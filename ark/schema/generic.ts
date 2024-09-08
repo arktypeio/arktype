@@ -10,7 +10,7 @@ import {
 import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { BaseScope } from "./scope.ts"
+import type { SchemaScope } from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arkKind } from "./shared/utils.ts"
 
@@ -26,7 +26,7 @@ export type GenericParamDef<name extends string = string> =
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
-	$: BaseScope
+	$: SchemaScope
 ): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
 export type genericParamNames<params extends array<GenericParamAst>> = {
@@ -73,19 +73,19 @@ export class GenericRoot<
 
 	paramDefs: array<GenericParamDef>
 	bodyDef: bodyDef
-	$: BaseScope
-	arg$: BaseScope
+	$: SchemaScope
+	arg$: SchemaScope
 	baseInstantiation: BaseRoot
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
 		bodyDef: bodyDef,
-		$: BaseScope,
-		arg$: BaseScope
+		$: SchemaScope,
+		arg$: SchemaScope
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
-				const arg = this.arg$.parseRoot(args[i])
+				const arg = this.arg$.parseDefinition(args[i])
 				if (!arg.extends(this.constraints[i])) {
 					throwParseError(
 						writeUnsatisfiedParameterConstraintMessage(
@@ -101,10 +101,10 @@ export class GenericRoot<
 			if (this.defIsLazy()) {
 				const def = this.bodyDef(argNodes)
 
-				return this.$.parseRoot(def)
+				return this.$.parseDefinition(def)
 			}
 
-			return this.$.parseRoot(bodyDef, { args: argNodes })
+			return this.$.parseDefinition(bodyDef, { args: argNodes })
 		})
 
 		this.paramDefs = paramDefs
@@ -141,7 +141,7 @@ export class GenericRoot<
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
 					[param, $ark.intrinsic.unknown]
-				:	[param[0], this.$.parseRoot(param[1])]
+				:	[param[0], this.$.parseDefinition(param[1])]
 			) as never
 		)
 	}

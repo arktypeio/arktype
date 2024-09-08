@@ -16,7 +16,7 @@ import {
 import type { mutableInnerOfKind } from "../kinds.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
-import type { BaseScope } from "../scope.ts"
+import type { SchemaScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -679,7 +679,7 @@ export type NormalizedIndex = {
 export const normalizeIndex = (
 	signature: BaseRoot,
 	value: BaseRoot,
-	$: BaseScope
+	$: SchemaScope
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,

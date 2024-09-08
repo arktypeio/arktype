@@ -20,7 +20,7 @@ import {
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { BaseScope } from "./scope.ts"
+import type { SchemaScope } from "./scope.ts"
 import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
@@ -51,7 +51,7 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
-	$: BaseScope
+	$: SchemaScope
 	args: ContextualArgs
 	kind: kind
 	normalizedSchema: NormalizedSchema<kind>
@@ -205,7 +205,7 @@ export const createNode = (
 	kind: NodeKind,
 	inner: dict,
 	meta: BaseMeta,
-	$: BaseScope
+	$: SchemaScope
 ): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const innerEntries = entriesOf(inner)

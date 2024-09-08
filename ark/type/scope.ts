@@ -1,6 +1,6 @@
 import {
 	$ark,
-	BaseScope,
+	SchemaScope,
 	hasArkKind,
 	isNode,
 	nodesById,
@@ -208,7 +208,7 @@ export interface InternalScope {
 	constructor: typeof InternalScope
 }
 
-export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
+export class InternalScope<$ extends {} = {}> extends SchemaScope<$> {
 	private parseCache: Record<string, BaseRoot> = {}
 
 	override preparseAlias(k: string, v: unknown): AliasDefEntry {
@@ -305,7 +305,10 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return node as never
 	}
 
-	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
+	override parseDefinition = (
+		def: unknown,
+		opts: TypeParseOptions = {}
+	): BaseRoot => {
 		if (isNode(def) && def.isRoot()) return this.bindReference(def)
 
 		const ctx: ParseContext = {
@@ -322,9 +325,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 			const node = this.parse(def, ctx)
 			nodesById[id] = node.id
-
-			if (!isScopeAlias && !node.precompilation && !this.resolvedConfig.jitless)
-				node.precompile()
 			return node
 		})
 	}

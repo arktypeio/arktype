@@ -98,7 +98,7 @@ export abstract class BaseRoot<
 	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
-		const rNode = this.$.parseRoot(r)
+		const rNode = this.$.parseDefinition(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
@@ -112,9 +112,9 @@ export abstract class BaseRoot<
 	}
 
 	or(r: unknown): BaseRoot {
-		const rNode = this.$.parseRoot(r)
+		const rNode = this.$.parseDefinition(r)
 		const branches = [...this.branches, ...(rNode.branches as any)]
-		return this.$.rootNode(branches) as never
+		return this.$.schema(branches) as never
 	}
 
 	assert(data: unknown): unknown {
@@ -123,19 +123,19 @@ export abstract class BaseRoot<
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("pick", keys))
+		return this.$.schema(this.applyStructuralOperation("pick", keys))
 	}
 
 	omit(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("omit", keys))
+		return this.$.schema(this.applyStructuralOperation("omit", keys))
 	}
 
 	required(): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("required", []))
+		return this.$.schema(this.applyStructuralOperation("required", []))
 	}
 
 	partial(): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("partial", []))
+		return this.$.schema(this.applyStructuralOperation("partial", []))
 	}
 
 	private _keyof?: BaseRoot
@@ -151,12 +151,12 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return (this._keyof = result)
+		return (this._keyof = this.$.finalize(result))
 	}
 
 	merge(r: unknown): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		return this.$.rootNode(
+		const rNode = this.$.parseDefinition(r)
+		return this.$.schema(
 			rNode.distribute(branch =>
 				this.applyStructuralOperation("merge", [
 					structureOf(branch) ??
@@ -206,25 +206,25 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		return this.$.rootNode(this.applyStructuralOperation("get", path)) as never
+		return this.$.schema(this.applyStructuralOperation("get", path)) as never
 	}
 
 	extract(r: unknown): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		return this.$.rootNode(
+		const rNode = this.$.parseDefinition(r)
+		return this.$.schema(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
 	exclude(r: BaseRoot): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		return this.$.rootNode(
+		const rNode = this.$.parseDefinition(r)
+		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
 	}
 
 	array(): BaseRoot {
-		return this.$.rootNode(
+		return this.$.schema(
 			{
 				proto: Array,
 				sequence: this
@@ -302,7 +302,7 @@ export abstract class BaseRoot<
 	})
 
 	to(def: unknown): BaseRoot {
-		return this.toNode(this.$.parseRoot(def))
+		return this.toNode(this.$.parseDefinition(def))
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
@@ -325,7 +325,7 @@ export abstract class BaseRoot<
 						in: branch,
 						morphs: [morph]
 					}),
-			branches => this.$.rootNode(branches)
+			this.$.parseSchema
 		)
 	}
 

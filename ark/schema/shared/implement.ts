@@ -22,7 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { BaseScope, ResolvedArkScopeConfig } from "../scope.ts"
+import type { ResolvedArkScopeConfig, SchemaScope } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -144,7 +144,7 @@ export interface InternalIntersectionOptions {
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
-	$: BaseScope
+	$: SchemaScope
 	invert: boolean
 }
 
@@ -302,7 +302,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: BaseScope
+		$: SchemaScope
 	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 }
 

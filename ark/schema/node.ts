@@ -27,7 +27,7 @@ import type { NodeParseOptions } from "./parse.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
-import type { BaseScope } from "./scope.ts"
+import type { SchemaScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
@@ -63,9 +63,9 @@ export abstract class BaseNode<
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	attachments: UnknownAttachments
-	$: BaseScope
+	$: SchemaScope
 
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
+	constructor(attachments: UnknownAttachments, $: SchemaScope) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
 			// through pipes and keep track of piped paths. It is not exposed
@@ -196,11 +196,6 @@ export abstract class BaseNode<
 
 	readonly precedence: number = precedenceOfKind(this.kind)
 	precompilation: string | undefined
-
-	precompile(): this {
-		this.$.bindPrecompilation(this.references)
-		return this
-	}
 
 	allows = (data: d["prerequisite"]): boolean => {
 		if (this.allowsRequiresContext) {
@@ -493,7 +488,7 @@ export const appendUniqueNodes = <node extends BaseNode>(
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
-	bindScope?: BaseScope
+	bindScope?: SchemaScope
 	prereduced?: boolean
 }
 

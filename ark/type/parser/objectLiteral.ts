@@ -67,7 +67,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.rootNode({
+	return ctx.$.parseSchema({
 		domain: "object",
 		structure: spread?.merge(structureNode) ?? structureNode
 	})

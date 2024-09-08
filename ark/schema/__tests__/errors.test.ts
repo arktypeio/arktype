@@ -104,14 +104,14 @@ contextualize(() => {
 				description: inner => `my special ${inner.domain}`
 			}
 		})
-		const mySpecialSymbol = schemaScope({}).rootNode("symbol")
+		const mySpecialSymbol = schemaScope({}).parseSchema("symbol")
 		attest(mySpecialSymbol.traverse("foo")?.toString()).snap(
 			"must be my special symbol (was a string)"
 		)
 		configure({
 			domain: $ark.defaultConfig.domain
 		})
-		const myBoringSymbol = schemaScope({}).rootNode("symbol")
+		const myBoringSymbol = schemaScope({}).parseSchema("symbol")
 		attest(myBoringSymbol.traverse("foo")?.toString()).snap(
 			"must be a symbol (was a string)"
 		)

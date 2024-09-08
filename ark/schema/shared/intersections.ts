@@ -4,7 +4,7 @@ import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Union } from "../roots/union.ts"
-import type { BaseScope } from "../scope.ts"
+import type { SchemaScope } from "../scope.ts"
 import { Disjoint } from "./disjoint.ts"
 import {
 	rootKinds,
@@ -12,7 +12,7 @@ import {
 	type RootKind,
 	type UnknownIntersectionResult
 } from "./implement.ts"
-import { isNode } from "./utils.ts"
+import { hasArkKind, isNode } from "./utils.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
@@ -23,7 +23,7 @@ type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 ) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
 :	BaseNode | Disjoint | null
 
-export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
+export const intersectNodesRoot: InternalNodeIntersection<SchemaScope> = (
 	l,
 	r,
 	$
@@ -33,16 +33,20 @@ export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 		invert: false,
 		pipe: false
 	})
-	return isNode(result) ? (result.precompile() as never) : result
+	return hasArkKind(result, "root") ? $.finalize(result) : result
 }
 
-export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) => {
+export const pipeNodesRoot: InternalNodeIntersection<SchemaScope> = (
+	l,
+	r,
+	$
+) => {
 	const result = intersectNodes(l, r, {
 		$,
 		invert: false,
 		pipe: true
 	})
-	return isNode(result) ? (result.precompile() as never) : result
+	return hasArkKind(result, "root") ? $.finalize(result) : result
 }
 
 export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
@@ -136,7 +140,7 @@ const pipeMorphed = (
 			)
 			return viableBranches.length === 0 ?
 					Disjoint.init("union", from.branches, to.branches)
-				:	ctx.$.rootNode(viableBranches)
+				:	ctx.$.parseSchema(viableBranches)
 		}
 	)
 

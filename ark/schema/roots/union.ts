@@ -102,7 +102,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 						const branchNodes =
 							hasArkKind(branchSchema, "root") ?
 								branchSchema.branches
-							:	ctx.$.rootNode(branchSchema).branches
+							:	ctx.$.parseSchema(branchSchema).branches
 						branchNodes.forEach(node => {
 							if (node.hasKind("morph")) {
 								const matchingMorphIndex = branches.findIndex(
@@ -199,7 +199,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 
 				if (resultBranches instanceof Disjoint) return resultBranches
 
-				return ctx.$.rootNode(
+				return ctx.$.parseSchema(
 					l.ordered || r.ordered ?
 						{
 							branches: resultBranches,
@@ -214,7 +214,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 
 				if (branches.length === 1) return branches[0]
 
-				return ctx.$.rootNode(
+				return ctx.$.parseSchema(
 					l.ordered ? { branches, ordered: true } : { branches }
 				)
 			})

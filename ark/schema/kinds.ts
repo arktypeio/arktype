@@ -23,7 +23,7 @@ import { Morph } from "./roots/morph.ts"
 import { Proto } from "./roots/proto.ts"
 import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
-import type { BaseScope } from "./scope.ts"
+import type { SchemaScope } from "./scope.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -94,7 +94,7 @@ $ark.defaultConfig = Object.assign(
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: UnknownAttachments, $: BaseScope) => BaseNode
+	new (attachments: UnknownAttachments, $: SchemaScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: Alias.Node,

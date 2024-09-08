@@ -66,7 +66,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		keys: {
 			in: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.rootNode(schema)
+				parse: (schema, ctx) => ctx.$.parseSchema(schema)
 			},
 			morphs: {
 				parse: liftArray,
@@ -125,7 +125,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 							...baseInner,
 							in: inBranch
 						}),
-					ctx.$.rootNode
+					ctx.$.parseSchema
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
@@ -136,7 +136,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 								...l.inner,
 								in: branch
 							}),
-							ctx.$.rootNode
+							ctx.$.parseSchema
 						)
 					)
 			})
