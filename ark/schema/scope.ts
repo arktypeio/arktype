@@ -294,14 +294,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 				)
 
 		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			if (
-				isNode(bound) &&
-				!bound.precompilation &&
-				!this.resolvedConfig.jitless
-			)
-				bindPrecompilation(bound.references)
+			// // this node was not part of the original scope, so compile an anonymous scope
+			// // including only its references
+			// if (
+			// 	isNode(bound) &&
+			// 	!bound.precompilation &&
+			// 	!this.resolvedConfig.jitless
+			// )
+			// 	bindPrecompilation(bound.references)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference

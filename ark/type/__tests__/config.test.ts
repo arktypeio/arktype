@@ -116,7 +116,7 @@ contextualize(() => {
 		})
 
 		// no JIT until scope is resolved
-		attest($.type("defined").internal.jit).equals(undefined)
+		attest($.type("defined").precompilation).equals(undefined)
 		attest($.type("referenced").precompilation).equals(undefined)
 
 		const types = $.export()

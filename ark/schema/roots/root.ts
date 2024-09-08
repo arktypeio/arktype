@@ -61,6 +61,7 @@ export abstract class BaseRoot<
 > extends BaseNode<d> {
 	readonly [arkKind] = "root"
 	declare readonly [inferred]: unknown
+	readonly isScopeAlias = this.alias && this.alias in this.$.aliases
 
 	get internal(): this {
 		return this

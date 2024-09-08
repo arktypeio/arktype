@@ -319,8 +319,16 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			// if the definition being parsed is not a scope alias and is not a
 			// generic instantiation (i.e. opts don't include args), add this as a resolution.
 			if (!isScopeAlias && !ctx.args) ctx.args = { this: id }
+
 			const node = this.parse(def, ctx)
 			nodesById[id] = node.id
+
+			if (
+				!node.isScopeAlias &&
+				!node.precompilation &&
+				!this.resolvedConfig.jitless
+			)
+				node.precompile()
 			return node
 		})
 	}
