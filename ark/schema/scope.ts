@@ -41,8 +41,9 @@ import {
 import type { BaseNode } from "./node.ts"
 import {
 	parseNode,
+	registerNodeId,
 	schemaKindOf,
-	type NodeParseContextInput,
+	type NodeParseContext,
 	type NodeParseOptions
 } from "./parse.ts"
 import { normalizeAliasSchema, type Alias } from "./roots/alias.ts"
@@ -215,7 +216,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
 		opts: NodeParseOptions
-	): BaseNode | NodeParseContextInput {
+	): BaseNode | NodeParseContext {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
@@ -246,12 +247,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
+		const id = registerNodeId(opts.alias ?? kind)
+
 		return {
 			...opts,
 			$: this,
 			args: opts.args ?? {},
 			kind,
-			normalizedSchema
+			normalizedSchema,
+			id
 		}
 	}
 

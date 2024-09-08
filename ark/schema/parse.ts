@@ -46,20 +46,22 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 **/
 	reduceTo?: BaseNode
 	args?: ContextualArgs
+	id?: NodeId
 }
 
-export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
+export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: BaseScope
 	args: ContextualArgs
 	kind: kind
 	normalizedSchema: NormalizedSchema<kind>
-}
-
-export interface NodeParseContext<kind extends NodeKind = NodeKind>
-	extends NodeParseContextInput<kind> {
 	id: NodeId
 }
+
+// export interface NodeParseContext<kind extends NodeKind = NodeKind>
+// 	extends NodeParseContextInput<kind> {
+// 	id: NodeId
+// }
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
 	schema: unknown,
@@ -132,12 +134,7 @@ export const registerNode = <node extends BaseNode>(
 	return (nodesById[id] = resolve(id))
 }
 
-export const parseNode = (ctxInput: NodeParseContextInput): BaseNode =>
-	registerNode(ctxInput.alias ?? ctxInput.kind, id =>
-		_parseNode(Object.assign(ctxInput, { id }))
-	)
-
-const _parseNode = (ctx: NodeParseContext): BaseNode => {
+export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
 	const inner: dict = {}
 	const { meta: metaSchema, ...schema } = ctx.normalizedSchema as dict & {
@@ -279,12 +276,10 @@ export const createNode = (
 	return (nodeCache[hash] = node)
 }
 
-export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode => {
-	const prefix = meta.alias ?? node.kind
-	return registerNode(prefix, id =>
+export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
+	registerNode(meta.alias ?? node.kind, id =>
 		createNode(id, node.kind, node.inner, meta, node.$)
 	)
-}
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: dict,
