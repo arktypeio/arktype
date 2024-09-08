@@ -12,9 +12,10 @@ import {
 	type Json,
 	type Key,
 	type SerializedPrimitive,
+	type array,
 	type show
 } from "@ark/util"
-import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
@@ -29,7 +30,6 @@ import { Disjoint } from "../shared/disjoint.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
-	unionChildKinds,
 	type IntersectionContext,
 	type RootKind,
 	type UnionChildKind,
@@ -57,17 +57,10 @@ export declare namespace Union {
 
 	export type ChildNode = nodeOfKind<ChildKind>
 
-	// allow union nodes as branch definitions that will be flattened on parsing
-	export type BranchSchema = ChildSchema | BaseRoot
+	export type Schema = NormalizedSchema | readonly RootSchema[]
 
-	export type Schema<
-		branches extends readonly BranchSchema[] = readonly BranchSchema[]
-	> = NormalizedSchema<branches> | branches
-
-	export interface NormalizedSchema<
-		branches extends readonly BranchSchema[] = readonly BranchSchema[]
-	> extends BaseNormalizedSchema {
-		readonly branches: branches
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly branches: array<RootSchema>
 		readonly ordered?: true
 	}
 
@@ -104,11 +97,31 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 			branches: {
 				child: true,
 				parse: (schema, ctx) => {
-					const branches = schema.flatMap(branch =>
-						hasArkKind(branch, "root") ?
-							branch.branches
-						:	ctx.$.node(unionChildKinds, branch as Union.ChildSchema)
-					)
+					const branches: Union.ChildNode[] = []
+					schema.forEach(branchSchema => {
+						const branchNodes =
+							hasArkKind(branchSchema, "root") ?
+								branchSchema.branches
+							:	ctx.$.rootNode(branchSchema).branches
+						branchNodes.forEach(node => {
+							if (node.hasKind("morph")) {
+								const matchingMorphIndex = branches.findIndex(
+									matching =>
+										matching.hasKind("morph") && matching.hasEqualMorphs(node)
+								)
+								if (matchingMorphIndex === -1) branches.push(node)
+								else {
+									const matchingMorph = branches[
+										matchingMorphIndex
+									] as Morph.Node
+									branches[matchingMorphIndex] = ctx.$.node("morph", {
+										...matchingMorph.inner,
+										in: matchingMorph.in.or(node.in)
+									})
+								}
+							} else branches.push(node)
+						})
+					})
 
 					if (!ctx.normalizedSchema.ordered)
 						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))

@@ -15,7 +15,6 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import type {
-	Inner,
 	mutableInnerOfKind,
 	nodeOfKind,
 	NodeSchema,
@@ -76,14 +75,12 @@ export declare namespace Intersection {
 
 	export type NormalizedSchema = Omit<Schema, StructuralKind | "undeclared">
 
-	export type Schema<inferredBasis = any> =
-		| show<
-				BaseNormalizedSchema & {
-					domain?: Domain.Schema
-					proto?: Proto.Schema
-				} & conditionalRootOf<inferredBasis>
-		  >
-		| IntersectionNode
+	export type Schema<inferredBasis = any> = show<
+		BaseNormalizedSchema & {
+			domain?: Domain.Schema
+			proto?: Proto.Schema
+		} & conditionalRootOf<inferredBasis>
+	>
 
 	export interface ErrorContext
 		extends BaseErrorContext<"intersection">,
@@ -407,19 +404,16 @@ type conditionalIntersectionKeyOf<t> =
 	| constraintKindOf<t>
 	| (t extends object ? "undeclared" : never)
 
-// not sure why explicitly allowing Inner<k> is necessary in these cases,
-// but remove if it can be removed without creating type errors
-type intersectionChildRootValueOf<k extends Intersection.FlattenedChildKind> =
-	k extends OpenNodeKind ? listable<NodeSchema<k> | Inner<k>>
-	:	NodeSchema<k> | Inner<k>
+type intersectionChildSchemaValueOf<k extends Intersection.FlattenedChildKind> =
+	k extends OpenNodeKind ? listable<NodeSchema<k>> : NodeSchema<k>
 
-type conditionalRootValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends Intersection.FlattenedChildKind ? intersectionChildRootValueOf<k>
+type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends Intersection.FlattenedChildKind ? intersectionChildSchemaValueOf<k>
 	:	ConditionalTerminalIntersectionRoot[k & ConditionalTerminalIntersectionKey]
 
 type intersectionChildInnerValueOf<k extends Intersection.FlattenedChildKind> =
 	k extends OpenNodeKind ? readonly nodeOfKind<k>[] : nodeOfKind<k>
 
 export type conditionalRootOf<t> = {
-	[k in conditionalIntersectionKeyOf<t>]?: conditionalRootValueOfKey<k>
+	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
 }
