@@ -720,25 +720,15 @@ contextualize(() => {
 			) => Out<1[]>
 		>(t.t)
 
-		const serializedMorphs =
-			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+		const serializedMorphs = t.internal.assertHasKind("morph").serializedMorphs
 
-		attest(t.json).snap([
-			{
-				in: {
-					required: [{ key: "bar", value: { unit: 1 } }],
-					domain: "object"
-				},
-				morphs: serializedMorphs
-			},
-			{
-				in: {
-					required: [{ key: "foo", value: { unit: 1 } }],
-					domain: "object"
-				},
-				morphs: serializedMorphs
-			}
-		])
+		attest(t.json).snap({
+			in: [
+				{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
+				{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
+			],
+			morphs: serializedMorphs
+		})
 		attest(t({ foo: 1 })).snap([1])
 		attest(t({ bar: 1 })).snap([1])
 		attest(t({ baz: 2 }).toString()).snap(
@@ -781,6 +771,6 @@ contextualize(() => {
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string ) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: number | string | false | null | true | jsonObject | jsonData[] } | jsonData[]> | false | true }`)
+Right: { foo: (In: string) => Out<{ [string]: jsonObject | number | string | jsonData[] | false | null | true } | jsonData[]> | false | true }`)
 	})
 })

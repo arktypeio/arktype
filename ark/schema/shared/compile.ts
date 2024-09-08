@@ -216,8 +216,4 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			:	this.line(this.invoke(node, opts))
 	}
-
-	writeMethod(name: string): string {
-		return `${name}(${this.argNames.join(", ")}){\n${this.body}    }\n`
-	}
 }

@@ -320,14 +320,14 @@ export abstract class BaseRoot<
 		if (hasArkKind(morph, "root")) return this.toNode(morph)
 
 		return this.distribute(
-			node =>
-				node.hasKind("morph") ?
+			branch =>
+				branch.hasKind("morph") ?
 					this.$.node("morph", {
-						in: node.in,
-						morphs: [...node.morphs, morph]
+						in: branch.in,
+						morphs: [...branch.morphs, morph]
 					})
 				:	this.$.node("morph", {
-						in: node,
+						in: branch,
 						morphs: [morph]
 					}),
 			branches => this.$.rootNode(branches)

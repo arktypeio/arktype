@@ -623,11 +623,22 @@ const compileScope = (references: readonly BaseNode[]) =>
 		.block("return", js => {
 			references.forEach(node => {
 				const allowsCompiler = new NodeCompiler("Allows").indent()
-				node.compile(allowsCompiler)
+				js.block(
+					`${node.id}Allows(${allowsCompiler.argNames.join(", ")})`,
+					js => {
+						node.compile(allowsCompiler)
+						return js.line(allowsCompiler.body)
+					},
+					","
+				)
 				const applyCompiler = new NodeCompiler("Apply").indent()
-				node.compile(applyCompiler)
-				js.line(`${allowsCompiler.writeMethod(`${node.id}Allows`)},`).line(
-					`${applyCompiler.writeMethod(`${node.id}Apply`)},`
+				js.block(
+					`${node.id}Apply(${applyCompiler.argNames.join(", ")})`,
+					js => {
+						node.compile(applyCompiler)
+						return js.line(applyCompiler.body)
+					},
+					","
 				)
 			})
 			return js

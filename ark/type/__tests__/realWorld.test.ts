@@ -700,16 +700,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(validatePositiveBigint)
 
 		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
-		attest(Amount.json).snap([
-			{
-				in: "number",
-				morphs: [morphReference, { predicate: [predicateReference] }]
-			},
-			{
-				in: "string",
-				morphs: [morphReference, { predicate: [predicateReference] }]
-			}
-		])
+		attest(Amount.json).snap({
+			in: ["number", "string"],
+			morphs: [morphReference, { predicate: [predicateReference] }]
+		})
 
 		attest(Amount("1000")).equals(1000n)
 		attest(Amount("-5").toString()).snap(
