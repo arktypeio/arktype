@@ -98,7 +98,7 @@ export abstract class BaseRoot<
 	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parse(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
@@ -112,7 +112,7 @@ export abstract class BaseRoot<
 	}
 
 	or(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parse(r)
 		const branches = [...this.branches, ...(rNode.branches as any)]
 		return this.$.schema(branches) as never
 	}
@@ -155,7 +155,7 @@ export abstract class BaseRoot<
 	}
 
 	merge(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parse(r)
 		return this.$.schema(
 			rNode.distribute(branch =>
 				this.applyStructuralOperation("merge", [
@@ -210,14 +210,14 @@ export abstract class BaseRoot<
 	}
 
 	extract(r: unknown): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parse(r)
 		return this.$.schema(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
 	exclude(r: BaseRoot): BaseRoot {
-		const rNode = this.$.parseDefinition(r)
+		const rNode = this.$.parse(r)
 		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
@@ -302,7 +302,7 @@ export abstract class BaseRoot<
 	})
 
 	to(def: unknown): BaseRoot {
-		return this.toNode(this.$.parseDefinition(def))
+		return this.toNode(this.$.parse(def))
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {

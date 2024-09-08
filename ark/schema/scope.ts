@@ -366,11 +366,9 @@ export class SchemaScope<$ extends {} = {}> {
 		}
 
 		this.resolutions[name] = name
-		return (this.resolutions[name] = this.bindReference(
-			this.parseDefinition(preparsed, {
-				alias: name
-			})
-		))
+		return (this.resolutions[name] = this.parse(preparsed, {
+			alias: name
+		}))
 	}
 
 	import(): SchemaModule<{
@@ -451,7 +449,15 @@ export class SchemaScope<$ extends {} = {}> {
 		return this.export()[name as never]
 	}
 
-	parseDefinition(def: unknown, opts?: NodeParseOptions): BaseRoot {
+	parse = (def: unknown, opts?: NodeParseOptions): BaseRoot => {
+		if (hasArkKind(def, "root")) return this.bindReference(def)
+		return this.parseOwnDefinitionFormat(def, opts)
+	}
+
+	protected parseOwnDefinitionFormat(
+		def: unknown,
+		opts?: NodeParseOptions
+	): BaseRoot {
 		return this.parseSchema(def as never, opts)
 	}
 

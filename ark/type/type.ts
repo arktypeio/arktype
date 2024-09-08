@@ -101,7 +101,7 @@ export class InternalTypeParser extends Callable<
 			{
 				errors: ArkErrors,
 				$: $ as never,
-				raw: $.parseDefinition as never,
+				raw: $.parse as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
 				generic: $.generic as never,
@@ -118,7 +118,7 @@ export class InternalTypeParser extends Callable<
 			(...args) => {
 				if (args.length === 1) {
 					// treat as a simple definition
-					return $.parseDefinition(args[0])
+					return $.parse(args[0])
 				}
 				if (
 					args.length === 2 &&
@@ -143,7 +143,7 @@ export class InternalTypeParser extends Callable<
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported
 				// part of the API as specified by the associated types
-				return $.parseDefinition(args)
+				return $.parse(args)
 			},
 			{
 				bind: $,

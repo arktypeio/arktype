@@ -2,7 +2,6 @@ import {
 	$ark,
 	SchemaScope,
 	hasArkKind,
-	isNode,
 	nodesById,
 	parseGeneric,
 	registerNode,
@@ -75,6 +74,7 @@ import {
 	type DeclarationParser,
 	type DefinitionParser,
 	type EnumeratedTypeParser,
+	type SchemaParser,
 	type Type,
 	type TypeParser,
 	type UnitTypeParser
@@ -266,22 +266,41 @@ export class InternalScope<$ extends {} = {}> extends SchemaScope<$> {
 		)
 	}
 
-	parse(def: unknown, ctx: ParseContext): BaseRoot {
-		return this.bindReference(this._parse(def, ctx))
-	}
-
-	private _parse(def: unknown, ctx: ParseContext): BaseRoot {
-		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
-				// we can only rely on the cache if there are no contextual
-				// resolutions like "this" or generic args
-				return this.parseString(def, ctx)
-			}
-			return (this.parseCache[def] ??= this.parseString(def, ctx))
+	protected override parseOwnDefinitionFormat(
+		def: unknown,
+		opts?: TypeParseOptions
+	): BaseRoot {
+		const ctx: ParseContext = {
+			...opts,
+			$: this as never
 		}
-		return hasDomain(def, "object") ?
-				parseObject(def, ctx)
-			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+
+		const rawParse = () => {
+			if (typeof def === "string") {
+				if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
+					// we can only rely on the cache if there are no contextual
+					// resolutions like "this" or generic args
+					return this.parseString(def, ctx)
+				}
+				return (this.parseCache[def] ??= this.parseString(def, ctx))
+			}
+			return hasDomain(def, "object") ?
+					parseObject(def, ctx)
+				:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+		}
+
+		return registerNode(ctx.alias ?? "type", id => {
+			const isScopeAlias = ctx.alias && ctx.alias in this.aliases
+
+			// if the definition being parsed is not a scope alias and is not a
+			// generic instantiation (i.e. opts don't include args), add this as a resolution.
+
+			if (!isScopeAlias && !ctx.args) ctx.args = { this: id }
+
+			const node = rawParse()
+			nodesById[id] = node.id
+			return node
+		})
 	}
 
 	parseString(def: string, ctx: ParseContext): BaseRoot {
@@ -303,30 +322,6 @@ export class InternalScope<$ extends {} = {}> extends SchemaScope<$> {
 			throwParseError(writeUnexpectedCharacterMessage(">"))
 
 		return node as never
-	}
-
-	override parseDefinition = (
-		def: unknown,
-		opts: TypeParseOptions = {}
-	): BaseRoot => {
-		if (isNode(def) && def.isRoot()) return this.bindReference(def)
-
-		const ctx: ParseContext = {
-			...opts,
-			$: this as never
-		}
-
-		return registerNode(opts.alias ?? "type", id => {
-			const isScopeAlias = ctx.alias && ctx.alias in this.aliases
-
-			// if the definition being parsed is not a scope alias and is not a
-			// generic instantiation (i.e. opts don't include args), add this as a resolution.
-			if (!isScopeAlias && !ctx.args) ctx.args = { this: id }
-
-			const node = this.parse(def, ctx)
-			nodesById[id] = node.id
-			return node
-		})
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
@@ -367,8 +362,6 @@ export interface Scope<$ = {}> {
 
 	defineSchema<const def extends RootSchema>(schema: def): def
 
-	schema(schema: RootSchema, opts?: NodeParseOptions): BaseRoot
-
 	node<kinds extends NodeKind | array<RootKind>>(
 		kinds: kinds,
 		schema: NodeSchema<flattenListable<kinds>>,
@@ -385,6 +378,8 @@ export interface Scope<$ = {}> {
 	define: DefinitionParser<$>
 
 	generic: GenericParser<$>
+
+	schema: SchemaParser<$>
 
 	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
