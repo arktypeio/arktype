@@ -1,4 +1,4 @@
-import type { BaseRoot, resolvableReferenceIn } from "@ark/schema"
+import type { resolvableReferenceIn, RootSchema } from "@ark/schema"
 import {
 	throwInternalError,
 	throwParseError,
@@ -45,7 +45,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): BaseRoot => {
+export const fullStringParse = (s: DynamicState): RootSchema => {
 	s.parseOperand()
 	let result = parseUntilFinalizer(s).root
 	if (!result) {

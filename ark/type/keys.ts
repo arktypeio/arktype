@@ -23,7 +23,7 @@ export type arkKeyOf<o> =
 				:	never
 		  }[keyof o & `${number}`]
 	:	{
-			[k in keyof o]: k extends number ? k | `${k}` : k
+			[k in keyof o]-?: k extends number ? k | `${k}` : k
 		}[keyof o]
 
 export type getArkKey<o, k extends arkKeyOf<o>> = o[Extract<
