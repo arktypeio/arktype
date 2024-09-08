@@ -38,9 +38,11 @@ attest({ re: "dew" }, { cfg: { updateSnapshots: true } }).snap({ re: "dew" })
 // @ts-expect-error (using internal updateSnapshots hook)
 attest(5, { cfg: { updateSnapshots: true } }).snap(5)
 
-attest(undefined).snap("(undefined)")
+attest(5n).snap(5n)
 
-attest({ a: undefined }).snap({ a: "(undefined)" })
+attest(undefined).snap(undefined)
+
+attest({ a: undefined }).snap({ a: undefined })
 
 attest("multiline\nmultiline").snap(`multiline
 multiline`)

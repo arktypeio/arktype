@@ -26,6 +26,8 @@ attest({ re: "dew" }, { cfg: { updateSnapshots: true } }).snap({ re: "do" })
 // @ts-expect-error (using internal updateSnapshots hook)
 attest(5, { cfg: { updateSnapshots: true } }).snap(6)
 
+attest(5n).snap()
+
 attest(undefined).snap()
 
 attest({ a: undefined }).snap()

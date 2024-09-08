@@ -250,7 +250,7 @@ contextualize(() => {
 			const t = type({ key: "unknown = undefined" })
 			const expected = type({ key: ["unknown", "=", undefined] })
 
-			attest(t({})).snap({ key: "(undefined)" })
+			attest(t({})).snap({ key: undefined })
 
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)

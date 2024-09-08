@@ -418,7 +418,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = MyAssets({ assets: [{ token: "a", amount: "1" }] })
 
-		attest(out).snap({ assets: { a: "1n" } })
+		attest(out).snap({ assets: { a: 1n } })
 	})
 
 	// https://discord.com/channels/957797212103016458/957804102685982740/1243850690644934677

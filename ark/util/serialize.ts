@@ -40,23 +40,43 @@ export type snapshot<t, depth extends 1[] = []> =
 			[k in keyof t]: snapshot<t[k], [...depth, 1]>
 		}
 
-type snapshotPrimitive<t> =
-	t extends undefined ? "(undefined)"
-	: t extends bigint ? `${t}n`
-	: t extends symbol ? `Symbol(${string})`
-	: t
+type snapshotPrimitive<t> = t extends symbol ? `(Symbol${string})` : t
 
 export const print = (data: unknown, indent?: number): void =>
 	console.log(printable(data, indent))
 
+const deepReplaceUndefinedAndBigInt = (data: unknown): unknown => {
+	if (data === undefined) return "undefined"
+	if (typeof data === "bigint") return `${data}n`
+	if (Array.isArray(data)) {
+		const result: any = []
+		for (const item of data) result.push(deepReplaceUndefinedAndBigInt(item))
+
+		return result
+	}
+	if (typeof data === "object") {
+		const result: any = {}
+		for (const k in data)
+			result[k] = deepReplaceUndefinedAndBigInt(data[k as keyof typeof data])
+
+		return result
+	}
+	return data
+}
+
 export const printable = (data: unknown, indent?: number): string => {
 	switch (domainOf(data)) {
+		case "bigint":
+			return `${data}n`
 		case "object":
 			const o = data as dict
 			const ctorName = o.constructor.name
+			const serialized = _serialize(o, printableOpts, [])
+			// Deep replace undefined and bigints to support JSON.stringify
+			const deepReplaced = deepReplaceUndefinedAndBigInt(serialized)
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
-					JSON.stringify(_serialize(o, printableOpts, []), null, indent)
+					JSON.stringify(deepReplaced, null, indent)
 				: o instanceof Date ? describeCollapsibleDate(o)
 				: typeof o.expression === "string" ? o.expression
 				: ctorName
@@ -101,7 +121,7 @@ const _serialize = (
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
-			return `${data}n`
+			return data
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
 		default:
