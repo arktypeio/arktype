@@ -1,4 +1,4 @@
-import { intrinsic, rootNode } from "@ark/schema"
+import { intrinsic, schema } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
@@ -16,7 +16,7 @@ const root = regexStringNode(
 
 export const numeric: stringNumeric.module = arkModule({
 	root,
-	parse: rootNode({
+	parse: schema({
 		in: root,
 		morphs: (s: string) => Number.parseFloat(s),
 		declaredOut: intrinsic.number

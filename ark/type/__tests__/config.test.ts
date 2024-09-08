@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { schema } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -112,12 +112,8 @@ contextualize(() => {
 	it("jit by default in scope", () => {
 		const $ = scope({
 			defined: "55",
-			referenced: rootNode({ unit: 5 })
+			referenced: schema({ unit: 5 })
 		})
-
-		// no JIT until scope is resolved
-		attest($.type("defined").precompilation).equals(undefined)
-		attest($.type("referenced").precompilation).equals(undefined)
 
 		const types = $.export()
 

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { Disjoint, boundKindPairsByLower, rootNode } from "@ark/schema"
+import { Disjoint, boundKindPairsByLower, schema } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
 const numericCases = {
@@ -16,7 +16,7 @@ const lengthCases = flatMorph(numericCases, (name, v) => [name, "1".repeat(v)])
 
 contextualize(() => {
 	it("numeric apply", () => {
-		const t = rootNode({
+		const t = schema({
 			domain: "number",
 			min: { rule: 5, exclusive: true },
 			max: { rule: 10 }
@@ -38,7 +38,7 @@ contextualize(() => {
 	})
 
 	it("length apply", () => {
-		const t = rootNode({
+		const t = schema({
 			domain: "string",
 			minLength: { rule: 5, exclusive: true },
 			maxLength: { rule: 10 }
@@ -60,7 +60,7 @@ contextualize(() => {
 	})
 
 	it("date apply", () => {
-		const t = rootNode({
+		const t = schema({
 			proto: Date,
 			after: { rule: 5, exclusive: true },
 			before: { rule: 10 }
@@ -93,7 +93,7 @@ contextualize(() => {
 				: dateCases
 
 			it("allows", () => {
-				const t = rootNode({
+				const t = schema({
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
@@ -107,13 +107,13 @@ contextualize(() => {
 			})
 
 			it("unit range reduces", () => {
-				const l = rootNode({
+				const l = schema({
 					...basis,
 					[min]: {
 						rule: 6
 					}
 				} as never)
-				const r = rootNode({
+				const r = schema({
 					...basis,
 					[max]: {
 						rule: 6
@@ -121,15 +121,15 @@ contextualize(() => {
 				} as never)
 				const expected =
 					min === "min" ?
-						rootNode({
+						schema({
 							unit: 6
 						})
 					: min === "minLength" ?
-						rootNode({
+						schema({
 							...basis,
 							exactLength: 6
 						} as never)
-					:	rootNode({
+					:	schema({
 							unit: new Date(6)
 						})
 
@@ -138,13 +138,13 @@ contextualize(() => {
 			})
 
 			it("non-overlapping exclusive", () => {
-				const l = rootNode({
+				const l = schema({
 					...basis,
 					[min]: {
 						rule: 3
 					}
 				} as never)
-				const r = rootNode({
+				const r = schema({
 					...basis,
 					[max]: {
 						rule: 3,
@@ -156,8 +156,8 @@ contextualize(() => {
 			})
 
 			it("non-overlapping limits", () => {
-				const l = rootNode({ ...basis, [min]: 3 } as never)
-				const r = rootNode({
+				const l = schema({ ...basis, [min]: 3 } as never)
+				const r = schema({
 					...basis,
 					[max]: 1
 				} as never)
@@ -166,11 +166,11 @@ contextualize(() => {
 			})
 
 			it("greater min is stricter", () => {
-				const lesser = rootNode({
+				const lesser = schema({
 					...basis,
 					[min]: 3
 				} as never)
-				const greater = rootNode({
+				const greater = schema({
 					...basis,
 					[min]: 4
 				} as never)
@@ -179,11 +179,11 @@ contextualize(() => {
 			})
 
 			it("lesser max is stricter", () => {
-				const lesser = rootNode({
+				const lesser = schema({
 					...basis,
 					[max]: 3
 				} as never)
-				const greater = rootNode({
+				const greater = schema({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
 				} as never)
@@ -192,11 +192,11 @@ contextualize(() => {
 			})
 
 			it("exclusive wins if limits equal", () => {
-				const exclusive = rootNode({
+				const exclusive = schema({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
 				} as never)
-				const inclusive = rootNode({
+				const inclusive = schema({
 					...basis,
 					[max]: 3
 				} as never)

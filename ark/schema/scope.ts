@@ -543,6 +543,9 @@ export class SchemaScope<
 > extends BaseScope<$> {
 	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot => {
 		const node = this.rootNode(schema as never, opts)
+		const isScopeAlias = opts.alias && opts.alias in this.aliases
+		if (!isScopeAlias && !node.precompilation && !this.resolvedConfig.jitless)
+			node.precompile()
 		return node
 	}
 }
@@ -554,7 +557,7 @@ export const parseAsSchema = (
 	opts?: NodeParseOptions
 ): BaseRoot | ParseError => {
 	try {
-		return rootNode(def as RootSchema, opts) as never
+		return schema(def as RootSchema, opts) as never
 	} catch (e) {
 		if (e instanceof ParseError) return e
 		throw e
@@ -651,7 +654,7 @@ const writePrecompilation = (references: readonly BaseNode[]) =>
 // ensure the scope is resolved so JIT will be applied to future types
 rootSchemaScope.export()
 
-export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
+export const schema: SchemaScope["rootNode"] = rootSchemaScope.parseRoot
 export const node: SchemaScope["node"] = rootSchemaScope.node
 export const defineSchema: SchemaScope["defineSchema"] =
 	rootSchemaScope.defineSchema

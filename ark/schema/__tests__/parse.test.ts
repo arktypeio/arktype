@@ -1,19 +1,19 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { schema } from "@ark/schema"
 
 contextualize(() => {
 	it("single constraint", () => {
-		const t = rootNode({ domain: "string", pattern: ".*" })
+		const t = schema({ domain: "string", pattern: ".*" })
 		attest(t.json).snap({ domain: "string", pattern: [".*"] })
 	})
 
 	it("multiple constraints", () => {
-		const l = rootNode({
+		const l = schema({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = rootNode({
+		const r = schema({
 			domain: "number",
 			divisor: 5
 		})
@@ -28,7 +28,7 @@ contextualize(() => {
 
 	it("throws on reduced minLength disjoint", () => {
 		attest(() =>
-			rootNode({
+			schema({
 				proto: Array,
 				maxLength: 0,
 				sequence: {

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { schema } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -12,7 +12,7 @@ contextualize(() => {
 			ages: a.array()
 		})
 
-		const c = rootNode(b.json as never)
+		const c = schema(b.json as never)
 
 		attest(b.json).equals(c.json)
 	})

@@ -1,7 +1,7 @@
-import { rootNode } from "@ark/schema"
+import { schema } from "@ark/schema"
 import type { number } from "./number.ts"
 
-export const integer = rootNode({
+export const integer = schema({
 	domain: "number",
 	divisor: 1
 })

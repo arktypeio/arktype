@@ -1,4 +1,4 @@
-import { rootNode } from "@ark/schema"
+import { schema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import { arkModule } from "../utils.ts"
@@ -15,7 +15,7 @@ const preformatted = regexStringNode(
 )
 
 export const trim: trim.module = arkModule({
-	root: rootNode({
+	root: schema({
 		in: "string",
 		morphs: (s: string) => s.trim(),
 		declaredOut: preformatted

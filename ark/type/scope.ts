@@ -323,11 +323,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			const node = this.parse(def, ctx)
 			nodesById[id] = node.id
 
-			if (
-				!node.isScopeAlias &&
-				!node.precompilation &&
-				!this.resolvedConfig.jitless
-			)
+			if (!isScopeAlias && !node.precompilation && !this.resolvedConfig.jitless)
 				node.precompile()
 			return node
 		})

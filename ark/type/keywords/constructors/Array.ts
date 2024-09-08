@@ -1,4 +1,4 @@
-import { genericNode, intrinsic, rootNode } from "@ark/schema"
+import { genericNode, intrinsic, schema } from "@ark/schema"
 import { Hkt, liftArray, type Digit } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { To } from "../ast.ts"
@@ -18,7 +18,7 @@ const liftFrom = genericNode("element")(args => {
 		.pipe(liftArray)
 		.distribute(
 			branch => branch.assertHasKind("morph").declareOut(lifted),
-			rootNode
+			schema
 		)
 }, liftFromHkt)
 
