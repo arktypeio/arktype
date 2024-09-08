@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	rootNode,
 	writeNonStructuralOperandMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiableExpressionError
