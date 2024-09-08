@@ -30,12 +30,12 @@ export declare namespace Alias {
 
 	export interface NormalizedSchema<alias extends string = string>
 		extends BaseNormalizedSchema {
-		readonly resolutionName: alias
+		readonly reference: alias
 		readonly resolve?: () => BaseRoot
 	}
 
 	export interface Inner<alias extends string = string> {
-		readonly resolutionName: alias
+		readonly reference: alias
 		readonly resolve?: () => BaseRoot
 	}
 
@@ -51,7 +51,7 @@ export declare namespace Alias {
 }
 
 export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
-	typeof schema === "string" ? { resolutionName: schema } : schema
+	typeof schema === "string" ? { reference: schema } : schema
 
 const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
 	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
@@ -60,14 +60,14 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
 		hasAssociatedError: false,
-		collapsibleKey: "resolutionName",
+		collapsibleKey: "reference",
 		keys: {
-			resolutionName: {},
+			reference: {},
 			resolve: {}
 		},
 		normalize: normalizeAliasSchema,
 		defaults: {
-			description: node => node.resolutionName
+			description: node => node.reference
 		},
 		intersections: {
 			alias: (l, r, ctx) =>
@@ -86,21 +86,21 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
-	readonly expression: string = this.resolutionName
+	readonly expression: string = this.reference
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
 		if (this.resolve) {
 			return this.cacheGetter(
 				"resolution",
-				this.resolve?.() ?? this.$.resolveRoot(this.resolutionName)
+				this.resolve?.() ?? this.$.resolveRoot(this.reference)
 			)
 		}
 
-		if (this.resolutionName[0] === "$")
-			return this.$.resolveRoot(this.resolutionName.slice(1))
+		if (this.reference[0] === "$")
+			return this.$.resolveRoot(this.reference.slice(1))
 
-		const id = this.resolutionName as NodeId
+		const id = this.reference as NodeId
 
 		let resolution = nodesById[id]
 		const seen: PartialRecord<NodeId> = {}
@@ -126,25 +126,23 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
-		const seen = ctx.seen[this.resolutionName]
+		const seen = ctx.seen[this.reference]
 		if (seen?.includes(data)) return true
-		ctx.seen[this.resolutionName] = append(seen, data)
+		ctx.seen[this.reference] = append(seen, data)
 		return this.resolution.traverseAllows(data, ctx)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const seen = ctx.seen[this.resolutionName]
+		const seen = ctx.seen[this.reference]
 		if (seen?.includes(data)) return
-		ctx.seen[this.resolutionName] = append(seen, data)
+		ctx.seen[this.reference] = append(seen, data)
 		this.resolution.traverseApply(data, ctx)
 	}
 
 	compile(js: NodeCompiler): void {
-		js.if(`ctx.seen.${this.resolutionName}?.includes(data)`, () =>
-			js.return(true)
-		)
-		js.line(`ctx.seen.${this.resolutionName} ??= []`).line(
-			`ctx.seen.${this.resolutionName}.push(data)`
+		js.if(`ctx.seen.${this.reference}?.includes(data)`, () => js.return(true))
+		js.line(`ctx.seen.${this.reference} ??= []`).line(
+			`ctx.seen.${this.reference}.push(data)`
 		)
 		js.return(js.invoke(this.resolution))
 	}

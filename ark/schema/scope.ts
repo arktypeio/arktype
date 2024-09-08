@@ -202,7 +202,7 @@ export class SchemaScope<$ extends {} = {}> {
 		const node = this.node(
 			"alias",
 			{
-				resolutionName: syntheticAlias ?? "synthetic",
+				reference: syntheticAlias ?? "synthetic",
 				resolve
 			},
 			{ prereduced: true }
@@ -229,7 +229,7 @@ export class SchemaScope<$ extends {} = {}> {
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
-				Alias.implementation.normalize(schema as never, this).resolutionName
+				Alias.implementation.normalize(schema as never, this).reference
 			)
 			schema = resolution
 			kind = resolution.kind
@@ -331,7 +331,7 @@ export class SchemaScope<$ extends {} = {}> {
 		const resolution = this.maybeShallowResolve(name)
 
 		return typeof resolution === "string" ?
-				this.node("alias", { resolutionName: resolution }, { prereduced: true })
+				this.node("alias", { reference: resolution }, { prereduced: true })
 			:	resolution
 	}
 
@@ -483,7 +483,7 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 				aliasNode.resolution.referencesById
 			)
 			resolution.references.forEach(ref => {
-				if (aliasNode.resolutionName in ref.referencesById)
+				if (aliasNode.reference in ref.referencesById)
 					Object.assign(ref.referencesById, aliasNode.referencesById)
 			})
 		})

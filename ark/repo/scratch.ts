@@ -7,5 +7,5 @@ const t = type({ foo: "1" })
 console.log(t.internal.precompilation)
 
 type({
-	foo: "string"
+	foo: "string.normalize.NFC.preformatted"
 })
