@@ -27,19 +27,23 @@ export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
 	r,
 	$
-) =>
-	intersectNodes(l, r, {
+) => {
+	const result = intersectNodes(l, r, {
 		$,
 		invert: false,
 		pipe: false
 	})
+	return isNode(result) ? (result.precompile() as never) : result
+}
 
-export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) =>
-	intersectNodes(l, r, {
+export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) => {
+	const result = intersectNodes(l, r, {
 		$,
 		invert: false,
 		pipe: true
 	})
+	return isNode(result) ? (result.precompile() as never) : result
+}
 
 export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	l,

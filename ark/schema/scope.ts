@@ -439,7 +439,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) bindPrecompilation(this.references)
+			if (!this.resolvedConfig.jitless) this.bindPrecompilation(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
@@ -449,6 +449,27 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this._exports![name]
 			]) as never
 		) as never
+	}
+
+	bindPrecompilation(references: readonly BaseNode[]): void {
+		const precompilation = writePrecompilation(references)
+		const compiledTraversals = instantiatePrecompilation(precompilation)
+		for (const node of references) {
+			if (node.precompilation) {
+				// if node has already been bound to another scope or anonymous type, don't rebind it
+				continue
+			}
+			node.traverseAllows =
+				compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
+			if (node.isRoot() && !node.allowsRequiresContext) {
+				// if the reference doesn't require context, we can assign over
+				// it directly to avoid having to initialize it
+				node.allows = node.traverseAllows as never
+			}
+			node.traverseApply =
+				compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
+			node.precompilation = precompilation
+		}
 	}
 
 	resolve<name extends exportedNameOf<$>>(
@@ -623,27 +644,6 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
-
-export const bindPrecompilation = (references: readonly BaseNode[]): void => {
-	const precompilation = writePrecompilation(references)
-	const compiledTraversals = instantiatePrecompilation(precompilation)
-	for (const node of references) {
-		if (node.precompilation) {
-			// if node has already been bound to another scope or anonymous type, don't rebind it
-			continue
-		}
-		node.traverseAllows =
-			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
-		if (node.isRoot() && !node.allowsRequiresContext) {
-			// if the reference doesn't require context, we can assign over
-			// it directly to avoid having to initialize it
-			node.allows = node.traverseAllows as never
-		}
-		node.traverseApply =
-			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
-		node.precompilation = precompilation
-	}
-}
 
 const instantiatePrecompilation = (precompilation: string) =>
 	new CompiledFunction().return(precompilation).compile<

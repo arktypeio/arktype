@@ -197,6 +197,11 @@ export abstract class BaseNode<
 	readonly precedence: number = precedenceOfKind(this.kind)
 	precompilation: string | undefined
 
+	precompile(): this {
+		this.$.bindPrecompilation(this.references)
+		return this
+	}
+
 	allows = (data: d["prerequisite"]): boolean => {
 		if (this.allowsRequiresContext) {
 			return this.traverseAllows(
