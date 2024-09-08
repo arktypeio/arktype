@@ -120,11 +120,7 @@ const maybeParseReference = (
 	if (s.ctx.args?.[token]) {
 		const arg = s.ctx.args[token]
 		return typeof arg === "string" ?
-				s.ctx.$.node(
-					"alias",
-					{ alias: arg, resolve: arg },
-					{ prereduced: true }
-				)
+				s.ctx.$.node("alias", { resolutionName: arg }, { prereduced: true })
 			:	arg
 	}
 	const resolution = s.ctx.$.maybeResolve(token)

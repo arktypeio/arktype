@@ -43,10 +43,11 @@ import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
+	type NodeId,
 	type NodeParseContext,
 	type NodeParseOptions
 } from "./parse.ts"
-import { normalizeAliasSchema, type Alias } from "./roots/alias.ts"
+import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
@@ -133,6 +134,7 @@ export class SchemaScope<$ extends {} = {}> {
 	readonly json: Json = {}
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
+	readonly aliasIds: Record<string, NodeId> = {}
 	protected resolved = false
 
 	constructor(
@@ -200,7 +202,7 @@ export class SchemaScope<$ extends {} = {}> {
 		const node = this.node(
 			"alias",
 			{
-				alias: syntheticAlias ?? "synthetic",
+				resolutionName: syntheticAlias ?? "synthetic",
 				resolve
 			},
 			{ prereduced: true }
@@ -227,7 +229,7 @@ export class SchemaScope<$ extends {} = {}> {
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
-				normalizeAliasSchema(schema as never).alias
+				Alias.implementation.normalize(schema as never, this).resolutionName
 			)
 			schema = resolution
 			kind = resolution.kind
@@ -240,8 +242,7 @@ export class SchemaScope<$ extends {} = {}> {
 		}
 
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedSchema =
-			impl.normalize?.(schema, this.resolvedConfig) ?? schema
+		const normalizedSchema = impl.normalize?.(schema, this) ?? schema
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
@@ -330,7 +331,7 @@ export class SchemaScope<$ extends {} = {}> {
 		const resolution = this.maybeShallowResolve(name)
 
 		return typeof resolution === "string" ?
-				this.node("alias", { alias: resolution }, { prereduced: true })
+				this.node("alias", { resolutionName: resolution }, { prereduced: true })
 			:	resolution
 	}
 
@@ -390,6 +391,8 @@ export class SchemaScope<$ extends {} = {}> {
 		) as never
 	}
 
+	precompilation: string | undefined
+
 	private _exportedResolutions: InternalResolutions | undefined
 	private _exports: RootExportCache | undefined
 	export(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
@@ -431,7 +434,10 @@ export class SchemaScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) bindPrecompilation(this.references)
+			if (!this.resolvedConfig.jitless) {
+				this.precompilation = writePrecompilation(this.references)
+				bindPrecompilation(this.references, this.precompilation)
+			}
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
@@ -463,7 +469,7 @@ export class SchemaScope<$ extends {} = {}> {
 
 	finalize<node extends BaseRoot>(node: node): node {
 		if (!node.precompilation && !this.resolvedConfig.jitless)
-			bindPrecompilation(node.references)
+			precompile(node.references)
 		return node
 	}
 }
@@ -477,7 +483,7 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 				aliasNode.resolution.referencesById
 			)
 			resolution.references.forEach(ref => {
-				if (aliasNode.id in ref.referencesById)
+				if (aliasNode.resolutionName in ref.referencesById)
 					Object.assign(ref.referencesById, aliasNode.referencesById)
 			})
 		})
@@ -610,8 +616,13 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-const bindPrecompilation = (references: readonly BaseNode[]): void => {
-	const precompilation = writePrecompilation(references)
+const precompile = (references: readonly BaseNode[]): void =>
+	bindPrecompilation(references, writePrecompilation(references))
+
+const bindPrecompilation = (
+	references: readonly BaseNode[],
+	precompilation: string
+): void => {
 	const compiledTraversals = instantiatePrecompilation(precompilation)
 	for (const node of references) {
 		if (node.precompilation) {

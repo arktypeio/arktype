@@ -81,42 +81,16 @@ import {
 } from "./type.ts"
 
 export type ScopeParser = <const def>(
-	def: validateScope<def>,
+	def: scope.validate<def>,
 	config?: ArkScopeConfig
-) => Scope<inferScope<def>>
+) => Scope<scope.infer<def>>
 
 export type ModuleParser = <const def>(
-	def: validateScope<def>,
+	def: scope.validate<def>,
 	config?: ArkScopeConfig
-) => inferScope<def> extends infer $ ?
+) => scope.infer<def> extends infer $ ?
 	Module<{ [k in exportedNameOf<$>]: $[k] }>
 :	never
-
-export type validateScope<def> = {
-	[k in keyof def]: k extends noSuggest ?
-		// avoid trying to parse meta keys when spreading modules
-		unknown
-	: parseScopeKey<k, def>["params"] extends infer params ?
-		params extends array<GenericParamAst> ?
-			params["length"] extends 0 ?
-				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
-				// if you are from the future with a better version of TS and can remove it
-				// without breaking `pnpm typecheck`, go for it.
-				def[k] extends Type.Any | PreparsedResolution ? def[k]
-				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-					ErrorType<writeDuplicateAliasError<name>>
-				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-			:	validateDefinition<
-					def[k],
-					bootstrapAliases<def>,
-					baseGenericConstraints<params>
-				>
-		:	// if we get here, the params failed to parse- return the error
-			params
-	:	never
-}
-
-export type inferScope<def> = inferBootstrapped<bootstrapAliases<def>>
 
 export type bindThis<def> = { this: Def<def> }
 
@@ -345,6 +319,37 @@ export class InternalScope<$ extends {} = {}> extends SchemaScope<$> {
 }
 
 export const scope: ScopeParser = InternalScope.scope
+
+export namespace scope {
+	export type validate<def> = {
+		[k in keyof def]: k extends noSuggest ?
+			// avoid trying to parse meta keys when spreading modules
+			unknown
+		: parseScopeKey<k, def>["params"] extends infer params ?
+			params extends array<GenericParamAst> ?
+				params["length"] extends 0 ?
+					// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
+					// if you are from the future with a better version of TS and can remove it
+					// without breaking `pnpm typecheck`, go for it.
+					def[k] extends Type.Any | PreparsedResolution ? def[k]
+					: k extends (
+						PrivateDeclaration<infer name extends keyof def & string>
+					) ?
+						ErrorType<writeDuplicateAliasError<name>>
+					:	validateDefinition<def[k], bootstrapAliases<def>, {}>
+				:	validateDefinition<
+						def[k],
+						bootstrapAliases<def>,
+						baseGenericConstraints<params>
+					>
+			:	// if we get here, the params failed to parse- return the error
+				params
+		:	never
+	}
+
+	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
+}
+
 export const module: ModuleParser = InternalScope.module
 
 export interface Scope<$ = {}> {

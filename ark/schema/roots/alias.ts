@@ -24,17 +24,19 @@ import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Alias {
-	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>
+	export type Schema<alias extends string = string> =
+		| `$${alias}`
+		| NormalizedSchema<alias>
 
 	export interface NormalizedSchema<alias extends string = string>
 		extends BaseNormalizedSchema {
-		readonly alias: alias
-		readonly resolve?: NodeId | (() => BaseRoot)
+		readonly resolutionName: alias
+		readonly resolve?: () => BaseRoot
 	}
 
 	export interface Inner<alias extends string = string> {
-		readonly alias: alias
-		readonly resolve?: NodeId | (() => BaseRoot)
+		readonly resolutionName: alias
+		readonly resolve?: () => BaseRoot
 	}
 
 	export interface Declaration
@@ -49,7 +51,7 @@ export declare namespace Alias {
 }
 
 export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
-	typeof schema === "string" ? { alias: schema.slice(1) } : schema
+	typeof schema === "string" ? { resolutionName: schema } : schema
 
 const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
 	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
@@ -58,59 +60,60 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
 		hasAssociatedError: false,
-		collapsibleKey: "alias",
+		collapsibleKey: "resolutionName",
 		keys: {
-			alias: {
-				serialize: schema => `$${schema}`
-			},
+			resolutionName: {},
 			resolve: {}
 		},
 		normalize: normalizeAliasSchema,
 		defaults: {
-			description: node => node.alias
+			description: node => node.resolutionName
 		},
 		intersections: {
 			alias: (l, r, ctx) =>
 				ctx.$.lazilyResolve(
 					() =>
 						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
-					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
+					`${l.alias}${ctx.pipe ? "=>" : "&"}${r.alias}`
 				),
 			...defineRightwardIntersections("alias", (l, r, ctx) =>
 				ctx.$.lazilyResolve(
 					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
-					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
+					`${l.alias}${ctx.pipe ? "=>" : "&"}${r.alias}`
 				)
 			)
 		}
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
-	readonly expression: string = this.alias
+	readonly expression: string = this.resolutionName
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
-		if (typeof this.resolve !== "string") {
+		if (this.resolve) {
 			return this.cacheGetter(
 				"resolution",
-				this.resolve?.() ?? this.$.resolveRoot(this.alias)
+				this.resolve?.() ?? this.$.resolveRoot(this.resolutionName)
 			)
 		}
 
-		let globalResolution = nodesById[this.resolve]
+		if (this.resolutionName[0] === "$")
+			return this.$.resolveRoot(this.resolutionName.slice(1))
+
+		const id = this.resolutionName as NodeId
+
+		let resolution = nodesById[id]
 		const seen: PartialRecord<NodeId> = {}
-		while (typeof globalResolution === "string") {
-			if (seen[globalResolution]) {
-				return throwParseError(
-					`Unable to resolve cyclic id ${globalResolution}`
-				)
-			}
-			seen[globalResolution] = true
-			globalResolution = nodesById[globalResolution]
+		while (typeof resolution === "string") {
+			if (seen[resolution])
+				return throwParseError(`Unable to resolve cyclic id ${resolution}`)
+
+			seen[resolution] = true
+			resolution = nodesById[resolution]
 		}
 		return this.cacheGetter(
 			"resolution",
-			globalResolution.assertHasKindIn(...rootKinds)
+			resolution.assertHasKindIn(...rootKinds)
 		)
 	}
 
@@ -123,27 +126,27 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
-		const seen = ctx.seen[this.id]
+		const seen = ctx.seen[this.resolutionName]
 		if (seen?.includes(data)) return true
-		ctx.seen[this.id] = append(seen, data)
+		ctx.seen[this.resolutionName] = append(seen, data)
 		return this.resolution.traverseAllows(data, ctx)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const seen = ctx.seen[this.id]
+		const seen = ctx.seen[this.resolutionName]
 		if (seen?.includes(data)) return
-		ctx.seen[this.id] = append(seen, data)
+		ctx.seen[this.resolutionName] = append(seen, data)
 		this.resolution.traverseApply(data, ctx)
 	}
 
 	compile(js: NodeCompiler): void {
-		js.if(`ctx.seen.${this.id}?.includes(data)`, () => js.return(true))
-		js.line(`ctx.seen.${this.id} ??= []`).line(`ctx.seen.${this.id}.push(data)`)
-		js.return(
-			js.invoke(
-				typeof this.resolve === "string" ? this.resolve : this.resolution
-			)
+		js.if(`ctx.seen.${this.resolutionName}?.includes(data)`, () =>
+			js.return(true)
 		)
+		js.line(`ctx.seen.${this.resolutionName} ??= []`).line(
+			`ctx.seen.${this.resolutionName}.push(data)`
+		)
+		js.return(js.invoke(this.resolution))
 	}
 }
 

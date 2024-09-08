@@ -7,7 +7,7 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { Hkt, type domainDescriptions } from "@ark/util"
+import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
