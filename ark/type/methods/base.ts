@@ -42,6 +42,7 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	json: Json
+	precompilation: string | undefined
 	toJsonSchema(): JsonSchema
 	description: string
 	expression: string
