@@ -9,7 +9,7 @@ contextualize(() => {
 			}
 		}).export()
 
-		attest(types.foo.jit).equals(true)
+		attest(types.foo.precompilation).satisfies("string")
 	})
 
 	it("has jit standalone", () => {
@@ -17,7 +17,7 @@ contextualize(() => {
 			domain: "string"
 		})
 
-		attest(node.jit).equals(true)
+		attest(node.precompilation).satisfies("string")
 	})
 
 	it("reference", () => {

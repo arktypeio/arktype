@@ -633,15 +633,15 @@ const instantiatePrecompilation = (precompilation: string) =>
 
 const writePrecompilation = (references: readonly BaseNode[]) =>
 	references.reduce((js, node) => {
-		const allowsCompiler = new NodeCompiler("Allows")
+		const allowsCompiler = new NodeCompiler("Allows").indent()
 		node.compile(allowsCompiler)
 		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
 
-		const applyCompiler = new NodeCompiler("Apply")
+		const applyCompiler = new NodeCompiler("Apply").indent()
 		node.compile(applyCompiler)
 		const applyJs = applyCompiler.write(`${node.id}Apply`)
 
-		return `${js}\t${allowsJs},\t${applyJs},\n`
+		return `${js}${allowsJs},\n${applyJs},\n`
 	}, "{\n") + "}"
 
 // ensure the scope is resolved so JIT will be applied to future types

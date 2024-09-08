@@ -111,8 +111,7 @@ export class CompiledFunction<
 
 	write(name = "anonymous"): string {
 		return `${name}(${this.argNames.join(", ")}) {
-${this.body}
-}`
+${this.body}}`
 	}
 
 	compile<
