@@ -41,10 +41,10 @@ import {
 import type { BaseNode } from "./node.ts"
 import {
 	parseNode,
-	registerNodeId,
+	registerNode,
 	schemaKindOf,
 	type NodeId,
-	type NodeParseContext,
+	type NodeParseContextInput,
 	type NodeParseOptions
 } from "./parse.ts"
 import { Alias } from "./roots/alias.ts"
@@ -221,7 +221,7 @@ export class SchemaScope<$ extends {} = {}> {
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
 		opts: NodeParseOptions
-	): BaseNode | NodeParseContext {
+	): BaseNode | NodeParseContextInput {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
@@ -255,15 +255,12 @@ export class SchemaScope<$ extends {} = {}> {
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const id = registerNodeId(opts.alias ?? kind)
-
 		return {
 			...opts,
 			$: this,
 			args: opts.args ?? {},
 			kind,
-			normalizedSchema,
-			id
+			normalizedSchema
 		}
 	}
 
@@ -282,9 +279,9 @@ export class SchemaScope<$ extends {} = {}> {
 
 		if (isNode(preparsed)) return this.bindReference(preparsed) as never
 
-		const node = parseNode(preparsed)
-
-		return this.bindReference(node) as never
+		return registerNode(preparsed.alias ?? preparsed.kind, id =>
+			this.bindReference(parseNode(Object.assign(preparsed, { id })))
+		) as never
 	}
 
 	bindReference<reference extends BaseNode | GenericRoot>(

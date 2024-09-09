@@ -49,19 +49,18 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	id?: NodeId
 }
 
-export interface NodeParseContext<kind extends NodeKind = NodeKind>
+export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: SchemaScope
 	args: ContextualArgs
 	kind: kind
 	normalizedSchema: NormalizedSchema<kind>
-	id: NodeId
 }
 
-// export interface NodeParseContext<kind extends NodeKind = NodeKind>
-// 	extends NodeParseContextInput<kind> {
-// 	id: NodeId
-// }
+export interface NodeParseContext<kind extends NodeKind = NodeKind>
+	extends NodeParseContextInput<kind> {
+	id: NodeId
+}
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
 	schema: unknown,
@@ -120,16 +119,12 @@ export type NodeResolver = (id: NodeId) => BaseNode
 
 export const nodesById: Record<NodeId, BaseNode | NodeId> = {}
 
-export const registerNodeId = (prefix: string): NodeId => {
-	nodeCountsByPrefix[prefix] ??= 0
-	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as never
-}
-
 export const registerNode = <node extends BaseNode>(
 	prefix: string,
 	resolve: (id: NodeId) => node
 ): node => {
-	const id = registerNodeId(prefix)
+	nodeCountsByPrefix[prefix] ??= 0
+	const id = `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
 	nodesById[id] = id
 	return (nodesById[id] = resolve(id))
 }

@@ -12,7 +12,7 @@ import {
 	type RootKind,
 	type UnknownIntersectionResult
 } from "./implement.ts"
-import { hasArkKind, isNode } from "./utils.ts"
+import { isNode } from "./utils.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
@@ -27,27 +27,19 @@ export const intersectNodesRoot: InternalNodeIntersection<SchemaScope> = (
 	l,
 	r,
 	$
-) => {
-	const result = intersectNodes(l, r, {
+) =>
+	intersectNodes(l, r, {
 		$,
 		invert: false,
 		pipe: false
 	})
-	return hasArkKind(result, "root") ? $.finalize(result) : result
-}
 
-export const pipeNodesRoot: InternalNodeIntersection<SchemaScope> = (
-	l,
-	r,
-	$
-) => {
-	const result = intersectNodes(l, r, {
+export const pipeNodesRoot: InternalNodeIntersection<SchemaScope> = (l, r, $) =>
+	intersectNodes(l, r, {
 		$,
 		invert: false,
 		pipe: true
 	})
-	return hasArkKind(result, "root") ? $.finalize(result) : result
-}
 
 export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	l,

@@ -114,6 +114,12 @@ Resolution: ${resolution}`)
 		return this.cacheGetter("resolution", resolution)
 	}
 
+	get resolutionId(): NodeId {
+		return this.reference[0] === "$" ?
+				this.$.aliasIds[this.reference.slice(1)]
+			:	(this.reference as NodeId)
+	}
+
 	get shortDescription(): string {
 		return domainDescriptions.object
 	}
@@ -137,11 +143,10 @@ Resolution: ${resolution}`)
 	}
 
 	compile(js: NodeCompiler): void {
-		js.if(`ctx.seen.${this.reference}?.includes(data)`, () => js.return(true))
-		js.line(`ctx.seen.${this.reference} ??= []`).line(
-			`ctx.seen.${this.reference}.push(data)`
-		)
-		js.return(js.invoke(this.resolution))
+		const id = this.resolutionId
+		js.if(`ctx.seen.${id}?.includes(data)`, () => js.return(true))
+		js.line(`ctx.seen.${id} ??= []`).line(`ctx.seen.${id}.push(data)`)
+		js.return(js.invoke(id))
 	}
 }
 

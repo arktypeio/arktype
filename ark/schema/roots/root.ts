@@ -308,7 +308,7 @@ export abstract class BaseRoot<
 	private toNode(root: BaseRoot): BaseRoot {
 		const result = pipeNodesRoot(this, root, this.$)
 		if (result instanceof Disjoint) return result.throw()
-		return result as BaseRoot
+		return this.$.finalize(result as BaseRoot)
 	}
 
 	private pipeOnce(morph: Morph): BaseRoot {
@@ -414,7 +414,7 @@ export abstract class BaseRoot<
 
 		if (result instanceof Disjoint) result.throw()
 
-		return result as never
+		return this.$.finalize(result as never)
 	}
 
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
