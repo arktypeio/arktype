@@ -141,7 +141,7 @@ type nonOptionalKeyFrom<k, $, args> =
 type optionalKeyFrom<k> =
 	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
 
-type PreparsedKey<
+export type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
 	key extends Key = Key
 > = {

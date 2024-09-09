@@ -11,6 +11,7 @@ import type {
 } from "@ark/util"
 import type { arkGet, arkKeyOf, toArkKey, TypeKey } from "../keys.ts"
 import type { type } from "../keywords/ark.ts"
+import type { PreparsedKey } from "../parser/objectLiteral.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 import type { ValidatorType } from "./validator.ts"
@@ -102,17 +103,47 @@ type constructMapped<t, transformed extends listable<TypeEntry>> = show<
 
 type fromTypeEntries<t, entries extends TypeEntries> = show<
 	{
-		[entry in entries[number] as Exclude<
-			inferTypeKey<entry[0]>,
-			optionalKeyOf<t>
+		[entry in entries[number] as inferRequiredTypeKey<
+			t,
+			entry[0]
 		>]: entry[1][inferred]
 	} & {
-		[entry in entries[number] as Extract<
-			inferTypeKey<entry[0]>,
-			optionalKeyOf<t>
+		[entry in entries[number] as inferOptionalTypeKey<
+			t,
+			entry[0]
 		>]?: entry[1][inferred]
 	}
 >
+
+type inferRequiredTypeKey<t, k extends TypeKey> =
+	parseInferredMappedKey<t, inferTypeKey<k>> extends (
+		PreparsedKey<"required" | "index", infer key>
+	) ?
+		key
+	:	never
+
+type inferOptionalTypeKey<t, k extends TypeKey> =
+	parseInferredMappedKey<t, inferTypeKey<k>> extends (
+		PreparsedKey<"optional", infer key>
+	) ?
+		key
+	:	never
+
+type parseInferredMappedKey<t, k extends Key> =
+	k extends `${infer base}?` ?
+		k extends `${infer base}-?` ? { kind: "required"; key: base }
+		: base extends `${infer escapedBase}\\` ?
+			applyHomomorphicOptionality<
+				t,
+				{ kind: "required"; key: `${escapedBase}?` }
+			>
+		:	{ kind: "optional"; key: base }
+	:	applyHomomorphicOptionality<t, { kind: "required"; key: k }>
+
+type applyHomomorphicOptionality<
+	t,
+	k extends PreparsedKey<"optional" | "required" | "index">
+> = k extends optionalKeyOf<t> ? { kind: "optional"; key: k } : k
 
 type inferTypeKey<k extends TypeKey> =
 	k extends Key ? k
