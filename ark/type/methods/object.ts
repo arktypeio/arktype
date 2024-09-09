@@ -1,5 +1,15 @@
-import type { array, ErrorType, merge } from "@ark/util"
-import type { arkGet, arkKeyOf, toArkKey } from "../keys.ts"
+import type {
+	array,
+	ErrorType,
+	inferred,
+	intersectUnion,
+	Key,
+	listable,
+	merge,
+	optionalKeyOf,
+	show
+} from "@ark/util"
+import type { arkGet, arkKeyOf, toArkKey, TypeKey } from "../keys.ts"
 import type { type } from "../keywords/ark.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -62,6 +72,51 @@ interface Type<out t extends object = object, $ = {}>
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
 
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
+
+	map<transformed extends listable<TypeEntry<TypeKey, v>>, v = unknown>(
+		// v isn't used directly here but helps TS infer a precise type for transformed
+		flatMapEntry: (entry: typeEntryOf<t, $>) => transformed
+	): Type<constructMapped<t, transformed>, $>
 }
+
+export type TypeEntry<k extends TypeKey = TypeKey, v = unknown> = readonly [
+	k,
+	type.cast<v>
+]
+
+type TypeEntries = array<TypeEntry>
+
+type typeEntryOf<t, $> = {
+	[k in keyof t]-?: [k, instantiateType<t[k] & ({} | null), $>]
+}[keyof t] &
+	unknown
+
+type constructMapped<t, transformed extends listable<TypeEntry>> = show<
+	intersectUnion<
+		fromTypeEntries<
+			t,
+			transformed extends TypeEntries ? transformed : [transformed]
+		>
+	>
+>
+
+type fromTypeEntries<t, entries extends TypeEntries> = show<
+	{
+		[entry in entries[number] as Exclude<
+			inferTypeKey<entry[0]>,
+			optionalKeyOf<t>
+		>]: entry[1][inferred]
+	} & {
+		[entry in entries[number] as Extract<
+			inferTypeKey<entry[0]>,
+			optionalKeyOf<t>
+		>]?: entry[1][inferred]
+	}
+>
+
+type inferTypeKey<k extends TypeKey> =
+	k extends Key ? k
+	: k extends type.cast<infer t extends Key> ? t
+	: never
 
 export type { Type as ObjectType }
