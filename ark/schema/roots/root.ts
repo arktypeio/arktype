@@ -4,7 +4,8 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
-	type array
+	type array,
+	type listable
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
@@ -13,7 +14,8 @@ import {
 	appendUniqueFlatRefs,
 	type FlatRef,
 	type GettableKeyOrNode,
-	type KeyOrKeyNode
+	type KeyOrKeyNode,
+	type NodeEntry
 } from "../node.ts"
 import type { Predicate } from "../predicate.ts"
 import type { Divisor } from "../refinements/divisor.ts"
@@ -120,6 +122,10 @@ export abstract class BaseRoot<
 	assert(data: unknown): unknown {
 		const result = this.traverse(data)
 		return result instanceof ArkErrors ? result.throw() : result
+	}
+
+	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): this {
+		return this
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {

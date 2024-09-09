@@ -8,7 +8,13 @@ import {
 	type Predicate,
 	type RootSchema
 } from "@ark/schema"
-import { Callable, type Constructor, type array, type conform } from "@ark/util"
+import {
+	Callable,
+	Hkt,
+	type Constructor,
+	type array,
+	type conform
+} from "@ark/util"
 import {
 	parseGenericParams,
 	type Generic,
@@ -83,6 +89,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	$: Scope<$>
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
+	hkt: typeof Hkt
 	module: ModuleParser
 	scope: ScopeParser
 	generic: GenericParser<$>
@@ -100,6 +107,7 @@ export class InternalTypeParser extends Callable<
 		const attach: TypeParserAttachments = Object.assign(
 			{
 				errors: ArkErrors,
+				hkt: Hkt,
 				$: $ as never,
 				raw: $.parse as never,
 				module: $.constructor.module,

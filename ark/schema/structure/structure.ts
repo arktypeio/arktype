@@ -5,7 +5,8 @@ import {
 	spliterate,
 	throwParseError,
 	type array,
-	type Key
+	type Key,
+	type listable
 } from "@ark/util"
 import {
 	BaseConstraint,
@@ -14,7 +15,7 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import type { mutableInnerOfKind } from "../kinds.ts"
-import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import type { GettableKeyOrNode, KeyOrKeyNode, NodeEntry } from "../node.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { SchemaScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -274,12 +275,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		...this.optionalLiteralKeys
 	]
 
+	_keyof: BaseRoot | undefined
 	keyof(): BaseRoot {
+		if (this._keyof) return this._keyof
 		let branches = this.$.units(this.literalKeys).branches
 		this.index?.forEach(({ signature }) => {
 			branches = branches.concat(signature.branches)
 		})
-		return this.$.node("union", branches)
+		return (this._keyof = this.$.node("union", branches))
+	}
+
+	_entries: NodeEntry[] | undefined
+	entries(): NodeEntry[] {
+		if (this._entries) return this._entries
+		const entries: NodeEntry[] = []
+
+		return (this._entries = entries)
+	}
+
+	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): StructureNode {
+		return this
 	}
 
 	assertHasKeys(keys: array<KeyOrKeyNode>): void {
