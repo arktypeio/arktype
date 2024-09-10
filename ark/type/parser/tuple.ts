@@ -148,10 +148,10 @@ const appendSpreadBranch = (
 		// the only array with no sequence reference is unknown[]
 		return appendElement(base, "variadic", $ark.intrinsic.unknown)
 	}
-	spread.prefix.forEach(node => appendElement(base, "required", node))
-	spread.optionals.forEach(node => appendElement(base, "optional", node))
+	spread.prefix?.forEach(node => appendElement(base, "required", node))
+	spread.optionals?.forEach(node => appendElement(base, "optional", node))
 	if (spread.variadic) appendElement(base, "variadic", spread.variadic)
-	spread.postfix.forEach(node => appendElement(base, "required", node))
+	spread.postfix?.forEach(node => appendElement(base, "required", node))
 	return base
 }
 

@@ -352,7 +352,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (index < this.sequence.prevariadic.length) {
 					const fixedElement = this.sequence.prevariadic[index]
 					value = value?.and(fixedElement) ?? fixedElement
-					required ||= index < this.sequence.prefix.length
+					required ||= index < this.sequence.prefixLength
 				} else if (this.sequence.variadic) {
 					// ideally we could return something more specific for postfix
 					// but there is no way to represent it using an index alone
