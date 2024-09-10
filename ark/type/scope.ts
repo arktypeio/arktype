@@ -195,8 +195,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
-		if (isThunk(v) && !hasArkKind(v, "generic")) v = v()
-
 		const firstParamIndex = k.indexOf("<")
 		if (firstParamIndex === -1) return [k, v]
 
@@ -226,12 +224,16 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		]
 	}
 
+	protected preparseRootScopeValue(resolution: unknown): unknown {
+		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
+			return resolution()
+		return resolution
+	}
+
 	protected preparseOwnDefinitionFormat(
 		def: unknown,
 		opts: BaseParseOptions
 	): BaseRoot | BaseParseContextInput {
-		if (isThunk(def)) def = def()
-
 		return {
 			...opts,
 			$: this,

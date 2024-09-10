@@ -331,9 +331,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		const def = this.aliases[name] ?? this.ambient?.[name]
+		let def: unknown = this.aliases[name] ?? this.ambient?.[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
+
+		def = this.preparseRootScopeValue(def)
 
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = this.bindReference(def))
@@ -497,6 +499,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 	): BaseRoot
 
 	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
+
+	protected abstract preparseRootScopeValue(resolution: unknown): unknown
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
@@ -516,6 +520,10 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 
 	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
 		return [k, v]
+	}
+
+	protected preparseRootScopeValue(resolution: unknown): unknown {
+		return resolution
 	}
 }
 
