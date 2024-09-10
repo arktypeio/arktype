@@ -346,16 +346,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
-		const ctxOrNode = this.preparseOwnDefinitionFormat(def, {
+		return (this.resolutions[name] = this.parse(def, {
 			alias: name
-		})
-
-		if (hasArkKind(ctxOrNode, "root"))
-			return (this.resolutions[name] = ctxOrNode)
-
-		const ctx = this.createParseContext(ctxOrNode)
-		this.resolutions[name] = ctx.id
-		return (this.resolutions[name] = this.parseOwnDefinitionFormat(def, ctx))
+		}))
 	}
 
 	protected createParseContext<input extends BaseParseContextInput>(
@@ -479,7 +472,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxOrNode, "root")) return this.bindReference(ctxOrNode)
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesById[ctx.id] = this.parseOwnDefinitionFormat(def, ctx))
+		return (nodesById[ctx.id] = this.bindReference(
+			this.parseOwnDefinitionFormat(def, ctx)
+		))
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {
