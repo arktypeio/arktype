@@ -8,7 +8,7 @@ export type SerializationOptions = {
 	onCycle?: (value: object) => string
 	onSymbol?: (value: symbol) => string
 	onFunction?: (value: Function) => string
-	onUndefined?: string
+	onUndefined?: string | undefined
 }
 
 export type Json = JsonObject | JsonArray
@@ -25,7 +25,7 @@ export type JsonData = Json | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,
-	opts: SerializationOptions = { onUndefined: "(undefined)" }
+	opts: SerializationOptions = { onUndefined: undefined }
 ): snapshot<t> => _serialize(data, opts, []) as never
 
 export type snapshot<t, depth extends 1[] = []> =
@@ -45,25 +45,6 @@ type snapshotPrimitive<t> = t extends symbol ? `(Symbol${string})` : t
 export const print = (data: unknown, indent?: number): void =>
 	console.log(printable(data, indent))
 
-const deepReplaceUndefinedAndBigInt = (data: unknown): unknown => {
-	if (data === undefined) return "undefined"
-	if (typeof data === "bigint") return `${data}n`
-	if (Array.isArray(data)) {
-		const result: any = []
-		for (const item of data) result.push(deepReplaceUndefinedAndBigInt(item))
-
-		return result
-	}
-	if (typeof data === "object") {
-		const result: any = {}
-		for (const k in data)
-			result[k] = deepReplaceUndefinedAndBigInt(data[k as keyof typeof data])
-
-		return result
-	}
-	return data
-}
-
 export const printable = (data: unknown, indent?: number): string => {
 	switch (domainOf(data)) {
 		case "bigint":
@@ -71,12 +52,18 @@ export const printable = (data: unknown, indent?: number): string => {
 		case "object":
 			const o = data as dict
 			const ctorName = o.constructor.name
-			const serialized = _serialize(o, printableOpts, [])
 			// Deep replace undefined and bigints to support JSON.stringify
-			const deepReplaced = deepReplaceUndefinedAndBigInt(serialized)
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
-					JSON.stringify(deepReplaced, null, indent)
+					JSON.stringify(
+						_serialize(o, printableOpts, []),
+						(_key, value) => {
+							if (value === undefined) return "undefined"
+							if (typeof value === "bigint") return `${value}n`
+							return value
+						},
+						indent
+					)
 				: o instanceof Date ? describeCollapsibleDate(o)
 				: typeof o.expression === "string" ? o.expression
 				: ctorName
@@ -123,7 +110,7 @@ const _serialize = (
 		case "bigint":
 			return data
 		case "undefined":
-			return opts.onUndefined ?? "undefined"
+			return opts.onUndefined ?? undefined
 		default:
 			return data
 	}

@@ -42,7 +42,18 @@ export const readJson = (path: string): Record<string, unknown> =>
 	JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
 export const writeJson = (path: string, data: object): void =>
-	writeFileSync(path, `${JSON.stringify(data, null, 4)}\n`)
+	writeFileSync(
+		path,
+		`${JSON.stringify(
+			data,
+			(_key, value) => {
+				if (value === undefined) return undefined
+				if (typeof value === "bigint") return `${value}n`
+				return value
+			},
+			4
+		)}\n`
+	)
 
 export type JsonTransformer = (data: object) => object
 

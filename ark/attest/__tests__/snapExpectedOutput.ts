@@ -42,6 +42,8 @@ attest(5n).snap(5n)
 
 attest(undefined).snap(undefined)
 
+attest("undefined").snap("undefined")
+
 attest({ a: undefined }).snap({ a: undefined })
 
 attest("multiline\nmultiline").snap(`multiline
