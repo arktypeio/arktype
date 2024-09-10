@@ -40,12 +40,17 @@ import {
 } from "./module.ts"
 import type { BaseNode } from "./node.ts"
 import {
+	nodesById,
 	parseNode,
-	registerNode,
+	registerNodeId,
 	schemaKindOf,
+	type AttachedParseContext,
+	type BaseParseContext,
+	type BaseParseContextInput,
+	type BaseParseOptions,
 	type NodeId,
-	type NodeParseContextInput,
-	type NodeParseOptions
+	type NodeParseContext,
+	type NodeParseContextInput
 } from "./parse.ts"
 import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
@@ -54,6 +59,7 @@ import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
+
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
@@ -185,7 +191,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			) as never
 	}
 
-	units = (values: array, opts?: NodeParseOptions): BaseRoot => {
+	units = (values: array, opts?: BaseParseOptions): BaseRoot => {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
@@ -220,7 +226,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	protected preparseNode(
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
-		opts: NodeParseOptions
+		opts: BaseParseOptions
 	): BaseNode | NodeParseContextInput {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
@@ -258,30 +264,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return {
 			...opts,
 			$: this,
-			args: opts.args ?? {},
 			kind,
-			normalizedSchema
+			def: normalizedSchema,
+			prefix: opts.alias ?? kind
 		}
-	}
-
-	node = <
-		kinds extends NodeKind | array<RootKind>,
-		prereduced extends boolean = false
-	>(
-		kinds: kinds,
-		nodeSchema: NodeSchema<flattenListable<kinds>>,
-		opts = {} as NodeParseOptions<prereduced>
-	): nodeOfKind<
-		prereduced extends true ? flattenListable<kinds>
-		:	reducibleKindOf<flattenListable<kinds>>
-	> => {
-		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
-
-		if (isNode(preparsed)) return this.bindReference(preparsed) as never
-
-		return registerNode(preparsed.alias ?? preparsed.kind, id =>
-			this.bindReference(parseNode(Object.assign(preparsed, { id })))
-		) as never
 	}
 
 	bindReference<reference extends BaseNode | GenericRoot>(
@@ -365,10 +351,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxOrNode, "root"))
 			return (this.resolutions[name] = ctxOrNode)
 
-		this.resolutions[name] = ctxOrNode.id
-		return (this.resolutions[name] = this.parse(ctxOrNode, {
-			alias: name
-		}))
+		const ctx = this.createParseContext(ctxOrNode)
+		this.resolutions[name] = ctx.id
+		return (this.resolutions[name] = this.parseOwnDefinitionFormat(def, ctx))
+	}
+
+	protected createParseContext<input extends BaseParseContextInput>(
+		input: input
+	): input & AttachedParseContext {
+		const id = registerNodeId(input.prefix)
+		nodesById[id] = id
+		return Object.assign(input, {
+			$: this as never,
+			id
+		})
 	}
 
 	import(): SchemaModule<{
@@ -454,9 +450,34 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.export()[name as never]
 	}
 
-	parse = (def: unknown, opts?: NodeParseOptions): BaseRoot => {
+	node = <
+		kinds extends NodeKind | array<RootKind>,
+		prereduced extends boolean = false
+	>(
+		kinds: kinds,
+		nodeSchema: NodeSchema<flattenListable<kinds>>,
+		opts = {} as BaseParseOptions<prereduced>
+	): nodeOfKind<
+		prereduced extends true ? flattenListable<kinds>
+		:	reducibleKindOf<flattenListable<kinds>>
+	> => {
+		const ctxOrNode = this.preparseNode(kinds, nodeSchema, opts)
+
+		if (isNode(ctxOrNode)) return this.bindReference(ctxOrNode) as never
+
+		const ctx = this.createParseContext(ctxOrNode)
+
+		return (nodesById[ctx.id] = this.bindReference(parseNode(ctx))) as never
+	}
+
+	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot => {
 		if (hasArkKind(def, "root")) return this.bindReference(def)
-		return this.parseOwnDefinitionFormat(def, opts)
+
+		const ctxOrNode = this.preparseOwnDefinitionFormat(def, opts)
+		if (hasArkKind(ctxOrNode, "root")) return this.bindReference(ctxOrNode)
+		const ctx = this.createParseContext(ctxOrNode)
+
+		return (nodesById[ctx.id] = this.parseOwnDefinitionFormat(def, ctx))
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {
@@ -465,15 +486,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node
 	}
 
-	protected abstract parseOwnDefinitionFormat(
-		def: unknown,
-		opts?: NodeParseOptions
-	): BaseRoot
-
 	protected abstract preparseOwnDefinitionFormat(
 		def: unknown,
-		opts: NodeParseOptions
-	): BaseRoot | NodeParseContextInput
+		opts: BaseParseOptions
+	): BaseRoot | BaseParseContextInput
+
+	protected abstract parseOwnDefinitionFormat(
+		def: unknown,
+		ctx: BaseParseContext
+	): BaseRoot
 
 	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
 }
@@ -481,14 +502,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 	protected parseOwnDefinitionFormat(
 		def: unknown,
-		opts?: NodeParseOptions
+		ctx: NodeParseContext
 	): BaseRoot {
-		return this.parseSchema(def as never, opts)
+		return parseNode(ctx) as never
 	}
 
 	protected preparseOwnDefinitionFormat(
 		schema: RootSchema,
-		opts: NodeParseOptions
+		opts: BaseParseOptions
 	): BaseRoot | NodeParseContextInput {
 		return this.preparseNode(schemaKindOf(schema), schema, opts) as never
 	}
@@ -578,14 +599,14 @@ export const schemaScope: SchemaScopeParser = (aliases, config) =>
 
 export type InternalSchemaParser = (
 	schema: RootSchema,
-	opts?: NodeParseOptions
+	opts?: BaseParseOptions
 ) => BaseRoot
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
 export const parseAsSchema = (
 	def: unknown,
-	opts?: NodeParseOptions
+	opts?: BaseParseOptions
 ): BaseRoot | ParseError => {
 	try {
 		return rootSchema(def as RootSchema, opts) as never

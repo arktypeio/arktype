@@ -36,7 +36,7 @@ import { hasArkKind } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
-export type NodeParseOptions<prereduced extends boolean = boolean> = {
+export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
 	prereduced?: prereduced
 	/** Instead of creating the node, compute the innerHash of the definition and
@@ -46,19 +46,31 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 **/
 	reduceTo?: BaseNode
 	args?: ContextualArgs
-	id?: NodeId
 }
 
-export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
-	extends NodeParseOptions {
+export interface BaseParseContextInput extends BaseParseOptions {
+	prefix: string
+	def: unknown
+}
+
+export interface AttachedParseContext {
 	$: BaseScope
-	args: ContextualArgs
+	id: NodeId
+}
+
+export interface BaseParseContext
+	extends BaseParseContextInput,
+		AttachedParseContext {}
+
+export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
+	extends BaseParseContextInput {
 	kind: kind
-	normalizedSchema: NormalizedSchema<kind>
+	def: NormalizedSchema<kind>
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseContextInput<kind> {
+	$: BaseScope
 	id: NodeId
 }
 
@@ -119,12 +131,16 @@ export type NodeResolver = (id: NodeId) => BaseNode
 
 export const nodesById: Record<NodeId, BaseNode | NodeId> = {}
 
+export const registerNodeId = (prefix: string): NodeId => {
+	nodeCountsByPrefix[prefix] ??= 0
+	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
+}
+
 export const registerNode = <node extends BaseNode>(
 	prefix: string,
 	resolve: (id: NodeId) => node
 ): node => {
-	nodeCountsByPrefix[prefix] ??= 0
-	const id = `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
+	const id = registerNodeId(prefix)
 	nodesById[id] = id
 	return (nodesById[id] = resolve(id))
 }
@@ -132,7 +148,7 @@ export const registerNode = <node extends BaseNode>(
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
 	const inner: dict = {}
-	const { meta: metaSchema, ...schema } = ctx.normalizedSchema as dict & {
+	const { meta: metaSchema, ...schema } = ctx.def as dict & {
 		meta?: MetaSchema
 	}
 

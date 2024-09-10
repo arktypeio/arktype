@@ -2,20 +2,18 @@ import {
 	$ark,
 	BaseScope,
 	hasArkKind,
-	nodesById,
 	parseGeneric,
-	registerNode,
 	type AliasDefEntry,
 	type ArkScopeConfig,
 	type BaseNode,
+	type BaseParseContext,
+	type BaseParseContextInput,
+	type BaseParseOptions,
 	type BaseRoot,
-	type ContextualArgs,
 	type GenericAst,
 	type GenericParamAst,
 	type GenericRoot,
 	type NodeKind,
-	type NodeParseContextInput,
-	type NodeParseOptions,
 	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
@@ -170,15 +168,6 @@ export interface ArkTypeRegistry extends ArkSchemaRegistry {
 
 export const $arkTypeRegistry: ArkTypeRegistry = $ark
 
-export interface ParseContext extends TypeParseOptions {
-	$: InternalScope
-}
-
-export interface TypeParseOptions {
-	args?: ContextualArgs
-	alias?: string
-}
-
 export interface InternalScope {
 	constructor: typeof InternalScope
 }
@@ -238,52 +227,44 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	protected preparseOwnDefinitionFormat(
-		def: unknown
-	): BaseRoot | NodeParseContextInput
-	protected preparseOwnDefinitionFormat(def: unknown): unknown {
-		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
+		def: unknown,
+		opts: BaseParseOptions
+	): BaseRoot | BaseParseContextInput {
+		if (isThunk(def)) def = def()
 
-		return def
+		return {
+			...opts,
+			$: this,
+			def,
+			prefix: opts.alias ?? "type"
+		}
 	}
 
 	protected parseOwnDefinitionFormat(
 		def: unknown,
-		opts?: TypeParseOptions
+		ctx: BaseParseContext
 	): BaseRoot {
-		const ctx: ParseContext = {
-			...opts,
-			$: this as never
-		}
+		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
 
-		const rawParse = () => {
-			if (typeof def === "string") {
-				if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
-					// we can only rely on the cache if there are no contextual
-					// resolutions like "this" or generic args
-					return this.parseString(def, ctx)
-				}
-				return (this.parseCache[def] ??= this.parseString(def, ctx))
+		// if the definition being parsed is not a scope alias and is not a
+		// generic instantiation (i.e. opts don't include args), add this as a resolution.
+
+		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
+
+		if (typeof def === "string") {
+			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
+				// we can only rely on the cache if there are no contextual
+				// resolutions like "this" or generic args
+				return this.parseString(def, ctx)
 			}
-			return hasDomain(def, "object") ?
-					parseObject(def, ctx)
-				:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+			return (this.parseCache[def] ??= this.parseString(def, ctx))
 		}
-
-		return registerNode(ctx.alias ?? "type", id => {
-			const isScopeAlias = ctx.alias && ctx.alias in this.aliases
-
-			// if the definition being parsed is not a scope alias and is not a
-			// generic instantiation (i.e. opts don't include args), add this as a resolution.
-
-			if (!isScopeAlias && !ctx.args) ctx.args = { this: id }
-
-			const node = rawParse()
-			nodesById[id] = node.id
-			return node
-		})
+		return hasDomain(def, "object") ?
+				parseObject(def, ctx)
+			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: ParseContext): BaseRoot {
+	parseString(def: string, ctx: BaseParseContext): BaseRoot {
 		const aliasResolution = this.maybeResolveRoot(def)
 		if (aliasResolution) return aliasResolution
 
@@ -376,7 +357,7 @@ export interface Scope<$ = {}> {
 	node<kinds extends NodeKind | array<RootKind>>(
 		kinds: kinds,
 		schema: NodeSchema<flattenListable<kinds>>,
-		opts?: NodeParseOptions
+		opts?: BaseParseOptions
 	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
 
 	unit: UnitTypeParser<$>

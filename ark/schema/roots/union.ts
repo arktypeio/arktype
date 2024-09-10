@@ -123,7 +123,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 						})
 					})
 
-					if (!ctx.normalizedSchema.ordered)
+					if (!ctx.def.ordered)
 						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
 
 					return branches

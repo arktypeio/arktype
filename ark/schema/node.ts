@@ -23,7 +23,7 @@ import type {
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
-import type { NodeParseOptions } from "./parse.ts"
+import type { BaseParseOptions } from "./parse.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
@@ -502,7 +502,7 @@ export type ShouldTransformFn = (
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
-	parseOptions: NodeParseOptions
+	parseOptions: BaseParseOptions
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(

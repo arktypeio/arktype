@@ -1,6 +1,7 @@
 import {
 	$ark,
 	makeRootAndArrayPropertiesMutable,
+	type BaseParseContext,
 	type BaseRoot,
 	type MetaSchema,
 	type Morph,
@@ -31,16 +32,18 @@ import type {
 	inferPredicate,
 	Out
 } from "../keywords/ast.ts"
-import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
 import type { BaseCompletions } from "./string/string.ts"
 
-export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
+export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
+export const parseTupleLiteral = (
+	def: array,
+	ctx: BaseParseContext
+): BaseRoot => {
 	let sequences: mutableInnerOfKind<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -157,7 +160,7 @@ const appendSpreadBranch = (
 
 const maybeParseTupleExpression = (
 	def: array,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): BaseRoot | undefined => {
 	const tupleExpressionResult =
 		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
@@ -418,12 +421,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ) => BaseRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ) => BaseRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression

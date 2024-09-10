@@ -1,6 +1,7 @@
 import {
 	GenericRoot,
 	type arkKind,
+	type BaseParseContext,
 	type GenericAst,
 	type GenericParamAst,
 	type GenericParamDef,
@@ -29,7 +30,7 @@ import { DynamicState } from "./parser/string/reduce/dynamic.ts"
 import type { state, StaticState } from "./parser/string/reduce/static.ts"
 import { Scanner } from "./parser/string/shift/scanner.ts"
 import { parseUntilFinalizer } from "./parser/string/string.ts"
-import type { ParseContext, Scope } from "./scope.ts"
+import type { Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
 
 export type ParameterString<params extends string = string> = `<${params}>`
@@ -278,7 +279,7 @@ export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
 export const parseGenericParams = (
 	def: string,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): array<GenericParamDef> => parseName(new Scanner(def), [], ctx)
 
 export type parseGenericParams<def extends string, $> = parseNextNameChar<
@@ -293,7 +294,7 @@ type ParamsTerminator = WhiteSpaceToken | ","
 const parseName = (
 	scanner: Scanner,
 	result: GenericParamDef[],
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): GenericParamDef[] => {
 	scanner.shiftUntilNonWhitespace()
 	const name = scanner.shiftUntilNextTerminator()
@@ -341,7 +342,7 @@ const _parseOptionalConstraint = (
 	scanner: Scanner,
 	name: string,
 	result: GenericParamDef[],
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): GenericParamDef[] => {
 	scanner.shiftUntilNonWhitespace()
 	if (scanner.unscanned.startsWith(extendsToken))

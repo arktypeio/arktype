@@ -1,4 +1,4 @@
-import { hasArkKind, type BaseRoot } from "@ark/schema"
+import { hasArkKind, type BaseParseContext, type BaseRoot } from "@ark/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -20,7 +20,6 @@ import {
 } from "@ark/util"
 import type { type } from "../keywords/ark.ts"
 import type { string } from "../keywords/string/string.ts"
-import type { ParseContext } from "../scope.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
@@ -35,7 +34,7 @@ import {
 	type validateTuple
 } from "./tuple.ts"
 
-export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
+export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:

@@ -2,9 +2,9 @@ import {
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
+	type BaseParseOptions,
 	type MetaSchema,
 	type Morph,
-	type NodeParseOptions,
 	type Predicate,
 	type RootSchema
 } from "@ark/schema"
@@ -177,7 +177,7 @@ export type DefinitionParser<$> = <def>(def: type.validate<def, $>) => def
 
 export type SchemaParser<$> = (
 	schema: RootSchema,
-	opts?: NodeParseOptions
+	opts?: BaseParseOptions
 ) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
