@@ -54,12 +54,12 @@ const intrinsicJson = schemaScope(
 			domain: "object",
 			index: {
 				signature: "string",
-				value: "$jsonData"
+				value: [] //"$jsonData"
 			}
 		},
 		jsonArray: {
 			proto: Array,
-			sequence: "$jsonData"
+			sequence: [] // "$jsonData"
 		},
 		jsonData: ["$jsonPrimitive", "$jsonObject", "$jsonArray"],
 		json: ["$jsonObject", "$jsonArray"]

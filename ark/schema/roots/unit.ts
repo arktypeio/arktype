@@ -135,11 +135,12 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
-		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
-				{ const: this.unit }
-			:	throwParseError(
-					writeUnsupportedJsonSchemaTypeMessage(this.shortDescription)
-				)
+		//  $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
+		// 		{ const: this.unit }
+		// 	:
+		return throwParseError(
+			writeUnsupportedJsonSchemaTypeMessage(this.shortDescription)
+		)
 	}
 
 	traverseAllows: TraverseAllows =
