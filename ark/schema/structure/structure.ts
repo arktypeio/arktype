@@ -1,5 +1,6 @@
 import {
 	append,
+	conflatenate,
 	flatMorph,
 	printable,
 	spliterate,
@@ -252,11 +253,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
 
-	required = this.inner.required ?? []
-	optional = this.inner.optional ?? []
-	index = this.inner.index ?? []
-
-	props: array<Prop.Node> = [...this.required, ...this.optional]
+	props: array<Prop.Node> = conflatenate<Prop.Node>(
+		this.required,
+		this.optional
+	)
 
 	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
 		this.props,
@@ -278,10 +278,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		...this.optionalLiteralKeys
 	]
 
-	entries: NodeEntry[] = [
-		...this.props.map(entry => [entry.key, entry.value] as const),
-		...this.index.map(entry => [entry.signature, entry.value] as const)
-	]
+	entries: array<NodeEntry> = conflatenate<NodeEntry>(
+		this.props.map(entry => [entry.key, entry.value] as const),
+		this.index?.map(entry => [entry.signature, entry.value] as const)
+	)
 
 	_keyof: BaseRoot | undefined
 	keyof(): BaseRoot {
