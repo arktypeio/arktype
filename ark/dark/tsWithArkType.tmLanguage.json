@@ -22,7 +22,7 @@
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "([^\\)\\(\\s=]+)?(\\.|\\s)?(type|generic|scope|define|match|fn|module|[aA]rk[a-zA-Z]*)(\\()",
+			"begin": "([^\\)\\(\\s]+)?(\\.)?(type|generic|scope|define|match|fn|module|[aA]rk[a-zA-Z]*)(\\()",
 			"beginCaptures": {
 				"2": {
 					"name": "punctuation.accessor.ts"

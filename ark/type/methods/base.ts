@@ -16,6 +16,7 @@ import type {
 	Json,
 	unset
 } from "@ark/util"
+import type { ArkAmbient } from "../config.ts"
 import type { inferIntersection } from "../intersect.ts"
 import type { type } from "../keywords/ark.ts"
 import type {
@@ -42,6 +43,7 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	json: Json
+	meta: ArkAmbient.meta
 	precompilation: string | undefined
 	toJsonSchema(): JsonSchema
 	description: string

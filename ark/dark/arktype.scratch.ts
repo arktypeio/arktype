@@ -57,6 +57,18 @@ const lOrR = types.l.or(types.r)
 // THIS SHOULD NOT BE HIGHLIGHTED
 // attest(t.internal.indexableExpressions).snap()
 
+const foo = {
+	bar: blah.bloo()
+}
+
+const aTypes = {
+	a: type("string").anythingNotAKnownChainedMethod("")
+}
+
+// THIS SHOULD BE HIGHLIGHTED
+for (const [name, schema] of Object.entries(aTypes)) {
+}
+
 const ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
@@ -88,7 +100,7 @@ scope({
 	]
 })
 
-$.type({
+type({
 	foo: "string[]"
 })
 
