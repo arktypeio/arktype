@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { scope, type } from "arktype"
+import { hasArkKind } from "../schema/out/shared/utils"
 
 type("(boolean | number | 'foo')[]")
 
@@ -56,6 +57,9 @@ const lOrR = types.l.or(types.r)
 
 // THIS SHOULD NOT BE HIGHLIGHTED
 // attest(t.internal.indexableExpressions).snap()
+
+// THIS SHOULD NOT BE HIGHLIGHTED AS A TYPE
+hasArkKind("foo[]")
 
 const foo = {
 	bar: blah.bloo()
