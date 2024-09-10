@@ -124,8 +124,8 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): this {
-		return this
+	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): BaseRoot {
+		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
@@ -576,6 +576,7 @@ export type StructuralOperationName =
 	| "pick"
 	| "omit"
 	| "get"
+	| "map"
 	| "required"
 	| "partial"
 	| "merge"

@@ -14,7 +14,6 @@ import type {
 	NodeSchema,
 	Prerequisite,
 	innerAttachedAs,
-	mutableInnerOfKind,
 	nodeOfKind
 } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
@@ -46,7 +45,7 @@ export declare namespace Constraint {
 		kind: ConstraintKind
 	}
 
-	export type ReductionResult = BaseRoot | Disjoint | Intersection.MutableInner
+	export type ReductionResult = BaseRoot | Disjoint | Intersection.Inner.mutable
 
 	export interface Attachments {
 		impliedBasis: BaseRoot | null
@@ -208,8 +207,8 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 interface FlatIntersectionInner extends Intersection.Inner, Structure.Inner {}
 
 interface MutableFlatIntersectionInner
-	extends Intersection.MutableInner,
-		mutableInnerOfKind<"structure"> {}
+	extends Intersection.Inner.mutable,
+		Structure.Inner.mutable {}
 
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>

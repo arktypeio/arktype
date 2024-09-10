@@ -445,7 +445,7 @@ export abstract class BaseNode<
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
 export type KeyOrKeyNode = Key | BaseRoot
 
-export type NodeEntry = [KeyOrKeyNode, BaseRoot]
+export type NodeEntry = readonly [KeyOrKeyNode, BaseRoot]
 
 export type GettableKeyOrNode = KeyOrKeyNode | number
 

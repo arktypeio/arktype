@@ -14,7 +14,7 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.ts"
-import type { mutableInnerOfKind } from "../kinds.ts"
+import type { Inner, mutableInnerOfKind } from "../kinds.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode, NodeEntry } from "../node.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { SchemaScope } from "../scope.ts"
@@ -73,6 +73,10 @@ export declare namespace Structure {
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
 		readonly undeclared?: UndeclaredKeyHandling
+	}
+
+	export namespace Inner {
+		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
 	}
 
 	export interface Declaration
@@ -221,7 +225,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					}
 				}
 
-				const baseInner: mutableInnerOfKind<"structure"> = {}
+				const baseInner: Structure.Inner.mutable = {}
 
 				if (l.undeclared || r.undeclared) {
 					baseInner.undeclared =
@@ -248,12 +252,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
 
-	props: array<Prop.Node> =
-		this.required ?
-			this.optional ?
-				[...this.required, ...this.optional]
-			:	this.required
-		:	(this.optional ?? [])
+	required = this.inner.required ?? []
+	optional = this.inner.optional ?? []
+	index = this.inner.index ?? []
+
+	props: array<Prop.Node> = [...this.required, ...this.optional]
 
 	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
 		this.props,
@@ -275,6 +278,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		...this.optionalLiteralKeys
 	]
 
+	entries: NodeEntry[] = [
+		...this.props.map(entry => [entry.key, entry.value] as const),
+		...this.index.map(entry => [entry.signature, entry.value] as const)
+	]
+
 	_keyof: BaseRoot | undefined
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
@@ -285,16 +293,20 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this._keyof = this.$.node("union", branches))
 	}
 
-	_entries: NodeEntry[] | undefined
-	entries(): NodeEntry[] {
-		if (this._entries) return this._entries
-		const entries: NodeEntry[] = []
-
-		return (this._entries = entries)
-	}
-
 	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): StructureNode {
-		return this
+		const inner: Structure.Inner.mutable = {}
+		this.entries.forEach(entry => {
+			const result = flatMapEntry(entry)
+			// based on flatMorph from @ark/util
+			const mappedEntries =
+				Array.isArray(result[0]) || result.length === 0 ?
+					(result as NodeEntry[])
+				:	[result as NodeEntry]
+			mappedEntries.forEach(entry => {
+				inner[entry[0]] = entry[1]
+			})
+		})
+		return this.$.node("structure", inner)
 	}
 
 	assertHasKeys(keys: array<KeyOrKeyNode>): void {
@@ -422,7 +434,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	private filterKeys(
 		operation: "pick" | "omit",
 		keys: array<BaseRoot | Key>
-	): mutableInnerOfKind<"structure"> {
+	): Structure.Inner.mutable {
 		const result = makeRootAndArrayPropertiesMutable(this.inner)
 
 		const shouldKeep = (key: KeyOrKeyNode) => {

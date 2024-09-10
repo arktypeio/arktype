@@ -15,7 +15,6 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import type {
-	mutableInnerOfKind,
 	nodeOfKind,
 	NodeSchema,
 	Prerequisite,
@@ -44,7 +43,11 @@ import { intersectNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
-import { hasArkKind, isNode } from "../shared/utils.ts"
+import {
+	hasArkKind,
+	isNode,
+	type makeRootAndArrayPropertiesMutable
+} from "../shared/utils.ts"
 import type { Sequence } from "../structure/sequence.ts"
 import type {
 	Structure,
@@ -73,7 +76,9 @@ export declare namespace Intersection {
 		predicate?: array<PredicateNode>
 	}
 
-	export type MutableInner = mutableInnerOfKind<"intersection">
+	export namespace Inner {
+		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
+	}
 
 	export type ConstraintsSchema<inferredBasis = any> = show<
 		BaseNormalizedSchema & {
@@ -377,7 +382,7 @@ const intersectIntersections = (
 	if (hasArkKind(r, "root") && r.hasKind("intersection"))
 		return intersectIntersections(l, r.inner, ctx)
 
-	const baseInner: Intersection.MutableInner = {}
+	const baseInner: Intersection.Inner.mutable = {}
 
 	const lBasis = l.proto ?? l.domain
 	const rBasis = r.proto ?? r.domain
