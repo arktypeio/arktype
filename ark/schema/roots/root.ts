@@ -196,6 +196,7 @@ export abstract class BaseRoot<
 
 			if (operation === "keyof") return structure.keyof()
 			if (operation === "get") return structure.get(...(args as [never]))
+			if (operation === "map") return structure.map(...(args as [never]))
 
 			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"

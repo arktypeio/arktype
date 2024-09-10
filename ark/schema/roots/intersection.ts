@@ -41,7 +41,6 @@ import {
 } from "../shared/implement.ts"
 import { intersectNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -92,9 +91,7 @@ export declare namespace Intersection {
 		StructuralKind | "undeclared"
 	>
 
-	export type Schema<inferredBasis = any> =
-		| ConstraintsSchema<inferredBasis>
-		| AstSchema
+	export type Schema<inferredBasis = any> = ConstraintsSchema<inferredBasis>
 
 	export interface AstSchema extends BaseNormalizedSchema {
 		intersection: readonly RootSchema[]
@@ -125,12 +122,6 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 		hasAssociatedError: true,
 		normalize: rawSchema => {
 			if (isNode(rawSchema)) return rawSchema
-			if ("intersection" in rawSchema) {
-				return rawSchema.intersection.reduce(
-					(node, schema) => node.and(schema),
-					$ark.intrinsic.unknown
-				)
-			}
 
 			const { structure, ...schema } = rawSchema
 			const hasRootStructureKey = !!structure

@@ -129,6 +129,7 @@ type inferOptionalTypeKey<t, k extends TypeKey> =
 		key
 	:	never
 
+// mirrors reduceMappedEntry in @ark/schema
 type parseInferredMappedKey<t, k extends Key> =
 	k extends `${infer base}?` ?
 		k extends `${infer base}-?` ? { kind: "required"; key: base }

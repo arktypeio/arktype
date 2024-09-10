@@ -14,7 +14,6 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.ts"
-import type { Inner, mutableInnerOfKind } from "../kinds.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode, NodeEntry } from "../node.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { SchemaScope } from "../scope.ts"
@@ -45,6 +44,7 @@ import type {
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
+	isNode,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
@@ -298,13 +298,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.entries.forEach(entry => {
 			const result = flatMapEntry(entry)
 			// based on flatMorph from @ark/util
-			const mappedEntries =
-				Array.isArray(result[0]) || result.length === 0 ?
-					(result as NodeEntry[])
-				:	[result as NodeEntry]
-			mappedEntries.forEach(entry => {
-				inner[entry[0]] = entry[1]
-			})
+			if (Array.isArray(result[0]) || result.length === 0) {
+				return (result as NodeEntry[]).forEach(entry =>
+					reduceMappedEntry(this, inner, entry)
+				)
+			}
+			reduceMappedEntry(this, inner, result as NodeEntry)
 		})
 		return this.$.node("structure", inner)
 	}
@@ -677,6 +676,42 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		return schema
 	}
+}
+
+const reduceMappedEntry = (
+	original: Structure.Node,
+	inner: Structure.Inner.mutable,
+	[k, v]: NodeEntry
+): unknown => {
+	if (isNode(k)) {
+		const originalIndex = original.index?.find(node => node.signature === k)
+		return (inner.index = append(
+			inner.index,
+			originalIndex ?? original.$.node("index", { signature: k, value: v })
+		))
+	}
+
+	if (typeof k === "string" && k.at(-1) === "?") {
+		if (k.at(-2) === "-")
+			return (inner.required = append(inner.required, v as never))
+		else if (k.at(-2) !== "\\")
+			return (inner.optional = append(inner.optional, v as never))
+	}
+
+	const originalProp = original.propsByKey[k]
+	if (originalProp) {
+		return (inner[originalProp.kind] = append(
+			inner[originalProp.kind],
+			originalProp
+		) as never)
+	}
+	return (inner.required = append(
+		inner.required,
+		original.$.node("required", {
+			key: k,
+			value: v
+		})
+	))
 }
 
 export const Structure = {
