@@ -17,7 +17,7 @@ import {
 } from "../constraint.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode, NodeEntry } from "../node.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
-import type { SchemaScope } from "../scope.ts"
+import type { BaseScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -741,7 +741,7 @@ export type NormalizedIndex = {
 export const normalizeIndex = (
 	signature: BaseRoot,
 	value: BaseRoot,
-	$: SchemaScope
+	$: BaseScope
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,

@@ -15,7 +15,7 @@ import type { GenericRoot } from "../generic.ts"
 import type { InternalModule } from "../module.ts"
 import type { BaseNode } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import type { SchemaScope } from "../scope.ts"
+import type { BaseScope } from "../scope.ts"
 import type { ArkError } from "./errors.ts"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -88,7 +88,7 @@ export const arkKind = noSuggest("arkKind")
 export interface ArkKinds {
 	constraint: BaseConstraint
 	root: BaseRoot
-	scope: SchemaScope
+	scope: BaseScope
 	generic: GenericRoot
 	module: InternalModule
 	error: ArkError

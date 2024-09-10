@@ -4,7 +4,7 @@ import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Union } from "../roots/union.ts"
-import type { SchemaScope } from "../scope.ts"
+import type { BaseScope } from "../scope.ts"
 import { Disjoint } from "./disjoint.ts"
 import {
 	rootKinds,
@@ -23,7 +23,7 @@ type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 ) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
 :	BaseNode | Disjoint | null
 
-export const intersectNodesRoot: InternalNodeIntersection<SchemaScope> = (
+export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
 	r,
 	$
@@ -34,7 +34,7 @@ export const intersectNodesRoot: InternalNodeIntersection<SchemaScope> = (
 		pipe: false
 	})
 
-export const pipeNodesRoot: InternalNodeIntersection<SchemaScope> = (l, r, $) =>
+export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) =>
 	intersectNodes(l, r, {
 		$,
 		invert: false,

@@ -50,7 +50,7 @@ import {
 import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
-import { rootKinds, type NodeKind, type RootKind } from "./shared/implement.ts"
+import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
@@ -75,7 +75,7 @@ export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export type InternalResolution = BaseRoot | GenericRoot | InternalModule
 
-export type toInternalScope<$> = SchemaScope<{
+export type toInternalScope<$> = BaseScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
@@ -106,7 +106,7 @@ export type writeDuplicateAliasError<alias extends string> =
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
-const scopesById: Record<string, SchemaScope | undefined> = {}
+const scopesById: Record<string, BaseScope | undefined> = {}
 
 export interface ArkScopeConfig extends ArkConfig {
 	ambient?: boolean | string
@@ -117,7 +117,7 @@ export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
 
 $ark.ambient ??= {} as never
 
-export class SchemaScope<$ extends {} = {}> {
+export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig
 	readonly resolvedConfig: ResolvedArkScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
@@ -147,7 +147,7 @@ export class SchemaScope<$ extends {} = {}> {
 		this.resolvedConfig = resolveConfig(config)
 
 		const aliasEntries = Object.entries(def).map(entry =>
-			this.preparseAlias(...entry)
+			this.preparseOwnAliasEntry(...entry)
 		)
 
 		aliasEntries.forEach(([k, v]) => {
@@ -175,7 +175,7 @@ export class SchemaScope<$ extends {} = {}> {
 	}
 
 	generic: GenericRootParser = (...params) => {
-		const $: SchemaScope = this as never
+		const $: BaseScope = this as never
 		return (def: unknown, possibleHkt?: Constructor) =>
 			new GenericRoot(
 				params,
@@ -320,14 +320,6 @@ export class SchemaScope<$ extends {} = {}> {
 		return result
 	}
 
-	preparseRoot(def: unknown): unknown {
-		return def
-	}
-
-	preparseAlias(k: string, v: unknown): AliasDefEntry {
-		return [k, v]
-	}
-
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const resolution = this.maybeShallowResolve(name)
 
@@ -357,17 +349,16 @@ export class SchemaScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		const preparsedDef = this.preparseRoot(def)
-		if (hasArkKind(preparsedDef, "generic"))
-			return (this.resolutions[name] = this.bindReference(preparsedDef))
+		if (hasArkKind(def, "generic"))
+			return (this.resolutions[name] = this.bindReference(def))
 
-		if (hasArkKind(preparsedDef, "module")) {
-			if (preparsedDef.root)
-				return (this.resolutions[name] = this.bindReference(preparsedDef.root))
+		if (hasArkKind(def, "module")) {
+			if (def.root)
+				return (this.resolutions[name] = this.bindReference(def.root))
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
-		const ctxOrNode = this.preparseNode(rootKinds, preparsedDef, {
+		const ctxOrNode = this.preparseOwnDefinitionFormat(def, {
 			alias: name
 		})
 
@@ -375,7 +366,7 @@ export class SchemaScope<$ extends {} = {}> {
 			return (this.resolutions[name] = ctxOrNode)
 
 		this.resolutions[name] = ctxOrNode.id
-		return (this.resolutions[name] = this.parse(preparsedDef, {
+		return (this.resolutions[name] = this.parse(ctxOrNode, {
 			alias: name
 		}))
 	}
@@ -468,6 +459,26 @@ export class SchemaScope<$ extends {} = {}> {
 		return this.parseOwnDefinitionFormat(def, opts)
 	}
 
+	finalize<node extends BaseRoot>(node: node): node {
+		if (!node.precompilation && !this.resolvedConfig.jitless)
+			precompile(node.references)
+		return node
+	}
+
+	protected abstract parseOwnDefinitionFormat(
+		def: unknown,
+		opts?: NodeParseOptions
+	): BaseRoot
+
+	protected abstract preparseOwnDefinitionFormat(
+		def: unknown,
+		opts: NodeParseOptions
+	): BaseRoot | NodeParseContextInput
+
+	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
+}
+
+export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 	protected parseOwnDefinitionFormat(
 		def: unknown,
 		opts?: NodeParseOptions
@@ -475,10 +486,15 @@ export class SchemaScope<$ extends {} = {}> {
 		return this.parseSchema(def as never, opts)
 	}
 
-	finalize<node extends BaseRoot>(node: node): node {
-		if (!node.precompilation && !this.resolvedConfig.jitless)
-			precompile(node.references)
-		return node
+	protected preparseOwnDefinitionFormat(
+		schema: RootSchema,
+		opts: NodeParseOptions
+	): BaseRoot | NodeParseContextInput {
+		return this.preparseNode(schemaKindOf(schema), schema, opts) as never
+	}
+
+	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
+		return [k, v]
 	}
 }
 
@@ -555,7 +571,7 @@ export type SchemaScopeParser = <const aliases>(
 		>
 	},
 	config?: ArkScopeConfig
-) => SchemaScope<instantiateAliases<aliases>>
+) => BaseScope<instantiateAliases<aliases>>
 
 export const schemaScope: SchemaScopeParser = (aliases, config) =>
 	new SchemaScope(aliases, config)
@@ -584,7 +600,7 @@ export type RootExportCache = Record<
 	BaseRoot | GenericRoot | RootModule | undefined
 >
 
-const resolutionsOfModule = ($: SchemaScope, typeSet: RootExportCache) => {
+const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 	const result: InternalResolutions = {}
 	for (const k in typeSet) {
 		const v = typeSet[k]
@@ -674,8 +690,8 @@ const writePrecompilation = (references: readonly BaseNode[]) =>
 // ensure the scope is resolved so JIT will be applied to future types
 rootSchemaScope.export()
 
-export const rootSchema: SchemaScope["schema"] = rootSchemaScope.schema
-export const node: SchemaScope["node"] = rootSchemaScope.node
-export const defineSchema: SchemaScope["defineSchema"] =
+export const rootSchema: BaseScope["schema"] = rootSchemaScope.schema
+export const node: BaseScope["node"] = rootSchemaScope.node
+export const defineSchema: BaseScope["defineSchema"] =
 	rootSchemaScope.defineSchema
-export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic
+export const genericNode: BaseScope["generic"] = rootSchemaScope.generic

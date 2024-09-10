@@ -10,7 +10,7 @@ import {
 import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { SchemaScope } from "./scope.ts"
+import type { BaseScope } from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arkKind } from "./shared/utils.ts"
 
@@ -26,7 +26,7 @@ export type GenericParamDef<name extends string = string> =
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
-	$: SchemaScope
+	$: BaseScope
 ): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
 export type genericParamNames<params extends array<GenericParamAst>> = {
@@ -73,15 +73,15 @@ export class GenericRoot<
 
 	paramDefs: array<GenericParamDef>
 	bodyDef: bodyDef
-	$: SchemaScope
-	arg$: SchemaScope
+	$: BaseScope
+	arg$: BaseScope
 	baseInstantiation: BaseRoot
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
 		bodyDef: bodyDef,
-		$: SchemaScope,
-		arg$: SchemaScope
+		$: BaseScope,
+		arg$: BaseScope
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {

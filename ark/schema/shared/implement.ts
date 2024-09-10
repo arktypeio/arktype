@@ -22,7 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { SchemaScope } from "../scope.ts"
+import type { BaseScope } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -144,7 +144,7 @@ export interface InternalIntersectionOptions {
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
-	$: SchemaScope
+	$: BaseScope
 	invert: boolean
 }
 
@@ -293,13 +293,13 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
-	normalize: (schema: d["schema"], $: SchemaScope) => d["normalizedSchema"]
+	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: SchemaScope
+		$: BaseScope
 	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 }
 

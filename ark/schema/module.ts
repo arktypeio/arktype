@@ -1,9 +1,9 @@
 import { DynamicBase, flatMorph, type anyOrNever } from "@ark/util"
 import type { BaseRoot } from "./roots/root.ts"
 import type {
+	BaseScope,
 	InternalResolution,
-	InternalResolutions,
-	SchemaScope
+	InternalResolutions
 } from "./scope.ts"
 import { arkKind, hasArkKind } from "./shared/utils.ts"
 
@@ -26,7 +26,7 @@ export interface InternalModule<
 
 export const bindModule = (
 	module: InternalModule,
-	$: SchemaScope
+	$: BaseScope
 ): InternalModule =>
 	new RootModule(
 		flatMorph(module, (alias, value) => [

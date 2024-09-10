@@ -59,13 +59,13 @@
 		"eslint-plugin-import": "2.30.0",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.4.1",
-		"knip": "5.30.0",
+		"knip": "5.30.1",
 		"mocha": "10.7.3",
 		"prettier": "3.3.3",
 		"prettier-plugin-astro": "0.14.1",
 		"tsx": "4.19.0",
 		"typescript": "catalog:",
-		"typescript-eslint": "8.4.0"
+		"typescript-eslint": "8.5.0"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",

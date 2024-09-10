@@ -1,6 +1,6 @@
 import {
 	$ark,
-	SchemaScope,
+	BaseScope,
 	hasArkKind,
 	nodesById,
 	parseGeneric,
@@ -14,6 +14,7 @@ import {
 	type GenericParamAst,
 	type GenericRoot,
 	type NodeKind,
+	type NodeParseContextInput,
 	type NodeParseOptions,
 	type NodeSchema,
 	type PreparsedNodeResolution,
@@ -182,10 +183,31 @@ export interface InternalScope {
 	constructor: typeof InternalScope
 }
 
-export class InternalScope<$ extends {} = {}> extends SchemaScope<$> {
+export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	private parseCache: Record<string, BaseRoot> = {}
 
-	override preparseAlias(k: string, v: unknown): AliasDefEntry {
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
+	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
+		if (!$arkTypeRegistry.typeAttachments) return
+		return this.cacheGetter(
+			"ambientAttachments",
+			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+				k,
+				this.bindReference(v as {} as BaseRoot | GenericRoot)
+			]) as never
+		)
+	}
+
+	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
+		if (isThunk(v) && !hasArkKind(v, "generic")) v = v()
+
 		const firstParamIndex = k.indexOf("<")
 		if (firstParamIndex === -1) return [k, v]
 
@@ -215,32 +237,16 @@ export class InternalScope<$ extends {} = {}> extends SchemaScope<$> {
 		]
 	}
 
-	protected cacheGetter<name extends keyof this>(
-		name: name,
-		value: this[name]
-	): this[name] {
-		Object.defineProperty(this, name, { value })
-		return value
-	}
-
-	override preparseRoot(def: unknown): unknown {
+	protected preparseOwnDefinitionFormat(
+		def: unknown
+	): BaseRoot | NodeParseContextInput
+	protected preparseOwnDefinitionFormat(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
 
 		return def
 	}
 
-	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
-		if (!$arkTypeRegistry.typeAttachments) return
-		return this.cacheGetter(
-			"ambientAttachments",
-			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
-				k,
-				this.bindReference(v as {} as BaseRoot | GenericRoot)
-			]) as never
-		)
-	}
-
-	protected override parseOwnDefinitionFormat(
+	protected parseOwnDefinitionFormat(
 		def: unknown,
 		opts?: TypeParseOptions
 	): BaseRoot {
