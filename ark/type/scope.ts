@@ -12,6 +12,7 @@ import {
 	type BaseRoot,
 	type GenericAst,
 	type GenericParamAst,
+	type GenericParamDef,
 	type GenericRoot,
 	type NodeKind,
 	type NodeSchema,
@@ -43,11 +44,12 @@ import {
 } from "@ark/util"
 import type { ArkSchemaRegistry } from "./config.ts"
 import {
-	parseGenericParams,
+	parseGenericParamName,
 	type GenericDeclaration,
 	type GenericParser,
 	type ParameterString,
 	type baseGenericConstraints,
+	type parseGenericParams,
 	type parseValidGenericParams
 } from "./generic.ts"
 import type { Ark } from "./keywords/ark.ts"
@@ -212,16 +214,24 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
 			() => {
-				const params = parseGenericParams(paramString, {
-					$: this as never,
-					args: {}
-				})
+				const params = this.parseGenericParams(paramString, { alias: name })
 
 				const generic = parseGeneric(params, v, this as never)
 
 				return generic
 			}
 		]
+	}
+
+	parseGenericParams(
+		def: string,
+		opts: BaseParseOptions
+	): array<GenericParamDef> {
+		return parseGenericParamName(
+			new Scanner(def),
+			[],
+			this.createParseContext({ ...opts, def, prefix: "generic" })
+		)
 	}
 
 	protected normalizeRootScopeValue(resolution: unknown): unknown {
@@ -236,7 +246,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	): BaseRoot | BaseParseContextInput {
 		return {
 			...opts,
-			$: this,
 			def,
 			prefix: opts.alias ?? "type"
 		}

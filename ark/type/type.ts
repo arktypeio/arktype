@@ -15,14 +15,13 @@ import {
 	type array,
 	type conform
 } from "@ark/util"
-import {
-	parseGenericParams,
-	type Generic,
-	type GenericParser,
-	type ParameterString,
-	type baseGenericConstraints,
-	type parseValidGenericParams,
-	type validateParameterString
+import type {
+	Generic,
+	GenericParser,
+	ParameterString,
+	baseGenericConstraints,
+	parseValidGenericParams,
+	validateParameterString
 } from "./generic.ts"
 import type { Ark, ark, type } from "./keywords/ark.ts"
 import type { distill } from "./keywords/ast.ts"
@@ -136,10 +135,8 @@ export class InternalTypeParser extends Callable<
 				) {
 					// if there are exactly two args, the first of which looks like <${string}>,
 					// treat as a generic
-					const params = parseGenericParams(args[0].slice(1, -1), {
-						$,
-						args: {}
-					})
+					const paramString = args[0].slice(1, -1)
+					const params = $.parseGenericParams(paramString, {})
 
 					return new GenericRoot(
 						params,

@@ -28,7 +28,7 @@ import type { inferAstRoot } from "./parser/semantic/infer.ts"
 import type { validateAst } from "./parser/semantic/validate.ts"
 import { DynamicState } from "./parser/string/reduce/dynamic.ts"
 import type { state, StaticState } from "./parser/string/reduce/static.ts"
-import { Scanner } from "./parser/string/shift/scanner.ts"
+import type { Scanner } from "./parser/string/shift/scanner.ts"
 import { parseUntilFinalizer } from "./parser/string/string.ts"
 import type { Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
@@ -277,11 +277,6 @@ export const emptyGenericParameterMessage =
 
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
-export const parseGenericParams = (
-	def: string,
-	ctx: BaseParseContext
-): array<GenericParamDef> => parseName(new Scanner(def), [], ctx)
-
 export type parseGenericParams<def extends string, $> = parseNextNameChar<
 	Scanner.skipWhitespace<def>,
 	"",
@@ -291,7 +286,7 @@ export type parseGenericParams<def extends string, $> = parseNextNameChar<
 
 type ParamsTerminator = WhiteSpaceToken | ","
 
-const parseName = (
+export const parseGenericParamName = (
 	scanner: Scanner,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
@@ -352,13 +347,13 @@ const _parseOptionalConstraint = (
 		// assume in the rest of the function body we do have a constraint
 		if (scanner.lookahead === ",") scanner.shift()
 		result.push(name)
-		return parseName(scanner, result, ctx)
+		return parseGenericParamName(scanner, result, ctx)
 	}
 
 	const s = parseUntilFinalizer(new DynamicState(scanner, ctx))
 	result.push([name, s.root])
 
-	return parseName(scanner, result, ctx)
+	return parseGenericParamName(scanner, result, ctx)
 }
 
 type _parseOptionalConstraint<
