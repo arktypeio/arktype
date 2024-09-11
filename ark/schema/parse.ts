@@ -32,7 +32,7 @@ import {
 	type RootKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { hasArkKind } from "./shared/utils.ts"
+import { hasArkKind, type arkKind } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
@@ -54,8 +54,10 @@ export interface BaseParseContextInput extends BaseParseOptions {
 }
 
 export interface AttachedParseContext {
+	[arkKind]: "context"
 	$: BaseScope
 	id: NodeId
+	phase: "unresolved" | "resolving" | "resolved"
 }
 
 export interface BaseParseContext
@@ -69,10 +71,8 @@ export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
-	extends NodeParseContextInput<kind> {
-	$: BaseScope
-	id: NodeId
-}
+	extends NodeParseContextInput<kind>,
+		AttachedParseContext {}
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
 	schema: unknown,
@@ -129,20 +129,14 @@ export type NodeId = nominal<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 
-export const nodesById: Record<NodeId, BaseNode | NodeId> = {}
+export const nodesById: Record<
+	NodeId,
+	BaseNode | BaseParseContext | undefined
+> = {}
 
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
-}
-
-export const registerNode = <node extends BaseNode>(
-	prefix: string,
-	resolve: (id: NodeId) => node
-): node => {
-	const id = registerNodeId(prefix)
-	nodesById[id] = id
-	return (nodesById[id] = resolve(id))
 }
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
@@ -288,8 +282,12 @@ export const createNode = (
 }
 
 export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
-	registerNode(meta.alias ?? node.kind, id =>
-		createNode(id, node.kind, node.inner, meta, node.$)
+	createNode(
+		registerNodeId(meta.alias ?? node.kind),
+		node.kind,
+		node.inner,
+		meta,
+		node.$
 	)
 
 const possiblyCollapse = <allowPrimitive extends boolean>(

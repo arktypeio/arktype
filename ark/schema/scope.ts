@@ -3,6 +3,7 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
+	isThunk,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -90,7 +91,7 @@ export type toInternalScope<$> = BaseScope<{
 	:	BaseRoot
 }>
 
-type CachedResolution = string | BaseRoot | GenericRoot
+type CachedResolution = NodeId | BaseRoot | GenericRoot
 
 const schemaBranchesOf = (schema: object) =>
 	isArray(schema) ? schema
@@ -134,13 +135,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	readonly referencesById: { [id: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
-	protected readonly resolutions: {
+	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
 	readonly json: Json = {}
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
-	readonly aliasIds: Record<string, NodeId> = {}
 	protected resolved = false
 
 	constructor(
@@ -157,15 +157,27 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 
 		aliasEntries.forEach(([k, v]) => {
+			let name = k
 			if (k[0] === "#") {
-				const name = k.slice(1)
+				name = k.slice(1)
 				if (name in this.aliases)
 					throwParseError(writeDuplicateAliasError(name))
 				this.aliases[name] = v
 			} else {
-				if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
-				this.aliases[k] = v
-				this.exportedNames.push(k)
+				if (name in this.aliases) throwParseError(writeDuplicateAliasError(k))
+				this.aliases[name] = v
+				this.exportedNames.push(name)
+			}
+			if (
+				!hasArkKind(v, "module") &&
+				!hasArkKind(v, "generic") &&
+				// TODO: proto thunk defs?
+				!isThunk(v)
+			) {
+				const preparsed = this.preparseOwnDefinitionFormat(v, { alias: name })
+				if (hasArkKind(preparsed, "root"))
+					this.resolutions[name] = this.bindReference(preparsed)
+				else this.resolutions[name] = this.createParseContext(preparsed).id
 			}
 		}) as never
 
@@ -306,14 +318,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return result
 	}
 
-	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
-		const resolution = this.maybeShallowResolve(name)
-
-		return typeof resolution === "string" ?
-				this.node("alias", { reference: resolution }, { prereduced: true })
-			:	resolution
-	}
-
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	protected maybeResolveSubalias(
 		name: string
@@ -328,14 +332,36 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return $ark.ambient as never
 	}
 
-	maybeShallowResolve(name: string): CachedResolution | undefined {
+	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const cached = this.resolutions[name]
-		if (cached) return cached
+		if (cached) {
+			if (typeof cached !== "string") return cached
+
+			const v = nodesById[cached]
+			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
+			if (hasArkKind(v, "context")) {
+				if (v.phase === "resolving")
+					return this.node("alias", { reference: v.id }, { prereduced: true })
+				if (v.phase === "resolved") {
+					return throwInternalError(
+						`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
+					)
+				}
+				v.phase = "resolving"
+				const node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
+				v.phase = "resolved"
+				nodesById[node.id] = node
+				return (this.resolutions[name] = node)
+			}
+			return throwInternalError(
+				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
+			)
+		}
 		let def: unknown = this.aliases[name] ?? this.ambient?.[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		def = this.preparseRootScopeValue(def)
+		def = this.normalizeRootScopeValue(def)
 
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = this.bindReference(def))
@@ -355,11 +381,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		const id = registerNodeId(input.prefix)
-		nodesById[id] = id
-		return Object.assign(input, {
+		return (nodesById[id] = Object.assign(input, {
+			[arkKind]: "context" as const,
 			$: this as never,
-			id
-		})
+			id,
+			phase: "unresolved" as const
+		}))
 	}
 
 	import(): SchemaModule<{
@@ -495,7 +522,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
 
-	protected abstract preparseRootScopeValue(resolution: unknown): unknown
+	protected abstract normalizeRootScopeValue(resolution: unknown): unknown
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
@@ -517,8 +544,8 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 		return [k, v]
 	}
 
-	protected preparseRootScopeValue(resolution: unknown): unknown {
-		return resolution
+	protected normalizeRootScopeValue(v: unknown): unknown {
+		return v
 	}
 }
 

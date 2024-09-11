@@ -224,7 +224,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		]
 	}
 
-	protected preparseRootScopeValue(resolution: unknown): unknown {
+	protected normalizeRootScopeValue(resolution: unknown): unknown {
 		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
 			return resolution()
 		return resolution

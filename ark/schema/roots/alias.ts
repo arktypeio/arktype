@@ -1,6 +1,7 @@
 import {
 	append,
 	domainDescriptions,
+	printable,
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
@@ -99,25 +100,34 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 		let resolution = nodesById[id]
 		const seen: NodeId[] = []
-		while (typeof resolution === "string") {
-			if (seen.includes(resolution))
-				return throwParseError(writeShallowCycleErrorMessage(resolution, seen))
+		while (hasArkKind(resolution, "context")) {
+			if (seen.includes(resolution.id)) {
+				return throwParseError(
+					writeShallowCycleErrorMessage(resolution.id, seen)
+				)
+			}
 
-			seen.push(resolution)
-			resolution = nodesById[resolution]
+			seen.push(resolution.id)
+			resolution = nodesById[resolution.id]
 		}
 		if (!hasArkKind(resolution, "root")) {
 			return throwInternalError(`Unexpected resolution for reference ${this.reference}
 Seen: [${seen.join("->")}] 
-Resolution: ${resolution}`)
+Resolution: ${printable(resolution)}`)
 		}
 		return this.cacheGetter("resolution", resolution)
 	}
 
 	get resolutionId(): NodeId {
-		return this.reference[0] === "$" ?
-				this.$.aliasIds[this.reference.slice(1)]
-			:	(this.reference as NodeId)
+		if (this.reference[0] !== "$") return this.reference as NodeId
+		const alias = this.reference.slice(1)
+		const resolution = this.$.resolutions[alias]
+		if (!hasArkKind(resolution, "root") && !hasArkKind(resolution, "context")) {
+			return throwInternalError(
+				`Unexpected resolution for reference ${this.reference}: ${printable(resolution)}`
+			)
+		}
+		return resolution.id
 	}
 
 	get shortDescription(): string {
