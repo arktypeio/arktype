@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, type ArkErrors } from "@ark/schema"
+import { registeredReference, rootNode, type ArkErrors } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
@@ -891,5 +891,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const t = type({ name: "string" }).and("string[]")
 		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
 		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/979
+	// https://github.com/arktypeio/arktype/issues/1124
+	it("negative length constraint", () => {
+		attest(() => rootNode({ proto: "Array", minLength: -1 })).throws("ParseError: minLength bound must be a positive integer (was -1)")
+		attest(() => rootNode({ proto: "String", minLength: -1 })).throws("ParseError: minLength bound must be a positive integer (was -1)")
+
+		attest(() => rootNode({ proto: "Array", maxLength: -1 })).throws("ParseError: maxLength bound must be a positive integer (was -1)")
+		attest(() => rootNode({ proto: "String", maxLength: -1 })).throws("ParseError: maxLength bound must be a positive integer (was -1)")
 	})
 })
