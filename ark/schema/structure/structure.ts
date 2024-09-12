@@ -692,17 +692,35 @@ const reduceMappedEntry = (
 	}
 
 	if (typeof k === "string" && k.at(-1) === "?") {
-		if (k.at(-2) === "-")
-			return (inner.required = append(inner.required, v as never))
-		else if (k.at(-2) !== "\\")
-			return (inner.optional = append(inner.optional, v as never))
+		if (k.at(-2) === "-") {
+			return (inner.required = append(
+				inner.required,
+				original.$.node("required", {
+					key: k.slice(0, -2),
+					value: v
+				})
+			))
+		} else if (k.at(-2) !== "\\") {
+			return (inner.optional = append(
+				inner.optional,
+				original.$.node("optional", {
+					key: k.slice(0, -1),
+					value: v
+				})
+			))
+		}
 	}
 
 	const originalProp = original.propsByKey[k]
 	if (originalProp) {
 		return (inner[originalProp.kind] = append(
 			inner[originalProp.kind],
-			originalProp
+			v === originalProp.value ?
+				originalProp
+			:	original.$.node(originalProp.kind, {
+					key: k,
+					value: v
+				})
 		) as never)
 	}
 	return (inner.required = append(
