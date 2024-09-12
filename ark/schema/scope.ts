@@ -507,8 +507,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxOrNode, "root")) return this.bindReference(ctxOrNode)
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesByRegisteredId[ctx.id] = this.bindReference(
-			this.parseOwnDefinitionFormat(def, ctx)
+		return (nodesByRegisteredId[ctx.id] = this.finalize(
+			this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
 		))
 	}
 

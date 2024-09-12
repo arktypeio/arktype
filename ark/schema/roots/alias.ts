@@ -77,12 +77,14 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
 					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.reference}`
 				),
-			...defineRightwardIntersections("alias", (l, r, ctx) =>
-				ctx.$.lazilyResolve(
+			...defineRightwardIntersections("alias", (l, r, ctx) => {
+				if (r.isUnknown()) return l
+				if (r.isNever()) return r
+				return ctx.$.lazilyResolve(
 					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
 					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
 				)
-			)
+			})
 		}
 	})
 
