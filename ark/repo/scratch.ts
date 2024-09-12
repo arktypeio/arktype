@@ -1,17 +1,17 @@
+import { attest } from "@ark/attest"
 import { type } from "arktype"
 
-export const myType = type({ foo: "0 < number < 10" }).or({
-	bar: "string.alphanumeric"
-})
+const oneTo9999 = type("1 <= number.integer <= 9999")
 
-const nullable = type({
-	"foo?": "string",
-	bar: "number",
-	baz: "boolean"
-}).map(entry => {
-	if (entry[0] === "bar") {
-		const nullableBar = entry[1].or("null")
-		return [entry[0], nullableBar]
-	}
-	return entry
+const T = type({
+	PORT: ["string.integer.parse", "=>", oneTo9999]
 })
+const defaults: typeof T.infer = {
+	PORT: 123
+}
+
+process.env.PORT = "456"
+
+const out = T.assert(process.env)
+
+console.log(out.PORT)

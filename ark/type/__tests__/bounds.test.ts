@@ -2,9 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
 	rootSchema,
+	writeInvalidLengthBoundMessage,
 	writeInvalidOperandMessage,
-	writeNegativeLengthBoundMessage,
-	writeNonIntegerLengthBoundMessage,
 	writeUnboundableMessage
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
@@ -209,13 +208,13 @@ contextualize(() => {
 
 		it("negative-length", () => {
 			attest(() => type("string < 0")).throws(
-				writeNegativeLengthBoundMessage("maxLength", -1)
+				writeInvalidLengthBoundMessage("maxLength", -1)
 			)
 		})
 
 		it("non-integer length", () => {
 			attest(() => type("string >= 2.5")).throws(
-				writeNonIntegerLengthBoundMessage("minLength", 2.5)
+				writeInvalidLengthBoundMessage("minLength", 2.5)
 			)
 		})
 
