@@ -5,7 +5,8 @@ import {
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
-	writeUnsatisfiedParameterConstraintMessage
+	writeUnsatisfiedParameterConstraintMessage,
+	type RootSchema
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
@@ -298,9 +299,21 @@ contextualize(() => {
 					box: "0|this"
 				})
 
+				const expectedJsonType = type({
+					domain: "'object'",
+					required: [
+						{ key: "'box'", value: [/^\$ark\.type\d+$/, { unit: "0" }] }
+					]
+				})
+
 				attest<Expected>(t.t)
 				attest<Expected>(standalone.t)
-				attest(t.json).equals(standalone.json)
+				attest(t.json).satisfies(expectedJsonType)
+				attest(standalone.json).satisfies(expectedJsonType)
+
+				attest(t({ box: 0 })).equals({ box: 0 })
+				attest(t({ box: { box: 0 } })).snap()
+				attest(t({ box: { box: { box: 5 } } })).snap()
 			})
 
 			it("right bounds", ({ $ }) => {

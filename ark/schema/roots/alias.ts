@@ -63,7 +63,9 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		hasAssociatedError: false,
 		collapsibleKey: "reference",
 		keys: {
-			reference: {},
+			reference: {
+				serialize: s => (s.startsWith("$") ? s : `$ark.${s}`)
+			},
 			resolve: {}
 		},
 		normalize: normalizeAliasSchema,
@@ -100,7 +102,6 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 	protected _resolve(): BaseRoot {
 		if (this.resolve) return this.resolve()
-
 		if (this.reference[0] === "$")
 			return this.$.resolveRoot(this.reference.slice(1))
 
