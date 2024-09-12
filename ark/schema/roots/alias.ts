@@ -125,6 +125,8 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	get resolutionId(): NodeId {
+		if (this.reference.includes("&") || this.reference.includes("=>"))
+			return this.resolution.id
 		if (this.reference[0] !== "$") return this.reference as NodeId
 		const alias = this.reference.slice(1)
 		const resolution = this.$.resolutions[alias]
