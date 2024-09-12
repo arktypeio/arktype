@@ -356,8 +356,8 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			b.c.b = b
 			b.c.c = b.c
 
-			attest(types.arf.description).snap("{ b: { c: arf&bork } }")
-			attest(types.bork.description).snap("{ c: arf&bork }")
+			attest(types.arf.expression).snap("{ b: { c: $arf&$bork } }")
+			attest(types.bork.expression).snap("{ c: $arf&$bork }")
 
 			attest(types.arf(a)).equals(a)
 			attest(types.arf({ b: { c: {} } }).toString())
