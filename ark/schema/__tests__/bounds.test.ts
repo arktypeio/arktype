@@ -1,5 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { Disjoint, boundKindPairsByLower, rootSchema } from "@ark/schema"
+import {
+	Disjoint,
+	boundKindPairsByLower,
+	rootSchema,
+	writeInvalidLengthBoundMessage
+} from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
 const numericCases = {
@@ -78,6 +83,18 @@ contextualize(() => {
 		)
 		attest(t.traverse(dateCases.greaterThanMax)?.toString()).snap(
 			"must be 7:00:00.010 PM, December 31, 1969 or earlier (was 7:00:00.011 PM, December 31, 1969)"
+		)
+	})
+
+	it("errors on negative length bound", () => {
+		attest(() => rootSchema({ domain: "string", maxLength: -1 })).throws(
+			writeInvalidLengthBoundMessage("maxLength", -1)
+		)
+	})
+
+	it("errors on non-integer length bound", () => {
+		attest(() => rootSchema({ domain: "string", exactLength: 1.5 })).throws(
+			writeInvalidLengthBoundMessage("exactLength", 1.5)
 		)
 	})
 
