@@ -129,7 +129,7 @@ export type NodeId = nominal<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 
-export const nodesById: Record<
+export const nodesByRegisteredId: Record<
 	NodeId,
 	BaseNode | BaseParseContext | undefined
 > = {}

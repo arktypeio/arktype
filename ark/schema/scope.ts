@@ -41,7 +41,7 @@ import {
 } from "./module.ts"
 import type { BaseNode } from "./node.ts"
 import {
-	nodesById,
+	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
@@ -337,11 +337,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (cached) {
 			if (typeof cached !== "string") return cached
 
-			const v = nodesById[cached]
+			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
 			if (hasArkKind(v, "context")) {
-				if (v.phase === "resolving")
-					return this.node("alias", { reference: v.id }, { prereduced: true })
+				if (v.phase === "resolving") {
+					return this.node(
+						"alias",
+						{ reference: `$${name}` },
+						{ prereduced: true }
+					)
+				}
 				if (v.phase === "resolved") {
 					return throwInternalError(
 						`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
@@ -350,7 +355,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 				v.phase = "resolving"
 				const node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
 				v.phase = "resolved"
-				nodesById[node.id] = node
+				nodesByRegisteredId[node.id] = node
+				nodesByRegisteredId[v.id] = node
 				return (this.resolutions[name] = node)
 			}
 			return throwInternalError(
@@ -381,7 +387,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		const id = registerNodeId(input.prefix)
-		return (nodesById[id] = Object.assign(input, {
+		return (nodesByRegisteredId[id] = Object.assign(input, {
 			[arkKind]: "context" as const,
 			$: this as never,
 			id,
@@ -489,7 +495,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesById[ctx.id] = this.bindReference(parseNode(ctx))) as never
+		return (nodesByRegisteredId[ctx.id] = this.bindReference(
+			parseNode(ctx)
+		)) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot => {
@@ -499,7 +507,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxOrNode, "root")) return this.bindReference(ctxOrNode)
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesById[ctx.id] = this.bindReference(
+		return (nodesByRegisteredId[ctx.id] = this.bindReference(
 			this.parseOwnDefinitionFormat(def, ctx)
 		))
 	}

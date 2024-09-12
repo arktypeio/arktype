@@ -5,7 +5,7 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
-import { nodesById, type NodeId } from "../parse.ts"
+import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -91,14 +91,20 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
-		if (this.resolve) return this.cacheGetter("resolution", this.resolve())
+		const result = this._resolve()
+		nodesByRegisteredId[this.id] = result
+		return this.cacheGetter("resolution", result)
+	}
+
+	protected _resolve(): BaseRoot {
+		if (this.resolve) return this.resolve()
 
 		if (this.reference[0] === "$")
 			return this.$.resolveRoot(this.reference.slice(1))
 
 		const id = this.reference as NodeId
 
-		let resolution = nodesById[id]
+		let resolution = nodesByRegisteredId[id]
 		const seen: NodeId[] = []
 		while (hasArkKind(resolution, "context")) {
 			if (seen.includes(resolution.id)) {
@@ -108,26 +114,26 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			}
 
 			seen.push(resolution.id)
-			resolution = nodesById[resolution.id]
+			resolution = nodesByRegisteredId[resolution.id]
 		}
 		if (!hasArkKind(resolution, "root")) {
 			return throwInternalError(`Unexpected resolution for reference ${this.reference}
 Seen: [${seen.join("->")}] 
 Resolution: ${printable(resolution)}`)
 		}
-		return this.cacheGetter("resolution", resolution)
+		return resolution
 	}
 
 	get resolutionId(): NodeId {
 		if (this.reference[0] !== "$") return this.reference as NodeId
 		const alias = this.reference.slice(1)
 		const resolution = this.$.resolutions[alias]
-		if (!hasArkKind(resolution, "root") && !hasArkKind(resolution, "context")) {
-			return throwInternalError(
-				`Unexpected resolution for reference ${this.reference}: ${printable(resolution)}`
-			)
-		}
-		return resolution.id
+		if (typeof resolution === "string") return resolution
+		if (hasArkKind(resolution, "root")) return resolution.id
+
+		return throwInternalError(
+			`Unexpected resolution for reference ${this.reference}: ${printable(resolution)}`
+		)
 	}
 
 	get shortDescription(): string {
