@@ -896,10 +896,18 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	// https://github.com/arktypeio/arktype/issues/979
 	// https://github.com/arktypeio/arktype/issues/1124
 	it("negative length constraint", () => {
-		attest(() => rootNode({ proto: "Array", minLength: -1 })).throws("ParseError: minLength bound must be a positive integer (was -1)")
-		attest(() => rootNode({ proto: "String", minLength: -1 })).throws("ParseError: minLength bound must be a positive integer (was -1)")
+		attest(() => rootNode({ proto: "Array", minLength: -1 })).throws(
+			"ParseError: minLength bound must be a positive integer (was -1)"
+		)
+		attest(() => rootNode({ proto: "String", minLength: -1 })).throws(
+			"ParseError: minLength bound must be a positive integer (was -1)"
+		)
 
-		attest(() => rootNode({ proto: "Array", maxLength: -1 })).throws("ParseError: maxLength bound must be a positive integer (was -1)")
-		attest(() => rootNode({ proto: "String", maxLength: -1 })).throws("ParseError: maxLength bound must be a positive integer (was -1)")
+		attest(() => rootNode({ proto: "Array", maxLength: -1 })).throws(
+			"ParseError: maxLength bound must be a positive integer (was -1)"
+		)
+		attest(() => rootNode({ proto: "String", maxLength: -1 })).throws(
+			"ParseError: maxLength bound must be a positive integer (was -1)"
+		)
 	})
 })
