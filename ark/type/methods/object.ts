@@ -9,9 +9,8 @@ import type {
 	optionalKeyOf,
 	show
 } from "@ark/util"
-import type { arkGet, arkKeyOf, toArkKey, TypeKey } from "../keys.ts"
+import type { arkGet, arkKeyOf, toArkKey } from "../keys.ts"
 import type { type } from "../keywords/ark.ts"
-import type { PreparsedKey } from "../parser/objectLiteral.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 import type { ValidatorType } from "./validator.ts"
@@ -74,25 +73,30 @@ interface Type<out t extends object = object, $ = {}>
 
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
-	map<transformed extends listable<TypeEntry<TypeKey, v>>, v = unknown>(
+	map<transformed extends listable<MappedTypeEntry<Key, v>>, v = unknown>(
 		// v isn't used directly here but helps TS infer a precise type for transformed
 		flatMapEntry: (entry: typeEntryOf<t, $>) => transformed
 	): Type<constructMapped<t, transformed>, $>
 }
 
-export type TypeEntry<k extends TypeKey = TypeKey, v = unknown> = readonly [
-	k,
-	type.cast<v>
+export type MappedTypeEntry<k extends Key = Key, v = unknown> = readonly [
+	key: k,
+	value: type.cast<v>,
+	kind?: "required" | "optional"
 ]
 
-type TypeEntries = array<TypeEntry>
+type TypeEntries = array<MappedTypeEntry>
 
 type typeEntryOf<t, $> = {
-	[k in keyof t]-?: [k, instantiateType<t[k] & ({} | null), $>]
+	[k in keyof t]-?: readonly [
+		k,
+		instantiateType<t[k] & ({} | null), $>,
+		k extends optionalKeyOf<t> ? "optional" : "required"
+	]
 }[keyof t] &
 	unknown
 
-type constructMapped<t, transformed extends listable<TypeEntry>> = show<
+type constructMapped<t, transformed extends listable<MappedTypeEntry>> = show<
 	intersectUnion<
 		fromTypeEntries<
 			t,
@@ -103,52 +107,25 @@ type constructMapped<t, transformed extends listable<TypeEntry>> = show<
 
 type fromTypeEntries<t, entries extends TypeEntries> = show<
 	{
-		[entry in entries[number] as inferRequiredTypeKey<
-			t,
-			entry[0]
-		>]: entry[1][inferred]
+		[entry in entries[number] as Extract<
+			applyHomomorphicOptionality<t, entry>,
+			readonly [unknown, unknown, "required"]
+		>[0]]: entry[1][inferred]
 	} & {
-		[entry in entries[number] as inferOptionalTypeKey<
-			t,
-			entry[0]
-		>]?: entry[1][inferred]
+		[entry in entries[number] as Extract<
+			applyHomomorphicOptionality<t, entry>,
+			readonly [unknown, unknown, "optional"]
+		>[0]]?: entry[1][inferred]
 	}
 >
 
-type inferRequiredTypeKey<t, k extends TypeKey> =
-	parseInferredMappedKey<t, inferTypeKey<k>> extends (
-		PreparsedKey<"required" | "index", infer key>
-	) ?
-		key
-	:	never
-
-type inferOptionalTypeKey<t, k extends TypeKey> =
-	parseInferredMappedKey<t, inferTypeKey<k>> extends (
-		PreparsedKey<"optional", infer key>
-	) ?
-		key
-	:	never
-
 // mirrors reduceMappedEntry in @ark/schema
-type parseInferredMappedKey<t, k extends Key> =
-	k extends `${infer base}?` ?
-		k extends `${infer base}-?` ? { kind: "required"; key: base }
-		: base extends `${infer escapedBase}\\` ?
-			applyHomomorphicOptionality<
-				t,
-				{ kind: "required"; key: `${escapedBase}?` }
-			>
-		:	{ kind: "optional"; key: base }
-	:	applyHomomorphicOptionality<t, { kind: "required"; key: k }>
-
-type applyHomomorphicOptionality<
-	t,
-	k extends PreparsedKey<"optional" | "required" | "index">
-> = k extends optionalKeyOf<t> ? { kind: "optional"; key: k } : k
-
-type inferTypeKey<k extends TypeKey> =
-	k extends Key ? k
-	: k extends type.cast<infer t extends Key> ? t
-	: never
+type applyHomomorphicOptionality<t, entry extends MappedTypeEntry> = readonly [
+	entry[0],
+	entry[1],
+	entry[2] extends string ? entry[2]
+	: entry[0] extends optionalKeyOf<t> ? "optional"
+	: "required"
+]
 
 export type { Type as ObjectType }

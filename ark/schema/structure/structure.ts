@@ -15,7 +15,7 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.ts"
-import type { GettableKeyOrNode, KeyOrKeyNode, NodeEntry } from "../node.ts"
+import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -45,7 +45,6 @@ import type {
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
-	isNode,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
@@ -278,9 +277,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		...this.optionalLiteralKeys
 	]
 
-	entries: array<NodeEntry> = conflatenate<NodeEntry>(
-		this.props.map(entry => [entry.key, entry.value] as const),
-		this.index?.map(entry => [entry.signature, entry.value] as const)
+	entries: array<NodeEntry> = this.props.map(
+		entry => [entry.key, entry.value, entry.kind] as const
 	)
 
 	_keyof: BaseRoot | undefined
@@ -293,7 +291,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this._keyof = this.$.node("union", branches))
 	}
 
-	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): StructureNode {
+	map(flatMapEntry: NodeEntryFlatMapper): StructureNode {
 		const inner: Structure.Inner.mutable = {}
 		this.entries.forEach(entry => {
 			const result = flatMapEntry(entry)
@@ -678,58 +676,43 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
+export type NodeEntryFlatMapper = (
+	entry: NodeEntry
+) => listable<MappedNodeEntry>
+
+export type NodeEntry = readonly [
+	key: Key,
+	value: BaseRoot,
+	kind: "required" | "optional"
+]
+
+export type MappedNodeEntry = readonly [
+	key: Key,
+	value: BaseRoot,
+	kind?: "required" | "optional"
+]
+
 const reduceMappedEntry = (
 	original: Structure.Node,
 	inner: Structure.Inner.mutable,
-	[k, v]: NodeEntry
+	[k, v, kind]: MappedNodeEntry
 ): unknown => {
-	if (isNode(k)) {
-		const originalIndex = original.index?.find(node => node.signature === k)
-		return (inner.index = append(
-			inner.index,
-			originalIndex ?? original.$.node("index", { signature: k, value: v })
-		))
-	}
-
-	if (typeof k === "string" && k.at(-1) === "?") {
-		if (k.at(-2) === "-") {
-			return (inner.required = append(
-				inner.required,
-				original.$.node("required", {
-					key: k.slice(0, -2),
-					value: v
-				})
-			))
-		} else if (k.at(-2) !== "\\") {
-			return (inner.optional = append(
-				inner.optional,
-				original.$.node("optional", {
-					key: k.slice(0, -1),
-					value: v
-				})
-			))
-		}
-	}
-
 	const originalProp = original.propsByKey[k]
-	if (originalProp) {
-		return (inner[originalProp.kind] = append(
-			inner[originalProp.kind],
-			v === originalProp.value ?
-				originalProp
-			:	original.$.node(originalProp.kind, {
-					key: k,
-					value: v
-				})
-		) as never)
-	}
-	return (inner.required = append(
-		inner.required,
-		original.$.node("required", {
-			key: k,
-			value: v
-		})
-	))
+	const mappedKind = kind ?? originalProp?.kind ?? "required"
+
+	return (inner[mappedKind] = append(
+		inner[mappedKind],
+		(
+			originalProp &&
+				mappedKind === originalProp.kind &&
+				v === originalProp.value
+		) ?
+			originalProp
+		:	original.$.node(mappedKind, {
+				key: k,
+				value: v
+			})
+	) as never)
 }
 
 export const Structure = {

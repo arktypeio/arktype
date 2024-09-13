@@ -596,8 +596,8 @@ other must be a string (was a bigint)`)
 			})
 
 			const t = original.map(entry => {
-				if (entry[0] === "foo") return ["foo-?", entry[1]] as const
-				if (entry[0] === "bar") return ["bar?", entry[1]] as const
+				if (entry[0] === "foo") return ["foo", entry[1], "required"] as const
+				if (entry[0] === "bar") return ["bar", entry[1], "optional"] as const
 
 				return entry
 			})

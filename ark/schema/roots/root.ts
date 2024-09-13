@@ -4,8 +4,7 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
-	type array,
-	type listable
+	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
@@ -14,8 +13,7 @@ import {
 	appendUniqueFlatRefs,
 	type FlatRef,
 	type GettableKeyOrNode,
-	type KeyOrKeyNode,
-	type NodeEntry
+	type KeyOrKeyNode
 } from "../node.ts"
 import type { Predicate } from "../predicate.ts"
 import type { Divisor } from "../refinements/divisor.ts"
@@ -46,6 +44,7 @@ import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import type {
+	NodeEntryFlatMapper,
 	Structure,
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
@@ -124,7 +123,7 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	map(flatMapEntry: (entry: NodeEntry) => listable<NodeEntry>): BaseRoot {
+	map(flatMapEntry: NodeEntryFlatMapper): BaseRoot {
 		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
 	}
 
