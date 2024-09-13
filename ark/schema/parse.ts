@@ -5,6 +5,7 @@ import {
 	isArray,
 	isEmptyObject,
 	printable,
+	throwInternalError,
 	throwParseError,
 	unset,
 	type JsonData,
@@ -32,7 +33,7 @@ import {
 	type RootKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { hasArkKind, type arkKind } from "./shared/utils.ts"
+import { hasArkKind, isNode, type arkKind } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
@@ -46,6 +47,8 @@ export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	 **/
 	reduceTo?: BaseNode
 	args?: ContextualArgs
+	id?: NodeId
+	isExternalRoot?: boolean
 }
 
 export interface BaseParseContextInput extends BaseParseOptions {
@@ -62,7 +65,9 @@ export interface AttachedParseContext {
 
 export interface BaseParseContext
 	extends BaseParseContextInput,
-		AttachedParseContext {}
+		AttachedParseContext {
+	id: NodeId
+}
 
 export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 	extends BaseParseContextInput {
@@ -72,7 +77,9 @@ export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseContextInput<kind>,
-		AttachedParseContext {}
+		AttachedParseContext {
+	id: NodeId
+}
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
 	schema: unknown,
@@ -191,7 +198,11 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return withMeta(reduced, meta)
+			return withMeta(
+				reduced,
+				meta,
+				ctx.id.startsWith("type") ? ctx.id : undefined
+			)
 		}
 	}
 
@@ -255,7 +266,8 @@ export const createNode = (
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[hash]) return nodeCache[hash]
+	// force ids from external type definition (starting with "type") to be created
+	if (nodeCache[hash] && !id.startsWith("type")) return nodeCache[hash]
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -281,14 +293,21 @@ export const createNode = (
 	return (nodeCache[hash] = node)
 }
 
-export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
-	createNode(
-		registerNodeId(meta.alias ?? node.kind),
+export const withMeta = (
+	node: BaseNode,
+	meta: ArkEnv.meta,
+	id?: NodeId
+): BaseNode => {
+	if (id && isNode(nodesByRegisteredId[id]))
+		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
+	return createNode(
+		id ?? registerNodeId(meta.alias ?? node.kind),
 		node.kind,
 		node.inner,
 		meta,
 		node.$
 	)
+}
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: dict,

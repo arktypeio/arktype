@@ -11,7 +11,7 @@ export const arkUtilVersion = "0.8.0"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: import.meta.filename,
+	filename: import.meta.filename ?? globalThis.__filename ?? "unknown",
 	FileConstructor
 }
 

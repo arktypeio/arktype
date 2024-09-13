@@ -148,9 +148,7 @@ export abstract class BaseNode<
 	// we don't cache this currently since it can be updated once a scope finishes
 	// resolving cyclic references, although it may be possible to ensure it is cached safely
 	get references(): BaseNode[] {
-		return Object.values(this.referencesById).filter(
-			ref => !ref.id.startsWith("this")
-		)
+		return Object.values(this.referencesById)
 	}
 
 	get shallowReferences(): BaseNode[] {

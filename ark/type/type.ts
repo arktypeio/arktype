@@ -112,7 +112,7 @@ export class InternalTypeParser extends Callable<
 				module: $.constructor.module,
 				scope: $.constructor.scope,
 				generic: $.generic as never,
-				schema: $.parseSchema as never,
+				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
 				ark: $.ambient as never,
 				unit: $.unit,

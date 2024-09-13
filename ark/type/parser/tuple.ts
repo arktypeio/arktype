@@ -54,7 +54,7 @@ export const parseTupleLiteral = (
 			i++
 		}
 
-		const element = ctx.$.parse(def[i], ctx)
+		const element = ctx.$.parseOwnDefinitionFormat(def[i], ctx)
 
 		i++
 		if (def[i] === "?") {
@@ -401,7 +401,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-	ctx.$.parse(def[1], ctx).keyof()
+	ctx.$.parseOwnDefinitionFormat(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
@@ -411,13 +411,13 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
-	const l = ctx.$.parse(def[0], ctx)
-	const r = ctx.$.parse(def[2], ctx)
+	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
+	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
 	return def[1] === "&" ? l.and(r) : l.or(r)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).array()
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).array()
 
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
@@ -452,7 +452,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
 		)
 	}
-	return ctx.$.parse(def[0], ctx).pipe(def[2] as Morph)
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).pipe(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (
@@ -476,14 +476,19 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.$.parse(def[0], ctx).constrain("predicate", def[2] as Predicate)
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).constrain(
+		"predicate",
+		def[2] as Predicate
+	)
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureShallowDescendants(
+		def[2] as never
+	)
 
 const parseDefaultTuple: PostfixParser<"="> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).default(def[2] as never)
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).default(def[2] as never)
 
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>

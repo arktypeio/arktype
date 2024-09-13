@@ -70,10 +70,13 @@ export const parseObjectLiteral = (
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.parseSchema({
-		domain: "object",
-		structure: spread?.merge(structureNode) ?? structureNode
-	})
+	return ctx.$.parseSchema(
+		{
+			domain: "object",
+			structure: spread?.merge(structureNode) ?? structureNode
+		},
+		ctx.isExternalRoot ? { id: ctx.id } : undefined
+	)
 }
 
 export const writeInvalidUndeclaredBehaviorMessage = (
@@ -193,12 +196,12 @@ export const parseEntry = (
 	}
 
 	if (parsedKey.kind === "...")
-		return { kind: "spread", node: ctx.$.parse(value, ctx) }
+		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
-	const parsedValue = ctx.$.parse(value, ctx)
+	const parsedValue = ctx.$.parseOwnDefinitionFormat(value, ctx)
 
 	if (parsedKey.kind === "index") {
-		const signature = ctx.$.parse(parsedKey.key, ctx)
+		const signature = ctx.$.parseOwnDefinitionFormat(parsedKey.key, ctx)
 		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
 		return (
 			normalized.index ?

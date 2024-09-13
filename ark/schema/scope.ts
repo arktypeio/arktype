@@ -386,12 +386,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 	protected createParseContext<input extends BaseParseContextInput>(
 		input: input
 	): input & AttachedParseContext {
-		const id = registerNodeId(input.prefix)
+		const id = input.id ?? registerNodeId(input.prefix)
 		return (nodesByRegisteredId[id] = Object.assign(input, {
 			[arkKind]: "context" as const,
 			$: this as never,
 			id,
-			phase: "unresolved" as const
+			phase: "unresolved" as const,
+			isExternalRoot: true
 		}))
 	}
 
@@ -503,16 +504,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot => {
 		if (hasArkKind(def, "root")) return this.bindReference(def)
 
-		const ctxOrNode = this.preparseOwnDefinitionFormat(def, opts)
-		if (hasArkKind(ctxOrNode, "root")) return this.bindReference(ctxOrNode)
-		const ctx = this.createParseContext(ctxOrNode)
+		const ctxInputOrNode = this.preparseOwnDefinitionFormat(def, opts)
+		if (hasArkKind(ctxInputOrNode, "root"))
+			return this.bindReference(ctxInputOrNode)
 
-		return (nodesByRegisteredId[ctx.id] = this.finalize(
+		const ctx = this.createParseContext(ctxInputOrNode)
+		nodesByRegisteredId[ctx.id] = ctx
+		const node = this.finalize(
 			this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
-		))
+		)
+		return (nodesByRegisteredId[ctx.id] = node)
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {
+		bootstrapAliasReferences(node)
 		if (!node.precompilation && !this.resolvedConfig.jitless)
 			precompile(node.references)
 		return node
@@ -523,7 +528,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		opts: BaseParseOptions
 	): BaseRoot | BaseParseContextInput
 
-	protected abstract parseOwnDefinitionFormat(
+	abstract parseOwnDefinitionFormat(
 		def: unknown,
 		ctx: BaseParseContext
 	): BaseRoot
@@ -534,10 +539,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
-	protected parseOwnDefinitionFormat(
-		def: unknown,
-		ctx: NodeParseContext
-	): BaseRoot {
+	parseOwnDefinitionFormat(def: unknown, ctx: NodeParseContext): BaseRoot {
 		return parseNode(ctx) as never
 	}
 

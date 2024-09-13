@@ -251,10 +251,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 	}
 
-	protected parseOwnDefinitionFormat(
-		def: unknown,
-		ctx: BaseParseContext
-	): BaseRoot {
+	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
 		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
 
 		// if the definition being parsed is not a scope alias and is not a
