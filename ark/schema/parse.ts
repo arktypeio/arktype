@@ -48,7 +48,6 @@ export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	reduceTo?: BaseNode
 	args?: ContextualArgs
 	id?: NodeId
-	isExternalRoot?: boolean
 }
 
 export interface BaseParseContextInput extends BaseParseOptions {
@@ -198,7 +197,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return withMeta(reduced, meta, ctx.isExternalRoot ? ctx.id : undefined)
+			return withMeta(reduced, meta)
 		}
 	}
 
@@ -289,18 +288,18 @@ export const createNode = (
 	return (nodeCache[hash] = node)
 }
 
-export const withId = (node: BaseNode, id: NodeId): BaseNode => {
+export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node
 	if (isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
-	return createNode(id, node.kind, node.inner, node.meta, node.$)
+	return createNode(id, node.kind, node.inner, node.meta, node.$) as never
 }
 
-export const withMeta = (
-	node: BaseNode,
+export const withMeta = <node extends BaseNode>(
+	node: node,
 	meta: ArkEnv.meta,
 	id?: NodeId
-): BaseNode => {
+): node => {
 	if (id && isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	return createNode(
@@ -309,7 +308,7 @@ export const withMeta = (
 		node.inner,
 		meta,
 		node.$
-	)
+	) as never
 }
 
 const possiblyCollapse = <allowPrimitive extends boolean>(

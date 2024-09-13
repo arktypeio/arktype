@@ -115,11 +115,15 @@ export abstract class BaseNode<
 		(this.hasKind("optional") && this.hasDefault()) ||
 		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
-	// if a predicate accepts exactly one arg, we can safely skip passing context
-	readonly allowsRequiresContext: boolean =
+
+	readonly hasContextualPredicate: boolean =
+		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.kind === "alias" ||
-		this.children.some(child => child.allowsRequiresContext)
+		this.children.some(child => child.hasContextualPredicate)
+	readonly isCyclic: boolean =
+		this.kind === "alias" || this.children.some(child => child.isCyclic)
+	readonly allowsRequiresContext: boolean =
+		this.hasContextualPredicate || this.isCyclic
 	readonly referencesById: Record<string, BaseNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.referencesById),
 		{ [this.id]: this }

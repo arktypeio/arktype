@@ -392,8 +392,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			[arkKind]: "context" as const,
 			$: this as never,
 			id,
-			phase: "unresolved" as const,
-			isExternalRoot: true
+			phase: "unresolved" as const
 		}))
 	}
 
@@ -511,10 +510,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = this.createParseContext(ctxInputOrNode)
 		nodesByRegisteredId[ctx.id] = ctx
-		const node = withId(
-			this.bindReference(this.parseOwnDefinitionFormat(def, ctx)),
-			ctx.id
-		) as BaseRoot
+		let node = this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
+
+		// if the node is recursive e.g. { box: "this" }, we need to make sure it
+		// has the original id from context so that its references compile correctly
+		if (node.isCyclic) node = withId(node, ctx.id)
 
 		nodesByRegisteredId[ctx.id] = node
 
