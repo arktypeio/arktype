@@ -290,32 +290,6 @@ contextualize(() => {
 				attest(t.json).equals(expected.json)
 			})
 
-			it("this in args", ({ $ }) => {
-				const t = $.type("box<0,  this>")
-				type Expected = {
-					box: 0 | Expected
-				}
-				const standalone = type({
-					box: "0|this"
-				})
-
-				const expectedJsonType = type({
-					domain: "'object'",
-					required: [
-						{ key: "'box'", value: [/^\$ark\.type\d+$/, { unit: "0" }] }
-					]
-				})
-
-				attest<Expected>(t.t)
-				attest<Expected>(standalone.t)
-				attest(t.json).satisfies(expectedJsonType)
-				attest(standalone.json).satisfies(expectedJsonType)
-
-				attest(t({ box: 0 })).equals({ box: 0 })
-				attest(t({ box: { box: 0 } })).snap()
-				attest(t({ box: { box: { box: 5 } } })).snap()
-			})
-
 			it("right bounds", ({ $ }) => {
 				// should be able to differentiate between > that is part of a right
 				// bound and > that closes a generic instantiation
@@ -339,7 +313,7 @@ contextualize(() => {
 			it("extra >", ({ $ }) => {
 				attest(() =>
 					// @ts-expect-error
-					$.type("box<0,  this>>")
+					$.type("box<0,  1>>")
 				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
 			})
 

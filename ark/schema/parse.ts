@@ -33,6 +33,7 @@ import {
 	type RootKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
 import { hasArkKind, isNode, type arkKind } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
@@ -45,7 +46,6 @@ export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: BaseNode
 	args?: ContextualArgs
 	id?: NodeId
 }
@@ -123,7 +123,6 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
 	`${printable(schema)} is not a valid type schema`
 
-const nodeCache: { [hash: string]: BaseNode } = {}
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
@@ -139,6 +138,8 @@ export const nodesByRegisteredId: Record<
 	NodeId,
 	BaseNode | BaseParseContext | undefined
 > = {}
+
+$ark.nodesByRegisteredId = nodesByRegisteredId
 
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
@@ -203,11 +204,6 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
 
-	if (ctx.reduceTo) {
-		nodeCache[node.hash] = ctx.reduceTo
-		return ctx.reduceTo
-	}
-
 	return node
 }
 
@@ -216,7 +212,8 @@ export const createNode = (
 	kind: NodeKind,
 	inner: dict,
 	meta: BaseMeta,
-	$: BaseScope
+	$: BaseScope,
+	ignoreCache?: true
 ): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const innerEntries = entriesOf(inner)
@@ -261,8 +258,7 @@ export const createNode = (
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	// force ids from external type definition (starting with "type") to be created
-	if (nodeCache[hash] && !id.startsWith("type")) return nodeCache[hash]
+	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -285,14 +281,15 @@ export const createNode = (
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	return (nodeCache[hash] = node)
+	return ($.nodesByHash[hash] = node)
 }
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node
 	if (isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
-	return createNode(id, node.kind, node.inner, node.meta, node.$) as never
+	// have to ignore cache to force creation of new potentially cyclic id
+	return createNode(id, node.kind, node.inner, node.meta, node.$, true) as never
 }
 
 export const withMeta = <node extends BaseNode>(

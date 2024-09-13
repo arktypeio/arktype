@@ -1,5 +1,6 @@
 import type { ArkRegistry, mutable, requireKeys, show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
+import type { nodesByRegisteredId } from "./parse.ts"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -19,6 +20,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkConfig
 	defaultConfig: ResolvedArkConfig
+	nodesByRegisteredId: typeof nodesByRegisteredId
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<

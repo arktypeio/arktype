@@ -56,6 +56,7 @@ import {
 } from "./parse.ts"
 import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
@@ -125,6 +126,8 @@ export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
 
 $ark.ambient ??= {} as never
 
+let rawUnknownUnion: UnionNode | undefined
+
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig
 	readonly resolvedConfig: ResolvedArkScopeConfig
@@ -143,6 +146,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
+	readonly nodesByHash: Record<string, BaseNode> = {}
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -181,6 +185,31 @@ export abstract class BaseScope<$ extends {} = {}> {
 				else this.resolutions[name] = this.createParseContext(preparsed).id
 			}
 		}) as never
+
+		// reduce union of all possible values reduces to unknown
+		rawUnknownUnion ??= this.node(
+			"union",
+			{
+				branches: [
+					"string",
+					"number",
+					"object",
+					"bigint",
+					"symbol",
+					{ unit: true },
+					{ unit: false },
+					{ unit: undefined },
+					{ unit: null }
+				]
+			},
+			{ prereduced: true }
+		)
+
+		this.nodesByHash[rawUnknownUnion.hash] = this.node(
+			"intersection",
+			{},
+			{ prereduced: true }
+		)
 
 		scopesById[this.id] = this
 	}

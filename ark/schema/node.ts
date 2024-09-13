@@ -353,7 +353,7 @@ export abstract class BaseNode<
 	):
 		| nodeOfKind<reducibleKindOf<this["kind"]>>
 		| Extract<ReturnType<mapper>, null> {
-		const result = this._transform(mapper, {
+		return this._transform(mapper, {
 			...opts,
 			seen: {},
 			path: [],
@@ -361,15 +361,13 @@ export abstract class BaseNode<
 				prereduced: opts?.prereduced ?? false
 			}
 		}) as never
-		if (result === null) return null as never
-		return this.$.finalize(result) as never
 	}
 
 	protected _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
-		const $ = ctx.bindScope?.internal ?? this.$
+		const $ = ctx.bindScope ?? this.$
 		if (ctx.seen[this.id])
 			// Cyclic handling needs to be made more robust
 			// https://github.com/arktypeio/arktype/issues/944
@@ -440,9 +438,11 @@ export abstract class BaseNode<
 	}
 
 	configureShallowDescendants(meta: MetaSchema): this {
-		return this.transform((kind, inner) => ({ ...inner, meta }), {
-			shouldTransform: node => node.kind !== "structure"
-		}) as never
+		return this.$.finalize(
+			this.transform((kind, inner) => ({ ...inner, meta }), {
+				shouldTransform: node => node.kind !== "structure"
+			}) as never
+		)
 	}
 }
 

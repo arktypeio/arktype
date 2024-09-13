@@ -425,15 +425,17 @@ export abstract class BaseRoot<
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
 		const rule = typeof cfg === "string" ? cfg : cfg.rule
 		const deep = typeof cfg === "string" ? false : cfg.deep
-		return this.transform(
-			(kind, inner) =>
-				kind === "structure" ?
-					rule === "ignore" ?
-						omit(inner as Structure.Inner, { undeclared: 1 })
-					:	{ ...inner, undeclared: rule }
-				:	inner,
-			deep ? undefined : (
-				{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+		return this.$.finalize(
+			this.transform(
+				(kind, inner) =>
+					kind === "structure" ?
+						rule === "ignore" ?
+							omit(inner as Structure.Inner, { undeclared: 1 })
+						:	{ ...inner, undeclared: rule }
+					:	inner,
+				deep ? undefined : (
+					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+				)
 			)
 		)
 	}
