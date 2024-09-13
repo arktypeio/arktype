@@ -198,11 +198,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return withMeta(
-				reduced,
-				meta,
-				ctx.id.startsWith("type") ? ctx.id : undefined
-			)
+			return withMeta(reduced, meta, ctx.isExternalRoot ? ctx.id : undefined)
 		}
 	}
 
@@ -291,6 +287,13 @@ export const createNode = (
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
 	return (nodeCache[hash] = node)
+}
+
+export const withId = (node: BaseNode, id: NodeId): BaseNode => {
+	if (node.id === id) return node
+	if (isNode(nodesByRegisteredId[id]))
+		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
+	return createNode(id, node.kind, node.inner, node.meta, node.$)
 }
 
 export const withMeta = (

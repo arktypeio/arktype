@@ -1,4 +1,3 @@
-import { attest } from "@ark/attest"
 import { type } from "arktype"
 
 const oneTo9999 = type("1 <= number.integer <= 9999")

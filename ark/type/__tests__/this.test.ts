@@ -30,7 +30,24 @@ contextualize(() => {
 		).snap("box.box.label must be a string (was missing)")
 	})
 
-	it("equivalent to recursive scoped type", () => {
+	it("at nested path", () => {
+		const t = type({ foo: { bar: "this" } })
+
+		attest(t).type.toString.snap()
+
+		const validData = { foo: { bar: {} } } as typeof t.infer
+		validData.foo.bar = validData
+
+		attest(t(validData)).equals(validData)
+
+		const invalidData = { foo: { bar: {} as any } }
+		invalidData.foo.bar = invalidData.foo
+		attest(t(invalidData).toString()).snap(
+			"foo.bar.foo must be an object (was missing)"
+		)
+	})
+
+	it("this preserved when referencing at path", () => {
 		const initial = type({
 			initial: "this"
 		})
@@ -46,15 +63,17 @@ contextualize(() => {
 		}
 
 		attest<Expected>(reference.infer)
-		const types = scope({
-			initial: {
-				initial: "initial"
-			},
-			reference: {
-				reference: "initial"
-			}
-		}).export()
-		attest(reference.json).equals(types.reference.json)
+
+		const initialData = {} as typeof initial.infer
+		initialData.initial = initialData
+
+		const referenceData = { reference: initialData }
+
+		attest(initial(initialData)).equals(initialData)
+		attest(reference(referenceData)).equals(referenceData)
+		attest(reference({ reference: {} }).toString()).snap(
+			"reference.initial must be an object (was missing)"
+		)
 	})
 
 	it("unresolvable in scope", () => {
@@ -69,32 +88,23 @@ contextualize(() => {
 		).throwsAndHasTypeError(writeUnresolvableMessage("this"))
 	})
 
-	it("root expression", () => {
-		const t = type({ a: "string" }, "|", { b: "this" })
-		attest(t.infer).type.toString.snap(
-			"{ a: string; } | { b: { a: string; } | any; }"
-		)
+	it("tuple expression", () => {
+		const t = type([{ a: "string" }, "|", { b: "this" }])
+		attest(t.infer).type.toString.snap()
 		attest(t({ a: "foo" })).snap({ a: "foo" })
-		attest(t({ a: "foo", b: { a: "bar" } })).snap({ a: "foo", b: { a: "bar" } })
-		attest(t({ a: "foo", b: { a: "bar", b: {} } }).toString()).snap(
-			"b.b.a must be a string (was missing)"
+		attest(t({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
+		attest(t({ b: { b: {} } }).toString()).snap(
+			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
 		)
 	})
 
-	it("tuple expression", () => {
-		const t = type([{ a: "string" }, "|", { b: "this" }])
-		attest(t.infer).type.toString.snap(
-			"{ a: string; } | { b: { a: string; } | any; }"
+	it("root expression", () => {
+		const t = type({ a: "string" }, "|", { b: "this" })
+		attest(t.infer).type.toString.snap()
+		attest(t({ a: "foo" })).snap({ a: "foo" })
+		attest(t({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
+		attest(t({ b: { b: {} } }).toString()).snap(
+			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
 		)
-		const types = scope({
-			a: {
-				a: "string"
-			},
-			b: {
-				b: "expected"
-			},
-			expected: "a|b"
-		}).export()
-		attest(t.json).equals(types.expected.json)
 	})
 })

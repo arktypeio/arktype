@@ -45,6 +45,7 @@ import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
+	withId,
 	type AttachedParseContext,
 	type BaseParseContext,
 	type BaseParseContextInput,
@@ -510,10 +511,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = this.createParseContext(ctxInputOrNode)
 		nodesByRegisteredId[ctx.id] = ctx
-		const node = this.finalize(
-			this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
-		)
-		return (nodesByRegisteredId[ctx.id] = node)
+		const node = withId(
+			this.bindReference(this.parseOwnDefinitionFormat(def, ctx)),
+			ctx.id
+		) as BaseRoot
+
+		nodesByRegisteredId[ctx.id] = node
+
+		return this.finalize(node)
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {

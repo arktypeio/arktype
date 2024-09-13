@@ -70,13 +70,10 @@ export const parseObjectLiteral = (
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.parseSchema(
-		{
-			domain: "object",
-			structure: spread?.merge(structureNode) ?? structureNode
-		},
-		ctx.isExternalRoot ? { id: ctx.id } : undefined
-	)
+	return ctx.$.parseSchema({
+		domain: "object",
+		structure: spread?.merge(structureNode) ?? structureNode
+	})
 }
 
 export const writeInvalidUndeclaredBehaviorMessage = (

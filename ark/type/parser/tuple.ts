@@ -1,5 +1,7 @@
 import {
 	$ark,
+	Disjoint,
+	intersectNodesRoot,
 	makeRootAndArrayPropertiesMutable,
 	type BaseParseContext,
 	type BaseRoot,
@@ -413,7 +415,10 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 
 	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
 	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
-	return def[1] === "&" ? l.and(r) : l.or(r)
+	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
+	const result = intersectNodesRoot(l, r, ctx.$)
+	if (result instanceof Disjoint) return result.throw()
+	return result
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
