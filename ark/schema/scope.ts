@@ -573,7 +573,7 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 				aliasNode.resolution.referencesById
 			)
 			resolution.references.forEach(ref => {
-				if (aliasNode.reference in ref.referencesById)
+				if (aliasNode.id in ref.referencesById)
 					Object.assign(ref.referencesById, aliasNode.referencesById)
 			})
 		})

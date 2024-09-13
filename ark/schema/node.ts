@@ -353,7 +353,7 @@ export abstract class BaseNode<
 	):
 		| nodeOfKind<reducibleKindOf<this["kind"]>>
 		| Extract<ReturnType<mapper>, null> {
-		return this._transform(mapper, {
+		const result = this._transform(mapper, {
 			...opts,
 			seen: {},
 			path: [],
@@ -361,6 +361,8 @@ export abstract class BaseNode<
 				prereduced: opts?.prereduced ?? false
 			}
 		}) as never
+		if (result === null) return null as never
+		return this.$.finalize(result) as never
 	}
 
 	protected _transform(

@@ -96,8 +96,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 	get resolution(): BaseRoot {
 		const result = this._resolve()
-		nodesByRegisteredId[this.id] = result
-		return this.cacheGetter("resolution", result)
+		return (nodesByRegisteredId[this.id] = result)
 	}
 
 	protected _resolve(): BaseRoot {
