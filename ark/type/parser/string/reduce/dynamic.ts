@@ -1,4 +1,4 @@
-import type { BaseRoot } from "@ark/schema"
+import type { BaseParseContext, BaseRoot } from "@ark/schema"
 import {
 	isKeyOf,
 	type requireKeys,
@@ -6,7 +6,6 @@ import {
 	throwParseError
 } from "@ark/util"
 import type { LimitLiteral } from "../../../keywords/ast.ts"
-import type { ParseContext } from "../../../scope.ts"
 import type { InfixOperator } from "../../semantic/infer.ts"
 import { parseOperand } from "../shift/operand/operand.ts"
 import { parseOperator } from "../shift/operator/operator.ts"
@@ -48,9 +47,9 @@ export class DynamicState {
 	groups: BranchState[] = []
 
 	scanner: Scanner
-	ctx: ParseContext
+	ctx: BaseParseContext
 
-	constructor(scanner: Scanner, ctx: ParseContext) {
+	constructor(scanner: Scanner, ctx: BaseParseContext) {
 		this.scanner = scanner
 		this.ctx = ctx
 	}
@@ -143,10 +142,11 @@ export class DynamicState {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
-		this.branches.intersection = this.branches.intersection?.and(root) ?? root
+		this.branches.intersection =
+			this.branches.intersection?.rawAnd(root) ?? root
 		if (token === "|") {
 			this.branches.union =
-				this.branches.union?.or(this.branches.intersection) ??
+				this.branches.union?.rawOr(this.branches.intersection) ??
 				this.branches.intersection
 			this.branches.intersection = null
 		}

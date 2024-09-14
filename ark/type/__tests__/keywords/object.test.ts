@@ -36,7 +36,7 @@ contextualize(() => {
 	In: { data: number } | { data: number }[]
 ) => To<{ data: number }[]>`)
 			attest(t.expression).snap(
-				"(In: { data: number }) => Out<{ data: number }[]> | (In: { data: number }[]) => Out<{ data: number }[]>"
+				"(In: { data: number } | { data: number }[]) => Out<{ data: number }[]>"
 			)
 		})
 	})

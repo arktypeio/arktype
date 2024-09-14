@@ -1,5 +1,6 @@
 import {
 	normalizeIndex,
+	type BaseParseContext,
 	type BaseRoot,
 	type Index,
 	type NodeSchema,
@@ -27,12 +28,14 @@ import {
 	type show
 } from "@ark/util"
 import type { constrain } from "../keywords/ast.ts"
-import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { astToString } from "./semantic/utils.ts"
 import type { validateString } from "./semantic/validate.ts"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
+export const parseObjectLiteral = (
+	def: Dict,
+	ctx: BaseParseContext
+): BaseRoot => {
 	let spread: Structure.Node | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
 	// We only allow a spread operator to be used as the first key in an object
@@ -67,7 +70,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.rootNode({
+	return ctx.$.parseSchema({
 		domain: "object",
 		structure: spread?.merge(structureNode) ?? structureNode
 	})
@@ -141,7 +144,7 @@ type nonOptionalKeyFrom<k, $, args> =
 type optionalKeyFrom<k> =
 	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
 
-type PreparsedKey<
+export type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
 	key extends Key = Key
 > = {
@@ -179,7 +182,7 @@ export type ParsedSpreadEntry = {
 export const parseEntry = (
 	key: Key,
 	value: unknown,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): listable<ParsedEntry> => {
 	const parsedKey = parseKey(key)
 
@@ -190,12 +193,12 @@ export const parseEntry = (
 	}
 
 	if (parsedKey.kind === "...")
-		return { kind: "spread", node: ctx.$.parse(value, ctx) }
+		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
-	const parsedValue = ctx.$.parse(value, ctx)
+	const parsedValue = ctx.$.parseOwnDefinitionFormat(value, ctx)
 
 	if (parsedKey.kind === "index") {
-		const signature = ctx.$.parse(parsedKey.key, ctx)
+		const signature = ctx.$.parseOwnDefinitionFormat(parsedKey.key, ctx)
 		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
 		return (
 			normalized.index ?

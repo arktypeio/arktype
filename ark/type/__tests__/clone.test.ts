@@ -75,4 +75,22 @@ contextualize(() => {
 
 		attest(out).unknown.snap({ foo: "bar", customCloned: true })
 	})
+
+	// process.env is an exotic object- ensure it is correctly cloned
+	// https://discord.com/channels/957797212103016458/1116551844710330458
+	it("can clone process.env", () => {
+		const env = type({
+			"+": "delete",
+			TZ: "'America/New_York'"
+		})
+
+		const originalEnv = { ...process.env }
+
+		const vars = env(process.env)
+
+		attest(vars).snap({ TZ: "America/New_York" })
+		// if process.env is not spread here, the assertion fails apparently
+		// because it's an exotic object? seems like a Node bug
+		attest({ ...process.env }).equals(originalEnv)
+	})
 })

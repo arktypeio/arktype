@@ -16,13 +16,13 @@ import {
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
 import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import type { NodeParseContext } from "../parse.ts"
+import type { NodeId, NodeParseContext } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { BaseScope, ResolvedArkScopeConfig } from "../scope.ts"
+import type { BaseScope } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -293,10 +293,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
-	normalize: (
-		schema: d["schema"],
-		ctx: ResolvedArkScopeConfig
-	) => d["normalizedSchema"]
+	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
@@ -360,7 +357,7 @@ export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
-	readonly id: string
+	readonly id: NodeId
 
 	readonly inner: Record<string, any>
 	readonly innerEntries: readonly Entry<string>[]

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode, writeUnresolvableMessage } from "@ark/schema"
+import { rootSchema, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
 
@@ -55,6 +55,7 @@ contextualize(() => {
 					"object",
 					"string",
 					"symbol",
+					"this",
 					"true",
 					"undefined",
 					"unknown"
@@ -109,6 +110,7 @@ contextualize(() => {
 					"object",
 					"string",
 					"symbol",
+					"this",
 					"true",
 					"undefined",
 					"unknown",
@@ -159,14 +161,14 @@ contextualize(() => {
 		it("instanceof single", () => {
 			const t = type("instanceof", RegExp)
 			attest<RegExp>(t.infer)
-			const expected = rootNode(RegExp)
+			const expected = rootSchema(RegExp)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("instanceof branches", () => {
 			const t = type("instanceof", Array, Date)
 			attest<unknown[] | Date>(t.infer)
-			const expected = rootNode([Array, Date])
+			const expected = rootSchema([Array, Date])
 			attest(t.json).equals(expected.json)
 		})
 
@@ -189,11 +191,14 @@ contextualize(() => {
 
 			attest(t.json).equals(type({ a: "string" }).or({ b: "boolean" }).json)
 		})
-		// TODO: infinitely deep why?
-		// it("morph", () => {
-		// 	const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
-		// 	attest<Type<(In: { a: string }) => Out<{ b: string }>, Ark>>(t)
-		// })
+
+		it("morph", () => {
+			const t = type({ a: "string" }, "=>", In => ({ b: In.a }))
+			attest(t).type.toString.snap(
+				"Type<(In: { a: string }) => Out<{ b: string }>, {}>"
+			)
+			attest(t.expression).snap("(In: { a: string }) => Out<unknown>")
+		})
 
 		it("narrow", () => {
 			const t = type(

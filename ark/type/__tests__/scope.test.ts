@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	rootNode,
+	rootSchema,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -356,8 +356,8 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			b.c.b = b
 			b.c.c = b.c
 
-			attest(types.arf.description).snap("{ b: { c: arf&bork } }")
-			attest(types.bork.description).snap("{ c: arf&bork }")
+			attest(types.arf.expression).snap("{ b: { c: $arf&$bork } }")
+			attest(types.bork.expression).snap("{ c: $arf&$bork }")
 
 			attest(types.arf(a)).equals(a)
 			attest(types.arf({ b: { c: {} } }).toString())
@@ -425,7 +425,7 @@ b.c.c must be an object (was missing)`)
 			foo: {
 				bar: "string"
 			},
-			string: rootNode({ domain: "string" }).constrain("minLength", 1)
+			string: rootSchema({ domain: "string" }).constrain("minLength", 1)
 		}).export()
 		attest<
 			Module<{

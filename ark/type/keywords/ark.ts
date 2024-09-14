@@ -10,6 +10,7 @@ import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
+	SchemaParser,
 	Type,
 	TypeParser
 } from "../type.ts"
@@ -119,6 +120,8 @@ export declare namespace type {
 export type type<t = unknown, $ = {}> = Type<t, $>
 
 export const generic: GenericParser<{}> = ambient.generic as never
+
+export const schema: SchemaParser<{}> = ambient.schema as never
 
 export const define: DefinitionParser<{}> = ambient.define as never
 

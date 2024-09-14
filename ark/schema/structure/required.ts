@@ -37,7 +37,7 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.rootNode(schema)
+				parse: (schema, ctx) => ctx.$.parseSchema(schema)
 			}
 		},
 		normalize: schema => schema,

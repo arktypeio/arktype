@@ -12,9 +12,10 @@ import {
 	type Json,
 	type Key,
 	type SerializedPrimitive,
+	type array,
 	type show
 } from "@ark/util"
-import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
@@ -29,7 +30,6 @@ import { Disjoint } from "../shared/disjoint.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
-	unionChildKinds,
 	type IntersectionContext,
 	type RootKind,
 	type UnionChildKind,
@@ -57,17 +57,10 @@ export declare namespace Union {
 
 	export type ChildNode = nodeOfKind<ChildKind>
 
-	// allow union nodes as branch definitions that will be flattened on parsing
-	export type BranchSchema = ChildSchema | BaseRoot
+	export type Schema = NormalizedSchema | readonly RootSchema[]
 
-	export type Schema<
-		branches extends readonly BranchSchema[] = readonly BranchSchema[]
-	> = NormalizedSchema<branches> | branches
-
-	export interface NormalizedSchema<
-		branches extends readonly BranchSchema[] = readonly BranchSchema[]
-	> extends BaseNormalizedSchema {
-		readonly branches: branches
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly branches: array<RootSchema>
 		readonly ordered?: true
 	}
 
@@ -104,13 +97,33 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 			branches: {
 				child: true,
 				parse: (schema, ctx) => {
-					const branches = schema.flatMap(branch =>
-						hasArkKind(branch, "root") ?
-							branch.branches
-						:	ctx.$.node(unionChildKinds, branch as Union.ChildSchema)
-					)
+					const branches: Union.ChildNode[] = []
+					schema.forEach(branchSchema => {
+						const branchNodes =
+							hasArkKind(branchSchema, "root") ?
+								branchSchema.branches
+							:	ctx.$.parseSchema(branchSchema).branches
+						branchNodes.forEach(node => {
+							if (node.hasKind("morph")) {
+								const matchingMorphIndex = branches.findIndex(
+									matching =>
+										matching.hasKind("morph") && matching.hasEqualMorphs(node)
+								)
+								if (matchingMorphIndex === -1) branches.push(node)
+								else {
+									const matchingMorph = branches[
+										matchingMorphIndex
+									] as Morph.Node
+									branches[matchingMorphIndex] = ctx.$.node("morph", {
+										...matchingMorph.inner,
+										in: matchingMorph.in.rawOr(node.in)
+									})
+								}
+							} else branches.push(node)
+						})
+					})
 
-					if (!ctx.normalizedSchema.ordered)
+					if (!ctx.def.ordered)
 						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
 
 					return branches
@@ -186,7 +199,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 
 				if (resultBranches instanceof Disjoint) return resultBranches
 
-				return ctx.$.rootNode(
+				return ctx.$.parseSchema(
 					l.ordered || r.ordered ?
 						{
 							branches: resultBranches,
@@ -201,7 +214,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 
 				if (branches.length === 1) return branches[0]
 
-				return ctx.$.rootNode(
+				return ctx.$.parseSchema(
 					l.ordered ? { branches, ordered: true } : { branches }
 				)
 			})
@@ -268,8 +281,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		for (let i = 0; i < this.branches.length; i++) {
 			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)
-			if (!ctx.hasError())
-				return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+			if (!ctx.hasError()) {
+				if (this.branches[i].includesMorph)
+					return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+				return ctx.popBranch()
+			}
 			errors.push(ctx.popBranch().error!)
 		}
 		ctx.error({ code: "union", errors })
@@ -346,7 +362,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					.line("ctx.pushBranch()")
 					.line(js.invoke(branch))
 					.if("!ctx.hasError()", () =>
-						js.return("ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)")
+						js.return(
+							branch.includesMorph ?
+								"ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)"
+							:	"ctx.popBranch()"
+						)
 					)
 					.line("errors.push(ctx.popBranch().error)")
 			)

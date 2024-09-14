@@ -1,6 +1,9 @@
 import {
 	$ark,
+	Disjoint,
+	intersectNodesRoot,
 	makeRootAndArrayPropertiesMutable,
+	type BaseParseContext,
 	type BaseRoot,
 	type MetaSchema,
 	type Morph,
@@ -31,16 +34,18 @@ import type {
 	inferPredicate,
 	Out
 } from "../keywords/ast.ts"
-import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
 import type { BaseCompletions } from "./string/string.ts"
 
-export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
+export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
+export const parseTupleLiteral = (
+	def: array,
+	ctx: BaseParseContext
+): BaseRoot => {
 	let sequences: mutableInnerOfKind<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -51,7 +56,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			i++
 		}
 
-		const element = ctx.$.parse(def[i], ctx)
+		const element = ctx.$.parseOwnDefinitionFormat(def[i], ctx)
 
 		i++
 		if (def[i] === "?") {
@@ -79,7 +84,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			)
 		}
 	}
-	return ctx.$.internal.rootNode(
+	return ctx.$.parseSchema(
 		sequences.map(sequence =>
 			isEmptyObject(sequence) ?
 				{
@@ -148,16 +153,16 @@ const appendSpreadBranch = (
 		// the only array with no sequence reference is unknown[]
 		return appendElement(base, "variadic", $ark.intrinsic.unknown)
 	}
-	spread.prefix.forEach(node => appendElement(base, "required", node))
-	spread.optionals.forEach(node => appendElement(base, "optional", node))
+	spread.prefix?.forEach(node => appendElement(base, "required", node))
+	spread.optionals?.forEach(node => appendElement(base, "optional", node))
 	if (spread.variadic) appendElement(base, "variadic", spread.variadic)
-	spread.postfix.forEach(node => appendElement(base, "required", node))
+	spread.postfix?.forEach(node => appendElement(base, "required", node))
 	return base
 }
 
 const maybeParseTupleExpression = (
 	def: array,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): BaseRoot | undefined => {
 	const tupleExpressionResult =
 		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
@@ -398,7 +403,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-	ctx.$.parse(def[1], ctx).keyof()
+	ctx.$.parseOwnDefinitionFormat(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
@@ -408,22 +413,25 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
-	const l = ctx.$.parse(def[0], ctx)
-	const r = ctx.$.parse(def[2], ctx)
-	return def[1] === "&" ? l.and(r) : l.or(r)
+	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
+	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
+	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
+	const result = intersectNodesRoot(l, r, ctx.$)
+	if (result instanceof Disjoint) return result.throw()
+	return result
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).array()
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).array()
 
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ) => BaseRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ) => BaseRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
@@ -449,8 +457,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
 		)
 	}
-	// TODO: nested morphs?
-	return ctx.$.parse(def[0], ctx).pipe(def[2] as Morph)
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).pipe(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (
@@ -474,14 +481,19 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.$.parse(def[0], ctx).constrain("predicate", def[2] as Predicate)
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).constrain(
+		"predicate",
+		def[2] as Predicate
+	)
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureShallowDescendants(
+		def[2] as never
+	)
 
 const parseDefaultTuple: PostfixParser<"="> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).default(def[2] as never)
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).default(def[2] as never)
 
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>

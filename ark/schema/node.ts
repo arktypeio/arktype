@@ -23,7 +23,7 @@ import type {
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
-import type { NodeParseOptions } from "./parse.ts"
+import type { BaseParseOptions } from "./parse.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
@@ -115,11 +115,15 @@ export abstract class BaseNode<
 		(this.hasKind("optional") && this.hasDefault()) ||
 		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
-	// if a predicate accepts exactly one arg, we can safely skip passing context
-	readonly allowsRequiresContext: boolean =
+
+	readonly hasContextualPredicate: boolean =
+		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.kind === "alias" ||
-		this.children.some(child => child.allowsRequiresContext)
+		this.children.some(child => child.hasContextualPredicate)
+	readonly isCyclic: boolean =
+		this.kind === "alias" || this.children.some(child => child.isCyclic)
+	readonly allowsRequiresContext: boolean =
+		this.hasContextualPredicate || this.isCyclic
 	readonly referencesById: Record<string, BaseNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.referencesById),
 		{ [this.id]: this }
@@ -148,9 +152,7 @@ export abstract class BaseNode<
 	// we don't cache this currently since it can be updated once a scope finishes
 	// resolving cyclic references, although it may be possible to ensure it is cached safely
 	get references(): BaseNode[] {
-		return Object.values(this.referencesById).filter(
-			ref => !ref.id.startsWith("this")
-		)
+		return Object.values(this.referencesById)
 	}
 
 	get shallowReferences(): BaseNode[] {
@@ -195,7 +197,7 @@ export abstract class BaseNode<
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
-	jit = false
+	precompilation: string | undefined
 
 	allows = (data: d["prerequisite"]): boolean => {
 		if (this.allowsRequiresContext) {
@@ -251,20 +253,28 @@ export abstract class BaseNode<
 		return this.innerHash === other.innerHash
 	}
 
+	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
+		return this.kind === (kind as never)
+	}
+
 	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
 		if (this.kind !== kind)
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
 	}
 
-	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
-		return this.kind === (kind as never)
-	}
-
 	hasKindIn<kinds extends NodeKind[]>(
 		...kinds: kinds
 	): this is nodeOfKind<kinds[number]> {
 		return kinds.includes(this.kind)
+	}
+
+	assertHasKindIn<kinds extends NodeKind[]>(
+		...kinds: kinds
+	): nodeOfKind<kinds[number]> {
+		if (!includes(kinds, this.kind))
+			throwError(`${this.kind} node was not one of asserted kinds ${kinds}`)
+		return this as never
 	}
 
 	isBasis(): this is nodeOfKind<BasisKind> {
@@ -357,7 +367,7 @@ export abstract class BaseNode<
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
-		const $ = ctx.bindScope?.internal ?? this.$
+		const $ = ctx.bindScope ?? this.$
 		if (ctx.seen[this.id])
 			// Cyclic handling needs to be made more robust
 			// https://github.com/arktypeio/arktype/issues/944
@@ -428,9 +438,11 @@ export abstract class BaseNode<
 	}
 
 	configureShallowDescendants(meta: MetaSchema): this {
-		return this.transform((kind, inner) => ({ ...inner, meta }), {
-			shouldTransform: node => node.kind !== "structure"
-		}) as never
+		return this.$.finalize(
+			this.transform((kind, inner) => ({ ...inner, meta }), {
+				shouldTransform: node => node.kind !== "structure"
+			}) as never
+		)
 	}
 }
 
@@ -492,7 +504,7 @@ export type ShouldTransformFn = (
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
-	parseOptions: NodeParseOptions
+	parseOptions: BaseParseOptions
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(

@@ -40,6 +40,12 @@ export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 	[_ in k]?: v
 }
 
+/** Returns true if a type can be homomorphically mapped without losing information.
+ * Useful for avoiding e.g. classes with private properties while mapping.
+ */
+export type isSafelyMappable<t> =
+	{ [k in keyof t]: t[k] } extends t ? true : false
+
 export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
 
 export type keySetOf<o extends object> = keySet<Extract<keyof o, string>>

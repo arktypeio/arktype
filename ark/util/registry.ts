@@ -7,11 +7,11 @@ import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.8.0"
+export const arkUtilVersion = "0.9.0"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: import.meta.filename,
+	filename: import.meta.filename ?? globalThis.__filename ?? "unknown",
 	FileConstructor
 }
 
@@ -34,7 +34,7 @@ declare global {
 }
 
 const namesByResolution = new WeakMap<object | symbol, string>()
-const nameCounts: Record<string, number | undefined> = {}
+const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
 	const existingName = namesByResolution.get(value)

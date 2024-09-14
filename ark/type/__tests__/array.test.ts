@@ -340,7 +340,7 @@ value at [1] must be a number (was boolean)`)
 				[{ d: "3", g: "6" }, "[]"]
 			])
 
-			attest(expected.expression).snap(
+			attest(result.expression).snap(
 				"[{ a: 0, e: 4 }, { b: 1, f: 5 }?, { c: 2, g: 6 }?, ...{ d: 3, g: 6 }[]]"
 			)
 

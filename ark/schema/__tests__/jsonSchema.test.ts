@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	intrinsic,
-	rootNode,
+	rootSchema,
 	writeCyclicJsonSchemaMessage,
 	writeJsonSchemaMorphMessage
 } from "@ark/schema"
@@ -21,7 +21,7 @@ contextualize(() => {
 	})
 
 	it("string", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "string",
 			pattern: ".*",
 			minLength: 1,
@@ -36,7 +36,7 @@ contextualize(() => {
 	})
 
 	it("number", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "number",
 			divisor: 2,
 			min: 1,
@@ -51,7 +51,7 @@ contextualize(() => {
 	})
 
 	it("exclusive range", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "number",
 			min: { rule: 1, exclusive: true },
 			max: { rule: 2, exclusive: true }
@@ -64,7 +64,7 @@ contextualize(() => {
 	})
 
 	it("object", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "object",
 			required: [
 				{
@@ -104,7 +104,7 @@ contextualize(() => {
 	})
 
 	it("pattern index", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "object",
 			index: {
 				signature: {
@@ -121,7 +121,7 @@ contextualize(() => {
 	})
 
 	it("variadic array", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			proto: Array,
 			sequence: { domain: "string" },
 			minLength: 1,
@@ -137,7 +137,7 @@ contextualize(() => {
 	})
 
 	it("fixed length tuple", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			proto: Array,
 			sequence: {
 				prefix: [{ domain: "string" }, { domain: "number" }]
@@ -152,7 +152,7 @@ contextualize(() => {
 	})
 
 	it("prefixed array", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			proto: Array,
 			sequence: {
 				prefix: [{ domain: "string" }, { domain: "number" }],
@@ -169,7 +169,7 @@ contextualize(() => {
 	})
 
 	it("preserves meta", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "object",
 			required: [
 				{
@@ -196,9 +196,9 @@ contextualize(() => {
 			}
 		})
 
-		const schema = node.toJsonSchema()
+		const jsonSchema = node.toJsonSchema()
 
-		attest(schema).snap({
+		attest(jsonSchema).snap({
 			type: "object",
 			properties: {
 				bar: { type: "number", title: "bar", examples: [1337, 7331] },
@@ -210,7 +210,7 @@ contextualize(() => {
 	})
 
 	it("errors on morph", () => {
-		const morph = rootNode({
+		const morph = rootSchema({
 			in: "string",
 			morphs: [(s: string) => Number.parseInt(s)]
 		})

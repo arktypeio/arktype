@@ -63,7 +63,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 			signature: {
 				child: true,
 				parse: (schema, ctx) => {
-					const key = ctx.$.rootNode(schema)
+					const key = ctx.$.parseSchema(schema)
 					if (!key.extends($ark.intrinsic.key)) {
 						return throwParseError(
 							writeInvalidPropertyKeyMessage(key.expression)
@@ -82,7 +82,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 			},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.rootNode(schema)
+				parse: (schema, ctx) => ctx.$.parseSchema(schema)
 			}
 		},
 		normalize: schema => schema,

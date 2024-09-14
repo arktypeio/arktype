@@ -54,8 +54,4 @@ export declare namespace arkPrototypes {
 
 	export type instanceOf<name extends keyof instances = keyof instances> =
 		instances[name]
-
-	export type instanceOfExcluding<
-		name extends keyof instances = keyof instances
-	> = instances[Exclude<keyof instances, name>]
 }

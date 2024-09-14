@@ -263,6 +263,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
         <th>mishushakov</th>
         <th>mewhhaha</th>
     	<th>codeandcats</th>
+		<th>drwpwrs</th>
 	</tr>
 	<tr>
 		<td>
@@ -270,13 +271,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 				><img
 					height="64px"
 					src="https://avatars.githubusercontent.com/u/6759464"
-			/></a>
-		</td>
-		<td>
-			<a href="https://github.com/jacksteamdev"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/23390212"
 			/></a>
 		</td>
         <td>
@@ -298,6 +292,13 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     				src="https://avatars.githubusercontent.com/u/6035934"
     		/></a>
     	</td>
+		<td>
+			<a href="https://github.com/drwpwrs"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/49917220"
+			/></a>
+		</td>
 	</tr>
 	<tr>
     	<th>Timeraa</th>

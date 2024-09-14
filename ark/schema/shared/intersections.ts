@@ -132,7 +132,7 @@ const pipeMorphed = (
 			)
 			return viableBranches.length === 0 ?
 					Disjoint.init("union", from.branches, to.branches)
-				:	ctx.$.rootNode(viableBranches)
+				:	ctx.$.parseSchema(viableBranches)
 		}
 	)
 

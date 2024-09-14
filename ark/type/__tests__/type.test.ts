@@ -128,4 +128,11 @@ contextualize(() => {
 		attest<5 | true | null>(t.t)
 		attest(t.expression).snap("5 | null | true")
 	})
+
+	it("schema", () => {
+		const t = type.schema({ domain: "string" })
+		// uninferred for now
+		attest<unknown>(t.t)
+		attest(t.expression).equals("string")
+	})
 })

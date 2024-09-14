@@ -253,12 +253,7 @@ export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 
 export type LengthBoundKind = "minLength" | "maxLength" | "exactLength"
 
-export const writeNonIntegerLengthBoundMessage = (
-	kind: LengthBoundKind,
-	limit: number
-): string => `${kind} bound must be a positive integer (was ${limit})`
-
-export const writeNegativeLengthBoundMessage = (
+export const writeInvalidLengthBoundMessage = (
 	kind: LengthBoundKind,
 	limit: number
 ): string => `${kind} bound must be a positive integer (was ${limit})`
@@ -266,9 +261,8 @@ export const writeNegativeLengthBoundMessage = (
 export const createLengthRuleParser =
 	(kind: LengthBoundKind) =>
 	(limit: number): number | undefined => {
-		if (!Number.isInteger(limit))
-			throwParseError(writeNonIntegerLengthBoundMessage(kind, limit))
-		if (limit < 0) throwParseError(writeNegativeLengthBoundMessage(kind, limit))
+		if (!Number.isInteger(limit) || limit < 0)
+			throwParseError(writeInvalidLengthBoundMessage(kind, limit))
 		return limit
 	}
 

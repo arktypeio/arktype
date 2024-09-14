@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, rootNode, type ArkErrors } from "@ark/schema"
+import { registeredReference, type ArkErrors } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
@@ -531,7 +531,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+			"box.box.box must be an object (was a string)"
 		)
 	})
 
@@ -700,16 +700,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(validatePositiveBigint)
 
 		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
-		attest(Amount.json).snap([
-			{
-				in: "number",
-				morphs: [morphReference, { predicate: [predicateReference] }]
-			},
-			{
-				in: "string",
-				morphs: [morphReference, { predicate: [predicateReference] }]
-			}
-		])
+		attest(Amount.json).snap({
+			in: ["number", "string"],
+			morphs: [morphReference, { predicate: [predicateReference] }]
+		})
 
 		attest(Amount("1000")).equals(1000n)
 		attest(Amount("-5").toString()).snap(
@@ -893,21 +887,14 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.infer).type.toString.snap("{ name: string } & string[]")
 	})
 
-	// https://github.com/arktypeio/arktype/issues/979
-	// https://github.com/arktypeio/arktype/issues/1124
-	it("negative length constraint", () => {
-		attest(() => rootNode({ proto: "Array", minLength: -1 })).throws(
-			"ParseError: minLength bound must be a positive integer (was -1)"
-		)
-		attest(() => rootNode({ proto: "String", minLength: -1 })).throws(
-			"ParseError: minLength bound must be a positive integer (was -1)"
-		)
+	it("tuple or morph inference", () => {
+		const t = type(["string", "string"]).or(["null", "=>", () => undefined])
 
-		attest(() => rootNode({ proto: "Array", maxLength: -1 })).throws(
-			"ParseError: maxLength bound must be a positive integer (was -1)"
+		attest(t.expression).snap("[string, string] | (In: null) => Out<unknown>")
+		attest(t.t).type.toString.snap(
+			"[string, string] | ((In: null) => Out<undefined>)"
 		)
-		attest(() => rootNode({ proto: "String", maxLength: -1 })).throws(
-			"ParseError: maxLength bound must be a positive integer (was -1)"
-		)
+		attest(t.inferIn).type.toString("[string, string] | null")
+		attest(t.infer).type.toString("[string, string] | undefined")
 	})
 })

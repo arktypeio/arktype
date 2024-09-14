@@ -15,24 +15,24 @@
 		"@ark/util": "workspace:*",
 		"@astrojs/check": "0.9.3",
 		"@astrojs/react": "3.6.2",
-		"@astrojs/starlight": "0.26.1",
-		"@astrojs/ts-plugin": "1.10.1",
-		"@shikijs/transformers": "1.14.1",
-		"@shikijs/twoslash": "1.14.1",
+		"@astrojs/starlight": "0.27.1",
+		"@astrojs/ts-plugin": "1.10.2",
+		"@shikijs/transformers": "1.16.3",
+		"@shikijs/twoslash": "1.16.3",
 		"arkdark": "workspace:*",
 		"arktype": "workspace:*",
-		"astro": "4.15.1",
+		"astro": "4.15.4",
 		"astro-og-canvas": "0.5.3",
 		"canvaskit-wasm": "0.39.1",
-		"framer-motion": "11.3.31",
+		"framer-motion": "11.5.4",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",
 		"sharp": "0.33.5",
-		"shiki": "1.14.1",
-		"twoslash": "0.2.9"
+		"shiki": "1.16.3",
+		"twoslash": "0.2.11"
 	},
 	"devDependencies": {
-		"@types/react": "18.3.4",
+		"@types/react": "18.3.5",
 		"@types/react-dom": "18.3.0",
 		"typescript": "catalog:"
 	}

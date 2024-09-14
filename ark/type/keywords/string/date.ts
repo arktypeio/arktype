@@ -1,4 +1,4 @@
-import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
+import { ArkErrors, intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, To, constrain } from "../ast.ts"
 import { number } from "../number/number.ts"
@@ -104,7 +104,7 @@ export const tryParseDatePattern = (
 
 const isParsableDate = (s: string) => !Number.isNaN(new Date(s).valueOf())
 
-const parsableDate = rootNode({
+const parsableDate = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: "a parsable date",
@@ -131,7 +131,7 @@ const epochroot = integer.root.internal
 
 const epoch = arkModule({
 	root: epochroot,
-	parse: rootNode({
+	parse: rootSchema({
 		in: epochroot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
@@ -145,7 +145,7 @@ const isoroot = regexStringNode(
 
 const iso = arkModule({
 	root: isoroot,
-	parse: rootNode({
+	parse: rootSchema({
 		in: isoroot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
@@ -163,7 +163,7 @@ declare namespace string {
 
 export const stringDate: stringDate.module = arkModule({
 	root: parsableDate,
-	parse: rootNode({
+	parse: rootSchema({
 		declaredIn: parsableDate,
 		in: "string",
 		morphs: (s: string, ctx) => {

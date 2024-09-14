@@ -5,14 +5,16 @@ import {
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
-	writeUnsatisfiedParameterConstraintMessage
+	writeUnsatisfiedParameterConstraintMessage,
+	type RootSchema
 } from "@ark/schema"
-import { Hkt, type domainDescriptions } from "@ark/util"
+import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -93,21 +95,17 @@ contextualize(() => {
 			).throwsAndHasTypeError(writeUnresolvableMessage("this"))
 		})
 
-		// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-		// it("this in arg", () => {
-		// 	const boxOf = type("<t>", {
-		// 		box: "t"
-		// 	})
-		// 	const t = boxOf({
-		// 		a: "string|this"
-		// 	})
+		it("this in arg", () => {
+			const boxOf = type("<t>", {
+				box: "t"
+			})
+			const t = boxOf({
+				a: "string|this"
+			})
 
-		// 	const expectedContents = type({ a: "string|this" })
-		// 	const expectedBox = type({ box: expectedContents })
-
-		// 	attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
-		// 	attest(t.json).equals(expectedBox.json)
-		// })
+			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
+			attest(t.expression).satisfies(/{ box: { a: type\d+ \| string } }/)
+		})
 
 		it("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])
@@ -288,21 +286,6 @@ contextualize(() => {
 				attest(t.json).equals(expected.json)
 			})
 
-			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-			// it("this in args", ({ $ }) => {
-			// 	const t = $.type("box<0,  this>")
-			// 	type Expected = {
-			// 		box: 0 | Expected
-			// 	}
-			// 	const standalone = type({
-			// 		box: "0|this"
-			// 	})
-
-			// 	attest<Expected>(t.t)
-			// 	attest<Expected>(standalone.t)
-			// 	attest(t.json).equals(standalone.json)
-			// })
-
 			it("right bounds", ({ $ }) => {
 				// should be able to differentiate between > that is part of a right
 				// bound and > that closes a generic instantiation
@@ -323,13 +306,12 @@ contextualize(() => {
 				)
 			})
 
-			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-			// it("extra >", ({ $ }) => {
-			// 	attest(() =>
-			// 		// @ts-expect-error
-			// 		$.type("box<0,  this>>")
-			// 	).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
-			// })
+			it("extra >", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0,  1>>")
+				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
+			})
 
 			it("too few args", ({ $ }) => {
 				attest(() =>

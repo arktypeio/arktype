@@ -1,4 +1,4 @@
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import { arkModule } from "../utils.ts"
@@ -11,7 +11,7 @@ declare namespace string {
 const preformatted = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
 
 export const upper: upper.module = arkModule({
-	root: rootNode({
+	root: rootSchema({
 		in: "string",
 		morphs: (s: string) => s.toUpperCase(),
 		declaredOut: preformatted

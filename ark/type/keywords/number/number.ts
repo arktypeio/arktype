@@ -1,4 +1,4 @@
-import { intrinsic, rootNode } from "@ark/schema"
+import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
 	Branded,
@@ -16,7 +16,7 @@ export const number: number.module = arkModule({
 	root: intrinsic.number,
 	integer,
 	epoch,
-	safe: rootNode({
+	safe: rootSchema({
 		domain: "number",
 		min: Number.MIN_SAFE_INTEGER,
 		max: Number.MAX_SAFE_INTEGER,

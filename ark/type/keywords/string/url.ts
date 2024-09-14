@@ -1,4 +1,4 @@
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import { arkModule } from "../utils.ts"
@@ -18,7 +18,7 @@ const isParsableUrl = (s: string) => {
 	}
 }
 
-const root = rootNode({
+const root = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: "a URL string",
@@ -28,7 +28,7 @@ const root = rootNode({
 
 export const url: url.module = arkModule({
 	root,
-	parse: rootNode({
+	parse: rootSchema({
 		declaredIn: root as never,
 		in: "string",
 		morphs: (s: string, ctx) => {
@@ -38,7 +38,7 @@ export const url: url.module = arkModule({
 				return ctx.error("a URL string")
 			}
 		},
-		declaredOut: rootNode(URL)
+		declaredOut: rootSchema(URL)
 	})
 })
 

@@ -2,19 +2,26 @@ import {
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
+	type BaseParseOptions,
 	type MetaSchema,
 	type Morph,
-	type Predicate
+	type Predicate,
+	type RootSchema
 } from "@ark/schema"
-import { Callable, type Constructor, type array, type conform } from "@ark/util"
 import {
-	parseGenericParams,
-	type Generic,
-	type GenericParser,
-	type ParameterString,
-	type baseGenericConstraints,
-	type parseValidGenericParams,
-	type validateParameterString
+	Callable,
+	Hkt,
+	type Constructor,
+	type array,
+	type conform
+} from "@ark/util"
+import type {
+	Generic,
+	GenericParser,
+	ParameterString,
+	baseGenericConstraints,
+	parseValidGenericParams,
+	validateParameterString
 } from "./generic.ts"
 import type { Ark, ark, type } from "./keywords/ark.ts"
 import type { distill } from "./keywords/ast.ts"
@@ -81,9 +88,11 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	$: Scope<$>
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
+	hkt: typeof Hkt
 	module: ModuleParser
 	scope: ScopeParser
 	generic: GenericParser<$>
+	schema: SchemaParser<$>
 	ark: typeof ark
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>
@@ -97,11 +106,13 @@ export class InternalTypeParser extends Callable<
 		const attach: TypeParserAttachments = Object.assign(
 			{
 				errors: ArkErrors,
+				hkt: Hkt,
 				$: $ as never,
-				raw: $.parseRoot as never,
+				raw: $.parse as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
 				generic: $.generic as never,
+				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
 				ark: $.ambient as never,
 				unit: $.unit,
@@ -114,7 +125,7 @@ export class InternalTypeParser extends Callable<
 			(...args) => {
 				if (args.length === 1) {
 					// treat as a simple definition
-					return $.parseRoot(args[0])
+					return $.parse(args[0])
 				}
 				if (
 					args.length === 2 &&
@@ -124,10 +135,8 @@ export class InternalTypeParser extends Callable<
 				) {
 					// if there are exactly two args, the first of which looks like <${string}>,
 					// treat as a generic
-					const params = parseGenericParams(args[0].slice(1, -1), {
-						$,
-						args: {}
-					})
+					const paramString = args[0].slice(1, -1)
+					const params = $.parseGenericParams(paramString, {})
 
 					return new GenericRoot(
 						params,
@@ -139,7 +148,7 @@ export class InternalTypeParser extends Callable<
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported
 				// part of the API as specified by the associated types
-				return $.parseRoot(args)
+				return $.parse(args)
 			},
 			{
 				bind: $,
@@ -162,6 +171,11 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 ) => Type<values[number], $>
 
 export type DefinitionParser<$> = <def>(def: type.validate<def, $>) => def
+
+export type SchemaParser<$> = (
+	schema: RootSchema,
+	opts?: BaseParseOptions
+) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
 

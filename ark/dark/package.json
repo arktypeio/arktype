@@ -2,11 +2,11 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
-	"version": "5.8.2",
+	"version": "5.12.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
-		"vspublish": "pnpx vsce publish"
+		"publishExtension": "pnpx vsce publish"
 	},
 	"files": [
 		"*.json"

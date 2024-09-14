@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { declare, type } from "arktype"
+import type { string } from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	it("shallow", () => {
@@ -51,11 +52,11 @@ contextualize(() => {
 		attest<0 | 1>(t.infer)
 	})
 
-	// TODO: figure out narrowing
-	// it("regexp", () => {
-	// 	const t = declare<string>().type(/.*/)
-	// 	attest<string>(t.infer)
-	// })
+	it("regexp", () => {
+		const t = declare<string.matching<"?">>().type(/.*/)
+		attest<string.matching<"?">>(t.t)
+		attest<string>(t.infer)
+	})
 
 	it("Inferred<t>", () => {
 		const foo = type("'foo'")

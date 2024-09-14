@@ -14,6 +14,7 @@ import type { BaseConstraint } from "../constraint.ts"
 import type { GenericRoot } from "../generic.ts"
 import type { InternalModule } from "../module.ts"
 import type { BaseNode } from "../node.ts"
+import type { BaseParseContext } from "../parse.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
 import type { ArkError } from "./errors.ts"
@@ -92,6 +93,7 @@ export interface ArkKinds {
 	generic: GenericRoot
 	module: InternalModule
 	error: ArkError
+	context: BaseParseContext
 }
 
 export type ArkKind = show<keyof ArkKinds>

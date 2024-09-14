@@ -42,7 +42,6 @@
 
 // type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 // 	matcherInputs<ctx>,
-// 	// TODO: add other anon
 // 	Narrowed
 // >
 
@@ -172,7 +171,6 @@
 // 		},
 
 // 		finalize: () => {
-// 			// TODO: exhaustiveness checking
 // 			const branches = handledCases.flatMap(({ when, then }) => {
 // 				if (when.kind === "union") {
 // 					return when.branches.map((branch) => ({

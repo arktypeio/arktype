@@ -1,4 +1,4 @@
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
@@ -24,7 +24,7 @@ const preformattedNodes = flatMorph(
 	(i, form) =>
 		[
 			form,
-			rootNode({
+			rootSchema({
 				domain: "string",
 				predicate: (s: string) => s.normalize(form) === s,
 				meta: `${form}-normalized unicode`
@@ -37,7 +37,7 @@ const normalizeNodes = flatMorph(
 	(i, form) =>
 		[
 			form,
-			rootNode({
+			rootSchema({
 				in: "string",
 				morphs: (s: string) => s.normalize(form),
 				declaredOut: preformattedNodes[form]

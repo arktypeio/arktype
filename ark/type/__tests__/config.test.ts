@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -93,39 +93,35 @@ contextualize(() => {
 			{ jitless: true }
 		).export()
 
-		attest(types.fast.internal.jit).equals(false)
+		attest(types.fast.precompilation).equals(undefined)
 	})
 
 	it("jit by default", () => {
 		const t = type("/^foo.*$/")
-		attest(t.internal.jit).equals(true)
+		attest(t.precompilation).satisfies("string")
 	})
 
 	it("builtin keywords jit by default", () => {
 		const t = type("string")
-		attest(t.internal.jit).equals(true)
+		attest(t.precompilation).satisfies("string")
 
 		const sub = type("string.normalize.NFC.preformatted")
-		attest(sub.internal.jit).equals(true)
+		attest(sub.precompilation).satisfies("string")
 	})
 
 	it("jit by default in scope", () => {
 		const $ = scope({
 			defined: "55",
-			referenced: rootNode({ unit: 5 })
+			referenced: rootSchema({ unit: 5 })
 		})
-
-		// no JIT until scope is resolved
-		attest($.type("defined").internal.jit).equals(false)
-		attest($.type("referenced").internal.jit).equals(false)
 
 		const types = $.export()
 
-		attest(types.defined.internal.jit).equals(true)
-		attest(types.referenced.internal.jit).equals(true)
+		attest(types.defined.precompilation).satisfies("string")
+		attest(types.referenced.precompilation).satisfies("string")
 
-		attest($.type("defined").internal.jit).equals(true)
-		attest($.type("referenced").internal.jit).equals(true)
+		attest($.type("defined").precompilation).satisfies("string")
+		attest($.type("referenced").precompilation).satisfies("string")
 	})
 
 	it("jit by default in submodule", () => {
@@ -134,6 +130,6 @@ contextualize(() => {
 				foo: "55"
 			})
 		})
-		attest(types.inner.foo.internal.jit).equals(true)
+		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 })
