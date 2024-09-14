@@ -91,6 +91,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	hkt: typeof Hkt
 	module: ModuleParser
 	scope: ScopeParser
+	define: DefinitionParser<$>
 	generic: GenericParser<$>
 	schema: SchemaParser<$>
 	ark: typeof ark
@@ -111,6 +112,7 @@ export class InternalTypeParser extends Callable<
 				raw: $.parse as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
+				define: $.define as never,
 				generic: $.generic as never,
 				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
