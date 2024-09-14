@@ -530,7 +530,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)) as never
 	}
 
-	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot => {
+	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
+		this.finalize(this.parseDefinition(def, opts))
+
+	parseDefinition(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
 		if (hasArkKind(def, "root")) return this.bindReference(def)
 
 		const ctxInputOrNode = this.preparseOwnDefinitionFormat(def, opts)
@@ -547,7 +550,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		nodesByRegisteredId[ctx.id] = node
 
-		return this.finalize(node)
+		return node
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {

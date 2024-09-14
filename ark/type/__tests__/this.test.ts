@@ -33,7 +33,7 @@ contextualize(() => {
 	it("at nested path", () => {
 		const t = type({ foo: { bar: "this" } })
 
-		attest(t).type.toString.snap()
+		attest(t).type.toString.snap("Type<{ foo: { bar: cyclic } }, {}>")
 
 		const validData = { foo: { bar: {} } } as typeof t.infer
 		validData.foo.bar = validData
@@ -90,7 +90,9 @@ contextualize(() => {
 
 	it("tuple expression", () => {
 		const t = type([{ a: "string" }, "|", { b: "this" }])
-		attest(t.infer).type.toString.snap()
+		attest(t.infer).type.toString.snap(
+			"{ a: string } | { b: { a: string } | cyclic }"
+		)
 		attest(t({ a: "foo" })).snap({ a: "foo" })
 		attest(t({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(t({ b: { b: {} } }).toString()).snap(
@@ -100,7 +102,9 @@ contextualize(() => {
 
 	it("root expression", () => {
 		const t = type({ a: "string" }, "|", { b: "this" })
-		attest(t.infer).type.toString.snap()
+		attest(t.infer).type.toString.snap(
+			"{ a: string } | { b: { a: string } | cyclic }"
+		)
 		attest(t({ a: "foo" })).snap({ a: "foo" })
 		attest(t({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(t({ b: { b: {} } }).toString()).snap(

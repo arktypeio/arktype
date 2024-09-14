@@ -14,7 +14,7 @@ const liftFrom = genericNode("element")(args => {
 	const nonArrayElement = args.element.exclude(intrinsic.Array)
 	const lifted = nonArrayElement.array()
 	return nonArrayElement
-		.or(lifted)
+		.rawOr(lifted)
 		.pipe(liftArray)
 		.distribute(
 			branch => branch.assertHasKind("morph").declareOut(lifted),

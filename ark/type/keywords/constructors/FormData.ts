@@ -10,7 +10,7 @@ export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
 
 const value = rootSchema(["string", registry.FileConstructor])
 
-const parsedFormDataValue = value.or(value.array())
+const parsedFormDataValue = value.rawOr(value.array())
 
 const parsed = rootSchema({
 	meta: "an object representing parsed form data",

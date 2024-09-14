@@ -116,7 +116,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 									] as Morph.Node
 									branches[matchingMorphIndex] = ctx.$.node("morph", {
 										...matchingMorph.inner,
-										in: matchingMorph.in.or(node.in)
+										in: matchingMorph.in.rawOr(node.in)
 									})
 								}
 							} else branches.push(node)

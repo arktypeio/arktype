@@ -214,7 +214,7 @@ contextualize(() => {
 		attest<{ foo: number }>(object.in.infer)
 
 		const nested = type({ foo: ["number.integer", "=>", n => n++] })
-		attest(nested.t).type.toString.snap()
+		attest(nested.t).type.toString.snap("{ foo: (In: integer) => Out<number> }")
 		attest<{ foo: number }>(nested.inferIn)
 		attest<{ foo: number }>(nested.in.infer)
 	})

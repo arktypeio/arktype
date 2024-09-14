@@ -55,6 +55,7 @@ contextualize(() => {
 					"object",
 					"string",
 					"symbol",
+					"this",
 					"true",
 					"undefined",
 					"unknown"
@@ -109,6 +110,7 @@ contextualize(() => {
 					"object",
 					"string",
 					"symbol",
+					"this",
 					"true",
 					"undefined",
 					"unknown",

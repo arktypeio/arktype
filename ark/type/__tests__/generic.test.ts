@@ -95,21 +95,17 @@ contextualize(() => {
 			).throwsAndHasTypeError(writeUnresolvableMessage("this"))
 		})
 
-		// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-		// it("this in arg", () => {
-		// 	const boxOf = type("<t>", {
-		// 		box: "t"
-		// 	})
-		// 	const t = boxOf({
-		// 		a: "string|this"
-		// 	})
+		it("this in arg", () => {
+			const boxOf = type("<t>", {
+				box: "t"
+			})
+			const t = boxOf({
+				a: "string|this"
+			})
 
-		// 	const expectedContents = type({ a: "string|this" })
-		// 	const expectedBox = type({ box: expectedContents })
-
-		// 	attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
-		// 	attest(t.json).equals(expectedBox.json)
-		// })
+			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
+			attest(t.expression).satisfies(/{ box: { a: type\d+ \| string } }/)
+		})
 
 		it("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])
