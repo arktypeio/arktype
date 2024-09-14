@@ -897,4 +897,40 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.inferIn).type.toString("[string, string] | null")
 		attest(t.infer).type.toString("[string, string] | undefined")
 	})
+
+	it("scoped discrimnated union", () => {
+		const $ = scope({
+			TypeWithNoKeywords: { type: "'boolean'|'null'" },
+			TypeWithKeywords: "ArraySchema|ObjectSchema", // without both ArraySchema and ObjectSchema there's no error
+			// "#BaseSchema": "TypeWithNoKeywords|boolean", // errors even with union reversed
+			"#BaseSchema": "boolean|TypeWithNoKeywords", // without the `boolean` there's no error (even if still union such as `string|TypeWithNoKeywords`)
+			ArraySchema: {
+				"additionalItems?": "BaseSchema", // without this reference there's no error
+				type: "'array'"
+			},
+			// If `ObjectSchema` doesn't have `type` key there's no error
+			ObjectSchema: {
+				type: "'object'"
+			}
+		})
+		const JsonSchema = $.export()
+		attest(JsonSchema.TypeWithKeywords.expression).snap(
+			'{ type: "array", additionalItems?: { type: "boolean" | "null" } | false | true } | { type: "object" }'
+		)
+
+		attest(
+			JsonSchema.TypeWithKeywords({
+				type: "array",
+				additionalItems: { type: "boolean" }
+			})
+		).snap({ type: "array", additionalItems: { type: "boolean" } })
+		attest(
+			JsonSchema.TypeWithKeywords({
+				type: "array",
+				additionalItems: {
+					type: "whoops"
+				}
+			}).toString()
+		).snap('additionalItems.type must be "boolean" or "null" (was "whoops")')
+	})
 })
