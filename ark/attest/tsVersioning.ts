@@ -76,8 +76,17 @@ export type TsVersionData = {
 	path: string
 }
 
-const possibleTsVersionPrefix = "typescript"
+const possibleTsVersionPrefix = "typescript-"
 const strictTsVersionPrefix = "@ark/attest-ts-"
+
+const parseInstalledTsAlias = (installedAlias: string): string | null => {
+	if (installedAlias === "typescript") return "default"
+	if (installedAlias.startsWith(possibleTsVersionPrefix))
+		return installedAlias.slice(possibleTsVersionPrefix.length)
+	if (installedAlias.startsWith(strictTsVersionPrefix))
+		return installedAlias.slice(strictTsVersionPrefix.length)
+	return null
+}
 
 /**
  * Find and return the paths of all installed TypeScript versions, including the
@@ -112,23 +121,20 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 			...(packageJson.dependencies as object),
 			...(packageJson.devDependencies as object)
 		}
-		for (const alias in dependencies) {
-			if (
-				!alias.startsWith(possibleTsVersionPrefix) &&
-				!alias.startsWith(strictTsVersionPrefix)
-			)
-				continue
+		for (const installedAlias in dependencies) {
+			const alias = parseInstalledTsAlias(installedAlias)
+			if (alias === null) continue
 
-			const path = join(nodeModulesPath, alias)
+			const path = join(nodeModulesPath, installedAlias)
 			if (!existsSync(path)) {
 				throw Error(
-					`TypeScript version ${alias} specified in ${packageJsonPath} must be installed at ${path} `
+					`TypeScript version ${installedAlias} specified in ${packageJsonPath} must be installed at ${path} `
 				)
 			}
 			const typescriptJson = readJson(join(path, "package.json"))
 
 			if (typescriptJson.name !== "typescript") {
-				if (alias.startsWith(strictTsVersionPrefix))
+				if (installedAlias.startsWith(strictTsVersionPrefix))
 					throw new Error(`Package at ${path} should be named "typescript"`)
 				continue
 			}

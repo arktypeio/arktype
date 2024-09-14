@@ -66,7 +66,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
-	tsVersions: "typescript",
+	tsVersions: "default",
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
