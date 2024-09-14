@@ -5,8 +5,16 @@ import { getConfig } from "../config.ts"
 import { baseDiagnosticTscCmd } from "./shared.ts"
 
 export const trace = async (args: string[]): Promise<void> => {
-	const packageDir = args[0] ?? process.cwd()
+	const packageDir = resolve(args[0] ?? process.cwd())
 	const config = getConfig()
+
+	if (!config.tsconfig) {
+		console.error(
+			`attest trace must be run from a directory with a tsconfig.json file`
+		)
+		process.exit(1)
+	}
+
 	const traceDir = resolve(config.cacheDir, "trace")
 	ensureDir(traceDir)
 
@@ -17,10 +25,13 @@ export const trace = async (args: string[]): Promise<void> => {
 		// the .attest/trace directory will contain a trace.json file and a types.json file.
 		// the trace.json file can be viewed via a tool like https://ui.perfetto.dev/
 		// the types.json file can be used to associate IDs from the trace file with type aliases
-		execSync(`${baseDiagnosticTscCmd} --generateTrace ${traceDir}`, {
-			cwd: packageDir,
-			stdio: "inherit"
-		})
+		execSync(
+			`${baseDiagnosticTscCmd} --project ${config.tsconfig} --generateTrace ${traceDir}`,
+			{
+				cwd: packageDir,
+				stdio: "inherit"
+			}
+		)
 	} catch (e) {
 		console.error(String(e))
 	} finally {
