@@ -143,7 +143,7 @@ value at [1] must be a number (was boolean)`)
 		})
 
 		it("optional tuple", () => {
-			const t = type(["string", "?"])
+			const t = type([["string", "?"]])
 			attest<[string?]>(t.infer)
 			attest(t([])).equals([])
 			attest(t(["foo"])).equals(["foo"])
@@ -155,9 +155,40 @@ value at [1] must be a number (was boolean)`)
 			)
 		})
 
-		it("nested optional tuple", () => {
-			const t = type([["string", "?"], "string", "?"])
-			attest<[[string?], string?]>(t.infer)
+		it("optional string-embedded tuple", () => {
+			const t = type(["string?"])
+
+			const expected = type([["string", "?"]])
+			attest<typeof expected>(t)
+			attest(t.expression).equals(expected.expression)
+		})
+
+		it("optional object tuple", () => {
+			const t = type([[{ foo: "string" }, "?"], "string?"])
+			attest<
+				[
+					{
+						foo: string
+					}?,
+					string?
+				]
+			>(t.t)
+			attest(t.expression).snap("[{ foo: string }?, string?]")
+		})
+
+		it("optional nested object tuple", () => {
+			const t = type([[[{ foo: "string" }, "?"]], ["string", "?"]])
+			attest<
+				[
+					[
+						{
+							foo: string
+						}?
+					],
+					string?
+				]
+			>(t.t)
+			attest(t.expression).snap("[[{ foo: string }?], string?]")
 		})
 	})
 
@@ -313,18 +344,14 @@ value at [1] must be a number (was boolean)`)
 		it("kitchen sink", () => {
 			const l = type([
 				{ a: "0" },
-				{ b: "1" },
-				"?",
-				{ c: "2" },
-				"?",
+				[{ b: "1" }, "?"],
+				[{ c: "2" }, "?"],
 				"...",
 				[{ d: "3" }, "[]"]
 			])
 			const r = type([
-				{ e: "4" },
-				"?",
-				{ f: "5" },
-				"?",
+				[{ e: "4" }, "?"],
+				[{ f: "5" }, "?"],
 				"...",
 				[{ g: "6" }, "[]"]
 			])
@@ -332,10 +359,8 @@ value at [1] must be a number (was boolean)`)
 
 			const expected = type([
 				{ a: "0", e: "4" },
-				{ b: "1", f: "5" },
-				"?",
-				{ c: "2", g: "6" },
-				"?",
+				[{ b: "1", f: "5" }, "?"],
+				[{ c: "2", g: "6" }, "?"],
 				"...",
 				[{ d: "3", g: "6" }, "[]"]
 			])
@@ -345,7 +370,7 @@ value at [1] must be a number (was boolean)`)
 			)
 
 			attest<typeof expected>(result)
-			attest(result.json).equals(expected.json)
+			attest(result.expression).equals(expected.expression)
 		})
 
 		it("prefix and postfix", () => {

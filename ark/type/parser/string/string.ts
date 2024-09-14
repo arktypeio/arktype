@@ -53,7 +53,9 @@ export const fullStringParse = (s: DynamicState): BaseRoot => {
 			`Root was unexpectedly unset after parsing string '${s.scanner.scanned}'`
 		)
 	}
+
 	if (s.finalizer === "=") result = parseDefault(s as DynamicStateWithRoot)
+	else if (s.finalizer === "?") result = result.optional()
 
 	s.scanner.shiftUntilNonWhitespace()
 	if (s.scanner.lookahead) {
@@ -88,5 +90,6 @@ type next<s extends StaticState, $, args> =
 export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends "" ? s["root"]
 	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
+	: s["finalizer"] extends "?" ? [s["root"], "?"]
 	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
 	: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

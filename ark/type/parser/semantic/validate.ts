@@ -43,9 +43,9 @@ export type validateAst<ast, $, args> =
 			ErrorMessage<writePrefixedPrivateReferenceMessage<ast[2]>>
 		:	undefined
 	: ast extends PostfixExpression<infer operator, infer operand> ?
-		operator extends "[]" ?
-			validateAst<operand, $, args>
-		:	never
+		operator extends "[]" ? validateAst<operand, $, args>
+		: operator extends "?" ? validateAst<operand, $, args>
+		: never
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
 		operator extends "&" | "|" ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>

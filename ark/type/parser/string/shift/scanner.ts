@@ -101,6 +101,7 @@ export class Scanner<lookahead extends string = string> {
 		"%": true,
 		",": true,
 		":": true,
+		"?": true,
 		...whiteSpaceTokens
 	} as const
 
@@ -108,7 +109,8 @@ export class Scanner<lookahead extends string = string> {
 		">": true,
 		",": true,
 		"": true,
-		"=": true
+		"=": true,
+		"?": true
 	} as const
 
 	static lookaheadIsTerminator: Scanner.UntilCondition = (scanner: Scanner) =>
@@ -133,8 +135,8 @@ export class Scanner<lookahead extends string = string> {
 			// "=" is a finalizer on its own (representing a default value),
 			// but not with a second "=" (an equality comparator)
 		: lookahead === "=" ? unscanned[0] !== "="
-			// ","" is unambiguously a finalizer
-		: lookahead === ","
+			// "," and "?" are unambiguously finalizers
+		: lookahead === "," || lookahead === "?"
 }
 
 export declare namespace Scanner {
@@ -156,7 +158,7 @@ export declare namespace Scanner {
 			unscanned extends `=${string}` ?
 				false
 			:	true
-		: lookahead extends "," ? true
+		: lookahead extends "," | "?" ? true
 		: false
 
 	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean

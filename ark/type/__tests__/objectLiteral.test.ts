@@ -63,6 +63,49 @@ contextualize(() => {
 			})
 		})
 
+		it("string-embedded value optional", () => {
+			const s = Symbol("ok")
+			const ref = registeredReference(s)
+			const t = type({ [s]: "string?" })
+
+			attest<{
+				[s]: string.optional
+			}>(t.t)
+			attest<{ [s]?: string }>(t.infer)
+
+			attest(t.json).equals({
+				optional: [
+					{
+						key: ref,
+						value: { domain: "string", meta: { optional: true } }
+					}
+				],
+				domain: "object"
+			})
+		})
+
+		it("tuple value optional", () => {
+			const s = Symbol("ok")
+			const ref = registeredReference(s)
+			const t = type({ [s]: [{ foo: "string" }, "?"] })
+
+			attest<{ [s]?: { foo: string } }>(t.infer)
+
+			attest(t.json).snap({
+				optional: [
+					{
+						key: ref,
+						value: {
+							required: [{ key: "foo", value: "string" }],
+							domain: "object",
+							meta: { optional: true }
+						}
+					}
+				],
+				domain: "object"
+			})
+		})
+
 		// https://github.com/arktypeio/arktype/issues/1102
 		it("only optional keys not reduced to object", () => {
 			const o = type({ "a?": "number" })
