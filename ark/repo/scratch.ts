@@ -15,18 +15,11 @@ const out = T.assert(process.env)
 
 console.log(out.PORT)
 
-declare global {
-	interface ArkEnv {
-		meta(): {
-			text: string
-			url: string
-		}
-	}
-}
-
 export const _assetOptionsSchema = type({
-	"assetType?": type("string").default("image").configure({
-		text: "Uses Generative Fill to extended padded image with AI",
-		url: "https://cloudinary.com/documentation/transformation_reference#g_gravity"
-	})
+	"assetType?": type("string")
+		.default("image")
+		.configure({
+			text: "Uses Generative Fill to extended padded image with AI",
+			url: "https://cloudinary.com/documentation/transformation_reference#g_gravity"
+		} as ArkEnv.meta)
 })
