@@ -9,20 +9,27 @@ declare namespace string {
 
 const jsonStringDescription = "a JSON string"
 
-const isParsableJson = (s: string) => {
-	try {
-		JSON.parse(s)
-		return true
-	} catch {
-		return false
-	}
+export const writeJsonSyntaxErrorProblem = (error: unknown): string => {
+	if (!(error instanceof SyntaxError)) throw error
+	return `must be ${jsonStringDescription} (${error})`
 }
 
 const root = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: jsonStringDescription,
-		predicate: isParsableJson
+		predicate: (s: string, ctx) => {
+			try {
+				JSON.parse(s)
+				return true
+			} catch (e) {
+				return ctx.reject({
+					code: "predicate",
+					expected: jsonStringDescription,
+					problem: writeJsonSyntaxErrorProblem(e)
+				})
+			}
+		}
 	}
 })
 
@@ -44,7 +51,7 @@ export const json: stringJson.module = arkModule({
 				return ctx.error({
 					code: "predicate",
 					expected: jsonStringDescription,
-					problem: `must be ${jsonStringDescription} (${e})`
+					problem: writeJsonSyntaxErrorProblem(e)
 				})
 			}
 		},
