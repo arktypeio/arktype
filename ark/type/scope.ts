@@ -314,7 +314,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 export const scope: ScopeParser = InternalScope.scope
 
-export namespace scope {
+export declare namespace scope {
 	export type validate<def> = {
 		[k in keyof def]: k extends noSuggest ?
 			// avoid trying to parse meta keys when spreading modules

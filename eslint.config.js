@@ -137,7 +137,7 @@ export default tseslint.config(
 			"@typescript-eslint/no-explicit-any": "off",
 			"@typescript-eslint/no-non-null-assertion": "off",
 			"@typescript-eslint/no-unsafe-declaration-merging": "off",
-			"@typescript-eslint/no-namespace": "off",
+			"@typescript-eslint/no-namespace": ["warn", { allowDeclarations: true }],
 			"@typescript-eslint/no-empty-function": "off",
 			"@typescript-eslint/no-this-alias": "off",
 			"no-case-declarations": "off",
