@@ -249,8 +249,13 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
-	equals(other: BaseNode): boolean {
-		return this.innerHash === other.innerHash
+	equals(r: unknown): boolean {
+		const rNode: BaseNode = isNode(r) ? r : this.$.parseDefinition(r)
+		return this.innerHash === rNode.innerHash
+	}
+
+	ifEquals(r: unknown): BaseNode | undefined {
+		return this.equals(r) ? this : undefined
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {

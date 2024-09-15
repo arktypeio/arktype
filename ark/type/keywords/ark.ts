@@ -1,6 +1,7 @@
 import type { ArkErrors, arkKind } from "@ark/schema"
 import type { inferred } from "@ark/util"
 import type { GenericParser } from "../generic.ts"
+import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
 	inferDefinition,
@@ -77,6 +78,9 @@ export declare namespace type {
 	}
 
 	export type errors = ArkErrors
+
+	/** @ts-ignore cast variance */
+	export interface Any<out t = any> extends BaseType<t, any> {}
 
 	export type infer<def, $ = {}, args = bindThis<def>> = inferDefinition<
 		def,

@@ -58,12 +58,12 @@ contextualize(() => {
 		)
 	})
 
-	it("Type.Any allows arbitrary scope", () => {
+	it("type.Any allows arbitrary scope", () => {
 		const foo = scope({
 			foo: "string"
 		}).resolve("foo")
 
-		const t: Type.Any<string> = foo
+		const t: type.Any<string> = foo
 
 		// @ts-expect-error (fails with default ambient type)
 		attest((): Type<string> => foo).type.errors(
@@ -75,10 +75,9 @@ contextualize(() => {
 		const t = type("===", 0, "1", "2", 3, "4", 5)
 
 		const numbers = t.distribute(
-			(n): Type<number> =>
-				n.extends(type.number) ? n : (
-					type.raw(n.expression.slice(1, -1)).as<number>()
-				),
+			n =>
+				n.ifExtends(type.number) ??
+				type.raw(n.expression.slice(1, -1)).as<number>(),
 			branches => type.raw(branches).as<number[]>()
 		)
 
@@ -134,5 +133,25 @@ contextualize(() => {
 		// uninferred for now
 		attest<unknown>(t.t)
 		attest(t.expression).equals("string")
+	})
+
+	it("ifEquals", () => {
+		const t = type("string")
+		attest(t.ifEquals("string")).equals(t)
+		// subtype
+		attest(t.ifEquals("'foo'")).equals(undefined)
+		// supertype
+		attest(t.ifEquals("string | number")).equals(undefined)
+	})
+
+	it("ifExtends", () => {
+		const t = type("string")
+		attest<type<string> | undefined>(t.ifExtends("string")).equals(t)
+		// subtype
+		attest<type<"foo"> | undefined>(t.ifExtends("'foo'")).equals(undefined)
+		// supertype
+		attest<type<string | number> | undefined>(
+			t.ifExtends("string | number")
+		).equals(t)
 	})
 })

@@ -100,9 +100,21 @@ interface Type<out t = unknown, $ = {}>
 
 	pipe: ChainedPipes<t, $>
 
-	equals<def>(
+	equals<def>(def: type.validate<def, $>): boolean
+
+	ifEquals<def>(
 		def: type.validate<def, $>
+	): instantiateType<type.infer<def, $>, $> | undefined
+
+	extends<def>(
+		other: type.validate<def, $>
 	): this is instantiateType<type.infer<def, $>, $>
+
+	ifExtends<def>(
+		other: type.validate<def, $>
+	): instantiateType<type.infer<def, $>, $> | undefined
+
+	overlaps<def>(r: type.validate<def, $>): boolean
 
 	extract<def>(
 		r: type.validate<def, $>
@@ -111,12 +123,6 @@ interface Type<out t = unknown, $ = {}>
 	exclude<def>(
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, type.infer<def, $>>, $>
-
-	extends<def>(
-		other: type.validate<def, $>
-	): this is instantiateType<type.infer<def, $>, $>
-
-	overlaps<def>(r: type.validate<def, $>): boolean
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,

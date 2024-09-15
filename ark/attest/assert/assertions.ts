@@ -1,5 +1,5 @@
 import { printable, throwInternalError } from "@ark/util"
-import type { Type } from "arktype"
+import type { type } from "arktype"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
 import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.ts"
@@ -99,7 +99,7 @@ export const assertEquals: AssertFn = versionableAssertion(
 )
 
 const unversionedAssertSatisfies = (
-	t: Type.Any,
+	t: type.Any,
 	data: unknown,
 	ctx: AssertionContext
 ) => {

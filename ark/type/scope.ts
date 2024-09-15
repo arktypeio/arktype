@@ -52,7 +52,7 @@ import {
 	type parseGenericParams,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { Ark } from "./keywords/ark.ts"
+import type { Ark, type } from "./keywords/ark.ts"
 import type {
 	BoundModule,
 	Module,
@@ -76,7 +76,6 @@ import {
 	type DefinitionParser,
 	type EnumeratedTypeParser,
 	type SchemaParser,
-	type Type,
 	type TypeParser,
 	type UnitTypeParser
 } from "./type.ts"
@@ -326,7 +325,7 @@ export namespace scope {
 					// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
 					// if you are from the future with a better version of TS and can remove it
 					// without breaking `pnpm typecheck`, go for it.
-					def[k] extends Type.Any | PreparsedResolution ? def[k]
+					def[k] extends type.Any | PreparsedResolution ? def[k]
 					: k extends (
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
