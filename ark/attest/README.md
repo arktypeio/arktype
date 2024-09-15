@@ -66,7 +66,7 @@ export const mochaGlobalTeardown = teardown
 
 You should also add `.attest` to your repository's `.gitignore` file.
 
-Bun support is currently pending a [bug in the way their source maps translate to stack traces](https://github.com/oven-sh/bun/issues/7120). If this is a problem for you, please 👍 that issue so they prioritize it!
+Bun support is currently pending [them supporting @prettier/sync for type formatting](https://github.com/oven-sh/bun/issues/10768). If this is a problem for you, please 👍 that issue so they prioritize it!
 
 ## Assertions
 
