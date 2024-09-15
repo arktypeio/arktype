@@ -62,11 +62,10 @@ export type GenericInstantiator<
 	: params["length"] extends 2 ?
 		{
 			<const a, const b, r = instantiateGeneric<def, params, [a, b], $, args$>>(
-				...args: [type.validate<a, args$>, type.validate<b, args$>] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>
-					]
+				...args: [
+					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
+					type.validate<b, args$> & validateGenericArg<b, params[1], args$>
+				]
 			): r
 		}
 	: params["length"] extends 3 ?

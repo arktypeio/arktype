@@ -89,7 +89,8 @@ export type validateDefinition<def, $, args> =
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
 		BaseCompletions<$, args> | {}
-	:	validateObjectLiteral<def, $, args>
+	: RegExp extends def ? def
+	: validateObjectLiteral<def, $, args>
 
 export type validateDeclared<declared, def, $, args> =
 	def extends validateDefinition<def, $, args> ?
@@ -134,7 +135,7 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | type.cast<unknown> | Fn
+type Terminal = type.cast<unknown> | Fn
 
 export type ThunkCast<t = unknown> = () => type.cast<t>
 

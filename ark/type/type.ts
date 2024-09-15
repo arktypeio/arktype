@@ -54,7 +54,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	// valid definition or a string representing an error message.
 	<const def, r = Type<type.infer<def, $>, $>>(def: type.validate<def, $>): r
 
-	<params extends ParameterString, const def>(
+	<const params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
 		def: validateDefinition<
 			def,
@@ -89,11 +89,12 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
+	ark: typeof ark
 	module: ModuleParser
 	scope: ScopeParser
+	define: DefinitionParser<$>
 	generic: GenericParser<$>
 	schema: SchemaParser<$>
-	ark: typeof ark
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>
 }
@@ -111,6 +112,7 @@ export class InternalTypeParser extends Callable<
 				raw: $.parse as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
+				define: $.define as never,
 				generic: $.generic as never,
 				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
@@ -170,7 +172,7 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
-export type DefinitionParser<$> = <def>(def: type.validate<def, $>) => def
+export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 
 export type SchemaParser<$> = (
 	schema: RootSchema,
@@ -178,10 +180,6 @@ export type SchemaParser<$> = (
 ) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
-
-export declare namespace Type {
-	export type Any<t = any> = BaseType<t, any>
-}
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,

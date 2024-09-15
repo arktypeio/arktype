@@ -161,7 +161,7 @@ contextualize(() => {
 	})
 
 	it("tuple", () => {
-		const t = type(["1", "2", "?"])
+		const t = type(["1", "2?"])
 
 		// fixed
 		const a = t.get(0)

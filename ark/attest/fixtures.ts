@@ -19,7 +19,7 @@ export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 
 	if (
 		config.tsVersions.length === 1 &&
-		config.tsVersions[0].alias === "typescript"
+		config.tsVersions[0].alias === "default"
 	)
 		writeAssertionData(config.defaultAssertionCachePath)
 	else {

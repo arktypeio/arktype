@@ -236,7 +236,7 @@ export abstract class BaseRoot<
 		) as never
 	}
 
-	exclude(r: BaseRoot): BaseRoot {
+	exclude(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
 		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
@@ -253,20 +253,25 @@ export abstract class BaseRoot<
 		) as never
 	}
 
-	overlaps(r: BaseRoot): boolean {
-		const intersection = this.intersect(r as never)
+	overlaps(r: unknown): boolean {
+		const intersection = this.intersect(r)
 		return !(intersection instanceof Disjoint)
 	}
 
-	extends(r: BaseRoot): boolean {
-		const intersection = this.intersect(r as never)
+	extends(r: unknown): boolean {
+		const intersection = this.intersect(r)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
 
-	subsumes(r: BaseRoot): boolean {
-		return r.extends(this as never)
+	ifExtends(r: unknown): BaseRoot | undefined {
+		return this.extends(r) ? this : undefined
+	}
+
+	subsumes(r: unknown): boolean {
+		const rNode = this.$.parseDefinition(r)
+		return rNode.extends(this)
 	}
 
 	configure(meta: MetaSchema): this {

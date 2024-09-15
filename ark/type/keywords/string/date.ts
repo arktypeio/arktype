@@ -112,7 +112,7 @@ const parsableDate = rootSchema({
 	}
 }).assertHasKind("intersection")
 
-const epochroot = integer.root.internal
+const epochRoot = integer.root.internal
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string
@@ -130,23 +130,23 @@ const epochroot = integer.root.internal
 	.assertHasKind("intersection")
 
 const epoch = arkModule({
-	root: epochroot,
+	root: epochRoot,
 	parse: rootSchema({
-		in: epochroot,
+		in: epochRoot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})
 })
 
-const isoroot = regexStringNode(
+const isoRoot = regexStringNode(
 	iso8601Matcher,
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
 const iso = arkModule({
-	root: isoroot,
+	root: isoRoot,
 	parse: rootSchema({
-		in: isoroot,
+		in: isoRoot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})

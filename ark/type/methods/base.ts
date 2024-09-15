@@ -100,23 +100,29 @@ interface Type<out t = unknown, $ = {}>
 
 	pipe: ChainedPipes<t, $>
 
-	equals<def>(
+	equals<const def>(def: type.validate<def, $>): boolean
+
+	ifEquals<const def>(
 		def: type.validate<def, $>
-	): this is instantiateType<type.infer<def, $>, $>
+	): instantiateType<type.infer<def, $>, $> | undefined
 
-	extract<def>(
-		r: type.validate<def, $>
-	): instantiateType<Extract<t, type.infer<def, $>>, $>
-
-	exclude<def>(
-		r: type.validate<def, $>
-	): instantiateType<Exclude<t, type.infer<def, $>>, $>
-
-	extends<def>(
+	extends<const def>(
 		other: type.validate<def, $>
 	): this is instantiateType<type.infer<def, $>, $>
 
-	overlaps<def>(r: type.validate<def, $>): boolean
+	ifExtends<const def>(
+		other: type.validate<def, $>
+	): instantiateType<type.infer<def, $>, $> | undefined
+
+	overlaps<const def>(r: type.validate<def, $>): boolean
+
+	extract<const def>(
+		r: type.validate<def, $>
+	): instantiateType<Extract<t, type.infer<def, $>>, $>
+
+	exclude<const def>(
+		r: type.validate<def, $>
+	): instantiateType<Exclude<t, type.infer<def, $>>, $>
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,

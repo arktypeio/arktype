@@ -6,6 +6,8 @@ import type { type } from "../../keywords/ark.ts"
 import type {
 	Default,
 	LimitLiteral,
+	Optional,
+	applyConstraint,
 	applyConstraintSchema,
 	distill,
 	normalizeLimit
@@ -96,6 +98,8 @@ export type inferExpression<ast, $, args> =
 				"divisor",
 				ast[2] & number
 			>
+		: ast[1] extends "?" ?
+			applyConstraint<inferExpression<ast[0], $, args>, Optional>
 		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
 		: never
 	:	never
@@ -136,7 +140,7 @@ export type PrefixExpression<
 	operand = unknown
 > = [operator, operand]
 
-export type PostfixOperator = "[]"
+export type PostfixOperator = "[]" | "?"
 
 export type PostfixExpression<
 	operator extends PostfixOperator = PostfixOperator,
