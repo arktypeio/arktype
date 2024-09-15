@@ -15,5 +15,8 @@
 	},
 	"bin": {
 		"ts": "./ts.js"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.1.9"
 	}
 }
