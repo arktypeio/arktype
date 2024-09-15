@@ -35,13 +35,13 @@
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@typescript/vfs": "1.6.0",
 		"@typescript/analyze-trace": "0.10.1",
+		"@typescript/vfs": "1.6.0",
+		"arktype": "workspace:*",
 		"prettier": "3.3.3",
-		"@prettier/sync": "0.5.2"
+		"synckit": "^0.9.1"
 	},
 	"devDependencies": {
 		"typescript": "catalog:"
