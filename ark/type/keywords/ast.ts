@@ -176,7 +176,7 @@ export type distill<
 	opts extends distill.Options = {}
 > = finalizeDistillation<t, _distill<t, opts>>
 
-export namespace distill {
+export declare namespace distill {
 	export type Endpoint = "in" | "out" | "out.introspectable"
 
 	export type Options = {

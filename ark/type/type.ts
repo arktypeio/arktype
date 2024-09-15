@@ -54,7 +54,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	// valid definition or a string representing an error message.
 	<const def, r = Type<type.infer<def, $>, $>>(def: type.validate<def, $>): r
 
-	<params extends ParameterString, const def>(
+	<const params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
 		def: validateDefinition<
 			def,
@@ -89,12 +89,12 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
+	ark: typeof ark
 	module: ModuleParser
 	scope: ScopeParser
 	define: DefinitionParser<$>
 	generic: GenericParser<$>
 	schema: SchemaParser<$>
-	ark: typeof ark
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>
 }
