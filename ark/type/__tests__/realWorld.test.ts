@@ -933,4 +933,29 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			}).toString()
 		).snap('additionalItems.type must be "boolean" or "null" (was "whoops")')
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1127
+	it("keys can overlap with RegExp", () => {
+		const MaybeEmpty = type("<t>", "t|undefined|null")
+
+		const ApiSchema = type({
+			ref: MaybeEmpty("string"),
+			service_code: MaybeEmpty("number"),
+			action: MaybeEmpty("string"),
+			source: type("string | null"),
+			lastIndex: type("string | null")
+		})
+
+		attest<{
+			ref: string | null | undefined
+			service_code: number | null | undefined
+			action: string | null | undefined
+			source: string | null
+			lastIndex: string | null
+		}>(ApiSchema.t)
+
+		attest(ApiSchema.expression).snap(
+			"{ action: string | undefined | null, lastIndex: string | null, ref: string | undefined | null, service_code: number | undefined | null, source: string | null }"
+		)
+	})
 })

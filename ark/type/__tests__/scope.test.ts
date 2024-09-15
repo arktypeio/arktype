@@ -180,7 +180,7 @@ contextualize(() => {
 				a: "string|number",
 				b: ["boolean"]
 			})
-			attest<{ a: "string|number"; b: ["boolean"] }>(def)
+			attest<{ a: "string|number"; b: readonly ["boolean"] }>(def)
 		})
 
 		it("ark error", () => {
@@ -197,7 +197,7 @@ contextualize(() => {
 			})
 
 			const ok = $.define(["a[]|boolean"])
-			attest<["a[]|boolean"]>(ok)
+			attest<readonly ["a[]|boolean"]>(ok)
 
 			// @ts-expect-error
 			attest(() => $.define({ not: "ok" })).type.errors(

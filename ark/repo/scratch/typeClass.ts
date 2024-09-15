@@ -1,7 +1,7 @@
 import { DynamicBase } from "@ark/util"
 import { type } from "arktype"
 
-const Class = <def>(def: type.validate<def>) => {
+const Class = <const def>(def: type.validate<def>) => {
 	const validator = type(def as never)
 
 	return class TypeConstructor<t = type.infer<def>> extends DynamicBase<

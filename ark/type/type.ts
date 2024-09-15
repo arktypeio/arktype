@@ -172,7 +172,7 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
-export type DefinitionParser<$> = <def>(def: type.validate<def, $>) => def
+export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 
 export type SchemaParser<$> = (
 	schema: RootSchema,
