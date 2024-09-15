@@ -35,10 +35,11 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	t: t
+	infer: this["inferOut"]
 	inferBrandableIn: distill.brandable.In<t>
 	inferBrandableOut: distill.brandable.Out<t>
 	inferIntrospectableOut: distill.introspectable.Out<t>
-	infer: distill.Out<t>
+	inferOut: distill.Out<t>
 	inferIn: distill.In<t>
 	[inferred]: t
 
@@ -55,7 +56,7 @@ interface Type<out t = unknown, $ = {}>
 
 	allows(data: unknown): data is this["inferIn"]
 
-	traverse(data: unknown): distill.Out<t> | ArkErrors
+	traverse(data: unknown): this["infer"] | ArkErrors
 
 	configure(meta: MetaSchema): this
 

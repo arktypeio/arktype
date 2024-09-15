@@ -2,7 +2,7 @@ import type { anyOrNever, array, Hkt, intersectArrays, show } from "@ark/util"
 import type {
 	constrain,
 	Constraints,
-	MorphAst,
+	InferredMorph,
 	parseConstraints,
 	To
 } from "./keywords/ast.ts"
@@ -13,15 +13,15 @@ export type inferPipe<l, r> = _inferIntersection<l, r, true>
 
 type _inferIntersection<l, r, piped extends boolean> =
 	[l & r] extends [infer t extends anyOrNever] ? t
-	: l extends MorphAst<infer lIn, infer lOut> ?
-		r extends MorphAst<any, infer rOut> ?
+	: l extends InferredMorph<infer lIn, infer lOut> ?
+		r extends InferredMorph<any, infer rOut> ?
 			piped extends true ?
 				(In: lIn) => rOut
 			:	// a commutative intersection between two morphs is a ParseError
 				never
 		: piped extends true ? (In: lIn) => To<r>
 		: (In: _inferIntersection<lIn, r, false>) => lOut
-	: r extends MorphAst<infer rIn, infer rOut> ?
+	: r extends InferredMorph<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => rOut
 	: parseConstraints<l> extends (
 		[infer lBase, infer lConstraints extends Constraints]

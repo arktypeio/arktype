@@ -34,8 +34,8 @@ import type {
 	distill,
 	inferMorphOut,
 	inferPredicate,
+	InferredOptional,
 	Optional,
-	OptionalAst,
 	Out
 } from "../keywords/ast.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
@@ -243,7 +243,7 @@ type preparseNextElement<s extends SequenceParseState, $, args> =
 					optional: false
 					spread: true
 				}>
-			: [t] extends [OptionalAst<infer base>] ?
+			: [t] extends [InferredOptional<infer base>] ?
 				PreparsedElement.from<{
 					head: head
 					tail: tail
@@ -270,7 +270,7 @@ type preparseNextElement<s extends SequenceParseState, $, args> =
 					optional: false
 					spread: false
 				}>
-			: [t] extends [OptionalAst<infer base>] ?
+			: [t] extends [InferredOptional<infer base>] ?
 				PreparsedElement.from<{
 					head: head
 					tail: tail
