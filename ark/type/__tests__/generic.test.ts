@@ -111,7 +111,7 @@ contextualize(() => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
 			attest(() => pair("string")).type.errors(
-				"Source has 1 element(s) but target requires 2"
+				"Expected 2 arguments, but got 1"
 			)
 		})
 
@@ -119,7 +119,7 @@ contextualize(() => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
 			attest(() => pair("string", "boolean", "number")).type.errors(
-				"Source has 3 element(s) but target allows only 2"
+				"Expected 2 arguments, but got 3"
 			)
 		})
 	})

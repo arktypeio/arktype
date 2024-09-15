@@ -100,27 +100,27 @@ interface Type<out t = unknown, $ = {}>
 
 	pipe: ChainedPipes<t, $>
 
-	equals<def>(def: type.validate<def, $>): boolean
+	equals<const def>(def: type.validate<def, $>): boolean
 
-	ifEquals<def>(
+	ifEquals<const def>(
 		def: type.validate<def, $>
 	): instantiateType<type.infer<def, $>, $> | undefined
 
-	extends<def>(
+	extends<const def>(
 		other: type.validate<def, $>
 	): this is instantiateType<type.infer<def, $>, $>
 
-	ifExtends<def>(
+	ifExtends<const def>(
 		other: type.validate<def, $>
 	): instantiateType<type.infer<def, $>, $> | undefined
 
-	overlaps<def>(r: type.validate<def, $>): boolean
+	overlaps<const def>(r: type.validate<def, $>): boolean
 
-	extract<def>(
+	extract<const def>(
 		r: type.validate<def, $>
 	): instantiateType<Extract<t, type.infer<def, $>>, $>
 
-	exclude<def>(
+	exclude<const def>(
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, type.infer<def, $>>, $>
 
