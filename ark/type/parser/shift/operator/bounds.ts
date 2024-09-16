@@ -6,9 +6,9 @@ import {
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
-import type { DateLiteral } from "../../../../keywords/ast.ts"
-import type { InferredAst } from "../../../semantic/infer.ts"
-import type { astToString } from "../../../semantic/utils.ts"
+import type { DateLiteral } from "../../../keywords/inference.ts"
+import type { InferredAst } from "../../ast/infer.ts"
+import type { astToString } from "../../ast/utils.ts"
 import type {
 	DynamicState,
 	DynamicStateWithRoot

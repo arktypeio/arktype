@@ -1,4 +1,6 @@
 import type {
+	arkGet,
+	arkKeyOf,
 	array,
 	ErrorType,
 	inferred,
@@ -7,9 +9,9 @@ import type {
 	listable,
 	merge,
 	optionalKeyOf,
-	show
+	show,
+	toArkKey
 } from "@ark/util"
-import type { arkGet, arkKeyOf, toArkKey } from "../keys.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"

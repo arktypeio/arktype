@@ -59,17 +59,17 @@ import type {
 	Submodule,
 	instantiateExport
 } from "./module.ts"
+import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition,
 	type validateDefinition
 } from "./parser/definition.ts"
-import type { DefAst, InferredAst } from "./parser/semantic/infer.ts"
-import { DynamicState } from "./parser/string/reduce/dynamic.ts"
-import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
-import { Scanner } from "./parser/string/shift/scanner.ts"
-import { fullStringParse } from "./parser/string/string.ts"
+import { DynamicState } from "./parser/reduce/dynamic.ts"
+import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
+import { Scanner } from "./parser/shift/scanner.ts"
+import { fullStringParse } from "./parser/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,

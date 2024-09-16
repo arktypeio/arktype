@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootSchema, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	describe("tuple expressions", () => {

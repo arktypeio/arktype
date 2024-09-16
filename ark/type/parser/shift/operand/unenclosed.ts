@@ -20,13 +20,10 @@ import {
 	type join,
 	type lastOf
 } from "@ark/util"
-import type { ArkAmbient } from "../../../../config.ts"
-import type { resolutionToAst } from "../../../../scope.ts"
-import type {
-	GenericInstantiationAst,
-	InferredAst
-} from "../../../semantic/infer.ts"
-import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.ts"
+import type { ArkAmbient } from "../../../config.ts"
+import type { resolutionToAst } from "../../../scope.ts"
+import type { GenericInstantiationAst, InferredAst } from "../../ast/infer.ts"
+import { writePrefixedPrivateReferenceMessage } from "../../ast/validate.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"

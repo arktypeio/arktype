@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { declare, type } from "arktype"
-import type { string } from "arktype/internal/keywords/ast.ts"
+import type { string } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("shallow", () => {

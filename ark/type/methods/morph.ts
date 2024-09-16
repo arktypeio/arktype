@@ -1,6 +1,10 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
-import type { inferPipe } from "../intersect.ts"
-import type { applyConstraintSchema, Out, To } from "../keywords/ast.ts"
+import type {
+	applyConstraintSchema,
+	inferPipe,
+	Out,
+	To
+} from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { BaseType } from "./base.ts"
 

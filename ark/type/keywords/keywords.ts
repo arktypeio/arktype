@@ -15,9 +15,9 @@ import type {
 	Type,
 	TypeParser
 } from "../type.ts"
-import type { distill } from "./ast.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
+import type { distill } from "./inference.ts"
 import { number } from "./number/number.ts"
 import { string } from "./string/string.ts"
 import { arkTsGenerics, arkTsKeywords, unknown } from "./ts.ts"

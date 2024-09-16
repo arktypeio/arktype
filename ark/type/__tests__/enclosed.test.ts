@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/string/shift/operand/enclosed.ts"
+import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/shift/operand/enclosed.ts"
 
 contextualize(() => {
 	it("with spaces", () => {

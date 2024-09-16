@@ -12,7 +12,7 @@ import type {
 	Optional,
 	constrain,
 	constraint
-} from "../ast.ts"
+} from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"

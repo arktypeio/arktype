@@ -1,6 +1,6 @@
 import { ArkErrors, intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, To, constrain } from "../ast.ts"
+import type { Branded, To, constrain } from "../inference.ts"
 import { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { integer } from "./integer.ts"

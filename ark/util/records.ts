@@ -2,6 +2,7 @@ import type { array } from "./arrays.ts"
 import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
+import type { Key } from "./keys.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -275,8 +276,6 @@ export const defineProperties: <base extends object, merged extends object>(
 		base,
 		Object.getOwnPropertyDescriptors(merged)
 	) as never
-
-export type Key = string | symbol
 
 export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 	[k in t[keyof t]]: {

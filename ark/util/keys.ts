@@ -1,12 +1,7 @@
-import type {
-	array,
-	join,
-	Key,
-	NonNegativeIntegerLiteral,
-	typeToString
-} from "@ark/util"
-import type { termOrType } from "./keywords/ast.ts"
-import type { type } from "./keywords/keywords.ts"
+import type { array, join } from "./arrays.ts"
+import type { NonNegativeIntegerLiteral } from "./numericLiterals.ts"
+
+export type Key = string | symbol
 
 export type toArkKey<o, k extends keyof o> =
 	k extends number ?
@@ -30,12 +25,6 @@ export type arkGet<o, k extends arkKeyOf<o>> = o[Extract<
 	k extends NonNegativeIntegerLiteral ? number : k,
 	keyof o
 >]
-
-export type TypeKey = termOrType<Key>
-
-export type typeKeyToString<k extends TypeKey> = typeToString<
-	k extends type.cast<infer t> ? t : k
->
 
 export type writeInvalidKeysMessage<
 	o extends string,

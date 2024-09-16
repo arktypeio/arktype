@@ -1,7 +1,7 @@
 import type { writeUnassignableDefaultValueMessage } from "@ark/schema"
 import type { ErrorMessage } from "@ark/util"
 import type { type } from "../../keywords/keywords.ts"
-import type { UnitLiteral } from "../string/shift/operator/default.ts"
+import type { UnitLiteral } from "../shift/operator/default.ts"
 import type { inferAstOut } from "./infer.ts"
 import type { astToString } from "./utils.ts"
 import type { validateAst } from "./validate.ts"

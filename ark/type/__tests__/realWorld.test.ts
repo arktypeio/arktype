@@ -10,7 +10,7 @@ import type {
 	constrain,
 	number,
 	string
-} from "arktype/internal/keywords/ast.ts"
+} from "arktype/internal/keywords/inference.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string

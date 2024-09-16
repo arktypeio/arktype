@@ -1,5 +1,5 @@
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, constrain } from "../ast.ts"
+import type { Branded, constrain } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 

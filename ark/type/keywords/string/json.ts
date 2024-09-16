@@ -1,6 +1,6 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, To, constrain } from "../ast.ts"
+import type { Branded, To, constrain } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {

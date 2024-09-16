@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { incompleteArrayTokenMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
+import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	it("allows and apply", () => {

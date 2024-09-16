@@ -23,7 +23,7 @@ import type {
 	parseValidGenericParams,
 	validateParameterString
 } from "./generic.ts"
-import type { distill } from "./keywords/ast.ts"
+import type { distill } from "./keywords/inference.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"

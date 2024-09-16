@@ -8,7 +8,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
-import type { Out, To, constrain } from "arktype/internal/keywords/ast.ts"
+import type { Out, To, constrain } from "arktype/internal/keywords/inference.ts"
 import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
 
 contextualize(() => {
