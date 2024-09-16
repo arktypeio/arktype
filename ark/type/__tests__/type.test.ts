@@ -154,4 +154,13 @@ contextualize(() => {
 			t.ifExtends("string | number")
 		).equals(t)
 	})
+
+	it("allows assignment to unparameterized Type", () => {
+		const t = type({
+			name: "string >= 2",
+			email: "string.email"
+		})
+
+		const u: Type = t
+	})
 })

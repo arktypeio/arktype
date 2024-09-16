@@ -20,5 +20,6 @@ export type instantiateType<t, $> =
 			[t] extends [array] ? ArrayType<t, $>
 			: [t] extends [Date] ? DateType<t, $>
 			: ObjectType<t, $>
-		:	ValidatorType<t, $>
+		: unknown extends t ? BaseType<unknown, $>
+		: ValidatorType<t, $>
 	:	MorphType<t, $>

@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { type, type Type } from "arktype"
 
 export const cloudinaryResource = type({
 	"[string]": "unknown",
