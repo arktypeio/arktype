@@ -59,4 +59,16 @@ contextualize(() => {
 		attest<typeof expected>(t)
 		attest(t.expression).equals(expected.expression)
 	})
+
+	it("modify default", () => {
+		const original = type({
+			foo: "string = 'foo'",
+			bar: "number"
+		})
+
+		const t = original.map(entry => {
+			if (entry[0] === "foo")
+				return [entry[0], entry[1], "optional", { default: entry[3].default }]
+		})
+	})
 })

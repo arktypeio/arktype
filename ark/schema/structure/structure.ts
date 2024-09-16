@@ -48,9 +48,9 @@ import {
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
-import type { Optional } from "./optional.ts"
+import type { Optional, OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
-import type { Required } from "./required.ts"
+import type { Required, RequiredNode } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcherReference } from "./shared.ts"
 
@@ -271,7 +271,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	literalKeys: Key[] = [...this.requiredKeys, ...this.optionalKeys]
 
 	literalEntries: array<NodeEntry> = this.props.map(
-		entry => [entry.key, entry.value, entry.kind] as const
+		// we have to cast the prop type since TS can't correlate it with prop.kind
+		prop => [prop.key, prop.value, prop.kind, prop as never] as const
 	)
 
 	_keyof: BaseRoot | undefined
@@ -673,39 +674,71 @@ export type NodeEntryFlatMapper = (
 	entry: NodeEntry
 ) => listable<MappedNodeEntry>
 
-export type NodeEntry = readonly [
+export type NodeEntry = RequiredNodeEntry | OptionalNodeEntry
+
+export type RequiredNodeEntry = readonly [
 	key: Key,
 	value: BaseRoot,
-	kind: "required" | "optional"
+	kind: "required",
+	node: RequiredNode
 ]
 
-export type MappedNodeEntry = readonly [
+export type OptionalNodeEntry = readonly [
 	key: Key,
 	value: BaseRoot,
-	kind?: "required" | "optional"
+	kind: "optional",
+	node: OptionalNode
+]
+
+export type MappedNodeEntry = RequiredMappedNodeEntry | OptionalMappedNodeEntry
+
+export type RequiredMappedNodeEntry = readonly [
+	key: Key,
+	value: BaseRoot,
+	kind?: "required",
+	additionalInnerProps?: Omit<Required.Inner, "key" | "value">
+]
+
+export type OptionalMappedNodeEntry = readonly [
+	key: Key,
+	value: BaseRoot,
+	kind?: "optional",
+	additionalInnerProps?: Omit<Optional.Inner, "key" | "value">
 ]
 
 const reduceMappedEntry = (
 	original: Structure.Node,
-	inner: Structure.Inner.mutable,
-	[k, v, kind]: MappedNodeEntry
+	structureInner: Structure.Inner.mutable,
+	[k, v, kind, additionalInnerProps]: MappedNodeEntry
 ): unknown => {
 	const originalProp = original.propsByKey[k]
 	const mappedKind = kind ?? originalProp?.kind ?? "required"
 
-	return (inner[mappedKind] = append(
-		inner[mappedKind],
-		(
-			originalProp &&
-				mappedKind === originalProp.kind &&
-				v === originalProp.value
-		) ?
+	if (
+		originalProp &&
+		mappedKind === originalProp.kind &&
+		v === originalProp.value &&
+		!additionalInnerProps
+	) {
+		structureInner[mappedKind] = append(
+			structureInner[mappedKind] as any,
 			originalProp
-		:	original.$.node(mappedKind, {
-				key: k,
-				value: v
-			})
-	) as never)
+		)
+	} else {
+		const mappedPropInner = {
+			key: k,
+			value: v
+		}
+		if (additionalInnerProps)
+			Object.assign(mappedPropInner, additionalInnerProps)
+
+		structureInner[mappedKind] = append(
+			structureInner[mappedKind] as any,
+			original.$.node(mappedKind, mappedPropInner)
+		)
+	}
+
+	return structureInner
 }
 
 export const Structure = {

@@ -176,29 +176,10 @@ export abstract class BaseRoot<
 		return (this._keyof = this.$.finalize(result))
 	}
 
-	get literalEntries(): array<NodeEntry> {
-		const entryBranches = this.applyStructuralOperation("literalEntries", [])
-
-		let result = entryBranches[0]
-
-		for (let i = 1; i < entryBranches.length; i++) {
-			const commonEntries: NodeEntry[] = []
-			for (const [key, value, kind] of entryBranches[i]) {
-				const matching = result.find(branchEntry => branchEntry[0] === key)
-				if (matching) {
-					commonEntries.push([
-						key,
-						value.or(matching[1]),
-						kind === "required" && matching[2] === "required" ?
-							"required"
-						:	"optional"
-					])
-				}
-			}
-			result = commonEntries
-		}
-
-		return this.cacheGetter("literalEntries", result)
+	get literalEntries(): NodeEntry[] {
+		if (this.branches.length !== 1)
+			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
+		return [...this.applyStructuralOperation("literalEntries", [])[0]]
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -634,6 +615,10 @@ export type StructuralOperationBranchResultByName = {
 
 export type StructuralOperationName =
 	keyof StructuralOperationBranchResultByName
+
+export const writeLiteralUnionEntriesMessage = (expression: string): string =>
+	`literalEntries cannot be extracted from a union. Use .distribute to extract entries from each branch instead. Received:
+${expression}`
 
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,

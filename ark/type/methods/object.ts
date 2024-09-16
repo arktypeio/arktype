@@ -1,3 +1,4 @@
+import type { Optional, Required } from "@ark/schema"
 import type {
 	arkGet,
 	arkKeyOf,
@@ -83,10 +84,34 @@ interface Type<out t extends object = object, $ = {}>
 	literalEntries: array<typeEntryOf<t, $>>
 }
 
-export type MappedTypeEntry<k extends Key = Key, v = unknown> = readonly [
+export type MappedTypeEntry<k extends Key = Key, v = unknown> =
+	| HomomorphicMappedTypeEntry<k, v>
+	| RequiredMappedTypeEntry<k, v>
+	| OptionalMappedTypeEntry<k, v>
+
+export type HomomorphicMappedTypeEntry<
+	k extends Key = Key,
+	v = unknown
+> = readonly [key: k, value: type.cast<v>]
+
+export type RequiredMappedTypeEntry<
+	k extends Key = Key,
+	v = unknown
+> = readonly [
 	key: k,
 	value: type.cast<v>,
-	kind?: "required" | "optional"
+	kind: "required",
+	additionalInnerProps?: Omit<Required.Inner, "key" | "value">
+]
+
+export type OptionalMappedTypeEntry<
+	k extends Key = Key,
+	v = unknown
+> = readonly [
+	key: k,
+	value: type.cast<v>,
+	kind: "optional",
+	additionalInnerProps?: Omit<Optional.Inner, "key" | "value">
 ]
 
 type TypeEntries = array<MappedTypeEntry>
@@ -95,7 +120,8 @@ type typeEntryOf<t, $> = {
 	[k in keyof t]-?: readonly [
 		k,
 		instantiateType<t[k] & ({} | null), $>,
-		k extends optionalKeyOf<t> ? "optional" : "required"
+		k extends optionalKeyOf<t> ? "optional" : "required",
+		k extends optionalKeyOf<t> ? Optional.Node : Required.Node
 	]
 }[keyof t] &
 	unknown

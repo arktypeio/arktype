@@ -1,5 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
+import {
+	registeredReference,
+	writeLiteralUnionEntriesMessage
+} from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
 
@@ -17,11 +20,7 @@ contextualize(() => {
 				| readonly ["bar", type<2>, "required"]
 				| readonly ["baz", type<3>, "optional"]
 			>
-		>(t.literalEntries).snap([
-			["bar", { unit: 2 }, "required"],
-			["foo", { unit: 1 }, "required"],
-			["baz", { unit: 3 }, "optional"]
-		])
+		>(t.literalEntries).snap()
 	})
 
 	it("mixed keys", () => {
@@ -45,33 +44,33 @@ contextualize(() => {
 		}>(t.infer)
 
 		attest(t.literalEntries).snap([
-			[`Symbol(${sReference})`, { unit: 1 }, "required"],
-			["foo", { unit: 3 }, "required"],
 			[
-				`Symbol(${s2Reference})`,
+				"Symbol(symbol)",
+				{ unit: 1 },
+				"required",
+				{ key: "$ark.symbol", value: { unit: 1 } }
+			],
+			["foo", { unit: 3 }, "required", { key: "foo", value: { unit: 3 } }],
+			[
+				"Symbol(symbol1)",
 				{ unit: 2, meta: { optional: true } },
 				// not sure why the type of snap breaks here. if you can fix it, do!
-				"optional" as never
+				"optional" as never,
+				{ key: "$ark.symbol1", value: { unit: 2, meta: { optional: true } } }
 			],
-			["foo2", { unit: 4, meta: { optional: true } }, "optional" as never]
+			[
+				"foo2",
+				{ unit: 4, meta: { optional: true } },
+				"optional" as never,
+				{ key: "foo2", value: { unit: 4, meta: { optional: true } } }
+			]
 		])
 	})
 
 	it("union", () => {
-		const t = type({
-			firstOnly: "1",
-			shared: "2",
-			sharedRequired: "3",
-			"sharedOptional?": "4",
-			sharedMixed: "5"
-		}).or({
-			secondOnly: "6",
-			shared: "7",
-			sharedRequired: "8",
-			"sharedOptional?": "9",
-			"sharedMixed?": "10"
-		})
-
-		attest(t.literalEntries).snap()
+		const t = type({ foo: "string" }).or({ bar: "number" })
+		attest(() => t.literalEntries).throws(
+			writeLiteralUnionEntriesMessage(t.expression)
+		)
 	})
 })
