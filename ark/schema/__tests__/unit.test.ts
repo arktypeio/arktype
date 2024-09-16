@@ -26,8 +26,7 @@ contextualize(() => {
 
 	it("bigint", () => {
 		const t = rootSchema({ unit: 7n })
-		// serializes to string for JSON
-		attest(t.json).snap({ unit: "7n" })
+		attest(t.json).snap({ unit: 7n })
 		assertNodeKind(t.internal, "unit")
 		// preserves the bigint for context
 		attest(t.internal.errorContext).equals({
@@ -43,7 +42,7 @@ contextualize(() => {
 	it("undefined", () => {
 		const t = rootSchema({ unit: undefined })
 		assertNodeKind(t.internal, "unit")
-		attest(t.json).snap({ unit: "undefined" })
+		attest(t.json).snap({ unit: undefined })
 		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "undefined",

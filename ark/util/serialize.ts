@@ -47,23 +47,13 @@ export const print = (data: unknown, indent?: number): void =>
 
 export const printable = (data: unknown, indent?: number): string => {
 	switch (domainOf(data)) {
-		case "bigint":
-			return `${data}n`
 		case "object":
 			const o = data as dict
 			const ctorName = o.constructor.name
 			// Deep replace undefined and bigints to support JSON.stringify
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
-					JSON.stringify(
-						_serialize(o, printableOpts, []),
-						(_key, value) => {
-							if (value === undefined) return "undefined"
-							if (typeof value === "bigint") return `${value}n`
-							return value
-						},
-						indent
-					)
+					JSON.stringify(_serialize(o, printableOpts, []), null, indent)
 				: o instanceof Date ? describeCollapsibleDate(o)
 				: typeof o.expression === "string" ? o.expression
 				: ctorName
@@ -108,9 +98,9 @@ const _serialize = (
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
-			return data
+			return `$ark.bigint-${data}`
 		case "undefined":
-			return opts.onUndefined ?? undefined
+			return opts.onUndefined ?? "$ark.undefined"
 		default:
 			return data
 	}
