@@ -55,7 +55,7 @@ $arkTypeRegistry.typeAttachments = {
 	Record: arkTsGenerics.Record
 }
 
-export const ambient: Scope<Ark> = scope(
+export const ark: Scope<Ark> = scope(
 	{
 		...arkTsKeywords,
 		...arkTsGenerics,
@@ -68,9 +68,9 @@ export const ambient: Scope<Ark> = scope(
 	{ prereducedAliases: true, ambient: true }
 ) as never
 
-export const ark: Module<Ark> = ambient.export()
+export const keywords: Module<Ark> = ark.export()
 
-export const type: TypeParser<{}> = ambient.type as never
+export const type: TypeParser<{}> = ark.type as never
 
 export declare namespace type {
 	export type cast<t> = {
@@ -123,10 +123,10 @@ export declare namespace type {
 
 export type type<t = unknown, $ = {}> = Type<t, $>
 
-export const generic: GenericParser<{}> = ambient.generic as never
+export const generic: GenericParser<{}> = ark.generic as never
 
-export const schema: SchemaParser<{}> = ambient.schema as never
+export const schema: SchemaParser<{}> = ark.schema as never
 
-export const define: DefinitionParser<{}> = ambient.define as never
+export const define: DefinitionParser<{}> = ark.define as never
 
-export const declare: DeclarationParser<{}> = ambient.declare as never
+export const declare: DeclarationParser<{}> = ark.declare as never

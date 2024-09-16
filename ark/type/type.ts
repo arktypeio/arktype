@@ -23,8 +23,8 @@ import type {
 	parseValidGenericParams,
 	validateParameterString
 } from "./generic.ts"
-import type { Ark, ark, type } from "./keywords/ark.ts"
 import type { distill } from "./keywords/ast.ts"
+import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
@@ -87,7 +87,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
-	ark: typeof ark
+	keywords: typeof keywords
 	$: Scope<$>
 	raw(def: unknown): BaseType<any, $>
 	module: ModuleParser
@@ -116,7 +116,7 @@ export class InternalTypeParser extends Callable<
 				generic: $.generic as never,
 				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
-				ark: $.ambient as never,
+				keywords: $.ambient as never,
 				unit: $.unit,
 				enumerated: $.enumerated
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,

@@ -113,7 +113,7 @@ contextualize(() => {
 	})
 
 	it("ark attached", () => {
-		attest<string>(type.ark.number.integer.expression).snap("number % 1")
+		attest<string>(type.keywords.number.integer.expression).snap("number % 1")
 	})
 
 	it("unit", () => {

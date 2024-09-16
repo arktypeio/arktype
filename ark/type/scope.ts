@@ -52,7 +52,7 @@ import {
 	type parseGenericParams,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { Ark, type } from "./keywords/ark.ts"
+import type { Ark, type } from "./keywords/keywords.ts"
 import type {
 	BoundModule,
 	Module,

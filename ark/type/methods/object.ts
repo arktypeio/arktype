@@ -10,7 +10,7 @@ import type {
 	show
 } from "@ark/util"
 import type { arkGet, arkKeyOf, toArkKey } from "../keys.ts"
-import type { type } from "../keywords/ark.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 import type { ValidatorType } from "./validator.ts"

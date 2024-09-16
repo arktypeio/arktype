@@ -40,7 +40,7 @@ contextualize(() => {
 	})
 
 	it("invalid ipv6 with empty segments", () => {
-		const out = type.ark.string.ip.v6("::%8:.-:.:")
+		const out = type.keywords.string.ip.v6("::%8:.-:.:")
 		attest(out.toString()).snap('must be an IPv6 address (was "::%8:.-:.:")')
 	})
 })

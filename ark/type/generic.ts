@@ -19,7 +19,7 @@ import {
 	type Json,
 	type WhiteSpaceToken
 } from "@ark/util"
-import type { type } from "./keywords/ark.ts"
+import type { type } from "./keywords/keywords.ts"
 import type {
 	inferDefinition,
 	validateDefinition

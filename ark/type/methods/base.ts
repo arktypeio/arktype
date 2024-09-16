@@ -18,7 +18,6 @@ import type {
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
 import type { inferIntersection } from "../intersect.ts"
-import type { type } from "../keywords/ark.ts"
 import type {
 	applyConstraint,
 	Default,
@@ -27,6 +26,7 @@ import type {
 	inferPipes,
 	Optional
 } from "../keywords/ast.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"

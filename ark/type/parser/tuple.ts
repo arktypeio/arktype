@@ -27,7 +27,6 @@ import {
 	type show
 } from "@ark/util"
 import type { inferIntersection } from "../intersect.ts"
-import type { type } from "../keywords/ark.ts"
 import type {
 	applyConstraint,
 	Default,
@@ -38,6 +37,7 @@ import type {
 	Optional,
 	Out
 } from "../keywords/ast.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"

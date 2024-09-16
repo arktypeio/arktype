@@ -18,7 +18,7 @@ import {
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
-import type { type } from "../keywords/ark.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { string } from "../keywords/string/string.ts"
 import {
 	parseObjectLiteral,

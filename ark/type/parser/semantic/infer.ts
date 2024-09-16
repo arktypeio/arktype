@@ -2,7 +2,6 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
 import type { arkKeyOf } from "../../keys.ts"
-import type { type } from "../../keywords/ark.ts"
 import type {
 	Default,
 	LimitLiteral,
@@ -13,6 +12,7 @@ import type {
 	normalizeLimit
 } from "../../keywords/ast.ts"
 import type { Date } from "../../keywords/constructors/Date.ts"
+import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator, MinComparator } from "../string/reduce/shared.ts"

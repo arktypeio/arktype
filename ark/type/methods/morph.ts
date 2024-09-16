@@ -1,7 +1,7 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
 import type { inferPipe } from "../intersect.ts"
-import type { type } from "../keywords/ark.ts"
 import type { applyConstraintSchema, Out, To } from "../keywords/ast.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { BaseType } from "./base.ts"
 
 // t can't be constrained to MorphAst here because it could be a union including some
