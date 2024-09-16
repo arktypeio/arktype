@@ -85,11 +85,11 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		:	[]
 	): r
 
-	$: Scope<$>
-	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
 	ark: typeof ark
+	$: Scope<$>
+	raw(def: unknown): BaseType<any, $>
 	module: ModuleParser
 	scope: ScopeParser
 	define: DefinitionParser<$>

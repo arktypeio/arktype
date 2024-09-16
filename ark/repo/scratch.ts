@@ -1,4 +1,5 @@
 import { type } from "arktype"
+import assert from "node:assert"
 
 export const cloudinaryResource = type({
 	"[string]": "unknown",
@@ -7,3 +8,5 @@ export const cloudinaryResource = type({
 })
 
 const o = cloudinaryResource.optional()
+
+assert.strictEqual({ foo: "string" }, { foo: "bar" })
