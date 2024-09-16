@@ -4,6 +4,7 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
+	type Fn,
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
@@ -44,6 +45,7 @@ import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import type {
+	NodeEntry,
 	NodeEntryFlatMapper,
 	Structure,
 	UndeclaredKeyBehavior
@@ -174,6 +176,31 @@ export abstract class BaseRoot<
 		return (this._keyof = this.$.finalize(result))
 	}
 
+	get literalEntries(): array<NodeEntry> {
+		const entryBranches = this.applyStructuralOperation("literalEntries", [])
+
+		let result = entryBranches[0]
+
+		for (let i = 1; i < entryBranches.length; i++) {
+			const commonEntries: NodeEntry[] = []
+			for (const [key, value, kind] of entryBranches[i]) {
+				const matching = result.find(branchEntry => branchEntry[0] === key)
+				if (matching) {
+					commonEntries.push([
+						key,
+						value.or(matching[1]),
+						kind === "required" && matching[2] === "required" ?
+							"required"
+						:	"optional"
+					])
+				}
+			}
+			result = commonEntries
+		}
+
+		return this.cacheGetter("literalEntries", result)
+	}
+
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
 		return this.$.schema(
@@ -190,8 +217,8 @@ export abstract class BaseRoot<
 
 	private applyStructuralOperation<operation extends StructuralOperationName>(
 		operation: operation,
-		args: Parameters<BaseRoot[operation]>
-	): Union.ChildNode[] {
+		args: BaseRoot[operation] extends Fn<infer args> ? args : []
+	): StructuralOperationBranchResultByName[operation][] {
 		return this.distribute(branch => {
 			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
 				// ideally this wouldn't be a special case, but for now it
@@ -210,6 +237,7 @@ export abstract class BaseRoot<
 
 			if (operation === "keyof") return structure.keyof()
 			if (operation === "get") return structure.get(...(args as [never]))
+			if (operation === "literalEntries") return structure.literalEntries
 
 			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"
@@ -592,15 +620,20 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 	return null
 }
 
+export type StructuralOperationBranchResultByName = {
+	keyof: Union.ChildNode
+	pick: Union.ChildNode
+	omit: Union.ChildNode
+	get: Union.ChildNode
+	map: Union.ChildNode
+	required: Union.ChildNode
+	partial: Union.ChildNode
+	merge: Union.ChildNode
+	literalEntries: array<NodeEntry>
+}
+
 export type StructuralOperationName =
-	| "keyof"
-	| "pick"
-	| "omit"
-	| "get"
-	| "map"
-	| "required"
-	| "partial"
-	| "merge"
+	keyof StructuralOperationBranchResultByName
 
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,

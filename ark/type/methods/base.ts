@@ -44,6 +44,7 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	json: Json
+	toJSON(): Json
 	meta: ArkAmbient.meta
 	precompilation: string | undefined
 	toJsonSchema(): JsonSchema

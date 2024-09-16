@@ -79,6 +79,8 @@ interface Type<out t extends object = object, $ = {}>
 		// v isn't used directly here but helps TS infer a precise type for transformed
 		flatMapEntry: (entry: typeEntryOf<t, $>) => transformed
 	): Type<constructMapped<t, transformed>, $>
+
+	literalEntries: array<typeEntryOf<t, $>>
 }
 
 export type MappedTypeEntry<k extends Key = Key, v = unknown> = readonly [

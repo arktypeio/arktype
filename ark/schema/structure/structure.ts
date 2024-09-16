@@ -154,9 +154,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				const rInner = { ...r.inner }
 				if (l.undeclared) {
 					const lKey = l.keyof()
-					const disjointRKeys = r.requiredLiteralKeys.filter(
-						k => !lKey.allows(k)
-					)
+					const disjointRKeys = r.requiredKeys.filter(k => !lKey.allows(k))
 					if (disjointRKeys.length) {
 						return new Disjoint(
 							...disjointRKeys.map(k => ({
@@ -190,9 +188,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				}
 				if (r.undeclared) {
 					const rKey = r.keyof()
-					const disjointLKeys = l.requiredLiteralKeys.filter(
-						k => !rKey.allows(k)
-					)
+					const disjointLKeys = l.requiredKeys.filter(k => !rKey.allows(k))
 					if (disjointLKeys.length) {
 						return new Disjoint(
 							...disjointLKeys.map(k => ({
@@ -268,16 +264,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	expression: string = structuralExpression(this)
 
-	requiredLiteralKeys: Key[] = this.required?.map(node => node.key) ?? []
+	requiredKeys: Key[] = this.required?.map(node => node.key) ?? []
 
-	optionalLiteralKeys: Key[] = this.optional?.map(node => node.key) ?? []
+	optionalKeys: Key[] = this.optional?.map(node => node.key) ?? []
 
-	literalKeys: Key[] = [
-		...this.requiredLiteralKeys,
-		...this.optionalLiteralKeys
-	]
+	literalKeys: Key[] = [...this.requiredKeys, ...this.optionalKeys]
 
-	entries: array<NodeEntry> = this.props.map(
+	literalEntries: array<NodeEntry> = this.props.map(
 		entry => [entry.key, entry.value, entry.kind] as const
 	)
 
@@ -293,7 +286,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	map(flatMapEntry: NodeEntryFlatMapper): StructureNode {
 		const inner: Structure.Inner.mutable = {}
-		this.entries.forEach(entry => {
+		this.literalEntries.forEach(entry => {
 			const result = flatMapEntry(entry)
 			// based on flatMorph from @ark/util
 			if (Array.isArray(result[0]) || result.length === 0) {
@@ -636,8 +629,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.properties![prop.key] = prop.value.toJsonSchema()
 			})
-			if (this.requiredLiteralKeys.length)
-				schema.required = this.requiredLiteralKeys as string[]
+			if (this.requiredKeys.length)
+				schema.required = this.requiredKeys as string[]
 		}
 
 		this.index?.forEach(index => {
