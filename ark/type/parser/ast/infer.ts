@@ -80,10 +80,10 @@ export type inferExpression<ast, $, args> =
 			>
 		: ast[1] extends "=" ?
 			// unscoped type.infer is safe since the default value is always a literal
-			applyConstraint<
-				inferExpression<ast[0], $, args>,
-				Default<type.infer<ast[2]>>
-			>
+			// as of TS5.6, inlining defaultValue causes a bunch of extra types and instantiations
+			type.infer<ast[2]> extends infer defaultValue ?
+				applyConstraint<inferExpression<ast[0], $, args>, Default<defaultValue>>
+			:	never
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
 				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
