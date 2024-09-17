@@ -28,6 +28,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
+import type { BaseScope } from "../scope.ts"
 import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -38,6 +39,7 @@ import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
+	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
@@ -61,8 +63,14 @@ export abstract class BaseRoot<
 	/** @ts-ignore cast variance */
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
-	readonly [arkKind] = "root"
+	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
+		super(attachments, $)
+		// define as a getter to avoid it being enumerable/spreadable
+		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+	}
 
 	get internal(): this {
 		return this

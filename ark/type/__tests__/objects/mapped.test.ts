@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
+import type { Default } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("identity", () => {
@@ -13,19 +14,26 @@ contextualize(() => {
 		attest<typeof original>(t)
 		attest(t.expression).equals(original.expression)
 	})
+
 	it("change one value", () => {
 		const original = type({
 			"foo?": "string",
 			bar: "number",
 			baz: "boolean"
 		})
-		const withNullableBar = original.map(entry => {
-			if (entry[0] === "bar") {
-				const nullableBar = entry[1].or("null")
-				return [entry[0], nullableBar]
+		const withNullableBar = original.map(prop => {
+			if (prop.key === "bar") {
+				// due to a TS bug, this has to be assigned to a variable,
+				// otherwise the | null is not inferred
+				const nullableBar = prop.value.or("null")
+				return {
+					key: prop.key,
+					value: nullableBar
+				}
 			}
-			return entry
+			return prop
 		})
+
 		const expected = type({
 			"foo?": "string",
 			bar: "number | null",
@@ -43,11 +51,13 @@ contextualize(() => {
 			baz: "boolean"
 		})
 
-		const t = original.map(entry => {
-			if (entry[0] === "foo") return ["foo", entry[1], "required"] as const
-			if (entry[0] === "bar") return ["bar", entry[1], "optional"] as const
+		const t = original.map(prop => {
+			if (prop.key === "foo")
+				return { kind: "required", key: "foo", value: prop.value } as const
+			if (prop.key === "bar")
+				return { kind: "optional", key: "bar", value: prop.value } as const
 
-			return entry
+			return prop
 		})
 
 		const expected = type({
@@ -63,12 +73,29 @@ contextualize(() => {
 	it("modify default", () => {
 		const original = type({
 			foo: "string = 'foo'",
-			bar: "number"
+			"bar?": "number"
 		})
 
-		const t = original.map(entry => {
-			if (entry[0] === "foo")
-				return [entry[0], entry[1], "optional", { default: entry[3].default }]
+		attest<{
+			foo: (In?: string | undefined) => Default<"foo">
+			bar?: number
+		}>(original.t)
+		attest(original.expression).snap('{ foo?: string = "foo", bar?: number }')
+
+		const t = original.map(prop => {
+			if (prop.key === "foo") {
+				return {
+					...prop,
+					default: `${prop.default}t` as const
+				}
+			}
+			return prop
 		})
+
+		attest<{
+			bar?: number
+			foo: (In?: string | undefined) => Default<"foot">
+		}>(t.t)
+		attest(t.expression).snap('{ foo?: string = "foot", bar?: number }')
 	})
 })

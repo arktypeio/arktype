@@ -1,5 +1,6 @@
 import type { BaseMappedPropInner, OptionalMappedPropInner } from "@ark/schema"
 import type {
+	anyOrNever,
 	arkGet,
 	arkKeyOf,
 	array,
@@ -14,7 +15,11 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { distill, InferredDefault } from "../keywords/inference.ts"
+import type {
+	Default,
+	InferredDefault,
+	InferredOptional
+} from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -91,18 +96,28 @@ type typePropOf<o, $> = {
 }[keyof o] &
 	unknown
 
-type typeProp<o, k extends keyof o, $> =
-	o[k] & ({} | null) extends infer v ?
+type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
+	t extends InferredDefault<infer v, infer defaultValue> ?
 		{
-			kind: k extends optionalKeyOf<distill.In<o>> ? "optional" : "required"
+			kind: "optional"
 			key: k
 			value: instantiateType<v, $>
 			meta: ArkEnv.meta
-			default: v extends InferredDefault<infer defaultValue> ? defaultValue
-			:	undefined
+			default: defaultValue
 			toJSON: () => Json
 		}
-	:	never
+	:	{
+			kind: k extends optionalKeyOf<o> ? "optional"
+			: t extends InferredOptional ?
+				[t] extends [anyOrNever] ?
+					"required"
+				:	"optional"
+			:	"required"
+			key: k
+			value: instantiateType<t, $>
+			meta: ArkEnv.meta
+			toJSON: () => Json
+		}
 
 type MappedTypeProp<k extends Key = Key, v = unknown> =
 	| BaseMappedTypeProp<k, v>
@@ -140,8 +155,15 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 	} & {
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
-			{ kind: "optional" }
+			{ kind: "optional"; default?: never }
 		>["key"]]?: prop["value"][inferred]
+	} & {
+		[prop in props[number] as Extract<
+			applyHomomorphicOptionality<t, prop>,
+			{ kind: "optional"; default: unknown }
+		>["key"]]: (
+			In?: prop["value"][inferred]
+		) => Default<prop["default" & keyof prop]>
 	}
 >
 

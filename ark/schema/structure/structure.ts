@@ -49,7 +49,7 @@ import {
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
-import type { Optional } from "./optional.ts"
+import { Optional } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
@@ -290,6 +290,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					const originalProp = this.propsByKey[mapped.key]
 
 					if (isNode(mapped)) {
+						if (mapped.kind !== "required" && mapped.kind !== "optional") {
+							return throwParseError(
+								`Map result must have kind "required" or "optional" (was ${mapped.kind})`
+							)
+						}
+
 						structureInner[mapped.kind] = append(
 							structureInner[mapped.kind] as any,
 							mapped
@@ -297,13 +303,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						return structureInner
 					}
 
-					const { kind, ...propInner } = mapped
+					const mappedKind = mapped.kind ?? originalProp?.kind ?? "required"
 
-					const mappedKind = kind ?? originalProp?.kind ?? "required"
+					// extract the inner keys from the map result in case a node was spread,
+					// which would otherwise lead to invalid keys
+					const mappedPropInner: Prop.Inner = flatMorph(
+						mapped as BaseMappedPropInner,
+						(k, v) => (k in Optional.implementation.keys ? [k, v] : [])
+					) as never
 
 					structureInner[mappedKind] = append(
 						structureInner[mappedKind] as any,
-						this.$.node(mappedKind, propInner)
+						this.$.node(mappedKind, mappedPropInner)
 					)
 
 					return structureInner

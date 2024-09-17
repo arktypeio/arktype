@@ -20,6 +20,7 @@ import { BaseNode } from "./node.ts"
 import type { NodeParseContext } from "./parse.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -31,6 +32,7 @@ import {
 	type NodeKind,
 	type RootKind,
 	type StructuralKind,
+	type UnknownAttachments,
 	type kindLeftOf
 } from "./shared/implement.ts"
 import { intersectNodes, intersectNodesRoot } from "./shared/intersections.ts"
@@ -60,7 +62,17 @@ export abstract class BaseConstraint<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
-	readonly [arkKind] = "constraint"
+	declare readonly [arkKind]: "constraint"
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
+		super(attachments, $)
+		// define as a getter to avoid it being enumerable/spreadable
+		Object.defineProperty(this, arkKind, {
+			value: "constraint",
+			enumerable: false
+		})
+	}
+
 	abstract readonly impliedBasis: BaseRoot | null
 	readonly impliedSiblings?: array<BaseConstraint>
 
