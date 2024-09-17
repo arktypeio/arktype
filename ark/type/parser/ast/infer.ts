@@ -2,6 +2,7 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, arkKeyOf, array } from "@ark/util"
 import type { Date } from "../../keywords/constructors/Date.ts"
 import type {
+	Default,
 	LimitLiteral,
 	Optional,
 	applyConstraint,
@@ -14,7 +15,6 @@ import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator, MinComparator } from "../reduce/shared.ts"
-import type { withDefault } from "./default.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
@@ -80,7 +80,10 @@ export type inferExpression<ast, $, args> =
 			>
 		: ast[1] extends "=" ?
 			// unscoped type.infer is safe since the default value is always a literal
-			withDefault<inferExpression<ast[0], $, args>, type.infer<ast[2]>>
+			applyConstraint<
+				inferExpression<ast[0], $, args>,
+				Default<type.infer<ast[2]>>
+			>
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
 				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>

@@ -5,6 +5,7 @@ import type {
 	AtMostLength,
 	Branded,
 	Constraints,
+	Default,
 	ExactlyLength,
 	LessThanLength,
 	MoreThanLength,
@@ -76,6 +77,8 @@ export declare namespace string {
 
 	export type optional = constrain<string, Optional>
 
+	export type defaultsTo<rule> = constrain<string, Default<rule>>
+
 	export type branded<rule> = constrain<string, Branded<rule>>
 
 	export type is<constraints extends Constraints> = constrain<
@@ -91,6 +94,7 @@ export declare namespace string {
 		: constraint extends LessThanLength<infer rule> ? lessThanLength<rule>
 		: constraint extends Matching<infer rule> ? matching<rule>
 		: constraint extends Optional ? optional
+		: constraint extends Default<infer rule> ? defaultsTo<rule>
 		: constraint extends Narrowed ? narrowed
 		: never
 

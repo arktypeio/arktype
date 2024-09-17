@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeLiteralUnionEntriesMessage, type Prop } from "@ark/schema"
+import { writeLiteralUnionEntriesMessage } from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/methods/object.ts"
@@ -55,6 +55,8 @@ contextualize(() => {
 			[s2]?: 2
 			foo2?: 4
 		}>(t.infer)
+
+		const z = t.props
 
 		attest(snapshottableProps(t.props)).snap([
 			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },

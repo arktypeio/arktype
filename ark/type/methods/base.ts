@@ -19,6 +19,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type {
 	applyConstraint,
+	Default,
 	distill,
 	inferIntersection,
 	inferMorphOut,
@@ -28,7 +29,6 @@ import type {
 	To
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { withDefault } from "../parser/ast/default.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -139,7 +139,10 @@ interface Type<out t = unknown, $ = {}>
 	// work the way it does for the other methods here
 	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
-	default<value extends this["inferIn"], r = withDefault<t, value>>(
+	default<
+		value extends this["inferIn"],
+		r = applyConstraint<t, Default<value>>
+	>(
 		value: value
 	): instantiateType<r, $>
 

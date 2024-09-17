@@ -101,14 +101,16 @@ export type applyConstraintSchema<
 	t,
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
-> =
-	t extends InferredMorph<infer i, infer o> ?
-		(
-			In: leftIfEqual<i, applyConstraint<i, schemaToConstraint<kind, schema>>>
-		) => o
-	:	leftIfEqual<t, applyConstraint<t, schemaToConstraint<kind, schema>>>
+> = applyConstraint<t, schemaToConstraint<kind, schema>>
 
 export type applyConstraint<t, constraint> =
+	t extends InferredMorph<infer i, infer o> ?
+		(
+			In: leftIfEqual<i, applyConstraint<i, _applyConstraint<t, constraint>>>
+		) => o
+	:	leftIfEqual<t, _applyConstraint<t, constraint>>
+
+type _applyConstraint<t, constraint> =
 	parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?

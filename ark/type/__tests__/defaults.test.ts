@@ -13,7 +13,7 @@ contextualize(() => {
 			// ensure type ast displays is exactly as expected
 			attest(o.t).type.toString.snap(`{
 	foo: string
-	bar: (In?: number | undefined) => Default<5>
+	bar: number.defaultsTo<5>
 }`)
 			attest<{ foo: string; bar?: number }>(o.inferIn)
 			attest<{ foo: string; bar: number }>(o.infer)
@@ -82,18 +82,14 @@ contextualize(() => {
 
 		it("chained", () => {
 			const defaultedString = type("string").default("")
-			attest(defaultedString.t).type.toString.snap(
-				'(In?: string | undefined) => Default<"">'
-			)
+			attest(defaultedString.t).type.toString.snap('string.defaultsTo<"">')
 			attest(defaultedString.json).snap({
 				domain: "string",
 				meta: { default: "" }
 			})
 
 			const o = type({ a: defaultedString })
-			attest(o.t).type.toString.snap(
-				'{ a: (In?: string | undefined) => Default<""> }'
-			)
+			attest(o.t).type.toString.snap('{ a: string.defaultsTo<""> }')
 			attest<{ a?: string }>(o.inferIn)
 			attest<{ a: string }>(o.infer)
 			attest(o.json).snap({
