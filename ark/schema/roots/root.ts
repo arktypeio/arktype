@@ -44,9 +44,9 @@ import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
+import type { Prop } from "../structure/prop.ts"
 import type {
-	NodeEntry,
-	NodeEntryFlatMapper,
+	PropFlatMapper,
 	Structure,
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
@@ -140,7 +140,7 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	map(flatMapEntry: NodeEntryFlatMapper): BaseRoot {
+	map(flatMapEntry: PropFlatMapper): BaseRoot {
 		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
 	}
 
@@ -176,10 +176,10 @@ export abstract class BaseRoot<
 		return (this._keyof = this.$.finalize(result))
 	}
 
-	get literalEntries(): NodeEntry[] {
+	get props(): Prop.Node[] {
 		if (this.branches.length !== 1)
 			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
-		return [...this.applyStructuralOperation("literalEntries", [])[0]]
+		return [...this.applyStructuralOperation("props", [])[0]]
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -218,7 +218,7 @@ export abstract class BaseRoot<
 
 			if (operation === "keyof") return structure.keyof()
 			if (operation === "get") return structure.get(...(args as [never]))
-			if (operation === "literalEntries") return structure.literalEntries
+			if (operation === "props") return structure.props
 
 			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"
@@ -610,14 +610,14 @@ export type StructuralOperationBranchResultByName = {
 	required: Union.ChildNode
 	partial: Union.ChildNode
 	merge: Union.ChildNode
-	literalEntries: array<NodeEntry>
+	props: array<Prop.Node>
 }
 
 export type StructuralOperationName =
 	keyof StructuralOperationBranchResultByName
 
 export const writeLiteralUnionEntriesMessage = (expression: string): string =>
-	`literalEntries cannot be extracted from a union. Use .distribute to extract entries from each branch instead. Received:
+	`Props cannot be extracted from a union. Use .distribute to extract props from each branch instead. Received:
 ${expression}`
 
 export const writeNonStructuralOperandMessage = <

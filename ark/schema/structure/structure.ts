@@ -45,12 +45,13 @@ import type {
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
+	isNode,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
-import type { Optional, OptionalNode } from "./optional.ts"
+import type { Optional } from "./optional.ts"
 import type { Prop } from "./prop.ts"
-import type { Required, RequiredNode } from "./required.ts"
+import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcherReference } from "./shared.ts"
 
@@ -270,11 +271,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	literalKeys: Key[] = [...this.requiredKeys, ...this.optionalKeys]
 
-	literalEntries: array<NodeEntry> = this.props.map(
-		// we have to cast the prop type since TS can't correlate it with prop.kind
-		prop => [prop.key, prop.value, prop.kind, prop as never] as const
-	)
-
 	_keyof: BaseRoot | undefined
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
@@ -285,19 +281,34 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this._keyof = this.$.node("union", branches))
 	}
 
-	map(flatMapEntry: NodeEntryFlatMapper): StructureNode {
-		const inner: Structure.Inner.mutable = {}
-		this.literalEntries.forEach(entry => {
-			const result = flatMapEntry(entry)
-			// based on flatMorph from @ark/util
-			if (Array.isArray(result[0]) || result.length === 0) {
-				return (result as NodeEntry[]).forEach(entry =>
-					reduceMappedEntry(this, inner, entry)
-				)
-			}
-			reduceMappedEntry(this, inner, result as NodeEntry)
-		})
-		return this.$.node("structure", inner)
+	map(flatMapProp: PropFlatMapper): StructureNode {
+		return this.$.node(
+			"structure",
+			this.props
+				.flatMap(flatMapProp)
+				.reduce((structureInner: Structure.Inner.mutable, mapped) => {
+					const originalProp = this.propsByKey[mapped.key]
+
+					if (isNode(mapped)) {
+						structureInner[mapped.kind] = append(
+							structureInner[mapped.kind] as any,
+							mapped
+						)
+						return structureInner
+					}
+
+					const { kind, ...propInner } = mapped
+
+					const mappedKind = kind ?? originalProp?.kind ?? "required"
+
+					structureInner[mappedKind] = append(
+						structureInner[mappedKind] as any,
+						this.$.node(mappedKind, propInner)
+					)
+
+					return structureInner
+				}, {})
+		)
 	}
 
 	assertHasKeys(keys: array<KeyOrKeyNode>): void {
@@ -670,75 +681,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
-export type NodeEntryFlatMapper = (
-	entry: NodeEntry
-) => listable<MappedNodeEntry>
+export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 
-export type NodeEntry = RequiredNodeEntry | OptionalNodeEntry
+export type MappedPropInner = BaseMappedPropInner | OptionalMappedPropInner
 
-export type RequiredNodeEntry = readonly [
-	key: Key,
-	value: BaseRoot,
-	kind: "required",
-	node: RequiredNode
-]
+// this assumes the props on Required.Inner are a subset of those on Optional.Inner
+export interface BaseMappedPropInner extends Required.Inner {
+	kind?: "required" | "optional"
+}
 
-export type OptionalNodeEntry = readonly [
-	key: Key,
-	value: BaseRoot,
-	kind: "optional",
-	node: OptionalNode
-]
-
-export type MappedNodeEntry = RequiredMappedNodeEntry | OptionalMappedNodeEntry
-
-export type RequiredMappedNodeEntry = readonly [
-	key: Key,
-	value: BaseRoot,
-	kind?: "required",
-	additionalInnerProps?: Omit<Required.Inner, "key" | "value">
-]
-
-export type OptionalMappedNodeEntry = readonly [
-	key: Key,
-	value: BaseRoot,
-	kind?: "optional",
-	additionalInnerProps?: Omit<Optional.Inner, "key" | "value">
-]
-
-const reduceMappedEntry = (
-	original: Structure.Node,
-	structureInner: Structure.Inner.mutable,
-	[k, v, kind, additionalInnerProps]: MappedNodeEntry
-): unknown => {
-	const originalProp = original.propsByKey[k]
-	const mappedKind = kind ?? originalProp?.kind ?? "required"
-
-	if (
-		originalProp &&
-		mappedKind === originalProp.kind &&
-		v === originalProp.value &&
-		!additionalInnerProps
-	) {
-		structureInner[mappedKind] = append(
-			structureInner[mappedKind] as any,
-			originalProp
-		)
-	} else {
-		const mappedPropInner = {
-			key: k,
-			value: v
-		}
-		if (additionalInnerProps)
-			Object.assign(mappedPropInner, additionalInnerProps)
-
-		structureInner[mappedKind] = append(
-			structureInner[mappedKind] as any,
-			original.$.node(mappedKind, mappedPropInner)
-		)
-	}
-
-	return structureInner
+export interface OptionalMappedPropInner extends Optional.Inner {
+	kind: "optional"
 }
 
 export const Structure = {
