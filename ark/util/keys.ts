@@ -13,13 +13,13 @@ export type toArkKey<o, k extends keyof o> =
 export type arkKeyOf<o> =
 	[o] extends [array] ?
 		| (number extends o["length"] ? NonNegativeIntegerLiteral : never)
-		| {
-				[k in keyof o]-?: k extends `${infer index extends number}` ? index | k
-				:	never
-		  }[keyof o & `${number}`]
-	:	{
-			[k in keyof o]-?: k extends number ? k | `${k}` : k
-		}[keyof o]
+		| keyof {
+				[k in keyof o as k extends `${infer index extends number}` ? index | k
+				:	never]: never
+		  }
+	:	keyof {
+			[k in keyof o as k extends number ? k | `${k}` : k]: never
+		}
 
 export type arkGet<o, k extends arkKeyOf<o>> = o[Extract<
 	k extends NonNegativeIntegerLiteral ? number : k,

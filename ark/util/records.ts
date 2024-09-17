@@ -92,11 +92,11 @@ export type keyOf<o> =
 		number extends o["length"] ?
 			`${number}`
 		:	keyof o & `${number}`
-	:	{
-			[k in keyof o]: k extends string ? k
+	:	keyof {
+			[k in keyof o as k extends string ? k
 			: k extends number ? `${k}`
-			: never
-		}[keyof o]
+			: never]: never
+		}
 
 export const keysOf = <o extends object>(o: o): keyOf<o>[] =>
 	Object.keys(o) as never
@@ -130,9 +130,9 @@ export const hasDefinedKey: <o extends object, k extends unionKeyOf<o>>(
 ) => o is extractDefinedKey<o, k> = (o, k): o is any =>
 	(o as any)[k] !== undefined
 
-export type requiredKeyOf<o> = {
-	[k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never
-}[keyof o]
+export type requiredKeyOf<o> = keyof {
+	[k in keyof o as o extends { [_ in k]-?: o[k] } ? k : never]: never
+}
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
