@@ -140,7 +140,7 @@ interface Type<out t = unknown, $ = {}>
 	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
 	default<
-		value extends this["inferIn"],
+		const value extends this["inferIn"],
 		r = applyConstraint<t, Default<value>>
 	>(
 		value: value

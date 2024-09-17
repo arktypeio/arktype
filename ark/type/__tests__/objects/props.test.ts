@@ -56,8 +56,6 @@ contextualize(() => {
 			foo2?: 4
 		}>(t.infer)
 
-		const z = t.props
-
 		attest(snapshottableProps(t.props)).snap([
 			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
 			{ kind: "required", key: "foo", value: "3" },
