@@ -24,7 +24,7 @@ contextualize(() => {
 		const withNullableBar = original.map(prop => {
 			if (prop.key === "bar") {
 				// due to a TS bug, this has to be assigned to a variable,
-				// otherwise the | null is not inferred
+				// otherwise the | null is not inferred: https://github.com/arktypeio/arktype/issues/1132
 				const nullableBar = prop.value.or("null")
 				return {
 					key: prop.key,

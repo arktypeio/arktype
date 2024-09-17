@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { flatMorph } from "@ark/util"
-import { ark, Generic, scope, Type, type, type Ark } from "arktype"
+import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -106,7 +106,7 @@ contextualize(() => {
 			unknown: "unknown",
 			undefined: "undefined",
 			Key: "string | symbol",
-			Record: ark.Record.internal.json
+			Record: keywords.Record.internal.json
 		})
 
 		attest<number>(type.number.t)

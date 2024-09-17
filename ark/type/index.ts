@@ -8,11 +8,11 @@ export {
 export { Hkt, inferred } from "@ark/util"
 export { Generic } from "./generic.ts"
 export {
-	ark as ambient,
-	keywords as ark,
+	ark,
 	declare,
 	define,
 	generic,
+	keywords,
 	type,
 	type Ark
 } from "./keywords/keywords.ts"

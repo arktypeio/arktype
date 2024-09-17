@@ -29,13 +29,13 @@ const keywords = type({
 const keywords = type({
 	// Primitive keywords are exposed directly on `type`.
 	string: type.string,
-	// All builtin keywords and modules are available under `ark`.
-	date: type.ark.Date,
+	// All builtin keywords and modules are available under `keywords`.
+	date: type.keywords.Date,
 	// Subtype keywords refine or transform their root type.
 	// `.root` gets the base type of a subtyped module.
-	dateFormattedString: type.ark.string.date.root,
-	isoFormattedString: type.ark.string.date.iso.root,
-	transformStringToDate: type.ark.string.date.parse
+	dateFormattedString: type.keywords.string.date.root,
+	isoFormattedString: type.keywords.string.date.iso.root,
+	transformStringToDate: type.keywords.string.date.parse
 })
 ```
 

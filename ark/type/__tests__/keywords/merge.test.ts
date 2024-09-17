@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeNonStructuralOperandMessage } from "@ark/schema"
-import { ark, scope, type } from "arktype"
+import { keywords, scope, type } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -27,7 +27,7 @@ contextualize(() => {
 
 	it("invoked", () => {
 		const s = Symbol()
-		const t = ark.Merge(
+		const t = keywords.Merge(
 			{
 				"[string]": "number | bigint",
 				foo: "0",

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { ark, type } from "arktype"
+import { keywords, type } from "arktype"
 import type { To } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
@@ -30,7 +30,7 @@ contextualize(() => {
 		})
 
 		it("invoked", () => {
-			const t = ark.Array.liftFrom({ data: "number" })
+			const t = keywords.Array.liftFrom({ data: "number" })
 
 			attest(t.t).type.toString.snap(`(
 	In: { data: number } | { data: number }[]

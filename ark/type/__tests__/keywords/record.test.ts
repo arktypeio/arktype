@@ -4,7 +4,7 @@ import {
 	writeIndivisibleMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { ark, type } from "arktype"
+import { keywords, type } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -18,7 +18,7 @@ contextualize(() => {
 	it("invoked", () => {
 		const expected = type({ "[string]": "number" })
 
-		const t = ark.Record("string", "number")
+		const t = keywords.Record("string", "number")
 
 		attest(t.json).equals(expected.json)
 		attest<typeof expected.t>(t.t)
@@ -26,14 +26,14 @@ contextualize(() => {
 
 	it("invoked validation error", () => {
 		// @ts-expect-error
-		attest(() => ark.Record("string", "string % 2")).throwsAndHasTypeError(
+		attest(() => keywords.Record("string", "string % 2")).throwsAndHasTypeError(
 			writeIndivisibleMessage(intrinsic.string)
 		)
 	})
 
 	it("invoked constraint error", () => {
 		// @ts-expect-error
-		attest(() => ark.Record("boolean", "number"))
+		attest(() => keywords.Record("boolean", "number"))
 			.throws(
 				writeUnsatisfiedParameterConstraintMessage(
 					"K",
