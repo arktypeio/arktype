@@ -27,10 +27,10 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { constrain } from "../keywords/ast.ts"
+import type { constrain } from "../keywords/inference.ts"
+import type { astToString } from "./ast/utils.ts"
+import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { astToString } from "./semantic/utils.ts"
-import type { validateString } from "./semantic/validate.ts"
 
 export const parseObjectLiteral = (
 	def: Dict,

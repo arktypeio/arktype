@@ -2,6 +2,7 @@ import type { array } from "./arrays.ts"
 import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
+import type { Key } from "./keys.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -91,11 +92,11 @@ export type keyOf<o> =
 		number extends o["length"] ?
 			`${number}`
 		:	keyof o & `${number}`
-	:	{
-			[k in keyof o]: k extends string ? k
-			: k extends number ? `${k}`
-			: never
-		}[keyof o]
+	: keyof o extends infer k ?
+		k extends string ? k
+		: k extends number ? `${k}`
+		: never
+	:	never
 
 export const keysOf = <o extends object>(o: o): keyOf<o>[] =>
 	Object.keys(o) as never
@@ -129,9 +130,14 @@ export const hasDefinedKey: <o extends object, k extends unionKeyOf<o>>(
 ) => o is extractDefinedKey<o, k> = (o, k): o is any =>
 	(o as any)[k] !== undefined
 
-export type requiredKeyOf<o> = {
-	[k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never
-}[keyof o]
+export type requiredKeyOf<o> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			o extends { [_ in k]-?: o[k] } ?
+				k
+			:	never
+		:	never
+	:	never
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
@@ -158,6 +164,9 @@ type excludeExactKeyOf<key extends PropertyKey, o> = Exclude<
 	extractExactKeyOf<key, o>
 >
 
+// we can't use the normal method to distrubte over the keys
+// since we need to preserve index signatures + literals
+// like string | "foo" that would collapse in a union
 type extractExactKeyOf<key extends PropertyKey, base> = keyof {
 	[k in keyof base as [key, k] extends [k, key] ? key : never]: 1
 }
@@ -275,8 +284,6 @@ export const defineProperties: <base extends object, merged extends object>(
 		base,
 		Object.getOwnPropertyDescriptors(merged)
 	) as never
-
-export type Key = string | symbol
 
 export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 	[k in t[keyof t]]: {

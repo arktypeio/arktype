@@ -1,27 +1,22 @@
 import { type } from "arktype"
 
-export const cloudinaryResource = type({
-	"[string]": "unknown",
-	"alt?": "string",
-	"caption?": "string"
+const original = type({
+	bar: "number"
 })
 
-const user = type({
-	name: "string",
-	device: {
-		platform: "'android' | 'ios'",
-		"version?": "number | string"
+// correctly adds null to bar's value
+const variableNullable = original.map(prop => {
+	//     ^?
+	const nullableValue = prop.value.or("null")
+	return {
+		key: prop.key,
+		value: nullableValue
 	}
 })
 
-// ---cut---
-user.extends("object") // true
-user.extends("string") // false
-// true (string is narrower than unknown)
-user.extends({
-	name: "unknown"
-})
-// false (string is wider than "Alan")
-user.extends({
-	name: "'Alan'"
-})
+// ignores the .or("null") and returns the original value
+const inlinedNullable = original.map(prop => ({
+	//    ^?
+	key: prop.key,
+	value: prop.value.or("null")
+}))

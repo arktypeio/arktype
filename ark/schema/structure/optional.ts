@@ -1,4 +1,4 @@
-import { throwParseError } from "@ark/util"
+import { printable, throwParseError } from "@ark/util"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
@@ -64,7 +64,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		}
 	}
 
-	expression = `${this.compiledKey}?: ${this.value.expression}`
+	expression = `${this.compiledKey}?: ${this.value.expression}${"default" in this.inner ? ` = ${printable(this.inner.default)}` : ""}`
 }
 
 export const Optional = {

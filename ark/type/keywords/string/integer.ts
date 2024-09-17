@@ -1,7 +1,7 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
+import type { Branded, constrain, To } from "../inference.ts"
 import type { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"

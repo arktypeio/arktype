@@ -18,15 +18,15 @@ import {
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
-import type { type } from "../keywords/ark.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { string } from "../keywords/string/string.ts"
+import type { validateString } from "./ast/validate.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.ts"
-import type { validateString } from "./semantic/validate.ts"
-import type { BaseCompletions, inferString } from "./string/string.ts"
+import type { BaseCompletions, inferString } from "./string.ts"
 import {
 	parseTuple,
 	type TupleExpression,

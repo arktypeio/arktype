@@ -1,5 +1,5 @@
 import { rootSchema } from "@ark/schema"
-import type { Branded, constrain } from "../ast.ts"
+import type { Branded, constrain } from "../inference.ts"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string): boolean => {

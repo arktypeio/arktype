@@ -26,22 +26,22 @@ import {
 	type ErrorMessage,
 	type show
 } from "@ark/util"
-import type { inferIntersection } from "../intersect.ts"
-import type { type } from "../keywords/ark.ts"
 import type {
 	applyConstraint,
 	Default,
 	distill,
+	inferIntersection,
 	inferMorphOut,
 	inferPredicate,
+	InferredOptional,
 	Optional,
-	OptionalAst,
 	Out
-} from "../keywords/ast.ts"
+} from "../keywords/inference.ts"
+import type { type } from "../keywords/keywords.ts"
+import type { InfixOperator, PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
-import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
-import type { BaseCompletions } from "./string/string.ts"
+import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
+import type { BaseCompletions } from "./string.ts"
 
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
@@ -243,7 +243,7 @@ type preparseNextElement<s extends SequenceParseState, $, args> =
 					optional: false
 					spread: true
 				}>
-			: [t] extends [OptionalAst<infer base>] ?
+			: [t] extends [InferredOptional<infer base>] ?
 				PreparsedElement.from<{
 					head: head
 					tail: tail
@@ -270,7 +270,7 @@ type preparseNextElement<s extends SequenceParseState, $, args> =
 					optional: false
 					spread: false
 				}>
-			: [t] extends [OptionalAst<infer base>] ?
+			: [t] extends [InferredOptional<infer base>] ?
 				PreparsedElement.from<{
 					head: head
 					tail: tail

@@ -1,15 +1,17 @@
+// import type { BaseRoot, Morph } from "@ark/schema"
 // import type {
 // 	ErrorMessage,
+// 	Fn,
 // 	isDisjoint,
 // 	numericStringKeyOf,
 // 	override,
 // 	propValueOf,
 // 	unionToTuple
 // } from "@ark/util"
-// import type { distill, Narrowed } from "./ast.ts"
 // import type { inferIntersection } from "./intersect.ts"
+// import { ambient, type type } from "./keywords/ark.ts"
+// import type { distill, Narrowed } from "./keywords/ast.ts"
 // import type { Scope } from "./scope.ts"
-// import type { type.infer, type.validate } from "./type.ts"
 
 // type MatchParserContext = {
 // 	thens: readonly ((In: unknown) => unknown)[]
@@ -156,62 +158,64 @@
 // 	:	ReturnType<ctx["thens"][i]>
 // }[numericStringKeyOf<ctx["thens"]>]
 
-// export const createMatchParser = <$>($: Scope): MatchParser<$> =>
-// 	(() => {}).bind($) as never
+// export const createMatchParser = <$>($: Scope<$>): MatchParser<$> => {
+// 	const matchParser = (isRestricted: boolean) => {
+// 		const handledCases: { when: BaseRoot; then: Morph }[] = []
+// 		let defaultCase: ((x: unknown) => unknown) | null = null
 
-// const matchParser = (isRestricted: boolean) => {
-// 	const handledCases: { when: RawRoot; then: Morph }[] = []
-// 	let defaultCase: ((x: unknown) => unknown) | null = null
+// 		const parser = {
+// 			when: (when: unknown, then: Morph) => {
+// 				handledCases.push({ when: $.parseRoot(when, {}), then })
 
-// 	const parser = {
-// 		when: (when: unknown, then: Morph) => {
-// 			handledCases.push({ when: $.parseRoot(when, {}), then })
+// 				return parser
+// 			},
 
-// 			return parser
-// 		},
+// 			finalize: () => {
+// 				const branches = handledCases.flatMap(({ when, then }) => {
+// 					if (when.kind === "union") {
+// 						return when.branches.map(branch => ({
+// 							in: branch,
+// 							morph: then
+// 						}))
+// 					}
+// 					if (when.kind === "morph")
+// 						return [{ in: when, morph: [when.morph, then] }]
 
-// 		finalize: () => {
-// 			const branches = handledCases.flatMap(({ when, then }) => {
-// 				if (when.kind === "union") {
-// 					return when.branches.map((branch) => ({
-// 						in: branch,
-// 						morph: then
-// 					}))
-// 				}
-// 				if (when.kind === "morph") {
-// 					return [{ in: when, morph: [when.morph, then] }]
-// 				}
-// 				return [{ in: when, morph: then }]
-// 			})
-// 			if (defaultCase) {
-// 				branches.push({ in: keywordNodes.unknown, morph: defaultCase })
+// 					return [{ in: when, morph: then }]
+// 				})
+// 				if (defaultCase)
+// 					branches.push({ in: keywordNodes.unknown, morph: defaultCase })
+
+// 				const matchers = $.node("union", {
+// 					branches,
+// 					ordered: true
+// 				})
+// 				return matchers.assert
+// 			},
+
+// 			orThrow: () => {
+// 				// implicitly finalize, we don't need to do anything else because we throw either way
+// 				return parser.finalize()
+// 			},
+
+// 			default: (x: unknown) => {
+// 				if (x instanceof Function) defaultCase = x as never
+// 				else defaultCase = () => x
+
+// 				return parser.finalize()
 // 			}
-// 			const matchers = $.node("union", {
-// 				branches,
-// 				ordered: true
-// 			})
-// 			return matchers.assert
-// 		},
-
-// 		orThrow: () => {
-// 			// implicitly finalize, we don't need to do anything else because we throw either way
-// 			return parser.finalize()
-// 		},
-
-// 		default: (x: unknown) => {
-// 			if (x instanceof Function) {
-// 				defaultCase = x as never
-// 			} else {
-// 				defaultCase = () => x
-// 			}
-
-// 			return parser.finalize()
 // 		}
+
+// 		return parser
 // 	}
 
-// 	return parser
+// 	return Object.assign(() => matchParser(false), {
+// 		only: () => matchParser(true)
+// 	}) as never
 // }
 
-// return Object.assign(() => matchParser(false), {
-// 	only: () => matchParser(true)
-// }) as never
+// const match = createMatchParser(ambient)
+
+// match({
+// 	string: s => s.length
+// })

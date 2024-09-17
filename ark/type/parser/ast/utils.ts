@@ -1,5 +1,5 @@
 import type { Stringifiable } from "@ark/util"
-import type { Comparator } from "../string/reduce/shared.ts"
+import type { Comparator } from "../reduce/shared.ts"
 import type {
 	DefAst,
 	InferredAst,

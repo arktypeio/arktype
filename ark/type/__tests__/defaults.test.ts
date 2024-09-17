@@ -1,8 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
-import type { Default } from "arktype/internal/keywords/ast.ts"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
-import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/string/shift/operator/default.ts"
+import type { Default } from "arktype/internal/keywords/inference.ts"
+import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {

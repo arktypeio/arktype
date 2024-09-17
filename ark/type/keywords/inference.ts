@@ -12,17 +12,18 @@ import {
 	type array,
 	type conform,
 	type equals,
+	type Hkt,
+	type intersectArrays,
 	type isSafelyMappable,
 	type leftIfEqual,
 	type objectKindOf,
 	type Primitive,
 	type show
 } from "@ark/util"
-import type { inferPipe } from "../intersect.ts"
 import type { Type } from "../type.ts"
-import type { type } from "./ark.ts"
 import type { arkPrototypes } from "./constructors/constructors.ts"
 import type { Date } from "./constructors/Date.ts"
+import type { type } from "./keywords.ts"
 import type { DivisibleBy, number } from "./number/number.ts"
 import type { Matching, string } from "./string/string.ts"
 export type { arkPrototypes as object } from "./constructors/constructors.ts"
@@ -101,7 +102,7 @@ export type applyConstraintSchema<
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
-	t extends MorphAst<infer i, infer o> ?
+	t extends InferredMorph<infer i, infer o> ?
 		(
 			In: leftIfEqual<i, applyConstraint<i, schemaToConstraint<kind, schema>>>
 		) => o
@@ -236,12 +237,12 @@ type _distill<t, opts extends distill.Options> =
 		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
-	: t extends MorphAst<infer i, infer o> ?
+	: t extends InferredMorph<infer i, infer o> ?
 		opts["branded"] extends true ?
 			distillIo<i, o, opts>
 		:	distillUnbrandedIo<t, i, o, opts>
 	: t extends array ? distillArray<t, opts>
-	: t extends DefaultedAst<infer t> ? _distill<t, opts>
+	: t extends InferredDefault<infer t> ? _distill<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
@@ -252,25 +253,21 @@ type distillMappable<o, opts extends distill.Options> =
 	opts["endpoint"] extends "in" ?
 		show<
 			{
-				[k in keyof o as k extends optionalInputKeyOf<o> ? never : k]: _distill<
-					o[k],
-					opts
-				>
+				// this is homomorphic so includes parsed optional keys like "key?": "string"
+				[k in keyof o as k extends inferredOptionalOrDefaultKeyOf<o> ? never
+				:	k]: _distill<o[k], opts>
 			} & {
-				[k in optionalInputKeyOf<o>]?: _distill<o[k], opts>
+				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<o[k], opts>
 			}
 		>
 	:	show<
 			{
-				[k in keyof o as k extends metaOptionalKeyOf<o> ? never : k]: _distill<
-					o[k],
-					opts
-				>
+				// this is homomorphic so includes parsed optional keys like "key?": "string"
+				[k in keyof o as k extends inferredOptionalKeyOf<o> ? never
+				:	k]: _distill<o[k], opts>
 			} & {
-				[k in keyof o as k extends metaOptionalKeyOf<o> ? k : never]?: _distill<
-					o[k],
-					opts
-				>
+				[k in keyof o as k extends inferredOptionalKeyOf<o> ? k
+				:	never]?: _distill<o[k], opts>
 			}
 		>
 
@@ -278,13 +275,13 @@ type distillMappable<o, opts extends distill.Options> =
 // constrain<base, constraints>. If it degrades to `t & {[constrained]: constraints}`,
 // we'll not longer be able to extract the constraints and distill will infinitely recurse.
 type distillUnbrandedIo<
-	t extends MorphAst,
+	t extends InferredMorph,
 	i,
 	o extends Out,
 	opts extends distill.Options
 > =
 	t extends (
-		MorphAst<
+		InferredMorph<
 			constrain<infer constrainedIn, any>,
 			Out<constrain<infer constrainedOut, any>>
 		>
@@ -294,9 +291,9 @@ type distillUnbrandedIo<
 			o extends To ? To<constrainedOut> : Out<constrainedOut>,
 			opts
 		>
-	: t extends MorphAst<constrain<infer constrainedIn, any>> ?
+	: t extends InferredMorph<constrain<infer constrainedIn, any>> ?
 		distillIo<constrainedIn, o, opts>
-	: t extends MorphAst<any, Out<constrain<infer constrainedOut, any>>> ?
+	: t extends InferredMorph<any, Out<constrain<infer constrainedOut, any>>> ?
 		distillIo<i, o extends To ? To<constrainedOut> : Out<constrainedOut>, opts>
 	:	distillIo<i, o, opts>
 
@@ -313,19 +310,27 @@ type distillIo<i, o extends Out, opts extends distill.Options> =
 		:	(In: i) => Out<r>
 	:	never
 
-type optionalInputKeyOf<o> = metaDefaultedKeyOf<o> | metaOptionalKeyOf<o>
+type inferredOptionalOrDefaultKeyOf<o> =
+	| inferredDefaultKeyOf<o>
+	| inferredOptionalKeyOf<o>
 
-type metaDefaultedKeyOf<o> = {
-	[k in keyof o]: [o[k]] extends [anyOrNever] ? never
-	: o[k] extends DefaultedAst ? k
-	: never
-}[keyof o]
+type inferredDefaultKeyOf<o> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			[o[k]] extends [anyOrNever] ? never
+			: o[k] extends InferredDefault ? k
+			: never
+		:	never
+	:	never
 
-type metaOptionalKeyOf<o> = {
-	[k in keyof o]: [o[k]] extends [anyOrNever] ? never
-	: o[k] extends OptionalAst ? k
-	: never
-}[keyof o]
+type inferredOptionalKeyOf<o> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			[o[k]] extends [anyOrNever] ? never
+			: o[k] extends InferredOptional ? k
+			: never
+		:	never
+	:	never
 
 type distillArray<t extends array, opts extends distill.Options> =
 	_distillArray<[...t], opts, []> extends infer result ?
@@ -418,16 +423,81 @@ export type Out<o = any> = ["=>", o, boolean]
 
 export type To<o = any> = ["=>", o, true]
 
-export type MorphAst<i = any, o extends Out = Out> = (In: i) => o
+export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type Optional = {
 	optional?: {}
 }
 
-export type OptionalAst<t = unknown> = constrain<t, Optional>
+export type InferredOptional<t = unknown> = constrain<t, Optional>
 
 export type Default<v = any> = ["=", v]
 
-export type DefaultedAst<t = any, v = any> = (In?: t) => Default<v>
+export type InferredDefault<t = any, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | Type<t, any>
+
+export type inferIntersection<l, r> = _inferIntersection<l, r, false>
+
+export type inferPipe<l, r> = _inferIntersection<l, r, true>
+
+type _inferIntersection<l, r, piped extends boolean> =
+	[l & r] extends [infer t extends anyOrNever] ? t
+	: l extends InferredMorph<infer lIn, infer lOut> ?
+		r extends InferredMorph<any, infer rOut> ?
+			piped extends true ?
+				(In: lIn) => rOut
+			:	// a commutative intersection between two morphs is a ParseError
+				never
+		: piped extends true ? (In: lIn) => To<r>
+		: (In: _inferIntersection<lIn, r, false>) => lOut
+	: r extends InferredMorph<infer rIn, infer rOut> ?
+		(In: _inferIntersection<rIn, l, false>) => rOut
+	: parseConstraints<l> extends (
+		[infer lBase, infer lConstraints extends Constraints]
+	) ?
+		parseConstraints<r> extends (
+			[infer rBase, infer rConstraints extends Constraints]
+		) ?
+			constrain<
+				_inferIntersection<lBase, rBase, piped>,
+				lConstraints & rConstraints
+			>
+		:	constrain<_inferIntersection<lBase, r, piped>, lConstraints>
+	: parseConstraints<r> extends (
+		[infer rBase, infer rConstraints extends Constraints]
+	) ?
+		constrain<_inferIntersection<l, rBase, piped>, rConstraints>
+	: [l, r] extends [object, object] ?
+		// adding this intermediate infer result avoids extra instantiations
+		intersectObjects<l, r, piped> extends infer result ?
+			result
+		:	never
+	:	l & r
+
+interface MorphableIntersection<piped extends boolean>
+	extends Hkt<[unknown, unknown]> {
+	body: _inferIntersection<this[0], this[1], piped>
+}
+
+type intersectObjects<l, r, piped extends boolean> =
+	l extends array ?
+		r extends array ?
+			intersectArrays<l, r, MorphableIntersection<piped>>
+		:	// for an intersection with exactly one array operand like { name: string } & string[],
+			// don't compute the intersection to avoid including prototype props
+			l & r
+	: r extends array ? l & r
+	: show<
+			// this looks redundant, but should hit the cache anyways and
+			// preserves index signature + optional keys correctly
+			{
+				[k in keyof l]: k extends keyof r ?
+					_inferIntersection<l[k], r[k], piped>
+				:	l[k]
+			} & {
+				[k in keyof r]: k extends keyof l ?
+					_inferIntersection<l[k], r[k], piped>
+				:	r[k]
+			}
+		>

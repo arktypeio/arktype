@@ -7,7 +7,7 @@ import type {
 	Constraints,
 	Narrowed,
 	Optional
-} from "../ast.ts"
+} from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"

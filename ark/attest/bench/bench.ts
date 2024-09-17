@@ -1,4 +1,4 @@
-import { caller, rmRf, type SourcePosition } from "@ark/fs"
+import { caller, getCallStack, rmRf, type SourcePosition } from "@ark/fs"
 import { performance } from "node:perf_hooks"
 import {
 	ensureCacheDirs,
@@ -204,7 +204,7 @@ export class BenchAssertions<
 		console.groupEnd()
 		queueBaselineUpdateIfNeeded(createTimeMeasure(ms), baseline, {
 			...this.ctx,
-			kind: name
+			lastSnapFunctionName: name
 		})
 		return this.getNextAssertions()
 	}
@@ -232,7 +232,7 @@ export class BenchAssertions<
 		console.groupEnd()
 		queueBaselineUpdateIfNeeded(markResults, baseline, {
 			...this.ctx,
-			kind: "mark"
+			lastSnapFunctionName: "mark"
 		})
 		return this.getNextAssertions()
 	}
@@ -321,10 +321,11 @@ export type BenchContext = {
 	qualifiedName: string
 	options: InternalBenchOptions
 	cfg: ParsedAttestConfig
+	assertionStack: string
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
+	lastSnapFunctionName: string | undefined
 	isAsync: boolean
-	kind: TimeAssertionName | "types" | "instantiations"
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>
@@ -347,13 +348,14 @@ export const getBenchCtx = (
 	qualifiedPath: string[],
 	isAsync: boolean = false,
 	options: BenchOptions = {}
-): BenchContext =>
-	({
-		qualifiedPath,
-		qualifiedName: qualifiedPath.join("/"),
-		options,
-		cfg: getConfig(),
-		benchCallPosition: caller(),
-		lastSnapCallPosition: undefined,
-		isAsync
-	}) as BenchContext
+): BenchContext => ({
+	qualifiedPath,
+	qualifiedName: qualifiedPath.join("/"),
+	options,
+	cfg: getConfig(),
+	benchCallPosition: caller(),
+	lastSnapCallPosition: undefined,
+	lastSnapFunctionName: undefined,
+	isAsync,
+	assertionStack: getCallStack({ offset: 1 }).join("\n")
+})

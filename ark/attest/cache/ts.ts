@@ -1,5 +1,5 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
-import { throwInternalError, type dict } from "@ark/util"
+import { printable, throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -53,7 +53,7 @@ export class TsServer {
 	getSourceFileOrThrow(path: string): ts.SourceFile {
 		const tsPath = path.replaceAll(/\\/g, "/")
 		const file = this.virtualEnv.getSourceFile(tsPath)
-		if (!file) throw new Error(`Could not find ${path}.`)
+		if (!file) throwInternalError(`Could not find TS path ${path}`)
 
 		return file
 	}
@@ -65,7 +65,7 @@ export const nearestCallExpressionChild = (
 ): ts.CallExpression => {
 	const result = nearestBoundingCallExpression(node, position)
 	if (!result) {
-		throw new Error(
+		throwInternalError(
 			`Unable to find bounding call expression at position ${position} in ${
 				node.getSourceFile().fileName
 			}`
@@ -97,8 +97,8 @@ export const getAbsolutePosition = (
 		position.char - 1
 	)
 	if (!pos) {
-		throw new Error(
-			`Absolute position was not able to be found in ${file.fileName}`
+		throwInternalError(
+			`Absolute position ${printable(position)} does not exist in ${file.fileName}`
 		)
 	}
 	return pos
@@ -116,7 +116,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		tsconfig ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!configFilePath) {
 		throw new Error(
-			`File ${tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist.`
+			`File ${tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist`
 		)
 	}
 

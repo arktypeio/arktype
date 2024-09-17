@@ -8,6 +8,7 @@ import {
 	writeJson,
 	type SourcePosition
 } from "@ark/fs"
+import { throwInternalError } from "@ark/util"
 import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"
@@ -86,7 +87,7 @@ const findCallExpressionAncestor = (
 	const calls = getCallExpressionsByName(startNode, [functionName], true)
 	if (calls.length) return startNode
 
-	throw new Error(
+	throwInternalError(
 		`Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
 			position
 		)}.`

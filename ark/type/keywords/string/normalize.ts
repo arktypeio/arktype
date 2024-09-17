@@ -1,7 +1,7 @@
 import { rootSchema } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
+import type { Branded, constrain, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {

@@ -19,17 +19,17 @@ import {
 	type Json,
 	type WhiteSpaceToken
 } from "@ark/util"
-import type { type } from "./keywords/ark.ts"
+import type { type } from "./keywords/keywords.ts"
+import type { inferAstRoot } from "./parser/ast/infer.ts"
+import type { validateAst } from "./parser/ast/validate.ts"
 import type {
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.ts"
-import type { inferAstRoot } from "./parser/semantic/infer.ts"
-import type { validateAst } from "./parser/semantic/validate.ts"
-import { DynamicState } from "./parser/string/reduce/dynamic.ts"
-import type { state, StaticState } from "./parser/string/reduce/static.ts"
-import type { Scanner } from "./parser/string/shift/scanner.ts"
-import { parseUntilFinalizer } from "./parser/string/string.ts"
+import { DynamicState } from "./parser/reduce/dynamic.ts"
+import type { state, StaticState } from "./parser/reduce/static.ts"
+import type { Scanner } from "./parser/shift/scanner.ts"
+import { parseUntilFinalizer } from "./parser/string.ts"
 import type { Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
 
@@ -55,6 +55,9 @@ export type GenericInstantiator<
 > =
 	params["length"] extends 1 ?
 		{
+			// precomputing the results as default parameters is more efficient
+			// here than inferring them into aliases conditionally as we do in
+			// some of type's methods
 			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
 				a: type.validate<a, args$> & validateGenericArg<a, params[0], args$>
 			): r

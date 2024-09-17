@@ -1,7 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
-import { incompleteArrayTokenMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage

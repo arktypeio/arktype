@@ -1,8 +1,6 @@
 import type { GenericAst } from "@ark/schema"
-import type { Hkt, array } from "@ark/util"
-import type { inferIntersection } from "../../intersect.ts"
-import type { arkKeyOf } from "../../keys.ts"
-import type { type } from "../../keywords/ark.ts"
+import type { Hkt, arkKeyOf, array } from "@ark/util"
+import type { Date } from "../../keywords/constructors/Date.ts"
 import type {
 	Default,
 	LimitLiteral,
@@ -10,12 +8,13 @@ import type {
 	applyConstraint,
 	applyConstraintSchema,
 	distill,
+	inferIntersection,
 	normalizeLimit
-} from "../../keywords/ast.ts"
-import type { Date } from "../../keywords/constructors/Date.ts"
+} from "../../keywords/inference.ts"
+import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
-import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
+import type { Comparator, MinComparator } from "../reduce/shared.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never

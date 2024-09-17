@@ -81,6 +81,10 @@ export const attest: AttestFn = Object.assign(attestInternal, {
 		const ctx = getBenchCtx([calledFrom.file])
 		ctx.benchCallPosition = calledFrom
 		ctx.lastSnapCallPosition = calledFrom
-		instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
+		instantiationDataHandler(
+			{ ...ctx, lastSnapFunctionName: "instantiations" },
+			args,
+			false
+		)
 	}
 }) as never

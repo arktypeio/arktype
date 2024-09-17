@@ -1,11 +1,11 @@
 import type { writeUnboundableMessage } from "@ark/schema"
 import type { ErrorMessage, array, typeToString } from "@ark/util"
-import type { LimitLiteral } from "../../keywords/ast.ts"
-import type { Comparator } from "../string/reduce/shared.ts"
+import type { LimitLiteral } from "../../keywords/inference.ts"
+import type { Comparator } from "../reduce/shared.ts"
 import type {
 	BoundExpressionKind,
 	writeInvalidLimitMessage
-} from "../string/shift/operator/bounds.ts"
+} from "../shift/operator/bounds.ts"
 import type { inferAstIn } from "./infer.ts"
 import type { astToString } from "./utils.ts"
 import type { validateAst } from "./validate.ts"

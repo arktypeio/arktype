@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeDuplicateAliasError } from "@ark/schema"
 import { scope, type, type BoundModule, type Module, type Type } from "arktype"
-import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/semantic/validate.ts"
+import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/ast/validate.ts"
 
 contextualize(() => {
 	contextualize.each(

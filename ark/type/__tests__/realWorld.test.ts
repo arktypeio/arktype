@@ -10,7 +10,7 @@ import type {
 	constrain,
 	number,
 	string
-} from "arktype/internal/keywords/ast.ts"
+} from "arktype/internal/keywords/inference.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -881,10 +881,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(out.toString()).snap("name must be removed or city must be removed")
 	})
 
-	it("array intersection", () => {
+	it("array intersection with object literal", () => {
 		const t = type({ name: "string" }).and("string[]")
 		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
 		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+
+		attest(t.expression).snap("{ name: string } & string[]")
 	})
 
 	it("tuple or morph inference", () => {

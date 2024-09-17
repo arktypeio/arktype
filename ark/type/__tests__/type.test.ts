@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { flatMorph } from "@ark/util"
-import { ark, Generic, scope, Type, type, type Ark } from "arktype"
+import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -106,14 +106,14 @@ contextualize(() => {
 			unknown: "unknown",
 			undefined: "undefined",
 			Key: "string | symbol",
-			Record: ark.Record.internal.json
+			Record: keywords.Record.internal.json
 		})
 
 		attest<number>(type.number.t)
 	})
 
 	it("ark attached", () => {
-		attest<string>(type.ark.number.integer.expression).snap("number % 1")
+		attest<string>(type.keywords.number.integer.expression).snap("number % 1")
 	})
 
 	it("unit", () => {
@@ -153,5 +153,14 @@ contextualize(() => {
 		attest<type<string | number> | undefined>(
 			t.ifExtends("string | number")
 		).equals(t)
+	})
+
+	it("allows assignment to unparameterized Type", () => {
+		const t = type({
+			name: "string >= 2",
+			email: "string.email"
+		})
+
+		const u: Type = t
 	})
 })

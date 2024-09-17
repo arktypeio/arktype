@@ -1,4 +1,5 @@
 import { filePath } from "@ark/fs"
+import { throwInternalError } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getConfig } from "../config.ts"
@@ -68,7 +69,12 @@ export const gatherInlineInstantiationData = (
 		const body = getDescendants(enclosingFunction.ancestor).find(
 			node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
 		) as ts.ArrowFunction | ts.FunctionExpression | undefined
-		if (!body) throw new Error("Unable to find file contents")
+		if (!body) {
+			throwInternalError(
+				`Unable to resolve source associated with TS Node:
+${enclosingFunction.ancestor.getText()}`
+			)
+		}
 
 		return {
 			location: enclosingFunction.position,

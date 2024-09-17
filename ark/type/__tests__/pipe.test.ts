@@ -7,8 +7,8 @@ import {
 	writeMorphIntersectionMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { ark, scope, type, type Type } from "arktype"
-import type { Out, To, constrain } from "arktype/internal/keywords/ast.ts"
+import { keywords, scope, type, type Type } from "arktype"
+import type { Out, To, constrain } from "arktype/internal/keywords/inference.ts"
 import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
 
 contextualize(() => {
@@ -64,10 +64,13 @@ contextualize(() => {
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array.readonly)
+			const t = type("string").pipe.try(
+				s => JSON.parse(s),
+				keywords.Array.readonly
+			)
 
 			const tOut = t.out
-			const expectedOut = ark.Array.readonly
+			const expectedOut = keywords.Array.readonly
 
 			attest<typeof expectedOut.t>(tOut.t)
 			attest(tOut.expression).equals(expectedOut.expression)
@@ -81,7 +84,7 @@ contextualize(() => {
 				writeInvalidOperandMessage(
 					"maxLength",
 					intrinsic.lengthBoundable,
-					ark.string.numeric.parse.internal
+					keywords.string.numeric.parse.internal
 				)
 			)
 			.type.errors("Property 'atMostLength' does not exist")
@@ -740,9 +743,6 @@ contextualize(() => {
 	| { r: 1; n: (In: numeric) => To<number> },
 	{}
 >`)
-
-		const serializedMorphs =
-			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.expression).snap(
 			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number>, r: 1 }"
