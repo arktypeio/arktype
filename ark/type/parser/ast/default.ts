@@ -1,10 +1,10 @@
 import type { writeUnassignableDefaultValueMessage } from "@ark/schema"
 import type { anyOrNever, ErrorMessage } from "@ark/util"
 import type {
+	applyConstraint,
 	Default,
-	InferredMorph,
-	Out,
-	To
+	InferredDefault,
+	InferredMorph
 } from "../../keywords/inference.ts"
 import type { type } from "../../keywords/keywords.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
@@ -24,6 +24,6 @@ export type validateDefault<baseAst, unitLiteral extends UnitLiteral, $, args> =
 export type withDefault<t, value> =
 	t extends InferredMorph<infer i, infer o> ?
 		[t] extends [anyOrNever] ?
-			(In: t | Default<value>) => Out<t>
-		:	(In: i | Default<value>) => o
-	:	(In: t | Default<value>) => To<t>
+			InferredDefault<t, value>
+		:	(In: InferredDefault<i, value>) => o
+	:	applyConstraint<t, Default<value>>

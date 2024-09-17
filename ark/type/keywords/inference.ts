@@ -40,7 +40,7 @@ export type DateLiteral<source extends string = string> =
 
 export type ConstraintSet = Record<PropertyKey, 1>
 
-export type Constraints = Record<string, ConstraintSet>
+export type Constraints = Record<string, ConstraintSet> | { default?: unknown }
 
 export const constrained = noSuggest("arkConstrained")
 
@@ -242,7 +242,6 @@ type _distill<t, opts extends distill.Options> =
 			distillIo<i, o, opts>
 		:	distillUnbrandedIo<t, i, o, opts>
 	: t extends array ? distillArray<t, opts>
-	: t extends InferredDefault<infer t> ? _distill<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
@@ -257,11 +256,7 @@ type distillMappable<o, opts extends distill.Options> =
 				[k in keyof o as k extends inferredOptionalOrDefaultKeyOf<o> ? never
 				:	k]: _distill<o[k], opts>
 			} & {
-				[k in inferredOptionalOrDefaultKeyOf<o>]?: o[k] extends (
-					InferredDefault<infer i>
-				) ?
-					i
-				:	_distill<o[k], opts>
+				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<o[k], opts>
 			}
 		>
 	:	show<
@@ -435,11 +430,11 @@ export type Optional = {
 
 export type InferredOptional<t = unknown> = constrain<t, Optional>
 
-export type Default<v = any> = ["=", v]
+export type Default<v = any> = {
+	default?: { value: v }
+}
 
-export type InferredDefault<i = any, v = any, o = i> = (
-	In: i | Default<v>
-) => Out<o>
+export type InferredDefault<t = unknown, v = any> = constrain<t, Default<v>>
 
 export type termOrType<t> = t | Type<t, any>
 

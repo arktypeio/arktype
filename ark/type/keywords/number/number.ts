@@ -5,6 +5,7 @@ import type {
 	constrain,
 	constraint,
 	Constraints,
+	Default,
 	Narrowed,
 	Optional
 } from "../inference.ts"
@@ -65,6 +66,8 @@ export declare namespace number {
 
 	export type optional = constrain<number, Optional>
 
+	export type defaultsTo<rule> = constrain<number, Default<rule>>
+
 	export type branded<rule> = constrain<number, Branded<rule>>
 
 	export type NaN = branded<"NaN">
@@ -93,6 +96,7 @@ export declare namespace number {
 		: constraint extends LessThan<infer rule> ? lessThan<rule>
 		: constraint extends DivisibleBy<infer rule> ? divisibleBy<rule>
 		: constraint extends Optional ? optional
+		: constraint extends Default<infer rule> ? defaultsTo<rule>
 		: constraint extends Narrowed ? narrowed
 		: never
 

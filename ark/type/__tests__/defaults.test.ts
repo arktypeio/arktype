@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { writeUnassignableDefaultValueMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
-import type { Default, To } from "arktype/internal/keywords/inference.ts"
+import type { InferredDefault } from "arktype/internal/keywords/inference.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -60,7 +60,7 @@ contextualize(() => {
 
 			attest<{
 				foo: string
-				bar: (In: number | Default<5>) => To<number>
+				bar: InferredDefault<number, 5>
 			}>(types.stringDefault.t)
 
 			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
@@ -143,7 +143,7 @@ contextualize(() => {
 			const processForm = type({
 				bool_value: type("string")
 					.pipe(v => (v === "on" ? true : false))
-					.default(false)
+					.default("off")
 			})
 		})
 	})
@@ -184,7 +184,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: (In: Date | Default<Date.literal<"1993-05-21">>) => To<Date>
+				key: InferredDefault<Date, Date.literal<"1993-05-21">>
 			}>(t.t)
 			attest(t.json).equals(expected.json)
 		})
