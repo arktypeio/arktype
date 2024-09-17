@@ -39,7 +39,7 @@ interface Type<out t extends object = object, $ = {}>
 
 	get<k1 extends arkKeyOf<t>, r = instantiateType<arkGet<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
-	): r
+	): NoInfer<r>
 	get<
 		k1 extends arkKeyOf<t>,
 		k2 extends arkKeyOf<arkGet<t, k1>>,
@@ -47,7 +47,7 @@ interface Type<out t extends object = object, $ = {}>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
-	): r
+	): NoInfer<r>
 	get<
 		k1 extends arkKeyOf<t>,
 		k2 extends arkKeyOf<arkGet<t, k1>>,
@@ -57,7 +57,7 @@ interface Type<out t extends object = object, $ = {}>
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): r
+	): NoInfer<r>
 
 	pick<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
@@ -87,7 +87,7 @@ interface Type<out t extends object = object, $ = {}>
 
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
-	map<transformed extends listable<MappedTypeProp<Key, v>>, v = unknown>(
+	map<transformed extends listable<MappedTypeProp>>(
 		// v isn't used directly here but helps TS infer a precise type for transformed
 		flatMapEntry: (entry: typePropOf<t, $>) => transformed
 	): Type<constructMapped<t, transformed>, $>
