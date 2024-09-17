@@ -744,9 +744,6 @@ contextualize(() => {
 	{}
 >`)
 
-		const serializedMorphs =
-			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
-
 		attest(t.expression).snap(
 			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number>, r: 1 }"
 		)

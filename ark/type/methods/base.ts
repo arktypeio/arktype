@@ -92,11 +92,11 @@ interface Type<out t = unknown, $ = {}>
 	// like "nested 'and' chained from morph on optional"
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $>
+	): instantiateType<inferIntersection<t, NoInfer<r>>, $>
 
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<t | r, $>
+	): instantiateType<t | NoInfer<r>, $>
 
 	array(): ArrayType<t[], $>
 

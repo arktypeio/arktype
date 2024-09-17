@@ -9,6 +9,8 @@ import type { ObjectType } from "./object.ts"
 import type { StringType } from "./string.ts"
 import type { ValidatorType } from "./validator.ts"
 
+// NoInfer avoids return type inference that can lead to incorrect results
+// See: https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
 export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
 	[Extract<t, InferredMorph>] extends [anyOrNever] ?

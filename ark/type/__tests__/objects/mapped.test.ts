@@ -15,20 +15,28 @@ contextualize(() => {
 		attest(t.expression).equals(original.expression)
 	})
 
-	it("change one value", () => {
+	it("change values", () => {
 		const original = type({
 			"foo?": "string",
 			bar: "number",
-			baz: "boolean"
+			baz: {
+				inner: "string"
+			}
 		})
-		const withNullableBar = original.map(prop => {
+
+		const t = original.map(prop => {
 			if (prop.key === "bar") {
-				// due to a TS bug, this has to be assigned to a variable,
-				// otherwise the | null is not inferred: https://github.com/arktypeio/arktype/issues/1132
-				const nullableBar = prop.value.or("null")
 				return {
 					key: prop.key,
-					value: nullableBar
+					value: prop.value.or("null")
+				}
+			}
+			if (prop.key === "baz") {
+				return {
+					key: prop.key,
+					value: prop.value.and({
+						intersectedInner: "number"
+					})
 				}
 			}
 			return prop
@@ -37,11 +45,14 @@ contextualize(() => {
 		const expected = type({
 			"foo?": "string",
 			bar: "number | null",
-			baz: "boolean"
+			baz: {
+				inner: "string",
+				intersectedInner: "number"
+			}
 		})
 
-		attest<typeof expected>(withNullableBar)
-		attest(withNullableBar.expression).equals(expected.expression)
+		attest<typeof expected>(t)
+		attest(t.expression).equals(expected.expression)
 	})
 
 	it("change optionality", () => {
