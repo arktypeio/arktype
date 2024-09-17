@@ -60,7 +60,7 @@ export type GenericInstantiator<
 			// some of type's methods
 			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
 				a: type.validate<a, args$> & validateGenericArg<a, params[0], args$>
-			): NoInfer<r>
+			): r
 		}
 	: params["length"] extends 2 ?
 		{
