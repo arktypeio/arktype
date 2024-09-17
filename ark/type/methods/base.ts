@@ -63,15 +63,6 @@ interface Type<out t = unknown, $ = {}>
 
 	describe(description: string): this
 
-	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
-
-	default<
-		value extends this["infer"],
-		r = (In?: this["inferBrandableIn"]) => Default<value>
-	>(
-		value: value
-	): instantiateType<r, $>
-
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
@@ -83,24 +74,24 @@ interface Type<out t = unknown, $ = {}>
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
-	// these defaulted params are split up to optimize
-	// type perf while maintaining accurate inference for test cases
-	// like "nested 'and' chained from morph on optional".
-
-	// NoInfer avoids return type inference that can lead to incorrect results.
-	// It should be added to all defaulted params.
-	// See: https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
-	intersect<const def, r = type.infer<def, $>>(
+	// inferring r into an alias improves perf and avoids return type inference
+	// that can lead to incorrect results. See:
+	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
+	intersect<const def>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, NoInfer<r>>, $> | Disjoint
+	): type.infer<def, $> extends infer r ?
+		instantiateType<inferIntersection<t, r>, $> | Disjoint
+	:	never
 
-	and<const def, r = type.infer<def, $>>(
+	and<const def>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, NoInfer<r>>, $>
+	): type.infer<def, $> extends infer r ?
+		instantiateType<inferIntersection<t, r>, $>
+	:	never
 
-	or<const def, r = type.infer<def, $>>(
+	or<const def>(
 		def: type.validate<def, $>
-	): instantiateType<t | NoInfer<r>, $>
+	): type.infer<def, $> extends infer r ? instantiateType<t | r, $> : never
 
 	array(): ArrayType<t[], $>
 
@@ -110,30 +101,43 @@ interface Type<out t = unknown, $ = {}>
 
 	ifEquals<const def>(
 		def: type.validate<def, $>
-	): instantiateType<type.infer<def, $>, $> | undefined
+	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
+	:	never
 
-	extends<const def>(
-		other: type.validate<def, $>
-	): this is instantiateType<type.infer<def, $>, $>
+	extends<const def>(other: type.validate<def, $>): boolean
 
 	ifExtends<const def>(
 		other: type.validate<def, $>
-	): instantiateType<type.infer<def, $>, $> | undefined
+	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
+	:	never
 
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
 	extract<const def>(
 		r: type.validate<def, $>
-	): instantiateType<Extract<t, type.infer<def, $>>, $>
+	): type.infer<def, $> extends infer r ? instantiateType<Extract<t, r>, $>
+	:	never
 
 	exclude<const def>(
 		r: type.validate<def, $>
-	): instantiateType<Exclude<t, type.infer<def, $>>, $>
+	): type.infer<def, $> extends infer r ? instantiateType<Exclude<t, r>, $>
+	:	never
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
 	): NoInfer<reduceOut>
+
+	// inferring r into an alias in the return doesn't
+	// work the way it does for the other methods here
+	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
+
+	default<
+		value extends this["infer"],
+		r = (In?: this["inferBrandableIn"]) => Default<value>
+	>(
+		value: value
+	): instantiateType<r, $>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

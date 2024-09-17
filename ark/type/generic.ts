@@ -55,6 +55,9 @@ export type GenericInstantiator<
 > =
 	params["length"] extends 1 ?
 		{
+			// precomputing the results as default parameters is more efficient
+			// here than inferring them into aliases conditionally as we do in
+			// some of type's methods
 			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
 				a: type.validate<a, args$> & validateGenericArg<a, params[0], args$>
 			): r

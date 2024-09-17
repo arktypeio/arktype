@@ -314,17 +314,16 @@ type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
-type inferredDefaultKeyOf<o> = {
-	[k in keyof o]: [o[k]] extends [anyOrNever] ? never
+type inferredDefaultKeyOf<o> = keyof {
+	[k in keyof o as [o[k]] extends [anyOrNever] ? never
 	: o[k] extends InferredDefault ? k
-	: never
-}[keyof o]
-
-type inferredOptionalKeyOf<o> = {
-	[k in keyof o]: [o[k]] extends [anyOrNever] ? never
+	: never]: never
+}
+type inferredOptionalKeyOf<o> = keyof {
+	[k in keyof o as [o[k]] extends [anyOrNever] ? never
 	: o[k] extends InferredOptional ? k
-	: never
-}[keyof o]
+	: never]: never
+}
 
 type distillArray<t extends array, opts extends distill.Options> =
 	_distillArray<[...t], opts, []> extends infer result ?

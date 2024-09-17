@@ -61,6 +61,44 @@ contextualize(() => {
 		attest(t.expression).equals(expected.expression)
 	})
 
+	it("filter and split values", () => {
+		const original = type({
+			"foo?": "string",
+			bar: "number",
+			baz: {
+				inner: "string"
+			}
+		})
+
+		const getInner = (data: typeof original.infer.baz) => data.inner
+
+		const t = original.map(prop => {
+			if (prop.key === "bar") return []
+
+			if (prop.key === "baz") {
+				return [
+					prop,
+					{
+						key: "fromBaz" as const,
+						value: prop.value.pipe(getInner)
+					}
+				]
+			}
+			return prop
+		})
+
+		const expected = type({
+			"foo?": "string",
+			baz: {
+				inner: "string"
+			},
+			fromBaz: original.get("baz").pipe(getInner)
+		})
+
+		attest<typeof expected>(t)
+		attest(t.expression).equals(expected.expression)
+	})
+
 	it("change optionality", () => {
 		const original = type({
 			"foo?": "string",

@@ -37,27 +37,24 @@ interface Type<out t extends object = object, $ = {}>
 
 	keyof(): instantiateType<arkKeyOf<t>, $>
 
-	get<k1 extends arkKeyOf<t>, r = instantiateType<arkGet<t, k1>, $>>(
+	get<k1 extends arkKeyOf<t>>(
 		k1: k1 | type.cast<k1>
-	): NoInfer<r>
-	get<
-		k1 extends arkKeyOf<t>,
-		k2 extends arkKeyOf<arkGet<t, k1>>,
-		r = instantiateType<arkGet<arkGet<t, k1>, k2>, $>
-	>(
+	): instantiateType<arkGet<t, k1>, $> extends infer r ? r : never
+	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<arkGet<t, k1>>>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
-	): NoInfer<r>
+	): instantiateType<arkGet<arkGet<t, k1>, k2>, $> extends infer r ? r : never
 	get<
 		k1 extends arkKeyOf<t>,
 		k2 extends arkKeyOf<arkGet<t, k1>>,
-		k3 extends arkKeyOf<arkGet<arkGet<t, k1>, k2>>,
-		r = instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $>
+		k3 extends arkKeyOf<arkGet<arkGet<t, k1>, k2>>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): NoInfer<r>
+	): instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $> extends infer r ?
+		r
+	:	never
 
 	pick<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
