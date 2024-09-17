@@ -1,4 +1,4 @@
-import type { Optional, Required } from "@ark/schema"
+import type { BaseMappedPropInner, OptionalMappedPropInner } from "@ark/schema"
 import type {
 	arkGet,
 	arkKeyOf,
@@ -6,6 +6,7 @@ import type {
 	ErrorType,
 	inferred,
 	intersectUnion,
+	Json,
 	Key,
 	listable,
 	merge,
@@ -13,6 +14,7 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
+import type { distill, InferredDefault } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -76,86 +78,77 @@ interface Type<out t extends object = object, $ = {}>
 
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
-	map<transformed extends listable<MappedTypeEntry<Key, v>>, v = unknown>(
+	map<transformed extends listable<MappedTypeProp<Key, v>>, v = unknown>(
 		// v isn't used directly here but helps TS infer a precise type for transformed
-		flatMapEntry: (entry: typeEntryOf<t, $>) => transformed
+		flatMapEntry: (entry: typePropOf<t, $>) => transformed
 	): Type<constructMapped<t, transformed>, $>
 
-	literalEntries: array<typeEntryOf<t, $>>
+	props: array<typePropOf<t, $>>
 }
 
-export type MappedTypeEntry<k extends Key = Key, v = unknown> =
-	| HomomorphicMappedTypeEntry<k, v>
-	| RequiredMappedTypeEntry<k, v>
-	| OptionalMappedTypeEntry<k, v>
-
-export type HomomorphicMappedTypeEntry<
-	k extends Key = Key,
-	v = unknown
-> = readonly [key: k, value: type.cast<v>]
-
-export type RequiredMappedTypeEntry<
-	k extends Key = Key,
-	v = unknown
-> = readonly [
-	key: k,
-	value: type.cast<v>,
-	kind: "required",
-	additionalInnerProps?: Omit<Required.Inner, "key" | "value">
-]
-
-export type OptionalMappedTypeEntry<
-	k extends Key = Key,
-	v = unknown
-> = readonly [
-	key: k,
-	value: type.cast<v>,
-	kind: "optional",
-	additionalInnerProps?: Omit<Optional.Inner, "key" | "value">
-]
-
-type TypeEntries = array<MappedTypeEntry>
-
-type typeEntryOf<t, $> = {
-	[k in keyof t]-?: readonly [
-		k,
-		instantiateType<t[k] & ({} | null), $>,
-		k extends optionalKeyOf<t> ? "optional" : "required",
-		k extends optionalKeyOf<t> ? Optional.Node : Required.Node
-	]
-}[keyof t] &
+type typePropOf<o, $> = {
+	[k in keyof o]-?: typeProp<o, k, $>
+}[keyof o] &
 	unknown
 
-type constructMapped<t, transformed extends listable<MappedTypeEntry>> = show<
-	intersectUnion<
-		fromTypeEntries<
-			t,
-			transformed extends TypeEntries ? transformed : [transformed]
-		>
-	>
->
+type typeProp<o, k extends keyof o, $> =
+	o[k] & ({} | null) extends infer v ?
+		{
+			kind: k extends optionalKeyOf<distill.In<o>> ? "optional" : "required"
+			key: k
+			value: instantiateType<v, $>
+			meta: ArkEnv.meta
+			default: v extends InferredDefault<infer defaultValue> ? defaultValue
+			:	undefined
+			toJSON: () => Json
+		}
+	:	never
 
-type fromTypeEntries<t, entries extends TypeEntries> = show<
+type MappedTypeProp<k extends Key = Key, v = unknown> =
+	| BaseMappedTypeProp<k, v>
+	| OptionalMappedTypeProp<k, v>
+
+type BaseMappedTypeProp<k extends Key, v> = merge<
+	BaseMappedPropInner,
 	{
-		[entry in entries[number] as Extract<
-			applyHomomorphicOptionality<t, entry>,
-			readonly [unknown, unknown, "required"]
-		>[0]]: entry[1][inferred]
-	} & {
-		[entry in entries[number] as Extract<
-			applyHomomorphicOptionality<t, entry>,
-			readonly [unknown, unknown, "optional"]
-		>[0]]?: entry[1][inferred]
+		key: k
+		value: type.cast<v>
 	}
 >
 
-// mirrors reduceMappedEntry in @ark/schema
-type applyHomomorphicOptionality<t, entry extends MappedTypeEntry> = readonly [
-	entry[0],
-	entry[1],
-	entry[2] extends string ? entry[2]
-	: entry[0] extends optionalKeyOf<t> ? "optional"
-	: "required"
-]
+type OptionalMappedTypeProp<k extends Key, v> = merge<
+	OptionalMappedPropInner,
+	{
+		key: k
+		value: type.cast<v>
+		default?: v
+	}
+>
+
+type constructMapped<t, transformed extends listable<MappedTypeProp>> = show<
+	intersectUnion<
+		fromTypeProps<t, transformed extends array ? transformed : [transformed]>
+	>
+>
+
+type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
+	{
+		[prop in props[number] as Extract<
+			applyHomomorphicOptionality<t, prop>,
+			{ kind: "required" }
+		>["key"]]: prop["value"][inferred]
+	} & {
+		[prop in props[number] as Extract<
+			applyHomomorphicOptionality<t, prop>,
+			{ kind: "optional" }
+		>["key"]]?: prop["value"][inferred]
+	}
+>
+
+type applyHomomorphicOptionality<t, prop extends MappedTypeProp> =
+	prop["kind"] extends string ? prop
+	:	prop & {
+			kind: prop["key"] extends optionalKeyOf<t> ? "optional" : "required"
+		}
 
 export type { Type as ObjectType }

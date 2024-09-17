@@ -686,11 +686,11 @@ export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 export type MappedPropInner = BaseMappedPropInner | OptionalMappedPropInner
 
 // this assumes the props on Required.Inner are a subset of those on Optional.Inner
-export interface BaseMappedPropInner extends Required.Inner {
+export interface BaseMappedPropInner extends Required.Schema {
 	kind?: "required" | "optional"
 }
 
-export interface OptionalMappedPropInner extends Optional.Inner {
+export interface OptionalMappedPropInner extends Optional.Schema {
 	kind: "optional"
 }
 

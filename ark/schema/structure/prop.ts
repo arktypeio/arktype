@@ -30,7 +30,8 @@ export declare namespace Prop {
 		readonly value: RootSchema
 	}
 
-	export interface Inner extends Schema {
+	export interface Inner {
+		readonly key: Key
 		readonly value: BaseRoot
 	}
 
