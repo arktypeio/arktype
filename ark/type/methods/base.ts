@@ -83,13 +83,17 @@ interface Type<out t = unknown, $ = {}>
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
-	intersect<const def, r = type.infer<def, $>>(
-		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $> | Disjoint
-
 	// these defaulted params are split up to optimize
 	// type perf while maintaining accurate inference for test cases
-	// like "nested 'and' chained from morph on optional"
+	// like "nested 'and' chained from morph on optional".
+
+	// NoInfer avoids return type inference that can lead to incorrect results.
+	// It should be added to all defaulted params.
+	// See: https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
+	intersect<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
+	): instantiateType<inferIntersection<t, NoInfer<r>>, $> | Disjoint
+
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, NoInfer<r>>, $>
@@ -129,7 +133,7 @@ interface Type<out t = unknown, $ = {}>
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
-	): reduceOut
+	): NoInfer<reduceOut>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

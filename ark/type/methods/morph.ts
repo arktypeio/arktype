@@ -14,7 +14,7 @@ import type { BaseType } from "./base.ts"
 interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 	to<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): Type<inferPipe<t, r>, $>
+	): Type<inferPipe<t, NoInfer<r>>, $>
 
 	narrow<narrowed extends this["infer"] = never>(
 		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>

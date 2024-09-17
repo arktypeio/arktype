@@ -25,6 +25,12 @@ contextualize(() => {
 		})
 
 		const t = original.map(prop => {
+			if (prop.key === "foo") {
+				return {
+					key: prop.key,
+					value: prop.value.array().atLeastLength(1)
+				}
+			}
 			if (prop.key === "bar") {
 				return {
 					key: prop.key,
@@ -43,7 +49,7 @@ contextualize(() => {
 		})
 
 		const expected = type({
-			"foo?": "string",
+			"foo?": "string[] >= 1",
 			bar: "number | null",
 			baz: {
 				inner: "string",

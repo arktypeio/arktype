@@ -81,7 +81,7 @@ interface Type<out t extends object = object, $ = {}>
 		def: type.validate<def, $> &
 			(r extends object ? unknown
 			:	ErrorType<"Merged type must be an object", [actual: r]>)
-	): Type<merge<t, r & object>, $>
+	): Type<merge<t, NoInfer<r & object>>, $>
 
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
 
