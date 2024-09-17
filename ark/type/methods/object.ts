@@ -1,4 +1,8 @@
-import type { BaseMappedPropInner, OptionalMappedPropInner } from "@ark/schema"
+import type {
+	BaseMappedPropInner,
+	OptionalMappedPropInner,
+	Prop
+} from "@ark/schema"
 import type {
 	anyOrNever,
 	arkGet,
@@ -98,26 +102,41 @@ type typePropOf<o, $> = {
 
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 	t extends InferredDefault<infer v, infer defaultValue> ?
-		{
-			kind: "optional"
-			key: k
-			value: instantiateType<v, $>
-			meta: ArkEnv.meta
-			default: defaultValue
-			toJSON: () => Json
-		}
-	:	{
-			kind: k extends optionalKeyOf<o> ? "optional"
+		DefaultedTypeProp<k & Key, v, defaultValue, $>
+	:	BaseTypeProp<
+			k extends optionalKeyOf<o> ? "optional"
 			: t extends InferredOptional ?
 				[t] extends [anyOrNever] ?
 					"required"
 				:	"optional"
-			:	"required"
-			key: k
-			value: instantiateType<t, $>
-			meta: ArkEnv.meta
-			toJSON: () => Json
-		}
+			:	"required",
+			k & Key,
+			t,
+			$
+		>
+
+export interface BaseTypeProp<
+	kind extends Prop.Kind = Prop.Kind,
+	k extends Key = Key,
+	/** @ts-ignore cast variance */
+	out v = unknown,
+	$ = {}
+> {
+	kind: kind
+	key: k
+	value: instantiateType<v, $>
+	meta: ArkEnv.meta
+	toJSON: () => Json
+}
+
+export interface DefaultedTypeProp<
+	k extends Key = Key,
+	v = unknown,
+	defaultValue = v,
+	$ = {}
+> extends BaseTypeProp<"optional", k, v, $> {
+	default: defaultValue
+}
 
 type MappedTypeProp<k extends Key = Key, v = unknown> =
 	| BaseMappedTypeProp<k, v>
