@@ -92,11 +92,11 @@ export type keyOf<o> =
 		number extends o["length"] ?
 			`${number}`
 		:	keyof o & `${number}`
-	:	keyof {
-			[k in keyof o as k extends string ? k
-			: k extends number ? `${k}`
-			: never]: never
-		}
+	: keyof o extends infer k ?
+		k extends string ? k
+		: k extends number ? `${k}`
+		: never
+	:	never
 
 export const keysOf = <o extends object>(o: o): keyOf<o>[] =>
 	Object.keys(o) as never
@@ -130,9 +130,14 @@ export const hasDefinedKey: <o extends object, k extends unionKeyOf<o>>(
 ) => o is extractDefinedKey<o, k> = (o, k): o is any =>
 	(o as any)[k] !== undefined
 
-export type requiredKeyOf<o> = keyof {
-	[k in keyof o as o extends { [_ in k]-?: o[k] } ? k : never]: never
-}
+export type requiredKeyOf<o> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			o extends { [_ in k]-?: o[k] } ?
+				k
+			:	never
+		:	never
+	:	never
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
@@ -159,6 +164,9 @@ type excludeExactKeyOf<key extends PropertyKey, o> = Exclude<
 	extractExactKeyOf<key, o>
 >
 
+// we can't use the normal method to distrubte over the keys
+// since we need to preserve index signatures + literals
+// like string | "foo" that would collapse in a union
 type extractExactKeyOf<key extends PropertyKey, base> = keyof {
 	[k in keyof base as [key, k] extends [k, key] ? key : never]: 1
 }

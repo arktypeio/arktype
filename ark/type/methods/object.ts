@@ -6,6 +6,7 @@ import type {
 import type {
 	anyOrNever,
 	arkGet,
+	arkIndexableOf,
 	arkKeyOf,
 	array,
 	ErrorType,
@@ -37,17 +38,20 @@ interface Type<out t extends object = object, $ = {}>
 
 	keyof(): instantiateType<arkKeyOf<t>, $>
 
-	get<k1 extends arkKeyOf<t>>(
+	get<const k1 extends arkIndexableOf<t>>(
 		k1: k1 | type.cast<k1>
 	): instantiateType<arkGet<t, k1>, $> extends infer r ? r : never
-	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<arkGet<t, k1>>>(
+	get<
+		const k1 extends arkIndexableOf<t>,
+		const k2 extends arkIndexableOf<arkGet<t, k1>>
+	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
 	): instantiateType<arkGet<arkGet<t, k1>, k2>, $> extends infer r ? r : never
 	get<
-		k1 extends arkKeyOf<t>,
-		k2 extends arkKeyOf<arkGet<t, k1>>,
-		k3 extends arkKeyOf<arkGet<arkGet<t, k1>, k2>>
+		const k1 extends arkIndexableOf<t>,
+		const k2 extends arkIndexableOf<arkGet<t, k1>>,
+		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,

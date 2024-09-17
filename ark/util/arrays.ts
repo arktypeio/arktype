@@ -236,9 +236,14 @@ export const appendUnique = <to extends unknown[]>(
 	return to
 }
 
-export type groupableKeyOf<t> = keyof {
-	[k in keyof t as t[k] extends PropertyKey ? k : never]: never
-}
+export type groupableKeyOf<o> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			o[k] extends PropertyKey ?
+				k
+			:	never
+		:	never
+	:	never
 
 export type groupBy<element, discriminant extends groupableKeyOf<element>> = {
 	[k in element[discriminant] & PropertyKey]?: (element extends unknown ?

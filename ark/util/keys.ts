@@ -10,21 +10,39 @@ export type toArkKey<o, k extends keyof o> =
 		:	`${k}`
 	:	k
 
-export type arkKeyOf<o> =
-	[o] extends [array] ?
-		| (number extends o["length"] ? NonNegativeIntegerLiteral : never)
-		| keyof {
-				[k in keyof o as k extends `${infer index extends number}` ? index | k
-				:	never]: never
-		  }
-	:	keyof {
-			[k in keyof o as k extends number ? k | `${k}` : k]: never
-		}
+export type arkIndexableOf<o> =
+	arkKeyOf<o> extends infer k ?
+		k extends `${infer index extends number}` ?
+			index | k
+		:	k
+	:	never
 
-export type arkGet<o, k extends arkKeyOf<o>> = o[Extract<
-	k extends NonNegativeIntegerLiteral ? number : k,
-	keyof o
->]
+export type arkKeyOf<o> =
+	[o] extends [object] ?
+		[o] extends [array] ?
+			arkArrayKeyOf<o>
+		:	arkObjectLiteralKeyOf<o>
+	:	never
+
+type arkArrayKeyOf<a extends array> =
+	number extends a["length"] ? NonNegativeIntegerLiteral
+	: keyof a extends infer i ?
+		i extends `${number}` ?
+			i
+		:	never
+	:	never
+
+type arkObjectLiteralKeyOf<o extends object> =
+	keyof o extends infer k ?
+		k extends number ?
+			`${k}`
+		:	k
+	:	never
+
+export type arkGet<o, k extends arkIndexableOf<o>> = o[k extends keyof o ? k
+: NonNegativeIntegerLiteral extends k ? number & keyof o
+: k extends number ? `${k}` & keyof o
+: never]
 
 export type writeInvalidKeysMessage<
 	o extends string,
