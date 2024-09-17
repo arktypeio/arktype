@@ -28,7 +28,6 @@ import {
 } from "@ark/util"
 import type {
 	applyConstraint,
-	Default,
 	distill,
 	inferIntersection,
 	inferMorphOut,
@@ -38,6 +37,7 @@ import type {
 	Out
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
+import type { withDefault } from "./ast/default.ts"
 import type { InfixOperator, PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
@@ -375,8 +375,7 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
-	: def[1] extends "=" ?
-		(In?: inferDefinition<def[0], $, args>) => Default<def[2]>
+	: def[1] extends "=" ? withDefault<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "?" ?
 		applyConstraint<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]

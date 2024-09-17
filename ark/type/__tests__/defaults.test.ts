@@ -1,7 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
+import { writeUnassignableDefaultValueMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
-import type { Default } from "arktype/internal/keywords/inference.ts"
+import type { Default, To } from "arktype/internal/keywords/inference.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -59,7 +60,7 @@ contextualize(() => {
 
 			attest<{
 				foo: string
-				bar: (In?: number | undefined) => Default<5>
+				bar: (In: number | Default<5>) => To<number>
 			}>(types.stringDefault.t)
 
 			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
@@ -106,6 +107,45 @@ contextualize(() => {
 				domain: "object"
 			})
 		})
+
+		it("invalid chained", () => {
+			// @ts-expect-error
+			attest(() => type("number").default(true))
+				.throws(
+					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+				)
+				.type.errors(
+					"'boolean' is not assignable to parameter of type 'number'"
+				)
+		})
+
+		it("spread", () => {
+			const t = type("number", "=", 5)
+
+			const expected = type(["number", "=", 5])
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid spread", () => {
+			// @ts-expect-error
+			attest(() => type("number", "=", true))
+				.throws(
+					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+				)
+				.type.errors(
+					"'boolean' is not assignable to parameter of type 'number'"
+				)
+		})
+
+		it("morphed", () => {
+			// https://discord.com/channels/957797212103016458/1280932672029593811/1283368602355109920
+			const processForm = type({
+				bool_value: type("string")
+					.pipe(v => (v === "on" ? true : false))
+					.default(false)
+			})
+		})
 	})
 
 	describe("string parsing", () => {
@@ -144,7 +184,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: (In?: Date) => Default<Date.literal<"1993-05-21">>
+				key: (In: Date | Default<Date.literal<"1993-05-21">>) => To<Date>
 			}>(t.t)
 			attest(t.json).equals(expected.json)
 		})
@@ -186,8 +226,11 @@ contextualize(() => {
 		it("incorrect default type", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
-				.throws.snap(
-					'ParseError: Default value for key "bar" must be a number (was boolean)'
+				.throws(
+					writeUnassignableDefaultValueMessage(
+						'"bar"',
+						"must be a number (was boolean"
+					)
 				)
 				.type.errors("true is not assignable to number")
 		})

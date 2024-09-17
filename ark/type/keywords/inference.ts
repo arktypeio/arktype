@@ -257,7 +257,11 @@ type distillMappable<o, opts extends distill.Options> =
 				[k in keyof o as k extends inferredOptionalOrDefaultKeyOf<o> ? never
 				:	k]: _distill<o[k], opts>
 			} & {
-				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<o[k], opts>
+				[k in inferredOptionalOrDefaultKeyOf<o>]?: o[k] extends (
+					InferredDefault<infer i>
+				) ?
+					i
+				:	_distill<o[k], opts>
 			}
 		>
 	:	show<
@@ -433,7 +437,9 @@ export type InferredOptional<t = unknown> = constrain<t, Optional>
 
 export type Default<v = any> = ["=", v]
 
-export type InferredDefault<t = any, v = any> = (In?: t) => Default<v>
+export type InferredDefault<i = any, v = any, o = i> = (
+	In: i | Default<v>
+) => Out<o>
 
 export type termOrType<t> = t | Type<t, any>
 
