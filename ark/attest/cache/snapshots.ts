@@ -160,9 +160,9 @@ const snapshotArgsToQueuedUpdate = ({
 		:	JSON.stringify(serializedValue)
 
 	if (newArgText.includes("$ark.bigint-"))
-		newArgText = `${newArgText.slice(0, -1)}n`
+		newArgText = `${newArgText.replace('"$ark.bigint-', "").slice(0, -1)}n`
 	else if (newArgText.includes("$ark.undefined"))
-		newArgText = newArgText.replaceAll("$ark.undefined", "undefined")
+		newArgText = newArgText.replace('"$ark.undefined"', "undefined")
 
 	return {
 		position,
