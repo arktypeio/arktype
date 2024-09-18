@@ -1,8 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	registeredReference,
 	writeNonPrimitiveNonFunctionDefaultValueMessage,
 	writeUnassignableDefaultValueMessage
 } from "@ark/schema"
+import type { Primitive } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import type {
@@ -15,25 +17,35 @@ import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/ope
 contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {
+			const fn5 = () => 5 as const
 			const o = type({
 				a: "string",
 				foo: "number = 5",
 				bar: ["number", "=", 5],
-				baz: ["number", "=", () => 5 as const]
+				baz: ["number", "=", fn5]
 			})
-			type x = typeof o.t.baz
+			const fn5reg = registeredReference(fn5)
 
 			// ensure type ast displays is exactly as expected
 			attest(o.t).type.toString.snap(
-				"{ a: string; foo: defaultsTo<5>; bar: defaultsTo<5>; baz: defaultsTo<5> }"
+				`{
+	a: string
+	foo: defaultsTo<5>
+	bar: defaultsTo<5>
+	baz: defaultsTo<() => 5>
+}`
 			)
 			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
 
-			attest(o.omit("baz").json).snap({
+			attest(o.json).snap({
 				required: [{ key: "a", value: "string" }],
 				optional: [
-					// WHY ARE THEY REVERSED?
+					{
+						default: fn5reg,
+						key: "baz",
+						value: { domain: "number", meta: { default: fn5reg } }
+					},
 					{
 						default: 5,
 						key: "bar",
@@ -71,7 +83,9 @@ contextualize(() => {
 						"must be a number (was a string)"
 					)
 				)
-				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
+				.type.errors.snap(
+					"Type 'string' is not assignable to type 'number | (() => number)'."
+				)
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", bar: ["number", "=", () => "5"] })
@@ -81,7 +95,9 @@ contextualize(() => {
 						"must be a number (was a string)"
 					)
 				)
-				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
+				.type.errors.snap(
+					"Type '() => string' is not assignable to type 'number | (() => number)'.Type '() => string' is not assignable to type '() => number'.Type 'string' is not assignable to type 'number'."
+				)
 		})
 
 		it("validated default in scope", () => {
@@ -163,7 +179,7 @@ contextualize(() => {
 					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
 				)
 				.type.errors(
-					"'boolean' is not assignable to parameter of type 'number'"
+					"'boolean' is not assignable to parameter of type 'number | (() => number)'"
 				)
 		})
 
@@ -444,8 +460,10 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ bar: type("number[]").default(() => ["a"]) })
 				// THIS LOOKS WEIRD TBH
-			}).throws.snap(
-				"ParseError: Default value value at [0] must be a number (was a string)"
+			}).throws(
+				writeUnassignableDefaultValueMessage(
+					"value at [0] must be a number (was a string)"
+				)
 			)
 			attest(() => {
 				type({
@@ -454,8 +472,10 @@ contextualize(() => {
 						// @ts-expect-error
 						.default(() => ["a"])
 				})
-			}).throws.snap(
-				"ParseError: Default value value at [0] must be a number (was a string)"
+			}).throws(
+				writeUnassignableDefaultValueMessage(
+					"value at [0] must be a number (was a string)"
+				)
 			)
 		})
 		it("default object", () => {
@@ -477,15 +497,17 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: type({ foo: "string" }).default({}) })
-			}).throws(
-				"ParseError: " + writeNonPrimitiveNonFunctionDefaultValueMessage("")
-			)
+			}).throws(writeNonPrimitiveNonFunctionDefaultValueMessage(""))
 			attest(() => {
 				type({
 					// @ts-expect-error
 					bar: type({ foo: "number" }).default(() => ({ foo: "foostr" }))
 				})
-			}).throws("ParseError: Default value foo must be a number (was a string)")
+			}).throws(
+				writeUnassignableDefaultValueMessage(
+					"foo must be a number (was a string)"
+				)
+			)
 		})
 		it("default factory", () => {
 			let i = 0

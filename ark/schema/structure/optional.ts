@@ -116,7 +116,8 @@ export const assertDefaultValueAssignability = (
 export const writeUnassignableDefaultValueMessage = (
 	message: string,
 	key = ""
-): string => `Default value${key && ` for key ${key}`} ${message}`
+): string =>
+	`Default value${key && ` for key ${key}`} is not assignable: ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,

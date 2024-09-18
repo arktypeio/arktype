@@ -29,6 +29,7 @@ import {
 import type {
 	applyConstraint,
 	Default,
+	DefaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
@@ -414,10 +415,8 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: def[1] extends "=" ?
-				| type.infer.Out<def[0], $, args>
-				| (() => type.infer.Out<def[0], $, args>)
-			:	validateDefinition<def[2], $, args>
+			: def[1] extends "=" ? DefaultFor<type.infer.Out<def[0], $, args>>
+			: validateDefinition<def[2], $, args>
 		]
 
 export type UnparsedTupleExpressionInput = {
