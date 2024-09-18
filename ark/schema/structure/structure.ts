@@ -759,8 +759,11 @@ export const normalizeIndex = (
 	const normalized: NormalizedIndex = {}
 
 	enumerableBranches.forEach(n => {
+		// since required can be reduced to optional if it has a default or
+		// optional meta on its value, we have to assign it depending on the
+		// compiled kind
 		const prop = $.node("required", { key: n.unit as Key, value })
-		normalized[prop.kind] = prop as never
+		normalized[prop.kind] = append(normalized[prop.kind], prop as never)
 	})
 
 	if (nonEnumerableBranches.length) {
