@@ -105,9 +105,7 @@ export type applyConstraintSchema<
 
 export type applyConstraint<t, constraint> =
 	t extends InferredMorph<infer i, infer o> ?
-		(
-			In: leftIfEqual<i, applyConstraint<i, _applyConstraint<t, constraint>>>
-		) => o
+		(In: leftIfEqual<i, _applyConstraint<i, constraint>>) => o
 	:	leftIfEqual<t, _applyConstraint<t, constraint>>
 
 type _applyConstraint<t, constraint> =

@@ -2,7 +2,11 @@ import { attest, contextualize } from "@ark/attest"
 import { writeUnassignableDefaultValueMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
-import type { InferredDefault } from "arktype/internal/keywords/inference.ts"
+import type {
+	InferredDefault,
+	Out,
+	string
+} from "arktype/internal/keywords/inference.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -135,12 +139,30 @@ contextualize(() => {
 		})
 
 		it("morphed", () => {
+			const z = type("string")
+				.pipe(v => (v === "on" ? true : false))
+				.default("off")
+
 			// https://discord.com/channels/957797212103016458/1280932672029593811/1283368602355109920
 			const processForm = type({
 				bool_value: type("string")
 					.pipe(v => (v === "on" ? true : false))
 					.default("off")
 			})
+
+			attest<{
+				bool_value: (In: string.defaultsTo<"off">) => Out<boolean>
+			}>(processForm.t)
+
+			const out = processForm({})
+
+			attest(out).snap({ bool_value: false })
+
+			attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
+
+			attest(processForm({ bool_value: true }).toString()).snap(
+				"bool_value must be a string (was boolean)"
+			)
 		})
 	})
 

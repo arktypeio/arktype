@@ -122,9 +122,16 @@ export abstract class BaseProp<
 		return result
 	}
 
+	private premorphedDefaultValue: unknown =
+		this.hasDefault() ?
+			this.value.includesMorph ?
+				this.value.assert(this.default)
+			:	this.default
+		:	undefined
+
 	private defaultValueMorphs: Morph[] = [
 		data => {
-			data[this.key] = (this as Optional.Node).default
+			data[this.key] = this.premorphedDefaultValue
 			return data
 		}
 	]

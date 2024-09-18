@@ -1,5 +1,6 @@
 import { type } from "arktype"
 
-const validator = type({
-	ok: "boolean"
+export const disappointingGift = type({
+	label: "string",
+	"box?": "this"
 })
