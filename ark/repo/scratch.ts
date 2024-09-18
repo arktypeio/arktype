@@ -1,4 +1,4 @@
-import { scope, type } from "arktype"
+import { type } from "arktype"
 
 export const disappointingGift = type({
 	label: "string",
