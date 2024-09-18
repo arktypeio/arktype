@@ -1,4 +1,4 @@
-import { printable, throwParseError } from "@ark/util"
+import { printable, throwParseError, unset } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
@@ -43,7 +43,13 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 				preserveUndefined: true
 			}
 		},
-		normalize: schema => schema,
+		// safe to spread here as a node will never be passed to normalize
+		normalize: ({ ...schema }, $) => {
+			const value = $.parseSchema(schema.value)
+			schema.value = value
+			if (value.defaultMeta !== unset) schema.default ??= value.defaultMeta
+			return schema
+		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		},
@@ -66,6 +72,23 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression = `${this.compiledKey}?: ${this.value.expression}${"default" in this.inner ? ` = ${printable(this.inner.default)}` : ""}`
 }
+
+// if (parsedValue.meta) {
+// 	if ("default" in parsedValue.meta) {
+// 		return ctx.$.node("optional", {
+// 			key: parsedKey.key,
+// 			value: parsedValue,
+// 			default: parsedValue.meta.default
+// 		})
+// 	}
+
+// 	if (parsedValue.meta.optional) {
+// 		return ctx.$.node("optional", {
+// 			key: parsedKey.key,
+// 			value: parsedValue
+// 		})
+// 	}
+// }
 
 export const Optional = {
 	implementation,

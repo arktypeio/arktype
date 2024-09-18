@@ -148,8 +148,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	compiledMorphs = `[${this.serializedMorphs}]`
 
 	lastMorph = this.inner.morphs.at(-1)
-	validatedIn: BaseRoot | undefined = this.inner.in
-	validatedOut: BaseRoot | undefined =
+	introspectableIn: BaseRoot | undefined = this.inner.in
+	introspectableOut: BaseRoot | undefined =
 		hasArkKind(this.lastMorph, "root") ?
 			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
 			this.lastMorph.out
@@ -161,7 +161,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	override get out(): BaseRoot {
 		return (
-			this.declaredOut ?? this.validatedOut ?? $ark.intrinsic.unknown.internal
+			this.declaredOut ??
+			this.introspectableOut ??
+			$ark.intrinsic.unknown.internal
 		)
 	}
 
@@ -191,19 +193,19 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			if (!this.validatedIn) return
-			js.return(js.invoke(this.validatedIn))
+			if (!this.introspectableIn) return
+			js.return(js.invoke(this.introspectableIn))
 			return
 		}
-		if (this.validatedIn) js.line(js.invoke(this.validatedIn))
+		if (this.introspectableIn) js.line(js.invoke(this.introspectableIn))
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
-		!this.validatedIn || this.validatedIn.traverseAllows(data, ctx)
+		!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (this.validatedIn) this.validatedIn.traverseApply(data, ctx)
+		if (this.introspectableIn) this.introspectableIn.traverseApply(data, ctx)
 		ctx.queueMorphs(this.morphs)
 	}
 

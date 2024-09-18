@@ -15,10 +15,7 @@ contextualize(() => {
 			const o = type({ foo: "string", bar: ["number", "=", 5] })
 
 			// ensure type ast displays is exactly as expected
-			attest(o.t).type.toString.snap(`{
-	foo: string
-	bar: defaultsTo<5>
-}`)
+			attest(o.t).type.toString.snap("{ foo: string; bar: defaultsTo<5> }")
 			attest<{ foo: string; bar?: number }>(o.inferIn)
 			attest<{ foo: string; bar: number }>(o.infer)
 
@@ -95,7 +92,7 @@ contextualize(() => {
 			})
 
 			const o = type({ a: defaultedString })
-			attest(o.t).type.toString.snap('{ a: string.defaultsTo<""> }')
+			attest(o.t).type.toString.snap('{ a: defaultsTo<""> }')
 			attest<{ a?: string }>(o.inferIn)
 			attest<{ a: string }>(o.infer)
 			attest(o.json).snap({
@@ -141,15 +138,31 @@ contextualize(() => {
 		})
 
 		it("morphed", () => {
-			const z = type("string")
-				.pipe(v => (v === "on" ? true : false))
-				.default("off")
-
 			// https://discord.com/channels/957797212103016458/1280932672029593811/1283368602355109920
 			const processForm = type({
 				bool_value: type("string")
 					.pipe(v => (v === "on" ? true : false))
 					.default("off")
+			})
+
+			attest<{
+				bool_value: (In: string.defaultsTo<"off">) => Out<boolean>
+			}>(processForm.t)
+
+			const out = processForm({})
+
+			attest(out).snap({ bool_value: false })
+
+			attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
+
+			attest(processForm({ bool_value: true }).toString()).snap(
+				"bool_value must be a string (was boolean)"
+			)
+		})
+
+		it("morphed from defaulted", () => {
+			const processForm = type({
+				bool_value: type("string='off'").pipe(v => (v === "on" ? true : false))
 			})
 
 			attest<{

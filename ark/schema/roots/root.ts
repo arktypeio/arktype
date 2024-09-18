@@ -4,6 +4,7 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
+	unset,
 	type Fn,
 	type array
 } from "@ark/util"
@@ -75,6 +76,24 @@ export abstract class BaseRoot<
 
 	get internal(): this {
 		return this
+	}
+
+	get optionalMeta(): boolean {
+		return this.cacheGetter(
+			"optionalMeta",
+			this.meta.optional === true ||
+				(this.hasKind("morph") && this.in.meta.optional === true)
+		)
+	}
+
+	/** returns unset if there is no default */
+	get defaultMeta(): unknown {
+		return this.cacheGetter(
+			"defaultMeta",
+			"default" in this.meta ? this.meta.default
+			: this.hasKind("morph") ? this.in.defaultMeta
+			: unset
+		)
 	}
 
 	as(): this {

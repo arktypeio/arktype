@@ -209,23 +209,6 @@ export const parseEntry = (
 		)
 	}
 
-	if (parsedValue.meta) {
-		if ("default" in parsedValue.meta) {
-			return ctx.$.node("optional", {
-				key: parsedKey.key,
-				value: parsedValue,
-				default: parsedValue.meta.default
-			})
-		}
-
-		if (parsedValue.meta.optional) {
-			return ctx.$.node("optional", {
-				key: parsedKey.key,
-				value: parsedValue
-			})
-		}
-	}
-
 	return ctx.$.node(parsedKey.kind, {
 		key: parsedKey.key,
 		value: parsedValue
