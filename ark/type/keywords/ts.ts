@@ -80,7 +80,7 @@ export declare namespace json {
 }
 
 export const object = arkModule({
-	root: intrinsic.unknown,
+	root: intrinsic.object,
 	json
 })
 

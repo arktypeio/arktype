@@ -58,7 +58,7 @@ bench("arktype", () => {
 	const out = verifyRegistrationResponseOptsSchema
 		.pick("id", "clientExtensionResults", "authenticatorAttachment")
 		.omit("clientExtensionResults")
-}).types([16167, "instantiations"])
+}).types([10451, "instantiations"])
 
 bench("arktype scope", () => {
 	return scope({
@@ -103,7 +103,7 @@ bench("arktype scope", () => {
 			type: "'public-key'"
 		}
 	}).export()
-}).types([26173, "instantiations"])
+}).types([8513, "instantiations"])
 
 bench("zod", () => {
 	const authenticatorTransportFutureSchema = z.array(
@@ -170,4 +170,4 @@ bench("zod", () => {
 			clientExtensionResults: true
 		})
 		.omit({ clientExtensionResults: true })
-}).types([27703, "instantiations"])
+}).types([16666, "instantiations"])
