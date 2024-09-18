@@ -222,6 +222,15 @@ contextualize(() => {
 			attest(t.json).equals(expected.json)
 		})
 
+		it("Date is immutable", () => {
+			const t = type({ date: 'Date = d"1993-05-21"' })
+			const v1 = t.assert({})
+			const time = v1.date.getTime()
+			v1.date.setMilliseconds(123)
+			const v2 = t.assert({})
+			attest(v1.date.getTime()).equals(time)
+		})
+
 		it("true", () => {
 			const t = type({ key: "boolean = true" })
 			const expected = type({ key: ["boolean", "=", true] })
