@@ -97,10 +97,12 @@ interface Type<out t extends object = object, $ = {}>
 	props: array<typePropOf<t, $>>
 }
 
-type typePropOf<o, $> = {
-	[k in keyof o]-?: typeProp<o, k, $>
-}[keyof o] &
-	unknown
+type typePropOf<o, $> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			typeProp<o, k, $>
+		:	never
+	:	never
 
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 	parseConstraints<t> extends (
