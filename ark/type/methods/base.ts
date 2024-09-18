@@ -141,10 +141,7 @@ interface Type<out t = unknown, $ = {}>
 	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
 	default<
-		const value extends Extract<
-			this["inferIn"],
-			Primitive | Primitive[] | Record<string, Primitive>
-		>,
+		const value extends Extract<this["inferIn"], Primitive>,
 		r = applyConstraint<t, Default<value>>
 	>(
 		value: value

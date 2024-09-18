@@ -65,8 +65,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 			assertDefaultValueAssignability(
 				this.value,
 				this.inner.default,
-				this.serializedKey,
-				false
+				this.serializedKey
 			)
 		}
 	}
@@ -98,60 +97,18 @@ export const Optional = {
 
 const isPrimitive = (value: unknown): value is Primitive =>
 	typeof value === "object" ? value === null : typeof value !== "function"
-const isSimpleSerializeable = (value: unknown): (() => unknown) | false => {
-	if (value instanceof Date) return () => new Date(value)
-	if (
-		Array.isArray(value) &&
-		Object.getPrototypeOf(value) === Array.prototype &&
-		value.every(isPrimitive)
-	)
-		return () => value.slice()
-	if (
-		typeof value === "object" &&
-		value !== null &&
-		Object.getPrototypeOf(value) === Object.prototype &&
-		Object.getOwnPropertySymbols(value).length === 0 &&
-		Object.getOwnPropertyNames(value).every(k => {
-			const prop = Object.getOwnPropertyDescriptor(value, k)
-			return (
-				prop &&
-				"value" in prop &&
-				isPrimitive(prop.value) &&
-				prop.writable === true &&
-				prop.enumerable === true &&
-				prop.configurable === true
-			)
-		})
-	)
-		return () => ({ ...value })
-	return false
-}
 
 export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
-	key: string | null,
-	canOverrideValue: boolean
+	key = ""
 ): unknown => {
 	if (!isPrimitive(value) && typeof value !== "function") {
-		if (!canOverrideValue) {
-			throwParseError(
-				writeNonPrimitiveNonFunctionDefaultValueMessage(key ?? "", value)
-			)
-		}
-		const fn = isSimpleSerializeable(value)
-		if (!fn) {
-			throwParseError(
-				writeNonPrimitiveNonFunctionDefaultValueMessage(key ?? "", value)
-			)
-		}
-		value = fn
+		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key, value))
 	}
 	const out = node.in(typeof value === "function" ? value() : value)
 	if (out instanceof ArkErrors) {
-		throwParseError(
-			writeUnassignableDefaultValueMessage(out.message, key ?? "")
-		)
+		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
 	}
 	return value
 }

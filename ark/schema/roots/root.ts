@@ -324,7 +324,7 @@ export abstract class BaseRoot<
 	}
 
 	default(value: unknown): this {
-		value = assertDefaultValueAssignability(this, value, null, true)
+		assertDefaultValueAssignability(this, value)
 
 		return this.withMeta({ default: value })
 	}
