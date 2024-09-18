@@ -1,4 +1,5 @@
 import { printable, throwParseError, unset } from "@ark/util"
+import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
@@ -6,6 +7,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
+import { registeredReference } from "../shared/registry.ts"
 import { BaseProp, intersectProps, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -70,25 +72,24 @@ export class OptionalNode extends BaseProp<"optional"> {
 		}
 	}
 
-	expression = `${this.compiledKey}?: ${this.value.expression}${"default" in this.inner ? ` = ${printable(this.inner.default)}` : ""}`
+	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
+
+	premorphedDefaultValue: unknown =
+		this.hasDefault() ?
+			this.value.includesMorph ?
+				this.value.assert(this.default)
+			:	this.default
+		:	undefined
+
+	defaultValueMorphs: Morph<object>[] = [
+		(data: any): object => {
+			data[this.key] = this.premorphedDefaultValue
+			return data
+		}
+	]
+
+	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
 }
-
-// if (parsedValue.meta) {
-// 	if ("default" in parsedValue.meta) {
-// 		return ctx.$.node("optional", {
-// 			key: parsedKey.key,
-// 			value: parsedValue,
-// 			default: parsedValue.meta.default
-// 		})
-// 	}
-
-// 	if (parsedValue.meta.optional) {
-// 		return ctx.$.node("optional", {
-// 			key: parsedKey.key,
-// 			value: parsedValue
-// 		})
-// 	}
-// }
 
 export const Optional = {
 	implementation,

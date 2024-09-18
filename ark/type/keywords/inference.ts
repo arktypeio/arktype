@@ -212,19 +212,6 @@ export declare namespace distill {
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
-export type includesMorphs<t> =
-	[
-		_distill<t, { endpoint: "in"; branded: true }>,
-		_distill<t, { endpoint: "out"; branded: true }>
-	] extends (
-		[
-			_distill<t, { endpoint: "out"; branded: true }>,
-			_distill<t, { endpoint: "in"; branded: true }>
-		]
-	) ?
-		false
-	:	true
-
 type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
