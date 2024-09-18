@@ -50,7 +50,6 @@ export const printable = (data: unknown, indent?: number): string => {
 		case "object":
 			const o = data as dict
 			const ctorName = o.constructor.name
-			// Deep replace undefined and bigints to support JSON.stringify
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					JSON.stringify(_serialize(o, printableOpts, []), null, indent)
