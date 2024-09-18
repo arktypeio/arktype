@@ -1,6 +1,14 @@
-import { genericNode, intrinsic } from "@ark/schema"
-import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
+import { genericNode, intrinsic, node } from "@ark/schema"
+import {
+	Hkt,
+	type Json,
+	type Key,
+	type omit,
+	type pick,
+	type show
+} from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
+import type { To } from "./inference.ts"
 import { arkModule } from "./utils.ts"
 
 export const arkTsKeywords: arkTsKeywords = arkModule({
@@ -50,6 +58,38 @@ export declare namespace unknown {
 	export type $ = {
 		root: unknown
 		any: any
+	}
+}
+
+export const json = arkModule({
+	root: intrinsic.json,
+	stringify: node("morph", {
+		in: intrinsic.json,
+		morphs: (data: Json) => JSON.stringify(data),
+		declaredOut: intrinsic.string
+	})
+})
+
+export declare namespace json {
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: Json
+		stringify: (In: Json) => To<string>
+	}
+}
+
+export const object = arkModule({
+	root: intrinsic.object,
+	json
+})
+
+export declare namespace object {
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: object
+		json: json.submodule
 	}
 }
 

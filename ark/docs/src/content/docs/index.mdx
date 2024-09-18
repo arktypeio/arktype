@@ -22,10 +22,7 @@ import {
 	TabItem,
 	Tabs
 } from "@astrojs/starlight/components"
-import {
-	RuntimeBenchmarksGraph,
-	TypeBenchmarksGraph
-} from "../../components/BenchmarksGraph.tsx"
+import { RuntimeBenchmarksGraph } from "../../components/BenchmarksGraph.tsx"
 import Code from "../../components/Code.astro"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import betterErrors from "./betterErrors.twoslash.js?raw"
@@ -49,14 +46,7 @@ import unparalleledDx from "./unparalleledDx.twoslash.js?raw"
 	<Card title="Faster... everything" icon="rocket">
 		100x faster than Zod at runtime with editor performance that will remind you
 		how autocomplete is supposed to feel
-		<Tabs>
-			<TabItem label="Runtime">
-				<RuntimeBenchmarksGraph />
-			</TabItem>
-			<TabItem label="Editor">
-				<TypeBenchmarksGraph />
-			</TabItem>
-		</Tabs>
+		<RuntimeBenchmarksGraph />
 	</Card>
 	<Card title="Clarity and Concision" icon="comment-alt">
 		Definitions are half as long, type errors are twice as readable, and hovers
