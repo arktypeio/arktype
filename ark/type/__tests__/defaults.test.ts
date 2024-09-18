@@ -27,14 +27,12 @@ contextualize(() => {
 			const fn5reg = registeredReference(fn5)
 
 			// ensure type ast displays is exactly as expected
-			attest(o.t).type.toString.snap(
-				`{
+			attest(o.t).type.toString.snap(`{
 	a: string
 	foo: defaultsTo<5>
 	bar: defaultsTo<5>
 	baz: defaultsTo<() => 5>
-}`
-			)
+}`)
 			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
 
@@ -372,6 +370,114 @@ contextualize(() => {
 			const expected = type("string").default("foo")
 			attest<typeof expected.t>(t.t)
 			attest(t.json).equals(expected.json)
+		})
+	})
+
+	describe("allows assigning primitives to whatever", () => {
+		it("allows primitives, subtypes and functions for anys", () => {
+			const fn = () => {}
+			const t = type({
+				foo1: ["unknown", "=", true],
+				bar1: ["unknown", "=", () => [true]],
+				baz1: ["unknown", "=", () => fn],
+				foo2: ["unknown.any", "=", true],
+				bar2: ["unknown.any", "=", () => [true]],
+				baz2: ["unknown.any", "=", () => fn]
+			})
+			const v = t.assert({})
+			attest(v).snap({
+				foo1: true,
+				bar1: [true],
+				baz1: fn,
+				foo2: true,
+				bar2: [true],
+				baz2: fn
+			})
+		})
+		it("disallows plain objects for anys", () => {
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: ["unknown", "=", { foo: "bar" }] })
+			})
+				.throws.snap(
+					"ParseError: Default value is not primitive so it should be specified as a function like () => ({my: 'object'})"
+				)
+				.type.errors.snap(
+					"Object literal may only specify known properties, and 'foo' does not exist in type '() => unknown'."
+				)
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: ["unknown.any", "=", { foo: "bar" }] })
+			})
+				.throws.snap(
+					"ParseError: Default value is not primitive so it should be specified as a function like () => ({my: 'object'})"
+				)
+				.type.errors.snap(
+					"Object literal may only specify known properties, and 'foo' does not exist in type '(() => any) | (() => any)'."
+				)
+		})
+		it("allows string sybtyping", () => {
+			type({
+				foo: [/^foo/ as type.cast<`foo${string}`>, "=", "foobar"],
+				bar: [/bar$/ as type.cast<`${string}bar`>, "=", () => "foobar" as const]
+			})
+		})
+		it("shows types plainly", () => {
+			attest(
+				// @ts-expect-error
+				() => type({ foo: ["number", "=", true] })
+			)
+				.throws()
+				.type.errors.snap(
+					"Type 'boolean' is not assignable to type 'number | (() => number)'."
+				)
+			attest(
+				// @ts-expect-error
+				() => type({ foo: ["number[]", "=", true] })
+			)
+				.throws()
+				.type.errors.snap(
+					"Type 'boolean' is not assignable to type '() => number[]'."
+				)
+			attest(() =>
+				type({
+					// @ts-expect-error
+					foo: [/foo/ as type.cast<"string" & { foo: true }>, "=", true]
+				})
+			)
+				.throws()
+				.type.errors.snap(
+					"Type 'true' is not assignable to type '(\"string\" & { foo: true; }) | (() => \"string\" & { foo: true; })'."
+				)
+			attest(
+				// @ts-expect-error
+				() => type({ foo: [["number[]", "|", "number"], "=", true] })
+			)
+				.throws()
+				.type.errors.snap(
+					"Type 'boolean' is not assignable to type 'number | (() => number) | (() => number[])'."
+				)
+		})
+		it("only allows argless functions for factories", () => {
+			attest(() => {
+				// @ts-expect-error
+				type({ bar: ["Function", "=", class {}] })
+			})
+				.throws.snap(
+					"TypeError: Class constructors cannot be invoked without 'new'"
+				)
+				.type.errors.snap(
+					"Type 'typeof (Anonymous class)' is not assignable to type '() => Function'.Type 'typeof (Anonymous class)' provides no match for the signature '(): Function'."
+				)
+			attest(() => {
+				// @ts-expect-error
+				type({ bar: ["number", "=", (a: number) => 1] })
+			}).type.errors.snap(
+				"Type '(a: number) => number' is not assignable to type 'number | (() => number)'.Type '(a: number) => number' is not assignable to type '() => number'.Target signature provides too few arguments. Expected 1 or more, but got 0."
+			)
+			attest(() => {
+				type({ bar: ["number", "=", (a?: number) => 1] })
+			})
 		})
 	})
 
