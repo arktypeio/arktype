@@ -364,4 +364,95 @@ contextualize(() => {
 			)
 		})
 	})
+
+	describe("works with objects", () => {
+		it("default array in string", () => {
+			const t = type({ bar: type("number[] = []") })
+			attest(t.assert({}).bar).snap([])
+			attest(t.assert({}).bar !== t.assert({}).bar)
+		})
+		it("default array", () => {
+			const t = type({
+				foo: type("number[]").default([1]),
+				bar: type("number[]").default(() => [1]),
+				baz: type("number[]")
+					.pipe(v => v.map(e => e.toString()))
+					.default(() => [1])
+			})
+			const v1 = t.assert({}),
+				v2 = t.assert({})
+			attest(v1).snap({ foo: [1], bar: [1], baz: ["1"] })
+			attest(v1.foo !== v2.foo)
+		})
+		it("default array is checked", () => {
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: type("number[]").default(["a"]) })
+			}).throws()
+			attest(() => {
+				// @ts-expect-error
+				type({ bar: type("number[]").default(() => ["a"]) })
+			}).throws()
+			attest(() => {
+				// @ts-expect-error
+				type({
+					baz: type("number[]")
+						.pipe(v => v.map(e => e.toString()))
+						.default(() => ["a"])
+				})
+			}).throws()
+		})
+		it("disallows default array with non-primitive elements", () => {
+			;[[], {}, new Date(), () => {}].forEach(v => {
+				attest(() => {
+					// @ts-expect-error
+					type({ foo: type("any[]").default(v) })
+				}).throws()
+			})
+		})
+		it("default object", () => {
+			const t = type({
+				foo: type({ "foo?": "string" }).default({}),
+				bar: type({ "foo?": "string" }).default(() => ({ foo: "foostr" })),
+				baz: type({ foo: "string = 'foostr'" }).default({})
+			})
+			const v1 = t.assert({}),
+				v2 = t.assert({})
+			attest(v1).snap({
+				foo: {},
+				bar: { foo: "foostr" },
+				baz: { foo: "foostr" }
+			})
+			attest(v1.foo !== v2.foo)
+		})
+		it("default object is checked", () => {
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: type({ foo: "string" }).default({}) })
+			}).throws()
+			attest(() => {
+				// @ts-expect-error
+				type({
+					bar: type({ foo: "number" }).default(() => ({ foo: "foostr" }))
+				})
+			}).throws()
+		})
+		it("default factory", () => {
+			let i = 0
+			const t = type({ bar: type("number[]").default(() => [++i]) })
+			attest(t.assert({}).bar).snap([3])
+			attest(t.assert({}).bar).snap([4])
+		})
+		it("default function factory", () => {
+			let i = 0
+			const t = type({
+				bar: type("Function").default(() => {
+					const j = ++i
+					return () => j
+				})
+			})
+			attest(t.assert({}).bar()).snap(3)
+			attest(t.assert({}).bar()).snap(4)
+		})
+	})
 })

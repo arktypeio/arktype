@@ -1,4 +1,4 @@
-import { printable, throwParseError, unset } from "@ark/util"
+import { printable, throwParseError, unset, type Primitive } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
@@ -65,7 +65,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 			assertDefaultValueAssignability(
 				this.value,
 				this.inner.default,
-				this.serializedKey
+				this.serializedKey,
+				false
 			)
 		}
 	}
@@ -95,14 +96,63 @@ export const Optional = {
 	Node: OptionalNode
 }
 
+const isPrimitive = (value: unknown): value is Primitive =>
+	typeof value === "object" ? value === null : typeof value !== "function"
+const isSimpleSerializeable = (value: unknown): (() => unknown) | false => {
+	if (value instanceof Date) return () => new Date(value)
+	if (
+		Array.isArray(value) &&
+		Object.getPrototypeOf(value) === Array.prototype &&
+		value.every(isPrimitive)
+	)
+		return () => value.slice()
+	if (
+		typeof value === "object" &&
+		value !== null &&
+		Object.getPrototypeOf(value) === Object.prototype &&
+		Object.getOwnPropertySymbols(value).length === 0 &&
+		Object.getOwnPropertyNames(value).every(k => {
+			const prop = Object.getOwnPropertyDescriptor(value, k)
+			return (
+				prop &&
+				"value" in prop &&
+				isPrimitive(prop.value) &&
+				prop.writable === true &&
+				prop.enumerable === true &&
+				prop.configurable === true
+			)
+		})
+	)
+		return () => ({ ...value })
+	return false
+}
+
 export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
-	key = ""
+	key: string | null,
+	canOverrideValue: boolean
 ): unknown => {
-	const out = node.in(value)
-	if (out instanceof ArkErrors)
-		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
+	if (!isPrimitive(value) && typeof value !== "function") {
+		if (!canOverrideValue) {
+			throwParseError(
+				writeNonPrimitiveNonFunctionDefaultValueMessage(key ?? "", value)
+			)
+		}
+		const fn = isSimpleSerializeable(value)
+		if (!fn) {
+			throwParseError(
+				writeNonPrimitiveNonFunctionDefaultValueMessage(key ?? "", value)
+			)
+		}
+		value = fn
+	}
+	const out = node.in(typeof value === "function" ? value() : value)
+	if (out instanceof ArkErrors) {
+		throwParseError(
+			writeUnassignableDefaultValueMessage(out.message, key ?? "")
+		)
+	}
 	return value
 }
 
@@ -115,3 +165,9 @@ export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
 	defaultValue extends string
 > = `Default value ${defaultValue} is not assignable to ${baseDef}`
+
+export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
+	key: string,
+	value: unknown
+): string =>
+	`Default value${key && ` for key ${key}`} is not primitive so it should be constructor function (was ${printable(value)})`

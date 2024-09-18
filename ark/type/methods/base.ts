@@ -14,6 +14,7 @@ import type {
 	ErrorMessage,
 	inferred,
 	Json,
+	Primitive,
 	unset
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
@@ -140,10 +141,19 @@ interface Type<out t = unknown, $ = {}>
 	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
 	default<
-		const value extends this["inferIn"],
+		const value extends Extract<
+			this["inferIn"],
+			Primitive | Primitive[] | Record<string, Primitive>
+		>,
 		r = applyConstraint<t, Default<value>>
 	>(
 		value: value
+	): instantiateType<r, $>
+	default<
+		const value extends this["inferIn"],
+		r = applyConstraint<t, Default<value>>
+	>(
+		value: () => value
 	): instantiateType<r, $>
 
 	// deprecate Function methods so they are deprioritized as suggestions
