@@ -333,6 +333,7 @@ type inferredOptionalKeyOf<o> =
 
 type distillArray<t extends array, opts extends distill.Options> =
 	// fast path for non-tuple arrays with no extra props
+	// this also allows TS to infer certain recursive arrays like JSON
 	t[number][] extends t ? alignReadonly<_distill<t[number], opts>[], t>
 	:	distillNonArraykeys<
 			t,
