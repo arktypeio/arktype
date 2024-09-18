@@ -9,8 +9,7 @@
 		"jsx": "preserve"
 	},
 	"mdx": {
-		"checkMdx": true,
-		"plugins": []
+		"checkMdx": true
 	},
 	// in addition to ignoring the additional dirs, this needs
 	// to be redeclared to avoid excluding ark/docs
