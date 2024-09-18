@@ -453,7 +453,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
 
-		attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
+		attest(out).snap([{ token: "lovelace", amount: 5000000n }])
 	})
 
 	it("regex index signature", () => {
