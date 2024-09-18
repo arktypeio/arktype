@@ -228,7 +228,7 @@ contextualize(() => {
 			const time = v1.date.getTime()
 			v1.date.setMilliseconds(123)
 			const v2 = t.assert({})
-			attest(v1.date.getTime()).equals(time)
+			attest(v2.date.getTime()).equals(time)
 		})
 
 		it("true", () => {

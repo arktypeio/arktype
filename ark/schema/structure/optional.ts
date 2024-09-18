@@ -103,13 +103,13 @@ export const assertDefaultValueAssignability = (
 	value: unknown,
 	key = ""
 ): unknown => {
-	if (!isPrimitive(value) && typeof value !== "function") {
-		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key, value))
-	}
+	if (!isPrimitive(value) && typeof value !== "function")
+		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
+
 	const out = node.in(typeof value === "function" ? value() : value)
-	if (out instanceof ArkErrors) {
+	if (out instanceof ArkErrors)
 		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
-	}
+
 	return value
 }
 
@@ -124,7 +124,6 @@ export type writeUnassignableDefaultValueMessage<
 > = `Default value ${defaultValue} is not assignable to ${baseDef}`
 
 export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
-	key: string,
-	value: unknown
+	key: string
 ): string =>
-	`Default value${key && ` for key ${key}`} is not primitive so it should be constructor function (was ${printable(value)})`
+	`Default value${key && ` for key ${key}`} is not primitive so it should be specified as a function like () => ({my: 'object'})`

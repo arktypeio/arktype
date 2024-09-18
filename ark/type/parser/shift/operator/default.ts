@@ -27,8 +27,11 @@ export const parseDefault = (s: DynamicStateWithRoot): BaseRoot => {
 	// token from which it was parsed
 	if (!defaultNode.hasKind("unit"))
 		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
-
-	return baseNode.default(defaultNode.unit)
+	const defaultValue =
+		defaultNode.unit instanceof Date ?
+			() => new Date(defaultNode.unit as Date)
+		:	defaultNode.unit
+	return baseNode.default(defaultValue)
 }
 
 export type parseDefault<root, unscanned extends string> =
