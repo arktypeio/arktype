@@ -307,7 +307,7 @@ export const dateLimitToString = (limit: LimitSchemaValue): string =>
 export const writeUnboundableMessage = <root extends string>(
 	root: root
 ): writeUnboundableMessage<root> =>
-	`Bounded expression ${root} must be a number, string, Array, or Date`
+	`Bounded expression ${root} must be exactly one of number, string, Array, or Date`
 
 export type writeUnboundableMessage<root extends string> =
-	`Bounded expression ${root} must be a number, string, Array, or Date`
+	`Bounded expression ${root} must be exactly one of number, string, Array, or Date`

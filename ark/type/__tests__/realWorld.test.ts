@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, type ArkErrors } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnboundableMessage,
+	type ArkErrors
+} from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
@@ -958,6 +962,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(ApiSchema.expression).snap(
 			"{ action: string | undefined | null, lastIndex: string | null, ref: string | undefined | null, service_code: number | undefined | null, source: string | null }"
+		)
+	})
+
+	it("error on bounded liftArray", () => {
+		// @ts-expect-error
+		attest(() => type("2 < Array.liftFrom<string> < 4")).throwsAndHasTypeError(
+			writeUnboundableMessage("string | string[]")
 		)
 	})
 })
