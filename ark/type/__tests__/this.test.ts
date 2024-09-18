@@ -9,8 +9,6 @@ contextualize(() => {
 			"box?": "this"
 		})
 
-		const id = disappointingGift.internal.id
-
 		type ExpectedDisappointingGift = {
 			label: string
 			box?: ExpectedDisappointingGift

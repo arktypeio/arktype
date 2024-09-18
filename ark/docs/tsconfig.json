@@ -6,8 +6,7 @@
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
 		"allowJs": true,
-		"jsx": "preserve",
-		"plugins": [{ "name": "@astrojs/ts-plugin" }]
+		"jsx": "preserve"
 	},
 	"mdx": {
 		"checkMdx": true,

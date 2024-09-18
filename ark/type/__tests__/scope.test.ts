@@ -2,7 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	rootSchema,
 	writeUnboundableMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type ArkErrors
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
 import type { distill, string } from "arktype/internal/keywords/inference.ts"
@@ -417,6 +418,22 @@ b.c.c must be an object (was missing)`)
 				domain: "object",
 				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
 			})
+		})
+
+		it("cyclic array", () => {
+			type Value = boolean | number | string | { [k: string]: Value } | Value[]
+
+			const types = scope({
+				primitive: "boolean | number | string",
+				record: {
+					"[string]": "value"
+				},
+				value: "primitive | record | value[]" as type.cast<Value>
+			}).export()
+
+			const out = types.value(5)
+
+			attest<Value | ArkErrors>(out).equals(5)
 		})
 	})
 

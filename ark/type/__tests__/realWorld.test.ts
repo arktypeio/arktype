@@ -1,6 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	intrinsic,
 	registeredReference,
+	writeInvalidOperandMessage,
 	writeUnboundableMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -967,8 +969,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	it("error on bounded liftArray", () => {
 		// @ts-expect-error
-		attest(() => type("2 < Array.liftFrom<string> < 4")).throwsAndHasTypeError(
-			writeUnboundableMessage("string | string[]")
-		)
+		attest(() => type("2 < Array.liftFrom<string> < 4"))
+			.throws.snap(
+				"ParseError: MaxLength operand must be a string or an array (was never)"
+			)
+			.type.errors(writeUnboundableMessage("string | string[]"))
 	})
 })
