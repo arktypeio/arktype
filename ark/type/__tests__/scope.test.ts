@@ -420,6 +420,7 @@ b.c.c must be an object (was missing)`)
 			})
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1138
 		it("cyclic array", () => {
 			type Value = boolean | number | string | { [k: string]: Value } | Value[]
 
@@ -428,12 +429,17 @@ b.c.c must be an object (was missing)`)
 				record: {
 					"[string]": "value"
 				},
-				value: "primitive | record | value[]" as type.cast<Value>
+				value: "primitive | record | value[]",
+				castValue: "value" as type.cast<Value>
 			}).export()
 
+			// TS type display blows up but it's equivalent to Value
 			const out = types.value(5)
+			// casting to Value also works
+			const castOut = types.value(5)
 
 			attest<Value | ArkErrors>(out).equals(5)
+			attest<Value | ArkErrors>(castOut).equals(5)
 		})
 	})
 

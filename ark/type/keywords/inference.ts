@@ -175,7 +175,7 @@ export type schemaToConstraint<
 export type distill<
 	t,
 	opts extends distill.Options = {}
-> = finalizeDistillation<t, _distill<t, opts & { seen: never }>>
+> = finalizeDistillation<t, _distill<t, opts>>
 
 export declare namespace distill {
 	export type Endpoint = "in" | "out" | "out.introspectable"
@@ -214,24 +214,19 @@ type finalizeDistillation<t, distilled> =
 
 export type includesMorphs<t> =
 	[
-		_distill<t, { endpoint: "in"; branded: true; seen: never }>,
-		_distill<t, { endpoint: "out"; branded: true; seen: never }>
+		_distill<t, { endpoint: "in"; branded: true }>,
+		_distill<t, { endpoint: "out"; branded: true }>
 	] extends (
 		[
-			_distill<t, { endpoint: "out"; branded: true; seen: never }>,
-			_distill<t, { endpoint: "in"; branded: true; seen: never }>
+			_distill<t, { endpoint: "out"; branded: true }>,
+			_distill<t, { endpoint: "in"; branded: true }>
 		]
 	) ?
 		false
 	:	true
 
-interface DistillContext extends distill.Options {
-	seen: unknown
-}
-
-type _distill<t, opts extends DistillContext> =
-	t extends opts["seen"] ? t
-	: // ensure optional keys don't prevent extracting defaults
+type _distill<t, opts extends distill.Options> =
+	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: parseConstraints<t> extends (
@@ -253,7 +248,7 @@ type _distill<t, opts extends DistillContext> =
 	: isSafelyMappable<t> extends true ? distillMappable<t, opts>
 	: t
 
-type distillMappable<o, opts extends DistillContext> =
+type distillMappable<o, opts extends distill.Options> =
 	opts["endpoint"] extends "in" ?
 		show<
 			{
@@ -282,7 +277,7 @@ type distillUnbrandedIo<
 	t extends InferredMorph,
 	i,
 	o extends Out,
-	opts extends DistillContext
+	opts extends distill.Options
 > =
 	t extends (
 		InferredMorph<
@@ -301,7 +296,7 @@ type distillUnbrandedIo<
 		distillIo<i, o extends To ? To<constrainedOut> : Out<constrainedOut>, opts>
 	:	distillIo<i, o, opts>
 
-type distillIo<i, o extends Out, opts extends DistillContext> =
+type distillIo<i, o extends Out, opts extends distill.Options> =
 	opts["endpoint"] extends "in" ? _distill<i, opts>
 	: opts["endpoint"] extends "out.introspectable" ?
 		o extends To<infer validatedOut> ?
@@ -336,8 +331,14 @@ type inferredOptionalKeyOf<o> =
 		:	never
 	:	never
 
-type distillArray<t extends array, opts extends DistillContext> =
-	_distillArray<[...t], opts, []> extends infer result ?
+type distillArray<t extends array, opts extends distill.Options> =
+	// fast path for non-tuple arrays with no extra props
+	t[number][] extends t ?
+		t extends unknown[] ?
+			// preserve readonly of the original array
+			_distill<t[number], opts>[]
+		:	readonly _distill<t[number], opts>[]
+	: _distillArray<[...t], opts, []> extends infer result ?
 		distillNonArraykeys<
 			t,
 			// preserve readonly of the original array
@@ -350,7 +351,7 @@ type distillArray<t extends array, opts extends DistillContext> =
 type distillNonArraykeys<
 	originalArray extends array,
 	distilledArray,
-	opts extends DistillContext
+	opts extends distill.Options
 > =
 	keyof originalArray extends keyof distilledArray | constrained ?
 		distilledArray
@@ -369,7 +370,7 @@ type distillNonArraykeys<
 
 type _distillArray<
 	t extends array,
-	opts extends DistillContext,
+	opts extends distill.Options,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
@@ -378,7 +379,7 @@ type _distillArray<
 
 type distillPostfix<
 	t extends array,
-	opts extends DistillContext,
+	opts extends distill.Options,
 	postfix extends array = []
 > =
 	t extends readonly [...infer init, infer last] ?
