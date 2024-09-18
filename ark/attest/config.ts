@@ -63,7 +63,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
 	compilerOptions: {},
 	attestAliases: ["attest", "attestInternal"],
-	updateSnapshots: !false,
+	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
 	tsVersions: "default",
