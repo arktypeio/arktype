@@ -5,8 +5,7 @@ import {
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
-	writeUnsatisfiedParameterConstraintMessage,
-	type RootSchema
+	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"

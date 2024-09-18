@@ -145,9 +145,9 @@ const _pipeMorphed = (
 
 	if (fromIsMorph) {
 		const morphs = [...from.morphs]
-		if (from.validatedOut) {
+		if (from.introspectableOut) {
 			// still piped from context, so allows appending additional morphs
-			const outIntersection = intersectNodes(from.validatedOut, to, ctx)
+			const outIntersection = intersectNodes(from.introspectableOut, to, ctx)
 			if (outIntersection instanceof Disjoint) return outIntersection
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)
@@ -158,13 +158,18 @@ const _pipeMorphed = (
 		})
 	}
 
-	return to.hasKind("morph") ?
-			ctx.$.node("morph", {
-				morphs: to.morphs,
-				in: _intersectNodes(from, to.in, ctx) as never
-			})
-		:	ctx.$.node("morph", {
-				morphs: [to],
-				in: from
-			})
+	if (to.hasKind("morph")) {
+		const inTersection = intersectNodes(from, to.in, ctx)
+		if (inTersection instanceof Disjoint) return inTersection
+
+		return ctx.$.node("morph", {
+			morphs: [to],
+			in: inTersection
+		})
+	}
+
+	return ctx.$.node("morph", {
+		morphs: [to],
+		in: from
+	})
 }

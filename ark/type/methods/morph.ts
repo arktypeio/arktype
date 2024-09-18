@@ -24,7 +24,7 @@ interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 				applyConstraintSchema<this["inferBrandableOut"], "predicate", Predicate>
 			:	narrowed
 		) extends infer o ?
-			this["inferIntrospectableOut"] extends this["inferBrandableOut"] ?
+			this["inferredOutIsIntrospectable"] extends true ?
 				(In: this["inferBrandableIn"]) => To<o>
 			:	(In: this["inferBrandableIn"]) => Out<o>
 		:	never,

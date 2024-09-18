@@ -25,7 +25,7 @@ bench("number", () => {
 
 bench("bigint", () => {
 	const _ = type("-987654321n")
-}).types([558, "instantiations"])
+}).types([559, "instantiations"])
 
 bench("object", () => {
 	const t = type({ foo: "string" })
@@ -44,4 +44,4 @@ bench("union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-}).types([5241, "instantiations"])
+}).types([5287, "instantiations"])

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeLiteralUnionEntriesMessage, type Prop } from "@ark/schema"
+import { writeLiteralUnionEntriesMessage } from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/methods/object.ts"

@@ -376,7 +376,7 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		(In?: inferDefinition<def[0], $, args>) => Default<def[2]>
+		applyConstraint<inferDefinition<def[0], $, args>, Default<def[2]>>
 	: def[1] extends "?" ?
 		applyConstraint<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]

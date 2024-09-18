@@ -24,7 +24,9 @@ import type {
 	inferIntersection,
 	inferMorphOut,
 	inferPipes,
-	Optional
+	InferredMorph,
+	Optional,
+	To
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
@@ -41,6 +43,11 @@ interface Type<out t = unknown, $ = {}>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
 	inferIn: distill.In<t>
+	inferredOutIsIntrospectable: t extends InferredMorph<any, infer o> ?
+		[o] extends [anyOrNever] ? true
+		: o extends To ? true
+		: false
+	:	true
 	[inferred]: t
 
 	json: Json
@@ -133,8 +140,8 @@ interface Type<out t = unknown, $ = {}>
 	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
 	default<
-		value extends this["infer"],
-		r = (In?: this["inferBrandableIn"]) => Default<value>
+		const value extends this["inferIn"],
+		r = applyConstraint<t, Default<value>>
 	>(
 		value: value
 	): instantiateType<r, $>

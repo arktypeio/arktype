@@ -1,6 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import type { Default } from "arktype/internal/keywords/inference.ts"
+import type {
+	Default,
+	InferredDefault
+} from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("identity", () => {
@@ -132,7 +135,7 @@ contextualize(() => {
 		})
 
 		attest<{
-			foo: (In?: string | undefined) => Default<"foo">
+			foo: InferredDefault<string, "foo">
 			bar?: number
 		}>(original.t)
 		attest(original.expression).snap('{ foo?: string = "foo", bar?: number }')
@@ -149,7 +152,7 @@ contextualize(() => {
 
 		attest<{
 			bar?: number
-			foo: (In?: string | undefined) => Default<"foot">
+			foo: InferredDefault<string, "foot">
 		}>(t.t)
 		attest(t.expression).snap('{ foo?: string = "foot", bar?: number }')
 	})

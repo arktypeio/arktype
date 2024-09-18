@@ -4,7 +4,6 @@ import type {
 	Prop
 } from "@ark/schema"
 import type {
-	anyOrNever,
 	arkGet,
 	arkIndexableOf,
 	arkKeyOf,
@@ -21,9 +20,11 @@ import type {
 	toArkKey
 } from "@ark/util"
 import type {
+	applyConstraint,
+	constrain,
 	Default,
-	InferredDefault,
-	InferredOptional
+	Optional,
+	parseConstraints
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
@@ -96,21 +97,36 @@ interface Type<out t extends object = object, $ = {}>
 	props: array<typePropOf<t, $>>
 }
 
-type typePropOf<o, $> = {
-	[k in keyof o]-?: typeProp<o, k, $>
-}[keyof o] &
-	unknown
+type typePropOf<o, $> =
+	keyof o extends infer k ?
+		k extends keyof o ?
+			typeProp<o, k, $>
+		:	never
+	:	never
 
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
-	t extends InferredDefault<infer v, infer defaultValue> ?
-		DefaultedTypeProp<k & Key, v, defaultValue, $>
+	parseConstraints<t> extends (
+		[infer base, infer constraints extends Default | Optional]
+	) ?
+		constraints extends Default<infer defaultValue> ?
+			DefaultedTypeProp<
+				k & Key,
+				keyof constraints extends keyof Default ? base
+				:	constrain<base, Omit<constraints, keyof Default>>,
+				defaultValue,
+				$
+			>
+		: constraints extends Optional ?
+			BaseTypeProp<
+				"optional",
+				k & Key,
+				keyof constraints extends keyof Optional ? base
+				:	constrain<base, Omit<constraints, keyof Optional>>,
+				$
+			>
+		:	never
 	:	BaseTypeProp<
-			k extends optionalKeyOf<o> ? "optional"
-			: t extends InferredOptional ?
-				[t] extends [anyOrNever] ?
-					"required"
-				:	"optional"
-			:	"required",
+			k extends optionalKeyOf<o> ? "optional" : "required",
 			k & Key,
 			t,
 			$
@@ -181,9 +197,10 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
 			{ kind: "optional"; default: unknown }
-		>["key"]]: (
-			In?: prop["value"][inferred]
-		) => Default<prop["default" & keyof prop]>
+		>["key"]]: applyConstraint<
+			prop["value"][inferred],
+			Default<prop["default" & keyof prop]>
+		>
 	}
 >
 

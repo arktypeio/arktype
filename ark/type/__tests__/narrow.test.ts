@@ -241,4 +241,14 @@ contextualize(() => {
 			}[]
 		>(objArray.in.infer)
 	})
+
+	it("can distill units", () => {
+		const t = type("5").narrow(() => true)
+		attest<constrain<5, Narrowed>>(t.t)
+		attest<5>(t.infer)
+		attest<5>(t.inferIn)
+
+		// this predicate is evaluated and pruned
+		attest(t.expression).equals("5")
+	})
 })

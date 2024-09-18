@@ -178,10 +178,16 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
-								rInner.required =
-									rInner.required ?
-										[...rInner.required, ...normalized.required]
-									:	normalized.required
+								rInner.required = conflatenate(
+									rInner.required,
+									normalized.required
+								)
+							}
+							if (normalized.optional) {
+								rInner.optional = conflatenate(
+									rInner.optional,
+									normalized.optional
+								)
 							}
 							return normalized.index ?? []
 						})
@@ -212,11 +218,18 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
-								lInner.required =
-									lInner.required ?
-										[...lInner.required, ...normalized.required]
-									:	normalized.required
+								lInner.required = conflatenate(
+									lInner.required,
+									normalized.required
+								)
 							}
+							if (normalized.optional) {
+								lInner.optional = conflatenate(
+									lInner.optional,
+									normalized.optional
+								)
+							}
+
 							return normalized.index ?? []
 						})
 					}
@@ -726,6 +739,7 @@ export const writeNumberIndexMessage = (
 export type NormalizedIndex = {
 	index?: Index.Node
 	required?: Required.Node[]
+	optional?: Optional.Node[]
 }
 
 /** extract enumerable named props from an index signature */
@@ -744,9 +758,14 @@ export const normalizeIndex = (
 
 	const normalized: NormalizedIndex = {}
 
-	normalized.required = enumerableBranches.map(n =>
-		$.node("required", { key: n.unit as Key, value })
-	)
+	enumerableBranches.forEach(n => {
+		// since required can be reduced to optional if it has a default or
+		// optional meta on its value, we have to assign it depending on the
+		// compiled kind
+		const prop = $.node("required", { key: n.unit as Key, value })
+		normalized[prop.kind] = append(normalized[prop.kind], prop as never)
+	})
+
 	if (nonEnumerableBranches.length) {
 		normalized.index = $.node("index", {
 			signature: nonEnumerableBranches,

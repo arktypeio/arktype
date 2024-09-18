@@ -40,7 +40,7 @@ export type DateLiteral<source extends string = string> =
 
 export type ConstraintSet = Record<PropertyKey, 1>
 
-export type Constraints = Record<string, ConstraintSet>
+export type Constraints = Record<string, ConstraintSet> | { default?: unknown }
 
 export const constrained = noSuggest("arkConstrained")
 
@@ -101,14 +101,14 @@ export type applyConstraintSchema<
 	t,
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
-> =
-	t extends InferredMorph<infer i, infer o> ?
-		(
-			In: leftIfEqual<i, applyConstraint<i, schemaToConstraint<kind, schema>>>
-		) => o
-	:	leftIfEqual<t, applyConstraint<t, schemaToConstraint<kind, schema>>>
+> = applyConstraint<t, schemaToConstraint<kind, schema>>
 
 export type applyConstraint<t, constraint> =
+	t extends InferredMorph<infer i, infer o> ?
+		(In: leftIfEqual<i, _applyConstraint<i, constraint>>) => o
+	:	leftIfEqual<t, _applyConstraint<t, constraint>>
+
+type _applyConstraint<t, constraint> =
 	parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
@@ -242,7 +242,6 @@ type _distill<t, opts extends distill.Options> =
 			distillIo<i, o, opts>
 		:	distillUnbrandedIo<t, i, o, opts>
 	: t extends array ? distillArray<t, opts>
-	: t extends InferredDefault<infer t> ? _distill<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
@@ -431,9 +430,11 @@ export type Optional = {
 
 export type InferredOptional<t = unknown> = constrain<t, Optional>
 
-export type Default<v = any> = ["=", v]
+export type Default<v = any> = {
+	default?: { value: v }
+}
 
-export type InferredDefault<t = any, v = any> = (In?: t) => Default<v>
+export type InferredDefault<t = unknown, v = any> = constrain<t, Default<v>>
 
 export type termOrType<t> = t | Type<t, any>
 

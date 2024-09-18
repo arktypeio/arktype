@@ -3,6 +3,7 @@ import type {
 	constrain,
 	constraint,
 	Constraints,
+	Default,
 	Literal,
 	Narrowed,
 	normalizeLimit,
@@ -38,6 +39,8 @@ export declare namespace Date {
 
 	export type optional = constrain<Date, Optional>
 
+	export type defaultsTo<rule> = constrain<Date, Default<rule>>
+
 	export type branded<rule> = constrain<Date, Branded<rule>>
 
 	export type literal<rule> = constrain<Date, Literal<rule>>
@@ -58,6 +61,7 @@ export declare namespace Date {
 		: constraint extends AtOrAfter<infer rule> ? atOrAfter<rule>
 		: constraint extends AtOrBefore<infer rule> ? atOrBefore<rule>
 		: constraint extends Optional ? optional
+		: constraint extends Default<infer rule> ? defaultsTo<rule>
 		: constraint extends Narrowed ? narrowed
 		: never
 }

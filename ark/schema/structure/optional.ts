@@ -1,4 +1,5 @@
-import { printable, throwParseError } from "@ark/util"
+import { printable, throwParseError, unset } from "@ark/util"
+import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
@@ -42,7 +43,13 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 				preserveUndefined: true
 			}
 		},
-		normalize: schema => schema,
+		// safe to spread here as a node will never be passed to normalize
+		normalize: ({ ...schema }, $) => {
+			const value = $.parseSchema(schema.value)
+			schema.value = value
+			if (value.defaultMeta !== unset) schema.default ??= value.defaultMeta
+			return schema
+		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		},
@@ -55,30 +62,54 @@ export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
 		if ("default" in this.inner) {
-			const out = this.value.in(this.inner.default)
-			if (out instanceof ArkErrors) {
-				throwParseError(
-					writeUnassignableDefaultValueMessage(this.serializedKey, out.message)
-				)
-			}
+			assertDefaultValueAssignability(
+				this.value,
+				this.inner.default,
+				this.serializedKey
+			)
 		}
 	}
 
 	expression = `${this.compiledKey}?: ${this.value.expression}${"default" in this.inner ? ` = ${printable(this.inner.default)}` : ""}`
 }
 
+// if (parsedValue.meta) {
+// 	if ("default" in parsedValue.meta) {
+// 		return ctx.$.node("optional", {
+// 			key: parsedKey.key,
+// 			value: parsedValue,
+// 			default: parsedValue.meta.default
+// 		})
+// 	}
+
+// 	if (parsedValue.meta.optional) {
+// 		return ctx.$.node("optional", {
+// 			key: parsedKey.key,
+// 			value: parsedValue
+// 		})
+// 	}
+// }
+
 export const Optional = {
 	implementation,
 	Node: OptionalNode
 }
 
-export const writeUnassignableDefaultValueMessage = <
-	key extends string,
-	message extends string
->(
-	key: key,
-	message: message
-): string => `Default value for key ${key} ${message}`
+export const assertDefaultValueAssignability = (
+	node: BaseRoot,
+	value: unknown,
+	key = ""
+): unknown => {
+	const out = node.in(value)
+	if (out instanceof ArkErrors)
+		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
+	return value
+}
+
+export const writeUnassignableDefaultValueMessage = (
+	message: string,
+	key = ""
+): string => `Default value${key && ` for key ${key}`} ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,

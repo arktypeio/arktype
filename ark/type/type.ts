@@ -81,6 +81,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
+			: one extends "=" ? [distill.In<type.infer<NoInfer<zero>, $>>]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r

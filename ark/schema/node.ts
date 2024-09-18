@@ -238,6 +238,7 @@ export abstract class BaseNode<
 					:	childValue[kind]
 			} else ioInner[k] = v
 		}
+
 		return this.$.node(this.kind, ioInner)
 	}
 

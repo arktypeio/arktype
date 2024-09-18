@@ -4,6 +4,7 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
+	unset,
 	type Fn,
 	type array
 } from "@ark/util"
@@ -46,6 +47,7 @@ import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
+import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
 import type {
 	PropFlatMapper,
@@ -74,6 +76,24 @@ export abstract class BaseRoot<
 
 	get internal(): this {
 		return this
+	}
+
+	get optionalMeta(): boolean {
+		return this.cacheGetter(
+			"optionalMeta",
+			this.meta.optional === true ||
+				(this.hasKind("morph") && this.in.meta.optional === true)
+		)
+	}
+
+	/** returns unset if there is no default */
+	get defaultMeta(): unknown {
+		return this.cacheGetter(
+			"defaultMeta",
+			"default" in this.meta ? this.meta.default
+			: this.hasKind("morph") ? this.in.defaultMeta
+			: unset
+		)
 	}
 
 	as(): this {
@@ -304,6 +324,8 @@ export abstract class BaseRoot<
 	}
 
 	default(value: unknown): this {
+		assertDefaultValueAssignability(this, value)
+
 		return this.withMeta({ default: value })
 	}
 
