@@ -2,6 +2,13 @@ import { bench } from "@ark/attest"
 import { scope, type } from "arktype"
 import { z } from "zod"
 
+bench.baseline(() => {
+	type({ foo: "string" }).or({ bar: "number" }).array()
+	z.array(
+		z.union([z.object({ foo: z.string() }), z.object({ bar: z.number() })])
+	)
+})
+
 bench("arktype", () => {
 	const authenticatorTransportFutureSchema = type(
 		"('ble'|'internal'|'nfc'|'usb'|'cable'|'hybrid')[]"
