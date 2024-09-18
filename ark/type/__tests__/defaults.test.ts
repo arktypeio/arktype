@@ -17,7 +17,7 @@ contextualize(() => {
 			// ensure type ast displays is exactly as expected
 			attest(o.t).type.toString.snap(`{
 	foo: string
-	bar: number.defaultsTo<5>
+	bar: defaultsTo<5>
 }`)
 			attest<{ foo: string; bar?: number }>(o.inferIn)
 			attest<{ foo: string; bar: number }>(o.infer)
@@ -49,8 +49,10 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: "string", bar: ["number", "=", "5"] })
 			)
-				.throws.snap(
-					'ParseError: Default value for key "bar" must be a number (was a string)'
+				.throws(
+					writeUnassignableDefaultValueMessage(
+						"must be a number (was a string)"
+					)
 				)
 				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
 		})
@@ -86,7 +88,7 @@ contextualize(() => {
 
 		it("chained", () => {
 			const defaultedString = type("string").default("")
-			attest(defaultedString.t).type.toString.snap('string.defaultsTo<"">')
+			attest(defaultedString.t).type.toString.snap('defaultsTo<"">')
 			attest(defaultedString.json).snap({
 				domain: "string",
 				meta: { default: "" }
@@ -245,10 +247,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
 				.throws(
-					writeUnassignableDefaultValueMessage(
-						'"bar"',
-						"must be a number (was boolean"
-					)
+					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
 				)
 				.type.errors("true is not assignable to number")
 		})
