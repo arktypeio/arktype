@@ -431,7 +431,7 @@ export type Optional = {
 export type InferredOptional<t = unknown> = constrain<t, Optional>
 
 export type Default<v = any> = {
-	default?: { value: v }
+	default?: { value: v extends Primitive ? v | (() => v) : () => v }
 }
 
 export type InferredDefault<t = unknown, v = any> = constrain<t, Default<v>>
