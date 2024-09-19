@@ -431,13 +431,13 @@ export type To<o = any> = ["=>", o, true]
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type Optional = {
-	optional?: {}
+	optional: {}
 }
 
 export type InferredOptional<t = unknown> = of<t, Optional>
 
 export type Default<v = any> = {
-	default?: { value: v }
+	default: { value: v }
 }
 
 export type DefaultFor<t> =

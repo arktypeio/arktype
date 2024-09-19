@@ -154,7 +154,7 @@ interface Type<out t = unknown, $ = {}>
 		r = applyAttribute<t, Default<value>>
 	>(
 		value: DefaultFor<value>
-	): NoInfer<instantiateType<r, $>>
+	): NoInfer<instantiateType<r, $>> extends infer result ? result : never
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
@@ -190,7 +190,7 @@ interface Type<out t = unknown, $ = {}>
 interface ChainedPipeSignature<t, $> {
 	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
 		a: a
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -198,7 +198,7 @@ interface ChainedPipeSignature<t, $> {
 	>(
 		a: a,
 		b: b
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -208,7 +208,7 @@ interface ChainedPipeSignature<t, $> {
 		a: a,
 		b: b,
 		c: c
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -220,7 +220,7 @@ interface ChainedPipeSignature<t, $> {
 		b: b,
 		c: c,
 		d: d
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -234,7 +234,7 @@ interface ChainedPipeSignature<t, $> {
 		c: c,
 		d: d,
 		e: e
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -250,7 +250,7 @@ interface ChainedPipeSignature<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -268,7 +268,7 @@ interface ChainedPipeSignature<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 }
 
 export interface ChainedPipes<t, $> extends ChainedPipeSignature<t, $> {
