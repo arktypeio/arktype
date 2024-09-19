@@ -52,8 +52,8 @@ attest({
 const it = (name: string, fn: () => void) => fn()
 
 it("can snap instantiations", () => {
-	type Z = makeComplexType<"asbsdfsaodisfhsda">
 	attest.instantiations()
+	return {} as makeComplexType<"asbsdfsaodisfhsda">
 })
 
 cleanup()

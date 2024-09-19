@@ -1,4 +1,5 @@
 import {
+	hasDomain,
 	omit,
 	printable,
 	throwParseError,
@@ -94,21 +95,30 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
 
-	premorphedDefaultValue: unknown =
-		this.hasDefault() ?
-			this.value.includesMorph ?
-				this.value.assert(this.default)
-			:	this.default
-		:	undefined
+	morphedDefaultFactory: () => unknown = this.getMorphedFactory()
 
-	defaultValueMorphs: Morph<object>[] = [
-		(data: any): object => {
-			data[this.key] = this.premorphedDefaultValue
+	defaultValueMorphs: Morph[] = [
+		(data: any): unknown => {
+			data[this.key] = this.morphedDefaultFactory()
 			return data
 		}
 	]
 
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+
+	getDefaultFactory(): () => unknown {
+		if (!this.hasDefault()) return () => undefined
+		if (typeof this.default === "function") return this.default as () => unknown
+		return () => this.default
+	}
+
+	getMorphedFactory(): () => unknown {
+		if (!this.hasDefault()) return () => undefined
+		const factory = this.getDefaultFactory()
+		return this.value.includesMorph ?
+				() => this.value.assert(factory())
+			:	factory
+	}
 }
 
 export const Optional = {
@@ -126,18 +136,28 @@ export const assertDefaultValueAssignability = (
 	value: unknown,
 	key = ""
 ): unknown => {
-	const out = node.in(value)
+	if (hasDomain(value, "object") && typeof value !== "function")
+		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
+
+	const out = node.in(typeof value === "function" ? value() : value)
 	if (out instanceof ArkErrors)
 		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
+
 	return value
 }
 
 export const writeUnassignableDefaultValueMessage = (
 	message: string,
 	key = ""
-): string => `Default value${key && ` for key ${key}`} ${message}`
+): string =>
+	`Default value${key && ` for key ${key}`} is not assignable: ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
 	defaultValue extends string
 > = `Default value ${defaultValue} is not assignable to ${baseDef}`
+
+export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
+	key: string
+): string =>
+	`Default value${key && ` for key ${key}`} is not primitive so it should be specified as a function like () => ({my: 'object'})`

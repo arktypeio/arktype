@@ -56,9 +56,7 @@ contextualize(() => {
 
 			const badOut = parseJson("{ unquoted: true }")
 
-			const a = attest(badOut.toString())
-
-			const z = a.satisfies(
+			attest(badOut.toString()).satisfies(
 				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
 			)
 		})
@@ -330,8 +328,8 @@ contextualize(() => {
 	(In: { a: 1; b: 2 }) => Out<string>,
 	{
 		a: (In: { a: 1 }) => Out<string>
-		b: { b: 2 }
 		c: (In: { a: 1; b: 2 }) => Out<string>
+		b: { b: 2 }
 	}
 >`)
 		assertNodeKind(types.c.internal, "morph")

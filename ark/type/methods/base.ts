@@ -21,6 +21,7 @@ import type {
 	applyAttribute,
 	Branded,
 	Default,
+	DefaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
@@ -152,8 +153,8 @@ interface Type<out t = unknown, $ = {}>
 		const value extends this["inferIn"],
 		r = applyAttribute<t, Default<value>>
 	>(
-		value: value
-	): instantiateType<r, $>
+		value: DefaultFor<value>
+	): NoInfer<instantiateType<r, $>>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

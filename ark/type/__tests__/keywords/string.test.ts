@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
 import { keywords, type } from "arktype"
-import type { Out, To, string } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("alpha", () => {

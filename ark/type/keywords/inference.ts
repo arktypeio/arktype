@@ -116,7 +116,8 @@ export type applyAttribute<t, attribute> =
 	:	leftIfEqual<t, _applyAttribute<t, attribute>>
 
 type _applyAttribute<t, attribute> =
-	splitAttributes<t> extends (
+	t extends null | undefined ? t
+	: splitAttributes<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
 		[number, base] extends [base, number] ? number.is<attribute & constraints>
@@ -143,8 +144,14 @@ export type splitAttributes<t> =
 				[arkPrototypes.instanceOf<kind>, constraints]
 			: // delegate array constraint distillation to distillArray
 			kind extends "Array" ? null
-			: kind extends undefined ? [Omit<base, attributes>, constraints]
-			: [base, constraints]
+			: kind extends undefined ?
+				[
+					// if the only key is attributes, the original type could have been {} or unknown,
+					// so we conservatively allow unknown
+					keyof base extends attributes ? unknown : Omit<base, attributes>,
+					constraints
+				]
+			:	[base, constraints]
 		:	never
 	:	null
 
@@ -432,6 +439,12 @@ export type InferredOptional<t = unknown> = of<t, Optional>
 export type Default<v = any> = {
 	default?: { value: v }
 }
+
+export type DefaultFor<t> =
+	| (Primitive extends t ? Primitive
+	  : t extends Primitive ? t
+	  : never)
+	| (() => t)
 
 export type InferredDefault<t = unknown, v = any> = of<t, Default<v>>
 

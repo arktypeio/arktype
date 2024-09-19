@@ -2,14 +2,11 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage,
-	type arkKind
+	writeUnresolvableMessage
 } from "@ark/schema"
-import type { anyOrNever } from "@ark/util"
 import {
 	scope,
 	type,
-	type Ark,
 	type BoundModule,
 	type Module,
 	type Scope,
@@ -255,7 +252,7 @@ contextualize.each(
 			attest(t.expression).snap("[1]")
 		})
 
-		it("non-submodule dot access", $ => {
+		it("non-submodule dot access", () => {
 			attest(() =>
 				type({
 					// @ts-expect-error

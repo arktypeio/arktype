@@ -374,6 +374,7 @@ contextualize(() => {
 				})
 
 				attest<typeof expected.t>(types.actual.t)
+				attest(expected.json).equals(types.actual.json)
 			})
 
 			it("allows external scope reference to be resolved", () => {
@@ -600,6 +601,7 @@ contextualize(() => {
 
 	// currently types only, runtime pending: https://github.com/arktypeio/arktype/issues/1082
 	describe("cyclic", () => {
+		const enable = false
 		it("self-reference", () => {
 			const getTypes = () =>
 				scope({
@@ -611,11 +613,11 @@ contextualize(() => {
 					},
 					reference: "alternate<0, 1>"
 				}).export()
-			const types = chainableNoOpProxy as ReturnType<typeof getTypes>
+			const types = enable ? getTypes() : (chainableNoOpProxy as never)
 			attest<[0, 1]>(types.reference.infer.swap.swap.order)
 			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
 			const getFromCall = () => types.alternate("'off'", "'on'")
-			const fromCall = chainableNoOpProxy as ReturnType<typeof getFromCall>
+			const fromCall = enable ? getFromCall() : (chainableNoOpProxy as never)
 
 			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
 			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)

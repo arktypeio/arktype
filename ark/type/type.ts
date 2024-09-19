@@ -23,7 +23,7 @@ import type {
 	parseValidGenericParams,
 	validateParameterString
 } from "./generic.ts"
-import type { distill } from "./keywords/inference.ts"
+import type { DefaultFor, distill } from "./keywords/inference.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
@@ -81,7 +81,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
-			: one extends "=" ? [distill.In<type.infer<NoInfer<zero>, $>>]
+			: one extends "=" ? [DefaultFor<distill.In<type.infer<NoInfer<zero>, $>>>]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r

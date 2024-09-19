@@ -1,8 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	intrinsic,
 	registeredReference,
-	writeInvalidOperandMessage,
 	writeUnboundableMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -435,11 +433,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 					return ctx.error("a non-decimal number")
 				}
 			})
-			.narrow((amount, ctx) => true)
+			.narrow(() => true)
 
 		const Token = type("7<string<=120")
 			.pipe(s => s.toLowerCase())
-			.narrow((s, ctx) => true)
+			.narrow(() => true)
 
 		const $ = scope({
 			Asset: {
@@ -623,7 +621,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	it("narrowed morph", () => {
 		const t = type("string")
 			.pipe(s => parseInt(s))
-			.narrow(n => true)
+			.narrow(() => true)
 
 		attest<(In: string) => Out<number.narrowed>>(t.t)
 
