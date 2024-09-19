@@ -95,31 +95,36 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
 
-	defaultValueMorphs: Morph[] =
-		this.hasDefault() ?
-			[
-				(data: any): unknown => {
-					data[this.key] = this.premorphedDefaultValue
-					return data
-				}
-			]
-		:	[]
-
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
 
-	get premorphedDefaultValue(): unknown {
+	get defaultValueMorphs(): Morph[] {
+		if (!this.hasDefault()) return this.cacheGetter("defaultValueMorphs", [])
+
+		const precomputed = this.precomputeDefaultValue()
+
+		return this.cacheGetter("defaultValueMorphs", [
+			// can be safely cached as long as the returned value is primitive
+			hasDomain(precomputed, "object") ?
+				data => {
+					data[this.key] = this.precomputeDefaultValue()
+					return data
+				}
+			:	data => {
+					data[this.key] = precomputed
+					return data
+				}
+		])
+	}
+
+	private precomputeDefaultValue(): unknown {
 		if (typeof this.default === "function") {
 			return this.value.includesMorph ?
 					this.value.assert(this.default())
 				:	this.default()
 		}
-		const premorphed =
-			this.value.includesMorph ? this.value.assert(this.default) : this.default
-
-		// can be safely cached as long as the returned value is primitive
-		return hasDomain(premorphed, "object") ? premorphed : (
-				this.cacheGetter("premorphedDefaultValue", premorphed)
-			)
+		return this.value.includesMorph ?
+				this.value.assert(this.default)
+			:	this.default
 	}
 }
 
