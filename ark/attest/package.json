@@ -31,7 +31,7 @@
 		"attest": "out/cli/cli.js"
 	},
 	"scripts": {
-		"build": "ts ../repo/build.ts",
+		"build": "ts ../repo/build.ts && cp ./assert/formatWorker.js ./out/assert/formatWorker.js",
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
