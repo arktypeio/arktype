@@ -38,8 +38,8 @@ export type validateAst<ast, $, args> =
 	ast extends ErrorMessage ? ast
 	: ast extends InferredAst ? validateInferredAst<ast[0], ast[2]>
 	: ast extends DefAst ?
-		ast[2] extends PrivateDeclaration ?
-			ErrorMessage<writePrefixedPrivateReferenceMessage<ast[2]>>
+		ast[2] extends PrivateDeclaration<infer name> ?
+			ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 		:	undefined
 	: ast extends PostfixExpression<infer operator, infer operand> ?
 		operator extends "[]" ? validateAst<operand, $, args>
@@ -100,8 +100,8 @@ type validateInferredAst<inferred, def extends string> =
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
 	: [inferred] extends [anyOrNever] ? undefined
-	: def extends PrivateDeclaration ?
-		ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
+	: def extends PrivateDeclaration<infer name> ?
+		ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 	: // these problems would've been caught during a fullStringParse, but it's most
 	// efficient to check for them here in case the string was naively parsed
 	inferred extends Generic ?

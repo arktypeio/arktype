@@ -768,7 +768,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	| {
 			type: "directory"
 			name: is<MoreThanLength<0> & LessThanLength<255>>
-			children: constrain<
+			children: of<
 				(
 					| {
 							type: "file"
