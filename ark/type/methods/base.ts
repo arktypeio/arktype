@@ -19,6 +19,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type {
 	applyAttribute,
+	Branded,
 	Default,
 	distill,
 	inferIntersection,
@@ -77,6 +78,14 @@ interface Type<out t = unknown, $ = {}>
 	from(literal: this["inferIn"]): this["infer"]
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
+
+	brand<
+		const name extends string,
+		r = applyAttribute<t, Branded<name>> extends infer r ? instantiateType<r, $>
+		:	never
+	>(
+		name: name
+	): r
 
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>

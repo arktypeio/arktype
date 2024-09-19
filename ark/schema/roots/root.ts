@@ -100,6 +100,10 @@ export abstract class BaseRoot<
 		return this
 	}
 
+	brand(): this {
+		return this
+	}
+
 	readonly(): this {
 		return this
 	}

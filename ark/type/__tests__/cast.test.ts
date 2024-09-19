@@ -99,4 +99,14 @@ contextualize(() => {
 			attest(t === from).equals(true)
 		})
 	})
+
+	describe("brand", () => {
+		it("chained", () => {
+			const t = type("string").brand("foo")
+			attest(t.t).type.toString.snap()
+
+			// no effect at runtime
+			attest(t.expression).equals("string")
+		})
+	})
 })

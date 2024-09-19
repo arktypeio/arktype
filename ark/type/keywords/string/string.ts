@@ -83,16 +83,16 @@ export declare namespace string {
 
 	export type is<constraints extends Constraints> = of<string, constraints>
 
-	export type withConstraint<constraint> =
-		constraint extends ExactlyLength<infer rule> ? exactlyLength<rule>
-		: constraint extends MoreThanLength<infer rule> ? moreThanLength<rule>
-		: constraint extends AtLeastLength<infer rule> ? atLeastLength<rule>
-		: constraint extends AtMostLength<infer rule> ? atMostLength<rule>
-		: constraint extends LessThanLength<infer rule> ? lessThanLength<rule>
-		: constraint extends Matching<infer rule> ? matching<rule>
-		: constraint extends Optional ? optional
-		: constraint extends Default<infer rule> ? defaultsTo<rule>
-		: constraint extends Narrowed ? narrowed
+	export type applyAttribute<attribute> =
+		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
+		: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
+		: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
+		: attribute extends AtMostLength<infer rule> ? atMostLength<rule>
+		: attribute extends LessThanLength<infer rule> ? lessThanLength<rule>
+		: attribute extends Matching<infer rule> ? matching<rule>
+		: attribute extends Optional ? optional
+		: attribute extends Default<infer rule> ? defaultsTo<rule>
+		: attribute extends Branded<infer rule> ? branded<rule>
 		: never
 
 	export type module = Module<string.submodule>

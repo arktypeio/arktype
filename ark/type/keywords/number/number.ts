@@ -96,15 +96,15 @@ export declare namespace number {
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	export type withConstraint<constraint> =
-		constraint extends MoreThan<infer rule> ? moreThan<rule>
-		: constraint extends AtLeast<infer rule> ? atLeast<rule>
-		: constraint extends AtMost<infer rule> ? atMost<rule>
-		: constraint extends LessThan<infer rule> ? lessThan<rule>
-		: constraint extends DivisibleBy<infer rule> ? divisibleBy<rule>
-		: constraint extends Optional ? optional
-		: constraint extends Default<infer rule> ? defaultsTo<rule>
-		: constraint extends Narrowed ? narrowed
+	export type applyAttribute<attribute> =
+		attribute extends MoreThan<infer rule> ? moreThan<rule>
+		: attribute extends AtLeast<infer rule> ? atLeast<rule>
+		: attribute extends AtMost<infer rule> ? atMost<rule>
+		: attribute extends LessThan<infer rule> ? lessThan<rule>
+		: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
+		: attribute extends Optional ? optional
+		: attribute extends Default<infer rule> ? defaultsTo<rule>
+		: attribute extends Branded<infer rule> ? branded<rule>
 		: never
 
 	export type module = Module<submodule>

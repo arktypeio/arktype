@@ -123,9 +123,9 @@ type _applyAttribute<t, attribute> =
 		: [string, base] extends [base, string] ? string.is<attribute & constraints>
 		: [Date, base] extends [base, Date] ? Date.is<attribute & constraints>
 		: of<base, constraints & attribute>
-	: [number, t] extends [t, number] ? number.withConstraint<attribute>
-	: [string, t] extends [t, string] ? string.withConstraint<attribute>
-	: [Date, t] extends [t, Date] ? Date.withConstraint<attribute>
+	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
+	: [string, t] extends [t, string] ? string.applyAttribute<attribute>
+	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
 	: of<t, conform<attribute, Constraints>>
 
 export type splitAttributes<t> =
