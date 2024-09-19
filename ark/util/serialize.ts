@@ -9,6 +9,7 @@ export type SerializationOptions = {
 	onSymbol?: (value: symbol) => string
 	onFunction?: (value: Function) => string
 	onUndefined?: string
+	onBigInt?: (value: bigint) => string
 }
 
 export type Json = JsonObject | JsonArray
@@ -25,8 +26,17 @@ export type JsonData = Json | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,
-	opts: SerializationOptions = { onUndefined: "(undefined)" }
-): snapshot<t> => _serialize(data, opts, []) as never
+	opts: SerializationOptions = {}
+): snapshot<t> =>
+	_serialize(
+		data,
+		{
+			onUndefined: `$ark.undefined`,
+			onBigInt: n => `$ark.bigint-${n}`,
+			...opts
+		},
+		[]
+	) as never
 
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown
@@ -40,11 +50,7 @@ export type snapshot<t, depth extends 1[] = []> =
 			[k in keyof t]: snapshot<t[k], [...depth, 1]>
 		}
 
-type snapshotPrimitive<t> =
-	t extends undefined ? "(undefined)"
-	: t extends bigint ? `${t}n`
-	: t extends symbol ? `Symbol(${string})`
-	: t
+type snapshotPrimitive<t> = t extends symbol ? `(Symbol${string})` : t
 
 export const print = (data: unknown, indent?: number): void =>
 	console.log(printable(data, indent))
@@ -101,7 +107,7 @@ const _serialize = (
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
-			return `${data}n`
+			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
 		default:
