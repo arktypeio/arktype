@@ -318,6 +318,17 @@ contextualize(() => {
 			attest<typeof expected.t>(t.t)
 			attest(t.json).equals(expected.json)
 		})
+
+		it("extracts output as required", () => {
+			const t = type({
+				foo: "string = 'foo'"
+			})
+
+			attest<{ foo?: string }>(t.in.infer)
+			attest<{ foo: string }>(t.out.infer)
+			attest(t.in.expression).snap('{ foo?: string = "foo" }')
+			attest(t.out.expression).snap("{ foo: string }")
+		})
 	})
 
 	describe("intersection", () => {
