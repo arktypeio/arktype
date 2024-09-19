@@ -95,29 +95,31 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
 
-	morphedDefaultFactory: () => unknown = this.getMorphedFactory()
-
-	defaultValueMorphs: Morph[] = [
-		(data: any): unknown => {
-			data[this.key] = this.morphedDefaultFactory()
-			return data
-		}
-	]
+	defaultValueMorphs: Morph[] =
+		this.hasDefault() ?
+			[
+				(data: any): unknown => {
+					data[this.key] = this.premorphedDefaultValue
+					return data
+				}
+			]
+		:	[]
 
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
 
-	getDefaultFactory(): () => unknown {
-		if (!this.hasDefault()) return () => undefined
-		if (typeof this.default === "function") return this.default as () => unknown
-		return () => this.default
-	}
+	get premorphedDefaultValue(): unknown {
+		if (typeof this.default === "function") {
+			return this.value.includesMorph ?
+					this.value.assert(this.default())
+				:	this.default()
+		}
+		const premorphed =
+			this.value.includesMorph ? this.value.assert(this.default) : this.default
 
-	getMorphedFactory(): () => unknown {
-		if (!this.hasDefault()) return () => undefined
-		const factory = this.getDefaultFactory()
-		return this.value.includesMorph ?
-				() => this.value.assert(factory())
-			:	factory
+		// can be safely cached as long as the returned value is primitive
+		return hasDomain(premorphed, "object") ? premorphed : (
+				this.cacheGetter("premorphedDefaultValue", premorphed)
+			)
 	}
 }
 
