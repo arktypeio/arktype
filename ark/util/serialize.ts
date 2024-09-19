@@ -8,7 +8,7 @@ export type SerializationOptions = {
 	onCycle?: (value: object) => string
 	onSymbol?: (value: symbol) => string
 	onFunction?: (value: Function) => string
-	onUndefined?: string | undefined
+	onUndefined?: string
 }
 
 export type Json = JsonObject | JsonArray
@@ -23,10 +23,8 @@ export type JsonPrimitive = string | boolean | number | null
 
 export type JsonData = Json | JsonPrimitive
 
-export const snapshot = <t>(
-	data: t,
-	opts: SerializationOptions = { onUndefined: undefined }
-): snapshot<t> => _serialize(data, opts, []) as never
+export const snapshot = <t>(data: t, opts: SerializationOptions): snapshot<t> =>
+	_serialize(data, opts, []) as never
 
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown
