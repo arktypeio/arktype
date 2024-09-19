@@ -9,6 +9,7 @@ export type SerializationOptions = {
 	onSymbol?: (value: symbol) => string
 	onFunction?: (value: Function) => string
 	onUndefined?: string
+	onBigInt?: (value: bigint) => string
 }
 
 export type Json = JsonObject | JsonArray
@@ -95,7 +96,7 @@ const _serialize = (
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
-			return `$ark.bigint-${data}`
+			return opts.onBigInt?.(data as bigint) ?? `$ark.bigint-${data}`
 		case "undefined":
 			return opts.onUndefined ?? "$ark.undefined"
 		default:
