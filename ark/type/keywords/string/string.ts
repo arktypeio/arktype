@@ -11,8 +11,8 @@ import type {
 	MoreThanLength,
 	Narrowed,
 	Optional,
-	constrain,
-	constraint
+	constraint,
+	of
 } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
@@ -61,30 +61,27 @@ export type Matching<rule> = {
 }
 
 export declare namespace string {
-	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
+	export type atLeastLength<rule> = of<string, AtLeastLength<rule>>
 
-	export type moreThanLength<rule> = constrain<string, MoreThanLength<rule>>
+	export type moreThanLength<rule> = of<string, MoreThanLength<rule>>
 
-	export type atMostLength<rule> = constrain<string, AtMostLength<rule>>
+	export type atMostLength<rule> = of<string, AtMostLength<rule>>
 
-	export type lessThanLength<rule> = constrain<string, LessThanLength<rule>>
+	export type lessThanLength<rule> = of<string, LessThanLength<rule>>
 
-	export type exactlyLength<rule> = constrain<string, ExactlyLength<rule>>
+	export type exactlyLength<rule> = of<string, ExactlyLength<rule>>
 
-	export type matching<rule> = constrain<string, Matching<rule>>
+	export type matching<rule> = of<string, Matching<rule>>
 
-	export type narrowed = constrain<string, Narrowed>
+	export type narrowed = of<string, Narrowed>
 
-	export type optional = constrain<string, Optional>
+	export type optional = of<string, Optional>
 
-	export type defaultsTo<rule> = constrain<string, Default<rule>>
+	export type defaultsTo<rule> = of<string, Default<rule>>
 
-	export type branded<rule> = constrain<string, Branded<rule>>
+	export type branded<rule> = of<string, Branded<rule>>
 
-	export type is<constraints extends Constraints> = constrain<
-		string,
-		constraints
-	>
+	export type is<constraints extends Constraints> = of<string, constraints>
 
 	export type withConstraint<constraint> =
 		constraint extends ExactlyLength<infer rule> ? exactlyLength<rule>

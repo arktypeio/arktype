@@ -5,8 +5,8 @@ import { type } from "arktype"
 import type {
 	Narrowed,
 	Out,
-	constrain,
 	number,
+	of,
 	string
 } from "arktype/internal/keywords/inference.ts"
 
@@ -72,7 +72,7 @@ contextualize(() => {
 			}
 		])
 
-		attest<constrain<{ a: number; b: number }, Narrowed>>(abEqual.t)
+		attest<of<{ a: number; b: number }, Narrowed>>(abEqual.t)
 		attest<{
 			a: number
 			b: number
@@ -164,7 +164,7 @@ contextualize(() => {
 
 		const A = type("bigint").narrow(predicate).pipe(toString)
 
-		attest<(In: constrain<bigint, Narrowed>) => Out<string>>(A.t)
+		attest<(In: of<bigint, Narrowed>) => Out<string>>(A.t)
 		attest<bigint>(A.in.infer)
 		attest<bigint>(A.inferIn)
 		attest<string>(A.infer)
@@ -244,7 +244,7 @@ contextualize(() => {
 
 	it("can distill units", () => {
 		const t = type("5").narrow(() => true)
-		attest<constrain<5, Narrowed>>(t.t)
+		attest<of<5, Narrowed>>(t.t)
 		attest<5>(t.infer)
 		attest<5>(t.inferIn)
 

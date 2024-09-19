@@ -18,7 +18,7 @@ import type {
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
 import type {
-	applyConstraint,
+	applyAttribute,
 	Default,
 	distill,
 	inferIntersection,
@@ -137,11 +137,11 @@ interface Type<out t = unknown, $ = {}>
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
-	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
+	optional<r = applyAttribute<t, Optional>>(): instantiateType<r, $>
 
 	default<
 		const value extends this["inferIn"],
-		r = applyConstraint<t, Default<value>>
+		r = applyAttribute<t, Default<value>>
 	>(
 		value: value
 	): instantiateType<r, $>

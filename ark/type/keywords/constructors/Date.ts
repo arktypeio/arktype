@@ -1,12 +1,12 @@
 import type {
 	Branded,
-	constrain,
 	constraint,
 	Constraints,
 	Default,
 	Literal,
 	Narrowed,
 	normalizeLimit,
+	of,
 	Optional
 } from "../inference.ts"
 
@@ -27,25 +27,25 @@ export type Before<rule> = {
 }
 
 export declare namespace Date {
-	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
+	export type atOrAfter<rule> = of<Date, AtOrAfter<rule>>
 
-	export type after<rule> = constrain<Date, After<rule>>
+	export type after<rule> = of<Date, After<rule>>
 
-	export type atOrBefore<rule> = constrain<Date, AtOrBefore<rule>>
+	export type atOrBefore<rule> = of<Date, AtOrBefore<rule>>
 
-	export type before<rule> = constrain<Date, Before<rule>>
+	export type before<rule> = of<Date, Before<rule>>
 
-	export type narrowed = constrain<Date, Narrowed>
+	export type narrowed = of<Date, Narrowed>
 
-	export type optional = constrain<Date, Optional>
+	export type optional = of<Date, Optional>
 
-	export type defaultsTo<rule> = constrain<Date, Default<rule>>
+	export type defaultsTo<rule> = of<Date, Default<rule>>
 
-	export type branded<rule> = constrain<Date, Branded<rule>>
+	export type branded<rule> = of<Date, Branded<rule>>
 
-	export type literal<rule> = constrain<Date, Literal<rule>>
+	export type literal<rule> = of<Date, Literal<rule>>
 
-	export type is<constraints extends Constraints> = constrain<Date, constraints>
+	export type is<constraints extends Constraints> = of<Date, constraints>
 
 	export type afterSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? After<normalizeLimit<rule>>

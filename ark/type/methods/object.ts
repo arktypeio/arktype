@@ -20,11 +20,11 @@ import type {
 	toArkKey
 } from "@ark/util"
 import type {
-	applyConstraint,
-	constrain,
+	applyAttribute,
 	Default,
+	of,
 	Optional,
-	parseConstraints
+	splitAttributes
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
@@ -105,14 +105,14 @@ type typePropOf<o, $> =
 	:	never
 
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
-	parseConstraints<t> extends (
+	splitAttributes<t> extends (
 		[infer base, infer constraints extends Default | Optional]
 	) ?
 		constraints extends Default<infer defaultValue> ?
 			DefaultedTypeProp<
 				k & Key,
 				keyof constraints extends keyof Default ? base
-				:	constrain<base, Omit<constraints, keyof Default>>,
+				:	of<base, Omit<constraints, keyof Default>>,
 				defaultValue,
 				$
 			>
@@ -121,7 +121,7 @@ type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 				"optional",
 				k & Key,
 				keyof constraints extends keyof Optional ? base
-				:	constrain<base, Omit<constraints, keyof Optional>>,
+				:	of<base, Omit<constraints, keyof Optional>>,
 				$
 			>
 		:	never
@@ -197,7 +197,7 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
 			{ kind: "optional"; default: unknown }
-		>["key"]]: applyConstraint<
+		>["key"]]: applyAttribute<
 			prop["value"][inferred],
 			Default<prop["default" & keyof prop]>
 		>

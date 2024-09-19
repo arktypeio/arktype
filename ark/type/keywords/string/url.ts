@@ -1,10 +1,10 @@
 import { rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../inference.ts"
+import type { Branded, of, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {
-	export type url = constrain<string, Branded<"url">>
+	export type url = of<string, Branded<"url">>
 }
 
 const isParsableUrl = (s: string) => {

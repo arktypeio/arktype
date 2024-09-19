@@ -5,7 +5,7 @@ import type {
 	Default,
 	LimitLiteral,
 	Optional,
-	applyConstraint,
+	applyAttribute,
 	applyConstraintSchema,
 	distill,
 	inferIntersection,
@@ -82,7 +82,7 @@ export type inferExpression<ast, $, args> =
 			// unscoped type.infer is safe since the default value is always a literal
 			// as of TS5.6, inlining defaultValue causes a bunch of extra types and instantiations
 			type.infer<ast[2]> extends infer defaultValue ?
-				applyConstraint<inferExpression<ast[0], $, args>, Default<defaultValue>>
+				applyAttribute<inferExpression<ast[0], $, args>, Default<defaultValue>>
 			:	never
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
@@ -99,7 +99,7 @@ export type inferExpression<ast, $, args> =
 				ast[2] & number
 			>
 		: ast[1] extends "?" ?
-			applyConstraint<inferExpression<ast[0], $, args>, Optional>
+			applyAttribute<inferExpression<ast[0], $, args>, Optional>
 		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
 		: never
 	:	never
