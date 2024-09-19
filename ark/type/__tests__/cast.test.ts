@@ -108,5 +108,12 @@ contextualize(() => {
 			// no effect at runtime
 			attest(t.expression).equals("string")
 		})
+
+		it("string-embedded", () => {
+			const t = type("number#cool")
+			attest(t.t).type.toString.snap()
+
+			attest(t.expression).equals("number")
+		})
 	})
 })

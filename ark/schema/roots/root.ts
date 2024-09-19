@@ -100,8 +100,8 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	brand(name: string): this {
+		if (name === "") return throwParseError(emptyBrandNameMessage)
 		return this
 	}
 
@@ -577,6 +577,10 @@ export type UndeclaredKeyConfig = {
 	rule: UndeclaredKeyBehavior
 	deep?: boolean
 }
+
+export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
+
+export type emptyBrandNameMessage = typeof emptyBrandNameMessage
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 	schema: schema

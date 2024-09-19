@@ -168,7 +168,17 @@ contextualize(() => {
 				xdd: "#kekw",
 				"#kekw": "true"
 			}).export()
-		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("#kekw"))
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("kekw"))
+	})
+
+	it("errors on private reference with # in expression", () => {
+		attest(() =>
+			scope({
+				// @ts-expect-error
+				xdd: "string|#kekw",
+				"#kekw": "true"
+			}).export()
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("kekw"))
 	})
 
 	it("errors on public and private refrence with same name", () => {
