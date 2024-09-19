@@ -1,4 +1,10 @@
-import { printable, throwParseError, unset, type Primitive } from "@ark/util"
+import {
+	hasDomain,
+	printable,
+	throwParseError,
+	unset,
+	type Primitive
+} from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
@@ -95,15 +101,12 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-const isPrimitive = (value: unknown): value is Primitive =>
-	typeof value === "object" ? value === null : typeof value !== "function"
-
 export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
 	key = ""
 ): unknown => {
-	if (!isPrimitive(value) && typeof value !== "function")
+	if (hasDomain(value, "object") && typeof value !== "function")
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
 	const out = node.in(typeof value === "function" ? value() : value)

@@ -158,7 +158,7 @@ contextualize(() => {
 					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
 				)
 				.type.errors(
-					"'boolean' is not assignable to parameter of type 'number'"
+					"'boolean' is not assignable to parameter of type 'number | (() => number)'"
 				)
 		})
 
@@ -473,14 +473,18 @@ contextualize(() => {
 				() => type("number[]", "|", "string").default(true)
 			)
 				.throws()
-				.type.errors(/of type 'string'.*of type '\(\) => string | number\[\]'/)
+				.type.errors(
+					"not assignable to parameter of type 'string | (() => string | number[])'."
+				)
 			// should not cause "instantiation is excessively deep"
 			attest(
 				// @ts-expect-error
 				() => type("number[]", "|", "string").default(() => true)
 			)
 				.throws()
-				.type.errors(/'of type 'string'.*of type '\(\) => string | number\[\]'/)
+				.type.errors(
+					"not assignable to parameter of type 'string | (() => string | number[])'."
+				)
 		})
 
 		it("uses input type for morphs", () => {
@@ -615,6 +619,12 @@ contextualize(() => {
 			}).throws.snap(
 				"ParseError: Default value is not assignable: must be an array (was string)"
 			)
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: [{ a: "number" }, "=", () => ({ a: "bar" })] })
+			}).throws.snap(
+				"ParseError: Default value is not assignable: a must be a number (was a string)"
+			)
 		})
 
 		it("morphs the returned value", () => {
@@ -654,7 +664,8 @@ contextualize(() => {
 		it("default function factory", () => {
 			let i = 0
 			const t = type({
-				bar: type("Function").default(() => {
+				// this requires explicit type argument
+				bar: type("Function").default<() => number>(() => {
 					const j = ++i
 					return () => j
 				})
