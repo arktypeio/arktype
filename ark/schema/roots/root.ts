@@ -100,7 +100,8 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	brand(): this {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	brand(name: string): this {
 		return this
 	}
 

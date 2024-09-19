@@ -15,6 +15,7 @@ import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator, MinComparator } from "../reduce/shared.ts"
+import type { Scanner } from "../shift/scanner.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
@@ -140,25 +141,13 @@ export type PrefixExpression<
 	operand = unknown
 > = [operator, operand]
 
-export type PostfixOperator = "[]" | "?"
-
 export type PostfixExpression<
-	operator extends PostfixOperator = PostfixOperator,
+	operator extends Scanner.PostfixToken = Scanner.PostfixToken,
 	operand = unknown
 > = readonly [operand, operator]
 
-export type InfixOperator =
-	| "|"
-	| "&"
-	| Comparator
-	| "%"
-	| ":"
-	| "=>"
-	| "@"
-	| "="
-
 export type InfixExpression<
-	operator extends InfixOperator = InfixOperator,
+	operator extends Scanner.InfixToken = Scanner.InfixToken,
 	l = unknown,
 	r = unknown
 > = [l, operator, r]

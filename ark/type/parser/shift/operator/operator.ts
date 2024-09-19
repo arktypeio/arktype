@@ -44,6 +44,7 @@ export type parseOperator<s extends StaticState, $, args> =
 		: lookahead extends ComparatorStartChar ?
 			parseBound<s, lookahead, unscanned, $, args>
 		: lookahead extends "%" ? parseDivisor<s, unscanned>
+		: lookahead extends "#" ? s
 		: lookahead extends WhiteSpaceToken ?
 			parseOperator<state.scanTo<s, unscanned>, $, args>
 		:	state.error<writeUnexpectedCharacterMessage<lookahead>>
