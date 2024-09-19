@@ -100,31 +100,41 @@ export class OptionalNode extends BaseProp<"optional"> {
 	get defaultValueMorphs(): Morph[] {
 		if (!this.hasDefault()) return this.cacheGetter("defaultValueMorphs", [])
 
-		const precomputed = this.precomputeDefaultValue()
+		const defaultInput = this.default
+
+		if (typeof defaultInput === "function") {
+			const computeMorphedDefault =
+				this.value.includesMorph ?
+					() => this.value.assert(defaultInput())
+				:	() => defaultInput()
+			return this.cacheGetter("defaultValueMorphs", [
+				data => {
+					data[this.key] = computeMorphedDefault()
+					return data
+				}
+			])
+		}
+
+		const computeMorphedDefault =
+			this.value.includesMorph ?
+				() => this.value.assert(defaultInput)
+			:	() => defaultInput
+
+		// non-functional defaults can be safely cached as long as the morph is
+		// guaranteed to be pure and the output is primitive
+		const precomputedMorphedDefault = computeMorphedDefault()
 
 		return this.cacheGetter("defaultValueMorphs", [
-			// can be safely cached as long as the returned value is primitive
-			hasDomain(precomputed, "object") ?
+			hasDomain(precomputedMorphedDefault, "object") ?
 				data => {
-					data[this.key] = this.precomputeDefaultValue()
+					data[this.key] = computeMorphedDefault()
 					return data
 				}
 			:	data => {
-					data[this.key] = precomputed
+					data[this.key] = precomputedMorphedDefault
 					return data
 				}
 		])
-	}
-
-	private precomputeDefaultValue(): unknown {
-		if (typeof this.default === "function") {
-			return this.value.includesMorph ?
-					this.value.assert(this.default())
-				:	this.default()
-		}
-		return this.value.includesMorph ?
-				this.value.assert(this.default)
-			:	this.default
 	}
 }
 
