@@ -27,7 +27,16 @@ export type JsonData = Json | JsonPrimitive
 export const snapshot = <t>(
 	data: t,
 	opts: SerializationOptions = {}
-): snapshot<t> => _serialize(data, opts, []) as never
+): snapshot<t> =>
+	_serialize(
+		data,
+		{
+			onUndefined: `$ark.undefined`,
+			onBigInt: n => `$ark.bigint-${n}`,
+			...opts
+		},
+		[]
+	) as never
 
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown
@@ -98,9 +107,9 @@ const _serialize = (
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
-			return opts.onBigInt?.(data as bigint) ?? `$ark.bigint-${data}`
+			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
-			return opts.onUndefined ?? "$ark.undefined"
+			return opts.onUndefined ?? "undefined"
 		default:
 			return data
 	}
