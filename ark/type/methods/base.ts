@@ -14,7 +14,6 @@ import type {
 	ErrorMessage,
 	inferred,
 	Json,
-	Primitive,
 	unset
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"

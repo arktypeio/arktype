@@ -1,10 +1,4 @@
-import {
-	hasDomain,
-	printable,
-	throwParseError,
-	unset,
-	type Primitive
-} from "@ark/util"
+import { hasDomain, printable, throwParseError, unset } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
