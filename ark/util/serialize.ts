@@ -24,8 +24,10 @@ export type JsonPrimitive = string | boolean | number | null
 
 export type JsonData = Json | JsonPrimitive
 
-export const snapshot = <t>(data: t, opts: SerializationOptions): snapshot<t> =>
-	_serialize(data, opts, []) as never
+export const snapshot = <t>(
+	data: t,
+	opts: SerializationOptions = {}
+): snapshot<t> => _serialize(data, opts, []) as never
 
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown

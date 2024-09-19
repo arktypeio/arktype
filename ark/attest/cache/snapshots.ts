@@ -145,8 +145,6 @@ const writeCachedInlineSnapshotUpdates = () => {
 	}
 }
 
-const BIG_INT_PREFIX = '"$ark.bigint-'
-
 const snapshotArgsToQueuedUpdate = ({
 	position,
 	serializedValue,
@@ -161,10 +159,9 @@ const snapshotArgsToQueuedUpdate = ({
 			"`"
 		:	JSON.stringify(serializedValue)
 
-	if (newArgText.startsWith(BIG_INT_PREFIX))
-		newArgText = newArgText.slice(BIG_INT_PREFIX.length, -1) + "n"
-	else if (newArgText.includes("$ark.undefined"))
-		newArgText = newArgText.replace('"$ark.undefined"', "undefined")
+	newArgText = newArgText
+		.replace(/"\$ark.bigint-(-?\d+)"/g, "$1n")
+		.replace(/"\$ark.undefined"/g, "undefined")
 
 	return {
 		position,

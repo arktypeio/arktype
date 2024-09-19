@@ -28,6 +28,10 @@ attest(5, { cfg: { updateSnapshots: true } }).snap(6)
 
 attest(5n).snap()
 
+attest(-5n).snap()
+
+attest({ a: 4n }).snap()
+
 attest(undefined).snap()
 
 attest("undefined").snap()
