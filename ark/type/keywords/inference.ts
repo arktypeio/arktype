@@ -17,7 +17,6 @@ import {
 	type intersectArrays,
 	type isSafelyMappable,
 	type leftIfEqual,
-	type objectKindOf,
 	type Primitive,
 	type show
 } from "@ark/util"
@@ -54,7 +53,7 @@ export const attributes = noSuggest("arkAttributes")
 export type attributes = typeof attributes
 
 export type of<base, attributes> = base & {
-	[attributes]: attributes
+	[attributes]: [base, attributes]
 }
 
 export type LimitLiteral = number | DateLiteral
@@ -117,43 +116,15 @@ export type applyAttribute<t, attribute> =
 
 type _applyAttribute<t, attribute> =
 	t extends null | undefined ? t
-	: splitAttributes<t> extends (
-		[infer base, infer constraints extends Constraints]
-	) ?
-		[number, base] extends [base, number] ? number.is<attribute & constraints>
-		: [string, base] extends [base, string] ? string.is<attribute & constraints>
-		: [Date, base] extends [base, Date] ? Date.is<attribute & constraints>
-		: of<base, constraints & attribute>
+	: t extends of<infer base, infer attributes> ?
+		[number, base] extends [base, number] ? number.is<attribute & attributes>
+		: [string, base] extends [base, string] ? string.is<attribute & attributes>
+		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
+		: of<base, attributes & attribute>
 	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
 	: [string, t] extends [t, string] ? string.applyAttribute<attribute>
 	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
 	: of<t, conform<attribute, Constraints>>
-
-export type splitAttributes<t> =
-	t extends of<infer base, infer constraints> ?
-		equals<t, number & { [attributes]: constraints }> extends true ?
-			[number, constraints]
-		: equals<t, string & { [attributes]: constraints }> extends true ?
-			[string, constraints]
-		: equals<t, bigint & { [attributes]: constraints }> extends true ?
-			[bigint, constraints]
-		: equals<t, symbol & { [attributes]: constraints }> extends true ?
-			[symbol, constraints]
-		: objectKindOf<t> extends infer kind ?
-			kind extends BuiltinTerminalObjectKind ?
-				[arkPrototypes.instanceOf<kind>, constraints]
-			: // delegate array constraint distillation to distillArray
-			kind extends "Array" ? null
-			: kind extends undefined ?
-				[
-					// if the only key is attributes, the original type could have been {} or unknown,
-					// so we conservatively allow unknown
-					keyof base extends attributes ? unknown : Omit<base, attributes>,
-					constraints
-				]
-			:	[base, constraints]
-		:	never
-	:	null
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
@@ -229,9 +200,9 @@ type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
-	: splitAttributes<t> extends [infer base, infer constraints] ?
+	: t extends of<infer base, infer attributes> ?
 		opts["branded"] extends true ?
-			of<_distill<base, opts>, constraints>
+			of<_distill<base, opts>, attributes>
 		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
@@ -466,18 +437,12 @@ type _inferIntersection<l, r, piped extends boolean> =
 		: (In: _inferIntersection<lIn, r, false>) => lOut
 	: r extends InferredMorph<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => rOut
-	: splitAttributes<l> extends (
-		[infer lBase, infer lConstraints extends Constraints]
-	) ?
-		splitAttributes<r> extends (
-			[infer rBase, infer rConstraints extends Constraints]
-		) ?
-			of<_inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
-		:	of<_inferIntersection<lBase, r, piped>, lConstraints>
-	: splitAttributes<r> extends (
-		[infer rBase, infer rConstraints extends Constraints]
-	) ?
-		of<_inferIntersection<l, rBase, piped>, rConstraints>
+	: l extends of<infer lBase, infer lAttributes> ?
+		r extends of<infer rBase, infer rAttributes> ?
+			of<_inferIntersection<lBase, rBase, piped>, lAttributes & rAttributes>
+		:	of<_inferIntersection<lBase, r, piped>, lAttributes>
+	: r extends of<infer rBase, infer rAttributes> ?
+		of<_inferIntersection<rBase, l, piped>, rAttributes>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?

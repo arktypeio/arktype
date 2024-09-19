@@ -4,7 +4,6 @@ import type {
 	BaseAttributes,
 	Branded,
 	constraint,
-	Constraints,
 	Default,
 	Narrowed,
 	of,
@@ -88,7 +87,7 @@ export declare namespace number {
 
 	export type safe = branded<"safe">
 
-	export type is<constraints extends Constraints> = of<number, constraints>
+	export type is<attributes> = of<number, attributes>
 
 	export type minSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>

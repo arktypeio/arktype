@@ -4,7 +4,6 @@ import type {
 	AtLeastLength,
 	AtMostLength,
 	Branded,
-	Constraints,
 	Default,
 	ExactlyLength,
 	LessThanLength,
@@ -81,7 +80,7 @@ export declare namespace string {
 
 	export type branded<rule> = of<string, Branded<rule>>
 
-	export type is<constraints extends Constraints> = of<string, constraints>
+	export type is<attributes> = of<string, attributes>
 
 	export type applyAttribute<attribute> =
 		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>

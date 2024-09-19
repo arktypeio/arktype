@@ -1,7 +1,6 @@
 import type {
 	Branded,
 	constraint,
-	Constraints,
 	Default,
 	Literal,
 	Narrowed,
@@ -45,7 +44,7 @@ export declare namespace Date {
 
 	export type literal<rule> = of<Date, Literal<rule>>
 
-	export type is<constraints extends Constraints> = of<Date, constraints>
+	export type is<attributes> = of<Date, attributes>
 
 	export type afterSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? After<normalizeLimit<rule>>
