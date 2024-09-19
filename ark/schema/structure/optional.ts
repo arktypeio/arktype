@@ -95,10 +95,12 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
 
+	defaultValueMorphs: Morph[] = this.computeDefaultValueMorphs()
+
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
 
-	get defaultValueMorphs(): Morph[] {
-		if (!this.hasDefault()) return this.cacheGetter("defaultValueMorphs", [])
+	private computeDefaultValueMorphs(): Morph[] {
+		if (!this.hasDefault()) return []
 
 		const defaultInput = this.default
 
@@ -107,12 +109,12 @@ export class OptionalNode extends BaseProp<"optional"> {
 				this.value.includesMorph ?
 					() => this.value.assert(defaultInput())
 				:	() => defaultInput()
-			return this.cacheGetter("defaultValueMorphs", [
+			return [
 				data => {
 					data[this.key] = computeMorphedDefault()
 					return data
 				}
-			])
+			]
 		}
 
 		const computeMorphedDefault =
@@ -124,7 +126,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		// guaranteed to be pure and the output is primitive
 		const precomputedMorphedDefault = computeMorphedDefault()
 
-		return this.cacheGetter("defaultValueMorphs", [
+		return [
 			hasDomain(precomputedMorphedDefault, "object") ?
 				data => {
 					data[this.key] = computeMorphedDefault()
@@ -134,7 +136,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 					data[this.key] = precomputedMorphedDefault
 					return data
 				}
-		])
+		]
 	}
 }
 
