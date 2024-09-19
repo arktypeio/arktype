@@ -437,6 +437,13 @@ export type Default<v = any> = {
 	default?: { value: v }
 }
 
+export type DefaultFor<t> =
+	[t] extends [Primitive] ? (0 extends 1 & t ? Primitive : t) | (() => t)
+	:	| (Primitive extends t ? Primitive
+		  : t extends Primitive ? t
+		  : never)
+		| (() => t)
+
 export type InferredDefault<t = unknown, v = any> = constrain<t, Default<v>>
 
 export type termOrType<t> = t | Type<t, any>

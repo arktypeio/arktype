@@ -122,16 +122,11 @@ export abstract class BaseProp<
 		return result
 	}
 
-	private premorphedDefaultValue: unknown =
-		this.hasDefault() ?
-			this.value.includesMorph ?
-				this.value.assert(this.default)
-			:	this.default
-		:	undefined
+	private morphedDefaultFactory: () => unknown = this.getMorphedFactory()
 
 	private defaultValueMorphs: Morph[] = [
 		data => {
-			data[this.key] = this.premorphedDefaultValue
+			data[this.key] = this.morphedDefaultFactory()
 			return data
 		}
 	]
@@ -142,6 +137,18 @@ export abstract class BaseProp<
 
 	hasDefault(): this is Optional.Node & { default: unknown } {
 		return "default" in this
+	}
+	getDefaultFactory(): () => unknown {
+		if (!this.hasDefault()) return () => undefined
+		if (typeof this.default === "function") return this.default as () => unknown
+		return () => this.default
+	}
+	getMorphedFactory(): () => unknown {
+		if (!this.hasDefault()) return () => undefined
+		const factory = this.getDefaultFactory()
+		return this.value.includesMorph ?
+				() => this.value.assert(factory())
+			:	factory
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
