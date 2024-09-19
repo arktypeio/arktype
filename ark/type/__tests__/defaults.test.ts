@@ -373,8 +373,8 @@ contextualize(() => {
 		})
 	})
 
-	describe("allows assigning primitives to whatever", () => {
-		it("allows primitives, subtypes and functions for anys", () => {
+	describe("works properly with types", () => {
+		it("allows primitives and factories for anys", () => {
 			const fn = () => {}
 			const t = type({
 				foo1: ["unknown", "=", true],
@@ -399,29 +399,23 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: ["unknown", "=", { foo: "bar" }] })
 			})
-				.throws.snap(
-					"ParseError: Default value is not primitive so it should be specified as a function like () => ({my: 'object'})"
-				)
-				.type.errors.snap(
-					"Object literal may only specify known properties, and 'foo' does not exist in type '() => unknown'."
-				)
+				.throws("is not primitive")
+				.type.errors("'foo' does not exist in type '() => unknown'.")
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["unknown.any", "=", { foo: "bar" }] })
 			})
-				.throws.snap(
-					"ParseError: Default value is not primitive so it should be specified as a function like () => ({my: 'object'})"
-				)
-				.type.errors.snap(
-					"Object literal may only specify known properties, and 'foo' does not exist in type '(() => any) | (() => any)'."
-				)
+				.throws("is not primitive")
+				.type.errors("'foo' does not exist in type '() => any'.")
 		})
+
 		it("allows string sybtyping", () => {
 			type({
 				foo: [/^foo/ as type.cast<`foo${string}`>, "=", "foobar"],
 				bar: [/bar$/ as type.cast<`${string}bar`>, "=", () => "foobar" as const]
 			})
 		})
+
 		it("shows types plainly", () => {
 			attest(
 				// @ts-expect-error
@@ -439,6 +433,14 @@ contextualize(() => {
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type '() => number[]'."
 				)
+			attest(
+				// @ts-expect-error
+				() => type({ foo: [{ bar: "false" }, "=", true] })
+			)
+				.throws()
+				.type.errors.snap(
+					"Type 'boolean' is not assignable to type '() => { bar: false; }'."
+				)
 			attest(() =>
 				type({
 					// @ts-expect-error
@@ -451,32 +453,88 @@ contextualize(() => {
 				)
 			attest(
 				// @ts-expect-error
-				() => type({ foo: [["number[]", "|", "number"], "=", true] })
+				() => type({ foo: [["number[]", "|", "string"], "=", true] })
 			)
 				.throws()
 				.type.errors.snap(
-					"Type 'boolean' is not assignable to type 'number | (() => number) | (() => number[])'."
+					"Type 'boolean' is not assignable to type 'string | (() => string | number[])'."
 				)
-		})
-		it("only allows argless functions for factories", () => {
-			attest(() => {
+			attest(
 				// @ts-expect-error
-				type({ bar: ["Function", "=", class {}] })
-			})
-				.throws.snap(
-					"TypeError: Class constructors cannot be invoked without 'new'"
-				)
-				.type.errors.snap(
-					"Type 'typeof (Anonymous class)' is not assignable to type '() => Function'.Type 'typeof (Anonymous class)' provides no match for the signature '(): Function'."
-				)
-			attest(() => {
-				// @ts-expect-error
-				type({ bar: ["number", "=", (a: number) => 1] })
-			}).type.errors.snap(
-				"Type '(a: number) => number' is not assignable to type 'number | (() => number)'.Type '(a: number) => number' is not assignable to type '() => number'.Target signature provides too few arguments. Expected 1 or more, but got 0."
+				() => type(["number[]", "|", "string"], "=", true)
 			)
-			attest(() => {
-				type({ bar: ["number", "=", (a?: number) => 1] })
+				.throws()
+				.type.errors.snap(
+					"Argument of type 'boolean' is not assignable to parameter of type 'string | (() => string | number[])'."
+				)
+			// should not cause "instantiation is excessively deep"
+			attest(
+				// @ts-expect-error
+				() => type("number[]", "|", "string").default(true)
+			)
+				.throws()
+				.type.errors(/of type 'string'.*of type '\(\) => string | number\[\]'/)
+			// should not cause "instantiation is excessively deep"
+			attest(
+				// @ts-expect-error
+				() => type("number[]", "|", "string").default(() => true)
+			)
+				.throws()
+				.type.errors(/'of type 'string'.*of type '\(\) => string | number\[\]'/)
+		})
+
+		it("uses input type for morphs", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: ["string.numeric.parse = true"] }))
+				.throws("must be a string (was boolean)")
+				.type.errors(
+					"Default value true is not assignable to string.numeric.parse"
+				)
+			// @ts-expect-error
+			attest(() => type({ foo: ["string.numeric.parse", "=", true] }))
+				.throws("must be a string (was boolean)")
+				.type.errors.snap(
+					"Type 'boolean' is not assignable to type 'string | (() => string)'."
+				)
+			// @ts-expect-error
+			attest(() => type({ foo: ["string.numeric.parse", "=", () => true] }))
+				.throws("must be a string (was boolean)")
+				.type.errors(
+					"Type '() => boolean' is not assignable to type 'string | (() => string)'."
+				)
+			const numtos = type("number").pipe(s => `${s}`)
+			// @ts-expect-error
+			attest(() => type({ foo: [numtos, "=", true] }))
+				.throws("must be a number (was boolean)")
+				.type.errors(
+					"Type 'boolean' is not assignable to type 'number | (() => number)'."
+				)
+			// @ts-expect-error
+			attest(() => type({ foo: [numtos, "=", () => true] }))
+				.throws("must be a number (was boolean)")
+				.type.errors(
+					"Type '() => boolean' is not assignable to type 'number | (() => number)'."
+				)
+
+			const f = type({
+				foo1: "string.numeric.parse = '123'",
+				foo2: ["string.numeric.parse", "=", "123"],
+				foo3: ["string.numeric.parse", "=", () => "123"],
+				bar1: [numtos, "=", 123],
+				bar2: [numtos, "=", () => 123],
+				baz1: type(numtos, "=", 123),
+				baz2: type(numtos, "=", () => 123),
+				baz3: type(numtos).default(123)
+			})
+			attest(f.assert({})).snap({
+				foo1: 123,
+				foo2: 123,
+				foo3: 123,
+				bar1: "123",
+				bar2: "123",
+				baz1: "123",
+				baz2: "123",
+				baz3: "123"
 			})
 		})
 	})
@@ -531,19 +589,91 @@ contextualize(() => {
 			const t = type({ foo: ["string", "=", () => "bar"] })
 			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
 		})
+
 		it("works in type tuple", () => {
 			const foo = type(["string", "=", () => "bar"])
 			const t = type({ foo })
 			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
 		})
+
 		it("works in type args", () => {
 			const foo = type("string", "=", () => "bar")
 			const t = type({ foo })
 			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
 		})
+
+		it("checks the returned value", () => {
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: ["number", "=", () => "bar"] })
+			}).throws.snap(
+				"ParseError: Default value is not assignable: must be a number (was a string)"
+			)
+			attest(() => {
+				// @ts-expect-error
+				type({ foo: ["number[]", "=", () => "bar"] })
+			}).throws.snap(
+				"ParseError: Default value is not assignable: must be an array (was string)"
+			)
+		})
+
+		it("morphs the returned value", () => {
+			const t = type({ foo: ["string.numeric.parse", "=", () => "123"] })
+			attest(t.assert({})).snap({ foo: 123 })
+		})
+
+		it("only allows argless functions for factories", () => {
+			attest(() => {
+				// @ts-expect-error
+				type({ bar: ["Function", "=", class {}] })
+			})
+				.throws.snap(
+					"TypeError: Class constructors cannot be invoked without 'new'"
+				)
+				.type.errors.snap(
+					"Type 'typeof (Anonymous class)' is not assignable to type '() => Function'.Type 'typeof (Anonymous class)' provides no match for the signature '(): Function'."
+				)
+			attest(() => {
+				// @ts-expect-error
+				type({ bar: ["number", "=", (a: number) => 1] })
+			}).type.errors.snap(
+				"Type '(a: number) => number' is not assignable to type 'number | (() => number)'.Type '(a: number) => number' is not assignable to type '() => number'.Target signature provides too few arguments. Expected 1 or more, but got 0."
+			)
+			attest(() => {
+				type({ bar: ["number", "=", (a?: number) => 1] })
+			})
+		})
+
+		it("default factory may return different values", () => {
+			let i = 0
+			const t = type({ bar: type("number[]").default(() => [++i]) })
+			attest(t.assert({}).bar).snap([3])
+			attest(t.assert({}).bar).snap([4])
+		})
+
+		it("default function factory", () => {
+			let i = 0
+			const t = type({
+				bar: type("Function").default(() => {
+					const j = ++i
+					return () => j
+				})
+			})
+			attest(t.assert({}).bar()).snap(3)
+			attest(t.assert({}).bar()).snap(4)
+		})
+
+		it("allows union factory", () => {
+			let i = 0
+			const t = type({
+				foo: [["number", "|", "number[]"], "=", () => (i % 2 ? ++i : [++i])]
+			})
+			attest(t.assert({})).snap({ foo: [3] })
+			attest(t.assert({})).snap({ foo: 4 })
+		})
 	})
 
-	describe("works with objects", () => {
+	describe("works with factories", () => {
 		// it("default array in string", () => {
 		// 	const t = type({ bar: type("number[] = []") })
 		// 	attest(t.assert({}).bar).snap([])
@@ -565,7 +695,6 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ bar: type("number[]").default(() => ["a"]) })
-				// THIS LOOKS WEIRD TBH
 			}).throws(
 				writeUnassignableDefaultValueMessage(
 					"value at [0] must be a number (was a string)"
@@ -614,23 +743,6 @@ contextualize(() => {
 					"foo must be a number (was a string)"
 				)
 			)
-		})
-		it("default factory", () => {
-			let i = 0
-			const t = type({ bar: type("number[]").default(() => [++i]) })
-			attest(t.assert({}).bar).snap([3])
-			attest(t.assert({}).bar).snap([4])
-		})
-		it("default function factory", () => {
-			let i = 0
-			const t = type({
-				bar: type("Function").default(() => {
-					const j = ++i
-					return () => j
-				})
-			})
-			attest(t.assert({}).bar()).snap(3)
-			attest(t.assert({}).bar()).snap(4)
 		})
 	})
 })

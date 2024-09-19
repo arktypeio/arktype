@@ -145,13 +145,13 @@ interface Type<out t = unknown, $ = {}>
 		r = applyConstraint<t, Default<value>>
 	>(
 		value: value
-	): instantiateType<r, $>
+	): NoInfer<instantiateType<r, $>>
 	default<
 		const value extends this["inferIn"],
 		r = applyConstraint<t, Default<value>>
 	>(
 		value: () => value
-	): instantiateType<r, $>
+	): NoInfer<instantiateType<r, $>>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

@@ -435,7 +435,7 @@ export type Default<v = any> = {
 }
 
 export type DefaultFor<t> =
-	t extends Primitive ? (0 extends 1 & t ? Primitive : t) | (() => t)
+	[t] extends [Primitive] ? (0 extends 1 & t ? Primitive : t) | (() => t)
 	:	| (Primitive extends t ? Primitive
 		  : t extends Primitive ? t
 		  : never)
