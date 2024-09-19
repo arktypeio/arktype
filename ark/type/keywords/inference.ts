@@ -11,6 +11,7 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
+	type dict,
 	type equals,
 	type Hkt,
 	type intersectArrays,
@@ -42,11 +43,17 @@ export type ConstraintSet = Record<PropertyKey, 1>
 
 export type Constraints = Record<string, ConstraintSet> | { default?: unknown }
 
+export interface BaseAttributes {
+	predicate?: dict<1>
+	default?: unknown
+	optional?: 1
+}
+
 export const attributes = noSuggest("arkAttributes")
 
 export type attributes = typeof attributes
 
-export type of<base, attributes extends Constraints> = base & {
+export type of<base, attributes> = base & {
 	[attributes]: attributes
 }
 
@@ -215,9 +222,7 @@ type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
-	: splitAttributes<t> extends (
-		[infer base, infer constraints extends Constraints]
-	) ?
+	: splitAttributes<t> extends [infer base, infer constraints] ?
 		opts["branded"] extends true ?
 			of<_distill<base, opts>, constraints>
 		:	_distill<base, opts>
@@ -299,21 +304,27 @@ type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
+type inOfValueExtends<v, t> =
+	[v] extends [anyOrNever] ? false
+	: [v] extends [t] ? true
+	: [v] extends [InferredMorph<infer i>] ? inOfValueExtends<i, t>
+	: false
+
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			[o[k]] extends [anyOrNever] ? never
-			: o[k] extends InferredDefault ? k
-			: never
+			inOfValueExtends<o[k], InferredDefault> extends true ?
+				k
+			:	never
 		:	never
 	:	never
 
 type inferredOptionalKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			[o[k]] extends [anyOrNever] ? never
-			: o[k] extends InferredOptional ? k
-			: never
+			inOfValueExtends<o[k], InferredOptional> extends true ?
+				k
+			:	never
 		:	never
 	:	never
 

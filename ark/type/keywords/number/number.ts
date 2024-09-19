@@ -1,6 +1,7 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
+	BaseAttributes,
 	Branded,
 	constraint,
 	Constraints,
@@ -69,6 +70,15 @@ export declare namespace number {
 	export type defaultsTo<rule> = of<number, Default<rule>>
 
 	export type branded<rule> = of<number, Branded<rule>>
+
+	interface ownConstraints
+		extends AtLeast<number>,
+			MoreThan<number>,
+			LessThan<number>,
+			AtMost<number>,
+			DivisibleBy<number> {}
+
+	export interface Attributes extends BaseAttributes, Partial<ownConstraints> {}
 
 	export type NaN = branded<"NaN">
 
