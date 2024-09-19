@@ -68,10 +68,10 @@ contextualize(() => {
 		})
 		it("bidirectional checks doesn't break pipe inference", () => {
 			const tt = type({
-				f: ["string", "=>", s => [] as unknown]
+				f: ["string", "=>", () => [] as unknown]
 			})
 			// Should be inferred as {f: unknown}
-			type FF = typeof tt.infer
+			attest<{ f: unknown }>(tt.infer)
 		})
 
 		it("class with private properties", () => {

@@ -207,7 +207,6 @@ export default tseslint.config(
 		files: ["**/__tests__/**", "**/*.bench.ts", "**/*.test.ts"],
 
 		rules: {
-			"@typescript-eslint/no-unused-vars": "off",
 			"@typescript-eslint/ban-ts-comment": "off",
 			"@typescript-eslint/explicit-module-boundary-types": "off",
 			"import/no-extraneous-dependencies": "off",

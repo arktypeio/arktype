@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { keywords, type } from "arktype"
+import { type } from "arktype"
 
 contextualize(() => {
 	it("root", () => {

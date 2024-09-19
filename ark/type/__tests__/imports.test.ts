@@ -198,5 +198,6 @@ contextualize(() => {
 
 		attest<typeof expected.t>(types.foo.t)
 		attest(types.foo.expression).snap("[string][]")
+		attest(types.foo.expression).equals(expected.expression)
 	})
 })

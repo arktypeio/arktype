@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import type { array, conform, overloadOf } from "@ark/util"
 
-declare const fn: {
+type fn = {
 	(): void
 	(a?: 1): 1
 	(a: 2, b: 2): 2
@@ -14,18 +14,18 @@ const pipe = <fn extends (...args: any[]) => unknown, args extends array>(
 
 contextualize(() => {
 	it("parameters", () => {
-		const t = {} as Parameters<overloadOf<typeof fn>>
+		const t = {} as Parameters<overloadOf<fn>>
 		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
 	})
 
 	it("returns", () => {
-		const t = {} as ReturnType<overloadOf<typeof fn>>
+		const t = {} as ReturnType<overloadOf<fn>>
 		attest<void | 1 | 2>(t)
 	})
 
 	it("overload return", () => {
-		const limit = {} as ((s: string) => string) & ((n: number) => number)
-		type fromNumber = ReturnType<overloadOf<typeof limit, [number]>>
+		type limit = ((s: string) => string) & ((n: number) => number)
+		type fromNumber = ReturnType<overloadOf<limit, [number]>>
 		attest<number, fromNumber>()
 		// currently doesn't work for subtypes
 		// type fromString = overloadOf<typeof limit, ["foo"]>

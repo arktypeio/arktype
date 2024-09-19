@@ -109,7 +109,8 @@ export type applyConstraint<t, constraint> =
 	:	leftIfEqual<t, _applyConstraint<t, constraint>>
 
 type _applyConstraint<t, constraint> =
-	parseConstraints<t> extends (
+	t extends null | undefined ? t
+	: parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
 		[number, base] extends [base, number] ? number.is<constraint & constraints>
@@ -137,8 +138,14 @@ export type parseConstraints<t> =
 				[arkPrototypes.instanceOf<kind>, constraints]
 			: // delegate array constraint distillation to distillArray
 			kind extends "Array" ? null
-			: kind extends undefined ? [Omit<base, constrained>, constraints]
-			: [base, constraints]
+			: kind extends undefined ?
+				[
+					// if the only key is constrained, the original type could have been {} or unknown,
+					// so we conservatively allow unknown
+					keyof base extends constrained ? unknown : Omit<base, constrained>,
+					constraints
+				]
+			:	[base, constraints]
 		:	never
 	:	null
 

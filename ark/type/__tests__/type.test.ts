@@ -44,10 +44,10 @@ contextualize(() => {
 	})
 
 	it("is treated as contravariant", () => {
-		const ok: Type<number> = type("1")
+		type("1") satisfies Type<number>
 
 		// currently treated as bivariant here, should be error
-		const shouldBeError: Type<string> = type("1")
+		type("1") satisfies Type<string>
 
 		// errors correctly if t is declared as its own type param
 		const accept = <t extends string>(t: Type<t>) => t
@@ -63,7 +63,7 @@ contextualize(() => {
 			foo: "string"
 		}).resolve("foo")
 
-		const t: type.Any<string> = foo
+		foo satisfies type.Any<string>
 
 		// @ts-expect-error (fails with default ambient type)
 		attest((): Type<string> => foo).type.errors(
@@ -161,6 +161,6 @@ contextualize(() => {
 			email: "string.email"
 		})
 
-		const u: Type = t
+		t satisfies Type
 	})
 })

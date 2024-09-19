@@ -4,7 +4,6 @@ import {
 	writeNonPrimitiveNonFunctionDefaultValueMessage,
 	writeUnassignableDefaultValueMessage
 } from "@ark/schema"
-import type { Primitive } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import type {
@@ -255,15 +254,13 @@ contextualize(() => {
 
 			const out = t.assert({})
 
-			// pass the same date instance back
-			const expected = type({ key: ["Date", "=", () => out.key] })
+			attest(out.key.toISOString()).snap("1993-05-21T00:00:00.000Z")
 
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
 				key: InferredDefault<Date, Date.literal<"1993-05-21">>
 			}>(t.t)
-			// attest(t.json).equals(expected.json)
 		})
 
 		it("Date is immutable", () => {
@@ -295,6 +292,9 @@ contextualize(() => {
 			const t = type({ key: "object | null = null" })
 			const expected = type({ key: ["object | null", "=", null] })
 
+			attest(expected.t).type.toString.snap(
+				"{ key: constrain<object, Default<null>> | null }"
+			)
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
@@ -645,13 +645,10 @@ contextualize(() => {
 				)
 			attest(() => {
 				// @ts-expect-error
-				type({ bar: ["number", "=", (a: number) => 1] })
+				type({ bar: ["number", "=", (a: number) => a] })
 			}).type.errors.snap(
 				"Type '(a: number) => number' is not assignable to type 'number | (() => number)'.Type '(a: number) => number' is not assignable to type '() => number'.Target signature provides too few arguments. Expected 1 or more, but got 0."
 			)
-			attest(() => {
-				type({ bar: ["number", "=", (a?: number) => 1] })
-			})
 		})
 
 		it("default factory may return different values", () => {
@@ -685,11 +682,6 @@ contextualize(() => {
 	})
 
 	describe("works with factories", () => {
-		// it("default array in string", () => {
-		// 	const t = type({ bar: type("number[] = []") })
-		// 	attest(t.assert({}).bar).snap([])
-		// 	attest(t.assert({}).bar !== t.assert({}).bar)
-		// })
 		it("default array", () => {
 			const t = type({
 				foo: type("number[]").default(() => [1]),
