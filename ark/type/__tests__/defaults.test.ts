@@ -99,7 +99,8 @@ contextualize(() => {
 		it("unions are defaultable", () => {
 			const t = type("boolean = false")
 
-			attest(t.t).type.toString.snap()
+			attest(t.t).type.toString.snap(`	| of<false, Default<false>>
+	| of<true, Default<false>>`)
 
 			attest(t.json).snap({
 				branches: [{ unit: false }, { unit: true }],
@@ -110,7 +111,14 @@ contextualize(() => {
 				boo: t
 			})
 
-			attest(o).type.toString.snap()
+			attest(o).type.toString.snap(`Type<
+	{
+		boo:
+			| of<false, Default<false>>
+			| of<true, Default<false>>
+	},
+	{}
+>`)
 			attest(o.json).snap({
 				optional: [
 					{
@@ -266,24 +274,96 @@ contextualize(() => {
 		it("primitive morph precomputed", () => {
 			let callCount = 0
 
-			const defaultablePipedBoolean = type("boolean = false").pipe(b => {
+			const toggle = (b: boolean) => {
 				callCount++
 				return !b
-			})
+			}
 
-			attest(defaultablePipedBoolean.t).type.toString.snap()
-			// attest(defaultablePipedBoolean.json).snap()
+			const toggleRef = registeredReference(toggle)
+
+			const defaultablePipedBoolean = type("boolean = false").pipe(toggle)
+
+			attest(defaultablePipedBoolean.t).type.toString.snap(`(
+	In: of<false, Default<false>> | of<true, Default<false>>
+) => Out<boolean>`)
+			attest(defaultablePipedBoolean.json).snap({
+				in: [{ unit: false }, { unit: true }],
+				morphs: [toggleRef],
+				meta: { default: false }
+			})
 
 			const t = type({
 				blep: defaultablePipedBoolean
 			})
 
-			// attest(t.t).type.toString.snap()
+			attest(t.t).type.toString.snap(`{
+	blep: (
+		In: of<false, Default<false>> | of<true, Default<false>>
+	) => Out<boolean>
+}`)
 
-			// const out = t({})
+			const out = t({})
+
+			attest(out).snap({ blep: true })
+			attest(callCount).equals(1)
 
 			t({})
-			// attest(out).snap()
+			attest(callCount).equals(1)
+		})
+
+		it("default preserved on pipe to node", () => {
+			let callCount = 0
+
+			const toggle = (b: boolean) => {
+				callCount++
+				return !b
+			}
+
+			const toggleRef = registeredReference(toggle)
+
+			const defaultablePipedBoolean = type("boolean = false")
+				.pipe(toggle)
+				.to("boolean")
+
+			attest(defaultablePipedBoolean.t).type.toString.snap(`	| ((
+			In:
+				| of<false, Default<false>>
+				| of<true, Default<false>>
+	  ) => To<false>)
+	| ((
+			In:
+				| of<false, Default<false>>
+				| of<true, Default<false>>
+	  ) => To<true>)`)
+			attest(defaultablePipedBoolean.json).snap({
+				in: {
+					branches: [{ unit: false }, { unit: true }],
+					meta: { default: false }
+				},
+				morphs: [toggleRef, [{ unit: false }, { unit: true }]]
+			})
+
+			const t = type({
+				blep: defaultablePipedBoolean
+			})
+
+			attest(t.t).type.toString.snap(`{
+	blep:
+		| ((
+				In:
+					| of<false, Default<false>>
+					| of<true, Default<false>>
+		  ) => To<false>)
+		| ((
+				In:
+					| of<false, Default<false>>
+					| of<true, Default<false>>
+		  ) => To<true>)
+}`)
+
+			const out = t({})
+
+			attest(out).snap({ blep: true })
 			attest(callCount).equals(1)
 
 			t({})

@@ -9,7 +9,12 @@ import {
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
+import type {
+	NodeSchema,
+	mutableNormalizedRootOfKind,
+	nodeOfKind,
+	reducibleKindOf
+} from "../kinds.ts"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
@@ -394,7 +399,15 @@ export abstract class BaseRoot<
 						in: branch,
 						morphs: [morph]
 					}),
-			this.$.parseSchema
+			branches => {
+				if (!this.hasKind("union")) return this.$.parseSchema(branches[0])
+				const schema: mutableNormalizedRootOfKind<"union"> = {
+					branches
+				}
+				if ("default" in this.meta) schema.meta = { default: this.meta.default }
+				else if (this.meta.optional) schema.meta = { optional: true }
+				return this.$.parseSchema(schema)
+			}
 		)
 	}
 
