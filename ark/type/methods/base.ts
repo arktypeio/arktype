@@ -19,7 +19,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type {
 	applyAttribute,
-	Branded,
+	applyBrand,
 	Default,
 	DefaultFor,
 	distill,
@@ -28,6 +28,7 @@ import type {
 	inferPipes,
 	InferredMorph,
 	Optional,
+	Predicate,
 	To
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
@@ -82,7 +83,7 @@ interface Type<out t = unknown, $ = {}>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	brand<const name extends string, r = applyAttribute<t, Branded<name>>>(
+	brand<const name extends string, r = applyBrand<t, Predicate<name>>>(
 		name: name
 	): instantiateType<r, $>
 

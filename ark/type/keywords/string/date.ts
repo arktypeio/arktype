@@ -5,7 +5,7 @@ import {
 	type TraversalContext
 } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, To, of } from "../inference.ts"
+import type { Predicate, To, of } from "../inference.ts"
 import { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { integer } from "./integer.ts"
@@ -158,11 +158,11 @@ const iso = arkModule({
 })
 
 declare namespace string {
-	export type date = of<string, Branded<"date">>
+	export type date = of<string, Predicate<"date">>
 
 	export namespace date {
-		export type epoch = of<string, Branded<"date.epoch">>
-		export type iso = of<string, Branded<"date.iso">>
+		export type epoch = of<string, Predicate<"date.epoch">>
+		export type iso = of<string, Predicate<"date.iso">>
 	}
 }
 

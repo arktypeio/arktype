@@ -1,7 +1,7 @@
 import { type } from "arktype"
 
 export const disappointingGift = type({
-	label: "string",
+	label: "string#label",
 	"box?": "this"
 })
 

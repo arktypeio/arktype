@@ -25,7 +25,7 @@ import type { arkPrototypes } from "./constructors/constructors.ts"
 import type { Date } from "./constructors/Date.ts"
 import type { type } from "./keywords.ts"
 import type { DivisibleBy, number } from "./number/number.ts"
-import type { Matching, string } from "./string/string.ts"
+import type { brandedString, Matching, string } from "./string/string.ts"
 export type { arkPrototypes as object } from "./constructors/constructors.ts"
 export type { number } from "./number/number.ts"
 export type { string } from "./string/string.ts"
@@ -39,9 +39,9 @@ export type DateLiteral<source extends string = string> =
 	| `d'${source}'`
 
 export interface BaseAttributes {
-	predicate?: dict<1>
+	predicate?: dict
 	default?: unknown
-	optional?: 1
+	optional?: true
 }
 
 export const ofKey = noSuggest("of")
@@ -52,6 +52,13 @@ export type of<base, attributes> = base & {
 	[ofKey]: {
 		base: base
 		attributes: attributes
+	}
+}
+
+export type brand<base, attributes> = base & {
+	[ofKey]: {
+		base: base
+		attributes: attributes & { brand: true }
 	}
 }
 
@@ -72,8 +79,8 @@ export type Narrowed = {
 	predicate: { "?": 1 }
 }
 
-export type Branded<rule> = {
-	predicate: constraint<rule>
+export type Predicate<name> = {
+	predicate: constraint<name>
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
@@ -108,6 +115,11 @@ export type applyConstraintSchema<
 	schema extends NodeSchema<kind>
 > = applyAttribute<t, schemaToConstraint<kind, schema>>
 
+export type applyBrand<t, attribute> = applyAttribute<
+	t,
+	attribute & { brand: true }
+>
+
 export type applyAttribute<t, attribute> =
 	t extends InferredMorph<infer i, infer o> ?
 		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
@@ -117,11 +129,17 @@ type _applyAttribute<t, attribute> =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
 		[number, base] extends [base, number] ? number.is<attribute & attributes>
-		: [string, base] extends [base, string] ? string.is<attribute & attributes>
+		: [string, base] extends [base, string] ?
+			"brand" extends keyof attributes | keyof attribute ?
+				brandedString.is<attribute & attributes>
+			:	string.is<attribute & attributes>
 		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
 		: of<base, attributes & attribute>
 	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
-	: [string, t] extends [t, string] ? string.applyAttribute<attribute>
+	: [string, t] extends [t, string] ?
+		"brand" extends keyof attribute ?
+			brandedString.applyBrand<attribute>
+		:	string.applyAttribute<attribute>
 	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
 	: of<t, attribute>
 
@@ -200,9 +218,9 @@ type _distill<t, opts extends distill.Options> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
-		opts["branded"] extends true ?
-			of<_distill<base, opts>, attributes>
-		:	_distill<base, opts>
+		opts["branded"] extends true ? of<_distill<base, opts>, attributes>
+		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
+		: _distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>

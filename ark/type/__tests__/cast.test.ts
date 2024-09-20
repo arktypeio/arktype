@@ -109,8 +109,8 @@ contextualize(() => {
 			// no effect at runtime
 			attest(t.expression).equals("string")
 
-			// const out = t.traverseBrandable("moo")
-			// attest<string.branded<"foo"> | type.errors>(out).type.toString.snap()
+			const out = t("moo")
+			attest<string.branded<"foo"> | type.errors>(out).type.toString.snap()
 		})
 
 		it("string-embedded", () => {

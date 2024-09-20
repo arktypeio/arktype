@@ -1,17 +1,17 @@
 import { rootSchema } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, of, To } from "../inference.ts"
+import type { of, Predicate, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {
 	export type normalized = normalized.NFC
 
 	export namespace normalized {
-		export type NFC = of<string, Branded<"normalized.NFC">>
-		export type NFD = of<string, Branded<"normalized.NFD">>
-		export type NFKC = of<string, Branded<"normalized.NFKC">>
-		export type NFKD = of<string, Branded<"normalized.NFKD">>
+		export type NFC = of<string, Predicate<"normalized.NFC">>
+		export type NFD = of<string, Predicate<"normalized.NFD">>
+		export type NFKC = of<string, Predicate<"normalized.NFKC">>
+		export type NFKD = of<string, Predicate<"normalized.NFKD">>
 	}
 }
 

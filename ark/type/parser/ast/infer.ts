@@ -2,10 +2,10 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, arkKeyOf, array } from "@ark/util"
 import type { Date } from "../../keywords/constructors/Date.ts"
 import type {
-	Branded,
 	Default,
 	LimitLiteral,
 	Optional,
+	Predicate,
 	applyAttribute,
 	applyConstraintSchema,
 	distill,
@@ -87,7 +87,7 @@ export type inferExpression<ast, $, args> =
 				applyAttribute<inferExpression<ast[0], $, args>, Default<defaultValue>>
 			:	never
 		: ast[1] extends "#" ?
-			applyAttribute<inferExpression<ast[0], $, args>, Branded<ast[2]>>
+			applyAttribute<inferExpression<ast[0], $, args>, Predicate<ast[2]>>
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
 				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>

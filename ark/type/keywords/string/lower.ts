@@ -1,11 +1,11 @@
 import { rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, of, To } from "../inference.ts"
+import type { of, Predicate, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type lowercase = of<string, Branded<"lowercase">>
+	export type lowercase = of<string, Predicate<"lowercase">>
 }
 
 const preformatted = regexStringNode(/^[a-z]*$/, "only lowercase letters")
