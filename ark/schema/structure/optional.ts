@@ -108,8 +108,10 @@ export class OptionalNode extends BaseProp<"optional"> {
 			return [
 				// if the value has a morph, pipe context through it
 				this.value.includesMorph ?
-					data => {
-						data[this.key] = this.value.assert(defaultInput())
+					(data, ctx) => {
+						ctx.path.push(this.key)
+						this.value((data[this.key] = defaultInput()), ctx)
+						ctx.path.pop()
 						return data
 					}
 				:	data => {
@@ -127,8 +129,10 @@ export class OptionalNode extends BaseProp<"optional"> {
 		return [
 			hasDomain(precomputedMorphedDefault, "object") ?
 				// the type signature only allows this if the value was morphed
-				data => {
-					data[this.key] = this.value.assert(defaultInput)
+				(data, ctx) => {
+					ctx.path.push(this.key)
+					this.value((data[this.key] = defaultInput), ctx)
+					ctx.path.pop()
 					return data
 				}
 			:	data => {

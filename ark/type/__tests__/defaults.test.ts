@@ -4,6 +4,7 @@ import {
 	writeNonPrimitiveNonFunctionDefaultValueMessage,
 	writeUnassignableDefaultValueMessage
 } from "@ark/schema"
+import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import type {
@@ -93,6 +94,40 @@ contextualize(() => {
 					)
 				)
 				.type.errors("Type 'string' is not assignable to type 'number'.")
+		})
+
+		it("unions are defaultable", () => {
+			const t = type("boolean = false")
+
+			attest(t.t).type.toString.snap()
+
+			attest(t.json).snap({
+				branches: [{ unit: false }, { unit: true }],
+				meta: { default: false }
+			})
+
+			const o = type({
+				boo: t
+			})
+
+			attest(o).type.toString.snap()
+			attest(o.json).snap({
+				optional: [
+					{
+						default: false,
+						key: "boo",
+						value: {
+							branches: [{ unit: false }, { unit: true }],
+							meta: { default: false }
+						}
+					}
+				],
+				domain: "object"
+			})
+
+			attest(o({})).snap({ boo: false })
+			attest(o({ boo: true })).snap({ boo: true })
+			attest(o({ boo: 5 }).toString()).snap("boo must be boolean (was 5)")
 		})
 
 		it("validated default in scope", () => {
@@ -226,6 +261,56 @@ contextualize(() => {
 			attest(processForm({ bool_value: true }).toString()).snap(
 				"bool_value must be a string (was boolean)"
 			)
+		})
+
+		it("primitive morph precomputed", () => {
+			let callCount = 0
+
+			const defaultablePipedBoolean = type("boolean = false").pipe(b => {
+				callCount++
+				return !b
+			})
+
+			attest(defaultablePipedBoolean.t).type.toString.snap()
+			// attest(defaultablePipedBoolean.json).snap()
+
+			const t = type({
+				blep: defaultablePipedBoolean
+			})
+
+			// attest(t.t).type.toString.snap()
+
+			// const out = t({})
+
+			t({})
+			// attest(out).snap()
+			attest(callCount).equals(1)
+
+			t({})
+			attest(callCount).equals(1)
+		})
+
+		it("primitive morphed to object not premorphed", () => {
+			const toNestedString = type("string")
+				.default("foo")
+				.pipe(s => ({ nest: s }))
+
+			const t = type({ foo: toNestedString })
+			attest<{
+				foo: (In: string.defaultsTo<"foo">) => Out<{
+					nest: string
+				}>
+			}>(t.t)
+
+			const out = t.assert({})
+
+			attest(out).snap({ foo: { nest: "foo" } })
+
+			const originalOut = deepClone(out)
+
+			out.foo.nest = "baz"
+
+			attest(t({})).equals(originalOut)
 		})
 	})
 
@@ -590,7 +675,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("factory functions", () => {
+	describe("functions", () => {
 		it("works in tuple", () => {
 			const t = type({ foo: ["string", "=", () => "bar"] })
 			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
@@ -681,9 +766,7 @@ contextualize(() => {
 			attest(t.assert({})).snap({ foo: [3] })
 			attest(t.assert({})).snap({ foo: 4 })
 		})
-	})
 
-	describe("works with factories", () => {
 		it("default array", () => {
 			const t = type({
 				foo: type("number[]").default(() => [1]),
