@@ -1,4 +1,9 @@
-import { ArkErrors, intrinsic, rootSchema } from "@ark/schema"
+import {
+	ArkErrors,
+	intrinsic,
+	rootSchema,
+	type TraversalContext
+} from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, To, of } from "../inference.ts"
 import { number } from "../number/number.ts"
@@ -166,7 +171,7 @@ export const stringDate: stringDate.module = arkModule({
 	parse: rootSchema({
 		declaredIn: parsableDate,
 		in: "string",
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			const date = new Date(s)
 			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
 			return date

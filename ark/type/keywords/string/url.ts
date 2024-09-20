@@ -1,4 +1,4 @@
-import { rootSchema } from "@ark/schema"
+import { rootSchema, type TraversalContext } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, of, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
@@ -31,7 +31,7 @@ export const url: url.module = arkModule({
 	parse: rootSchema({
 		declaredIn: root as never,
 		in: "string",
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			try {
 				return new URL(s)
 			} catch {

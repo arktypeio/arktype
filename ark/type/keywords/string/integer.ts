@@ -1,4 +1,4 @@
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, of, To } from "../inference.ts"
@@ -19,7 +19,7 @@ export const integer: stringInteger.module = arkModule({
 	root,
 	parse: rootSchema({
 		in: root,
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			const parsed = Number.parseInt(s)
 			return Number.isSafeInteger(parsed) ? parsed : (
 					ctx.error(
