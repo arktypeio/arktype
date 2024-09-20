@@ -80,13 +80,9 @@ interface Type<out t = unknown, $ = {}>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	brand<
-		const name extends string,
-		r = applyAttribute<t, Branded<name>> extends infer r ? instantiateType<r, $>
-		:	never
-	>(
+	brand<const name extends string, r = applyAttribute<t, Branded<name>>>(
 		name: name
-	): r
+	): instantiateType<r, $>
 
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
@@ -94,21 +90,17 @@ interface Type<out t = unknown, $ = {}>
 	// inferring r into an alias improves perf and avoids return type inference
 	// that can lead to incorrect results. See:
 	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
-	intersect<const def>(
+	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ?
-		instantiateType<inferIntersection<t, r>, $> | Disjoint
-	:	never
+	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
-	and<const def>(
+	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ?
-		instantiateType<inferIntersection<t, r>, $>
-	:	never
+	): instantiateType<inferIntersection<t, r>, $>
 
-	or<const def>(
+	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<t | r, $> : never
+	): instantiateType<t | r, $>
 
 	array(): ArrayType<t[], $>
 
@@ -116,34 +108,30 @@ interface Type<out t = unknown, $ = {}>
 
 	equals<const def>(def: type.validate<def, $>): boolean
 
-	ifEquals<const def>(
+	ifEquals<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
-	:	never
+	): instantiateType<r, $> | undefined
 
 	extends<const def>(other: type.validate<def, $>): boolean
 
-	ifExtends<const def>(
+	ifExtends<const def, r = type.infer<def, $>>(
 		other: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
-	:	never
+	): instantiateType<r, $> | undefined
 
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
-	extract<const def>(
+	extract<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<Extract<t, r>, $>
-	:	never
+	): instantiateType<Extract<t, r>, $>
 
-	exclude<const def>(
+	exclude<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<Exclude<t, r>, $>
-	:	never
+	): instantiateType<Exclude<t, r>, $>
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
-	): NoInfer<reduceOut>
+	): reduceOut
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
@@ -154,7 +142,7 @@ interface Type<out t = unknown, $ = {}>
 		r = applyAttribute<t, Default<value>>
 	>(
 		value: DefaultFor<value>
-	): NoInfer<instantiateType<r, $>> extends infer result ? result : never
+	): instantiateType<r, $>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

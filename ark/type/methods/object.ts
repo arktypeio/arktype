@@ -38,9 +38,9 @@ interface Type<out t extends object = object, $ = {}>
 
 	keyof(): instantiateType<arkKeyOf<t>, $>
 
-	get<const k1 extends arkIndexableOf<t>>(
+	get<const k1 extends arkIndexableOf<t>, r = arkGet<t, k1>>(
 		k1: k1 | type.cast<k1>
-	): instantiateType<arkGet<t, k1>, $> extends infer r ? r : never
+	): instantiateType<r, $>
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>
@@ -51,14 +51,13 @@ interface Type<out t extends object = object, $ = {}>
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>,
-		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>
+		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>,
+		r = arkGet<arkGet<arkGet<t, k1>, k2>, k3>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $> extends infer r ?
-		r
-	:	never
+	): instantiateType<r, $>
 
 	pick<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
@@ -82,7 +81,7 @@ interface Type<out t extends object = object, $ = {}>
 		def: type.validate<def, $> &
 			(r extends object ? unknown
 			:	ErrorType<"Merged type must be an object", [actual: r]>)
-	): Type<merge<t, NoInfer<r & object>>, $>
+	): Type<merge<t, r & object>, $>
 
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
 

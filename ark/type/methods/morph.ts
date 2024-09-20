@@ -14,20 +14,19 @@ import type { BaseType } from "./base.ts"
 interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 	to<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): Type<inferPipe<t, NoInfer<r>>, $>
+	): Type<inferPipe<t, r>, $>
 
-	narrow<narrowed extends this["infer"] = never>(
+	narrow<
+		narrowed extends this["infer"] = never,
+		r = [narrowed] extends [never] ?
+			applyConstraintSchema<this["inferBrandableOut"], "predicate", Predicate>
+		:	narrowed
+	>(
 		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
 	): Type<
-		(
-			[narrowed] extends [never] ?
-				applyConstraintSchema<this["inferBrandableOut"], "predicate", Predicate>
-			:	narrowed
-		) extends infer o ?
-			this["inferredOutIsIntrospectable"] extends true ?
-				(In: this["inferBrandableIn"]) => To<o>
-			:	(In: this["inferBrandableIn"]) => Out<o>
-		:	never,
+		this["inferredOutIsIntrospectable"] extends true ?
+			(In: this["inferBrandableIn"]) => To<r>
+		:	(In: this["inferBrandableIn"]) => Out<r>,
 		$
 	>
 }

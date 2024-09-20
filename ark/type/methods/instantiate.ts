@@ -10,6 +10,9 @@ import type { StringType } from "./string.ts"
 import type { ValidatorType } from "./validator.ts"
 
 export type instantiateType<t, $> =
+	NoInfer<_instantiateType<t, $>> extends infer r ? r : never
+
+export type _instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
 	[Extract<t, InferredMorph>] extends [anyOrNever] ?
 		// otherwise, all branches have to conform to a single basis type those methods to be available
