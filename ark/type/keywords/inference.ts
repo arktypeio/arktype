@@ -38,22 +38,18 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export type ConstraintSet = Record<PropertyKey, 1>
-
-export type Constraints = Record<string, ConstraintSet> | { default?: unknown }
-
 export interface BaseAttributes {
 	predicate?: dict<1>
 	default?: unknown
 	optional?: 1
 }
 
-export const attributes = noSuggest("arkAttributes")
+export const ofKey = noSuggest("of")
 
-export type attributes = typeof attributes
+export type ofKey = typeof ofKey
 
 export type of<base, attributes> = base & {
-	[attributes]: [base, attributes]
+	[ofKey]: [base, attributes]
 }
 
 export type LimitLiteral = number | DateLiteral
@@ -124,7 +120,7 @@ type _applyAttribute<t, attribute> =
 	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
 	: [string, t] extends [t, string] ? string.applyAttribute<attribute>
 	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
-	: of<t, conform<attribute, Constraints>>
+	: of<t, attribute>
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
@@ -206,10 +202,7 @@ type _distill<t, opts extends distill.Options> =
 		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
-	: t extends InferredMorph<infer i, infer o> ?
-		opts["branded"] extends true ?
-			distillIo<i, o, opts>
-		:	distillUnbrandedIo<t, i, o, opts>
+	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>
 	: t extends array ? distillArray<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
@@ -239,32 +232,6 @@ type distillMappable<o, opts extends distill.Options> =
 			}
 		>
 
-// have to jump through a bunch of extra hoops to preserve the named instantiation of
-// constrain<base, constraints>. If it degrades to `t & {[constrained]: constraints}`,
-// we'll not longer be able to extract the constraints and distill will infinitely recurse.
-type distillUnbrandedIo<
-	t extends InferredMorph,
-	i,
-	o extends Out,
-	opts extends distill.Options
-> =
-	t extends (
-		InferredMorph<
-			of<infer constrainedIn, any>,
-			Out<of<infer constrainedOut, any>>
-		>
-	) ?
-		distillIo<
-			constrainedIn,
-			o extends To ? To<constrainedOut> : Out<constrainedOut>,
-			opts
-		>
-	: t extends InferredMorph<of<infer constrainedIn, any>> ?
-		distillIo<constrainedIn, o, opts>
-	: t extends InferredMorph<any, Out<of<infer constrainedOut, any>>> ?
-		distillIo<i, o extends To ? To<constrainedOut> : Out<constrainedOut>, opts>
-	:	distillIo<i, o, opts>
-
 type distillIo<i, o extends Out, opts extends distill.Options> =
 	opts["endpoint"] extends "in" ? _distill<i, opts>
 	: opts["endpoint"] extends "out.introspectable" ?
@@ -282,16 +249,16 @@ type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
-type inOfValueExtends<v, t> =
+type inExtends<v, t> =
 	[v] extends [anyOrNever] ? false
 	: [v] extends [t] ? true
-	: [v] extends [InferredMorph<infer i>] ? inOfValueExtends<i, t>
+	: [v] extends [InferredMorph<infer i>] ? inExtends<i, t>
 	: false
 
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inOfValueExtends<o[k], InferredDefault> extends true ?
+			inExtends<o[k], InferredDefault> extends true ?
 				k
 			:	never
 		:	never
@@ -300,7 +267,7 @@ type inferredDefaultKeyOf<o> =
 type inferredOptionalKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inOfValueExtends<o[k], InferredOptional> extends true ?
+			inExtends<o[k], InferredOptional> extends true ?
 				k
 			:	never
 		:	never
@@ -325,13 +292,13 @@ type distillNonArraykeys<
 	distilledArray,
 	opts extends distill.Options
 > =
-	keyof originalArray extends keyof distilledArray | attributes ? distilledArray
+	keyof originalArray extends keyof distilledArray | ofKey ? distilledArray
 	:	distilledArray &
 			_distill<
 				{
 					[k in keyof originalArray as k extends (
 						| keyof distilledArray
-						| (opts["branded"] extends true ? never : attributes)
+						| (opts["branded"] extends true ? never : ofKey)
 					) ?
 						never
 					:	k]: originalArray[k]
