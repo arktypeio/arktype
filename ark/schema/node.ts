@@ -61,15 +61,14 @@ export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends Callable<
-	(data: d["prerequisite"], ctx?: TraversalContext) => unknown,
-	attachmentsOf<d>
-> {
+> extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	attachments: UnknownAttachments
 	$: BaseScope
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
+			// pipedFromCtx allows us internally to reuse TraversalContext
+			// through pipes and keep track of piped paths. It is not exposed
 			(data: any, pipedFromCtx?: TraversalContext) => {
 				if (
 					!this.includesMorph &&
