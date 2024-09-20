@@ -38,6 +38,7 @@ import type { instantiateType } from "./instantiate.ts"
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
+	[inferred]: t
 	t: t
 	infer: this["inferOut"]
 	inferBrandableIn: distill.brandable.In<t>
@@ -50,7 +51,6 @@ interface Type<out t = unknown, $ = {}>
 		: o extends To ? true
 		: false
 	:	true
-	[inferred]: t
 
 	json: Json
 	toJSON(): Json
@@ -67,6 +67,8 @@ interface Type<out t = unknown, $ = {}>
 	allows(data: unknown): data is this["inferIn"]
 
 	traverse(data: unknown): this["infer"] | ArkErrors
+
+	brandable(): this
 
 	configure(meta: MetaSchema): this
 

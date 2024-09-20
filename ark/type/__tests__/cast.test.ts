@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import type { Constructor } from "@ark/util"
 import { type, type Type } from "arktype"
+import type { string } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	describe("type.cast", () => {
@@ -107,6 +108,9 @@ contextualize(() => {
 
 			// no effect at runtime
 			attest(t.expression).equals("string")
+
+			// const out = t.traverseBrandable("moo")
+			// attest<string.branded<"foo"> | type.errors>(out).type.toString.snap()
 		})
 
 		it("string-embedded", () => {

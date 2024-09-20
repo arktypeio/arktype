@@ -49,7 +49,10 @@ export const ofKey = noSuggest("of")
 export type ofKey = typeof ofKey
 
 export type of<base, attributes> = base & {
-	[ofKey]: [base, attributes]
+	[ofKey]: {
+		base: base
+		attributes: attributes
+	}
 }
 
 export type LimitLiteral = number | DateLiteral
