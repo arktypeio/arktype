@@ -691,8 +691,8 @@ contextualize(() => {
 					.pipe(v => v.map(e => e.toString()))
 					.default(() => [1])
 			})
-			const v1 = t.assert({}),
-				v2 = t.assert({})
+			const v1 = t.assert({})
+			const v2 = t.assert({})
 			attest(v1).snap({ foo: [1], bar: ["1"] })
 			attest(v1.foo !== v2.foo)
 		})

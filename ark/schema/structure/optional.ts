@@ -105,31 +105,30 @@ export class OptionalNode extends BaseProp<"optional"> {
 		const defaultInput = this.default
 
 		if (typeof defaultInput === "function") {
-			const computeMorphedDefault =
-				this.value.includesMorph ?
-					() => this.value.assert(defaultInput())
-				:	() => defaultInput()
 			return [
-				data => {
-					data[this.key] = computeMorphedDefault()
-					return data
-				}
+				// if the value has a morph, pipe context through it
+				this.value.includesMorph ?
+					data => {
+						data[this.key] = this.value.assert(defaultInput())
+						return data
+					}
+				:	data => {
+						data[this.key] = defaultInput()
+						return data
+					}
 			]
 		}
 
-		const computeMorphedDefault =
-			this.value.includesMorph ?
-				() => this.value.assert(defaultInput)
-			:	() => defaultInput
-
 		// non-functional defaults can be safely cached as long as the morph is
 		// guaranteed to be pure and the output is primitive
-		const precomputedMorphedDefault = computeMorphedDefault()
+		const precomputedMorphedDefault =
+			this.value.includesMorph ? this.value.assert(defaultInput) : defaultInput
 
 		return [
 			hasDomain(precomputedMorphedDefault, "object") ?
+				// the type signature only allows this if the value was morphed
 				data => {
-					data[this.key] = computeMorphedDefault()
+					data[this.key] = this.value.assert(defaultInput)
 					return data
 				}
 			:	data => {
