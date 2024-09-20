@@ -1,5 +1,5 @@
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, constrain } from "../inference.ts"
+import type { Branded, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -24,11 +24,11 @@ const ipv6Matcher = new RegExp(
 )
 
 declare namespace string {
-	export type ip = constrain<string, Branded<"ip">>
+	export type ip = of<string, Branded<"ip">>
 
 	export namespace ip {
-		export type v4 = constrain<string, Branded<"ip.v4">>
-		export type v6 = constrain<string, Branded<"ip.v6">>
+		export type v4 = of<string, Branded<"ip.v4">>
+		export type v6 = of<string, Branded<"ip.v6">>
 	}
 }
 

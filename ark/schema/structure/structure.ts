@@ -49,7 +49,7 @@ import {
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
-import { Optional } from "./optional.ts"
+import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
@@ -128,11 +128,33 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		keys: {
 			required: {
 				child: true,
-				parse: constraintKeyParser("required")
+				parse: constraintKeyParser("required"),
+				reduceIo: (ioKind, inner, nodes) => {
+					// ensure we don't overwrite nodes added by optional
+					inner.required = append(
+						inner.required,
+						nodes!.map(node => node[ioKind] as Required.Node)
+					)
+					return
+				}
 			},
 			optional: {
 				child: true,
-				parse: constraintKeyParser("optional")
+				parse: constraintKeyParser("optional"),
+				reduceIo: (ioKind, inner, nodes) => {
+					if (ioKind === "in") {
+						inner.optional = nodes!.map(node => node.in as OptionalNode)
+						return
+					}
+
+					nodes!.forEach(
+						node =>
+							(inner[node.outProp.kind] = append(
+								inner[node.outProp.kind],
+								node.outProp.out as Prop.Node
+							) as never)
+					)
+				}
 			},
 			index: {
 				child: true,

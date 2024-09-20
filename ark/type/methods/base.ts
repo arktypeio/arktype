@@ -18,7 +18,8 @@ import type {
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
 import type {
-	applyConstraint,
+	applyAttribute,
+	Branded,
 	Default,
 	DefaultFor,
 	distill,
@@ -79,6 +80,14 @@ interface Type<out t = unknown, $ = {}>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
+	brand<
+		const name extends string,
+		r = applyAttribute<t, Branded<name>> extends infer r ? instantiateType<r, $>
+		:	never
+	>(
+		name: name
+	): r
+
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
@@ -138,14 +147,14 @@ interface Type<out t = unknown, $ = {}>
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
-	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
+	optional<r = applyAttribute<t, Optional>>(): instantiateType<r, $>
 
 	default<
 		const value extends this["inferIn"],
-		r = applyConstraint<t, Default<value>>
+		r = applyAttribute<t, Default<value>>
 	>(
 		value: DefaultFor<value>
-	): NoInfer<instantiateType<r, $>>
+	): NoInfer<instantiateType<r, $>> extends infer result ? result : never
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
@@ -181,7 +190,7 @@ interface Type<out t = unknown, $ = {}>
 interface ChainedPipeSignature<t, $> {
 	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
 		a: a
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -189,7 +198,7 @@ interface ChainedPipeSignature<t, $> {
 	>(
 		a: a,
 		b: b
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -199,7 +208,7 @@ interface ChainedPipeSignature<t, $> {
 		a: a,
 		b: b,
 		c: c
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -211,7 +220,7 @@ interface ChainedPipeSignature<t, $> {
 		b: b,
 		c: c,
 		d: d
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -225,7 +234,7 @@ interface ChainedPipeSignature<t, $> {
 		c: c,
 		d: d,
 		e: e
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -241,7 +250,7 @@ interface ChainedPipeSignature<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -259,7 +268,7 @@ interface ChainedPipeSignature<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): NoInfer<r>
+	): NoInfer<r> extends infer result ? result : never
 }
 
 export interface ChainedPipes<t, $> extends ChainedPipeSignature<t, $> {

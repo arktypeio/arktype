@@ -1,8 +1,8 @@
-import type { Branded, constrain } from "../inference.ts"
+import type { Branded, of } from "../inference.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type email = constrain<string, Branded<"email">>
+	export type email = of<string, Branded<"email">>
 }
 
 export const email = regexStringNode(

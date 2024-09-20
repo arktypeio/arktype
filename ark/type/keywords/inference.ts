@@ -11,12 +11,12 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
+	type dict,
 	type equals,
 	type Hkt,
 	type intersectArrays,
 	type isSafelyMappable,
 	type leftIfEqual,
-	type objectKindOf,
 	type Primitive,
 	type show
 } from "@ark/util"
@@ -42,12 +42,18 @@ export type ConstraintSet = Record<PropertyKey, 1>
 
 export type Constraints = Record<string, ConstraintSet> | { default?: unknown }
 
-export const constrained = noSuggest("arkConstrained")
+export interface BaseAttributes {
+	predicate?: dict<1>
+	default?: unknown
+	optional?: 1
+}
 
-export type constrained = typeof constrained
+export const attributes = noSuggest("arkAttributes")
 
-export type constrain<base, constraints extends Constraints> = base & {
-	[constrained]: constraints
+export type attributes = typeof attributes
+
+export type of<base, attributes> = base & {
+	[attributes]: [base, attributes]
 }
 
 export type LimitLiteral = number | DateLiteral
@@ -101,53 +107,24 @@ export type applyConstraintSchema<
 	t,
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
-> = applyConstraint<t, schemaToConstraint<kind, schema>>
+> = applyAttribute<t, schemaToConstraint<kind, schema>>
 
-export type applyConstraint<t, constraint> =
+export type applyAttribute<t, attribute> =
 	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyConstraint<i, constraint>>) => o
-	:	leftIfEqual<t, _applyConstraint<t, constraint>>
+		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
+	:	leftIfEqual<t, _applyAttribute<t, attribute>>
 
-type _applyConstraint<t, constraint> =
+type _applyAttribute<t, attribute> =
 	t extends null | undefined ? t
-	: parseConstraints<t> extends (
-		[infer base, infer constraints extends Constraints]
-	) ?
-		[number, base] extends [base, number] ? number.is<constraint & constraints>
-		: [string, base] extends [base, string] ?
-			string.is<constraint & constraints>
-		: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
-		: constrain<base, constraints & constraint>
-	: [number, t] extends [t, number] ? number.withConstraint<constraint>
-	: [string, t] extends [t, string] ? string.withConstraint<constraint>
-	: [Date, t] extends [t, Date] ? Date.withConstraint<constraint>
-	: constrain<t, conform<constraint, Constraints>>
-
-export type parseConstraints<t> =
-	t extends constrain<infer base, infer constraints> ?
-		equals<t, number & { [constrained]: constraints }> extends true ?
-			[number, constraints]
-		: equals<t, string & { [constrained]: constraints }> extends true ?
-			[string, constraints]
-		: equals<t, bigint & { [constrained]: constraints }> extends true ?
-			[bigint, constraints]
-		: equals<t, symbol & { [constrained]: constraints }> extends true ?
-			[symbol, constraints]
-		: objectKindOf<t> extends infer kind ?
-			kind extends BuiltinTerminalObjectKind ?
-				[arkPrototypes.instanceOf<kind>, constraints]
-			: // delegate array constraint distillation to distillArray
-			kind extends "Array" ? null
-			: kind extends undefined ?
-				[
-					// if the only key is constrained, the original type could have been {} or unknown,
-					// so we conservatively allow unknown
-					keyof base extends constrained ? unknown : Omit<base, constrained>,
-					constraints
-				]
-			:	[base, constraints]
-		:	never
-	:	null
+	: t extends of<infer base, infer attributes> ?
+		[number, base] extends [base, number] ? number.is<attribute & attributes>
+		: [string, base] extends [base, string] ? string.is<attribute & attributes>
+		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
+		: of<base, attributes & attribute>
+	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
+	: [string, t] extends [t, string] ? string.applyAttribute<attribute>
+	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
+	: of<t, conform<attribute, Constraints>>
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
@@ -219,28 +196,13 @@ export declare namespace distill {
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
-export type includesMorphs<t> =
-	[
-		_distill<t, { endpoint: "in"; branded: true }>,
-		_distill<t, { endpoint: "out"; branded: true }>
-	] extends (
-		[
-			_distill<t, { endpoint: "out"; branded: true }>,
-			_distill<t, { endpoint: "in"; branded: true }>
-		]
-	) ?
-		false
-	:	true
-
 type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
-	: parseConstraints<t> extends (
-		[infer base, infer constraints extends Constraints]
-	) ?
+	: t extends of<infer base, infer attributes> ?
 		opts["branded"] extends true ?
-			constrain<_distill<base, opts>, constraints>
+			of<_distill<base, opts>, attributes>
 		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
@@ -288,8 +250,8 @@ type distillUnbrandedIo<
 > =
 	t extends (
 		InferredMorph<
-			constrain<infer constrainedIn, any>,
-			Out<constrain<infer constrainedOut, any>>
+			of<infer constrainedIn, any>,
+			Out<of<infer constrainedOut, any>>
 		>
 	) ?
 		distillIo<
@@ -297,9 +259,9 @@ type distillUnbrandedIo<
 			o extends To ? To<constrainedOut> : Out<constrainedOut>,
 			opts
 		>
-	: t extends InferredMorph<constrain<infer constrainedIn, any>> ?
+	: t extends InferredMorph<of<infer constrainedIn, any>> ?
 		distillIo<constrainedIn, o, opts>
-	: t extends InferredMorph<any, Out<constrain<infer constrainedOut, any>>> ?
+	: t extends InferredMorph<any, Out<of<infer constrainedOut, any>>> ?
 		distillIo<i, o extends To ? To<constrainedOut> : Out<constrainedOut>, opts>
 	:	distillIo<i, o, opts>
 
@@ -320,21 +282,27 @@ type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
+type inOfValueExtends<v, t> =
+	[v] extends [anyOrNever] ? false
+	: [v] extends [t] ? true
+	: [v] extends [InferredMorph<infer i>] ? inOfValueExtends<i, t>
+	: false
+
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			[o[k]] extends [anyOrNever] ? never
-			: o[k] extends InferredDefault ? k
-			: never
+			inOfValueExtends<o[k], InferredDefault> extends true ?
+				k
+			:	never
 		:	never
 	:	never
 
 type inferredOptionalKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			[o[k]] extends [anyOrNever] ? never
-			: o[k] extends InferredOptional ? k
-			: never
+			inOfValueExtends<o[k], InferredOptional> extends true ?
+				k
+			:	never
 		:	never
 	:	never
 
@@ -357,14 +325,13 @@ type distillNonArraykeys<
 	distilledArray,
 	opts extends distill.Options
 > =
-	keyof originalArray extends keyof distilledArray | constrained ?
-		distilledArray
+	keyof originalArray extends keyof distilledArray | attributes ? distilledArray
 	:	distilledArray &
 			_distill<
 				{
 					[k in keyof originalArray as k extends (
 						| keyof distilledArray
-						| (opts["branded"] extends true ? never : constrained)
+						| (opts["branded"] extends true ? never : attributes)
 					) ?
 						never
 					:	k]: originalArray[k]
@@ -402,14 +369,14 @@ type TerminallyInferredObject =
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		t extends constrain<unknown, infer constraints> ?
-			applyConstraintSchema<constrain<narrowed, constraints>, "predicate", any>
+		t extends of<unknown, infer constraints> ?
+			applyConstraintSchema<of<narrowed, constraints>, "predicate", any>
 		:	applyConstraintSchema<narrowed, "predicate", any>
 	:	applyConstraintSchema<t, "predicate", any>
 
 export type constrainWithPredicate<t> =
-	t extends constrain<unknown, infer constraints> ?
-		applyConstraintSchema<constrain<t, constraints>, "predicate", any>
+	t extends of<unknown, infer constraints> ?
+		applyConstraintSchema<of<t, constraints>, "predicate", any>
 	:	applyConstraintSchema<t, "predicate", any>
 
 export type inferPipes<t, pipes extends Morph[]> =
@@ -435,23 +402,22 @@ export type To<o = any> = ["=>", o, true]
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type Optional = {
-	optional?: {}
+	optional: {}
 }
 
-export type InferredOptional<t = unknown> = constrain<t, Optional>
+export type InferredOptional<t = unknown> = of<t, Optional>
 
 export type Default<v = any> = {
-	default?: { value: v }
+	default: { value: v }
 }
 
 export type DefaultFor<t> =
-	[t] extends [Primitive] ? (0 extends 1 & t ? Primitive : t) | (() => t)
-	:	| (Primitive extends t ? Primitive
-		  : t extends Primitive ? t
-		  : never)
-		| (() => t)
+	| (Primitive extends t ? Primitive
+	  : t extends Primitive ? t
+	  : never)
+	| (() => t)
 
-export type InferredDefault<t = unknown, v = any> = constrain<t, Default<v>>
+export type InferredDefault<t = unknown, v = any> = of<t, Default<v>>
 
 export type termOrType<t> = t | Type<t, any>
 
@@ -471,21 +437,12 @@ type _inferIntersection<l, r, piped extends boolean> =
 		: (In: _inferIntersection<lIn, r, false>) => lOut
 	: r extends InferredMorph<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => rOut
-	: parseConstraints<l> extends (
-		[infer lBase, infer lConstraints extends Constraints]
-	) ?
-		parseConstraints<r> extends (
-			[infer rBase, infer rConstraints extends Constraints]
-		) ?
-			constrain<
-				_inferIntersection<lBase, rBase, piped>,
-				lConstraints & rConstraints
-			>
-		:	constrain<_inferIntersection<lBase, r, piped>, lConstraints>
-	: parseConstraints<r> extends (
-		[infer rBase, infer rConstraints extends Constraints]
-	) ?
-		constrain<_inferIntersection<l, rBase, piped>, rConstraints>
+	: l extends of<infer lBase, infer lAttributes> ?
+		r extends of<infer rBase, infer rAttributes> ?
+			of<_inferIntersection<lBase, rBase, piped>, lAttributes & rAttributes>
+		:	of<_inferIntersection<lBase, r, piped>, lAttributes>
+	: r extends of<infer rBase, infer rAttributes> ?
+		of<_inferIntersection<rBase, l, piped>, rAttributes>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?

@@ -1,11 +1,20 @@
-import { hasDomain, printable, throwParseError, unset } from "@ark/util"
+import {
+	hasDomain,
+	omit,
+	printable,
+	throwParseError,
+	unset,
+	type keySetOf
+} from "@ark/util"
+import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import type { declareNode } from "../shared/declare.ts"
+import type { BaseMeta, declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
+import { registeredReference } from "../shared/registry.ts"
 import { BaseProp, intersectProps, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -70,29 +79,78 @@ export class OptionalNode extends BaseProp<"optional"> {
 		}
 	}
 
-	expression = `${this.compiledKey}?: ${this.value.expression}${"default" in this.inner ? ` = ${printable(this.inner.default)}` : ""}`
+	get outProp(): Prop.Node {
+		if (!this.hasDefault()) return this
+		const { default: defaultValue, ...requiredInner } = this.inner
+
+		requiredInner.value = requiredInner.value.withMeta(meta =>
+			omit(meta, optionalValueMetaKeys)
+		)
+
+		return this.cacheGetter(
+			"outProp",
+			this.$.node("required", requiredInner, { prereduced: true }) as never
+		)
+	}
+
+	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
+
+	defaultValueMorphs: Morph[] = this.computeDefaultValueMorphs()
+
+	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+
+	private computeDefaultValueMorphs(): Morph[] {
+		if (!this.hasDefault()) return []
+
+		const defaultInput = this.default
+
+		if (typeof defaultInput === "function") {
+			return [
+				// if the value has a morph, pipe context through it
+				this.value.includesMorph ?
+					(data, ctx) => {
+						ctx.path.push(this.key)
+						this.value((data[this.key] = defaultInput()), ctx)
+						ctx.path.pop()
+						return data
+					}
+				:	data => {
+						data[this.key] = defaultInput()
+						return data
+					}
+			]
+		}
+
+		// non-functional defaults can be safely cached as long as the morph is
+		// guaranteed to be pure and the output is primitive
+		const precomputedMorphedDefault =
+			this.value.includesMorph ? this.value.assert(defaultInput) : defaultInput
+
+		return [
+			hasDomain(precomputedMorphedDefault, "object") ?
+				// the type signature only allows this if the value was morphed
+				(data, ctx) => {
+					ctx.path.push(this.key)
+					this.value((data[this.key] = defaultInput), ctx)
+					ctx.path.pop()
+					return data
+				}
+			:	data => {
+					data[this.key] = precomputedMorphedDefault
+					return data
+				}
+		]
+	}
 }
-
-// if (parsedValue.meta) {
-// 	if ("default" in parsedValue.meta) {
-// 		return ctx.$.node("optional", {
-// 			key: parsedKey.key,
-// 			value: parsedValue,
-// 			default: parsedValue.meta.default
-// 		})
-// 	}
-
-// 	if (parsedValue.meta.optional) {
-// 		return ctx.$.node("optional", {
-// 			key: parsedKey.key,
-// 			value: parsedValue
-// 		})
-// 	}
-// }
 
 export const Optional = {
 	implementation,
 	Node: OptionalNode
+}
+
+const optionalValueMetaKeys: keySetOf<BaseMeta> = {
+	default: 1,
+	optional: 1
 }
 
 export const assertDefaultValueAssignability = (

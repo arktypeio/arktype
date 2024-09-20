@@ -1,12 +1,11 @@
 import type {
 	Branded,
-	constrain,
 	constraint,
-	Constraints,
 	Default,
 	Literal,
 	Narrowed,
 	normalizeLimit,
+	of,
 	Optional
 } from "../inference.ts"
 
@@ -27,25 +26,25 @@ export type Before<rule> = {
 }
 
 export declare namespace Date {
-	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
+	export type atOrAfter<rule> = of<Date, AtOrAfter<rule>>
 
-	export type after<rule> = constrain<Date, After<rule>>
+	export type after<rule> = of<Date, After<rule>>
 
-	export type atOrBefore<rule> = constrain<Date, AtOrBefore<rule>>
+	export type atOrBefore<rule> = of<Date, AtOrBefore<rule>>
 
-	export type before<rule> = constrain<Date, Before<rule>>
+	export type before<rule> = of<Date, Before<rule>>
 
-	export type narrowed = constrain<Date, Narrowed>
+	export type narrowed = of<Date, Narrowed>
 
-	export type optional = constrain<Date, Optional>
+	export type optional = of<Date, Optional>
 
-	export type defaultsTo<rule> = constrain<Date, Default<rule>>
+	export type defaultsTo<rule> = of<Date, Default<rule>>
 
-	export type branded<rule> = constrain<Date, Branded<rule>>
+	export type branded<rule> = of<Date, Branded<rule>>
 
-	export type literal<rule> = constrain<Date, Literal<rule>>
+	export type literal<rule> = of<Date, Literal<rule>>
 
-	export type is<constraints extends Constraints> = constrain<Date, constraints>
+	export type is<attributes> = of<Date, attributes>
 
 	export type afterSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? After<normalizeLimit<rule>>
@@ -55,13 +54,13 @@ export declare namespace Date {
 		schema extends { exclusive: true } ? Before<normalizeLimit<rule>>
 		:	AtOrBefore<normalizeLimit<rule>>
 
-	export type withConstraint<constraint> =
-		constraint extends After<infer rule> ? after<rule>
-		: constraint extends Before<infer rule> ? before<rule>
-		: constraint extends AtOrAfter<infer rule> ? atOrAfter<rule>
-		: constraint extends AtOrBefore<infer rule> ? atOrBefore<rule>
-		: constraint extends Optional ? optional
-		: constraint extends Default<infer rule> ? defaultsTo<rule>
-		: constraint extends Narrowed ? narrowed
+	export type applyAttribute<attribute> =
+		attribute extends After<infer rule> ? after<rule>
+		: attribute extends Before<infer rule> ? before<rule>
+		: attribute extends AtOrAfter<infer rule> ? atOrAfter<rule>
+		: attribute extends AtOrBefore<infer rule> ? atOrBefore<rule>
+		: attribute extends Optional ? optional
+		: attribute extends Default<infer rule> ? defaultsTo<rule>
+		: attribute extends Branded<infer rule> ? branded<rule>
 		: never
 }

@@ -1,10 +1,11 @@
 import type { PartialRecord, TypeGuard } from "@ark/util"
-import type { nodeOfKind } from "../kinds.ts"
+import type { mutableNormalizedRootOfKind, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Union } from "../roots/union.ts"
 import type { BaseScope } from "../scope.ts"
+import type { BaseMeta } from "./declare.ts"
 import { Disjoint } from "./disjoint.ts"
 import {
 	rootKinds,
@@ -130,9 +131,39 @@ const pipeMorphed = (
 			const viableBranches = results.filter(
 				isNode as TypeGuard<unknown, Morph.Node>
 			)
-			return viableBranches.length === 0 ?
-					Disjoint.init("union", from.branches, to.branches)
-				:	ctx.$.parseSchema(viableBranches)
+
+			if (viableBranches.length === 0)
+				return Disjoint.init("union", from.branches, to.branches)
+
+			if (
+				viableBranches.length < from.branches.length ||
+				!from.branches.every((branch, i) =>
+					branch.in.equals(viableBranches[i].in)
+				)
+			)
+				return ctx.$.parseSchema(viableBranches)
+
+			let meta: BaseMeta | undefined
+
+			if ("default" in from.meta) meta = { default: from.meta.default }
+			else if (from.meta.optional) meta = { optional: true }
+
+			if (viableBranches.length === 1) {
+				const onlyBranch = viableBranches[0]
+				if (!meta) return onlyBranch
+				return ctx.$.node("morph", {
+					...onlyBranch.inner,
+					in: onlyBranch.in.withMeta(meta)
+				})
+			}
+
+			const schema: mutableNormalizedRootOfKind<"union"> = {
+				branches: viableBranches
+			}
+
+			if (meta) schema.meta = meta
+
+			return ctx.$.parseSchema(schema)
 		}
 	)
 
@@ -154,7 +185,7 @@ const _pipeMorphed = (
 
 		return ctx.$.node("morph", {
 			morphs,
-			in: fromIsMorph ? from.in : from
+			in: from.in
 		})
 	}
 

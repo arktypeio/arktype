@@ -61,14 +61,15 @@ export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
+> extends Callable<
+	(data: d["prerequisite"], ctx?: TraversalContext) => unknown,
+	attachmentsOf<d>
+> {
 	attachments: UnknownAttachments
 	$: BaseScope
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
-			// pipedFromCtx allows us internally to reuse TraversalContext
-			// through pipes and keep track of piped paths. It is not exposed
 			(data: any, pipedFromCtx?: TraversalContext) => {
 				if (
 					!this.includesMorph &&
@@ -223,19 +224,22 @@ export abstract class BaseNode<
 
 	// Should be refactored to use transform
 	// https://github.com/arktypeio/arktype/issues/1020
-	getIo(kind: "in" | "out"): BaseNode {
+	getIo(ioKind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) return this as never
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.innerEntries) {
 			const keySchemaImplementation = this.impl.keys[k]
 
-			if (keySchemaImplementation.child) {
+			if (keySchemaImplementation.reduceIo)
+				keySchemaImplementation.reduceIo(ioKind, ioInner, v)
+			else if (keySchemaImplementation.child) {
 				const childValue = v as listable<BaseNode>
+
 				ioInner[k] =
 					isArray(childValue) ?
-						childValue.map(child => child[kind])
-					:	childValue[kind]
+						childValue.map(child => child[ioKind])
+					:	childValue[ioKind]
 			} else ioInner[k] = v
 		}
 

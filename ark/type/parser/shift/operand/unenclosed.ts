@@ -4,7 +4,6 @@ import {
 	type BaseRoot,
 	type GenericAst,
 	type GenericRoot,
-	type PrivateDeclaration,
 	type arkKind,
 	type genericParamNames,
 	type resolvableReferenceIn,
@@ -104,9 +103,12 @@ const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
-		token === "" ? writeMissingOperandMessage(s)
-		: token[0] === "#" ?
-			writePrefixedPrivateReferenceMessage(token as PrivateDeclaration)
+		token === "" ?
+			s.scanner.lookahead === "#" ?
+				writePrefixedPrivateReferenceMessage(
+					s.shiftedByOne().scanner.shiftUntilNextTerminator()
+				)
+			:	writeMissingOperandMessage(s)
 		:	writeUnresolvableMessage(token)
 	)
 
@@ -229,7 +231,13 @@ export type unresolvableState<
 	args,
 	submodulePath extends string[]
 > =
-	validReferenceFromToken<token, resolutions, args, submodulePath> extends (
+	[token, s["unscanned"]] extends ["", Scanner.shift<"#", infer unscanned>] ?
+		Scanner.shiftUntilNextTerminator<unscanned> extends (
+			Scanner.shiftResult<infer name, string>
+		) ?
+			state.error<writePrefixedPrivateReferenceMessage<name>>
+		:	never
+	: validReferenceFromToken<token, resolutions, args, submodulePath> extends (
 		never
 	) ?
 		state.error<

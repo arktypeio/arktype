@@ -11,8 +11,8 @@ import type {
 	Narrowed,
 	Out,
 	To,
-	constrain,
 	number,
+	of,
 	string
 } from "arktype/internal/keywords/inference.ts"
 
@@ -703,7 +703,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]
@@ -766,7 +766,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	| {
 			type: "directory"
 			name: is<MoreThanLength<0> & LessThanLength<255>>
-			children: constrain<
+			children: of<
 				(
 					| {
 							type: "file"

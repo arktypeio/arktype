@@ -27,7 +27,7 @@ import {
 	type show
 } from "@ark/util"
 import type {
-	applyConstraint,
+	applyAttribute,
 	Default,
 	DefaultFor,
 	distill,
@@ -39,9 +39,10 @@ import type {
 	Out
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { InfixOperator, PostfixExpression } from "./ast/infer.ts"
+import type { PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
+import type { Scanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
 
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
@@ -176,7 +177,7 @@ const maybeParseTupleExpression = (
 // It is *extremely* important we use readonly any time we check a tuple against
 // something like this. Not doing so will always cause the check to fail, since
 // def is declared as a const parameter.
-type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
+type InfixExpression = readonly [unknown, Scanner.InfixToken, ...unknown[]]
 
 export type validateTuple<def extends array, $, args> =
 	def extends IndexZeroExpression ? validatePrefixExpression<def, $, args>
@@ -377,9 +378,9 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		applyConstraint<inferDefinition<def[0], $, args>, Default<def[2]>>
+		applyAttribute<inferDefinition<def[0], $, args>, Default<def[2]>>
 	: def[1] extends "?" ?
-		applyConstraint<inferDefinition<def[0], $, args>, Optional>
+		applyAttribute<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]

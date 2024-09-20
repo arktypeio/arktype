@@ -9,7 +9,6 @@ import type {
 	anyOrNever,
 	array,
 	BigintLiteral,
-	charsAfterFirst,
 	Completion,
 	ErrorMessage,
 	NumberLiteral,
@@ -39,8 +38,8 @@ export type validateAst<ast, $, args> =
 	ast extends ErrorMessage ? ast
 	: ast extends InferredAst ? validateInferredAst<ast[0], ast[2]>
 	: ast extends DefAst ?
-		ast[2] extends PrivateDeclaration ?
-			ErrorMessage<writePrefixedPrivateReferenceMessage<ast[2]>>
+		ast[2] extends PrivateDeclaration<infer name> ?
+			ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 		:	undefined
 	: ast extends PostfixExpression<infer operator, infer operand> ?
 		operator extends "[]" ? validateAst<operand, $, args>
@@ -51,7 +50,8 @@ export type validateAst<ast, $, args> =
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
-		: never
+		: operator extends "#" ? validateAst<l, $, args>
+		: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
 	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
@@ -82,17 +82,13 @@ type validateGenericArgs<
 			>
 	:	undefined
 
-export const writePrefixedPrivateReferenceMessage = <
-	def extends PrivateDeclaration
->(
-	def: def
-): writePrefixedPrivateReferenceMessage<def> =>
-	`Private type references should not include '#'. Use '${def.slice(1) as charsAfterFirst<def>}' instead.`
+export const writePrefixedPrivateReferenceMessage = <name extends string>(
+	name: name
+): writePrefixedPrivateReferenceMessage<name> =>
+	`Private type references should not include '#'. Use '${name}' instead.`
 
-export type writePrefixedPrivateReferenceMessage<
-	def extends PrivateDeclaration
-> =
-	`Private type references should not include '#'. Use '${charsAfterFirst<def>}' instead.`
+export type writePrefixedPrivateReferenceMessage<name extends string> =
+	`Private type references should not include '#'. Use '${name}' instead.`
 
 type validateInferredAst<inferred, def extends string> =
 	def extends NumberLiteral ?
@@ -104,8 +100,8 @@ type validateInferredAst<inferred, def extends string> =
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
 	: [inferred] extends [anyOrNever] ? undefined
-	: def extends PrivateDeclaration ?
-		ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
+	: def extends PrivateDeclaration<infer name> ?
+		ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 	: // these problems would've been caught during a fullStringParse, but it's most
 	// efficient to check for them here in case the string was naively parsed
 	inferred extends Generic ?

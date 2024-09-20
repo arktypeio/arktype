@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
 import { keywords, type } from "arktype"
-import type { constrain, string } from "arktype/internal/keywords/inference.ts"
+import type { of, string } from "arktype/internal/keywords/inference.ts"
 import type { Matching } from "arktype/internal/keywords/string/string.ts"
 
 contextualize(() => {
@@ -97,9 +97,7 @@ contextualize(() => {
 		}>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
-		const d = t.get(
-			"foof" as constrain<"foof", Matching<"^f"> & Matching<"f$">>
-		)
+		const d = t.get("foof" as of<"foof", Matching<"^f"> & Matching<"f$">>)
 		// should include { c: 1 } as well but it seems TS can't infer it for now
 		attest<
 			{

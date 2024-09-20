@@ -102,6 +102,7 @@ export class Scanner<lookahead extends string = string> {
 		",": true,
 		":": true,
 		"?": true,
+		"#": true,
 		...whiteSpaceTokens
 	} as const
 
@@ -173,9 +174,18 @@ export declare namespace Scanner {
 
 	export type FinalizingLookahead = keyof typeof Scanner.finalizingLookaheads
 
-	export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>"
+	export type InfixToken =
+		| Comparator
+		| "|"
+		| "&"
+		| "%"
+		| ":"
+		| "=>"
+		| "#"
+		| "@"
+		| "="
 
-	export type PostfixToken = "[]"
+	export type PostfixToken = "[]" | "?"
 
 	export type OperatorToken = InfixToken | PostfixToken
 
