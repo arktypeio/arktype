@@ -5,7 +5,7 @@ import {
 	type TraversalContext
 } from "@ark/schema"
 import { printable, type array } from "@ark/util"
-import type { Type, applyConstraint, schemaToConstraint } from "arktype"
+import type { Type, applyConstraintSchema } from "arktype"
 
 import { innerParseJsonSchema, type inferJsonSchema } from "./json.js"
 import { JsonSchema } from "./scope.js"
@@ -136,18 +136,12 @@ type inferJsonSchemaArrayConstraints<arraySchema, T> =
 	"maxItems" extends keyof arraySchema ?
 		inferJsonSchemaArrayConstraints<
 			Omit<arraySchema, "maxItems">,
-			applyConstraint<
-				T,
-				schemaToConstraint<"maxLength", arraySchema["maxItems"] & number>
-			>
+			applyConstraintSchema<T, "maxLength", arraySchema["maxItems"] & number>
 		>
 	: "minItems" extends keyof arraySchema ?
 		inferJsonSchemaArrayConstraints<
 			Omit<arraySchema, "minItems">,
-			applyConstraint<
-				T,
-				schemaToConstraint<"minLength", arraySchema["minItems"] & number>
-			>
+			applyConstraintSchema<T, "minLength", arraySchema["minItems"] & number>
 		>
 	: T extends {} ? T
 	: never

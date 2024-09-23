@@ -7,7 +7,12 @@ export {
 } from "@ark/schema"
 export { Hkt, inferred } from "@ark/util"
 export { Generic } from "./generic.ts"
-export type { Out } from "./keywords/inference.ts"
+export type {
+	Out,
+	applyConstraintSchema,
+	number,
+	string
+} from "./keywords/inference.ts"
 export {
 	ark,
 	declare,
