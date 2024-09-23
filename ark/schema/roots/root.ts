@@ -4,10 +4,17 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
+	unset,
+	type Fn,
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
+import type {
+	NodeSchema,
+	mutableNormalizedRootOfKind,
+	nodeOfKind,
+	reducibleKindOf
+} from "../kinds.ts"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
@@ -27,6 +34,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
+import type { BaseScope } from "../scope.ts"
 import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -37,14 +45,17 @@ import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
+	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
+import { assertDefaultValueAssignability } from "../structure/optional.ts"
+import type { Prop } from "../structure/prop.ts"
 import type {
-	NodeEntryFlatMapper,
+	PropFlatMapper,
 	Structure,
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
@@ -59,14 +70,43 @@ export abstract class BaseRoot<
 	/** @ts-ignore cast variance */
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
-	readonly [arkKind] = "root"
+	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
+		super(attachments, $)
+		// define as a getter to avoid it being enumerable/spreadable
+		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+	}
 
 	get internal(): this {
 		return this
 	}
 
+	get optionalMeta(): boolean {
+		return this.cacheGetter(
+			"optionalMeta",
+			this.meta.optional === true ||
+				(this.hasKind("morph") && this.in.meta.optional === true)
+		)
+	}
+
+	/** returns unset if there is no default */
+	get defaultMeta(): unknown {
+		return this.cacheGetter(
+			"defaultMeta",
+			"default" in this.meta ? this.meta.default
+			: this.hasKind("morph") ? this.in.defaultMeta
+			: unset
+		)
+	}
+
 	as(): this {
+		return this
+	}
+
+	brand(name: string): this {
+		if (name === "") return throwParseError(emptyBrandNameMessage)
 		return this
 	}
 
@@ -138,7 +178,7 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	map(flatMapEntry: NodeEntryFlatMapper): BaseRoot {
+	map(flatMapEntry: PropFlatMapper): BaseRoot {
 		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
 	}
 
@@ -174,6 +214,12 @@ export abstract class BaseRoot<
 		return (this._keyof = this.$.finalize(result))
 	}
 
+	get props(): Prop.Node[] {
+		if (this.branches.length !== 1)
+			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
+		return [...this.applyStructuralOperation("props", [])[0]]
+	}
+
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
 		return this.$.schema(
@@ -190,8 +236,8 @@ export abstract class BaseRoot<
 
 	private applyStructuralOperation<operation extends StructuralOperationName>(
 		operation: operation,
-		args: Parameters<BaseRoot[operation]>
-	): Union.ChildNode[] {
+		args: BaseRoot[operation] extends Fn<infer args> ? args : []
+	): StructuralOperationBranchResultByName[operation][] {
 		return this.distribute(branch => {
 			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
 				// ideally this wouldn't be a special case, but for now it
@@ -210,6 +256,7 @@ export abstract class BaseRoot<
 
 			if (operation === "keyof") return structure.keyof()
 			if (operation === "get") return structure.get(...(args as [never]))
+			if (operation === "props") return structure.props
 
 			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"
@@ -287,6 +334,8 @@ export abstract class BaseRoot<
 	}
 
 	default(value: unknown): this {
+		assertDefaultValueAssignability(this, value)
+
 		return this.withMeta({ default: value })
 	}
 
@@ -350,7 +399,15 @@ export abstract class BaseRoot<
 						in: branch,
 						morphs: [morph]
 					}),
-			this.$.parseSchema
+			branches => {
+				if (!this.hasKind("union")) return this.$.parseSchema(branches[0])
+				const schema: mutableNormalizedRootOfKind<"union"> = {
+					branches
+				}
+				if ("default" in this.meta) schema.meta = { default: this.meta.default }
+				else if (this.meta.optional) schema.meta = { optional: true }
+				return this.$.parseSchema(schema)
+			}
 		)
 	}
 
@@ -534,6 +591,10 @@ export type UndeclaredKeyConfig = {
 	deep?: boolean
 }
 
+export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
+
+export type emptyBrandNameMessage = typeof emptyBrandNameMessage
+
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 	schema: schema
 ): schema =>
@@ -592,15 +653,24 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 	return null
 }
 
+export type StructuralOperationBranchResultByName = {
+	keyof: Union.ChildNode
+	pick: Union.ChildNode
+	omit: Union.ChildNode
+	get: Union.ChildNode
+	map: Union.ChildNode
+	required: Union.ChildNode
+	partial: Union.ChildNode
+	merge: Union.ChildNode
+	props: array<Prop.Node>
+}
+
 export type StructuralOperationName =
-	| "keyof"
-	| "pick"
-	| "omit"
-	| "get"
-	| "map"
-	| "required"
-	| "partial"
-	| "merge"
+	keyof StructuralOperationBranchResultByName
+
+export const writeLiteralUnionEntriesMessage = (expression: string): string =>
+	`Props cannot be extracted from a union. Use .distribute to extract props from each branch instead. Received:
+${expression}`
 
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,

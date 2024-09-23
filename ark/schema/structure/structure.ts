@@ -45,10 +45,11 @@ import type {
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
+	isNode,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
-import type { Optional } from "./optional.ts"
+import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
@@ -127,11 +128,33 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		keys: {
 			required: {
 				child: true,
-				parse: constraintKeyParser("required")
+				parse: constraintKeyParser("required"),
+				reduceIo: (ioKind, inner, nodes) => {
+					// ensure we don't overwrite nodes added by optional
+					inner.required = append(
+						inner.required,
+						nodes!.map(node => node[ioKind] as Required.Node)
+					)
+					return
+				}
 			},
 			optional: {
 				child: true,
-				parse: constraintKeyParser("optional")
+				parse: constraintKeyParser("optional"),
+				reduceIo: (ioKind, inner, nodes) => {
+					if (ioKind === "in") {
+						inner.optional = nodes!.map(node => node.in as OptionalNode)
+						return
+					}
+
+					nodes!.forEach(
+						node =>
+							(inner[node.outProp.kind] = append(
+								inner[node.outProp.kind],
+								node.outProp.out as Prop.Node
+							) as never)
+					)
+				}
 			},
 			index: {
 				child: true,
@@ -154,9 +177,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				const rInner = { ...r.inner }
 				if (l.undeclared) {
 					const lKey = l.keyof()
-					const disjointRKeys = r.requiredLiteralKeys.filter(
-						k => !lKey.allows(k)
-					)
+					const disjointRKeys = r.requiredKeys.filter(k => !lKey.allows(k))
 					if (disjointRKeys.length) {
 						return new Disjoint(
 							...disjointRKeys.map(k => ({
@@ -179,10 +200,16 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
-								rInner.required =
-									rInner.required ?
-										[...rInner.required, ...normalized.required]
-									:	normalized.required
+								rInner.required = conflatenate(
+									rInner.required,
+									normalized.required
+								)
+							}
+							if (normalized.optional) {
+								rInner.optional = conflatenate(
+									rInner.optional,
+									normalized.optional
+								)
 							}
 							return normalized.index ?? []
 						})
@@ -190,9 +217,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				}
 				if (r.undeclared) {
 					const rKey = r.keyof()
-					const disjointLKeys = l.requiredLiteralKeys.filter(
-						k => !rKey.allows(k)
-					)
+					const disjointLKeys = l.requiredKeys.filter(k => !rKey.allows(k))
 					if (disjointLKeys.length) {
 						return new Disjoint(
 							...disjointLKeys.map(k => ({
@@ -215,11 +240,18 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
-								lInner.required =
-									lInner.required ?
-										[...lInner.required, ...normalized.required]
-									:	normalized.required
+								lInner.required = conflatenate(
+									lInner.required,
+									normalized.required
+								)
 							}
+							if (normalized.optional) {
+								lInner.optional = conflatenate(
+									lInner.optional,
+									normalized.optional
+								)
+							}
+
 							return normalized.index ?? []
 						})
 					}
@@ -268,18 +300,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	expression: string = structuralExpression(this)
 
-	requiredLiteralKeys: Key[] = this.required?.map(node => node.key) ?? []
+	requiredKeys: Key[] = this.required?.map(node => node.key) ?? []
 
-	optionalLiteralKeys: Key[] = this.optional?.map(node => node.key) ?? []
+	optionalKeys: Key[] = this.optional?.map(node => node.key) ?? []
 
-	literalKeys: Key[] = [
-		...this.requiredLiteralKeys,
-		...this.optionalLiteralKeys
-	]
-
-	entries: array<NodeEntry> = this.props.map(
-		entry => [entry.key, entry.value, entry.kind] as const
-	)
+	literalKeys: Key[] = [...this.requiredKeys, ...this.optionalKeys]
 
 	_keyof: BaseRoot | undefined
 	keyof(): BaseRoot {
@@ -291,19 +316,45 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this._keyof = this.$.node("union", branches))
 	}
 
-	map(flatMapEntry: NodeEntryFlatMapper): StructureNode {
-		const inner: Structure.Inner.mutable = {}
-		this.entries.forEach(entry => {
-			const result = flatMapEntry(entry)
-			// based on flatMorph from @ark/util
-			if (Array.isArray(result[0]) || result.length === 0) {
-				return (result as NodeEntry[]).forEach(entry =>
-					reduceMappedEntry(this, inner, entry)
-				)
-			}
-			reduceMappedEntry(this, inner, result as NodeEntry)
-		})
-		return this.$.node("structure", inner)
+	map(flatMapProp: PropFlatMapper): StructureNode {
+		return this.$.node(
+			"structure",
+			this.props
+				.flatMap(flatMapProp)
+				.reduce((structureInner: Structure.Inner.mutable, mapped) => {
+					const originalProp = this.propsByKey[mapped.key]
+
+					if (isNode(mapped)) {
+						if (mapped.kind !== "required" && mapped.kind !== "optional") {
+							return throwParseError(
+								`Map result must have kind "required" or "optional" (was ${mapped.kind})`
+							)
+						}
+
+						structureInner[mapped.kind] = append(
+							structureInner[mapped.kind] as any,
+							mapped
+						)
+						return structureInner
+					}
+
+					const mappedKind = mapped.kind ?? originalProp?.kind ?? "required"
+
+					// extract the inner keys from the map result in case a node was spread,
+					// which would otherwise lead to invalid keys
+					const mappedPropInner: Prop.Inner = flatMorph(
+						mapped as BaseMappedPropInner,
+						(k, v) => (k in Optional.implementation.keys ? [k, v] : [])
+					) as never
+
+					structureInner[mappedKind] = append(
+						structureInner[mappedKind] as any,
+						this.$.node(mappedKind, mappedPropInner)
+					)
+
+					return structureInner
+				}, {})
+		)
 	}
 
 	assertHasKeys(keys: array<KeyOrKeyNode>): void {
@@ -636,8 +687,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.properties![prop.key] = prop.value.toJsonSchema()
 			})
-			if (this.requiredLiteralKeys.length)
-				schema.required = this.requiredLiteralKeys as string[]
+			if (this.requiredKeys.length)
+				schema.required = this.requiredKeys as string[]
 		}
 
 		this.index?.forEach(index => {
@@ -676,43 +727,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
-export type NodeEntryFlatMapper = (
-	entry: NodeEntry
-) => listable<MappedNodeEntry>
+export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 
-export type NodeEntry = readonly [
-	key: Key,
-	value: BaseRoot,
-	kind: "required" | "optional"
-]
+export type MappedPropInner = BaseMappedPropInner | OptionalMappedPropInner
 
-export type MappedNodeEntry = readonly [
-	key: Key,
-	value: BaseRoot,
+// this assumes the props on Required.Inner are a subset of those on Optional.Inner
+export interface BaseMappedPropInner extends Required.Schema {
 	kind?: "required" | "optional"
-]
+}
 
-const reduceMappedEntry = (
-	original: Structure.Node,
-	inner: Structure.Inner.mutable,
-	[k, v, kind]: MappedNodeEntry
-): unknown => {
-	const originalProp = original.propsByKey[k]
-	const mappedKind = kind ?? originalProp?.kind ?? "required"
-
-	return (inner[mappedKind] = append(
-		inner[mappedKind],
-		(
-			originalProp &&
-				mappedKind === originalProp.kind &&
-				v === originalProp.value
-		) ?
-			originalProp
-		:	original.$.node(mappedKind, {
-				key: k,
-				value: v
-			})
-	) as never)
+export interface OptionalMappedPropInner extends Optional.Schema {
+	kind: "optional"
 }
 
 export const Structure = {
@@ -736,6 +761,7 @@ export const writeNumberIndexMessage = (
 export type NormalizedIndex = {
 	index?: Index.Node
 	required?: Required.Node[]
+	optional?: Optional.Node[]
 }
 
 /** extract enumerable named props from an index signature */
@@ -754,9 +780,14 @@ export const normalizeIndex = (
 
 	const normalized: NormalizedIndex = {}
 
-	normalized.required = enumerableBranches.map(n =>
-		$.node("required", { key: n.unit as Key, value })
-	)
+	enumerableBranches.forEach(n => {
+		// since required can be reduced to optional if it has a default or
+		// optional meta on its value, we have to assign it depending on the
+		// compiled kind
+		const prop = $.node("required", { key: n.unit as Key, value })
+		normalized[prop.kind] = append(normalized[prop.kind], prop as never)
+	})
+
 	if (nonEnumerableBranches.length) {
 		normalized.index = $.node("index", {
 			signature: nonEnumerableBranches,

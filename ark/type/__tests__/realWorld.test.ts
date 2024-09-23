@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, type ArkErrors } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnboundableMessage,
+	type ArkErrors
+} from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
@@ -7,10 +11,10 @@ import type {
 	Narrowed,
 	Out,
 	To,
-	constrain,
 	number,
+	of,
 	string
-} from "arktype/internal/keywords/ast.ts"
+} from "arktype/internal/keywords/inference.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -412,7 +416,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = MyAssets({ assets: [{ token: "a", amount: "1" }] })
 
-		attest(out).snap({ assets: { a: "1n" } })
+		attest(out).snap({ assets: { a: 1n } })
 	})
 
 	// https://discord.com/channels/957797212103016458/957804102685982740/1243850690644934677
@@ -429,11 +433,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 					return ctx.error("a non-decimal number")
 				}
 			})
-			.narrow((amount, ctx) => true)
+			.narrow(() => true)
 
 		const Token = type("7<string<=120")
 			.pipe(s => s.toLowerCase())
-			.narrow((s, ctx) => true)
+			.narrow(() => true)
 
 		const $ = scope({
 			Asset: {
@@ -447,7 +451,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
 
-		attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
+		attest(out).snap([{ token: "lovelace", amount: 5000000n }])
 	})
 
 	it("regex index signature", () => {
@@ -617,7 +621,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	it("narrowed morph", () => {
 		const t = type("string")
 			.pipe(s => parseInt(s))
-			.narrow(n => true)
+			.narrow(() => true)
 
 		attest<(In: string) => Out<number.narrowed>>(t.t)
 
@@ -699,7 +703,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]
@@ -762,7 +766,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	| {
 			type: "directory"
 			name: is<MoreThanLength<0> & LessThanLength<255>>
-			children: constrain<
+			children: of<
 				(
 					| {
 							type: "file"
@@ -881,10 +885,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(out.toString()).snap("name must be removed or city must be removed")
 	})
 
-	it("array intersection", () => {
+	it("array intersection with object literal", () => {
 		const t = type({ name: "string" }).and("string[]")
 		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
 		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+
+		attest(t.expression).snap("{ name: string } & string[]")
 	})
 
 	it("tuple or morph inference", () => {
@@ -957,5 +963,14 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(ApiSchema.expression).snap(
 			"{ action: string | undefined | null, lastIndex: string | null, ref: string | undefined | null, service_code: number | undefined | null, source: string | null }"
 		)
+	})
+
+	it("error on bounded liftArray", () => {
+		// @ts-expect-error
+		attest(() => type("2 < Array.liftFrom<string> < 4"))
+			.throws.snap(
+				"ParseError: MaxLength operand must be a string or an array (was never)"
+			)
+			.type.errors(writeUnboundableMessage("string | string[]"))
 	})
 })

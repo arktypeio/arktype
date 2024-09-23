@@ -17,16 +17,20 @@ import type {
 	unset
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
-import type { inferIntersection } from "../intersect.ts"
-import type { type } from "../keywords/ark.ts"
 import type {
-	applyConstraint,
+	applyAttribute,
+	Branded,
 	Default,
+	DefaultFor,
 	distill,
+	inferIntersection,
 	inferMorphOut,
 	inferPipes,
-	Optional
-} from "../keywords/ast.ts"
+	InferredMorph,
+	Optional,
+	To
+} from "../keywords/inference.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -35,14 +39,21 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	t: t
+	infer: this["inferOut"]
 	inferBrandableIn: distill.brandable.In<t>
 	inferBrandableOut: distill.brandable.Out<t>
 	inferIntrospectableOut: distill.introspectable.Out<t>
-	infer: distill.Out<t>
+	inferOut: distill.Out<t>
 	inferIn: distill.In<t>
+	inferredOutIsIntrospectable: t extends InferredMorph<any, infer o> ?
+		[o] extends [anyOrNever] ? true
+		: o extends To ? true
+		: false
+	:	true
 	[inferred]: t
 
 	json: Json
+	toJSON(): Json
 	meta: ArkAmbient.meta
 	precompilation: string | undefined
 	toJsonSchema(): JsonSchema
@@ -55,20 +66,11 @@ interface Type<out t = unknown, $ = {}>
 
 	allows(data: unknown): data is this["inferIn"]
 
-	traverse(data: unknown): distill.Out<t> | ArkErrors
+	traverse(data: unknown): this["infer"] | ArkErrors
 
 	configure(meta: MetaSchema): this
 
 	describe(description: string): this
-
-	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
-
-	default<
-		value extends this["infer"],
-		r = (In?: this["inferBrandableIn"]) => Default<value>
-	>(
-		value: value
-	): instantiateType<r, $>
 
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
@@ -78,23 +80,35 @@ interface Type<out t = unknown, $ = {}>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
+	brand<
+		const name extends string,
+		r = applyAttribute<t, Branded<name>> extends infer r ? instantiateType<r, $>
+		:	never
+	>(
+		name: name
+	): r
+
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
-	intersect<const def, r = type.infer<def, $>>(
+	// inferring r into an alias improves perf and avoids return type inference
+	// that can lead to incorrect results. See:
+	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
+	intersect<const def>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $> | Disjoint
+	): type.infer<def, $> extends infer r ?
+		instantiateType<inferIntersection<t, r>, $> | Disjoint
+	:	never
 
-	// these defaulted params are split up to optimize
-	// type perf while maintaining accurate inference for test cases
-	// like "nested 'and' chained from morph on optional"
-	and<const def, r = type.infer<def, $>>(
+	and<const def>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $>
+	): type.infer<def, $> extends infer r ?
+		instantiateType<inferIntersection<t, r>, $>
+	:	never
 
-	or<const def, r = type.infer<def, $>>(
+	or<const def>(
 		def: type.validate<def, $>
-	): instantiateType<t | r, $>
+	): type.infer<def, $> extends infer r ? instantiateType<t | r, $> : never
 
 	array(): ArrayType<t[], $>
 
@@ -104,30 +118,43 @@ interface Type<out t = unknown, $ = {}>
 
 	ifEquals<const def>(
 		def: type.validate<def, $>
-	): instantiateType<type.infer<def, $>, $> | undefined
+	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
+	:	never
 
-	extends<const def>(
-		other: type.validate<def, $>
-	): this is instantiateType<type.infer<def, $>, $>
+	extends<const def>(other: type.validate<def, $>): boolean
 
 	ifExtends<const def>(
 		other: type.validate<def, $>
-	): instantiateType<type.infer<def, $>, $> | undefined
+	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
+	:	never
 
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
 	extract<const def>(
 		r: type.validate<def, $>
-	): instantiateType<Extract<t, type.infer<def, $>>, $>
+	): type.infer<def, $> extends infer r ? instantiateType<Extract<t, r>, $>
+	:	never
 
 	exclude<const def>(
 		r: type.validate<def, $>
-	): instantiateType<Exclude<t, type.infer<def, $>>, $>
+	): type.infer<def, $> extends infer r ? instantiateType<Exclude<t, r>, $>
+	:	never
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
-	): reduceOut
+	): NoInfer<reduceOut>
+
+	// inferring r into an alias in the return doesn't
+	// work the way it does for the other methods here
+	optional<r = applyAttribute<t, Optional>>(): instantiateType<r, $>
+
+	default<
+		const value extends this["inferIn"],
+		r = applyAttribute<t, Default<value>>
+	>(
+		value: DefaultFor<value>
+	): NoInfer<instantiateType<r, $>> extends infer result ? result : never
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
@@ -163,7 +190,7 @@ interface Type<out t = unknown, $ = {}>
 interface ChainedPipeSignature<t, $> {
 	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
 		a: a
-	): r
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -171,7 +198,7 @@ interface ChainedPipeSignature<t, $> {
 	>(
 		a: a,
 		b: b
-	): r
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -181,7 +208,7 @@ interface ChainedPipeSignature<t, $> {
 		a: a,
 		b: b,
 		c: c
-	): r
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -193,7 +220,7 @@ interface ChainedPipeSignature<t, $> {
 		b: b,
 		c: c,
 		d: d
-	): r
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -207,7 +234,7 @@ interface ChainedPipeSignature<t, $> {
 		c: c,
 		d: d,
 		e: e
-	): r
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -223,7 +250,7 @@ interface ChainedPipeSignature<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): r
+	): NoInfer<r> extends infer result ? result : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -241,7 +268,7 @@ interface ChainedPipeSignature<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): r
+	): NoInfer<r> extends infer result ? result : never
 }
 
 export interface ChainedPipes<t, $> extends ChainedPipeSignature<t, $> {

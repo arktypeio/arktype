@@ -23,8 +23,8 @@ import type {
 	parseValidGenericParams,
 	validateParameterString
 } from "./generic.ts"
-import type { Ark, ark, type } from "./keywords/ark.ts"
-import type { distill } from "./keywords/ast.ts"
+import type { DefaultFor, distill } from "./keywords/inference.ts"
+import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
@@ -81,15 +81,16 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
+			: one extends "=" ? [DefaultFor<distill.In<type.infer<NoInfer<zero>, $>>>]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r
 
-	$: Scope<$>
-	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
-	ark: typeof ark
+	keywords: typeof keywords
+	$: Scope<$>
+	raw(def: unknown): BaseType<any, $>
 	module: ModuleParser
 	scope: ScopeParser
 	define: DefinitionParser<$>
@@ -116,7 +117,7 @@ export class InternalTypeParser extends Callable<
 				generic: $.generic as never,
 				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
-				ark: $.ambient as never,
+				keywords: $.ambient as never,
 				unit: $.unit,
 				enumerated: $.enumerated
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,

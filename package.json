@@ -28,7 +28,7 @@
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
 		"testTsVersions": "pnpm testTyped --tsconfig null --tsVersions '*' --compilerOptions '{ \"strictNullChecks\": true }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
-		"benchUpdate": "ATTEST_updateSnapshots=1 pnpm bench",
+		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
 		"benchOperator": "ts ./ark/type/__tests__/operator.bench.ts",
 		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
@@ -67,7 +67,7 @@
 		"prettier-plugin-astro": "0.14.1",
 		"tsx": "4.19.1",
 		"typescript": "catalog:",
-		"typescript-eslint": "8.5.0"
+		"typescript-eslint": "8.6.0"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",

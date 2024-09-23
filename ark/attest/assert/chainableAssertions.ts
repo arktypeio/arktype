@@ -87,7 +87,7 @@ export class ChainableAssertions implements AssertionRecord {
 	instanceOf(expected: Constructor): this {
 		if (!(this.ctx.actual instanceof expected)) {
 			throwAssertionError({
-				ctx: this.ctx,
+				stack: this.ctx.assertionStack,
 				message: `Expected an instance of ${expected.name} (was ${
 					typeof this.ctx.actual === "object" && this.ctx.actual !== null ?
 						this.ctx.actual.constructor.name
@@ -199,7 +199,12 @@ export class ChainableAssertions implements AssertionRecord {
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
 
 		this.ctx.actual = new TypeAssertionMapping(data => {
-			checkCompletionsForErrors(data.completions)
+			if (typeof data.completions === "string") {
+				// if the completions were ambiguously defined, e.g. two string
+				// literals with the same value, they are writen as an error
+				// message to the JSON. Throw it immediately.
+				throw new Error(data.completions)
+			}
 			return { actual: data.completions }
 		})
 		this.ctx.lastSnapName = "completions"
@@ -231,10 +236,6 @@ export class ChainableAssertions implements AssertionRecord {
 			}
 		}
 	}
-}
-
-const checkCompletionsForErrors = (completions?: Completions) => {
-	if (typeof completions === "string") throw new Error(completions)
 }
 
 const declarationPrefix = "type T = "

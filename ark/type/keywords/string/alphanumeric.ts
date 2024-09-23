@@ -1,8 +1,8 @@
-import type { Branded, constrain } from "../ast.ts"
+import type { Branded, of } from "../inference.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type alphanumeric = constrain<string, Branded<"alphanumeric">>
+	export type alphanumeric = of<string, Branded<"alphanumeric">>
 }
 
 export const alphanumeric = regexStringNode(

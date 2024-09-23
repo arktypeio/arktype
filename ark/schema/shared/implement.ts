@@ -32,7 +32,7 @@ import type {
 	BaseNormalizedSchema
 } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
-import { isNode } from "./utils.ts"
+import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -277,6 +277,11 @@ export type NodeKeyImplementation<
 		preserveUndefined?: true
 		child?: boolean
 		serialize?: (schema: instantiated) => JsonData
+		reduceIo?: (
+			ioKind: "in" | "out",
+			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
+			value: d["inner"][k]
+		) => void
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
 			ctx: NodeParseContext<d["kind"]>

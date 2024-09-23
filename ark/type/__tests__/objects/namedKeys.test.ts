@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import type { string } from "arktype/internal/keywords/ast.ts"
+import type { Out, string } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("empty", () => {
@@ -208,5 +208,33 @@ contextualize(() => {
 			],
 			domain: "object"
 		})
+	})
+
+	it("morphed", () => {
+		const processForm = type({
+			bool_value: type("string")
+				.pipe(v => (v === "on" ? true : false))
+				.optional()
+		})
+
+		attest<{
+			bool_value: (In: string.optional) => Out<boolean>
+		}>(processForm.t)
+		attest<{
+			// key should still be distilled as optional even inside a morph
+			bool_value?: string
+		}>(processForm.inferIn)
+		attest<{
+			// out should also be inferred as optional
+			bool_value?: boolean
+		}>(processForm.infer)
+
+		attest(processForm({})).snap({})
+
+		attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
+
+		attest(processForm({ bool_value: true }).toString()).snap(
+			"bool_value must be a string (was boolean)"
+		)
 	})
 })

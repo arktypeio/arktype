@@ -5,16 +5,15 @@ import {
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
-	writeUnsatisfiedParameterConstraintMessage,
-	type RootSchema
+	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
-import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
-import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
-import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
+import { writeUnclosedGroupMessage } from "arktype/internal/parser/reduce/shared.ts"
+import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -375,6 +374,7 @@ contextualize(() => {
 				})
 
 				attest<typeof expected.t>(types.actual.t)
+				attest(expected.json).equals(types.actual.json)
 			})
 
 			it("allows external scope reference to be resolved", () => {
@@ -601,6 +601,7 @@ contextualize(() => {
 
 	// currently types only, runtime pending: https://github.com/arktypeio/arktype/issues/1082
 	describe("cyclic", () => {
+		const enable = false
 		it("self-reference", () => {
 			const getTypes = () =>
 				scope({
@@ -612,11 +613,11 @@ contextualize(() => {
 					},
 					reference: "alternate<0, 1>"
 				}).export()
-			const types = chainableNoOpProxy as ReturnType<typeof getTypes>
+			const types = enable ? getTypes() : (chainableNoOpProxy as never)
 			attest<[0, 1]>(types.reference.infer.swap.swap.order)
 			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
 			const getFromCall = () => types.alternate("'off'", "'on'")
-			const fromCall = chainableNoOpProxy as ReturnType<typeof getFromCall>
+			const fromCall = enable ? getFromCall() : (chainableNoOpProxy as never)
 
 			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
 			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)

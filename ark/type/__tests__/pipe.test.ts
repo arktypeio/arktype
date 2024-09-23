@@ -7,8 +7,8 @@ import {
 	writeMorphIntersectionMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { ark, scope, type, type Type } from "arktype"
-import type { Out, To, constrain } from "arktype/internal/keywords/ast.ts"
+import { keywords, scope, type, type Type } from "arktype"
+import type { Out, To, of } from "arktype/internal/keywords/inference.ts"
 import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
 
 contextualize(() => {
@@ -56,18 +56,19 @@ contextualize(() => {
 
 			const badOut = parseJson("{ unquoted: true }")
 
-			const a = attest(badOut.toString())
-
-			const z = a.satisfies(
+			attest(badOut.toString()).satisfies(
 				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
 			)
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array.readonly)
+			const t = type("string").pipe.try(
+				s => JSON.parse(s),
+				keywords.Array.readonly
+			)
 
 			const tOut = t.out
-			const expectedOut = ark.Array.readonly
+			const expectedOut = keywords.Array.readonly
 
 			attest<typeof expectedOut.t>(tOut.t)
 			attest(tOut.expression).equals(expectedOut.expression)
@@ -81,7 +82,7 @@ contextualize(() => {
 				writeInvalidOperandMessage(
 					"maxLength",
 					intrinsic.lengthBoundable,
-					ark.string.numeric.parse.internal
+					keywords.string.numeric.parse.internal
 				)
 			)
 			.type.errors("Property 'atMostLength' does not exist")
@@ -327,8 +328,8 @@ contextualize(() => {
 	(In: { a: 1; b: 2 }) => Out<string>,
 	{
 		a: (In: { a: 1 }) => Out<string>
-		b: { b: 2 }
 		c: (In: { a: 1; b: 2 }) => Out<string>
+		b: { b: 2 }
 	}
 >`)
 		assertNodeKind(types.c.internal, "morph")
@@ -561,7 +562,7 @@ contextualize(() => {
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
-		attest<{ a: (In: constrain<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
 			types.a.internal.firstReferenceOfKindOrThrow("morph")
 
@@ -740,9 +741,6 @@ contextualize(() => {
 	| { r: 1; n: (In: numeric) => To<number> },
 	{}
 >`)
-
-		const serializedMorphs =
-			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.expression).snap(
 			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number>, r: 1 }"

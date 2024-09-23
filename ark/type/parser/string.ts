@@ -4,9 +4,9 @@ import {
 	throwParseError,
 	type ErrorMessage
 } from "@ark/util"
-import type { ArkAmbient } from "../../config.ts"
-import type { resolutionToAst } from "../../scope.ts"
-import type { inferAstRoot } from "../semantic/infer.ts"
+import type { ArkAmbient } from "../config.ts"
+import type { resolutionToAst } from "../scope.ts"
+import type { inferAstRoot } from "./ast/infer.ts"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
 import type { state, StaticState } from "./reduce/static.ts"

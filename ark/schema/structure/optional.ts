@@ -1,10 +1,20 @@
-import { throwParseError } from "@ark/util"
-import type { declareNode } from "../shared/declare.ts"
+import {
+	hasDomain,
+	omit,
+	printable,
+	throwParseError,
+	unset,
+	type keySetOf
+} from "@ark/util"
+import type { Morph } from "../roots/morph.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseMeta, declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
+import { registeredReference } from "../shared/registry.ts"
 import { BaseProp, intersectProps, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -42,7 +52,13 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 				preserveUndefined: true
 			}
 		},
-		normalize: schema => schema,
+		// safe to spread here as a node will never be passed to normalize
+		normalize: ({ ...schema }, $) => {
+			const value = $.parseSchema(schema.value)
+			schema.value = value
+			if (value.defaultMeta !== unset) schema.default ??= value.defaultMeta
+			return schema
+		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		},
@@ -55,16 +71,76 @@ export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
 		if ("default" in this.inner) {
-			const out = this.value.in(this.inner.default)
-			if (out instanceof ArkErrors) {
-				throwParseError(
-					writeUnassignableDefaultValueMessage(this.serializedKey, out.message)
-				)
-			}
+			assertDefaultValueAssignability(
+				this.value,
+				this.inner.default,
+				this.serializedKey
+			)
 		}
 	}
 
-	expression = `${this.compiledKey}?: ${this.value.expression}`
+	get outProp(): Prop.Node {
+		if (!this.hasDefault()) return this
+		const { default: defaultValue, ...requiredInner } = this.inner
+
+		requiredInner.value = requiredInner.value.withMeta(meta =>
+			omit(meta, optionalValueMetaKeys)
+		)
+
+		return this.cacheGetter(
+			"outProp",
+			this.$.node("required", requiredInner, { prereduced: true }) as never
+		)
+	}
+
+	expression: string = `${this.compiledKey}?: ${this.value.expression}${this.hasDefault() ? ` = ${printable(this.inner.default)}` : ""}`
+
+	defaultValueMorphs: Morph[] = this.computeDefaultValueMorphs()
+
+	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+
+	private computeDefaultValueMorphs(): Morph[] {
+		if (!this.hasDefault()) return []
+
+		const defaultInput = this.default
+
+		if (typeof defaultInput === "function") {
+			return [
+				// if the value has a morph, pipe context through it
+				this.value.includesMorph ?
+					(data, ctx) => {
+						ctx.path.push(this.key)
+						this.value((data[this.key] = defaultInput()), ctx)
+						ctx.path.pop()
+						return data
+					}
+				:	data => {
+						data[this.key] = defaultInput()
+						return data
+					}
+			]
+		}
+
+		// non-functional defaults can be safely cached as long as the morph is
+		// guaranteed to be pure and the output is primitive
+		const precomputedMorphedDefault =
+			this.value.includesMorph ? this.value.assert(defaultInput) : defaultInput
+
+		return [
+			hasDomain(precomputedMorphedDefault, "object") ?
+				// the type signature only allows this if the value was morphed
+				(data, ctx) => {
+					ctx.path.push(this.key)
+					this.value((data[this.key] = defaultInput), ctx)
+					ctx.path.pop()
+					return data
+				}
+			:	data => {
+					data[this.key] = precomputedMorphedDefault
+					return data
+				}
+		]
+	}
 }
 
 export const Optional = {
@@ -72,15 +148,38 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-export const writeUnassignableDefaultValueMessage = <
-	key extends string,
-	message extends string
->(
-	key: key,
-	message: message
-): string => `Default value for key ${key} ${message}`
+const optionalValueMetaKeys: keySetOf<BaseMeta> = {
+	default: 1,
+	optional: 1
+}
+
+export const assertDefaultValueAssignability = (
+	node: BaseRoot,
+	value: unknown,
+	key = ""
+): unknown => {
+	if (hasDomain(value, "object") && typeof value !== "function")
+		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
+
+	const out = node.in(typeof value === "function" ? value() : value)
+	if (out instanceof ArkErrors)
+		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
+
+	return value
+}
+
+export const writeUnassignableDefaultValueMessage = (
+	message: string,
+	key = ""
+): string =>
+	`Default value${key && ` for key ${key}`} is not assignable: ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
 	defaultValue extends string
 > = `Default value ${defaultValue} is not assignable to ${baseDef}`
+
+export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
+	key: string
+): string =>
+	`Default value${key && ` for key ${key}`} is not primitive so it should be specified as a function like () => ({my: 'object'})`

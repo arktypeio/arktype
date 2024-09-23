@@ -1,7 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registry } from "@ark/util"
 import { type } from "arktype"
-import { writeJsonSyntaxErrorProblem } from "arktype/internal/keywords/string/json.ts"
 
 contextualize(() => {
 	it("number", () => {

@@ -8,13 +8,13 @@ import {
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { type } from "arktype"
-import { writeDoubleRightBoundMessage } from "arktype/internal/parser/semantic/bounds.ts"
+import { writeDoubleRightBoundMessage } from "arktype/internal/parser/ast/bounds.ts"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
-} from "arktype/internal/parser/string/reduce/shared.ts"
-import { writeInvalidLimitMessage } from "arktype/internal/parser/string/shift/operator/bounds.ts"
+} from "arktype/internal/parser/reduce/shared.ts"
+import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator/bounds.ts"
 
 contextualize(() => {
 	describe("string expressions", () => {

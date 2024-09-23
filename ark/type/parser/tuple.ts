@@ -26,22 +26,24 @@ import {
 	type ErrorMessage,
 	type show
 } from "@ark/util"
-import type { inferIntersection } from "../intersect.ts"
-import type { type } from "../keywords/ark.ts"
 import type {
-	applyConstraint,
+	applyAttribute,
 	Default,
+	DefaultFor,
 	distill,
+	inferIntersection,
 	inferMorphOut,
 	inferPredicate,
+	InferredOptional,
 	Optional,
-	OptionalAst,
 	Out
-} from "../keywords/ast.ts"
+} from "../keywords/inference.ts"
+import type { type } from "../keywords/keywords.ts"
+import type { PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
-import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
-import type { BaseCompletions } from "./string/string.ts"
+import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
+import type { Scanner } from "./shift/scanner.ts"
+import type { BaseCompletions } from "./string.ts"
 
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
@@ -175,7 +177,7 @@ const maybeParseTupleExpression = (
 // It is *extremely* important we use readonly any time we check a tuple against
 // something like this. Not doing so will always cause the check to fail, since
 // def is declared as a const parameter.
-type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
+type InfixExpression = readonly [unknown, Scanner.InfixToken, ...unknown[]]
 
 export type validateTuple<def extends array, $, args> =
 	def extends IndexZeroExpression ? validatePrefixExpression<def, $, args>
@@ -243,7 +245,7 @@ type preparseNextElement<s extends SequenceParseState, $, args> =
 					optional: false
 					spread: true
 				}>
-			: [t] extends [OptionalAst<infer base>] ?
+			: [t] extends [InferredOptional<infer base>] ?
 				PreparsedElement.from<{
 					head: head
 					tail: tail
@@ -270,7 +272,7 @@ type preparseNextElement<s extends SequenceParseState, $, args> =
 					optional: false
 					spread: false
 				}>
-			: [t] extends [OptionalAst<infer base>] ?
+			: [t] extends [InferredOptional<infer base>] ?
 				PreparsedElement.from<{
 					head: head
 					tail: tail
@@ -376,9 +378,9 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		(In?: inferDefinition<def[0], $, args>) => Default<def[2]>
+		applyAttribute<inferDefinition<def[0], $, args>, Default<def[2]>>
 	: def[1] extends "?" ?
-		applyConstraint<inferDefinition<def[0], $, args>, Optional>
+		applyAttribute<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]
@@ -414,7 +416,7 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: def[1] extends "=" ? type.infer.Out<def[0], $, args>
+			: def[1] extends "=" ? DefaultFor<type.infer.In<def[0], $, args>>
 			: validateDefinition<def[2], $, args>
 		]
 

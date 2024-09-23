@@ -7,6 +7,7 @@ import {
 	parseBound,
 	type ComparatorStartChar
 } from "./bounds.ts"
+import { parseBrand } from "./brand.ts"
 import { parseDivisor } from "./divisor.ts"
 
 export const parseOperator = (s: DynamicStateWithRoot): void => {
@@ -23,6 +24,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 			s.finalize(lookahead)
 		: isKeyOf(lookahead, comparatorStartChars) ? parseBound(s, lookahead)
 		: lookahead === "%" ? parseDivisor(s)
+		: lookahead === "#" ? parseBrand(s)
 		: lookahead in whiteSpaceTokens ? parseOperator(s)
 		: s.error(writeUnexpectedCharacterMessage(lookahead))
 	)
@@ -44,6 +46,7 @@ export type parseOperator<s extends StaticState, $, args> =
 		: lookahead extends ComparatorStartChar ?
 			parseBound<s, lookahead, unscanned, $, args>
 		: lookahead extends "%" ? parseDivisor<s, unscanned>
+		: lookahead extends "#" ? parseBrand<s, unscanned>
 		: lookahead extends WhiteSpaceToken ?
 			parseOperator<state.scanTo<s, unscanned>, $, args>
 		:	state.error<writeUnexpectedCharacterMessage<lookahead>>

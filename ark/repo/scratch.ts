@@ -1,27 +1,22 @@
 import { type } from "arktype"
 
-export const cloudinaryResource = type({
-	"[string]": "unknown",
-	"alt?": "string",
-	"caption?": "string"
+export const disappointingGift = type({
+	label: "string",
+	"box?": "this"
 })
 
-const user = type({
-	name: "string",
-	device: {
-		platform: "'android' | 'ios'",
-		"version?": "number | string"
-	}
-})
+type DisappointingGift = typeof disappointingGift.infer
 
-// ---cut---
-user.extends("object") // true
-user.extends("string") // false
-// true (string is narrower than unknown)
-user.extends({
-	name: "unknown"
-})
-// false (string is wider than "Alan")
-user.extends({
-	name: "'Alan'"
+const giftData: DisappointingGift = {
+	label: "get hyped"
+}
+
+// create a cyclic object
+giftData.box = giftData
+
+const ok = disappointingGift.assert(giftData)
+
+const bad = disappointingGift.assert({
+	label: "foo",
+	box: { label: "bar", box: {} }
 })

@@ -1,10 +1,10 @@
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, To, constrain } from "../ast.ts"
+import type { Branded, To, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {
-	export type json = constrain<string, Branded<"json">>
+	export type json = of<string, Branded<"json">>
 }
 
 const jsonStringDescription = "a JSON string"
@@ -37,7 +37,7 @@ export const json: stringJson.module = arkModule({
 	root,
 	parse: rootSchema({
 		in: "string",
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			if (s.length === 0) {
 				return ctx.error({
 					code: "predicate",

@@ -1,21 +1,22 @@
 import type { GenericAst } from "@ark/schema"
-import type { Hkt, array } from "@ark/util"
-import type { inferIntersection } from "../../intersect.ts"
-import type { arkKeyOf } from "../../keys.ts"
-import type { type } from "../../keywords/ark.ts"
+import type { Hkt, arkKeyOf, array } from "@ark/util"
+import type { Date } from "../../keywords/constructors/Date.ts"
 import type {
+	Branded,
 	Default,
 	LimitLiteral,
 	Optional,
-	applyConstraint,
+	applyAttribute,
 	applyConstraintSchema,
 	distill,
+	inferIntersection,
 	normalizeLimit
-} from "../../keywords/ast.ts"
-import type { Date } from "../../keywords/constructors/Date.ts"
+} from "../../keywords/inference.ts"
+import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
-import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
+import type { Comparator, MinComparator } from "../reduce/shared.ts"
+import type { Scanner } from "../shift/scanner.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
@@ -80,10 +81,13 @@ export type inferExpression<ast, $, args> =
 				inferExpression<ast[2], $, args>
 			>
 		: ast[1] extends "=" ?
-			//  type.infer is safe since the default value is always a literal
+			// unscoped type.infer is safe since the default value is always a literal
+			// as of TS5.6, inlining defaultValue causes a bunch of extra types and instantiations
 			type.infer<ast[2]> extends infer defaultValue ?
-				(In?: inferExpression<ast[0], $, args>) => Default<defaultValue>
+				applyAttribute<inferExpression<ast[0], $, args>, Default<defaultValue>>
 			:	never
+		: ast[1] extends "#" ?
+			applyAttribute<inferExpression<ast[0], $, args>, Branded<ast[2]>>
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
 				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
@@ -99,7 +103,7 @@ export type inferExpression<ast, $, args> =
 				ast[2] & number
 			>
 		: ast[1] extends "?" ?
-			applyConstraint<inferExpression<ast[0], $, args>, Optional>
+			applyAttribute<inferExpression<ast[0], $, args>, Optional>
 		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
 		: never
 	:	never
@@ -140,25 +144,13 @@ export type PrefixExpression<
 	operand = unknown
 > = [operator, operand]
 
-export type PostfixOperator = "[]" | "?"
-
 export type PostfixExpression<
-	operator extends PostfixOperator = PostfixOperator,
+	operator extends Scanner.PostfixToken = Scanner.PostfixToken,
 	operand = unknown
 > = readonly [operand, operator]
 
-export type InfixOperator =
-	| "|"
-	| "&"
-	| Comparator
-	| "%"
-	| ":"
-	| "=>"
-	| "@"
-	| "="
-
 export type InfixExpression<
-	operator extends InfixOperator = InfixOperator,
+	operator extends Scanner.InfixToken = Scanner.InfixToken,
 	l = unknown,
 	r = unknown
 > = [l, operator, r]

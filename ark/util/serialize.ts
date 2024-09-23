@@ -1,7 +1,7 @@
 import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
-import type { dict, Dict } from "./records.ts"
+import type { dict } from "./records.ts"
 import { register } from "./registry.ts"
 
 export type SerializationOptions = {
@@ -9,6 +9,7 @@ export type SerializationOptions = {
 	onSymbol?: (value: symbol) => string
 	onFunction?: (value: Function) => string
 	onUndefined?: string
+	onBigInt?: (value: bigint) => string
 }
 
 export type Json = JsonObject | JsonArray
@@ -25,12 +26,22 @@ export type JsonData = Json | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,
-	opts: SerializationOptions = { onUndefined: "(undefined)" }
-): snapshot<t> => _serialize(data, opts, []) as never
+	opts: SerializationOptions = {}
+): snapshot<t> =>
+	_serialize(
+		data,
+		{
+			onUndefined: `$ark.undefined`,
+			onBigInt: n => `$ark.bigint-${n}`,
+			...opts
+		},
+		[]
+	) as never
 
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown
 	: t extends Primitive ? snapshotPrimitive<t>
+	: t extends { toJSON: () => infer serialized } ? serialized
 	: t extends Function ? `Function(${string})`
 	: t extends Date ? string
 	: depth["length"] extends 10 ? unknown
@@ -39,11 +50,7 @@ export type snapshot<t, depth extends 1[] = []> =
 			[k in keyof t]: snapshot<t[k], [...depth, 1]>
 		}
 
-type snapshotPrimitive<t> =
-	t extends undefined ? "(undefined)"
-	: t extends bigint ? `${t}n`
-	: t extends symbol ? `(symbol${string})`
-	: t
+type snapshotPrimitive<t> = t extends symbol ? `(Symbol${string})` : t
 
 export const print = (data: unknown, indent?: number): void =>
 	console.log(printable(data, indent))
@@ -80,26 +87,27 @@ const _serialize = (
 ): unknown => {
 	switch (domainOf(data)) {
 		case "object": {
-			if (typeof data === "function") return printableOpts.onFunction(data)
+			const o = data as object
+			if ("toJSON" in o && typeof o.toJSON === "function") return o.toJSON()
+			if (typeof o === "function") return printableOpts.onFunction(o)
 
-			if (seen.includes(data)) return "(cycle)"
+			if (seen.includes(o)) return "(cycle)"
 
-			const nextSeen = [...seen, data]
-			if (Array.isArray(data))
-				return data.map(item => _serialize(item, opts, nextSeen))
+			const nextSeen = [...seen, o]
+			if (Array.isArray(o))
+				return o.map(item => _serialize(item, opts, nextSeen))
 
-			if (data instanceof Date) return data.toDateString()
+			if (o instanceof Date) return o.toDateString()
 
 			const result: Record<string, unknown> = {}
-			for (const k in data as Dict)
-				result[k] = _serialize((data as any)[k], opts, nextSeen)
+			for (const k in o) result[k] = _serialize((o as any)[k], opts, nextSeen)
 
 			return result
 		}
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
-			return `${data}n`
+			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
 		default:

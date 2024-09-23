@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeDuplicateAliasError } from "@ark/schema"
 import { scope, type, type BoundModule, type Module, type Type } from "arktype"
-import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/semantic/validate.ts"
+import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/ast/validate.ts"
 
 contextualize(() => {
 	contextualize.each(
@@ -168,7 +168,17 @@ contextualize(() => {
 				xdd: "#kekw",
 				"#kekw": "true"
 			}).export()
-		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("#kekw"))
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("kekw"))
+	})
+
+	it("errors on private reference with # in expression", () => {
+		attest(() =>
+			scope({
+				// @ts-expect-error
+				xdd: "string|#kekw",
+				"#kekw": "true"
+			}).export()
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("kekw"))
 	})
 
 	it("errors on public and private refrence with same name", () => {
@@ -198,5 +208,6 @@ contextualize(() => {
 
 		attest<typeof expected.t>(types.foo.t)
 		attest(types.foo.expression).snap("[string][]")
+		attest(types.foo.expression).equals(expected.expression)
 	})
 })

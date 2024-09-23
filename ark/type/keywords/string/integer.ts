@@ -1,13 +1,13 @@
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
+import type { Branded, of, To } from "../inference.ts"
 import type { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type integer = constrain<string, Branded<"integer">>
+	export type integer = of<string, Branded<"integer">>
 }
 
 const root = regexStringNode(
@@ -19,7 +19,7 @@ export const integer: stringInteger.module = arkModule({
 	root,
 	parse: rootSchema({
 		in: root,
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			const parsed = Number.parseInt(s)
 			return Number.isSafeInteger(parsed) ? parsed : (
 					ctx.error(

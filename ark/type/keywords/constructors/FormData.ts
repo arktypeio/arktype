@@ -1,7 +1,7 @@
 import { rootSchema } from "@ark/schema"
 import { registry } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { To } from "../ast.ts"
+import type { To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 export type FormDataValue = string | File

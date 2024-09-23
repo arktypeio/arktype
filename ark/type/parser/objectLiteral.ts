@@ -27,10 +27,10 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { constrain } from "../keywords/ast.ts"
+import type { of } from "../keywords/inference.ts"
+import type { astToString } from "./ast/utils.ts"
+import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { astToString } from "./semantic/utils.ts"
-import type { validateString } from "./semantic/validate.ts"
 
 export const parseObjectLiteral = (
 	def: Dict,
@@ -118,7 +118,7 @@ export type validateObjectLiteral<def, $, args> = {
 		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
 			// add a nominal type here to avoid allowing the error message as input
 			ErrorType<message>
-		: inferDefinition<indexDef, $, args> extends Key | constrain<Key, {}> ?
+		: inferDefinition<indexDef, $, args> extends Key | of<Key, {}> ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>
@@ -207,23 +207,6 @@ export const parseEntry = (
 				:	normalized.index
 			:	(normalized.required ?? [])
 		)
-	}
-
-	if (parsedValue.meta) {
-		if ("default" in parsedValue.meta) {
-			return ctx.$.node("optional", {
-				key: parsedKey.key,
-				value: parsedValue,
-				default: parsedValue.meta.default
-			})
-		}
-
-		if (parsedValue.meta.optional) {
-			return ctx.$.node("optional", {
-				key: parsedKey.key,
-				value: parsedValue
-			})
-		}
 	}
 
 	return ctx.$.node(parsedKey.kind, {

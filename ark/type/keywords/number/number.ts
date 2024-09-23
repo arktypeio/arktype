@@ -1,13 +1,14 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
+	BaseAttributes,
 	Branded,
-	constrain,
 	constraint,
-	Constraints,
+	Default,
 	Narrowed,
+	of,
 	Optional
-} from "../ast.ts"
+} from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"
@@ -51,21 +52,32 @@ export type DivisibleBy<rule> = {
 }
 
 export declare namespace number {
-	export type atLeast<rule> = constrain<number, AtLeast<rule>>
+	export type atLeast<rule> = of<number, AtLeast<rule>>
 
-	export type moreThan<rule> = constrain<number, MoreThan<rule>>
+	export type moreThan<rule> = of<number, MoreThan<rule>>
 
-	export type atMost<rule> = constrain<number, AtMost<rule>>
+	export type atMost<rule> = of<number, AtMost<rule>>
 
-	export type lessThan<rule> = constrain<number, LessThan<rule>>
+	export type lessThan<rule> = of<number, LessThan<rule>>
 
-	export type divisibleBy<rule> = constrain<number, DivisibleBy<rule>>
+	export type divisibleBy<rule> = of<number, DivisibleBy<rule>>
 
-	export type narrowed = constrain<number, Narrowed>
+	export type narrowed = of<number, Narrowed>
 
-	export type optional = constrain<number, Optional>
+	export type optional = of<number, Optional>
 
-	export type branded<rule> = constrain<number, Branded<rule>>
+	export type defaultsTo<rule> = of<number, Default<rule>>
+
+	export type branded<rule> = of<number, Branded<rule>>
+
+	interface ownConstraints
+		extends AtLeast<number>,
+			MoreThan<number>,
+			LessThan<number>,
+			AtMost<number>,
+			DivisibleBy<number> {}
+
+	export interface Attributes extends BaseAttributes, Partial<ownConstraints> {}
 
 	export type NaN = branded<"NaN">
 
@@ -75,10 +87,7 @@ export declare namespace number {
 
 	export type safe = branded<"safe">
 
-	export type is<constraints extends Constraints> = constrain<
-		number,
-		constraints
-	>
+	export type is<attributes> = of<number, attributes>
 
 	export type minSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>
@@ -86,14 +95,15 @@ export declare namespace number {
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	export type withConstraint<constraint> =
-		constraint extends MoreThan<infer rule> ? moreThan<rule>
-		: constraint extends AtLeast<infer rule> ? atLeast<rule>
-		: constraint extends AtMost<infer rule> ? atMost<rule>
-		: constraint extends LessThan<infer rule> ? lessThan<rule>
-		: constraint extends DivisibleBy<infer rule> ? divisibleBy<rule>
-		: constraint extends Optional ? optional
-		: constraint extends Narrowed ? narrowed
+	export type applyAttribute<attribute> =
+		attribute extends MoreThan<infer rule> ? moreThan<rule>
+		: attribute extends AtLeast<infer rule> ? atLeast<rule>
+		: attribute extends AtMost<infer rule> ? atMost<rule>
+		: attribute extends LessThan<infer rule> ? lessThan<rule>
+		: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
+		: attribute extends Optional ? optional
+		: attribute extends Default<infer rule> ? defaultsTo<rule>
+		: attribute extends Branded<infer rule> ? branded<rule>
 		: never
 
 	export type module = Module<submodule>

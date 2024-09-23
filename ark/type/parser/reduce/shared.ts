@@ -1,4 +1,4 @@
-import type { LimitLiteral } from "../../../keywords/ast.ts"
+import type { LimitLiteral } from "../../keywords/inference.ts"
 
 export type StringifiablePrefixOperator = "keyof"
 

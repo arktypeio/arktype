@@ -38,9 +38,17 @@ attest({ re: "dew" }, { cfg: { updateSnapshots: true } }).snap({ re: "dew" })
 // @ts-expect-error (using internal updateSnapshots hook)
 attest(5, { cfg: { updateSnapshots: true } }).snap(5)
 
-attest(undefined).snap("(undefined)")
+attest(5n).snap(5n)
 
-attest({ a: undefined }).snap({ a: "(undefined)" })
+attest(-5n).snap(-5n)
+
+attest({ a: 4n }).snap({ a: 4n })
+
+attest(undefined).snap(undefined)
+
+attest("undefined").snap("undefined")
+
+attest({ a: undefined }).snap({ a: undefined })
 
 attest("multiline\nmultiline").snap(`multiline
 multiline`)
@@ -62,8 +70,8 @@ attest({
 const it = (name: string, fn: () => void) => fn()
 
 it("can snap instantiations", () => {
-	type Z = makeComplexType<"asbsdfsaodisfhsda">
 	attest.instantiations([229, "instantiations"])
+	return {} as makeComplexType<"asbsdfsaodisfhsda">
 })
 
 cleanup()

@@ -4,15 +4,15 @@ import type {
 	AtLeastLength,
 	AtMostLength,
 	Branded,
-	Constraints,
+	Default,
 	ExactlyLength,
 	LessThanLength,
 	MoreThanLength,
 	Narrowed,
 	Optional,
-	constrain,
-	constraint
-} from "../ast.ts"
+	constraint,
+	of
+} from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
@@ -60,38 +60,38 @@ export type Matching<rule> = {
 }
 
 export declare namespace string {
-	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
+	export type atLeastLength<rule> = of<string, AtLeastLength<rule>>
 
-	export type moreThanLength<rule> = constrain<string, MoreThanLength<rule>>
+	export type moreThanLength<rule> = of<string, MoreThanLength<rule>>
 
-	export type atMostLength<rule> = constrain<string, AtMostLength<rule>>
+	export type atMostLength<rule> = of<string, AtMostLength<rule>>
 
-	export type lessThanLength<rule> = constrain<string, LessThanLength<rule>>
+	export type lessThanLength<rule> = of<string, LessThanLength<rule>>
 
-	export type exactlyLength<rule> = constrain<string, ExactlyLength<rule>>
+	export type exactlyLength<rule> = of<string, ExactlyLength<rule>>
 
-	export type matching<rule> = constrain<string, Matching<rule>>
+	export type matching<rule> = of<string, Matching<rule>>
 
-	export type narrowed = constrain<string, Narrowed>
+	export type narrowed = of<string, Narrowed>
 
-	export type optional = constrain<string, Optional>
+	export type optional = of<string, Optional>
 
-	export type branded<rule> = constrain<string, Branded<rule>>
+	export type defaultsTo<rule> = of<string, Default<rule>>
 
-	export type is<constraints extends Constraints> = constrain<
-		string,
-		constraints
-	>
+	export type branded<rule> = of<string, Branded<rule>>
 
-	export type withConstraint<constraint> =
-		constraint extends ExactlyLength<infer rule> ? exactlyLength<rule>
-		: constraint extends MoreThanLength<infer rule> ? moreThanLength<rule>
-		: constraint extends AtLeastLength<infer rule> ? atLeastLength<rule>
-		: constraint extends AtMostLength<infer rule> ? atMostLength<rule>
-		: constraint extends LessThanLength<infer rule> ? lessThanLength<rule>
-		: constraint extends Matching<infer rule> ? matching<rule>
-		: constraint extends Optional ? optional
-		: constraint extends Narrowed ? narrowed
+	export type is<attributes> = of<string, attributes>
+
+	export type applyAttribute<attribute> =
+		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
+		: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
+		: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
+		: attribute extends AtMostLength<infer rule> ? atMostLength<rule>
+		: attribute extends LessThanLength<infer rule> ? lessThanLength<rule>
+		: attribute extends Matching<infer rule> ? matching<rule>
+		: attribute extends Optional ? optional
+		: attribute extends Default<infer rule> ? defaultsTo<rule>
+		: attribute extends Branded<infer rule> ? branded<rule>
 		: never
 
 	export type module = Module<string.submodule>

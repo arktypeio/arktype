@@ -1,18 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	registeredReference,
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
-import type { string } from "arktype/internal/keywords/ast.ts"
-import {
-	writeInvalidSpreadTypeMessage,
-	writeInvalidUndeclaredBehaviorMessage
-} from "arktype/internal/parser/objectLiteral.ts"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	it("string index", () => {

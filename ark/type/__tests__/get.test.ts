@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
-import { ark, type } from "arktype"
-import type { constrain, string } from "arktype/internal/keywords/ast.ts"
+import { keywords, type } from "arktype"
+import type { of, string } from "arktype/internal/keywords/inference.ts"
 import type { Matching } from "arktype/internal/keywords/string/string.ts"
 
 contextualize(() => {
@@ -97,9 +97,7 @@ contextualize(() => {
 		}>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
-		const d = t.get(
-			"foof" as constrain<"foof", Matching<"^f"> & Matching<"f$">>
-		)
+		const d = t.get("foof" as of<"foof", Matching<"^f"> & Matching<"f$">>)
 		// should include { c: 1 } as well but it seems TS can't infer it for now
 		attest<
 			{
@@ -142,20 +140,20 @@ contextualize(() => {
 			writeInvalidKeysMessage(t.expression, ["5.5"])
 		)
 
-		attest(t.get(ark.Array.index).expression).snap("string | undefined")
+		attest(t.get(keywords.Array.index).expression).snap("string | undefined")
 	})
 
 	it("number access on non-variadic", () => {
 		const t = type({ foo: "number" }).array()
 
 		// @ts-expect-error
-		attest(() => t.get(ark.number.root)).throws(
+		attest(() => t.get(keywords.number.root)).throws(
 			writeNumberIndexMessage("number", t.expression)
 		)
 
 		// number subtype
 		// @ts-expect-error
-		attest(() => t.get(ark.number.integer)).throws(
+		attest(() => t.get(keywords.number.integer)).throws(
 			writeNumberIndexMessage("number % 1", t.expression)
 		)
 	})
@@ -204,16 +202,16 @@ contextualize(() => {
 			}
 		})
 
-		const bar = t.get("foo", ark.symbol, "bar")
+		const bar = t.get("foo", keywords.symbol, "bar")
 		attest<1>(bar.t)
 		attest(bar.expression).snap("undefined | 1")
 
-		const baz = t.get("foo", ark.symbol, "baz")
+		const baz = t.get("foo", keywords.symbol, "baz")
 		attest<2 | undefined>(baz.t)
 		attest(baz.expression).snap("undefined | 2")
 
 		// @ts-expect-error
-		attest(() => t.get("foo", ark.symbol, "")).completions({
+		attest(() => t.get("foo", keywords.symbol, "")).completions({
 			"": ["bar", "baz"]
 		})
 	})

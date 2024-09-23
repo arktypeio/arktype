@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { intrinsic, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
 
 contextualize(() => {
 	describe("parse", () => {
