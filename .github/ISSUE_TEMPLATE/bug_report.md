@@ -21,6 +21,11 @@ assignees: "ssalbdivad"
 - TypeScript version (5.1+):
 - Other context you think may be relevant (JS flavor, OS, etc.):
 
+<!--
+  For an easy way to generate this information, run
+  `npx envinfo --system --binaries --npmPackages "{arktype,@ark/*,typescript}" --fullTree`
+-->
+
 ### 🧑‍💻 Repro
 
 <!--
