@@ -163,4 +163,14 @@ contextualize(() => {
 
 		t satisfies Type
 	})
+
+	it("assert callable as standalone function", () => {
+		const { assert } = type("string")
+
+		attest<(data: unknown) => string>(assert)
+		attest(assert("foo")).equals("foo")
+		attest(() => assert(5)).throws.snap(
+			"AggregateError: must be a string (was a number)"
+		)
+	})
 })
