@@ -5,6 +5,8 @@ import type {
 	JsonSchema,
 	MetaSchema,
 	Morph,
+	PredicateCast,
+	Predicate as PredicateFn,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -20,6 +22,7 @@ import type { ArkAmbient } from "../config.ts"
 import type {
 	applyAttribute,
 	applyBrand,
+	applyConstraintSchema,
 	Default,
 	DefaultFor,
 	distill,
@@ -51,7 +54,9 @@ interface Type<out t = unknown, $ = {}>
 		[o] extends [anyOrNever] ? true
 		: o extends To ? true
 		: false
-	:	true
+	: // special-case unknown here to preserve assignability
+	unknown extends t ? boolean
+	: true
 
 	json: Json
 	toJSON(): Json
@@ -104,6 +109,17 @@ interface Type<out t = unknown, $ = {}>
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<t | r, $>
+
+	narrow<
+		narrowed extends this["infer"] = never,
+		r = [narrowed] extends [never] ?
+			applyConstraintSchema<t, "predicate", PredicateFn>
+		:	narrowed
+	>(
+		predicate:
+			| PredicateFn<this["infer"]>
+			| PredicateCast<this["infer"], narrowed>
+	): instantiateType<r, $>
 
 	array(): ArrayType<t[], $>
 

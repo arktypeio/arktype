@@ -164,6 +164,12 @@ contextualize(() => {
 		t satisfies Type
 	})
 
+	it("allows morph assignment to unparameterized Type", () => {
+		const t = type("string").pipe(s => s.length)
+
+		t satisfies Type
+	})
+
 	it("assert callable as standalone function", () => {
 		const { assert } = type("string")
 

@@ -258,4 +258,10 @@ contextualize(() => {
 		// this predicate is evaluated and pruned
 		attest(t.expression).equals("5")
 	})
+
+	it("unknown is narrowable", () => {
+		const t = type("unknown").narrow(() => true)
+		attest(t.t).type.toString.snap("of<unknown, Narrowed>")
+		attest(t.expression).snap("unknown")
+	})
 })
