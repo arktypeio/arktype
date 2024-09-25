@@ -7,7 +7,6 @@ import type { MorphType } from "./morph.ts"
 import type { NumberType } from "./number.ts"
 import type { ObjectType } from "./object.ts"
 import type { StringType } from "./string.ts"
-import type { ValidatorType } from "./validator.ts"
 
 export type instantiateType<t, $> =
 	NoInfer<_instantiateType<t, $>> extends infer r ? r : never
@@ -23,6 +22,5 @@ export type _instantiateType<t, $> =
 			[t] extends [array] ? ArrayType<t, $>
 			: [t] extends [Date] ? DateType<t, $>
 			: ObjectType<t, $>
-		: unknown extends t ? BaseType<unknown, $>
-		: ValidatorType<t, $>
+		:	BaseType<t, $>
 	:	MorphType<t, $>

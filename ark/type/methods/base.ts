@@ -31,6 +31,7 @@ import type {
 	inferPipes,
 	InferredMorph,
 	Optional,
+	Out,
 	Predicate,
 	To
 } from "../keywords/inference.ts"
@@ -113,7 +114,15 @@ interface Type<out t = unknown, $ = {}>
 	narrow<
 		narrowed extends this["infer"] = never,
 		r = [narrowed] extends [never] ?
-			applyConstraintSchema<t, "predicate", PredicateFn>
+			t extends InferredMorph<infer i, infer o> ?
+				o extends To ?
+					(In: i) => To<applyConstraintSchema<o[1], "predicate", PredicateFn>>
+				:	(In: i) => Out<applyConstraintSchema<o[1], "predicate", PredicateFn>>
+			:	applyConstraintSchema<t, "predicate", PredicateFn>
+		: t extends InferredMorph<infer i, infer o> ?
+			o extends To ?
+				(In: i) => To<narrowed>
+			:	(In: i) => Out<narrowed>
 		:	narrowed
 	>(
 		predicate:

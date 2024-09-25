@@ -27,12 +27,11 @@ import type {
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
+import type { BaseType } from "./base.ts"
 import type { instantiateType } from "./instantiate.ts"
-import type { ValidatorType } from "./validator.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends object = object, $ = {}>
-	extends ValidatorType<t, $> {
+interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
 	:	Type<{ readonly [k in keyof t]: t[k] }, $>
 
