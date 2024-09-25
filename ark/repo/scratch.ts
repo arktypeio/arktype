@@ -1,22 +1,9 @@
 import { type } from "arktype"
 
-export const disappointingGift = type({
-	label: "string#label",
-	"box?": "this"
-})
+const out = type("string.lower").to("string.trim").to("'success'")("Success") //?
 
-type DisappointingGift = typeof disappointingGift.infer
+const tt = type("string.lower").to("string.trim").to("'success'")
 
-const giftData: DisappointingGift = {
-	label: "get hyped"
-}
+console.log(tt.json)
 
-// create a cyclic object
-giftData.box = giftData
-
-const ok = disappointingGift.assert(giftData)
-
-const bad = disappointingGift.assert({
-	label: "foo",
-	box: { label: "bar", box: {} }
-})
+const out2 = "success " //?
