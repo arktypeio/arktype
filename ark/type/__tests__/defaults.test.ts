@@ -71,6 +71,13 @@ contextualize(() => {
 			)
 		})
 
+		it("tuple with default", () => {
+			const o = type(["string", ["number", "=", 5]])
+
+			attest<[string, number?]>(o.inferIn)
+			attest<[string, number]>(o.infer)
+		})
+
 		it("defined with wrong type", () => {
 			attest(() =>
 				// @ts-expect-error
