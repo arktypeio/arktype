@@ -49,6 +49,8 @@ attest({
 	type: "ark"
 } as const).type.toString.snap()
 
+attest({ [Symbol("mySymbol")]: 1 }).snap()
+
 const it = (name: string, fn: () => void) => fn()
 
 it("can snap instantiations", () => {

@@ -67,6 +67,8 @@ attest({
 	readonly type: "ark"
 }`)
 
+attest({ [Symbol("mySymbol")]: 1 }).snap({ "Symbol(mySymbol)": 1 })
+
 const it = (name: string, fn: () => void) => fn()
 
 it("can snap instantiations", () => {
