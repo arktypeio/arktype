@@ -130,6 +130,18 @@ interface Type<out t = unknown, $ = {}>
 			| PredicateCast<this["infer"], narrowed>
 	): instantiateType<r, $>
 
+	satisfying<
+		narrowed extends this["inferIn"] = never,
+		r = [narrowed] extends [never] ?
+			applyConstraintSchema<t, "predicate", PredicateFn>
+		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
+		: narrowed
+	>(
+		predicate:
+			| PredicateFn<this["inferIn"]>
+			| PredicateCast<this["inferIn"], narrowed>
+	): instantiateType<r, $>
+
 	array(): ArrayType<t[], $>
 
 	pipe: ChainedPipes<t, $>
