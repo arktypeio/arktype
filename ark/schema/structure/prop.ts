@@ -8,14 +8,13 @@ import {
 	type DeepNodeTransformContext,
 	type FlatRef
 } from "../node.ts"
-import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { IntersectionContext, RootKind } from "../shared/implement.ts"
 import { intersectNodes } from "../shared/intersections.ts"
-import { $ark, registeredReference } from "../shared/registry.ts"
+import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import type { Optional } from "./optional.ts"
 import type { Required } from "./required.ts"
@@ -30,7 +29,8 @@ export declare namespace Prop {
 		readonly value: RootSchema
 	}
 
-	export interface Inner extends Schema {
+	export interface Inner {
+		readonly key: Key
 		readonly value: BaseRoot
 	}
 
@@ -121,19 +121,8 @@ export abstract class BaseProp<
 		return result
 	}
 
-	private defaultValueMorphs: Morph[] = [
-		data => {
-			data[this.key] = (this as Optional.Node).default
-			return data
-		}
-	]
-
-	private defaultValueMorphsReference = registeredReference(
-		this.defaultValueMorphs
-	)
-
 	hasDefault(): this is Optional.Node & { default: unknown } {
-		return "default" in this
+		return "default" in this.inner
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
@@ -153,8 +142,7 @@ export abstract class BaseProp<
 			this.value.traverseApply((data as any)[this.key], ctx)
 			ctx.path.pop()
 		} else if (this.hasKind("required")) ctx.error(this.errorContext)
-		else if (this.hasKind("optional") && this.hasDefault())
-			ctx.queueMorphs(this.defaultValueMorphs)
+		else if (this.hasDefault()) ctx.queueMorphs(this.defaultValueMorphs)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -168,7 +156,7 @@ export abstract class BaseProp<
 					return js.line(`ctx.error(${this.compiledErrorContext})`)
 				else return js.return(false)
 			})
-		} else if (js.traversalKind === "Apply" && "default" in this) {
+		} else if (js.traversalKind === "Apply" && this.hasDefault()) {
 			js.else(() =>
 				js.line(`ctx.queueMorphs(${this.defaultValueMorphsReference})`)
 			)

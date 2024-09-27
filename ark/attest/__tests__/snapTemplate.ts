@@ -26,7 +26,15 @@ attest({ re: "dew" }, { cfg: { updateSnapshots: true } }).snap({ re: "do" })
 // @ts-expect-error (using internal updateSnapshots hook)
 attest(5, { cfg: { updateSnapshots: true } }).snap(6)
 
+attest(5n).snap()
+
+attest(-5n).snap()
+
+attest({ a: 4n }).snap()
+
 attest(undefined).snap()
+
+attest("undefined").snap()
 
 attest({ a: undefined }).snap()
 
@@ -41,11 +49,13 @@ attest({
 	type: "ark"
 } as const).type.toString.snap()
 
+attest({ [Symbol("mySymbol")]: 1 }).snap()
+
 const it = (name: string, fn: () => void) => fn()
 
 it("can snap instantiations", () => {
-	type Z = makeComplexType<"asbsdfsaodisfhsda">
 	attest.instantiations()
+	return {} as makeComplexType<"asbsdfsaodisfhsda">
 })
 
 cleanup()

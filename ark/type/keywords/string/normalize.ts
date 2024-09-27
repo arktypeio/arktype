@@ -1,17 +1,17 @@
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { flatMorph } from "@ark/util"
-import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import type { Module, Submodule } from "../../module.ts"
+import type { Branded, of, To } from "../inference.ts"
+import { arkModule } from "../utils.ts"
 
 declare namespace string {
 	export type normalized = normalized.NFC
 
 	export namespace normalized {
-		export type NFC = constrain<string, Branded<"normalized.NFC">>
-		export type NFD = constrain<string, Branded<"normalized.NFD">>
-		export type NFKC = constrain<string, Branded<"normalized.NFKC">>
-		export type NFKD = constrain<string, Branded<"normalized.NFKD">>
+		export type NFC = of<string, Branded<"normalized.NFC">>
+		export type NFD = of<string, Branded<"normalized.NFD">>
+		export type NFKC = of<string, Branded<"normalized.NFKC">>
+		export type NFKD = of<string, Branded<"normalized.NFKD">>
 	}
 }
 
@@ -24,7 +24,7 @@ const preformattedNodes = flatMorph(
 	(i, form) =>
 		[
 			form,
-			rootNode({
+			rootSchema({
 				domain: "string",
 				predicate: (s: string) => s.normalize(form) === s,
 				meta: `${form}-normalized unicode`
@@ -37,7 +37,7 @@ const normalizeNodes = flatMorph(
 	(i, form) =>
 		[
 			form,
-			rootNode({
+			rootSchema({
 				in: "string",
 				morphs: (s: string) => s.normalize(form),
 				declaredOut: preformattedNodes[form]
@@ -45,58 +45,80 @@ const normalizeNodes = flatMorph(
 		] as const
 )
 
-export type NFC = Submodule<{
-	$root: (In: string) => To<string.normalized.NFC>
-	preformatted: string.normalized.NFC
-}>
-
-export const NFC = submodule({
-	$root: normalizeNodes.NFC,
+export const NFC = arkModule({
+	root: normalizeNodes.NFC,
 	preformatted: preformattedNodes.NFC
 })
 
-export type NFD = Submodule<{
-	$root: (In: string) => To<string.normalized.NFD>
-	preformatted: string.normalized.NFD
-}>
-
-export const NFD = submodule({
-	$root: normalizeNodes.NFD,
+export const NFD = arkModule({
+	root: normalizeNodes.NFD,
 	preformatted: preformattedNodes.NFD
 })
 
-export type NFKC = Submodule<{
-	$root: (In: string) => To<string.normalized.NFKC>
-	preformatted: string.normalized.NFKC
-}>
-
-export const NFKC = submodule({
-	$root: normalizeNodes.NFKC,
+export const NFKC = arkModule({
+	root: normalizeNodes.NFKC,
 	preformatted: preformattedNodes.NFKC
 })
 
-export type NFKD = Submodule<{
-	$root: (In: string) => To<string.normalized.NFKD>
-	preformatted: string.normalized.NFKD
-}>
-
-export const NFKD = submodule({
-	$root: normalizeNodes.NFKD,
+export const NFKD = arkModule({
+	root: normalizeNodes.NFKD,
 	preformatted: preformattedNodes.NFKD
 })
 
-export const normalize = submodule({
-	$root: "NFC",
+export const normalize = arkModule({
+	root: "NFC",
 	NFC,
 	NFD,
 	NFKC,
 	NFKD
 })
 
-export type normalize = Submodule<{
-	$root: (In: string) => To<string.normalized.NFC>
-	NFC: NFC
-	NFD: NFD
-	NFKC: NFKC
-	NFKD: NFKD
-}>
+export declare namespace normalize {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: (In: string) => To<string.normalized.NFC>
+		NFC: NFC.submodule
+		NFD: NFD.submodule
+		NFKC: NFKC.submodule
+		NFKD: NFKD.submodule
+	}
+
+	export namespace NFC {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			root: (In: string) => To<string.normalized.NFC>
+			preformatted: string.normalized.NFC
+		}
+	}
+
+	export namespace NFD {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			root: (In: string) => To<string.normalized.NFD>
+			preformatted: string.normalized.NFD
+		}
+	}
+
+	export namespace NFKC {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			root: (In: string) => To<string.normalized.NFKC>
+			preformatted: string.normalized.NFKC
+		}
+	}
+
+	export namespace NFKD {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			root: (In: string) => To<string.normalized.NFKD>
+			preformatted: string.normalized.NFKD
+		}
+	}
+}

@@ -1,8 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/string/shift/operand/enclosed.ts"
-import { writeExpressionExpectedMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
+import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/shift/operand/enclosed.ts"
+import { writeExpressionExpectedMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("errors on empty string", () => {
@@ -12,9 +12,10 @@ contextualize(() => {
 
 	it("ignores whitespace between identifiers/operators", () => {
 		const t = type(`  \n   string  |
-    \tboolean    []   `)
-		attest<string | boolean[]>(t.infer)
-		attest(t.json).equals(type("string|boolean[]").json)
+           number
+    \t|boolean    []   `)
+		attest<string | number | boolean[]>(t.infer)
+		attest(t.json).equals(type("string|number|boolean[]").json)
 	})
 
 	it("errors on bad whitespace", () => {

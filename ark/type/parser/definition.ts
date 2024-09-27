@@ -1,4 +1,4 @@
-import { hasArkKind, type BaseRoot } from "@ark/schema"
+import { hasArkKind, type BaseParseContext, type BaseRoot } from "@ark/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -12,21 +12,21 @@ import {
 	type array,
 	type defined,
 	type equals,
+	type ifEmptyObjectLiteral,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
-import type { type } from "../keywords/ark.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { string } from "../keywords/string/string.ts"
-import type { ParseContext } from "../scope.ts"
+import type { validateString } from "./ast/validate.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.ts"
-import type { validateString } from "./semantic/validate.ts"
-import type { BaseCompletions, inferString } from "./string/string.ts"
+import type { BaseCompletions, inferString } from "./string.ts"
 import {
 	parseTuple,
 	type TupleExpression,
@@ -34,7 +34,7 @@ import {
 	type validateTuple
 } from "./tuple.ts"
 
-export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
+export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
@@ -66,13 +66,10 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
-		{} extends t ?
-			[t] extends [anyOrNever] ?
-				t
-			:	// unlike in TS, ArkType object literals are constrained to object
-				// so we use that as the base type inferred when parsing {}
-				object
-		:	t
+		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
+		// Unlike in TS however, ArkType object literals are constrained to object
+		// so we use that as the base type inferred when parsing {}.
+		ifEmptyObjectLiteral<def, object, t>
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
@@ -92,7 +89,8 @@ export type validateDefinition<def, $, args> =
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
 		BaseCompletions<$, args> | {}
-	:	validateObjectLiteral<def, $, args>
+	: RegExp extends def ? def
+	: validateObjectLiteral<def, $, args>
 
 export type validateDeclared<declared, def, $, args> =
 	def extends validateDefinition<def, $, args> ?
@@ -137,7 +135,7 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | type.cast<unknown> | Fn
+type Terminal = type.cast<unknown> | Fn
 
 export type ThunkCast<t = unknown> = () => type.cast<t>
 

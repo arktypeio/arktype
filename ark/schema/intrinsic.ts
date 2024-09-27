@@ -67,21 +67,6 @@ const intrinsicJson = schemaScope(
 	{ prereducedAliases: true }
 ).export()
 
-// reduce union of all possible values reduces to unknown
-node(
-	"union",
-	{
-		branches: [
-			...intrinsicJson.jsonPrimitive.branches,
-			"object",
-			"bigint",
-			"symbol",
-			{ unit: undefined }
-		]
-	},
-	{ reduceTo: node("intersection", {}, { prereduced: true }) }
-)
-
 export const intrinsic = {
 	...intrinsicBases,
 	...intrinsicRoots,

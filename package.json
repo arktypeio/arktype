@@ -16,10 +16,11 @@
 	"private": true,
 	"scripts": {
 		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm bench && pnpm testTsVersions",
-		"attest": "pnpm tsx ./ark/attest/cli/cli.ts",
+		"attest": "ts ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"rmBuild": "pnpm -r exec rm -rf out",
+		"ts": "node ./ark/repo/ts.js",
 		"tsc": "node ./node_modules/typescript/lib/tsc.js",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
@@ -27,42 +28,45 @@
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
 		"testTsVersions": "pnpm testTyped --tsconfig null --tsVersions '*' --compilerOptions '{ \"strictNullChecks\": true }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
+		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
 		"benchOperator": "ts ./ark/type/__tests__/operator.bench.ts",
 		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
-		"lint": "prettier --check . && eslint --max-warnings=0 .",
+		"lint": "pnpm checkPrettier && pnpm checkEslint",
+		"checkPrettier": "prettier --check .",
+		"checkEslint": "eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
-		"ci:publish": "ts ./ark/repo/publish.ts"
+		"latest": "pnpm -r up --latest",
+		"ci:publish": "ts ./ark/repo/publish.ts",
+		"publishExtension": "cd ark/dark && pnpm publishExtension",
+		"upDeps": "pnpm up -r --latest"
 	},
 	"devDependencies": {
 		"@ark/attest": "workspace:*",
+		"@ark/attest-ts-min": "catalog:",
+		"@ark/attest-ts-next": "catalog:",
 		"@ark/fs": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@types/mocha": "10.0.7",
-		"@types/node": "22.5.0",
-		"@typescript-eslint/eslint-plugin": "8.2.0",
-		"@typescript-eslint/parser": "8.2.0",
+		"@eslint/js": "9.10.0",
+		"@types/mocha": "10.0.8",
+		"@types/node": "22.5.5",
 		"arktype": "workspace:*",
 		"c8": "10.1.2",
-		"eslint": "8.57.0",
-		"eslint-config-prettier": "9.1.0",
-		"eslint-define-config": "2.1.0",
-		"eslint-import-resolver-typescript": "3.6.1",
-		"eslint-plugin-import": "2.29.1",
-		"eslint-plugin-mdx": "3.1.5",
+		"eslint": "9.10.0",
+		"eslint-plugin-import": "2.30.0",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.4.1",
-		"knip": "5.27.3",
+		"knip": "5.30.2",
 		"mocha": "10.7.3",
 		"prettier": "3.3.3",
-		"tsx": "4.17.0",
+		"prettier-plugin-astro": "0.14.1",
+		"tsx": "4.19.1",
 		"typescript": "catalog:",
-		"typescript-min": "npm:typescript@5.1.5",
-		"typescript-nightly": "npm:typescript@5.7.0-dev.20240822"
+		"typescript-eslint": "8.6.0"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
@@ -91,10 +95,25 @@
 		"semi": false,
 		"trailingComma": "none",
 		"experimentalTernaries": true,
-		"arrowParens": "avoid"
+		"arrowParens": "avoid",
+		"plugins": [
+			"prettier-plugin-astro"
+		],
+		"overrides": [
+			{
+				"files": "*.astro",
+				"options": {
+					"parser": "astro"
+				}
+			}
+		]
 	},
-	"eslintConfig": {
-		"extends": "./ark/repo/.eslintrc.cjs"
+	"pnpm": {
+		"peerDependencyRules": {
+			"allowedVersions": {
+				"eslint": "*"
+			}
+		}
 	},
-	"packageManager": "pnpm@9.8.0+sha512.8e4c3550fb500e808dbc30bb0ce4dd1eb614e30b1c55245f211591ec2cdf9c611cabd34e1364b42f564bd54b3945ed0f49d61d1bbf2ec9bd74b866fcdc723276"
+	"packageManager": "pnpm@9.9.0"
 }

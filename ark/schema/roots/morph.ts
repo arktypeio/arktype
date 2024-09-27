@@ -6,13 +6,14 @@ import {
 	type listable,
 	type mutable
 } from "@ark/util"
-import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import type { RootSchema } from "../kinds.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
-	type nodeImplementationOf
+	type nodeImplementationOf,
+	type RootKind
 } from "../shared/implement.ts"
 import { intersectNodes } from "../shared/intersections.ts"
 import {
@@ -26,27 +27,21 @@ import type {
 	TraverseApply
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
-import { BaseRoot, type schemaKindRightOf } from "./root.ts"
+import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Morph {
-	export type ChildKind = schemaKindRightOf<"morph"> | "alias"
-
-	export type ChildNode = nodeOfKind<ChildKind>
-
-	export type ChildSchema = NodeSchema<ChildKind>
-
 	export interface Inner {
-		readonly in?: ChildNode
+		readonly in?: BaseRoot
 		readonly morphs: array<Morph | BaseRoot>
-		readonly declaredIn?: ChildNode
+		readonly declaredIn?: BaseRoot
 		readonly declaredOut?: BaseRoot
 	}
 
 	export interface Schema extends BaseNormalizedSchema {
-		readonly in?: ChildSchema
+		readonly in?: RootSchema
 		readonly morphs: listable<Morph | BaseRoot>
-		readonly declaredIn?: ChildNode
+		readonly declaredIn?: BaseRoot
 		readonly declaredOut?: BaseRoot
 	}
 
@@ -56,19 +51,11 @@ export declare namespace Morph {
 			schema: Schema
 			normalizedSchema: Schema
 			inner: Inner
-			childKind: ChildKind
+			childKind: RootKind
 		}> {}
 
 	export type Node = MorphNode
 }
-
-const morphChildKinds: array<Morph.ChildKind> = [
-	"alias",
-	"intersection",
-	"unit",
-	"domain",
-	"proto"
-]
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -79,7 +66,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		keys: {
 			in: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.node(morphChildKinds, schema)
+				parse: (schema, ctx) => ctx.$.parseSchema(schema)
 			},
 			morphs: {
 				parse: liftArray,
@@ -136,9 +123,9 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 					inBranch =>
 						ctx.$.node("morph", {
 							...baseInner,
-							in: inBranch as Morph.ChildNode
+							in: inBranch
 						}),
-					ctx.$.rootNode
+					ctx.$.parseSchema
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
@@ -147,9 +134,9 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 						inTersection.distribute(
 							branch => ({
 								...l.inner,
-								in: branch as Morph.ChildNode
+								in: branch
 							}),
-							ctx.$.rootNode
+							ctx.$.parseSchema
 						)
 					)
 			})
@@ -161,28 +148,26 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	compiledMorphs = `[${this.serializedMorphs}]`
 
 	lastMorph = this.inner.morphs.at(-1)
-	validatedIn: BaseRoot | undefined = this.inner.in
-	validatedOut: BaseRoot | undefined =
+	introspectableIn: BaseRoot | undefined = this.inner.in
+	introspectableOut: BaseRoot | undefined =
 		hasArkKind(this.lastMorph, "root") ?
 			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
 			this.lastMorph.out
 		:	undefined;
 
-	override get in(): Morph.ChildNode {
-		return (
-			this.declaredIn ??
-			this.inner.in ??
-			($ark.intrinsic.unknown.internal as Morph.ChildNode)
-		)
+	override get in(): BaseRoot {
+		return this.declaredIn ?? this.inner.in ?? $ark.intrinsic.unknown.internal
 	}
 
 	override get out(): BaseRoot {
 		return (
-			this.declaredOut ?? this.validatedOut ?? $ark.intrinsic.unknown.internal
+			this.declaredOut ??
+			this.introspectableOut ??
+			$ark.intrinsic.unknown.internal
 		)
 	}
 
-	declareIn(declaredIn: Morph.ChildNode): MorphNode {
+	declareIn(declaredIn: BaseRoot): MorphNode {
 		return this.$.node("morph", {
 			...this.inner,
 			declaredIn
@@ -208,19 +193,19 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			if (!this.validatedIn) return
-			js.return(js.invoke(this.validatedIn))
+			if (!this.introspectableIn) return
+			js.return(js.invoke(this.introspectableIn))
 			return
 		}
-		if (this.validatedIn) js.line(js.invoke(this.validatedIn))
+		if (this.introspectableIn) js.line(js.invoke(this.introspectableIn))
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
-		!this.validatedIn || this.validatedIn.traverseAllows(data, ctx)
+		!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (this.validatedIn) this.validatedIn.traverseApply(data, ctx)
+		if (this.introspectableIn) this.introspectableIn.traverseApply(data, ctx)
 		ctx.queueMorphs(this.morphs)
 	}
 

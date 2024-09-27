@@ -1,8 +1,15 @@
 // @ts-nocheck
 import { scope, type } from "arktype"
+import { hasArkKind } from "../schema/out/shared/utils"
 
-// TODO: remove alpha helpers from syntax highlighting
 type("(boolean | number | 'foo')[]")
+
+// = should be highlighted as normal
+const t = type("(boolean | number | 'foo')[]")
+
+type({
+	foo: "string.normalize.NFC.preformatted"
+})
 
 const creditCard = type(
 	"/^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35d{3})d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/"
@@ -51,6 +58,21 @@ const lOrR = types.l.or(types.r)
 // THIS SHOULD NOT BE HIGHLIGHTED
 // attest(t.internal.indexableExpressions).snap()
 
+// THIS SHOULD NOT BE HIGHLIGHTED AS A TYPE
+hasArkKind("foo[]")
+
+const foo = {
+	bar: blah.bloo()
+}
+
+const aTypes = {
+	a: type("string").anythingNotAKnownChainedMethod("")
+}
+
+// THIS SHOULD BE HIGHLIGHTED
+for (const [name, schema] of Object.entries(aTypes)) {
+}
+
 const ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
@@ -82,7 +104,7 @@ scope({
 	]
 })
 
-$.type({
+type({
 	foo: "string[]"
 })
 

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { ark, type } from "arktype"
+import { keywords, type } from "arktype"
 
 const validIPv4 = "192.168.1.1"
 const validIPv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
@@ -28,14 +28,19 @@ contextualize(() => {
 			'must be an IPv4 address (was "1234")'
 		)
 
-		attest(ark.string.ip.v6(validIPv6)).equals(validIPv6)
+		attest(keywords.string.ip.v6(validIPv6)).equals(validIPv6)
 
 		attest(uuidv4(validIPv6).toString()).snap(
 			'must be an IPv4 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:7334")'
 		)
 
-		attest(ark.string.ip.v6(validIPv4).toString()).snap(
+		attest(keywords.string.ip.v6(validIPv4).toString()).snap(
 			'must be an IPv6 address (was "192.168.1.1")'
 		)
+	})
+
+	it("invalid ipv6 with empty segments", () => {
+		const out = type.keywords.string.ip.v6("::%8:.-:.:")
+		attest(out.toString()).snap('must be an IPv6 address (was "::%8:.-:.:")')
 	})
 })

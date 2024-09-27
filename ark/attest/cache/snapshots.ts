@@ -8,6 +8,7 @@ import {
 	writeJson,
 	type SourcePosition
 } from "@ark/fs"
+import { throwInternalError } from "@ark/util"
 import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"
@@ -86,7 +87,7 @@ const findCallExpressionAncestor = (
 	const calls = getCallExpressionsByName(startNode, [functionName], true)
 	if (calls.length) return startNode
 
-	throw new Error(
+	throwInternalError(
 		`Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
 			position
 		)}.`
@@ -151,12 +152,17 @@ const snapshotArgsToQueuedUpdate = ({
 	baselinePath
 }: SnapshotArgs): QueuedUpdate => {
 	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
-	const newArgText =
+	let newArgText =
 		typeof serializedValue === "string" && serializedValue.includes("\n") ?
 			"`" +
 			serializedValue.replaceAll("`", "\\`").replaceAll("${", "\\${") +
 			"`"
 		:	JSON.stringify(serializedValue)
+
+	newArgText = newArgText
+		.replace(/"\$ark.bigint-(-?\d+)"/g, "$1n")
+		.replace(/"\$ark.undefined"/g, "undefined")
+
 	return {
 		position,
 		snapCall,

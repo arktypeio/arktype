@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { ark, type } from "arktype"
-import type { Out, To, string } from "arktype/internal/keywords/ast.ts"
+import { keywords, type } from "arktype"
 
 contextualize(() => {
 	it("alpha", () => {
@@ -39,20 +38,20 @@ contextualize(() => {
 
 	it("credit card", () => {
 		const validCC = "5489582921773376"
-		attest(ark.string.creditCard(validCC)).equals(validCC)
+		attest(keywords.string.creditCard(validCC)).equals(validCC)
 		// Regex validation
-		attest(ark.string.creditCard("0".repeat(16)).toString()).snap(
+		attest(keywords.string.creditCard("0".repeat(16)).toString()).snap(
 			'must be a credit card number (was "0000000000000000")'
 		)
 		// Luhn validation
-		attest(ark.string.creditCard(validCC.slice(0, -1) + "0").toString()).snap(
-			'must be a credit card number (was "5489582921773370")'
-		)
+		attest(
+			keywords.string.creditCard(validCC.slice(0, -1) + "0").toString()
+		).snap('must be a credit card number (was "5489582921773370")')
 	})
 
 	it("semver", () => {
-		attest(ark.string.semver("1.0.0")).snap("1.0.0")
-		attest(ark.string.semver("-1.0.0").toString()).snap(
+		attest(keywords.string.semver("1.0.0")).snap("1.0.0")
+		attest(keywords.string.semver("-1.0.0").toString()).snap(
 			'must be a semantic version (see https://semver.org/) (was "-1.0.0")'
 		)
 	})
@@ -84,13 +83,13 @@ contextualize(() => {
 				'must be an IPv4 address (was "1234")'
 			)
 
-			attest(ark.string.ip.v6(validIPv6)).equals(validIPv6)
+			attest(keywords.string.ip.v6(validIPv6)).equals(validIPv6)
 
 			attest(uuidv4(validIPv6).toString()).snap(
 				'must be an IPv4 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:7334")'
 			)
 
-			attest(ark.string.ip.v6(validIPv4).toString()).snap(
+			attest(keywords.string.ip.v6(validIPv4).toString()).snap(
 				'must be an IPv6 address (was "192.168.1.1")'
 			)
 		})

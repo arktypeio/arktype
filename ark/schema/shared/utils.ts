@@ -14,6 +14,7 @@ import type { BaseConstraint } from "../constraint.ts"
 import type { GenericRoot } from "../generic.ts"
 import type { InternalModule } from "../module.ts"
 import type { BaseNode } from "../node.ts"
+import type { BaseParseContext } from "../parse.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
 import type { ArkError } from "./errors.ts"
@@ -53,12 +54,14 @@ export type PathToPropStringOptions<stringifiable = PropertyKey> = requireKeys<
 	stringifiable extends PropertyKey ? never : "stringifyNonKey"
 >
 
-export const pathToPropString = <stringifiable>(
+export type PathToPropStringFn = <stringifiable>(
 	path: array<stringifiable>,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: PathToPropStringOptions]
 	:	NoInfer<[opts: PathToPropStringOptions<stringifiable>]>
-): string => {
+) => string
+
+export const pathToPropString: PathToPropStringFn = (path, ...[opts]) => {
 	const stringifySymbol = opts?.stringifySymbol ?? printable
 	const propAccessChain = path.reduce<string>((s, k) => {
 		switch (typeof k) {
@@ -90,6 +93,7 @@ export interface ArkKinds {
 	generic: GenericRoot
 	module: InternalModule
 	error: ArkError
+	context: BaseParseContext
 }
 
 export type ArkKind = show<keyof ArkKinds>

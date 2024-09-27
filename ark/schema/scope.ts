@@ -3,6 +3,7 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
+	isThunk,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -40,14 +41,22 @@ import {
 } from "./module.ts"
 import type { BaseNode } from "./node.ts"
 import {
+	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
+	withId,
+	type AttachedParseContext,
+	type BaseParseContext,
+	type BaseParseContextInput,
+	type BaseParseOptions,
+	type NodeId,
 	type NodeParseContext,
-	type NodeParseOptions
+	type NodeParseContextInput
 } from "./parse.ts"
-import { normalizeAliasSchema, type Alias } from "./roots/alias.ts"
+import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
@@ -61,9 +70,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type resolvableReferenceIn<$> = {
 	[k in keyof $]: k extends string ?
 		k extends PrivateDeclaration<infer alias> ? alias
-		: // technically, $root subtypes are resolvable, but there's never a good
+		: // technically, root subtypes are resolvable, but there's never a good
 		// reason to use them over the base alias
-		k extends noSuggest | "$root" ? never
+		k extends noSuggest | "root" ? never
 		: k
 	:	never
 }[keyof $]
@@ -84,7 +93,7 @@ export type toInternalScope<$> = BaseScope<{
 	:	BaseRoot
 }>
 
-type CachedResolution = string | BaseRoot | GenericRoot
+type CachedResolution = NodeId | BaseRoot | GenericRoot
 
 const schemaBranchesOf = (schema: object) =>
 	isArray(schema) ? schema
@@ -117,6 +126,8 @@ export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
 
 $ark.ambient ??= {} as never
 
+let rawUnknownUnion: UnionNode | undefined
+
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig
 	readonly resolvedConfig: ResolvedArkScopeConfig
@@ -128,13 +139,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	readonly referencesById: { [id: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
-	protected readonly resolutions: {
+	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
 	readonly json: Json = {}
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
+	readonly nodesByHash: Record<string, BaseNode> = {}
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -146,21 +158,58 @@ export abstract class BaseScope<$ extends {} = {}> {
 		this.resolvedConfig = resolveConfig(config)
 
 		const aliasEntries = Object.entries(def).map(entry =>
-			this.preparseAlias(...entry)
+			this.preparseOwnAliasEntry(...entry)
 		)
 
 		aliasEntries.forEach(([k, v]) => {
+			let name = k
 			if (k[0] === "#") {
-				const name = k.slice(1)
+				name = k.slice(1)
 				if (name in this.aliases)
 					throwParseError(writeDuplicateAliasError(name))
 				this.aliases[name] = v
 			} else {
-				if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
-				this.aliases[k] = v
-				this.exportedNames.push(k)
+				if (name in this.aliases) throwParseError(writeDuplicateAliasError(k))
+				this.aliases[name] = v
+				this.exportedNames.push(name)
+			}
+			if (
+				!hasArkKind(v, "module") &&
+				!hasArkKind(v, "generic") &&
+				// TODO: proto thunk defs?
+				!isThunk(v)
+			) {
+				const preparsed = this.preparseOwnDefinitionFormat(v, { alias: name })
+				if (hasArkKind(preparsed, "root"))
+					this.resolutions[name] = this.bindReference(preparsed)
+				else this.resolutions[name] = this.createParseContext(preparsed).id
 			}
 		}) as never
+
+		// reduce union of all possible values reduces to unknown
+		rawUnknownUnion ??= this.node(
+			"union",
+			{
+				branches: [
+					"string",
+					"number",
+					"object",
+					"bigint",
+					"symbol",
+					{ unit: true },
+					{ unit: false },
+					{ unit: undefined },
+					{ unit: null }
+				]
+			},
+			{ prereduced: true }
+		)
+
+		this.nodesByHash[rawUnknownUnion.hash] = this.node(
+			"intersection",
+			{},
+			{ prereduced: true }
+		)
 
 		scopesById[this.id] = this
 	}
@@ -184,7 +233,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			) as never
 	}
 
-	units = (values: array, opts?: NodeParseOptions): BaseRoot => {
+	units = (values: array, opts?: BaseParseOptions): BaseRoot => {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
@@ -201,7 +250,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const node = this.node(
 			"alias",
 			{
-				alias: syntheticAlias ?? "synthetic",
+				reference: syntheticAlias ?? "synthetic",
 				resolve
 			},
 			{ prereduced: true }
@@ -210,25 +259,32 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node
 	}
 
-	rootNode = (def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
-		this.node(schemaKindOf(def), def, opts)
+	schema: InternalSchemaParser = (schema, opts) =>
+		this.finalize(this.parseSchema(schema, opts))
 
-	protected preparseNode = (
+	parseSchema: InternalSchemaParser = (schema, opts) =>
+		this.node(schemaKindOf(schema), schema, opts)
+
+	protected preparseNode(
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
-		opts: NodeParseOptions
-	): BaseNode | NodeParseContext => {
+		opts: BaseParseOptions
+	): BaseNode | NodeParseContextInput {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
-		if (isNode(schema) && schema.kind === kind) return schema.bindScope(this)
+		if (isNode(schema) && schema.kind === kind) return schema
 
 		if (kind === "alias" && !opts?.prereduced) {
-			const resolution = this.resolveRoot(
-				normalizeAliasSchema(schema as never).alias
+			const { reference } = Alias.implementation.normalize(
+				schema as never,
+				this
 			)
-			schema = resolution
-			kind = resolution.kind
+			if (reference.startsWith("$")) {
+				const resolution = this.resolveRoot(reference.slice(1))
+				schema = resolution
+				kind = resolution.kind
+			}
 		} else if (kind === "union" && hasDomain(schema, "object")) {
 			const branches = schemaBranchesOf(schema)
 			if (branches?.length === 1) {
@@ -238,69 +294,45 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedSchema =
-			impl.normalize?.(schema, this.resolvedConfig) ?? schema
+		const normalizedSchema = impl.normalize?.(schema, this) ?? schema
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					normalizedSchema.bindScope(this)
+					normalizedSchema
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
-
-		const id = registerNodeId(kind, opts.alias)
 
 		return {
 			...opts,
 			$: this,
-			args: opts.args ?? {},
 			kind,
-			normalizedSchema,
-			id
+			def: normalizedSchema,
+			prefix: opts.alias ?? kind
 		}
 	}
 
-	node = <
-		kinds extends NodeKind | array<RootKind>,
-		prereduced extends boolean = false
-	>(
-		kinds: kinds,
-		nodeSchema: NodeSchema<flattenListable<kinds>>,
-		opts = {} as NodeParseOptions<prereduced>
-	): nodeOfKind<
-		prereduced extends true ? flattenListable<kinds>
-		:	reducibleKindOf<flattenListable<kinds>>
-	> => {
-		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
+	bindReference<reference extends BaseNode | GenericRoot>(
+		reference: reference
+	): reference {
+		const bound: reference =
+			reference.$ === this ? reference
+			: isNode(reference) ?
+				new (reference.constructor as any)(reference.attachments, this)
+			:	new GenericRoot(
+					reference.params as never,
+					reference.bodyDef,
+					reference.$,
+					this as never
+				)
 
-		const node =
-			isNode(preparsed) ? preparsed : parseNode(preparsed).bindScope(this)
-
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			if (!this.resolvedConfig.jitless) bindCompiledScope(node.references)
-		} else {
+		if (!this.resolved) {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
-			Object.assign(this.referencesById, node.referencesById)
+			Object.assign(this.referencesById, bound.referencesById)
 		}
 
-		return node as never
-	}
-
-	protected finalizeRootArgs(
-		opts: NodeParseOptions,
-		resolve: () => BaseRoot
-	): NodeParseOptions {
-		const isResolution = opts.alias && opts.alias in this.aliases
-		// if the definition being parsed is not a scope alias and is not a
-		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		if (!isResolution)
-			// this.lazilyResolve(resolve) as never
-			opts.args ??= { this: $ark.intrinsic.unknown || resolve }
-
-		return opts
+		return bound as never
 	}
 
 	resolveRoot(name: string): BaseRoot {
@@ -314,22 +346,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const result = this.maybeResolve(name)
 		if (hasArkKind(result, "generic")) return
 		return result
-	}
-
-	preparseRoot(def: unknown): unknown {
-		return def
-	}
-
-	preparseAlias(k: string, v: unknown): AliasDefEntry {
-		return [k, v]
-	}
-
-	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
-		const resolution = this.maybeShallowResolve(name)
-
-		return typeof resolution === "string" ?
-				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	(resolution ?? this.maybeResolveSubalias(name))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
@@ -346,27 +362,67 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return $ark.ambient as never
 	}
 
-	maybeShallowResolve(name: string): CachedResolution | undefined {
+	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const cached = this.resolutions[name]
-		if (cached) return cached
-		const def = this.aliases[name] ?? this.ambient?.[name]
+		if (cached) {
+			if (typeof cached !== "string") return cached
+
+			const v = nodesByRegisteredId[cached]
+			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
+			if (hasArkKind(v, "context")) {
+				if (v.phase === "resolving") {
+					return this.node(
+						"alias",
+						{ reference: `$${name}` },
+						{ prereduced: true }
+					)
+				}
+				if (v.phase === "resolved") {
+					return throwInternalError(
+						`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
+					)
+				}
+				v.phase = "resolving"
+				const node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
+				v.phase = "resolved"
+				nodesByRegisteredId[node.id] = node
+				nodesByRegisteredId[v.id] = node
+				return (this.resolutions[name] = node)
+			}
+			return throwInternalError(
+				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
+			)
+		}
+		let def: unknown = this.aliases[name] ?? this.ambient?.[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		const preparsed = this.preparseRoot(def)
-		if (hasArkKind(preparsed, "generic"))
-			return (this.resolutions[name] = preparsed.bindScope(this))
+		def = this.normalizeRootScopeValue(def)
 
-		if (hasArkKind(preparsed, "module")) {
-			if (preparsed.$root)
-				return (this.resolutions[name] = preparsed.$root.bindScope(this))
+		if (hasArkKind(def, "generic"))
+			return (this.resolutions[name] = this.bindReference(def))
+
+		if (hasArkKind(def, "module")) {
+			if (def.root)
+				return (this.resolutions[name] = this.bindReference(def.root))
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
-		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parseRoot(preparsed, {
+		return (this.resolutions[name] = this.parse(def, {
 			alias: name
-		}).bindScope(this))
+		}))
+	}
+
+	protected createParseContext<input extends BaseParseContextInput>(
+		input: input
+	): input & AttachedParseContext {
+		const id = input.id ?? registerNodeId(input.prefix)
+		return (nodesByRegisteredId[id] = Object.assign(input, {
+			[arkKind]: "context" as const,
+			$: this as never,
+			id,
+			phase: "unresolved" as const
+		}))
 	}
 
 	import(): SchemaModule<{
@@ -388,6 +444,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		) as never
 	}
 
+	precompilation: string | undefined
+
 	private _exportedResolutions: InternalResolutions | undefined
 	private _exports: RootExportCache | undefined
 	export(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
@@ -403,24 +461,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this._exports = {}
 			for (const name of this.exportedNames) {
 				const def = this.aliases[name]
-				if (hasArkKind(def, "module"))
-					this._exports[name] = bindModule(def, this)
-				else {
-					const resolution = this.maybeResolve(name)!
-					resolution.references
-						.filter(node => node.hasKind("alias"))
-						.forEach(aliasNode => {
-							Object.assign(
-								aliasNode.referencesById,
-								aliasNode.resolution.referencesById
-							)
-							resolution.references.forEach(ref => {
-								if (aliasNode.id in ref.referencesById)
-									Object.assign(ref.referencesById, aliasNode.referencesById)
-							})
-						})
-					this._exports[name] = resolution as never
-				}
+				this._exports[name] =
+					hasArkKind(def, "module") ?
+						bindModule(def, this)
+					:	bootstrapAliasReferences(this.maybeResolve(name)!)
 			}
 
 			this.lazyResolutions.forEach(node => node.resolution)
@@ -443,7 +487,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
+			if (!this.resolvedConfig.jitless) {
+				this.precompilation = writePrecompilation(this.references)
+				bindPrecompilation(this.references, this.precompilation)
+			}
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
@@ -461,7 +508,108 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.export()[name as never]
 	}
 
-	abstract parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
+	node = <
+		kinds extends NodeKind | array<RootKind>,
+		prereduced extends boolean = false
+	>(
+		kinds: kinds,
+		nodeSchema: NodeSchema<flattenListable<kinds>>,
+		opts = {} as BaseParseOptions<prereduced>
+	): nodeOfKind<
+		prereduced extends true ? flattenListable<kinds>
+		:	reducibleKindOf<flattenListable<kinds>>
+	> => {
+		const ctxOrNode = this.preparseNode(kinds, nodeSchema, opts)
+
+		if (isNode(ctxOrNode)) return this.bindReference(ctxOrNode) as never
+
+		const ctx = this.createParseContext(ctxOrNode)
+
+		return (nodesByRegisteredId[ctx.id] = this.bindReference(
+			parseNode(ctx)
+		)) as never
+	}
+
+	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
+		this.finalize(this.parseDefinition(def, opts))
+
+	parseDefinition(def: unknown, opts: BaseParseOptions = {}): BaseRoot {
+		if (hasArkKind(def, "root")) return this.bindReference(def)
+
+		const ctxInputOrNode = this.preparseOwnDefinitionFormat(def, opts)
+		if (hasArkKind(ctxInputOrNode, "root"))
+			return this.bindReference(ctxInputOrNode)
+
+		const ctx = this.createParseContext(ctxInputOrNode)
+		nodesByRegisteredId[ctx.id] = ctx
+		let node = this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
+
+		// if the node is recursive e.g. { box: "this" }, we need to make sure it
+		// has the original id from context so that its references compile correctly
+		if (node.isCyclic) node = withId(node, ctx.id)
+
+		nodesByRegisteredId[ctx.id] = node
+
+		return node
+	}
+
+	finalize<node extends BaseRoot>(node: node): node {
+		bootstrapAliasReferences(node)
+		if (!node.precompilation && !this.resolvedConfig.jitless)
+			precompile(node.references)
+		return node
+	}
+
+	protected abstract preparseOwnDefinitionFormat(
+		def: unknown,
+		opts: BaseParseOptions
+	): BaseRoot | BaseParseContextInput
+
+	abstract parseOwnDefinitionFormat(
+		def: unknown,
+		ctx: BaseParseContext
+	): BaseRoot
+
+	protected abstract preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry
+
+	protected abstract normalizeRootScopeValue(resolution: unknown): unknown
+}
+
+export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
+	parseOwnDefinitionFormat(def: unknown, ctx: NodeParseContext): BaseRoot {
+		return parseNode(ctx) as never
+	}
+
+	protected preparseOwnDefinitionFormat(
+		schema: RootSchema,
+		opts: BaseParseOptions
+	): BaseRoot | NodeParseContextInput {
+		return this.preparseNode(schemaKindOf(schema), schema, opts) as never
+	}
+
+	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
+		return [k, v]
+	}
+
+	protected normalizeRootScopeValue(v: unknown): unknown {
+		return v
+	}
+}
+
+const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
+	resolution.references
+		.filter(node => node.hasKind("alias"))
+		.forEach(aliasNode => {
+			Object.assign(
+				aliasNode.referencesById,
+				aliasNode.resolution.referencesById
+			)
+			resolution.references.forEach(ref => {
+				if (aliasNode.id in ref.referencesById)
+					Object.assign(ref.referencesById, aliasNode.referencesById)
+			})
+		})
+	return resolution
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): Json =>
@@ -498,7 +646,7 @@ const maybeResolveSubalias = (
 
 	if (hasArkKind(resolution, "module")) {
 		return (
-			resolution.$root ??
+			resolution.root ??
 			throwParseError(writeMissingSubmoduleAccessMessage(name))
 		)
 	}
@@ -521,31 +669,24 @@ export type SchemaScopeParser = <const aliases>(
 		>
 	},
 	config?: ArkScopeConfig
-) => SchemaScope<instantiateAliases<aliases>>
+) => BaseScope<instantiateAliases<aliases>>
 
 export const schemaScope: SchemaScopeParser = (aliases, config) =>
 	new SchemaScope(aliases, config)
 
-export class SchemaScope<
-	$ extends InternalResolutions = InternalResolutions
-> extends BaseScope<$> {
-	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot => {
-		const node = this.rootNode(
-			schema as never,
-			this.finalizeRootArgs(opts, () => node)
-		)
-		return node
-	}
-}
+export type InternalSchemaParser = (
+	schema: RootSchema,
+	opts?: BaseParseOptions
+) => BaseRoot
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
 export const parseAsSchema = (
 	def: unknown,
-	opts?: NodeParseOptions
+	opts?: BaseParseOptions
 ): BaseRoot | ParseError => {
 	try {
-		return rootNode(def as RootSchema, opts) as never
+		return rootSchema(def as RootSchema, opts) as never
 	} catch (e) {
 		if (e instanceof ParseError) return e
 		throw e
@@ -597,14 +738,19 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-export const bindCompiledScope = (references: readonly BaseNode[]): void => {
-	const compiledTraversals = compileScope(references)
+const precompile = (references: readonly BaseNode[]): void =>
+	bindPrecompilation(references, writePrecompilation(references))
+
+const bindPrecompilation = (
+	references: readonly BaseNode[],
+	precompilation: string
+): void => {
+	const compiledTraversals = instantiatePrecompilation(precompilation)
 	for (const node of references) {
-		if (node.jit) {
+		if (node.precompilation) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			continue
 		}
-		node.jit = true
 		node.traverseAllows =
 			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
 		if (node.isRoot() && !node.allowsRequiresContext) {
@@ -614,35 +760,36 @@ export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 		}
 		node.traverseApply =
 			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
+		node.precompilation = precompilation
 	}
 }
 
-const compileScope = (references: readonly BaseNode[]) =>
-	new CompiledFunction()
-		.block("return", js => {
-			references.forEach(node => {
-				const allowsCompiler = new NodeCompiler("Allows").indent()
-				node.compile(allowsCompiler)
-				const applyCompiler = new NodeCompiler("Apply").indent()
-				node.compile(applyCompiler)
-				js.line(`${allowsCompiler.writeMethod(`${node.id}Allows`)},`).line(
-					`${applyCompiler.writeMethod(`${node.id}Apply`)},`
-				)
-			})
-			return js
-		})
-		.compile<
-			() => {
-				[k: `${string}Allows`]: TraverseAllows
-				[k: `${string}Apply`]: TraverseApply
-			}
-		>()()
+const instantiatePrecompilation = (precompilation: string) =>
+	new CompiledFunction().return(precompilation).compile<
+		() => {
+			[k: `${string}Allows`]: TraverseAllows
+			[k: `${string}Apply`]: TraverseApply
+		}
+	>()()
+
+const writePrecompilation = (references: readonly BaseNode[]) =>
+	references.reduce((js, node) => {
+		const allowsCompiler = new NodeCompiler("Allows").indent()
+		node.compile(allowsCompiler)
+		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
+
+		const applyCompiler = new NodeCompiler("Apply").indent()
+		node.compile(applyCompiler)
+		const applyJs = applyCompiler.write(`${node.id}Apply`)
+
+		return `${js}${allowsJs},\n${applyJs},\n`
+	}, "{\n") + "}"
 
 // ensure the scope is resolved so JIT will be applied to future types
 rootSchemaScope.export()
 
-export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
-export const node: SchemaScope["node"] = rootSchemaScope.node
-export const defineSchema: SchemaScope["defineSchema"] =
+export const rootSchema: BaseScope["schema"] = rootSchemaScope.schema
+export const node: BaseScope["node"] = rootSchemaScope.node
+export const defineSchema: BaseScope["defineSchema"] =
 	rootSchemaScope.defineSchema
-export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic
+export const genericNode: BaseScope["generic"] = rootSchemaScope.generic

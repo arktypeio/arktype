@@ -16,13 +16,13 @@ import {
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
 import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import type { NodeParseContext } from "../parse.ts"
+import type { NodeId, NodeParseContext } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { BaseScope, ResolvedArkScopeConfig } from "../scope.ts"
+import type { BaseScope } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -32,7 +32,7 @@ import type {
 	BaseNormalizedSchema
 } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
-import { isNode } from "./utils.ts"
+import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -255,13 +255,14 @@ type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
 >
 
 export const defaultValueSerializer = (v: unknown): JsonData => {
-	if (
-		typeof v === "string" ||
-		typeof v === "boolean" ||
-		typeof v === "number" ||
-		v === null
-	)
+	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
+
+	if (typeof v === "number") {
+		if (Number.isNaN(v)) return "NaN"
+		if (v === Number.POSITIVE_INFINITY) return "Infinity"
+		if (v === Number.NEGATIVE_INFINITY) return "-Infinity"
 		return v
+	}
 
 	return compileSerializedValue(v)
 }
@@ -276,6 +277,11 @@ export type NodeKeyImplementation<
 		preserveUndefined?: true
 		child?: boolean
 		serialize?: (schema: instantiated) => JsonData
+		reduceIo?: (
+			ioKind: "in" | "out",
+			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
+			value: d["inner"][k]
+		) => void
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
 			ctx: NodeParseContext<d["kind"]>
@@ -292,10 +298,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
-	normalize: (
-		schema: d["schema"],
-		ctx: ResolvedArkScopeConfig
-	) => d["normalizedSchema"]
+	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
@@ -359,7 +362,7 @@ export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
-	readonly id: string
+	readonly id: NodeId
 
 	readonly inner: Record<string, any>
 	readonly innerEntries: readonly Entry<string>[]

@@ -3,12 +3,12 @@
 	"private": true,
 	"type": "module",
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
-		"zod": "3.23.8",
-		"type-fest": "4.25.0",
-		"typescript": "5.6.0-beta"
+		"arktype": "workspace:*",
+		"type-fest": "4.26.1",
+		"typescript": "catalog:",
+		"zod": "3.23.8"
 	},
 	"scripts": {
 		"build": "echo No build required!"

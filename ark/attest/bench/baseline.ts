@@ -1,6 +1,6 @@
-import { snapshot } from "@ark/util"
-import { AssertionError } from "node:assert"
+import { snapshot, throwInternalError } from "@ark/util"
 import process from "node:process"
+import { throwAssertionError } from "../assert/assertions.ts"
 import {
 	queueSnapshotUpdate,
 	writeSnapshotUpdatesOnExit
@@ -23,18 +23,23 @@ export const queueBaselineUpdateIfNeeded = (
 
 	const serializedValue = snapshot(updated)
 	if (!ctx.lastSnapCallPosition) {
-		throw new Error(
-			`Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset).`
+		throwInternalError(
+			`Unable to update baseline for ${ctx.qualifiedName} ('lastSnapCallPosition' was unset)`
+		)
+	}
+	if (!ctx.lastSnapFunctionName) {
+		throwInternalError(
+			`Unable to update baseline for ${ctx.qualifiedName} ('lastSnapFunctionName' was unset)`
 		)
 	}
 	queueSnapshotUpdate({
 		position: ctx.lastSnapCallPosition,
 		serializedValue,
-		snapFunctionName: ctx.kind,
+		snapFunctionName: ctx.lastSnapFunctionName,
 		baselinePath: ctx.qualifiedPath
 	})
 
-	if (ctx.kind === "types") writeSnapshotUpdatesOnExit()
+	if (ctx.lastSnapFunctionName === "types") writeSnapshotUpdatesOnExit()
 }
 
 /** Pretty print comparison and set the process.exitCode to 1 if delta threshold is exceeded */
@@ -63,8 +68,8 @@ const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
 	console.error(`📈 ${message}`)
 	if (ctx.cfg.benchErrorOnThresholdExceeded) {
 		const errorSummary = `❌ ${message}`
-		if (ctx.kind === "instantiations")
-			throw new AssertionError({ message: errorSummary })
+		if (ctx.lastSnapFunctionName === "instantiations")
+			throwAssertionError({ stack: ctx.assertionStack, message: errorSummary })
 		else {
 			process.exitCode = 1
 			// Summarize failures at the end of output

@@ -1,16 +1,20 @@
 import {
+	$ark,
 	BaseScope,
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
 	type ArkScopeConfig,
 	type BaseNode,
+	type BaseParseContext,
+	type BaseParseContextInput,
+	type BaseParseOptions,
 	type BaseRoot,
-	type GenericArgResolutions,
 	type GenericAst,
 	type GenericParamAst,
+	type GenericParamDef,
+	type GenericRoot,
 	type NodeKind,
-	type NodeParseOptions,
 	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
@@ -25,6 +29,7 @@ import {
 } from "@ark/schema"
 import {
 	domainOf,
+	flatMorph,
 	hasDomain,
 	isThunk,
 	throwParseError,
@@ -34,90 +39,60 @@ import {
 	type anyOrNever,
 	type array,
 	type flattenListable,
-	type inferred,
 	type noSuggest,
 	type nominal
 } from "@ark/util"
-import type { ArkAmbient } from "./config.ts"
+import type { ArkSchemaRegistry } from "./config.ts"
 import {
-	parseGenericParams,
+	parseGenericParamName,
 	type GenericDeclaration,
 	type GenericParser,
 	type ParameterString,
 	type baseGenericConstraints,
+	type parseGenericParams,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { type } from "./keywords/ark.ts"
+import type { Ark, type } from "./keywords/keywords.ts"
 import type {
 	BoundModule,
 	Module,
 	Submodule,
 	instantiateExport
 } from "./module.ts"
+import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition,
 	type validateDefinition
 } from "./parser/definition.ts"
-import { DynamicState } from "./parser/string/reduce/dynamic.ts"
-import type { ParsedDefault } from "./parser/string/shift/operator/default.ts"
-import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
-import { Scanner } from "./parser/string/shift/scanner.ts"
-import {
-	fullStringParse,
-	type StringParseResult
-} from "./parser/string/string.ts"
+import { DynamicState } from "./parser/reduce/dynamic.ts"
+import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
+import { Scanner } from "./parser/shift/scanner.ts"
+import { fullStringParse } from "./parser/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
-	type Type,
-	type TypeParser
+	type EnumeratedTypeParser,
+	type SchemaParser,
+	type TypeParser,
+	type UnitTypeParser
 } from "./type.ts"
 
 export type ScopeParser = <const def>(
-	def: validateScope<def>,
+	def: scope.validate<def>,
 	config?: ArkScopeConfig
-) => Scope<inferScope<def>>
+) => Scope<scope.infer<def>>
 
 export type ModuleParser = <const def>(
-	def: validateScope<def>,
+	def: scope.validate<def>,
 	config?: ArkScopeConfig
-) => inferScope<def> extends infer $ ?
+) => scope.infer<def> extends infer $ ?
 	Module<{ [k in exportedNameOf<$>]: $[k] }>
 :	never
 
-export type validateScope<def> = {
-	[k in keyof def]: k extends noSuggest ?
-		// avoid trying to parse meta keys when spreading modules
-		unknown
-	: parseScopeKey<k, def>["params"] extends infer params ?
-		params extends array<GenericParamAst> ?
-			params["length"] extends 0 ?
-				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
-				// if you are from the future with a better version of TS and can remove it
-				// without breaking `pnpm typecheck`, go for it.
-				def[k] extends Type.Any | PreparsedResolution ? def[k]
-				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-					ErrorType<writeDuplicateAliasError<name>>
-				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-			:	validateDefinition<
-					def[k],
-					bootstrapAliases<def>,
-					baseGenericConstraints<params>
-				>
-		:	// if we get here, the params failed to parse- return the error
-			params
-	:	never
-}
-
-export type inferScope<def> = inferBootstrapped<bootstrapAliases<def>>
-
-// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-// this: Def<def>
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type bindThis<def> = {}
+export type bindThis<def> = { this: Def<def> }
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
@@ -133,12 +108,13 @@ type bootstrapAliases<def> = {
 		PreparsedResolution
 	) ?
 		def[k] extends { t: infer g extends GenericAst } ? g
-		: def[k] extends Module<infer $> ? Submodule<$>
+		: def[k] extends Module<infer $> | BoundModule<infer $, any> ? Submodule<$>
 		: def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
 		thunkReturn extends { t: infer g extends GenericAst } ? g
-		: thunkReturn extends Module<infer $> ? Submodule<$>
-		: thunkReturn
+		: thunkReturn extends Module<infer $> | BoundModule<infer $, any> ?
+			Submodule<$>
+		:	thunkReturn
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
@@ -171,17 +147,13 @@ type extractGenericParameters<k> =
 	// causes TS fail to infer a narrowed result as of 5.5
 	k extends `${string}<${infer params}>` ? ParameterString<params> : never
 
-export type resolve<reference extends keyof $ | keyof args, $, args> =
-	(
-		reference extends keyof args ?
-			args[reference]
-		:	$[reference & keyof $]
-	) extends infer resolution ?
-		[resolution] extends [anyOrNever] ? resolution
-		: resolution extends { [inferred]: infer t } ? t
-		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
-		: resolution
-	:	never
+export type resolutionToAst<alias extends string, resolution> =
+	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
+	: resolution extends Def<infer def> ? DefAst<def, alias>
+	: resolution extends { [arkKind]: "module"; root: infer root } ?
+		InferredAst<root, alias>
+	: resolution extends GenericAst ? resolution
+	: InferredAst<resolution, alias>
 
 export type moduleKeyOf<$> = {
 	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
@@ -191,36 +163,39 @@ export type moduleKeyOf<$> = {
 	:	never
 }[keyof $]
 
-type unwrapPreinferred<t> = t extends type.cast<infer inferred> ? inferred : t
-
-export type tryInferSubmoduleReference<$, token> =
-	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
-		subalias extends keyof $[submodule] ?
-			unwrapPreinferred<$[submodule][subalias]>
-		:	tryInferSubmoduleReference<$[submodule], subalias>
-	: token extends (
-		`${infer submodule extends moduleKeyOf<ArkAmbient.$>}.${infer subalias}`
-	) ?
-		subalias extends keyof ArkAmbient.$[submodule] ?
-			unwrapPreinferred<ArkAmbient.$[submodule][subalias]>
-		:	tryInferSubmoduleReference<ArkAmbient.$[submodule], subalias>
-	:	never
-
-export interface ParseContext extends TypeParseOptions {
-	$: InternalScope
+export interface ArkTypeRegistry extends ArkSchemaRegistry {
+	typeAttachments?: Ark.boundTypeAttachments<any>
 }
 
-export interface TypeParseOptions {
-	args?: GenericArgResolutions
-}
+export const $arkTypeRegistry: ArkTypeRegistry = $ark
 
 export interface InternalScope {
 	constructor: typeof InternalScope
 }
-export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	private parseCache: Record<string, StringParseResult> = {}
 
-	override preparseAlias(k: string, v: unknown): AliasDefEntry {
+export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
+	private parseCache: Record<string, BaseRoot> = {}
+
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
+	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
+		if (!$arkTypeRegistry.typeAttachments) return
+		return this.cacheGetter(
+			"ambientAttachments",
+			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+				k,
+				this.bindReference(v as {} as BaseRoot | GenericRoot)
+			]) as never
+		)
+	}
+
+	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
 		const firstParamIndex = k.indexOf("<")
 		if (firstParamIndex === -1) return [k, v]
 
@@ -238,10 +213,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
 			() => {
-				const params = parseGenericParams(paramString, {
-					$: this as never,
-					args: {}
-				})
+				const params = this.parseGenericParams(paramString, { alias: name })
 
 				const generic = parseGeneric(params, v, this as never)
 
@@ -250,40 +222,56 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		]
 	}
 
-	override preparseRoot(def: unknown): unknown {
-		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
-
-		return def
+	parseGenericParams(
+		def: string,
+		opts: BaseParseOptions
+	): array<GenericParamDef> {
+		return parseGenericParamName(
+			new Scanner(def),
+			[],
+			this.createParseContext({ ...opts, def, prefix: "generic" })
+		)
 	}
 
-	parse<defaultable extends boolean = false>(
+	protected normalizeRootScopeValue(resolution: unknown): unknown {
+		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
+			return resolution()
+		return resolution
+	}
+
+	protected preparseOwnDefinitionFormat(
 		def: unknown,
-		ctx: ParseContext,
-		defaultable: defaultable = false as defaultable
-	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
+		opts: BaseParseOptions
+	): BaseRoot | BaseParseContextInput {
+		return {
+			...opts,
+			def,
+			prefix: opts.alias ?? "type"
+		}
+	}
+
+	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
+		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
+
+		// if the definition being parsed is not a scope alias and is not a
+		// generic instantiation (i.e. opts don't include args), add this as a resolution.
+
+		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
+
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
-				return this.parseString(def, ctx, defaultable)
+				return this.parseString(def, ctx)
 			}
-			const contextKey = `${def}${defaultable}`
-			return (this.parseCache[contextKey] ??= this.parseString(
-				def,
-				ctx,
-				defaultable
-			)) as never
+			return (this.parseCache[def] ??= this.parseString(def, ctx))
 		}
 		return hasDomain(def, "object") ?
 				parseObject(def, ctx)
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString<defaultable extends boolean>(
-		def: string,
-		ctx: ParseContext,
-		defaultable: defaultable
-	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
+	parseString(def: string, ctx: BaseParseContext): BaseRoot {
 		const aliasResolution = this.maybeResolveRoot(def)
 		if (aliasResolution) return aliasResolution
 
@@ -294,7 +282,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 		if (aliasArrayResolution) return aliasArrayResolution
 
-		const s = new DynamicState(new Scanner(def), ctx, defaultable)
+		const s = new DynamicState(new Scanner(def), ctx)
 
 		const node = fullStringParse(s)
 
@@ -304,16 +292,10 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return node as never
 	}
 
-	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
-		const node: BaseRoot = this.parse(
-			def,
-			Object.assign(
-				this.finalizeRootArgs(opts, () => node),
-				{ $: this as never }
-			)
-		).bindScope(this as never)
-		return node
-	}
+	unit: UnitTypeParser<$> = value => this.units([value]) as never
+
+	enumerated: EnumeratedTypeParser<$> = (...values) =>
+		this.units(values) as never
 
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
@@ -331,6 +313,37 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 }
 
 export const scope: ScopeParser = InternalScope.scope
+
+export declare namespace scope {
+	export type validate<def> = {
+		[k in keyof def]: k extends noSuggest ?
+			// avoid trying to parse meta keys when spreading modules
+			unknown
+		: parseScopeKey<k, def>["params"] extends infer params ?
+			params extends array<GenericParamAst> ?
+				params["length"] extends 0 ?
+					// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
+					// if you are from the future with a better version of TS and can remove it
+					// without breaking `pnpm typecheck`, go for it.
+					def[k] extends type.Any | PreparsedResolution ? def[k]
+					: k extends (
+						PrivateDeclaration<infer name extends keyof def & string>
+					) ?
+						ErrorType<writeDuplicateAliasError<name>>
+					:	validateDefinition<def[k], bootstrapAliases<def>, {}>
+				:	validateDefinition<
+						def[k],
+						bootstrapAliases<def>,
+						baseGenericConstraints<params>
+					>
+			:	// if we get here, the params failed to parse- return the error
+				params
+		:	never
+	}
+
+	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
+}
+
 export const module: ModuleParser = InternalScope.module
 
 export interface Scope<$ = {}> {
@@ -348,13 +361,14 @@ export interface Scope<$ = {}> {
 
 	defineSchema<const def extends RootSchema>(schema: def): def
 
-	schema(schema: RootSchema, opts?: NodeParseOptions): BaseRoot
-
 	node<kinds extends NodeKind | array<RootKind>>(
 		kinds: kinds,
 		schema: NodeSchema<flattenListable<kinds>>,
-		opts?: NodeParseOptions
+		opts?: BaseParseOptions
 	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
+
+	unit: UnitTypeParser<$>
+	enumerated: EnumeratedTypeParser<$>
 
 	type: TypeParser<$>
 
@@ -363,6 +377,8 @@ export interface Scope<$ = {}> {
 	define: DefinitionParser<$>
 
 	generic: GenericParser<$>
+
+	schema: SchemaParser<$>
 
 	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
@@ -396,12 +412,6 @@ export interface ScopeConstructor {
 }
 
 export const Scope: ScopeConstructor = InternalScope as never
-
-export const writeShallowCycleErrorMessage = (
-	name: string,
-	seen: string[]
-): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
 
 export type parseScopeKey<k, def> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5

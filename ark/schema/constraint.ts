@@ -11,17 +11,16 @@ import {
 	type satisfy
 } from "@ark/util"
 import type {
-	Inner,
 	NodeSchema,
 	Prerequisite,
 	innerAttachedAs,
-	mutableInnerOfKind,
 	nodeOfKind
 } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
 import type { NodeParseContext } from "./parse.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -33,6 +32,7 @@ import {
 	type NodeKind,
 	type RootKind,
 	type StructuralKind,
+	type UnknownAttachments,
 	type kindLeftOf
 } from "./shared/implement.ts"
 import { intersectNodes, intersectNodesRoot } from "./shared/intersections.ts"
@@ -40,13 +40,14 @@ import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
+import type { Structure } from "./structure/structure.ts"
 
 export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {
 		kind: ConstraintKind
 	}
 
-	export type ReductionResult = BaseRoot | Disjoint | Intersection.MutableInner
+	export type ReductionResult = BaseRoot | Disjoint | Intersection.Inner.mutable
 
 	export interface Attachments {
 		impliedBasis: BaseRoot | null
@@ -61,7 +62,17 @@ export abstract class BaseConstraint<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
-	readonly [arkKind] = "constraint"
+	declare readonly [arkKind]: "constraint"
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
+		super(attachments, $)
+		// define as a getter to avoid it being enumerable/spreadable
+		Object.defineProperty(this, arkKind, {
+			value: "constraint",
+			enumerable: false
+		})
+	}
+
 	abstract readonly impliedBasis: BaseRoot | null
 	readonly impliedSiblings?: array<BaseConstraint>
 
@@ -205,11 +216,16 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 	return result
 }
 
-// TODO: Fix type
+interface FlatIntersectionInner extends Intersection.Inner, Structure.Inner {}
+
+interface MutableFlatIntersectionInner
+	extends Intersection.Inner.mutable,
+		Structure.Inner.mutable {}
+
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>
-): Intersection.Inner & Inner<"structure"> => {
-	const inner: Intersection.MutableInner & mutableInnerOfKind<"structure"> = {}
+): FlatIntersectionInner => {
+	const inner: MutableFlatIntersectionInner = {}
 	for (const constraint of constraints) {
 		if (constraint.hasOpenIntersection()) {
 			inner[constraint.kind] = append(

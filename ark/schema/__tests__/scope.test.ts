@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode, schemaScope } from "@ark/schema"
+import { rootSchema, schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -9,15 +9,15 @@ contextualize(() => {
 			}
 		}).export()
 
-		attest(types.foo.jit).equals(true)
+		attest(types.foo.precompilation).satisfies("string")
 	})
 
 	it("has jit standalone", () => {
-		const node = rootNode({
+		const node = rootSchema({
 			domain: "string"
 		})
 
-		attest(node.jit).equals(true)
+		attest(node.precompilation).satisfies("string")
 	})
 
 	it("reference", () => {

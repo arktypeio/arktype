@@ -1,6 +1,7 @@
 import type { array, listable } from "./arrays.ts"
 import type { show } from "./generics.ts"
-import type { Entry, Key, entryOf, fromEntries } from "./records.ts"
+import type { Key } from "./keys.ts"
+import type { Entry, entryOf, fromEntries } from "./records.ts"
 import type { intersectUnion } from "./unionToTuple.ts"
 
 type objectFromListableEntries<transformed extends readonly Entry[]> = show<
@@ -33,7 +34,7 @@ type extractEntries<e extends listable<Entry>> =
 	e extends readonly Entry[] ? e[number] : e
 
 type entryArgsWithIndex<o> = {
-	[k in keyof o]: [k: k, v: o[k], i: number]
+	[k in keyof o]-?: [k: k, v: Exclude<o[k], undefined>, i: number]
 }[keyof o]
 
 type numericArrayEntry<a extends array> =

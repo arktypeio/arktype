@@ -1,3 +1,4 @@
+import { unset } from "@ark/util"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { ArkErrorContextInput } from "../shared/errors.ts"
 import {
@@ -22,6 +23,7 @@ export declare namespace Required {
 			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
+			reducibleTo: "optional"
 		}
 	>
 
@@ -37,10 +39,19 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.rootNode(schema)
+				parse: (schema, ctx) => ctx.$.parseSchema(schema)
 			}
 		},
 		normalize: schema => schema,
+		reduce: (inner, $) => {
+			if (inner.value.defaultMeta !== unset) {
+				return $.node("optional", {
+					...inner,
+					default: inner.value.defaultMeta
+				})
+			}
+			if (inner.value.optionalMeta) return $.node("optional", inner)
+		},
 		defaults: {
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,

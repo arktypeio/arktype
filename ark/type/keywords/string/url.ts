@@ -1,10 +1,10 @@
-import { rootNode } from "@ark/schema"
-import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { rootSchema, type TraversalContext } from "@ark/schema"
+import type { Module, Submodule } from "../../module.ts"
+import type { Branded, of, To } from "../inference.ts"
+import { arkModule } from "../utils.ts"
 
 declare namespace string {
-	export type url = constrain<string, Branded<"url">>
+	export type url = of<string, Branded<"url">>
 }
 
 const isParsableUrl = (s: string) => {
@@ -18,7 +18,7 @@ const isParsableUrl = (s: string) => {
 	}
 }
 
-const $root = rootNode({
+const root = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: "a URL string",
@@ -26,23 +26,29 @@ const $root = rootNode({
 	}
 })
 
-export const url = submodule({
-	$root,
-	parse: rootNode({
-		declaredIn: $root as never,
+export const url: url.module = arkModule({
+	root,
+	parse: rootSchema({
+		declaredIn: root as never,
 		in: "string",
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			try {
 				return new URL(s)
 			} catch {
 				return ctx.error("a URL string")
 			}
 		},
-		declaredOut: rootNode(URL)
+		declaredOut: rootSchema(URL)
 	})
 })
 
-export type url = Submodule<{
-	$root: string.url
-	parse: (In: string.url) => To<URL>
-}>
+export declare namespace url {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: string.url
+		parse: (In: string.url) => To<URL>
+	}
+}

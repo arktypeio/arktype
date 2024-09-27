@@ -5,20 +5,22 @@ import {
 	isArray,
 	isEmptyObject,
 	printable,
+	throwInternalError,
 	throwParseError,
 	unset,
 	type JsonData,
 	type PartialRecord,
 	type dict,
-	type listable
+	type listable,
+	type nominal
 } from "@ark/util"
-import type { GenericArgResolutions } from "./generic.ts"
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type NormalizedSchema
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -31,9 +33,12 @@ import {
 	type RootKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { hasArkKind } from "./shared/utils.ts"
+import { $ark } from "./shared/registry.ts"
+import { hasArkKind, isNode, type arkKind } from "./shared/utils.ts"
 
-export type NodeParseOptions<prereduced extends boolean = boolean> = {
+export type ContextualArgs = Record<string, BaseRoot | NodeId>
+
+export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
 	prereduced?: prereduced
 	/** Instead of creating the node, compute the innerHash of the definition and
@@ -41,17 +46,38 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: BaseNode
-	args?: GenericArgResolutions
+	args?: ContextualArgs
+	id?: NodeId
+}
+
+export interface BaseParseContextInput extends BaseParseOptions {
+	prefix: string
+	def: unknown
+}
+
+export interface AttachedParseContext {
+	[arkKind]: "context"
+	$: BaseScope
+	id: NodeId
+	phase: "unresolved" | "resolving" | "resolved"
+}
+
+export interface BaseParseContext
+	extends BaseParseContextInput,
+		AttachedParseContext {
+	id: NodeId
+}
+
+export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
+	extends BaseParseContextInput {
+	kind: kind
+	def: NormalizedSchema<kind>
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
-	extends NodeParseOptions {
-	$: BaseScope
-	args: GenericArgResolutions
-	kind: kind
-	normalizedSchema: NormalizedSchema<kind>
-	id: string
+	extends NodeParseContextInput<kind>,
+		AttachedParseContext {
+	id: NodeId
 }
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
@@ -82,7 +108,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 
 	if ("unit" in schema) return "unit"
 
-	if ("alias" in schema) return "alias"
+	if ("reference" in schema) return "alias"
 
 	const schemaKeys = Object.keys(schema)
 
@@ -97,7 +123,6 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
 	`${printable(schema)} is not a valid type schema`
 
-const nodeCache: { [hash: string]: BaseNode } = {}
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
@@ -105,18 +130,26 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const registerNodeId = (kind: NodeKind, alias?: string): string => {
-	const prefix = alias ?? kind
+export type NodeId = nominal<string, "NodeId">
+
+export type NodeResolver = (id: NodeId) => BaseNode
+
+export const nodesByRegisteredId: Record<
+	NodeId,
+	BaseNode | BaseParseContext | undefined
+> = {}
+
+$ark.nodesByRegisteredId = nodesByRegisteredId
+
+export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
-	return `${prefix}${++nodeCountsByPrefix[prefix]!}`
+	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
 }
 
-export const parseNode = <kind extends NodeKind>(
-	ctx: NodeParseContext<kind>
-): BaseNode => {
+export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
 	const inner: dict = {}
-	const { meta: metaSchema, ...schema } = ctx.normalizedSchema as dict & {
+	const { meta: metaSchema, ...schema } = ctx.def as dict & {
 		meta?: MetaSchema
 	}
 
@@ -171,20 +204,16 @@ export const parseNode = <kind extends NodeKind>(
 
 	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
 
-	if (ctx.reduceTo) {
-		nodeCache[node.hash] = ctx.reduceTo
-		return ctx.reduceTo
-	}
-
 	return node
 }
 
 export const createNode = (
-	id: string,
+	id: NodeId,
 	kind: NodeKind,
 	inner: dict,
 	meta: BaseMeta,
-	$: BaseScope
+	$: BaseScope,
+	ignoreCache?: true
 ): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const innerEntries = entriesOf(inner)
@@ -229,7 +258,7 @@ export const createNode = (
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[hash]) return nodeCache[hash]
+	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -252,17 +281,32 @@ export const createNode = (
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	return (nodeCache[hash] = node)
+	return ($.nodesByHash[hash] = node)
 }
 
-export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
-	createNode(
-		registerNodeId(node.kind, meta.alias),
+export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
+	if (node.id === id) return node
+	if (isNode(nodesByRegisteredId[id]))
+		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
+	// have to ignore cache to force creation of new potentially cyclic id
+	return createNode(id, node.kind, node.inner, node.meta, node.$, true) as never
+}
+
+export const withMeta = <node extends BaseNode>(
+	node: node,
+	meta: ArkEnv.meta,
+	id?: NodeId
+): node => {
+	if (id && isNode(nodesByRegisteredId[id]))
+		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
+	return createNode(
+		id ?? registerNodeId(meta.alias ?? node.kind),
 		node.kind,
 		node.inner,
 		meta,
 		node.$
 	) as never
+}
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: dict,

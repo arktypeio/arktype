@@ -89,8 +89,10 @@ export abstract class BaseRange<
 }
 
 export interface BaseRangeInner {
-	readonly rule: number | Date
+	readonly rule: LimitValue
 }
+
+export type LimitValue = Date | number
 
 export type LimitSchemaValue = Date | number | string
 
@@ -251,22 +253,16 @@ export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 
 export type LengthBoundKind = "minLength" | "maxLength" | "exactLength"
 
-export const writeNonIntegerLengthBoundMessage = (
+export const writeInvalidLengthBoundMessage = (
 	kind: LengthBoundKind,
 	limit: number
-): string => `${kind} bound must be an integer (was ${limit})`
-
-export const writeNegativeLengthBoundMessage = (
-	kind: LengthBoundKind,
-	limit: number
-): string => `${kind} bound must be an integer (was ${limit})`
+): string => `${kind} bound must be a positive integer (was ${limit})`
 
 export const createLengthRuleParser =
 	(kind: LengthBoundKind) =>
 	(limit: number): number | undefined => {
-		if (!Number.isInteger(limit))
-			throwParseError(writeNonIntegerLengthBoundMessage(kind, limit))
-		if (limit < 0) throwParseError(writeNegativeLengthBoundMessage(kind, limit))
+		if (!Number.isInteger(limit) || limit < 0)
+			throwParseError(writeInvalidLengthBoundMessage(kind, limit))
 		return limit
 	}
 
@@ -311,7 +307,7 @@ export const dateLimitToString = (limit: LimitSchemaValue): string =>
 export const writeUnboundableMessage = <root extends string>(
 	root: root
 ): writeUnboundableMessage<root> =>
-	`Bounded expression ${root} must be a number, string, Array, or Date`
+	`Bounded expression ${root} must be exactly one of number, string, Array, or Date`
 
 export type writeUnboundableMessage<root extends string> =
-	`Bounded expression ${root} must be a number, string, Array, or Date`
+	`Bounded expression ${root} must be exactly one of number, string, Array, or Date`

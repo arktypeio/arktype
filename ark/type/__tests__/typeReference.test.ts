@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
-import { ambient, scope, type } from "arktype"
+import { ark, scope, type } from "arktype"
 
 contextualize(() => {
 	it("shallow type reference", () => {
@@ -25,7 +25,7 @@ contextualize(() => {
 		const $ = scope({ a })
 		const types = $.export()
 		attest(types.a.json).equals(a.json)
-		attest(a.$.json).equals(ambient.json)
+		attest(a.$.json).equals(ark.json)
 		attest(types.a.$.json).equals($.json)
 		attest<{ a: string }>(types.a.infer)
 	})

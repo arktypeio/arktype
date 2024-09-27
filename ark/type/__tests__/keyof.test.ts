@@ -1,12 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	rootNode,
 	writeNonStructuralOperandMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiableExpressionError
 } from "@ark/schema"
 import { scope, type } from "arktype"
-import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("autocompletion", () => {

@@ -105,11 +105,11 @@ contextualize(() => {
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
 		attest(t({}).toString()).snap(
-			"a must be a number, a string or an object (was undefined)"
+			"a must be a number, a string or null (was undefined)"
 		)
 		// unsatisfying value
 		attest(t({ a: false }).toString()).snap(
-			"a must be a number, a string or an object (was boolean)"
+			"a must be a number, a string or null (was boolean)"
 		)
 	})
 
@@ -126,7 +126,7 @@ contextualize(() => {
 			"foo must be an object, a number or a string (was undefined)"
 		)
 		attest(types.d({ foo: null }).toString()).snap(
-			"foo must be a function (was null)"
+			"foo must be an object, a number or a string (was null)"
 		)
 	})
 
@@ -138,24 +138,6 @@ contextualize(() => {
 		attest(t({ a: "" }).toString()).snap('a must be "bar" or "foo" (was "")')
 		attest(t({ a: 5 }).toString()).snap('a must be "bar" or "foo" (was 5)')
 	})
-
-	// TODO: https://github.com/arktypeio/arktype/issues/962
-	// it("multiple switch", () => {
-	// 	const types = scope({
-	// 		a: { foo: "string" },
-	// 		b: { foo: "number" },
-	// 		c: { foo: "Function" },
-	// 		d: "a|b|c"
-	// 	}).export()
-	// 	// attest(types.d({}).toString()).snap(
-	// 	// 	"foo must be a number, an object or a string (was undefined)"
-	// 	// )
-	// 	// this could be improved, currently a bit counterintuitive because of
-	// 	// the inconsistency between `domainOf` and typeof
-	// 	attest(types.d({ foo: null }).toString()).snap(
-	// 		"foo must be a function (was null)"
-	// 	)
-	// })
 
 	it("multi", () => {
 		const naturalNumber = type("number.integer>0")
@@ -200,7 +182,7 @@ isAdmin must be false, null or true (was 1)`)
 				d.password === d.repeatPassword ||
 				ctx.reject({
 					expected: "identical to password",
-					actual: null,
+					actual: "",
 					relativePath: ["repeatPassword"]
 				})
 		)

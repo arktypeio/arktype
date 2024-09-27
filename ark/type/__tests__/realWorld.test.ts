@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, type ArkErrors } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnboundableMessage,
+	type ArkErrors
+} from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
@@ -7,10 +11,10 @@ import type {
 	Narrowed,
 	Out,
 	To,
-	constrain,
 	number,
+	of,
 	string
-} from "arktype/internal/keywords/ast.ts"
+} from "arktype/internal/keywords/inference.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -378,10 +382,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
 			"first_name must be at most length 3 (was 4)"
 		)
-		// ideally, this would be "a string or null", but it is described
-		// as an object since discrimination uses the typeof operator
+
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
-			"first_name must be a string or an object (was a number)"
+			"first_name must be a string or null (was a number)"
 		)
 	})
 
@@ -413,7 +416,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = MyAssets({ assets: [{ token: "a", amount: "1" }] })
 
-		attest(out).snap({ assets: { a: "1n" } })
+		attest(out).snap({ assets: { a: 1n } })
 	})
 
 	// https://discord.com/channels/957797212103016458/957804102685982740/1243850690644934677
@@ -430,11 +433,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 					return ctx.error("a non-decimal number")
 				}
 			})
-			.narrow((amount, ctx) => true)
+			.narrow(() => true)
 
 		const Token = type("7<string<=120")
 			.pipe(s => s.toLowerCase())
-			.narrow((s, ctx) => true)
+			.narrow(() => true)
 
 		const $ = scope({
 			Asset: {
@@ -448,7 +451,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
 
-		attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
+		attest(out).snap([{ token: "lovelace", amount: 5000000n }])
 	})
 
 	it("regex index signature", () => {
@@ -532,7 +535,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+			"box.box.box must be an object (was a string)"
 		)
 	})
 
@@ -618,7 +621,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	it("narrowed morph", () => {
 		const t = type("string")
 			.pipe(s => parseInt(s))
-			.narrow(n => true)
+			.narrow(() => true)
 
 		attest<(In: string) => Out<number.narrowed>>(t.t)
 
@@ -700,17 +703,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
-		attest(Amount.json).snap([
-			{
-				in: "number",
-				morphs: [morphReference, { predicate: [predicateReference] }]
-			},
-			{
-				in: "string",
-				morphs: [morphReference, { predicate: [predicateReference] }]
-			}
-		])
+		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest(Amount.json).snap({
+			in: ["number", "string"],
+			morphs: [morphReference, { predicate: [predicateReference] }]
+		})
 
 		attest(Amount("1000")).equals(1000n)
 		attest(Amount("-5").toString()).snap(
@@ -769,7 +766,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	| {
 			type: "directory"
 			name: is<MoreThanLength<0> & LessThanLength<255>>
-			children: constrain<
+			children: of<
 				(
 					| {
 							type: "file"
@@ -859,5 +856,121 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			calendarID: 1,
 			appointmentTypeID: 1
 		})
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1276840721370054688
+	it("directly nested piped type instantiation", () => {
+		const t = type({
+			"test?": type("string").pipe(x => x === "true")
+		})
+
+		attest<{
+			test?: (In: string) => Out<boolean>
+		}>(t.t)
+	})
+
+	it("discriminated union error", () => {
+		const c = type({ city: "string", "+": "reject" }).pipe(o => ({
+			...o,
+			type: "city"
+		}))
+		const n = type({ name: "string", "+": "reject" }).pipe(o => ({
+			...o,
+			type: "name"
+		}))
+
+		const cn = c.or(n)
+
+		const out = cn({ city: "foo", name: "foo" })
+		attest(out.toString()).snap("name must be removed or city must be removed")
+	})
+
+	it("array intersection with object literal", () => {
+		const t = type({ name: "string" }).and("string[]")
+		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
+		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+
+		attest(t.expression).snap("{ name: string } & string[]")
+	})
+
+	it("tuple or morph inference", () => {
+		const t = type(["string", "string"]).or(["null", "=>", () => undefined])
+
+		attest(t.expression).snap("[string, string] | (In: null) => Out<unknown>")
+		attest(t.t).type.toString.snap(
+			"[string, string] | ((In: null) => Out<undefined>)"
+		)
+		attest(t.inferIn).type.toString("[string, string] | null")
+		attest(t.infer).type.toString("[string, string] | undefined")
+	})
+
+	it("scoped discrimnated union", () => {
+		const $ = scope({
+			TypeWithNoKeywords: { type: "'boolean'|'null'" },
+			TypeWithKeywords: "ArraySchema|ObjectSchema", // without both ArraySchema and ObjectSchema there's no error
+			// "#BaseSchema": "TypeWithNoKeywords|boolean", // errors even with union reversed
+			"#BaseSchema": "boolean|TypeWithNoKeywords", // without the `boolean` there's no error (even if still union such as `string|TypeWithNoKeywords`)
+			ArraySchema: {
+				"additionalItems?": "BaseSchema", // without this reference there's no error
+				type: "'array'"
+			},
+			// If `ObjectSchema` doesn't have `type` key there's no error
+			ObjectSchema: {
+				type: "'object'"
+			}
+		})
+		const JsonSchema = $.export()
+		attest(JsonSchema.TypeWithKeywords.expression).snap(
+			'{ type: "array", additionalItems?: { type: "boolean" | "null" } | false | true } | { type: "object" }'
+		)
+
+		attest(
+			JsonSchema.TypeWithKeywords({
+				type: "array",
+				additionalItems: { type: "boolean" }
+			})
+		).snap({ type: "array", additionalItems: { type: "boolean" } })
+		attest(
+			JsonSchema.TypeWithKeywords({
+				type: "array",
+				additionalItems: {
+					type: "whoops"
+				}
+			}).toString()
+		).snap('additionalItems.type must be "boolean" or "null" (was "whoops")')
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1127
+	it("keys can overlap with RegExp", () => {
+		const MaybeEmpty = type("<t>", "t|undefined|null")
+
+		const ApiSchema = type({
+			ref: MaybeEmpty("string"),
+			service_code: MaybeEmpty("number"),
+			action: MaybeEmpty("string"),
+			source: type("string | null"),
+			lastIndex: type("string | null")
+		})
+
+		attest<{
+			ref: string | null | undefined
+			service_code: number | null | undefined
+			action: string | null | undefined
+			source: string | null
+			lastIndex: string | null
+		}>(ApiSchema.t)
+
+		attest(ApiSchema.expression).snap(
+			"{ action: string | undefined | null, lastIndex: string | null, ref: string | undefined | null, service_code: number | undefined | null, source: string | null }"
+		)
+	})
+
+	it("error on bounded liftArray", () => {
+		// @ts-expect-error
+		attest(() => type("2 < Array.liftFrom<string> < 4"))
+			.throws.snap(
+				"ParseError: MaxLength operand must be a string or an array (was never)"
+			)
+			.type.errors(writeUnboundableMessage("string | string[]"))
 	})
 })

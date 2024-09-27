@@ -32,7 +32,7 @@
 
 // 	// @ts-expect-error
 // 	attest(() => matcher.when("string", s => s)).throwsAndHasTypeError(
-// 		"This branch is redundant and will never be reached" // TODO: rewrite error message
+// 		"This branch is redundant and will never be reached"
 // 	)
 // })
 
@@ -70,49 +70,48 @@
 // 		// properly returns the `never` type and throws given a guaranteed-to-be-invalid input
 // 		attest<never>(matcher(4))
 
-// 		attest(() => matcher(4)).throws("TODO: what's the error message?") // TODO
+// 		attest(() => matcher(4)).throws("FAIL NEEDS ERROR")
 // 	})
 
-// 	// TODO: reenable
-// 	// describe(".default", () => {
-// 	// 	it("chained, given a callback", () => {
-// 	// 		const matcher = match()
-// 	// 			.when("string", (s) => s)
-// 	// 			.default((_) => 0)
+// describe(".default", () => {
+// 	it("chained, given a callback", () => {
+// 		const matcher = match()
+// 			.when("string", (s) => s)
+// 			.default((_) => 0)
 
-// 	// 		attest<string>(matcher("abc")).equals("abc")
-// 	// 		attest<number>(matcher(4)).equals(0)
+// 		attest<string>(matcher("abc")).equals("abc")
+// 		attest<number>(matcher(4)).equals(0)
 
-// 	// 		attest<string | number>(matcher(0 as unknown))
-// 	// 	})
+// 		attest<string | number>(matcher(0 as unknown))
+// 	})
 
-// 	// 	it("chained, given a value", () => {
-// 	// 		const matcher = match()
-// 	// 			.when("string", (s) => s)
-// 	// 			.default(0)
+// 	it("chained, given a value", () => {
+// 		const matcher = match()
+// 			.when("string", (s) => s)
+// 			.default(0)
 
-// 	// 		attest<string>(matcher("abc")).equals("abc")
-// 	// 		attest<number>(matcher(4)).equals(0)
+// 		attest<string>(matcher("abc")).equals("abc")
+// 		attest<number>(matcher(4)).equals(0)
 
-// 	// 		attest<string | number>(matcher(0 as unknown))
-// 	// 	})
+// 		attest<string | number>(matcher(0 as unknown))
+// 	})
 
-// 	// 	it("in `cases`, given a callback", () => {
-// 	// 		const matcher = match({ string: (s) => s, default: (_) => 0 })
+// 	it("in `cases`, given a callback", () => {
+// 		const matcher = match({ string: (s) => s, default: (_) => 0 })
 
-// 	// 		attest<string>(matcher("abc")).equals("abc")
-// 	// 		attest<number>(matcher(4)).equals(0)
+// 		attest<string>(matcher("abc")).equals("abc")
+// 		attest<number>(matcher(4)).equals(0)
 
-// 	// 		attest<string | number>(matcher(0 as unknown))
-// 	// 	})
-// 	// })
+// 		attest<string | number>(matcher(0 as unknown))
+// 	})
+// })
 
 // 	it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
 // 		const matcher = match().when("string", s => s)
 
 // 		// @ts-expect-error
 // 		attest(() => matcher.finalize()).throwsAndHasTypeError(
-// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`" // TODO: rewrite message
+// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`"
 // 		)
 // 	})
 
@@ -136,7 +135,7 @@
 // 		// @ts-expect-error
 // 		attest(() => matcher(true)).throwsAndHasTypeError(
 // 			"Argument of type 'true' is not assignable to parameter of type 'string | number'"
-// 		) // TODO: what's the runtime error?
+// 		)
 // 	})
 
 // 	it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
@@ -144,7 +143,8 @@
 
 // 		// @ts-expect-error
 // 		attest(() => matcher.finalize()).throwsAndHasTypeError(
-// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or handling the cases explicitly" // TODO: rewrite message. at runtime can we even show a counterexample (serialize the cases not handled)?
+// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or handling the cases explicitly" +
+//          "should rewrite message. at runtime can we even show a counterexample (serialize the cases not handled)?"
 // 		)
 // 	})
 

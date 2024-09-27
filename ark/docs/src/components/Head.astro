@@ -1,19 +1,19 @@
 ---
-import type { Props } from '@astrojs/starlight/props';
-import BuiltinHead from '@astrojs/starlight/components/Head.astro';
+import type { Props } from "@astrojs/starlight/props"
+import BuiltinHead from "@astrojs/starlight/components/Head.astro"
 
 // Based on https://hideoo.dev/notes/starlight-og-images/
 
 // Get the URL of the generated image for the current page using its
 // ID and replace the file extension with `.png`.
 const ogImageUrl = new URL(
-  `/og/${Astro.props.id.replace(/\.\w+$/, '.png')}`,
-  Astro.site,
+	`/og/${Astro.props.id.replace(/\.\w+$/, ".png")}`,
+	Astro.site
 )
 ---
 
 <BuiltinHead {...Astro.props}>
-    <slot />
+	<slot />
 </BuiltinHead>
 
 <meta property="og:image" content={ogImageUrl} />

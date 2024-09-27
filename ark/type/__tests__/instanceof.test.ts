@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "arktype/internal/parser/tuple.ts"
 
@@ -8,7 +8,7 @@ contextualize(() => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = rootNode(Error)
+			const expected = rootSchema(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e)).equals(e)
@@ -68,10 +68,10 @@ contextualize(() => {
 		})
 		it("bidirectional checks doesn't break pipe inference", () => {
 			const tt = type({
-				f: ["string", "=>", s => [] as unknown]
+				f: ["string", "=>", () => [] as unknown]
 			})
 			// Should be inferred as {f: unknown}
-			type FF = typeof tt.infer
+			attest<{ f: unknown }>(tt.infer)
 		})
 
 		it("class with private properties", () => {

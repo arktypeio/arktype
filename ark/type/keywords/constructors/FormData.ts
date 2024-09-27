@@ -1,18 +1,33 @@
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { registry } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { Out } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import type { To } from "../inference.ts"
+import { arkModule } from "../utils.ts"
 
 export type FormDataValue = string | File
 
 export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
 
-export const FormDataModule: Module<FormDataModule> = submodule({
-	$root: ["instanceof", FormData],
-	parse: rootNode({
+const value = rootSchema(["string", registry.FileConstructor])
+
+const parsedFormDataValue = value.rawOr(value.array())
+
+const parsed = rootSchema({
+	meta: "an object representing parsed form data",
+	domain: "object",
+	index: {
+		signature: "string",
+		value: parsedFormDataValue
+	}
+})
+
+export const arkFormData: arkFormData.module = arkModule({
+	root: ["instanceof", FormData],
+	value,
+	parsed,
+	parse: rootSchema({
 		in: FormData,
-		morphs: (data: FormDataModule): ParsedFormData => {
+		morphs: (data: FormData): ParsedFormData => {
 			const result: ParsedFormData = {}
 
 			// no cast is actually required here, but with
@@ -28,15 +43,24 @@ export const FormDataModule: Module<FormDataModule> = submodule({
 						existing instanceof registry.FileConstructor
 					)
 						result[k] = [existing, v]
-					else (existing as FormDataValue[]).push(v)
+					else existing.push(v)
 				} else result[k] = v
 			}
 			return result
-		}
+		},
+		declaredOut: parsed
 	})
 })
 
-export type FormDataModule = Submodule<{
-	$root: FormData
-	parse: (In: FormData) => Out<ParsedFormData>
-}>
+export declare namespace arkFormData {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: FormData
+		value: FormDataValue
+		parse: (In: FormData) => To<ParsedFormData>
+		parsed: ParsedFormData
+	}
+}

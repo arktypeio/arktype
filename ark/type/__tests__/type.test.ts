@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type, type Type } from "arktype"
+import { flatMorph } from "@ark/util"
+import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -43,10 +44,10 @@ contextualize(() => {
 	})
 
 	it("is treated as contravariant", () => {
-		const ok: Type<number> = type("1")
+		type("1") satisfies Type<number>
 
 		// currently treated as bivariant here, should be error
-		const shouldBeError: Type<string> = type("1")
+		type("1") satisfies Type<string>
 
 		// errors correctly if t is declared as its own type param
 		const accept = <t extends string>(t: Type<t>) => t
@@ -57,16 +58,109 @@ contextualize(() => {
 		)
 	})
 
-	it("Type.Any allows arbitrary scope", () => {
+	it("type.Any allows arbitrary scope", () => {
 		const foo = scope({
 			foo: "string"
 		}).resolve("foo")
 
-		const t: Type.Any<string> = foo
+		foo satisfies type.Any<string>
 
 		// @ts-expect-error (fails with default ambient type)
 		attest((): Type<string> => foo).type.errors(
 			"Type<string, { foo: string; }>' is not assignable to type 'Type<string, {}>'"
 		)
+	})
+
+	it("distribute", () => {
+		const t = type("===", 0, "1", "2", 3, "4", 5)
+
+		const numbers = t.distribute(
+			n =>
+				n.ifExtends(type.number) ??
+				type.raw(n.expression.slice(1, -1)).as<number>(),
+			branches => type.raw(branches).as<number[]>()
+		)
+
+		attest(numbers.expression).snap("[1, 2, 4, 0, 3, 5]")
+	})
+
+	it("attached types", () => {
+		const attachments: Record<keyof Ark.typeAttachments, string | object> =
+			flatMorph({ ...type }, (k, v) =>
+				v instanceof Type ? [k, v.expression]
+				: v instanceof Generic ? [k, v.json]
+				: []
+			)
+
+		attest(attachments).snap({
+			bigint: "bigint",
+			boolean: "boolean",
+			false: "false",
+			never: "never",
+			null: "null",
+			number: "number",
+			object: "object",
+			string: "string",
+			symbol: "symbol",
+			true: "true",
+			unknown: "unknown",
+			undefined: "undefined",
+			Key: "string | symbol",
+			Record: keywords.Record.internal.json
+		})
+
+		attest<number>(type.number.t)
+	})
+
+	it("ark attached", () => {
+		attest<string>(type.keywords.number.integer.expression).snap("number % 1")
+	})
+
+	it("unit", () => {
+		const t = type.unit(5)
+		attest<5>(t.t)
+		attest(t.expression).equals("5")
+	})
+
+	it("enumerated", () => {
+		const t = type.enumerated(5, true, null)
+		attest<5 | true | null>(t.t)
+		attest(t.expression).snap("5 | null | true")
+	})
+
+	it("schema", () => {
+		const t = type.schema({ domain: "string" })
+		// uninferred for now
+		attest<unknown>(t.t)
+		attest(t.expression).equals("string")
+	})
+
+	it("ifEquals", () => {
+		const t = type("string")
+		attest(t.ifEquals("string")).equals(t)
+		// subtype
+		attest(t.ifEquals("'foo'")).equals(undefined)
+		// supertype
+		attest(t.ifEquals("string | number")).equals(undefined)
+	})
+
+	it("ifExtends", () => {
+		const t = type("string")
+		attest<type<string> | undefined>(t.ifExtends("string")).equals(t)
+		// subtype
+		attest<type<"foo"> | undefined>(t.ifExtends("'foo'")).equals(undefined)
+		// supertype
+		attest<type<string | number> | undefined>(
+			t.ifExtends("string | number")
+		).equals(t)
+	})
+
+	it("allows assignment to unparameterized Type", () => {
+		const t = type({
+			name: "string >= 2",
+			email: "string.email"
+		})
+
+		t satisfies Type
 	})
 })

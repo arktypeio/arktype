@@ -1,7 +1,7 @@
 ---
 title: Generics
 sidebar:
-  order: 2
+  order: 3
 ---
 
 Native generic syntax is finally available! 🎉
@@ -93,9 +93,9 @@ const basicUser = user.pick("name", "age")
 ### Invoked Definition
 
 ```ts
-import { ark } from "arktype"
+import { type } from "arktype"
 
-const unfalse = ark.Exclude("boolean", "false")
+const unfalse = type.keywords.Exclude("boolean", "false")
 ```
 
 ### TS (TODO)
@@ -120,7 +120,7 @@ console.log(boxType({ box: "foo" }))
 
 ### Generic HKTs
 
-Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible, but we're still finalizing the API. As a preview, here's what the implementation of `Partial` looks like internally:
+Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible. As a preview, here's what the implementation of `Partial` looks like internally:
 
 ```ts
 import { generic, Hkt } from "arktype"
@@ -132,8 +132,6 @@ const Partial = generic(["T", "object"])(
 	}
 )
 ```
-
-More to come on this as the API is finalized!
 
 Recursive and cyclic generics are also currently unavailable and will be added soon.
 

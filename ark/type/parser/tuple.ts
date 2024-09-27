@@ -1,6 +1,9 @@
 import {
 	$ark,
+	Disjoint,
+	intersectNodesRoot,
 	makeRootAndArrayPropertiesMutable,
+	type BaseParseContext,
 	type BaseRoot,
 	type MetaSchema,
 	type Morph,
@@ -11,8 +14,10 @@ import {
 } from "@ark/schema"
 import {
 	append,
+	isEmptyObject,
 	objectKindOrDomainOf,
 	throwParseError,
+	type anyOrNever,
 	type array,
 	type BuiltinObjectKind,
 	type conform,
@@ -21,43 +26,44 @@ import {
 	type ErrorMessage,
 	type show
 } from "@ark/util"
-import type { inferIntersection } from "../intersect.ts"
 import type {
-	distillConstrainableIn,
-	distillOut,
+	applyAttribute,
+	Default,
+	DefaultFor,
+	distill,
+	inferIntersection,
 	inferMorphOut,
 	inferPredicate,
+	InferredOptional,
+	Optional,
 	Out
-} from "../keywords/ast.ts"
-import type { ParseContext } from "../scope.ts"
+} from "../keywords/inference.ts"
+import type { type } from "../keywords/keywords.ts"
+import type { PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
-import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
-import type { BaseCompletions } from "./string/string.ts"
+import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
+import type { Scanner } from "./shift/scanner.ts"
+import type { BaseCompletions } from "./string.ts"
 
-export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
+export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
+export const parseTupleLiteral = (
+	def: array,
+	ctx: BaseParseContext
+): BaseRoot => {
 	let sequences: mutableInnerOfKind<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
 		let spread = false
-		let optional = false
 		if (def[i] === "..." && i < def.length - 1) {
 			spread = true
 			i++
 		}
 
-		const element = ctx.$.parse(def[i], ctx)
+		const element = ctx.$.parseOwnDefinitionFormat(def[i], ctx)
 
 		i++
-		if (def[i] === "?") {
-			if (spread) return throwParseError(spreadOptionalMessage)
-
-			optional = true
-			i++
-		}
 		if (spread) {
 			if (!element.extends($ark.intrinsic.Array))
 				return throwParseError(writeNonArraySpreadMessage(element.expression))
@@ -73,17 +79,25 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			)
 		} else {
 			sequences = sequences.map(base =>
-				appendElement(base, optional ? "optional" : "required", element)
+				appendElement(
+					base,
+					element.meta.optional ? "optional" : "required",
+					element
+				)
 			)
 		}
 	}
-	return ctx.$.internal.rootNode(
-		sequences.map(
-			sequence =>
-				({
+	return ctx.$.parseSchema(
+		sequences.map(sequence =>
+			isEmptyObject(sequence) ?
+				{
+					proto: Array,
+					exactLength: 0
+				}
+			:	({
 					proto: Array,
 					sequence
-				}) as const
+				} as const)
 		)
 	)
 }
@@ -142,16 +156,16 @@ const appendSpreadBranch = (
 		// the only array with no sequence reference is unknown[]
 		return appendElement(base, "variadic", $ark.intrinsic.unknown)
 	}
-	spread.prefix.forEach(node => appendElement(base, "required", node))
-	spread.optionals.forEach(node => appendElement(base, "optional", node))
+	spread.prefix?.forEach(node => appendElement(base, "required", node))
+	spread.optionals?.forEach(node => appendElement(base, "optional", node))
 	if (spread.variadic) appendElement(base, "variadic", spread.variadic)
-	spread.postfix.forEach(node => appendElement(base, "required", node))
+	spread.postfix?.forEach(node => appendElement(base, "required", node))
 	return base
 }
 
 const maybeParseTupleExpression = (
 	def: array,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): BaseRoot | undefined => {
 	const tupleExpressionResult =
 		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
@@ -163,7 +177,7 @@ const maybeParseTupleExpression = (
 // It is *extremely* important we use readonly any time we check a tuple against
 // something like this. Not doing so will always cause the check to fail, since
 // def is declared as a const parameter.
-type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
+type InfixExpression = readonly [unknown, Scanner.InfixToken, ...unknown[]]
 
 export type validateTuple<def extends array, $, args> =
 	def extends IndexZeroExpression ? validatePrefixExpression<def, $, args>
@@ -175,8 +189,7 @@ export type validateTuple<def extends array, $, args> =
 		readonly [
 			def[0] extends "" ? BaseCompletions<$, args, IndexZeroOperator | "...">
 			:	def[0],
-			def[1] extends "" ?
-				BaseCompletions<$, args, IndexOneOperator | "..." | "?">
+			def[1] extends "" ? BaseCompletions<$, args, IndexOneOperator | "...">
 			:	def[1]
 		]
 	:	validateTupleLiteral<def, $, args>
@@ -195,6 +208,7 @@ type SequenceParseState = {
 	unscanned: array
 	inferred: array
 	validated: array
+	includesOptional: boolean
 }
 
 type parseSequence<def extends array, $, args> = parseNextElement<
@@ -202,6 +216,7 @@ type parseSequence<def extends array, $, args> = parseNextElement<
 		unscanned: def
 		inferred: []
 		validated: []
+		includesOptional: false
 	},
 	$,
 	args
@@ -210,6 +225,7 @@ type parseSequence<def extends array, $, args> = parseNextElement<
 type PreparsedElement = {
 	head: unknown
 	tail: array
+	inferred: unknown
 	optional: boolean
 	spread: boolean
 }
@@ -218,58 +234,76 @@ declare namespace PreparsedElement {
 	export type from<result extends PreparsedElement> = result
 }
 
-type preparseNextElement<s extends SequenceParseState> =
+type preparseNextElement<s extends SequenceParseState, $, args> =
 	s["unscanned"] extends readonly ["...", infer head, ...infer tail] ?
-		tail extends readonly ["?", ...infer postOptionalTail] ?
-			PreparsedElement.from<{
-				head: head
-				tail: postOptionalTail
-				// this will be an error we have to handle
-				optional: true
-				spread: true
-			}>
-		:	PreparsedElement.from<{
-				head: head
-				tail: tail
-				optional: false
-				spread: true
-			}>
-	: s["unscanned"] extends readonly [infer head, "?", ...infer tail] ?
-		PreparsedElement.from<{
-			head: head
-			tail: tail
-			optional: true
-			spread: false
-		}>
+		inferDefinition<head, $, args> extends infer t ?
+			[t] extends [anyOrNever] ?
+				PreparsedElement.from<{
+					head: head
+					tail: tail
+					inferred: t
+					optional: false
+					spread: true
+				}>
+			: [t] extends [InferredOptional<infer base>] ?
+				PreparsedElement.from<{
+					head: head
+					tail: tail
+					inferred: base
+					// this will be an error we have to handle
+					optional: true
+					spread: true
+				}>
+			:	PreparsedElement.from<{
+					head: head
+					tail: tail
+					inferred: t
+					optional: false
+					spread: true
+				}>
+		:	never
 	: s["unscanned"] extends readonly [infer head, ...infer tail] ?
-		PreparsedElement.from<{
-			head: head
-			tail: tail
-			optional: false
-			spread: false
-		}>
+		inferDefinition<head, $, args> extends infer t ?
+			[t] extends [anyOrNever] ?
+				PreparsedElement.from<{
+					head: head
+					tail: tail
+					inferred: t
+					optional: false
+					spread: false
+				}>
+			: [t] extends [InferredOptional<infer base>] ?
+				PreparsedElement.from<{
+					head: head
+					tail: tail
+					inferred: base
+					optional: true
+					spread: false
+				}>
+			:	PreparsedElement.from<{
+					head: head
+					tail: tail
+					inferred: t
+					optional: false
+					spread: false
+				}>
+		:	never
 	:	null
 
 type parseNextElement<s extends SequenceParseState, $, args> =
-	preparseNextElement<s> extends infer next extends PreparsedElement ?
+	preparseNextElement<s, $, args> extends infer next extends PreparsedElement ?
 		parseNextElement<
 			{
 				unscanned: next["tail"]
 				inferred: next["spread"] extends true ?
-					[
-						...s["inferred"],
-						...conform<inferDefinition<next["head"], $, args>, array>
-					]
-				: next["optional"] extends true ?
-					[...s["inferred"], inferDefinition<next["head"], $, args>?]
-				:	[...s["inferred"], inferDefinition<next["head"], $, args>]
+					[...s["inferred"], ...conform<next["inferred"], array>]
+				: next["optional"] extends true ? [...s["inferred"], next["inferred"]?]
+				: [...s["inferred"], next["inferred"]]
 				validated: [
 					...s["validated"],
 					...(next["spread"] extends true ?
 						[
-							inferDefinition<next["head"], $, args> extends (
-								infer spreadOperand extends array
-							) ?
+							next["inferred"] extends infer spreadOperand extends array ?
 								[number, number] extends (
 									[s["inferred"]["length"], spreadOperand["length"]]
 								) ?
@@ -278,20 +312,20 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 							:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
 						]
 					:	[]),
-					[next["optional"] | next["spread"], "?"] extends (
-						[false, s["validated"][number]]
-					) ?
+					next["optional"] extends true ?
+						next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
+						: number extends s["inferred"]["length"] ?
+							ErrorMessage<optionalPostVariadicMessage>
+						:	validateDefinition<next["head"], $, args>
+					: [s["includesOptional"], next["spread"]] extends [true, false] ?
 						ErrorMessage<requiredPostOptionalMessage>
-					:	validateDefinition<next["head"], $, args>,
-					...(next["optional"] extends true ?
-						[
-							next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
-							: number extends s["inferred"]["length"] ?
-								ErrorMessage<optionalPostVariadicMessage>
-							:	"?"
-						]
-					:	[])
+					:	validateDefinition<next["head"], $, args>
 				]
+				includesOptional: s["includesOptional"] | next["optional"] extends (
+					false
+				) ?
+					false
+				:	true
 			},
 			$,
 			args
@@ -343,6 +377,10 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
+	: def[1] extends "=" ?
+		applyAttribute<inferDefinition<def[0], $, args>, Default<def[2]>>
+	: def[1] extends "?" ?
+		applyAttribute<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]
@@ -365,7 +403,7 @@ export type validatePostfixExpression<
 	args
 	// conform here is needed to preserve completions for shallow tuple
 	// expressions at index 1 after TS 5.1
-> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
+> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]" | "?"]>
 
 export type validateInfixExpression<def extends InfixExpression, $, args> =
 	def["length"] extends 2 ?
@@ -375,11 +413,10 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			def[1],
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
-			: def[1] extends ":" ?
-				Predicate<distillOut<inferDefinition<def[0], $, args>>>
-			: def[1] extends "=>" ?
-				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
+			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
+			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
+			: def[1] extends "=" ? DefaultFor<type.infer.In<def[0], $, args>>
 			: validateDefinition<def[2], $, args>
 		]
 
@@ -391,32 +428,35 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-	ctx.$.parse(def[1], ctx).keyof()
+	ctx.$.parseOwnDefinitionFormat(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
 >
 
-const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
+const parseBranchTuple: IndexOneParser<"|" | "&"> = (def, ctx) => {
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
-	const l = ctx.$.parse(def[0], ctx)
-	const r = ctx.$.parse(def[2], ctx)
-	return def[1] === "&" ? l.and(r) : l.or(r)
+	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
+	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
+	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
+	const result = intersectNodesRoot(l, r, ctx.$)
+	if (result instanceof Disjoint) return result.throw()
+	return result
 }
 
-const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).array()
+const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) =>
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).array()
 
-export type PostfixParser<token extends IndexOneOperator> = (
+export type IndexOneParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ) => BaseRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ) => BaseRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
@@ -425,9 +465,9 @@ export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
-export type TuplePostfixOperator = "[]"
+export type TuplePostfixOperator = "[]" | "?"
 
-export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@"
+export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@" | "="
 
 export type IndexOneExpression<
 	token extends IndexOneOperator = IndexOneOperator
@@ -436,14 +476,13 @@ export type IndexOneExpression<
 const isIndexOneExpression = (def: array): def is IndexOneExpression =>
 	indexOneParsers[def[1] as IndexOneOperator] !== undefined
 
-export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
+export const parseMorphTuple: IndexOneParser<"=>"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {
 		return throwParseError(
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
 		)
 	}
-	// TODO: nested morphs?
-	return ctx.$.parse(def[0], ctx).pipe(def[2] as Morph)
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).pipe(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (
@@ -457,31 +496,44 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
 		inferMorphOut<morph> extends infer out ?
-			(In: distillConstrainableIn<inferDefinition<inDef, $, args>>) => Out<out>
+			(In: distill.brandable.In<inferDefinition<inDef, $, args>>) => Out<out>
 		:	never
 	:	never
 
-export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
+export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {
 		return throwParseError(
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.$.parse(def[0], ctx).constrain("predicate", def[2] as Predicate)
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).constrain(
+		"predicate",
+		def[2] as Predicate
+	)
 }
 
-const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
-	ctx.$.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
+const parseAttributeTuple: IndexOneParser<"@"> = (def, ctx) =>
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureShallowDescendants(
+		def[2] as never
+	)
+
+const parseDefaultTuple: IndexOneParser<"="> = (def, ctx) =>
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).default(def[2] as never)
+
+const parseOptionalTuple: IndexOneParser<"?"> = (def, ctx) =>
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).optional()
 
 const indexOneParsers: {
-	[token in IndexOneOperator]: PostfixParser<token>
+	[token in IndexOneOperator]: IndexOneParser<token>
 } = {
+	"[]": parseArrayTuple,
+	"?": parseOptionalTuple,
 	"|": parseBranchTuple,
 	"&": parseBranchTuple,
-	"[]": parseArrayTuple,
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
-	"@": parseAttributeTuple
+	"@": parseAttributeTuple,
+	"=": parseDefaultTuple
 }
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "==="

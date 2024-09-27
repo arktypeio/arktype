@@ -1,12 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
-	rootNode,
+	rootSchema,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("binary", () => {
@@ -158,7 +158,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		rootNode([
+		rootSchema([
 			{
 				domain: "object",
 				required: {

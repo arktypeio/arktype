@@ -1,29 +1,35 @@
-import { intrinsic, rootNode } from "@ark/schema"
+import { intrinsic, rootSchema } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
-import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import type { Module, Submodule } from "../../module.ts"
+import type { Branded, of, To } from "../inference.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type numeric = constrain<string, Branded<"numeric">>
+	export type numeric = of<string, Branded<"numeric">>
 }
 
-const $root = regexStringNode(
+const root = regexStringNode(
 	wellFormedNumberMatcher,
 	"a well-formed numeric string"
 )
 
-export const numeric = submodule({
-	$root,
-	parse: rootNode({
-		in: $root,
+export const numeric: stringNumeric.module = arkModule({
+	root,
+	parse: rootSchema({
+		in: root,
 		morphs: (s: string) => Number.parseFloat(s),
 		declaredOut: intrinsic.number
 	})
 })
 
-export type numeric = Submodule<{
-	$root: string.numeric
-	parse: (In: string.numeric) => To<number>
-}>
+export declare namespace stringNumeric {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: string.numeric
+		parse: (In: string.numeric) => To<number>
+	}
+}

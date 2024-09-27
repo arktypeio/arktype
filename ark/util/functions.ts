@@ -2,8 +2,8 @@ import { throwInternalError } from "./errors.ts"
 import { unset } from "./records.ts"
 
 export type Fn<
-	in args extends readonly never[] = readonly never[],
-	out returns = unknown
+	args extends readonly any[] = readonly any[],
+	returns = unknown
 > = (...args: args) => returns
 
 export const cached = <t>(thunk: () => t): (() => t) => {

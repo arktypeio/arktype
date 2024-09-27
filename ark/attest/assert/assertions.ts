@@ -1,6 +1,5 @@
 import { printable, throwInternalError } from "@ark/util"
-import type { Type } from "arktype"
-import { AssertionError } from "node:assert"
+import type { type } from "arktype"
 import * as assert from "node:assert/strict"
 import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.ts"
 import type { AssertionContext } from "./attest.ts"
@@ -9,15 +8,15 @@ export type ThrowAssertionErrorContext = {
 	message: string
 	expected?: unknown
 	actual?: unknown
-	ctx: AssertionContext
+	stack: string
 }
 
 export const throwAssertionError = ({
-	ctx,
+	stack,
 	...errorArgs
 }: ThrowAssertionErrorContext): never => {
 	const e = new assert.AssertionError(errorArgs)
-	e.stack = ctx.assertionStack
+	e.stack = stack
 	throw e
 }
 
@@ -68,7 +67,12 @@ export const versionableAssertion =
 				} catch (e) {
 					errorMessage += `❌TypeScript@${version}:${e}\n`
 				}
-				if (errorMessage) throw new AssertionError({ message: errorMessage })
+				if (errorMessage) {
+					throwAssertionError({
+						stack: ctx.assertionStack,
+						message: errorMessage
+					})
+				}
 			}
 		} else fn(expected, actual, ctx)
 	}
@@ -99,7 +103,7 @@ export const assertEquals: AssertFn = versionableAssertion(
 )
 
 const unversionedAssertSatisfies = (
-	t: Type.Any,
+	t: type.Any,
 	data: unknown,
 	ctx: AssertionContext
 ) => {
@@ -136,7 +140,7 @@ export const typeEqualityMapping: TypeAssertionMapping =
 
 export const assertEqualOrMatching: AssertFn = versionableAssertion(
 	(expected, actual, ctx) => {
-		const assertionArgs = { actual, expected, ctx }
+		const assertionArgs = { actual, expected, stack: ctx.assertionStack }
 		if (typeof actual !== "string") {
 			throwAssertionError({
 				message: `Value was of type ${typeof actual} (expected a string).`,
@@ -172,8 +176,12 @@ export const getThrownMessage = (
 	result: AssertedFnCallResult,
 	ctx: AssertionContext
 ): string | undefined => {
-	if (!("threw" in result))
-		throwAssertionError({ message: "Function didn't throw.", ctx })
+	if (!("threw" in result)) {
+		throwAssertionError({
+			message: "Function didn't throw",
+			stack: ctx.assertionStack
+		})
+	}
 
 	return result.threw
 }

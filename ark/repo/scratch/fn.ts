@@ -1,91 +1,91 @@
-import type { inferTypeRoot, validateTypeRoot } from "arktype"
+import type { type } from "arktype"
 import type { ArkAmbient } from "arktype/config"
 
 export type FunctionParser<$> = {
-	// <ret = unknown>(_?: ":", ret?: validateTypeRoot<ret, $>): <
+	// <ret = unknown>(_?: ":", ret?: type.validate<ret, $>): <
 	//     implementation extends () => unknown extends ret
 	//         ? unknown
-	//         : inferTypeRoot<ret, $>
+	//         : type.infer<ret, $>
 	// >(
 	//     implementation: implementation
 	// ) => implementation
 
 	<arg0, ret = unknown>(
-		arg0: validateTypeRoot<arg0, $>,
+		arg0: type.validate<arg0, $>,
 		_?: ":",
-		ret?: validateTypeRoot<ret, $>
+		ret?: type.validate<ret, $>
 	): <
 		implementation extends (
-			arg0: inferTypeRoot<arg0, $>
-		) => unknown extends ret ? unknown : inferTypeRoot<ret, $>
+			arg0: type.infer<arg0, $>
+		) => unknown extends ret ? unknown : type.infer<ret, $>
 	>(
 		implementation: implementation
 	) => implementation
 
 	<arg0, arg1, ret = unknown>(
-		arg0: validateTypeRoot<arg0, $>,
-		arg1: validateTypeRoot<arg1, $>,
+		arg0: type.validate<arg0, $>,
+		arg1: type.validate<arg1, $>,
 		_?: ":",
-		ret?: validateTypeRoot<ret, $>
+		ret?: type.validate<ret, $>
 	): <
 		implementation extends (
-			arg0: inferTypeRoot<arg0, $>,
-			arg1: inferTypeRoot<arg1, $>
-		) => unknown extends ret ? unknown : inferTypeRoot<ret, $>
+			arg0: type.infer<arg0, $>,
+			arg1: type.infer<arg1, $>
+		) => unknown extends ret ? unknown : type.infer<ret, $>
 	>(
 		implementation: implementation
 	) => implementation
 
 	<arg0, arg1, arg2, ret = unknown>(
-		arg0: validateTypeRoot<arg0, $>,
-		arg1: validateTypeRoot<arg1, $>,
-		arg2: validateTypeRoot<arg2, $>,
+		arg0: type.validate<arg0, $>,
+		arg1: type.validate<arg1, $>,
+		arg2: type.validate<arg2, $>,
 		_?: ":",
-		ret?: validateTypeRoot<ret, $>
+		ret?: type.validate<ret, $>
 	): <
 		implementation extends (
-			arg0: inferTypeRoot<arg0, $>,
-			arg1: inferTypeRoot<arg1, $>,
-			arg2: inferTypeRoot<arg2, $>
-		) => unknown extends ret ? unknown : inferTypeRoot<ret, $>
+			arg0: type.infer<arg0, $>,
+			arg1: type.infer<arg1, $>,
+			arg2: type.infer<arg2, $>
+		) => unknown extends ret ? unknown : type.infer<ret, $>
 	>(
 		implementation: implementation
 	) => implementation
 
 	<arg0, arg1, arg2, arg3, ret = unknown>(
-		arg0: validateTypeRoot<arg0, $>,
-		arg1: validateTypeRoot<arg1, $>,
-		arg2: validateTypeRoot<arg2, $>,
-		arg3: validateTypeRoot<arg3, $>,
+		arg0: type.validate<arg0, $>,
+		arg1: type.validate<arg1, $>,
+		arg2: type.validate<arg2, $>,
+		arg3: type.validate<arg3, $>,
 		_?: ":",
-		ret?: validateTypeRoot<ret, $>
+		ret?: type.validate<ret, $>
 	): <
 		implementation extends (
-			arg0: inferTypeRoot<arg0, $>,
-			arg1: inferTypeRoot<arg1, $>,
-			arg2: inferTypeRoot<arg2, $>,
-			arg3: inferTypeRoot<arg3, $>
-		) => unknown extends ret ? unknown : inferTypeRoot<ret, $>
+			arg0: type.infer<arg0, $>,
+			arg1: type.infer<arg1, $>,
+			arg2: type.infer<arg2, $>,
+			arg3: type.infer<arg3, $>
+		) => unknown extends ret ? unknown : type.infer<ret, $>
 	>(
 		implementation: implementation
 	) => implementation
 
 	<arg0, arg1, arg2, arg3, arg4, ret = unknown>(
-		arg0: validateTypeRoot<arg0, $>,
-		arg1: validateTypeRoot<arg1, $>,
-		arg2: validateTypeRoot<arg2, $>,
-		arg3: validateTypeRoot<arg3, $>,
-		arg4: validateTypeRoot<arg4, $>,
+		arg0: type.validate<arg0, $>,
+		arg1: type.validate<arg1, $>,
+		arg2: type.validate<arg2, $>,
+		arg3: type.validate<arg3, $>,
+		arg4: type.validate<arg4, $>,
 		_?: ":",
-		ret?: validateTypeRoot<ret, $>
+		ret?: type.validate<ret, $>
 	): <
 		implementation extends (
-			arg0: inferTypeRoot<arg0, $>,
-			arg1: inferTypeRoot<arg1, $>,
-			arg2: inferTypeRoot<arg2, $>,
-			arg3: inferTypeRoot<arg3, $>,
-			arg4: inferTypeRoot<arg4, $>
-		) => unknown extends ret ? unknown : inferTypeRoot<ret, $>
+			arg0: type.infer<arg0, $>,
+			arg1: type.infer<arg1, $>,
+			arg2: type.infer<arg2, $>,
+			arg3: type.infer<arg3, $>,
+			arg4: type.infer<arg4, $>
+		) => unknown extends ret ? unknown : type.infer<ret, $>
 	>(
 		implementation: implementation
 	) => implementation

@@ -1,24 +1,22 @@
 import { type } from "arktype"
 
-// Syntax carried over from 1.0 + TS
-export const currentTsSyntax = type({
-	keyword: "null",
-	stringLiteral: "'TS'",
-	numberLiteral: "5",
-	bigintLiteral: "5n",
-	union: "string|number",
-	intersection: "boolean&true",
-	array: "Date[]",
-	grouping: "(0|1)[]",
-	objectLiteral: {
-		nested: "string",
-		"optional?": "number"
-	},
-	arrayOfObjectLiteral: [
-		{
-			name: "string"
-		},
-		"[]"
-	],
-	tuple: ["number", "number"]
+export const disappointingGift = type({
+	label: "string",
+	"box?": "this"
+})
+
+type DisappointingGift = typeof disappointingGift.infer
+
+const giftData: DisappointingGift = {
+	label: "get hyped"
+}
+
+// create a cyclic object
+giftData.box = giftData
+
+const ok = disappointingGift.assert(giftData)
+
+const bad = disappointingGift.assert({
+	label: "foo",
+	box: { label: "bar", box: {} }
 })

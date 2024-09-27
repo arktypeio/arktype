@@ -15,11 +15,10 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import type {
-	Inner,
-	mutableInnerOfKind,
 	nodeOfKind,
 	NodeSchema,
-	Prerequisite
+	Prerequisite,
+	RootSchema
 } from "../kinds.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -43,7 +42,11 @@ import {
 import { intersectNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
-import { hasArkKind, isNode } from "../shared/utils.ts"
+import {
+	hasArkKind,
+	isNode,
+	type makeRootAndArrayPropertiesMutable
+} from "../shared/utils.ts"
 import type { Sequence } from "../structure/sequence.ts"
 import type {
 	Structure,
@@ -72,18 +75,27 @@ export declare namespace Intersection {
 		predicate?: array<PredicateNode>
 	}
 
-	export type MutableInner = mutableInnerOfKind<"intersection">
+	export namespace Inner {
+		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
+	}
 
-	export type NormalizedSchema = Omit<Schema, StructuralKind | "undeclared">
+	export type ConstraintsSchema<inferredBasis = any> = show<
+		BaseNormalizedSchema & {
+			domain?: Domain.Schema
+			proto?: Proto.Schema
+		} & conditionalRootOf<inferredBasis>
+	>
 
-	export type Schema<inferredBasis = any> =
-		| show<
-				BaseNormalizedSchema & {
-					domain?: Domain.Schema
-					proto?: Proto.Schema
-				} & conditionalRootOf<inferredBasis>
-		  >
-		| IntersectionNode
+	export type NormalizedSchema = Omit<
+		ConstraintsSchema,
+		StructuralKind | "undeclared"
+	>
+
+	export type Schema<inferredBasis = any> = ConstraintsSchema<inferredBasis>
+
+	export interface AstSchema extends BaseNormalizedSchema {
+		intersection: readonly RootSchema[]
+	}
 
 	export interface ErrorContext
 		extends BaseErrorContext<"intersection">,
@@ -110,6 +122,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 		hasAssociatedError: true,
 		normalize: rawSchema => {
 			if (isNode(rawSchema)) return rawSchema
+
 			const { structure, ...schema } = rawSchema
 			const hasRootStructureKey = !!structure
 			const normalizedStructure = (structure as mutable<Structure.Schema>) ?? {}
@@ -252,10 +265,14 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		node.isRefinement()
 	)
 
-	expression: string =
-		this.structure?.expression ||
-		`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
-		"unknown"
+	get expression(): string {
+		let expression =
+			this.structure?.expression ||
+			`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
+			"unknown"
+		if (expression === "Array == 0") expression = "[]"
+		return this.cacheGetter("expression", expression)
+	}
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"
@@ -356,7 +373,7 @@ const intersectIntersections = (
 	if (hasArkKind(r, "root") && r.hasKind("intersection"))
 		return intersectIntersections(l, r.inner, ctx)
 
-	const baseInner: Intersection.MutableInner = {}
+	const baseInner: Intersection.Inner.mutable = {}
 
 	const lBasis = l.proto ?? l.domain
 	const rBasis = r.proto ?? r.domain
@@ -403,19 +420,16 @@ type conditionalIntersectionKeyOf<t> =
 	| constraintKindOf<t>
 	| (t extends object ? "undeclared" : never)
 
-// not sure why explicitly allowing Inner<k> is necessary in these cases,
-// but remove if it can be removed without creating type errors
-type intersectionChildRootValueOf<k extends Intersection.FlattenedChildKind> =
-	k extends OpenNodeKind ? listable<NodeSchema<k> | Inner<k>>
-	:	NodeSchema<k> | Inner<k>
+type intersectionChildSchemaValueOf<k extends Intersection.FlattenedChildKind> =
+	k extends OpenNodeKind ? listable<NodeSchema<k>> : NodeSchema<k>
 
-type conditionalRootValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends Intersection.FlattenedChildKind ? intersectionChildRootValueOf<k>
+type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends Intersection.FlattenedChildKind ? intersectionChildSchemaValueOf<k>
 	:	ConditionalTerminalIntersectionRoot[k & ConditionalTerminalIntersectionKey]
 
 type intersectionChildInnerValueOf<k extends Intersection.FlattenedChildKind> =
 	k extends OpenNodeKind ? readonly nodeOfKind<k>[] : nodeOfKind<k>
 
 export type conditionalRootOf<t> = {
-	[k in conditionalIntersectionKeyOf<t>]?: conditionalRootValueOfKey<k>
+	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
 }

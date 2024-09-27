@@ -14,7 +14,7 @@ contextualize(() => {
 
 	it("type error on unsatisfied constraint", () => {
 		// @ts-expect-error
-		attest((t: Hkt.apply<AppendKind, [2, 0]>) => {}).type.errors(
+		attest((t: Hkt.apply<AppendKind, [2, 0]>) => t).type.errors(
 			"Type 'number' is not assignable to type 'readonly unknown[]'"
 		)
 	})

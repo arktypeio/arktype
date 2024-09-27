@@ -1,8 +1,13 @@
-import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
-import type { Submodule } from "../../module.ts"
-import type { Branded, To, constrain } from "../ast.ts"
+import {
+	ArkErrors,
+	intrinsic,
+	rootSchema,
+	type TraversalContext
+} from "@ark/schema"
+import type { Module, Submodule } from "../../module.ts"
+import type { Branded, To, of } from "../inference.ts"
 import { number } from "../number/number.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { integer } from "./integer.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -104,7 +109,7 @@ export const tryParseDatePattern = (
 
 const isParsableDate = (s: string) => !Number.isNaN(new Date(s).valueOf())
 
-const parsableDate = rootNode({
+const parsableDate = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: "a parsable date",
@@ -112,7 +117,7 @@ const parsableDate = rootNode({
 	}
 }).assertHasKind("intersection")
 
-const epoch$root = integer.$root.internal
+const epochRoot = integer.root.internal
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string
@@ -129,35 +134,44 @@ const epoch$root = integer.$root.internal
 	})
 	.assertHasKind("intersection")
 
-const epoch = submodule({
-	$root: epoch$root,
-	parse: rootNode({
-		in: epoch$root,
+const epoch = arkModule({
+	root: epochRoot,
+	parse: rootSchema({
+		in: epochRoot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})
 })
 
-const iso$root = regexStringNode(
+const isoRoot = regexStringNode(
 	iso8601Matcher,
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
-const iso = submodule({
-	$root: iso$root,
-	parse: rootNode({
-		in: iso$root,
+const iso = arkModule({
+	root: isoRoot,
+	parse: rootSchema({
+		in: isoRoot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})
 })
 
-export const date = submodule({
-	$root: parsableDate,
-	parse: rootNode({
+declare namespace string {
+	export type date = of<string, Branded<"date">>
+
+	export namespace date {
+		export type epoch = of<string, Branded<"date.epoch">>
+		export type iso = of<string, Branded<"date.iso">>
+	}
+}
+
+export const stringDate: stringDate.module = arkModule({
+	root: parsableDate,
+	parse: rootSchema({
 		declaredIn: parsableDate,
 		in: "string",
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			const date = new Date(s)
 			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
 			return date
@@ -168,24 +182,33 @@ export const date = submodule({
 	epoch
 })
 
-declare namespace string {
-	export type date = constrain<string, Branded<"date">>
+export declare namespace stringDate {
+	export type module = Module<stringDate.submodule>
 
-	export namespace date {
-		export type epoch = constrain<string, Branded<"date.epoch">>
-		export type iso = constrain<string, Branded<"date.iso">>
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: string.date
+		parse: (In: string.date) => To<Date>
+		iso: iso.submodule
+		epoch: epoch.submodule
+	}
+
+	export namespace iso {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			root: string.date.iso
+			parse: (In: string.date.iso) => To<Date>
+		}
+	}
+
+	export namespace epoch {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			root: string.date.epoch
+			parse: (In: string.date.epoch) => To<Date>
+		}
 	}
 }
-
-export type date = Submodule<{
-	$root: string.date
-	parse: (In: string.date) => To<Date>
-	iso: Submodule<{
-		$root: string.date.iso
-		parse: (In: string.date.iso) => To<Date>
-	}>
-	epoch: Submodule<{
-		$root: string.date.epoch
-		parse: (In: string.date.epoch) => To<Date>
-	}>
-}>

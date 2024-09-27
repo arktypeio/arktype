@@ -1,12 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	rootNode,
+	rootSchema,
 	writeUnboundableMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type ArkErrors
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distillOut, string } from "arktype/internal/keywords/ast.ts"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
+import type { distill, string } from "arktype/internal/keywords/inference.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	it("base definition", () => {
@@ -64,7 +65,10 @@ contextualize(() => {
 	it("doesn't try to validate any in scope", () => {
 		const $ = scope({ a: {} as any })
 		attest<any>($.resolve("a").infer)
-		attest<[number, any]>($.type(["number", "a"]).infer)
+
+		const t = $.type(["number", "a"])
+
+		attest<[number, any]>(t.infer)
 	})
 
 	it("infers input and output", () => {
@@ -177,7 +181,7 @@ contextualize(() => {
 				a: "string|number",
 				b: ["boolean"]
 			})
-			attest<{ a: "string|number"; b: ["boolean"] }>(def)
+			attest<{ a: "string|number"; b: readonly ["boolean"] }>(def)
 		})
 
 		it("ark error", () => {
@@ -194,7 +198,7 @@ contextualize(() => {
 			})
 
 			const ok = $.define(["a[]|boolean"])
-			attest<["a[]|boolean"]>(ok)
+			attest<readonly ["a[]|boolean"]>(ok)
 
 			// @ts-expect-error
 			attest(() => $.define({ not: "ok" })).type.errors(
@@ -242,7 +246,9 @@ contextualize(() => {
 				}
 			})
 
-		type Package = distillOut<ReturnType<typeof getCyclicScope>["t"]["package"]>
+		type Package = distill.Out<
+			ReturnType<typeof getCyclicScope>["t"]["package"]
+		>
 
 		const getCyclicData = () => {
 			const packageData = {
@@ -254,17 +260,6 @@ contextualize(() => {
 			return packageData
 		}
 
-		it("cyclic union", () => {
-			const types = scope({
-				a: { b: "b|false" },
-				b: { a: "a|true" }
-			}).export()
-			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | cyclic } }
-	b: { a: true | { b: false | cyclic } }
-}>`)
-		})
-
 		it("cyclic intersection", () => {
 			const types = scope({
 				a: { b: "b&a" },
@@ -273,6 +268,17 @@ contextualize(() => {
 			attest(types).type.toString.snap(`Module<{
 	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
 	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
+}>`)
+		})
+
+		it("cyclic union", () => {
+			const types = scope({
+				a: { b: "b|false" },
+				b: { a: "a|true" }
+			}).export()
+			attest(types).type.toString.snap(`Module<{
+	a: { b: false | { a: true | cyclic } }
+	b: { a: true | { b: false | cyclic } }
 }>`)
 		})
 
@@ -307,6 +313,67 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			attest(nonSelfDependent(data).toString()).snap(
 				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 			)
+		})
+
+		it("intersect cyclic reference", () => {
+			const types = scope({
+				arf: {
+					b: "bork"
+				},
+				bork: {
+					c: "arf&bork"
+				}
+			}).export()
+			attest(types.arf.infer).type.toString.snap(
+				"{ b: { c: { b: cyclic; c: cyclic } } }"
+			)
+			attest(types.bork.infer).type.toString.snap(
+				"{ c: { b: cyclic; c: cyclic } }"
+			)
+
+			const expectedCyclicJson =
+				types.arf.internal.firstReferenceOfKindOrThrow("alias").json
+
+			attest(types.arf.json).snap({
+				domain: "object",
+				required: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [
+								{
+									key: "c",
+									value: expectedCyclicJson
+								}
+							]
+						}
+					}
+				]
+			})
+			const a = {} as typeof types.arf.infer
+			const b = { c: {} } as typeof types.bork.infer
+			a.b = b
+			b.c.b = b
+			b.c.c = b.c
+
+			attest(types.arf.expression).snap("{ b: { c: $arf&$bork } }")
+			attest(types.bork.expression).snap("{ c: $arf&$bork }")
+
+			attest(types.arf(a)).equals(a)
+			attest(types.arf({ b: { c: {} } }).toString())
+				.snap(`b.c.b must be an object (was missing)
+b.c.c must be an object (was missing)`)
+
+			attest(types.bork.json).snap({
+				domain: "object",
+				required: [
+					{
+						key: "c",
+						value: expectedCyclicJson
+					}
+				]
+			})
 		})
 
 		it("union cyclic reference", () => {
@@ -353,65 +420,26 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			})
 		})
 
-		it("intersect cyclic reference", () => {
+		// https://github.com/arktypeio/arktype/issues/1138
+		it("cyclic array", () => {
+			type Value = boolean | number | string | { [k: string]: Value } | Value[]
+
 			const types = scope({
-				arf: {
-					b: "bork"
+				primitive: "boolean | number | string",
+				record: {
+					"[string]": "value"
 				},
-				bork: {
-					c: "arf&bork"
-				}
+				value: "primitive | record | value[]",
+				castValue: "value" as type.cast<Value>
 			}).export()
-			attest(types.arf.infer).type.toString.snap(
-				"{ b: { c: { b: cyclic; c: cyclic } } }"
-			)
-			attest(types.bork.infer).type.toString.snap(
-				"{ c: { b: cyclic; c: cyclic } }"
-			)
 
-			const expectedCyclicJson =
-				types.arf.internal.firstReferenceOfKindOrThrow("alias").json
+			// TS type display blows up but it's equivalent to Value
+			const out = types.value(5)
+			// casting to Value also works
+			const castOut = types.value(5)
 
-			attest(types.arf.json).snap({
-				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [
-								{
-									key: "c",
-									value: expectedCyclicJson
-								}
-							]
-						}
-					}
-				]
-			})
-			const a = {} as typeof types.arf.infer
-			const b = { c: {} } as typeof types.bork.infer
-			a.b = b
-			b.c.b = b
-			b.c.c = b.c
-
-			attest(types.arf.description).snap("{ b: { c: arf&bork } }")
-			attest(types.bork.description).snap("{ c: arf&bork }")
-
-			attest(types.arf(a)).equals(a)
-			attest(types.arf({ b: { c: {} } }).toString())
-				.snap(`b.c.b must be an object (was missing)
-b.c.c must be an object (was missing)`)
-
-			attest(types.bork.json).snap({
-				domain: "object",
-				required: [
-					{
-						key: "c",
-						value: expectedCyclicJson
-					}
-				]
-			})
+			attest<Value | ArkErrors>(out).equals(5)
+			attest<Value | ArkErrors>(castOut).equals(5)
 		})
 	})
 
@@ -420,7 +448,7 @@ b.c.c must be an object (was missing)`)
 			foo: {
 				bar: "string"
 			},
-			string: rootNode({ domain: "string" }).constrain("minLength", 1)
+			string: rootSchema({ domain: "string" }).constrain("minLength", 1)
 		}).export()
 		attest<
 			Module<{

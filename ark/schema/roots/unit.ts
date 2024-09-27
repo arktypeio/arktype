@@ -2,12 +2,9 @@ import {
 	domainDescriptions,
 	domainOf,
 	printable,
-	prototypeKeysOf,
 	throwParseError,
 	type Domain,
-	type JsonPrimitive,
-	type Key,
-	type array
+	type JsonPrimitive
 } from "@ark/util"
 import type {
 	BaseErrorContext,
@@ -119,7 +116,6 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		typeof this.unit === "string" || this.unit instanceof Date ?
 			JSON.stringify(this.compiledValue)
 		:	`${this.compiledValue}`
-	literalKeys: array<Key> = prototypeKeysOf(this.unit)
 
 	compiledCondition: string = compileEqualityCheck(
 		this.unit,
@@ -149,7 +145,8 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	traverseAllows: TraverseAllows =
 		this.unit instanceof Date ?
 			data => data instanceof Date && data.toISOString() === this.compiledValue
-		:	data => data === this.unit
+		: Number.isNaN(this.unit) ? data => Number.isNaN(data)
+		: data => data === this.unit
 }
 
 export const Unit = {
@@ -166,5 +163,8 @@ const compileEqualityCheck = (
 		const condition = `data instanceof Date && data.toISOString() === ${serializedValue}`
 		return negated ? `!(${condition})` : condition
 	}
+
+	if (Number.isNaN(unit)) return `${negated ? "!" : ""}Number.isNaN(data)`
+
 	return `data ${negated ? "!" : "="}== ${serializedValue}`
 }

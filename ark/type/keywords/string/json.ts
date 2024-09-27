@@ -1,36 +1,43 @@
-import { intrinsic, rootNode } from "@ark/schema"
-import type { Submodule } from "../../module.ts"
-import type { Branded, To, constrain } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
+import type { Module, Submodule } from "../../module.ts"
+import type { Branded, To, of } from "../inference.ts"
+import { arkModule } from "../utils.ts"
 
 declare namespace string {
-	export type json = constrain<string, Branded<"json">>
+	export type json = of<string, Branded<"json">>
 }
 
 const jsonStringDescription = "a JSON string"
 
-const isParsableJson = (s: string) => {
-	try {
-		JSON.parse(s)
-		return true
-	} catch {
-		return false
-	}
+export const writeJsonSyntaxErrorProblem = (error: unknown): string => {
+	if (!(error instanceof SyntaxError)) throw error
+	return `must be ${jsonStringDescription} (${error})`
 }
 
-const $root = rootNode({
+const root = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: jsonStringDescription,
-		predicate: isParsableJson
+		predicate: (s: string, ctx) => {
+			try {
+				JSON.parse(s)
+				return true
+			} catch (e) {
+				return ctx.reject({
+					code: "predicate",
+					expected: jsonStringDescription,
+					problem: writeJsonSyntaxErrorProblem(e)
+				})
+			}
+		}
 	}
 })
 
-export const json = submodule({
-	$root,
-	parse: rootNode({
+export const json: stringJson.module = arkModule({
+	root,
+	parse: rootSchema({
 		in: "string",
-		morphs: (s: string, ctx) => {
+		morphs: (s: string, ctx: TraversalContext) => {
 			if (s.length === 0) {
 				return ctx.error({
 					code: "predicate",
@@ -44,7 +51,7 @@ export const json = submodule({
 				return ctx.error({
 					code: "predicate",
 					expected: jsonStringDescription,
-					problem: `must be ${jsonStringDescription} (${e})`
+					problem: writeJsonSyntaxErrorProblem(e)
 				})
 			}
 		},
@@ -52,7 +59,13 @@ export const json = submodule({
 	})
 })
 
-export type json = Submodule<{
-	$root: string.json
-	parse: (In: string.json) => To<object>
-}>
+export declare namespace stringJson {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: string.json
+		parse: (In: string.json) => To<object>
+	}
+}

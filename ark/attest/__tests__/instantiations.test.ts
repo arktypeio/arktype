@@ -4,7 +4,8 @@ import { it } from "mocha"
 
 contextualize(() => {
 	it("inline", () => {
-		const user = type({
+		attest.instantiations([7574, "instantiations"])
+		return type({
 			kind: "'admin'",
 			"powers?": "string[]"
 		})
@@ -15,14 +16,13 @@ contextualize(() => {
 			.or({
 				kind: "'pleb'"
 			})
-		// attest.instantiations([7574, "instantiations"])
 	})
 	it("fails on instantiations above threshold", () => {
 		attest(() => {
-			const user = type({
+			attest.instantiations([1, "instantiations"])
+			return type({
 				foo: "0|1|2|3|4|5|6"
 			})
-			attest.instantiations([1, "instantiations"])
 		}).throws("exceeded baseline by")
 	})
 })

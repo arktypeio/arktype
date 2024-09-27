@@ -1,11 +1,8 @@
 import {
 	domainDescriptions,
 	domainOf,
-	getBaseDomainKeys,
 	throwParseError,
-	type Domain as _Domain,
-	type array,
-	type Key
+	type Domain as _Domain
 } from "@ark/util"
 import type {
 	BaseErrorContext,
@@ -93,7 +90,6 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		:	`typeof data !== "${this.domain}"`
 
 	readonly expression: string = this.domain
-	readonly literalKeys: array<Key> = getBaseDomainKeys(this.domain)
 
 	get shortDescription(): string {
 		return domainDescriptions[this.domain]

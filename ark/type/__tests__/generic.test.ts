@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { chainableNoOpProxy } from "@ark/attest/internal/utils.js"
 import {
 	intrinsic,
 	writeIndivisibleMessage,
@@ -9,10 +10,10 @@ import {
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
-import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
-import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
-import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
+import { writeUnclosedGroupMessage } from "arktype/internal/parser/reduce/shared.ts"
+import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -93,27 +94,23 @@ contextualize(() => {
 			).throwsAndHasTypeError(writeUnresolvableMessage("this"))
 		})
 
-		// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-		// it("this in arg", () => {
-		// 	const boxOf = type("<t>", {
-		// 		box: "t"
-		// 	})
-		// 	const t = boxOf({
-		// 		a: "string|this"
-		// 	})
+		it("this in arg", () => {
+			const boxOf = type("<t>", {
+				box: "t"
+			})
+			const t = boxOf({
+				a: "string|this"
+			})
 
-		// 	const expectedContents = type({ a: "string|this" })
-		// 	const expectedBox = type({ box: expectedContents })
-
-		// 	attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
-		// 	attest(t.json).equals(expectedBox.json)
-		// })
+			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
+			attest(t.expression).satisfies(/{ box: { a: type\d+ \| string } }/)
+		})
 
 		it("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
 			attest(() => pair("string")).type.errors(
-				"Source has 1 element(s) but target requires 2"
+				"Expected 2 arguments, but got 1"
 			)
 		})
 
@@ -121,7 +118,7 @@ contextualize(() => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
 			attest(() => pair("string", "boolean", "number")).type.errors(
-				"Source has 3 element(s) but target allows only 2"
+				"Expected 2 arguments, but got 3"
 			)
 		})
 	})
@@ -142,23 +139,13 @@ contextualize(() => {
 			testNonEmpty(nonEmpty)
 		})
 
-		it("can apply constraints via :", () => {
-			const nonEmpty = type("<arr: unknown[]>", "arr > 0")
-			testNonEmpty(nonEmpty)
-		})
-
 		it("can apply constraints with whitespace", () => {
 			const nonEmpty = type("<   arr     extends    unknown  []>", "arr > 0")
 			testNonEmpty(nonEmpty)
 		})
 
-		it("can apply constraints with whitespace and :", () => {
-			const nonEmpty = type("<   arr     :    unknown  []   >", "arr > 0")
-			testNonEmpty(nonEmpty)
-		})
-
 		it("constrained constraint", () => {
-			const positiveToInteger = type("<n: number > 0>", "n % 1")
+			const positiveToInteger = type("<n extends number > 0>", "n % 1")
 
 			const t = positiveToInteger("number > 0")
 			const expected = type("number.integer > 0")
@@ -181,7 +168,7 @@ contextualize(() => {
 
 		it("unsatisfied parameter string", () => {
 			const $ = scope({
-				"entry<k extends string | symbol, v>": ["k", "v"],
+				"entry<k extends Key, v>": ["k", "v"],
 				foobar: "entry<'foo', 'bar'>"
 			})
 
@@ -227,8 +214,8 @@ contextualize(() => {
 		it("errors on unsatisfied constraints from current scope", () => {
 			attest(() =>
 				scope({
-					"entry<k extends key, v>": ["k", "v"],
-					key: "string | symbol",
+					"entry<k extends specialKey, v>": ["k", "v"],
+					specialKey: "string | symbol",
 					goodEntry: "entry<'foo', 1>",
 					// @ts-expect-error
 					badEntry: "entry<1, 0>"
@@ -298,21 +285,6 @@ contextualize(() => {
 				attest(t.json).equals(expected.json)
 			})
 
-			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-			// it("this in args", ({ $ }) => {
-			// 	const t = $.type("box<0,  this>")
-			// 	type Expected = {
-			// 		box: 0 | Expected
-			// 	}
-			// 	const standalone = type({
-			// 		box: "0|this"
-			// 	})
-
-			// 	attest<Expected>(t.t)
-			// 	attest<Expected>(standalone.t)
-			// 	attest(t.json).equals(standalone.json)
-			// })
-
 			it("right bounds", ({ $ }) => {
 				// should be able to differentiate between > that is part of a right
 				// bound and > that closes a generic instantiation
@@ -333,13 +305,12 @@ contextualize(() => {
 				)
 			})
 
-			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-			// it("extra >", ({ $ }) => {
-			// 	attest(() =>
-			// 		// @ts-expect-error
-			// 		$.type("box<0,  this>>")
-			// 	).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
-			// })
+			it("extra >", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0,  1>>")
+				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
+			})
 
 			it("too few args", ({ $ }) => {
 				attest(() =>
@@ -403,6 +374,7 @@ contextualize(() => {
 				})
 
 				attest<typeof expected.t>(types.actual.t)
+				attest(expected.json).equals(types.actual.json)
 			})
 
 			it("allows external scope reference to be resolved", () => {
@@ -493,11 +465,34 @@ contextualize(() => {
 					)
 			})
 
-			it("completions", g => {
+			it("completions in instantiation", g => {
 				// @ts-expect-error
 				attest(() => g({ foo: "numb" })).completions({
 					numb: ["number"]
 				})
+			})
+
+			it("completions in contraint", () => {
+				attest(() =>
+					generic([
+						"t",
+						{
+							// @ts-expect-error
+							foo: "numb"
+						}
+					])
+				).completions({
+					numb: ["number"]
+				})
+			})
+
+			it("is available on type", () => {
+				const nonEmpty = type.generic(["s", "string"])("s > 0")
+
+				const expected = type("string.alpha > 0")
+				const actual = nonEmpty("string.alpha")
+				attest<typeof expected>(actual)
+				attest(actual.expression).equals(expected.expression)
 			})
 		}
 	)
@@ -604,34 +599,40 @@ contextualize(() => {
 		})
 	})
 
-	// describe("cyclic", () => {
-	// it("self-reference", () => {
-	// 	const types = scope({
-	// 		"alternate<a, b>": {
-	// 			// ensures old generic params aren't intersected with
-	// 			// updated values (would be never)
-	// 			swap: "alternate<b, a>",
-	// 			order: ["a", "b"]
-	// 		},
-	// 		reference: "alternate<0, 1>"
-	// 	}).export()
-	// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
-	// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-	// 	const fromCall = types.alternate("'off'", "'on'")
-	// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-	// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
-	// })
-	// it("self-reference no params", () => {
-	// 	attest(() =>
-	// 		scope({
-	// 			"nest<t>": {
-	// 				// @ts-expect-error
-	// 				nest: "nest"
-	// 			}
-	// 		}).export()
-	// 	).throwsAndHasTypeError(
-	// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
-	// 	)
-	// })
-	// })
+	// currently types only, runtime pending: https://github.com/arktypeio/arktype/issues/1082
+	describe("cyclic", () => {
+		const enable = false
+		it("self-reference", () => {
+			const getTypes = () =>
+				scope({
+					"alternate<a, b>": {
+						// ensures old generic params aren't intersected with
+						// updated values (would be never)
+						swap: "alternate<b, a>",
+						order: ["a", "b"]
+					},
+					reference: "alternate<0, 1>"
+				}).export()
+			const types = enable ? getTypes() : (chainableNoOpProxy as never)
+			attest<[0, 1]>(types.reference.infer.swap.swap.order)
+			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
+			const getFromCall = () => types.alternate("'off'", "'on'")
+			const fromCall = enable ? getFromCall() : (chainableNoOpProxy as never)
+
+			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+		})
+		it("self-reference no params", () => {
+			attest(() =>
+				scope({
+					"nest<t>": {
+						// @ts-expect-error
+						nest: "nest"
+					}
+				}).export()
+			).type.errors.snap(
+				'Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... "\'.'
+			)
+		})
+	})
 })

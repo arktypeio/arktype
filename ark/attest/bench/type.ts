@@ -1,4 +1,5 @@
 import { caller } from "@ark/fs"
+import { throwInternalError } from "@ark/util"
 import ts from "typescript"
 import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.ts"
 import {
@@ -31,7 +32,7 @@ export const createBenchTypeAssertion = (
 ): BenchTypeAssertions => ({
 	types: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
 		ctx.lastSnapCallPosition = caller()
-		instantiationDataHandler({ ...ctx, kind: "types" }, args[0])
+		instantiationDataHandler({ ...ctx, lastSnapFunctionName: "types" }, args[0])
 	}
 })
 
@@ -60,7 +61,7 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 	) as ts.ArrowFunction | ts.FunctionExpression | undefined
 
 	if (!body)
-		throw new Error("Unable to retrieve contents of the call expression")
+		throwInternalError("Unable to retrieve contents of the call expression")
 
 	return getInstantiationsContributedByNode(file, body)
 }

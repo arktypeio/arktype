@@ -28,7 +28,7 @@ Defining basic types in ArkType is just like TypeScript, so if you already know 
 
 For an ever better in-editor developer experience, try the [ArkDark VSCode extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) for syntax highlighting.
 
-```ts @blockFrom:dev/test/examples/type.ts
+```ts
 import { type } from "arktype"
 
 // Definitions are statically parsed and inferred as TS
@@ -163,7 +163,7 @@ ArkType's isomorphic parser has parallel static and dynamic implementations. Thi
 
 If you're curious, below is an example of what that looks like under the hood. If not, close that hood back up, `npm install arktype` and enjoy top-notch developer experience 🧑‍💻
 
-```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
+```ts
 export const parseOperator = (s: DynamicState): void => {
 	const lookahead = s.scanner.shift()
 	return (
@@ -263,6 +263,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
         <th>mishushakov</th>
         <th>mewhhaha</th>
     	<th>codeandcats</th>
+		<th>drwpwrs</th>
 	</tr>
 	<tr>
 		<td>
@@ -270,13 +271,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 				><img
 					height="64px"
 					src="https://avatars.githubusercontent.com/u/6759464"
-			/></a>
-		</td>
-		<td>
-			<a href="https://github.com/jacksteamdev"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/23390212"
 			/></a>
 		</td>
         <td>
@@ -298,6 +292,13 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     				src="https://avatars.githubusercontent.com/u/6035934"
     		/></a>
     	</td>
+		<td>
+			<a href="https://github.com/drwpwrs"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/49917220"
+			/></a>
+		</td>
 	</tr>
 	<tr>
     	<th>Timeraa</th>

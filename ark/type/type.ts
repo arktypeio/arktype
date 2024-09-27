@@ -2,22 +2,32 @@ import {
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
+	type BaseParseOptions,
 	type MetaSchema,
 	type Morph,
-	type Predicate
+	type Predicate,
+	type RootSchema
 } from "@ark/schema"
-import { Callable, type Constructor, type array, type conform } from "@ark/util"
 import {
-	parseGenericParams,
-	type Generic,
-	type ParameterString,
-	type baseGenericConstraints,
-	type parseValidGenericParams,
-	type validateParameterString
-} from "./generic.ts"
-import type { distillIn, distillOut } from "./keywords/ast.ts"
+	Callable,
+	Hkt,
+	type Constructor,
+	type array,
+	type conform
+} from "@ark/util"
 import type {
-	inferDefinition,
+	Generic,
+	GenericParser,
+	ParameterString,
+	baseGenericConstraints,
+	parseValidGenericParams,
+	validateParameterString
+} from "./generic.ts"
+import type { DefaultFor, distill } from "./keywords/inference.ts"
+import type { Ark, keywords, type } from "./keywords/keywords.ts"
+import type { BaseType } from "./methods/base.ts"
+import type { instantiateType } from "./methods/instantiate.ts"
+import type {
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.ts"
@@ -33,22 +43,18 @@ import type {
 	ScopeParser,
 	bindThis
 } from "./scope.ts"
-import type { BaseType } from "./subtypes/base.ts"
-import type { instantiateType } from "./subtypes/instantiate.ts"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
 	// map over to remove call signatures
 	Omit<TypeParser, never>
 
-export interface TypeParser<$ = {}> {
+export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
-	<const def, r = Type<inferTypeRoot<def, $>, $>>(
-		def: validateTypeRoot<def, $>
-	): r
+	<const def, r = Type<type.infer<def, $>, $>>(def: type.validate<def, $>): r
 
-	<params extends ParameterString, const def>(
+	<const params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
 		def: validateDefinition<
 			def,
@@ -62,27 +68,36 @@ export interface TypeParser<$ = {}> {
 		const zero,
 		const one,
 		const rest extends array,
-		r = Type<inferTypeRoot<[zero, one, ...rest], $>, $>
+		r = Type<type.infer<[zero, one, ...rest], $>, $>
 	>(
-		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
-		_1: zero extends "keyof" ? validateTypeRoot<one, $>
+		_0: zero extends IndexZeroOperator ? zero : type.validate<zero, $>,
+		_1: zero extends "keyof" ? type.validate<one, $>
 		: zero extends "instanceof" ? conform<one, Constructor>
 		: zero extends "===" ? conform<one, unknown>
 		: conform<one, IndexOneOperator>,
 		..._2: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
-			one extends ":" ? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
-			: one extends "=>" ? [Morph<distillOut<inferTypeRoot<zero, $>>, unknown>]
+			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
+			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
-			: [validateTypeRoot<rest[0], $>]
+			: one extends "=" ? [DefaultFor<distill.In<type.infer<NoInfer<zero>, $>>>]
+			: [type.validate<rest[0], $>]
 		:	[]
 	): r
 
-	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
+	hkt: typeof Hkt
+	keywords: typeof keywords
+	$: Scope<$>
+	raw(def: unknown): BaseType<any, $>
 	module: ModuleParser
 	scope: ScopeParser
+	define: DefinitionParser<$>
+	generic: GenericParser<$>
+	schema: SchemaParser<$>
+	unit: UnitTypeParser<$>
+	enumerated: EnumeratedTypeParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -90,11 +105,30 @@ export class InternalTypeParser extends Callable<
 	TypeParserAttachments
 > {
 	constructor($: InternalScope) {
+		const attach: TypeParserAttachments = Object.assign(
+			{
+				errors: ArkErrors,
+				hkt: Hkt,
+				$: $ as never,
+				raw: $.parse as never,
+				module: $.constructor.module,
+				scope: $.constructor.scope,
+				define: $.define as never,
+				generic: $.generic as never,
+				schema: $.schema as never,
+				// this won't be defined during bootstrapping, but externally always will be
+				keywords: $.ambient as never,
+				unit: $.unit,
+				enumerated: $.enumerated
+			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
+			// also won't be defined during bootstrapping
+			$.ambientAttachments!
+		)
 		super(
 			(...args) => {
 				if (args.length === 1) {
 					// treat as a simple definition
-					return $.parseRoot(args[0])
+					return $.parse(args[0])
 				}
 				if (
 					args.length === 2 &&
@@ -104,10 +138,8 @@ export class InternalTypeParser extends Callable<
 				) {
 					// if there are exactly two args, the first of which looks like <${string}>,
 					// treat as a generic
-					const params = parseGenericParams(args[0].slice(1, -1), {
-						$,
-						args: {}
-					})
+					const paramString = args[0].slice(1, -1)
+					const params = $.parseGenericParams(paramString, {})
 
 					return new GenericRoot(
 						params,
@@ -119,16 +151,11 @@ export class InternalTypeParser extends Callable<
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported
 				// part of the API as specified by the associated types
-				return $.parseRoot(args)
+				return $.parse(args)
 			},
 			{
 				bind: $,
-				attach: {
-					errors: ArkErrors,
-					raw: $.parseRoot as never,
-					module: $.constructor.module,
-					scope: $.constructor.scope
-				}
+				attach
 			}
 		)
 	}
@@ -141,25 +168,19 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
-export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
+export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>
+export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
+	...values: values
+) => Type<values[number], $>
 
-export type validateTypeRoot<def, $ = {}> = validateDefinition<
-	def,
-	$,
-	bindThis<def>
->
+export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 
-export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
-
-export type validateAmbient<def> = validateTypeRoot<def, {}>
-
-export type inferAmbient<def> = inferTypeRoot<def, {}>
+export type SchemaParser<$> = (
+	schema: RootSchema,
+	opts?: BaseParseOptions
+) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
-
-export declare namespace Type {
-	export type Any<t = any> = BaseType<t, any>
-}
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,

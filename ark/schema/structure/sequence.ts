@@ -1,5 +1,6 @@
 import {
 	append,
+	conflatenate,
 	throwInternalError,
 	throwParseError,
 	type array,
@@ -85,7 +86,7 @@ const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
 			// empty affixes are omitted. an empty array should therefore
 			// be specified as `{ proto: Array, length: 0 }`
 			undefined
-		:	schema.map(element => ctx.$.rootNode(element))
+		:	schema.map(element => ctx.$.parseSchema(element))
 }
 
 const implementation: nodeImplementationOf<Sequence.Declaration> =
@@ -98,7 +99,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			optionals: fixedSequenceKeySchemaDefinition,
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.rootNode(schema, ctx)
+				parse: (schema, ctx) => ctx.$.parseSchema(schema, ctx)
 			},
 			minVariadicLength: {
 				// minVariadicLength is reflected in the id of this node,
@@ -244,16 +245,21 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 
 export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
-	prefix: array<BaseRoot> = this.inner.prefix ?? []
-	optionals: array<BaseRoot> = this.inner.optionals ?? []
-	prevariadic: array<BaseRoot> = [...this.prefix, ...this.optionals]
-	postfix: array<BaseRoot> = this.inner.postfix ?? []
-	variadicOrPostfix: array<BaseRoot> =
-		this.variadic ? [this.variadic, ...this.postfix] : this.postfix
-	isVariadicOnly: boolean = this.prevariadic.length + this.postfix.length === 0
+
+	prefixLength: number = this.prefix?.length ?? 0
+	optionalsLength: number = this.optionals?.length ?? 0
+	postfixLength: number = this.postfix?.length ?? 0
+	prevariadic: array<BaseRoot> = conflatenate(this.prefix, this.optionals)
+
+	variadicOrPostfix: array<BaseRoot> = conflatenate(
+		this.variadic && [this.variadic],
+		this.postfix
+	)
+
+	isVariadicOnly: boolean = this.prevariadic.length + this.postfixLength === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
 	minLength: number =
-		this.prefix.length + this.minVariadicLength + this.postfix.length
+		this.prefixLength + this.minVariadicLength + this.postfixLength
 	minLengthNode: MinLengthNode | null =
 		this.minLength === 0 ?
 			null
@@ -261,7 +267,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			// MinLengthNode would be when minLength is 0
 		:	(this.$.node("minLength", this.minLength) as never)
 	maxLength: number | null =
-		this.variadic ? null : this.minLength + this.optionals.length
+		this.variadic ? null : this.minLength + this.optionalsLength
 	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
 	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
@@ -274,9 +280,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	protected childAtIndex(data: array, index: number): BaseRoot {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
-		const firstPostfixIndex = data.length - this.postfix.length
+		const firstPostfixIndex = data.length - this.postfixLength
 		if (index >= firstPostfixIndex)
-			return this.postfix[index - firstPostfixIndex]
+			return this.postfix![index - firstPostfixIndex]
 		return (
 			this.variadic ??
 			throwInternalError(
@@ -340,9 +346,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		this.prefix.forEach((node, i) => js.traverseKey(`${i}`, `data[${i}]`, node))
-		this.optionals.forEach((node, i) => {
-			const dataIndex = `${i + this.prefix.length}`
+		this.prefix?.forEach((node, i) =>
+			js.traverseKey(`${i}`, `data[${i}]`, node)
+		)
+		this.optionals?.forEach((node, i) => {
+			const dataIndex = `${i + this.prefixLength}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
@@ -350,18 +358,18 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		})
 
 		if (this.variadic) {
-			if (this.postfix.length) {
+			if (this.postfix) {
 				js.const(
 					"firstPostfixIndex",
-					`${js.data}.length${this.postfix.length ? `- ${this.postfix.length}` : ""}`
+					`${js.data}.length${this.postfix ? `- ${this.postfix.length}` : ""}`
 				)
 			}
 			js.for(
-				`i < ${this.postfix.length ? "firstPostfixIndex" : "data.length"}`,
+				`i < ${this.postfix ? "firstPostfixIndex" : "data.length"}`,
 				() => js.traverseKey("i", "data[i]", this.variadic!),
 				this.prevariadic.length
 			)
-			this.postfix.forEach((node, i) => {
+			this.postfix?.forEach((node, i) => {
 				const keyExpression = `firstPostfixIndex + ${i}`
 				js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
 			})
@@ -385,13 +393,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	expression: string = this.description
 
 	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
-		if (this.prefix.length)
+		if (this.prefix)
 			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
 
-		if (this.optionals.length) {
+		if (this.optionals) {
 			throwParseError(
 				writeUnsupportedJsonSchemaTypeMessage(
-					`Optional tuple element${this.optionals.length > 1 ? "s" : ""} ${this.optionals.join(", ")}`
+					`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
 				)
 			)
 		}
@@ -410,10 +418,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			delete schema.maxItems
 		}
 
-		if (this.postfix.length) {
+		if (this.postfix) {
 			throwParseError(
 				writeUnsupportedJsonSchemaTypeMessage(
-					`Postfix tuple element${this.postfix.length > 1 ? "s" : ""} ${this.postfix.join(", ")}`
+					`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
 				)
 			)
 		}
@@ -525,7 +533,8 @@ const _intersectSequences = (
 		if (kind === "prefix" || kind === "postfix") {
 			s.disjoint.push(
 				...result.withPrefixKey(
-					// TODO: more precise path handling for Disjoints
+					// ideally we could handle disjoint paths more precisely here,
+					// but not trivial to serialize postfix elements as keys
 					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`,
 					"required"
 				)

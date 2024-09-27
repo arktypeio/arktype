@@ -21,7 +21,7 @@ export class RootModule<exports extends {} = {}> extends DynamicBase<exports> {
 export interface InternalModule<
 	exports extends InternalResolutions = InternalResolutions
 > extends RootModule<exports> {
-	$root?: BaseRoot
+	root?: BaseRoot
 }
 
 export const bindModule = (
@@ -31,7 +31,9 @@ export const bindModule = (
 	new RootModule(
 		flatMorph(module, (alias, value) => [
 			alias,
-			hasArkKind(value, "module") ? bindModule(value, $) : value.bindScope($)
+			hasArkKind(value, "module") ?
+				bindModule(value, $)
+			:	$.bindReference(value)
 		])
 	) as never
 

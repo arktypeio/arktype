@@ -26,21 +26,6 @@ contextualize(() => {
 		attest(cloned.self === cloned).equals(true)
 	})
 
-	it("should preserve the prototype of the object", () => {
-		class MyClass {
-			a: number
-
-			constructor(a: number) {
-				this.a = a
-			}
-		}
-		const obj = new MyClass(1)
-		const cloned = deepClone(obj)
-		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
-		attest(cloned).instanceOf(MyClass)
-	})
-
 	it("should handle deep cycles correctly", () => {
 		const obj: any = { a: 1, b: { c: 2 } }
 		obj.b.self = obj
@@ -48,22 +33,6 @@ contextualize(() => {
 		attest<typeof obj>(cloned).equals(obj)
 		attest(cloned !== obj).equals(true)
 		attest(cloned.b.self === cloned).equals(true)
-	})
-
-	it("should preserve the prototype of nested objects", () => {
-		class MyClass {
-			a: number
-
-			constructor(a: number) {
-				this.a = a
-			}
-		}
-		const obj = { a: 1, b: new MyClass(2) }
-		const cloned = deepClone(obj)
-		attest<typeof obj>(cloned).equals(obj)
-		attest(cloned !== obj).equals(true)
-		attest(cloned.b !== obj.b).equals(true)
-		attest(cloned.b instanceof MyClass).equals(true)
 	})
 
 	it("should handle null values correctly", () => {
@@ -88,17 +57,16 @@ contextualize(() => {
 		attest(cloned.b !== obj.b).equals(true)
 	})
 
-	it("should handle array subclasses with extra properties correctly", () => {
-		class MyArray extends Array {
-			extraProp = "extra"
-		}
-
-		const arr = new MyArray()
-		arr.push(1, 2, 3)
-		const cloned = deepClone(arr)
-
-		attest<MyArray>(cloned).equals(arr)
-		attest(cloned !== arr).equals(true)
-		attest(cloned.extraProp).equals(arr.extraProp)
+	it("Date", () => {
+		const original = new Date(2000, 1)
+		const cloned = deepClone(original)
+		attest(cloned).instanceOf(Date)
+		attest(cloned.toISOString()).equals(original.toISOString())
+		original.setDate(original.getDate() + 1)
+		attest(cloned.getDate()).equals(1)
+		attest(original.getDate()).equals(2)
+		cloned.setDate(3)
+		attest(cloned.getDate()).equals(3)
+		attest(original.getDate()).equals(2)
 	})
 })

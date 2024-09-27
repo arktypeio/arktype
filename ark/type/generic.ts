@@ -1,11 +1,12 @@
-import type {
-	arkKind,
-	GenericAst,
-	GenericParamAst,
-	GenericParamDef,
-	genericParamNames,
+import {
 	GenericRoot,
-	LazyGenericBody
+	type arkKind,
+	type BaseParseContext,
+	type GenericAst,
+	type GenericParamAst,
+	type GenericParamDef,
+	type genericParamNames,
+	type LazyGenericBody
 } from "@ark/schema"
 import {
 	throwParseError,
@@ -15,20 +16,22 @@ import {
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
+	type Json,
 	type WhiteSpaceToken
 } from "@ark/util"
+import type { type } from "./keywords/keywords.ts"
+import type { inferAstRoot } from "./parser/ast/infer.ts"
+import type { validateAst } from "./parser/ast/validate.ts"
 import type {
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.ts"
-import type { inferAstRoot } from "./parser/semantic/infer.ts"
-import type { validateAst } from "./parser/semantic/validate.ts"
-import { DynamicState } from "./parser/string/reduce/dynamic.ts"
-import type { state, StaticState } from "./parser/string/reduce/static.ts"
-import { Scanner } from "./parser/string/shift/scanner.ts"
-import { parseUntilFinalizer } from "./parser/string/string.ts"
-import type { ParseContext, Scope } from "./scope.ts"
-import type { inferTypeRoot, Type, validateTypeRoot } from "./type.ts"
+import { DynamicState } from "./parser/reduce/dynamic.ts"
+import type { state, StaticState } from "./parser/reduce/static.ts"
+import type { Scanner } from "./parser/shift/scanner.ts"
+import { parseUntilFinalizer } from "./parser/string.ts"
+import type { Scope } from "./scope.ts"
+import type { Type } from "./type.ts"
 
 export type ParameterString<params extends string = string> = `<${params}>`
 
@@ -41,7 +44,7 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferTypeRoot<arg, $> extends param[1] ? unknown
+	type.infer<arg, $> extends param[1] ? unknown
 	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
 export type GenericInstantiator<
@@ -52,18 +55,20 @@ export type GenericInstantiator<
 > =
 	params["length"] extends 1 ?
 		{
+			// precomputing the results as default parameters is more efficient
+			// here than inferring them into aliases conditionally as we do in
+			// some of type's methods
 			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
-				a: validateTypeRoot<a, args$> & validateGenericArg<a, params[0], args$>
+				a: type.validate<a, args$> & validateGenericArg<a, params[0], args$>
 			): r
 		}
 	: params["length"] extends 2 ?
 		{
 			<const a, const b, r = instantiateGeneric<def, params, [a, b], $, args$>>(
-				...args: [validateTypeRoot<a, args$>, validateTypeRoot<b, args$>] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>
-					]
+				...args: [
+					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
+					type.validate<b, args$> & validateGenericArg<b, params[1], args$>
+				]
 			): r
 		}
 	: params["length"] extends 3 ?
@@ -75,9 +80,9 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -96,10 +101,10 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -120,11 +125,11 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>,
-					validateTypeRoot<e, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>,
+					type.validate<e, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -147,12 +152,12 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e, f], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>,
-					validateTypeRoot<e, args$>,
-					validateTypeRoot<f, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>,
+					type.validate<e, args$>,
+					type.validate<f, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -177,13 +182,13 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e, f, g], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>,
-					validateTypeRoot<e, args$>,
-					validateTypeRoot<f, args$>,
-					validateTypeRoot<g, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>,
+					type.validate<e, args$>,
+					type.validate<f, args$>,
+					type.validate<g, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -208,13 +213,13 @@ type instantiateGeneric<
 	args$
 > = Type<
 	[def] extends [Hkt] ?
-		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
+		Hkt.apply<def, { [i in keyof args]: type.infer<args[i], args$> }>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	args$
 >
 
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
-	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
+	[i in keyof params & `${number}` as params[i][0]]: type.infer<
 		args[i & keyof args],
 		$
 	>
@@ -247,7 +252,17 @@ export interface Generic<
 	arg$: Scope<arg$>
 
 	internal: GenericRoot
+	json: Json
 }
+
+export type GenericConstructor<
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown,
+	$ = {},
+	arg$ = {}
+> = new () => Generic<params, bodyDef, $, arg$>
+
+export const Generic: GenericConstructor = GenericRoot as never
 
 export type GenericDeclaration<
 	name extends string = string,
@@ -264,11 +279,6 @@ export const emptyGenericParameterMessage =
 
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
-export const parseGenericParams = (
-	def: string,
-	ctx: ParseContext
-): array<GenericParamDef> => parseName(new Scanner(def), [], ctx)
-
 export type parseGenericParams<def extends string, $> = parseNextNameChar<
 	Scanner.skipWhitespace<def>,
 	"",
@@ -276,12 +286,12 @@ export type parseGenericParams<def extends string, $> = parseNextNameChar<
 	$
 >
 
-type ParamsTerminator = WhiteSpaceToken | "," | ":"
+type ParamsTerminator = WhiteSpaceToken | ","
 
-const parseName = (
+export const parseGenericParamName = (
 	scanner: Scanner,
 	result: GenericParamDef[],
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): GenericParamDef[] => {
 	scanner.shiftUntilNonWhitespace()
 	const name = scanner.shiftUntilNextTerminator()
@@ -314,10 +324,8 @@ type parseNextNameChar<
 			name extends "" ? ErrorMessage<emptyGenericParameterMessage>
 			: lookahead extends "," ?
 				parseName<nextUnscanned, [...result, [name, unknown]], $>
-			: lookahead extends ":" | WhiteSpaceToken ?
-				// pass in unscanned instead of nextUnscanned here so we don't
-				// miss the ":" terminator
-				_parseOptionalConstraint<unscanned, name, result, $>
+			: lookahead extends WhiteSpaceToken ?
+				_parseOptionalConstraint<nextUnscanned, name, result, $>
 			:	never
 		:	parseNextNameChar<nextUnscanned, `${name}${lookahead}`, result, $>
 	: name extends "" ? result
@@ -325,31 +333,29 @@ type parseNextNameChar<
 
 const extendsToken = "extends "
 
-type ConstrainingToken = ":" | typeof extendsToken
+type extendsToken = typeof extendsToken
 
 const _parseOptionalConstraint = (
 	scanner: Scanner,
 	name: string,
 	result: GenericParamDef[],
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): GenericParamDef[] => {
 	scanner.shiftUntilNonWhitespace()
-
-	if (scanner.lookahead === ":") scanner.shift()
-	else if (scanner.unscanned.startsWith(extendsToken))
+	if (scanner.unscanned.startsWith(extendsToken))
 		scanner.jumpForward(extendsToken.length)
 	else {
 		// if we don't have a contraining token here, return now so we can
 		// assume in the rest of the function body we do have a constraint
 		if (scanner.lookahead === ",") scanner.shift()
 		result.push(name)
-		return parseName(scanner, result, ctx)
+		return parseGenericParamName(scanner, result, ctx)
 	}
 
-	const s = parseUntilFinalizer(new DynamicState(scanner, ctx, false))
+	const s = parseUntilFinalizer(new DynamicState(scanner, ctx))
 	result.push([name, s.root])
 
-	return parseName(scanner, result, ctx)
+	return parseGenericParamName(scanner, result, ctx)
 }
 
 type _parseOptionalConstraint<
@@ -359,7 +365,7 @@ type _parseOptionalConstraint<
 	$
 > =
 	Scanner.skipWhitespace<unscanned> extends (
-		`${ConstrainingToken}${infer nextUnscanned}`
+		`${extendsToken}${infer nextUnscanned}`
 	) ?
 		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
 			infer finalArgState extends StaticState
@@ -384,9 +390,8 @@ type _parseOptionalConstraint<
 
 type genericParamDefToAst<schema extends GenericParamDef, $> =
 	schema extends string ? [schema, unknown]
-	: schema extends readonly [infer name, infer def] ?
-		[name, inferTypeRoot<def, $>]
-	:	never
+	: schema extends readonly [infer name, infer def] ? [name, type.infer<def, $>]
+	: never
 
 export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
 	...{ [i in keyof defs]: genericParamDefToAst<defs[i], $> }
@@ -395,7 +400,13 @@ export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
 export type GenericParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
-	...params: paramsDef
+	...params: {
+		[i in keyof paramsDef]: paramsDef[i] extends (
+			readonly [infer name, infer def]
+		) ?
+			readonly [name, type.validate<def, $>]
+		:	paramsDef[i]
+	}
 ) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>
 
 interface GenericBodyParser<params extends array<GenericParamAst>, $> {

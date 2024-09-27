@@ -13,11 +13,6 @@ export type JsTypeOf =
 	| "undefined"
 	| "null"
 
-export const domainToJsTypesOf = (domain: Domain): JsTypeOf[] =>
-	domain === "null" ? ["object"]
-	: domain === "object" ? ["object", "function"]
-	: [domain]
-
 export const hasDomain = <data, domain extends Domain>(
 	data: data,
 	kind: domain

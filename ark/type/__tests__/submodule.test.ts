@@ -106,14 +106,57 @@ contextualize.each(
 			)
 		})
 
-		// TODO: private aliases
+		it("allows unbound module in scope", () => {
+			const mod = scope({
+				a: "number"
+			}).export()
+
+			const use1 = scope({
+				mod,
+				b: "mod.a"
+			})
+
+			attest(use1).type.toString.snap(
+				"Scope<{ b: number; mod: Submodule<{ a: number }> }>"
+			)
+
+			use1.export()
+			attest(use1.json).snap({
+				"mod.a": { domain: "number" },
+				b: { domain: "number" }
+			})
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1103
+		it("allows BoundModule reference in scope", () => {
+			const mod2 = scope({
+				a: "number",
+				c: "string"
+			}).export("a")
+
+			const use2 = scope({
+				mod2,
+				b: "mod2.a"
+			})
+
+			attest(use2).type.toString.snap(`Scope<{
+	b: number
+	mod2: Submodule<{ a: number }>
+}>`)
+
+			use2.export()
+			attest(use2.json).snap({
+				"mod2.a": { domain: "number" },
+				b: { domain: "number" }
+			})
+		})
 	}
 )
 
 contextualize.each(
 	"subtypes",
 	() => {
-		const foo = scope({ $root: "'foo'", bar: "'bar'" }).export()
+		const foo = scope({ root: "'foo'", bar: "'bar'" }).export()
 
 		const $ = scope({
 			foo,
@@ -128,7 +171,7 @@ contextualize.each(
 			attest<
 				Scope<{
 					foo: Submodule<{
-						$root: "foo"
+						root: "foo"
 						bar: "bar"
 					}>
 					fooBare: "foo"
@@ -139,14 +182,14 @@ contextualize.each(
 			const types = $.export()
 
 			attest(types.foo.bar.expression).snap('"bar"')
-			attest(types.foo.$root.expression).snap('"foo"')
+			attest(types.foo.root.expression).snap('"foo"')
 
 			attest(types.fooBar.expression).snap('"bar"')
 			attest(types.fooBare.expression).snap('"foo"')
 		})
 
 		it("completions", $ => {
-			// `foo.$root` should not be included since it is redundant with `foo`
+			// `foo.root` should not be included since it is redundant with `foo`
 			// @ts-expect-error
 			attest(() => $.type("foo.")).completions({ "foo.": ["foo.bar"] })
 		})
@@ -209,7 +252,7 @@ contextualize.each(
 			attest(t.expression).snap("[1]")
 		})
 
-		it("non-submodule dot access", $ => {
+		it("non-submodule dot access", () => {
 			attest(() =>
 				type({
 					// @ts-expect-error

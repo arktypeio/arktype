@@ -1,6 +1,6 @@
 import {
-	ArkErrors,
 	normalizeIndex,
+	type BaseParseContext,
 	type BaseRoot,
 	type Index,
 	type NodeSchema,
@@ -13,12 +13,10 @@ import {
 import {
 	append,
 	escapeToken,
-	isArray,
 	printable,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type anyOrNever,
-	type conform,
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
@@ -29,15 +27,15 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { constrain, Default } from "../keywords/ast.ts"
-import type { ParseContext } from "../scope.ts"
+import type { of } from "../keywords/inference.ts"
+import type { astToString } from "./ast/utils.ts"
+import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import { writeUnassignableDefaultValueMessage } from "./semantic/default.ts"
-import type { astToString } from "./semantic/utils.ts"
-import type { validateString } from "./semantic/validate.ts"
-import type { ParsedDefault } from "./string/shift/operator/default.ts"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
+export const parseObjectLiteral = (
+	def: Dict,
+	ctx: BaseParseContext
+): BaseRoot => {
 	let spread: Structure.Node | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
 	// We only allow a spread operator to be used as the first key in an object
@@ -72,7 +70,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.rootNode({
+	return ctx.$.parseSchema({
 		domain: "object",
 		structure: spread?.merge(structureNode) ?? structureNode
 	})
@@ -102,12 +100,10 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
-		DefaultValueTuple<infer baseDef, infer defaultValue>
-	) ?
-		[def[k]] extends [anyOrNever] ?
-			def[k]
-		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
+	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: [
+		def[k]
+	] extends [anyOrNever] ?
+		def[k]
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
@@ -122,7 +118,7 @@ export type validateObjectLiteral<def, $, args> = {
 		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
 			// add a nominal type here to avoid allowing the error message as input
 			ErrorType<message>
-		: inferDefinition<indexDef, $, args> extends Key | constrain<Key, {}> ?
+		: inferDefinition<indexDef, $, args> extends Key | of<Key, {}> ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>
@@ -132,36 +128,8 @@ export type validateObjectLiteral<def, $, args> = {
 			validateDefinition<def[k], $, args>
 		:	ErrorType<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	: k extends "+" ? UndeclaredKeyBehavior
-	: validateDefaultableValue<def, k, $, args>
+	: validateDefinition<def[k], $, args>
 }
-
-type validateDefaultableValue<def, k extends keyof def, $, args> =
-	def[k] extends DefaultValueTuple ?
-		validateDefaultValueTuple<def[k], k, $, args>
-	:	validateDefinition<def[k], $, args>
-
-type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [
-	baseDef,
-	"=",
-	defaultValue
-]
-
-type validateDefaultValueTuple<
-	def extends DefaultValueTuple,
-	k extends PropertyKey,
-	$,
-	args
-> =
-	parseKey<k>["kind"] extends "required" ?
-		conform<
-			def,
-			readonly [
-				validateDefinition<def[0], $, args>,
-				"=",
-				inferDefinition<def[0], $, args>
-			]
-		>
-	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
@@ -176,7 +144,7 @@ type nonOptionalKeyFrom<k, $, args> =
 type optionalKeyFrom<k> =
 	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
 
-type PreparsedKey<
+export type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
 	key extends Key = Key
 > = {
@@ -214,7 +182,7 @@ export type ParsedSpreadEntry = {
 export const parseEntry = (
 	key: Key,
 	value: unknown,
-	ctx: ParseContext
+	ctx: BaseParseContext
 ): listable<ParsedEntry> => {
 	const parsedKey = parseKey(key)
 
@@ -225,36 +193,12 @@ export const parseEntry = (
 	}
 
 	if (parsedKey.kind === "...")
-		return { kind: "spread", node: ctx.$.parse(value, ctx) }
+		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
-	const parsedValue: ParsedDefault | BaseRoot =
-		isArray(value) && value[1] === "=" ?
-			[ctx.$.parse(value[0], ctx), "=", value[2]]
-		:	ctx.$.parse(value, ctx, true)
-
-	if (isArray(parsedValue)) {
-		if (parsedKey.kind !== "required")
-			throwParseError(invalidDefaultKeyKindMessage)
-
-		const out = parsedValue[0].traverse(parsedValue[2])
-		if (out instanceof ArkErrors) {
-			throwParseError(
-				writeUnassignableDefaultValueMessage(
-					printable(parsedKey.key),
-					out.message
-				)
-			)
-		}
-
-		return ctx.$.node("optional", {
-			key: parsedKey.key,
-			value: parsedValue[0],
-			default: parsedValue[2]
-		})
-	}
+	const parsedValue = ctx.$.parseOwnDefinitionFormat(value, ctx)
 
 	if (parsedKey.kind === "index") {
-		const signature = ctx.$.parse(parsedKey.key, ctx)
+		const signature = ctx.$.parseOwnDefinitionFormat(parsedKey.key, ctx)
 		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
 		return (
 			normalized.index ?
@@ -270,11 +214,6 @@ export const parseEntry = (
 		value: parsedValue
 	})
 }
-
-// single quote use here is better for TypeScript's inlined error to avoid escapes
-export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
-
-export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
 
 const parseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol" ? { kind: "required", key }

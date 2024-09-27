@@ -1,4 +1,4 @@
-import { shell, writeJson } from "@ark/fs"
+import { fileName, shell, writeJson } from "@ark/fs"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.ts"
@@ -19,18 +19,21 @@ export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 
 	if (
 		config.tsVersions.length === 1 &&
-		config.tsVersions[0].alias === "typescript"
+		config.tsVersions[0].alias === "default"
 	)
 		writeAssertionData(config.defaultAssertionCachePath)
 	else {
-		forTypeScriptVersions(config.tsVersions, version =>
-			shell(
-				`npm exec -c "attest precache ${join(
-					config.assertionCacheDir,
-					version.alias + ".json"
-				)}"`
+		forTypeScriptVersions(config.tsVersions, version => {
+			const precachePath = join(
+				config.assertionCacheDir,
+				version.alias + ".json"
 			)
-		)
+			// if we're in our own repo, we need to pnpm to use the root script to execute ts directly
+			if (fileName().endsWith("ts"))
+				shell(`pnpm attest precache ${precachePath}`)
+			// otherwise, just use npm to run the CLI command from build output
+			else shell(`npm exec -c "attest precache ${precachePath}"`)
+		})
 	}
 	return teardown
 }

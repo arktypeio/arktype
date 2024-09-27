@@ -1,16 +1,16 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes prop order", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			required: [
 				{ key: "b", value: "number" },
@@ -21,13 +21,13 @@ contextualize(() => {
 	})
 
 	it("preserves matching literal", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			index: [{ signature: "string", value: "string" }],
 			undeclared: "reject"
 		})
 
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: { unit: "foo" } }]
 		})
@@ -43,13 +43,13 @@ contextualize(() => {
 	})
 
 	it("preserves matching index", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			index: [{ signature: "string", value: "string" }],
 			undeclared: "reject"
 		})
 
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			index: [{ signature: "string", value: { unit: "foo" } }]
 		})
@@ -63,30 +63,30 @@ contextualize(() => {
 		})
 	})
 
-	const startingWithA = rootNode({ domain: "string", pattern: /^a.*/ })
+	const startingWithA = rootSchema({ domain: "string", pattern: /^a.*/ })
 
-	const endingWithZ = rootNode({ domain: "string", pattern: /.*z$/ })
+	const endingWithZ = rootSchema({ domain: "string", pattern: /.*z$/ })
 
-	const startingWithAAndEndingWithZ = rootNode({
+	const startingWithAAndEndingWithZ = rootSchema({
 		domain: "string",
 		pattern: [/^a.*/, /.*z$/]
 	})
 
 	it("intersects nonsubtype index signatures", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			index: [{ signature: startingWithA, value: "string" }],
 			undeclared: "reject"
 		})
 
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			index: [{ signature: endingWithZ, value: { unit: "foo" } }]
 		})
 
 		const result = l.and(r)
 
-		const expected = rootNode({
+		const expected = rootSchema({
 			domain: "object",
 			index: [
 				{ signature: startingWithA, value: "string" },
@@ -99,13 +99,13 @@ contextualize(() => {
 	})
 
 	it("intersects non-subtype strict index signatures", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			index: [{ signature: startingWithA, value: endingWithZ }],
 			undeclared: "reject"
 		})
 
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			index: [{ signature: endingWithZ, value: startingWithA }],
 			undeclared: "reject"
@@ -113,7 +113,7 @@ contextualize(() => {
 
 		const result = l.and(r)
 
-		const expected = rootNode({
+		const expected = rootSchema({
 			domain: "object",
 			index: [
 				{
@@ -128,13 +128,13 @@ contextualize(() => {
 	})
 
 	it("prunes undeclared optional", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: "string" }],
 			undeclared: "reject"
 		})
 
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			optional: [{ key: "b", value: "number" }]
 		})
@@ -145,12 +145,12 @@ contextualize(() => {
 	})
 
 	it("prunes undeclared index", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			index: [{ signature: "string", value: "string" }]
 		})
 
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: { unit: "foo" } }],
 			undeclared: "reject"
@@ -166,14 +166,14 @@ contextualize(() => {
 	})
 
 	it("undeclared required", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: "string" }],
 			undeclared: "reject"
@@ -185,12 +185,12 @@ contextualize(() => {
 	})
 
 	it("delete & reject", () => {
-		const l = rootNode({
+		const l = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: "string" }],
 			undeclared: "delete"
 		})
-		const r = rootNode({
+		const r = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: "string" }],
 			undeclared: "reject"

@@ -1,15 +1,17 @@
+// import type { BaseRoot, Morph } from "@ark/schema"
 // import type {
 // 	ErrorMessage,
+// 	Fn,
 // 	isDisjoint,
 // 	numericStringKeyOf,
 // 	override,
 // 	propValueOf,
 // 	unionToTuple
 // } from "@ark/util"
-// import type { distillOut, Narrowed } from "./ast.ts"
 // import type { inferIntersection } from "./intersect.ts"
+// import { ambient, type type } from "./keywords/ark.ts"
+// import type { distill, Narrowed } from "./keywords/ast.ts"
 // import type { Scope } from "./scope.ts"
-// import type { inferTypeRoot, validateTypeRoot } from "./type.ts"
 
 // type MatchParserContext = {
 // 	thens: readonly ((In: unknown) => unknown)[]
@@ -42,11 +44,10 @@
 
 // type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 // 	matcherInputs<ctx>,
-// 	// TODO: add other anon
 // 	Narrowed
 // >
 
-// type getUnhandledBranches<ctx extends MatchParserContext> = distillOut<
+// type getUnhandledBranches<ctx extends MatchParserContext> = distill.Out<
 // 	Exclude<ctx["exhaustiveOver"], getHandledBranches<ctx>>
 // >
 
@@ -56,16 +57,16 @@
 // > = override<ctx, { thens: [...ctx["thens"], ...branches] }>
 
 // type validateWhenDefinition<def, ctx extends MatchParserContext> =
-// 	def extends validateTypeRoot<def, ctx["$"]> ?
+// 	def extends type.validate<def, ctx["$"]> ?
 // 		inferMatchBranch<def, ctx> extends getHandledBranches<ctx> ?
 // 			ErrorMessage<"This branch is redundant and will never be reached">
 // 		:	def
-// 	:	validateTypeRoot<def, ctx["$"]>
+// 	:	type.validate<def, ctx["$"]>
 
-// // infer the types handled by a match branch, which is identical to `inferTypeRoot` while properly
+// // infer the types handled by a match branch, which is identical to `type.infer` while properly
 // // excluding cases that are already handled by other branches
-// type inferMatchBranch<def, ctx extends MatchParserContext> = distillOut<
-// 	inferIntersection<getUnhandledBranches<ctx>, inferTypeRoot<def, ctx["$"]>>
+// type inferMatchBranch<def, ctx extends MatchParserContext> = distill.Out<
+// 	inferIntersection<getUnhandledBranches<ctx>, type.infer<def, ctx["$"]>>
 // >
 
 // export type ChainableMatchParser<ctx extends MatchParserContext> = {
@@ -112,7 +113,7 @@
 // 	:	validateWhenDefinition<def, ctx>
 // } & {
 // 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-// 		In: distillOut<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
+// 		In: distill.Out<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
 // 	) => unknown
 // } & {
 // 	default?: (In: getUnhandledBranches<ctx>) => unknown
@@ -157,63 +158,64 @@
 // 	:	ReturnType<ctx["thens"][i]>
 // }[numericStringKeyOf<ctx["thens"]>]
 
-// export const createMatchParser = <$>($: Scope): MatchParser<$> =>
-// 	(() => {}).bind($) as never
+// export const createMatchParser = <$>($: Scope<$>): MatchParser<$> => {
+// 	const matchParser = (isRestricted: boolean) => {
+// 		const handledCases: { when: BaseRoot; then: Morph }[] = []
+// 		let defaultCase: ((x: unknown) => unknown) | null = null
 
-// const matchParser = (isRestricted: boolean) => {
-// 	const handledCases: { when: RawRoot; then: Morph }[] = []
-// 	let defaultCase: ((x: unknown) => unknown) | null = null
+// 		const parser = {
+// 			when: (when: unknown, then: Morph) => {
+// 				handledCases.push({ when: $.parseRoot(when, {}), then })
 
-// 	const parser = {
-// 		when: (when: unknown, then: Morph) => {
-// 			handledCases.push({ when: $.parseRoot(when, {}), then })
+// 				return parser
+// 			},
 
-// 			return parser
-// 		},
+// 			finalize: () => {
+// 				const branches = handledCases.flatMap(({ when, then }) => {
+// 					if (when.kind === "union") {
+// 						return when.branches.map(branch => ({
+// 							in: branch,
+// 							morph: then
+// 						}))
+// 					}
+// 					if (when.kind === "morph")
+// 						return [{ in: when, morph: [when.morph, then] }]
 
-// 		finalize: () => {
-// 			// TODO: exhaustiveness checking
-// 			const branches = handledCases.flatMap(({ when, then }) => {
-// 				if (when.kind === "union") {
-// 					return when.branches.map((branch) => ({
-// 						in: branch,
-// 						morph: then
-// 					}))
-// 				}
-// 				if (when.kind === "morph") {
-// 					return [{ in: when, morph: [when.morph, then] }]
-// 				}
-// 				return [{ in: when, morph: then }]
-// 			})
-// 			if (defaultCase) {
-// 				branches.push({ in: keywordNodes.unknown, morph: defaultCase })
+// 					return [{ in: when, morph: then }]
+// 				})
+// 				if (defaultCase)
+// 					branches.push({ in: keywordNodes.unknown, morph: defaultCase })
+
+// 				const matchers = $.node("union", {
+// 					branches,
+// 					ordered: true
+// 				})
+// 				return matchers.assert
+// 			},
+
+// 			orThrow: () => {
+// 				// implicitly finalize, we don't need to do anything else because we throw either way
+// 				return parser.finalize()
+// 			},
+
+// 			default: (x: unknown) => {
+// 				if (x instanceof Function) defaultCase = x as never
+// 				else defaultCase = () => x
+
+// 				return parser.finalize()
 // 			}
-// 			const matchers = $.node("union", {
-// 				branches,
-// 				ordered: true
-// 			})
-// 			return matchers.assert
-// 		},
-
-// 		orThrow: () => {
-// 			// implicitly finalize, we don't need to do anything else because we throw either way
-// 			return parser.finalize()
-// 		},
-
-// 		default: (x: unknown) => {
-// 			if (x instanceof Function) {
-// 				defaultCase = x as never
-// 			} else {
-// 				defaultCase = () => x
-// 			}
-
-// 			return parser.finalize()
 // 		}
+
+// 		return parser
 // 	}
 
-// 	return parser
+// 	return Object.assign(() => matchParser(false), {
+// 		only: () => matchParser(true)
+// 	}) as never
 // }
 
-// return Object.assign(() => matchParser(false), {
-// 	only: () => matchParser(true)
-// }) as never
+// const match = createMatchParser(ambient)
+
+// match({
+// 	string: s => s.length
+// })

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
+import { rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -92,6 +93,43 @@ contextualize(() => {
 			{ jitless: true }
 		).export()
 
-		attest(types.fast.internal.jit).equals(false)
+		attest(types.fast.precompilation).equals(undefined)
+	})
+
+	it("jit by default", () => {
+		const t = type("/^foo.*$/")
+		attest(t.precompilation).satisfies("string")
+	})
+
+	it("builtin keywords jit by default", () => {
+		const t = type("string")
+		attest(t.precompilation).satisfies("string")
+
+		const sub = type("string.normalize.NFC.preformatted")
+		attest(sub.precompilation).satisfies("string")
+	})
+
+	it("jit by default in scope", () => {
+		const $ = scope({
+			defined: "55",
+			referenced: rootSchema({ unit: 5 })
+		})
+
+		const types = $.export()
+
+		attest(types.defined.precompilation).satisfies("string")
+		attest(types.referenced.precompilation).satisfies("string")
+
+		attest($.type("defined").precompilation).satisfies("string")
+		attest($.type("referenced").precompilation).satisfies("string")
+	})
+
+	it("jit by default in submodule", () => {
+		const types = type.module({
+			inner: type.module({
+				foo: "55"
+			})
+		})
+		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 })

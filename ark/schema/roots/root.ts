@@ -4,10 +4,17 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
+	unset,
+	type Fn,
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
+import type {
+	NodeSchema,
+	mutableNormalizedRootOfKind,
+	nodeOfKind,
+	reducibleKindOf
+} from "../kinds.ts"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
@@ -27,6 +34,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
+import type { BaseScope } from "../scope.ts"
 import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -37,13 +45,17 @@ import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
+	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
+import { assertDefaultValueAssignability } from "../structure/optional.ts"
+import type { Prop } from "../structure/prop.ts"
 import type {
+	PropFlatMapper,
 	Structure,
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
@@ -58,14 +70,43 @@ export abstract class BaseRoot<
 	/** @ts-ignore cast variance */
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
-	readonly [arkKind] = "root"
+	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
+		super(attachments, $)
+		// define as a getter to avoid it being enumerable/spreadable
+		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+	}
 
 	get internal(): this {
 		return this
 	}
 
+	get optionalMeta(): boolean {
+		return this.cacheGetter(
+			"optionalMeta",
+			this.meta.optional === true ||
+				(this.hasKind("morph") && this.in.meta.optional === true)
+		)
+	}
+
+	/** returns unset if there is no default */
+	get defaultMeta(): unknown {
+		return this.cacheGetter(
+			"defaultMeta",
+			"default" in this.meta ? this.meta.default
+			: this.hasKind("morph") ? this.in.defaultMeta
+			: unset
+		)
+	}
+
 	as(): this {
+		return this
+	}
+
+	brand(name: string): this {
+		if (name === "") return throwParseError(emptyBrandNameMessage)
 		return this
 	}
 
@@ -98,8 +139,14 @@ export abstract class BaseRoot<
 	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
-		const rNode = this.$.parseRoot(r)
-		return intersectNodesRoot(this, rNode, this.$) as never
+		const rNode = this.$.parseDefinition(r)
+		const result = this.rawIntersect(rNode)
+		if (result instanceof Disjoint) return result
+		return this.$.finalize(result as BaseRoot)
+	}
+
+	rawIntersect(r: BaseRoot): BaseRoot {
+		return intersectNodesRoot(this, r, this.$) as never
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
@@ -111,10 +158,19 @@ export abstract class BaseRoot<
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
+	rawAnd(r: BaseRoot): BaseRoot {
+		const result = this.rawIntersect(r)
+		return result instanceof Disjoint ? result.throw() : result
+	}
+
 	or(r: unknown): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		const branches = [...this.branches, ...(rNode.branches as any)]
-		return this.$.rootNode(branches) as never
+		const rNode = this.$.parseDefinition(r)
+		return this.$.finalize(this.rawOr(rNode)) as never
+	}
+
+	rawOr(r: BaseRoot): BaseRoot {
+		const branches = [...this.branches, ...(r.branches as any)]
+		return this.$.node("union", branches) as never
 	}
 
 	assert(data: unknown): unknown {
@@ -122,20 +178,24 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
+	map(flatMapEntry: PropFlatMapper): BaseRoot {
+		return this.$.schema(this.applyStructuralOperation("map", [flatMapEntry]))
+	}
+
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("pick", keys))
+		return this.$.schema(this.applyStructuralOperation("pick", keys))
 	}
 
 	omit(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("omit", keys))
+		return this.$.schema(this.applyStructuralOperation("omit", keys))
 	}
 
 	required(): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("required", []))
+		return this.$.schema(this.applyStructuralOperation("required", []))
 	}
 
 	partial(): BaseRoot {
-		return this.$.rootNode(this.applyStructuralOperation("partial", []))
+		return this.$.schema(this.applyStructuralOperation("partial", []))
 	}
 
 	private _keyof?: BaseRoot
@@ -151,12 +211,18 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return (this._keyof = result)
+		return (this._keyof = this.$.finalize(result))
+	}
+
+	get props(): Prop.Node[] {
+		if (this.branches.length !== 1)
+			return throwParseError(writeLiteralUnionEntriesMessage(this.expression))
+		return [...this.applyStructuralOperation("props", [])[0]]
 	}
 
 	merge(r: unknown): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		return this.$.rootNode(
+		const rNode = this.$.parseDefinition(r)
+		return this.$.schema(
 			rNode.distribute(branch =>
 				this.applyStructuralOperation("merge", [
 					structureOf(branch) ??
@@ -170,8 +236,8 @@ export abstract class BaseRoot<
 
 	private applyStructuralOperation<operation extends StructuralOperationName>(
 		operation: operation,
-		args: Parameters<BaseRoot[operation]>
-	): Union.ChildNode[] {
+		args: BaseRoot[operation] extends Fn<infer args> ? args : []
+	): StructuralOperationBranchResultByName[operation][] {
 		return this.distribute(branch => {
 			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
 				// ideally this wouldn't be a special case, but for now it
@@ -190,6 +256,7 @@ export abstract class BaseRoot<
 
 			if (operation === "keyof") return structure.keyof()
 			if (operation === "get") return structure.get(...(args as [never]))
+			if (operation === "props") return structure.props
 
 			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"
@@ -206,25 +273,25 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		return this.$.rootNode(this.applyStructuralOperation("get", path)) as never
+		return this.$.schema(this.applyStructuralOperation("get", path)) as never
 	}
 
 	extract(r: unknown): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		return this.$.rootNode(
+		const rNode = this.$.parseDefinition(r)
+		return this.$.schema(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
-	exclude(r: BaseRoot): BaseRoot {
-		const rNode = this.$.parseRoot(r)
-		return this.$.rootNode(
+	exclude(r: unknown): BaseRoot {
+		const rNode = this.$.parseDefinition(r)
+		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
 	}
 
 	array(): BaseRoot {
-		return this.$.rootNode(
+		return this.$.schema(
 			{
 				proto: Array,
 				sequence: this
@@ -233,20 +300,25 @@ export abstract class BaseRoot<
 		) as never
 	}
 
-	overlaps(r: BaseRoot): boolean {
-		const intersection = this.intersect(r as never)
+	overlaps(r: unknown): boolean {
+		const intersection = this.intersect(r)
 		return !(intersection instanceof Disjoint)
 	}
 
-	extends(r: BaseRoot): boolean {
-		const intersection = this.intersect(r as never)
+	extends(r: unknown): boolean {
+		const intersection = this.intersect(r)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
 
-	subsumes(r: BaseRoot): boolean {
-		return r.extends(this as never)
+	ifExtends(r: unknown): BaseRoot | undefined {
+		return this.extends(r) ? this : undefined
+	}
+
+	subsumes(r: unknown): boolean {
+		const rNode = this.$.parseDefinition(r)
+		return rNode.extends(this)
 	}
 
 	configure(meta: MetaSchema): this {
@@ -257,8 +329,18 @@ export abstract class BaseRoot<
 		return this.configure({ description })
 	}
 
+	optional(): this {
+		return this.withMeta({ optional: true })
+	}
+
+	default(value: unknown): this {
+		assertDefaultValueAssignability(this, value)
+
+		return this.withMeta({ default: value })
+	}
+
 	from(input: unknown): unknown {
-		// ideally we wouldn't validate here but for now we need to do determine
+		// ideally we might not validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
 	}
@@ -294,7 +376,7 @@ export abstract class BaseRoot<
 	})
 
 	to(def: unknown): BaseRoot {
-		return this.toNode(this.$.parseRoot(def))
+		return this.$.finalize(this.toNode(this.$.parseDefinition(def)))
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
@@ -307,17 +389,25 @@ export abstract class BaseRoot<
 		if (hasArkKind(morph, "root")) return this.toNode(morph)
 
 		return this.distribute(
-			node =>
-				node.hasKind("morph") ?
+			branch =>
+				branch.hasKind("morph") ?
 					this.$.node("morph", {
-						in: node.in,
-						morphs: [...node.morphs, morph]
+						in: branch.in,
+						morphs: [...branch.morphs, morph]
 					})
 				:	this.$.node("morph", {
-						in: node,
+						in: branch,
 						morphs: [morph]
 					}),
-			branches => this.$.rootNode(branches)
+			branches => {
+				if (!this.hasKind("union")) return this.$.parseSchema(branches[0])
+				const schema: mutableNormalizedRootOfKind<"union"> = {
+					branches
+				}
+				if ("default" in this.meta) schema.meta = { default: this.meta.default }
+				else if (this.meta.optional) schema.meta = { optional: true }
+				return this.$.parseSchema(schema)
+			}
 		)
 	}
 
@@ -406,21 +496,23 @@ export abstract class BaseRoot<
 
 		if (result instanceof Disjoint) result.throw()
 
-		return result as never
+		return this.$.finalize(result as never)
 	}
 
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
 		const rule = typeof cfg === "string" ? cfg : cfg.rule
 		const deep = typeof cfg === "string" ? false : cfg.deep
-		return this.transform(
-			(kind, inner) =>
-				kind === "structure" ?
-					rule === "ignore" ?
-						omit(inner as Structure.Inner, { undeclared: 1 })
-					:	{ ...inner, undeclared: rule }
-				:	inner,
-			deep ? undefined : (
-				{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+		return this.$.finalize(
+			this.transform(
+				(kind, inner) =>
+					kind === "structure" ?
+						rule === "ignore" ?
+							omit(inner as Structure.Inner, { undeclared: 1 })
+						:	{ ...inner, undeclared: rule }
+					:	inner,
+				deep ? undefined : (
+					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+				)
 			)
 		)
 	}
@@ -499,6 +591,10 @@ export type UndeclaredKeyConfig = {
 	deep?: boolean
 }
 
+export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
+
+export type emptyBrandNameMessage = typeof emptyBrandNameMessage
+
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 	schema: schema
 ): schema =>
@@ -546,25 +642,35 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 		return (
 			branch.inner.structure ??
 			(branch.basis?.domain === "object" ?
-				$ark.intrinsic.emptyStructure.bindScope(branch.$)
+				branch.$.bindReference($ark.intrinsic.emptyStructure)
 			:	null)
 		)
 	}
 
 	if (branch.isBasis() && branch.domain === "object")
-		return $ark.intrinsic.emptyStructure.bindScope(branch.$)
+		return branch.$.bindReference($ark.intrinsic.emptyStructure)
 
 	return null
 }
 
+export type StructuralOperationBranchResultByName = {
+	keyof: Union.ChildNode
+	pick: Union.ChildNode
+	omit: Union.ChildNode
+	get: Union.ChildNode
+	map: Union.ChildNode
+	required: Union.ChildNode
+	partial: Union.ChildNode
+	merge: Union.ChildNode
+	props: array<Prop.Node>
+}
+
 export type StructuralOperationName =
-	| "keyof"
-	| "pick"
-	| "omit"
-	| "get"
-	| "required"
-	| "partial"
-	| "merge"
+	keyof StructuralOperationBranchResultByName
+
+export const writeLiteralUnionEntriesMessage = (expression: string): string =>
+	`Props cannot be extracted from a union. Use .distribute to extract props from each branch instead. Received:
+${expression}`
 
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,

@@ -1,25 +1,25 @@
-import { intrinsic, rootNode } from "@ark/schema"
+import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
-import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
+import type { Module, Submodule } from "../../module.ts"
+import type { Branded, of, To } from "../inference.ts"
 import type { number } from "../number/number.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type integer = constrain<string, Branded<"integer">>
+	export type integer = of<string, Branded<"integer">>
 }
 
-const $root = regexStringNode(
+const root = regexStringNode(
 	wellFormedIntegerMatcher,
 	"a well-formed integer string"
 )
 
-export const integer = submodule({
-	$root,
-	parse: rootNode({
-		in: $root,
-		morphs: (s: string, ctx) => {
+export const integer: stringInteger.module = arkModule({
+	root,
+	parse: rootSchema({
+		in: root,
+		morphs: (s: string, ctx: TraversalContext) => {
 			const parsed = Number.parseInt(s)
 			return Number.isSafeInteger(parsed) ? parsed : (
 					ctx.error(
@@ -31,7 +31,13 @@ export const integer = submodule({
 	})
 })
 
-export type integer = Submodule<{
-	$root: string.integer
-	parse: (In: string.integer) => To<number.divisibleBy<1>>
-}>
+export declare namespace stringInteger {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: string.integer
+		parse: (In: string.integer) => To<number.divisibleBy<1>>
+	}
+}

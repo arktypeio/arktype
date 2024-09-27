@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { writeInvalidDateMessage } from "arktype/internal/parser/string/shift/operand/date.ts"
+import { writeInvalidDateMessage } from "arktype/internal/parser/shift/operand/date.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -32,5 +32,10 @@ contextualize(() => {
 
 	it("invalid date", () => {
 		attest(() => type("d'tuesday'")).throws(writeInvalidDateMessage("tuesday"))
+	})
+
+	it("morphable", () => {
+		const t = type(["Date", "=>", d => d.toISOString()])
+		attest(t.from(new Date(2000, 1))).snap("2000-02-01T05:00:00.000Z")
 	})
 })

@@ -85,7 +85,7 @@ export class GenericRoot<
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
-				const arg = this.arg$.parseRoot(args[i])
+				const arg = this.arg$.parse(args[i])
 				if (!arg.extends(this.constraints[i])) {
 					throwParseError(
 						writeUnsatisfiedParameterConstraintMessage(
@@ -101,10 +101,10 @@ export class GenericRoot<
 			if (this.defIsLazy()) {
 				const def = this.bodyDef(argNodes)
 
-				return this.$.parseRoot(def)
+				return this.$.parse(def)
 			}
 
-			return this.$.parseRoot(bodyDef, { args: argNodes })
+			return this.$.parse(bodyDef, { args: argNodes })
 		})
 
 		this.paramDefs = paramDefs
@@ -116,16 +116,6 @@ export class GenericRoot<
 
 	defIsLazy(): this is GenericRoot<params, LazyGenericBody> {
 		return this.bodyDef instanceof LazyGenericBody
-	}
-
-	bindScope($: BaseScope): this {
-		if (this.arg$ === ($ as never)) return this
-		return new GenericRoot(
-			this.params as never,
-			this.bodyDef,
-			this.$,
-			$ as never
-		) as never
 	}
 
 	protected cacheGetter<name extends keyof this>(
@@ -151,7 +141,7 @@ export class GenericRoot<
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
 					[param, $ark.intrinsic.unknown]
-				:	[param[0], this.$.parseRoot(param[1])]
+				:	[param[0], this.$.parse(param[1])]
 			) as never
 		)
 	}
@@ -166,6 +156,10 @@ export class GenericRoot<
 
 	get internal(): this {
 		return this
+	}
+
+	get referencesById(): Record<string, BaseNode> {
+		return this.baseInstantiation.internal.referencesById
 	}
 
 	get references(): BaseNode[] {

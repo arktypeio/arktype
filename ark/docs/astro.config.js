@@ -60,5 +60,10 @@ export default defineConfig({
 	],
 	markdown: {
 		shikiConfig
+	},
+	vite: {
+		resolve: {
+			conditions: ["ark-ts"]
+		}
 	}
 })

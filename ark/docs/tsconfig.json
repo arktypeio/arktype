@@ -6,13 +6,10 @@
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
 		"allowJs": true,
-		"jsx": "preserve",
-		"plugins": [{ "name": "@astrojs/ts-plugin" }]
+		"jsx": "preserve"
 	},
-	// temporarily disabled until it can handle Starlight's frontmatter
 	"mdx": {
-		"checkMdx": true,
-		"plugins": []
+		"checkMdx": true
 	},
 	// in addition to ignoring the additional dirs, this needs
 	// to be redeclared to avoid excluding ark/docs

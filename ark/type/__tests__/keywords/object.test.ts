@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { ark, type } from "arktype"
-import type { To } from "arktype/internal/keywords/ast.ts"
+import type { Json } from "@ark/util"
+import { keywords, type } from "arktype"
+import type { To } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("Function", () => {
@@ -13,6 +14,40 @@ contextualize(() => {
 		attest(type("Date").infer).type.toString.snap("Date")
 	})
 
+	describe("json", () => {
+		it("root", () => {
+			const json = type("object.json")
+
+			attest<Json>(json.t)
+			attest<Json>(json.infer)
+			attest<Json>(json.inferIn)
+
+			attest(json({})).equals({})
+			attest(json([])).equals([])
+			attest(json(5).toString()).snap("must be an object or an array (was 5)")
+			attest(json({ foo: [5n] }).toString()).snap(
+				"foo[0] must be an object (was a bigint) or must be an array (was object)"
+			)
+		})
+
+		it("stringify", () => {
+			const stringify = type("object.json.stringify")
+
+			const out = stringify.assert({ foo: "bar" })
+
+			attest<string>(out).snap('{"foo":"bar"}')
+
+			// this error kind of sucks, would not be sad if it was discriminated and changed
+			attest(stringify({ foo: undefined }).toString()).snap(
+				"foo must be an object (was undefined) or must be an array (was object)"
+			)
+
+			// has declared out
+			attest<string>(stringify.out.t)
+			attest(stringify.out.expression).snap("string")
+		})
+	})
+
 	describe("liftArray", () => {
 		it("parsed", () => {
 			const liftNumberArray = type("Array.liftFrom<number>")
@@ -22,15 +57,22 @@ contextualize(() => {
 			attest(liftNumberArray(5)).equals([5])
 			attest(liftNumberArray([5])).equals([5])
 			attest(liftNumberArray("five").toString()).snap(
-				'must be a number or an array (was "five")'
+				"must be a number or an object (was a string)"
 			)
 			attest(liftNumberArray(["five"]).toString()).snap(
-				"must be a number (was an object) or [0] must be a number (was a string)"
+				"value at [0] must be a number (was a string)"
 			)
 		})
 
 		it("invoked", () => {
-			ark.Array.liftFrom({ data: "number" })
+			const t = keywords.Array.liftFrom({ data: "number" })
+
+			attest(t.t).type.toString.snap(`(
+	In: { data: number } | { data: number }[]
+) => To<{ data: number }[]>`)
+			attest(t.expression).snap(
+				"(In: { data: number } | { data: number }[]) => Out<{ data: number }[]>"
+			)
 		})
 	})
 })

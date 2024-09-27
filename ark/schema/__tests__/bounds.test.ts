@@ -1,5 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { Disjoint, boundKindPairsByLower, rootNode } from "@ark/schema"
+import {
+	Disjoint,
+	boundKindPairsByLower,
+	rootSchema,
+	writeInvalidLengthBoundMessage
+} from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
 const numericCases = {
@@ -16,7 +21,7 @@ const lengthCases = flatMorph(numericCases, (name, v) => [name, "1".repeat(v)])
 
 contextualize(() => {
 	it("numeric apply", () => {
-		const t = rootNode({
+		const t = rootSchema({
 			domain: "number",
 			min: { rule: 5, exclusive: true },
 			max: { rule: 10 }
@@ -38,7 +43,7 @@ contextualize(() => {
 	})
 
 	it("length apply", () => {
-		const t = rootNode({
+		const t = rootSchema({
 			domain: "string",
 			minLength: { rule: 5, exclusive: true },
 			maxLength: { rule: 10 }
@@ -60,7 +65,7 @@ contextualize(() => {
 	})
 
 	it("date apply", () => {
-		const t = rootNode({
+		const t = rootSchema({
 			proto: Date,
 			after: { rule: 5, exclusive: true },
 			before: { rule: 10 }
@@ -81,6 +86,18 @@ contextualize(() => {
 		)
 	})
 
+	it("errors on negative length bound", () => {
+		attest(() => rootSchema({ domain: "string", maxLength: -1 })).throws(
+			writeInvalidLengthBoundMessage("maxLength", -1)
+		)
+	})
+
+	it("errors on non-integer length bound", () => {
+		attest(() => rootSchema({ domain: "string", exactLength: 1.5 })).throws(
+			writeInvalidLengthBoundMessage("exactLength", 1.5)
+		)
+	})
+
 	entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 		describe(`${min}/${max}`, () => {
 			const basis =
@@ -93,7 +110,7 @@ contextualize(() => {
 				: dateCases
 
 			it("allows", () => {
-				const t = rootNode({
+				const t = rootSchema({
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
@@ -107,13 +124,13 @@ contextualize(() => {
 			})
 
 			it("unit range reduces", () => {
-				const l = rootNode({
+				const l = rootSchema({
 					...basis,
 					[min]: {
 						rule: 6
 					}
 				} as never)
-				const r = rootNode({
+				const r = rootSchema({
 					...basis,
 					[max]: {
 						rule: 6
@@ -121,15 +138,15 @@ contextualize(() => {
 				} as never)
 				const expected =
 					min === "min" ?
-						rootNode({
+						rootSchema({
 							unit: 6
 						})
 					: min === "minLength" ?
-						rootNode({
+						rootSchema({
 							...basis,
 							exactLength: 6
 						} as never)
-					:	rootNode({
+					:	rootSchema({
 							unit: new Date(6)
 						})
 
@@ -138,13 +155,13 @@ contextualize(() => {
 			})
 
 			it("non-overlapping exclusive", () => {
-				const l = rootNode({
+				const l = rootSchema({
 					...basis,
 					[min]: {
 						rule: 3
 					}
 				} as never)
-				const r = rootNode({
+				const r = rootSchema({
 					...basis,
 					[max]: {
 						rule: 3,
@@ -156,8 +173,8 @@ contextualize(() => {
 			})
 
 			it("non-overlapping limits", () => {
-				const l = rootNode({ ...basis, [min]: 3 } as never)
-				const r = rootNode({
+				const l = rootSchema({ ...basis, [min]: 3 } as never)
+				const r = rootSchema({
 					...basis,
 					[max]: 1
 				} as never)
@@ -166,11 +183,11 @@ contextualize(() => {
 			})
 
 			it("greater min is stricter", () => {
-				const lesser = rootNode({
+				const lesser = rootSchema({
 					...basis,
 					[min]: 3
 				} as never)
-				const greater = rootNode({
+				const greater = rootSchema({
 					...basis,
 					[min]: 4
 				} as never)
@@ -179,11 +196,11 @@ contextualize(() => {
 			})
 
 			it("lesser max is stricter", () => {
-				const lesser = rootNode({
+				const lesser = rootSchema({
 					...basis,
 					[max]: 3
 				} as never)
-				const greater = rootNode({
+				const greater = rootSchema({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
 				} as never)
@@ -192,11 +209,11 @@ contextualize(() => {
 			})
 
 			it("exclusive wins if limits equal", () => {
-				const exclusive = rootNode({
+				const exclusive = rootSchema({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
 				} as never)
-				const inclusive = rootNode({
+				const inclusive = rootSchema({
 					...basis,
 					[max]: 3
 				} as never)

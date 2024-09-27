@@ -1,19 +1,18 @@
 import { domainOf } from "./domain.ts"
 import { throwInternalError } from "./errors.ts"
-import { objectKindOf } from "./objectKinds.ts"
+import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 
 // Eventually we can just import from package.json in the source itself
 // but for now, import assertions are too unstable and it wouldn't support
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.3.0"
+export const arkUtilVersion = "0.14.0"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: import.meta.filename,
-	/** Node18 */
-	FileConstructor: globalThis.File ?? Blob
+	filename: import.meta.filename ?? globalThis.__filename ?? "unknown",
+	FileConstructor
 }
 
 export type InitialRegistryContents = typeof initialRegistryContents
@@ -35,7 +34,7 @@ declare global {
 }
 
 const namesByResolution = new WeakMap<object | symbol, string>()
-const nameCounts: Record<string, number | undefined> = {}
+const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
 	const existingName = namesByResolution.get(value)

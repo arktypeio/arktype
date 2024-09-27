@@ -27,8 +27,6 @@ export type exactMessageOnError<t extends object, u extends object> = {
 
 export type leftIfEqual<l, r> = [l, r] extends [r, l] ? l : r
 
-export type defer<t> = [t][t extends any ? 0 : never]
-
 export type UnknownUnion =
 	| string
 	| number
