@@ -47,10 +47,10 @@ export type snapshot<t, depth extends 1[] = []> =
 	: depth["length"] extends 10 ? unknown
 	: t extends array<infer item> ? array<snapshot<item, [...depth, 1]>>
 	: {
-			[k in keyof t]: snapshot<t[k], [...depth, 1]>
+			[k in keyof t as snapshotPrimitive<k>]: snapshot<t[k], [...depth, 1]>
 		}
 
-type snapshotPrimitive<t> = t extends symbol ? `(Symbol${string})` : t
+type snapshotPrimitive<t> = t extends symbol ? `Symbol(${string})` : t
 
 export const print = (data: unknown, indent?: number): void =>
 	console.log(printable(data, indent))
@@ -101,6 +101,14 @@ const _serialize = (
 
 			const result: Record<string, unknown> = {}
 			for (const k in o) result[k] = _serialize((o as any)[k], opts, nextSeen)
+
+			for (const s of Object.getOwnPropertySymbols(o)) {
+				result[opts.onSymbol?.(s as symbol) ?? s.toString()] = _serialize(
+					(o as any)[s],
+					opts,
+					nextSeen
+				)
+			}
 
 			return result
 		}
