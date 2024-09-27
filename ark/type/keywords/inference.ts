@@ -201,9 +201,9 @@ type _distill<t, opts extends distill.Options> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
-		opts["branded"] extends true ?
-			of<_distill<base, opts>, attributes>
-		:	_distill<base, opts>
+		opts["branded"] extends true ? of<_distill<base, opts>, attributes>
+		: attributes extends Default<base> ? _distill<base, opts> | undefined
+		: _distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ?
