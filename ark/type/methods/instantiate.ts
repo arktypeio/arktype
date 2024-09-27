@@ -7,9 +7,11 @@ import type { MorphType } from "./morph.ts"
 import type { NumberType } from "./number.ts"
 import type { ObjectType } from "./object.ts"
 import type { StringType } from "./string.ts"
-import type { ValidatorType } from "./validator.ts"
 
 export type instantiateType<t, $> =
+	NoInfer<_instantiateType<t, $>> extends infer r ? r : never
+
+export type _instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
 	[Extract<t, InferredMorph>] extends [anyOrNever] ?
 		// otherwise, all branches have to conform to a single basis type those methods to be available
@@ -20,6 +22,5 @@ export type instantiateType<t, $> =
 			[t] extends [array] ? ArrayType<t, $>
 			: [t] extends [Date] ? DateType<t, $>
 			: ObjectType<t, $>
-		: unknown extends t ? BaseType<unknown, $>
-		: ValidatorType<t, $>
+		:	BaseType<t, $>
 	:	MorphType<t, $>

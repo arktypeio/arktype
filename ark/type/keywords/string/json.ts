@@ -1,10 +1,10 @@
 import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, To, of } from "../inference.ts"
+import type { Predicate, To, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {
-	export type json = of<string, Branded<"json">>
+	export type json = of<string, Predicate<"json">>
 }
 
 const jsonStringDescription = "a JSON string"

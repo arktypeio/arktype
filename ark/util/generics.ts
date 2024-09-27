@@ -68,7 +68,7 @@ export type exactEquals<l, r> =
 export const keyNonimal = " keyNonimal"
 
 export type nominal<t, id extends string> = t & {
-	readonly [keyNonimal]: id
+	readonly [keyNonimal]: [t, id]
 }
 
 export type satisfy<base, t extends base> = t

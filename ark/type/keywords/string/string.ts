@@ -3,13 +3,13 @@ import type { Module, Submodule } from "../../module.ts"
 import type {
 	AtLeastLength,
 	AtMostLength,
-	Branded,
 	Default,
 	ExactlyLength,
 	LessThanLength,
 	MoreThanLength,
 	Narrowed,
 	Optional,
+	Predicate,
 	constraint,
 	of
 } from "../inference.ts"
@@ -78,7 +78,7 @@ export declare namespace string {
 
 	export type defaultsTo<rule> = of<string, Default<rule>>
 
-	export type branded<rule> = of<string, Branded<rule>>
+	export type branded<rule> = of<string, Predicate<rule>>
 
 	export type is<attributes> = of<string, attributes>
 
@@ -91,7 +91,7 @@ export declare namespace string {
 		: attribute extends Matching<infer rule> ? matching<rule>
 		: attribute extends Optional ? optional
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Branded<infer rule> ? branded<rule>
+		: attribute extends Predicate<infer rule> ? branded<rule>
 		: never
 
 	export type module = Module<string.submodule>
@@ -120,3 +120,5 @@ export declare namespace string {
 		upper: upper.submodule
 	}
 }
+
+export type { brandedString } from "./brands.ts"

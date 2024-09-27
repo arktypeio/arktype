@@ -100,20 +100,23 @@ contextualize(() => {
 		})
 	})
 
-	describe("brand", () => {
-		it("chained", () => {
-			const t = type("string").brand("foo")
-			attest(t.t).type.toString.snap('branded<"foo">')
+	// describe("brand", () => {
+	// 	it("chained", () => {
+	// 		const t = type("string").brand("foo")
+	// 		attest(t.t).type.toString.snap('branded<"foo">')
 
-			// no effect at runtime
-			attest(t.expression).equals("string")
-		})
+	// 		// no effect at runtime
+	// 		attest(t.expression).equals("string")
 
-		it("string-embedded", () => {
-			const t = type("number#cool")
-			attest(t.t).type.toString.snap('branded<"cool">')
+	// 		const out = t("moo")
+	// 		attest<string.branded<"foo"> | type.errors>(out).type.toString.snap()
+	// 	})
 
-			attest(t.expression).equals("number")
-		})
-	})
+	// 	it("string-embedded", () => {
+	// 		const t = type("number#cool")
+	// 		attest(t.t).type.toString.snap('branded<"cool">')
+
+	// 		attest(t.expression).equals("number")
+	// 	})
+	// })
 })

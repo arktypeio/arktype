@@ -6,11 +6,10 @@ import type {
 	Pattern
 } from "@ark/schema"
 import type { applyConstraintSchema } from "../keywords/inference.ts"
-import type { ValidatorType } from "./validator.ts"
+import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends string = string, $ = {}>
-	extends ValidatorType<t, $> {
+interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
 	matching<const schema extends Pattern.Schema>(
 		schema: schema
 	): Type<applyConstraintSchema<t, "pattern", schema>, $>

@@ -1,12 +1,12 @@
 import type {
-	Branded,
 	constraint,
 	Default,
 	Literal,
 	Narrowed,
 	normalizeLimit,
 	of,
-	Optional
+	Optional,
+	Predicate
 } from "../inference.ts"
 
 export type AtOrAfter<rule> = {
@@ -40,7 +40,7 @@ export declare namespace Date {
 
 	export type defaultsTo<rule> = of<Date, Default<rule>>
 
-	export type branded<rule> = of<Date, Branded<rule>>
+	export type branded<rule> = of<Date, Predicate<rule>>
 
 	export type literal<rule> = of<Date, Literal<rule>>
 
@@ -61,6 +61,6 @@ export declare namespace Date {
 		: attribute extends AtOrBefore<infer rule> ? atOrBefore<rule>
 		: attribute extends Optional ? optional
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Branded<infer rule> ? branded<rule>
+		: attribute extends Predicate<infer rule> ? branded<rule>
 		: never
 }

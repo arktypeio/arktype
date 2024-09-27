@@ -2,12 +2,12 @@ import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
 	BaseAttributes,
-	Branded,
 	constraint,
 	Default,
 	Narrowed,
 	of,
-	Optional
+	Optional,
+	Predicate
 } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
@@ -68,7 +68,7 @@ export declare namespace number {
 
 	export type defaultsTo<rule> = of<number, Default<rule>>
 
-	export type branded<rule> = of<number, Branded<rule>>
+	export type branded<rule> = of<number, Predicate<rule>>
 
 	interface ownConstraints
 		extends AtLeast<number>,
@@ -103,7 +103,7 @@ export declare namespace number {
 		: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
 		: attribute extends Optional ? optional
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Branded<infer rule> ? branded<rule>
+		: attribute extends Predicate<infer rule> ? branded<rule>
 		: never
 
 	export type module = Module<submodule>

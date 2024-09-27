@@ -8,7 +8,7 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import type { TraversalPath } from "./utils.ts"
+import { pathToPropString, type TraversalPath } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: TraversalPath
@@ -50,9 +50,8 @@ export class TraversalContext {
 	}
 
 	finalize(): unknown {
-		if (this.hasError()) return this.errors
-
-		if (!this.queuedMorphs.length) return this.root
+		if (!this.queuedMorphs.length)
+			return this.hasError() ? this.errors : this.root
 
 		if (
 			typeof this.root === "object" &&
@@ -66,6 +65,14 @@ export class TraversalContext {
 		// queuedMorphs is empty rather than iterating over the list once
 		while (this.queuedMorphs.length) {
 			const { path, morphs } = this.queuedMorphs.shift()!
+
+			// even if we already have an error, apply morphs that are not at a path
+			// with errors to capture potential validation errors
+			if (this.hasError()) {
+				const morphPropString = pathToPropString(path)
+				if (this.errors.some(e => morphPropString.startsWith(e.propString)))
+					continue
+			}
 
 			const key = path.at(-1)
 
@@ -84,22 +91,21 @@ export class TraversalContext {
 					parent === undefined ? this.root : parent[key!],
 					this
 				)
-				if (result instanceof ArkErrors) return result
-				if (this.hasError()) return this.errors
 				if (result instanceof ArkError) {
 					// if an ArkError was returned but wasn't added to these
-					// errors, add it then return
-					this.error(result)
-					return this.errors
+					// errors, add it
+					if (!this.errors.includes(result)) this.error(result)
+				} else if (!(result instanceof ArkErrors)) {
+					// if the morph was successful, assign the result to the
+					// corresponding property, or to root if path is empty
+					if (parent === undefined) this.root = result
+					else parent[key!] = result
 				}
-
-				// apply the morph function and assign the result to the
-				// corresponding property, or to root if path is empty
-				if (parent === undefined) this.root = result
-				else parent[key!] = result
+				// if ArkErrors was returned, the morph itself was likely a type
+				// and the errors will have been added directly via this piped context
 			}
 		}
-		return this.root
+		return this.hasError() ? this.errors : this.root
 	}
 
 	get currentErrorCount(): number {

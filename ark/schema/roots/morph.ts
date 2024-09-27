@@ -148,11 +148,13 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	compiledMorphs = `[${this.serializedMorphs}]`
 
 	lastMorph = this.inner.morphs.at(-1)
+	lastMorphIfNode: BaseRoot | undefined =
+		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in
 	introspectableOut: BaseRoot | undefined =
-		hasArkKind(this.lastMorph, "root") ?
-			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
-			this.lastMorph.out
+		this.lastMorphIfNode ?
+			Object.assign(this.referencesById, this.lastMorphIfNode.referencesById) &&
+			this.lastMorphIfNode.out
 		:	undefined;
 
 	override get in(): BaseRoot {
