@@ -918,7 +918,9 @@ contextualize(() => {
 			const a = type(["string.numeric.parse", "=", "1"])
 
 			attest(a).type.toString.snap(`Type<
-	(In: is<Default<"1"> & Branded<"numeric">>) => To<number>,
+	(
+		In: is<Default<"1"> & Predicate<"numeric">>
+	) => To<number>,
 	{}
 >`)
 
@@ -931,7 +933,7 @@ contextualize(() => {
 	of<
 		{
 			a: (
-				In: is<Default<"1"> & Branded<"numeric">>
+				In: is<Default<"1"> & Predicate<"numeric">>
 			) => To<number>
 		},
 		Default<{}>

@@ -52,8 +52,10 @@ contextualize(() => {
 		// errors correctly if t is declared as its own type param
 		const accept = <t extends string>(t: Type<t>) => t
 
+		const t = type("1")
+
 		// @ts-expect-error
-		attest(() => accept(type("1"))).type.errors(
+		attest(() => accept(t)).type.errors(
 			"Argument of type 'Type<1, {}>' is not assignable to parameter of type 'Type<string, {}>'"
 		)
 	})

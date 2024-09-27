@@ -219,9 +219,9 @@ contextualize(() => {
 		attest<{ foo: number }>(nested.in.infer)
 
 		const map = type.keywords.Map.narrow(() => true).pipe(m => m)
-		attest(map.t).type.toString.snap(
-			"(In: of<Map<unknown, unknown>, Narrowed>) => Out<Map<unknown, unknown>>"
-		)
+		attest(map.t).type.toString.snap(`(
+	In: of<Map<unknown, unknown>, Narrowed>
+) => Out<Map<unknown, unknown>>`)
 		attest(map.infer).type.toString.snap("Map<unknown, unknown>")
 		attest(map.inferIn).type.toString("Map<unknown, unknown>")
 	})
@@ -261,7 +261,9 @@ contextualize(() => {
 
 	it("unknown is narrowable", () => {
 		const t = type("unknown").narrow(() => true)
-		attest(t.t).type.toString.snap("of<unknown, Narrowed>")
+		attest(t.t).type.toString.snap(
+			'{ " of": { base: unknown; attributes: Narrowed } }'
+		)
 		attest(t.expression).snap("unknown")
 	})
 })

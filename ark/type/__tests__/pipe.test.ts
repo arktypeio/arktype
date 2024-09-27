@@ -8,7 +8,12 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
-import type { Out, To, of } from "arktype/internal/keywords/inference.ts"
+import type {
+	Out,
+	To,
+	of,
+	string
+} from "arktype/internal/keywords/inference.ts"
 import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
 
 contextualize(() => {
@@ -769,7 +774,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 	it("multiple chained pipes", () => {
 		const t = type("string.trim").to("string.lower")
 
-		attest<(In: string) => To<string>>(t.t)
+		attest(t.t).type.toString.snap("(In: string) => To<lowercase>")
 
 		attest(t("Success")).equals("success")
 		attest(t("success")).equals("success")
