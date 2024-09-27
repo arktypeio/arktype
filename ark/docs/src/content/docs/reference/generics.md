@@ -98,7 +98,7 @@ import { type } from "arktype"
 const unfalse = type.keywords.Exclude("boolean", "false")
 ```
 
-### TS (TODO)
+<!-- ### TS (TODO)
 
 ```ts
 import { type, type Type } from "arktype"
@@ -116,7 +116,7 @@ const badBox = createBox(type("number"))
 
 console.log(boxType({ box: 5 }).toString())
 console.log(boxType({ box: "foo" }))
-```
+``` -->
 
 ### Generic HKTs
 
