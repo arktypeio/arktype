@@ -176,9 +176,9 @@ const _pipeMorphed = (
 
 	if (fromIsMorph) {
 		const morphs = [...from.morphs]
-		if (from.introspectableOut) {
+		if (from.lastMorphIfNode) {
 			// still piped from context, so allows appending additional morphs
-			const outIntersection = intersectNodes(from.introspectableOut, to, ctx)
+			const outIntersection = intersectNodes(from.lastMorphIfNode, to, ctx)
 			if (outIntersection instanceof Disjoint) return outIntersection
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)
