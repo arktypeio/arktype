@@ -973,4 +973,19 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			)
 			.type.errors(writeUnboundableMessage("string | string[]"))
 	})
+
+	it("can extract proto Node at property", () => {
+		const d = type("Date")
+
+		const o = type({
+			last_updated: d
+		})
+
+		const t = o.get("last_updated")
+
+		attest<Date>(t.t)
+		attest(d.expression).snap("Date")
+		attest(t.expression).equals(d.expression)
+		attest(t.extends(d)).equals(true)
+	})
 })
