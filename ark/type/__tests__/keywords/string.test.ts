@@ -19,6 +19,34 @@ contextualize(() => {
 			'must be only letters and digits 0-9 (was "abc@123")'
 		)
 	})
+	it("base64", () => {
+		const b64 = type("string.base64")
+		attest(b64("fn5+")).snap("fn5+")
+		attest(b64("V29yZA==")).snap("V29yZA==")
+		attest(b64("V29yZA").toString()).equals(
+			'must be alphanumeric characters and +/ with the correct amount of = padding (was "V29yZA")'
+		)
+		attest(b64("V29.yZA").toString()).equals(
+			'must be alphanumeric characters and +/ with the correct amount of = padding (was "V29.yZA")'
+		)
+		attest(b64("fn5-").toString()).equals(
+			'must be alphanumeric characters and +/ with the correct amount of = padding (was "fn5-")'
+		)
+	})
+
+	it("base64url", () => {
+		const b64url = type("string.base64url")
+		attest(b64url("fn5-")).snap("fn5-")
+		attest(b64url("V29yZA")).snap("V29yZA")
+		attest(b64url("V29yZA==")).snap("V29yZA==")
+		attest(b64url("V29yZA%3D%3D")).snap("V29yZA%3D%3D")
+		attest(b64url("V29.yZA").toString()).equals(
+			'must be alphanumeric characters and _- optionally with the correct amount of = or %3D padding (was "V29.yZA")'
+		)
+		attest(b64url("fn5+").toString()).equals(
+			'must be alphanumeric characters and _- optionally with the correct amount of = or %3D padding (was "fn5+")'
+		)
+	})
 
 	it("digits", () => {
 		const digits = type("string.digits")
