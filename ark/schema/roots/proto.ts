@@ -25,6 +25,7 @@ import {
 } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
+import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
 import type { Domain } from "./domain.ts"
 
@@ -75,7 +76,9 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 		},
 		normalize: schema =>
 			typeof schema === "string" ? { proto: builtinConstructors[schema] }
-			: typeof schema === "function" ? { proto: schema }
+			: typeof schema === "function" ?
+				isNode(schema) ? (schema as {} as ProtoNode)
+				:	{ proto: schema }
 			: typeof schema.proto === "string" ?
 				{ ...schema, proto: builtinConstructors[schema.proto] }
 			:	(schema as Proto.ExpandedSchema<Constructor>),
