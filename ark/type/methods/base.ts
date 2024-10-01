@@ -43,12 +43,14 @@ interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	[inferred]: t
 	/**
-	 * Generic argument. May be used for type reconstruction.
+	 * The top-level generic parameter accepted by the `Type`.\
+	 * Potentially includes morphs and subtype constraints not reflected
+	 *   in the types fully-inferred input (via `inferIn`) or output (via `infer` or `inferOut`).
 	 * @example type A = type.infer<[typeof T.t, '[]']>
 	 */
 	t: t
 	/**
-	 * Result type of the validation. Base type used by
+	 * A type representing the output the `Type` will return (after morphs are applied to valid input)
 	 * @example export type MyType = typeof MyType.infer
 	 * @example export interface MyType extends Identity<typeof MyType.infer> {}
 	 */
@@ -58,7 +60,7 @@ interface Type<out t = unknown, $ = {}>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
 	/**
-	 * Type required as input to the validator function.
+	 * A type representing the input the `Type` will accept (before morphs are applied)
 	 * @example export type MyTypeInput = typeof MyType.inferIn
 	 */
 	inferIn: distill.In<t>
@@ -90,7 +92,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Check if data matches the input shape.
 	 * Doesn't process any morphs, but does check narrows.
-	 * @example
+	 * @example type({ foo: "number" }).allows({ foo: "bar" }) // false
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
@@ -103,7 +105,7 @@ interface Type<out t = unknown, $ = {}>
 	describe(description: string): this
 
 	/**
-	 * Change the behavior when unknown properties are encountered
+	 * Create a copy of this `Type` with updated unknown key behavior
 	 * - `ignore`: ignore unknown properties (default)
 	 * - 'reject': disallow objects with unknown properties
 	 * - 'delete': clone the object and keep only known properties
@@ -111,8 +113,8 @@ interface Type<out t = unknown, $ = {}>
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Change the behavior when unknown properties are encountered
-	 * Includes the whole object, not just the immediate properties
+	 * Create a copy of this `Type` with updated unknown key behavior\
+	 * The behavior applies to the whole object tree, not just the immediate properties.
 	 * - `ignore`: ignore unknown properties (default)
 	 * - 'reject': disallow objects with unknown properties
 	 * - 'delete': clone the object and keep only known properties
@@ -120,14 +122,13 @@ interface Type<out t = unknown, $ = {}>
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Validate the data, throwing `type.errors` instance on failure
-	 * Unlike `assert`, this method has a typed argument
+	 * Identical to `assert`, but with a typed input as a convenience for providing a typed value.
 	 * @example const ConfigT = type({ foo: "string" }); export const config = ConfigT.from({ foo: "bar" })
 	 */
 	from(literal: this["inferIn"]): this["infer"]
 
 	/**
-	 * Cast this type to a different type.
+	 * Cast the way this `Type` is inferred (has no effect at runtime).
 	 * const branded = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
 	 */
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
@@ -137,14 +138,14 @@ interface Type<out t = unknown, $ = {}>
 	// ): instantiateType<r, $>
 
 	/**
-	 * ArkType of the input shape.
-	 * Does not include any morphs, but does include narrows.
+	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
 	 * @example const inputT = T.in
 	 */
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	/**
-	 * ArkType of the output shape.
-	 * Does not include any morphs, but does include narrows.
+	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
+	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
+	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
 	 * @example const outputT = T.out
 	 */
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
@@ -153,8 +154,7 @@ interface Type<out t = unknown, $ = {}>
 	// that can lead to incorrect results. See:
 	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
 	/**
-	 * Intersect this type with another type.
-	 * May result in `never` Disjoint ArkType.
+	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
 	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
 	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
 	 */
@@ -163,36 +163,28 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
 	/**
-	 * Intersect this type with another type.
-	 * If the intersection results in Disjoint (Type<never>), immediately throws an error.
+	 * Intersect another `Type` definition, throwing an error if the result is unsatisfiable.
 	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
-	 * @example const tupleForm = type(["string", "&", "number"])
-	 * @example const argsForm = type("string", "&", "number")
 	 */
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $>
 
 	/**
-	 * Make a union of this type and another type.
+	 * Union another `Type` definition.\
 	 * If the types contain morphs, input shapes should be distinct. Otherwise an error will be thrown.
 	 * @example const union = type({ foo: "number" }).or({ foo: "string" }) // Type<{ foo: number } | { foo: string }>
 	 * @example const union = type("string.numeric.parse").or("number") // Type<((In: string) => Out<number>) | number>
-	 * @example const tupleForm = type(["string", "|", "number"])
-	 * @example const argsForm = type("string", "|", "number")
 	 */
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<t | r, $>
 
 	/**
-	 * Narrow this type to its subtype.
-	 *
+	 * Add a custom predicate to this `Type`.
 	 * @example const integer = type("number").narrow(n => Number.isInteger(n)) // Type<number>
 	 * @example const foo = type("string").narrow((s): s is "foo" => s === "foo") // Type<"foo">
 	 * @example const trimmed = type("string").narrow((s, ctx) => s.trim() === s ? true : ctx.mustBe("a trimmed string")) // Type<string>
-	 * @example const tupleForm = type(["string", ":", s => true])
-	 * @example const argsForm = type("string", ":", s => true)
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
@@ -226,18 +218,14 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $>
 
 	/**
-	 * Construct an array of this type.
+	 * Create a `Type` for array with elements of this `Type`
 	 * @example const array = type("string").array() // Type<string[]>
-	 * @example const tupleForm = type(["string", "[]"])
-	 * @example const argsForm = type("string", "[]")
 	 */
 	array(): ArrayType<t[], $>
 
 	/**
-	 * Morph this type with a chain of morphs.
+	 * Morph this `Type` through a chain of morphs.
 	 * @example const uppercase = type("string").pipe(s => s.toUpperCase()) // Type<(In: string) => Out<string>>
-	 * @example const tupleForm = type(["string", "=>", s => s])
-	 * @example const argsForm = type("string", "=>", s => s)
 	 */
 	pipe: ChainedPipes<t, $>
 
@@ -273,14 +261,12 @@ interface Type<out t = unknown, $ = {}>
 	optional<r = applyAttribute<t, Optional>>(): instantiateType<r, $>
 
 	/**
-	 * Add a default value to this type when it is used as a property.
-	 * Default value should be a valid input value for the type, or a function that returns a valid input value.
+	 * Add a default value for this `Type` when it is used as a property.\
+	 * Default value should be a valid input value for this `Type, or a function that returns a valid input value.\
 	 * If the type has a morph, it will be applied to the default value.
 	 * @example const withDefault = type({ foo: type("string").default("bar") }); withDefault({}) // { foo: "bar" }
 	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
 	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
-	 * @example const tupleForm = type(["string", "=", "foo"])
-	 * @example const argsForm = type("string", "=", "foo")
 	 */
 	default<
 		const value extends this["inferIn"],

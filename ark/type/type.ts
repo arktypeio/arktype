@@ -102,13 +102,13 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	generic: GenericParser<$>
 	schema: SchemaParser<$>
 	/**
-	 * Construct a literal (or by-reference object) type
+	 * Create a `Type` that is satisfied only by a value strictly equal (`===`) to the argument passed to this function.
 	 * @example const foo = type.unit('foo') // Type<'foo'>
 	 * @example const sym: unique symbol = Symbol(); type.unit(sym) // Type<typeof sym>
 	 */
 	unit: UnitTypeParser<$>
 	/**
-	 * Constructs a union of literals and by-reference objects
+	 * Create a `Type` that is satisfied only by a value strictly equal (`===`) to one of the arguments passed to this function.
 	 * @example const enum = type.enumerated('foo', 'bar', obj) // obj is a by-reference object
 	 * @example const tupleForm = type(['===', 'foo', 'bar', obj])
 	 * @example const argsForm = type('===', 'foo', 'bar', obj)
