@@ -16,6 +16,7 @@ import type {
 import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
+import { base64 } from "./base64.ts"
 import { capitalize } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
 import { stringDate } from "./date.ts"
@@ -39,6 +40,7 @@ export const string = arkModule({
 	integer,
 	alpha,
 	alphanumeric,
+	base64,
 	digits,
 	semver,
 	ip,
@@ -102,6 +104,7 @@ export declare namespace string {
 		root: string
 		alpha: alpha
 		alphanumeric: alphanumeric
+		base64: base64.submodule
 		digits: digits
 		numeric: stringNumeric.submodule
 		integer: stringInteger.submodule
