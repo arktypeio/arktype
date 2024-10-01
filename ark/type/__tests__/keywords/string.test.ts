@@ -38,10 +38,10 @@ contextualize(() => {
 		attest(b64url("V29yZA==")).snap("V29yZA==")
 		attest(b64url("V29yZA%3D%3D")).snap("V29yZA%3D%3D")
 		attest(b64url("V29.yZA").toString()).equals(
-			'must be base64-encoded (was "V29.yZA")'
+			'must be base64url-encoded (was "V29.yZA")'
 		)
 		attest(b64url("fn5+").toString()).equals(
-			'must be base64-encoded (was "fn5+")'
+			'must be base64url-encoded (was "fn5+")'
 		)
 	})
 

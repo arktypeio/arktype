@@ -10,7 +10,7 @@ export const base64 = arkModule({
 	),
 	url: regexStringNode(
 		/^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==|%3D%3D)?|[A-Za-z0-9_-]{3}(?:=|%3D)?)?$/,
-		"base64-encoded"
+		"base64url-encoded"
 	)
 })
 
