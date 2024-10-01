@@ -1,6 +1,6 @@
 import React from "react"
-import { FloatYourBoat } from "./FloatYourBoat.js"
-import { PlatformCloud } from "./PlatformCloud.js"
+import { FloatYourBoat } from "./FloatYourBoat.tsx"
+import { PlatformCloud } from "./PlatformCloud.tsx"
 
 // workaround for compatibility issue between MDX and Astro
 declare module "react" {
