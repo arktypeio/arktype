@@ -86,6 +86,11 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		:	[]
 	): r
 
+	/**
+	 * Error class for validation errors
+	 * Calling type instance returns an instance of this class on failure
+	 * @example if ( T(data) instanceof type.errors ) { ... }
+	 */
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
 	keywords: typeof keywords
@@ -96,7 +101,18 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	define: DefinitionParser<$>
 	generic: GenericParser<$>
 	schema: SchemaParser<$>
+	/**
+	 * Construct a literal (or by-reference object) type
+	 * @example const foo = type.unit('foo') // Type<'foo'>
+	 * @example const sym: unique symbol = Symbol(); type.unit(sym) // Type<typeof sym>
+	 */
 	unit: UnitTypeParser<$>
+	/**
+	 * Constructs a union of literals and by-reference objects
+	 * @example const enum = type.enumerated('foo', 'bar', obj) // obj is a by-reference object
+	 * @example const tupleForm = type(['===', 'foo', 'bar', obj])
+	 * @example const argsForm = type('===', 'foo', 'bar', obj)
+	 */
 	enumerated: EnumeratedTypeParser<$>
 }
 
