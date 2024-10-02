@@ -217,6 +217,13 @@ contextualize(() => {
 		attest(nested.t).type.toString.snap("{ foo: (In: integer) => Out<number> }")
 		attest<{ foo: number }>(nested.inferIn)
 		attest<{ foo: number }>(nested.in.infer)
+
+		const map = type.keywords.Map.narrow(() => true).pipe(m => m)
+		attest(map.t).type.toString.snap(`(
+	In: of<Map<unknown, unknown>, Narrowed>
+) => Out<Map<unknown, unknown>>`)
+		attest(map.infer).type.toString.snap("Map<unknown, unknown>")
+		attest(map.inferIn).type.toString("Map<unknown, unknown>")
 	})
 
 	it("can distill constrained arrays", () => {
@@ -250,5 +257,13 @@ contextualize(() => {
 
 		// this predicate is evaluated and pruned
 		attest(t.expression).equals("5")
+	})
+
+	it("unknown is narrowable", () => {
+		const t = type("unknown").narrow(() => true)
+		attest(t.t).type.toString.snap(
+			'{ " of": { base: unknown; attributes: Narrowed } }'
+		)
+		attest(t.expression).snap("unknown")
 	})
 })

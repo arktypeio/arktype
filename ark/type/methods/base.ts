@@ -5,6 +5,8 @@ import type {
 	JsonSchema,
 	MetaSchema,
 	Morph,
+	PredicateCast,
+	Predicate as PredicateFn,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -19,7 +21,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type {
 	applyAttribute,
-	Branded,
+	applyConstraintSchema,
 	Default,
 	DefaultFor,
 	distill,
@@ -28,6 +30,7 @@ import type {
 	inferPipes,
 	InferredMorph,
 	Optional,
+	Out,
 	To
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
@@ -38,6 +41,7 @@ import type { instantiateType } from "./instantiate.ts"
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
+	[inferred]: t
 	t: t
 	infer: this["inferOut"]
 	inferBrandableIn: distill.brandable.In<t>
@@ -49,8 +53,9 @@ interface Type<out t = unknown, $ = {}>
 		[o] extends [anyOrNever] ? true
 		: o extends To ? true
 		: false
-	:	true
-	[inferred]: t
+	: // special-case unknown here to preserve assignability
+	unknown extends t ? boolean
+	: true
 
 	json: Json
 	toJSON(): Json
@@ -68,6 +73,8 @@ interface Type<out t = unknown, $ = {}>
 
 	traverse(data: unknown): this["infer"] | ArkErrors
 
+	brandable(): this
+
 	configure(meta: MetaSchema): this
 
 	describe(description: string): this
@@ -80,13 +87,9 @@ interface Type<out t = unknown, $ = {}>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	brand<
-		const name extends string,
-		r = applyAttribute<t, Branded<name>> extends infer r ? instantiateType<r, $>
-		:	never
-	>(
-		name: name
-	): r
+	// brand<const name extends string, r = applyBrand<t, Predicate<name>>>(
+	// 	name: name
+	// ): instantiateType<r, $>
 
 	get in(): instantiateType<this["inferBrandableIn"], $>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
@@ -94,21 +97,48 @@ interface Type<out t = unknown, $ = {}>
 	// inferring r into an alias improves perf and avoids return type inference
 	// that can lead to incorrect results. See:
 	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
-	intersect<const def>(
+	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ?
-		instantiateType<inferIntersection<t, r>, $> | Disjoint
-	:	never
+	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
-	and<const def>(
+	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ?
-		instantiateType<inferIntersection<t, r>, $>
-	:	never
+	): instantiateType<inferIntersection<t, r>, $>
 
-	or<const def>(
+	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<t | r, $> : never
+	): instantiateType<t | r, $>
+
+	narrow<
+		narrowed extends this["infer"] = never,
+		r = [narrowed] extends [never] ?
+			t extends InferredMorph<infer i, infer o> ?
+				o extends To ?
+					(In: i) => To<applyConstraintSchema<o[1], "predicate", PredicateFn>>
+				:	(In: i) => Out<applyConstraintSchema<o[1], "predicate", PredicateFn>>
+			:	applyConstraintSchema<t, "predicate", PredicateFn>
+		: t extends InferredMorph<infer i, infer o> ?
+			o extends To ?
+				(In: i) => To<narrowed>
+			:	(In: i) => Out<narrowed>
+		:	narrowed
+	>(
+		predicate:
+			| PredicateFn<this["infer"]>
+			| PredicateCast<this["infer"], narrowed>
+	): instantiateType<r, $>
+
+	satisfying<
+		narrowed extends this["inferIn"] = never,
+		r = [narrowed] extends [never] ?
+			applyConstraintSchema<t, "predicate", PredicateFn>
+		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
+		: narrowed
+	>(
+		predicate:
+			| PredicateFn<this["inferIn"]>
+			| PredicateCast<this["inferIn"], narrowed>
+	): instantiateType<r, $>
 
 	array(): ArrayType<t[], $>
 
@@ -116,34 +146,30 @@ interface Type<out t = unknown, $ = {}>
 
 	equals<const def>(def: type.validate<def, $>): boolean
 
-	ifEquals<const def>(
+	ifEquals<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
-	:	never
+	): instantiateType<r, $> | undefined
 
 	extends<const def>(other: type.validate<def, $>): boolean
 
-	ifExtends<const def>(
+	ifExtends<const def, r = type.infer<def, $>>(
 		other: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<r, $> | undefined
-	:	never
+	): instantiateType<r, $> | undefined
 
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
-	extract<const def>(
+	extract<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<Extract<t, r>, $>
-	:	never
+	): instantiateType<Extract<t, r>, $>
 
-	exclude<const def>(
+	exclude<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
-	): type.infer<def, $> extends infer r ? instantiateType<Exclude<t, r>, $>
-	:	never
+	): instantiateType<Exclude<t, r>, $>
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
-	): NoInfer<reduceOut>
+	): reduceOut
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
@@ -154,7 +180,7 @@ interface Type<out t = unknown, $ = {}>
 		r = applyAttribute<t, Default<value>>
 	>(
 		value: DefaultFor<value>
-	): NoInfer<instantiateType<r, $>> extends infer result ? result : never
+	): instantiateType<r, $>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

@@ -5,11 +5,10 @@ import type {
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
 import type { applyConstraintSchema } from "../keywords/inference.ts"
-import type { ValidatorType } from "./validator.ts"
+import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends number = number, $ = {}>
-	extends ValidatorType<t, $> {
+interface Type<out t extends number = number, $ = {}> extends BaseType<t, $> {
 	divisibleBy<const schema extends Divisor.Schema>(
 		schema: schema
 	): Type<applyConstraintSchema<t, "divisor", schema>, $>

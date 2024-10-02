@@ -765,4 +765,29 @@ contextualize(() => {
 Left: { foo: (In: string ) => Out<Date> | false | true }
 Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $jsonData[] | false | null | true } | $jsonData[]> | false | true }`)
 	})
+
+	it("multiple chained pipes", () => {
+		const t = type("string.trim").to("string.lower")
+
+		attest(t.t).type.toString.snap("(In: string) => To<lowercase>")
+
+		attest(t("Success")).equals("success")
+		attest(t("success")).equals("success")
+		attest(t("SUCCESS  ")).equals("success")
+		attest(t("success  ")).equals("success")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1144
+	it("multiple chained pipes with literal output", () => {
+		const base = type("string.trim").to("string.lower")
+
+		const t = base.to("'success'")
+
+		attest<(In: string) => To<"success">>(t.t)
+
+		attest(t("Success")).equals("success")
+		attest(t("success")).equals("success")
+		attest(t("SUCCESS  ")).equals("success")
+		attest(t("success  ")).equals("success")
+	})
 })

@@ -52,8 +52,10 @@ contextualize(() => {
 		// errors correctly if t is declared as its own type param
 		const accept = <t extends string>(t: Type<t>) => t
 
+		const t = type("1")
+
 		// @ts-expect-error
-		attest(() => accept(type("1"))).type.errors(
+		attest(() => accept(t)).type.errors(
 			"Argument of type 'Type<1, {}>' is not assignable to parameter of type 'Type<string, {}>'"
 		)
 	})
@@ -162,5 +164,21 @@ contextualize(() => {
 		})
 
 		t satisfies Type
+	})
+
+	it("allows morph assignment to unparameterized Type", () => {
+		const t = type("string").pipe(s => s.length)
+
+		t satisfies Type
+	})
+
+	it("assert callable as standalone function", () => {
+		const { assert } = type("string")
+
+		attest<(data: unknown) => string>(assert)
+		attest(assert("foo")).equals("foo")
+		attest(() => assert(5)).throws.snap(
+			"AggregateError: must be a string (was a number)"
+		)
 	})
 })

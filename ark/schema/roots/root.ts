@@ -79,6 +79,11 @@ export abstract class BaseRoot<
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
 	}
 
+	assert = (data: unknown): unknown => {
+		const result = this.traverse(data)
+		return result instanceof ArkErrors ? result.throw() : result
+	}
+
 	get internal(): this {
 		return this
 	}
@@ -171,11 +176,6 @@ export abstract class BaseRoot<
 	rawOr(r: BaseRoot): BaseRoot {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.node("union", branches) as never
-	}
-
-	assert(data: unknown): unknown {
-		const result = this.traverse(data)
-		return result instanceof ArkErrors ? result.throw() : result
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {
