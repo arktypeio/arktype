@@ -183,3 +183,41 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 		return throwParseError(writeMalformedNumericLiteralMessage(def, "bigint"))
 	}
 }
+
+/**
+ * Returns the next or previous representable floating-point number after the given input.
+ *
+ * @param {number} n - The input number.
+ * @param {"+" | "-"} [direction="+"] - The direction to find the nearest float. "+" for the next float, "-" for the previous float.
+ * @returns {number} The nearest representable floating-point number after or before the input.
+ * @throws {Error} If the input is not a finite number.
+ *
+ * @example
+ * console.log(nearestFloat(0)); // Smallest positive number
+ * console.log(nearestFloat(2)); // 2.0000000000000004
+ * console.log(nearestFloat(2.1)); // 2.1000000000000005
+ * console.log(nearestFloat(2, "-")); // 1.9999999999999998
+ * console.log(nearestFloat(2.1, "-")); // 2.0999999999999996
+ * // as size of input increases, the increments become larger to stay within what
+ * // JS can represent in a numeric value
+ * console.log(nearestFloat(5555555555555555)); // 5555555555555556
+ * console.log(nearestFloat(5555555555555555, "-")); // 5555555555555554
+ */
+export const nearestFloat = (n: number, direction: "+" | "-" = "+"): number => {
+	if (!Number.isFinite(n)) throw new Error("Input must be a finite number")
+
+	const buffer = new ArrayBuffer(8)
+	const f64 = new Float64Array(buffer)
+	const u32 = new Uint32Array(buffer)
+
+	f64[0] = n
+
+	if (n === 0) {
+		u32[0] = 1
+		u32[1] = direction === "-" ? 1 << 31 : 0
+	} else if ((n > 0 && direction === "+") || (n < 0 && direction === "-")) {
+		if (u32[0]++ === 0xffffffff) u32[1]++
+	} else if (u32[0]-- === 0) u32[1]--
+
+	return f64[0]
+}
