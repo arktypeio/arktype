@@ -23,11 +23,5 @@ contextualize(() => {
 			attest(nearestFloat(-5555555555555555)).snap(-5555555555555554)
 			attest(nearestFloat(-5555555555555555, "-")).equals(-5555555555555556)
 		})
-
-		it("infinite", () => {
-			attest(() => nearestFloat(Number.POSITIVE_INFINITY)).throws.snap(
-				"Error: Input must be a finite number"
-			)
-		})
 	})
 })

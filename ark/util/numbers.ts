@@ -204,8 +204,6 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
  * console.log(nearestFloat(5555555555555555, "-")); // 5555555555555554
  */
 export const nearestFloat = (n: number, direction: "+" | "-" = "+"): number => {
-	if (!Number.isFinite(n)) throw new Error("Input must be a finite number")
-
 	const buffer = new ArrayBuffer(8)
 	const f64 = new Float64Array(buffer)
 	const u32 = new Uint32Array(buffer)
