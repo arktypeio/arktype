@@ -45,6 +45,39 @@ contextualize(() => {
 		attest(tOut.expression).equals(expected.expression)
 	})
 
+	it("to morph", () => {
+		const restringifyUser = (o: object) => JSON.stringify(o)
+
+		const t = type("string.json.parse").to([
+			{
+				name: "string",
+				age: "number"
+			},
+			"=>",
+			restringifyUser
+		])
+
+		attest(t.t).type.toString.snap()
+
+		attest<string>(t.infer)
+		attest(t.json).snap({
+			in: "string",
+			morphs: [
+				"$ark.parseJson",
+				{
+					in: {
+						required: [
+							{ key: "age", value: "number" },
+							{ key: "name", value: "string" }
+						],
+						domain: "object"
+					},
+					morphs: ["$ark.restringifyUser"]
+				}
+			]
+		})
+	})
+
 	describe("try", () => {
 		it("can catch thrown errors", () => {
 			const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
