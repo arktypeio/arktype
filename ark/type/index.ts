@@ -25,4 +25,3 @@ export {
 export { Module, type BoundModule, type Submodule } from "./module.ts"
 export { module, scope, type Scope } from "./scope.ts"
 export { Type } from "./type.ts"
-
