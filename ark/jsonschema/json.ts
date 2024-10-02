@@ -124,7 +124,7 @@ export const innerParseJsonSchema: Type<
 				`Provided JSON Schema must have one of 'type', 'enum', 'const', 'allOf', 'anyOf' but was ${printable(jsonSchema)}.`
 			)
 		}
-		return preTypeValidator // TODO: Is this actually the correct thing to return???
+		return preTypeValidator
 	}
 )
 
