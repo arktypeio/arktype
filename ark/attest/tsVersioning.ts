@@ -28,6 +28,7 @@ export const forTypeScriptVersions = (
 	const nodeModules = join(assertPackageRoot(process.cwd()), "node_modules")
 	const tsPrimaryPath = join(nodeModules, "typescript")
 	const tsTemporaryPath = join(nodeModules, "typescript-temp")
+	if (existsSync(tsTemporaryPath)) unlinkSync(tsTemporaryPath)
 	if (existsSync(tsPrimaryPath)) renameSync(tsPrimaryPath, tsTemporaryPath)
 
 	try {
@@ -41,7 +42,7 @@ export const forTypeScriptVersions = (
 			try {
 				if (existsSync(tsPrimaryPath)) unlinkSync(tsPrimaryPath)
 
-				symlinkSync(targetPath, tsPrimaryPath)
+				symlinkSync(targetPath, tsPrimaryPath, "junction")
 				fn(version)
 				passedVersions.push(version)
 			} catch (e) {
@@ -65,6 +66,7 @@ export const forTypeScriptVersions = (
 	} finally {
 		if (existsSync(tsTemporaryPath)) {
 			console.log(`⏮️ Restoring your original TypeScript version...`)
+			unlinkSync(tsPrimaryPath)
 			renameSync(tsTemporaryPath, tsPrimaryPath)
 		}
 	}

@@ -26,6 +26,7 @@
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test && pnpm testV8 && cd ./ark/attest && pnpm test",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
+		"testBun": "bun test --preload ./ark/repo/bun.globalSetup.ts",
 		"testTsVersions": "pnpm testTyped --tsconfig null --tsVersions '*' --compilerOptions '{ \"strictNullChecks\": true }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
 		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
