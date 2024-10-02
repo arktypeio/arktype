@@ -1,5 +1,10 @@
-import { throwInternalError } from "@ark/util"
 import {
+	isKeyOf,
+	stringAndSymbolicEntriesOf,
+	throwInternalError,
+} from "@ark/util"
+import {
+	anything,
 	array,
 	bigInt,
 	constant,
@@ -11,160 +16,172 @@ import {
 	string,
 	tuple,
 	uniqueArray,
-	type Arbitrary
+	type Arbitrary,
+	type LetrecLooselyTypedBuilder,
+	type LetrecValue
 } from "fast-check"
+import { isStructureNode, type NodeContext, type StructureNodeContext } from "./arktypeFastCheck.ts"
 import {
 	generateDateArbitrary,
 	generateNumberArbitrary,
 	generateStringArbitrary
-} from "./arbitraryGenerators.ts"
-import type {
-	ArrayNode,
-	NodeDetails,
-	RecordDetails,
-	UnionNode
-} from "./arktypeFastCheck.ts"
+} from "./generateTerminalArbitrary.ts"
 
 type ArbitraryBuilders = {
-	number: (nodeDetails: NodeDetails) => Arbitrary<number>
-	string: (nodeDetails: NodeDetails) => Arbitrary<string>
+	number: (fastCheckContext: FastCheckContext) => Arbitrary<number>
+	string: (fastCheckContext: FastCheckContext) => Arbitrary<string>
 	object: (
-		nodeDetails: ObjectNode,
-		tie?: any
+		fastCheckContext: FastCheckContext
 	) => Arbitrary<Record<string, unknown>>
-	union: (nodeDetails: UnionNode, tie?: any) => Arbitrary<unknown>
-	unit: (nodeDetails: NodeDetails) => Arbitrary<string> | Arbitrary<boolean>
-	Array: (nodeDetails: ArrayNode, tie?: any) => Arbitrary<unknown[]>
-	Date: (nodeDetails: NodeDetails) => Arbitrary<Date>
-	symbol: (nodeDetails: NodeDetails) => Arbitrary<symbol>
-	bigint: () => Arbitrary<bigint>
-	Set: (nodeDetails: NodeDetails) => Arbitrary<Set<unknown>>
-	alias: (nodeDetails: NodeDetails, tie?: any) => Arbitrary<unknown>
+	union: (fastCheckContext: FastCheckContext) => Arbitrary<unknown>
+	//todoshawn
+	unit: (fastCheckContext: FastCheckContext) => Arbitrary<unknown>
+	Array: (fastCheckContext: FastCheckContext) => Arbitrary<unknown[]>
+	Date: (fastCheckContext: FastCheckContext) => Arbitrary<Date>
+	symbol: (fastCheckContext: FastCheckContext) => Arbitrary<symbol>
+	bigint: (fastCheckContext: FastCheckContext) => Arbitrary<bigint>
+	Set: (fastCheckContext: FastCheckContext) => Arbitrary<Set<unknown>>
+	alias: (fastCheckContext: FastCheckContext) => LetrecValue<unknown>
 }
 
-let hasAlias = false
 let inLetrec = false
 
 export const buildArbitraries = (
-	node: NodeDetails,
-	idToNodeDetails: any,
+	reducedNode: NodeContext,
+	aliasArbitrariesById: Record<string, NodeContext>,
 	containsAlias: boolean
 ): Arbitrary<unknown> => {
+	const context = createFastCheckContext(reducedNode, aliasArbitrariesById)
 	if (containsAlias) {
-		Object.assign(nodeDetailsById, idToNodeDetails)
-		hasAlias = containsAlias
-		eagerArbitraryGeneration()
+		context.hasAlias = containsAlias
+		eagerArbitraryGeneration(context)
 	}
-	return arbitraryBuilders[getKey(node)](node as never)
+	return arbitraryBuilders[getKey(reducedNode)](context)
 }
+
+export type FastCheckContext = {
+	hasAlias: boolean
+	fastCheckTies: LetrecLooselyTypedBuilder<unknown>[]
+	convertedAliasNodesById: Record<string, NodeContext>
+	fastCheckAliasArbitrariesById: Record<string, Arbitrary<unknown>>
+	currentNodeContext: NodeContext
+}
+
+const createFastCheckContext = (
+	node: NodeContext,
+	convertedAliasNodesById: Record<string, NodeContext>
+): FastCheckContext => ({
+	//inLetrec now becomes fastCheckTies.length todoshawn
+	hasAlias: false,
+	fastCheckTies: [],
+	convertedAliasNodesById,
+	fastCheckAliasArbitrariesById: {},
+	currentNodeContext: node
+})
 
 export const arbitraryBuilders: ArbitraryBuilders = {
-	number: nodeDetails => generateNumberArbitrary(nodeDetails),
-	bigint: () => bigInt(),
-	string: nodeDetails => generateStringArbitrary(nodeDetails),
-	Date: nodeDetails => generateDateArbitrary(nodeDetails),
-	unit: nodeDetails => constant(nodeDetails.rule),
-	object: (nodeDetails, tie) => generateObjectArbitrary(nodeDetails, tie),
-	symbol: () => constant(Symbol()),
-	union: (nodeDetails, tie) => {
+	number: fastCheckContext => generateNumberArbitrary(fastCheckContext),
+	bigint: fastCheckContext => bigInt(),
+	string: fastCheckContext => generateStringArbitrary(fastCheckContext),
+	Date: fastCheckContext => generateDateArbitrary(fastCheckContext),
+	object: fastCheckContext => generateObjectArbitrary(fastCheckContext),
+	symbol: fastCheckContext => constant(Symbol()),
+	union: fastCheckContext => {
 		const arbitraries: Arbitrary<unknown>[] = []
-		for (const node of nodeDetails.oneOf)
-			arbitraries.push(arbitraryBuilders[getKey(node)](node as never, tie))
+		//todoshawn need some kind of narrowing thing now
+		for (const node of fastCheckContext.currentNodeContext.oneOf)
+			arbitraries.push(arbitraryBuilders[getKey(node)](fastCheckContext))
 		return oneof(...arbitraries)
 	},
-	Array: (nodeDetails, tie) => generateArrayArbitrary(nodeDetails, tie),
+	Array: fastCheckContext => generateArrayArbitrary(fastCheckContext),
 	// Once you can define a typed Set this can be changed to match that type
-	Set: () => uniqueArray(oneof(integer(), string())).map(arr => new Set(arr)),
-	alias: (nodeDetails, tie) => tie(nodeDetails.id)
+	Set: () =>
+		uniqueArray(oneof(anything())).map(arr => new Set(arr)),
+	alias: fastCheckContext => {
+		const tieStack = fastCheckContext.fastCheckTies
+		if (tieStack.length) {
+			const tie = tieStack.at(-1)!
+			const id = fastCheckContext.currentNodeContext.id!
+			return tie(id)
+		}
+		throwInternalError("Tie has not been initialized")
+	},
+	unit: fastCheckContext => constant(fastCheckContext.currentNodeContext.rule)
 }
 
-export const isArbitraryBuilderKey = (
-	key: string
-): key is keyof ArbitraryBuilders =>
-	Object.keys(arbitraryBuilders).includes(key)
-
-export const getKey = (nodeDetails: NodeDetails): keyof ArbitraryBuilders => {
-	if (nodeDetails.kind === "unit" || nodeDetails.kind === "alias")
-		return nodeDetails.kind
-	else if (isArbitraryBuilderKey(nodeDetails.rule)) return nodeDetails.rule
-	throwInternalError(`${nodeDetails.rule} is either not valid or implemented`)
+export const getKey = (fastCheckContext: FastCheckContext): keyof ArbitraryBuilders => {
+	const currentNodeContext = fastCheckContext.currentNodeContext
+	if (currentContext.kind === "unit" || currentContext.kind === "alias")
+		return currentContext.kind
+	else if (currentContext.rule in arbitraryBuilders) return currentContext.rule
+	throwInternalError(`${currentContext.rule} is either not valid or implemented`)
 }
 
-const generateArrayArbitrary = (nodeDetails: ArrayNode, tie?: any) => {
-	const {
-		arbitraryNodeDetails = [],
-		nodeCollection = {},
-		minLength = 0,
-		maxLength = 5,
-		exactLength = undefined
-	} = nodeDetails
-
-	if (exactLength !== undefined) {
-		const arbitraryArray: Arbitrary<unknown>[] = arbitraryNodeDetails.map(
-			kindAndNode =>
+const generateArrayArbitrary = (fastCheckContext: FastCheckContext) => {
+	const condensedNodeContext = fastCheckContext.currentNodeContext
+	if (condensedNodeContext.exactLength !== undefined) {
+		const arbitraryArray: Arbitrary<unknown>[] =
+			condensedNodeContext.arbitraryNodeDetails.map(kindAndNode =>
 				arbitraryBuilders[getKey(kindAndNode.node)](kindAndNode.node as never)
-		)
+			)
 		return tuple(...arbitraryArray)
 	}
-	if (arbitraryNodeDetails.length) {
-		if (arbitraryNodeDetails.length === 1) {
-			let arbitrary
-			const elementNodeDetails = arbitraryNodeDetails[0].node
-			const key = getKey(elementNodeDetails)
-			if (isArbitraryBuilderKey(key))
-				arbitrary = arbitraryBuilders[key](elementNodeDetails as never, tie)
-			else throw new Error(`${key} not defined`)
-			let arrArbitrary
-			if (inLetrec) {
-				arrArbitrary = oneof(
+	const innerArbitraryContext = condensedNodeContext.arbitraryNodeDetails
+	if (!innerArbitraryContext.length) {
+		// For cases where we attach props to an Array
+		if (Object.keys(condensedNodeContext.nodeCollection).length)
+			return assignObjectPropsToArray(array(anything()), fastCheckContext)
+
+		return array(anything())
+	}
+	if (innerArbitraryContext.length === 1) {
+		const elementNodeDetails = condensedNodeContext.arbitraryNodeDetails[0].node
+		const key = getKey(elementNodeDetails)
+		if (!isKeyOf(key, arbitraryBuilders)) throw new Error(`${key} not defined`)
+		fastCheckContext.currentNodeContext = elementNodeDetails
+		const arbitrary = arbitraryBuilders[key](fastCheckContext)
+		const arrArbitrary = array(arbitrary, { minLength, maxLength })
+		const arbitraryToReturn =
+			inLetrec ?
+				oneof(
 					{ maxDepth: 1 },
 					{ arbitrary: constant([]), weight: 2 },
-					{ arbitrary: array(arbitrary, { minLength, maxLength }), weight: 1 }
+					{ arbitrary: arrArbitrary, weight: 1 }
 				)
-			} else arrArbitrary = array(arbitrary, { minLength, maxLength })
+			:	arrArbitrary
 
-			if (Object.keys(nodeCollection).length)
-				return assignObjectPropsToArray(arrArbitrary, nodeDetails)
-			return arrArbitrary
-		} else {
-			const builder = arbitraryNodeDetails.map(nodeAndKind => {
-				const arbitrary = arbitraryBuilders[getKey(nodeAndKind.node)](
-					nodeAndKind.node as never
-				)
-				if (nodeAndKind.kind === "variadic") return array(arbitrary)
-
-				return arbitrary
-			})
-			return tuple(...builder).chain(arr => {
-				const newArr = []
-				for (let i = 0; i < arr.length; i++) {
-					if (arbitraryNodeDetails[i].kind === "variadic")
-						// This is a work around to spread the variadic elements in a tuple
-						newArr.push(...(arr[i] as unknown[]).map(val => constant(val)))
-					else newArr.push(constant(arr[i]))
-				}
-				return tuple(...newArr)
-			})
-		}
 	}
+		if (Object.keys(nodeCollection).length)
+			return assignObjectPropsToArray(arbitraryToReturn, nodeDetails)
+		return arbitraryToReturn
+	} else {
+		const builder = arbitraryNodeDetails.map(nodeAndKind => {
+			const arbitrary = arbitraryBuilders[getKey(nodeAndKind.node)](
+				nodeAndKind.node as never
+			)
+			if (nodeAndKind.kind === "variadic") return array(arbitrary)
 
-	// For ambigious types like type("Array") define random arbitraries to be used
-	const defaultArbitrary = oneof(string(), integer())
-
-	// For cases where we attach props to an Array
-	if (Object.keys(nodeCollection).length)
-		return assignObjectPropsToArray(array(defaultArbitrary), nodeDetails)
-
-	return array(defaultArbitrary)
+			return arbitrary
+		})
+		return tuple(...builder).chain(arr => {
+			const newArr = []
+			for (let i = 0; i < arr.length; i++) {
+				if (arbitraryNodeDetails[i].kind === "variadic")
+					// This is a work around to spread the variadic elements in a tuple
+					newArr.push(...(arr[i] as unknown[]).map(val => constant(val)))
+				else newArr.push(constant(arr[i]))
+			}
+			return tuple(...newArr)
+		})
+	}
 }
 
-const generateObjectArbitrary = (
-	nodeDetails: ObjectNode | ArrayNode,
-	tie?: unknown
-) => {
+const generateObjectArbitrary = (fastCheckContext: FastCheckContext) => {
 	const arbitrariesCollection: Record<string | symbol, Arbitrary<unknown>> = {}
-	const { nodeCollection = {}, requiredKeys = [] } = nodeDetails
-	if (isObjectNode(nodeDetails)) {
+	//todoshawn I want to be in control of the stuff I'm passing around internally meaning that default values should not be a thing
+	//since it shouldve been setup already
+	const nodeContext = fastCheckContext.currentNodeContext
+	if (isStructureNode(nodeContext)) {
 		if (nodeDetails.isIndexSignature) {
 			const keyDetails = nodeCollection["key"]
 			const valueDetails = nodeCollection["value"]
@@ -181,11 +198,9 @@ const generateObjectArbitrary = (
 		}
 	}
 
-	const keysAndSymbols = [
-		...Object.keys(nodeCollection),
-		...Object.getOwnPropertySymbols(nodeCollection)
-	]
+	const keysAndSymbols = stringAndSymbolicEntriesOf(nodeCollection)
 
+	//todoshawn can maybe do a stack and then allows for letrecs in letrecs if it's needed
 	if (hasAlias && !inLetrec) {
 		const something = letrec(tie => {
 			inLetrec = true
@@ -206,11 +221,7 @@ const generateObjectArbitrary = (
 	})
 }
 
-const generateRecusiveCollection = (
-	tie: any,
-	nodeDetails: ObjectNode,
-	id: string
-) => {
+const generateRecusiveCollection = (context: FastCheckContext, id: string) => {
 	const collection: Record<string, any> = {}
 	collection[id] = {}
 	const { nodeCollection = {} } = nodeDetails
@@ -218,11 +229,11 @@ const generateRecusiveCollection = (
 	for (const key of Object.keys(nodeCollection)) {
 		const node = nodeCollection[key]
 		collection[id][key] = arbitraryBuilders[getKey(node)](node as never, tie)
-		if (node.kind === "alias" && (nodeDetails.requiredKeys ?? []).includes(key))
+		if (node.kind === "alias" && nodeDetails.requiredKeys?.includes(key))
 			throwInternalError("Infinitely deep cycles are not supported.")
 	}
 	collection[id] = record(collection[id], {
-		requiredKeys: (nodeDetails.requiredKeys ?? []) as never[]
+		requiredKeys: (nodeDetails.requiredKeys ?? []) as never
 	})
 
 	return collection
@@ -238,32 +249,21 @@ const assignObjectPropsToArray = (
 	)
 }
 
-export type ObjectNode = {
+//todoshawn make interface for all of these and it'll be cleaner
+export interface FastCheckObjectNodeContext extends StructureNodeContext {
 	isIndexSignature?: boolean
-	onUndeclaredKey?: "delete" | "reject"
-} & RecordDetails &
-	NodeDetails
+}
 
-export const isObjectNode = (
-	nodeDetails: NodeDetails
-): nodeDetails is ObjectNode => nodeDetails.rule === "object"
-
-const nodeDetailsById: Record<
-	string,
-	{ node: NodeDetails; aliasReference: string }
-> = {}
-
-const eagerlyGeneratedArbitraries: Record<string, Arbitrary<unknown>> = {}
-
-const eagerArbitraryGeneration = () => {
-	Object.entries(nodeDetailsById).forEach(([k, _]) => {
+//todoshawn NodeDetails = fastcheckctx ideally
+const eagerArbitraryGeneration = (context: FastCheckContext) => {
+	Object.entries(context.convertedAliasNodesById).forEach(([k, _]) => {
 		const result = letrec(tie => {
-			inLetrec = true
+			context.fastCheckTies.push(tie)
 			const collection = generateAliasNodes(tie)
-			inLetrec = false
+			context.fastCheckTies.pop()
 			return collection
 		}) as Record<string, Arbitrary<unknown>>
-		eagerlyGeneratedArbitraries[k] = result[k]
+		context.fastCheckAliasArbitrariesById[k] = result[k]
 	})
 }
 
@@ -271,15 +271,19 @@ const generateAliasNodes = (tie: any) => {
 	const collection: any = {}
 	// Sort the nodes based on the Alias id so that they are generated in order
 	const aliasNodeEntries = Object.entries(nodeDetailsById).sort((a, b) => {
+		//todoshawn maybe look at parseWellFormedInteger
 		const aliasANumber = parseInt(a[1].aliasReference.match(/\d+$/)?.[0] || "")
 		const aliasBNumber = parseInt(b[1].aliasReference.match(/\d+$/)?.[0] || "")
 		if (isNaN(aliasANumber)) return 1
 		if (isNaN(aliasBNumber)) return -1
 		return aliasANumber - aliasBNumber
 	})
+	//todoshawn random node -> bad name
 	for (const [id, { node }] of aliasNodeEntries) {
 		const arb = arbitraryBuilders[getKey(node)](node as never, tie)
 		collection[id] = arb
 	}
 	return collection
 }
+
+const extractSuffix = () => {}

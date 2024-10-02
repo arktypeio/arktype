@@ -1,7 +1,8 @@
+import { attest } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
 import { ArkErrors, type BaseRoot } from "@ark/schema"
 import { scope, type } from "arktype"
-import { assert, property } from "fast-check"
+import { assert, property, type Arbitrary } from "fast-check"
 import { describe, it } from "mocha"
 
 const ss = {
@@ -16,89 +17,254 @@ const ss = {
 	}
 } as const
 
-describe("Arbitrary Generation", () => {
-	const s = Symbol()
-	const ArkTypeTypes: Record<string, BaseRoot> = {
-		// number
-		number: type("number"),
-		boundedNumberNonInclusive: type("number < 5"),
-		boundedDouble: type("number <= 5.1"),
-		doubleBoundedNumber: type("5<=number<10"),
-		divisible: type("number%2"),
-		// string
-		string: type("string"),
-		boundedStringNonInclusive: type("string<4"),
-		boundedStringInclusive: type("string>=5"),
-		doubleBoundedString: type("1<string<=5"),
-		//regex
-		email: type("string.email"),
-		lowercase: type("string.lower"),
-		// union
-		numOrString: type("number|string"),
-		integer: type("number.integer"),
-		//object
-		emptyObject: type({}),
-		object: type("object"),
-		objectWithOptional: type({ a: "string", "b?": "3<number<5" }),
-		nestedObject: type({
-			a: {
-				b: "string < 2"
-			}
-		}),
-		objectIntersection: type([{ a: "string" }, "&", { b: "number" }]),
-		//array
-		stringArr: type("string[]"),
-		boundedStringArr: type("1 < string[] < 5"),
-		arrOfArrs: type("string[][]"),
-		numberArr: type("number[]"),
-		unionArr: type("(string|number)[]"),
-		emptyTuple: type([]),
-		tuple: type(["string", "number", "string<5"]),
-		nestedTuple: type(["string", ["string", "number"], "number"]),
-		variadicTuple: type(["string", "...", "number[]", "string"]),
-		morph: type(["string<5", "=>", val => `${val}`]),
-		//boolean
-		boolean: type("boolean"),
-		falsebool: type("false"),
-		truebool: type("true"),
-		//literal
-		exactNumber: type("number == 0.5"),
-		exactLiteral: type("0.5"),
-		stringLiteral: type("'hello'"),
-		union: type({
-			tag: "'admin'",
-			"powers?": "string[]"
+const assertProperty = (arbitrary: Arbitrary<unknown>, schema: BaseRoot) =>
+	assert(
+		property(arbitrary, value => {
+			const result = schema(value)
+			console.log(value)
+			return !(result instanceof ArkErrors)
 		})
-			.or({
-				tag: "'superadmin'",
-				"superpowers?": "string[]"
-			})
-			.or({
-				tag: "'pleb'"
-			}) as any,
-		symbol: type({
-			[s]: "string"
-		}),
-		symbolType: type("symbol"),
-		indexsig: type({ "[string]": "number|string" }),
-		symbolIndexsig: type({ "[symbol]": "number|string" }),
-		extraPropsOnArr: type({ name: "string" }).and("string[]") as any,
-		date: type("Date"),
-		boundedDate: type("d'2001/10/10'<Date<=d'2005/10/10'"),
-		containsAlias: scope(ss).type("user"),
-		Set: type("Set"),
-		bigInt: type("bigint"),
-		bigIntLiteral: type("19n")
-	}
-	for (const [name, schema] of Object.entries(ArkTypeTypes)) {
-		it(name, () => {
-			const arbitrary = arkToArbitrary(schema)
-			return assert(
-				property(arbitrary, value => {
-					const result = schema(value)
-					return !(result instanceof ArkErrors)
-				})
+	)
+
+describe("Arbitrary Generation", () => {
+	describe("number", () => {
+		it("number", () => {
+			const t = type("number")
+			const arbitrary = arkToArbitrary(t)
+			return assertProperty(arbitrary, t)
+		})
+		it("Tight Bound", () => {
+			const t = type("4<number<5")
+			const arbitrary = arkToArbitrary(t)
+			return assertProperty(arbitrary, t)
+		})
+		it("Tighter Bound", () => {
+			const t = type("1.1<number<1.9")
+			const arbitrary = arkToArbitrary(t)
+			return assertProperty(arbitrary, t)
+		})
+		it("Integer", () => {
+			const t = type("number.integer")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("Invalid Bound", () => {
+			const t = type("4<number.integer<5")
+			attest(() => assertProperty(arkToArbitrary(t), t)).throws.snap(
+				"Error: No integer value satisfies >5 & <4"
 			)
 		})
-	}
+		it("equals", () => {
+			const t = type("number==2")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("divisible", () => {
+			const t = type("number%2")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("divisible within range", () => {
+			const t = type("37<number%7<100")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+	describe("string", () => {
+		it("string", () => {
+			const t = type("string")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("bounded string", () => {
+			const t = type("string < 5")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("double bounded string", () => {
+			const t = type("3<string <= 8")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+	describe("union", () => {
+		it("number|string", () => {
+			const t = type("number|string")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+	describe("object", () => {
+		it("{}", () => {
+			const t = type({})
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("object keyword", () => {
+			const t = type("object")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("object with optional key", () => {
+			const t = type({ a: "string", "b?": "3<number<5" })
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("nested object", () => {
+			const t = type({
+				a: {
+					b: "string < 2"
+				}
+			})
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("intersected object", () => {
+			const t = type([{ a: "string" }, "&", { b: "number" }])
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("symbol key", () => {
+			const s = Symbol()
+			const t = type({
+				[s]: "string"
+			})
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("index signature", () => {
+			const t = type({ "[string]": "number|string" })
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("symbol index signature", () => {
+			const t = type({ "[symbol]": "number|string" })
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("has alias", () => {
+			const t = scope(ss).type("user")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+	describe("array", () => {
+		it("string[]", () => {
+			const t = type("string[]")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("number[][]", () => {
+			const t = type("number[][]")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("bounded array", () => {
+			const t = type("3<number[]<=5")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("union array", () => {
+			const t = type("(string|number)[]")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("array with additional props", () => {
+			const t = type({ name: "string" }).and("string[]")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+	describe("tuple", () => {
+		it("empty tuple", () => {
+			const t = type([])
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("tuple", () => {
+			const t = type(["string", "number", "string<5"])
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("nested tuple", () => {
+			const t = type(["string", ["string", "number"], "number"])
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("variadic tuple", () => {
+			const t = type(["string", "...", "number[]", "string"])
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+
+	describe("Date", () => {
+		it("Date", () => {
+			const t = type("Date")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("bounded date", () => {
+			const t = type("d'2001/10/10'<Date<=d'2005/10/10'")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
+	describe("Miscellaneous", () => {
+		it("Set", () => {
+			const t = type("Set")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("bigint", () => {
+			const t = type("bigint")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("bigint literal", () => {
+			const t = type("19n")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("boolean", () => {
+			const t = type("boolean")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("false", () => {
+			const t = type("false")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("true", () => {
+			const t = type("true")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("literal number", () => {
+			const t = type("0.5")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("literal string", () => {
+			const t = type("'hello'")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("symbol", () => {
+			const t = type("symbol")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("morph", () => {
+			const t = type(["string<5", "=>", val => `${val}`])
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("email regex", () => {
+			const t = type("string.email")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+	})
 })

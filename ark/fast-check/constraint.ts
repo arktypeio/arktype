@@ -1,93 +1,49 @@
-import {
-	After,
-	Before,
-	Max,
-	MaxLength,
-	Min,
-	MinLength,
-	refinementKinds,
-	type NodeKind,
-	type nodeOfKind,
-	type RefinementKind
-} from "@ark/schema"
-import { hasKey, throwInternalError } from "@ark/util"
-import type { NodeDetails } from "./arktypeFastCheck.ts"
+import { Max, Min, type nodeOfKind, type RefinementKind } from "@ark/schema"
+import { hasKey, includes, throwInternalError } from "@ark/util"
+import { integer } from "fast-check"
+import type { NodeContext } from "./arktypeFastCheck.ts"
 
-export type Constraint = Partial<ConstraintNameToType>
-
-type ConstraintNameToType = {
-	divisor: number
-	pattern: string
-	min: number
-	max: number
-	minLength: number
-	maxLength: number
-	exactLength: number
-	after: Date
-	before: Date
+export type ruleByRefinementKind = {
+	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
 }
 
-type HandleConstraint = {
-	child: nodeOfKind<NodeKind>
-	lastNode: NodeDetails
+const setConstraint = <K extends RefinementKind>(
+	kind: K,
+	rule: Required<ruleByRefinementKind>[K],
+	constraint: ruleByRefinementKind
+) => {
+	constraint[kind] = rule
 }
 
-export const handleConstraint = ({
-	child,
-	lastNode
-}: HandleConstraint): boolean => {
-	let constraintAdded = false
+export const applyConstraint = (
+	child: nodeOfKind<RefinementKind>,
+	rootNode: NodeContext
+): void => {
 	const kind = child.kind
-	const rule = hasKey(child, "rule") ? child.rule : undefined
-	const constraint: Partial<
-		Record<RefinementKind, Constraint[RefinementKind]>
-	> = {}
-	if (isRefinementKind(kind)) {
-		if (numberConstraintKeywords.includes(kind)) {
-			if (isNumberConstraint(rule)) {
-				constraint[kind] =
-					hasKey(child, "exclusive") && child.exclusive === true ?
-						kind === "min" ?
-							rule + 1
-						:	rule - 1
-					:	rule
-			}
-		} else if (lengthConstraintKeywords.includes(kind)) constraint[kind] = rule
-		else if (kind === "divisor") constraint.divisor = rule
-		else if (kind === "pattern") {
-			if (lastNode.pattern !== undefined)
+	const rule = child.rule
+	const constraint: ruleByRefinementKind = {}
+	//todoshawn davido helpo
+	if (typeof rule === "string") {
+		if (kind === "pattern") {
+			if (rootNode.pattern !== undefined)
 				throwInternalError("Regex Intersection is not implemented.")
 			constraint.pattern = rule
-		} else if (kind === "exactLength") constraint.exactLength = rule
-		else if (dateConstraintKeywords.includes(kind)) {
-			if (kind === "before") constraint.before = rule
-			else constraint.after = rule
 		}
-		if (Object.keys(constraint).length > 0) {
-			Object.assign(lastNode, constraint)
-			constraintAdded = true
+	} else if (includes(numberConstraintKeywords, kind)) {
+		if (typeof rule === "number") {
+			constraint[kind] =
+				hasKey(child, "exclusive") ?
+					kind === "min" ?
+						//todoshawn ask David if this or Epsilon since Epsilon needs to be increased
+						rule + 0.0001
+					:	rule - 0.0001
+				:	rule
 		}
-	}
-	return constraintAdded
+	} else setConstraint(kind, rule, constraint)
+	Object.assign(rootNode, constraint)
 }
 
 const numberConstraintKeywords = [
 	Min.implementation.kind,
 	Max.implementation.kind
-] as string[]
-
-const dateConstraintKeywords = [
-	Before.implementation.kind,
-	After.implementation.kind
-] as string[]
-
-const lengthConstraintKeywords = [
-	MinLength.implementation.kind,
-	MaxLength.implementation.kind
-] as string[]
-
-const isNumberConstraint = (rule: unknown): rule is number =>
-	typeof rule === "number"
-
-const isRefinementKind = (kind: NodeKind): kind is RefinementKind =>
-	refinementKinds.includes(kind as never)
+]
