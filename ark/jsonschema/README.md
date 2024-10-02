@@ -22,11 +22,11 @@ const assertIsString = (data: unknown)
 ```
 
 ## Extra Type Safety
-If you wish to ensure that your JSON Schema schemas are valid, you can do this too! Simply import the relevant schema type from `@ark/jsonschema`, like below:
+If you wish to ensure that your JSON Schema schemas are valid, you can do this too! Simply import the `JsonSchema` namespace type from `@ark/jsonschema`, and use the appropriate member like so:
 ```ts
-import type { JsonSchemaString } from "@ark/jsonschema"
+import type { JsonSchema } from "@ark/jsonschema"
 
-const schema: JsonSchemaString = {
+const schema: JsonSchema.StringSchema = {
     type: "string",
     minLength: "3" // errors stating that 'minLength' must be a number
 }
