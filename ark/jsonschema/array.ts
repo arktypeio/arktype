@@ -117,6 +117,7 @@ export type inferJsonSchemaArray<arraySchema, T = unknown> =
 			arraySchema["items"] extends array<JsonSchema.Schema> ?
 				inferJsonSchemaArrayConstraints<
 					Omit<arraySchema, "additionalItems" | "items">,
+					// @ts-ignore - TypeScript complains that this is "excessively deep", despite it correctly resolving the type
 					[
 						...inferJsonSchemaArrayItems<arraySchema["items"]>,
 						...inferJsonSchema<arraySchema["additionalItems"]>[]
