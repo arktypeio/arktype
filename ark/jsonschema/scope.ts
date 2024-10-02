@@ -4,7 +4,6 @@ const $ = scope({
 	AnyKeywords: {
 		"const?": "unknown",
 		"enum?": "unknown[]"
-		// "type?": "string"
 	},
 	CompositionKeywords: {
 		"allOf?": "Schema[]",
