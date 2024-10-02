@@ -33,7 +33,7 @@ contextualize(() => {
 			sequence: { prefix: ["string"] }
 		})
 
-		// // [string, ...number[]]
+		// [string, ...number[]]
 		const parsedJsonSchemaArrayFixedWithVariadic = parseJsonSchema({
 			type: "array",
 			items: [{ type: "string" }],
