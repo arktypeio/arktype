@@ -96,13 +96,9 @@ export abstract class BaseNode<
 	withMeta(
 		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
 	): this {
-		const newMeta =
-			typeof meta === "function" ?
-				meta({ ...this.meta })
-			:	{ ...this.meta, ...meta }
 		return this.$.node(this.kind, {
 			...this.inner,
-			meta: newMeta
+			meta: typeof meta === "function" ? meta({ ...this.meta }) : meta
 		}) as never
 	}
 

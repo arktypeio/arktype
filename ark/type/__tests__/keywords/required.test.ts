@@ -34,4 +34,17 @@ contextualize(() => {
 
 		attest(t.expression).snap("{ [string]: number, bar: 1, foo: 1 }")
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1156
+	it("with default", () => {
+		const t = type({ foo: "string = 'bar'" }).required()
+
+		const expected = type({
+			foo: "string"
+		})
+
+		attest<typeof expected.t, typeof t.t>()
+
+		attest(t.expression).equals(expected.expression)
+	})
 })
