@@ -158,7 +158,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		:	undefined;
 
 	override get in(): BaseRoot {
-		return this.declaredIn ?? this.inner.in ?? $ark.intrinsic.unknown.internal
+		return (
+			this.declaredIn ?? this.inner.in?.in ?? $ark.intrinsic.unknown.internal
+		)
 	}
 
 	override get out(): BaseRoot {
