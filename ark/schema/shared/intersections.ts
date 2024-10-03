@@ -67,12 +67,24 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 				return lrResult
 			}
 		}
-		if (l.equals(r)) return l
 
-		let result =
-			ctx.pipe && l.hasKindIn(...rootKinds) && r.hasKindIn(...rootKinds) ?
-				_pipeNodes(l, r, ctx)
-			:	_intersectNodes(l, r, ctx)
+		const isPureIntersection =
+			!ctx.pipe || (!l.includesMorph && !r.includesMorph)
+
+		if (isPureIntersection && l.equals(r)) return l
+
+		let result: BaseNode | Disjoint | null
+
+		if (isPureIntersection) {
+			if (l.equals(r)) return l
+			result = _intersectNodes(l, r, ctx)
+		} else {
+			result =
+				l.hasKindIn(...rootKinds) ?
+					// if l is a RootNode, r will be as well
+					_pipeNodes(l, r as never, ctx)
+				:	_intersectNodes(l, r, ctx)
+		}
 
 		if (isNode(result)) {
 			// if the result equals one of the operands, preserve its metadata by

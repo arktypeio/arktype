@@ -823,4 +823,65 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 		attest(t("SUCCESS  ")).equals("success")
 		attest(t("success  ")).equals("success")
 	})
+
+	const appendLengthMorph = (s: string) => `${s}${s.length}`
+
+	// https://discord.com/channels/957797212103016458/1291014543635517542
+	it("repeated Type pipe", () => {
+		const appendLength = type("string", "=>", appendLengthMorph)
+		const appendLengths = type("string").pipe(appendLength, appendLength)
+
+		attest(appendLengths.json).snap({
+			in: "string",
+			morphs: [
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				}
+			]
+		})
+
+		attest(appendLengths("a")).snap("a12")
+	})
+
+	// https://discord.com/channels/957797212103016458/1291014543635517542
+	it("repeated Type pipe with intermediate morph", () => {
+		const appendLength = type("string", "=>", appendLengthMorph)
+
+		const appendSeparatorMorph = (s: string) => `${s}|`
+
+		const appendSeparatedLengths = type("string").pipe(
+			appendLength,
+			appendLength,
+			appendSeparatorMorph,
+			appendLength,
+			appendLength
+		)
+
+		attest(appendSeparatedLengths.json).snap({
+			in: "string",
+			morphs: [
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				},
+				"$ark.appendSeparatorMorph",
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				}
+			]
+		})
+
+		attest(appendSeparatedLengths("a")).snap("a12|45")
+	})
 })
