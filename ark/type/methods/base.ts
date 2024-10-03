@@ -72,6 +72,7 @@ interface Type<out t = unknown, $ = {}>
 	unknown extends t ? boolean
 	: true
 
+	/** Internal JSON representation of this `Type` */
 	json: Json
 	toJSON(): Json
 	meta: ArkAmbient.meta
@@ -182,9 +183,9 @@ interface Type<out t = unknown, $ = {}>
 
 	/**
 	 * Add a custom predicate to this `Type`.
-	 * @example const integer = type("number").narrow(n => Number.isInteger(n)) // Type<number>
-	 * @example const foo = type("string").narrow((s): s is "foo" => s === "foo") // Type<"foo">
-	 * @example const trimmed = type("string").narrow((s, ctx) => s.trim() === s ? true : ctx.mustBe("a trimmed string")) // Type<string>
+	 * @example const nan = type('number').narrow(n => Number.isNaN(n)) // Type<number>
+	 * @example const foo = type("string").narrow((s): s is `foo${string}` => s.startsWith('foo') || ctx.mustBe('string starting with "foo"')) // Type<"foo${string}">
+	 * @example const unique = type('string[]').narrow((a, ctx) => new Set(a).size === a.length || ctx.mustBe('array with unique elements'))
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
@@ -219,13 +220,14 @@ interface Type<out t = unknown, $ = {}>
 
 	/**
 	 * Create a `Type` for array with elements of this `Type`
-	 * @example const array = type("string").array() // Type<string[]>
+	 * @example const T = type(/^foo/); const array = T.array() // Type<string[]>
 	 */
 	array(): ArrayType<t[], $>
 
 	/**
 	 * Morph this `Type` through a chain of morphs.
-	 * @example const uppercase = type("string").pipe(s => s.toUpperCase()) // Type<(In: string) => Out<string>>
+	 * @example const dedupe = type('string[]').pipe(a => Array.from(new Set(a)))
+	 * @example type({codes: 'string.numeric[]'}).pipe(obj => obj.codes).to('string.numeric.parse[]')
 	 */
 	pipe: ChainedPipes<t, $>
 
