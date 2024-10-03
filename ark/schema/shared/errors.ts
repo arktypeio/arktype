@@ -87,6 +87,11 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 	private mutable: ArkError[] = this as never
 
 	add(error: ArkError): void {
+		if (this.includes(error)) return
+		this._add(error)
+	}
+
+	private _add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
 			const errorIntersection = new ArkError(
@@ -114,14 +119,15 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 	}
 
 	merge(errors: ArkErrors): void {
-		errors.forEach(e =>
-			this.add(
+		errors.forEach(e => {
+			if (this.includes(e)) return
+			this._add(
 				new ArkError(
 					{ ...e, path: [...e.path, ...this.ctx.path] } as never,
 					this.ctx
 				)
 			)
-		)
+		})
 	}
 
 	get summary(): string {
