@@ -973,4 +973,29 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			)
 			.type.errors(writeUnboundableMessage("string | string[]"))
 	})
+
+	// https://discord.com/channels/957797212103016458/1290304355643293747
+	it("can extract proto Node at property", () => {
+		const d = type("Date")
+
+		const o = type({
+			last_updated: d
+		})
+
+		const t = o.get("last_updated")
+
+		attest<Date>(t.t)
+		attest(d.expression).snap("Date")
+		attest(t.expression).equals(d.expression)
+		attest(t.extends(d)).equals(true)
+	})
+
+	it("piped through Type", () => {
+		const Letters = type("'a'|'b'|'c'")
+		// normally, this would just be .to(Letters), but this should work as
+		// well, even if it's less efficient
+		const Letter = type("string").pipe(s => Letters(s))
+
+		attest(Letter("d").toString()).snap('must be "a", "b" or "c" (was "d")')
+	})
 })

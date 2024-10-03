@@ -106,6 +106,25 @@ export abstract class BaseRoot<
 		)
 	}
 
+	withoutOptionalOrDefaultMeta(): this {
+		if (!this.optionalMeta && this.defaultMeta === unset) return this
+		const meta = { ...this.meta }
+		delete meta.default
+		delete meta.optional
+
+		if (
+			!this.hasKind("morph") ||
+			(!this.in.optionalMeta && this.in.defaultMeta === unset)
+		)
+			return this.withMeta(meta)
+
+		return this.$.node("morph", {
+			...this.inner,
+			in: this.in.withoutOptionalOrDefaultMeta(),
+			meta
+		}) as never
+	}
+
 	as(): this {
 		return this
 	}

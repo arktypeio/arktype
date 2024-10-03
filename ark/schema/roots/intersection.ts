@@ -39,7 +39,7 @@ import {
 	type RefinementKind,
 	type StructuralKind
 } from "../shared/implement.ts"
-import { intersectNodes } from "../shared/intersections.ts"
+import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import {
@@ -238,7 +238,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				// if l is unknown, return r
 				if (l.children.length === 0) return r
 
-				const basis = l.basis ? intersectNodes(l.basis, r, ctx) : r
+				const basis = l.basis ? intersectOrPipeNodes(l.basis, r, ctx) : r
 
 				return (
 					basis instanceof Disjoint ? basis
@@ -380,7 +380,7 @@ const intersectIntersections = (
 	const basisResult =
 		lBasis ?
 			rBasis ?
-				(intersectNodes(
+				(intersectOrPipeNodes(
 					lBasis,
 					rBasis,
 					ctx

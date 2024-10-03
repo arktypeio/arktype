@@ -31,7 +31,7 @@ import {
 	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectNodes } from "../shared/intersections.ts"
+import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
@@ -528,7 +528,7 @@ const _intersectSequences = (
 			s.fixedVariants.push(postfixBranchResult)
 	}
 
-	const result = intersectNodes(lHead.node, rHead.node, s.ctx)
+	const result = intersectOrPipeNodes(lHead.node, rHead.node, s.ctx)
 	if (result instanceof Disjoint) {
 		if (kind === "prefix" || kind === "postfix") {
 			s.disjoint.push(
