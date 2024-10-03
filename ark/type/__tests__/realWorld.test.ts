@@ -989,4 +989,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.expression).equals(d.expression)
 		attest(t.extends(d)).equals(true)
 	})
+
+	it("piped through Type", () => {
+		const Letters = type("'a'|'b'|'c'")
+		// normally, this would just be .to(Letters), but this should work as
+		// well, even if it's less efficient
+		const Letter = type("string").pipe(s => Letters(s))
+
+		attest(Letter("d").toString()).snap('must be "a", "b" or "c" (was "d")')
+	})
 })

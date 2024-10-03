@@ -8,7 +8,7 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { pathToPropString, type TraversalPath } from "./utils.ts"
+import { isNode, pathToPropString, type TraversalPath } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: TraversalPath
@@ -95,14 +95,20 @@ export class TraversalContext {
 					// if an ArkError was returned but wasn't added to these
 					// errors, add it
 					if (!this.errors.includes(result)) this.error(result)
-				} else if (!(result instanceof ArkErrors)) {
+				} else if (result instanceof ArkErrors) {
+					// if it was, errors will have been added directly via this piped context
+					if (!isNode(morph)) {
+						// otherwise, ensure each error has been added
+						result.forEach(e => {
+							if (!this.errors.includes(e)) this.errors.add(e)
+						})
+					}
+				} else {
 					// if the morph was successful, assign the result to the
 					// corresponding property, or to root if path is empty
 					if (parent === undefined) this.root = result
 					else parent[key!] = result
 				}
-				// if ArkErrors was returned, the morph itself was likely a type
-				// and the errors will have been added directly via this piped context
 			}
 		}
 		return this.hasError() ? this.errors : this.root
