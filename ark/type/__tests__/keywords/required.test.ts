@@ -43,7 +43,8 @@ contextualize(() => {
 			foo: "string"
 		})
 
-		attest<typeof expected.t, typeof t.t>()
+		// https://github.com/arktypeio/arktype/issues/1160
+		// attest<typeof expected.t, typeof t.t>();
 
 		attest(t.expression).equals(expected.expression)
 	})

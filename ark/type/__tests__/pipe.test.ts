@@ -57,7 +57,11 @@ contextualize(() => {
 			restringifyUser
 		])
 
-		attest(t.t).type.toString.snap()
+		attest(t.t).type.toString.snap(`(
+	In: string & {
+		" of": { base: string; attributes: Predicate<"json"> }
+	}
+) => Out<string>`)
 
 		attest<string>(t.infer)
 		attest(t.json).snap({

@@ -266,7 +266,7 @@ type distillIo<i, o extends Out, opts extends distill.Options> =
 		:	(In: i) => Out<r>
 	:	never
 
-type inferredOptionalOrDefaultKeyOf<o> =
+export type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
