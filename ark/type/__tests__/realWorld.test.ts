@@ -998,4 +998,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(Letter("d").toString()).snap('must be "a", "b" or "c" (was "d")')
 	})
+
+	it(".in types are always unionable", () => {
+		const MorphArrayMorph = type("string")
+			.pipe(e => e)
+			.array()
+			.pipe(e => e)
+		const OtherType = type("string[]")
+		const EitherInput = MorphArrayMorph.in.or(OtherType.in)
+
+		attest(EitherInput(["str"])).snap(["str"])
+	})
 })
