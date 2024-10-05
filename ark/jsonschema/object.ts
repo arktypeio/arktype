@@ -8,8 +8,8 @@ import {
 import { printable, type show } from "@ark/util"
 import type { Type } from "arktype"
 
-import { innerParseJsonSchema, type inferJsonSchema } from "./json.js"
-import { JsonSchema } from "./scope.js"
+import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
+import { JsonSchema } from "./scope.ts"
 
 const parseMinMaxProperties = (
 	jsonSchema: JsonSchema.ObjectSchema,

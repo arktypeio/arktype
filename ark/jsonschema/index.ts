@@ -1,2 +1,2 @@
-export { parseJsonSchema } from "./json.js"
-export * from "./scope.js"
+export { parseJsonSchema } from "./json.ts"
+export * from "./scope.ts"
