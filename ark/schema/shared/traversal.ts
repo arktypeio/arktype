@@ -8,7 +8,7 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { pathToPropString, type TraversalPath } from "./utils.ts"
+import { isNode, pathToPropString, type TraversalPath } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: TraversalPath
@@ -60,52 +60,76 @@ export class TraversalContext {
 		)
 			this.root = this.config.clone(this.root)
 
+		this.applyQueuedMorphs()
+
+		return this.hasError() ? this.errors : this.root
+	}
+
+	private applyQueuedMorphs() {
 		// invoking morphs that are Nodes will reuse this context, potentially
 		// adding additional morphs, so we have to continue looping until
 		// queuedMorphs is empty rather than iterating over the list once
 		while (this.queuedMorphs.length) {
-			const { path, morphs } = this.queuedMorphs.shift()!
+			const queuedMorphs = this.queuedMorphs
+			this.queuedMorphs = []
+			for (const { path, morphs } of queuedMorphs) {
+				// even if we already have an error, apply morphs that are not at a path
+				// with errors to capture potential validation errors
+				if (this.pathHasError(path)) continue
 
-			// even if we already have an error, apply morphs that are not at a path
-			// with errors to capture potential validation errors
-			if (this.hasError()) {
-				const morphPropString = pathToPropString(path)
-				if (this.errors.some(e => morphPropString.startsWith(e.propString)))
-					continue
-			}
-
-			const key = path.at(-1)
-
-			let parent: any
-
-			if (key !== undefined) {
-				// find the object on which the key to be morphed exists
-				parent = this.root
-				for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
-					parent = parent[path[pathIndex]]
-			}
-
-			this.path = path
-			for (const morph of morphs) {
-				const result = morph(
-					parent === undefined ? this.root : parent[key!],
-					this
-				)
-				if (result instanceof ArkError) {
-					// if an ArkError was returned but wasn't added to these
-					// errors, add it
-					if (!this.errors.includes(result)) this.error(result)
-				} else if (!(result instanceof ArkErrors)) {
-					// if the morph was successful, assign the result to the
-					// corresponding property, or to root if path is empty
-					if (parent === undefined) this.root = result
-					else parent[key!] = result
-				}
-				// if ArkErrors was returned, the morph itself was likely a type
-				// and the errors will have been added directly via this piped context
+				this.applyMorphsAtPath(path, morphs)
 			}
 		}
-		return this.hasError() ? this.errors : this.root
+	}
+
+	private applyMorphsAtPath(path: TraversalPath, morphs: array<Morph>): void {
+		const key = path.at(-1)
+
+		let parent: any
+
+		if (key !== undefined) {
+			// find the object on which the key to be morphed exists
+			parent = this.root
+			for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
+				parent = parent[path[pathIndex]]
+		}
+
+		this.path = path
+
+		for (const morph of morphs) {
+			const morphIsNode = isNode(morph)
+
+			const result = morph(
+				parent === undefined ? this.root : parent[key!],
+				this
+			)
+
+			if (result instanceof ArkError) {
+				// if an ArkError was returned, ensure it has been added to errors
+				this.errors.add(result)
+				// skip any remaining morphs at the current path
+				break
+			}
+			if (result instanceof ArkErrors) {
+				// if the morph was a direct reference to another node,
+				// errors will have been added directly via this piped context
+				if (!morphIsNode) {
+					// otherwise, we have to ensure each error has been added
+					this.errors.merge(result)
+				}
+				// skip any remaining morphs at the current path
+				break
+			}
+
+			// if the morph was successful, assign the result to the
+			// corresponding property, or to root if path is empty
+			if (parent === undefined) this.root = result
+			else parent[key!] = result
+
+			// if the current morph queued additional morphs,
+			// applying them before subsequent morphs
+			this.applyQueuedMorphs()
+		}
 	}
 
 	get currentErrorCount(): number {
@@ -120,6 +144,13 @@ export class TraversalContext {
 
 	hasError(): boolean {
 		return this.currentErrorCount !== 0
+	}
+
+	pathHasError(path: TraversalPath): boolean {
+		if (!this.hasError()) return false
+
+		const propString = pathToPropString(path)
+		return this.errors.some(e => propString.startsWith(e.propString))
 	}
 
 	get failFast(): boolean {

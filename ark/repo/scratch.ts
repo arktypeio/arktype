@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { type, type Type } from "arktype"
 
 const out = type("string.lower").to("string.trim").to("'success'")("Success") //?
 
