@@ -286,6 +286,15 @@ contextualize(() => {
 			})
 			.onUndeclaredKey("reject")
 
+		attest(AorB.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["type"],
+			cases: {
+				'"A"': { undeclared: "reject" },
+				'"B"': { undeclared: "reject" }
+			}
+		})
+
 		attest(AorB({ type: "A" })).equals({ type: "A" })
 	})
 })
