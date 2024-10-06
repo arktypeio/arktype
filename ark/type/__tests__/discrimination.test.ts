@@ -276,4 +276,16 @@ contextualize(() => {
 			"innerA.id must be 1 or 2 (was undefined)"
 		)
 	})
+
+	it("allows strict discriminated keys", () => {
+		const AorB = type({
+			type: "'A'"
+		})
+			.or({
+				type: "'B'"
+			})
+			.onUndeclaredKey("reject")
+
+		attest(AorB({ type: "A" })).equals({ type: "A" })
+	})
 })

@@ -365,7 +365,8 @@ export abstract class BaseNode<
 			path: [],
 			parseOptions: {
 				prereduced: opts?.prereduced ?? false
-			}
+			},
+			hasUndeclaredKeyHandling: false
 		}) as never
 	}
 
@@ -384,13 +385,22 @@ export abstract class BaseNode<
 
 		ctx.seen[this.id] = () => transformedNode
 
+		let nextCtx = ctx
+
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
 			(k, v) => {
 				if (!this.impl.keys[k].child) return [k, v]
 				const children = v as listable<BaseNode>
 				if (!isArray(children)) {
-					const transformed = children._transform(mapper, ctx)
+					if (this.hasKind("structure")) {
+						nextCtx = {
+							...ctx,
+							hasUndeclaredKeyHandling: this.undeclared !== undefined
+						}
+					}
+
+					const transformed = children._transform(mapper, nextCtx)
 					return transformed ? [k, transformed] : []
 				}
 				// if the value was previously explicitly set to an empty list,
@@ -429,8 +439,14 @@ export abstract class BaseNode<
 				this.kind === "optional" ||
 				this.kind === "index") &&
 			!("value" in transformedInner)
-		)
-			return null
+		) {
+			if (!ctx.hasUndeclaredKeyHandling)
+				return null
+				// ensure that we still traverse undeclared keys as unknown
+				// so that they don't fail if e.g. they are pruned during discrimination
+			;(transformedInner as any).value = $ark.intrinsic.unknown
+		}
+
 		if (this.kind === "morph") {
 			;(transformedInner as mutableInnerOfKind<"morph">).in ??= $ark.intrinsic
 				.unknown as never
@@ -511,6 +527,7 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: BaseParseOptions
+	hasUndeclaredKeyHandling: boolean
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
