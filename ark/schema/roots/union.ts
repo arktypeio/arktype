@@ -735,9 +735,8 @@ export const pruneDiscriminant = (
 	discriminantCtx: DiscriminantContext
 ): BaseRoot | null =>
 	discriminantBranch.transform(
-		(nodeKind, inner, ctx) => {
-			if (nodeKind === "domain" || nodeKind === "unit")
-				return ctx.undeclaredKeyHandling ? inner : null
+		(nodeKind, inner) => {
+			if (nodeKind === "domain" || nodeKind === "unit") return null
 
 			return inner
 		},

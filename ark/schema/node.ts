@@ -441,8 +441,11 @@ export abstract class BaseNode<
 				this.kind === "optional" ||
 				this.kind === "index") &&
 			!("value" in transformedInner)
-		)
-			return null
+		) {
+			return ctx.undeclaredKeyHandling ?
+					({ ...transformedInner, value: $ark.intrinsic.unknown } as never)
+				:	null
+		}
 
 		if (this.kind === "morph") {
 			;(transformedInner as mutableInnerOfKind<"morph">).in ??= $ark.intrinsic
