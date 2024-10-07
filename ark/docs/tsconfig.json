@@ -13,9 +13,9 @@
 		// can remove this line if it doesn't break the build in the future
 		"rewriteRelativeImportExtensions": false
 	},
-	"mdx": {
-		"checkMdx": true
-	},
+	// "mdx": {
+	// 	"checkMdx": true
+	// },
 	// in addition to ignoring the additional dirs, this needs
 	// to be redeclared to avoid excluding ark/docs
 	"exclude": [".astro", "out", "dist", "node_modules"]
