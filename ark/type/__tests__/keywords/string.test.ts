@@ -43,6 +43,17 @@ contextualize(() => {
 		attest(b64url("fn5+").toString()).equals(
 			'must be base64url-encoded (was "fn5+")'
 		)
+
+		const b64parse = type("string.base64.parse")
+		attest(Buffer.from(b64parse("fn5+") as Uint8Array).toString("utf8")).snap(
+			"~~~"
+		)
+		attest(
+			Buffer.from(b64parse("V29yZA==") as Uint8Array).toString("utf8")
+		).snap("Word")
+		attest(b64("V29yZA").toString()).equals(
+			'must be base64-encoded (was "V29yZA")'
+		)
 	})
 
 	it("digits", () => {
