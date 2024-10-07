@@ -219,11 +219,10 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 	return result
 }
 
-interface FlatIntersectionInner extends Intersection.Inner, Structure.Inner {}
+type FlatIntersectionInner = Intersection.Inner & Structure.Inner
 
-interface MutableFlatIntersectionInner
-	extends Intersection.Inner.mutable,
-		Structure.Inner.mutable {}
+type MutableFlatIntersectionInner = Intersection.Inner.mutable &
+	Structure.Inner.mutable
 
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>

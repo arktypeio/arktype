@@ -1,9 +1,14 @@
-import { type, type Type } from "arktype"
+import { type } from "arktype"
 
-const out = type("string.lower").to("string.trim").to("'success'")("Success") //?
+const AorB = type({
+	"+": "reject",
+	something: "'A'"
+}).or({
+	"+": "reject",
+	something: "'B'",
+	somethingelse: "number"
+})
 
-const tt = type("string.lower").to("string.trim").to("'success'")
+console.log(AorB.internal.assertHasKind("union").discriminantJson)
 
-console.log(tt.json)
-
-const out2 = "success " //?
+const out2 = AorB({ something: "A" }) //?
