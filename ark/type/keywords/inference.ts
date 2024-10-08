@@ -25,7 +25,7 @@ import type { arkPrototypes } from "./constructors/constructors.ts"
 import type { Date } from "./constructors/Date.ts"
 import type { type } from "./keywords.ts"
 import type { DivisibleBy, number } from "./number/number.ts"
-import type { Matching, string } from "./string/string.ts"
+import type { brandedString, Matching, string } from "./string/string.ts"
 export type { arkPrototypes as object } from "./constructors/constructors.ts"
 export type { number } from "./number/number.ts"
 export type { string } from "./string/string.ts"
@@ -38,22 +38,28 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export type ConstraintSet = Record<PropertyKey, 1>
-
-export type Constraints = Record<string, ConstraintSet> | { default?: unknown }
-
 export interface BaseAttributes {
-	predicate?: dict<1>
+	predicate?: dict
 	default?: unknown
-	optional?: 1
+	optional?: true
 }
 
-export const attributes = noSuggest("arkAttributes")
+export const ofKey = noSuggest("of")
 
-export type attributes = typeof attributes
+export type ofKey = typeof ofKey
 
 export type of<base, attributes> = base & {
-	[attributes]: [base, attributes]
+	[ofKey]: {
+		base: base
+		attributes: attributes
+	}
+}
+
+export type brand<base, attributes> = base & {
+	[ofKey]: {
+		base: base
+		attributes: attributes & { brand: true }
+	}
 }
 
 export type LimitLiteral = number | DateLiteral
@@ -73,8 +79,8 @@ export type Narrowed = {
 	predicate: { "?": 1 }
 }
 
-export type Branded<rule> = {
-	predicate: constraint<rule>
+export type Predicate<name> = {
+	predicate: constraint<name>
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
@@ -109,6 +115,11 @@ export type applyConstraintSchema<
 	schema extends NodeSchema<kind>
 > = applyAttribute<t, schemaToConstraint<kind, schema>>
 
+// export type applyBrand<t, attribute> = applyAttribute<
+// 	t,
+// 	attribute & { brand: true }
+// >
+
 export type applyAttribute<t, attribute> =
 	t extends InferredMorph<infer i, infer o> ?
 		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
@@ -118,13 +129,19 @@ type _applyAttribute<t, attribute> =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
 		[number, base] extends [base, number] ? number.is<attribute & attributes>
-		: [string, base] extends [base, string] ? string.is<attribute & attributes>
+		: [string, base] extends [base, string] ?
+			"brand" extends keyof attributes | keyof attribute ?
+				brandedString.is<attribute & attributes>
+			:	string.is<attribute & attributes>
 		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
 		: of<base, attributes & attribute>
 	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
-	: [string, t] extends [t, string] ? string.applyAttribute<attribute>
+	: [string, t] extends [t, string] ?
+		"brand" extends keyof attribute ?
+			brandedString.applyBrand<attribute>
+		:	string.applyAttribute<attribute>
 	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
-	: of<t, conform<attribute, Constraints>>
+	: of<t, attribute>
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
@@ -201,15 +218,12 @@ type _distill<t, opts extends distill.Options> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
-		opts["branded"] extends true ?
-			of<_distill<base, opts>, attributes>
-		:	_distill<base, opts>
+		opts["branded"] extends true ? of<_distill<base, opts>, attributes>
+		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
+		: _distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
-	: t extends InferredMorph<infer i, infer o> ?
-		opts["branded"] extends true ?
-			distillIo<i, o, opts>
-		:	distillUnbrandedIo<t, i, o, opts>
+	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>
 	: t extends array ? distillArray<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
@@ -239,32 +253,6 @@ type distillMappable<o, opts extends distill.Options> =
 			}
 		>
 
-// have to jump through a bunch of extra hoops to preserve the named instantiation of
-// constrain<base, constraints>. If it degrades to `t & {[constrained]: constraints}`,
-// we'll not longer be able to extract the constraints and distill will infinitely recurse.
-type distillUnbrandedIo<
-	t extends InferredMorph,
-	i,
-	o extends Out,
-	opts extends distill.Options
-> =
-	t extends (
-		InferredMorph<
-			of<infer constrainedIn, any>,
-			Out<of<infer constrainedOut, any>>
-		>
-	) ?
-		distillIo<
-			constrainedIn,
-			o extends To ? To<constrainedOut> : Out<constrainedOut>,
-			opts
-		>
-	: t extends InferredMorph<of<infer constrainedIn, any>> ?
-		distillIo<constrainedIn, o, opts>
-	: t extends InferredMorph<any, Out<of<infer constrainedOut, any>>> ?
-		distillIo<i, o extends To ? To<constrainedOut> : Out<constrainedOut>, opts>
-	:	distillIo<i, o, opts>
-
 type distillIo<i, o extends Out, opts extends distill.Options> =
 	opts["endpoint"] extends "in" ? _distill<i, opts>
 	: opts["endpoint"] extends "out.introspectable" ?
@@ -278,20 +266,20 @@ type distillIo<i, o extends Out, opts extends distill.Options> =
 		:	(In: i) => Out<r>
 	:	never
 
-type inferredOptionalOrDefaultKeyOf<o> =
+export type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
-type inOfValueExtends<v, t> =
+type inExtends<v, t> =
 	[v] extends [anyOrNever] ? false
 	: [v] extends [t] ? true
-	: [v] extends [InferredMorph<infer i>] ? inOfValueExtends<i, t>
+	: [v] extends [InferredMorph<infer i>] ? inExtends<i, t>
 	: false
 
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inOfValueExtends<o[k], InferredDefault> extends true ?
+			inExtends<o[k], InferredDefault> extends true ?
 				k
 			:	never
 		:	never
@@ -300,7 +288,7 @@ type inferredDefaultKeyOf<o> =
 type inferredOptionalKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inOfValueExtends<o[k], InferredOptional> extends true ?
+			inExtends<o[k], InferredOptional> extends true ?
 				k
 			:	never
 		:	never
@@ -325,13 +313,13 @@ type distillNonArraykeys<
 	distilledArray,
 	opts extends distill.Options
 > =
-	keyof originalArray extends keyof distilledArray | attributes ? distilledArray
+	keyof originalArray extends keyof distilledArray | ofKey ? distilledArray
 	:	distilledArray &
 			_distill<
 				{
 					[k in keyof originalArray as k extends (
 						| keyof distilledArray
-						| (opts["branded"] extends true ? never : attributes)
+						| (opts["branded"] extends true ? never : ofKey)
 					) ?
 						never
 					:	k]: originalArray[k]

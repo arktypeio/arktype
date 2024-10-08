@@ -175,21 +175,21 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			structure: (l, r, ctx) => {
 				const lInner = { ...l.inner }
 				const rInner = { ...r.inner }
+				const disjointResult = new Disjoint()
 				if (l.undeclared) {
 					const lKey = l.keyof()
-					const disjointRKeys = r.requiredKeys.filter(k => !lKey.allows(k))
-					if (disjointRKeys.length) {
-						return new Disjoint(
-							...disjointRKeys.map(k => ({
-								kind: "presence" as const,
-								discriminantKind: undefined,
-								l: $ark.intrinsic.never.internal,
-								r: r.propsByKey[k]!.value,
-								path: [k],
-								optional: false
-							}))
-						)
-					}
+					r.requiredKeys.forEach(k => {
+						if (!lKey.allows(k)) {
+							disjointResult.add(
+								"presence",
+								$ark.intrinsic.never.internal,
+								r.propsByKey[k]!.value,
+								{
+									path: [k]
+								}
+							)
+						}
+					})
 
 					if (rInner.optional)
 						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
@@ -217,19 +217,18 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				}
 				if (r.undeclared) {
 					const rKey = r.keyof()
-					const disjointLKeys = l.requiredKeys.filter(k => !rKey.allows(k))
-					if (disjointLKeys.length) {
-						return new Disjoint(
-							...disjointLKeys.map(k => ({
-								kind: "presence" as const,
-								discriminantKind: undefined,
-								l: l.propsByKey[k]!.value,
-								r: $ark.intrinsic.never.internal,
-								path: [k],
-								optional: false
-							}))
-						)
-					}
+					l.requiredKeys.forEach(k => {
+						if (!rKey.allows(k)) {
+							disjointResult.add(
+								"presence",
+								l.propsByKey[k]!.value,
+								$ark.intrinsic.never.internal,
+								{
+									path: [k]
+								}
+							)
+						}
+					})
 
 					if (lInner.optional)
 						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
@@ -266,7 +265,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						:	"delete"
 				}
 
-				return intersectConstraints({
+				const childIntersectionResult = intersectConstraints({
 					kind: "structure",
 					baseInner,
 					l: flattenConstraints(lInner),
@@ -274,6 +273,13 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					roots: [],
 					ctx
 				})
+
+				if (childIntersectionResult instanceof Disjoint)
+					disjointResult.push(...childIntersectionResult)
+
+				if (disjointResult.length) return disjointResult
+
+				return childIntersectionResult
 			}
 		}
 	})
@@ -458,12 +464,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const { optional, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
-			required: this.props.map(prop =>
-				prop.hasKind("optional") ?
-					// don't include keys like default that don't exist on required
-					this.$.node("required", { key: prop.key, value: prop.value })
-				:	prop
-			)
+			required: this.props.map(prop => {
+				if (prop.hasKind("required")) return prop
+				// strip default/optional meta from the value so that it
+				// isn't reduced back to an optional prop
+				return this.$.node("required", {
+					key: prop.key,
+					value: prop.value.withoutOptionalOrDefaultMeta()
+				})
+			})
 		})
 	}
 

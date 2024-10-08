@@ -20,6 +20,31 @@ contextualize(() => {
 		)
 	})
 
+	it("base64", () => {
+		const b64 = type("string.base64")
+		attest(b64("fn5+")).snap("fn5+")
+		attest(b64("V29yZA==")).snap("V29yZA==")
+		attest(b64("V29yZA").toString()).equals(
+			'must be base64-encoded (was "V29yZA")'
+		)
+		attest(b64("V29.yZA").toString()).equals(
+			'must be base64-encoded (was "V29.yZA")'
+		)
+		attest(b64("fn5-").toString()).equals('must be base64-encoded (was "fn5-")')
+
+		const b64url = type("string.base64.url")
+		attest(b64url("fn5-")).snap("fn5-")
+		attest(b64url("V29yZA")).snap("V29yZA")
+		attest(b64url("V29yZA==")).snap("V29yZA==")
+		attest(b64url("V29yZA%3D%3D")).snap("V29yZA%3D%3D")
+		attest(b64url("V29.yZA").toString()).equals(
+			'must be base64url-encoded (was "V29.yZA")'
+		)
+		attest(b64url("fn5+").toString()).equals(
+			'must be base64url-encoded (was "fn5+")'
+		)
+	})
+
 	it("digits", () => {
 		const digits = type("string.digits")
 		attest(digits("123")).snap("123")

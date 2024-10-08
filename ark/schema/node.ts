@@ -56,6 +56,7 @@ import {
 	type TraverseApply
 } from "./shared/traversal.ts"
 import { isNode, pathToPropString, type arkKind } from "./shared/utils.ts"
+import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -96,13 +97,9 @@ export abstract class BaseNode<
 	withMeta(
 		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
 	): this {
-		const newMeta =
-			typeof meta === "function" ?
-				meta({ ...this.meta })
-			:	{ ...this.meta, ...meta }
 		return this.$.node(this.kind, {
 			...this.inner,
-			meta: newMeta
+			meta: typeof meta === "function" ? meta({ ...this.meta }) : meta
 		}) as never
 	}
 
@@ -369,7 +366,8 @@ export abstract class BaseNode<
 			path: [],
 			parseOptions: {
 				prereduced: opts?.prereduced ?? false
-			}
+			},
+			undeclaredKeyHandling: undefined
 		}) as never
 	}
 
@@ -387,6 +385,16 @@ export abstract class BaseNode<
 		let transformedNode: BaseRoot | undefined
 
 		ctx.seen[this.id] = () => transformedNode
+
+		if (
+			this.hasKind("structure") &&
+			this.undeclared !== ctx.undeclaredKeyHandling
+		) {
+			ctx = {
+				...ctx,
+				undeclaredKeyHandling: this.undeclared
+			}
+		}
 
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
@@ -433,8 +441,12 @@ export abstract class BaseNode<
 				this.kind === "optional" ||
 				this.kind === "index") &&
 			!("value" in transformedInner)
-		)
-			return null
+		) {
+			return ctx.undeclaredKeyHandling ?
+					({ ...transformedInner, value: $ark.intrinsic.unknown } as never)
+				:	null
+		}
+
 		if (this.kind === "morph") {
 			;(transformedInner as mutableInnerOfKind<"morph">).in ??= $ark.intrinsic
 				.unknown as never
@@ -515,6 +527,7 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: BaseParseOptions
+	undeclaredKeyHandling: UndeclaredKeyHandling | undefined
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(

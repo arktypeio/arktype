@@ -79,6 +79,11 @@ export abstract class BaseRoot<
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
 	}
 
+	assert = (data: unknown): unknown => {
+		const result = this.traverse(data)
+		return result instanceof ArkErrors ? result.throw() : result
+	}
+
 	get internal(): this {
 		return this
 	}
@@ -99,6 +104,25 @@ export abstract class BaseRoot<
 			: this.hasKind("morph") ? this.in.defaultMeta
 			: unset
 		)
+	}
+
+	withoutOptionalOrDefaultMeta(): this {
+		if (!this.optionalMeta && this.defaultMeta === unset) return this
+		const meta = { ...this.meta }
+		delete meta.default
+		delete meta.optional
+
+		if (
+			!this.hasKind("morph") ||
+			(!this.in.optionalMeta && this.in.defaultMeta === unset)
+		)
+			return this.withMeta(meta)
+
+		return this.$.node("morph", {
+			...this.inner,
+			in: this.in.withoutOptionalOrDefaultMeta(),
+			meta
+		}) as never
 	}
 
 	as(): this {
@@ -171,11 +195,6 @@ export abstract class BaseRoot<
 	rawOr(r: BaseRoot): BaseRoot {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.node("union", branches) as never
-	}
-
-	assert(data: unknown): unknown {
-		const result = this.traverse(data)
-		return result instanceof ArkErrors ? result.throw() : result
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {

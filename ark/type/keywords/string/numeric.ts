@@ -1,12 +1,12 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { Branded, of, To } from "../inference.ts"
+import type { of, Predicate, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type numeric = of<string, Branded<"numeric">>
+	export type numeric = of<string, Predicate<"numeric">>
 }
 
 const root = regexStringNode(

@@ -21,7 +21,7 @@ import {
 	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectNodes } from "../shared/intersections.ts"
+import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 
@@ -93,7 +93,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 		intersections: {
 			index: (l, r, ctx) => {
 				if (l.signature.equals(r.signature)) {
-					const valueIntersection = intersectNodes(l.value, r.value, ctx)
+					const valueIntersection = intersectOrPipeNodes(l.value, r.value, ctx)
 					const value =
 						valueIntersection instanceof Disjoint ?
 							$ark.intrinsic.never.internal

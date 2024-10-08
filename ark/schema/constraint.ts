@@ -35,7 +35,10 @@ import {
 	type UnknownAttachments,
 	type kindLeftOf
 } from "./shared/implement.ts"
-import { intersectNodes, intersectNodesRoot } from "./shared/intersections.ts"
+import {
+	intersectNodesRoot,
+	intersectOrPipeNodes
+} from "./shared/intersections.ts"
 import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
@@ -167,14 +170,14 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 		for (const root of s.roots) {
 			if (result instanceof Disjoint) return result
 
-			result = intersectNodes(root, result, s.ctx)!
+			result = intersectOrPipeNodes(root, result, s.ctx)!
 		}
 
 		return result as never
 	}
 	let matched = false
 	for (let i = 0; i < s.l.length; i++) {
-		const result = intersectNodes(s.l[i], head, s.ctx)
+		const result = intersectOrPipeNodes(s.l[i], head, s.ctx)
 		if (result === null) continue
 		if (result instanceof Disjoint) return result
 
@@ -216,11 +219,10 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 	return result
 }
 
-interface FlatIntersectionInner extends Intersection.Inner, Structure.Inner {}
+type FlatIntersectionInner = Intersection.Inner & Structure.Inner
 
-interface MutableFlatIntersectionInner
-	extends Intersection.Inner.mutable,
-		Structure.Inner.mutable {}
+type MutableFlatIntersectionInner = Intersection.Inner.mutable &
+	Structure.Inner.mutable
 
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>

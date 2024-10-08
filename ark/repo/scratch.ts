@@ -1,22 +1,14 @@
 import { type } from "arktype"
 
-export const disappointingGift = type({
-	label: "string",
-	"box?": "this"
+const AorB = type({
+	"+": "reject",
+	something: "'A'"
+}).or({
+	"+": "reject",
+	something: "'B'",
+	somethingelse: "number"
 })
 
-type DisappointingGift = typeof disappointingGift.infer
+console.log(AorB.internal.assertHasKind("union").discriminantJson)
 
-const giftData: DisappointingGift = {
-	label: "get hyped"
-}
-
-// create a cyclic object
-giftData.box = giftData
-
-const ok = disappointingGift.assert(giftData)
-
-const bad = disappointingGift.assert({
-	label: "foo",
-	box: { label: "bar", box: {} }
-})
+const out2 = AorB({ something: "A" }) //?

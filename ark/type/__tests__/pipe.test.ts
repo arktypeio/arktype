@@ -45,6 +45,43 @@ contextualize(() => {
 		attest(tOut.expression).equals(expected.expression)
 	})
 
+	it("to morph", () => {
+		const restringifyUser = (o: object) => JSON.stringify(o)
+
+		const t = type("string.json.parse").to([
+			{
+				name: "string",
+				age: "number"
+			},
+			"=>",
+			restringifyUser
+		])
+
+		attest(t.t).type.toString.snap(`(
+	In: string & {
+		" of": { base: string; attributes: Predicate<"json"> }
+	}
+) => Out<string>`)
+
+		attest<string>(t.infer)
+		attest(t.json).snap({
+			in: "string",
+			morphs: [
+				"$ark.parseJson",
+				{
+					in: {
+						required: [
+							{ key: "age", value: "number" },
+							{ key: "name", value: "string" }
+						],
+						domain: "object"
+					},
+					morphs: ["$ark.restringifyUser"]
+				}
+			]
+		})
+	})
+
 	describe("try", () => {
 		it("can catch thrown errors", () => {
 			const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
@@ -764,5 +801,91 @@ contextualize(() => {
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string ) => Out<Date> | false | true }
 Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $jsonData[] | false | null | true } | $jsonData[]> | false | true }`)
+	})
+
+	it("multiple chained pipes", () => {
+		const t = type("string.trim").to("string.lower")
+
+		attest(t.t).type.toString.snap("(In: string) => To<lowercase>")
+
+		attest(t("Success")).equals("success")
+		attest(t("success")).equals("success")
+		attest(t("SUCCESS  ")).equals("success")
+		attest(t("success  ")).equals("success")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1144
+	it("multiple chained pipes with literal output", () => {
+		const base = type("string.trim").to("string.lower")
+
+		const t = base.to("'success'")
+
+		attest<(In: string) => To<"success">>(t.t)
+
+		attest(t("Success")).equals("success")
+		attest(t("success")).equals("success")
+		attest(t("SUCCESS  ")).equals("success")
+		attest(t("success  ")).equals("success")
+	})
+
+	const appendLengthMorph = (s: string) => `${s}${s.length}`
+
+	// https://discord.com/channels/957797212103016458/1291014543635517542
+	it("repeated Type pipe", () => {
+		const appendLength = type("string", "=>", appendLengthMorph)
+		const appendLengths = type("string").pipe(appendLength, appendLength)
+
+		attest(appendLengths.json).snap({
+			in: "string",
+			morphs: [
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				}
+			]
+		})
+
+		attest(appendLengths("a")).snap("a12")
+	})
+
+	// https://discord.com/channels/957797212103016458/1291014543635517542
+	it("repeated Type pipe with intermediate morph", () => {
+		const appendLength = type("string", "=>", appendLengthMorph)
+
+		const appendSeparatorMorph = (s: string) => `${s}|`
+
+		const appendSeparatedLengths = type("string").pipe(
+			appendLength,
+			appendLength,
+			appendSeparatorMorph,
+			appendLength,
+			appendLength
+		)
+
+		attest(appendSeparatedLengths.json).snap({
+			in: "string",
+			morphs: [
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				},
+				"$ark.appendSeparatorMorph",
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				}
+			]
+		})
+
+		attest(appendSeparatedLengths("a")).snap("a12|45")
 	})
 })

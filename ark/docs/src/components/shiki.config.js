@@ -141,7 +141,7 @@ export const addCopyButton = {
 /** @type { import("astro").ShikiConfig } */
 export const shikiConfig = {
 	theme: arkdarkColors,
-	// @ts-expect-error
+	// @ts-ignore
 	langs: [arktypeTextmate],
 	// @ts-ignore
 	transformers: [twoslash, transformerNotationErrorLevel(), addCopyButton],

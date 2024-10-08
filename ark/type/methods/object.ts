@@ -27,20 +27,23 @@ import type {
 } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
+import type { BaseType } from "./base.ts"
 import type { instantiateType } from "./instantiate.ts"
-import type { ValidatorType } from "./validator.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends object = object, $ = {}>
-	extends ValidatorType<t, $> {
+interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
 	:	Type<{ readonly [k in keyof t]: t[k] }, $>
 
 	keyof(): instantiateType<arkKeyOf<t>, $>
 
-	get<const k1 extends arkIndexableOf<t>>(
+	/**
+	 * Get the `Type` of a property of this `Type<object>`.
+	 * @example type({ foo: "string" }).get("foo") // Type<string>
+	 */
+	get<const k1 extends arkIndexableOf<t>, r = arkGet<t, k1>>(
 		k1: k1 | type.cast<k1>
-	): instantiateType<arkGet<t, k1>, $> extends infer r ? r : never
+	): instantiateType<r, $>
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>
@@ -51,15 +54,18 @@ interface Type<out t extends object = object, $ = {}>
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>,
-		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>
+		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>,
+		r = arkGet<arkGet<arkGet<t, k1>, k2>, k3>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $> extends infer r ?
-		r
-	:	never
+	): instantiateType<r, $>
 
+	/**
+	 * Create a copy of this `Type` with only the specified properties.
+	 * @example type({ foo: "string", bar: "number" }).pick("foo") // Type<{ foo: string }>
+	 */
 	pick<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
 	): Type<
@@ -69,6 +75,10 @@ interface Type<out t extends object = object, $ = {}>
 		$
 	>
 
+	/**
+	 * Create a copy of this `Type` with all properties except the specified ones.
+	 * @example type({ foo: "string", bar: "number" }).omit("foo") // Type<{ bar: number }>
+	 */
 	omit<const key extends arkKeyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
 	): Type<
@@ -78,14 +88,26 @@ interface Type<out t extends object = object, $ = {}>
 		$
 	>
 
+	/**
+	 * Merge another `Type` definition, overriding properties of this `Type` with the duplicate keys.
+	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1, b: 3, c: 4 }>
+	 */
 	merge<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $> &
 			(r extends object ? unknown
 			:	ErrorType<"Merged type must be an object", [actual: r]>)
-	): Type<merge<t, NoInfer<r & object>>, $>
+	): Type<merge<t, r & object>, $>
 
+	/**
+	 * Create a copy of this `Type` with all properties required.
+	 * @example const T = type({ "foo?"": "string" }).required() // Type<{ foo: string }>
+	 */
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
 
+	/**
+	 * Create a copy of this `Type` with all properties optional.
+	 * @example: const T = type({ foo: "string" }).optional() // Type<{ foo?: string }>
+	 */
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
 	map<transformed extends listable<MappedTypeProp>>(
@@ -93,6 +115,10 @@ interface Type<out t extends object = object, $ = {}>
 		flatMapEntry: (entry: typePropOf<t, $>) => transformed
 	): Type<constructMapped<t, transformed>, $>
 
+	/**
+	 * List of property info of this `Type<object>`.
+	 * @example type({ foo: "string = "" }).props // [{ kind: "required", key: "foo", value: Type<string>, default: "" }]
+	 */
 	props: array<typePropOf<t, $>>
 }
 

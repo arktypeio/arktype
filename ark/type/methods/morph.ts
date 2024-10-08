@@ -1,10 +1,4 @@
-import type { Predicate, PredicateCast } from "@ark/schema"
-import type {
-	applyConstraintSchema,
-	inferPipe,
-	Out,
-	To
-} from "../keywords/inference.ts"
+import type { inferPipe } from "../keywords/inference.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { BaseType } from "./base.ts"
 
@@ -12,24 +6,13 @@ import type { BaseType } from "./base.ts"
 // non-morph branches
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
+	/**
+	 * Append extra validation shape on the pipe output
+	 * @example type({codes: 'string.numeric[]'}).pipe(obj => obj.codes).to('string.numeric.parse[]')
+	 */
 	to<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): Type<inferPipe<t, NoInfer<r>>, $>
-
-	narrow<narrowed extends this["infer"] = never>(
-		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
-	): Type<
-		(
-			[narrowed] extends [never] ?
-				applyConstraintSchema<this["inferBrandableOut"], "predicate", Predicate>
-			:	narrowed
-		) extends infer o ?
-			this["inferredOutIsIntrospectable"] extends true ?
-				(In: this["inferBrandableIn"]) => To<o>
-			:	(In: this["inferBrandableIn"]) => Out<o>
-		:	never,
-		$
-	>
+	): Type<inferPipe<t, r>, $>
 }
 
 export type { Type as MorphType }

@@ -207,4 +207,41 @@ isAdmin must be false, null or true (was 1)`)
 			}).toString()
 		).snap("user.repeatPassword must be identical to password")
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1149
+	it("morphs apply when not at an error path, even on failed validation", () => {
+		const ageType = type("string.numeric.parse").to("number>18")
+		const objType = type({ name: "string", "age?": ageType })
+
+		const out = objType({ name: 2, age: "2" })
+		attest(out.toString()).snap(`name must be a string (was a number)
+age must be more than 18 (was 2)`)
+	})
+
+	it("morphs don't apply when at an error path", () => {
+		let callCount = 0
+		const t = type("unknown")
+			.narrow((data, ctx) => ctx.mustBe("valid"))
+			.pipe(() => callCount++)
+
+		const out = t(1)
+
+		attest(out.toString()).snap("must be valid (was 1)")
+		attest(callCount).equals(0)
+	})
+
+	it("morphs don't apply when under an error path", () => {
+		let callCount = 0
+		const t = type({
+			foo: ["unknown", "=>", () => callCount++]
+		}).satisfying((data, ctx) => ctx.mustBe("valid"))
+
+		attest(t.t).type.toString.snap(
+			"of<{ foo: (In: unknown) => Out<number> }, Narrowed>"
+		)
+		const out = t({ foo: 1 })
+
+		attest(out.toString()).snap('must be valid (was {"foo":1})')
+		attest(callCount).equals(0)
+	})
 })

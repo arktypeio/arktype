@@ -6,11 +6,16 @@
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
 		"allowJs": true,
-		"jsx": "preserve"
+		"jsx": "preserve",
+		// leaving this in for now as it results in some nonsense in 5.7 alpha like:
+		// "This relative import path is unsafe to rewrite because it looks like a file name,
+		// but actually resolves to ./src/components/shiki.config.js"
+		// can remove this line if it doesn't break the build in the future
+		"rewriteRelativeImportExtensions": false
 	},
-	"mdx": {
-		"checkMdx": true
-	},
+	// "mdx": {
+	// 	"checkMdx": true
+	// },
 	// in addition to ignoring the additional dirs, this needs
 	// to be redeclared to avoid excluding ark/docs
 	"exclude": [".astro", "out", "dist", "node_modules"]

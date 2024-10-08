@@ -13,7 +13,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectNodes } from "../shared/intersections.ts"
+import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import {
 	writeCyclicJsonSchemaMessage,
 	type JsonSchema
@@ -76,14 +76,16 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 			alias: (l, r, ctx) =>
 				ctx.$.lazilyResolve(
 					() =>
-						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
+						neverIfDisjoint(
+							intersectOrPipeNodes(l.resolution, r.resolution, ctx)
+						),
 					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.reference}`
 				),
 			...defineRightwardIntersections("alias", (l, r, ctx) => {
 				if (r.isUnknown()) return l
 				if (r.isNever()) return r
 				return ctx.$.lazilyResolve(
-					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
+					() => neverIfDisjoint(intersectOrPipeNodes(l.resolution, r, ctx)),
 					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
 				)
 			})

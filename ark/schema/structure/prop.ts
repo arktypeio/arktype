@@ -13,7 +13,7 @@ import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import type { IntersectionContext, RootKind } from "../shared/implement.ts"
-import { intersectNodes } from "../shared/intersections.ts"
+import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import type { Optional } from "./optional.ts"
@@ -50,7 +50,7 @@ export const intersectProps = (
 	if (l.key !== r.key) return null
 
 	const key = l.key
-	let value = intersectNodes(l.value, r.value, ctx)
+	let value = intersectOrPipeNodes(l.value, r.value, ctx)
 	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
 		if (kind === "optional") value = $ark.intrinsic.never.internal
