@@ -1,4 +1,4 @@
-import { hasKey, throwInternalError } from "@ark/util"
+import { hasKey } from "@ark/util"
 import {
 	date,
 	double,
