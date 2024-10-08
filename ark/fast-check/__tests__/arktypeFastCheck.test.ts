@@ -155,14 +155,14 @@ describe("Arbitrary Generation", () => {
 		})
 		it("cyclic throws", () => {
 			const $ = scope({
-				arf: {
-					b: "bork"
+				arf2: {
+					b: "bork2"
 				},
-				bork: {
-					c: "arf&bork"
+				bork2: {
+					c: "arf2&bork2"
 				}
 			}).export()
-			attest(() => arkToArbitrary($.arf)).throws(
+			attest(() => arkToArbitrary($.arf2)).throws(
 				"Infinitely deep cycles are not supported."
 			)
 		})
