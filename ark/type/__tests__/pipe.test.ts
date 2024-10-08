@@ -10,7 +10,6 @@ import {
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To, of } from "arktype/internal/keywords/inference.ts"
 import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
-
 contextualize(() => {
 	it("base", () => {
 		const t = type("number").pipe(data => `${data}`)
@@ -208,6 +207,18 @@ contextualize(() => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
 			"ParseError: Intersection of > 5 and < 3 results in an unsatisfiable type"
 		)
+	})
+
+	it("extract in/out at path", () => {
+		const t = type({
+			foo: type("number").pipe(n => `${n}`, type.string)
+		})
+
+		attest<{ foo: number }>(t.in.t)
+		attest(t.in.expression).snap("{ foo: number }")
+
+		attest<{ foo: string }>(t.out.t)
+		attest(t.out.expression).snap("{ foo: string }")
 	})
 
 	it("uses pipe for many consecutive types", () => {
