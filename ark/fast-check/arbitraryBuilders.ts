@@ -86,12 +86,10 @@ export const arbitraryBuilders: ArbitraryBuilders = {
 
 const handleAlias = (fastCheckContext: FastCheckContext) => {
 	const tieStack = fastCheckContext.fastCheckTies
-	if (tieStack.length) {
-		const tie = tieStack.at(-1)!
-		const id = (fastCheckContext.currentNodeContext as StructureNodeContext).id
-		return tie(id)
-	}
-	throwInternalError("Tie has not been initialized")
+	if (!(tieStack.length > 0)) throwInternalError("Tie has not been initialized")
+	const tie = tieStack[tieStack.length - 1]
+	const id = (fastCheckContext.currentNodeContext as StructureNodeContext).id
+	return tie(id)
 }
 
 export const getKey = (nodeContext: NodeContext): keyof ArbitraryBuilders => {

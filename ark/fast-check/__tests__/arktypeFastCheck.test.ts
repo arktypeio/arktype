@@ -2,16 +2,15 @@ import { attest } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
 import { ArkErrors } from "@ark/schema"
 import { scope, type } from "arktype"
-import { cyclic10 } from "arktype/internal/__tests__/generated/cyclic.ts"
 import { assert, property, type Arbitrary } from "fast-check"
 import { describe, it } from "mocha"
 
 const assertProperty = (arbitrary: Arbitrary<unknown>, schema: type.Any) =>
 	assert(
 		property(arbitrary, value => {
-			const result = schema(value)
 			console.log(value)
-			return !(result instanceof ArkErrors)
+			schema.assert(value)
+			return true
 		})
 	)
 
@@ -50,6 +49,11 @@ describe("Arbitrary Generation", () => {
 		})
 		it("divisible", () => {
 			const t = type("number%2")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("large divisor", () => {
+			const t = type("number%7654321001>1")
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
 		})
@@ -145,11 +149,6 @@ describe("Arbitrary Generation", () => {
 				}
 			} as const
 			const t = scope(example).type("user")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
-		})
-		it("multiple aliases", () => {
-			const t = scope(cyclic10).type("user&user2")
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
 		})

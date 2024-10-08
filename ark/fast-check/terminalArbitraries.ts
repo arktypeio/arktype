@@ -1,4 +1,4 @@
-import { hasKey } from "@ark/util"
+import { hasKey, throwInternalError } from "@ark/util"
 import {
 	date,
 	double,
@@ -66,42 +66,53 @@ export const generateNumberArbitrary = (
 	const hasMax = condensedNodeContext.max !== undefined
 	const hasMin = condensedNodeContext.min !== undefined
 
-	if ("divisor" in condensedNodeContext) {
-		const constraints = getNumericBoundConstraints(
-			fastCheckContext,
-			["min", "max"],
-			{
-				min: (value: number) => Math.ceil(value),
-				max: (value: number) => Math.floor(value)
-			}
-		)
-		if (hasMin && hasMax && constraints.min > constraints.max) {
-			throw new Error(
-				`No integer value satisfies >${constraints.min} & <${constraints.max}`
-			)
+	if (condensedNodeContext.divisor === undefined) {
+		const constraints = getNumericBoundConstraints(fastCheckContext, [
+			"min",
+			"max"
+		])
+		return double(constraints)
+	}
+	const divisor = condensedNodeContext.divisor
+	const constraints = getNumericBoundConstraints(
+		fastCheckContext,
+		["min", "max"],
+		{
+			min: (value: number) => Math.ceil(value),
+			max: (value: number) => Math.floor(value)
 		}
-
-		const firstDivisibleInRange =
-			Math.ceil(
-				(constraints.min ?? Number.MIN_SAFE_INTEGER) /
-					condensedNodeContext.divisor
-			) * condensedNodeContext.divisor
-
-		if (firstDivisibleInRange > (constraints.max ?? Number.MAX_SAFE_INTEGER)) {
-			throw new Error(
-				`No values within range ${constraints.min} - ${constraints.max} are divisible by ${condensedNodeContext.divisor}.`
-			)
-		}
-
-		return integer(constraints).filter(
-			num => num % condensedNodeContext.divisor! === 0
+	)
+	if (hasMin && hasMax && constraints.min > constraints.max) {
+		throw new Error(
+			`No integer value satisfies >${constraints.min} & <${constraints.max}`
 		)
 	}
-	const constraints = getNumericBoundConstraints(fastCheckContext, [
-		"min",
-		"max"
-	])
-	return double(constraints)
+	const min = constraints.min ?? Number.MIN_SAFE_INTEGER
+	const max = constraints.max ?? Number.MAX_SAFE_INTEGER
+	const firstDivisibleInRange = Math.ceil(min / divisor) * divisor
+
+	if (firstDivisibleInRange > max || firstDivisibleInRange < min) {
+		throw new Error(
+			`No values within range ${constraints.min} - ${constraints.max} are divisible by ${divisor}.`
+		)
+	}
+	constraints.min = firstDivisibleInRange
+	//fast-check defaults max to 0x7fffffff which prevents larger divisible numbers from being produced
+	constraints.max = max
+	const integerArbitrary = integer(constraints)
+	const integersDivisibleByDivisor = integerArbitrary.map(value => {
+		const remainder = value % divisor
+		if (remainder === 0) return value
+
+		const lowerPossibleValue = value - remainder
+		if (
+			lowerPossibleValue >= firstDivisibleInRange &&
+			lowerPossibleValue % divisor === 0
+		)
+			return lowerPossibleValue
+		return value + remainder
+	})
+	return integersDivisibleByDivisor
 }
 
 const getNumericBoundConstraints: ConstraintContext = (
