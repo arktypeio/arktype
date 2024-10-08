@@ -5,6 +5,7 @@ contextualize(() => {
 	describe("nearestFloat", () => {
 		it("0", () => {
 			attest(nearestFloat(0)).equals(Number.MIN_VALUE)
+			attest(nearestFloat(0, "-")).equals(-Number.MIN_VALUE)
 		})
 
 		it("small integer", () => {

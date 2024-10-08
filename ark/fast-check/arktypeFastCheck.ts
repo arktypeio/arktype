@@ -2,161 +2,172 @@ import type { Arbitrary } from "fast-check"
 
 import {
 	refinementKinds,
-	type BaseRoot,
 	type NodeKind,
 	type nodeOfKind,
 	type RefinementKind,
 	type SequenceElementKind
 } from "@ark/schema"
 import { includes, throwInternalError } from "@ark/util"
-import { buildArbitraries } from "./arbitraryBuilders.ts"
+import type { type } from "arktype"
+import {
+	buildArbitraries,
+	type ArbitraryBuilderKeys
+} from "./arbitraryBuilders.ts"
 import { applyConstraint, type ruleByRefinementKind } from "./constraint.ts"
 
-//todoshawn this could be named better... what kind of context is it?
-//seenIds could maybe just be changed over to convertedNodesById? and then just store every converted node
-interface Context {
+type BuilderContext = {
 	seenIds: Record<string, true>
 	convertedNodesById: Record<string, NodeContext>
-	collection: NodeContext[]
+	collection: Context[]
 }
 
-const initializeContext = (): Context => ({
+const initializeContext = (): BuilderContext => ({
 	seenIds: {},
 	convertedNodesById: {},
 	collection: []
 })
 
-export const arkToArbitrary = (schema: BaseRoot): Arbitrary<unknown> => {
+export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
+	const baseRoot = schema.internal
 	const context = initializeContext()
 	const node = recursiveNodeBuilder([schema] as never, context)
 	const aliasNodesByResolvedId: Record<string, NodeContext> = {}
-	if (schema.isCyclic) {
-		Object.values(schema.referencesById).forEach(arkNode => {
+	if (baseRoot.isCyclic) {
+		Object.values(baseRoot.referencesById).forEach(arkNode => {
 			if (arkNode.hasKind("alias")) {
 				const id = arkNode.resolutionId
 				aliasNodesByResolvedId[id] = context.convertedNodesById[id]
 			}
 		})
 	}
-	return buildArbitraries(node, aliasNodesByResolvedId, schema.isCyclic)
+	return buildArbitraries(node, aliasNodesByResolvedId, baseRoot.isCyclic)
 }
 
 export const recursiveNodeBuilder = <kind extends NodeKind>(
 	children: nodeOfKind<kind>[],
-	context: Context
+	builderContext: BuilderContext
 ): NodeContext => {
-	const collection = context.collection
+	const collection = builderContext.collection
 	if (children.length === 0) {
 		if (collection.length > 1)
-			throwInternalError("Node was not properly condensed.")
+			throwInternalError("Error occured when condensing node.")
 
 		return collection[0]
 	}
 
 	const [child, ...rest] = children
-	const { expression } = child
 
-	const rootConvertedNode = collection[collection.length - 1] ?? {}
-	context.seenIds[child.id] = true
+	const rootCondensedNode = collection[collection.length - 1] ?? {}
+	builderContext.seenIds[child.id] = true
 	switch (child.kind) {
 		case "intersection":
+			if (builderContext.convertedNodesById[child.id] !== undefined)
+				return builderContext.convertedNodesById[child.id]
+
 			const intersectionResult = recursiveNodeBuilder(
 				[...child.children, ...rest] as never,
-				context
+				builderContext
 			)
 			intersectionResult.id = child.id
-			context.convertedNodesById[child.id] = intersectionResult
+			builderContext.convertedNodesById[child.id] = intersectionResult
 			return intersectionResult
 		case "alias":
-			const nodeToAdd = { kind: child.kind, rule: expression, id: "" }
+			const nodeToAdd = {
+				kind: child.kind,
+				rule: child.expression as never,
+				id: ""
+			}
 			const resolvedNode = child.resolution
 			const id = resolvedNode.id
 			/**
-			 * In cases where the alias has not explicitly been seen in the structure we convert the resolved node so we have access to it when
-			 * we're building the arbitrary
+			 * In cases where the alias has not explicitly been seen in the structure (synthetic aliases) we
+			 * recurse through the resolved node to have access to it when we're building the arbitrary.
 			 */
-			if (context.seenIds[id] === undefined) {
+			if (builderContext.seenIds[id] === undefined) {
 				recursiveNodeBuilder(
 					[resolvedNode] as never,
-					setContextCollection(context)
+					setContextCollection(builderContext)
 				)
 			}
 			nodeToAdd.id = id
 			collection.push(nodeToAdd)
-			return recursiveNodeBuilder(rest, context)
+			return recursiveNodeBuilder(rest, builderContext)
 		case "union":
-			const newNode: UnionNode = {
+			const newNode: UnionContext = {
 				kind: "union",
 				rule: "union",
 				oneOf: []
 			}
 			for (const c of child.children) {
 				newNode.oneOf.push(
-					recursiveNodeBuilder([c], setContextCollection(context))
+					recursiveNodeBuilder([c], setContextCollection(builderContext))
 				)
 			}
 
 			collection.push(newNode)
-			return recursiveNodeBuilder(rest, context)
+			return recursiveNodeBuilder(rest, builderContext)
 		case "structure":
-			if (isStructureNode(rootConvertedNode))
-				prepareStructureNode(rootConvertedNode, child, context)
-			return recursiveNodeBuilder(rest, context)
+			prepareStructureNode(rootCondensedNode as never, child, builderContext)
+			return recursiveNodeBuilder(rest, builderContext)
 		case "sequence":
-			if (isStructureNode(rootConvertedNode)) {
+			if (isStructureNode(rootCondensedNode)) {
 				const mappedChildren = child.tuple.map(element => ({
 					kind: element.kind,
 					node: recursiveNodeBuilder(
 						[element.node] as never,
-						setContextCollection(context)
+						setContextCollection(builderContext)
 					)
 				}))
-				rootConvertedNode.arbitraryNodeDetails.push(...mappedChildren)
+				rootCondensedNode.arbitraryNodeDetails.push(...mappedChildren)
 			}
-			return recursiveNodeBuilder(rest, context)
+			return recursiveNodeBuilder(rest, builderContext)
 		case "morph":
-			return recursiveNodeBuilder([child.inner.in, ...rest] as never, context)
+			return recursiveNodeBuilder(
+				[child.inner.in, ...rest] as never,
+				builderContext
+			)
 		case "index":
 			const signature = recursiveNodeBuilder(
 				[child.signature],
-				setContextCollection(context)
+				setContextCollection(builderContext)
 			)
 			const value = recursiveNodeBuilder(
 				[child.value] as never,
-				setContextCollection(context)
+				setContextCollection(builderContext)
 			)
-			if (isStructureNode(rootConvertedNode)) {
-				rootConvertedNode.nodeCollection["key"] = signature
-				rootConvertedNode.nodeCollection["value"] = value
-				rootConvertedNode.hasIndexSignature = true
+			if (isStructureNode(rootCondensedNode)) {
+				rootCondensedNode.nodeCollection["key"] = signature
+				rootCondensedNode.nodeCollection["value"] = value
+				rootCondensedNode.hasIndexSignature = true
 			}
-			return recursiveNodeBuilder(rest, context)
+			return recursiveNodeBuilder(rest, builderContext)
 		case "unit":
-			collection.push({ kind: child.kind, rule: child.unit as any })
-			return recursiveNodeBuilder(rest, context)
+			collection.push({ kind: child.kind, rule: "unit", unit: child.unit })
+			return recursiveNodeBuilder(rest, builderContext)
 		case "required":
 		case "optional":
-			if (isStructureNode(rootConvertedNode)) {
+			if (isStructureNode(rootCondensedNode)) {
 				const key = child.key
 				const value = recursiveNodeBuilder(
 					[child.value as never],
-					setContextCollection(context)
+					setContextCollection(builderContext)
 				)
-				rootConvertedNode.nodeCollection[key] = value
-				if (child.kind === "required") rootConvertedNode.requiredKeys.push(key)
+				rootCondensedNode.nodeCollection[key] = value
+				if (child.kind === "required") rootCondensedNode.requiredKeys.push(key)
 			}
-			return recursiveNodeBuilder(rest, context)
+			return recursiveNodeBuilder(rest, builderContext)
 		default:
-			if (isRefinementKind(child)) applyConstraint(child, rootConvertedNode)
-			else collection.push({ kind: child.kind, rule: expression })
-			return recursiveNodeBuilder(rest, context)
+			if (isRefinementKind(child)) applyConstraint(child, rootCondensedNode)
+			else
+				collection.push({ kind: child.kind, rule: child.expression as never })
+			return recursiveNodeBuilder(rest, builderContext)
 	}
 }
 
 const prepareStructureNode = (
 	lastNode: StructureNodeContext,
 	child: nodeOfKind<NodeKind>,
-	context: Context
+	context: BuilderContext
 ) => {
 	lastNode.id = child.id
 	lastNode.requiredKeys = []
@@ -168,19 +179,26 @@ const prepareStructureNode = (
 }
 
 const setContextCollection = (
-	context: Context,
+	context: BuilderContext,
 	newCollection: NodeContext[] = []
 ) => ({ ...context, collection: newCollection })
 
+export type Context = NodeContext | StructureNodeContext | UnionContext
+
 export interface NodeContext extends ruleByRefinementKind {
 	kind: NodeKind
-	rule: unknown
+	rule: ArbitraryBuilderKeys
 	id?: string
+	unit?: unknown
 }
 
-export interface UnionNode extends NodeContext {
+export interface UnionContext extends NodeContext {
 	oneOf: NodeContext[]
 }
+
+export const isUnionNode = (
+	nodeContext: NodeContext
+): nodeContext is UnionContext => nodeContext.kind === "union"
 
 export interface StructureNodeContext extends NodeContext {
 	arbitraryNodeDetails: {
@@ -193,9 +211,9 @@ export interface StructureNodeContext extends NodeContext {
 }
 
 export const isStructureNode = (
-	nodeDetails: NodeContext
-): nodeDetails is StructureNodeContext =>
-	nodeDetails.rule === "Array" || nodeDetails.rule === "object"
+	nodeContext: NodeContext
+): nodeContext is StructureNodeContext =>
+	nodeContext.rule === "Array" || nodeContext.rule === "object"
 
 const isRefinementKind = (
 	child: nodeOfKind<NodeKind>

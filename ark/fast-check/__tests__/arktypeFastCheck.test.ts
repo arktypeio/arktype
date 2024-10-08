@@ -1,23 +1,12 @@
 import { attest } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
-import { ArkErrors, type BaseRoot } from "@ark/schema"
+import { ArkErrors } from "@ark/schema"
 import { scope, type } from "arktype"
+import { cyclic10 } from "arktype/internal/__tests__/generated/cyclic.ts"
 import { assert, property, type Arbitrary } from "fast-check"
 import { describe, it } from "mocha"
 
-const ss = {
-	user: {
-		name: "string",
-		"friend?": "user[]"
-	},
-	group: {
-		title: "string",
-		members: "user[]",
-		isActive: "boolean|undefined"
-	}
-} as const
-
-const assertProperty = (arbitrary: Arbitrary<unknown>, schema: BaseRoot) =>
+const assertProperty = (arbitrary: Arbitrary<unknown>, schema: type.Any) =>
 	assert(
 		property(arbitrary, value => {
 			const result = schema(value)
@@ -65,9 +54,15 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 		it("divisible within range", () => {
-			const t = type("37<number%7<100")
+			const t = type("15<number%7<39")
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
+		})
+		it("non-divisible within range", () => {
+			const t = type("52<number%10<58")
+			attest(() => arkToArbitrary(t)).throws(
+				"No values within range 53 - 57 are divisible by 10."
+			)
 		})
 	})
 	describe("string", () => {
@@ -113,7 +108,7 @@ describe("Arbitrary Generation", () => {
 		it("nested object", () => {
 			const t = type({
 				a: {
-					b: "string < 2"
+					b: "string >= 2"
 				}
 			})
 			const arbitrary = arkToArbitrary(t)
@@ -142,10 +137,34 @@ describe("Arbitrary Generation", () => {
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
 		})
-		it("has alias", () => {
-			const t = scope(ss).type("user")
+		it("contains alias", () => {
+			const example = {
+				user: {
+					name: "string",
+					friend: "user[]"
+				}
+			} as const
+			const t = scope(example).type("user")
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
+		})
+		it("multiple aliases", () => {
+			const t = scope(cyclic10).type("user&user2")
+			const arbitrary = arkToArbitrary(t)
+			assertProperty(arbitrary, t)
+		})
+		it("cyclic throws", () => {
+			const $ = scope({
+				arf: {
+					b: "bork"
+				},
+				bork: {
+					c: "arf&bork"
+				}
+			}).export()
+			attest(() => arkToArbitrary($.arf)).throws(
+				"Infinitely deep cycles are not supported."
+			)
 		})
 	})
 	describe("array", () => {
@@ -162,7 +181,14 @@ describe("Arbitrary Generation", () => {
 		it("bounded array", () => {
 			const t = type("3<number[]<=5")
 			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			// assertProperty(arbitrary, t)
+			assert(
+				property(arbitrary, value => {
+					const result = t(value)
+					console.log(value)
+					return !(result instanceof ArkErrors)
+				})
+			)
 		})
 		it("union array", () => {
 			const t = type("(string|number)[]")
