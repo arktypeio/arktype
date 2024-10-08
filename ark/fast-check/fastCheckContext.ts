@@ -7,7 +7,7 @@ export type FastCheckContext = {
 	convertedAliasNodesById: Record<string, Context>
 	fastCheckAliasArbitrariesById: Record<string, Arbitrary<unknown>>
 	currentNodeContext: Context
-	convertedObjects: Record<string, Arbitrary<unknown>>
+	arbitrariesById: Record<string, Arbitrary<unknown>>
 	numberOfAliasNodesInStructure: number
 }
 
@@ -20,7 +20,7 @@ export const createFastCheckContext = (
 	convertedAliasNodesById,
 	fastCheckAliasArbitrariesById: {},
 	currentNodeContext: node,
-	convertedObjects: {},
+	arbitrariesById: {},
 	numberOfAliasNodesInStructure: Object.keys(convertedAliasNodesById).length
 })
 

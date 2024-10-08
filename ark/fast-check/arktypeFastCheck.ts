@@ -17,13 +17,13 @@ import { applyConstraint, type ruleByRefinementKind } from "./constraint.ts"
 
 type BuilderContext = {
 	seenIds: Record<string, true>
-	convertedNodesById: Record<string, NodeContext>
+	convertedIntersectionNodesById: Record<string, NodeContext>
 	collection: Context[]
 }
 
 const initializeContext = (): BuilderContext => ({
 	seenIds: {},
-	convertedNodesById: {},
+	convertedIntersectionNodesById: {},
 	collection: []
 })
 
@@ -36,7 +36,7 @@ export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
 		Object.values(baseRoot.referencesById).forEach(arkNode => {
 			if (arkNode.hasKind("alias")) {
 				const id = arkNode.resolutionId
-				aliasNodesByResolvedId[id] = context.convertedNodesById[id]
+				aliasNodesByResolvedId[id] = context.convertedIntersectionNodesById[id]
 			}
 		})
 	}
@@ -46,7 +46,7 @@ export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
 export const recursiveNodeBuilder = <kind extends NodeKind>(
 	children: nodeOfKind<kind>[],
 	builderContext: BuilderContext
-): NodeContext => {
+): Context => {
 	const collection = builderContext.collection
 	if (children.length === 0) {
 		if (collection.length > 1)
@@ -61,15 +61,16 @@ export const recursiveNodeBuilder = <kind extends NodeKind>(
 	builderContext.seenIds[child.id] = true
 	switch (child.kind) {
 		case "intersection":
-			if (builderContext.convertedNodesById[child.id] !== undefined)
-				return builderContext.convertedNodesById[child.id]
+			if (builderContext.convertedIntersectionNodesById[child.id] !== undefined)
+				return builderContext.convertedIntersectionNodesById[child.id]
 
 			const intersectionResult = recursiveNodeBuilder(
 				[...child.children, ...rest] as never,
 				builderContext
 			)
-			intersectionResult.id = child.id
-			builderContext.convertedNodesById[child.id] = intersectionResult
+			if (isStructureNode(intersectionResult)) intersectionResult.id = child.id
+			builderContext.convertedIntersectionNodesById[child.id] =
+				intersectionResult
 			return intersectionResult
 		case "alias":
 			const nodeToAdd = {
@@ -188,7 +189,6 @@ export type Context = NodeContext | StructureNodeContext | UnionContext
 export interface NodeContext extends ruleByRefinementKind {
 	kind: NodeKind
 	rule: ArbitraryBuilderKeys
-	id?: string
 	unit?: unknown
 }
 
@@ -208,6 +208,7 @@ export interface StructureNodeContext extends NodeContext {
 	nodeCollection: Record<string | symbol, NodeContext>
 	requiredKeys: (string | symbol)[]
 	hasIndexSignature: boolean
+	id: string
 }
 
 export const isStructureNode = (

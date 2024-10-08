@@ -60,12 +60,10 @@ export type ArbitraryBuilderKeys = keyof ArbitraryBuilders
 type ArbitraryBuilders = {
 	number: (fastCheckContext: FastCheckContext) => Arbitrary<number>
 	string: (fastCheckContext: FastCheckContext) => Arbitrary<string>
-	object: (
-		fastCheckContext: FastCheckContext
-	) => Arbitrary<Record<string, unknown>>
+	object: (fastCheckContext: FastCheckContext) => Arbitrary<unknown>
 	union: (fastCheckContext: FastCheckContext) => Arbitrary<unknown>
 	unit: (fastCheckContext: FastCheckContext) => Arbitrary<unknown>
-	Array: (fastCheckContext: FastCheckContext) => Arbitrary<unknown[]>
+	Array: (fastCheckContext: FastCheckContext) => Arbitrary<unknown>
 	Date: (fastCheckContext: FastCheckContext) => Arbitrary<Date>
 	symbol: (fastCheckContext: FastCheckContext) => Arbitrary<symbol>
 	bigint: (fastCheckContext: FastCheckContext) => Arbitrary<bigint>
@@ -90,7 +88,7 @@ const handleAlias = (fastCheckContext: FastCheckContext) => {
 	const tieStack = fastCheckContext.fastCheckTies
 	if (tieStack.length) {
 		const tie = tieStack.at(-1)!
-		const id = fastCheckContext.currentNodeContext.id!
+		const id = (fastCheckContext.currentNodeContext as StructureNodeContext).id
 		return tie(id)
 	}
 	throwInternalError("Tie has not been initialized")
@@ -124,27 +122,42 @@ const getArbitrary = (
 
 const arrayArbitraryMapper = (
 	fastCheckContext: FastCheckContext
-): Arbitrary<unknown[]> => {
+): Arbitrary<unknown> => {
 	const nodeContext = fastCheckContext.currentNodeContext
-	if (isStructureNode(nodeContext)) {
-		if (nodeContext.exactLength !== undefined)
-			return generateTupleArbitrary(fastCheckContext)
-
-		const innerArbitraryContext = nodeContext.arbitraryNodeDetails
-		if (!innerArbitraryContext.length) {
-			// For cases where we attach props to an Array
-			if (Object.keys(nodeContext.nodeCollection).length)
-				return assignObjectPropsToArray(array(anything()), fastCheckContext)
-
-			return array(anything())
-		}
-		if (innerArbitraryContext.length === 1)
-			return generateArrayArbitrary(fastCheckContext)
-		return generateVariadicTupleArbitrary(fastCheckContext)
+	if (!isStructureNode(nodeContext)) {
+		throwInternalError(
+			"Expected a converted structure node when creating an array arbitrary."
+		)
 	}
-	throwInternalError(
-		"Expected a converted structure node when creating an array arbitrary."
-	)
+
+	if (nodeContext.id in fastCheckContext.arbitrariesById)
+		return fastCheckContext.arbitrariesById[nodeContext.id]
+
+	if (nodeContext.exactLength !== undefined) {
+		const tupleArbitrary = generateTupleArbitrary(fastCheckContext)
+		fastCheckContext.arbitrariesById[nodeContext.id] = tupleArbitrary
+		return tupleArbitrary
+	}
+
+	const innerArbitraryContext = nodeContext.arbitraryNodeDetails
+	if (!innerArbitraryContext.length) {
+		// For cases where we attach props to an Array
+		if (Object.keys(nodeContext.nodeCollection).length)
+			return assignObjectPropsToArray(array(anything()), fastCheckContext)
+
+		return array(anything())
+	}
+
+	if (innerArbitraryContext.length === 1) {
+		const arrayArbitrary = generateArrayArbitrary(fastCheckContext)
+		fastCheckContext.arbitrariesById[nodeContext.id] = arrayArbitrary
+		return arrayArbitrary
+	}
+
+	const variadicTupleArbitrary =
+		generateVariadicTupleArbitrary(fastCheckContext)
+	fastCheckContext.arbitrariesById[nodeContext.id] = variadicTupleArbitrary
+	return variadicTupleArbitrary
 }
 
 const generateTupleArbitrary = (fastCheckContext: FastCheckContext) => {
@@ -174,7 +187,7 @@ const generateArrayArbitrary = (fastCheckContext: FastCheckContext) => {
 	const arrArbitrary = array(arbitrary, constraints)
 
 	/**
-	 More complex structures containing many aliases will be more likely to generate an 
+	 More complex structures containing many aliases are more likely to generate an 
 	 empty array to prevent the arbitrary from hanging or taking a very long time when
 	 generating values
 	 */
@@ -183,7 +196,7 @@ const generateArrayArbitrary = (fastCheckContext: FastCheckContext) => {
 			oneof(
 				{
 					maxDepth: fastCheckContext.numberOfAliasNodesInStructure > 2 ? 1 : 2,
-					depthIdentifier: `id:${nodeContext.id!}`
+					depthIdentifier: `id:${nodeContext.id}`
 				},
 				{ arbitrary: constant([]), weight: 1 },
 				{
@@ -249,8 +262,8 @@ const generateObjectArbitrary = (fastCheckContext: FastCheckContext) => {
 	if (!hasKey(nodeContext, "nodeCollection")) return object()
 
 	const keysAndSymbols = stringAndSymbolicEntriesOf(nodeContext.nodeCollection)
-	if (nodeContext.id in fastCheckContext.convertedObjects)
-		return fastCheckContext.convertedObjects[nodeContext.id]
+	if (nodeContext.id in fastCheckContext.arbitrariesById)
+		return fastCheckContext.arbitrariesById[nodeContext.id]
 
 	if (
 		fastCheckContext.containsAlias &&
@@ -263,7 +276,7 @@ const generateObjectArbitrary = (fastCheckContext: FastCheckContext) => {
 			return collection
 		})["root"] as Arbitrary<Record<string, unknown>>
 
-		fastCheckContext.convertedObjects[nodeContext.id] = aliasArbitrary
+		fastCheckContext.arbitrariesById[nodeContext.id] = aliasArbitrary
 		return aliasArbitrary
 	}
 
@@ -283,7 +296,7 @@ const generateObjectArbitrary = (fastCheckContext: FastCheckContext) => {
 	const objectArbitrary = record(arbitrariesCollection, {
 		requiredKeys: nodeContext.requiredKeys as never
 	})
-	fastCheckContext.convertedObjects[nodeContext.id] = objectArbitrary
+	fastCheckContext.arbitrariesById[nodeContext.id] = objectArbitrary
 	return objectArbitrary
 }
 
