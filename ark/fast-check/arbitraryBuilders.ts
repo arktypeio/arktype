@@ -201,7 +201,7 @@ const generateArrayArbitrary = (fastCheckContext: FastCheckContext) => {
 				{ arbitrary: constant([]), weight: 1 },
 				{
 					arbitrary: arrArbitrary,
-					weight: fastCheckContext.numberOfAliasNodesInStructure > 2 ? 2 : 3
+					weight: fastCheckContext.numberOfAliasNodesInStructure > 2 ? 1 : 3
 				}
 			)
 		:	arrArbitrary

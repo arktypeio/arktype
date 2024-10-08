@@ -33,9 +33,10 @@
 		"test": "tsx ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"fast-check": "3.18.0",
+		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
-		"@ark/util": "workspace:*"
+		"@ark/util": "workspace:*",
+		"fast-check": "3.18.0"
 	},
 	"publishConfig": {
 		"access": "public"
