@@ -141,10 +141,6 @@ export declare namespace string {
 
 		export type anonymous = brand<string, Anonymous>
 
-		export type optional = brand<string, Optional>
-
-		export type defaultsTo<rule> = brand<string, Default<rule>>
-
 		export type is<attributes> = brand<string, attributes>
 
 		export type apply<attribute> =

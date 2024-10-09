@@ -48,7 +48,7 @@ contextualize(() => {
 			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
 		)
 
-		attest<number.narrowed>(divisibleBy30.t)
+		attest<number.anonymous>(divisibleBy30.t)
 
 		attest(divisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
 		attest(divisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")

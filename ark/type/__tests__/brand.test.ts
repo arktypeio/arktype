@@ -11,7 +11,7 @@ contextualize(() => {
 		attest(t.expression).equals("string")
 
 		const out = t("moo")
-		attest<string.nominal<"foo"> | type.errors>(out).type.toString.snap()
+		attest<string.branded<"foo"> | type.errors>(out).type.toString.snap()
 	})
 
 	it("string-embedded", () => {

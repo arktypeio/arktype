@@ -135,7 +135,7 @@ type _applyAttribute<t, attribute> =
 			:	string.is<attribute & attributes>
 		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
 		: of<base, attributes & attribute>
-	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
+	: [number, t] extends [t, number] ? number.apply<attribute>
 	: [string, t] extends [t, string] ?
 		"brand" extends keyof attribute ?
 			string.branded.apply<attribute>

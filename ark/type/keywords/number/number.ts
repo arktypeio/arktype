@@ -3,6 +3,7 @@ import type { Module, Submodule } from "../../module.ts"
 import type {
 	Anonymous,
 	BaseAttributes,
+	brand,
 	constraint,
 	Default,
 	Nominal,
@@ -62,13 +63,23 @@ export declare namespace number {
 
 	export type divisibleBy<rule> = of<number, DivisibleBy<rule>>
 
-	export type narrowed = of<number, Anonymous>
+	export type anonymous = of<number, Anonymous>
 
 	export type optional = of<number, Optional>
 
 	export type defaultsTo<rule> = of<number, Default<rule>>
 
-	export type branded<rule> = of<number, Nominal<rule>>
+	export type nominal<rule> = of<number, Nominal<rule>>
+
+	export type NaN = nominal<"NaN">
+
+	export type Infinity = nominal<"Infinity">
+
+	export type NegativeInfinity = nominal<"NegativeInfinity">
+
+	export type safe = nominal<"safe">
+
+	export type is<attributes> = of<number, attributes>
 
 	interface ownConstraints
 		extends AtLeast<number>,
@@ -79,23 +90,13 @@ export declare namespace number {
 
 	export interface Attributes extends BaseAttributes, Partial<ownConstraints> {}
 
-	export type NaN = branded<"NaN">
-
-	export type Infinity = branded<"Infinity">
-
-	export type NegativeInfinity = branded<"NegativeInfinity">
-
-	export type safe = branded<"safe">
-
-	export type is<attributes> = of<number, attributes>
-
 	export type minSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>
 
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	export type applyAttribute<attribute> =
+	export type apply<attribute> =
 		attribute extends MoreThan<infer rule> ? moreThan<rule>
 		: attribute extends AtLeast<infer rule> ? atLeast<rule>
 		: attribute extends AtMost<infer rule> ? atMost<rule>
@@ -103,7 +104,7 @@ export declare namespace number {
 		: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
 		: attribute extends Optional ? optional
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Nominal<infer rule> ? branded<rule>
+		: attribute extends Nominal<infer rule> ? nominal<rule>
 		: never
 
 	export type module = Module<submodule>
@@ -118,5 +119,32 @@ export declare namespace number {
 		NaN: NaN
 		Infinity: Infinity
 		NegativeInfinity: NegativeInfinity
+	}
+
+	export type branded<rule> = brand<string, Nominal<rule>>
+
+	export namespace branded {
+		export type atLeast<rule> = brand<number, AtLeast<rule>>
+
+		export type moreThan<rule> = brand<number, MoreThan<rule>>
+
+		export type atMost<rule> = brand<number, AtMost<rule>>
+
+		export type lessThan<rule> = brand<number, LessThan<rule>>
+
+		export type divisibleBy<rule> = brand<number, DivisibleBy<rule>>
+
+		export type is<attributes> = brand<number, attributes>
+
+		export type anonymous = brand<number, Anonymous>
+
+		export type apply<attribute> =
+			attribute extends MoreThan<infer rule> ? moreThan<rule>
+			: attribute extends AtLeast<infer rule> ? atLeast<rule>
+			: attribute extends AtMost<infer rule> ? atMost<rule>
+			: attribute extends LessThan<infer rule> ? lessThan<rule>
+			: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
+			: attribute extends Optional ? optional
+			: never
 	}
 }

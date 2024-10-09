@@ -623,7 +623,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(s => parseInt(s))
 			.narrow(() => true)
 
-		attest<(In: string) => Out<number.narrowed>>(t.t)
+		attest<(In: string) => Out<number.anonymous>>(t.t)
 
 		const u = t.pipe(
 			n => `${n}`,
