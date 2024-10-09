@@ -1,8 +1,8 @@
 import type {
+	Anonymous,
 	constraint,
 	Default,
 	Literal,
-	Narrowed,
 	Nominal,
 	normalizeLimit,
 	of,
@@ -34,7 +34,7 @@ export declare namespace Date {
 
 	export type before<rule> = of<Date, Before<rule>>
 
-	export type narrowed = of<Date, Narrowed>
+	export type narrowed = of<Date, Anonymous>
 
 	export type optional = of<Date, Optional>
 

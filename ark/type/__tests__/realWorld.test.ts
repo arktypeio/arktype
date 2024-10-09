@@ -6,9 +6,9 @@ import {
 } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
+	Anonymous,
 	AtLeastLength,
 	AtMostLength,
-	Narrowed,
 	Out,
 	To,
 	number,
@@ -587,7 +587,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(() => true)
 			.describe('This will "fail"')
 
-		attest<string.narrowed>(t.t)
+		attest<string.anonymous>(t.t)
 
 		const serializedPredicate =
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
@@ -703,7 +703,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<of<bigint, Anonymous>>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]

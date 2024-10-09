@@ -25,7 +25,7 @@ import type { arkPrototypes } from "./constructors/constructors.ts"
 import type { Date } from "./constructors/Date.ts"
 import type { type } from "./keywords.ts"
 import type { DivisibleBy, number } from "./number/number.ts"
-import type { brandedString, Matching, string } from "./string/string.ts"
+import type { Matching, string } from "./string/string.ts"
 export type { arkPrototypes as object } from "./constructors/constructors.ts"
 export type { number } from "./number/number.ts"
 export type { string } from "./string/string.ts"
@@ -75,7 +75,7 @@ export type Literal<rule> = {
 	literal: constraint<rule>
 }
 
-export type Narrowed = {
+export type Anonymous = {
 	predicate: { "?": 1 }
 }
 
@@ -131,15 +131,15 @@ type _applyAttribute<t, attribute> =
 		[number, base] extends [base, number] ? number.is<attribute & attributes>
 		: [string, base] extends [base, string] ?
 			"brand" extends keyof attributes | keyof attribute ?
-				brandedString.is<attribute & attributes>
+				string.branded.is<attribute & attributes>
 			:	string.is<attribute & attributes>
 		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
 		: of<base, attributes & attribute>
 	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
 	: [string, t] extends [t, string] ?
 		"brand" extends keyof attribute ?
-			brandedString.applyBrand<attribute>
-		:	string.applyAttribute<attribute>
+			string.branded.apply<attribute>
+		:	string.apply<attribute>
 	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
 	: of<t, attribute>
 
@@ -170,7 +170,7 @@ export type schemaToConstraint<
 		: kind extends "exactLength" ? ExactlyLength<rule>
 		: kind extends "after" ? Date.afterSchemaToConstraint<schema, rule>
 		: kind extends "before" ? Date.beforeSchemaToConstraint<schema, rule>
-		: Narrowed
+		: Anonymous
 	:	never
 
 export type distill<

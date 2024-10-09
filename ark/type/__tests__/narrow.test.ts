@@ -3,7 +3,7 @@ import { registeredReference } from "@ark/schema"
 import type { equals } from "@ark/util"
 import { type } from "arktype"
 import type {
-	Narrowed,
+	Anonymous,
 	Out,
 	number,
 	of,
@@ -72,7 +72,7 @@ contextualize(() => {
 			}
 		])
 
-		attest<of<{ a: number; b: number }, Narrowed>>(abEqual.t)
+		attest<of<{ a: number; b: number }, Anonymous>>(abEqual.t)
 		attest<{
 			a: number
 			b: number
@@ -110,7 +110,7 @@ contextualize(() => {
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
-		attest<string.narrowed>(palindrome.t)
+		attest<string.anonymous>(palindrome.t)
 		attest(palindrome("dad")).snap("dad")
 		attest(palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'
@@ -164,7 +164,7 @@ contextualize(() => {
 
 		const A = type("bigint").narrow(predicate).pipe(toString)
 
-		attest<(In: of<bigint, Narrowed>) => Out<string>>(A.t)
+		attest<(In: of<bigint, Anonymous>) => Out<string>>(A.t)
 		attest<bigint>(A.in.infer)
 		attest<bigint>(A.inferIn)
 		attest<string>(A.infer)
@@ -251,7 +251,7 @@ contextualize(() => {
 
 	it("can distill units", () => {
 		const t = type("5").narrow(() => true)
-		attest<of<5, Narrowed>>(t.t)
+		attest<of<5, Anonymous>>(t.t)
 		attest<5>(t.infer)
 		attest<5>(t.inferIn)
 

@@ -1,10 +1,10 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
+	Anonymous,
 	BaseAttributes,
 	constraint,
 	Default,
-	Narrowed,
 	Nominal,
 	of,
 	Optional
@@ -62,7 +62,7 @@ export declare namespace number {
 
 	export type divisibleBy<rule> = of<number, DivisibleBy<rule>>
 
-	export type narrowed = of<number, Narrowed>
+	export type narrowed = of<number, Anonymous>
 
 	export type optional = of<number, Optional>
 

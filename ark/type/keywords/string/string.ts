@@ -1,13 +1,13 @@
 import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
+	Anonymous,
 	AtLeastLength,
 	AtMostLength,
 	Default,
 	ExactlyLength,
 	LessThanLength,
 	MoreThanLength,
-	Narrowed,
 	Nominal,
 	Optional,
 	brand,
@@ -75,17 +75,17 @@ export declare namespace string {
 
 	export type matching<rule> = of<string, Matching<rule>>
 
-	export type narrowed = of<string, Narrowed>
+	export type anonymous = of<string, Anonymous>
 
 	export type optional = of<string, Optional>
 
 	export type defaultsTo<rule> = of<string, Default<rule>>
 
-	export type branded<rule> = of<string, Nominal<rule>>
+	export type nominal<rule> = of<string, Nominal<rule>>
 
 	export type is<attributes> = of<string, attributes>
 
-	export type applyAttribute<attribute> =
+	export type apply<attribute> =
 		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
 		: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
 		: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
@@ -94,7 +94,7 @@ export declare namespace string {
 		: attribute extends Matching<infer rule> ? matching<rule>
 		: attribute extends Optional ? optional
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Nominal<infer rule> ? branded<rule>
+		: attribute extends Nominal<infer rule> ? nominal<rule>
 		: never
 
 	export type module = Module<string.submodule>
@@ -124,6 +124,8 @@ export declare namespace string {
 		upper: upper.submodule
 	}
 
+	export type branded<rule> = brand<string, Nominal<rule>>
+
 	export namespace branded {
 		export type atLeastLength<rule> = brand<string, AtLeastLength<rule>>
 
@@ -137,17 +139,15 @@ export declare namespace string {
 
 		export type matching<rule> = brand<string, Matching<rule>>
 
-		export type narrowed = brand<string, Narrowed>
+		export type anonymous = brand<string, Anonymous>
 
 		export type optional = brand<string, Optional>
 
 		export type defaultsTo<rule> = brand<string, Default<rule>>
 
-		export type branded<rule> = brand<string, Nominal<rule>>
-
 		export type is<attributes> = brand<string, attributes>
 
-		export type applyBrand<attribute> =
+		export type apply<attribute> =
 			attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
 			: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
 			: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
@@ -160,5 +160,3 @@ export declare namespace string {
 			: never
 	}
 }
-
-export type { brandedString } from "./brands.ts"
