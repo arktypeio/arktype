@@ -6,8 +6,8 @@ import type {
 	LessThanLength,
 	MoreThanLength,
 	Narrowed,
+	Nominal,
 	Optional,
-	Predicate,
 	brand
 } from "../inference.ts"
 import type { Matching } from "./string.ts"
@@ -31,7 +31,7 @@ declare namespace string {
 
 	export type defaultsTo<rule> = brand<string, Default<rule>>
 
-	export type branded<rule> = brand<string, Predicate<rule>>
+	export type branded<rule> = brand<string, Nominal<rule>>
 
 	export type is<attributes> = brand<string, attributes>
 
@@ -44,7 +44,7 @@ declare namespace string {
 		: attribute extends Matching<infer rule> ? matching<rule>
 		: attribute extends Optional ? optional
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Predicate<infer rule> ? branded<rule>
+		: attribute extends Nominal<infer rule> ? branded<rule>
 		: never
 }
 

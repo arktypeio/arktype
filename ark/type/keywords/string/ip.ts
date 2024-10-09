@@ -1,5 +1,5 @@
 import type { Module, Submodule } from "../../module.ts"
-import type { Predicate, of } from "../inference.ts"
+import type { Nominal, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -24,11 +24,11 @@ const ipv6Matcher = new RegExp(
 )
 
 declare namespace string {
-	export type ip = of<string, Predicate<"ip">>
+	export type ip = of<string, Nominal<"ip">>
 
 	export namespace ip {
-		export type v4 = of<string, Predicate<"ip.v4">>
-		export type v6 = of<string, Predicate<"ip.v6">>
+		export type v4 = of<string, Nominal<"ip.v4">>
+		export type v6 = of<string, Nominal<"ip.v6">>
 	}
 }
 

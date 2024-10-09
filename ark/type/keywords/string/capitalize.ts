@@ -1,11 +1,11 @@
 import { rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { of, Predicate, To } from "../inference.ts"
+import type { Nominal, of, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type capitalized = of<string, Predicate<"capitalized">>
+	export type capitalized = of<string, Nominal<"capitalized">>
 }
 
 const preformatted = regexStringNode(/^[A-Z].*$/, "capitalized")

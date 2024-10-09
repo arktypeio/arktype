@@ -1,8 +1,8 @@
-import type { Predicate, of } from "../inference.ts"
+import type { Nominal, of } from "../inference.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type digits = of<string, Predicate<"digits">>
+	export type digits = of<string, Nominal<"digits">>
 }
 
 export const digits = regexStringNode(/^\d*$/, "only digits 0-9")

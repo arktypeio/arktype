@@ -79,7 +79,7 @@ export type Narrowed = {
 	predicate: { "?": 1 }
 }
 
-export type Predicate<name> = {
+export type Nominal<name> = {
 	predicate: constraint<name>
 }
 

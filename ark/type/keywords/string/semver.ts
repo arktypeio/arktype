@@ -1,8 +1,8 @@
-import type { Predicate, of } from "../inference.ts"
+import type { Nominal, of } from "../inference.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type semver = of<string, Predicate<"semver">>
+	export type semver = of<string, Nominal<"semver">>
 }
 
 // https://semver.org/

@@ -7,7 +7,6 @@ import type {
 	Morph,
 	Predicate,
 	PredicateCast,
-	Predicate as PredicateFn,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -31,6 +30,7 @@ import type {
 	inferMorphOut,
 	inferPipes,
 	InferredMorph,
+	Nominal,
 	Optional,
 	Out,
 	To
@@ -136,7 +136,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	brand<const name extends string, r = applyBrand<t, Predicate<name>>>(
+	brand<const name extends string, r = applyBrand<t, Nominal<name>>>(
 		name: name
 	): instantiateType<r, $>
 
@@ -194,29 +194,27 @@ interface Type<out t = unknown, $ = {}>
 		r = [narrowed] extends [never] ?
 			t extends InferredMorph<infer i, infer o> ?
 				o extends To ?
-					(In: i) => To<applyConstraintSchema<o[1], "predicate", PredicateFn>>
-				:	(In: i) => Out<applyConstraintSchema<o[1], "predicate", PredicateFn>>
-			:	applyConstraintSchema<t, "predicate", PredicateFn>
+					(In: i) => To<applyConstraintSchema<o[1], "predicate", Predicate>>
+				:	(In: i) => Out<applyConstraintSchema<o[1], "predicate", Predicate>>
+			:	applyConstraintSchema<t, "predicate", Predicate>
 		: t extends InferredMorph<infer i, infer o> ?
 			o extends To ?
 				(In: i) => To<narrowed>
 			:	(In: i) => Out<narrowed>
 		:	narrowed
 	>(
-		predicate:
-			| PredicateFn<this["infer"]>
-			| PredicateCast<this["infer"], narrowed>
+		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
 	): instantiateType<r, $>
 
 	satisfying<
 		narrowed extends this["inferIn"] = never,
 		r = [narrowed] extends [never] ?
-			applyConstraintSchema<t, "predicate", PredicateFn>
+			applyConstraintSchema<t, "predicate", Predicate>
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(
 		predicate:
-			| PredicateFn<this["inferIn"]>
+			| Predicate<this["inferIn"]>
 			| PredicateCast<this["inferIn"], narrowed>
 	): instantiateType<r, $>
 

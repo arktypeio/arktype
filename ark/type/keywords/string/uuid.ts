@@ -1,5 +1,5 @@
 import type { Module, Submodule } from "../../module.ts"
-import type { Predicate, of } from "../inference.ts"
+import type { Nominal, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -47,17 +47,17 @@ export const uuid = arkModule({
 })
 
 declare namespace string {
-	export type uuid = of<string, Predicate<"uuid">>
+	export type uuid = of<string, Nominal<"uuid">>
 
 	export namespace uuid {
-		export type v1 = of<string, Predicate<"uuid.v1">>
-		export type v2 = of<string, Predicate<"uuid.v2">>
-		export type v3 = of<string, Predicate<"uuid.v3">>
-		export type v4 = of<string, Predicate<"uuid.v4">>
-		export type v5 = of<string, Predicate<"uuid.v5">>
-		export type v6 = of<string, Predicate<"uuid.v6">>
-		export type v7 = of<string, Predicate<"uuid.v7">>
-		export type v8 = of<string, Predicate<"uuid.v8">>
+		export type v1 = of<string, Nominal<"uuid.v1">>
+		export type v2 = of<string, Nominal<"uuid.v2">>
+		export type v3 = of<string, Nominal<"uuid.v3">>
+		export type v4 = of<string, Nominal<"uuid.v4">>
+		export type v5 = of<string, Nominal<"uuid.v5">>
+		export type v6 = of<string, Nominal<"uuid.v6">>
+		export type v7 = of<string, Nominal<"uuid.v7">>
+		export type v8 = of<string, Nominal<"uuid.v8">>
 	}
 }
 
