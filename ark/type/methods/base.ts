@@ -5,6 +5,7 @@ import type {
 	JsonSchema,
 	MetaSchema,
 	Morph,
+	Predicate,
 	PredicateCast,
 	Predicate as PredicateFn,
 	UndeclaredKeyBehavior
@@ -21,6 +22,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type {
 	applyAttribute,
+	applyBrand,
 	applyConstraintSchema,
 	Default,
 	DefaultFor,
@@ -134,9 +136,9 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	// brand<const name extends string, r = applyBrand<t, Predicate<name>>>(
-	// 	name: name
-	// ): instantiateType<r, $>
+	brand<const name extends string, r = applyBrand<t, Predicate<name>>>(
+		name: name
+	): instantiateType<r, $>
 
 	/**
 	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).

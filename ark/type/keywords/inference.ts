@@ -115,10 +115,10 @@ export type applyConstraintSchema<
 	schema extends NodeSchema<kind>
 > = applyAttribute<t, schemaToConstraint<kind, schema>>
 
-// export type applyBrand<t, attribute> = applyAttribute<
-// 	t,
-// 	attribute & { brand: true }
-// >
+export type applyBrand<t, attribute> = applyAttribute<
+	t,
+	attribute & { brand: true }
+>
 
 export type applyAttribute<t, attribute> =
 	t extends InferredMorph<infer i, infer o> ?
