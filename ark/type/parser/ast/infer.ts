@@ -7,6 +7,7 @@ import type {
 	Nominal,
 	Optional,
 	applyAttribute,
+	applyBrand,
 	applyConstraintSchema,
 	distill,
 	inferIntersection,
@@ -87,7 +88,7 @@ export type inferExpression<ast, $, args> =
 				applyAttribute<inferExpression<ast[0], $, args>, Default<defaultValue>>
 			:	never
 		: ast[1] extends "#" ?
-			applyAttribute<inferExpression<ast[0], $, args>, Nominal<ast[2]>>
+			applyBrand<inferExpression<ast[0], $, args>, Nominal<ast[2]>>
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
 				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>

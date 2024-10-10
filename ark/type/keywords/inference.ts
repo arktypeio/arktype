@@ -203,6 +203,10 @@ export declare namespace distill {
 		}
 	}
 
+	export type brand<t> = distill<t, { attributes: "brand" }>
+
+	export type unbrand<t> = distill<t, { attributes: "unbrand" }>
+
 	export namespace introspectable {
 		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
 	}

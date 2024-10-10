@@ -132,15 +132,17 @@ interface Type<out t = unknown, $ = {}>
 	 * Cast the way this `Type` is inferred (has no effect at runtime).
 	 * const branded = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
 	 */
-	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
+	as<castTo = unset>(
+		...args: validateChainedAsArgs<castTo>
+	): instantiateType<castTo, $>
 
 	brand<const name extends string, r = applyBrand<t, Nominal<name>>>(
 		name: name
 	): instantiateType<r, $>
 
-	brandAttributes(): this
+	brandAttributes(): instantiateType<distill.brand<t>, $>
 
-	unbrandAttributes(): this
+	unbrandAttributes(): instantiateType<distill.unbrand<t>, $>
 
 	/**
 	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import type { string } from "arktype/internal/keywords/inference.ts"
+import type { number, string } from "arktype/internal/keywords/inference.ts"
 
 contextualize(() => {
 	it("chained", () => {
@@ -11,7 +11,7 @@ contextualize(() => {
 		attest(t.expression).equals("string")
 
 		const out = t("moo")
-		attest<string.branded<"foo"> | type.errors>(out).type.toString.snap()
+		attest<string.branded<"foo"> | type.errors>(out)
 	})
 
 	it("string-embedded", () => {
@@ -19,5 +19,8 @@ contextualize(() => {
 		attest(t.t).type.toString.snap('branded<"cool">')
 
 		attest(t.expression).equals("number")
+
+		const out = t(5)
+		attest<number.branded<"cool"> | type.errors>(out)
 	})
 })
