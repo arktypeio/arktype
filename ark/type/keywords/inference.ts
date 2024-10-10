@@ -140,7 +140,7 @@ type _applyAttribute<t, attribute> =
 		"brand" extends keyof attribute ?
 			string.branded.apply<attribute>
 		:	string.apply<attribute>
-	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
+	: [Date, t] extends [t, Date] ? Date.apply<attribute>
 	: of<t, attribute>
 
 export type normalizePrimitiveConstraintRoot<

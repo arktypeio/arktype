@@ -97,6 +97,10 @@ export declare namespace number {
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
 	export type apply<attribute> =
+		"brand" extends keyof attribute ? branded.apply<attribute>
+		:	applyUnbranded<attribute>
+
+	type applyUnbranded<attribute> =
 		attribute extends MoreThan<infer rule> ? moreThan<rule>
 		: attribute extends AtLeast<infer rule> ? atLeast<rule>
 		: attribute extends AtMost<infer rule> ? atMost<rule>
@@ -121,7 +125,7 @@ export declare namespace number {
 		NegativeInfinity: NegativeInfinity
 	}
 
-	export type branded<rule> = brand<string, Nominal<rule>>
+	export type branded<rule> = brand<number, Nominal<rule>>
 
 	export namespace branded {
 		export type atLeast<rule> = brand<number, AtLeast<rule>>
@@ -144,7 +148,7 @@ export declare namespace number {
 			: attribute extends AtMost<infer rule> ? atMost<rule>
 			: attribute extends LessThan<infer rule> ? lessThan<rule>
 			: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
-			: attribute extends Optional ? optional
+			: attribute extends Nominal<infer rule> ? branded<rule>
 			: never
 	}
 }

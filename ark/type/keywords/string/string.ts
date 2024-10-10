@@ -86,6 +86,10 @@ export declare namespace string {
 	export type is<attributes> = of<string, attributes>
 
 	export type apply<attribute> =
+		"brand" extends keyof attribute ? branded.apply<attribute>
+		:	applyUnbranded<attribute>
+
+	type applyUnbranded<attribute> =
 		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
 		: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
 		: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
@@ -150,8 +154,6 @@ export declare namespace string {
 			: attribute extends AtMostLength<infer rule> ? atMostLength<rule>
 			: attribute extends LessThanLength<infer rule> ? lessThanLength<rule>
 			: attribute extends Matching<infer rule> ? matching<rule>
-			: attribute extends Optional ? optional
-			: attribute extends Default<infer rule> ? defaultsTo<rule>
 			: attribute extends Nominal<infer rule> ? branded<rule>
 			: never
 	}
