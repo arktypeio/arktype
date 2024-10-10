@@ -128,7 +128,10 @@ export type applyAttribute<t, attribute> =
 type _applyAttribute<t, attribute> =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
-		[number, base] extends [base, number] ? number.is<attribute & attributes>
+		[number, base] extends [base, number] ?
+			"brand" extends keyof attributes | keyof attribute ?
+				number.branded.is<attribute & attributes>
+			:	number.is<attribute & attributes>
 		: [string, base] extends [base, string] ?
 			"brand" extends keyof attributes | keyof attribute ?
 				string.branded.is<attribute & attributes>
