@@ -52,7 +52,7 @@ contextualize(() => {
 
 		attest(reunbranded.t).type.toString.snap()
 
-		attest<typeof branded, typeof reunbranded>()
+		attest<typeof unbranded, typeof reunbranded>()
 		attest(unbranded.json).equals(reunbranded.json)
 	})
 })
