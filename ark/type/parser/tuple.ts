@@ -496,7 +496,9 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
 		inferMorphOut<morph> extends infer out ?
-			(In: distill.brandable.In<inferDefinition<inDef, $, args>>) => Out<out>
+			(
+				In: distill.withAttributes.In<inferDefinition<inDef, $, args>>
+			) => Out<out>
 		:	never
 	:	never
 

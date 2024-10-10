@@ -99,12 +99,12 @@ export declare namespace type {
 			inferDefinition<def, $, args>
 		>
 
-		export namespace brandable {
-			export type In<def, $ = {}, args = {}> = distill.brandable.In<
+		export namespace withAttributes {
+			export type In<def, $ = {}, args = {}> = distill.withAttributes.In<
 				inferDefinition<def, $, args>
 			>
 
-			export type Out<def, $ = {}, args = {}> = distill.brandable.Out<
+			export type Out<def, $ = {}, args = {}> = distill.withAttributes.Out<
 				inferDefinition<def, $, args>
 			>
 		}

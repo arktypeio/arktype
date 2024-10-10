@@ -183,27 +183,25 @@ export declare namespace distill {
 
 	export type Options = {
 		endpoint?: Endpoint
-		branded?: true
+		attributes?: true
 	}
 
 	export type In<t> = distill<t, { endpoint: "in" }>
 
 	export type Out<t> = distill<t, { endpoint: "out" }>
 
-	export namespace brandable {
-		export type In<t> = distill<t, { endpoint: "in"; branded: true }>
+	export namespace withAttributes {
+		export type In<t> = distill<t, { endpoint: "in"; attributes: true }>
 
-		export type Out<t> = distill<t, { endpoint: "out"; branded: true }>
+		export type Out<t> = distill<t, { endpoint: "out"; attributes: true }>
 
 		export namespace introspectable {
 			export type Out<t> = distill<
 				t,
-				{ endpoint: "out.introspectable"; branded: true }
+				{ endpoint: "out.introspectable"; attributes: true }
 			>
 		}
 	}
-
-	export type unbranded<t> = distill<t>
 
 	export namespace introspectable {
 		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
@@ -218,7 +216,7 @@ type _distill<t, opts extends distill.Options> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
-		opts["branded"] extends true ? of<_distill<base, opts>, attributes>
+		opts["attributes"] extends true ? of<_distill<base, opts>, attributes>
 		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
 		: _distill<base, opts>
 	: unknown extends t ? unknown
@@ -319,7 +317,7 @@ type distillNonArraykeys<
 				{
 					[k in keyof originalArray as k extends (
 						| keyof distilledArray
-						| (opts["branded"] extends true ? never : ofKey)
+						| (opts["attributes"] extends true ? never : ofKey)
 					) ?
 						never
 					:	k]: originalArray[k]
@@ -372,7 +370,7 @@ export type inferPipes<t, pipes extends Morph[]> =
 		inferPipes<
 			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
-				(In: distill.brandable.In<t>) => Out<out>
+				(In: distill.withAttributes.In<t>) => Out<out>
 			:	never,
 			tail
 		>

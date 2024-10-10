@@ -57,8 +57,8 @@ interface Type<out t = unknown, $ = {}>
 	 * @example export interface MyType extends Identity<typeof MyType.infer> {}
 	 */
 	infer: this["inferOut"]
-	inferBrandableIn: distill.brandable.In<t>
-	inferBrandableOut: distill.brandable.Out<t>
+	inferInWithAttributes: distill.withAttributes.In<t>
+	inferOutWithAttributes: distill.withAttributes.Out<t>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
 	/**
@@ -101,8 +101,6 @@ interface Type<out t = unknown, $ = {}>
 
 	traverse(data: unknown): this["infer"] | ArkErrors
 
-	brandable(): this
-
 	configure(meta: MetaSchema): this
 
 	describe(description: string): this
@@ -140,11 +138,15 @@ interface Type<out t = unknown, $ = {}>
 		name: name
 	): instantiateType<r, $>
 
+	brandAttributes(): this
+
+	unbrandAttributes(): this
+
 	/**
 	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
 	 * @example const inputT = T.in
 	 */
-	get in(): instantiateType<this["inferBrandableIn"], $>
+	get in(): instantiateType<this["inferInWithAttributes"], $>
 	/**
 	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
 	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown

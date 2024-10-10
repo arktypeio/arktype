@@ -109,17 +109,17 @@ export type inferExpression<ast, $, args> =
 	:	never
 
 export type brandBound<
-	brandableIn,
+	inWithAttributes,
 	comparator extends Comparator,
 	limit extends LimitLiteral
 > =
-	distill.In<brandableIn> extends infer In ?
+	distill.In<inWithAttributes> extends infer In ?
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: applyConstraintSchema<brandableIn, "exactLength", limit & number>
+			: applyConstraintSchema<inWithAttributes, "exactLength", limit & number>
 		:	applyConstraintSchema<
-				brandableIn,
+				inWithAttributes,
 				In extends number ?
 					comparator extends MinComparator ?
 						"min"
