@@ -11,7 +11,6 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
-	type dict,
 	type equals,
 	type Hkt,
 	type intersectArrays,
@@ -37,12 +36,6 @@ export type RegexLiteral<source extends string = string> = `/${source}/`
 export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
-
-export interface BaseAttributes {
-	predicate?: dict
-	default?: unknown
-	optional?: true
-}
 
 export const ofKey = noSuggest("of")
 
@@ -145,6 +138,19 @@ type _applyAttribute<t, attribute> =
 		:	string.apply<attribute>
 	: [Date, t] extends [t, Date] ? Date.apply<attribute>
 	: of<t, attribute>
+
+export interface BaseAttributes
+	extends BaseBrandableAttributes,
+		MetaAttributes {}
+
+export interface BaseBrandableAttributes {
+	nominal: string
+}
+
+export interface MetaAttributes {
+	optional: true
+	default: unknown
+}
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
