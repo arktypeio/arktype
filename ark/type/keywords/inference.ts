@@ -183,7 +183,7 @@ export declare namespace distill {
 
 	export type Options = {
 		endpoint?: Endpoint
-		attributes?: true
+		attributes?: "preserve" | "brand" | "unbrand"
 	}
 
 	export type In<t> = distill<t, { endpoint: "in" }>
@@ -191,14 +191,14 @@ export declare namespace distill {
 	export type Out<t> = distill<t, { endpoint: "out" }>
 
 	export namespace withAttributes {
-		export type In<t> = distill<t, { endpoint: "in"; attributes: true }>
+		export type In<t> = distill<t, { endpoint: "in"; attributes: "preserve" }>
 
-		export type Out<t> = distill<t, { endpoint: "out"; attributes: true }>
+		export type Out<t> = distill<t, { endpoint: "out"; attributes: "preserve" }>
 
 		export namespace introspectable {
 			export type Out<t> = distill<
 				t,
-				{ endpoint: "out.introspectable"; attributes: true }
+				{ endpoint: "out.introspectable"; attributes: "preserve" }
 			>
 		}
 	}
@@ -216,7 +216,12 @@ type _distill<t, opts extends distill.Options> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
-		opts["attributes"] extends true ? of<_distill<base, opts>, attributes>
+		opts["attributes"] extends "preserve" ?
+			applyAttribute<_distill<base, opts>, attributes>
+		: opts["attributes"] extends "unbrand" ?
+			applyAttribute<_distill<base, opts>, Omit<attributes, "brand">>
+		: opts["attributes"] extends "brand" ?
+			brand<_distill<base, opts>, attributes>
 		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
 		: _distill<base, opts>
 	: unknown extends t ? unknown
