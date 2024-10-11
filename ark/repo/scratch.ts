@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { type, type Type } from "arktype"
-import type { string, To } from "arktype/internal/keywords/inference.ts"
+import type { string, To } from "arktype/internal/attributes.ts"
 
 const t = type("string.numeric.parse")
 

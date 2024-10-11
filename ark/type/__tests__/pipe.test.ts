@@ -8,8 +8,8 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
-import type { Out, To, of } from "arktype/internal/keywords/inference.ts"
-import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
+import type { MoreThan, Out, To, of } from "arktype/internal/attributes.ts"
+
 contextualize(() => {
 	it("base", () => {
 		const t = type("number").pipe(data => `${data}`)

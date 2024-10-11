@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import type { number, string } from "arktype/internal/keywords/inference.ts"
+import type { number, string } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("chained", () => {

@@ -8,7 +8,7 @@ import type {
 	number,
 	of,
 	string
-} from "arktype/internal/keywords/inference.ts"
+} from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("implicit problem", () => {

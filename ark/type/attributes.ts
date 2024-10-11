@@ -397,9 +397,10 @@ type _distill<t, opts extends distill.Options> =
 			applyAttribute<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "unbrand" ?
 			applyAttribute<_distill<base, opts>, Omit<attributes, "brand">>
-		: "brand" extends keyof attributes | opts["attributes"] ?
+		: opts["attributes"] extends "brand" ?
 			brand<_distill<base, opts>, attributes>
-		:	_distill<base, opts>
+		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
+		: _distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>

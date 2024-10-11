@@ -6,7 +6,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distill, string } from "arktype/internal/keywords/inference.ts"
+import type { distill, string } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {

@@ -6,12 +6,12 @@ import {
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
-import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import type {
 	InferredDefault,
 	Out,
 	string
-} from "arktype/internal/keywords/inference.ts"
+} from "arktype/internal/attributes.ts"
+import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
