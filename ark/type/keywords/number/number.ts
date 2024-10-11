@@ -100,6 +100,18 @@ export declare namespace number {
 		}
 	}
 
+	export type createAttribute<
+		kind extends Attributes.Kind,
+		value extends Attributes[kind]
+	> =
+		kind extends "divisibleBy" ? DivisibleBy<value>
+		: kind extends "moreThan" ? MoreThan<value>
+		: kind extends "atLeast" ? AtLeast<value>
+		: kind extends "atMost" ? AtMost<value>
+		: kind extends "lessThan" ? LessThan<value>
+		: kind extends "nominal" ? Nominal<value>
+		: never
+
 	export type minSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>
 
@@ -109,41 +121,22 @@ export declare namespace number {
 	export type attach<
 		base extends number,
 		kind extends Attributes.Kind,
-		value extends Attributes[kind]
+		value extends Attributes[kind],
+		existingAttributes = unknown
 	> =
-		kind extends "divisibleBy" ?
-			number extends base ?
-				divisibleBy<value>
-			:	of<base, DivisibleBy<value>>
-		: kind extends "moreThan" ?
-			number extends base ?
-				moreThan<value>
-			:	of<base, MoreThan<value>>
-		: kind extends "atLeast" ?
-			number extends base ?
-				atLeast<value>
-			:	of<base, AtLeast<value>>
-		: kind extends "atMost" ?
-			number extends base ?
-				atMost<value>
-			:	of<base, AtMost<value>>
-		: kind extends "lessThan" ?
-			number extends base ?
-				lessThan<value>
-			:	of<base, LessThan<value>>
-		: kind extends "nominal" ?
-			number extends base ?
-				nominal<value>
-			:	of<base, Nominal<value>>
-		: kind extends "optional" ?
-			number extends base ?
-				optional
-			:	of<base, Optional>
-		: kind extends "default" ?
-			number extends base ?
-				defaultsTo<value>
-			:	of<base, Default<value>>
-		:	never
+		number extends base ?
+			unknown extends existingAttributes ?
+				kind extends "divisibleBy" ? divisibleBy<value>
+				: kind extends "moreThan" ? moreThan<value>
+				: kind extends "atLeast" ? atLeast<value>
+				: kind extends "atMost" ? atMost<value>
+				: kind extends "lessThan" ? lessThan<value>
+				: kind extends "nominal" ? nominal<value>
+				: kind extends "optional" ? optional
+				: kind extends "default" ? defaultsTo<value>
+				: never
+			:	is<existingAttributes & createAttribute<kind, value>>
+		:	of<base, existingAttributes & createAttribute<kind, value>>
 
 	export type apply<attribute> =
 		"brand" extends keyof attribute ? branded.apply<attribute>
@@ -202,29 +195,20 @@ export declare namespace number {
 
 		export type attach<
 			base extends number,
-			kind extends Attributes.Brandable.Kind,
-			value extends Attributes[kind]
+			kind extends Attributes.Kind,
+			value extends Attributes[kind],
+			existingAttributes = unknown
 		> =
-			kind extends "divisibleBy" ?
-				number extends base ?
-					divisibleBy<value>
-				:	brand<base, DivisibleBy<value>>
-			: kind extends "moreThan" ?
-				number extends base ?
-					moreThan<value>
-				:	brand<base, MoreThan<value>>
-			: kind extends "atLeast" ?
-				number extends base ?
-					atLeast<value>
-				:	brand<base, AtLeast<value>>
-			: kind extends "atMost" ?
-				number extends base ?
-					atMost<value>
-				:	brand<base, AtMost<value>>
-			: kind extends "lessThan" ?
-				number extends base ?
-					lessThan<value>
-				:	brand<base, LessThan<value>>
-			:	never
+			number extends base ?
+				unknown extends existingAttributes ?
+					kind extends "divisibleBy" ? divisibleBy<value>
+					: kind extends "moreThan" ? moreThan<value>
+					: kind extends "atLeast" ? atLeast<value>
+					: kind extends "atMost" ? atMost<value>
+					: kind extends "lessThan" ? lessThan<value>
+					: kind extends "nominal" ? nominal<value>
+					: never
+				:	is<existingAttributes & createAttribute<kind, value>>
+			:	brand<base, existingAttributes & createAttribute<kind, value>>
 	}
 }

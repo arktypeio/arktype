@@ -44,14 +44,15 @@ export type attributesKey = typeof attributesKey
 export type of<base, attributes> = base & {
 	[attributesKey]: {
 		base: base
-		attach: attributes
+		attributes: attributes
 	}
 }
 
 export type brand<base, attributes> = base & {
 	[attributesKey]: {
 		base: base
-		brand: attributes
+		attributes: attributes
+		brand: true
 	}
 }
 
@@ -139,31 +140,39 @@ type _applyAttribute<t, attribute> =
 	: [Date, t] extends [t, Date] ? Date.apply<attribute>
 	: of<t, attribute>
 
-export type attachAttribute<t, attribute> =
-	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
-	:	leftIfEqual<t, _applyAttribute<t, attribute>>
+export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
-type _attachAttribute<t, attribute> =
+export type attachAttribute<
+	t,
+	kind extends AttributeKind,
+	value extends AllAttributes[kind],
+	behavior extends AttributeInferenceBehavior
+> =
+	t extends InferredMorph<infer i, infer o> ?
+		(In: leftIfEqual<i, _attachAttribute<i, kind, value, behavior>>) => o
+	:	leftIfEqual<t, _attachAttribute<t, kind, value, behavior>>
+
+type _attachAttribute<
+	t,
+	kind extends AttributeKind,
+	value extends AllAttributes[kind],
+	behavior extends AttributeInferenceBehavior
+> =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
-		[number, base] extends [base, number] ?
-			"brand" extends keyof attributes | keyof attribute ?
-				number.branded.is<attribute & attributes>
-			:	number.is<attribute & attributes>
-		: [string, base] extends [base, string] ?
-			"brand" extends keyof attributes | keyof attribute ?
-				string.branded.is<attribute & attributes>
-			:	string.is<attribute & attributes>
-		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
-		: of<base, attributes & attribute>
-	: [number, t] extends [t, number] ? number.apply<attribute>
-	: [string, t] extends [t, string] ?
-		"brand" extends keyof attribute ?
-			string.branded.apply<attribute>
-		:	string.apply<attribute>
-	: [Date, t] extends [t, Date] ? Date.apply<attribute>
-	: of<t, attribute>
+		"brand" extends keyof t[attributesKey] | behavior ?
+			base extends number ?
+				number.branded.is<attributes & number.createAttribute<kind, value>>
+			:	{}
+		: base extends number ?
+			number.is<attributes & number.createAttribute<kind, value>>
+		:	{}
+	: behavior extends "brand" ?
+		t extends number ?
+			number.branded.attach<t, kind, value>
+		:	{}
+	: t extends number ? number.attach<t, kind, value>
+	: {}
 
 export interface BaseAttributes
 	extends BaseBrandableAttributes,
@@ -177,6 +186,10 @@ export interface MetaAttributes {
 	optional: true
 	default: unknown
 }
+
+export interface AllAttributes extends number.Attributes {}
+
+export type AttributeKind = keyof AllAttributes
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
