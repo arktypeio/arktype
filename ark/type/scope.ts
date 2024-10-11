@@ -80,10 +80,19 @@ import {
 	type UnitTypeParser
 } from "./type.ts"
 
-export type ScopeParser = <const def>(
-	def: scope.validate<def>,
-	config?: ArkScopeConfig
-) => Scope<scope.infer<def>>
+/** The convenience properties attached to `scope` */
+export type ScopeParserAttachments =
+	// map over to remove call signatures
+	Omit<ScopeParser, never>
+
+export interface ScopeParser {
+	<const def>(
+		def: scope.validate<def>,
+		config?: ArkScopeConfig
+	): Scope<scope.infer<def>>
+
+	define: <const def>(def: scope.validate<def>) => def
+}
 
 export type ModuleParser = <const def>(
 	def: scope.validate<def>,

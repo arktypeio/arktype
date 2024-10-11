@@ -67,7 +67,7 @@ export type parseEnclosed<
 				InferredAst<
 					enclosingStart extends EnclosingQuote ? scanned
 					: enclosingStart extends "/" ? string.matching<scanned>
-					: Date.literal<scanned>,
+					: Date.nominal<scanned>,
 					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 				>,
 				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned

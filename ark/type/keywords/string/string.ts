@@ -3,12 +3,13 @@ import type {
 	Anonymous,
 	AtLeastLength,
 	AtMostLength,
-	BaseAttributes,
+	AttributeInferenceBehavior,
+	AttributeKind,
+	Attributes,
 	Default,
 	ExactlyLength,
-	LengthAttributes,
+	LengthAttributeKind,
 	LessThanLength,
-	MetaAttributes,
 	MoreThanLength,
 	Nominal,
 	Optional,
@@ -89,45 +90,30 @@ export declare namespace string {
 
 	export type is<attributes> = of<string, attributes>
 
-	export type apply<attribute> =
-		"brand" extends keyof attribute ? branded.apply<attribute>
-		:	applyUnbranded<attribute>
-
-	type applyUnbranded<attribute> =
-		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
-		: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
-		: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
-		: attribute extends AtMostLength<infer rule> ? atMostLength<rule>
-		: attribute extends LessThanLength<infer rule> ? lessThanLength<rule>
-		: attribute extends Matching<infer rule> ? matching<rule>
-		: attribute extends Optional ? optional
-		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Nominal<infer rule> ? nominal<rule>
-		: never
-
-	export interface Attributes extends MetaAttributes, Attributes.Brandable {}
-
-	export namespace Attributes {
-		export type Kind = keyof Attributes
-
-		export interface Brandable extends BaseAttributes, LengthAttributes {
-			matching: string
-		}
-
-		export namespace Brandable {
-			export type Kind = keyof Brandable
-		}
-	}
+	export type AttributableKind = AttributeKind.defineAttributable<
+		"matching" | LengthAttributeKind
+	>
 
 	export type attach<
 		base extends string,
-		kind extends Attributes.Kind,
+		kind extends AttributableKind,
+		value extends Attributes[kind],
+		behavior extends AttributeInferenceBehavior,
+		existingAttributes = unknown
+	> =
+		behavior extends "brand" ? branded.attach<base, kind, value>
+		:	attachUnbranded<base, kind, value, existingAttributes>
+
+	type attachUnbranded<
+		base extends string,
+		kind extends AttributableKind,
 		value extends Attributes[kind],
 		existingAttributes = unknown
 	> =
 		string extends base ?
 			unknown extends existingAttributes ?
-				kind extends "matching" ? matching<value>
+				kind extends "nominal" ? nominal<value>
+				: kind extends "matching" ? matching<value>
 				: kind extends "atLeastLength" ? atLeastLength<value>
 				: kind extends "atMostLength" ? atMostLength<value>
 				: kind extends "moreThanLength" ? moreThanLength<value>
@@ -184,14 +170,22 @@ export declare namespace string {
 
 		export type is<attributes> = brand<string, attributes>
 
-		export type apply<attribute> =
-			attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
-			: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
-			: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
-			: attribute extends AtMostLength<infer rule> ? atMostLength<rule>
-			: attribute extends LessThanLength<infer rule> ? lessThanLength<rule>
-			: attribute extends Matching<infer rule> ? matching<rule>
-			: attribute extends Nominal<infer rule> ? branded<rule>
-			: never
+		export type attach<
+			base extends string,
+			kind extends AttributableKind,
+			value extends Attributes[kind],
+			existingAttributes = unknown
+		> =
+			string extends base ?
+				unknown extends existingAttributes ?
+					kind extends "nominal" ? nominal<value>
+					: kind extends "matching" ? matching<value>
+					: kind extends "atLeastLength" ? atLeastLength<value>
+					: kind extends "atMostLength" ? atMostLength<value>
+					: kind extends "moreThanLength" ? moreThanLength<value>
+					: kind extends "lessThanLength" ? lessThanLength<value>
+					: never
+				:	is<existingAttributes & createAttributeRaw<kind, value>>
+			:	of<base, existingAttributes & createAttributeRaw<kind, value>>
 	}
 }

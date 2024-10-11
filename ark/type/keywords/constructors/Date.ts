@@ -3,10 +3,13 @@ import type {
 	Anonymous,
 	AtOrAfter,
 	AtOrBefore,
+	AttributeInferenceBehavior,
+	AttributeKind,
+	Attributes,
 	Before,
 	brand,
+	createAttributeRaw,
 	Default,
-	Literal,
 	Nominal,
 	normalizeLimit,
 	of,
@@ -23,8 +26,6 @@ export declare namespace Date {
 	export type before<rule> = of<Date, Before<rule>>
 
 	export type anonymous = of<Date, Anonymous>
-
-	export type literal<rule> = of<Date, Literal<rule>>
 
 	export type nominal<rule> = of<Date, Nominal<rule>>
 
@@ -56,6 +57,39 @@ export declare namespace Date {
 		: attribute extends Nominal<infer rule> ? nominal<rule>
 		: never
 
+	export type AttributableKind = AttributeKind.defineAttributable<
+		"after" | "atOrAfter" | "before" | "atOrBefore"
+	>
+
+	export type attach<
+		base extends Date,
+		kind extends AttributableKind,
+		value extends Attributes[kind],
+		behavior extends AttributeInferenceBehavior,
+		existingAttributes = unknown
+	> =
+		behavior extends "brand" ? branded.attach<base, kind, value>
+		:	attachUnbranded<base, kind, value, existingAttributes>
+
+	type attachUnbranded<
+		base extends Date,
+		kind extends AttributableKind,
+		value extends Attributes[kind],
+		existingAttributes = unknown
+	> =
+		string extends base ?
+			unknown extends existingAttributes ?
+				kind extends "nominal" ? nominal<value>
+				: kind extends "after" ? after<value>
+				: kind extends "atOrAfter" ? atOrAfter<value>
+				: kind extends "before" ? before<value>
+				: kind extends "atOrBefore" ? atOrBefore<value>
+				: kind extends "optional" ? optional
+				: kind extends "defaultsTo" ? defaultsTo<value>
+				: never
+			:	is<existingAttributes & createAttributeRaw<kind, value>>
+		:	of<base, existingAttributes & createAttributeRaw<kind, value>>
+
 	export type branded<rule> = brand<Date, Nominal<rule>>
 
 	export namespace branded {
@@ -69,7 +103,7 @@ export declare namespace Date {
 
 		export type anonymous = brand<Date, Anonymous>
 
-		export type literal<rule> = brand<Date, Literal<rule>>
+		export type is<attributes> = brand<Date, attributes>
 
 		export type apply<attribute> =
 			attribute extends After<infer rule> ? after<rule>
@@ -78,5 +112,22 @@ export declare namespace Date {
 			: attribute extends AtOrBefore<infer rule> ? atOrBefore<rule>
 			: attribute extends Nominal<infer rule> ? nominal<rule>
 			: never
+
+		export type attach<
+			base extends Date,
+			kind extends AttributableKind,
+			value extends Attributes[kind],
+			existingAttributes = unknown
+		> =
+			Date extends base ?
+				unknown extends existingAttributes ?
+					kind extends "nominal" ? nominal<value>
+					: kind extends "after" ? after<value>
+					: kind extends "atOrAfter" ? atOrAfter<value>
+					: kind extends "before" ? before<value>
+					: kind extends "atOrBefore" ? atOrBefore<value>
+					: never
+				:	is<existingAttributes & createAttributeRaw<kind, value>>
+			:	of<base, existingAttributes & createAttributeRaw<kind, value>>
 	}
 }

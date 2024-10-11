@@ -118,7 +118,7 @@ export type brandBound<
 	distill.In<inWithAttributes> extends infer In ?
 		comparator extends "==" ?
 			In extends number ? limit
-			: In extends Date ? Date.literal<normalizeLimit<limit>>
+			: In extends Date ? Date.nominal<normalizeLimit<limit>>
 			: applyConstraintSchema<inWithAttributes, "exactLength", limit & number>
 		:	applyConstraintSchema<
 				inWithAttributes,

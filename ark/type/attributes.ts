@@ -231,10 +231,7 @@ type _applyAttribute<t, attribute> =
 		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
 		: of<base, attributes & attribute>
 	: [number, t] extends [t, number] ? number
-	: [string, t] extends [t, string] ?
-		"brand" extends keyof attribute ?
-			string.branded.apply<attribute>
-		:	string.apply<attribute>
+	: [string, t] extends [t, string] ? string
 	: [Date, t] extends [t, Date] ? Date.apply<attribute>
 	: of<t, attribute>
 
@@ -268,7 +265,10 @@ type attributableKindOf<t> = _attributableKindOf<inputIfMorph<t>>
 type inputIfMorph<t> = t extends InferredMorph<infer i> ? i : t
 
 type _attributableKindOf<t> =
-	t extends number ? number.AttributableKind : AttributeKind
+	t extends string ? string.AttributableKind
+	: t extends number ? number.AttributableKind
+	: t extends Date ? Date.AttributableKind
+	: AttributeKind
 
 type _attachAttribute<
 	t,
@@ -279,13 +279,21 @@ type _attachAttribute<
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
 		"brand" extends keyof t[attributesKey] | behavior ?
-			base extends number ?
+			base extends string ?
+				string.branded.is<attributes & createAttribute<kind, value>>
+			: base extends number ?
 				number.branded.is<attributes & createAttribute<kind, value>>
-			:	{}
+			: base extends Date ?
+				Date.branded.is<attributes & createAttribute<kind, value>>
+			:	brand<base, attributes & createAttribute<kind, value>>
+		: base extends string ? string.is<attributes & createAttribute<kind, value>>
 		: base extends number ? number.is<attributes & createAttribute<kind, value>>
-		: {}
+		: base extends Date ? Date.is<attributes & createAttribute<kind, value>>
+		: of<>
+	: t extends string ? attachStringAttribute<t, kind, value, behavior>
 	: t extends number ? attachNumberAttribute<t, kind, value, behavior>
-	: {}
+	: t extends Date ? attachDateAttribute<t, kind, value, behavior>
+	: of<t, createAttribute<kind, value>>
 
 type attachNumberAttribute<
 	t extends number,
@@ -295,6 +303,24 @@ type attachNumberAttribute<
 > =
 	behavior extends "brand" ? number.branded.attach<t, kind, value>
 	:	number.attach<t, kind, value, behavior, unknown>
+
+type attachStringAttribute<
+	t extends string,
+	kind extends attributableKindOf<t>,
+	value extends Attributes[kind],
+	behavior extends AttributeInferenceBehavior
+> =
+	behavior extends "brand" ? string.branded.attach<t, kind, value>
+	:	string.attach<t, kind, value, behavior, unknown>
+
+type attachDateAttribute<
+	t extends Date,
+	kind extends attributableKindOf<t>,
+	value extends Attributes[kind],
+	behavior extends AttributeInferenceBehavior
+> =
+	behavior extends "brand" ? Date.branded.attach<t, kind, value>
+	:	Date.attach<t, kind, value, behavior, unknown>
 
 export interface BaseAttributes
 	extends BaseBrandableAttributes,
@@ -315,6 +341,8 @@ export interface LengthAttributes {
 	atMostLength: number
 	lessThanLength: number
 }
+
+export type LengthAttributeKind = keyof LengthAttributes
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>

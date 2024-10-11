@@ -96,12 +96,12 @@ export declare namespace number {
 	> =
 		number extends base ?
 			unknown extends existingAttributes ?
-				kind extends "divisibleBy" ? divisibleBy<value>
+				kind extends "nominal" ? nominal<value>
+				: kind extends "divisibleBy" ? divisibleBy<value>
 				: kind extends "moreThan" ? moreThan<value>
 				: kind extends "atLeast" ? atLeast<value>
 				: kind extends "atMost" ? atMost<value>
 				: kind extends "lessThan" ? lessThan<value>
-				: kind extends "nominal" ? nominal<value>
 				: kind extends "optional" ? optional
 				: kind extends "defaultsTo" ? defaultsTo<value>
 				: never
@@ -147,12 +147,12 @@ export declare namespace number {
 		> =
 			number extends base ?
 				unknown extends existingAttributes ?
-					kind extends "divisibleBy" ? divisibleBy<value>
+					kind extends "nominal" ? nominal<value>
+					: kind extends "divisibleBy" ? divisibleBy<value>
 					: kind extends "moreThan" ? moreThan<value>
 					: kind extends "atLeast" ? atLeast<value>
 					: kind extends "atMost" ? atMost<value>
 					: kind extends "lessThan" ? lessThan<value>
-					: kind extends "nominal" ? nominal<value>
 					: never
 				:	is<existingAttributes & createAttribute<kind, value>>
 			:	brand<base, existingAttributes & createAttribute<kind, value>>
