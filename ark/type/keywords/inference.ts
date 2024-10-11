@@ -37,21 +37,21 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export const ofKey = noSuggest("of")
+export const attributesKey = noSuggest("attach")
 
-export type ofKey = typeof ofKey
+export type attributesKey = typeof attributesKey
 
 export type of<base, attributes> = base & {
-	[ofKey]: {
+	[attributesKey]: {
 		base: base
-		attributes: attributes
+		attach: attributes
 	}
 }
 
 export type brand<base, attributes> = base & {
-	[ofKey]: {
+	[attributesKey]: {
 		base: base
-		attributes: attributes & { brand: true }
+		brand: attributes
 	}
 }
 
@@ -119,6 +119,32 @@ export type applyAttribute<t, attribute> =
 	:	leftIfEqual<t, _applyAttribute<t, attribute>>
 
 type _applyAttribute<t, attribute> =
+	t extends null | undefined ? t
+	: t extends of<infer base, infer attributes> ?
+		[number, base] extends [base, number] ?
+			"brand" extends keyof attributes | keyof attribute ?
+				number.branded.is<attribute & attributes>
+			:	number.is<attribute & attributes>
+		: [string, base] extends [base, string] ?
+			"brand" extends keyof attributes | keyof attribute ?
+				string.branded.is<attribute & attributes>
+			:	string.is<attribute & attributes>
+		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
+		: of<base, attributes & attribute>
+	: [number, t] extends [t, number] ? number.apply<attribute>
+	: [string, t] extends [t, string] ?
+		"brand" extends keyof attribute ?
+			string.branded.apply<attribute>
+		:	string.apply<attribute>
+	: [Date, t] extends [t, Date] ? Date.apply<attribute>
+	: of<t, attribute>
+
+export type attachAttribute<t, attribute> =
+	t extends InferredMorph<infer i, infer o> ?
+		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
+	:	leftIfEqual<t, _applyAttribute<t, attribute>>
+
+type _attachAttribute<t, attribute> =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
 		[number, base] extends [base, number] ?
@@ -329,13 +355,14 @@ type distillNonArraykeys<
 	distilledArray,
 	opts extends distill.Options
 > =
-	keyof originalArray extends keyof distilledArray | ofKey ? distilledArray
+	keyof originalArray extends keyof distilledArray | attributesKey ?
+		distilledArray
 	:	distilledArray &
 			_distill<
 				{
 					[k in keyof originalArray as k extends (
 						| keyof distilledArray
-						| (opts["attributes"] extends true ? never : ofKey)
+						| (opts["attributes"] extends true ? never : attributesKey)
 					) ?
 						never
 					:	k]: originalArray[k]

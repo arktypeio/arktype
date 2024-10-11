@@ -82,13 +82,6 @@ export declare namespace number {
 
 	export type is<attributes> = of<number, attributes>
 
-	interface ownConstraints
-		extends AtLeast<number>,
-			MoreThan<number>,
-			LessThan<number>,
-			AtMost<number>,
-			DivisibleBy<number> {}
-
 	export interface Attributes extends MetaAttributes, Attributes.Brandable {}
 
 	export namespace Attributes {
@@ -209,7 +202,7 @@ export declare namespace number {
 
 		export type attach<
 			base extends number,
-			kind extends Attributes.Kind,
+			kind extends Attributes.Brandable.Kind,
 			value extends Attributes[kind]
 		> =
 			kind extends "divisibleBy" ?

@@ -1,14 +1,11 @@
 import { type } from "arktype"
 
-const AorB = type({
-	"+": "reject",
-	something: "'A'"
-}).or({
-	"+": "reject",
-	something: "'B'",
-	somethingelse: "number"
-})
-
-console.log(AorB.internal.assertHasKind("union").discriminantJson)
-
-const out2 = AorB({ something: "A" }) //?
+const toDredge = (t: type.Any) => {
+	if (t.extends("string")) return "string"
+	if (t.extends("number")) return "number"
+	if (t.extends("boolean")) return "boolean"
+	if (t.extends("Date")) return "date"
+	if (t.extends("Array")) return "array"
+	if (t.extends("object")) return "object"
+	return null
+}
