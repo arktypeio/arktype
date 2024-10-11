@@ -1,5 +1,5 @@
 import { rootSchema } from "@ark/schema"
-import type { Nominal, of } from "../inference.ts"
+import type { Nominal, of } from "../../attributes.ts"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string): boolean => {

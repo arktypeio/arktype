@@ -1,6 +1,6 @@
 import { isKeyOf, throwParseError } from "@ark/util"
+import type { string } from "../../../attributes.ts"
 import type { Date } from "../../../keywords/constructors/Date.ts"
-import type { string } from "../../../keywords/inference.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"

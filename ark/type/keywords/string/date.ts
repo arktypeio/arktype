@@ -4,8 +4,8 @@ import {
 	rootSchema,
 	type TraversalContext
 } from "@ark/schema"
+import type { Nominal, To, of } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { Nominal, To, of } from "../inference.ts"
 import { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { integer } from "./integer.ts"

@@ -5,7 +5,7 @@ import type {
 	InclusiveNumericRangeSchema,
 	Pattern
 } from "@ark/schema"
-import type { applyConstraintSchema } from "../keywords/inference.ts"
+import type { applyConstraintSchema } from "../attributes.ts"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */

@@ -17,17 +17,18 @@ import {
 	type isSafelyMappable,
 	type leftIfEqual,
 	type Primitive,
+	type satisfy,
 	type show
 } from "@ark/util"
-import type { Type } from "../type.ts"
-import type { arkPrototypes } from "./constructors/constructors.ts"
-import type { Date } from "./constructors/Date.ts"
-import type { type } from "./keywords.ts"
-import type { DivisibleBy, number } from "./number/number.ts"
-import type { Matching, string } from "./string/string.ts"
-export type { arkPrototypes as object } from "./constructors/constructors.ts"
-export type { number } from "./number/number.ts"
-export type { string } from "./string/string.ts"
+import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
+import type { Date } from "./keywords/constructors/Date.ts"
+import type { type } from "./keywords/keywords.ts"
+import type { DivisibleBy, number } from "./keywords/number/number.ts"
+import type { Matching, string } from "./keywords/string/string.ts"
+import type { Type } from "./type.ts"
+export type { arkPrototypes as object } from "./keywords/constructors/constructors.ts"
+export type { number } from "./keywords/number/number.ts"
+export type { string } from "./keywords/string/string.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -54,6 +55,42 @@ export type brand<base, attributes> = base & {
 		attributes: attributes
 		brand: true
 	}
+}
+
+export interface Attributes {
+	divisibleBy: number
+	moreThan: number
+	atLeast: number
+	atMost: number
+	lessThan: number
+	matching: string
+	moreThanLength: number
+	atLeastLength: number
+	atMostLength: number
+	lessThanLength: number
+	atOrAfter: string
+	laterThan: string
+	atOrBefore: string
+	earlierThan: string
+	nominal: string
+	optional: true
+	default: unknown
+}
+
+export declare namespace Attributes {
+	export type Kind = keyof Attributes
+
+	export type MetaKind = satisfy<Kind, "optional" | "default">
+
+	export type BaseConstrainingKind = satisfy<Kind, "nominal">
+
+	export type BaseKind = MetaKind | BaseConstrainingKind
+
+	export type ConstrainingKind = Exclude<Kind, MetaKind>
+
+	export type ConditionalKind = Exclude<Kind, BaseKind>
+
+	export type defineAvailable<kind extends ConditionalKind> = BaseKind | kind
 }
 
 export type LimitLiteral = number | DateLiteral
@@ -144,9 +181,9 @@ export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
 export type attachAttribute<
 	t,
-	kind extends AttributeKind,
-	value extends AllAttributes[kind],
-	behavior extends AttributeInferenceBehavior
+	kind extends Attributes.Kind,
+	value extends Attributes[kind],
+	behavior extends AttributeInferenceBehavior = "detachOnInfer"
 > =
 	t extends InferredMorph<infer i, infer o> ?
 		(In: leftIfEqual<i, _attachAttribute<i, kind, value, behavior>>) => o
@@ -154,9 +191,9 @@ export type attachAttribute<
 
 type _attachAttribute<
 	t,
-	kind extends AttributeKind,
-	value extends AllAttributes[kind],
-	behavior extends AttributeInferenceBehavior
+	kind extends Attributes.Kind,
+	value extends Attributes[kind],
+	behavior extends AttributeInferenceBehavior = "detachOnInfer"
 > =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
@@ -187,9 +224,12 @@ export interface MetaAttributes {
 	default: unknown
 }
 
-export interface AllAttributes extends number.Attributes {}
-
-export type AttributeKind = keyof AllAttributes
+export interface LengthAttributes {
+	moreThanLength: number
+	atLeastLength: number
+	atMostLength: number
+	lessThanLength: number
+}
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>

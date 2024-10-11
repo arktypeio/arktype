@@ -7,8 +7,8 @@ import {
 	type pick,
 	type show
 } from "@ark/util"
+import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
-import type { To } from "./inference.ts"
 import { arkModule } from "./utils.ts"
 
 export const arkTsKeywords: arkTsKeywords = arkModule({

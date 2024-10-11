@@ -1,4 +1,4 @@
-import type { Nominal, of } from "../inference.ts"
+import type { Nominal, of } from "../../attributes.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {

@@ -19,12 +19,7 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type {
-	applyAttribute,
-	Default,
-	of,
-	Optional
-} from "../keywords/inference.ts"
+import type { applyAttribute, Default, of, Optional } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"

@@ -1,5 +1,5 @@
+import type { Nominal, of } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { Nominal, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 

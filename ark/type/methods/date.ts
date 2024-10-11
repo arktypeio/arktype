@@ -3,7 +3,7 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveDateRangeSchema
 } from "@ark/schema"
-import type { applyConstraintSchema } from "../keywords/inference.ts"
+import type { applyConstraintSchema } from "../attributes.ts"
 import type { ObjectType } from "./object.ts"
 
 /** @ts-ignore cast variance */

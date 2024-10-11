@@ -1,6 +1,5 @@
 import type { GenericAst } from "@ark/schema"
 import type { Hkt, arkKeyOf, array } from "@ark/util"
-import type { Date } from "../../keywords/constructors/Date.ts"
 import type {
 	Default,
 	LimitLiteral,
@@ -13,7 +12,8 @@ import type {
 	distill,
 	inferIntersection,
 	normalizeLimit
-} from "../../keywords/inference.ts"
+} from "../../attributes.ts"
+import type { Date } from "../../keywords/constructors/Date.ts"
 import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
@@ -102,8 +102,7 @@ export type inferExpression<ast, $, args> =
 			attachAttribute<
 				inferExpression<ast[0], $, args>,
 				"divisibleBy",
-				ast[2] & number,
-				false
+				ast[2] & number
 			>
 		: ast[1] extends "?" ?
 			applyAttribute<inferExpression<ast[0], $, args>, Optional>

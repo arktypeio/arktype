@@ -1,19 +1,22 @@
 import { intrinsic } from "@ark/schema"
-import type { Module, Submodule } from "../../module.ts"
 import type {
 	Anonymous,
 	AtLeastLength,
 	AtMostLength,
+	BaseAttributes,
 	Default,
 	ExactlyLength,
+	LengthAttributes,
 	LessThanLength,
+	MetaAttributes,
 	MoreThanLength,
 	Nominal,
 	Optional,
 	brand,
 	constraint,
 	of
-} from "../inference.ts"
+} from "../../attributes.ts"
+import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
@@ -100,6 +103,35 @@ export declare namespace string {
 		: attribute extends Default<infer rule> ? defaultsTo<rule>
 		: attribute extends Nominal<infer rule> ? nominal<rule>
 		: never
+
+	export interface Attributes extends MetaAttributes, Attributes.Brandable {}
+
+	export namespace Attributes {
+		export type Kind = keyof Attributes
+
+		export interface Brandable extends BaseAttributes, LengthAttributes {
+			matching: string
+		}
+
+		export namespace Brandable {
+			export type Kind = keyof Brandable
+		}
+	}
+
+	export type attach<
+		base extends string,
+		kind extends Attributes.Kind,
+		value extends Attributes[kind],
+		existingAttributes = unknown
+	> =
+		string extends base ?
+			unknown extends existingAttributes ?
+				kind extends "matching" ? matching<value>
+				: kind extends "optional" ? optional
+				: kind extends "default" ? defaultsTo<value>
+				: never
+			:	is<existingAttributes & createAttribute<kind, value>>
+		:	of<base, existingAttributes & createAttribute<kind, value>>
 
 	export type module = Module<string.submodule>
 

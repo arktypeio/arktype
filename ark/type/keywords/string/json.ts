@@ -4,8 +4,8 @@ import {
 	type Morph,
 	type TraversalContext
 } from "@ark/schema"
+import type { Nominal, To, of } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { Nominal, To, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {

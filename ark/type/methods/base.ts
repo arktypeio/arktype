@@ -18,7 +18,6 @@ import type {
 	Json,
 	unset
 } from "@ark/util"
-import type { ArkAmbient } from "../config.ts"
 import type {
 	applyAttribute,
 	applyBrand,
@@ -34,7 +33,8 @@ import type {
 	Optional,
 	Out,
 	To
-} from "../keywords/inference.ts"
+} from "../attributes.ts"
+import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"

@@ -1,6 +1,6 @@
 import { rootSchema, type TraversalContext } from "@ark/schema"
+import type { Nominal, of, To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { Nominal, of, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 
 declare namespace string {

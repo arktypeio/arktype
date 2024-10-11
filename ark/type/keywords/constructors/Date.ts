@@ -8,7 +8,7 @@ import type {
 	normalizeLimit,
 	of,
 	Optional
-} from "../inference.ts"
+} from "../../attributes.ts"
 
 export type AtOrAfter<rule> = {
 	atOrAfter: constraint<rule>

@@ -1,7 +1,7 @@
 import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
+import type { Nominal, of, To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { Nominal, of, To } from "../inference.ts"
 import type { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"

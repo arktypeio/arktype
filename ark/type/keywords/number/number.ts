@@ -1,16 +1,15 @@
 import { intrinsic, rootSchema } from "@ark/schema"
-import type { Module, Submodule } from "../../module.ts"
 import type {
 	Anonymous,
-	BaseAttributes,
+	Attributes,
 	brand,
 	constraint,
 	Default,
-	MetaAttributes,
 	Nominal,
 	of,
 	Optional
-} from "../inference.ts"
+} from "../../attributes.ts"
+import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"
@@ -82,23 +81,9 @@ export declare namespace number {
 
 	export type is<attributes> = of<number, attributes>
 
-	export interface Attributes extends MetaAttributes, Attributes.Brandable {}
-
-	export namespace Attributes {
-		export type Kind = keyof Attributes
-
-		export interface Brandable extends BaseAttributes {
-			divisibleBy: number
-			moreThan: number
-			atLeast: number
-			atMost: number
-			lessThan: number
-		}
-
-		export namespace Brandable {
-			export type Kind = keyof Brandable
-		}
-	}
+	export type AttributeKind = Attributes.defineAvailable<
+		"divisibleBy" | "moreThan" | "atLeast" | "atMost" | "lessThan"
+	>
 
 	export type createAttribute<
 		kind extends Attributes.Kind,

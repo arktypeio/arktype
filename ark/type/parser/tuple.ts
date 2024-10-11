@@ -37,7 +37,7 @@ import type {
 	InferredOptional,
 	Optional,
 	Out
-} from "../keywords/inference.ts"
+} from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
