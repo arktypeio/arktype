@@ -1,10 +1,17 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import type {
 	Anonymous,
+	AtLeast,
+	AtMost,
+	AttributeInferenceBehavior,
+	AttributeKind,
 	Attributes,
 	brand,
-	constraint,
+	createAttribute,
 	Default,
+	DivisibleBy,
+	LessThan,
+	MoreThan,
 	Nominal,
 	of,
 	Optional
@@ -31,26 +38,6 @@ export const number: number.module = arkModule({
 	Infinity: ["===", Number.POSITIVE_INFINITY],
 	NegativeInfinity: ["===", Number.NEGATIVE_INFINITY]
 })
-
-export type AtLeast<rule> = {
-	atLeast: constraint<rule>
-}
-
-export type AtMost<rule> = {
-	atMost: constraint<rule>
-}
-
-export type MoreThan<rule> = {
-	moreThan: constraint<rule>
-}
-
-export type LessThan<rule> = {
-	lessThan: constraint<rule>
-}
-
-export type DivisibleBy<rule> = {
-	divisibleBy: constraint<rule>
-}
 
 export declare namespace number {
 	export type atLeast<rule> = of<number, AtLeast<rule>>
@@ -81,21 +68,9 @@ export declare namespace number {
 
 	export type is<attributes> = of<number, attributes>
 
-	export type AttributeKind = Attributes.defineAvailable<
+	export type AttributableKind = AttributeKind.defineAttributable<
 		"divisibleBy" | "moreThan" | "atLeast" | "atMost" | "lessThan"
 	>
-
-	export type createAttribute<
-		kind extends Attributes.Kind,
-		value extends Attributes[kind]
-	> =
-		kind extends "divisibleBy" ? DivisibleBy<value>
-		: kind extends "moreThan" ? MoreThan<value>
-		: kind extends "atLeast" ? AtLeast<value>
-		: kind extends "atMost" ? AtMost<value>
-		: kind extends "lessThan" ? LessThan<value>
-		: kind extends "nominal" ? Nominal<value>
-		: never
 
 	export type minSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>
@@ -103,11 +78,21 @@ export declare namespace number {
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	export type attach<
+	type attach<
 		base extends number,
-		kind extends Attributes.Kind,
+		kind extends AttributableKind,
 		value extends Attributes[kind],
+		behavior extends AttributeInferenceBehavior,
 		existingAttributes = unknown
+	> =
+		behavior extends "brand" ? number.branded.attach<base, kind, value>
+		:	attachUnbranded<base, kind, value, existingAttributes>
+
+	type attachUnbranded<
+		base extends number,
+		kind extends AttributableKind,
+		value extends Attributes[kind],
+		existingAttributes
 	> =
 		number extends base ?
 			unknown extends existingAttributes ?
@@ -118,25 +103,10 @@ export declare namespace number {
 				: kind extends "lessThan" ? lessThan<value>
 				: kind extends "nominal" ? nominal<value>
 				: kind extends "optional" ? optional
-				: kind extends "default" ? defaultsTo<value>
+				: kind extends "defaultsTo" ? defaultsTo<value>
 				: never
 			:	is<existingAttributes & createAttribute<kind, value>>
 		:	of<base, existingAttributes & createAttribute<kind, value>>
-
-	export type apply<attribute> =
-		"brand" extends keyof attribute ? branded.apply<attribute>
-		:	applyUnbranded<attribute>
-
-	type applyUnbranded<attribute> =
-		attribute extends MoreThan<infer rule> ? moreThan<rule>
-		: attribute extends AtLeast<infer rule> ? atLeast<rule>
-		: attribute extends AtMost<infer rule> ? atMost<rule>
-		: attribute extends LessThan<infer rule> ? lessThan<rule>
-		: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
-		: attribute extends Optional ? optional
-		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Nominal<infer rule> ? nominal<rule>
-		: never
 
 	export type module = Module<submodule>
 
@@ -169,18 +139,9 @@ export declare namespace number {
 
 		export type anonymous = brand<number, Anonymous>
 
-		export type apply<attribute> =
-			attribute extends MoreThan<infer rule> ? moreThan<rule>
-			: attribute extends AtLeast<infer rule> ? atLeast<rule>
-			: attribute extends AtMost<infer rule> ? atMost<rule>
-			: attribute extends LessThan<infer rule> ? lessThan<rule>
-			: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
-			: attribute extends Nominal<infer rule> ? branded<rule>
-			: never
-
 		export type attach<
 			base extends number,
-			kind extends Attributes.Kind,
+			kind extends AttributableKind,
 			value extends Attributes[kind],
 			existingAttributes = unknown
 		> =

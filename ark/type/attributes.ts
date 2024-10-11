@@ -23,7 +23,7 @@ import {
 import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
 import type { Date } from "./keywords/constructors/Date.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { DivisibleBy, number } from "./keywords/number/number.ts"
+import type { number } from "./keywords/number/number.ts"
 import type { Matching, string } from "./keywords/string/string.ts"
 import type { Type } from "./type.ts"
 export type { arkPrototypes as object } from "./keywords/constructors/constructors.ts"
@@ -69,28 +69,53 @@ export interface Attributes {
 	atMostLength: number
 	lessThanLength: number
 	atOrAfter: string
-	laterThan: string
+	after: string
 	atOrBefore: string
-	earlierThan: string
+	before: string
 	nominal: string
 	optional: true
-	default: unknown
+	defaultsTo: unknown
 }
 
-export declare namespace Attributes {
-	export type Kind = keyof Attributes
+export type AttributeKind = keyof Attributes
 
-	export type MetaKind = satisfy<Kind, "optional" | "default">
+export type createAttribute<
+	kind extends AttributeKind,
+	value extends Attributes[kind]
+> = createAttributeRaw<kind, value>
 
-	export type BaseConstrainingKind = satisfy<Kind, "nominal">
+export type createAttributeRaw<kind extends AttributeKind, value> =
+	kind extends "nominal" ? Nominal<value>
+	: kind extends "divisibleBy" ? DivisibleBy<value>
+	: kind extends "moreThan" ? MoreThan<value>
+	: kind extends "atLeast" ? AtLeast<value>
+	: kind extends "atMost" ? AtMost<value>
+	: kind extends "lessThan" ? LessThan<value>
+	: kind extends "matching" ? Matching<value>
+	: kind extends "moreThanLength" ? MoreThanLength<value>
+	: kind extends "atLeastLength" ? AtLeastLength<value>
+	: kind extends "atMostLength" ? AtMostLength<value>
+	: kind extends "lessThanLength" ? LessThanLength<value>
+	: kind extends "after" ? After<value>
+	: kind extends "atOrAfter" ? AtOrAfter<value>
+	: kind extends "before" ? Before<value>
+	: kind extends "atOrBefore" ? AtOrBefore<value>
+	: kind extends "optional" ? Optional
+	: kind extends "defaultsTo" ? Default<value>
+	: never
 
-	export type BaseKind = MetaKind | BaseConstrainingKind
+export declare namespace AttributeKind {
+	export type Meta = satisfy<AttributeKind, "optional" | "defaultsTo">
 
-	export type ConstrainingKind = Exclude<Kind, MetaKind>
+	export type BaseConstraining = satisfy<AttributeKind, "nominal">
 
-	export type ConditionalKind = Exclude<Kind, BaseKind>
+	export type Base = Meta | BaseConstraining
 
-	export type defineAvailable<kind extends ConditionalKind> = BaseKind | kind
+	export type Constraining = Exclude<AttributeKind, Meta>
+
+	export type Conditional = Exclude<AttributeKind, Base>
+
+	export type defineAttributable<kind extends Conditional> = Base | kind
 }
 
 export type LimitLiteral = number | DateLiteral
@@ -112,6 +137,42 @@ export type Anonymous = {
 
 export type Nominal<name> = {
 	predicate: constraint<name>
+}
+
+export type AtLeast<rule> = {
+	atLeast: constraint<rule>
+}
+
+export type AtMost<rule> = {
+	atMost: constraint<rule>
+}
+
+export type MoreThan<rule> = {
+	moreThan: constraint<rule>
+}
+
+export type LessThan<rule> = {
+	lessThan: constraint<rule>
+}
+
+export type DivisibleBy<rule> = {
+	divisibleBy: constraint<rule>
+}
+
+export type AtOrAfter<rule> = {
+	atOrAfter: constraint<rule>
+}
+
+export type AtOrBefore<rule> = {
+	atOrBefore: constraint<rule>
+}
+
+export type After<rule> = {
+	after: constraint<rule>
+}
+
+export type Before<rule> = {
+	before: constraint<rule>
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
@@ -169,7 +230,7 @@ type _applyAttribute<t, attribute> =
 			:	string.is<attribute & attributes>
 		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
 		: of<base, attributes & attribute>
-	: [number, t] extends [t, number] ? number.apply<attribute>
+	: [number, t] extends [t, number] ? number
 	: [string, t] extends [t, string] ?
 		"brand" extends keyof attribute ?
 			string.branded.apply<attribute>
@@ -181,35 +242,59 @@ export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
 export type attachAttribute<
 	t,
-	kind extends Attributes.Kind,
+	kind extends attributableKindOf<t>,
 	value extends Attributes[kind],
 	behavior extends AttributeInferenceBehavior = "detachOnInfer"
 > =
 	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _attachAttribute<i, kind, value, behavior>>) => o
+		(
+			In: leftIfEqual<
+				i,
+				_attachAttribute<
+					i,
+					// most performant to just ignore the error here as TS
+					// doesn't understand the correlation between the extracted input and kind
+					/** @ts-expect-error (see above) */
+					kind,
+					value,
+					behavior
+				>
+			>
+		) => o
 	:	leftIfEqual<t, _attachAttribute<t, kind, value, behavior>>
+
+type attributableKindOf<t> = _attributableKindOf<inputIfMorph<t>>
+
+type inputIfMorph<t> = t extends InferredMorph<infer i> ? i : t
+
+type _attributableKindOf<t> =
+	t extends number ? number.AttributableKind : AttributeKind
 
 type _attachAttribute<
 	t,
-	kind extends Attributes.Kind,
+	kind extends attributableKindOf<t>,
 	value extends Attributes[kind],
-	behavior extends AttributeInferenceBehavior = "detachOnInfer"
+	behavior extends AttributeInferenceBehavior
 > =
 	t extends null | undefined ? t
 	: t extends of<infer base, infer attributes> ?
 		"brand" extends keyof t[attributesKey] | behavior ?
 			base extends number ?
-				number.branded.is<attributes & number.createAttribute<kind, value>>
+				number.branded.is<attributes & createAttribute<kind, value>>
 			:	{}
-		: base extends number ?
-			number.is<attributes & number.createAttribute<kind, value>>
-		:	{}
-	: behavior extends "brand" ?
-		t extends number ?
-			number.branded.attach<t, kind, value>
-		:	{}
-	: t extends number ? number.attach<t, kind, value>
+		: base extends number ? number.is<attributes & createAttribute<kind, value>>
+		: {}
+	: t extends number ? attachNumberAttribute<t, kind, value, behavior>
 	: {}
+
+type attachNumberAttribute<
+	t extends number,
+	kind extends attributableKindOf<t>,
+	value extends Attributes[kind],
+	behavior extends AttributeInferenceBehavior
+> =
+	behavior extends "brand" ? number.branded.attach<t, kind, value>
+	:	number.attach<t, kind, value, behavior, unknown>
 
 export interface BaseAttributes
 	extends BaseBrandableAttributes,
@@ -221,7 +306,7 @@ export interface BaseBrandableAttributes {
 
 export interface MetaAttributes {
 	optional: true
-	default: unknown
+	defaultsTo: unknown
 }
 
 export interface LengthAttributes {
@@ -312,10 +397,9 @@ type _distill<t, opts extends distill.Options> =
 			applyAttribute<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "unbrand" ?
 			applyAttribute<_distill<base, opts>, Omit<attributes, "brand">>
-		: opts["attributes"] extends "brand" ?
+		: "brand" extends keyof attributes | opts["attributes"] ?
 			brand<_distill<base, opts>, attributes>
-		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
-		: _distill<base, opts>
+		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>

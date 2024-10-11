@@ -14,6 +14,7 @@ import type {
 	Optional,
 	brand,
 	constraint,
+	createAttributeRaw,
 	of
 } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
@@ -127,11 +128,15 @@ export declare namespace string {
 		string extends base ?
 			unknown extends existingAttributes ?
 				kind extends "matching" ? matching<value>
+				: kind extends "atLeastLength" ? atLeastLength<value>
+				: kind extends "atMostLength" ? atMostLength<value>
+				: kind extends "moreThanLength" ? moreThanLength<value>
+				: kind extends "lessThanLength" ? lessThanLength<value>
 				: kind extends "optional" ? optional
-				: kind extends "default" ? defaultsTo<value>
+				: kind extends "defaultsTo" ? defaultsTo<value>
 				: never
-			:	is<existingAttributes & createAttribute<kind, value>>
-		:	of<base, existingAttributes & createAttribute<kind, value>>
+			:	is<existingAttributes & createAttributeRaw<kind, value>>
+		:	of<base, existingAttributes & createAttributeRaw<kind, value>>
 
 	export type module = Module<string.submodule>
 

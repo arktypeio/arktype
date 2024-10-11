@@ -1,7 +1,10 @@
 import type {
+	After,
 	Anonymous,
+	AtOrAfter,
+	AtOrBefore,
+	Before,
 	brand,
-	constraint,
 	Default,
 	Literal,
 	Nominal,
@@ -9,22 +12,6 @@ import type {
 	of,
 	Optional
 } from "../../attributes.ts"
-
-export type AtOrAfter<rule> = {
-	atOrAfter: constraint<rule>
-}
-
-export type AtOrBefore<rule> = {
-	atOrBefore: constraint<rule>
-}
-
-export type After<rule> = {
-	after: constraint<rule>
-}
-
-export type Before<rule> = {
-	before: constraint<rule>
-}
 
 export declare namespace Date {
 	export type atOrAfter<rule> = of<Date, AtOrAfter<rule>>
