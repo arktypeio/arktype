@@ -82,9 +82,10 @@ export class Callable<fn extends Fn, attachments extends object = {}> {
 	}
 }
 
-export type Guardable<input = unknown, narrowed extends input = input> =
-	| ((In: input) => In is narrowed)
-	| ((In: input) => boolean)
+export type GuardablePredicate<
+	input = unknown,
+	narrowed extends input = input
+> = ((In: input) => In is narrowed) | ((In: input) => boolean)
 
 export type TypeGuard<input = unknown, narrowed extends input = input> = (
 	In: input
