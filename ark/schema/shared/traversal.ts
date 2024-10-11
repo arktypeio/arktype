@@ -149,8 +149,11 @@ export class TraversalContext {
 	pathHasError(path: TraversalPath): boolean {
 		if (!this.hasError()) return false
 
-		const propString = pathToPropString(path)
-		return this.errors.some(e => propString.startsWith(e.propString))
+		for (let i = 0; i <= path.length; i++) {
+			const partialPropString = pathToPropString(path.slice(0, i))
+			if (Object.hasOwn(this.errors.byPath, partialPropString)) return true
+		}
+		return false
 	}
 
 	get failFast(): boolean {
