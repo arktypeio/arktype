@@ -201,40 +201,6 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export type applyConstraintSchema<
-	t,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = applyAttribute<t, schemaToConstraint<kind, schema>>
-
-export type applyBrand<t, attribute> = applyAttribute<
-	t,
-	attribute & { brand: true }
->
-
-export type applyAttribute<t, attribute> =
-	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
-	:	leftIfEqual<t, _applyAttribute<t, attribute>>
-
-type _applyAttribute<t, attribute> =
-	t extends null | undefined ? t
-	: t extends of<infer base, infer attributes> ?
-		[number, base] extends [base, number] ?
-			"brand" extends keyof attributes | keyof attribute ?
-				number.branded.is<attribute & attributes>
-			:	number.is<attribute & attributes>
-		: [string, base] extends [base, string] ?
-			"brand" extends keyof attributes | keyof attribute ?
-				string.branded.is<attribute & attributes>
-			:	string.is<attribute & attributes>
-		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
-		: of<base, attributes & attribute>
-	: [number, t] extends [t, number] ? number
-	: [string, t] extends [t, string] ? string
-	: [Date, t] extends [t, Date] ? Date.apply<attribute>
-	: of<t, attribute>
-
 export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
 export type attachAttribute<
@@ -567,14 +533,11 @@ type TerminallyInferredObject =
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
 		t extends of<unknown, infer constraints> ?
-			applyConstraintSchema<of<narrowed, constraints>, "predicate", any>
-		:	applyConstraintSchema<narrowed, "predicate", any>
-	:	applyConstraintSchema<t, "predicate", any>
-
-export type constrainWithPredicate<t> =
-	t extends of<unknown, infer constraints> ?
-		applyConstraintSchema<of<t, constraints>, "predicate", any>
-	:	applyConstraintSchema<t, "predicate", any>
+			"brand" extends keyof t[attributesKey] ?
+				brand<narrowed, constraints>
+			:	of<narrowed, constraints>
+		:	narrowed
+	:	attachAttribute<t, "nominal", "?">
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
