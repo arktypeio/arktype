@@ -289,7 +289,7 @@ type _attachAttribute<
 		: base extends string ? string.is<attributes & createAttribute<kind, value>>
 		: base extends number ? number.is<attributes & createAttribute<kind, value>>
 		: base extends Date ? Date.is<attributes & createAttribute<kind, value>>
-		: of<>
+		: of<base, attributes & createAttribute<kind, value>>
 	: t extends string ? attachStringAttribute<t, kind, value, behavior>
 	: t extends number ? attachNumberAttribute<t, kind, value, behavior>
 	: t extends Date ? attachDateAttribute<t, kind, value, behavior>

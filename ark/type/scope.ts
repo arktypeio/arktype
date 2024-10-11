@@ -321,7 +321,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.scope(def as never, config).export()) as never
 }
 
-export const scope: ScopeParser = InternalScope.scope
+export const scope: ScopeParser = Object.assign(InternalScope.scope, {
+	define: def => def as never
+} satisfies ScopeParserAttachments)
 
 export declare namespace scope {
 	export type validate<def> = {
