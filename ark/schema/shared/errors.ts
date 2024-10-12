@@ -82,7 +82,7 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 		this.ctx = ctx
 	}
 
-	byPath: Record<string, ArkError> = {}
+	byPath: Record<string, ArkError> = Object.create(null)
 	count = 0
 	private mutable: ArkError[] = this as never
 

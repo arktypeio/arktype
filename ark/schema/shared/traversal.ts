@@ -155,10 +155,11 @@ export class TraversalContext {
 		if (!this.hasError()) return false
 
 		let partialPropString: string = ""
-		if (Object.hasOwn(this.errors.byPath, partialPropString)) return true
+		// this.errors.byPath is null prototyped so indexing by string is safe
+		if (this.errors.byPath[partialPropString]) return true
 		for (let i = 0; i < path.length; i++) {
 			partialPropString = appendPropToPathString(partialPropString, path[i])
-			if (Object.hasOwn(this.errors.byPath, partialPropString)) return true
+			if (this.errors.byPath[partialPropString]) return true
 		}
 		return false
 	}
