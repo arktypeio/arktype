@@ -1,4 +1,4 @@
-import { symlinkSync } from "fs"
+import { copyFileSync } from "fs"
 import { join } from "path"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { fromCwd, fromHere, rmRf, shell, writeJson } from "../fs/index.ts"
@@ -15,10 +15,10 @@ const buildCurrentProject = () =>
 try {
 	rmRf(outDir)
 	rmRf("tsconfig.build.json")
-	symlinkSync(`../repo/tsconfig.${buildKind}.json`, "tsconfig.build.json")
+	copyFileSync(`../repo/tsconfig.${buildKind}.json`, "tsconfig.build.json")
 	buildCurrentProject()
 	rmRf("tsconfig.build.json")
-	symlinkSync(`../repo/tsconfig.dts.json`, "tsconfig.build.json")
+	copyFileSync(`../repo/tsconfig.dts.json`, "tsconfig.build.json")
 	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })

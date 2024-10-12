@@ -899,4 +899,15 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 
 		attest(appendSeparatedLengths("a")).snap("a12|45")
 	})
+
+	it("doesn't lose input prop morphs", () => {
+		const T = type({
+			foo: type("string").pipe(s => s.length)
+		})
+			.pipe(o => o)
+			.to({
+				foo: "number"
+			})
+		attest(T({ foo: "bar" })).snap({ foo: 3 })
+	})
 })

@@ -201,7 +201,7 @@ const _pipeMorphed = (
 
 		return ctx.$.node("morph", {
 			morphs,
-			in: from.in
+			in: from.inner.in as any
 		})
 	}
 
