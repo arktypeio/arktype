@@ -205,40 +205,19 @@ export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
 export type attachAttribute<
 	t,
-	kind extends attributableKindOf<t>,
+	kind extends AttributeKind,
 	value extends Attributes[kind],
 	behavior extends AttributeInferenceBehavior = "detachOnInfer"
 > =
 	t extends InferredMorph<infer i, infer o> ?
-		(
-			In: leftIfEqual<
-				i,
-				_attachAttribute<
-					i,
-					// most performant to just ignore the error here as TS
-					// doesn't understand the correlation between the extracted input and kind
-					/** @ts-expect-error (see above) */
-					kind,
-					value,
-					behavior
-				>
-			>
-		) => o
+		(In: leftIfEqual<i, _attachAttribute<i, kind, value, behavior>>) => o
 	:	leftIfEqual<t, _attachAttribute<t, kind, value, behavior>>
 
-type attributableKindOf<t> = _attributableKindOf<inputIfMorph<t>>
-
-type inputIfMorph<t> = t extends InferredMorph<infer i> ? i : t
-
-type _attributableKindOf<t> =
-	t extends string ? string.AttributableKind
-	: t extends number ? number.AttributableKind
-	: t extends Date ? Date.AttributableKind
-	: AttributeKind
+export type attachExistingAttributes<t, attributes> = {}
 
 type _attachAttribute<
 	t,
-	kind extends attributableKindOf<t>,
+	kind extends AttributeKind,
 	value extends Attributes[kind],
 	behavior extends AttributeInferenceBehavior
 > =
@@ -256,14 +235,23 @@ type _attachAttribute<
 		: base extends number ? number.is<attributes & createAttribute<kind, value>>
 		: base extends Date ? Date.is<attributes & createAttribute<kind, value>>
 		: of<base, attributes & createAttribute<kind, value>>
-	: t extends string ? attachStringAttribute<t, kind, value, behavior>
-	: t extends number ? attachNumberAttribute<t, kind, value, behavior>
-	: t extends Date ? attachDateAttribute<t, kind, value, behavior>
-	: of<t, createAttribute<kind, value>>
+	: t extends string ?
+		kind extends string.AttributableKind ?
+			attachStringAttribute<t, kind, value, behavior>
+		:	never
+	: t extends number ?
+		kind extends number.AttributableKind ?
+			attachNumberAttribute<t, kind, value, behavior>
+		:	never
+	: t extends Date ?
+		kind extends Date.AttributableKind ?
+			attachDateAttribute<t, kind, value, behavior>
+		:	never
+	:	of<t, createAttribute<kind, value>>
 
 type attachNumberAttribute<
 	t extends number,
-	kind extends attributableKindOf<t>,
+	kind extends number.AttributableKind,
 	value extends Attributes[kind],
 	behavior extends AttributeInferenceBehavior
 > =
@@ -272,16 +260,16 @@ type attachNumberAttribute<
 
 type attachStringAttribute<
 	t extends string,
-	kind extends attributableKindOf<t>,
+	kind extends string.AttributableKind,
 	value extends Attributes[kind],
 	behavior extends AttributeInferenceBehavior
 > =
 	behavior extends "brand" ? string.branded.attach<t, kind, value>
-	:	string.attach<t, kind, value, behavior, unknown>
+	:	string.attach<t, kind & string.AttributableKind, value, behavior, unknown>
 
 type attachDateAttribute<
 	t extends Date,
-	kind extends attributableKindOf<t>,
+	kind extends Date.AttributableKind,
 	value extends Attributes[kind],
 	behavior extends AttributeInferenceBehavior
 > =
