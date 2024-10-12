@@ -1,14 +1,14 @@
 import { type } from "arktype"
 
-const AorB = type({
-	"+": "reject",
-	something: "'A'"
-}).or({
-	"+": "reject",
-	something: "'B'",
-	somethingelse: "number"
-})
-
-console.log(AorB.internal.assertHasKind("union").discriminantJson)
-
-const out2 = AorB({ something: "A" }) //?
+console.log(
+	type({
+		foo: type("string").pipe(() => 123)
+	})
+		.pipe(c => c)
+		.to({
+			foo: "123"
+		})({
+		foo: "bar"
+	}) + ""
+)
+// foo must be 123 (was "bar")
