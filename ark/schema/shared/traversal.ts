@@ -8,7 +8,12 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { isNode, pathToPropString, type TraversalPath } from "./utils.ts"
+import {
+	appendPropToPathString,
+	isNode,
+	pathToPropString,
+	type TraversalPath
+} from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: TraversalPath
@@ -149,8 +154,10 @@ export class TraversalContext {
 	pathHasError(path: TraversalPath): boolean {
 		if (!this.hasError()) return false
 
-		for (let i = 0; i <= path.length; i++) {
-			const partialPropString = pathToPropString(path.slice(0, i))
+		let partialPropString: string = ""
+		if (Object.hasOwn(this.errors.byPath, partialPropString)) return true
+		for (let i = 0; i < path.length; i++) {
+			partialPropString = appendPropToPathString(partialPropString, path[i])
 			if (Object.hasOwn(this.errors.byPath, partialPropString)) return true
 		}
 		return false
