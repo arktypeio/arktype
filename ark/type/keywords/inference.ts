@@ -220,6 +220,7 @@ type _distill<t, opts extends distill.Options> =
 	: t extends of<infer base, infer attributes> ?
 		opts["branded"] extends true ? of<_distill<base, opts>, attributes>
 		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
+		: attributes extends Default<base> ? base
 		: _distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
