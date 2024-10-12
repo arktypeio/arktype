@@ -11,7 +11,6 @@ import {
 import {
 	appendPropToPathString,
 	isNode,
-	pathToPropString,
 	type TraversalPath
 } from "./utils.ts"
 
