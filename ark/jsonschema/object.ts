@@ -5,7 +5,7 @@ import {
 	type Predicate,
 	type TraversalContext
 } from "@ark/schema"
-import { printable, type show } from "@ark/util"
+import { conflatenateAll, printable, type show } from "@ark/util"
 import type { Type } from "arktype"
 
 import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
@@ -247,12 +247,12 @@ export const validateJsonSchemaObject = JsonSchema.ObjectSchema.pipe(
 		arktypeObjectSchema.required = requiredKeys
 		arktypeObjectSchema.optional = optionalKeys
 
-		const predicates: Predicate.Schema[] = [
+		const predicates = conflatenateAll<Predicate.Schema>(
 			...parseMinMaxProperties(jsonSchema, ctx),
 			parsePropertyNames(jsonSchema, ctx),
 			parsePatternProperties(jsonSchema, ctx),
 			parseAdditionalProperties(jsonSchema)
-		].filter(x => x !== undefined)
+		)
 
 		const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
 		if (predicates.length === 0) return typeWithoutPredicates as never
