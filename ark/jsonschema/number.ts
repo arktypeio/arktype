@@ -4,7 +4,7 @@ import type { Type, number } from "arktype"
 import { JsonSchema } from "./scope.js"
 
 export const validateJsonSchemaNumber = JsonSchema.NumberSchema.pipe(
-	jsonSchema => {
+	(jsonSchema): Type<number> => {
 		const arktypeNumberSchema: Intersection.Schema<number> = {
 			domain: "number"
 		}
@@ -41,7 +41,7 @@ export const validateJsonSchemaNumber = JsonSchema.NumberSchema.pipe(
 			arktypeNumberSchema.divisor = jsonSchema.multipleOf
 		else if (jsonSchema.type === "integer") arktypeNumberSchema.divisor = 1
 
-		return rootSchema(arktypeNumberSchema) as unknown as Type<number>
+		return rootSchema(arktypeNumberSchema) as never
 	}
 )
 

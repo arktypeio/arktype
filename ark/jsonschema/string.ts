@@ -3,7 +3,7 @@ import type { Type, string } from "arktype"
 import { JsonSchema } from "./scope.js"
 
 export const validateJsonSchemaString = JsonSchema.StringSchema.pipe(
-	jsonSchema => {
+	(jsonSchema): Type<string> => {
 		const arktypeStringSchema: Intersection.Schema<string> = {
 			domain: "string"
 		}
@@ -20,7 +20,7 @@ export const validateJsonSchemaString = JsonSchema.StringSchema.pipe(
 				]
 			} else arktypeStringSchema.pattern = [jsonSchema.pattern]
 		}
-		return rootSchema(arktypeStringSchema) as unknown as Type<string>
+		return rootSchema(arktypeStringSchema) as never
 	}
 )
 

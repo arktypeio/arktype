@@ -52,7 +52,7 @@ const arrayContainsItemMatchingSchema = (
 		)
 
 export const validateJsonSchemaArray = JsonSchema.ArraySchema.pipe(
-	jsonSchema => {
+	(jsonSchema): Type<JsonSchema.Json[]> => {
 		const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
 			proto: "Array"
 		}
@@ -103,7 +103,7 @@ export const validateJsonSchemaArray = JsonSchema.ArraySchema.pipe(
 
 		arktypeArraySchema.predicate = predicates
 
-		return rootSchema(arktypeArraySchema) as unknown as Type<JsonSchema.Json[]>
+		return rootSchema(arktypeArraySchema) as never
 	}
 )
 
