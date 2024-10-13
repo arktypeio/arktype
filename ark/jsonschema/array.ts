@@ -7,8 +7,8 @@ import {
 import { printable, type array } from "@ark/util"
 import type { Type, applyConstraintSchema } from "arktype"
 
-import { innerParseJsonSchema, type inferJsonSchema } from "./json.js"
-import { JsonSchema } from "./scope.js"
+import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
+import { JsonSchema } from "./scope.ts"
 
 const deepNormalize = (data: unknown): unknown =>
 	typeof data === "object" ?

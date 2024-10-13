@@ -6,7 +6,7 @@ import {
 } from "@ark/util"
 import { type, type Out, type Type } from "arktype"
 import { parseJsonSchemaAnyKeywords } from "./any.ts"
-import { validateJsonSchemaArray, type inferJsonSchemaArray } from "./array.js"
+import { validateJsonSchemaArray, type inferJsonSchemaArray } from "./array.ts"
 import {
 	parseJsonSchemaCompositionKeywords,
 	type inferJsonSchemaComposition
@@ -14,16 +14,16 @@ import {
 import {
 	validateJsonSchemaNumber,
 	type inferJsonSchemaNumber
-} from "./number.js"
+} from "./number.ts"
 import {
 	validateJsonSchemaObject,
 	type inferJsonSchemaObject
-} from "./object.js"
-import { JsonSchema } from "./scope.js"
+} from "./object.ts"
+import { JsonSchema } from "./scope.ts"
 import {
 	validateJsonSchemaString,
 	type inferJsonSchemaString
-} from "./string.js"
+} from "./string.ts"
 
 type JsonSchemaConstraintKind = "const" | "enum"
 type JsonSchemaConst<t> = { const: t }

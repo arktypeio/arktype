@@ -1,6 +1,6 @@
 import { rootSchema, type Intersection } from "@ark/schema"
 import type { Type, string } from "arktype"
-import { JsonSchema } from "./scope.js"
+import { JsonSchema } from "./scope.ts"
 
 export const validateJsonSchemaString = JsonSchema.StringSchema.pipe(
 	(jsonSchema): Type<string> => {

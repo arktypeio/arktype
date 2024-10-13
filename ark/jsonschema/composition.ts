@@ -1,7 +1,7 @@
 import type { array } from "@ark/util"
 import { type, type Type } from "arktype"
-import { innerParseJsonSchema, type inferJsonSchema } from "./json.js"
-import type { JsonSchema } from "./scope.js"
+import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
+import type { JsonSchema } from "./scope.ts"
 
 const validateAllOfJsonSchemas = (
 	jsonSchemas: JsonSchema.Schema[]
