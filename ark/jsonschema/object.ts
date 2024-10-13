@@ -190,7 +190,8 @@ const parseRequiredAndOptionalKeys = (
 const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 	if (!("additionalProperties" in jsonSchema)) return
 
-	const properties = jsonSchema.properties ? Object.keys(jsonSchema.properties) : []
+	const properties =
+		jsonSchema.properties ? Object.keys(jsonSchema.properties) : []
 	const patternProperties = Object.keys(jsonSchema.patternProperties ?? {})
 
 	const additionalPropertiesSchema = jsonSchema.additionalProperties
