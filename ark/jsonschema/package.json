@@ -15,17 +15,23 @@
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./internal/*": "./out/*"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
 	},
 	"files": [
 		"out"
 	],
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"bench": "tsx ./__tests__/comparison.bench.ts",
-		"test": "tsx ../repo/testPackage.ts",
-		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
+		"build": "ts ../repo/build.ts",
+		"bench": "ts ./__tests__/comparison.bench.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
 		"arktype": "workspace:*",
