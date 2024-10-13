@@ -190,7 +190,7 @@ const parseRequiredAndOptionalKeys = (
 const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 	if (!("additionalProperties" in jsonSchema)) return
 
-	const properties = Object.keys(jsonSchema.properties ?? {})
+	const properties = jsonSchema.properties ? Object.keys(jsonSchema.properties) : []
 	const patternProperties = Object.keys(jsonSchema.patternProperties ?? {})
 
 	const additionalPropertiesSchema = jsonSchema.additionalProperties
@@ -254,7 +254,6 @@ export const validateJsonSchemaObject = JsonSchema.ObjectSchema.pipe(
 		].filter(x => x !== undefined)
 
 		const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
-		console.log(typeWithoutPredicates.json)
 		if (predicates.length === 0) return typeWithoutPredicates as never
 
 		return rootSchema({ domain: "object", predicate: predicates }).narrow(
