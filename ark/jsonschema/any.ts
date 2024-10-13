@@ -1,6 +1,5 @@
-import { rootSchema } from "@ark/schema"
 import { throwParseError } from "@ark/util"
-import type { Type } from "arktype"
+import { type Type, type } from "arktype"
 import type { JsonSchema } from "./scope.ts"
 
 export const parseJsonSchemaAnyKeywords = (
@@ -16,14 +15,8 @@ export const parseJsonSchemaAnyKeywords = (
 				"Provided JSON Schema cannot have both 'const' and 'enum' keywords."
 			)
 		}
-		return rootSchema({ unit: jsonSchema.const }) as unknown as Type
+		return type.unit(jsonSchema.const)
 	}
 
-	if ("enum" in jsonSchema) {
-		return rootSchema(
-			jsonSchema.enum.map((unit: unknown) => ({
-				unit
-			}))
-		) as unknown as Type
-	}
+	if ("enum" in jsonSchema) return type.enumerated(jsonSchema.enum)
 }
