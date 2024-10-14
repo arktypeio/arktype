@@ -8,7 +8,7 @@ import type {
 	applyAttribute,
 	applyBrand,
 	applyConstraintSchema,
-	attachAttribute,
+	attachAttributes,
 	distill,
 	inferIntersection,
 	normalizeLimit
@@ -99,7 +99,7 @@ export type inferExpression<ast, $, args> =
 					ast[2] & LimitLiteral
 				>
 		: ast[1] extends "%" ?
-			attachAttribute<
+			attachAttributes<
 				inferExpression<ast[0], $, args>,
 				"divisibleBy",
 				ast[2] & number

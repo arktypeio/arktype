@@ -42,14 +42,14 @@ export const attributesKey = noSuggest("attach")
 
 export type attributesKey = typeof attributesKey
 
-export type of<base, attributes> = base & {
+export type of<base, attributes extends Attributes> = base & {
 	[attributesKey]: {
 		base: base
 		attributes: attributes
 	}
 }
 
-export type brand<base, attributes> = base & {
+export type brand<base, attributes extends Attributes> = base & {
 	[attributesKey]: {
 		base: base
 		attributes: attributes
@@ -57,7 +57,7 @@ export type brand<base, attributes> = base & {
 	}
 }
 
-export interface Attributes {
+export interface ConstrainingAttributeValuesByKind {
 	divisibleBy: number
 	moreThan: number
 	atLeast: number
@@ -73,9 +73,29 @@ export interface Attributes {
 	atOrBefore: string
 	before: string
 	nominal: string
+}
+
+export type ConstrainingAttributeKind = keyof ConstrainingAttributeValuesByKind
+
+export type ConstrainingAttributesByKind = {
+	[k in ConstrainingAttributeKind]?: Record<
+		ConstrainingAttributeValuesByKind[k],
+		true
+	>
+}
+
+export type MetaAttributeValuesByKind = {
 	optional: true
 	defaultsTo: unknown
 }
+
+export type MetaAttributeKind = keyof MetaAttributeValuesByKind
+
+export type MetaAttributesByKind = Partial<MetaAttributeValuesByKind>
+
+export interface Attributes
+	extends ConstrainingAttributesByKind,
+		MetaAttributesByKind {}
 
 export type AttributeKind = keyof Attributes
 
@@ -125,18 +145,14 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-export type constraint<rule> = { [k in rule & PropertyKey]: 1 }
-
-export type Literal<rule> = {
-	literal: constraint<rule>
-}
+export type constraint<rule> = { [k in rule & PropertyKey]: true }
 
 export type Anonymous = {
-	predicate: { "?": 1 }
+	nominal: { "?": true }
 }
 
 export type Nominal<name> = {
-	predicate: constraint<name>
+	nominal: constraint<name>
 }
 
 export type AtLeast<rule> = {
@@ -203,7 +219,7 @@ export type ExactlyLength<rule> = {
 
 export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
-export type attachAttribute<
+export type attachAttributes<
 	t,
 	attributes extends Attributes,
 	behavior extends AttributeInferenceBehavior = "detachOnInfer"
@@ -370,9 +386,9 @@ type _distill<t, opts extends distill.Options> =
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
 		opts["attributes"] extends "preserve" ?
-			attachAttribute<_distill<base, opts>, attributes>
+			attachAttributes<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "unbrand" ?
-			attachAttribute<_distill<base, opts>, attributes>
+			attachAttributes<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "brand" ?
 			brand<_distill<base, opts>, attributes>
 		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
@@ -519,7 +535,7 @@ export type inferPredicate<t, predicate> =
 				brand<narrowed, constraints>
 			:	of<narrowed, constraints>
 		:	narrowed
-	:	attachAttribute<t, { predicate: {} }>
+	:	attachAttributes<t, Anonymous>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
@@ -544,13 +560,13 @@ export type To<o = any> = ["=>", o, true]
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type Optional = {
-	optional: {}
+	optional: true
 }
 
 export type InferredOptional<t = unknown> = of<t, Optional>
 
 export type Default<v = any> = {
-	default: { value: v }
+	defaultsTo: v
 }
 
 export type DefaultFor<t> =
