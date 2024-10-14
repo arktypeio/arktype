@@ -3,7 +3,6 @@ import type {
 	Anonymous,
 	AtLeastLength,
 	AtMostLength,
-	AttributeInferenceBehavior,
 	AttributeKind,
 	Attributes,
 	Default,
@@ -15,7 +14,6 @@ import type {
 	Optional,
 	brand,
 	constraint,
-	createAttributeRaw,
 	of
 } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
@@ -94,35 +92,23 @@ export declare namespace string {
 		"matching" | LengthAttributeKind
 	>
 
-	export type attach<
-		base extends string,
+	export type withSingleAttribute<
 		kind extends AttributableKind,
-		value extends Attributes[kind],
-		behavior extends AttributeInferenceBehavior,
-		existingAttributes = unknown
-	> =
-		behavior extends "brand" ? branded.attach<base, kind, value>
-		:	attachUnbranded<base, kind, value, existingAttributes>
+		value extends Attributes[kind]
+	> = raw.withSingleAttribute<kind, value>
 
-	type attachUnbranded<
-		base extends string,
-		kind extends AttributableKind,
-		value extends Attributes[kind],
-		existingAttributes = unknown
-	> =
-		string extends base ?
-			unknown extends existingAttributes ?
-				kind extends "nominal" ? nominal<value>
-				: kind extends "matching" ? matching<value>
-				: kind extends "atLeastLength" ? atLeastLength<value>
-				: kind extends "atMostLength" ? atMostLength<value>
-				: kind extends "moreThanLength" ? moreThanLength<value>
-				: kind extends "lessThanLength" ? lessThanLength<value>
-				: kind extends "optional" ? optional
-				: kind extends "defaultsTo" ? defaultsTo<value>
-				: never
-			:	is<existingAttributes & createAttributeRaw<kind, value>>
-		:	of<base, existingAttributes & createAttributeRaw<kind, value>>
+	export namespace raw {
+		export type withSingleAttribute<kind, value> =
+			kind extends "nominal" ? nominal<value>
+			: kind extends "matching" ? matching<value>
+			: kind extends "atLeastLength" ? atLeastLength<value>
+			: kind extends "atMostLength" ? atMostLength<value>
+			: kind extends "moreThanLength" ? moreThanLength<value>
+			: kind extends "lessThanLength" ? lessThanLength<value>
+			: kind extends "optional" ? optional
+			: kind extends "defaultsTo" ? defaultsTo<value>
+			: never
+	}
 
 	export type module = Module<string.submodule>
 
@@ -170,22 +156,20 @@ export declare namespace string {
 
 		export type is<attributes> = brand<string, attributes>
 
-		export type attach<
-			base extends string,
+		export type withSingleAttribute<
 			kind extends AttributableKind,
-			value extends Attributes[kind],
-			existingAttributes = unknown
-		> =
-			string extends base ?
-				unknown extends existingAttributes ?
-					kind extends "nominal" ? nominal<value>
-					: kind extends "matching" ? matching<value>
-					: kind extends "atLeastLength" ? atLeastLength<value>
-					: kind extends "atMostLength" ? atMostLength<value>
-					: kind extends "moreThanLength" ? moreThanLength<value>
-					: kind extends "lessThanLength" ? lessThanLength<value>
-					: never
-				:	is<existingAttributes & createAttributeRaw<kind, value>>
-			:	of<base, existingAttributes & createAttributeRaw<kind, value>>
+			value extends Attributes[kind]
+		> = raw.withSingleAttribute<kind, value>
+
+		export namespace raw {
+			export type withSingleAttribute<kind, value> =
+				kind extends "nominal" ? nominal<value>
+				: kind extends "matching" ? matching<value>
+				: kind extends "atLeastLength" ? atLeastLength<value>
+				: kind extends "atMostLength" ? atMostLength<value>
+				: kind extends "moreThanLength" ? moreThanLength<value>
+				: kind extends "lessThanLength" ? lessThanLength<value>
+				: never
+		}
 	}
 }

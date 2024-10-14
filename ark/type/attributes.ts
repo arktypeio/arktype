@@ -205,76 +205,70 @@ export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
 
 export type attachAttribute<
 	t,
-	kind extends AttributeKind,
-	value extends Attributes[kind],
+	attributes extends Attributes,
 	behavior extends AttributeInferenceBehavior = "detachOnInfer"
 > =
 	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _attachAttribute<i, kind, value, behavior>>) => o
-	:	leftIfEqual<t, _attachAttribute<t, kind, value, behavior>>
+		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
+	:	leftIfEqual<t, _attachAttributes<t, attributes, behavior>>
 
-export type attachExistingAttributes<t, attributes> = {}
-
-type _attachAttribute<
+export type _attachAttributes<
 	t,
-	kind extends AttributeKind,
-	value extends Attributes[kind],
+	attributes extends Attributes,
 	behavior extends AttributeInferenceBehavior
 > =
 	t extends null | undefined ? t
-	: t extends of<infer base, infer attributes> ?
+	: t extends of<infer base, infer existingAttributes> ?
 		"brand" extends keyof t[attributesKey] | behavior ?
-			base extends string ?
-				string.branded.is<attributes & createAttribute<kind, value>>
-			: base extends number ?
-				number.branded.is<attributes & createAttribute<kind, value>>
-			: base extends Date ?
-				Date.branded.is<attributes & createAttribute<kind, value>>
-			:	brand<base, attributes & createAttribute<kind, value>>
-		: base extends string ? string.is<attributes & createAttribute<kind, value>>
-		: base extends number ? number.is<attributes & createAttribute<kind, value>>
-		: base extends Date ? Date.is<attributes & createAttribute<kind, value>>
-		: of<base, attributes & createAttribute<kind, value>>
-	: t extends string ?
-		kind extends string.AttributableKind ?
-			attachStringAttribute<t, kind, value, behavior>
-		:	never
-	: t extends number ?
-		kind extends number.AttributableKind ?
-			attachNumberAttribute<t, kind, value, behavior>
-		:	never
-	: t extends Date ?
-		kind extends Date.AttributableKind ?
-			attachDateAttribute<t, kind, value, behavior>
-		:	never
-	:	of<t, createAttribute<kind, value>>
+			[base, string] extends [string, base] ?
+				string.branded.is<existingAttributes & attributes>
+			: [base, number] extends [number, base] ?
+				number.branded.is<existingAttributes & attributes>
+			: [base, Date] extends [Date, base] ?
+				Date.branded.is<existingAttributes & attributes>
+			:	brand<base, existingAttributes & attributes>
+		: [base, string] extends [string, base] ?
+			string.is<existingAttributes & attributes>
+		: [base, number] extends [number, base] ?
+			number.is<existingAttributes & attributes>
+		: [base, Date] extends [Date, number] ?
+			Date.is<existingAttributes & attributes>
+		:	of<base, existingAttributes & attributes>
+	: extractIfSingleAttribute<attributes> extends (
+		{ kind: infer kind extends keyof Attributes; value: infer value }
+	) ?
+		"brand" extends behavior ?
+			[t, string] extends [string, t] ?
+				string.branded.raw.withSingleAttribute<kind, value>
+			: [t, number] extends [number, t] ?
+				number.branded.raw.withSingleAttribute<kind, value>
+			: [t, Date] extends [Date, t] ?
+				Date.branded.raw.withSingleAttribute<kind, value>
+			:	brand<t, attributes>
+		: [t, string] extends [string, t] ?
+			string.raw.withSingleAttribute<kind, value>
+		: [t, number] extends [number, t] ?
+			number.raw.withSingleAttribute<kind, value>
+		: [t, Date] extends [Date, t] ? Date.raw.withSingleAttribute<kind, value>
+		: of<t, attributes>
+	: "brand" extends behavior ?
+		[t, string] extends [string, t] ? string.branded.is<attributes>
+		: [t, number] extends [number, t] ? number.branded.is<attributes>
+		: [t, Date] extends [Date, t] ? Date.branded.is<attributes>
+		: brand<t, attributes>
+	: [t, string] extends [string, t] ? string.is<attributes>
+	: [t, number] extends [number, t] ? number.is<attributes>
+	: [t, Date] extends [Date, t] ? Date.is<attributes>
+	: of<t, attributes>
 
-type attachNumberAttribute<
-	t extends number,
-	kind extends number.AttributableKind,
-	value extends Attributes[kind],
-	behavior extends AttributeInferenceBehavior
-> =
-	behavior extends "brand" ? number.branded.attach<t, kind, value>
-	:	number.attach<t, kind, value, behavior, unknown>
-
-type attachStringAttribute<
-	t extends string,
-	kind extends string.AttributableKind,
-	value extends Attributes[kind],
-	behavior extends AttributeInferenceBehavior
-> =
-	behavior extends "brand" ? string.branded.attach<t, kind, value>
-	:	string.attach<t, kind & string.AttributableKind, value, behavior, unknown>
-
-type attachDateAttribute<
-	t extends Date,
-	kind extends Date.AttributableKind,
-	value extends Attributes[kind],
-	behavior extends AttributeInferenceBehavior
-> =
-	behavior extends "brand" ? Date.branded.attach<t, kind, value>
-	:	Date.attach<t, kind, value, behavior, unknown>
+type extractIfSingleAttribute<attributes extends Attributes> = {
+	[k in keyof attributes]: keyof attributes extends k ?
+		{
+			kind: k
+			value: attributes[k]
+		}
+	:	{}
+}[keyof attributes]
 
 export interface BaseAttributes
 	extends BaseBrandableAttributes,
@@ -376,9 +370,9 @@ type _distill<t, opts extends distill.Options> =
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
 		opts["attributes"] extends "preserve" ?
-			applyAttribute<_distill<base, opts>, attributes>
+			attachAttribute<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "unbrand" ?
-			applyAttribute<_distill<base, opts>, Omit<attributes, "brand">>
+			attachAttribute<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "brand" ?
 			brand<_distill<base, opts>, attributes>
 		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
@@ -525,7 +519,7 @@ export type inferPredicate<t, predicate> =
 				brand<narrowed, constraints>
 			:	of<narrowed, constraints>
 		:	narrowed
-	:	attachAttribute<t, "nominal", "?">
+	:	attachAttribute<t, { predicate: {} }>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?

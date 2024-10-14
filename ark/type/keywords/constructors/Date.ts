@@ -3,12 +3,10 @@ import type {
 	Anonymous,
 	AtOrAfter,
 	AtOrBefore,
-	AttributeInferenceBehavior,
 	AttributeKind,
 	Attributes,
 	Before,
 	brand,
-	createAttributeRaw,
 	Default,
 	Nominal,
 	normalizeLimit,
@@ -43,52 +41,26 @@ export declare namespace Date {
 		schema extends { exclusive: true } ? Before<normalizeLimit<rule>>
 		:	AtOrBefore<normalizeLimit<rule>>
 
-	export type apply<attribute> =
-		"brand" extends keyof attribute ? branded.apply<attribute>
-		:	applyUnbranded<attribute>
-
-	type applyUnbranded<attribute> =
-		attribute extends After<infer rule> ? after<rule>
-		: attribute extends Before<infer rule> ? before<rule>
-		: attribute extends AtOrAfter<infer rule> ? atOrAfter<rule>
-		: attribute extends AtOrBefore<infer rule> ? atOrBefore<rule>
-		: attribute extends Optional ? optional
-		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Nominal<infer rule> ? nominal<rule>
-		: never
-
 	export type AttributableKind = AttributeKind.defineAttributable<
 		"after" | "atOrAfter" | "before" | "atOrBefore"
 	>
 
-	export type attach<
-		base extends Date,
+	export type withSingleAttribute<
 		kind extends AttributableKind,
-		value extends Attributes[kind],
-		behavior extends AttributeInferenceBehavior,
-		existingAttributes = unknown
-	> =
-		behavior extends "brand" ? branded.attach<base, kind, value>
-		:	attachUnbranded<base, kind, value, existingAttributes>
+		value extends Attributes[kind]
+	> = raw.withSingleAttribute<kind, value>
 
-	type attachUnbranded<
-		base extends Date,
-		kind extends AttributableKind,
-		value extends Attributes[kind],
-		existingAttributes = unknown
-	> =
-		string extends base ?
-			unknown extends existingAttributes ?
-				kind extends "nominal" ? nominal<value>
-				: kind extends "after" ? after<value>
-				: kind extends "atOrAfter" ? atOrAfter<value>
-				: kind extends "before" ? before<value>
-				: kind extends "atOrBefore" ? atOrBefore<value>
-				: kind extends "optional" ? optional
-				: kind extends "defaultsTo" ? defaultsTo<value>
-				: never
-			:	is<existingAttributes & createAttributeRaw<kind, value>>
-		:	of<base, existingAttributes & createAttributeRaw<kind, value>>
+	export namespace raw {
+		export type withSingleAttribute<kind, value> =
+			kind extends "nominal" ? nominal<value>
+			: kind extends "after" ? after<value>
+			: kind extends "atOrAfter" ? atOrAfter<value>
+			: kind extends "before" ? before<value>
+			: kind extends "atOrBefore" ? atOrBefore<value>
+			: kind extends "optional" ? optional
+			: kind extends "defaultsTo" ? defaultsTo<value>
+			: never
+	}
 
 	export type branded<rule> = brand<Date, Nominal<rule>>
 
@@ -105,29 +77,19 @@ export declare namespace Date {
 
 		export type is<attributes> = brand<Date, attributes>
 
-		export type apply<attribute> =
-			attribute extends After<infer rule> ? after<rule>
-			: attribute extends Before<infer rule> ? before<rule>
-			: attribute extends AtOrAfter<infer rule> ? atOrAfter<rule>
-			: attribute extends AtOrBefore<infer rule> ? atOrBefore<rule>
-			: attribute extends Nominal<infer rule> ? nominal<rule>
-			: never
-
-		export type attach<
-			base extends Date,
+		export type withSingleAttribute<
 			kind extends AttributableKind,
-			value extends Attributes[kind],
-			existingAttributes = unknown
-		> =
-			Date extends base ?
-				unknown extends existingAttributes ?
-					kind extends "nominal" ? nominal<value>
-					: kind extends "after" ? after<value>
-					: kind extends "atOrAfter" ? atOrAfter<value>
-					: kind extends "before" ? before<value>
-					: kind extends "atOrBefore" ? atOrBefore<value>
-					: never
-				:	is<existingAttributes & createAttributeRaw<kind, value>>
-			:	of<base, existingAttributes & createAttributeRaw<kind, value>>
+			value extends Attributes[kind]
+		> = raw.withSingleAttribute<kind, value>
+
+		export namespace raw {
+			export type withSingleAttribute<kind, value> =
+				kind extends "nominal" ? nominal<value>
+				: kind extends "after" ? after<value>
+				: kind extends "atOrAfter" ? atOrAfter<value>
+				: kind extends "before" ? before<value>
+				: kind extends "atOrBefore" ? atOrBefore<value>
+				: never
+		}
 	}
 }

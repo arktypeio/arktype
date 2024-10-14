@@ -3,11 +3,9 @@ import type {
 	Anonymous,
 	AtLeast,
 	AtMost,
-	AttributeInferenceBehavior,
 	AttributeKind,
 	Attributes,
 	brand,
-	createAttribute,
 	Default,
 	DivisibleBy,
 	LessThan,
@@ -78,35 +76,23 @@ export declare namespace number {
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	type attach<
-		base extends number,
+	export type withSingleAttribute<
 		kind extends AttributableKind,
-		value extends Attributes[kind],
-		behavior extends AttributeInferenceBehavior,
-		existingAttributes = unknown
-	> =
-		behavior extends "brand" ? number.branded.attach<base, kind, value>
-		:	attachUnbranded<base, kind, value, existingAttributes>
+		value extends Attributes[kind]
+	> = raw.withSingleAttribute<kind, value>
 
-	type attachUnbranded<
-		base extends number,
-		kind extends AttributableKind,
-		value extends Attributes[kind],
-		existingAttributes
-	> =
-		number extends base ?
-			unknown extends existingAttributes ?
-				kind extends "nominal" ? nominal<value>
-				: kind extends "divisibleBy" ? divisibleBy<value>
-				: kind extends "moreThan" ? moreThan<value>
-				: kind extends "atLeast" ? atLeast<value>
-				: kind extends "atMost" ? atMost<value>
-				: kind extends "lessThan" ? lessThan<value>
-				: kind extends "optional" ? optional
-				: kind extends "defaultsTo" ? defaultsTo<value>
-				: never
-			:	is<existingAttributes & createAttribute<kind, value>>
-		:	of<base, existingAttributes & createAttribute<kind, value>>
+	export namespace raw {
+		export type withSingleAttribute<kind, value> =
+			kind extends "nominal" ? nominal<value>
+			: kind extends "divisibleBy" ? divisibleBy<value>
+			: kind extends "moreThan" ? moreThan<value>
+			: kind extends "atLeast" ? atLeast<value>
+			: kind extends "atMost" ? atMost<value>
+			: kind extends "lessThan" ? lessThan<value>
+			: kind extends "optional" ? optional
+			: kind extends "defaultsTo" ? defaultsTo<value>
+			: never
+	}
 
 	export type module = Module<submodule>
 
@@ -139,22 +125,20 @@ export declare namespace number {
 
 		export type anonymous = brand<number, Anonymous>
 
-		export type attach<
-			base extends number,
+		export type withSingleAttribute<
 			kind extends AttributableKind,
-			value extends Attributes[kind],
-			existingAttributes = unknown
-		> =
-			number extends base ?
-				unknown extends existingAttributes ?
-					kind extends "nominal" ? nominal<value>
-					: kind extends "divisibleBy" ? divisibleBy<value>
-					: kind extends "moreThan" ? moreThan<value>
-					: kind extends "atLeast" ? atLeast<value>
-					: kind extends "atMost" ? atMost<value>
-					: kind extends "lessThan" ? lessThan<value>
-					: never
-				:	is<existingAttributes & createAttribute<kind, value>>
-			:	brand<base, existingAttributes & createAttribute<kind, value>>
+			value extends Attributes[kind]
+		> = raw.withSingleAttribute<kind, value>
+
+		export namespace raw {
+			export type withSingleAttribute<kind, value> =
+				kind extends "nominal" ? nominal<value>
+				: kind extends "divisibleBy" ? divisibleBy<value>
+				: kind extends "moreThan" ? moreThan<value>
+				: kind extends "atLeast" ? atLeast<value>
+				: kind extends "atMost" ? atMost<value>
+				: kind extends "lessThan" ? lessThan<value>
+				: never
+		}
 	}
 }
