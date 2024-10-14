@@ -247,7 +247,7 @@ export type _attachAttributes<
 			string.is<existingAttributes & attributes>
 		: [base, number] extends [number, base] ?
 			number.is<existingAttributes & attributes>
-		: [base, Date] extends [Date, number] ?
+		: [base, Date] extends [Date, base] ?
 			Date.is<existingAttributes & attributes>
 		:	of<base, existingAttributes & attributes>
 	: extractIfSingleAttribute<attributes> extends (
@@ -286,27 +286,14 @@ type extractIfSingleAttribute<attributes extends Attributes> = {
 	:	{}
 }[keyof attributes]
 
-export interface BaseAttributes
-	extends BaseBrandableAttributes,
-		MetaAttributes {}
-
-export interface BaseBrandableAttributes {
-	nominal: string
-}
-
-export interface MetaAttributes {
-	optional: true
-	defaultsTo: unknown
-}
-
-export interface LengthAttributes {
+export interface LengthAttributeValuesByKind {
 	moreThanLength: number
 	atLeastLength: number
 	atMostLength: number
 	lessThanLength: number
 }
 
-export type LengthAttributeKind = keyof LengthAttributes
+export type LengthAttributeKind = keyof LengthAttributeValuesByKind
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
