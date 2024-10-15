@@ -288,8 +288,14 @@ type _attachAttributes<
 type extractIfSingleAttribute<attributes extends Attributes> = {
 	[k in keyof attributes]: keyof attributes extends k ?
 		{
-			kind: k
-			value: attributes[k]
+			[attributeValue in keyof attributes[k]]: keyof attributes[k] extends (
+				attributeValue
+			) ?
+				{
+					kind: k
+					value: attributeValue
+				}
+			:	{}
 		}
 	:	{}
 }[keyof attributes]
