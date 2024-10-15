@@ -43,8 +43,10 @@ import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors>,
-		StandardSchema<distill.In<t>, distill.Out<t>> {
+	extends Callable<
+		(data: unknown) => distill.Out<t> | ArkErrors,
+		StandardSchema.ConstantProps
+	> {
 	[inferred]: t
 
 	//   The top-level generic parameter accepted by the `Type`. Potentially
@@ -281,6 +283,15 @@ interface Type<out t = unknown, $ = {}>
 	>(
 		value: DefaultFor<value>
 	): instantiateType<r, $>
+
+	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
+	// Static properties are attached via Callable, so this is just those that depend on `t`.
+	// Important for type performance that we declare these directly as props rather than
+	// extend them so TS can be lazy about evaluating them (as is the case for props like `.inferIn`)
+
+	"~validate": StandardSchema.Validator<this["inferOut"]>
+
+	"~types": StandardSchema.Types<this["inferIn"], this["inferOut"]>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
