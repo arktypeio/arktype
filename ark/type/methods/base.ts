@@ -19,9 +19,9 @@ import type {
 	unset
 } from "@ark/util"
 import type {
-	applyAttribute,
 	applyBrand,
 	applyConstraintSchema,
+	attachAttributes,
 	Default,
 	DefaultFor,
 	distill,
@@ -264,7 +264,7 @@ interface Type<out t = unknown, $ = {}>
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
-	optional<r = applyAttribute<t, Optional>>(): instantiateType<r, $>
+	optional<r = attachAttributes<t, Optional>>(): instantiateType<r, $>
 
 	/**
 	 * Add a default value for this `Type` when it is used as a property.\
@@ -276,7 +276,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	default<
 		const value extends this["inferIn"],
-		r = applyAttribute<t, Default<value>>
+		r = attachAttributes<t, Default<value>>
 	>(
 		value: DefaultFor<value>
 	): instantiateType<r, $>

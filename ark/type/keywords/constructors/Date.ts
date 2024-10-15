@@ -31,7 +31,7 @@ export declare namespace Date {
 
 	export type defaultsTo<rule> = of<Date, Default<rule>>
 
-	export type is<attributes> = of<Date, attributes>
+	export type is<attributes extends Attributes> = of<Date, attributes>
 
 	export type afterSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? After<normalizeLimit<rule>>
@@ -75,7 +75,7 @@ export declare namespace Date {
 
 		export type anonymous = brand<Date, Anonymous>
 
-		export type is<attributes> = brand<Date, attributes>
+		export type is<attributes extends Attributes> = brand<Date, attributes>
 
 		export type withSingleAttribute<
 			kind extends AttributableKind,

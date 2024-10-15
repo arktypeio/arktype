@@ -86,7 +86,7 @@ export declare namespace string {
 
 	export type nominal<rule> = of<string, Nominal<rule>>
 
-	export type is<attributes> = of<string, attributes>
+	export type is<attributes extends Attributes> = of<string, attributes>
 
 	export type AttributableKind = AttributeKind.defineAttributable<
 		"matching" | LengthAttributeKind
@@ -154,7 +154,7 @@ export declare namespace string {
 
 		export type anonymous = brand<string, Anonymous>
 
-		export type is<attributes> = brand<string, attributes>
+		export type is<attributes extends Attributes> = brand<string, attributes>
 
 		export type withSingleAttribute<
 			kind extends AttributableKind,

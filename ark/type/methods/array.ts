@@ -4,7 +4,6 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
-import type { applyConstraintSchema } from "../attributes.ts"
 import type { ObjectType } from "./object.ts"
 
 interface Type<

@@ -64,7 +64,7 @@ export declare namespace number {
 
 	export type safe = nominal<"safe">
 
-	export type is<attributes> = of<number, attributes>
+	export type is<attributes extends Attributes> = of<number, attributes>
 
 	export type AttributableKind = AttributeKind.defineAttributable<
 		"divisibleBy" | "moreThan" | "atLeast" | "atMost" | "lessThan"
@@ -121,7 +121,7 @@ export declare namespace number {
 
 		export type divisibleBy<rule> = brand<number, DivisibleBy<rule>>
 
-		export type is<attributes> = brand<number, attributes>
+		export type is<attributes extends Attributes> = brand<number, attributes>
 
 		export type anonymous = brand<number, Anonymous>
 

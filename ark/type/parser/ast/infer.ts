@@ -2,12 +2,11 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, arkKeyOf, array } from "@ark/util"
 import type {
 	Default,
+	DivisibleBy,
+	ExactlyLength,
 	LimitLiteral,
 	Nominal,
 	Optional,
-	applyAttribute,
-	applyBrand,
-	applyConstraintSchema,
 	attachAttributes,
 	distill,
 	inferIntersection,
@@ -86,31 +85,34 @@ export type inferExpression<ast, $, args> =
 			// unscoped type.infer is safe since the default value is always a literal
 			// as of TS5.6, inlining defaultValue causes a bunch of extra types and instantiations
 			type.infer<ast[2]> extends infer defaultValue ?
-				applyAttribute<inferExpression<ast[0], $, args>, Default<defaultValue>>
+				attachAttributes<
+					inferExpression<ast[0], $, args>,
+					Default<defaultValue>
+				>
 			:	never
 		: ast[1] extends "#" ?
-			applyBrand<inferExpression<ast[0], $, args>, Nominal<ast[2]>>
+			attachAttributes<
+				inferExpression<ast[0], $, args>,
+				Nominal<ast[2]>,
+				"brand"
+			>
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
-				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
-			:	brandBound<
+				attachBoundAttributes<inferExpression<ast[2], $, args>, ast[1], ast[0]>
+			:	attachBoundAttributes<
 					inferExpression<ast[0], $, args>,
 					ast[1],
 					ast[2] & LimitLiteral
 				>
 		: ast[1] extends "%" ?
-			attachAttributes<
-				inferExpression<ast[0], $, args>,
-				"divisibleBy",
-				ast[2] & number
-			>
+			attachAttributes<inferExpression<ast[0], $, args>, DivisibleBy<ast[2]>>
 		: ast[1] extends "?" ?
-			applyAttribute<inferExpression<ast[0], $, args>, Optional>
+			attachAttributes<inferExpression<ast[0], $, args>, Optional>
 		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
 		: never
 	:	never
 
-export type brandBound<
+export type attachBoundAttributes<
 	inWithAttributes,
 	comparator extends Comparator,
 	limit extends LimitLiteral
@@ -119,7 +121,7 @@ export type brandBound<
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.nominal<normalizeLimit<limit>>
-			: applyConstraintSchema<inWithAttributes, "exactLength", limit & number>
+			: attachAttributes<inWithAttributes, ExactlyLength<limit>>
 		:	applyConstraintSchema<
 				inWithAttributes,
 				In extends number ?
