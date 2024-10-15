@@ -217,18 +217,28 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export type AttributeInferenceBehavior = "brand" | "detachOnInfer"
+export type AttributeInferenceBehavior = "brand" | "associate"
 
-export type attachAttributes<
+export type associateAttributes<
+	t,
+	attributes extends Attributes
+> = attachAttributes<t, attributes, "associate">
+
+export type brandAttributes<
+	t,
+	attributes extends Attributes
+> = attachAttributes<t, attributes, "brand">
+
+type attachAttributes<
 	t,
 	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior = "detachOnInfer"
+	behavior extends AttributeInferenceBehavior = "associate"
 > =
 	t extends InferredMorph<infer i, infer o> ?
 		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
 	:	leftIfEqual<t, _attachAttributes<t, attributes, behavior>>
 
-export type _attachAttributes<
+type _attachAttributes<
 	t,
 	attributes extends Attributes,
 	behavior extends AttributeInferenceBehavior
@@ -308,7 +318,13 @@ type minLengthSchemaToConstraint<schema, rule> =
 type maxLengthSchemaToConstraint<schema, rule> =
 	schema extends { exclusive: true } ? LessThanLength<rule> : AtMostLength<rule>
 
-export type schemaToConstraint<
+export type associateAttributesFromSchema<
+	t,
+	kind extends Constraint.PrimitiveKind,
+	schema extends NodeSchema<kind>
+> = associateAttributes<t, schemaToAttributes<kind, schema>>
+
+export type schemaToAttributes<
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
@@ -373,9 +389,9 @@ type _distill<t, opts extends distill.Options> =
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
 		opts["attributes"] extends "preserve" ?
-			attachAttributes<_distill<base, opts>, attributes>
+			associateAttributes<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "unbrand" ?
-			attachAttributes<_distill<base, opts>, attributes>
+			associateAttributes<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "brand" ?
 			brand<_distill<base, opts>, attributes>
 		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
@@ -522,7 +538,7 @@ export type inferPredicate<t, predicate> =
 				brand<narrowed, constraints>
 			:	of<narrowed, constraints>
 		:	narrowed
-	:	attachAttributes<t, Anonymous>
+	:	associateAttributes<t, Anonymous>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?

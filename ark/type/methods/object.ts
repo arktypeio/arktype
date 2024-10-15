@@ -19,7 +19,12 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { attachAttributes, Default, of, Optional } from "../attributes.ts"
+import type {
+	associateAttributes,
+	Default,
+	of,
+	Optional
+} from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -215,7 +220,7 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
 			{ kind: "optional"; default: unknown }
-		>["key"]]: attachAttributes<
+		>["key"]]: associateAttributes<
 			prop["value"][inferred],
 			Default<prop["default" & keyof prop]>
 		>

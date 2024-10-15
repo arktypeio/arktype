@@ -27,7 +27,7 @@ import {
 	type show
 } from "@ark/util"
 import type {
-	attachAttributes,
+	associateAttributes,
 	Default,
 	DefaultFor,
 	distill,
@@ -378,9 +378,9 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		attachAttributes<inferDefinition<def[0], $, args>, Default<def[2]>>
+		associateAttributes<inferDefinition<def[0], $, args>, Default<def[2]>>
 	: def[1] extends "?" ?
-		attachAttributes<inferDefinition<def[0], $, args>, Optional>
+		associateAttributes<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]

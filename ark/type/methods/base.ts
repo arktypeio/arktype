@@ -19,9 +19,9 @@ import type {
 	unset
 } from "@ark/util"
 import type {
-	applyBrand,
-	applyConstraintSchema,
-	attachAttributes,
+	associateAttributes,
+	associateAttributesFromSchema,
+	brandAttributes,
 	Default,
 	DefaultFor,
 	distill,
@@ -136,7 +136,7 @@ interface Type<out t = unknown, $ = {}>
 		...args: validateChainedAsArgs<castTo>
 	): instantiateType<castTo, $>
 
-	brand<const name extends string, r = applyBrand<t, Nominal<name>>>(
+	brand<const name extends string, r = brandAttributes<t, Nominal<name>>>(
 		name: name
 	): instantiateType<r, $>
 
@@ -198,9 +198,13 @@ interface Type<out t = unknown, $ = {}>
 		r = [narrowed] extends [never] ?
 			t extends InferredMorph<infer i, infer o> ?
 				o extends To ?
-					(In: i) => To<applyConstraintSchema<o[1], "predicate", Predicate>>
-				:	(In: i) => Out<applyConstraintSchema<o[1], "predicate", Predicate>>
-			:	applyConstraintSchema<t, "predicate", Predicate>
+					(
+						In: i
+					) => To<associateAttributesFromSchema<o[1], "predicate", Predicate>>
+				:	(
+						In: i
+					) => Out<associateAttributesFromSchema<o[1], "predicate", Predicate>>
+			:	associateAttributesFromSchema<t, "predicate", Predicate>
 		: t extends InferredMorph<infer i, infer o> ?
 			o extends To ?
 				(In: i) => To<narrowed>
@@ -213,7 +217,7 @@ interface Type<out t = unknown, $ = {}>
 	satisfying<
 		narrowed extends this["inferIn"] = never,
 		r = [narrowed] extends [never] ?
-			applyConstraintSchema<t, "predicate", Predicate>
+			associateAttributesFromSchema<t, "predicate", Predicate>
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(
@@ -264,7 +268,7 @@ interface Type<out t = unknown, $ = {}>
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
-	optional<r = attachAttributes<t, Optional>>(): instantiateType<r, $>
+	optional<r = associateAttributes<t, Optional>>(): instantiateType<r, $>
 
 	/**
 	 * Add a default value for this `Type` when it is used as a property.\
@@ -276,7 +280,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	default<
 		const value extends this["inferIn"],
-		r = attachAttributes<t, Default<value>>
+		r = associateAttributes<t, Default<value>>
 	>(
 		value: DefaultFor<value>
 	): instantiateType<r, $>

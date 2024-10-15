@@ -5,40 +5,48 @@ import type {
 	InclusiveNumericRangeSchema,
 	Pattern
 } from "@ark/schema"
-import type { applyConstraintSchema } from "../attributes.ts"
+import type { associateAttributesFromSchema } from "../attributes.ts"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
 	matching<const schema extends Pattern.Schema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "pattern", schema>, $>
+	): Type<associateAttributesFromSchema<t, "pattern", schema>, $>
 
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "minLength", schema>, $>
+	): Type<associateAttributesFromSchema<t, "minLength", schema>, $>
 
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "maxLength", schema>, $>
+	): Type<associateAttributesFromSchema<t, "maxLength", schema>, $>
 
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<
-		applyConstraintSchema<t, "minLength", exclusivizeRangeSchema<schema>>,
+		associateAttributesFromSchema<
+			t,
+			"minLength",
+			exclusivizeRangeSchema<schema>
+		>,
 		$
 	>
 
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<
-		applyConstraintSchema<t, "maxLength", exclusivizeRangeSchema<schema>>,
+		associateAttributesFromSchema<
+			t,
+			"maxLength",
+			exclusivizeRangeSchema<schema>
+		>,
 		$
 	>
 
 	exactlyLength<const schema extends ExactLength.Schema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "exactLength", schema>, $>
+	): Type<associateAttributesFromSchema<t, "exactLength", schema>, $>
 }
 
 export type { Type as StringType }
