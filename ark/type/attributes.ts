@@ -38,7 +38,7 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export const attributesKey = noSuggest("attach")
+export const attributesKey = noSuggest("attributes")
 
 export type attributesKey = typeof attributesKey
 
@@ -373,8 +373,9 @@ type _distill<t, opts extends distill.Options> =
 			associateAttributes<_distill<base, opts>, attributes>
 		: opts["attributes"] extends "brand" ?
 			brand<_distill<base, opts>, attributes>
-		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
-		: _distill<base, opts>
+		: "brand" extends keyof t[attributesKey] ?
+			brand<_distill<base, opts>, attributes>
+		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>
