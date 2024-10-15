@@ -7,6 +7,7 @@ import type {
 	Morph,
 	Predicate,
 	PredicateCast,
+	StandardSchema,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -42,7 +43,8 @@ import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
+	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors>,
+		StandardSchema<distill.In<t>, distill.Out<t>> {
 	[inferred]: t
 
 	//   The top-level generic parameter accepted by the `Type`. Potentially
@@ -58,10 +60,8 @@ interface Type<out t = unknown, $ = {}>
 	inferOutWithAttributes: distill.withAttributes.Out<t>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
-	/**
-	 * A type representing the input the `Type` will accept (before morphs are applied)
-	 * @example export type MyTypeInput = typeof MyType.inferIn
-	 */
+	// A type representing the input the `Type` will accept (before morphs are applied)
+	// @example export type MyTypeInput = typeof MyType.inferIn
 	inferIn: distill.In<t>
 	inferredOutIsIntrospectable: t extends InferredMorph<any, infer o> ?
 		[o] extends [anyOrNever] ? true
