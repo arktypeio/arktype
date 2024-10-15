@@ -260,20 +260,29 @@ type _attachAttributes<
 	: [t, Date] extends [Date, t] ? Date.is<attributes>
 	: of<t, attributes>
 
-type extractIfSingleAttribute<attributes extends Attributes> = {
-	[k in keyof attributes]: keyof attributes extends k ?
-		{
-			[attributeValue in keyof attributes[k]]: keyof attributes[k] extends (
-				attributeValue
-			) ?
-				{
-					kind: k
-					value: attributeValue
-				}
-			:	{}
-		}[keyof attributes[k]]
-	:	{}
-}[keyof attributes]
+/**
+ * Check if attributes is a single attribute kind + value that can be collapsed
+ * for display purposes, e.g.:
+ *
+ * // has multiple attribute kinds
+ * { divisibleBy: { 2: true }, moreThan: { 3: true } } => null
+ *
+ * // has multiple attribute values of a single kind
+ * { divisibleBy: { 2: true, 3: true } } => null
+ *
+ * // has a single attribute kind + value, can be collapsed
+ * { divisibleBy: { 2: true } } => ["divisibleBy", 2]
+ */
+type extractIfSingleAttribute<attributes extends Attributes> =
+	extractIfSingleEntry<attributes> extends [infer kind, infer attributesValue] ?
+		extractIfSingleEntry<attributesValue> extends [infer value, unknown] ?
+			[kind, value]
+		:	null
+	:	null
+
+type extractIfSingleEntry<o> = {
+	[k in keyof o]: keyof o extends k ? [key: k, value: o[k]] : null
+}[keyof o]
 
 export interface LengthAttributeValuesByKind {
 	moreThanLength: number
