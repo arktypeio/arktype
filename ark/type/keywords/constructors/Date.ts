@@ -84,7 +84,7 @@ export declare namespace Date {
 
 		export namespace raw {
 			export type withSingleAttribute<kind, value> =
-				kind extends "nominal" ? nominal<value>
+				kind extends "nominal" ? branded<value>
 				: kind extends "after" ? after<value>
 				: kind extends "atOrAfter" ? atOrAfter<value>
 				: kind extends "before" ? before<value>

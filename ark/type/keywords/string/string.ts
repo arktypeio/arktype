@@ -163,7 +163,7 @@ export declare namespace string {
 
 		export namespace raw {
 			export type withSingleAttribute<kind, value> =
-				kind extends "nominal" ? nominal<value>
+				kind extends "nominal" ? branded<value>
 				: kind extends "matching" ? matching<value>
 				: kind extends "atLeastLength" ? atLeastLength<value>
 				: kind extends "atMostLength" ? atMostLength<value>

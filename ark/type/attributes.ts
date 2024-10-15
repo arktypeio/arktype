@@ -99,31 +99,6 @@ export interface Attributes
 
 export type AttributeKind = keyof Attributes
 
-export type createAttribute<
-	kind extends AttributeKind,
-	value extends Attributes[kind]
-> = createAttributeRaw<kind, value>
-
-export type createAttributeRaw<kind extends AttributeKind, value> =
-	kind extends "nominal" ? Nominal<value>
-	: kind extends "divisibleBy" ? DivisibleBy<value>
-	: kind extends "moreThan" ? MoreThan<value>
-	: kind extends "atLeast" ? AtLeast<value>
-	: kind extends "atMost" ? AtMost<value>
-	: kind extends "lessThan" ? LessThan<value>
-	: kind extends "matching" ? Matching<value>
-	: kind extends "moreThanLength" ? MoreThanLength<value>
-	: kind extends "atLeastLength" ? AtLeastLength<value>
-	: kind extends "atMostLength" ? AtMostLength<value>
-	: kind extends "lessThanLength" ? LessThanLength<value>
-	: kind extends "after" ? After<value>
-	: kind extends "atOrAfter" ? AtOrAfter<value>
-	: kind extends "before" ? Before<value>
-	: kind extends "atOrBefore" ? AtOrBefore<value>
-	: kind extends "optional" ? Optional
-	: kind extends "defaultsTo" ? Default<value>
-	: never
-
 export declare namespace AttributeKind {
 	export type Meta = satisfy<AttributeKind, "optional" | "defaultsTo">
 
@@ -259,7 +234,7 @@ type _attachAttributes<
 			Date.is<existingAttributes & attributes>
 		:	of<base, existingAttributes & attributes>
 	: extractIfSingleAttribute<attributes> extends (
-		{ kind: infer kind extends keyof Attributes; value: infer value }
+		{ kind: infer kind extends AttributeKind; value: infer value }
 	) ?
 		"brand" extends behavior ?
 			[t, string] extends [string, t] ?
@@ -296,7 +271,7 @@ type extractIfSingleAttribute<attributes extends Attributes> = {
 					value: attributeValue
 				}
 			:	{}
-		}
+		}[keyof attributes[k]]
 	:	{}
 }[keyof attributes]
 

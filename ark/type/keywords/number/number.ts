@@ -132,7 +132,7 @@ export declare namespace number {
 
 		export namespace raw {
 			export type withSingleAttribute<kind, value> =
-				kind extends "nominal" ? nominal<value>
+				kind extends "nominal" ? branded<value>
 				: kind extends "divisibleBy" ? divisibleBy<value>
 				: kind extends "moreThan" ? moreThan<value>
 				: kind extends "atLeast" ? atLeast<value>
