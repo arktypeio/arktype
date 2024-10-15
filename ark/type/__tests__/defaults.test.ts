@@ -429,7 +429,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: InferredDefault<Date, Date.literal<"1993-05-21">>
+				key: InferredDefault<Date, Date.nominal<"1993-05-21">>
 			}>(t.t)
 		})
 

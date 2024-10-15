@@ -44,18 +44,15 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	[inferred]: t
-	/**
-	 * The top-level generic parameter accepted by the `Type`.\
-	 * Potentially includes morphs and subtype constraints not reflected
-	 *   in the types fully-inferred input (via `inferIn`) or output (via `infer` or `inferOut`).
-	 * @example type A = type.infer<[typeof T.t, '[]']>
-	 */
+
+	//   The top-level generic parameter accepted by the `Type`. Potentially
+	//   includes morphs and subtype constraints not reflected in the types
+	//   fully-inferred input (via `inferIn`) or output (via `infer` or
+	//   `inferOut`)
 	t: t
-	/**
-	 * A type representing the output the `Type` will return (after morphs are applied to valid input)
-	 * @example export type MyType = typeof MyType.infer
-	 * @example export interface MyType extends Identity<typeof MyType.infer> {}
-	 */
+
+	// A type representing the output the `Type` will return (after morphs are
+	// applied to valid input)
 	infer: this["inferOut"]
 	inferInWithAttributes: distill.withAttributes.In<t>
 	inferOutWithAttributes: distill.withAttributes.Out<t>

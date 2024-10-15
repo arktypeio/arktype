@@ -147,9 +147,7 @@ export type normalizeLimit<limit> =
 
 export type constraint<rule> = { [k in rule & PropertyKey]: true }
 
-export type Anonymous = {
-	nominal: { "?": true }
-}
+export type Anonymous = Nominal<"?">
 
 export type Nominal<name> = {
 	nominal: constraint<name>
