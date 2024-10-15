@@ -261,9 +261,9 @@ contextualize(() => {
 
 	it("unknown is narrowable", () => {
 		const t = type("unknown").narrow(() => true)
-		attest(t.t).type.toString.snap(
-			'{ " of": { base: unknown; attributes: Narrowed } }'
-		)
+		attest(t.t).type.toString.snap(`{
+	" attributes": { base: unknown; attributes: Anonymous }
+}`)
 		attest(t.expression).snap("unknown")
 	})
 })

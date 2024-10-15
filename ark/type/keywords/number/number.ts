@@ -1,4 +1,5 @@
 import { intrinsic, rootSchema } from "@ark/schema"
+import type { satisfy } from "@ark/util"
 import type {
 	Anonymous,
 	AtLeast,
@@ -66,7 +67,8 @@ export declare namespace number {
 
 	export type is<attributes extends Attributes> = of<number, attributes>
 
-	export type AttributableKind = AttributeKind.defineAttributable<
+	export type AttributableKind = satisfy<
+		AttributeKind,
 		"divisibleBy" | "moreThan" | "atLeast" | "atMost" | "lessThan"
 	>
 

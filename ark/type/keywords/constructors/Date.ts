@@ -1,3 +1,4 @@
+import type { satisfy } from "@ark/util"
 import type {
 	After,
 	Anonymous,
@@ -41,7 +42,8 @@ export declare namespace Date {
 		schema extends { exclusive: true } ? Before<normalizeLimit<rule>>
 		:	AtOrBefore<normalizeLimit<rule>>
 
-	export type AttributableKind = AttributeKind.defineAttributable<
+	export type AttributableKind = satisfy<
+		AttributeKind,
 		"after" | "atOrAfter" | "before" | "atOrBefore"
 	>
 

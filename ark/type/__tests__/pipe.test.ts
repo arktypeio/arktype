@@ -58,7 +58,10 @@ contextualize(() => {
 
 		attest(t.t).type.toString.snap(`(
 	In: string & {
-		" of": { base: string; attributes: Predicate<"json"> }
+		" attributes": {
+			base: string
+			attributes: Nominal<"json">
+		}
 	}
 ) => Out<string>`)
 

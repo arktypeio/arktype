@@ -31,7 +31,7 @@ contextualize(() => {
 	a: string
 	foo: defaultsTo<5>
 	bar: defaultsTo<5>
-	baz: defaultsTo<() => 5>
+	baz: defaultsTo<5>
 }`)
 			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
@@ -918,9 +918,7 @@ contextualize(() => {
 			const a = type(["string.numeric.parse", "=", "1"])
 
 			attest(a).type.toString.snap(`Type<
-	(
-		In: is<Default<"1"> & Predicate<"numeric">>
-	) => To<number>,
+	(In: is<Nominal<"numeric"> & Default<"1">>) => To<number>,
 	{}
 >`)
 
@@ -933,7 +931,7 @@ contextualize(() => {
 	of<
 		{
 			a: (
-				In: is<Default<"1"> & Predicate<"numeric">>
+				In: is<Nominal<"numeric"> & Default<"1">>
 			) => To<number>
 		},
 		Default<{}>

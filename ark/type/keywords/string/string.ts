@@ -1,4 +1,5 @@
 import { intrinsic } from "@ark/schema"
+import type { satisfy } from "@ark/util"
 import type {
 	Anonymous,
 	AtLeastLength,
@@ -88,7 +89,8 @@ export declare namespace string {
 
 	export type is<attributes extends Attributes> = of<string, attributes>
 
-	export type AttributableKind = AttributeKind.defineAttributable<
+	export type AttributableKind = satisfy<
+		AttributeKind,
 		"matching" | LengthAttributeKind
 	>
 

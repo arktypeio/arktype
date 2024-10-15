@@ -17,7 +17,6 @@ import {
 	type isSafelyMappable,
 	type leftIfEqual,
 	type Primitive,
-	type satisfy,
 	type show
 } from "@ark/util"
 import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
@@ -98,20 +97,6 @@ export interface Attributes
 		MetaAttributesByKind {}
 
 export type AttributeKind = keyof Attributes
-
-export declare namespace AttributeKind {
-	export type Meta = satisfy<AttributeKind, "optional" | "defaultsTo">
-
-	export type BaseConstraining = satisfy<AttributeKind, "nominal">
-
-	export type Base = Meta | BaseConstraining
-
-	export type Constraining = Exclude<AttributeKind, Meta>
-
-	export type Conditional = Exclude<AttributeKind, Base>
-
-	export type defineAttributable<kind extends Conditional> = Base | kind
-}
 
 export type LimitLiteral = number | DateLiteral
 
@@ -287,7 +272,9 @@ type extractIfSingleAttributeEntry<attributes extends Attributes> =
 	extractIfSingleEntry<attributes> extends (
 		[infer kind extends AttributeKind, infer attributesValue]
 	) ?
-		extractIfSingleEntry<attributesValue> extends [infer value, unknown] ?
+		// optional and default aren't stored in keys like constraining attributes
+		kind extends MetaAttributeKind ? [kind, attributesValue]
+		: extractIfSingleEntry<attributesValue> extends [infer value, unknown] ?
 			AttributeEntry<kind, value>
 		:	null
 	:	null
