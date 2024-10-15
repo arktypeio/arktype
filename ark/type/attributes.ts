@@ -219,46 +219,56 @@ type _attachAttributes<
 	t extends null | undefined ? t
 	: t extends of<infer base, infer existingAttributes> ?
 		"brand" extends keyof t[attributesKey] | behavior ?
-			[base, string] extends [string, base] ?
-				string.branded.is<existingAttributes & attributes>
-			: [base, number] extends [number, base] ?
-				number.branded.is<existingAttributes & attributes>
-			: [base, Date] extends [Date, base] ?
-				Date.branded.is<existingAttributes & attributes>
-			:	brand<base, existingAttributes & attributes>
-		: [base, string] extends [string, base] ?
-			string.is<existingAttributes & attributes>
-		: [base, number] extends [number, base] ?
-			number.is<existingAttributes & attributes>
-		: [base, Date] extends [Date, base] ?
-			Date.is<existingAttributes & attributes>
-		:	of<base, existingAttributes & attributes>
-	: extractIfSingleAttribute<attributes> extends (
-		{ kind: infer kind extends AttributeKind; value: infer value }
+			attachMultipleBranded<base, existingAttributes & attributes>
+		:	attachMultipleAssociated<base, existingAttributes & attributes>
+	: extractIfSingleAttributeEntry<attributes> extends (
+		AttributeEntry<infer kind, infer value>
 	) ?
 		"brand" extends behavior ?
-			[t, string] extends [string, t] ?
-				string.branded.raw.withSingleAttribute<kind, value>
-			: [t, number] extends [number, t] ?
-				number.branded.raw.withSingleAttribute<kind, value>
-			: [t, Date] extends [Date, t] ?
-				Date.branded.raw.withSingleAttribute<kind, value>
-			:	brand<t, attributes>
-		: [t, string] extends [string, t] ?
-			string.raw.withSingleAttribute<kind, value>
-		: [t, number] extends [number, t] ?
-			number.raw.withSingleAttribute<kind, value>
-		: [t, Date] extends [Date, t] ? Date.raw.withSingleAttribute<kind, value>
-		: of<t, attributes>
-	: "brand" extends behavior ?
-		[t, string] extends [string, t] ? string.branded.is<attributes>
-		: [t, number] extends [number, t] ? number.branded.is<attributes>
-		: [t, Date] extends [Date, t] ? Date.branded.is<attributes>
-		: brand<t, attributes>
-	: [t, string] extends [string, t] ? string.is<attributes>
+			attachSingleBranded<t, attributes, kind, value>
+		:	attachSingleAssociated<t, attributes, kind, value>
+	: "brand" extends behavior ? attachMultipleBranded<t, attributes>
+	: attachMultipleAssociated<t, attributes>
+
+type attachMultipleAssociated<t, attributes extends Attributes> =
+	[t, string] extends [string, t] ? string.is<attributes>
 	: [t, number] extends [number, t] ? number.is<attributes>
 	: [t, Date] extends [Date, t] ? Date.is<attributes>
 	: of<t, attributes>
+
+type attachMultipleBranded<t, attributes extends Attributes> =
+	[t, string] extends [string, t] ? string.branded.is<attributes>
+	: [t, number] extends [number, t] ? number.branded.is<attributes>
+	: [t, Date] extends [Date, t] ? Date.branded.is<attributes>
+	: brand<t, attributes>
+
+type attachSingleAssociated<
+	t,
+	attributes extends Attributes,
+	kind extends AttributeKind,
+	value
+> =
+	[t, string] extends [string, t] ? string.raw.withSingleAttribute<kind, value>
+	: [t, number] extends [number, t] ?
+		number.raw.withSingleAttribute<kind, value>
+	: [t, Date] extends [Date, t] ? Date.raw.withSingleAttribute<kind, value>
+	: of<t, attributes>
+
+type attachSingleBranded<
+	t,
+	attributes extends Attributes,
+	kind extends AttributeKind,
+	value
+> =
+	[t, string] extends [string, t] ?
+		string.branded.raw.withSingleAttribute<kind, value>
+	: [t, number] extends [number, t] ?
+		number.branded.raw.withSingleAttribute<kind, value>
+	: [t, Date] extends [Date, t] ?
+		Date.branded.raw.withSingleAttribute<kind, value>
+	:	brand<t, attributes>
+
+type AttributeEntry<kind extends AttributeKind, value> = [kind, value]
 
 /**
  * Check if attributes is a single attribute kind + value that can be collapsed
@@ -273,10 +283,12 @@ type _attachAttributes<
  * // has a single attribute kind + value, can be collapsed
  * { divisibleBy: { 2: true } } => ["divisibleBy", 2]
  */
-type extractIfSingleAttribute<attributes extends Attributes> =
-	extractIfSingleEntry<attributes> extends [infer kind, infer attributesValue] ?
+type extractIfSingleAttributeEntry<attributes extends Attributes> =
+	extractIfSingleEntry<attributes> extends (
+		[infer kind extends AttributeKind, infer attributesValue]
+	) ?
 		extractIfSingleEntry<attributesValue> extends [infer value, unknown] ?
-			[kind, value]
+			AttributeEntry<kind, value>
 		:	null
 	:	null
 
