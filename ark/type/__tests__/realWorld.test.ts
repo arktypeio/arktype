@@ -731,7 +731,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.t).type.toString.snap(`{
 	first_name?: (
 		In: string
-	) => To<is<AtLeastLength<1> & AtMostLength<3>>>
+	) => To<is<AtMostLength<3> & AtLeastLength<1>>>
 }`)
 	})
 
@@ -761,22 +761,22 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(root.t).type.toString.snap(`	| {
 			type: "file"
-			name: is<MoreThanLength<0> & LessThanLength<255>>
+			name: is<LessThanLength<255> & MoreThanLength<0>>
 	  }
 	| {
 			type: "directory"
-			name: is<MoreThanLength<0> & LessThanLength<255>>
+			name: is<LessThanLength<255> & MoreThanLength<0>>
 			children: of<
 				(
 					| {
 							type: "file"
 							name: is<
-								MoreThanLength<0> & LessThanLength<255>
+								LessThanLength<255> & MoreThanLength<0>
 							>
 					  }
 					| cyclic
 				)[],
-				Narrowed
+				Anonymous
 			>
 	  }`)
 	})

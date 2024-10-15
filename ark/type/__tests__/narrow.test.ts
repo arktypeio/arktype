@@ -220,7 +220,7 @@ contextualize(() => {
 
 		const map = type.keywords.Map.narrow(() => true).pipe(m => m)
 		attest(map.t).type.toString.snap(`(
-	In: of<Map<unknown, unknown>, Narrowed>
+	In: of<Map<unknown, unknown>, Anonymous>
 ) => Out<Map<unknown, unknown>>`)
 		attest(map.infer).type.toString.snap("Map<unknown, unknown>")
 		attest(map.inferIn).type.toString("Map<unknown, unknown>")

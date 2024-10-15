@@ -29,7 +29,9 @@ contextualize(() => {
 			age: "number.integer >= 0"
 		})
 
-		attest(unbranded.t).type.toString.snap()
+		attest(unbranded.t).type.toString.snap(
+			"{ age: is<DivisibleBy<1> & AtLeast<0>> }"
+		)
 
 		const out = unbranded({ age: 5 })
 
@@ -42,15 +44,20 @@ contextualize(() => {
 
 		const branded = unbranded.brandAttributes()
 
-		attest(branded.t).type.toString.snap()
+		attest(branded.t).type.toString.snap(
+			"{ age: brand<number, DivisibleBy<1> & AtLeast<0>> }"
+		)
 
 		const brandedOut = branded({ age: 5 })
 
-		attest(brandedOut).type.toString.snap()
+		attest(brandedOut).type.toString.snap(`	| ArkErrors
+	| { age: brand<number, DivisibleBy<1> & AtLeast<0>> }`)
 
 		const reunbranded = branded.unbrandAttributes()
 
-		attest(reunbranded.t).type.toString.snap()
+		attest(reunbranded.t).type.toString.snap(
+			"{ age: is<DivisibleBy<1> & AtLeast<0>> }"
+		)
 
 		attest<typeof unbranded, typeof reunbranded>()
 		attest(unbranded.json).equals(reunbranded.json)

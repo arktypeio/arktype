@@ -32,7 +32,7 @@ contextualize(() => {
 			readonly bar: {
 				readonly foo: "foo"
 			}
-		}>(aliases).snap()
+		}>(aliases).snap({ foo: "string", bar: { foo: "foo" } })
 	})
 
 	it("type definition inline", () => {
