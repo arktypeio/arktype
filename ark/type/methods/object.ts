@@ -21,6 +21,7 @@ import type {
 } from "@ark/util"
 import type {
 	associateAttributes,
+	Attributes,
 	Default,
 	of,
 	Optional
@@ -135,7 +136,16 @@ type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 			DefaultedTypeProp<
 				k & Key,
 				keyof attributes extends keyof Default ? base
-				:	of<base, Omit<attributes, keyof Default>>,
+				:	of<
+						base,
+						// Shouldn't need this extends check, logged a TS bug:
+						// https://github.com/microsoft/TypeScript/issues/60233
+						Omit<attributes, keyof Default> extends (
+							infer attributes extends Attributes
+						) ?
+							attributes
+						:	never
+					>,
 				defaultValue,
 				$
 			>
@@ -144,7 +154,14 @@ type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 				"optional",
 				k & Key,
 				keyof attributes extends keyof Optional ? base
-				:	of<base, Omit<attributes, keyof Optional>>,
+				:	of<
+						base,
+						Omit<attributes, keyof Default> extends (
+							infer attributes extends Attributes
+						) ?
+							attributes
+						:	never
+					>,
 				$
 			>
 		:	never
