@@ -11,7 +11,6 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
-	type dict,
 	type equals,
 	type Hkt,
 	type intersectArrays,
@@ -20,15 +19,15 @@ import {
 	type Primitive,
 	type show
 } from "@ark/util"
-import type { Type } from "../type.ts"
-import type { arkPrototypes } from "./constructors/constructors.ts"
-import type { Date } from "./constructors/Date.ts"
-import type { type } from "./keywords.ts"
-import type { DivisibleBy, number } from "./number/number.ts"
-import type { brandedString, Matching, string } from "./string/string.ts"
-export type { arkPrototypes as object } from "./constructors/constructors.ts"
-export type { number } from "./number/number.ts"
-export type { string } from "./string/string.ts"
+import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
+import type { Date } from "./keywords/constructors/Date.ts"
+import type { type } from "./keywords/keywords.ts"
+import type { number } from "./keywords/number/number.ts"
+import type { Matching, string } from "./keywords/string/string.ts"
+import type { Type } from "./type.ts"
+export type { arkPrototypes as object } from "./keywords/constructors/constructors.ts"
+export type { number } from "./keywords/number/number.ts"
+export type { string } from "./keywords/string/string.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -38,29 +37,63 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export interface BaseAttributes {
-	predicate?: dict
-	default?: unknown
-	optional?: true
-}
+export const attributesKey = noSuggest("attributes")
 
-export const ofKey = noSuggest("of")
+export type attributesKey = typeof attributesKey
 
-export type ofKey = typeof ofKey
-
-export type of<base, attributes> = base & {
-	[ofKey]: {
+export type of<base, attributes extends Attributes> = base & {
+	[attributesKey]: {
 		base: base
 		attributes: attributes
 	}
 }
 
-export type brand<base, attributes> = base & {
-	[ofKey]: {
+export type brand<base, attributes extends Attributes> = base & {
+	[attributesKey]: {
 		base: base
-		attributes: attributes & { brand: true }
+		attributes: attributes
+		brand: true
 	}
 }
+
+export interface ConstrainingAttributeValuesByKind {
+	divisibleBy: number
+	moreThan: number
+	atLeast: number
+	atMost: number
+	lessThan: number
+	matching: string
+	moreThanLength: number
+	atLeastLength: number
+	atMostLength: number
+	lessThanLength: number
+	atOrAfter: string
+	after: string
+	atOrBefore: string
+	before: string
+	nominal: string
+}
+
+export type ConstrainingAttributeKind = keyof ConstrainingAttributeValuesByKind
+
+export type ConstrainingAttributesByKind = {
+	[k in ConstrainingAttributeKind]?: Record<
+		ConstrainingAttributeValuesByKind[k],
+		true
+	>
+}
+
+export interface MetaAttributeValuesByKind extends Optional, Default {}
+
+export type MetaAttributeKind = keyof MetaAttributeValuesByKind
+
+export type MetaAttributesByKind = Partial<MetaAttributeValuesByKind>
+
+export interface Attributes
+	extends ConstrainingAttributesByKind,
+		MetaAttributesByKind {}
+
+export type AttributeKind = keyof Attributes
 
 export type LimitLiteral = number | DateLiteral
 
@@ -69,18 +102,48 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-export type constraint<rule> = { [k in rule & PropertyKey]: 1 }
+export type constraint<rule> = { [k in rule & PropertyKey]: true }
 
-export type Literal<rule> = {
-	literal: constraint<rule>
+export type Anonymous = Nominal<"?">
+
+export type Nominal<name> = {
+	nominal: constraint<name>
 }
 
-export type Narrowed = {
-	predicate: { "?": 1 }
+export type AtLeast<rule> = {
+	atLeast: constraint<rule>
 }
 
-export type Predicate<name> = {
-	predicate: constraint<name>
+export type AtMost<rule> = {
+	atMost: constraint<rule>
+}
+
+export type MoreThan<rule> = {
+	moreThan: constraint<rule>
+}
+
+export type LessThan<rule> = {
+	lessThan: constraint<rule>
+}
+
+export type DivisibleBy<rule> = {
+	divisibleBy: constraint<rule>
+}
+
+export type AtOrAfter<rule> = {
+	atOrAfter: constraint<rule>
+}
+
+export type AtOrBefore<rule> = {
+	atOrBefore: constraint<rule>
+}
+
+export type After<rule> = {
+	after: constraint<rule>
+}
+
+export type Before<rule> = {
+	before: constraint<rule>
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
@@ -109,39 +172,122 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export type applyConstraintSchema<
+export type AttributeInferenceBehavior = "brand" | "associate"
+
+export type associateAttributes<
 	t,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = applyAttribute<t, schemaToConstraint<kind, schema>>
+	attributes extends Attributes
+> = attachAttributes<t, attributes, "associate">
 
-// export type applyBrand<t, attribute> = applyAttribute<
-// 	t,
-// 	attribute & { brand: true }
-// >
+export type brandAttributes<
+	t,
+	attributes extends Attributes
+> = attachAttributes<t, attributes, "brand">
 
-export type applyAttribute<t, attribute> =
+type attachAttributes<
+	t,
+	attributes extends Attributes,
+	behavior extends AttributeInferenceBehavior = "associate"
+> =
 	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyAttribute<i, attribute>>) => o
-	:	leftIfEqual<t, _applyAttribute<t, attribute>>
+		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
+	:	leftIfEqual<t, _attachAttributes<t, attributes, behavior>>
 
-type _applyAttribute<t, attribute> =
+type _attachAttributes<
+	t,
+	attributes extends Attributes,
+	behavior extends AttributeInferenceBehavior
+> =
 	t extends null | undefined ? t
-	: t extends of<infer base, infer attributes> ?
-		[number, base] extends [base, number] ? number.is<attribute & attributes>
-		: [string, base] extends [base, string] ?
-			"brand" extends keyof attributes | keyof attribute ?
-				brandedString.is<attribute & attributes>
-			:	string.is<attribute & attributes>
-		: [Date, base] extends [base, Date] ? Date.is<attribute & attributes>
-		: of<base, attributes & attribute>
-	: [number, t] extends [t, number] ? number.applyAttribute<attribute>
-	: [string, t] extends [t, string] ?
-		"brand" extends keyof attribute ?
-			brandedString.applyBrand<attribute>
-		:	string.applyAttribute<attribute>
-	: [Date, t] extends [t, Date] ? Date.applyAttribute<attribute>
-	: of<t, attribute>
+	: t extends of<infer base, infer existingAttributes> ?
+		"brand" extends keyof t[attributesKey] | behavior ?
+			brandMultiple<base, existingAttributes & attributes>
+		:	associateMultiple<base, existingAttributes & attributes>
+	: extractIfSingleAttributeEntry<attributes> extends (
+		AttributeEntry<infer kind, infer value>
+	) ?
+		"brand" extends behavior ?
+			brandSingle<t, attributes, kind, value>
+		:	associateSingle<t, attributes, kind, value>
+	: "brand" extends behavior ? brandMultiple<t, attributes>
+	: associateMultiple<t, attributes>
+
+type associateMultiple<t, attributes extends Attributes> =
+	[t, string] extends [string, t] ? string.is<attributes>
+	: [t, number] extends [number, t] ? number.is<attributes>
+	: [t, Date] extends [Date, t] ? Date.is<attributes>
+	: of<t, attributes>
+
+type brandMultiple<t, attributes extends Attributes> =
+	[t, string] extends [string, t] ? string.branded.is<attributes>
+	: [t, number] extends [number, t] ? number.branded.is<attributes>
+	: [t, Date] extends [Date, t] ? Date.branded.is<attributes>
+	: brand<t, attributes>
+
+type associateSingle<
+	t,
+	attributes extends Attributes,
+	kind extends AttributeKind,
+	value
+> =
+	[t, string] extends [string, t] ? string.raw.withSingleAttribute<kind, value>
+	: [t, number] extends [number, t] ?
+		number.raw.withSingleAttribute<kind, value>
+	: [t, Date] extends [Date, t] ? Date.raw.withSingleAttribute<kind, value>
+	: of<t, attributes>
+
+type brandSingle<
+	t,
+	attributes extends Attributes,
+	kind extends AttributeKind,
+	value
+> =
+	[t, string] extends [string, t] ?
+		string.branded.raw.withSingleAttribute<kind, value>
+	: [t, number] extends [number, t] ?
+		number.branded.raw.withSingleAttribute<kind, value>
+	: [t, Date] extends [Date, t] ?
+		Date.branded.raw.withSingleAttribute<kind, value>
+	:	brand<t, attributes>
+
+type AttributeEntry<kind extends AttributeKind, value> = [kind, value]
+
+/**
+ * Check if attributes is a single attribute kind + value that can be collapsed
+ * for display purposes, e.g.:
+ *
+ * // has multiple attribute kinds
+ * { divisibleBy: { 2: true }, moreThan: { 3: true } } => null
+ *
+ * // has multiple attribute values of a single kind
+ * { divisibleBy: { 2: true, 3: true } } => null
+ *
+ * // has a single attribute kind + value, can be collapsed
+ * { divisibleBy: { 2: true } } => ["divisibleBy", 2]
+ */
+type extractIfSingleAttributeEntry<attributes extends Attributes> =
+	extractIfSingleEntry<attributes> extends (
+		AttributeEntry<infer kind, infer attributesValue>
+	) ?
+		extractIfSingleEntry<attributesValue> extends [infer key, infer value] ?
+			// the relevant values for optional and default aren't
+			// stored in keys like constraining attributes
+			AttributeEntry<kind, kind extends MetaAttributeKind ? value : key>
+		:	null
+	:	null
+
+type extractIfSingleEntry<o> = {
+	[k in keyof o]: keyof o extends k ? [key: k, value: o[k]] : null
+}[keyof o]
+
+export interface LengthAttributeValuesByKind {
+	moreThanLength: number
+	atLeastLength: number
+	atMostLength: number
+	lessThanLength: number
+}
+
+export type LengthAttributeKind = keyof LengthAttributeValuesByKind
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<Constraint.PrimitiveKind>
@@ -156,7 +302,13 @@ type minLengthSchemaToConstraint<schema, rule> =
 type maxLengthSchemaToConstraint<schema, rule> =
 	schema extends { exclusive: true } ? LessThanLength<rule> : AtMostLength<rule>
 
-export type schemaToConstraint<
+export type associateAttributesFromSchema<
+	t,
+	kind extends Constraint.PrimitiveKind,
+	schema extends NodeSchema<kind>
+> = associateAttributes<t, schemaToAttributes<kind, schema>>
+
+export type schemaToAttributes<
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
@@ -170,7 +322,7 @@ export type schemaToConstraint<
 		: kind extends "exactLength" ? ExactlyLength<rule>
 		: kind extends "after" ? Date.afterSchemaToConstraint<schema, rule>
 		: kind extends "before" ? Date.beforeSchemaToConstraint<schema, rule>
-		: Narrowed
+		: Anonymous
 	:	never
 
 export type distill<
@@ -183,27 +335,29 @@ export declare namespace distill {
 
 	export type Options = {
 		endpoint?: Endpoint
-		branded?: true
+		attributes?: "preserve" | "brand" | "unbrand"
 	}
 
 	export type In<t> = distill<t, { endpoint: "in" }>
 
 	export type Out<t> = distill<t, { endpoint: "out" }>
 
-	export namespace brandable {
-		export type In<t> = distill<t, { endpoint: "in"; branded: true }>
+	export namespace withAttributes {
+		export type In<t> = distill<t, { endpoint: "in"; attributes: "preserve" }>
 
-		export type Out<t> = distill<t, { endpoint: "out"; branded: true }>
+		export type Out<t> = distill<t, { endpoint: "out"; attributes: "preserve" }>
 
 		export namespace introspectable {
 			export type Out<t> = distill<
 				t,
-				{ endpoint: "out.introspectable"; branded: true }
+				{ endpoint: "out.introspectable"; attributes: "preserve" }
 			>
 		}
 	}
 
-	export type unbranded<t> = distill<t>
+	export type brand<t> = distill<t, { attributes: "brand" }>
+
+	export type unbrand<t> = distill<t, { attributes: "unbrand" }>
 
 	export namespace introspectable {
 		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
@@ -218,9 +372,15 @@ type _distill<t, opts extends distill.Options> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: t extends of<infer base, infer attributes> ?
-		opts["branded"] extends true ? of<_distill<base, opts>, attributes>
-		: "brand" extends keyof attributes ? brand<_distill<base, opts>, attributes>
-		: _distill<base, opts>
+		opts["attributes"] extends "preserve" ?
+			associateAttributes<_distill<base, opts>, attributes>
+		: opts["attributes"] extends "unbrand" ?
+			associateAttributes<_distill<base, opts>, attributes>
+		: opts["attributes"] extends "brand" ?
+			brand<_distill<base, opts>, attributes>
+		: "brand" extends keyof t[attributesKey] ?
+			brand<_distill<base, opts>, attributes>
+		:	_distill<base, opts>
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>
@@ -313,13 +473,14 @@ type distillNonArraykeys<
 	distilledArray,
 	opts extends distill.Options
 > =
-	keyof originalArray extends keyof distilledArray | ofKey ? distilledArray
+	keyof originalArray extends keyof distilledArray | attributesKey ?
+		distilledArray
 	:	distilledArray &
 			_distill<
 				{
 					[k in keyof originalArray as k extends (
 						| keyof distilledArray
-						| (opts["branded"] extends true ? never : ofKey)
+						| (opts["attributes"] extends true ? never : attributesKey)
 					) ?
 						never
 					:	k]: originalArray[k]
@@ -358,21 +519,18 @@ type TerminallyInferredObject =
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
 		t extends of<unknown, infer constraints> ?
-			applyConstraintSchema<of<narrowed, constraints>, "predicate", any>
-		:	applyConstraintSchema<narrowed, "predicate", any>
-	:	applyConstraintSchema<t, "predicate", any>
-
-export type constrainWithPredicate<t> =
-	t extends of<unknown, infer constraints> ?
-		applyConstraintSchema<of<t, constraints>, "predicate", any>
-	:	applyConstraintSchema<t, "predicate", any>
+			"brand" extends keyof t[attributesKey] ?
+				brand<narrowed, constraints>
+			:	of<narrowed, constraints>
+		:	narrowed
+	:	associateAttributes<t, Anonymous>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
 			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
-				(In: distill.brandable.In<t>) => Out<out>
+				(In: distill.withAttributes.In<t>) => Out<out>
 			:	never,
 			tail
 		>
@@ -390,13 +548,17 @@ export type To<o = any> = ["=>", o, true]
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type Optional = {
-	optional: {}
+	optional: {
+		"=": true
+	}
 }
 
 export type InferredOptional<t = unknown> = of<t, Optional>
 
 export type Default<v = any> = {
-	default: { value: v }
+	defaultsTo: {
+		value: v
+	}
 }
 
 export type DefaultFor<t> =

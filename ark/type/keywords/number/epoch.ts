@@ -1,5 +1,6 @@
 import { rootSchema } from "@ark/schema"
-import type { AtLeast, AtMost, DivisibleBy, number } from "./number.ts"
+import type { AtLeast, AtMost, DivisibleBy } from "../../attributes.ts"
+import type { number } from "./number.ts"
 
 /**
  * As per the ECMA-262 specification:

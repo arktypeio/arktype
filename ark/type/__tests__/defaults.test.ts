@@ -6,12 +6,12 @@ import {
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
-import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import type {
 	InferredDefault,
 	Out,
 	string
-} from "arktype/internal/keywords/inference.ts"
+} from "arktype/internal/attributes.ts"
+import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -31,7 +31,7 @@ contextualize(() => {
 	a: string
 	foo: defaultsTo<5>
 	bar: defaultsTo<5>
-	baz: defaultsTo<() => 5>
+	baz: defaultsTo<5>
 }`)
 			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
@@ -429,7 +429,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: InferredDefault<Date, Date.literal<"1993-05-21">>
+				key: InferredDefault<Date, Date.nominal<"1993-05-21">>
 			}>(t.t)
 		})
 
@@ -918,9 +918,7 @@ contextualize(() => {
 			const a = type(["string.numeric.parse", "=", "1"])
 
 			attest(a).type.toString.snap(`Type<
-	(
-		In: is<Default<"1"> & Predicate<"numeric">>
-	) => To<number>,
+	(In: is<Nominal<"numeric"> & Default<"1">>) => To<number>,
 	{}
 >`)
 
@@ -933,7 +931,7 @@ contextualize(() => {
 	of<
 		{
 			a: (
-				In: is<Default<"1"> & Predicate<"numeric">>
+				In: is<Nominal<"numeric"> & Default<"1">>
 			) => To<number>
 		},
 		Default<{}>

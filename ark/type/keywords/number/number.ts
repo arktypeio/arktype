@@ -1,14 +1,21 @@
 import { intrinsic, rootSchema } from "@ark/schema"
-import type { Module, Submodule } from "../../module.ts"
+import type { satisfy } from "@ark/util"
 import type {
-	BaseAttributes,
-	constraint,
+	Anonymous,
+	AtLeast,
+	AtMost,
+	AttributeKind,
+	Attributes,
+	brand,
 	Default,
-	Narrowed,
+	DivisibleBy,
+	LessThan,
+	MoreThan,
+	Nominal,
 	of,
-	Optional,
-	Predicate
-} from "../inference.ts"
+	Optional
+} from "../../attributes.ts"
+import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"
@@ -31,26 +38,6 @@ export const number: number.module = arkModule({
 	NegativeInfinity: ["===", Number.NEGATIVE_INFINITY]
 })
 
-export type AtLeast<rule> = {
-	atLeast: constraint<rule>
-}
-
-export type AtMost<rule> = {
-	atMost: constraint<rule>
-}
-
-export type MoreThan<rule> = {
-	moreThan: constraint<rule>
-}
-
-export type LessThan<rule> = {
-	lessThan: constraint<rule>
-}
-
-export type DivisibleBy<rule> = {
-	divisibleBy: constraint<rule>
-}
-
 export declare namespace number {
 	export type atLeast<rule> = of<number, AtLeast<rule>>
 
@@ -62,32 +49,28 @@ export declare namespace number {
 
 	export type divisibleBy<rule> = of<number, DivisibleBy<rule>>
 
-	export type narrowed = of<number, Narrowed>
+	export type anonymous = of<number, Anonymous>
 
 	export type optional = of<number, Optional>
 
 	export type defaultsTo<rule> = of<number, Default<rule>>
 
-	export type branded<rule> = of<number, Predicate<rule>>
+	export type nominal<rule> = of<number, Nominal<rule>>
 
-	interface ownConstraints
-		extends AtLeast<number>,
-			MoreThan<number>,
-			LessThan<number>,
-			AtMost<number>,
-			DivisibleBy<number> {}
+	export type NaN = nominal<"NaN">
 
-	export interface Attributes extends BaseAttributes, Partial<ownConstraints> {}
+	export type Infinity = nominal<"Infinity">
 
-	export type NaN = branded<"NaN">
+	export type NegativeInfinity = nominal<"NegativeInfinity">
 
-	export type Infinity = branded<"Infinity">
+	export type safe = nominal<"safe">
 
-	export type NegativeInfinity = branded<"NegativeInfinity">
+	export type is<attributes extends Attributes> = of<number, attributes>
 
-	export type safe = branded<"safe">
-
-	export type is<attributes> = of<number, attributes>
+	export type AttributableKind = satisfy<
+		AttributeKind,
+		"divisibleBy" | "moreThan" | "atLeast" | "atMost" | "lessThan"
+	>
 
 	export type minSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>
@@ -95,16 +78,23 @@ export declare namespace number {
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	export type applyAttribute<attribute> =
-		attribute extends MoreThan<infer rule> ? moreThan<rule>
-		: attribute extends AtLeast<infer rule> ? atLeast<rule>
-		: attribute extends AtMost<infer rule> ? atMost<rule>
-		: attribute extends LessThan<infer rule> ? lessThan<rule>
-		: attribute extends DivisibleBy<infer rule> ? divisibleBy<rule>
-		: attribute extends Optional ? optional
-		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Predicate<infer rule> ? branded<rule>
-		: never
+	export type withSingleAttribute<
+		kind extends AttributableKind,
+		value extends Attributes[kind]
+	> = raw.withSingleAttribute<kind, value>
+
+	export namespace raw {
+		export type withSingleAttribute<kind, value> =
+			kind extends "nominal" ? nominal<value>
+			: kind extends "divisibleBy" ? divisibleBy<value>
+			: kind extends "moreThan" ? moreThan<value>
+			: kind extends "atLeast" ? atLeast<value>
+			: kind extends "atMost" ? atMost<value>
+			: kind extends "lessThan" ? lessThan<value>
+			: kind extends "optional" ? optional
+			: kind extends "defaultsTo" ? defaultsTo<value>
+			: never
+	}
 
 	export type module = Module<submodule>
 
@@ -118,5 +108,39 @@ export declare namespace number {
 		NaN: NaN
 		Infinity: Infinity
 		NegativeInfinity: NegativeInfinity
+	}
+
+	export type branded<rule> = brand<number, Nominal<rule>>
+
+	export namespace branded {
+		export type atLeast<rule> = brand<number, AtLeast<rule>>
+
+		export type moreThan<rule> = brand<number, MoreThan<rule>>
+
+		export type atMost<rule> = brand<number, AtMost<rule>>
+
+		export type lessThan<rule> = brand<number, LessThan<rule>>
+
+		export type divisibleBy<rule> = brand<number, DivisibleBy<rule>>
+
+		export type is<attributes extends Attributes> = brand<number, attributes>
+
+		export type anonymous = brand<number, Anonymous>
+
+		export type withSingleAttribute<
+			kind extends AttributableKind,
+			value extends Attributes[kind]
+		> = raw.withSingleAttribute<kind, value>
+
+		export namespace raw {
+			export type withSingleAttribute<kind, value> =
+				kind extends "nominal" ? branded<value>
+				: kind extends "divisibleBy" ? divisibleBy<value>
+				: kind extends "moreThan" ? moreThan<value>
+				: kind extends "atLeast" ? atLeast<value>
+				: kind extends "atMost" ? atMost<value>
+				: kind extends "lessThan" ? lessThan<value>
+				: never
+		}
 	}
 }

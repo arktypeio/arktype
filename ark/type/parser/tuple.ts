@@ -24,10 +24,11 @@ import {
 	type Constructor,
 	type Domain,
 	type ErrorMessage,
-	type show
+	type show,
+	type Thunk
 } from "@ark/util"
 import type {
-	applyAttribute,
+	associateAttributes,
 	Default,
 	DefaultFor,
 	distill,
@@ -37,7 +38,7 @@ import type {
 	InferredOptional,
 	Optional,
 	Out
-} from "../keywords/inference.ts"
+} from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
@@ -378,9 +379,12 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		applyAttribute<inferDefinition<def[0], $, args>, Default<def[2]>>
+		associateAttributes<
+			inferDefinition<def[0], $, args>,
+			Default<def[2] extends Thunk<infer returnValue> ? returnValue : def[2]>
+		>
 	: def[1] extends "?" ?
-		applyAttribute<inferDefinition<def[0], $, args>, Optional>
+		associateAttributes<inferDefinition<def[0], $, args>, Optional>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]
@@ -496,7 +500,9 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
 		inferMorphOut<morph> extends infer out ?
-			(In: distill.brandable.In<inferDefinition<inDef, $, args>>) => Out<out>
+			(
+				In: distill.withAttributes.In<inferDefinition<inDef, $, args>>
+			) => Out<out>
 		:	never
 	:	never
 

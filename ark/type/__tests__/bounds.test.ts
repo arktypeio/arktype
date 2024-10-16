@@ -69,7 +69,7 @@ contextualize(() => {
 
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
-			attest(t).type.toString.snap("Type<is<MoreThan<-5> & AtMost<5>>, {}>")
+			attest(t).type.toString.snap("Type<is<AtMost<5> & MoreThan<-5>>, {}>")
 			attest<number>(t.infer)
 			const expected = rootSchema({
 				domain: "number",
@@ -82,7 +82,7 @@ contextualize(() => {
 		it("<=,<", () => {
 			const t = type("-3.23<=number<4.654")
 			attest(t).type.toString.snap(
-				"Type<is<AtLeast<-3.23> & LessThan<4.654>>, {}>"
+				"Type<is<LessThan<4.654> & AtLeast<-3.23>>, {}>"
 			)
 			attest<number>(t.infer)
 			const expected = rootSchema({
@@ -114,7 +114,7 @@ contextualize(() => {
 		it("Date equality", () => {
 			const t = type("Date==d'2020-1-1'")
 			attest<Date>(t.infer)
-			attest(t).type.toString.snap('Type<literal<"2020-1-1">, {}>')
+			attest(t).type.toString.snap('Type<nominal<"2020-1-1">, {}>')
 			attest(t.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
 			attest(t.allows(new Date("2020/01/01"))).equals(true)
 			attest(t.allows(new Date("2020/01/02"))).equals(false)
@@ -124,7 +124,7 @@ contextualize(() => {
 			const t = type("d'2001/10/10'< Date < d'2005/10/10'")
 			attest<Date>(t.infer)
 			attest(t.t).type.toString.snap(
-				'is<After<"2001/10/10"> & Before<"2005/10/10">>'
+				'is<Before<"2005/10/10"> & After<"2001/10/10">>'
 			)
 			attest(t.json).snap({
 				proto: "Date",
@@ -141,7 +141,7 @@ contextualize(() => {
 			const t = type(`d'2000'< Date <=d'${now.toISOString()}'`)
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap(
-				'Type<is<After<"2000"> & AtOrBefore<string>>, {}>'
+				'Type<is<AtOrBefore<string> & After<"2000">>, {}>'
 			)
 			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
 			attest(t.allows(now)).equals(true)

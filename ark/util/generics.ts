@@ -25,6 +25,8 @@ export type exactMessageOnError<t extends object, u extends object> = {
 	:	ErrorMessage<`'${k & string}' is not a valid key`>
 } & u
 
+export type promisable<t> = t | Promise<t>
+
 export type leftIfEqual<l, r> = [l, r] extends [r, l] ? l : r
 
 export type UnknownUnion =

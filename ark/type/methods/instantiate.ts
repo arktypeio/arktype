@@ -1,5 +1,5 @@
 import type { anyOrNever, array } from "@ark/util"
-import type { InferredMorph } from "../keywords/inference.ts"
+import type { InferredMorph } from "../attributes.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
 import type { DateType } from "./date.ts"
