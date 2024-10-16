@@ -1009,4 +1009,19 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(EitherInput(["str"])).snap(["str"])
 	})
+
+	it("intersecting unknown with piped type preserves identity", () => {
+		const base = type({
+			foo: type("string").pipe(() => 123)
+		})
+			.pipe(c => c)
+			.to({
+				foo: "123"
+			})
+
+		const identity = base.and("unknown")
+
+		attest(base.json).equals(identity.json)
+		attest(base.internal.id).equals(identity.internal.id)
+	})
 })
