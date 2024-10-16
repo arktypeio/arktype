@@ -128,7 +128,7 @@ export const addCopyButton = {
 	<div class="code-source">
 		${html}
 	</div>
-    <button class="copy-button">
+    <button class="copy-button" aria-label="copy code">
         <img class="copy-icon" src="/copy.svg"/>
 		<script type="module">
 			${addCopyButtonListenersSrc}
