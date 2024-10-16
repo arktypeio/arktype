@@ -1,5 +1,5 @@
 import { type } from "arktype"
 
 const t = type({
-	foo: [type.string.optional()]
+	foo: type.keywords.string.uuid.v4.optional()
 })

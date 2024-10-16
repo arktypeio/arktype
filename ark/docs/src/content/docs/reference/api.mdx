@@ -83,12 +83,16 @@ const exactValueFromSet = type.enumerated(1337, true, null)
 
 ### Objects
 
+<Tabs>
+	<SyntaxTab string>
+
 ```ts
 const symbolicKey = Symbol()
 
 const object = type({
 	requiredKey: "string",
 	"optionalKey?": "string.uuid",
+	defaultValue: "boolean = false",
 	// Nested definitions don't require additional `type` calls.
 	[symbolicKey]: {
 		nested: "unknown"
@@ -98,11 +102,54 @@ const object = type({
 })
 ```
 
-:::caution[Under Construction]
-We're still working on our new docs, as evidenced by the fact that they are not done.
+    </SyntaxTab>
 
-Check back soon for more!
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const object = type({
+	requiredKey: type.string,
+	optionalKey: type.keywords.string.uuid.v4.optional(),
+	defaultValue: type.boolean.default(false)
+})
+
+const record = type.Record("string", "number")
+```
+
+:::caution[`optional` and `default` only work within objects!]
+Adding an `optional` or `default` to a `Type` doesn't alter its standalone behavior.
+
+Rather, it adds metadata that changes how it works when referenced from an object:
+
+```ts
+const optionalString = type.string.optional()
+
+optionalString.allows(undefined) // false
+
+const objectWithOptionalKey = type({
+	foo: optionalString
+})
+
+objectWithOptionalKey.allows({}) // true
+```
+
+To avoid unintuitive behavior, prefer the key-embedded syntax for optionality (`"optionalKey?":`) where possible.
 :::
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Tuples
+
+```ts
+const object = type({
+	fixedLength: ["string", "number"],
+	optionalElement: [{ nestedObject: "object" }, "number?"]
+})
+```
 
 ### Kitchen Sink (more comprehensive docs to come next week!)
 
