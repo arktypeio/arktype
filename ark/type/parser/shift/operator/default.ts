@@ -5,7 +5,7 @@ import type {
 	NumberLiteral,
 	trim
 } from "@ark/util"
-import type { DateLiteral } from "../../../keywords/inference.ts"
+import type { DateLiteral } from "../../../attributes.ts"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
 import type { StringLiteral } from "../operand/enclosed.ts"
 

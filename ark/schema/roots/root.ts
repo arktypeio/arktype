@@ -51,6 +51,7 @@ import {
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { StandardSchema } from "../shared/standardSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -67,9 +68,12 @@ export interface InternalRootDeclaration extends BaseNodeDeclaration {
 }
 
 export abstract class BaseRoot<
-	/** @ts-ignore cast variance */
-	out d extends InternalRootDeclaration = InternalRootDeclaration
-> extends BaseNode<d> {
+		/** @ts-ignore cast variance */
+		out d extends InternalRootDeclaration = InternalRootDeclaration
+	>
+	extends BaseNode<d>
+	implements StandardSchema<unknown, unknown>
+{
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
 
@@ -87,6 +91,22 @@ export abstract class BaseRoot<
 	get internal(): this {
 		return this
 	}
+
+	get "~standard"(): 1 {
+		return 1
+	}
+
+	get "~vendor"(): "arktype" {
+		return "arktype"
+	}
+
+	"~validate"(input: StandardSchema.Input): StandardSchema.Result<unknown> {
+		const out = this(input.value)
+		if (out instanceof ArkErrors) return out
+		return { value: out }
+	}
+
+	declare "~types": StandardSchema.Types<unknown, unknown>
 
 	get optionalMeta(): boolean {
 		return this.cacheGetter(
@@ -131,6 +151,14 @@ export abstract class BaseRoot<
 
 	brand(name: string): this {
 		if (name === "") return throwParseError(emptyBrandNameMessage)
+		return this
+	}
+
+	brandAttributes(): this {
+		return this
+	}
+
+	unbrandAttributes(): this {
 		return this
 	}
 

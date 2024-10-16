@@ -63,15 +63,26 @@ type _mutable<o, depth extends 1[], maxDepth extends number> =
 			}
 	:	o
 
+/**
+ * extracts entries mimicking Object.entries, accounting for whether the
+ * object is an array
+ **/
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]
-}[o extends array ? keyof o & number : keyof o] &
+}[o extends readonly unknown[] ? keyof o & number : keyof o] &
 	unknown
 
 export type entriesOf<o extends object> = entryOf<o>[]
 
-export const entriesOf = <o extends object>(o: o): entriesOf<o> =>
-	Object.entries(o) as never
+/**
+ * Object.entries wrapper providing narrowed types for objects with known sets
+ * of keys, e.g. those defined internally as configs
+ *
+ * @param o the object to get narrowed entries from
+ * @returns a narrowed array of entries based on that object's type
+ */
+export const entriesOf: <o extends object>(o: o) => entryOf<o>[] =
+	Object.entries as never
 
 export type Entry<
 	key extends PropertyKey = PropertyKey,

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import type { InferredDefault } from "arktype/internal/keywords/inference.ts"
+import type { InferredDefault } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("identity", () => {

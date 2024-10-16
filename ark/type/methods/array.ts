@@ -4,7 +4,7 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
-import type { applyConstraintSchema } from "../keywords/inference.ts"
+import type { associateAttributesFromSchema } from "../attributes.ts"
 import type { ObjectType } from "./object.ts"
 
 interface Type<
@@ -14,29 +14,37 @@ interface Type<
 > extends ObjectType<t, $> {
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "minLength", schema>, $>
+	): Type<associateAttributesFromSchema<t, "minLength", schema>, $>
 
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "maxLength", schema>, $>
+	): Type<associateAttributesFromSchema<t, "maxLength", schema>, $>
 
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<
-		applyConstraintSchema<t, "minLength", exclusivizeRangeSchema<schema>>,
+		associateAttributesFromSchema<
+			t,
+			"minLength",
+			exclusivizeRangeSchema<schema>
+		>,
 		$
 	>
 
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<
-		applyConstraintSchema<t, "maxLength", exclusivizeRangeSchema<schema>>,
+		associateAttributesFromSchema<
+			t,
+			"maxLength",
+			exclusivizeRangeSchema<schema>
+		>,
 		$
 	>
 
 	exactlyLength<const schema extends ExactLength.Schema>(
 		schema: schema
-	): Type<applyConstraintSchema<t, "exactLength", schema>, $>
+	): Type<associateAttributesFromSchema<t, "exactLength", schema>, $>
 }
 
 export type { Type as ArrayType }

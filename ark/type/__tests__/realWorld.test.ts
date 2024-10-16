@@ -6,15 +6,15 @@ import {
 } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
+	Anonymous,
 	AtLeastLength,
 	AtMostLength,
-	Narrowed,
 	Out,
 	To,
 	number,
 	of,
 	string
-} from "arktype/internal/keywords/inference.ts"
+} from "arktype/internal/attributes.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -587,7 +587,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(() => true)
 			.describe('This will "fail"')
 
-		attest<string.narrowed>(t.t)
+		attest<string.anonymous>(t.t)
 
 		const serializedPredicate =
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
@@ -623,7 +623,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(s => parseInt(s))
 			.narrow(() => true)
 
-		attest<(In: string) => Out<number.narrowed>>(t.t)
+		attest<(In: string) => Out<number.anonymous>>(t.t)
 
 		const u = t.pipe(
 			n => `${n}`,
@@ -703,7 +703,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<of<bigint, Anonymous>>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]
@@ -731,7 +731,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.t).type.toString.snap(`{
 	first_name?: (
 		In: string
-	) => To<is<AtLeastLength<1> & AtMostLength<3>>>
+	) => To<is<AtMostLength<3> & AtLeastLength<1>>>
 }`)
 	})
 
@@ -761,22 +761,22 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(root.t).type.toString.snap(`	| {
 			type: "file"
-			name: is<MoreThanLength<0> & LessThanLength<255>>
+			name: is<LessThanLength<255> & MoreThanLength<0>>
 	  }
 	| {
 			type: "directory"
-			name: is<MoreThanLength<0> & LessThanLength<255>>
+			name: is<LessThanLength<255> & MoreThanLength<0>>
 			children: of<
 				(
 					| {
 							type: "file"
 							name: is<
-								MoreThanLength<0> & LessThanLength<255>
+								LessThanLength<255> & MoreThanLength<0>
 							>
 					  }
 					| cyclic
 				)[],
-				Narrowed
+				Anonymous
 			>
 	  }`)
 	})

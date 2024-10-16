@@ -7,7 +7,7 @@ import {
 	isEmptyObject,
 	throwError,
 	type Dict,
-	type Guardable,
+	type GuardablePredicate,
 	type Json,
 	type Key,
 	type array,
@@ -325,13 +325,13 @@ export abstract class BaseNode<
 	}
 
 	firstReference<narrowed>(
-		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
+		filter: GuardablePredicate<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
 		return this.references.find(n => n !== this && filter(n)) as never
 	}
 
 	firstReferenceOrThrow<narrowed extends BaseNode>(
-		filter: Guardable<BaseNode, narrowed>
+		filter: GuardablePredicate<BaseNode, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??

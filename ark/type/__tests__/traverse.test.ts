@@ -236,9 +236,10 @@ age must be more than 18 (was 2)`)
 			foo: ["unknown", "=>", () => callCount++]
 		}).satisfying((data, ctx) => ctx.mustBe("valid"))
 
-		attest(t.t).type.toString.snap(
-			"of<{ foo: (In: unknown) => Out<number> }, Narrowed>"
-		)
+		attest(t.t).type.toString.snap(`of<
+	{ foo: (In: unknown) => Out<number> },
+	Anonymous
+>`)
 		const out = t({ foo: 1 })
 
 		attest(out.toString()).snap('must be valid (was {"foo":1})')

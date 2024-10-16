@@ -6,7 +6,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distill, string } from "arktype/internal/keywords/inference.ts"
+import type { distill, string } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -23,6 +23,16 @@ contextualize(() => {
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
+	})
+
+	it("define", () => {
+		const aliases = scope.define({ foo: "string", bar: { foo: "foo" } })
+		attest<{
+			readonly foo: "string"
+			readonly bar: {
+				readonly foo: "foo"
+			}
+		}>(aliases).snap({ foo: "string", bar: { foo: "foo" } })
 	})
 
 	it("type definition inline", () => {

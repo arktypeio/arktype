@@ -15,6 +15,7 @@ import {
 	type array,
 	type conform
 } from "@ark/util"
+import type { DefaultFor, distill } from "./attributes.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -23,7 +24,6 @@ import type {
 	parseValidGenericParams,
 	validateParameterString
 } from "./generic.ts"
-import type { DefaultFor, distill } from "./keywords/inference.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
