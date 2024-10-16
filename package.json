@@ -67,7 +67,7 @@
 		"prettier-plugin-astro": "0.14.1",
 		"tsx": "4.19.1",
 		"typescript": "catalog:",
-		"typescript-eslint": "8.8.1"
+		"typescript-eslint": "8.9.0"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
