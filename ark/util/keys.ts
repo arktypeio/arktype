@@ -1,5 +1,5 @@
 import type { array, join } from "./arrays.ts"
-import type { NonNegativeIntegerLiteral } from "./numericLiterals.ts"
+import type { NonNegativeIntegerLiteral } from "./numbers.ts"
 
 export type Key = string | symbol
 
