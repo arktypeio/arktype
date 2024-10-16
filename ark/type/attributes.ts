@@ -83,10 +83,7 @@ export type ConstrainingAttributesByKind = {
 	>
 }
 
-export type MetaAttributeValuesByKind = {
-	optional: true
-	defaultsTo: unknown
-}
+export interface MetaAttributeValuesByKind extends Optional, Default {}
 
 export type MetaAttributeKind = keyof MetaAttributeValuesByKind
 
@@ -204,30 +201,30 @@ type _attachAttributes<
 	t extends null | undefined ? t
 	: t extends of<infer base, infer existingAttributes> ?
 		"brand" extends keyof t[attributesKey] | behavior ?
-			attachMultipleBranded<base, existingAttributes & attributes>
-		:	attachMultipleAssociated<base, existingAttributes & attributes>
+			brandMultiple<base, existingAttributes & attributes>
+		:	associateMultiple<base, existingAttributes & attributes>
 	: extractIfSingleAttributeEntry<attributes> extends (
 		AttributeEntry<infer kind, infer value>
 	) ?
 		"brand" extends behavior ?
-			attachSingleBranded<t, attributes, kind, value>
-		:	attachSingleAssociated<t, attributes, kind, value>
-	: "brand" extends behavior ? attachMultipleBranded<t, attributes>
-	: attachMultipleAssociated<t, attributes>
+			brandSingle<t, attributes, kind, value>
+		:	associateSingle<t, attributes, kind, value>
+	: "brand" extends behavior ? brandMultiple<t, attributes>
+	: associateMultiple<t, attributes>
 
-type attachMultipleAssociated<t, attributes extends Attributes> =
+type associateMultiple<t, attributes extends Attributes> =
 	[t, string] extends [string, t] ? string.is<attributes>
 	: [t, number] extends [number, t] ? number.is<attributes>
 	: [t, Date] extends [Date, t] ? Date.is<attributes>
 	: of<t, attributes>
 
-type attachMultipleBranded<t, attributes extends Attributes> =
+type brandMultiple<t, attributes extends Attributes> =
 	[t, string] extends [string, t] ? string.branded.is<attributes>
 	: [t, number] extends [number, t] ? number.branded.is<attributes>
 	: [t, Date] extends [Date, t] ? Date.branded.is<attributes>
 	: brand<t, attributes>
 
-type attachSingleAssociated<
+type associateSingle<
 	t,
 	attributes extends Attributes,
 	kind extends AttributeKind,
@@ -239,7 +236,7 @@ type attachSingleAssociated<
 	: [t, Date] extends [Date, t] ? Date.raw.withSingleAttribute<kind, value>
 	: of<t, attributes>
 
-type attachSingleBranded<
+type brandSingle<
 	t,
 	attributes extends Attributes,
 	kind extends AttributeKind,
@@ -270,12 +267,12 @@ type AttributeEntry<kind extends AttributeKind, value> = [kind, value]
  */
 type extractIfSingleAttributeEntry<attributes extends Attributes> =
 	extractIfSingleEntry<attributes> extends (
-		[infer kind extends AttributeKind, infer attributesValue]
+		AttributeEntry<infer kind, infer attributesValue>
 	) ?
-		// optional and default aren't stored in keys like constraining attributes
-		kind extends MetaAttributeKind ? [kind, attributesValue]
-		: extractIfSingleEntry<attributesValue> extends [infer value, unknown] ?
-			AttributeEntry<kind, value>
+		extractIfSingleEntry<attributesValue> extends [infer key, infer value] ?
+			// the relevant values for optional and default aren't
+			// stored in keys like constraining attributes
+			AttributeEntry<kind, kind extends MetaAttributeKind ? value : key>
 		:	null
 	:	null
 
@@ -551,13 +548,17 @@ export type To<o = any> = ["=>", o, true]
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type Optional = {
-	optional: true
+	optional: {
+		"=": true
+	}
 }
 
 export type InferredOptional<t = unknown> = of<t, Optional>
 
 export type Default<v = any> = {
-	defaultsTo: v
+	defaultsTo: {
+		value: v
+	}
 }
 
 export type DefaultFor<t> =
