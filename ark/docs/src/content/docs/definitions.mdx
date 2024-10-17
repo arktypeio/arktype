@@ -118,7 +118,7 @@ const object = type({
 const record = type.Record("string", "number")
 ```
 
-:::caution[`optional` and `default` only work within objects!]
+:::caution[Optional and default only work within objects!]
 Adding an `optional` or `default` to a `Type` doesn't alter its standalone behavior.
 
 Rather, it adds metadata that changes how it works when referenced from an object:
