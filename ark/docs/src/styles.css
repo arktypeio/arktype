@@ -27,6 +27,8 @@
 	--sl-color-gray-5: #003b62;
 	--sl-color-gray-6: #002946;
 	--sl-color-black: #001a2f;
+	/** Background of warning asides */
+	--sl-color-orange-low: var(--sl-color-accent-low);
 	/* Based on ArkDark ErrorLens */
 	--ark-green: #40decc;
 	--ark-error: #9558f8;
@@ -63,6 +65,15 @@
 	--sl-color-asides-text-accent: var(--sl-color-gray-2);
 	--sl-color-asides-border: var(--sl-color-gray-4);
 	background-color: var(--sl-color-gray-6);
+}
+
+/* avoid highlighting code blocks as if they were inline */
+.starlight-aside .code-container {
+	background-color: var(--sl-color-black);
+	opacity: 0.9;
+	border-radius: 1rem;
+	box-shadow: var(--shadow);
+	--sl-color-asides-text-accent: transparent;
 }
 
 @media (prefers-reduced-motion: no-preference) {
