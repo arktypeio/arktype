@@ -85,7 +85,7 @@ const exactValueFromSet = type.enumerated(1337, true, null)
 
 Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
 
-#### Required
+#### Required Properties
 
 <Tabs>
 	<SyntaxTab string>
@@ -199,7 +199,7 @@ objectWithOptionalKey.allows({}) // true
 To avoid potentially unintuitive behavior, prefer the key-embedded syntax for optionality (`"optionalKey?":`) where possible.
 :::
 
-#### Defaulted Properties
+#### Defaultable Properties
 
 <Tabs>
 	<SyntaxTab string>
@@ -237,6 +237,22 @@ const myObject = type({
 ```ts
 const myObject = type({
 	defaultableKey: type("boolean", "=", false)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+#### Index Signatures
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	"[string | symbol]": "number",
+	"[string]": "number.integer"
 })
 ```
 

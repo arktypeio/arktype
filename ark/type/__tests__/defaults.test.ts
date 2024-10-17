@@ -719,6 +719,31 @@ contextualize(() => {
 
 			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
 		})
+
+		it("union not distributed during inference with morph", () => {
+			const parseDateToFuture = (s: string) => {
+				const d = new Date(s)
+				d.setFullYear(d.getFullYear() + 100)
+				return d
+			}
+
+			const t = type("boolean | number", "=", false).or([
+				"string",
+				"=>",
+				parseDateToFuture
+			])
+
+			attest(t.json).snap([
+				"number",
+				{ in: "string", morphs: ["$ark.parseFutureDate"] },
+				{ unit: false },
+				{ unit: true }
+			])
+
+			attest(t.t).type.toString.snap(
+				"of<number | boolean, Default<false>> | ((In: string.numeric) => To<number>)"
+			)
+		})
 	})
 
 	describe("intersection", () => {

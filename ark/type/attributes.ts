@@ -188,11 +188,11 @@ type attachAttributes<
 	t,
 	attributes extends Attributes,
 	behavior extends AttributeInferenceBehavior = "associate",
-	distributed = t
+	unmorphedT = Exclude<t, InferredMorph>
 > =
-	distributed extends InferredMorph<infer i, infer o> ?
+	t extends InferredMorph<infer i, infer o> ?
 		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
-	:	leftIfEqual<t, _attachAttributes<t, attributes, behavior>>
+	:	leftIfEqual<unmorphedT, _attachAttributes<unmorphedT, attributes, behavior>>
 
 type _attachAttributes<
 	t,
