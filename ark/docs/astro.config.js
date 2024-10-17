@@ -44,6 +44,27 @@ export default defineConfig({
 					}
 				},
 				{
+					label: "Definitions",
+					items: [
+						{
+							label: "Keywords",
+							link: "/definitions#keywords"
+						},
+						{
+							label: "Literals",
+							link: "/definitions#literals"
+						},
+						{
+							label: "Objects",
+							link: "/definitions#objects"
+						},
+						{
+							label: "Tuples",
+							link: "/definitions#tuples"
+						}
+					]
+				},
+				{
 					label: "Reference",
 					autogenerate: {
 						directory: "reference"
