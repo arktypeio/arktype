@@ -182,7 +182,10 @@ const myObject = type({
 :::caution[Optional and default only work within objects!]
 Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
 
-Rather, it adds metadata that changes how it works when referenced from an object:
+Rather, it adds metadata that changes how it works when referenced from an object.
+
+<details>
+	<summary>See an example</summary>
 
 ```ts
 const optionalString = type.string.optional()
@@ -196,7 +199,9 @@ const objectWithOptionalKey = type({
 objectWithOptionalKey.allows({}) // true
 ```
 
-To avoid potentially unintuitive behavior, prefer the key-embedded syntax for optionality (`"optionalKey?":`) where possible.
+</details>
+
+Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
 :::
 
 #### Defaultable Properties
@@ -251,8 +256,10 @@ const myObject = type({
 
 ```ts
 const myObject = type({
-	"[string | symbol]": "number",
-	"[string]": "number.integer"
+	// index signatures do not require a label
+	"[string]": "number.integer",
+	// arbitrary string or symbolic expressions are allowed
+	"[string | symbol]": "number"
 })
 ```
 
