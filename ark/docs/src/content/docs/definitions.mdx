@@ -83,9 +83,9 @@ const exactValueFromSet = type.enumerated(1337, true, null)
 
 ### Objects
 
-#### Overview
-
 Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
+
+#### Required
 
 <Tabs>
 	<SyntaxTab string>
@@ -93,16 +93,12 @@ Objects definitions can include any combination of required, optional, defaultab
 ```ts
 const symbolicKey = Symbol()
 
-const object = type({
+const myObject = type({
 	requiredKey: "string",
-	"optionalKey?": "string.uuid.v4",
-	defaultValue: "string = ''",
-	// Nested definitions don't require additional `type` calls.
+	// Nested definitions don't require additional `type` calls!
 	[symbolicKey]: {
 		nested: "unknown"
-	},
-	// Index signatures are unlabeled and support arbitrary expressions.
-	"[string]": "string"
+	}
 })
 ```
 
@@ -113,19 +109,75 @@ const object = type({
 ```ts
 const symbolicKey = Symbol()
 
-const object = type({
+const myObject = type({
 	requiredKey: type.string,
-	optionalKey: type.keywords.string.uuid.v4.optional(),
-	defaultValue: type.string.default(""),
-	// Nested definitions don't require additional `type` calls.
+	// Nested definitions don't require additional `type` calls!
 	[symbolicKey]: {
 		nested: type.unknown
 	}
 })
-
-// equivalent to type({ "[string]": "string" })
-const record = type.Record(type.string, type.string)
 ```
+
+    </SyntaxTab>
+
+</Tabs>
+
+#### Optional Properties
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	"optionalKey?": "number[]",
+	[symbolicKey]: "string?"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type.number.array().optional(),
+	[symbolicKey]: type.string.optional()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: [{ type: "'script'" }, "?"],
+	[symbolicKey]: [{ ark: "'type'" }, "?"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type({ type: "'script'" }, "?"),
+	[symbolicKey]: type({ ark: "'type'" }, "?")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 :::caution[Optional and default only work within objects!]
 Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
@@ -147,13 +199,50 @@ objectWithOptionalKey.allows({}) // true
 To avoid potentially unintuitive behavior, prefer the key-embedded syntax for optionality (`"optionalKey?":`) where possible.
 :::
 
+#### Defaulted Properties
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	defaultableKey: "boolean = false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myObject = type({
+	defaultableKey: type.boolean.default(false)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myObject = type({
+	defaultableKey: ["boolean", "=", false]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const myObject = type({
+	defaultableKey: type("boolean", "=", false)
+})
+```
+
     </SyntaxTab>
 
 </Tabs>
-
-#### Optional Properties
-
-#### Defaulted Properties
 
 ### Tuples
 

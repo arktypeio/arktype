@@ -708,6 +708,17 @@ contextualize(() => {
 				baz3: "123"
 			})
 		})
+
+		it("boolean not distributed during inference", () => {
+			const t = type("boolean", "=", false)
+
+			attest(t.json).snap({
+				branches: [{ unit: false }, { unit: true }],
+				meta: { default: false }
+			})
+
+			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
+		})
 	})
 
 	describe("intersection", () => {
