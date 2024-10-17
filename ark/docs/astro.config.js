@@ -75,7 +75,10 @@ export default defineConfig({
 				Head: "./src/components/Head.astro"
 			},
 			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],
-			expressiveCode: false
+			expressiveCode: false,
+			tableOfContents: {
+				maxHeadingLevel: 4
+			}
 		}),
 		react()
 	],
