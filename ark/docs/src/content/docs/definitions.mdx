@@ -91,8 +91,8 @@ const symbolicKey = Symbol()
 
 const object = type({
 	requiredKey: "string",
-	"optionalKey?": "string.uuid",
-	defaultValue: "boolean = false",
+	"optionalKey?": "string.uuid.v4",
+	defaultValue: "string = ''",
 	// Nested definitions don't require additional `type` calls.
 	[symbolicKey]: {
 		nested: "unknown"
@@ -112,14 +112,19 @@ const symbolicKey = Symbol()
 const object = type({
 	requiredKey: type.string,
 	optionalKey: type.keywords.string.uuid.v4.optional(),
-	defaultValue: type.boolean.default(false)
+	defaultValue: type.string.default(""),
+	// Nested definitions don't require additional `type` calls.
+	[symbolicKey]: {
+		nested: type.unknown
+	}
 })
 
-const record = type.Record("string", "number")
+// equivalent to type({ "[string]": "string" })
+const record = type.Record(type.string, type.string)
 ```
 
 :::caution[Optional and default only work within objects!]
-Adding an `optional` or `default` to a `Type` doesn't alter its standalone behavior.
+Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
 
 Rather, it adds metadata that changes how it works when referenced from an object:
 
@@ -141,6 +146,10 @@ To avoid potentially unintuitive behavior, prefer the key-embedded syntax for op
     </SyntaxTab>
 
 </Tabs>
+
+#### Optional Properties
+
+#### Defaulted Properties
 
 ### Tuples
 
