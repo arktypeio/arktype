@@ -1,0 +1,42 @@
+---
+title: Keywords
+---
+
+import { Tabs } from "@astrojs/starlight/components"
+import SyntaxTab from "../../components/SyntaxTab.astro"
+
+### Base
+
+<Tabs>
+	<SyntaxTab string>
+```ts
+const keywords = type({
+	string: "string",
+	date: "Date",
+	// Subtype keywords refine or transform their root type.
+	dateFormattedString: "string.date",
+	isoFormattedString: "string.date.iso",
+	transformStringToDate: "string.date.parse"
+})
+```
+	</SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const keywords = type({
+	// Primitive keywords are exposed directly on `type`.
+	string: type.string,
+	// All builtin keywords and modules are available under `keywords`.
+	date: type.keywords.Date,
+	// Subtype keywords refine or transform their root type.
+	// `.root` gets the base type of a subtyped module.
+	dateFormattedString: type.keywords.string.date.root,
+	isoFormattedString: type.keywords.string.date.iso.root,
+	transformStringToDate: type.keywords.string.date.parse
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>

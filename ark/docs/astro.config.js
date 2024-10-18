@@ -43,31 +43,32 @@ export default defineConfig({
 						directory: "intro"
 					}
 				},
-
 				{
 					label: "Keywords",
+					collapsed: true,
 					items: [
 						{
-							label: "Core",
-							link: "/definitions#core"
+							label: "Base",
+							link: "/keywords#base"
 						},
 						{
-							label: "Subtypes",
-							link: "/definitions#subtypes"
+							label: "Subtype",
+							link: "/keywords#subtype"
 						},
 						{
-							label: "Utilities",
-							link: "/definitions#utilities"
+							label: "Utility",
+							link: "/keywords#utility"
 						}
 					]
 				},
 				{
 					label: "Literals",
+					collapsed: true,
 					items: [
-						{ label: "Strings", link: "/definitions#strings" },
-						{ label: "Numbers", link: "/definitions#numbers" },
-						{ label: "Dates", link: "/definitions#dates" },
-						{ label: "Regex", link: "/definitions#regex" }
+						{ label: "Strings", link: "/literals#strings" },
+						{ label: "Numbers", link: "/literals#numbers" },
+						{ label: "Dates", link: "/literals#dates" },
+						{ label: "Regex", link: "/literals#regex" }
 					]
 				},
 				{
@@ -75,19 +76,19 @@ export default defineConfig({
 					items: [
 						{
 							label: "Required Properties",
-							link: "/definitions#required-properties"
+							link: "/objects#required-properties"
 						},
 						{
 							label: "Optional Properties",
-							link: "/definitions#optional-properties"
+							link: "/objects#optional-properties"
 						},
 						{
 							label: "Defaultable Properties",
-							link: "/definitions#defaultable-properties"
+							link: "/objects#defaultable-properties"
 						},
 						{
 							label: "Index Signatures",
-							link: "/definitions#index-signatures"
+							link: "/objects#index-signatures"
 						}
 					]
 				},
@@ -97,81 +98,84 @@ export default defineConfig({
 					items: [
 						{
 							label: "Prefix Elements",
-							link: "/definitions#prefix-elements"
+							link: "/tuples#prefix-elements"
 						},
 						{
 							label: "Optional Elements",
-							link: "/definitions#optional-elements"
+							link: "/tuples#optional-elements"
 						},
 						{
 							label: "Variadic Elements",
-							link: "/definitions#variadic-elements"
+							link: "/tuples#variadic-elements"
 						},
 						{
 							label: "Postfix Elements",
-							link: "/definitions#postfix-elements"
+							link: "/tuples#postfix-elements"
 						}
 					]
 				},
-
 				{
 					label: "Expressions",
 					items: [
 						{
 							label: "Arrays",
-							link: "/definitions#arrays"
-						},
-						{
-							label: "Unions",
-							link: "/definitions#unions"
-						},
-						{
-							label: "Morphs",
-							link: "/definitions#morphs"
-						},
-						{
-							label: "Narrows",
-							link: "/definitions#narrows"
-						},
-						{
-							label: "Intersections",
-							link: "/definitions#intersections"
+							link: "/expressions#arrays"
 						},
 						{
 							label: "Brands",
-							link: "/definitions#brands"
+							link: "/expressions#brands"
 						},
 						{
 							label: "Casts",
-							link: "/definitions#casts"
+							link: "/expressions#casts"
 						},
 						{
 							label: "Divisors",
-							link: "/definitions#divisors"
-						},
-						{
-							label: "Ranges",
-							link: "/definitions#range"
+							link: "/expressions#divisors"
 						},
 						{
 							label: "Groups (parenthetical)",
-							link: "/definitions#groups"
+							link: "/expressions#groups"
 						},
 						{
 							label: "instanceof",
-							link: "/definitions#instanceof"
+							link: "/expressions#instanceof"
+						},
+						{
+							label: "Intersections",
+							link: "/expressions#intersections"
 						},
 						{
 							label: "keyof",
-							link: "/definitions#keyof"
-						},
-						{
-							label: "Property Access",
-							link: "/definitions#property-access"
+							link: "/expressions#keyof"
 						},
 						{
 							label: "Merge",
-							link: "/definitions#merge"
+							link: "/expressions#merge"
+						},
+						{
+							label: "Meta",
+							link: "/expressions#meta"
+						},
+						{
+							label: "Morphs",
+							link: "/expressions#morphs"
+						},
+						{
+							label: "Narrows",
+							link: "/expressions#narrows"
+						},
+						{
+							label: "Property Access",
+							link: "/expressions#property-access"
+						},
+						{
+							label: "Ranges",
+							link: "/expressions#range"
+						},
+						{
+							label: "Unions",
+							link: "/expressions#unions"
 						}
 					]
 				},
