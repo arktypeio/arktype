@@ -43,24 +43,135 @@ export default defineConfig({
 						directory: "intro"
 					}
 				},
+
 				{
-					label: "Definitions",
+					label: "Keywords",
 					items: [
 						{
-							label: "Keywords",
-							link: "/definitions#keywords"
+							label: "Core",
+							link: "/definitions#core"
 						},
 						{
-							label: "Literals",
-							link: "/definitions#literals"
+							label: "Subtypes",
+							link: "/definitions#subtypes"
 						},
 						{
-							label: "Objects",
-							link: "/definitions#objects"
+							label: "Utilities",
+							link: "/definitions#utilities"
+						}
+					]
+				},
+				{
+					label: "Literals",
+					items: [
+						{ label: "Strings", link: "/definitions#strings" },
+						{ label: "Numbers", link: "/definitions#numbers" },
+						{ label: "Dates", link: "/definitions#dates" },
+						{ label: "Regex", link: "/definitions#regex" }
+					]
+				},
+				{
+					label: "Objects",
+					items: [
+						{
+							label: "Required Properties",
+							link: "/definitions#required-properties"
 						},
 						{
-							label: "Tuples",
-							link: "/definitions#tuples"
+							label: "Optional Properties",
+							link: "/definitions#optional-properties"
+						},
+						{
+							label: "Defaultable Properties",
+							link: "/definitions#defaultable-properties"
+						},
+						{
+							label: "Index Signatures",
+							link: "/definitions#index-signatures"
+						}
+					]
+				},
+				{
+					label: "Tuples",
+					collapsed: true,
+					items: [
+						{
+							label: "Prefix Elements",
+							link: "/definitions#prefix-elements"
+						},
+						{
+							label: "Optional Elements",
+							link: "/definitions#optional-elements"
+						},
+						{
+							label: "Variadic Elements",
+							link: "/definitions#variadic-elements"
+						},
+						{
+							label: "Postfix Elements",
+							link: "/definitions#postfix-elements"
+						}
+					]
+				},
+
+				{
+					label: "Expressions",
+					items: [
+						{
+							label: "Arrays",
+							link: "/definitions#arrays"
+						},
+						{
+							label: "Unions",
+							link: "/definitions#unions"
+						},
+						{
+							label: "Morphs",
+							link: "/definitions#morphs"
+						},
+						{
+							label: "Narrows",
+							link: "/definitions#narrows"
+						},
+						{
+							label: "Intersections",
+							link: "/definitions#intersections"
+						},
+						{
+							label: "Brands",
+							link: "/definitions#brands"
+						},
+						{
+							label: "Casts",
+							link: "/definitions#casts"
+						},
+						{
+							label: "Divisors",
+							link: "/definitions#divisors"
+						},
+						{
+							label: "Ranges",
+							link: "/definitions#range"
+						},
+						{
+							label: "Groups (parenthetical)",
+							link: "/definitions#groups"
+						},
+						{
+							label: "instanceof",
+							link: "/definitions#instanceof"
+						},
+						{
+							label: "keyof",
+							link: "/definitions#keyof"
+						},
+						{
+							label: "Property Access",
+							link: "/definitions#property-access"
+						},
+						{
+							label: "Merge",
+							link: "/definitions#merge"
 						}
 					]
 				},
@@ -88,6 +199,7 @@ export default defineConfig({
 	vite: {
 		resolve: {
 			conditions: ["ark-ts"]
-		}
+		},
+		publicDir: "public"
 	}
 })
