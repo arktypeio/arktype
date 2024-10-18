@@ -334,9 +334,15 @@ const myTuple = type([
     <SyntaxTab tuple>
 
 ```ts
-const myTuple = type(["string", [{
-	name: "string"
-}, "?"])
+const myTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"?"
+	]
+])
 ```
 
     </SyntaxTab>
@@ -344,9 +350,15 @@ const myTuple = type(["string", [{
     <SyntaxTab spread>
 
 ```ts
-const myTuple = type(["string", type({
-	name: "string"
-}, "?"))
+const myTuple = type([
+	"string",
+	type(
+		{
+			name: "string"
+		},
+		"?"
+	)
+])
 ```
 
     </SyntaxTab>
