@@ -198,9 +198,9 @@ type _attachAttributes<
 	t,
 	attributes extends Attributes,
 	behavior extends AttributeInferenceBehavior,
-	distributed extends t = t
+	distributed = t
 > =
-	distributed extends null | undefined ? t
+	distributed extends null | undefined ? distributed
 	: distributed extends of<infer base, infer existingAttributes> ?
 		"brand" extends keyof distributed[attributesKey] | behavior ?
 			brandMultiple<base, existingAttributes & attributes>
