@@ -8,7 +8,7 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { isNode, pathToPropString, type TraversalPath } from "./utils.ts"
+import { appendPropToPathString, isNode, type TraversalPath } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: TraversalPath
@@ -149,8 +149,14 @@ export class TraversalContext {
 	pathHasError(path: TraversalPath): boolean {
 		if (!this.hasError()) return false
 
-		const propString = pathToPropString(path)
-		return this.errors.some(e => propString.startsWith(e.propString))
+		let partialPropString: string = ""
+		// this.errors.byPath is null prototyped so indexing by string is safe
+		if (this.errors.byPath[partialPropString]) return true
+		for (let i = 0; i < path.length; i++) {
+			partialPropString = appendPropToPathString(partialPropString, path[i])
+			if (this.errors.byPath[partialPropString]) return true
+		}
+		return false
 	}
 
 	get failFast(): boolean {

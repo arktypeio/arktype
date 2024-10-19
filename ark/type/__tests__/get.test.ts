@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
 import { keywords, type } from "arktype"
-import type { of, string } from "arktype/internal/keywords/inference.ts"
+import type { of, string } from "arktype/internal/attributes.ts"
 import type { Matching } from "arktype/internal/keywords/string/string.ts"
 
 contextualize(() => {

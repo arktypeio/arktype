@@ -1,8 +1,8 @@
-import type { Predicate, of } from "../inference.ts"
+import type { Nominal, of } from "../../attributes.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type alphanumeric = of<string, Predicate<"alphanumeric">>
+	export type alphanumeric = of<string, Nominal<"alphanumeric">>
 }
 
 export const alphanumeric = regexStringNode(

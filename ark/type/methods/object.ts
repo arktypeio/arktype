@@ -20,11 +20,12 @@ import type {
 	toArkKey
 } from "@ark/util"
 import type {
-	applyAttribute,
+	associateAttributes,
+	Attributes,
 	Default,
 	of,
 	Optional
-} from "../keywords/inference.ts"
+} from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -135,7 +136,16 @@ type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 			DefaultedTypeProp<
 				k & Key,
 				keyof attributes extends keyof Default ? base
-				:	of<base, Omit<attributes, keyof Default>>,
+				:	of<
+						base,
+						// Shouldn't need this extends check, logged a TS bug:
+						// https://github.com/microsoft/TypeScript/issues/60233
+						Omit<attributes, keyof Default> extends (
+							infer attributes extends Attributes
+						) ?
+							attributes
+						:	never
+					>,
 				defaultValue,
 				$
 			>
@@ -144,7 +154,14 @@ type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 				"optional",
 				k & Key,
 				keyof attributes extends keyof Optional ? base
-				:	of<base, Omit<attributes, keyof Optional>>,
+				:	of<
+						base,
+						Omit<attributes, keyof Default> extends (
+							infer attributes extends Attributes
+						) ?
+							attributes
+						:	never
+					>,
 				$
 			>
 		:	never
@@ -220,7 +237,7 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
 			{ kind: "optional"; default: unknown }
-		>["key"]]: applyAttribute<
+		>["key"]]: associateAttributes<
 			prop["value"][inferred],
 			Default<prop["default" & keyof prop]>
 		>

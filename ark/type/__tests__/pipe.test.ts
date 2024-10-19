@@ -8,8 +8,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
-import type { Out, To, of } from "arktype/internal/keywords/inference.ts"
-import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
+import type { MoreThan, Out, To, of } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -59,7 +58,10 @@ contextualize(() => {
 
 		attest(t.t).type.toString.snap(`(
 	In: string & {
-		" of": { base: string; attributes: Predicate<"json"> }
+		" attributes": {
+			base: string
+			attributes: Nominal<"json">
+		}
 	}
 ) => Out<string>`)
 
@@ -208,6 +210,18 @@ contextualize(() => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
 			"ParseError: Intersection of > 5 and < 3 results in an unsatisfiable type"
 		)
+	})
+
+	it("extract in/out at path", () => {
+		const t = type({
+			foo: type("number").pipe(n => `${n}`, type.string)
+		})
+
+		attest<{ foo: number }>(t.in.t)
+		attest(t.in.expression).snap("{ foo: number }")
+
+		attest<{ foo: string }>(t.out.t)
+		attest(t.out.expression).snap("{ foo: string }")
 	})
 
 	it("uses pipe for many consecutive types", () => {
@@ -887,5 +901,16 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 		})
 
 		attest(appendSeparatedLengths("a")).snap("a12|45")
+	})
+
+	it("doesn't lose input prop morphs", () => {
+		const T = type({
+			foo: type("string").pipe(s => s.length)
+		})
+			.pipe(o => o)
+			.to({
+				foo: "number"
+			})
+		attest(T({ foo: "bar" })).snap({ foo: 3 })
 	})
 })

@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import type { Json } from "@ark/util"
 import { keywords, type } from "arktype"
-import type { To } from "arktype/internal/keywords/inference.ts"
+import type { To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("Function", () => {

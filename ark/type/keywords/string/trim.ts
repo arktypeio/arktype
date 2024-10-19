@@ -1,11 +1,11 @@
 import { rootSchema } from "@ark/schema"
+import type { Nominal, of, To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { of, Predicate, To } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type trimmed = of<string, Predicate<"trimmed">>
+	export type trimmed = of<string, Nominal<"trimmed">>
 }
 
 const preformatted = regexStringNode(

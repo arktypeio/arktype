@@ -1,29 +1,19 @@
+import type { satisfy } from "@ark/util"
 import type {
-	constraint,
+	After,
+	Anonymous,
+	AtOrAfter,
+	AtOrBefore,
+	AttributeKind,
+	Attributes,
+	Before,
+	brand,
 	Default,
-	Literal,
-	Narrowed,
+	Nominal,
 	normalizeLimit,
 	of,
-	Optional,
-	Predicate
-} from "../inference.ts"
-
-export type AtOrAfter<rule> = {
-	atOrAfter: constraint<rule>
-}
-
-export type AtOrBefore<rule> = {
-	atOrBefore: constraint<rule>
-}
-
-export type After<rule> = {
-	after: constraint<rule>
-}
-
-export type Before<rule> = {
-	before: constraint<rule>
-}
+	Optional
+} from "../../attributes.ts"
 
 export declare namespace Date {
 	export type atOrAfter<rule> = of<Date, AtOrAfter<rule>>
@@ -34,17 +24,15 @@ export declare namespace Date {
 
 	export type before<rule> = of<Date, Before<rule>>
 
-	export type narrowed = of<Date, Narrowed>
+	export type anonymous = of<Date, Anonymous>
+
+	export type nominal<rule> = of<Date, Nominal<rule>>
 
 	export type optional = of<Date, Optional>
 
 	export type defaultsTo<rule> = of<Date, Default<rule>>
 
-	export type branded<rule> = of<Date, Predicate<rule>>
-
-	export type literal<rule> = of<Date, Literal<rule>>
-
-	export type is<attributes> = of<Date, attributes>
+	export type is<attributes extends Attributes> = of<Date, attributes>
 
 	export type afterSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? After<normalizeLimit<rule>>
@@ -54,13 +42,56 @@ export declare namespace Date {
 		schema extends { exclusive: true } ? Before<normalizeLimit<rule>>
 		:	AtOrBefore<normalizeLimit<rule>>
 
-	export type applyAttribute<attribute> =
-		attribute extends After<infer rule> ? after<rule>
-		: attribute extends Before<infer rule> ? before<rule>
-		: attribute extends AtOrAfter<infer rule> ? atOrAfter<rule>
-		: attribute extends AtOrBefore<infer rule> ? atOrBefore<rule>
-		: attribute extends Optional ? optional
-		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Predicate<infer rule> ? branded<rule>
-		: never
+	export type AttributableKind = satisfy<
+		AttributeKind,
+		"after" | "atOrAfter" | "before" | "atOrBefore"
+	>
+
+	export type withSingleAttribute<
+		kind extends AttributableKind,
+		value extends Attributes[kind]
+	> = raw.withSingleAttribute<kind, value>
+
+	export namespace raw {
+		export type withSingleAttribute<kind, value> =
+			kind extends "nominal" ? nominal<value>
+			: kind extends "after" ? after<value>
+			: kind extends "atOrAfter" ? atOrAfter<value>
+			: kind extends "before" ? before<value>
+			: kind extends "atOrBefore" ? atOrBefore<value>
+			: kind extends "optional" ? optional
+			: kind extends "defaultsTo" ? defaultsTo<value>
+			: never
+	}
+
+	export type branded<rule> = brand<Date, Nominal<rule>>
+
+	export namespace branded {
+		export type atOrAfter<rule> = brand<Date, AtOrAfter<rule>>
+
+		export type after<rule> = brand<Date, After<rule>>
+
+		export type atOrBefore<rule> = brand<Date, AtOrBefore<rule>>
+
+		export type before<rule> = brand<Date, Before<rule>>
+
+		export type anonymous = brand<Date, Anonymous>
+
+		export type is<attributes extends Attributes> = brand<Date, attributes>
+
+		export type withSingleAttribute<
+			kind extends AttributableKind,
+			value extends Attributes[kind]
+		> = raw.withSingleAttribute<kind, value>
+
+		export namespace raw {
+			export type withSingleAttribute<kind, value> =
+				kind extends "nominal" ? branded<value>
+				: kind extends "after" ? after<value>
+				: kind extends "atOrAfter" ? atOrAfter<value>
+				: kind extends "before" ? before<value>
+				: kind extends "atOrBefore" ? atOrBefore<value>
+				: never
+		}
+	}
 }

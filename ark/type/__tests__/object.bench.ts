@@ -71,4 +71,4 @@ bench("nested type invocations", () =>
 			})
 			.array()
 	})
-).types([21173, "instantiations"])
+).types([21549, "instantiations"])

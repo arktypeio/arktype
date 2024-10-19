@@ -19,7 +19,7 @@ export type AttestFn = {
 	<expected, actual extends expected = never>(
 		...args: actual extends never ?
 			[
-				ErrorMessage<"Type-only assertion requires two explicit genreic params, e.g. attest<expected, actual>">
+				ErrorMessage<"Type-only assertion requires two explicit generic params, e.g. attest<expected, actual>">
 			]
 		:	[]
 	): void

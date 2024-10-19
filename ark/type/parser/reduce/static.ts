@@ -1,5 +1,5 @@
 import type { Completion, ErrorMessage, defined } from "@ark/util"
-import type { LimitLiteral } from "../../keywords/inference.ts"
+import type { LimitLiteral } from "../../attributes.ts"
 import type { Scanner } from "../shift/scanner.ts"
 import type {
 	Comparator,

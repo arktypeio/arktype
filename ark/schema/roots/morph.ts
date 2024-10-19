@@ -129,16 +129,16 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
-				const inTersection = intersectOrPipeNodes(l.in, r, ctx)
-				return inTersection instanceof Disjoint ? inTersection : (
-						inTersection.distribute(
-							branch => ({
-								...l.inner,
-								in: branch
-							}),
-							ctx.$.parseSchema
-						)
-					)
+				const inTersection =
+					l.inner.in ? intersectOrPipeNodes(l.inner.in, r, ctx) : r
+				return (
+					inTersection instanceof Disjoint ? inTersection
+					: inTersection.equals(l.inner.in) ? l
+					: ctx.$.node("morph", {
+							...l.inner,
+							in: inTersection
+						})
+				)
 			})
 		}
 	})

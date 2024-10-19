@@ -73,24 +73,18 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 
 		if (isPureIntersection && l.equals(r)) return l
 
-		let result: BaseNode | Disjoint | null
-
-		if (isPureIntersection) {
-			if (l.equals(r)) return l
-			result = _intersectNodes(l, r, ctx)
-		} else {
-			result =
-				l.hasKindIn(...rootKinds) ?
-					// if l is a RootNode, r will be as well
-					_pipeNodes(l, r as never, ctx)
-				:	_intersectNodes(l, r, ctx)
-		}
+		let result =
+			isPureIntersection ? _intersectNodes(l, r, ctx)
+			: l.hasKindIn(...rootKinds) ?
+				// if l is a RootNode, r will be as well
+				_pipeNodes(l, r as never, ctx)
+			:	_intersectNodes(l, r, ctx)
 
 		if (isNode(result)) {
 			// if the result equals one of the operands, preserve its metadata by
 			// returning the original reference
-			if (l.equals(result)) result = l as never
-			else if (r.equals(result)) result = r as never
+			if (l.equals(result)) result = l
+			else if (r.equals(result)) result = r
 		}
 
 		intersectionCache[lrCacheKey] = result
@@ -201,7 +195,7 @@ const _pipeMorphed = (
 
 		return ctx.$.node("morph", {
 			morphs,
-			in: from.in
+			in: from.inner.in as any
 		})
 	}
 

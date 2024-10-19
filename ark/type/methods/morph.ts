@@ -1,4 +1,4 @@
-import type { inferPipe } from "../keywords/inference.ts"
+import type { inferPipe } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { BaseType } from "./base.ts"
 

@@ -264,7 +264,7 @@ export type valueAssertions<
 	t,
 	kind extends AssertionKind
 > = comparableValueAssertion<t, kind> &
-	(t extends () => unknown ? functionAssertions<kind> : {})
+	([t] extends [() => unknown] ? functionAssertions<kind> : {})
 
 export type nextAssertions<kind extends AssertionKind> =
 	"type" extends kind ? TypeAssertionsRoot : {}

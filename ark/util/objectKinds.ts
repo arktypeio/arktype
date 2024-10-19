@@ -1,4 +1,3 @@
-import type { array } from "./arrays.ts"
 import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
@@ -181,7 +180,8 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 ): data is InstanceType<builtinConstructors[kind]> =>
 	objectKindOf(data) === (kind as never)
 
-export const isArray = (data: unknown): data is array => Array.isArray(data)
+export const isArray: (data: unknown) => data is readonly unknown[] =
+	Array.isArray
 
 export const ecmascriptDescriptions = {
 	Array: "an array",
