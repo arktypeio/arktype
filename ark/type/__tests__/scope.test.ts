@@ -314,15 +314,8 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 			)
 		})
+
 		it("intersect cyclic reference", () => {
-			const $ = scope({
-				arf: {
-					b: "bork"
-				},
-				bork: {
-					c: "arf&bork"
-				}
-			}).export()
 			const types = scope({
 				arf: {
 					b: "bork"
