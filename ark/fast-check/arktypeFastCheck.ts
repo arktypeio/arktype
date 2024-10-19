@@ -1,221 +1,331 @@
-import type { Arbitrary } from "fast-check"
-
 import {
 	refinementKinds,
 	type NodeKind,
 	type nodeOfKind,
-	type RefinementKind,
-	type SequenceElementKind
+	type RefinementKind
 } from "@ark/schema"
-import { includes, throwInternalError } from "@ark/util"
+import {
+	hasKey,
+	isArray,
+	nearestFloat,
+	stringAndSymbolicEntriesOf,
+	throwInternalError
+} from "@ark/util"
 import type { type } from "arktype"
 import {
-	buildArbitraries,
-	type ArbitraryBuilderKeys
-} from "./arbitraryBuilders.ts"
-import { applyConstraint, type ruleByRefinementKind } from "./constraint.ts"
+	anything,
+	array,
+	bigInt,
+	constant,
+	dictionary,
+	letrec,
+	object,
+	oneof,
+	record,
+	tuple,
+	uniqueArray,
+	type Arbitrary,
+	type LetrecLooselyTypedTie
+} from "fast-check"
+import { buildDateArbitrary } from "./terminalArbitraries/date.ts"
+import { buildNumberArbitrary } from "./terminalArbitraries/number.ts"
+import { buildStringArbitrary } from "./terminalArbitraries/string.ts"
 
-type BuilderContext = {
-	seenIds: Record<string, true>
-	convertedIntersectionNodesById: Record<string, NodeContext>
-	collection: Context[]
+export type RuleByRefinementKind = {
+	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
 }
 
-const initializeContext = (): BuilderContext => ({
-	seenIds: {},
-	convertedIntersectionNodesById: {},
-	collection: []
-})
-
-export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
-	const baseRoot = schema.internal
-	const context = initializeContext()
-	const node = recursiveNodeBuilder([schema] as never, context)
-	const aliasNodesByResolvedId: Record<string, NodeContext> = {}
-	if (baseRoot.isCyclic) {
-		Object.values(baseRoot.referencesById).forEach(arkNode => {
-			if (arkNode.hasKind("alias")) {
-				const id = arkNode.resolutionId
-				aliasNodesByResolvedId[id] = context.convertedIntersectionNodesById[id]
-			}
-		})
-	}
-	return buildArbitraries(node, aliasNodesByResolvedId, baseRoot.isCyclic)
-}
-
-export const recursiveNodeBuilder = <kind extends NodeKind>(
-	children: nodeOfKind<kind>[],
-	builderContext: BuilderContext
-): Context => {
-	const collection = builderContext.collection
-	if (children.length === 0) {
-		if (collection.length > 1)
-			throwInternalError("Error occured when condensing node.")
-
-		return collection[0]
-	}
-
-	const [child, ...rest] = children
-
-	const rootCondensedNode = collection[collection.length - 1] ?? {}
-	builderContext.seenIds[child.id] = true
-	switch (child.kind) {
+const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
+	switch (node.kind) {
 		case "intersection":
-			if (builderContext.convertedIntersectionNodesById[child.id] !== undefined)
-				return builderContext.convertedIntersectionNodesById[child.id]
-
-			const intersectionResult = recursiveNodeBuilder(
-				[...child.children, ...rest] as never,
-				builderContext
+			ctx.seenIntersectionIds[node.id] = true
+			ctx.isCyclic = node.isCyclic
+			const rootNode = getRootAndSetCtxRefinements(node, ctx)
+			const intersectionArbitrary: Arbitrary<unknown> = buildArbitrary(
+				rootNode,
+				ctx
 			)
-			if (isStructureNode(intersectionResult)) intersectionResult.id = child.id
-			builderContext.convertedIntersectionNodesById[child.id] =
-				intersectionResult
-			return intersectionResult
-		case "alias":
-			const nodeToAdd = {
-				kind: child.kind,
-				rule: child.expression as never,
-				id: ""
-			}
-			const resolvedNode = child.resolution
-			const id = resolvedNode.id
-			/**
-			 * In cases where the alias has not explicitly been seen in the structure (synthetic aliases) we
-			 * recurse through the resolved node to have access to it when we're building the arbitrary.
-			 */
-			if (builderContext.seenIds[id] === undefined) {
-				recursiveNodeBuilder(
-					[resolvedNode] as never,
-					setContextCollection(builderContext)
-				)
-			}
-			nodeToAdd.id = id
-			collection.push(nodeToAdd)
-			return recursiveNodeBuilder(rest, builderContext)
+			ctx.arbitrariesByIntersectionId[node.id] = intersectionArbitrary
+			return intersectionArbitrary
+		case "domain":
+			return buildDomainArbitrary(node, ctx)
 		case "union":
-			const newNode: UnionContext = {
-				kind: "union",
-				rule: "union",
-				oneOf: []
-			}
-			for (const c of child.children) {
-				newNode.oneOf.push(
-					recursiveNodeBuilder([c], setContextCollection(builderContext))
-				)
-			}
-
-			collection.push(newNode)
-			return recursiveNodeBuilder(rest, builderContext)
-		case "structure":
-			prepareStructureNode(rootCondensedNode as never, child, builderContext)
-			return recursiveNodeBuilder(rest, builderContext)
-		case "sequence":
-			if (isStructureNode(rootCondensedNode)) {
-				const mappedChildren = child.tuple.map(element => ({
-					kind: element.kind,
-					node: recursiveNodeBuilder(
-						[element.node] as never,
-						setContextCollection(builderContext)
-					)
-				}))
-				rootCondensedNode.arbitraryNodeDetails.push(...mappedChildren)
-			}
-			return recursiveNodeBuilder(rest, builderContext)
-		case "morph":
-			return recursiveNodeBuilder(
-				[child.inner.in, ...rest] as never,
-				builderContext
+			const arbitraries: Arbitrary<unknown>[] = node.children.map(node =>
+				buildArbitrary(node, ctx)
 			)
-		case "index":
-			const signature = recursiveNodeBuilder(
-				[child.signature],
-				setContextCollection(builderContext)
-			)
-			const value = recursiveNodeBuilder(
-				[child.value] as never,
-				setContextCollection(builderContext)
-			)
-			if (isStructureNode(rootCondensedNode)) {
-				rootCondensedNode.nodeCollection["key"] = signature
-				rootCondensedNode.nodeCollection["value"] = value
-				rootCondensedNode.hasIndexSignature = true
-			}
-			return recursiveNodeBuilder(rest, builderContext)
+			return oneof(...arbitraries)
 		case "unit":
-			collection.push({ kind: child.kind, rule: "unit", unit: child.unit })
-			return recursiveNodeBuilder(rest, builderContext)
+			return constant(node.unit)
+		case "proto":
+			return buildProtoArbitrary(node, ctx)
+		case "structure":
+			return buildStructureArbitrary(node, ctx)
+		case "index":
+			return buildIndexSignatureArbitrary([node], ctx)
 		case "required":
 		case "optional":
-			if (isStructureNode(rootCondensedNode)) {
-				const key = child.key
-				const value = recursiveNodeBuilder(
-					[child.value as never],
-					setContextCollection(builderContext)
+			if (node.value.kind === "alias" && node.required)
+				throwInternalError("Infinitely deep cycles are not supported.")
+			return buildArbitrary(node.value as never, getCleanCtx(ctx))
+		case "morph":
+			//todoshawn we can ask david about this one
+			if (node.inner.in === undefined)
+				throwInternalError(`Expected the morph to have an 'In' value.`)
+
+			return buildArbitrary(node.inner.in as never, ctx)
+		case "alias":
+			if (ctx.tieStack.length < 1)
+				throwInternalError("Tie has not been initialized")
+			const tie = ctx.tieStack[ctx.tieStack.length - 1]
+			const id = node.resolutionId
+			if (!(id in ctx.seenIntersectionIds)) {
+				ctx.seenIntersectionIds[id] = true
+				ctx.arbitrariesByIntersectionId[id] = buildArbitrary(
+					node.resolution as never,
+					getCleanCtx(ctx)
 				)
-				rootCondensedNode.nodeCollection[key] = value
-				if (child.kind === "required") rootCondensedNode.requiredKeys.push(key)
 			}
-			return recursiveNodeBuilder(rest, builderContext)
+			return tie(id)
+	}
+	throwInternalError(`${node.kind} is not supported`)
+}
+
+export type Ctx = {
+	refinements: RuleByRefinementKind
+	seenIntersectionIds: Record<string, true>
+	arbitrariesByIntersectionId: Record<string, Arbitrary<unknown>>
+	isCyclic: boolean
+	tieStack: LetrecLooselyTypedTie[]
+}
+
+const initializeContext = (): Ctx => ({
+	refinements: {},
+	seenIntersectionIds: {},
+	arbitrariesByIntersectionId: {},
+	isCyclic: false,
+	tieStack: []
+})
+
+const getCleanCtx = (oldCtx: Ctx) => ({ ...oldCtx, refinements: {} })
+
+export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
+	const ctx = initializeContext()
+	return buildArbitrary(schema as never, ctx)
+}
+
+const getRefinements = <t extends RefinementKind>(
+	refinementNodes: nodeOfKind<t>[]
+) => {
+	const refinements: RuleByRefinementKind = {}
+	for (const refinementNode of refinementNodes) {
+		if (refinementNode.hasKindIn("min", "max")) {
+			refinements[refinementNode.kind] =
+				"exclusive" in refinementNode ?
+					nearestFloat(
+						refinementNode.rule,
+						refinementNode.kind === "min" ? "+" : "-"
+					)
+				:	refinementNode.rule
+		} else refinements[refinementNode.kind] = refinementNode.rule as never
+	}
+	return refinements
+}
+const getRootAndSetCtxRefinements = (
+	node: nodeOfKind<"intersection">,
+	ctx: Ctx
+) => {
+	const refinementNodes: nodeOfKind<RefinementKind>[] = []
+	let rootNodes: nodeOfKind<NodeKind>[] = []
+	for (const key in node.inner) {
+		const value = node.inner[key as keyof typeof node.inner]
+		if (refinementKinds.includes(key as never)) {
+			if (key === "pattern" && isArray(value)) {
+				if (value.length > 1) {
+					throwInternalError(
+						"Multiple regexes on a single node is not supported."
+					)
+				}
+				refinementNodes.push(value[0] as never)
+			} else refinementNodes.push(value as never)
+		} else rootNodes.push(value as never)
+	}
+	ctx.refinements = getRefinements(refinementNodes as never)
+
+	if (rootNodes.length === 0 || rootNodes.length > 1) {
+		if (!hasKey(node, "structure"))
+			throwInternalError("todoshawn figure out hwo to handle here")
+		else rootNodes = rootNodes.filter(node => node.kind === "structure")
+	}
+
+	return rootNodes[0]
+}
+
+const buildDomainArbitrary = (node: nodeOfKind<"domain">, ctx: Ctx) => {
+	switch (node.domain) {
+		case "bigint":
+			return bigInt()
+		case "number":
+			return buildNumberArbitrary(ctx)
+		case "object":
+			return object()
+		case "string":
+			return buildStringArbitrary(ctx)
+		case "symbol":
+			return constant(Symbol())
 		default:
-			if (isRefinementKind(child)) applyConstraint(child, rootCondensedNode)
-			else
-				collection.push({ kind: child.kind, rule: child.expression as never })
-			return recursiveNodeBuilder(rest, builderContext)
+			throwInternalError(`${node.domain} is not implemented`)
 	}
 }
 
-const prepareStructureNode = (
-	lastNode: StructureNodeContext,
-	child: nodeOfKind<NodeKind>,
-	context: BuilderContext
-) => {
-	lastNode.id = child.id
-	lastNode.requiredKeys = []
-	lastNode.arbitraryNodeDetails = []
-	lastNode.nodeCollection = {}
-	lastNode.hasIndexSignature = false
-	const alteredContext = setContextCollection(context, [lastNode])
-	recursiveNodeBuilder(child.children, alteredContext)
+const buildStructureArbitrary = (
+	node: nodeOfKind<"structure">,
+	ctx: Ctx
+): Arbitrary<unknown> => {
+	//todoshawn
+	if (hasKey(node, "index") && node.index)
+		return buildIndexSignatureArbitrary(node.index, ctx)
+
+	if (hasKey(node.inner, "sequence") && node.sequence) {
+		const arrayArbitrary = buildArrayArbitrary(node.sequence, ctx)
+		if (!hasKey(node.inner, "required")) return arrayArbitrary
+		//todoshawn apply additional props to an array
+		const recordArbitrary = buildObjectArbitrary(node, ctx)
+		return tuple(arrayArbitrary, recordArbitrary).map(([arr, record]) =>
+			Object.assign(arr, record)
+		)
+	}
+
+	if (ctx.isCyclic && !ctx.tieStack.length) {
+		const objectArbitrary = letrec(tie => {
+			ctx.tieStack.push(tie)
+			const arbitraries = {
+				root: buildObjectArbitrary(node, ctx),
+				...ctx.arbitrariesByIntersectionId
+			}
+			ctx.tieStack.pop()
+			return arbitraries
+		})
+		return objectArbitrary["root"]
+	}
+
+	return buildObjectArbitrary(node, ctx)
 }
 
-const setContextCollection = (
-	context: BuilderContext,
-	newCollection: NodeContext[] = []
-) => ({ ...context, collection: newCollection })
+const buildObjectArbitrary = (node: nodeOfKind<"structure">, ctx: Ctx) => {
+	const entries = stringAndSymbolicEntriesOf(node.propsByKey)
+	const requiredKeys = node.requiredKeys
+	const arbitrariesByKey: Record<PropertyKey, Arbitrary<unknown>> = {}
+	for (const [key, value] of entries) {
+		arbitrariesByKey[key] = buildArbitrary(
+			value as nodeOfKind<NodeKind>,
+			getCleanCtx(ctx)
+		)
+	}
 
-export type Context = NodeContext | StructureNodeContext | UnionContext
-
-export interface NodeContext extends ruleByRefinementKind {
-	kind: NodeKind
-	rule: ArbitraryBuilderKeys
-	unit?: unknown
+	return record(arbitrariesByKey, { requiredKeys } as never)
 }
 
-export interface UnionContext extends NodeContext {
-	oneOf: NodeContext[]
+const buildIndexSignatureArbitrary = (
+	indexNodes: readonly nodeOfKind<"index">[],
+	ctx: Ctx
+): Arbitrary<Record<string, unknown>> => {
+	if (indexNodes.length === 1)
+		return getDictionaryArbitrary(indexNodes[0], getCleanCtx(ctx))
+
+	const dictionaryArbitraries = []
+	for (const indexNode of indexNodes) {
+		dictionaryArbitraries.push(
+			getDictionaryArbitrary(indexNode, getCleanCtx(ctx))
+		)
+	}
+	return tuple(...dictionaryArbitraries).map(arbs => {
+		const recordArb = {}
+		for (const arb of arbs) Object.assign(recordArb, arb)
+		return recordArb
+	})
 }
 
-export const isUnionNode = (
-	nodeContext: NodeContext
-): nodeContext is UnionContext => nodeContext.kind === "union"
-
-export interface StructureNodeContext extends NodeContext {
-	arbitraryNodeDetails: {
-		kind: SequenceElementKind
-		node: NodeContext
-	}[]
-	nodeCollection: Record<string | symbol, NodeContext>
-	requiredKeys: (string | symbol)[]
-	hasIndexSignature: boolean
-	id: string
+const getDictionaryArbitrary = (node: nodeOfKind<"index">, ctx: Ctx) => {
+	const signatureArbitrary = buildArbitrary(node.signature, ctx)
+	const valueArbitrary = buildArbitrary(node.value as never, ctx)
+	//signatureArbitrary can be a symbol or string arbitrary
+	return dictionary(signatureArbitrary as never, valueArbitrary)
 }
 
-export const isStructureNode = (
-	nodeContext: NodeContext
-): nodeContext is StructureNodeContext =>
-	nodeContext.rule === "Array" || nodeContext.rule === "object"
+const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
+	const tupleElements = node.tuple
+	//Arrays will always have a single element and the kind will be variadic
+	if (tupleElements.length === 1 && tupleElements[0].kind === "variadic") {
+		const arrayTypeArbitrary = buildArbitrary(
+			tupleElements[0].node as never,
+			ctx
+		)
+		const arrArbitrary = array(arrayTypeArbitrary, ctx.refinements)
+		const assembledArbitrary =
+			ctx.tieStack.length ?
+				oneof(
+					{
+						maxDepth: 2,
+						depthIdentifier: `id:${node.id}`
+					},
+					{ arbitrary: constant([]), weight: 1 },
+					{
+						arbitrary: arrArbitrary,
+						weight: 2
+					}
+				)
+			:	arrArbitrary
 
-const isRefinementKind = (
-	child: nodeOfKind<NodeKind>
-): child is nodeOfKind<RefinementKind> => includes(refinementKinds, child.kind)
+		return assembledArbitrary
+	}
+
+	const tupleArbitraries = []
+	for (const element of tupleElements) {
+		const arbitrary = buildArbitrary(element.node as never, getCleanCtx(ctx))
+		if (element.kind === "variadic") tupleArbitraries.push(array(arbitrary))
+		else tupleArbitraries.push(arbitrary)
+	}
+
+	const spreadVariadicElementsTuple: Arbitrary<unknown[]> = tuple(
+		...tupleArbitraries
+	).chain(arr => {
+		const arrayWithoutOptionals = []
+		const arrayWithOptionals = []
+		for (const i in arr) {
+			if (tupleElements[i].kind === "variadic") {
+				const generatedValuesArray = (arr[i] as unknown[]).map(val =>
+					constant(val)
+				)
+				arrayWithoutOptionals.push(...generatedValuesArray)
+				arrayWithOptionals.push(...generatedValuesArray)
+			} else if (tupleElements[i].kind === "optionals")
+				arrayWithoutOptionals.push(constant(arr[i]))
+			else {
+				arrayWithoutOptionals.push(constant(arr[i]))
+				arrayWithOptionals.push(constant(arr[i]))
+			}
+		}
+		if (arrayWithOptionals.length !== arrayWithoutOptionals.length) {
+			return oneof(
+				tuple(...arrayWithoutOptionals),
+				tuple(...arrayWithOptionals)
+			)
+		}
+		return tuple(...arrayWithoutOptionals)
+	})
+	return spreadVariadicElementsTuple
+}
+
+const buildProtoArbitrary = (node: nodeOfKind<"proto">, ctx: Ctx) => {
+	switch (node.builtinName) {
+		case "Array":
+			if (ctx.refinements.exactLength === 0) return tuple()
+			return array(anything())
+		case "Set":
+			return uniqueArray(anything()).map(arr => new Set(arr))
+		case "Date":
+			return buildDateArbitrary(ctx)
+		default:
+			throwInternalError(`${node.builtinName} is not implemented`)
+	}
+}

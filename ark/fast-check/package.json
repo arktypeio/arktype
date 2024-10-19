@@ -40,5 +40,8 @@
 	},
 	"publishConfig": {
 		"access": "public"
+	},
+	"peerDependencies": {
+		"fast-check": "3"
 	}
 }
