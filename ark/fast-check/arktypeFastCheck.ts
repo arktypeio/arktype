@@ -2,11 +2,11 @@ import {
 	refinementKinds,
 	type NodeKind,
 	type nodeOfKind,
-	type RefinementKind
+	type RefinementKind,
+	type SequenceTuple
 } from "@ark/schema"
 import {
 	hasKey,
-	isArray,
 	nearestFloat,
 	stringAndSymbolicEntriesOf,
 	throwInternalError
@@ -25,7 +25,8 @@ import {
 	tuple,
 	uniqueArray,
 	type Arbitrary,
-	type LetrecLooselyTypedTie
+	type LetrecLooselyTypedTie,
+	type LetrecValue
 } from "fast-check"
 import { buildDateArbitrary } from "./terminalArbitraries/date.ts"
 import { buildNumberArbitrary } from "./terminalArbitraries/number.ts"
@@ -68,7 +69,6 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 				throwInternalError("Infinitely deep cycles are not supported.")
 			return buildArbitrary(node.value as never, getCleanCtx(ctx))
 		case "morph":
-			//todoshawn we can ask david about this one
 			if (node.inner.in === undefined)
 				throwInternalError(`Expected the morph to have an 'In' value.`)
 
@@ -113,43 +113,35 @@ export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
 	return buildArbitrary(schema as never, ctx)
 }
 
-const getRefinements = <t extends RefinementKind>(
-	refinementNodes: nodeOfKind<t>[]
+const setRefinement = (
+	refinementNode: nodeOfKind<RefinementKind>,
+	ctx: Ctx
 ) => {
-	const refinements: RuleByRefinementKind = {}
-	for (const refinementNode of refinementNodes) {
-		if (refinementNode.hasKindIn("min", "max")) {
-			refinements[refinementNode.kind] =
-				"exclusive" in refinementNode ?
-					nearestFloat(
-						refinementNode.rule,
-						refinementNode.kind === "min" ? "+" : "-"
-					)
-				:	refinementNode.rule
-		} else refinements[refinementNode.kind] = refinementNode.rule as never
+	if (refinementNode.hasKind("pattern")) {
+		if (ctx.refinements.pattern !== undefined)
+			throwInternalError("Multiple regexes on a single node is not supported.")
 	}
-	return refinements
+	if (refinementNode.hasKindIn("min", "max")) {
+		ctx.refinements[refinementNode.kind] =
+			"exclusive" in refinementNode ?
+				nearestFloat(
+					refinementNode.rule,
+					refinementNode.kind === "min" ? "+" : "-"
+				)
+			:	refinementNode.rule
+	} else ctx.refinements[refinementNode.kind] = refinementNode.rule as never
 }
+
 const getRootAndSetCtxRefinements = (
 	node: nodeOfKind<"intersection">,
 	ctx: Ctx
 ) => {
-	const refinementNodes: nodeOfKind<RefinementKind>[] = []
+	//todoshawn there's a possibility of multiple root nodes and it gigases me
 	let rootNodes: nodeOfKind<NodeKind>[] = []
-	for (const key in node.inner) {
-		const value = node.inner[key as keyof typeof node.inner]
-		if (refinementKinds.includes(key as never)) {
-			if (key === "pattern" && isArray(value)) {
-				if (value.length > 1) {
-					throwInternalError(
-						"Multiple regexes on a single node is not supported."
-					)
-				}
-				refinementNodes.push(value[0] as never)
-			} else refinementNodes.push(value as never)
-		} else rootNodes.push(value as never)
+	for (const child of node.children) {
+		if (child.hasKindIn(...refinementKinds)) setRefinement(child, ctx)
+		else rootNodes.push(child)
 	}
-	ctx.refinements = getRefinements(refinementNodes as never)
 
 	if (rootNodes.length === 0 || rootNodes.length > 1) {
 		if (!hasKey(node, "structure"))
@@ -185,18 +177,24 @@ const buildStructureArbitrary = (
 	if (hasKey(node, "index") && node.index)
 		return buildIndexSignatureArbitrary(node.index, ctx)
 
-	if (hasKey(node.inner, "sequence") && node.sequence) {
+	if (hasKey(node.inner, "sequence") && node.sequence !== undefined) {
 		const arrayArbitrary = buildArrayArbitrary(node.sequence, ctx)
-		if (!hasKey(node.inner, "required")) return arrayArbitrary
-		//todoshawn apply additional props to an array
+		const objectNode = node.children.find(child =>
+			child.hasKindIn("required", "optional")
+		)
+		if (objectNode === undefined) return arrayArbitrary
 		const recordArbitrary = buildObjectArbitrary(node, ctx)
 		return tuple(arrayArbitrary, recordArbitrary).map(([arr, record]) =>
 			Object.assign(arr, record)
 		)
 	}
 
+	return buildObjectArbitrary(node, ctx)
+}
+
+const buildObjectArbitrary = (node: nodeOfKind<"structure">, ctx: Ctx) => {
 	if (ctx.isCyclic && !ctx.tieStack.length) {
-		const objectArbitrary = letrec(tie => {
+		const objectArbitrary: LetrecValue<unknown> = letrec(tie => {
 			ctx.tieStack.push(tie)
 			const arbitraries = {
 				root: buildObjectArbitrary(node, ctx),
@@ -205,13 +203,11 @@ const buildStructureArbitrary = (
 			ctx.tieStack.pop()
 			return arbitraries
 		})
-		return objectArbitrary["root"]
+		return (objectArbitrary as never)["root"] as Arbitrary<
+			Record<string, unknown>
+		>
 	}
 
-	return buildObjectArbitrary(node, ctx)
-}
-
-const buildObjectArbitrary = (node: nodeOfKind<"structure">, ctx: Ctx) => {
 	const entries = stringAndSymbolicEntriesOf(node.propsByKey)
 	const requiredKeys = node.requiredKeys
 	const arbitrariesByKey: Record<PropertyKey, Arbitrary<unknown>> = {}
@@ -253,14 +249,13 @@ const getDictionaryArbitrary = (node: nodeOfKind<"index">, ctx: Ctx) => {
 }
 
 const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
-	const tupleElements = node.tuple
 	//Arrays will always have a single element and the kind will be variadic
-	if (tupleElements.length === 1 && tupleElements[0].kind === "variadic") {
-		const arrayTypeArbitrary = buildArbitrary(
-			tupleElements[0].node as never,
-			ctx
+	if (node.tuple.length === 1 && node.tuple[0].kind === "variadic") {
+		const elementsArbitrary = buildArbitrary(
+			node.tuple[0].node as never,
+			getCleanCtx(ctx)
 		)
-		const arrArbitrary = array(arrayTypeArbitrary, ctx.refinements)
+		const arrArbitrary = array(elementsArbitrary, ctx.refinements)
 		const assembledArbitrary =
 			ctx.tieStack.length ?
 				oneof(
@@ -279,6 +274,15 @@ const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
 		return assembledArbitrary
 	}
 
+	const spreadVariadicElementsTuple: Arbitrary<unknown[]> =
+		getSpreadVariadicElementsTuple(node.tuple, ctx)
+	return spreadVariadicElementsTuple
+}
+
+const getSpreadVariadicElementsTuple = (
+	tupleElements: SequenceTuple,
+	ctx: Ctx
+) => {
 	const tupleArbitraries = []
 	for (const element of tupleElements) {
 		const arbitrary = buildArbitrary(element.node as never, getCleanCtx(ctx))
@@ -286,9 +290,7 @@ const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
 		else tupleArbitraries.push(arbitrary)
 	}
 
-	const spreadVariadicElementsTuple: Arbitrary<unknown[]> = tuple(
-		...tupleArbitraries
-	).chain(arr => {
+	return tuple(...tupleArbitraries).chain(arr => {
 		const arrayWithoutOptionals = []
 		const arrayWithOptionals = []
 		for (const i in arr) {
@@ -313,7 +315,6 @@ const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
 		}
 		return tuple(...arrayWithoutOptionals)
 	})
-	return spreadVariadicElementsTuple
 }
 
 const buildProtoArbitrary = (node: nodeOfKind<"proto">, ctx: Ctx) => {

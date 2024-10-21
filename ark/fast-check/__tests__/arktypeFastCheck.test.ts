@@ -261,7 +261,7 @@ contextualize(() => {
 			})
 			it("multiple index signatures", () => {
 				const t = type({
-					"[string]": "number|string",
+					"[string?]": "number|string",
 					"[symbol]": "string"
 				})
 				const arbitrary = arkToArbitrary(t)
@@ -283,43 +283,31 @@ contextualize(() => {
 				const arbitrary = arkToArbitrary(t)
 				assertProperty(arbitrary, t)
 			})
-			// it("cyclic throws", () => {
-			// 	const $ = scope({
-			// 		arf: {
-			// 			b: "bork"
-			// 		},
-			// 		bork: {
-			// 			c: "arf&bork"
-			// 		}
-			// 	}).export()
-			// 	attest(() => arkToArbitrary($.arf)).throws(
-			// 		"Infinitely deep cycles are not supported."
-			// 	)
-			// })
-			it("test", () => {
-				const a = scope({
-					a: { c: "b" },
-					b: "a&b"
+			it("cyclic", () => {
+				const $ = scope({
+					arf2: {
+						b: "bork2"
+					},
+					bork2: {
+						c: "arf2&bork2"
+					}
 				}).export()
-				const b = scope({
-					a: { c: "b" },
-					b: "a&b"
-				}).export()
-				attest(a.a.json).snap({
-					required: [
-						{ key: "c", value: { reference: "$a&$b", resolve: "$ark.fn16" } }
-					],
-					domain: "object"
-				})
-				attest(b.a.json).snap({
-					required: [
-						{ key: "c", value: { reference: "$a&$b", resolve: "$ark.fn16" } }
-					],
-					domain: "object"
-				})
+				attest(() => arkToArbitrary($.arf2)).throws(
+					"Infinitely deep cycles are not supported."
+				)
 			})
 			it("array with additional props", () => {
-				const t = type({ name: "string", date: "string" }).and("string[]")
+				const t = type({ name: "string" }).and("unknown[]")
+				const arbitrary = arkToArbitrary(t)
+				assertProperty(arbitrary, t)
+			})
+			it("array keyword with additional props", () => {
+				const t = type("string[]").and({ name: "string" })
+				const arbitrary = arkToArbitrary(t)
+				assertProperty(arbitrary, t)
+			})
+			it("array keyword with additional propss", () => {
+				const t = type("string[]")
 				const arbitrary = arkToArbitrary(t)
 				assertProperty(arbitrary, t)
 			})
