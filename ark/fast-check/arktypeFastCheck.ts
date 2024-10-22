@@ -42,6 +42,9 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			ctx.seenIntersectionIds[node.id] = true
 			ctx.isCyclic = node.isCyclic
 			const rootNode = getRootAndSetCtxRefinements(node, ctx)
+			//todoshawn
+			// Specifically in the case of unknown the root node is an empty intersection node
+			if (rootNode === undefined) return anything()
 			const intersectionArbitrary: Arbitrary<unknown> = buildArbitrary(
 				rootNode,
 				ctx
@@ -137,17 +140,18 @@ const getRootAndSetCtxRefinements = (
 	ctx: Ctx
 ) => {
 	//todoshawn there's a possibility of multiple root nodes and it gigases me
+	/**
+	 * Part of my issue is that I'm simply throwing away information that I had believed was
+	 * useless.
+	 */
 	let rootNodes: nodeOfKind<NodeKind>[] = []
 	for (const child of node.children) {
 		if (child.hasKindIn(...refinementKinds)) setRefinement(child, ctx)
 		else rootNodes.push(child)
 	}
 
-	if (rootNodes.length === 0 || rootNodes.length > 1) {
-		if (!hasKey(node, "structure"))
-			throwInternalError("todoshawn figure out hwo to handle here")
-		else rootNodes = rootNodes.filter(node => node.kind === "structure")
-	}
+	if (rootNodes.length > 1)
+		rootNodes = rootNodes.filter(node => node.kind === "structure")
 
 	return rootNodes[0]
 }
@@ -321,7 +325,7 @@ const buildProtoArbitrary = (node: nodeOfKind<"proto">, ctx: Ctx) => {
 	switch (node.builtinName) {
 		case "Array":
 			if (ctx.refinements.exactLength === 0) return tuple()
-			return array(anything())
+			return array(anything(), ctx.refinements)
 		case "Set":
 			return uniqueArray(anything()).map(arr => new Set(arr))
 		case "Date":

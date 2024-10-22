@@ -96,6 +96,16 @@ contextualize(() => {
 			})
 		})
 		describe("misc", () => {
+			it("unknown", () => {
+				const t = type("unknown")
+				const arbitrary = arkToArbitrary(t)
+				return assertProperty(arbitrary, t)
+			})
+			it("unknown[]", () => {
+				const t = type("unknown[]")
+				const arbitrary = arkToArbitrary(t)
+				return assertProperty(arbitrary, t)
+			})
 			it("bigint", () => {
 				const t = type("bigint")
 				const arbitrary = arkToArbitrary(t)
@@ -152,6 +162,11 @@ contextualize(() => {
 		describe("array", () => {
 			it("Array keyword", () => {
 				const t = type("Array")
+				const arbitrary = arkToArbitrary(t)
+				assertProperty(arbitrary, t)
+			})
+			it("constrained Array keyword", () => {
+				const t = type("Array<2")
 				const arbitrary = arkToArbitrary(t)
 				assertProperty(arbitrary, t)
 			})
@@ -307,7 +322,12 @@ contextualize(() => {
 				assertProperty(arbitrary, t)
 			})
 			it("array keyword with additional propss", () => {
-				const t = type("string[]")
+				const t = type({ name: "string" }).and("Array")
+				const arbitrary = arkToArbitrary(t)
+				assertProperty(arbitrary, t)
+			})
+			it("constrained Array keyword", () => {
+				const t = type(["Array<2", "string[]"])
 				const arbitrary = arkToArbitrary(t)
 				assertProperty(arbitrary, t)
 			})
