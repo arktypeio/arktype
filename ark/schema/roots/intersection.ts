@@ -238,7 +238,11 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				// if l is unknown, return r
 				if (l.children.length === 0) return r
 
-				const basis = l.basis ? intersectOrPipeNodes(l.basis, r, ctx) : r
+				const { domain, proto, ...lInnerConstraints } = l.inner
+
+				const lBasis = proto ?? domain
+
+				const basis = lBasis ? intersectOrPipeNodes(lBasis, r, ctx) : r
 
 				return (
 					basis instanceof Disjoint ? basis
@@ -249,7 +253,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 						// be an intersection with the new basis result integrated
 					:	l.$.node(
 							"intersection",
-							{ ...l.inner, [basis.kind]: basis },
+							{ ...lInnerConstraints, [basis.kind]: basis },
 							{ prereduced: true }
 						)
 				)
