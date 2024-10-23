@@ -2,12 +2,10 @@ import {
 	refinementKinds,
 	type NodeKind,
 	type nodeOfKind,
-	type RefinementKind,
 	type SequenceTuple
 } from "@ark/schema"
 import {
 	hasKey,
-	nearestFloat,
 	stringAndSymbolicEntriesOf,
 	throwInternalError
 } from "@ark/util"
@@ -15,25 +13,27 @@ import type { type } from "arktype"
 import {
 	anything,
 	array,
-	bigInt,
 	constant,
 	dictionary,
 	letrec,
-	object,
 	oneof,
 	record,
 	tuple,
-	uniqueArray,
 	type Arbitrary,
-	type LetrecLooselyTypedTie,
 	type LetrecValue
 } from "fast-check"
-import { buildDateArbitrary } from "./terminalArbitraries/date.ts"
-import { buildNumberArbitrary } from "./terminalArbitraries/number.ts"
-import { buildStringArbitrary } from "./terminalArbitraries/string.ts"
+import {
+	getCtxWithNoRefinements,
+	initializeContext,
+	type Ctx
+} from "./fastCheckContext.ts"
+import { setRefinement } from "./refinements.ts"
+import { buildDomainArbitrary } from "./terminalArbitraries/domain.ts"
+import { buildProtoArbitrary } from "./terminalArbitraries/proto.ts"
 
-export type RuleByRefinementKind = {
-	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
+export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
+	const ctx = initializeContext()
+	return buildArbitrary(schema as never, ctx)
 }
 
 const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
@@ -41,9 +41,11 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 		case "intersection":
 			ctx.seenIntersectionIds[node.id] = true
 			ctx.isCyclic = node.isCyclic
-			const rootNode = getRootAndSetCtxRefinements(node, ctx)
-			//todoshawn
-			// Specifically in the case of unknown the root node is an empty intersection node
+			const rootNode = extractRootAndSetRefinements(node, ctx)
+			/**
+			 * Only known case for this to happen is when dealing with "unknown" the node is represented with
+			 * an empty intersection causing root to be undefined
+			 */
 			if (rootNode === undefined) return anything()
 			const intersectionArbitrary: Arbitrary<unknown> = buildArbitrary(
 				rootNode,
@@ -52,7 +54,9 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			ctx.arbitrariesByIntersectionId[node.id] = intersectionArbitrary
 			return intersectionArbitrary
 		case "domain":
-			return buildDomainArbitrary(node, ctx)
+			if (node.domain in buildDomainArbitrary)
+				return buildDomainArbitrary[node.domain](ctx)
+			return throwInternalError(`${node.domain} is not supported`)
 		case "union":
 			const arbitraries: Arbitrary<unknown>[] = node.children.map(node =>
 				buildArbitrary(node, ctx)
@@ -68,9 +72,9 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			return buildIndexSignatureArbitrary([node], ctx)
 		case "required":
 		case "optional":
-			if (node.value.kind === "alias" && node.required)
+			if (node.value.hasKind("alias") && node.required)
 				throwInternalError("Infinitely deep cycles are not supported.")
-			return buildArbitrary(node.value as never, getCleanCtx(ctx))
+			return buildArbitrary(node.value as never, getCtxWithNoRefinements(ctx))
 		case "morph":
 			if (node.inner.in === undefined)
 				throwInternalError(`Expected the morph to have an 'In' value.`)
@@ -81,11 +85,15 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 				throwInternalError("Tie has not been initialized")
 			const tie = ctx.tieStack[ctx.tieStack.length - 1]
 			const id = node.resolutionId
+			/**
+			 * Synthetic aliases cause the original structure to not contain the resolved alias node when
+			 * iterating through children so we explicitly build the resolved node
+			 */
 			if (!(id in ctx.seenIntersectionIds)) {
 				ctx.seenIntersectionIds[id] = true
 				ctx.arbitrariesByIntersectionId[id] = buildArbitrary(
 					node.resolution as never,
-					getCleanCtx(ctx)
+					getCtxWithNoRefinements(ctx)
 				)
 			}
 			return tie(id)
@@ -93,100 +101,38 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 	throwInternalError(`${node.kind} is not supported`)
 }
 
-export type Ctx = {
-	refinements: RuleByRefinementKind
-	seenIntersectionIds: Record<string, true>
-	arbitrariesByIntersectionId: Record<string, Arbitrary<unknown>>
-	isCyclic: boolean
-	tieStack: LetrecLooselyTypedTie[]
-}
-
-const initializeContext = (): Ctx => ({
-	refinements: {},
-	seenIntersectionIds: {},
-	arbitrariesByIntersectionId: {},
-	isCyclic: false,
-	tieStack: []
-})
-
-const getCleanCtx = (oldCtx: Ctx) => ({ ...oldCtx, refinements: {} })
-
-export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
-	const ctx = initializeContext()
-	return buildArbitrary(schema as never, ctx)
-}
-
-const setRefinement = (
-	refinementNode: nodeOfKind<RefinementKind>,
-	ctx: Ctx
-) => {
-	if (refinementNode.hasKind("pattern")) {
-		if (ctx.refinements.pattern !== undefined)
-			throwInternalError("Multiple regexes on a single node is not supported.")
-	}
-	if (refinementNode.hasKindIn("min", "max")) {
-		ctx.refinements[refinementNode.kind] =
-			"exclusive" in refinementNode ?
-				nearestFloat(
-					refinementNode.rule,
-					refinementNode.kind === "min" ? "+" : "-"
-				)
-			:	refinementNode.rule
-	} else ctx.refinements[refinementNode.kind] = refinementNode.rule as never
-}
-
-const getRootAndSetCtxRefinements = (
+const extractRootAndSetRefinements = (
 	node: nodeOfKind<"intersection">,
 	ctx: Ctx
 ) => {
-	//todoshawn there's a possibility of multiple root nodes and it gigases me
-	/**
-	 * Part of my issue is that I'm simply throwing away information that I had believed was
-	 * useless.
-	 */
-	let rootNodes: nodeOfKind<NodeKind>[] = []
-	for (const child of node.children) {
+	const roots: nodeOfKind<NodeKind>[] = []
+
+	node.children.forEach(child => {
 		if (child.hasKindIn(...refinementKinds)) setRefinement(child, ctx)
-		else rootNodes.push(child)
-	}
-
-	if (rootNodes.length > 1)
-		rootNodes = rootNodes.filter(node => node.kind === "structure")
-
-	return rootNodes[0]
-}
-
-const buildDomainArbitrary = (node: nodeOfKind<"domain">, ctx: Ctx) => {
-	switch (node.domain) {
-		case "bigint":
-			return bigInt()
-		case "number":
-			return buildNumberArbitrary(ctx)
-		case "object":
-			return object()
-		case "string":
-			return buildStringArbitrary(ctx)
-		case "symbol":
-			return constant(Symbol())
-		default:
-			throwInternalError(`${node.domain} is not implemented`)
-	}
+		else roots.push(child)
+	})
+	//todoshawn currently doesn't work if type("Array").and({a: string})
+	if (roots.length > 1)
+		return roots.filter(root => root.hasKind("structure"))[0]
+	return roots[0]
 }
 
 const buildStructureArbitrary = (
 	node: nodeOfKind<"structure">,
 	ctx: Ctx
 ): Arbitrary<unknown> => {
-	//todoshawn
 	if (hasKey(node, "index") && node.index)
 		return buildIndexSignatureArbitrary(node.index, ctx)
 
 	if (hasKey(node.inner, "sequence") && node.sequence !== undefined) {
 		const arrayArbitrary = buildArrayArbitrary(node.sequence, ctx)
+
+		// This allows us to check if there was an interesection with an object adding additional props to the array
 		const objectNode = node.children.find(child =>
 			child.hasKindIn("required", "optional")
 		)
 		if (objectNode === undefined) return arrayArbitrary
+
 		const recordArbitrary = buildObjectArbitrary(node, ctx)
 		return tuple(arrayArbitrary, recordArbitrary).map(([arr, record]) =>
 			Object.assign(arr, record)
@@ -217,8 +163,8 @@ const buildObjectArbitrary = (node: nodeOfKind<"structure">, ctx: Ctx) => {
 	const arbitrariesByKey: Record<PropertyKey, Arbitrary<unknown>> = {}
 	for (const [key, value] of entries) {
 		arbitrariesByKey[key] = buildArbitrary(
-			value as nodeOfKind<NodeKind>,
-			getCleanCtx(ctx)
+			value as never,
+			getCtxWithNoRefinements(ctx)
 		)
 	}
 
@@ -230,12 +176,12 @@ const buildIndexSignatureArbitrary = (
 	ctx: Ctx
 ): Arbitrary<Record<string, unknown>> => {
 	if (indexNodes.length === 1)
-		return getDictionaryArbitrary(indexNodes[0], getCleanCtx(ctx))
+		return getDictionaryArbitrary(indexNodes[0], getCtxWithNoRefinements(ctx))
 
 	const dictionaryArbitraries = []
 	for (const indexNode of indexNodes) {
 		dictionaryArbitraries.push(
-			getDictionaryArbitrary(indexNode, getCleanCtx(ctx))
+			getDictionaryArbitrary(indexNode, getCtxWithNoRefinements(ctx))
 		)
 	}
 	return tuple(...dictionaryArbitraries).map(arbs => {
@@ -257,10 +203,10 @@ const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
 	if (node.tuple.length === 1 && node.tuple[0].kind === "variadic") {
 		const elementsArbitrary = buildArbitrary(
 			node.tuple[0].node as never,
-			getCleanCtx(ctx)
+			getCtxWithNoRefinements(ctx)
 		)
 		const arrArbitrary = array(elementsArbitrary, ctx.refinements)
-		const assembledArbitrary =
+		const possiblyWeightedArray =
 			ctx.tieStack.length ?
 				oneof(
 					{
@@ -275,12 +221,13 @@ const buildArrayArbitrary = (node: nodeOfKind<"sequence">, ctx: Ctx) => {
 				)
 			:	arrArbitrary
 
-		return assembledArbitrary
+		return possiblyWeightedArray
 	}
 
-	const spreadVariadicElementsTuple: Arbitrary<unknown[]> =
-		getSpreadVariadicElementsTuple(node.tuple, ctx)
-	return spreadVariadicElementsTuple
+	return getSpreadVariadicElementsTuple(
+		node.tuple,
+		getCtxWithNoRefinements(ctx)
+	)
 }
 
 const getSpreadVariadicElementsTuple = (
@@ -289,7 +236,7 @@ const getSpreadVariadicElementsTuple = (
 ) => {
 	const tupleArbitraries = []
 	for (const element of tupleElements) {
-		const arbitrary = buildArbitrary(element.node as never, getCleanCtx(ctx))
+		const arbitrary = buildArbitrary(element.node as never, ctx)
 		if (element.kind === "variadic") tupleArbitraries.push(array(arbitrary))
 		else tupleArbitraries.push(arbitrary)
 	}
@@ -319,18 +266,4 @@ const getSpreadVariadicElementsTuple = (
 		}
 		return tuple(...arrayWithoutOptionals)
 	})
-}
-
-const buildProtoArbitrary = (node: nodeOfKind<"proto">, ctx: Ctx) => {
-	switch (node.builtinName) {
-		case "Array":
-			if (ctx.refinements.exactLength === 0) return tuple()
-			return array(anything(), ctx.refinements)
-		case "Set":
-			return uniqueArray(anything()).map(arr => new Set(arr))
-		case "Date":
-			return buildDateArbitrary(ctx)
-		default:
-			throwInternalError(`${node.builtinName} is not implemented`)
-	}
 }

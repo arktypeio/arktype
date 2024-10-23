@@ -1,5 +1,5 @@
 import { string, stringMatching, type Arbitrary } from "fast-check"
-import type { Ctx, RuleByRefinementKind } from "../arktypeFastCheck.ts"
+import type { Ctx, RuleByRefinementKind } from "../fastCheckContext.ts"
 
 export const buildStringArbitrary = (ctx: Ctx): Arbitrary<string> => {
 	const refinements = ctx.refinements

@@ -1,6 +1,6 @@
 import { hasKey, throwInternalError } from "@ark/util"
 import { double, integer, type Arbitrary } from "fast-check"
-import type { Ctx } from "../arktypeFastCheck.ts"
+import type { Ctx } from "../fastCheckContext.ts"
 
 export const buildNumberArbitrary = (ctx: Ctx): Arbitrary<number> => {
 	const refinements = ctx.refinements

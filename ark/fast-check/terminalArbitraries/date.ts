@@ -1,5 +1,5 @@
 import { date, type Arbitrary } from "fast-check"
-import type { Ctx } from "../arktypeFastCheck.ts"
+import type { Ctx } from "../fastCheckContext.ts"
 
 type DateConstraints = { min?: Date; max?: Date }
 

@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
 import { scope, type } from "arktype"
-import { assert, property, type Arbitrary } from "fast-check"
+import { type Arbitrary, assert, property } from "fast-check"
 import { describe } from "mocha"
 
 contextualize(() => {
@@ -142,23 +142,7 @@ contextualize(() => {
 				assertProperty(arbitrary, t)
 			})
 		})
-		describe("proto", () => {
-			it("Set", () => {
-				const t = type("Set")
-				const arbitrary = arkToArbitrary(t)
-				assertProperty(arbitrary, t)
-			})
-			it("Date", () => {
-				const t = type("Date")
-				const arbitrary = arkToArbitrary(t)
-				assertProperty(arbitrary, t)
-			})
-			it("bounded date", () => {
-				const t = type("d'2001/10/10'<Date<=d'2005/10/10'")
-				const arbitrary = arkToArbitrary(t)
-				assertProperty(arbitrary, t)
-			})
-		})
+
 		describe("array", () => {
 			it("Array keyword", () => {
 				const t = type("Array")
@@ -326,8 +310,20 @@ contextualize(() => {
 				const arbitrary = arkToArbitrary(t)
 				assertProperty(arbitrary, t)
 			})
-			it("constrained Array keyword", () => {
-				const t = type(["Array<2", "string[]"])
+		})
+		describe("proto", () => {
+			it("Set", () => {
+				const t = type("Set")
+				const arbitrary = arkToArbitrary(t)
+				assertProperty(arbitrary, t)
+			})
+			it("Date", () => {
+				const t = type("Date")
+				const arbitrary = arkToArbitrary(t)
+				assertProperty(arbitrary, t)
+			})
+			it("bounded date", () => {
+				const t = type("d'2001/10/10'<Date<=d'2005/10/10'")
 				const arbitrary = arkToArbitrary(t)
 				assertProperty(arbitrary, t)
 			})
