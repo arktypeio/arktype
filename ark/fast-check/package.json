@@ -1,0 +1,46 @@
+{
+	"name": "@ark/fast-check",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/fast-check"
+	},
+	"type": "module",
+	"main": "./out/arktypeFastCheck.js",
+	"types": "./out/arktypeFastCheck.d.ts",
+	"exports": {
+		".": {
+			"ark-ts": "./arktypeFastCheck.ts",
+			"default": "./out/arktypeFastCheck.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
+	},
+	"files": [
+		"out"
+	],
+	"scripts": {
+		"build": "ts ../repo/build.ts",
+		"test": "tsx ../repo/testPackage.ts"
+	},
+	"dependencies": {
+		"arktype": "workspace:*",
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"peerDependencies": {
+		"fast-check": "3"
+	}
+}
