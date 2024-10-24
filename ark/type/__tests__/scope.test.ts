@@ -25,6 +25,16 @@ contextualize(() => {
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 	})
 
+	it("define", () => {
+		const aliases = scope.define({ foo: "string", bar: { foo: "foo" } })
+		attest<{
+			readonly foo: "string"
+			readonly bar: {
+				readonly foo: "foo"
+			}
+		}>(aliases).snap({ foo: "string", bar: { foo: "foo" } })
+	})
+
 	it("type definition inline", () => {
 		const $ = scope({ actual: type({ name: "string" }) })
 		const types = $.export()
