@@ -1,5 +1,5 @@
 import type { GuardablePredicate } from "./functions.ts"
-import type { anyOrNever } from "./generics.ts"
+import type { anyOrNever, conform } from "./generics.ts"
 import type { isDisjoint } from "./intersections.ts"
 import type { parseNonNegativeInteger } from "./numericLiterals.ts"
 
@@ -293,3 +293,15 @@ export const arrayEquals = <element>(
 			(lItem, i) => opts.isEqual!(lItem, r[i])
 		:	(lItem, i) => lItem === r[i]
 	)
+
+export type validateExhaustiveKeys<
+	keys extends readonly PropertyKey[],
+	expectedKey extends PropertyKey
+> =
+	keys extends readonly [infer head, ...infer tail extends PropertyKey[]] ?
+		readonly [
+			conform<head, expectedKey>,
+			...validateExhaustiveKeys<tail, Exclude<expectedKey, head>>
+		]
+	: [expectedKey] extends [never] ? []
+	: [expectedKey]
