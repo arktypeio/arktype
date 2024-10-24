@@ -35,8 +35,7 @@
 	"dependencies": {
 		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
-		"@ark/util": "workspace:*",
-		"fast-check": "3.18.0"
+		"@ark/util": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

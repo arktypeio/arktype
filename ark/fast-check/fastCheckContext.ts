@@ -1,5 +1,5 @@
-import type { nodeOfKind, RefinementKind } from "@ark/schema"
 import type { Arbitrary, LetrecLooselyTypedTie } from "fast-check"
+import type { RuleByRefinementKind } from "./refinements.ts"
 
 export type Ctx = {
 	refinements: RuleByRefinementKind
@@ -7,6 +7,7 @@ export type Ctx = {
 	arbitrariesByIntersectionId: Record<string, Arbitrary<unknown>>
 	isCyclic: boolean
 	tieStack: LetrecLooselyTypedTie[]
+	mustGenerate: Record<string, Arbitrary<unknown>>
 }
 
 export const initializeContext = (): Ctx => ({
@@ -14,14 +15,11 @@ export const initializeContext = (): Ctx => ({
 	seenIntersectionIds: {},
 	arbitrariesByIntersectionId: {},
 	isCyclic: false,
-	tieStack: []
+	tieStack: [],
+	mustGenerate: {}
 })
 
 export const getCtxWithNoRefinements = (oldCtx: Ctx): Ctx => ({
 	...oldCtx,
 	refinements: {}
 })
-
-export type RuleByRefinementKind = {
-	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
-}

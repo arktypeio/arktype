@@ -20,3 +20,7 @@ export const setRefinement = (
 			:	refinementNode.rule
 	} else ctx.refinements[refinementNode.kind] = refinementNode.rule as never
 }
+
+export type RuleByRefinementKind = {
+	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
+}

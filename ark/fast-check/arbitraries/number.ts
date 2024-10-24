@@ -27,8 +27,10 @@ export const buildNumberArbitrary = (ctx: Ctx): Arbitrary<number> => {
 			)
 		}
 	}
+
 	const min = refinements.min ?? Number.MIN_SAFE_INTEGER
 	const max = refinements.max ?? Number.MAX_SAFE_INTEGER
+
 	const firstDivisibleInRange = Math.ceil(min / divisor) * divisor
 
 	if (firstDivisibleInRange > max || firstDivisibleInRange < min) {
@@ -36,10 +38,13 @@ export const buildNumberArbitrary = (ctx: Ctx): Arbitrary<number> => {
 			`No values within range ${refinements.min} - ${refinements.max} are divisible by ${refinements.divisor}.`
 		)
 	}
+
 	refinements.min = firstDivisibleInRange
 	//fast-check defaults max to 0x7fffffff which prevents larger divisible numbers from being produced
 	refinements.max = max
+
 	const integerArbitrary = integer(refinements)
+
 	const integersDivisibleByDivisor = integerArbitrary.map(value => {
 		const remainder = value % divisor
 		if (remainder === 0) return value
