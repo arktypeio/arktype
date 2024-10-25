@@ -439,7 +439,7 @@ export abstract class BaseRoot<
 			branch =>
 				branch.hasKind("morph") ?
 					this.$.node("morph", {
-						in: branch.inner.in as any,
+						in: branch.inner.in as never,
 						morphs: [...branch.morphs, morph]
 					})
 				:	this.$.node("morph", {

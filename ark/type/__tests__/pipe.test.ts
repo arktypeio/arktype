@@ -913,16 +913,12 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 			})
 		attest(T({ foo: "bar" })).snap({ foo: 3 })
 
-		const $ = scope({
+		const types = scope({
 			From: { a: ["1", "=>", () => 2] },
 			Morph: ["From", "=>", e => e],
 			To: { a: "2" }
 		}).export()
-
-		attest(
-			$.Morph.pipe(e => e)
-				.pipe($.To)
-				.assert({ a: 1 })
-		).snap({ a: 2 })
+		const U = types.Morph.pipe(e => e, types.To)
+		attest(U({ a: 1 })).snap({ a: 2 })
 	})
 })
