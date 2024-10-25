@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import type { Out, string } from "arktype/internal/keywords/inference.ts"
+import type { Out, string } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("empty", () => {

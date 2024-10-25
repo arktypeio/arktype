@@ -6,15 +6,15 @@ import {
 } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
+	Anonymous,
 	AtLeastLength,
 	AtMostLength,
-	Narrowed,
 	Out,
 	To,
 	number,
 	of,
 	string
-} from "arktype/internal/keywords/inference.ts"
+} from "arktype/internal/attributes.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -587,7 +587,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(() => true)
 			.describe('This will "fail"')
 
-		attest<string.narrowed>(t.t)
+		attest<string.anonymous>(t.t)
 
 		const serializedPredicate =
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
@@ -623,7 +623,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(s => parseInt(s))
 			.narrow(() => true)
 
-		attest<(In: string) => Out<number.narrowed>>(t.t)
+		attest<(In: string) => Out<number.anonymous>>(t.t)
 
 		const u = t.pipe(
 			n => `${n}`,
@@ -703,7 +703,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<of<bigint, Anonymous>>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]
@@ -731,7 +731,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.t).type.toString.snap(`{
 	first_name?: (
 		In: string
-	) => To<is<AtLeastLength<1> & AtMostLength<3>>>
+	) => To<is<AtMostLength<3> & AtLeastLength<1>>>
 }`)
 	})
 
@@ -761,22 +761,22 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(root.t).type.toString.snap(`	| {
 			type: "file"
-			name: is<MoreThanLength<0> & LessThanLength<255>>
+			name: is<LessThanLength<255> & MoreThanLength<0>>
 	  }
 	| {
 			type: "directory"
-			name: is<MoreThanLength<0> & LessThanLength<255>>
+			name: is<LessThanLength<255> & MoreThanLength<0>>
 			children: of<
 				(
 					| {
 							type: "file"
 							name: is<
-								MoreThanLength<0> & LessThanLength<255>
+								LessThanLength<255> & MoreThanLength<0>
 							>
 					  }
 					| cyclic
 				)[],
-				Narrowed
+				Anonymous
 			>
 	  }`)
 	})
@@ -972,5 +972,56 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				"ParseError: MaxLength operand must be a string or an array (was never)"
 			)
 			.type.errors(writeUnboundableMessage("string | string[]"))
+	})
+
+	// https://discord.com/channels/957797212103016458/1290304355643293747
+	it("can extract proto Node at property", () => {
+		const d = type("Date")
+
+		const o = type({
+			last_updated: d
+		})
+
+		const t = o.get("last_updated")
+
+		attest<Date>(t.t)
+		attest(d.expression).snap("Date")
+		attest(t.expression).equals(d.expression)
+		attest(t.extends(d)).equals(true)
+	})
+
+	it("piped through Type", () => {
+		const Letters = type("'a'|'b'|'c'")
+		// normally, this would just be .to(Letters), but this should work as
+		// well, even if it's less efficient
+		const Letter = type("string").pipe(s => Letters(s))
+
+		attest(Letter("d").toString()).snap('must be "a", "b" or "c" (was "d")')
+	})
+
+	it(".in types are always unionable", () => {
+		const MorphArrayMorph = type("string")
+			.pipe(e => e)
+			.array()
+			.pipe(e => e)
+		const OtherType = type("string[]")
+		const EitherInput = MorphArrayMorph.in.or(OtherType.in)
+
+		attest(EitherInput(["str"])).snap(["str"])
+	})
+
+	it("intersecting unknown with piped type preserves identity", () => {
+		const base = type({
+			foo: type("string").pipe(() => 123)
+		})
+			.pipe(c => c)
+			.to({
+				foo: "123"
+			})
+
+		const identity = base.and("unknown")
+
+		attest(base.json).equals(identity.json)
+		attest(base.internal.id).equals(identity.internal.id)
 	})
 })

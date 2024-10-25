@@ -1,5 +1,5 @@
-import type { Guardable } from "./functions.ts"
-import type { anyOrNever } from "./generics.ts"
+import type { GuardablePredicate } from "./functions.ts"
+import type { anyOrNever, conform } from "./generics.ts"
 import type { isDisjoint } from "./intersections.ts"
 import type { parseNonNegativeInteger } from "./numericLiterals.ts"
 
@@ -113,16 +113,35 @@ export type liftArray<t> =
 export const liftArray = <t>(data: t): liftArray<t> =>
 	(Array.isArray(data) ? data : [data]) as never
 
+/**
+ * Splits an array into two arrays based on the result of a predicate
+ *
+ * @param arr - The input array to be split.
+ * @param predicate - The guard function used to determine which items to include.
+ * @returns A tuple containing two arrays:
+ * 				- the first includes items for which `predicate` returns true
+ * 				- the second includes items for which `predicate` returns false
+ *
+ * @example
+ * const list = [1, "2", "3", 4, 5];
+ * const [numbers, strings] = spliterate(list, (x) => typeof x === "number");
+ * // Type: number[]
+ * // Output: [1, 4, 5]
+ * console.log(evens);
+ * // Type: string[]
+ * // Output: ["2", "3"]
+ * console.log(odds);
+ */
 export const spliterate = <item, included extends item>(
-	list: readonly item[],
-	by: Guardable<item, included>
+	arr: readonly item[],
+	predicate: GuardablePredicate<item, included>
 ): [
 	included: included[],
-	excluded: item extends included ? item[] : Exclude<item, included>[]
+	excluded: [item] extends [included] ? item[] : Exclude<item, included>[]
 ] => {
-	const result: [any[], any[]] = [[], []]
-	for (const item of list) {
-		if (by(item)) result[0].push(item)
+	const result: [unknown[], unknown[]] = [[], []]
+	for (const item of arr) {
+		if (predicate(item)) result[0].push(item)
 		else result[1].push(item)
 	}
 	return result as never
@@ -274,3 +293,15 @@ export const arrayEquals = <element>(
 			(lItem, i) => opts.isEqual!(lItem, r[i])
 		:	(lItem, i) => lItem === r[i]
 	)
+
+export type validateExhaustiveKeys<
+	keys extends readonly PropertyKey[],
+	expectedKey extends PropertyKey
+> =
+	keys extends readonly [infer head, ...infer tail extends PropertyKey[]] ?
+		readonly [
+			conform<head, expectedKey>,
+			...validateExhaustiveKeys<tail, Exclude<expectedKey, head>>
+		]
+	: [expectedKey] extends [never] ? []
+	: [expectedKey]

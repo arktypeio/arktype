@@ -29,60 +29,67 @@ export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	r,
 	$
 ) =>
-	intersectNodes(l, r, {
+	intersectOrPipeNodes(l, r, {
 		$,
 		invert: false,
 		pipe: false
 	})
 
 export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) =>
-	intersectNodes(l, r, {
+	intersectOrPipeNodes(l, r, {
 		$,
 		invert: false,
 		pipe: true
 	})
 
-export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
-	l,
-	r,
-	ctx
-) => {
-	const operator = ctx.pipe ? "|>" : "&"
-	const lrCacheKey = `${l.hash}${operator}${r.hash}`
-	if (intersectionCache[lrCacheKey] !== undefined)
-		return intersectionCache[lrCacheKey]! as never
+export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext> =
+	((
+		l: BaseNode,
+		r: BaseNode,
+		ctx: IntersectionContext
+	): BaseNode | Disjoint | null => {
+		const operator = ctx.pipe ? "|>" : "&"
+		const lrCacheKey = `${l.hash}${operator}${r.hash}`
+		if (intersectionCache[lrCacheKey] !== undefined)
+			return intersectionCache[lrCacheKey]! as never
 
-	if (!ctx.pipe) {
-		// we can only use this for the commutative & operator
-		const rlCacheKey = `${r.hash}${operator}${l.hash}`
-		if (intersectionCache[rlCacheKey] !== undefined) {
-			// if the cached result was a Disjoint and the operands originally
-			// appeared in the opposite order, we need to invert it to match
-			const rlResult = intersectionCache[rlCacheKey]!
-			const lrResult =
-				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
-			// add the lr result to the cache directly to bypass this check in the future
-			intersectionCache[lrCacheKey] = lrResult
-			return lrResult as never
+		if (!ctx.pipe) {
+			// we can only use this for the commutative & operator
+			const rlCacheKey = `${r.hash}${operator}${l.hash}`
+			if (intersectionCache[rlCacheKey] !== undefined) {
+				// if the cached result was a Disjoint and the operands originally
+				// appeared in the opposite order, we need to invert it to match
+				const rlResult = intersectionCache[rlCacheKey]!
+				const lrResult =
+					rlResult instanceof Disjoint ? rlResult.invert() : rlResult
+				// add the lr result to the cache directly to bypass this check in the future
+				intersectionCache[lrCacheKey] = lrResult
+				return lrResult
+			}
 		}
-	}
-	if (l.equals(r as never)) return l as never
 
-	let result =
-		ctx.pipe && l.hasKindIn(...rootKinds) && r.hasKindIn(...rootKinds) ?
-			_pipeNodes(l, r, ctx)
-		:	_intersectNodes(l, r, ctx)
+		const isPureIntersection =
+			!ctx.pipe || (!l.includesMorph && !r.includesMorph)
 
-	if (isNode(result)) {
-		// if the result equals one of the operands, preserve its metadata by
-		// returning the original reference
-		if (l.equals(result)) result = l as never
-		else if (r.equals(result)) result = r as never
-	}
+		if (isPureIntersection && l.equals(r)) return l
 
-	intersectionCache[lrCacheKey] = result
-	return result as never
-}
+		let result =
+			isPureIntersection ? _intersectNodes(l, r, ctx)
+			: l.hasKindIn(...rootKinds) ?
+				// if l is a RootNode, r will be as well
+				_pipeNodes(l, r as never, ctx)
+			:	_intersectNodes(l, r, ctx)
+
+		if (isNode(result)) {
+			// if the result equals one of the operands, preserve its metadata by
+			// returning the original reference
+			if (l.equals(result)) result = l
+			else if (r.equals(result)) result = r
+		}
+
+		intersectionCache[lrCacheKey] = result
+		return result as never
+	}) as never
 
 const _intersectNodes = (
 	l: BaseNode,
@@ -110,14 +117,10 @@ const _pipeNodes = (
 	r: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ) =>
-	l.includesMorph ?
+	l.includesMorph || r.includesMorph ?
 		ctx.invert ?
-			pipeMorphed(r as never, l, ctx)
-		:	pipeMorphed(l, r as never, ctx)
-	: r.includesMorph ?
-		ctx.invert ?
-			pipeMorphed(r, l as never, ctx)
-		:	pipeMorphed(l as never, r, ctx)
+			pipeMorphed(r, l, ctx)
+		:	pipeMorphed(l, r, ctx)
 	:	_intersectNodes(l, r, ctx)
 
 const pipeMorphed = (
@@ -135,6 +138,7 @@ const pipeMorphed = (
 			if (viableBranches.length === 0)
 				return Disjoint.init("union", from.branches, to.branches)
 
+			// if the input type has changed, create a new node without preserving metadata
 			if (
 				viableBranches.length < from.branches.length ||
 				!from.branches.every((branch, i) =>
@@ -142,6 +146,8 @@ const pipeMorphed = (
 				)
 			)
 				return ctx.$.parseSchema(viableBranches)
+
+			// otherwise, the input has not changed so preserve metadata
 
 			let meta: BaseMeta | undefined
 
@@ -178,19 +184,23 @@ const _pipeMorphed = (
 		const morphs = [...from.morphs]
 		if (from.lastMorphIfNode) {
 			// still piped from context, so allows appending additional morphs
-			const outIntersection = intersectNodes(from.lastMorphIfNode, to, ctx)
+			const outIntersection = intersectOrPipeNodes(
+				from.lastMorphIfNode,
+				to,
+				ctx
+			)
 			if (outIntersection instanceof Disjoint) return outIntersection
 			morphs[morphs.length - 1] = outIntersection
 		} else morphs.push(to)
 
 		return ctx.$.node("morph", {
 			morphs,
-			in: from.in
+			in: from.inner.in as any
 		})
 	}
 
 	if (to.hasKind("morph")) {
-		const inTersection = intersectNodes(from, to.in, ctx)
+		const inTersection = intersectOrPipeNodes(from, to.in, ctx)
 		if (inTersection instanceof Disjoint) return inTersection
 
 		return ctx.$.node("morph", {

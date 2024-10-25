@@ -15,7 +15,7 @@ import {
 	type nodeImplementationOf,
 	type RootKind
 } from "../shared/implement.ts"
-import { intersectNodes } from "../shared/intersections.ts"
+import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import {
 	writeJsonSchemaMorphMessage,
 	type JsonSchema
@@ -96,7 +96,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 						writeMorphIntersectionMessage(l.expression, r.expression)
 					)
 				}
-				const inTersection = intersectNodes(l.in, r.in, ctx)
+				const inTersection = intersectOrPipeNodes(l.in, r.in, ctx)
 				if (inTersection instanceof Disjoint) return inTersection
 
 				const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
@@ -104,7 +104,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				}
 
 				if (l.declaredIn || r.declaredIn) {
-					const declaredIn = intersectNodes(l.in, r.in, ctx)
+					const declaredIn = intersectOrPipeNodes(l.in, r.in, ctx)
 					// we can't treat this as a normal Disjoint since it's just declared
 					// it should only happen if someone's essentially trying to create a broken type
 					if (declaredIn instanceof Disjoint) return declaredIn.throw()
@@ -112,7 +112,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				}
 
 				if (l.declaredOut || r.declaredOut) {
-					const declaredOut = intersectNodes(l.out, r.out, ctx)
+					const declaredOut = intersectOrPipeNodes(l.out, r.out, ctx)
 					if (declaredOut instanceof Disjoint) return declaredOut.throw()
 					else baseInner.declaredOut = declaredOut
 				}
@@ -129,16 +129,16 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
-				const inTersection = intersectNodes(l.in, r, ctx)
-				return inTersection instanceof Disjoint ? inTersection : (
-						inTersection.distribute(
-							branch => ({
-								...l.inner,
-								in: branch
-							}),
-							ctx.$.parseSchema
-						)
-					)
+				const inTersection =
+					l.inner.in ? intersectOrPipeNodes(l.inner.in, r, ctx) : r
+				return (
+					inTersection instanceof Disjoint ? inTersection
+					: inTersection.equals(l.inner.in) ? l
+					: ctx.$.node("morph", {
+							...l.inner,
+							in: inTersection
+						})
+				)
 			})
 		}
 	})
@@ -158,7 +158,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		:	undefined;
 
 	override get in(): BaseRoot {
-		return this.declaredIn ?? this.inner.in ?? $ark.intrinsic.unknown.internal
+		return (
+			this.declaredIn ?? this.inner.in?.in ?? $ark.intrinsic.unknown.internal
+		)
 	}
 
 	override get out(): BaseRoot {

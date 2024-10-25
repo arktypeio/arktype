@@ -1,0 +1,222 @@
+---
+title: Expressions
+---
+
+import { Tabs } from "@astrojs/starlight/components"
+import SyntaxTab from "../../components/SyntaxTab.astro"
+
+### Array
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const arrays = type({
+	key: "string[]"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const arrays = type({
+	key: type.string.array()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const arrays = type({
+	key: [{ name: "string" }, "[]"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const arrays = type({
+	key: type({ name: "string" }, "[]")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Divisibility
+
+Constrain a `number` to a multiple of the specified integer.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const evens = type({
+	key: "number%2"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const evens = type({
+	key: type.number.divisibleBy(2)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Equality
+
+While embedded [literal syntax](/literals) is usually ideal for defining exact primitive values, the `===` operator, `type.unit` and `type.enumerated` can be helpful for defining a non-serializable reference like a `symbol` or for deriving a type from a pre-existing list of allowed values.
+
+<Tabs>
+
+    <SyntaxTab fluent>
+
+```ts
+const mySymbol = Symbol()
+
+const exactValue = type.unit(mySymbol)
+
+const exactValueFromSet = type.enumerated(1337, true, null)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const mySymbol = Symbol()
+
+const exactValue = type(["===", mySymbol])
+
+const exactValueFromSet = type(["===", 1337, true, null])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const mySymbol = Symbol()
+
+const exactValue = type("===", mySymbol)
+
+const exactValueFromSet = type("===", 1337, true, null)
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Parenthetical
+
+By default, ArkType's operators follow the same precedence as TypeScript's. Also like in TypeScript, this can be overridden by wrapping an expression in parentheses.
+
+```ts
+// hover to see the distinction!
+const groups = type({
+	stringOrArrayOfNumbers: "string | number[]",
+	arrayOfStringsOrNumbers: "(string | number)[]"
+})
+```
+
+### instanceof
+
+Most builtin instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
+
+<Tabs>
+    <SyntaxTab fluent>
+
+```ts
+class MyClass {}
+
+const instances = type.instanceOf(MyClass)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+class MyClass {}
+
+const instances = type({
+	key: ["instanceof", MyClass]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+class MyClass {}
+
+const instances = type({
+	key: type("instanceof", MyClass)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Union
+
+All unions are automatically discriminated to optimize check time and error message clarity.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const unions = type({
+	key: "string | number"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const unions = type({
+	key: type.string.or(type.number)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const unions = type({
+	key: ["string", "|", { name: "string" }]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const unions = type({
+	key: type("string", "|", { name: "string" })
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>

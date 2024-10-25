@@ -128,7 +128,7 @@ export const addCopyButton = {
 	<div class="code-source">
 		${html}
 	</div>
-    <button class="copy-button">
+    <button class="copy-button" aria-label="copy code">
         <img class="copy-icon" src="/copy.svg"/>
 		<script type="module">
 			${addCopyButtonListenersSrc}
@@ -141,7 +141,7 @@ export const addCopyButton = {
 /** @type { import("astro").ShikiConfig } */
 export const shikiConfig = {
 	theme: arkdarkColors,
-	// @ts-expect-error
+	// @ts-ignore
 	langs: [arktypeTextmate],
 	// @ts-ignore
 	transformers: [twoslash, transformerNotationErrorLevel(), addCopyButton],

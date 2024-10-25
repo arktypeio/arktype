@@ -1,5 +1,5 @@
+import type { Nominal, of } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { Predicate, of } from "../inference.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -15,10 +15,10 @@ export const base64 = arkModule({
 })
 
 declare namespace string {
-	export type base64 = of<string, Predicate<"base64">>
+	export type base64 = of<string, Nominal<"base64">>
 
 	export namespace base64 {
-		export type url = of<string, Predicate<"base64.url">>
+		export type url = of<string, Nominal<"base64.url">>
 	}
 }
 

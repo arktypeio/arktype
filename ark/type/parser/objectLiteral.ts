@@ -27,7 +27,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { of } from "../keywords/inference.ts"
+import type { of } from "../attributes.ts"
 import type { astToString } from "./ast/utils.ts"
 import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"

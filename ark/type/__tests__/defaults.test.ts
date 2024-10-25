@@ -6,12 +6,12 @@ import {
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
-import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import type {
 	InferredDefault,
 	Out,
 	string
-} from "arktype/internal/keywords/inference.ts"
+} from "arktype/internal/attributes.ts"
+import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -31,7 +31,7 @@ contextualize(() => {
 	a: string
 	foo: defaultsTo<5>
 	bar: defaultsTo<5>
-	baz: defaultsTo<() => 5>
+	baz: defaultsTo<5>
 }`)
 			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
@@ -99,8 +99,7 @@ contextualize(() => {
 		it("unions are defaultable", () => {
 			const t = type("boolean = false")
 
-			attest(t.t).type.toString.snap(`	| of<false, Default<false>>
-	| of<true, Default<false>>`)
+			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
 
 			attest(t.json).snap({
 				branches: [{ unit: false }, { unit: true }],
@@ -111,14 +110,9 @@ contextualize(() => {
 				boo: t
 			})
 
-			attest(o).type.toString.snap(`Type<
-	{
-		boo:
-			| of<false, Default<false>>
-			| of<true, Default<false>>
-	},
-	{}
->`)
+			attest(o).type.toString.snap(
+				"Type<{ boo: of<boolean, Default<false>> }, {}>"
+			)
 			attest(o.json).snap({
 				optional: [
 					{
@@ -283,9 +277,9 @@ contextualize(() => {
 
 			const defaultablePipedBoolean = type("boolean = false").pipe(toggle)
 
-			attest(defaultablePipedBoolean.t).type.toString.snap(`(
-	In: of<false, Default<false>> | of<true, Default<false>>
-) => Out<boolean>`)
+			attest(defaultablePipedBoolean.t).type.toString.snap(
+				"(In: of<boolean, Default<false>>) => Out<boolean>"
+			)
 			attest(defaultablePipedBoolean.json).snap({
 				in: [{ unit: false }, { unit: true }],
 				morphs: [toggleRef],
@@ -297,9 +291,7 @@ contextualize(() => {
 			})
 
 			attest(t.t).type.toString.snap(`{
-	blep: (
-		In: of<false, Default<false>> | of<true, Default<false>>
-	) => Out<boolean>
+	blep: (In: of<boolean, Default<false>>) => Out<boolean>
 }`)
 
 			const out = t({})
@@ -325,16 +317,9 @@ contextualize(() => {
 				.pipe(toggle)
 				.to("boolean")
 
-			attest(defaultablePipedBoolean.t).type.toString.snap(`	| ((
-			In:
-				| of<false, Default<false>>
-				| of<true, Default<false>>
-	  ) => To<false>)
-	| ((
-			In:
-				| of<false, Default<false>>
-				| of<true, Default<false>>
-	  ) => To<true>)`)
+			attest(defaultablePipedBoolean.t).type.toString
+				.snap(`	| ((In: of<boolean, Default<false>>) => To<false>)
+	| ((In: of<boolean, Default<false>>) => To<true>)`)
 			attest(defaultablePipedBoolean.json).snap({
 				in: {
 					branches: [{ unit: false }, { unit: true }],
@@ -349,16 +334,8 @@ contextualize(() => {
 
 			attest(t.t).type.toString.snap(`{
 	blep:
-		| ((
-				In:
-					| of<false, Default<false>>
-					| of<true, Default<false>>
-		  ) => To<false>)
-		| ((
-				In:
-					| of<false, Default<false>>
-					| of<true, Default<false>>
-		  ) => To<true>)
+		| ((In: of<boolean, Default<false>>) => To<false>)
+		| ((In: of<boolean, Default<false>>) => To<true>)
 }`)
 
 			const out = t({})
@@ -429,7 +406,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: InferredDefault<Date, Date.literal<"1993-05-21">>
+				key: InferredDefault<Date, Date.nominal<"1993-05-21">>
 			}>(t.t)
 		})
 
@@ -459,12 +436,12 @@ contextualize(() => {
 		})
 
 		it("null", () => {
+			// ideally we could infer a better type here,
+			// but attaching attributes to null or undefined
+			// is not possible with the current design
 			const t = type({ key: "object | null = null" })
 			const expected = type({ key: ["object | null", "=", null] })
 
-			attest(expected.t).type.toString.snap(
-				"{ key: of<object, Default<null>> | null }"
-			)
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
@@ -708,6 +685,45 @@ contextualize(() => {
 				baz3: "123"
 			})
 		})
+
+		it("boolean not distributed during inference", () => {
+			const t = type("boolean", "=", false)
+
+			attest(t.json).snap({
+				branches: [{ unit: false }, { unit: true }],
+				meta: { default: false }
+			})
+
+			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
+		})
+
+		it("union not distributed during inference with morph", () => {
+			const parseDateToFuture = (s: string) => {
+				const d = new Date(s)
+				d.setFullYear(d.getFullYear() + 100)
+				return d
+			}
+
+			const narrowFutureInput = () => true
+
+			const t = type("boolean | number", "=", false)
+				.or(["string", "=>", parseDateToFuture])
+				.satisfying(narrowFutureInput)
+
+			attest(t.json).snap([
+				{ domain: "number", predicate: ["$ark.narrowFutureInput"] },
+				{
+					in: { domain: "string", predicate: ["$ark.narrowFutureInput"] },
+					morphs: ["$ark.parseDateToFuture"]
+				},
+				{ unit: false },
+				{ unit: true }
+			])
+
+			attest(t.t).type.toString
+				.snap(`	| of<number | boolean, Default<false> & Anonymous>
+	| ((In: nominal<"?">) => Out<Date>)`)
+		})
 	})
 
 	describe("intersection", () => {
@@ -918,9 +934,7 @@ contextualize(() => {
 			const a = type(["string.numeric.parse", "=", "1"])
 
 			attest(a).type.toString.snap(`Type<
-	(
-		In: is<Default<"1"> & Predicate<"numeric">>
-	) => To<number>,
+	(In: is<Nominal<"numeric"> & Default<"1">>) => To<number>,
 	{}
 >`)
 
@@ -933,7 +947,7 @@ contextualize(() => {
 	of<
 		{
 			a: (
-				In: is<Default<"1"> & Predicate<"numeric">>
+				In: is<Nominal<"numeric"> & Default<"1">>
 			) => To<number>
 		},
 		Default<{}>

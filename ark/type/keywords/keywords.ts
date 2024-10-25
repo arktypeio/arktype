@@ -1,5 +1,6 @@
 import type { ArkErrors, arkKind } from "@ark/schema"
 import type { inferred } from "@ark/util"
+import type { distill } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
@@ -17,7 +18,6 @@ import type {
 } from "../type.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
-import type { distill } from "./inference.ts"
 import { number } from "./number/number.ts"
 import { string } from "./string/string.ts"
 import { arkTsGenerics, arkTsKeywords, object, unknown } from "./ts.ts"
@@ -44,6 +44,8 @@ export declare namespace Ark {
 	export interface typeAttachments extends arkTsKeywords.$ {
 		Key: arkBuiltins.$["Key"]
 		Record: arkTsGenerics.$["Record"]
+		Date: arkPrototypes.$["Date"]
+		Array: arkPrototypes.$["Array"]["root"]
 	}
 
 	export interface boundTypeAttachments<$>
@@ -53,7 +55,9 @@ export declare namespace Ark {
 $arkTypeRegistry.typeAttachments = {
 	...arkTsKeywords,
 	Key: arkBuiltins.Key,
-	Record: arkTsGenerics.Record
+	Record: arkTsGenerics.Record,
+	Array: arkPrototypes.Array.root,
+	Date: arkPrototypes.Date
 }
 
 export const ark: Scope<Ark> = scope(
@@ -99,12 +103,12 @@ export declare namespace type {
 			inferDefinition<def, $, args>
 		>
 
-		export namespace brandable {
-			export type In<def, $ = {}, args = {}> = distill.brandable.In<
+		export namespace withAttributes {
+			export type In<def, $ = {}, args = {}> = distill.withAttributes.In<
 				inferDefinition<def, $, args>
 			>
 
-			export type Out<def, $ = {}, args = {}> = distill.brandable.Out<
+			export type Out<def, $ = {}, args = {}> = distill.withAttributes.Out<
 				inferDefinition<def, $, args>
 			>
 		}

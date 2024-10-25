@@ -75,15 +75,25 @@ import {
 	type DeclarationParser,
 	type DefinitionParser,
 	type EnumeratedTypeParser,
+	type InstanceOfTypeParser,
 	type SchemaParser,
 	type TypeParser,
 	type UnitTypeParser
 } from "./type.ts"
 
-export type ScopeParser = <const def>(
-	def: scope.validate<def>,
-	config?: ArkScopeConfig
-) => Scope<scope.infer<def>>
+/** The convenience properties attached to `scope` */
+export type ScopeParserAttachments =
+	// map over to remove call signatures
+	Omit<ScopeParser, never>
+
+export interface ScopeParser {
+	<const def>(
+		def: scope.validate<def>,
+		config?: ArkScopeConfig
+	): Scope<scope.infer<def>>
+
+	define: <const def>(def: scope.validate<def>) => def
+}
 
 export type ModuleParser = <const def>(
 	def: scope.validate<def>,
@@ -297,6 +307,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	enumerated: EnumeratedTypeParser<$> = (...values) =>
 		this.units(values) as never
 
+	instanceOf: InstanceOfTypeParser<$> = ctor =>
+		this.node("proto", { proto: ctor }, { prereduced: true }) as never
+
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
 	declare = (): { type: InternalTypeParser } => ({
@@ -312,7 +325,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.scope(def as never, config).export()) as never
 }
 
-export const scope: ScopeParser = InternalScope.scope
+export const scope: ScopeParser = Object.assign(InternalScope.scope, {
+	define: def => def as never
+} satisfies ScopeParserAttachments)
 
 export declare namespace scope {
 	export type validate<def> = {

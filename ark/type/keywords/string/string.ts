@@ -1,18 +1,23 @@
 import { intrinsic } from "@ark/schema"
-import type { Module, Submodule } from "../../module.ts"
+import type { satisfy } from "@ark/util"
 import type {
+	Anonymous,
 	AtLeastLength,
 	AtMostLength,
+	AttributeKind,
+	Attributes,
 	Default,
 	ExactlyLength,
+	LengthAttributeKind,
 	LessThanLength,
 	MoreThanLength,
-	Narrowed,
+	Nominal,
 	Optional,
-	Predicate,
+	brand,
 	constraint,
 	of
-} from "../inference.ts"
+} from "../../attributes.ts"
+import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
@@ -74,27 +79,38 @@ export declare namespace string {
 
 	export type matching<rule> = of<string, Matching<rule>>
 
-	export type narrowed = of<string, Narrowed>
+	export type anonymous = of<string, Anonymous>
 
 	export type optional = of<string, Optional>
 
 	export type defaultsTo<rule> = of<string, Default<rule>>
 
-	export type branded<rule> = of<string, Predicate<rule>>
+	export type nominal<rule> = of<string, Nominal<rule>>
 
-	export type is<attributes> = of<string, attributes>
+	export type is<attributes extends Attributes> = of<string, attributes>
 
-	export type applyAttribute<attribute> =
-		attribute extends ExactlyLength<infer rule> ? exactlyLength<rule>
-		: attribute extends MoreThanLength<infer rule> ? moreThanLength<rule>
-		: attribute extends AtLeastLength<infer rule> ? atLeastLength<rule>
-		: attribute extends AtMostLength<infer rule> ? atMostLength<rule>
-		: attribute extends LessThanLength<infer rule> ? lessThanLength<rule>
-		: attribute extends Matching<infer rule> ? matching<rule>
-		: attribute extends Optional ? optional
-		: attribute extends Default<infer rule> ? defaultsTo<rule>
-		: attribute extends Predicate<infer rule> ? branded<rule>
-		: never
+	export type AttributableKind = satisfy<
+		AttributeKind,
+		"matching" | LengthAttributeKind
+	>
+
+	export type withSingleAttribute<
+		kind extends AttributableKind,
+		value extends Attributes[kind]
+	> = raw.withSingleAttribute<kind, value>
+
+	export namespace raw {
+		export type withSingleAttribute<kind, value> =
+			kind extends "nominal" ? nominal<value>
+			: kind extends "matching" ? matching<value>
+			: kind extends "atLeastLength" ? atLeastLength<value>
+			: kind extends "atMostLength" ? atMostLength<value>
+			: kind extends "moreThanLength" ? moreThanLength<value>
+			: kind extends "lessThanLength" ? lessThanLength<value>
+			: kind extends "optional" ? optional
+			: kind extends "defaultsTo" ? defaultsTo<value>
+			: never
+	}
 
 	export type module = Module<string.submodule>
 
@@ -122,6 +138,40 @@ export declare namespace string {
 		lower: lower.submodule
 		upper: upper.submodule
 	}
-}
 
-export type { brandedString } from "./brands.ts"
+	export type branded<rule> = brand<string, Nominal<rule>>
+
+	export namespace branded {
+		export type atLeastLength<rule> = brand<string, AtLeastLength<rule>>
+
+		export type moreThanLength<rule> = brand<string, MoreThanLength<rule>>
+
+		export type atMostLength<rule> = brand<string, AtMostLength<rule>>
+
+		export type lessThanLength<rule> = brand<string, LessThanLength<rule>>
+
+		export type exactlyLength<rule> = brand<string, ExactlyLength<rule>>
+
+		export type matching<rule> = brand<string, Matching<rule>>
+
+		export type anonymous = brand<string, Anonymous>
+
+		export type is<attributes extends Attributes> = brand<string, attributes>
+
+		export type withSingleAttribute<
+			kind extends AttributableKind,
+			value extends Attributes[kind]
+		> = raw.withSingleAttribute<kind, value>
+
+		export namespace raw {
+			export type withSingleAttribute<kind, value> =
+				kind extends "nominal" ? branded<value>
+				: kind extends "matching" ? matching<value>
+				: kind extends "atLeastLength" ? atLeastLength<value>
+				: kind extends "atMostLength" ? atMostLength<value>
+				: kind extends "moreThanLength" ? moreThanLength<value>
+				: kind extends "lessThanLength" ? lessThanLength<value>
+				: never
+		}
+	}
+}

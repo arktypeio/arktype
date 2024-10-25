@@ -8,8 +8,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
-import type { Out, To, of } from "arktype/internal/keywords/inference.ts"
-import type { MoreThan } from "arktype/internal/keywords/number/number.ts"
+import type { MoreThan, Out, To, of } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -43,6 +42,46 @@ contextualize(() => {
 
 		attest<typeof expected.t>(tOut.t)
 		attest(tOut.expression).equals(expected.expression)
+	})
+
+	it("to morph", () => {
+		const restringifyUser = (o: object) => JSON.stringify(o)
+
+		const t = type("string.json.parse").to([
+			{
+				name: "string",
+				age: "number"
+			},
+			"=>",
+			restringifyUser
+		])
+
+		attest(t.t).type.toString.snap(`(
+	In: string & {
+		" attributes": {
+			base: string
+			attributes: Nominal<"json">
+		}
+	}
+) => Out<string>`)
+
+		attest<string>(t.infer)
+		attest(t.json).snap({
+			in: "string",
+			morphs: [
+				"$ark.parseJson",
+				{
+					in: {
+						required: [
+							{ key: "age", value: "number" },
+							{ key: "name", value: "string" }
+						],
+						domain: "object"
+					},
+					morphs: ["$ark.restringifyUser"]
+				}
+			]
+		})
 	})
 
 	describe("try", () => {
@@ -171,6 +210,18 @@ contextualize(() => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
 			"ParseError: Intersection of > 5 and < 3 results in an unsatisfiable type"
 		)
+	})
+
+	it("extract in/out at path", () => {
+		const t = type({
+			foo: type("number").pipe(n => `${n}`, type.string)
+		})
+
+		attest<{ foo: number }>(t.in.t)
+		attest(t.in.expression).snap("{ foo: number }")
+
+		attest<{ foo: string }>(t.out.t)
+		attest(t.out.expression).snap("{ foo: string }")
 	})
 
 	it("uses pipe for many consecutive types", () => {
@@ -789,5 +840,77 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 		attest(t("success")).equals("success")
 		attest(t("SUCCESS  ")).equals("success")
 		attest(t("success  ")).equals("success")
+	})
+
+	const appendLengthMorph = (s: string) => `${s}${s.length}`
+
+	// https://discord.com/channels/957797212103016458/1291014543635517542
+	it("repeated Type pipe", () => {
+		const appendLength = type("string", "=>", appendLengthMorph)
+		const appendLengths = type("string").pipe(appendLength, appendLength)
+
+		attest(appendLengths.json).snap({
+			in: "string",
+			morphs: [
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				}
+			]
+		})
+
+		attest(appendLengths("a")).snap("a12")
+	})
+
+	// https://discord.com/channels/957797212103016458/1291014543635517542
+	it("repeated Type pipe with intermediate morph", () => {
+		const appendLength = type("string", "=>", appendLengthMorph)
+
+		const appendSeparatorMorph = (s: string) => `${s}|`
+
+		const appendSeparatedLengths = type("string").pipe(
+			appendLength,
+			appendLength,
+			appendSeparatorMorph,
+			appendLength,
+			appendLength
+		)
+
+		attest(appendSeparatedLengths.json).snap({
+			in: "string",
+			morphs: [
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				},
+				"$ark.appendSeparatorMorph",
+				{
+					in: "string",
+					morphs: [
+						"$ark.appendLengthMorph",
+						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+					]
+				}
+			]
+		})
+
+		attest(appendSeparatedLengths("a")).snap("a12|45")
+	})
+
+	it("doesn't lose input prop morphs", () => {
+		const T = type({
+			foo: type("string").pipe(s => s.length)
+		})
+			.pipe(o => o)
+			.to({
+				foo: "number"
+			})
+		attest(T({ foo: "bar" })).snap({ foo: 3 })
 	})
 })

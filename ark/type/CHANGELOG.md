@@ -723,11 +723,3 @@ https://github.com/arktypeio/arktype/pull/971
 ### Patch Changes
 
 - Initial changeset
-
-```
-
-```
-
-```
-
-```

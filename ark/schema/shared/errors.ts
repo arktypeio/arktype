@@ -8,6 +8,7 @@ import {
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
+import type { StandardSchema } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
 import { arkKind, pathToPropString, type TraversalPath } from "./utils.ts"
 
@@ -74,7 +75,10 @@ export class ArkError<
 	}
 }
 
-export class ArkErrors extends ReadonlyArray<ArkError> {
+export class ArkErrors
+	extends ReadonlyArray<ArkError>
+	implements StandardSchema.Failure
+{
 	protected ctx: TraversalContext
 
 	constructor(ctx: TraversalContext) {
@@ -82,11 +86,16 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 		this.ctx = ctx
 	}
 
-	byPath: Record<string, ArkError> = {}
+	byPath: Record<string, ArkError> = Object.create(null)
 	count = 0
 	private mutable: ArkError[] = this as never
 
 	add(error: ArkError): void {
+		if (this.includes(error)) return
+		this._add(error)
+	}
+
+	private _add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
 			const errorIntersection = new ArkError(
@@ -114,14 +123,15 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 	}
 
 	merge(errors: ArkErrors): void {
-		errors.forEach(e =>
-			this.add(
+		errors.forEach(e => {
+			if (this.includes(e)) return
+			this._add(
 				new ArkError(
 					{ ...e, path: [...e.path, ...this.ctx.path] } as never,
 					this.ctx
 				)
 			)
-		)
+		})
 	}
 
 	get summary(): string {
@@ -130,6 +140,11 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 
 	get message(): string {
 		return this.toString()
+	}
+
+	/** Reference to this ArkErrors array (for Standard Schema compatibility) */
+	get issues(): this {
+		return this
 	}
 
 	toString(): string {

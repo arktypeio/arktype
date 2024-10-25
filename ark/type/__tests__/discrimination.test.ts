@@ -276,4 +276,56 @@ contextualize(() => {
 			"innerA.id must be 1 or 2 (was undefined)"
 		)
 	})
+
+	it("allows strict discriminated keys", () => {
+		const AorB = type({
+			type: "'A'"
+		})
+			.or({
+				type: "'B'"
+			})
+			.onUndeclaredKey("reject")
+
+		attest(AorB.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["type"],
+			cases: {
+				'"A"': { undeclared: "reject", required: [{ key: "type", value: {} }] },
+				'"B"': { undeclared: "reject", required: [{ key: "type", value: {} }] }
+			}
+		})
+
+		attest(AorB({ type: "A" })).equals({ type: "A" })
+	})
+
+	it("can discriminated objects with disjoint strict keys", () => {
+		const AorB = type({
+			"+": "reject",
+			something: "'A'"
+		}).or({
+			"+": "reject",
+			something: "'B'",
+			somethingelse: "number"
+		})
+
+		attest(AorB.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["something"],
+			cases: {
+				'"A"': {
+					undeclared: "reject",
+					required: [{ key: "something", value: {} }]
+				},
+				'"B"': {
+					undeclared: "reject",
+					required: [
+						{ key: "something", value: {} },
+						{ key: "somethingelse", value: "number" }
+					]
+				}
+			}
+		})
+
+		attest(AorB({ something: "A" })).snap({ something: "A" })
+	})
 })

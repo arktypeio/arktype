@@ -35,7 +35,10 @@ import {
 	type UnionChildKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectNodes, intersectNodesRoot } from "../shared/intersections.ts"
+import {
+	intersectNodesRoot,
+	intersectOrPipeNodes
+} from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
@@ -591,7 +594,7 @@ export const intersectBranches = (
 				candidatesByR = {}
 				break
 			}
-			const branchIntersection = intersectNodes(l[lIndex], r[rIndex], ctx)
+			const branchIntersection = intersectOrPipeNodes(l[lIndex], r[rIndex], ctx)
 			if (branchIntersection instanceof Disjoint) {
 				// Doesn't tell us anything useful about their relationships
 				// with other branches
