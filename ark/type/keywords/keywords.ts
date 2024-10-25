@@ -44,6 +44,8 @@ export declare namespace Ark {
 	export interface typeAttachments extends arkTsKeywords.$ {
 		Key: arkBuiltins.$["Key"]
 		Record: arkTsGenerics.$["Record"]
+		Date: arkPrototypes.$["Date"]
+		Array: arkPrototypes.$["Array"]["root"]
 	}
 
 	export interface boundTypeAttachments<$>
@@ -53,7 +55,9 @@ export declare namespace Ark {
 $arkTypeRegistry.typeAttachments = {
 	...arkTsKeywords,
 	Key: arkBuiltins.Key,
-	Record: arkTsGenerics.Record
+	Record: arkTsGenerics.Record,
+	Array: arkPrototypes.Array.root,
+	Date: arkPrototypes.Date
 }
 
 export const ark: Scope<Ark> = scope(

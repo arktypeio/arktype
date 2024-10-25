@@ -108,7 +108,9 @@ contextualize(() => {
 			unknown: "unknown",
 			undefined: "undefined",
 			Key: "string | symbol",
-			Record: keywords.Record.internal.json
+			Record: keywords.Record.internal.json,
+			Date: "Date",
+			Array: "Array"
 		})
 
 		attest<number>(type.number.t)

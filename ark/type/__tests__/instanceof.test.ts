@@ -16,6 +16,16 @@ contextualize(() => {
 			attest(t({}).toString()).snap("must be an Error (was object)")
 			attest(t(undefined).toString()).snap("must be an Error (was undefined)")
 		})
+
+		it("fluent", () => {
+			const t = type.instanceOf(Error)
+
+			const expected = type(["instanceof", Error])
+
+			attest<typeof expected.t>(t.t)
+			attest(t.expression).equals(expected.expression)
+		})
+
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])
 			const e = new TypeError()

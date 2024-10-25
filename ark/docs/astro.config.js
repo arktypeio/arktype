@@ -48,16 +48,16 @@ export default defineConfig({
 					collapsed: true,
 					items: [
 						{
-							label: "Base",
-							link: "/keywords#base"
+							label: "TypeScript",
+							link: "/keywords#typescript"
 						},
 						{
 							label: "Subtype",
 							link: "/keywords#subtype"
 						},
 						{
-							label: "Utility",
-							link: "/keywords#utility"
+							label: "this",
+							link: "/keywords#this"
 						}
 					]
 				},
@@ -65,9 +65,10 @@ export default defineConfig({
 					label: "Literals",
 					collapsed: true,
 					items: [
-						{ label: "Strings", link: "/literals#strings" },
-						{ label: "Numbers", link: "/literals#numbers" },
-						{ label: "Dates", link: "/literals#dates" },
+						{ label: "String", link: "/literals#string" },
+						{ label: "Number", link: "/literals#number" },
+						{ label: "Bigint", link: "/literals#bigint" },
+						{ label: "Date", link: "/literals#date" },
 						{ label: "Regex", link: "/literals#regex" }
 					]
 				},
@@ -118,64 +119,28 @@ export default defineConfig({
 					label: "Expressions",
 					items: [
 						{
-							label: "Arrays",
-							link: "/expressions#arrays"
+							label: "Array",
+							link: "/expressions#array"
 						},
 						{
-							label: "Brands",
-							link: "/expressions#brands"
+							label: "Divisibility",
+							link: "/expressions#divisibility"
 						},
 						{
-							label: "Casts",
-							link: "/expressions#casts"
+							label: "Equality",
+							link: "/expressions#equality"
 						},
 						{
-							label: "Divisors",
-							link: "/expressions#divisors"
-						},
-						{
-							label: "Groups (parenthetical)",
-							link: "/expressions#groups"
+							label: "Parenthetical",
+							link: "/expressions#parenthetical"
 						},
 						{
 							label: "instanceof",
 							link: "/expressions#instanceof"
 						},
 						{
-							label: "Intersections",
-							link: "/expressions#intersections"
-						},
-						{
-							label: "keyof",
-							link: "/expressions#keyof"
-						},
-						{
-							label: "Merge",
-							link: "/expressions#merge"
-						},
-						{
-							label: "Meta",
-							link: "/expressions#meta"
-						},
-						{
-							label: "Morphs",
-							link: "/expressions#morphs"
-						},
-						{
-							label: "Narrows",
-							link: "/expressions#narrows"
-						},
-						{
-							label: "Property Access",
-							link: "/expressions#property-access"
-						},
-						{
-							label: "Ranges",
-							link: "/expressions#range"
-						},
-						{
-							label: "Unions",
-							link: "/expressions#unions"
+							label: "Union",
+							link: "/expressions#union"
 						}
 					]
 				},

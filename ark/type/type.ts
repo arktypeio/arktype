@@ -114,6 +114,11 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * @example const argsForm = type('===', 'foo', 'bar', obj)
 	 */
 	enumerated: EnumeratedTypeParser<$>
+	/**
+	 * Create a `Type` that is satisfied only by a value of a specific class.
+	 * @example const array = type.instanceOf(Array)
+	 */
+	instanceOf: InstanceOfTypeParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -135,7 +140,8 @@ export class InternalTypeParser extends Callable<
 				// this won't be defined during bootstrapping, but externally always will be
 				keywords: $.ambient as never,
 				unit: $.unit,
-				enumerated: $.enumerated
+				enumerated: $.enumerated,
+				instanceOf: $.instanceOf
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
@@ -185,6 +191,9 @@ export type DeclarationParser<$> = <preinferred>() => {
 }
 
 export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>
+export type InstanceOfTypeParser<$> = <const t extends object>(
+	ctor: Constructor<t>
+) => Type<t, $>
 export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>

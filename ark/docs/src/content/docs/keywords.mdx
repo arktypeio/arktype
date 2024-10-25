@@ -5,16 +5,16 @@ title: Keywords
 import { Tabs } from "@astrojs/starlight/components"
 import SyntaxTab from "../../components/SyntaxTab.astro"
 
+### TypeScript
+
+All\* builtin TypeScript keywords are directly available.
+
 <Tabs>
 	<SyntaxTab string>
 ```ts
 const keywords = type({
 	string: "string",
-	date: "Date",
-	// Subtype keywords refine or transform their root type.
-	dateFormattedString: "string.date",
-	isoFormattedString: "string.date.iso",
-	transformStringToDate: "string.date.parse"
+	date: "Date"
 })
 ```
 	</SyntaxTab>
@@ -23,24 +23,84 @@ const keywords = type({
 
 ```ts
 const keywords = type({
-	// Primitive keywords are exposed directly on `type`.
 	string: type.string,
-	// All builtin keywords and modules are available under `keywords`.
-	date: type.keywords.Date,
-	// Subtype keywords refine or transform their root type.
-	// `.root` gets the base type of a subtyped module.
-	dateFormattedString: type.keywords.string.date.root,
-	isoFormattedString: type.keywords.string.date.iso.root,
-	transformStringToDate: type.keywords.string.date.parse
+	date: type.Date
 })
 ```
+
+Common keywords are exposed directly on `type`.
 
     </SyntaxTab>
 
 </Tabs>
 
-### Base
-
 ### Subtype
 
-### Utility
+Subtype keywords refine or transform their root type.
+
+<Tabs>
+	<SyntaxTab string>
+```ts
+const keywords = type({
+	dateFormattedString: "string.date",
+	transformStringToDate: "string.date.parse",
+	isoFormattedString: "string.date.iso",
+	transformIsoFormattedStringToDate: "string.date.iso.parse"
+})
+```
+
+You can easily explore available subtypes via autocomplete by with a partial definition like `"string."`.
+
+</SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const keywords = type({
+	dateFormattedString: type.keywords.string.date.root,
+	isoFormattedString: type.keywords.string.date.iso.root,
+	transformStringToDate: type.keywords.string.date.parse,
+	transformIsoFormattedStringToDate: type.keywords.string.date.iso.parse
+})
+```
+
+All builtin keywords and modules are available in `type.keywords`.
+
+`.root` gets the base type of a subtyped module so that it can be used as a `Type` directly.
+
+    </SyntaxTab>
+
+</Tabs>
+
+### this
+
+`this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
+
+```ts
+const fetchGift = async () => null
+// ---cut---
+const disappointingGift = type({ label: "string", "box?": "this" })
+const myGift = disappointingGift.assert(await fetchGift())
+
+// hover me
+const chainable = myGift.box?.box?.label
+```
+
+Unlike its TypeScript counterpart, ArkType's `this` is not limited to interfaces. It can also be used from within a tuple expression.
+
+```ts
+// boxes now expects an array of our gift object
+const disappointingGifts = type({ label: "string", boxes: "this" }, "[]")
+```
+
+Referencing `this` from within a scope will result in a ParseError. For similar behavior within a scoped definition, just reference the alias by name:
+
+```ts
+const types = scope({
+	disappointingGift: {
+		label: "string",
+		// Resolves correctly to the root of the current type
+		"box?": "disappointingGift"
+	}
+}).export()
+```
