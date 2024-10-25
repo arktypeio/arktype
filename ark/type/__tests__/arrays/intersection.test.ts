@@ -133,4 +133,23 @@ contextualize(() => {
 		const expected = type("number[]>=3")
 		attest(t.json).equals(expected.json)
 	})
+
+	it("array with props", () => {
+		const t = type("Array").and({ name: "string" })
+
+		attest(t.json).snap({
+			required: [{ key: "name", value: "string" }],
+			proto: "Array"
+		})
+
+		attest<
+			unknown[] & {
+				name: string
+			}
+		>(t.t)
+
+		attest(t({ name: "foo" }).toString()).snap("must be an array (was object)")
+		const arrayWithProps = Object.assign([], { name: "foo" })
+		attest(t(arrayWithProps)).equals(arrayWithProps)
+	})
 })

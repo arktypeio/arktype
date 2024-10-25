@@ -5,27 +5,27 @@ import type {
 	InclusiveNumericRangeSchema,
 	Pattern
 } from "@ark/schema"
-import type { associateAttributesFromSchema } from "../attributes.ts"
+import type { associateAttributesFromStringSchema } from "../attributes.ts"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
 	matching<const schema extends Pattern.Schema>(
 		schema: schema
-	): Type<associateAttributesFromSchema<t, "pattern", schema>, $>
+	): Type<associateAttributesFromStringSchema<t, "pattern", schema>, $>
 
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<associateAttributesFromSchema<t, "minLength", schema>, $>
+	): Type<associateAttributesFromStringSchema<t, "minLength", schema>, $>
 
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<associateAttributesFromSchema<t, "maxLength", schema>, $>
+	): Type<associateAttributesFromStringSchema<t, "maxLength", schema>, $>
 
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<
-		associateAttributesFromSchema<
+		associateAttributesFromStringSchema<
 			t,
 			"minLength",
 			exclusivizeRangeSchema<schema>
@@ -36,7 +36,7 @@ interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<
-		associateAttributesFromSchema<
+		associateAttributesFromStringSchema<
 			t,
 			"maxLength",
 			exclusivizeRangeSchema<schema>
@@ -46,7 +46,7 @@ interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
 
 	exactlyLength<const schema extends ExactLength.Schema>(
 		schema: schema
-	): Type<associateAttributesFromSchema<t, "exactLength", schema>, $>
+	): Type<associateAttributesFromStringSchema<t, "exactLength", schema>, $>
 }
 
 export type { Type as StringType }

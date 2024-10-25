@@ -542,8 +542,7 @@ contextualize(() => {
 						}
 					}
 				],
-				proto: "$ark.MyExternalClass",
-				domain: "object"
+				proto: "$ark.MyExternalClass"
 			})
 
 			// @ts-expect-error

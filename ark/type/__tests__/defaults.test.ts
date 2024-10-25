@@ -99,8 +99,7 @@ contextualize(() => {
 		it("unions are defaultable", () => {
 			const t = type("boolean = false")
 
-			attest(t.t).type.toString.snap(`	| of<false, Default<false>>
-	| of<true, Default<false>>`)
+			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
 
 			attest(t.json).snap({
 				branches: [{ unit: false }, { unit: true }],
@@ -111,14 +110,9 @@ contextualize(() => {
 				boo: t
 			})
 
-			attest(o).type.toString.snap(`Type<
-	{
-		boo:
-			| of<false, Default<false>>
-			| of<true, Default<false>>
-	},
-	{}
->`)
+			attest(o).type.toString.snap(
+				"Type<{ boo: of<boolean, Default<false>> }, {}>"
+			)
 			attest(o.json).snap({
 				optional: [
 					{
@@ -283,9 +277,9 @@ contextualize(() => {
 
 			const defaultablePipedBoolean = type("boolean = false").pipe(toggle)
 
-			attest(defaultablePipedBoolean.t).type.toString.snap(`(
-	In: of<false, Default<false>> | of<true, Default<false>>
-) => Out<boolean>`)
+			attest(defaultablePipedBoolean.t).type.toString.snap(
+				"(In: of<boolean, Default<false>>) => Out<boolean>"
+			)
 			attest(defaultablePipedBoolean.json).snap({
 				in: [{ unit: false }, { unit: true }],
 				morphs: [toggleRef],
@@ -297,9 +291,7 @@ contextualize(() => {
 			})
 
 			attest(t.t).type.toString.snap(`{
-	blep: (
-		In: of<false, Default<false>> | of<true, Default<false>>
-	) => Out<boolean>
+	blep: (In: of<boolean, Default<false>>) => Out<boolean>
 }`)
 
 			const out = t({})
@@ -325,16 +317,9 @@ contextualize(() => {
 				.pipe(toggle)
 				.to("boolean")
 
-			attest(defaultablePipedBoolean.t).type.toString.snap(`	| ((
-			In:
-				| of<false, Default<false>>
-				| of<true, Default<false>>
-	  ) => To<false>)
-	| ((
-			In:
-				| of<false, Default<false>>
-				| of<true, Default<false>>
-	  ) => To<true>)`)
+			attest(defaultablePipedBoolean.t).type.toString
+				.snap(`	| ((In: of<boolean, Default<false>>) => To<false>)
+	| ((In: of<boolean, Default<false>>) => To<true>)`)
 			attest(defaultablePipedBoolean.json).snap({
 				in: {
 					branches: [{ unit: false }, { unit: true }],
@@ -349,16 +334,8 @@ contextualize(() => {
 
 			attest(t.t).type.toString.snap(`{
 	blep:
-		| ((
-				In:
-					| of<false, Default<false>>
-					| of<true, Default<false>>
-		  ) => To<false>)
-		| ((
-				In:
-					| of<false, Default<false>>
-					| of<true, Default<false>>
-		  ) => To<true>)
+		| ((In: of<boolean, Default<false>>) => To<false>)
+		| ((In: of<boolean, Default<false>>) => To<true>)
 }`)
 
 			const out = t({})
@@ -459,12 +436,12 @@ contextualize(() => {
 		})
 
 		it("null", () => {
+			// ideally we could infer a better type here,
+			// but attaching attributes to null or undefined
+			// is not possible with the current design
 			const t = type({ key: "object | null = null" })
 			const expected = type({ key: ["object | null", "=", null] })
 
-			attest(expected.t).type.toString.snap(
-				"{ key: of<object, Default<null>> | null }"
-			)
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
@@ -707,6 +684,45 @@ contextualize(() => {
 				baz2: "123",
 				baz3: "123"
 			})
+		})
+
+		it("boolean not distributed during inference", () => {
+			const t = type("boolean", "=", false)
+
+			attest(t.json).snap({
+				branches: [{ unit: false }, { unit: true }],
+				meta: { default: false }
+			})
+
+			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
+		})
+
+		it("union not distributed during inference with morph", () => {
+			const parseDateToFuture = (s: string) => {
+				const d = new Date(s)
+				d.setFullYear(d.getFullYear() + 100)
+				return d
+			}
+
+			const narrowFutureInput = () => true
+
+			const t = type("boolean | number", "=", false)
+				.or(["string", "=>", parseDateToFuture])
+				.satisfying(narrowFutureInput)
+
+			attest(t.json).snap([
+				{ domain: "number", predicate: ["$ark.narrowFutureInput"] },
+				{
+					in: { domain: "string", predicate: ["$ark.narrowFutureInput"] },
+					morphs: ["$ark.parseDateToFuture"]
+				},
+				{ unit: false },
+				{ unit: true }
+			])
+
+			attest(t.t).type.toString
+				.snap(`	| of<number | boolean, Default<false> & Anonymous>
+	| ((In: nominal<"?">) => Out<Date>)`)
 		})
 	})
 

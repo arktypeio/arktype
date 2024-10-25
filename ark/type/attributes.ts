@@ -187,20 +187,22 @@ export type brandAttributes<
 type attachAttributes<
 	t,
 	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior = "associate"
+	behavior extends AttributeInferenceBehavior = "associate",
+	unmorphedT = Exclude<t, InferredMorph>
 > =
 	t extends InferredMorph<infer i, infer o> ?
 		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
-	:	leftIfEqual<t, _attachAttributes<t, attributes, behavior>>
+	:	leftIfEqual<unmorphedT, _attachAttributes<unmorphedT, attributes, behavior>>
 
 type _attachAttributes<
 	t,
 	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior
+	behavior extends AttributeInferenceBehavior,
+	distributed = t
 > =
-	t extends null | undefined ? t
-	: t extends of<infer base, infer existingAttributes> ?
-		"brand" extends keyof t[attributesKey] | behavior ?
+	distributed extends null | undefined ? distributed
+	: distributed extends of<infer base, infer existingAttributes> ?
+		"brand" extends keyof distributed[attributesKey] | behavior ?
 			brandMultiple<base, existingAttributes & attributes>
 		:	associateMultiple<base, existingAttributes & attributes>
 	: extractIfSingleAttributeEntry<attributes> extends (
@@ -307,6 +309,35 @@ export type associateAttributesFromSchema<
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > = associateAttributes<t, schemaToAttributes<kind, schema>>
+
+// useful for helping TypeScript infer that adding attributes to a type
+// like string will still be a string for methods like .matching
+export type associateAttributesFromStringSchema<
+	t extends string,
+	kind extends Constraint.PrimitiveKind,
+	schema extends NodeSchema<kind>
+> = conform<associateAttributes<t, schemaToAttributes<kind, schema>>, string>
+
+export type associateAttributesFromNumberSchema<
+	t extends number,
+	kind extends Constraint.PrimitiveKind,
+	schema extends NodeSchema<kind>
+> = conform<associateAttributes<t, schemaToAttributes<kind, schema>>, number>
+
+export type associateAttributesFromDateSchema<
+	t extends Date,
+	kind extends Constraint.PrimitiveKind,
+	schema extends NodeSchema<kind>
+> = conform<associateAttributes<t, schemaToAttributes<kind, schema>>, Date>
+
+export type associateAttributesFromArraySchema<
+	t extends readonly unknown[],
+	kind extends Constraint.PrimitiveKind,
+	schema extends NodeSchema<kind>
+> = conform<
+	associateAttributes<t, schemaToAttributes<kind, schema>>,
+	readonly unknown[]
+>
 
 export type schemaToAttributes<
 	kind extends Constraint.PrimitiveKind,

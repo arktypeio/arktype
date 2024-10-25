@@ -75,6 +75,7 @@ import {
 	type DeclarationParser,
 	type DefinitionParser,
 	type EnumeratedTypeParser,
+	type InstanceOfTypeParser,
 	type SchemaParser,
 	type TypeParser,
 	type UnitTypeParser
@@ -305,6 +306,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	enumerated: EnumeratedTypeParser<$> = (...values) =>
 		this.units(values) as never
+
+	instanceOf: InstanceOfTypeParser<$> = ctor =>
+		this.node("proto", { proto: ctor }, { prereduced: true }) as never
 
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
