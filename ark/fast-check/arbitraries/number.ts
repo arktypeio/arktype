@@ -1,16 +1,18 @@
-import { hasKey, throwInternalError } from "@ark/util"
+import type { nodeOfKind, RefinementKind } from "@ark/schema"
+import { hasKey, nearestFloat, throwInternalError, type array } from "@ark/util"
 import { double, integer, type Arbitrary } from "fast-check"
-import type { Ctx } from "../fastCheckContext.ts"
+import type { RuleByRefinementKind } from "../arktypeFastCheck.ts"
+import type { DomainInputNode } from "./domain.ts"
 
-export const buildNumberArbitrary = (ctx: Ctx): Arbitrary<number> => {
-	const refinements = ctx.refinements
+export const buildNumberArbitrary = (
+	node: DomainInputNode
+): Arbitrary<number> => {
+	if (node.hasKind("domain")) return integer()
+	const refinements = getRefinements(node.refinements)
 	const hasMax = hasKey(refinements, "max")
 	const hasMin = hasKey(refinements, "min")
 
 	if (!hasKey(refinements, "divisor")) return double(refinements)
-
-	if (hasMin && refinements.min) refinements.min = Math.ceil(refinements.min)
-	if (hasMax && refinements.max) refinements.max = Math.floor(refinements.max)
 
 	const divisor = refinements.divisor
 	if (divisor === undefined) throwInternalError("Expected a divisor.")
@@ -58,4 +60,29 @@ export const buildNumberArbitrary = (ctx: Ctx): Arbitrary<number> => {
 		return value + remainder
 	})
 	return integersDivisibleByDivisor
+}
+
+const getRefinements = (refinements: array<nodeOfKind<RefinementKind>>) => {
+	const hasDivisor = refinements.find(refinement =>
+		refinement.hasKind("divisor")
+	)
+	const ruleByRefinementKind: RuleByRefinementKind = {}
+
+	for (const refinement of refinements) {
+		if (refinement.hasKindIn("min", "max")) {
+			let rule = refinement.rule
+			if ("exclusive" in refinement) {
+				rule = nearestFloat(
+					refinement.rule,
+					refinement.hasKind("min") ? "+" : "-"
+				)
+			}
+			if (hasDivisor !== undefined)
+				rule = refinement.hasKind("min") ? Math.ceil(rule) : Math.floor(rule)
+			ruleByRefinementKind[refinement.kind] = rule
+		} else if (refinement.hasKind("divisor"))
+			ruleByRefinementKind["divisor"] = refinement.rule
+	}
+
+	return ruleByRefinementKind
 }

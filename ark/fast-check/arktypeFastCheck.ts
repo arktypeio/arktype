@@ -1,8 +1,8 @@
-import {
-	refinementKinds,
-	type NodeKind,
-	type nodeOfKind,
-	type SequenceTuple
+import type {
+	NodeKind,
+	nodeOfKind,
+	RefinementKind,
+	SequenceTuple
 } from "@ark/schema"
 import {
 	hasKey,
@@ -21,18 +21,14 @@ import {
 	type Arbitrary
 } from "fast-check"
 import {
+	getArrayRefinements,
 	getPossiblyWeightedArray,
 	spreadVariadicElements
 } from "./arbitraries/array.ts"
 import { buildDomainArbitrary } from "./arbitraries/domain.ts"
 import { buildCyclicArbitrary } from "./arbitraries/object.ts"
 import { buildProtoArbitrary } from "./arbitraries/proto.ts"
-import {
-	getCtxWithNoRefinements,
-	initializeContext,
-	type Ctx
-} from "./fastCheckContext.ts"
-import { setRefinement } from "./refinements.ts"
+import { initializeContext, type Ctx } from "./fastCheckContext.ts"
 
 export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
 	const ctx = initializeContext()
@@ -47,24 +43,21 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 
 			ctx.isCyclic = node.isCyclic
 
-			const rootNode = extractRootAndSetRefinements(node, ctx)
+			//specifically in the case of unknown[], it is represented as an empty intersection so we just return anything here.
+			//todoshawn maybe it can be handled at a different spot
+			if (node.basis === null) return anything()
 
-			/**
-			 * When dealing with "unknown" the node is represented with an empty intersection causing root to be undefined
-			 */
-			if (rootNode === undefined) return anything()
-
-			const intersectionArbitrary: Arbitrary<unknown> = buildArbitrary(
-				rootNode,
-				ctx
-			)
+			const intersectionArbitrary =
+				node.basis?.kind === "domain" ?
+					buildDomainArbitrary[node.basis?.domain](node, ctx)
+				:	buildProtoArbitrary[node.basis?.proto.name](node, ctx)
 
 			ctx.arbitrariesByIntersectionId[node.id] = intersectionArbitrary
 
 			return intersectionArbitrary
 		case "domain":
 			if (node.domain in buildDomainArbitrary)
-				return buildDomainArbitrary[node.domain](ctx)
+				return buildDomainArbitrary[node.domain](node, ctx)
 
 			return throwInternalError(`${node.domain} is not supported`)
 		case "union":
@@ -76,9 +69,9 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 		case "unit":
 			return constant(node.unit)
 		case "proto":
-			return buildProtoArbitrary(node, ctx)
+			return buildProtoArbitrary[node.proto.name](node as never, ctx)
 		case "structure":
-			return buildStructureArbitrary(node, ctx)
+			return buildStructureArbitrary(node as never, ctx)
 		case "index":
 			return buildIndexSignatureArbitrary([node], ctx)
 		case "required":
@@ -86,7 +79,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			if (node.value.hasKind("alias") && node.required)
 				throwInternalError("Infinitely deep cycles are not supported.")
 
-			return buildArbitrary(node.value as never, getCtxWithNoRefinements(ctx))
+			return buildArbitrary(node.value as never, ctx)
 		case "morph":
 			if (node.inner.in === undefined)
 				throwInternalError(`Expected the morph to have an 'In' value.`)
@@ -108,7 +101,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 				ctx.seenIntersectionIds[id] = true
 				ctx.arbitrariesByIntersectionId[id] = buildArbitrary(
 					node.resolution as never,
-					getCtxWithNoRefinements(ctx)
+					ctx
 				)
 			}
 
@@ -117,63 +110,36 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 	throwInternalError(`${node.kind} is not supported`)
 }
 
-const extractRootAndSetRefinements = (
+export const buildStructureArbitrary = (
 	node: nodeOfKind<"intersection">,
 	ctx: Ctx
-) => {
-	const roots: nodeOfKind<NodeKind>[] = []
-
-	node.children.forEach(child => {
-		if (child.hasKindIn(...refinementKinds)) setRefinement(child, ctx)
-		else roots.push(child)
-	})
-
-	/**
-	 * In the case where we do not have a sequence node but there's a proto node we store it for generating the structure node
-	 */
-	if (roots.length > 1) {
-		if (node.inner.proto) {
-			if (!node.inner.structure?.sequence)
-				ctx.mustGenerate["array"] = buildArbitrary(node.inner.proto, ctx)
-		}
-
-		return node.inner.structure
-	}
-
-	return roots[0]
-}
-
-const buildStructureArbitrary = (
-	node: nodeOfKind<"structure">,
-	ctx: Ctx
 ): Arbitrary<unknown> => {
-	if (hasKey(node, "index") && node.index)
-		return buildIndexSignatureArbitrary(node.index, ctx)
+	const structure = node.structure
+	if (node.basis?.hasKind("domain")) {
+		if (structure === undefined)
+			throwInternalError("Expected a structure node.")
 
-	if (
-		hasKey(node.inner, "sequence") ||
-		ctx.mustGenerate["array"] !== undefined
-	) {
-		const arrayArbitrary =
-			ctx.mustGenerate["array"] === undefined && node.sequence ?
-				buildArrayArbitrary(node.sequence, ctx)
-			:	(ctx.mustGenerate["array"] as Arbitrary<unknown[]>)
+		if (hasKey(structure, "index") && structure.index)
+			return buildIndexSignatureArbitrary(structure.index, ctx)
 
-		// This allows us to check if there was an interesection with an object adding additional props to the array
-		const objectNode = node.children.find(child =>
-			child.hasKindIn("required", "optional")
-		)
-
-		if (objectNode === undefined) return arrayArbitrary
-
-		const recordArbitrary = buildObjectArbitrary(node, ctx)
-
-		return tuple(arrayArbitrary, recordArbitrary).map(([arr, record]) =>
-			Object.assign(arr, record)
-		)
+		return buildObjectArbitrary(structure, ctx)
+	} else {
+		const refinements = getArrayRefinements(node.refinements)
+		if (refinements.exactLength === 0) return tuple()
+		const arrArbitrary =
+			structure === undefined || structure.sequence === undefined ?
+				array(anything(), refinements)
+			:	buildArrayArbitrary(structure.sequence, refinements, ctx)
+		if (
+			structure &&
+			(structure.required !== undefined || structure.optional !== undefined)
+		) {
+			const objectArbitrary = buildObjectArbitrary(structure, ctx)
+			return tuple(arrArbitrary, objectArbitrary).map(([arr, record]) =>
+				Object.assign(arr, record)
+			)
+		} else return arrArbitrary
 	}
-
-	return buildObjectArbitrary(node, ctx)
 }
 
 export const buildObjectArbitrary = (
@@ -187,12 +153,8 @@ export const buildObjectArbitrary = (
 	const requiredKeys = node.requiredKeys
 	const arbitrariesByKey: Record<PropertyKey, Arbitrary<unknown>> = {}
 
-	for (const [key, value] of entries) {
-		arbitrariesByKey[key] = buildArbitrary(
-			value as never,
-			getCtxWithNoRefinements(ctx)
-		)
-	}
+	for (const [key, value] of entries)
+		arbitrariesByKey[key] = buildArbitrary(value as never, ctx)
 
 	return record(arbitrariesByKey, { requiredKeys } as never)
 }
@@ -201,15 +163,12 @@ const buildIndexSignatureArbitrary = (
 	indexNodes: readonly nodeOfKind<"index">[],
 	ctx: Ctx
 ): Arbitrary<Record<string, unknown>> => {
-	if (indexNodes.length === 1)
-		return getDictionaryArbitrary(indexNodes[0], getCtxWithNoRefinements(ctx))
+	if (indexNodes.length === 1) return getDictionaryArbitrary(indexNodes[0], ctx)
 
 	const dictionaryArbitraries = []
-	for (const indexNode of indexNodes) {
-		dictionaryArbitraries.push(
-			getDictionaryArbitrary(indexNode, getCtxWithNoRefinements(ctx))
-		)
-	}
+	for (const indexNode of indexNodes)
+		dictionaryArbitraries.push(getDictionaryArbitrary(indexNode, ctx))
+
 	return tuple(...dictionaryArbitraries).map(arbs => {
 		const recordArb = {}
 		for (const arb of arbs) Object.assign(recordArb, arb)
@@ -227,24 +186,19 @@ const getDictionaryArbitrary = (node: nodeOfKind<"index">, ctx: Ctx) => {
 
 const buildArrayArbitrary = (
 	node: nodeOfKind<"sequence">,
+	refinements: RuleByRefinementKind,
 	ctx: Ctx
 ): Arbitrary<unknown[]> => {
 	//Arrays will always have a single element and the kind will be variadic
 	if (node.tuple.length === 1 && node.tuple[0].kind === "variadic") {
-		const elementsArbitrary = buildArbitrary(
-			node.tuple[0].node as never,
-			getCtxWithNoRefinements(ctx)
-		)
+		const elementsArbitrary = buildArbitrary(node.tuple[0].node as never, ctx)
 
-		const arrArbitrary = array(elementsArbitrary, ctx.refinements)
+		const arrArbitrary = array(elementsArbitrary, refinements)
 
 		return getPossiblyWeightedArray(arrArbitrary, node, ctx)
 	}
 
-	return getSpreadVariadicElementsTuple(
-		node.tuple,
-		getCtxWithNoRefinements(ctx)
-	)
+	return getSpreadVariadicElementsTuple(node.tuple, ctx)
 }
 
 const getSpreadVariadicElementsTuple = (
@@ -260,4 +214,8 @@ const getSpreadVariadicElementsTuple = (
 	}
 
 	return spreadVariadicElements(tupleArbitraries, tupleElements)
+}
+
+export type RuleByRefinementKind = {
+	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
 }

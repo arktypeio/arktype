@@ -1,5 +1,7 @@
-import type { nodeOfKind, SequenceTuple } from "@ark/schema"
+import type { nodeOfKind, RefinementKind, SequenceTuple } from "@ark/schema"
+import type { array } from "@ark/util"
 import { constant, oneof, tuple, type Arbitrary } from "fast-check"
+import type { RuleByRefinementKind } from "../arktypeFastCheck.ts"
 import type { Ctx } from "../fastCheckContext.ts"
 
 export const getPossiblyWeightedArray = (
@@ -27,7 +29,6 @@ export const spreadVariadicElements = (
 ): Arbitrary<unknown[]> =>
 	tuple(...tupleArbitraries).chain(arr => {
 		const arrayWithoutOptionals = []
-
 		const arrayWithOptionals = []
 
 		for (const i in arr) {
@@ -52,3 +53,12 @@ export const spreadVariadicElements = (
 		}
 		return tuple(...arrayWithoutOptionals)
 	})
+
+export const getArrayRefinements = (
+	refinements: array<nodeOfKind<RefinementKind>>
+): RuleByRefinementKind => {
+	const ruleByRefinementKind: RuleByRefinementKind = {}
+	for (const refinement of refinements)
+		ruleByRefinementKind[refinement.kind as never] = refinement.rule as never
+	return ruleByRefinementKind
+}

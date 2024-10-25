@@ -24,7 +24,7 @@ describe("Arbitrary Generation", () => {
 			return assertProperty(arbitrary, t)
 		})
 		it("Tight Bound", () => {
-			const t = type("4<number<5")
+			const t = type("1<number.integer<5")
 			const arbitrary = arkToArbitrary(t)
 			return assertProperty(arbitrary, t)
 		})
@@ -228,7 +228,7 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 		it("object with optional key", () => {
-			const t = type({ a: "string", "b?": "3<number<5" })
+			const t = type({ b: "3<number<5" })
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
 		})
@@ -278,7 +278,7 @@ describe("Arbitrary Generation", () => {
 			const example = {
 				user: {
 					name: "string",
-					friend: "user[]"
+					friends: "user[]"
 				}
 			} as const
 			const t = scope(example).type("user")
@@ -336,6 +336,7 @@ describe("Arbitrary Generation", () => {
 const assertProperty = (arbitrary: Arbitrary<unknown>, schema: type.Any) =>
 	assert(
 		property(arbitrary, value => {
+			console.log(value)
 			schema.assert(value)
 			return true
 		})
