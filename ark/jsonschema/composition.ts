@@ -1,6 +1,5 @@
-import type { array } from "@ark/util"
 import { type, type Type } from "arktype"
-import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
+import { innerParseJsonSchema } from "./json.ts"
 import type { JsonSchema } from "./scope.ts"
 
 const validateAllOfJsonSchemas = (
@@ -67,29 +66,3 @@ export const parseJsonSchemaCompositionKeywords = (
 	if ("not" in jsonSchema) return validateNotJsonSchema(jsonSchema.not)
 	if ("oneOf" in jsonSchema) return validateOneOfJsonSchemas(jsonSchema.oneOf)
 }
-
-// NB: For simplicity sake, the type level treats 'anyOf' and 'oneOf' as the same.
-type inferJsonSchemaAnyOrOneOf<compositionSchemaValue, t> =
-	compositionSchemaValue extends never[] ?
-		never // is an empty array, so is invalid
-	: compositionSchemaValue extends array ?
-		t & inferJsonSchema<compositionSchemaValue>
-	:	never // is not an array, so is invalid
-
-export type inferJsonSchemaComposition<schema, t = unknown> =
-	"allOf" extends keyof schema ?
-		t extends never ?
-			t // "allOf" has incompatible schemas, so don't keep looking
-		: schema["allOf"] extends [infer firstSchema, ...infer restOfSchemas] ?
-			inferJsonSchemaComposition<
-				{ allOf: restOfSchemas },
-				inferJsonSchema<firstSchema, t>
-			>
-		: schema["allOf"] extends never[] ?
-			t // have finished inferring schemas
-		:	never // "allOf" isn't an array, so is invalid
-	: "oneOf" extends keyof schema ? inferJsonSchemaAnyOrOneOf<schema["oneOf"], t>
-	: "anyOf" extends keyof schema ? inferJsonSchemaAnyOrOneOf<schema["anyOf"], t>
-	: "not" extends keyof schema ?
-		t // NB: TypeScript doesn't have "not" types, so can't accurately represent.
-	:	unknown

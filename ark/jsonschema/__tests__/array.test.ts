@@ -7,7 +7,6 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type array", () => {
 		const t = parseJsonSchema({ type: "array" })
-		attest<unknown[]>(t.infer)
 		attest(t.json).snap({ proto: "Array" })
 	})
 
@@ -16,7 +15,6 @@ contextualize(() => {
 			type: "array",
 			items: [{ type: "string" }, { type: "number" }]
 		})
-		attest<[string, number]>(tItems.infer)
 		attest(tItems.json).snap({
 			proto: "Array",
 			sequence: { prefix: ["string", "number"] },
@@ -31,7 +29,6 @@ contextualize(() => {
 			items: [{ type: "string" }, { type: "number" }],
 			additionalItems: { type: "boolean" }
 		})
-		attest<[string, number, ...boolean[]]>(tItemsVariadic.infer)
 		attest(tItemsVariadic.json).snap({
 			minLength: 2,
 			proto: "Array",
@@ -55,7 +52,6 @@ contextualize(() => {
 			tContains.internal.firstReferenceOfKindOrThrow(
 				"predicate"
 			).serializedPredicate
-		attest<unknown[]>(tContains.infer)
 		attest(tContains.json).snap({
 			proto: "Array",
 			predicate: [predicateRef]
@@ -70,7 +66,6 @@ contextualize(() => {
 			type: "array",
 			maxItems: 5
 		})
-		attest<unknown[]>(tMaxItems.infer)
 		attest(tMaxItems.json).snap({
 			proto: "Array",
 			maxLength: 5
@@ -86,7 +81,6 @@ contextualize(() => {
 			type: "array",
 			minItems: 5
 		})
-		attest<unknown[]>(tMinItems.infer)
 		attest(tMinItems.json).snap({
 			proto: "Array",
 			minLength: 5
@@ -106,7 +100,6 @@ contextualize(() => {
 			tUniqueItems.internal.firstReferenceOfKindOrThrow(
 				"predicate"
 			).serializedPredicate
-		attest<unknown[]>(tUniqueItems.infer)
 		attest(tUniqueItems.json).snap({
 			proto: "Array",
 			predicate: [predicateRef]

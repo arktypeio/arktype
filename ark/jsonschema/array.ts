@@ -4,10 +4,10 @@ import {
 	type Predicate,
 	type TraversalContext
 } from "@ark/schema"
-import { printable, type array } from "@ark/util"
-import type { Type, applyConstraintSchema } from "arktype"
+import { printable } from "@ark/util"
+import type { Type } from "arktype"
 
-import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
+import { innerParseJsonSchema } from "./json.ts"
 import { JsonSchema } from "./scope.ts"
 
 const deepNormalize = (data: unknown): unknown =>
@@ -106,54 +106,3 @@ export const validateJsonSchemaArray = JsonSchema.ArraySchema.pipe(
 		return rootSchema(arktypeArraySchema) as never
 	}
 )
-
-type inferArrayOfJsonSchema<tuple extends array<JsonSchema.Schema>> = {
-	[index in keyof tuple]: inferJsonSchema<tuple[index]>
-}
-
-export type inferJsonSchemaArray<arraySchema, T = unknown> =
-	"additionalItems" extends keyof arraySchema ?
-		"items" extends keyof arraySchema ?
-			arraySchema["items"] extends array<JsonSchema.Schema> ?
-				inferJsonSchemaArrayConstraints<
-					Omit<arraySchema, "additionalItems" | "items">,
-					// @ts-ignore - TypeScript complains that this is "excessively deep", despite it correctly resolving the type
-					[
-						...inferJsonSchemaArrayItems<arraySchema["items"]>,
-						...inferJsonSchema<arraySchema["additionalItems"]>[]
-					]
-				>
-			:	// JSON Schema spec explicitly says that additionalItems MUST be ignored if items is not an array, and it's NOT an error
-				inferJsonSchemaArray<Omit<arraySchema, "additionalItems">, T>
-		:	inferJsonSchema<arraySchema["additionalItems"]>
-	: "items" extends keyof arraySchema ?
-		inferJsonSchemaArray<
-			Omit<arraySchema, "items">,
-			T & inferJsonSchemaArrayItems<arraySchema["items"]>
-		>
-	:	inferJsonSchemaArrayConstraints<arraySchema, T extends array ? T : T[]>
-
-type inferJsonSchemaArrayConstraints<arraySchema, T> =
-	"maxItems" extends keyof arraySchema ?
-		inferJsonSchemaArrayConstraints<
-			Omit<arraySchema, "maxItems">,
-			applyConstraintSchema<T, "maxLength", arraySchema["maxItems"] & number>
-		>
-	: "minItems" extends keyof arraySchema ?
-		inferJsonSchemaArrayConstraints<
-			Omit<arraySchema, "minItems">,
-			applyConstraintSchema<T, "minLength", arraySchema["minItems"] & number>
-		>
-	: T extends {} ? T
-	: never
-
-type inferJsonSchemaArrayItems<arrayItemsSchema> =
-	arrayItemsSchema extends array ?
-		arrayItemsSchema["length"] extends 0 ?
-			// JSON Schema explicitly states that {items: []} means "an array of anything"
-			// https://json-schema.org/understanding-json-schema/reference/array#items
-			unknown[]
-		: arrayItemsSchema extends array<JsonSchema.Schema> ?
-			inferArrayOfJsonSchema<arrayItemsSchema>
-		:	never
-	:	inferJsonSchema<arrayItemsSchema>[]

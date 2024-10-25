@@ -5,10 +5,10 @@ import {
 	type Predicate,
 	type TraversalContext
 } from "@ark/schema"
-import { conflatenateAll, printable, type show } from "@ark/util"
+import { conflatenateAll, printable } from "@ark/util"
 import type { Type } from "arktype"
 
-import { innerParseJsonSchema, type inferJsonSchema } from "./json.ts"
+import { innerParseJsonSchema } from "./json.ts"
 import { JsonSchema } from "./scope.ts"
 
 const parseMinMaxProperties = (
@@ -269,68 +269,3 @@ export const validateJsonSchemaObject = JsonSchema.ObjectSchema.pipe(
 		) as never
 	}
 )
-
-type inferAdditionalProperties<objectSchema> =
-	objectSchema["additionalProperties" & keyof objectSchema] extends (
-		JsonSchema.Schema
-	) ?
-		objectSchema["additionalProperties" & keyof objectSchema] extends false ?
-			// false means no additional properties are allowed,
-			// which is the default in TypeScript so just return the current type.
-			unknown
-		:	{
-				// It's not possible in TS to accurately infer additional properties
-				// so we use `unknown` to at least allow unspecified properties.
-				[key: string]: unknown
-			}
-	:	never // TODO: Throw type error
-
-type inferRequiredProperties<objectSchema> = {
-	[P in (objectSchema["required" & keyof objectSchema] &
-		string[])[number]]: P extends (
-		keyof objectSchema["properties" & keyof objectSchema]
-	) ?
-		objectSchema["properties" & keyof objectSchema][P] extends (
-			JsonSchema.Schema
-		) ?
-			inferJsonSchema<objectSchema["properties" & keyof objectSchema][P]>
-		:	never // TODO: Throw type error
-	:	never // TODO: Throw type error
-}
-
-type inferOptionalProperties<objectSchema> = {
-	[P in keyof objectSchema["properties" &
-		keyof objectSchema]]?: objectSchema["properties" &
-		keyof objectSchema][P] extends JsonSchema.Schema ?
-		inferJsonSchema<objectSchema["properties" & keyof objectSchema][P]>
-	:	never // TODO: Throw type error
-}
-
-// NB: We don't infer `patternProperties` or 'patternProperties' since regex index signatures are not supported in TS
-export type inferJsonSchemaObject<objectSchema, T = unknown> =
-	"properties" extends keyof objectSchema ?
-		"required" extends keyof objectSchema ?
-			inferJsonSchemaObject<
-				Omit<objectSchema, "required" | "properties"> & {
-					properties: Omit<
-						// Remove the required keys
-						objectSchema["properties"],
-						(objectSchema["required"] & string[])[number]
-					>
-				},
-				inferRequiredProperties<objectSchema>
-			>
-		:	// 'required' isn't present, so all properties are optional
-			inferJsonSchemaObject<
-				Omit<objectSchema, "properties">,
-				inferOptionalProperties<objectSchema> extends (
-					Record<PropertyKey, never>
-				) ?
-					T
-				:	T & inferOptionalProperties<objectSchema>
-			>
-	: "additionalProperties" extends keyof objectSchema ?
-		show<T & inferAdditionalProperties<objectSchema>>
-	:	// additionalProperties isn't present in the schema, which JSON Schema explicitly
-		// states means extra properties are allowed, so update types accordingly.
-		show<T & { [key: string]: JsonSchema.Json }>

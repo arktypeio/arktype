@@ -6,7 +6,6 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type object", () => {
 		const t = parseJsonSchema({ type: "object" })
-		attest<{ [x: string]: unknown }>(t.infer)
 		attest(t.json).snap({ domain: "object" })
 	})
 
@@ -15,7 +14,6 @@ contextualize(() => {
 			type: "object",
 			maxProperties: 1
 		})
-		attest<object>(tMaxProperties.infer)
 		attest(tMaxProperties.json).snap({ domain: "object" })
 		attest(tMaxProperties.allows({})).equals(true)
 		attest(tMaxProperties.allows({ foo: 1 })).equals(true)
@@ -28,7 +26,6 @@ contextualize(() => {
 			type: "object",
 			minProperties: 2
 		})
-		attest<object>(tMinProperties.infer)
 		attest(tMinProperties.json).snap({ domain: "object" })
 		attest(tMinProperties.allows({})).equals(false)
 		attest(tMinProperties.allows({ foo: 1 })).equals(false)
@@ -45,7 +42,6 @@ contextualize(() => {
 			},
 			required: ["foo"]
 		})
-		attest<{ [x: string]: unknown; foo: string; bar?: number }>(tRequired.infer)
 		attest(tRequired.json).snap({
 			domain: "object",
 			required: [{ key: "foo", value: "string" }],
@@ -78,7 +74,6 @@ contextualize(() => {
 			type: "object",
 			additionalProperties: { type: "number" }
 		})
-		attest<{ [x: string]: unknown }>(tAdditionalProperties.infer)
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
 			additional: "number"
@@ -96,7 +91,6 @@ contextualize(() => {
 				"^[a-z]+$": { type: "string" }
 			}
 		})
-		attest<{ [x: string]: unknown }>(tPatternProperties.infer)
 		attest(tPatternProperties.json).snap({
 			domain: "object",
 			pattern: [{ key: "^[a-z]+$", value: "string" }]

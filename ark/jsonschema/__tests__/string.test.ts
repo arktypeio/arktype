@@ -7,7 +7,6 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type string", () => {
 		const t = parseJsonSchema({ type: "string" })
-		attest<string>(t.infer)
 		attest(t.json).snap({ domain: "string" })
 	})
 
@@ -16,7 +15,6 @@ contextualize(() => {
 			type: "string",
 			maxLength: 5
 		})
-		attest<string>(tMaxLength.infer)
 		attest(tMaxLength.json).snap({
 			domain: "string",
 			maxLength: 5
@@ -28,7 +26,6 @@ contextualize(() => {
 			type: "string",
 			minLength: 5
 		})
-		attest<string>(tMinLength.infer)
 		attest(tMinLength.json).snap({
 			domain: "string",
 			minLength: 5
@@ -40,7 +37,6 @@ contextualize(() => {
 			type: "string",
 			pattern: "es"
 		})
-		attest<string>(tPatternString.infer)
 		attest(tPatternString.json).snap({
 			domain: "string",
 			regex: ["es"]
@@ -53,7 +49,6 @@ contextualize(() => {
 			type: "string",
 			pattern: /es/
 		})
-		attest<string>(tPatternRegExp.infer)
 		attest(tPatternRegExp.json).snap({
 			domain: "string",
 			regex: ["es"] // strips the outer slashes

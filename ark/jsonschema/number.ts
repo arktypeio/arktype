@@ -1,6 +1,6 @@
 import { rootSchema, type Intersection } from "@ark/schema"
 import { throwParseError } from "@ark/util"
-import type { Type, number } from "arktype"
+import type { Type } from "arktype"
 import { JsonSchema } from "./scope.ts"
 
 export const validateJsonSchemaNumber = JsonSchema.NumberSchema.pipe(
@@ -44,38 +44,3 @@ export const validateJsonSchemaNumber = JsonSchema.NumberSchema.pipe(
 		return rootSchema(arktypeNumberSchema) as never
 	}
 )
-
-export type inferJsonSchemaNumber<numberSchema, T = number> =
-	"exclusiveMaximum" extends keyof numberSchema ?
-		inferJsonSchemaNumber<
-			Omit<numberSchema, "exclusiveMaximum">,
-			T & number.lessThan<numberSchema["exclusiveMaximum"]>
-		>
-	: "exclusiveMinimum" extends keyof numberSchema ?
-		inferJsonSchemaNumber<
-			Omit<numberSchema, "exclusiveMinimum">,
-			T & number.moreThan<numberSchema["exclusiveMinimum"]>
-		>
-	: "maximum" extends keyof numberSchema ?
-		inferJsonSchemaNumber<
-			Omit<numberSchema, "maximum">,
-			T & number.atMost<numberSchema["maximum"]>
-		>
-	: "minimum" extends keyof numberSchema ?
-		inferJsonSchemaNumber<
-			Omit<numberSchema, "minimum">,
-			T & number.atLeast<numberSchema["minimum"]>
-		>
-	: "multipleOf" extends keyof numberSchema ?
-		inferJsonSchemaNumber<
-			Omit<numberSchema, "multipleOf" | "type"> & { type: "number" },
-			T & number.divisibleBy<numberSchema["multipleOf"]>
-		>
-	: "type" extends keyof numberSchema ?
-		numberSchema["type"] extends "integer" ?
-			inferJsonSchemaNumber<
-				Omit<numberSchema, "type"> & { type: "number" },
-				T & number.divisibleBy<1>
-			>
-		:	T
-	:	never // TODO: Throw type error (must have {type: "number"|"integer"} )

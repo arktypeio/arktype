@@ -1,5 +1,5 @@
 import { rootSchema, type Intersection } from "@ark/schema"
-import type { Type, string } from "arktype"
+import type { Type } from "arktype"
 import { JsonSchema } from "./scope.ts"
 
 export const validateJsonSchemaString = JsonSchema.StringSchema.pipe(
@@ -23,21 +23,3 @@ export const validateJsonSchemaString = JsonSchema.StringSchema.pipe(
 		return rootSchema(arktypeStringSchema) as never
 	}
 )
-
-export type inferJsonSchemaString<stringSchema, T = string> =
-	"maxLength" extends keyof stringSchema ?
-		inferJsonSchemaString<
-			Omit<stringSchema, "maxLength">,
-			T & string.atMostLength<stringSchema["maxLength"]>
-		>
-	: "minLength" extends keyof stringSchema ?
-		inferJsonSchemaString<
-			Omit<stringSchema, "minLength">,
-			T & string.atLeastLength<stringSchema["minLength"]>
-		>
-	: "pattern" extends keyof stringSchema ?
-		inferJsonSchemaString<
-			Omit<stringSchema, "pattern">,
-			T & string.matching<stringSchema["pattern"]>
-		>
-	:	T

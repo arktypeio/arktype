@@ -1,67 +1,12 @@
-import {
-	printable,
-	throwParseError,
-	type array,
-	type ErrorMessage
-} from "@ark/util"
+import { printable, throwParseError } from "@ark/util"
 import { type, type Out, type Type } from "arktype"
 import { parseJsonSchemaAnyKeywords } from "./any.ts"
-import { validateJsonSchemaArray, type inferJsonSchemaArray } from "./array.ts"
-import {
-	parseJsonSchemaCompositionKeywords,
-	type inferJsonSchemaComposition
-} from "./composition.ts"
-import {
-	validateJsonSchemaNumber,
-	type inferJsonSchemaNumber
-} from "./number.ts"
-import {
-	validateJsonSchemaObject,
-	type inferJsonSchemaObject
-} from "./object.ts"
+import { validateJsonSchemaArray } from "./array.ts"
+import { parseJsonSchemaCompositionKeywords } from "./composition.ts"
+import { validateJsonSchemaNumber } from "./number.ts"
+import { validateJsonSchemaObject } from "./object.ts"
 import { JsonSchema } from "./scope.ts"
-import {
-	validateJsonSchemaString,
-	type inferJsonSchemaString
-} from "./string.ts"
-
-type JsonSchemaConstraintKind = "const" | "enum"
-type JsonSchemaConst<t> = { const: t }
-type JsonSchemaEnum<t> = { enum: readonly t[] }
-
-type inferJsonSchemaConstraint<
-	schema,
-	t,
-	kind extends JsonSchemaConstraintKind
-> = t extends never ? never : t & inferJsonSchema<Omit<schema, kind>>
-
-type inferJsonSchemaTypeNoKeywords<
-	schema extends JsonSchema.TypeWithNoKeywords,
-	t
-> =
-	schema["type"] extends "boolean" ? t & boolean
-	: schema["type"] extends "null" ? t & null
-	: never
-
-export type inferJsonSchema<schema, t = unknown> =
-	schema extends true ? JsonSchema.Json
-	: schema extends false ? never
-	: schema extends Record<PropertyKey, never> ? JsonSchema.Json
-	: schema extends array ? inferJsonSchema<schema[number], t>
-	: schema extends JsonSchema.CompositionKeywords ?
-		inferJsonSchemaComposition<schema, t>
-	: schema extends JsonSchemaConst<infer c> ?
-		inferJsonSchemaConstraint<schema, t & c, "const">
-	: schema extends JsonSchemaEnum<infer e> ?
-		inferJsonSchemaConstraint<schema, t & e, "enum">
-	: schema extends JsonSchema.TypeWithNoKeywords ?
-		inferJsonSchemaTypeNoKeywords<schema, t>
-	: schema extends JsonSchema.ArraySchema ? inferJsonSchemaArray<schema>
-	: schema extends JsonSchema.NumberSchema ? t & inferJsonSchemaNumber<schema>
-	: schema extends JsonSchema.ObjectSchema ? t & inferJsonSchemaObject<schema>
-	: schema extends JsonSchema.StringSchema ? t & inferJsonSchemaString<schema>
-	: t extends {} ? t
-	: ErrorMessage<"Failed to infer JSON Schema">
+import { validateJsonSchemaString } from "./string.ts"
 
 export const innerParseJsonSchema: Type<
 	(In: JsonSchema.Schema) => Out<Type<unknown, any>>
@@ -128,6 +73,5 @@ export const innerParseJsonSchema: Type<
 	}
 )
 
-export const parseJsonSchema = <const t extends JsonSchema.Schema>(
-	jsonSchema: t
-): Type<inferJsonSchema<t>> => innerParseJsonSchema.assert(jsonSchema) as never
+export const parseJsonSchema = (jsonSchema: JsonSchema.Schema): Type<unknown> =>
+	innerParseJsonSchema.assert(jsonSchema) as never
