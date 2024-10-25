@@ -39,7 +39,7 @@ export const spreadVariadicElements = (
 				arrayWithoutOptionals.push(...generatedValuesArray)
 				arrayWithOptionals.push(...generatedValuesArray)
 			} else if (tupleElements[i].kind === "optionals")
-				arrayWithoutOptionals.push(constant(arr[i]))
+				arrayWithOptionals.push(constant(arr[i]))
 			else {
 				arrayWithoutOptionals.push(constant(arr[i]))
 				arrayWithOptionals.push(constant(arr[i]))
@@ -51,7 +51,7 @@ export const spreadVariadicElements = (
 				tuple(...arrayWithOptionals)
 			)
 		}
-		return tuple(...arrayWithoutOptionals)
+		return tuple(...arrayWithOptionals)
 	})
 
 export const getArrayRefinements = (
