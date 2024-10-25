@@ -39,7 +39,7 @@ contextualize(() => {
 		})
 		attest(tPatternString.json).snap({
 			domain: "string",
-			regex: ["es"]
+			pattern: ["es"]
 		})
 		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
@@ -51,7 +51,7 @@ contextualize(() => {
 		})
 		attest(tPatternRegExp.json).snap({
 			domain: "string",
-			regex: ["es"] // strips the outer slashes
+			pattern: ["es"] // strips the outer slashes
 		})
 		attest(tPatternRegExp.allows("expression")).equals(true)
 	})
