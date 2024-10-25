@@ -1,51 +1,53 @@
 import type { nodeOfKind, RefinementKind } from "@ark/schema"
 import { hasKey, nearestFloat, throwInternalError, type array } from "@ark/util"
-import { double, integer, type Arbitrary } from "fast-check"
-import type { RuleByRefinementKind } from "../arktypeFastCheck.ts"
+import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
 
 export const buildNumberArbitrary = (
 	node: DomainInputNode
-): Arbitrary<number> => {
-	if (node.hasKind("domain")) return integer()
-	const refinements = getRefinements(node.refinements)
-	const hasMax = hasKey(refinements, "max")
-	const hasMin = hasKey(refinements, "min")
+): fc.Arbitrary<number> => {
+	if (node.hasKind("domain")) return fc.integer()
+	const numberConstraints = getFastCheckNumberConstraints(node.refinements)
+	const hasMax = hasKey(numberConstraints, "max")
+	const hasMin = hasKey(numberConstraints, "min")
 
-	if (!hasKey(refinements, "divisor")) return double(refinements)
+	if (!hasKey(numberConstraints, "divisor")) return fc.double(numberConstraints)
 
-	const divisor = refinements.divisor
+	const divisor = numberConstraints.divisor
 	if (divisor === undefined) throwInternalError("Expected a divisor.")
 
 	if (hasMin && hasMax) {
-		if (refinements.min === undefined || refinements.max === undefined) {
+		if (
+			numberConstraints.min === undefined ||
+			numberConstraints.max === undefined
+		) {
 			throwInternalError(
-				`Expected min and max node refinements to not be undefined. (was min: ${refinements.min} max: ${refinements.max})`
+				`Expected min and max node refinements to not be undefined. (was min: ${numberConstraints.min} max: ${numberConstraints.max})`
 			)
 		}
-		if (refinements.min > refinements.max) {
+		if (numberConstraints.min > numberConstraints.max) {
 			throw new Error(
-				`No integer value satisfies >${refinements.min} & <${refinements.max}`
+				`No integer value satisfies >${numberConstraints.min} & <${numberConstraints.max}`
 			)
 		}
 	}
 
-	const min = refinements.min ?? Number.MIN_SAFE_INTEGER
-	const max = refinements.max ?? Number.MAX_SAFE_INTEGER
+	const min = numberConstraints.min ?? Number.MIN_SAFE_INTEGER
+	const max = numberConstraints.max ?? Number.MAX_SAFE_INTEGER
 
 	const firstDivisibleInRange = Math.ceil(min / divisor) * divisor
 
 	if (firstDivisibleInRange > max || firstDivisibleInRange < min) {
 		throw new Error(
-			`No values within range ${refinements.min} - ${refinements.max} are divisible by ${refinements.divisor}.`
+			`No values within range ${numberConstraints.min} - ${numberConstraints.max} are divisible by ${numberConstraints.divisor}.`
 		)
 	}
 
-	refinements.min = firstDivisibleInRange
+	numberConstraints.min = firstDivisibleInRange
 	//fast-check defaults max to 0x7fffffff which prevents larger divisible numbers from being produced
-	refinements.max = max
+	numberConstraints.max = max
 
-	const integerArbitrary = integer(refinements)
+	const integerArbitrary = fc.integer(numberConstraints)
 
 	const integersDivisibleByDivisor = integerArbitrary.map(value => {
 		const remainder = value % divisor
@@ -62,12 +64,15 @@ export const buildNumberArbitrary = (
 	return integersDivisibleByDivisor
 }
 
-const getRefinements = (refinements: array<nodeOfKind<RefinementKind>>) => {
+const getFastCheckNumberConstraints = (
+	refinements: array<nodeOfKind<RefinementKind>>
+) => {
 	const hasDivisor = refinements.find(refinement =>
 		refinement.hasKind("divisor")
 	)
-	const ruleByRefinementKind: RuleByRefinementKind = {}
-
+	const numberConstraints: fc.IntegerConstraints & {
+		divisor?: number
+	} = {}
 	for (const refinement of refinements) {
 		if (refinement.hasKindIn("min", "max")) {
 			let rule = refinement.rule
@@ -79,10 +84,10 @@ const getRefinements = (refinements: array<nodeOfKind<RefinementKind>>) => {
 			}
 			if (hasDivisor !== undefined)
 				rule = refinement.hasKind("min") ? Math.ceil(rule) : Math.floor(rule)
-			ruleByRefinementKind[refinement.kind] = rule
+			numberConstraints[refinement.kind] = rule
 		} else if (refinement.hasKind("divisor"))
-			ruleByRefinementKind["divisor"] = refinement.rule
+			numberConstraints["divisor"] = refinement.rule
 	}
 
-	return ruleByRefinementKind
+	return numberConstraints
 }

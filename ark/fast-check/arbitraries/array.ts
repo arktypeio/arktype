@@ -1,21 +1,19 @@
-import type { nodeOfKind, RefinementKind, SequenceTuple } from "@ark/schema"
-import type { array } from "@ark/util"
-import { constant, oneof, tuple, type Arbitrary } from "fast-check"
-import type { RuleByRefinementKind } from "../arktypeFastCheck.ts"
+import type { nodeOfKind, SequenceTuple } from "@ark/schema"
+import * as fc from "fast-check"
 import type { Ctx } from "../fastCheckContext.ts"
 
 export const getPossiblyWeightedArray = (
-	arrArbitrary: Arbitrary<unknown[]>,
+	arrArbitrary: fc.Arbitrary<unknown[]>,
 	node: nodeOfKind<"sequence">,
 	ctx: Ctx
-): Arbitrary<unknown[]> =>
+): fc.Arbitrary<unknown[]> =>
 	ctx.tieStack.length ?
-		oneof(
+		fc.oneof(
 			{
 				maxDepth: 2,
 				depthIdentifier: `id:${node.id}`
 			},
-			{ arbitrary: constant([]), weight: 1 },
+			{ arbitrary: fc.constant([]), weight: 1 },
 			{
 				arbitrary: arrArbitrary,
 				weight: 2
@@ -24,41 +22,32 @@ export const getPossiblyWeightedArray = (
 	:	arrArbitrary
 
 export const spreadVariadicElements = (
-	tupleArbitraries: Arbitrary<unknown>[],
+	tupleArbitraries: fc.Arbitrary<unknown>[],
 	tupleElements: SequenceTuple
-): Arbitrary<unknown[]> =>
-	tuple(...tupleArbitraries).chain(arr => {
+): fc.Arbitrary<unknown[]> =>
+	fc.tuple(...tupleArbitraries).chain(arr => {
 		const arrayWithoutOptionals = []
 		const arrayWithOptionals = []
 
 		for (const i in arr) {
 			if (tupleElements[i].kind === "variadic") {
 				const generatedValuesArray = (arr[i] as unknown[]).map(val =>
-					constant(val)
+					fc.constant(val)
 				)
 				arrayWithoutOptionals.push(...generatedValuesArray)
 				arrayWithOptionals.push(...generatedValuesArray)
 			} else if (tupleElements[i].kind === "optionals")
-				arrayWithOptionals.push(constant(arr[i]))
+				arrayWithOptionals.push(fc.constant(arr[i]))
 			else {
-				arrayWithoutOptionals.push(constant(arr[i]))
-				arrayWithOptionals.push(constant(arr[i]))
+				arrayWithoutOptionals.push(fc.constant(arr[i]))
+				arrayWithOptionals.push(fc.constant(arr[i]))
 			}
 		}
 		if (arrayWithOptionals.length !== arrayWithoutOptionals.length) {
-			return oneof(
-				tuple(...arrayWithoutOptionals),
-				tuple(...arrayWithOptionals)
+			return fc.oneof(
+				fc.tuple(...arrayWithoutOptionals),
+				fc.tuple(...arrayWithOptionals)
 			)
 		}
-		return tuple(...arrayWithOptionals)
+		return fc.tuple(...arrayWithOptionals)
 	})
-
-export const getArrayRefinements = (
-	refinements: array<nodeOfKind<RefinementKind>>
-): RuleByRefinementKind => {
-	const ruleByRefinementKind: RuleByRefinementKind = {}
-	for (const refinement of refinements)
-		ruleByRefinementKind[refinement.kind as never] = refinement.rule as never
-	return ruleByRefinementKind
-}

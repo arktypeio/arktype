@@ -24,7 +24,7 @@ describe("Arbitrary Generation", () => {
 			return assertProperty(arbitrary, t)
 		})
 		it("Tight Bound", () => {
-			const t = type("1<number.integer<5")
+			const t = type("4<number<5")
 			const arbitrary = arkToArbitrary(t)
 			return assertProperty(arbitrary, t)
 		})
@@ -35,8 +35,8 @@ describe("Arbitrary Generation", () => {
 		})
 		it("Invalid Bound", () => {
 			const t = type("4<number.integer<5")
-			attest(() => assertProperty(arkToArbitrary(t), t)).throws.snap(
-				"Error: No integer value satisfies >5 & <4"
+			attest(() => assertProperty(arkToArbitrary(t), t)).throws(
+				"No integer value satisfies >5 & <4"
 			)
 		})
 		it("equals", () => {
@@ -228,7 +228,7 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 		it("object with optional key", () => {
-			const t = type({ b: "3<number<5" })
+			const t = type({ a: "string", "b?": "3<number<5" })
 			const arbitrary = arkToArbitrary(t)
 			assertProperty(arbitrary, t)
 		})
@@ -336,7 +336,6 @@ describe("Arbitrary Generation", () => {
 const assertProperty = (arbitrary: Arbitrary<unknown>, schema: type.Any) =>
 	assert(
 		property(arbitrary, value => {
-			console.log(value)
 			schema.assert(value)
 			return true
 		})

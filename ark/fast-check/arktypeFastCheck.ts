@@ -1,27 +1,12 @@
-import type {
-	NodeKind,
-	nodeOfKind,
-	RefinementKind,
-	SequenceTuple
-} from "@ark/schema"
+import type { NodeKind, nodeOfKind, SequenceTuple } from "@ark/schema"
 import {
 	hasKey,
 	stringAndSymbolicEntriesOf,
 	throwInternalError
 } from "@ark/util"
 import type { type } from "arktype"
+import * as fc from "fast-check"
 import {
-	anything,
-	array,
-	constant,
-	dictionary,
-	oneof,
-	record,
-	tuple,
-	type Arbitrary
-} from "fast-check"
-import {
-	getArrayRefinements,
 	getPossiblyWeightedArray,
 	spreadVariadicElements
 } from "./arbitraries/array.ts"
@@ -30,7 +15,7 @@ import { buildCyclicArbitrary } from "./arbitraries/object.ts"
 import { buildProtoArbitrary } from "./arbitraries/proto.ts"
 import { initializeContext, type Ctx } from "./fastCheckContext.ts"
 
-export const arkToArbitrary = (schema: type.Any): Arbitrary<unknown> => {
+export const arkToArbitrary = (schema: type.Any): fc.Arbitrary<unknown> => {
 	const ctx = initializeContext()
 
 	return buildArbitrary(schema as never, ctx)
@@ -44,7 +29,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 			ctx.isCyclic = node.isCyclic
 
 			//specifically in the case of unknown, it is represented as an empty intersection so we just return anything here.
-			if (node.basis === null) return anything()
+			if (node.basis === null) return fc.anything()
 
 			const intersectionArbitrary =
 				node.basis?.kind === "domain" ?
@@ -60,13 +45,13 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 
 			return throwInternalError(`${node.domain} is not supported`)
 		case "union":
-			const arbitraries: Arbitrary<unknown>[] = node.children.map(node =>
+			const arbitraries: fc.Arbitrary<unknown>[] = node.children.map(node =>
 				buildArbitrary(node, ctx)
 			)
 
-			return oneof(...arbitraries)
+			return fc.oneof(...arbitraries)
 		case "unit":
-			return constant(node.unit)
+			return fc.constant(node.unit)
 		case "proto":
 			return buildProtoArbitrary[node.proto.name](node as never, ctx)
 		case "structure":
@@ -112,8 +97,9 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 export const buildStructureArbitrary = (
 	node: nodeOfKind<"intersection">,
 	ctx: Ctx
-): Arbitrary<unknown> => {
+): fc.Arbitrary<unknown> => {
 	const structure = node.structure
+
 	if (node.basis?.hasKind("domain")) {
 		if (structure === undefined)
 			throwInternalError("Expected a structure node.")
@@ -122,53 +108,57 @@ export const buildStructureArbitrary = (
 			return buildIndexSignatureArbitrary(structure.index, ctx)
 
 		return buildObjectArbitrary(structure, ctx)
-	} else {
-		const refinements = getArrayRefinements(node.refinements)
-		if (refinements.exactLength === 0) return tuple()
-		const arrArbitrary =
-			structure === undefined || structure.sequence === undefined ?
-				array(anything(), refinements)
-			:	buildArrayArbitrary(structure.sequence, refinements, ctx)
-		if (
-			structure &&
-			(structure.required !== undefined || structure.optional !== undefined)
-		) {
-			const objectArbitrary = buildObjectArbitrary(structure, ctx)
-			return tuple(arrArbitrary, objectArbitrary).map(([arr, record]) =>
-				Object.assign(arr, record)
-			)
-		} else return arrArbitrary
 	}
+
+	if (node.exactLength?.rule === 0) return fc.tuple()
+
+	const fcArrayConstraints: fc.ArrayConstraints = {}
+	if (node.minLength) fcArrayConstraints.minLength = node.minLength.rule
+	if (node.maxLength) fcArrayConstraints.maxLength = node.maxLength.rule
+
+	const arrArbitrary =
+		structure?.sequence ?
+			buildArrayArbitrary(structure.sequence, fcArrayConstraints, ctx)
+		:	fc.array(fc.anything(), fcArrayConstraints)
+
+	if (structure?.required || structure?.optional) {
+		const objectArbitrary = buildObjectArbitrary(structure, ctx)
+		return fc
+			.tuple(arrArbitrary, objectArbitrary)
+			.map(([arr, record]) => Object.assign(arr, record))
+	}
+
+	return arrArbitrary
 }
 
 export const buildObjectArbitrary = (
 	node: nodeOfKind<"structure">,
 	ctx: Ctx
-): Arbitrary<Record<string, unknown>> => {
+): fc.Arbitrary<Record<string, unknown>> => {
 	if (ctx.isCyclic && !ctx.tieStack.length)
 		return buildCyclicArbitrary(node, ctx)
 
 	const entries = stringAndSymbolicEntriesOf(node.propsByKey)
 	const requiredKeys = node.requiredKeys
-	const arbitrariesByKey: Record<PropertyKey, Arbitrary<unknown>> = {}
+	const arbitrariesByKey: Record<PropertyKey, fc.Arbitrary<unknown>> = {}
 
 	for (const [key, value] of entries)
 		arbitrariesByKey[key] = buildArbitrary(value as never, ctx)
 
-	return record(arbitrariesByKey, { requiredKeys } as never)
+	return fc.record(arbitrariesByKey, { requiredKeys } as never)
 }
 
 const buildIndexSignatureArbitrary = (
 	indexNodes: readonly nodeOfKind<"index">[],
 	ctx: Ctx
-): Arbitrary<Record<string, unknown>> => {
+): fc.Arbitrary<Record<string, unknown>> => {
 	if (indexNodes.length === 1) return getDictionaryArbitrary(indexNodes[0], ctx)
 
 	const dictionaryArbitraries = []
 	for (const indexNode of indexNodes)
 		dictionaryArbitraries.push(getDictionaryArbitrary(indexNode, ctx))
 
-	return tuple(...dictionaryArbitraries).map(arbs => {
+	return fc.tuple(...dictionaryArbitraries).map(arbs => {
 		const recordArb = {}
 		for (const arb of arbs) Object.assign(recordArb, arb)
 		return recordArb
@@ -180,19 +170,19 @@ const getDictionaryArbitrary = (node: nodeOfKind<"index">, ctx: Ctx) => {
 	const valueArbitrary = buildArbitrary(node.value as never, ctx)
 
 	//signatureArbitrary can be a symbol or string arbitrary
-	return dictionary(signatureArbitrary as never, valueArbitrary)
+	return fc.dictionary(signatureArbitrary as never, valueArbitrary)
 }
 
 const buildArrayArbitrary = (
 	node: nodeOfKind<"sequence">,
-	refinements: RuleByRefinementKind,
+	refinements: fc.ArrayConstraints,
 	ctx: Ctx
-): Arbitrary<unknown[]> => {
+): fc.Arbitrary<unknown[]> => {
 	//Arrays will always have a single element and the kind will be variadic
 	if (node.tuple.length === 1 && node.tuple[0].kind === "variadic") {
 		const elementsArbitrary = buildArbitrary(node.tuple[0].node as never, ctx)
 
-		const arrArbitrary = array(elementsArbitrary, refinements)
+		const arrArbitrary = fc.array(elementsArbitrary, refinements)
 
 		return getPossiblyWeightedArray(arrArbitrary, node, ctx)
 	}
@@ -208,13 +198,9 @@ const getSpreadVariadicElementsTuple = (
 	for (const element of tupleElements) {
 		const arbitrary = buildArbitrary(element.node as never, ctx)
 
-		if (element.kind === "variadic") tupleArbitraries.push(array(arbitrary))
+		if (element.kind === "variadic") tupleArbitraries.push(fc.array(arbitrary))
 		else tupleArbitraries.push(arbitrary)
 	}
 
 	return spreadVariadicElements(tupleArbitraries, tupleElements)
-}
-
-export type RuleByRefinementKind = {
-	[k in RefinementKind]?: nodeOfKind<k>["inner"]["rule"]
 }

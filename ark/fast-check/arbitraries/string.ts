@@ -1,38 +1,41 @@
 import type { nodeOfKind, RefinementKind } from "@ark/schema"
 import { throwInternalError, type array } from "@ark/util"
-import { string, stringMatching, type Arbitrary } from "fast-check"
-import type { RuleByRefinementKind } from "../arktypeFastCheck.ts"
+import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
 
-const getRefinements = (refinements: array<nodeOfKind<RefinementKind>>) => {
-	const ruleByRefinementKind: RuleByRefinementKind = {}
+export const buildStringArbitrary = (
+	node: DomainInputNode
+): fc.Arbitrary<string> => {
+	if (node.hasKind("domain")) return fc.string()
+	const stringConstraints = getFastCheckStringConstraints(node.refinements)
+	if ("pattern" in stringConstraints) {
+		if (stringConstraints.minLength || stringConstraints.maxLength)
+			throwInternalError("Bounded regex is not supported.")
+		return fc.stringMatching(new RegExp(stringConstraints.pattern))
+	}
+
+	return fc.string(stringConstraints)
+}
+
+const getFastCheckStringConstraints = (
+	refinements: array<nodeOfKind<RefinementKind>>
+) => {
+	const stringConstraints: fc.StringConstraints & {
+		pattern?: string
+	} = {}
 	for (const refinement of refinements) {
 		if (refinement.hasKind("pattern")) {
-			if (ruleByRefinementKind.pattern !== undefined) {
+			if (stringConstraints.pattern !== undefined) {
 				throwInternalError(
 					"Multiple regexes on a single node is not supported."
 				)
 			}
-		}
-		if (refinement.hasKind("exactLength")) {
-			ruleByRefinementKind["minLength"] = refinement.rule
-			ruleByRefinementKind["maxLength"] = refinement.rule
+			stringConstraints["pattern"] = refinement.rule
+		} else if (refinement.hasKind("exactLength")) {
+			stringConstraints["minLength"] = refinement.rule
+			stringConstraints["maxLength"] = refinement.rule
 		} else
-			ruleByRefinementKind[refinement.kind as never] = refinement.rule as never
+			stringConstraints[refinement.kind as never] = refinement.rule as never
 	}
-	return ruleByRefinementKind
-}
-
-export const buildStringArbitrary = (
-	node: DomainInputNode
-): Arbitrary<string> => {
-	if (node.hasKind("domain")) return string()
-	const refinements = getRefinements(node.refinements)
-	if ("pattern" in refinements) {
-		if (refinements.minLength || refinements.maxLength)
-			throwInternalError("Bounded regex is not supported.")
-		return stringMatching(new RegExp(refinements.pattern))
-	}
-
-	return string(refinements)
+	return stringConstraints
 }

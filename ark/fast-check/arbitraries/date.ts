@@ -1,26 +1,15 @@
-import type { nodeOfKind, RefinementKind } from "@ark/schema"
-import type { array } from "@ark/util"
-import { date, type Arbitrary } from "fast-check"
+import * as fc from "fast-check"
 import type { ProtoInputNode } from "./proto.ts"
 
-type DateConstraints = { min?: Date; max?: Date }
-
-export const buildDateArbitrary = (node: ProtoInputNode): Arbitrary<Date> => {
+export const buildDateArbitrary = (
+	node: ProtoInputNode
+): fc.Arbitrary<Date> => {
 	if (node.hasKind("intersection")) {
-		const dateConstraints: DateConstraints = getDateRefinements(
-			node.refinements
-		)
-		return date(dateConstraints)
-	}
-	return date()
-}
+		const fastCheckDateConstraints: fc.DateConstraints = {}
+		if (node.after) fastCheckDateConstraints.min = node.after.rule
+		if (node.before) fastCheckDateConstraints.max = node.before.rule
 
-const getDateRefinements = (refinements: array<nodeOfKind<RefinementKind>>) => {
-	const ruleByRefinementKind: DateConstraints = {}
-	for (const refinement of refinements) {
-		if (refinement.hasKind("after")) ruleByRefinementKind.min = refinement.rule
-		else if (refinement.hasKind("before"))
-			ruleByRefinementKind.max = refinement.rule
+		return fc.date(fastCheckDateConstraints)
 	}
-	return ruleByRefinementKind
+	return fc.date()
 }

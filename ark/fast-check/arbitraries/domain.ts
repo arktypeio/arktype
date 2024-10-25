@@ -1,5 +1,5 @@
 import type { nodeOfKind } from "@ark/schema"
-import { bigInt, constant, object, type Arbitrary } from "fast-check"
+import * as fc from "fast-check"
 import { buildStructureArbitrary } from "../arktypeFastCheck.ts"
 import type { Ctx } from "../fastCheckContext.ts"
 import { buildNumberArbitrary } from "./number.ts"
@@ -9,15 +9,15 @@ export const buildDomainArbitrary: BuildDomainArbitrary = {
 	number: node => buildNumberArbitrary(node),
 	string: node => buildStringArbitrary(node),
 	object: (node, ctx) =>
-		node.hasKind("domain") ? object() : buildStructureArbitrary(node, ctx),
-	symbol: () => constant(Symbol()),
-	bigint: () => bigInt()
+		node.hasKind("domain") ? fc.object() : buildStructureArbitrary(node, ctx),
+	symbol: () => fc.constant(Symbol()),
+	bigint: () => fc.bigInt()
 }
 
 export type DomainArbitrary<t = unknown> = (
 	node: DomainInputNode,
 	ctx: Ctx
-) => Arbitrary<t>
+) => fc.Arbitrary<t>
 
 type BuildDomainArbitrary = {
 	number: DomainArbitrary<number>

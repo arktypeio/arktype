@@ -1,5 +1,5 @@
 import type { nodeOfKind } from "@ark/schema"
-import { anything, array, uniqueArray, type Arbitrary } from "fast-check"
+import * as fc from "fast-check"
 import { buildStructureArbitrary } from "../arktypeFastCheck.ts"
 import type { Ctx } from "../fastCheckContext.ts"
 import { buildDateArbitrary } from "./date.ts"
@@ -8,9 +8,9 @@ import type { DomainInputNode } from "./domain.ts"
 export const buildProtoArbitrary: BuildProtoArbitrary = {
 	Array: (node, ctx) =>
 		node.hasKind("proto") ?
-			array(anything())
+			fc.array(fc.anything())
 		:	buildStructureArbitrary(node as never, ctx),
-	Set: () => uniqueArray(anything()).map(arr => new Set(arr)),
+	Set: () => fc.uniqueArray(fc.anything()).map(arr => new Set(arr)),
 	Date: node => buildDateArbitrary(node)
 }
 
@@ -24,6 +24,6 @@ type BuildProtoArbitrary = {
 type ProtoArbitrary<t = unknown> = (
 	node: ProtoInputNode | DomainInputNode,
 	ctx: Ctx
-) => Arbitrary<t>
+) => fc.Arbitrary<t>
 
 export type ProtoInputNode = nodeOfKind<"intersection"> | nodeOfKind<"domain">
