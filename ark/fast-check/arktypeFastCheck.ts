@@ -43,8 +43,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 
 			ctx.isCyclic = node.isCyclic
 
-			//specifically in the case of unknown[], it is represented as an empty intersection so we just return anything here.
-			//todoshawn maybe it can be handled at a different spot
+			//specifically in the case of unknown, it is represented as an empty intersection so we just return anything here.
 			if (node.basis === null) return anything()
 
 			const intersectionArbitrary =
