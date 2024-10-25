@@ -6,9 +6,9 @@ import {
 	type TraversalContext
 } from "@ark/schema"
 import { conflatenateAll, printable } from "@ark/util"
-import type { Type } from "arktype"
+import type { Out, Type } from "arktype"
 
-import { innerParseJsonSchema } from "./json.ts"
+import { parseJsonSchema } from "./json.ts"
 import { JsonSchema } from "./scope.ts"
 
 const parseMinMaxProperties = (
@@ -56,8 +56,7 @@ const parsePatternProperties = (
 	if (!("patternProperties" in jsonSchema)) return
 
 	const patternProperties = Object.entries(jsonSchema.patternProperties).map(
-		([key, value]) =>
-			[new RegExp(key), innerParseJsonSchema.assert(value)] as const
+		([key, value]) => [new RegExp(key), parseJsonSchema(value)] as const
 	)
 
 	// Ensure that the schema for any property is compatible with any corresponding patternProperties
@@ -66,8 +65,7 @@ const parsePatternProperties = (
 			([property, schemaForProperty]) => {
 				if (!pattern.test(property)) return
 
-				const parsedPropertySchema =
-					innerParseJsonSchema.assert(schemaForProperty)
+				const parsedPropertySchema = parseJsonSchema(schemaForProperty)
 
 				if (!parsedPropertySchema.overlaps(parsedPatternPropertySchema)) {
 					ctx.reject({
@@ -105,9 +103,7 @@ const parsePropertyNames = (
 ) => {
 	if (!("propertyNames" in jsonSchema)) return
 
-	const propertyNamesValidator = innerParseJsonSchema.assert(
-		jsonSchema.propertyNames
-	)
+	const propertyNamesValidator = parseJsonSchema(jsonSchema.propertyNames)
 
 	if (
 		"domain" in propertyNamesValidator.json &&
@@ -178,11 +174,11 @@ const parseRequiredAndOptionalKeys = (
 	return {
 		optionalKeys: optionalKeys.map(key => ({
 			key,
-			value: innerParseJsonSchema.assert(jsonSchema.properties![key]).internal
+			value: parseJsonSchema(jsonSchema.properties![key]).internal
 		})),
 		requiredKeys: requiredKeys.map(key => ({
 			key,
-			value: innerParseJsonSchema.assert(jsonSchema.properties![key]).internal
+			value: parseJsonSchema(jsonSchema.properties![key]).internal
 		}))
 	}
 }
@@ -217,7 +213,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 				return
 			}
 
-			const additionalPropertyValidator = innerParseJsonSchema.assert(
+			const additionalPropertyValidator = parseJsonSchema(
 				additionalPropertiesSchema
 			)
 
@@ -234,38 +230,39 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 	}
 }
 
-export const validateJsonSchemaObject = JsonSchema.ObjectSchema.pipe(
-	(jsonSchema, ctx): Type<object> => {
-		const arktypeObjectSchema: Intersection.Schema<object> = {
-			domain: "object"
-		}
-
-		const { requiredKeys, optionalKeys } = parseRequiredAndOptionalKeys(
-			jsonSchema,
-			ctx
-		)
-		arktypeObjectSchema.required = requiredKeys
-		arktypeObjectSchema.optional = optionalKeys
-
-		const predicates = conflatenateAll<Predicate.Schema>(
-			...parseMinMaxProperties(jsonSchema, ctx),
-			parsePropertyNames(jsonSchema, ctx),
-			parsePatternProperties(jsonSchema, ctx),
-			parseAdditionalProperties(jsonSchema)
-		)
-
-		const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
-		if (predicates.length === 0) return typeWithoutPredicates as never
-
-		return rootSchema({ domain: "object", predicate: predicates }).narrow(
-			(obj: object, innerCtx) => {
-				const validationResult = typeWithoutPredicates(obj)
-				if (validationResult instanceof ArkErrors) {
-					innerCtx.errors.merge(validationResult)
-					return false
-				}
-				return true
-			}
-		) as never
+export const validateJsonSchemaObject: Type<
+	(In: JsonSchema.ObjectSchema) => Out<Type<object, any>>,
+	any
+> = JsonSchema.ObjectSchema.pipe((jsonSchema, ctx): Type<object> => {
+	const arktypeObjectSchema: Intersection.Schema<object> = {
+		domain: "object"
 	}
-)
+
+	const { requiredKeys, optionalKeys } = parseRequiredAndOptionalKeys(
+		jsonSchema,
+		ctx
+	)
+	arktypeObjectSchema.required = requiredKeys
+	arktypeObjectSchema.optional = optionalKeys
+
+	const predicates = conflatenateAll<Predicate.Schema>(
+		...parseMinMaxProperties(jsonSchema, ctx),
+		parsePropertyNames(jsonSchema, ctx),
+		parsePatternProperties(jsonSchema, ctx),
+		parseAdditionalProperties(jsonSchema)
+	)
+
+	const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
+	if (predicates.length === 0) return typeWithoutPredicates as never
+
+	return rootSchema({ domain: "object", predicate: predicates }).narrow(
+		(obj: object, innerCtx) => {
+			const validationResult = typeWithoutPredicates(obj)
+			if (validationResult instanceof ArkErrors) {
+				innerCtx.errors.merge(validationResult)
+				return false
+			}
+			return true
+		}
+	) as never
+})

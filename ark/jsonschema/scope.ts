@@ -1,6 +1,83 @@
-import { scope } from "arktype"
+import { scope, type Scope } from "arktype"
 
-const $ = scope({
+type AnyKeywords = {
+	const?: unknown
+	enum?: unknown[]
+}
+type CompositionKeywords = {
+	allOf?: Schema[]
+	anyOf?: Schema[]
+	oneOf?: Schema[]
+	not?: Schema
+}
+type TypeWithNoKeywords = { type: "boolean" | "null" }
+type TypeWithKeywords = ArraySchema | NumberSchema | ObjectSchema | StringSchema
+// NB: For sake of simplicitly, at runtime it's assumed that
+// whatever we're parsing is valid JSON since it will be 99% of the time.
+// This decision may be changed later, e.g. when a built-in JSON type exists in AT.
+type Json = unknown
+type BaseSchema =
+	// NB: `true` means "accept an valid JSON"; `false` means "reject everything".
+	| boolean
+	| TypeWithNoKeywords
+	| TypeWithKeywords
+	| AnyKeywords
+	| CompositionKeywords
+type Schema = BaseSchema | BaseSchema[]
+type ArraySchema = {
+	additionalItems?: Schema
+	contains?: Schema
+	// JSON Schema states that if 'items' is not present, then treat as an empty schema (i.e. accept any valid JSON)
+	items?: Schema | Schema[]
+	maxItems?: number
+	minItems?: number
+	type: "array"
+	uniqueItems?: boolean
+}
+type NumberSchema = {
+	// NB: Technically 'exclusiveMaximum' and 'exclusiveMinimum' are mutually exclusive with 'maximum' and 'minimum', respectively,
+	// which is reflected at runtime but it's not worth the performance cost to validate this statically.
+	exclusiveMaximum?: number
+	exclusiveMinimum?: number
+	maximum?: number
+	minimum?: number
+	// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.
+	multipleOf?: number
+	type: "number" | "integer"
+}
+type ObjectSchema = {
+	additionalProperties?: Schema
+	maxProperties?: number
+	minProperties?: number
+	patternProperties?: { [k: string]: Schema }
+	// NB: Technically 'properties' is required when 'required' is present,
+	// which is reflected at runtime but it's not worth the performance cost to validate this statically.
+	properties?: { [k: string]: Schema }
+	propertyNames?: Schema
+	required?: string[]
+	type: "object"
+}
+type StringSchema = {
+	maxLength?: number
+	minLength?: number
+	pattern?: RegExp | string
+	type: "string"
+}
+
+type JsonSchemaScope = Scope<{
+	AnyKeywords: AnyKeywords
+	CompositionKeywords: CompositionKeywords
+	TypeWithNoKeywords: TypeWithNoKeywords
+	TypeWithKeywords: TypeWithKeywords
+	Json: Json
+	Schema: Schema
+	ArraySchema: ArraySchema
+	NumberSchema: NumberSchema
+	ObjectSchema: ObjectSchema
+	StringSchema: StringSchema
+}>
+
+const $: JsonSchemaScope = scope({
 	AnyKeywords: {
 		"const?": "unknown",
 		"enum?": "unknown[]"
@@ -60,7 +137,7 @@ const $ = scope({
 		"pattern?": "RegExp | string",
 		type: "'string'"
 	}
-})
+}) as unknown as JsonSchemaScope
 export const JsonSchema = $.export()
 
 export declare namespace JsonSchema {

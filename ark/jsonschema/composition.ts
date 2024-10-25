@@ -1,23 +1,23 @@
 import { type, type Type } from "arktype"
-import { innerParseJsonSchema } from "./json.ts"
+import { parseJsonSchema } from "./json.ts"
 import type { JsonSchema } from "./scope.ts"
 
 const validateAllOfJsonSchemas = (
 	jsonSchemas: JsonSchema.Schema[]
 ): Type<unknown> =>
 	jsonSchemas
-		.map(jsonSchema => innerParseJsonSchema.assert(jsonSchema))
+		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.and(validator))
 
 const validateAnyOfJsonSchemas = (
 	jsonSchemas: JsonSchema.Schema[]
 ): Type<unknown> =>
 	jsonSchemas
-		.map(jsonSchema => innerParseJsonSchema.assert(jsonSchema))
+		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
 
 const validateNotJsonSchema = (jsonSchema: JsonSchema.Schema) => {
-	const inner = innerParseJsonSchema.assert(jsonSchema)
+	const inner = parseJsonSchema(jsonSchema)
 	return type("unknown").narrow((data, ctx) =>
 		inner.allows(data) ? ctx.mustBe(`not ${inner.description}`) : true
 	) as Type<unknown>
@@ -25,7 +25,7 @@ const validateNotJsonSchema = (jsonSchema: JsonSchema.Schema) => {
 
 const validateOneOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]) => {
 	const oneOfValidators = jsonSchemas.map(nestedSchema =>
-		innerParseJsonSchema.assert(nestedSchema)
+		parseJsonSchema(nestedSchema)
 	)
 	const oneOfValidatorsDescriptions = oneOfValidators.map(
 		validator => `○ ${validator.description}`

@@ -5,9 +5,9 @@ import {
 	type TraversalContext
 } from "@ark/schema"
 import { printable } from "@ark/util"
-import type { Type } from "arktype"
+import type { Out, Type } from "arktype"
 
-import { innerParseJsonSchema } from "./json.ts"
+import { parseJsonSchema } from "./json.ts"
 import { JsonSchema } from "./scope.ts"
 
 const deepNormalize = (data: unknown): unknown =>
@@ -51,58 +51,54 @@ const arrayContainsItemMatchingSchema = (
 			"an array containing at least one item matching 'contains' schema"
 		)
 
-export const validateJsonSchemaArray = JsonSchema.ArraySchema.pipe(
-	(jsonSchema): Type<JsonSchema.Json[]> => {
-		const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
-			proto: "Array"
-		}
+export const validateJsonSchemaArray: Type<
+	(In: JsonSchema.ArraySchema) => Out<Type<unknown[], {}>>,
+	any
+> = JsonSchema.ArraySchema.pipe(jsonSchema => {
+	const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
+		proto: "Array"
+	}
 
-		if ("items" in jsonSchema) {
-			if (Array.isArray(jsonSchema.items)) {
-				arktypeArraySchema.sequence = {
-					prefix: jsonSchema.items.map(
-						item => innerParseJsonSchema.assert(item).internal
-					)
-				}
+	if ("items" in jsonSchema) {
+		if (Array.isArray(jsonSchema.items)) {
+			arktypeArraySchema.sequence = {
+				prefix: jsonSchema.items.map(item => parseJsonSchema(item).internal)
+			}
 
-				if ("additionalItems" in jsonSchema) {
-					if (jsonSchema.additionalItems === false)
-						arktypeArraySchema.exactLength = jsonSchema.items.length
-					else {
-						arktypeArraySchema.sequence = {
-							...arktypeArraySchema.sequence,
-							variadic: innerParseJsonSchema.assert(jsonSchema.additionalItems)
-								.internal
-						}
+			if ("additionalItems" in jsonSchema) {
+				if (jsonSchema.additionalItems === false)
+					arktypeArraySchema.exactLength = jsonSchema.items.length
+				else {
+					arktypeArraySchema.sequence = {
+						...arktypeArraySchema.sequence,
+						variadic: parseJsonSchema(jsonSchema.additionalItems).internal
 					}
 				}
-			} else {
-				arktypeArraySchema.sequence = {
-					variadic: innerParseJsonSchema.assert(jsonSchema.items).internal
-				}
+			}
+		} else {
+			arktypeArraySchema.sequence = {
+				variadic: parseJsonSchema(jsonSchema.items).json
 			}
 		}
-
-		if ("maxItems" in jsonSchema)
-			arktypeArraySchema.maxLength = jsonSchema.maxItems
-		if ("minItems" in jsonSchema)
-			arktypeArraySchema.minLength = jsonSchema.minItems
-
-		const predicates: Predicate.Schema[] = []
-		if ("uniqueItems" in jsonSchema && jsonSchema.uniqueItems === true)
-			predicates.push((arr: unknown[], ctx) => arrayItemsAreUnique(arr, ctx))
-
-		if ("contains" in jsonSchema) {
-			const parsedContainsJsonSchema = innerParseJsonSchema.assert(
-				jsonSchema.contains
-			)
-			predicates.push((arr: unknown[], ctx) =>
-				arrayContainsItemMatchingSchema(arr, parsedContainsJsonSchema, ctx)
-			)
-		}
-
-		arktypeArraySchema.predicate = predicates
-
-		return rootSchema(arktypeArraySchema) as never
 	}
-)
+
+	if ("maxItems" in jsonSchema)
+		arktypeArraySchema.maxLength = jsonSchema.maxItems
+	if ("minItems" in jsonSchema)
+		arktypeArraySchema.minLength = jsonSchema.minItems
+
+	const predicates: Predicate.Schema[] = []
+	if ("uniqueItems" in jsonSchema && jsonSchema.uniqueItems === true)
+		predicates.push((arr: unknown[], ctx) => arrayItemsAreUnique(arr, ctx))
+
+	if ("contains" in jsonSchema) {
+		const parsedContainsJsonSchema = parseJsonSchema(jsonSchema.contains)
+		predicates.push((arr: unknown[], ctx) =>
+			arrayContainsItemMatchingSchema(arr, parsedContainsJsonSchema, ctx)
+		)
+	}
+
+	arktypeArraySchema.predicate = predicates
+
+	return rootSchema(arktypeArraySchema) as never
+})
