@@ -5,6 +5,7 @@
 	"version": "5.12.2",
 	"publisher": "arktypeio",
 	"type": "module",
+	"license": "MIT",
 	"scripts": {
 		"publishExtension": "pnpx vsce publish"
 	},
