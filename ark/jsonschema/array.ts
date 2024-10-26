@@ -42,14 +42,15 @@ const arrayItemsAreUnique = (
 
 const arrayContainsItemMatchingSchema = (
 	array: readonly unknown[],
-	schema: Type<unknown>,
+	schema: Type,
 	ctx: TraversalContext
 ) =>
 	array.some(item => schema.allows(item)) === true ?
 		true
-	:	ctx.mustBe(
-			"an array containing at least one item matching 'contains' schema"
-		)
+	:	ctx.reject({
+			expected: `an array containing at least one item matching 'contains' schema of ${schema.description}`,
+			actual: printable(array)
+		})
 
 export const validateJsonSchemaArray: Type<
 	(In: JsonSchema.ArraySchema) => Out<Type<unknown[], {}>>,

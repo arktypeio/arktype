@@ -1,17 +1,14 @@
+import { printable } from "@ark/util"
 import { type, type Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
 import type { JsonSchema } from "./scope.ts"
 
-const validateAllOfJsonSchemas = (
-	jsonSchemas: JsonSchema.Schema[]
-): Type<unknown> =>
+const validateAllOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.and(validator))
 
-const validateAnyOfJsonSchemas = (
-	jsonSchemas: JsonSchema.Schema[]
-): Type<unknown> =>
+const validateAnyOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
@@ -19,8 +16,13 @@ const validateAnyOfJsonSchemas = (
 const validateNotJsonSchema = (jsonSchema: JsonSchema.Schema) => {
 	const inner = parseJsonSchema(jsonSchema)
 	return type("unknown").narrow((data, ctx) =>
-		inner.allows(data) ? ctx.mustBe(`not ${inner.description}`) : true
-	) as Type<unknown>
+		inner.allows(data) ?
+			ctx.reject({
+				expected: `a value that's not ${inner.description}`,
+				actual: printable(data)
+			})
+		:	true
+	) as Type
 }
 
 const validateOneOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]) => {
@@ -41,15 +43,16 @@ const validateOneOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]) => {
 							matchedValidator = validator
 							continue
 						}
-						return ctx.mustBe(
-							`exactly one of:\n${oneOfValidatorsDescriptions.join("\n")}`
-						)
+						return ctx.reject({
+							expected: `exactly one of:\n${oneOfValidatorsDescriptions.join("\n")}`,
+							actual: printable(data)
+						})
 					}
 				}
 				return matchedValidator !== undefined
-			}) as Type<unknown>
+			}) as Type
 		)
-			// TODO: Theoretically this shouldn't be necessary due to above `ctx.mustBe` in narrow???
+			// TODO: Theoretically this shouldn't be necessary due to above `ctx.rejects` in narrow???
 			.describe(`one of:\n${oneOfValidatorsDescriptions.join("\n")}\n`)
 	)
 }

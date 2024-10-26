@@ -21,7 +21,8 @@ const parseMinMaxProperties = (
 
 		if ((jsonSchema.required?.length ?? 0) > maxProperties) {
 			ctx.reject({
-				message: `The specified JSON Schema requires at least ${jsonSchema.required?.length} properties, which exceeds the specified maxProperties of ${jsonSchema.maxProperties}.`
+				expected: `an object JSON Schema with at most ${jsonSchema.maxProperties} required properties`,
+				actual: `an object JSON Schema with ${jsonSchema.required!.length} required properties`
 			})
 		}
 		predicates.push((data: object, ctx) => {
@@ -29,8 +30,8 @@ const parseMinMaxProperties = (
 			return keys.length <= maxProperties ?
 					true
 				:	ctx.reject({
-						expected: `at most ${maxProperties} propert${maxProperties === 1 ? "y" : "ies"}`,
-						actual: keys.length.toString()
+						expected: `an object with at most ${maxProperties} propert${maxProperties === 1 ? "y" : "ies"}`,
+						actual: `an object with ${keys.length.toString()} propert${maxProperties === 1 ? "y" : "ies"}`
 					})
 		})
 	}
@@ -41,8 +42,8 @@ const parseMinMaxProperties = (
 			return keys.length >= minProperties ?
 					true
 				:	ctx.reject({
-						expected: `at least ${minProperties} propert${minProperties === 1 ? "y" : "ies"}`,
-						actual: keys.length.toString()
+						expected: `an object with at least ${minProperties} propert${minProperties === 1 ? "y" : "ies"}`,
+						actual: `an object with ${keys.length.toString()} propert${minProperties === 1 ? "y" : "ies"}`
 					})
 		})
 	}
@@ -69,7 +70,9 @@ const parsePatternProperties = (
 
 				if (!parsedPropertySchema.overlaps(parsedPatternPropertySchema)) {
 					ctx.reject({
-						message: `property ${property} must have a schema that overlaps with the patternProperty ${pattern}`
+						path: [property],
+						expected: `a JSON Schema that overlaps with the schema for patternProperty ${pattern} (${parsedPatternPropertySchema.description})`,
+						actual: parsedPropertySchema.description
 					})
 				}
 			}
@@ -77,7 +80,7 @@ const parsePatternProperties = (
 	})
 
 	// NB: We don't validate compatability of schemas for overlapping patternProperties
-	// since getting the intersection of regexes is inherenetly difficult.
+	// since getting the intersection of regexes is inherently non-trivial.
 	return (data: object, ctx: TraversalContext) => {
 		const errors: false[] = []
 
@@ -86,8 +89,9 @@ const parsePatternProperties = (
 				if (pattern.test(dataKey) && !parsedJsonSchema.allows(dataValue)) {
 					errors.push(
 						ctx.reject({
-							actual: dataValue,
-							expected: `${parsedJsonSchema.description} as property ${dataKey} matches patternProperty ${pattern}`
+							path: [dataKey],
+							expected: `${parsedJsonSchema.description}, as property ${dataKey} matches patternProperty ${pattern}`,
+							actual: printable(dataValue)
 						})
 					)
 				}
@@ -111,8 +115,8 @@ const parsePropertyNames = (
 	) {
 		ctx.reject({
 			path: ["propertyNames"],
-			actual: `a schema for validating a ${propertyNamesValidator.json.domain as string}`,
-			expected: "a schema for validating a string"
+			expected: "a schema for validating a string",
+			actual: `a schema for validating a ${printable(propertyNamesValidator.json.domain)}`
 		})
 	}
 
@@ -123,7 +127,9 @@ const parsePropertyNames = (
 			if (!propertyNamesValidator.allows(key)) {
 				errors.push(
 					ctx.reject({
-						message: `property ${key} doesn't adhere to the propertyNames schema of ${propertyNamesValidator.description}`
+						path: [key],
+						expected: `a key adhering to the propertyNames schema of ${propertyNamesValidator.description}`,
+						actual: key
 					})
 				)
 			}
@@ -142,8 +148,9 @@ const parseRequiredAndOptionalKeys = (
 		if ("required" in jsonSchema) {
 			if (jsonSchema.required.length !== new Set(jsonSchema.required).size) {
 				ctx.reject({
+					path: ["required"],
 					expected: "an array of unique strings",
-					path: ["required"]
+					actual: printable(jsonSchema.required)
 				})
 			}
 
@@ -151,9 +158,9 @@ const parseRequiredAndOptionalKeys = (
 				if (key in jsonSchema.properties) requiredKeys.push(key)
 				else {
 					ctx.reject({
-						actual: key,
-						expected: "a key in the 'properties' object",
-						path: ["required"]
+						path: ["required"],
+						expected: `a key from the 'properties' object (one of ${printable(Object.keys(jsonSchema.properties))})`,
+						actual: key
 					})
 				}
 			}
@@ -165,9 +172,9 @@ const parseRequiredAndOptionalKeys = (
 		}
 	} else if ("required" in jsonSchema) {
 		ctx.reject({
+			expected: "a valid object JSON Schema",
 			actual:
-				"an object JSON Schema with 'required' array but no 'properties' object",
-			expected: "a valid object JSON Schema"
+				"an object JSON Schema with 'required' array but no 'properties' object"
 		})
 	}
 
@@ -207,7 +214,9 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 			if (additionalPropertiesSchema === false) {
 				errors.push(
 					ctx.reject({
-						message: `property ${key} is an additional property, which the provided schema does not allow`
+						expected:
+							"an object with no additional keys, since provided additionalProperties JSON Schema doesn't allow it",
+						actual: `an additional key (${key})`
 					})
 				)
 				return
@@ -221,7 +230,9 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 			if (!additionalPropertyValidator.allows(value)) {
 				errors.push(
 					ctx.reject({
-						problem: `property ${key} is an additional property so must adhere to additional property schema of ${additionalPropertyValidator.description} (was ${printable(value)})`
+						path: [key],
+						expected: `${additionalPropertyValidator.description}, since ${key} is an additional property.`,
+						actual: printable(value)
 					})
 				)
 			}

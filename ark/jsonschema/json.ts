@@ -73,5 +73,5 @@ export const innerParseJsonSchema: Type<
 	return preTypeValidator
 })
 
-export const parseJsonSchema = (jsonSchema: JsonSchema.Schema): Type<unknown> =>
+export const parseJsonSchema = (jsonSchema: JsonSchema.Schema): Type =>
 	innerParseJsonSchema.assert(jsonSchema) as never
