@@ -82,22 +82,18 @@ const parsePatternProperties = (
 	// NB: We don't validate compatability of schemas for overlapping patternProperties
 	// since getting the intersection of regexes is inherently non-trivial.
 	return (data: object, ctx: TraversalContext) => {
-		const errors: false[] = []
-
 		Object.entries(data).forEach(([dataKey, dataValue]) => {
 			patternProperties.forEach(([pattern, parsedJsonSchema]) => {
 				if (pattern.test(dataKey) && !parsedJsonSchema.allows(dataValue)) {
-					errors.push(
-						ctx.reject({
-							path: [dataKey],
-							expected: `${parsedJsonSchema.description}, as property ${dataKey} matches patternProperty ${pattern}`,
-							actual: printable(dataValue)
-						})
-					)
+					ctx.reject({
+						path: [dataKey],
+						expected: `${parsedJsonSchema.description}, as property ${dataKey} matches patternProperty ${pattern}`,
+						actual: printable(dataValue)
+					})
 				}
 			})
 		})
-		return errors.length === 0
+		return ctx.hasError()
 	}
 }
 
@@ -121,20 +117,16 @@ const parsePropertyNames = (
 	}
 
 	return (data: object, ctx: TraversalContext) => {
-		const errors: false[] = []
-
 		Object.keys(data).forEach(key => {
 			if (!propertyNamesValidator.allows(key)) {
-				errors.push(
-					ctx.reject({
-						path: [key],
-						expected: `a key adhering to the propertyNames schema of ${propertyNamesValidator.description}`,
-						actual: key
-					})
-				)
+				ctx.reject({
+					path: [key],
+					expected: `a key adhering to the propertyNames schema of ${propertyNamesValidator.description}`,
+					actual: key
+				})
 			}
 		})
-		return errors.length === 0
+		return ctx.hasError()
 	}
 }
 
@@ -201,8 +193,6 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 	if (additionalPropertiesSchema === true) return
 
 	return (data: object, ctx: TraversalContext) => {
-		const errors: false[] = []
-
 		Object.keys(data).forEach(key => {
 			if (
 				properties.includes(key) ||
@@ -212,13 +202,11 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 				return
 
 			if (additionalPropertiesSchema === false) {
-				errors.push(
-					ctx.reject({
-						expected:
-							"an object with no additional keys, since provided additionalProperties JSON Schema doesn't allow it",
-						actual: `an additional key (${key})`
-					})
-				)
+				ctx.reject({
+					expected:
+						"an object with no additional keys, since provided additionalProperties JSON Schema doesn't allow it",
+					actual: `an additional key (${key})`
+				})
 				return
 			}
 
@@ -228,16 +216,14 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 
 			const value = data[key as keyof typeof data]
 			if (!additionalPropertyValidator.allows(value)) {
-				errors.push(
-					ctx.reject({
-						path: [key],
-						expected: `${additionalPropertyValidator.description}, since ${key} is an additional property.`,
-						actual: printable(value)
-					})
-				)
+				ctx.reject({
+					path: [key],
+					expected: `${additionalPropertyValidator.description}, since ${key} is an additional property.`,
+					actual: printable(value)
+				})
 			}
 		})
-		return errors.length === 0
+		return ctx.hasError()
 	}
 }
 
