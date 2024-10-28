@@ -10,7 +10,12 @@ import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchema } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
-import { arkKind, pathToPropString, type TraversalPath } from "./utils.ts"
+import {
+	appendPropToPathString,
+	arkKind,
+	pathToPropString,
+	type TraversalPath
+} from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
@@ -87,6 +92,7 @@ export class ArkErrors
 	}
 
 	byPath: Record<string, ArkError> = Object.create(null)
+	ignorePaths: Record<string, true> = Object.create(null)
 	count = 0
 	private mutable: ArkError[] = this as never
 
@@ -118,6 +124,17 @@ export class ArkErrors
 		} else {
 			this.byPath[error.propString] = error
 			this.mutable.push(error)
+
+			// add superpaths of the error path to ignored
+			let partialPropString: string = ""
+			this.ignorePaths[partialPropString] = true
+			for (let i = 0; i < error.path.length; i++) {
+				partialPropString = appendPropToPathString(
+					partialPropString,
+					error.path[i]
+				)
+				this.ignorePaths[partialPropString] = true
+			}
 		}
 		this.count++
 	}

@@ -149,6 +149,7 @@ export class TraversalContext {
 	pathHasError(path: TraversalPath): boolean {
 		if (!this.hasError()) return false
 
+		// Check super-paths of the error path
 		let partialPropString: string = ""
 		// this.errors.byPath is null prototyped so indexing by string is safe
 		if (this.errors.byPath[partialPropString]) return true
@@ -156,6 +157,9 @@ export class TraversalContext {
 			partialPropString = appendPropToPathString(partialPropString, path[i])
 			if (this.errors.byPath[partialPropString]) return true
 		}
+		// Check sub-paths of the error path
+		if (this.errors.ignorePaths[partialPropString]) return true
+
 		return false
 	}
 

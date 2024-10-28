@@ -318,6 +318,54 @@ contextualize(() => {
 		attest(t({ a: 2 })).snap(3)
 	})
 
+	it("doesn't pipe in child property error", () => {
+		let calls = 0
+		const a = type({ a: "number" }).pipe(
+			() => {
+				calls++
+				return { a: "string" }
+			},
+			type({ a: "string" })
+		)
+		attest(a({ a: 1 })).snap({ a: "string" })
+		attest(calls).snap(1)
+		attest(a({ a: "error" }).toString()).snap(
+			"a must be a number (was a string)"
+		)
+		attest(calls).snap(1)
+	})
+	it("doesn't pipe in parent property error", () => {
+		let calls = 0
+		const a = type({ a: "number" }).pipe(
+			(v, ctx) => {
+				if (v.a !== 1) ctx.mustBe("{ a: 1 }")
+				return { a: "string" }
+			},
+			type({
+				a: type("string").pipe(() => calls++)
+			})
+		)
+		attest(a({ a: 1 })).snap({ a: 0 })
+		attest(calls).snap(1)
+		attest(a({ a: 2 }).toString()).snap('must be { a: 1 } (was {"a":2})')
+		attest(calls).snap(1)
+	})
+	it("doesn't pipe child property of parent piped property error", () => {
+		let calls = 0
+		const a = type({ a: "number" }).pipe(
+			() => ({ a: "string" }),
+			type({
+				a: type("string").pipe(() => calls++)
+			})
+		)
+		attest(a({ a: 1 })).snap({ a: 0 })
+		attest(calls).snap(1)
+		attest(a({ a: "error" }).toString()).snap(
+			"a must be a number (was a string)"
+		)
+		attest(calls).snap(1)
+	})
+
 	it("in array", () => {
 		const types = scope({
 			lengthOfString: ["string", "=>", data => data.length],
