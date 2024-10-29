@@ -6,13 +6,8 @@ export {
 	type JsonSchema
 } from "@ark/schema"
 export { Hkt, inferred } from "@ark/util"
+export type { Out, number, string } from "./attributes.ts"
 export { Generic } from "./generic.ts"
-export type {
-	Out,
-	applyConstraintSchema,
-	number,
-	string
-} from "./keywords/inference.ts"
 export {
 	ark,
 	declare,
