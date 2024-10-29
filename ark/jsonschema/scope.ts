@@ -4,7 +4,7 @@ type AnyKeywords = {
 	const?: unknown
 	enum?: unknown[]
 }
-type CompositionKeywords = {
+export type CompositionKeywords = {
 	allOf?: Schema[]
 	anyOf?: Schema[]
 	oneOf?: Schema[]
@@ -24,7 +24,7 @@ type BaseSchema =
 	| AnyKeywords
 	| CompositionKeywords
 type Schema = BaseSchema | BaseSchema[]
-type ArraySchema = {
+export type ArraySchema = {
 	additionalItems?: Schema
 	contains?: Schema
 	// JSON Schema states that if 'items' is not present, then treat as an empty schema (i.e. accept any valid JSON)
@@ -45,7 +45,7 @@ type NumberSchema = {
 	multipleOf?: number
 	type: "number" | "integer"
 }
-type ObjectSchema = {
+export type ObjectSchema = {
 	additionalProperties?: Schema
 	maxProperties?: number
 	minProperties?: number
