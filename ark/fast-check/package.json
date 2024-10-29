@@ -1,7 +1,6 @@
 {
-	"name": "arktype",
-	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-rc.21",
+	"name": "@ark/fast-check",
+	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -11,19 +10,15 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git",
-		"directory": "ark/type"
+		"directory": "ark/fast-check"
 	},
 	"type": "module",
-	"main": "./out/index.js",
-	"types": "./out/index.d.ts",
+	"main": "./out/arktypeFastCheck.js",
+	"types": "./out/arktypeFastCheck.d.ts",
 	"exports": {
 		".": {
-			"ark-ts": "./index.ts",
-			"default": "./out/index.js"
-		},
-		"./config": {
-			"ark-ts": "./config.ts",
-			"default": "./out/config.js"
+			"ark-ts": "./arktypeFastCheck.ts",
+			"default": "./out/arktypeFastCheck.js"
 		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
@@ -35,13 +30,17 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"test": "tsx ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"@ark/util": "workspace:*",
-		"@ark/schema": "workspace:*"
+		"arktype": "workspace:*",
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"
+	},
+	"peerDependencies": {
+		"fast-check": "3"
 	}
 }

@@ -2,6 +2,7 @@
 	"name": "@ark/repo",
 	"private": true,
 	"type": "module",
+	"license": "MIT",
 	"dependencies": {
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",

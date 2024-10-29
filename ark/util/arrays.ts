@@ -1,7 +1,7 @@
 import type { GuardablePredicate } from "./functions.ts"
 import type { anyOrNever, conform } from "./generics.ts"
 import type { isDisjoint } from "./intersections.ts"
-import type { parseNonNegativeInteger } from "./numericLiterals.ts"
+import type { parseNonNegativeInteger } from "./numbers.ts"
 
 export type pathToString<
 	segments extends string[],
