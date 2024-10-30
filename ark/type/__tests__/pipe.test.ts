@@ -921,4 +921,20 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 		const U = types.Morph.pipe(e => e, types.To)
 		attest(U({ a: 1 })).snap({ a: 2 })
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1185
+	it("pipe doesn't run on rejected descendant prop", () => {
+		let callCount = 0
+		const t = type({
+			key: "string"
+		}).pipe(v => {
+			callCount++
+			return v
+		})
+
+		const out = t({})
+
+		attest(out.toString()).snap("key must be a string (was missing)")
+		attest(callCount).equals(0)
+	})
 })
