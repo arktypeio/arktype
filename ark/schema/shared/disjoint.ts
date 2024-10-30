@@ -5,8 +5,9 @@ import type { Domain } from "../roots/domain.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Prop } from "../structure/prop.ts"
 import type { BoundKind } from "./implement.ts"
+import { pathToPropString } from "./path.ts"
 import { $ark } from "./registry.ts"
-import { isNode, pathToPropString } from "./utils.ts"
+import { isNode } from "./utils.ts"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind

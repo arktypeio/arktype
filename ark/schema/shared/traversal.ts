@@ -8,7 +8,8 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { appendPropToPathString, isNode, type TraversalPath } from "./utils.ts"
+import { appendPropToPathString, type TraversalPath } from "./path.ts"
+import { isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: TraversalPath

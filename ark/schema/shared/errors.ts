@@ -1,6 +1,7 @@
 import {
 	CastableBase,
 	ReadonlyArray,
+	append,
 	defineProperties,
 	type propwiseXor,
 	type show
@@ -8,9 +9,14 @@ import {
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
+import {
+	type TraversalPath,
+	appendPropToPathString,
+	pathToPropString
+} from "./path.ts"
 import type { StandardSchema } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
-import { arkKind, pathToPropString, type TraversalPath } from "./utils.ts"
+import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
@@ -48,6 +54,18 @@ export class ArkError<
 		return pathToPropString(this.path)
 	}
 
+	private _ancestorPropStrings: string[] | undefined
+	get ancestorPropStrings(): string[] {
+		if (this._ancestorPropStrings) return this._ancestorPropStrings
+		let propString = ""
+		const result: string[] = [propString]
+		this.path.forEach(path => {
+			propString = appendPropToPathString(propString, path)
+			result.push(propString)
+		})
+		return (this._ancestorPropStrings = result)
+	}
+
 	get expected(): string {
 		return (
 			this.input.expected ?? this.nodeConfig.expected?.(this.input as never)
@@ -75,10 +93,6 @@ export class ArkError<
 	}
 }
 
-export type StructuralArkErrors = {
-	[k in PropertyKey]?: StructuralArkErrors | ArkError
-}
-
 export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchema.Failure
@@ -91,8 +105,7 @@ export class ArkErrors
 	}
 
 	byPath: Record<string, ArkError> = Object.create(null)
-	root: ArkError | undefined = undefined
-	byStructure: StructuralArkErrors = Object.create(null)
+	byAncestorPath: Record<string, ArkError[]> = Object.create(null)
 
 	count = 0
 	private mutable: ArkError[] = this as never
@@ -118,26 +131,27 @@ export class ArkErrors
 			const existingIndex = this.indexOf(existing)
 			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
 				errorIntersection
+
 			this.byPath[error.propString] = errorIntersection
-			this._addToStructure(errorIntersection)
+			// add the original error here rather than the intersection
+			// since the intersection is reflected by the array of errors at
+			// this path
+			this.addAncestorPaths(error)
 		} else {
 			this.byPath[error.propString] = error
-			this._addToStructure(error)
+			this.addAncestorPaths(error)
 			this.mutable.push(error)
 		}
 		this.count++
 	}
 
-	private _addToStructure(error: ArkError): ArkError {
-		let current = this.byStructure
-		const path = error.path
-		if (error.path.length === 0) return (this.root = error)
-
-		for (let i = 0; i < path.length - 1; i++) {
-			current[path[i]] ??= {}
-			current = current[path[i]] as StructuralArkErrors
-		}
-		return (current[path.at(-1)!] = error)
+	private addAncestorPaths(error: ArkError): void {
+		error.ancestorPropStrings.forEach(propString => {
+			this.byAncestorPath[propString] = append(
+				this.byAncestorPath[propString],
+				error
+			)
+		})
 	}
 
 	merge(errors: ArkErrors): void {

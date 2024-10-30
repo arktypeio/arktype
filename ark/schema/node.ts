@@ -49,13 +49,14 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
+import { pathToPropString } from "./shared/path.ts"
 import { $ark } from "./shared/registry.ts"
 import {
 	TraversalContext,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
-import { isNode, pathToPropString, type arkKind } from "./shared/utils.ts"
+import { isNode, type arkKind } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
