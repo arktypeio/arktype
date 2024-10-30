@@ -75,6 +75,10 @@ export class ArkError<
 	}
 }
 
+export type StructuralArkErrors = {
+	[k in PropertyKey]?: StructuralArkErrors | ArkError
+}
+
 export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchema.Failure
@@ -87,6 +91,9 @@ export class ArkErrors
 	}
 
 	byPath: Record<string, ArkError> = Object.create(null)
+	root: ArkError | undefined = undefined
+	byStructure: StructuralArkErrors = Object.create(null)
+
 	count = 0
 	private mutable: ArkError[] = this as never
 
@@ -109,17 +116,28 @@ export class ArkErrors
 				this.ctx
 			)
 			const existingIndex = this.indexOf(existing)
-			// If existing is found (which it always should be unless this was externally mutated),
-			// replace it with the new problem intersection. In case it isn't for whatever reason,
-			// just append the intersection.
 			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
 				errorIntersection
 			this.byPath[error.propString] = errorIntersection
+			this._addToStructure(errorIntersection)
 		} else {
 			this.byPath[error.propString] = error
+			this._addToStructure(error)
 			this.mutable.push(error)
 		}
 		this.count++
+	}
+
+	private _addToStructure(error: ArkError): ArkError {
+		let current = this.byStructure
+		const path = error.path
+		if (error.path.length === 0) return (this.root = error)
+
+		for (let i = 0; i < path.length - 1; i++) {
+			current[path[i]] ??= {}
+			current = current[path[i]] as StructuralArkErrors
+		}
+		return (current[path.at(-1)!] = error)
 	}
 
 	merge(errors: ArkErrors): void {
@@ -127,7 +145,7 @@ export class ArkErrors
 			if (this.includes(e)) return
 			this._add(
 				new ArkError(
-					{ ...e, path: [...e.path, ...this.ctx.path] } as never,
+					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
 					this.ctx
 				)
 			)
@@ -142,7 +160,6 @@ export class ArkErrors
 		return this.toString()
 	}
 
-	/** Reference to this ArkErrors array (for Standard Schema compatibility) */
 	get issues(): this {
 		return this
 	}
