@@ -3,7 +3,7 @@ import {
 	flatMorph,
 	platformConstructors,
 	type EcmascriptObjects,
-	type keySet,
+	type KeySet,
 	type PlatformObjects
 } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
@@ -16,7 +16,7 @@ const omittedPrototypes = {
 	Boolean: 1,
 	Number: 1,
 	String: 1
-} satisfies keySet<keyof EcmascriptObjects>
+} satisfies KeySet<keyof EcmascriptObjects>
 
 export const arkPrototypes: arkPrototypes.module = arkModule({
 	...flatMorph(

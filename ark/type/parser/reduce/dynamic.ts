@@ -8,7 +8,7 @@ import {
 import type { LimitLiteral } from "../../attributes.ts"
 import { parseOperand } from "../shift/operand/operand.ts"
 import { parseOperator } from "../shift/operator/operator.ts"
-import type { Scanner } from "../shift/scanner.ts"
+import type { ArkTypeScanner } from "../shift/scanner.ts"
 import { parseUntilFinalizer } from "../string.ts"
 import {
 	type Comparator,
@@ -42,13 +42,13 @@ export class DynamicState {
 		intersection: null,
 		union: null
 	}
-	finalizer: Scanner.FinalizingLookahead | undefined
+	finalizer: ArkTypeScanner.FinalizingLookahead | undefined
 	groups: BranchState[] = []
 
-	scanner: Scanner
+	scanner: ArkTypeScanner
 	ctx: BaseParseContext
 
-	constructor(scanner: Scanner, ctx: BaseParseContext) {
+	constructor(scanner: ArkTypeScanner, ctx: BaseParseContext) {
 		this.scanner = scanner
 		this.ctx = ctx
 	}
@@ -75,7 +75,7 @@ export class DynamicState {
 		this.root = this.root!.constrain(args[0], args[1])
 	}
 
-	finalize(finalizer: Scanner.FinalizingLookahead): void {
+	finalize(finalizer: ArkTypeScanner.FinalizingLookahead): void {
 		if (this.groups.length) return this.error(writeUnclosedGroupMessage(")"))
 
 		this.finalizeBranches()
@@ -188,7 +188,7 @@ export class DynamicState {
 	previousOperator():
 		| MinComparator
 		| StringifiablePrefixOperator
-		| Scanner.InfixToken
+		| ArkTypeScanner.InfixToken
 		| undefined {
 		return (
 			this.branches.leftBound?.comparator ??

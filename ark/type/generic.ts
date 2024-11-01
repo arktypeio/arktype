@@ -17,7 +17,7 @@ import {
 	type ErrorType,
 	type Hkt,
 	type Json,
-	type WhiteSpaceToken
+	type WhitespaceChar
 } from "@ark/util"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
@@ -28,7 +28,7 @@ import type {
 } from "./parser/definition.ts"
 import { DynamicState } from "./parser/reduce/dynamic.ts"
 import type { state, StaticState } from "./parser/reduce/static.ts"
-import type { Scanner } from "./parser/shift/scanner.ts"
+import type { ArkTypeScanner } from "./parser/shift/scanner.ts"
 import { parseUntilFinalizer } from "./parser/string.ts"
 import type { Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
@@ -280,16 +280,16 @@ export const emptyGenericParameterMessage =
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
 export type parseGenericParams<def extends string, $> = parseNextNameChar<
-	Scanner.skipWhitespace<def>,
+	ArkTypeScanner.skipWhitespace<def>,
 	"",
 	[],
 	$
 >
 
-type ParamsTerminator = WhiteSpaceToken | ","
+type ParamsTerminator = WhitespaceChar | ","
 
 export const parseGenericParamName = (
-	scanner: Scanner,
+	scanner: ArkTypeScanner,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
@@ -311,7 +311,7 @@ type parseName<
 	unscanned extends string,
 	result extends array<GenericParamAst>,
 	$
-> = parseNextNameChar<Scanner.skipWhitespace<unscanned>, "", result, $>
+> = parseNextNameChar<ArkTypeScanner.skipWhitespace<unscanned>, "", result, $>
 
 type parseNextNameChar<
 	unscanned extends string,
@@ -324,7 +324,7 @@ type parseNextNameChar<
 			name extends "" ? ErrorMessage<emptyGenericParameterMessage>
 			: lookahead extends "," ?
 				parseName<nextUnscanned, [...result, [name, unknown]], $>
-			: lookahead extends WhiteSpaceToken ?
+			: lookahead extends WhitespaceChar ?
 				_parseOptionalConstraint<nextUnscanned, name, result, $>
 			:	never
 		:	parseNextNameChar<nextUnscanned, `${name}${lookahead}`, result, $>
@@ -336,7 +336,7 @@ const extendsToken = "extends "
 type extendsToken = typeof extendsToken
 
 const _parseOptionalConstraint = (
-	scanner: Scanner,
+	scanner: ArkTypeScanner,
 	name: string,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
@@ -364,7 +364,7 @@ type _parseOptionalConstraint<
 	result extends array<GenericParamAst>,
 	$
 > =
-	Scanner.skipWhitespace<unscanned> extends (
+	ArkTypeScanner.skipWhitespace<unscanned> extends (
 		`${extendsToken}${infer nextUnscanned}`
 	) ?
 		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
@@ -381,7 +381,9 @@ type _parseOptionalConstraint<
 				>
 		:	never
 	:	parseName<
-			Scanner.skipWhitespace<unscanned> extends `,${infer nextUnscanned}` ?
+			ArkTypeScanner.skipWhitespace<unscanned> extends (
+				`,${infer nextUnscanned}`
+			) ?
 				nextUnscanned
 			:	unscanned,
 			[...result, [name, unknown]],

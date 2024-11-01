@@ -1,13 +1,13 @@
-import type { Dict, keySet } from "./records.ts"
-import { escapeToken } from "./strings.ts"
+import type { Dict, KeySet } from "./records.ts"
+import { escapeChar, whitespaceChars } from "./strings.ts"
 
 export class Scanner<lookahead extends string = string> {
-	private chars: string[]
-	private i: number
+	protected chars: string[]
+	protected i: number
 
 	constructor(
 		public def: string,
-		public terminatingChars: keySet
+		public terminatingChars: KeySet
 	) {
 		this.chars = [...def]
 		this.i = 0
@@ -34,7 +34,7 @@ export class Scanner<lookahead extends string = string> {
 		let shifted = ""
 		while (this.lookahead) {
 			if (condition(this, shifted)) {
-				if (shifted[shifted.length - 1] === escapeToken)
+				if (shifted[shifted.length - 1] === escapeChar)
 					shifted = shifted.slice(0, -1)
 				else break
 			}
@@ -49,7 +49,7 @@ export class Scanner<lookahead extends string = string> {
 	}
 
 	shiftUntilNonWhitespace(): string {
-		return this.shiftUntil(() => !(this.lookahead in Scanner.whitespaceChars))
+		return this.shiftUntil(() => !(this.lookahead in whitespaceChars))
 	}
 
 	jumpToIndex(i: number): void {
@@ -85,12 +85,6 @@ export class Scanner<lookahead extends string = string> {
 	): this is Scanner<Extract<keyof tokens, string>> {
 		return this.lookahead in tokens
 	}
-
-	static readonly whitespaceChars = {
-		" ": true,
-		"\n": true,
-		"\t": true
-	} as const
 }
 
 export declare namespace Scanner {
