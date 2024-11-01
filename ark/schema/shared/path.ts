@@ -2,11 +2,12 @@ import {
 	type array,
 	isDotAccessible,
 	printable,
+	ReadonlyArray,
 	type requireKeys,
 	throwParseError
 } from "@ark/util"
 
-export type PathToPropStringOptions<stringifiable = PropertyKey> = requireKeys<
+export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
 		stringifySymbol?: (s: symbol) => string
 		stringifyNonKey?: (o: Exclude<stringifiable, PropertyKey>) => string
@@ -14,22 +15,22 @@ export type PathToPropStringOptions<stringifiable = PropertyKey> = requireKeys<
 	stringifiable extends PropertyKey ? never : "stringifyNonKey"
 >
 
-export type PathToPropStringFn = <stringifiable>(
+export type StringifyPathFn = <stringifiable>(
 	path: array<stringifiable>,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
-		[opts?: PathToPropStringOptions]
-	:	NoInfer<[opts: PathToPropStringOptions<stringifiable>]>
+		[opts?: StringifyPathOptions]
+	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
 ) => string
 
-export type AppendPropToPathStringFn = <stringifiable>(
+export type AppendStringifiedKeyFn = <stringifiable>(
 	path: string,
 	prop: stringifiable,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
-		[opts?: PathToPropStringOptions]
-	:	NoInfer<[opts: PathToPropStringOptions<stringifiable>]>
+		[opts?: StringifyPathOptions]
+	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
 ) => string
 
-export const appendPropToPathString: AppendPropToPathStringFn = (
+export const appendStringifiedKey: AppendStringifiedKeyFn = (
 	path,
 	prop,
 	...[opts]
@@ -61,7 +62,43 @@ export const appendPropToPathString: AppendPropToPathStringFn = (
 	return propAccessChain
 }
 
-export const pathToPropString: PathToPropStringFn = (path, ...opts) =>
-	path.reduce<string>((s, k) => appendPropToPathString(s, k, ...opts), "")
+export const stringifyPath: StringifyPathFn = (path, ...opts) =>
+	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
 
-export class TraversalPath extends Array<PropertyKey> {}
+export type Scanner = {
+	i: number
+}
+
+export const parsePath = (path: string): TraversalPath => {
+	const segments: PropertyKey[] = []
+
+	let i = 0
+
+	for (; i < path.length; i++) {}
+}
+
+export class TraversalPath extends ReadonlyArray<PropertyKey> {
+	static parse(path: string): TraversalPath {}
+
+	clone(): TraversalPath {
+		return new TraversalPath(...this)
+	}
+
+	private _stringified: string | undefined
+	stringify(): string {
+		if (this._stringified) return this._stringified
+		return (this._stringified = stringifyPath(this))
+	}
+
+	private _stringifiedAncestors: string[] | undefined
+	stringifyAncestors(): string[] {
+		if (this._stringifiedAncestors) return this._stringifiedAncestors
+		let propString = ""
+		const result: string[] = [propString]
+		this.forEach(path => {
+			propString = appendStringifiedKey(propString, path)
+			result.push(propString)
+		})
+		return (this._stringifiedAncestors = result)
+	}
+}

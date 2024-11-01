@@ -49,7 +49,7 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { pathToPropString } from "./shared/path.ts"
+import { stringifyPath } from "./shared/path.ts"
 import { $ark } from "./shared/registry.ts"
 import {
 	TraversalContext,
@@ -481,7 +481,7 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
-	pathToPropString(path, {
+	stringifyPath(path, {
 		stringifyNonKey: node => node.expression
 	})
 

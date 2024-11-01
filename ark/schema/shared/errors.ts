@@ -9,11 +9,7 @@ import {
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
-import {
-	type TraversalPath,
-	appendPropToPathString,
-	pathToPropString
-} from "./path.ts"
+import { TraversalPath, stringifyPath } from "./path.ts"
 import type { StandardSchema } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
@@ -41,8 +37,10 @@ export class ArkError<
 			)
 		}
 		this.nodeConfig = ctx.config[this.code] as never
-		this.path = input.path ?? [...ctx.path]
-		if (input.relativePath) this.path.push(...input.relativePath)
+		this.path =
+			input.relativePath ?
+				new TraversalPath(...ctx.path, ...input.relativePath)
+			:	ctx.path.clone()
 		this.data = "data" in input ? input.data : data
 	}
 
@@ -51,19 +49,7 @@ export class ArkError<
 	}
 
 	get propString(): string {
-		return pathToPropString(this.path)
-	}
-
-	private _ancestorPropStrings: string[] | undefined
-	get ancestorPropStrings(): string[] {
-		if (this._ancestorPropStrings) return this._ancestorPropStrings
-		let propString = ""
-		const result: string[] = [propString]
-		this.path.forEach(path => {
-			propString = appendPropToPathString(propString, path)
-			result.push(propString)
-		})
-		return (this._ancestorPropStrings = result)
+		return stringifyPath(this.path)
 	}
 
 	get expected(): string {

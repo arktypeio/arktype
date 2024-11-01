@@ -164,12 +164,6 @@ export declare namespace Scanner {
 
 	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
 
-	export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
-
-	export type ShiftUntilOptions = {
-		onInputEnd?: OnInputEndFn
-	}
-
 	export type TerminatingChar = keyof typeof Scanner.terminatingChars
 
 	export type FinalizingLookahead = keyof typeof Scanner.finalizingLookaheads

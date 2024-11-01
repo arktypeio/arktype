@@ -8,7 +8,7 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { appendPropToPathString, type TraversalPath } from "./path.ts"
+import { appendStringifiedKey, TraversalPath } from "./path.ts"
 import { isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
@@ -22,7 +22,7 @@ export type BranchTraversalContext = {
 }
 
 export class TraversalContext {
-	path: TraversalPath = []
+	path: TraversalPath = new TraversalPath()
 	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
@@ -43,7 +43,7 @@ export class TraversalContext {
 
 	queueMorphs(morphs: array<Morph>): void {
 		const input: MorphsAtPath = {
-			path: [...this.path],
+			path: new TraversalPath(...this.path),
 			morphs
 		}
 		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
@@ -153,7 +153,7 @@ export class TraversalContext {
 		let partialPropString: string = ""
 		if (this.errors.byPath[partialPropString]) return true
 		for (let i = 0; i < path.length; i++) {
-			partialPropString = appendPropToPathString(partialPropString, path[i])
+			partialPropString = appendStringifiedKey(partialPropString, path[i])
 			if (this.errors.byPath[partialPropString]) return true
 		}
 		return false
