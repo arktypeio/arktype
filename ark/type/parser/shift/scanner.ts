@@ -2,7 +2,6 @@ import {
 	isKeyOf,
 	Scanner,
 	whitespaceChars,
-	type Dict,
 	type EscapeChar,
 	type WhitespaceChar
 } from "@ark/util"
@@ -11,20 +10,11 @@ import type { Comparator } from "../reduce/shared.ts"
 export class ArkTypeScanner<
 	lookahead extends string = string
 > extends Scanner<lookahead> {
-	constructor(def: string) {
-		super(def, ArkTypeScanner.terminatingChars)
-	}
-
-	lookaheadIs<char extends lookahead>(
-		char: char
-	): this is ArkTypeScanner<char> {
-		return this.lookahead === char
-	}
-
-	lookaheadIsIn<tokens extends Dict>(
-		tokens: tokens
-	): this is ArkTypeScanner<Extract<keyof tokens, string>> {
-		return this.lookahead in tokens
+	shiftUntilNextTerminator(): string {
+		this.shiftUntilNonWhitespace()
+		return this.shiftUntil(
+			() => this.lookahead in ArkTypeScanner.terminatingChars
+		)
 	}
 
 	static terminatingChars = {

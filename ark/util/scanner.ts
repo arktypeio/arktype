@@ -1,20 +1,17 @@
-import type { Dict, KeySet } from "./records.ts"
+import type { KeySet } from "./records.ts"
 import { escapeChar, whitespaceChars } from "./strings.ts"
 
 export class Scanner<lookahead extends string = string> {
-	protected chars: string[]
-	protected i: number
+	chars: string[]
+	i: number
 
-	constructor(
-		public def: string,
-		public terminatingChars: KeySet
-	) {
+	constructor(public def: string) {
 		this.chars = [...def]
 		this.i = 0
 	}
 
 	/** Get lookahead and advance scanner by one */
-	shift(): lookahead {
+	shift(): this["lookahead"] {
 		return (this.chars[this.i++] ?? "") as never
 	}
 
@@ -43,9 +40,10 @@ export class Scanner<lookahead extends string = string> {
 		return shifted
 	}
 
-	shiftUntilNextTerminator(): string {
-		this.shiftUntilNonWhitespace()
-		return this.shiftUntil(() => this.lookahead in this.terminatingChars)
+	shiftUntilLookahead(charOrSet: string | KeySet): string {
+		return typeof charOrSet === "string" ?
+				this.shiftUntil(s => s.lookahead === charOrSet)
+			:	this.shiftUntil(s => s.lookahead in charOrSet)
 	}
 
 	shiftUntilNonWhitespace(): string {
@@ -80,9 +78,9 @@ export class Scanner<lookahead extends string = string> {
 		return this.lookahead === char
 	}
 
-	lookaheadIsIn<tokens extends Dict>(
-		tokens: tokens
-	): this is Scanner<Extract<keyof tokens, string>> {
+	lookaheadIsIn<keySet extends KeySet>(
+		tokens: keySet
+	): this is Scanner<Extract<keyof keySet, string>> {
 		return this.lookahead in tokens
 	}
 }

@@ -3,13 +3,14 @@ import {
 	ReadonlyArray,
 	append,
 	defineProperties,
+	type array,
 	type propwiseXor,
 	type show
 } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
-import { TraversalPath, stringifyPath } from "./path.ts"
+import { ReadonlyTraversalPath, stringifyPath } from "./path.ts"
 import type { StandardSchema } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
@@ -20,7 +21,7 @@ export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
-	path: TraversalPath
+	path: ReadonlyTraversalPath
 	data: Prerequisite<code>
 	private nodeConfig: ResolvedArkConfig[code]
 	protected input: ArkErrorContextInput<code>
@@ -39,8 +40,9 @@ export class ArkError<
 		this.nodeConfig = ctx.config[this.code] as never
 		this.path =
 			input.relativePath ?
-				new TraversalPath(...ctx.path, ...input.relativePath)
-			:	ctx.path.clone()
+				new ReadonlyTraversalPath(...ctx.path, ...input.relativePath)
+			: input.path ? new ReadonlyTraversalPath(...input.path)
+			: ctx.path.cloneToFrozen()
 		this.data = "data" in input ? input.data : data
 	}
 
@@ -132,7 +134,7 @@ export class ArkErrors
 	}
 
 	private addAncestorPaths(error: ArkError): void {
-		error.ancestorPropStrings.forEach(propString => {
+		error.path.stringifyAncestors().forEach(propString => {
 			this.byAncestorPath[propString] = append(
 				this.byAncestorPath[propString],
 				error
@@ -174,7 +176,7 @@ export class ArkErrors
 }
 
 export type ArkErrorsMergeOptions = {
-	relativePath?: TraversalPath
+	relativePath?: ReadonlyTraversalPath
 }
 
 export interface DerivableErrorContext<
@@ -185,14 +187,17 @@ export interface DerivableErrorContext<
 	problem: string
 	message: string
 	data: Prerequisite<code>
-	path: TraversalPath
+	path: array<PropertyKey>
 	propString: string
 }
 
 export type DerivableErrorContextInput<
 	code extends ArkErrorCode = ArkErrorCode
 > = Partial<DerivableErrorContext<code>> &
-	propwiseXor<{ path?: TraversalPath }, { relativePath?: TraversalPath }>
+	propwiseXor<
+		{ path?: array<PropertyKey> },
+		{ relativePath?: array<PropertyKey> }
+	>
 
 export type ArkErrorCode = {
 	[kind in NodeKind]: errorContext<kind> extends null ? never : kind

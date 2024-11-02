@@ -8,11 +8,15 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { appendStringifiedKey, TraversalPath } from "./path.ts"
+import {
+	appendStringifiedKey,
+	MutableTraversalPath,
+	ReadonlyTraversalPath
+} from "./path.ts"
 import { isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
-	path: TraversalPath
+	path: ReadonlyTraversalPath
 	morphs: array<Morph>
 }
 
@@ -22,7 +26,7 @@ export type BranchTraversalContext = {
 }
 
 export class TraversalContext {
-	path: TraversalPath = new TraversalPath()
+	path: MutableTraversalPath = new MutableTraversalPath()
 	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
@@ -43,7 +47,7 @@ export class TraversalContext {
 
 	queueMorphs(morphs: array<Morph>): void {
 		const input: MorphsAtPath = {
-			path: new TraversalPath(...this.path),
+			path: new ReadonlyTraversalPath(...this.path),
 			morphs
 		}
 		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
@@ -83,7 +87,10 @@ export class TraversalContext {
 		}
 	}
 
-	private applyMorphsAtPath(path: TraversalPath, morphs: array<Morph>): void {
+	private applyMorphsAtPath(
+		path: ReadonlyTraversalPath,
+		morphs: array<Morph>
+	): void {
 		const key = path.at(-1)
 
 		let parent: any
@@ -95,7 +102,7 @@ export class TraversalContext {
 				parent = parent[path[pathIndex]]
 		}
 
-		this.path = path
+		this.path = path.cloneToMutable()
 
 		for (const morph of morphs) {
 			const morphIsNode = isNode(morph)
@@ -147,7 +154,7 @@ export class TraversalContext {
 		return this.currentErrorCount !== 0
 	}
 
-	pathHasError(path: TraversalPath): boolean {
+	pathHasError(path: ReadonlyTraversalPath): boolean {
 		if (!this.hasError()) return false
 
 		let partialPropString: string = ""

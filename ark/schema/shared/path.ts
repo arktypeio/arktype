@@ -65,23 +65,13 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
 
-export type Scanner = {
-	i: number
-}
+export class ReadonlyTraversalPath extends ReadonlyArray<PropertyKey> {
+	cloneToFrozen(): ReadonlyTraversalPath {
+		return new ReadonlyTraversalPath(...this)
+	}
 
-export const parsePath = (path: string): TraversalPath => {
-	const segments: PropertyKey[] = []
-
-	let i = 0
-
-	for (; i < path.length; i++) {}
-}
-
-export class TraversalPath extends ReadonlyArray<PropertyKey> {
-	static parse(path: string): TraversalPath {}
-
-	clone(): TraversalPath {
-		return new TraversalPath(...this)
+	cloneToMutable(): MutableTraversalPath {
+		return new ReadonlyTraversalPath(...this) as never
 	}
 
 	private _stringified: string | undefined
@@ -102,3 +92,11 @@ export class TraversalPath extends ReadonlyArray<PropertyKey> {
 		return (this._stringifiedAncestors = result)
 	}
 }
+
+export interface MutableTraversalPath
+	extends Array<PropertyKey>,
+		Pick<ReadonlyTraversalPath, "cloneToFrozen"> {}
+
+export const MutableTraversalPath: new (
+	...args: ConstructorParameters<typeof ReadonlyTraversalPath>
+) => MutableTraversalPath = ReadonlyTraversalPath as never
