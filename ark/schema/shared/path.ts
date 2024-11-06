@@ -66,7 +66,7 @@ export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
 
 export class ReadonlyTraversalPath extends ReadonlyArray<PropertyKey> {
-	cloneToFrozen(): ReadonlyTraversalPath {
+	cloneAndFreeze(): ReadonlyTraversalPath {
 		return new ReadonlyTraversalPath(...this)
 	}
 
@@ -95,7 +95,7 @@ export class ReadonlyTraversalPath extends ReadonlyArray<PropertyKey> {
 
 export interface MutableTraversalPath
 	extends Array<PropertyKey>,
-		Pick<ReadonlyTraversalPath, "cloneToFrozen"> {}
+		Pick<ReadonlyTraversalPath, "cloneAndFreeze"> {}
 
 export const MutableTraversalPath: new (
 	...args: ConstructorParameters<typeof ReadonlyTraversalPath>

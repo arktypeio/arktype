@@ -42,7 +42,7 @@ export class ArkError<
 			input.relativePath ?
 				new ReadonlyTraversalPath(...ctx.path, ...input.relativePath)
 			: input.path ? new ReadonlyTraversalPath(...input.path)
-			: ctx.path.cloneToFrozen()
+			: ctx.path.cloneAndFreeze()
 		this.data = "data" in input ? input.data : data
 	}
 
