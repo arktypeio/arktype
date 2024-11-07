@@ -1,8 +1,10 @@
 import {
 	CastableBase,
 	ReadonlyArray,
+	ReadonlyPath,
 	append,
 	defineProperties,
+	stringifyPath,
 	type array,
 	type propwiseXor,
 	type show
@@ -10,7 +12,6 @@ import {
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
-import { ReadonlyTraversalPath, stringifyPath } from "./path.ts"
 import type { StandardSchema } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
@@ -21,7 +22,7 @@ export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
-	path: ReadonlyTraversalPath
+	path: ReadonlyPath
 	data: Prerequisite<code>
 	private nodeConfig: ResolvedArkConfig[code]
 	protected input: ArkErrorContextInput<code>
@@ -39,10 +40,9 @@ export class ArkError<
 		}
 		this.nodeConfig = ctx.config[this.code] as never
 		this.path =
-			input.relativePath ?
-				new ReadonlyTraversalPath(...ctx.path, ...input.relativePath)
-			: input.path ? new ReadonlyTraversalPath(...input.path)
-			: ctx.path.cloneAndFreeze()
+			input.relativePath ? new ReadonlyPath(...ctx.path, ...input.relativePath)
+			: input.path ? new ReadonlyPath(...input.path)
+			: ctx.path.cloneToReadonly()
 		this.data = "data" in input ? input.data : data
 	}
 
@@ -176,7 +176,7 @@ export class ArkErrors
 }
 
 export type ArkErrorsMergeOptions = {
-	relativePath?: ReadonlyTraversalPath
+	relativePath?: array<PropertyKey>
 }
 
 export interface DerivableErrorContext<

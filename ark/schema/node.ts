@@ -5,6 +5,7 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	stringifyPath,
 	throwError,
 	type Dict,
 	type GuardablePredicate,
@@ -49,7 +50,6 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { stringifyPath } from "./shared/path.ts"
 import { $ark } from "./shared/registry.ts"
 import {
 	TraversalContext,

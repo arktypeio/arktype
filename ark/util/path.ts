@@ -1,11 +1,8 @@
-import {
-	type array,
-	isDotAccessible,
-	printable,
-	ReadonlyArray,
-	type requireKeys,
-	throwParseError
-} from "@ark/util"
+import { ReadonlyArray, type array } from "./arrays.ts"
+import { throwParseError } from "./errors.ts"
+import type { requireKeys } from "./records.ts"
+import { isDotAccessible } from "./registry.ts"
+import { printable } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
@@ -65,13 +62,14 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
 
-export class ReadonlyTraversalPath extends ReadonlyArray<PropertyKey> {
-	cloneAndFreeze(): ReadonlyTraversalPath {
-		return new ReadonlyTraversalPath(...this)
+export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
+	constructor(...items: array<PropertyKey>) {
+		super(...items)
+		Object.freeze(this)
 	}
 
-	cloneToMutable(): MutableTraversalPath {
-		return new ReadonlyTraversalPath(...this) as never
+	cloneToMutable(): MutablePath {
+		return new MutablePath(...this)
 	}
 
 	private _stringified: string | undefined
@@ -93,10 +91,8 @@ export class ReadonlyTraversalPath extends ReadonlyArray<PropertyKey> {
 	}
 }
 
-export interface MutableTraversalPath
-	extends Array<PropertyKey>,
-		Pick<ReadonlyTraversalPath, "cloneAndFreeze"> {}
-
-export const MutableTraversalPath: new (
-	...args: ConstructorParameters<typeof ReadonlyTraversalPath>
-) => MutableTraversalPath = ReadonlyTraversalPath as never
+export class MutablePath extends Array<PropertyKey> {
+	cloneToReadonly(): ReadonlyPath {
+		return new ReadonlyPath(...this)
+	}
+}

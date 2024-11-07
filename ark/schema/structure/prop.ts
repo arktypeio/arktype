@@ -15,7 +15,11 @@ import { Disjoint } from "../shared/disjoint.ts"
 import type { IntersectionContext, RootKind } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import {
+	traverseKey,
+	type TraverseAllows,
+	type TraverseApply
+} from "../shared/traversal.ts"
 import type { Optional } from "./optional.ts"
 import type { Required } from "./required.ts"
 
@@ -128,19 +132,22 @@ export abstract class BaseProp<
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
-			ctx?.path.push(this.key)
-			const allowed = this.value.traverseAllows((data as any)[this.key], ctx)
-			ctx?.path.pop()
-			return allowed
+			return traverseKey(
+				this.key,
+				() => this.value.traverseAllows((data as any)[this.key], ctx),
+				ctx
+			)
 		}
 		return this.optional
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
-			ctx.path.push(this.key)
-			this.value.traverseApply((data as any)[this.key], ctx)
-			ctx.path.pop()
+			traverseKey(
+				this.key,
+				() => this.value.traverseApply((data as any)[this.key], ctx),
+				ctx
+			)
 		} else if (this.hasKind("required")) ctx.error(this.errorContext)
 		else if (this.hasDefault()) ctx.queueMorphs(this.defaultValueMorphs)
 	}

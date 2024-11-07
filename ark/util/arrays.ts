@@ -184,8 +184,7 @@ export const append = <
 		return (
 			value === undefined ? []
 			: Array.isArray(value) ? value
-			: ([value] as any)
-		)
+			: [value]) as never
 	}
 
 	if (opts?.prepend) {

@@ -1,4 +1,9 @@
-import type { array } from "@ark/util"
+import {
+	appendStringifiedKey,
+	MutablePath,
+	ReadonlyPath,
+	type array
+} from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
@@ -8,15 +13,10 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import {
-	appendStringifiedKey,
-	MutableTraversalPath,
-	ReadonlyTraversalPath
-} from "./path.ts"
 import { isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
-	path: ReadonlyTraversalPath
+	path: ReadonlyPath
 	morphs: array<Morph>
 }
 
@@ -26,7 +26,7 @@ export type BranchTraversalContext = {
 }
 
 export class TraversalContext {
-	path: MutableTraversalPath = new MutableTraversalPath()
+	path: MutablePath = new MutablePath()
 	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
@@ -47,7 +47,7 @@ export class TraversalContext {
 
 	queueMorphs(morphs: array<Morph>): void {
 		const input: MorphsAtPath = {
-			path: new ReadonlyTraversalPath(...this.path),
+			path: new ReadonlyPath(...this.path),
 			morphs
 		}
 		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
@@ -87,10 +87,7 @@ export class TraversalContext {
 		}
 	}
 
-	private applyMorphsAtPath(
-		path: ReadonlyTraversalPath,
-		morphs: array<Morph>
-	): void {
+	private applyMorphsAtPath(path: ReadonlyPath, morphs: array<Morph>): void {
 		const key = path.at(-1)
 
 		let parent: any
@@ -154,7 +151,7 @@ export class TraversalContext {
 		return this.currentErrorCount !== 0
 	}
 
-	pathHasError(path: ReadonlyTraversalPath): boolean {
+	pathHasError(path: ReadonlyPath): boolean {
 		if (!this.hasError()) return false
 
 		let partialPropString: string = ""
@@ -215,6 +212,20 @@ export class TraversalContext {
 	popBranch(): BranchTraversalContext {
 		return this.branches.pop()!
 	}
+}
+
+export const traverseKey = <result>(
+	key: PropertyKey,
+	fn: () => result,
+	// ctx will be undefined if this node isn't context-dependent
+	ctx: TraversalContext | undefined
+): result => {
+	if (!ctx) return fn()
+
+	ctx.path.push(key)
+	const result = fn()
+	ctx.path.pop()
+	return result
 }
 
 export type TraversalMethodsByKind<input = unknown> = {
