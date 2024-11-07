@@ -1,4 +1,4 @@
-import { appendStringifiedKey, ReadonlyPath, type array } from "@ark/util"
+import { ReadonlyPath, type array } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
@@ -75,8 +75,7 @@ export class TraversalContext {
 			for (const { path, morphs } of queuedMorphs) {
 				// even if we already have an error, apply morphs that are not at a path
 				// with errors to capture potential validation errors
-				if (this.pathHasError(path)) continue
-
+				if (this.errors.affectsPath(path)) continue
 				this.applyMorphsAtPath(path, morphs)
 			}
 		}
@@ -144,18 +143,6 @@ export class TraversalContext {
 
 	hasError(): boolean {
 		return this.currentErrorCount !== 0
-	}
-
-	pathHasError(path: ReadonlyPath): boolean {
-		if (!this.hasError()) return false
-
-		let partialPropString: string = ""
-		if (this.errors.byPath[partialPropString]) return true
-		for (let i = 0; i < path.length; i++) {
-			partialPropString = appendStringifiedKey(partialPropString, path[i])
-			if (this.errors.byPath[partialPropString]) return true
-		}
-		return false
 	}
 
 	get failFast(): boolean {

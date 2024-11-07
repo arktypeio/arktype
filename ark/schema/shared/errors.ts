@@ -104,6 +104,19 @@ export class ArkErrors
 		this._add(error)
 	}
 
+	affectsPath(path: ReadonlyPath): boolean {
+		if (this.length === 0) return false
+
+		return (
+			// this would occur if there is an existing error at a prefix of path
+			// e.g. the path is ["foo", "bar"] and there is an error at ["foo"]
+			path.stringifyAncestors().some(s => s in this.byPath) ||
+			// this would occur if there is an existing error at a suffix of path
+			// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
+			path.stringify() in this.byAncestorPath
+		)
+	}
+
 	private _add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {

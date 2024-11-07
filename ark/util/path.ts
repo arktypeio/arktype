@@ -63,6 +63,12 @@ export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
+	// alternate strategy for caching since the base object is frozen
+	private cache: {
+		stringify?: string
+		stringifyAncestors?: readonly string[]
+	} = {}
+
 	constructor(items: array<PropertyKey>) {
 		super()
 		// avoid case where a single number will create empty slots
@@ -70,27 +76,19 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		Object.freeze(this)
 	}
 
-	stringify(): string
-	stringify(
-		// alternate strategy for caching since the base object is frozen
-		this: this & { stringify: { result?: string } }
-	): string {
-		if (this.stringify.result) return this.stringify.result
-		return (this.stringify.result = stringifyPath(this))
+	stringify(): string {
+		if (this.cache.stringify) return this.cache.stringify
+		return (this.cache.stringify = stringifyPath(this))
 	}
 
-	stringifyAncestors(): readonly string[]
-	stringifyAncestors(
-		// alternate strategy for caching since the base object is frozen
-		this: this & { stringifyAncestors: { result?: string[] } }
-	): readonly string[] {
-		if (this.stringifyAncestors.result) return this.stringifyAncestors.result
+	stringifyAncestors(): readonly string[] {
+		if (this.cache.stringifyAncestors) return this.cache.stringifyAncestors
 		let propString = ""
 		const result: string[] = [propString]
 		this.forEach(path => {
 			propString = appendStringifiedKey(propString, path)
 			result.push(propString)
 		})
-		return (this.stringifyAncestors.result = result)
+		return (this.cache.stringifyAncestors = result)
 	}
 }
