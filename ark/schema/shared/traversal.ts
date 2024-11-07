@@ -42,7 +42,7 @@ export class TraversalContext {
 
 	queueMorphs(morphs: array<Morph>): void {
 		const input: MorphsAtPath = {
-			path: new ReadonlyPath(...this.path),
+			path: new ReadonlyPath(this.path),
 			morphs
 		}
 		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
@@ -94,7 +94,7 @@ export class TraversalContext {
 				parent = parent[path[pathIndex]]
 		}
 
-		this.path = path.cloneToMutable()
+		this.path = [...path]
 
 		for (const morph of morphs) {
 			const morphIsNode = isNode(morph)

@@ -40,9 +40,10 @@ export class ArkError<
 		}
 		this.nodeConfig = ctx.config[this.code] as never
 		this.path =
-			input.relativePath ? new ReadonlyPath(...ctx.path, ...input.relativePath)
-			: input.path ? new ReadonlyPath(...input.path)
-			: new ReadonlyPath(...ctx.path)
+			input.relativePath ?
+				new ReadonlyPath([...ctx.path, ...input.relativePath])
+			: input.path ? new ReadonlyPath(input.path)
+			: new ReadonlyPath(ctx.path)
 		this.data = "data" in input ? input.data : data
 	}
 

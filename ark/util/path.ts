@@ -63,15 +63,11 @@ export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
-	constructor(...items: array<PropertyKey>) {
+	constructor(items: array<PropertyKey>) {
 		super()
 		// avoid case where a single number will create empty slots
 		;(this as any).push(...items)
 		Object.freeze(this)
-	}
-
-	cloneToMutable(): PropertyKey[] {
-		return [...this]
 	}
 
 	stringify(): string
