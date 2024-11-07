@@ -64,12 +64,14 @@ export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	constructor(...items: array<PropertyKey>) {
-		super(...items)
+		super()
+		// avoid case where a single number will create empty slots
+		;(this as any).push(...items)
 		Object.freeze(this)
 	}
 
-	cloneToMutable(): MutablePath {
-		return new MutablePath(...this)
+	cloneToMutable(): PropertyKey[] {
+		return [...this]
 	}
 
 	stringify(): string
@@ -94,11 +96,5 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 			result.push(propString)
 		})
 		return (this.stringifyAncestors.result = result)
-	}
-}
-
-export class MutablePath extends Array<PropertyKey> {
-	cloneToReadonly(): ReadonlyPath {
-		return new ReadonlyPath(...this)
 	}
 }

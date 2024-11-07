@@ -1,9 +1,4 @@
-import {
-	appendStringifiedKey,
-	MutablePath,
-	ReadonlyPath,
-	type array
-} from "@ark/util"
+import { appendStringifiedKey, ReadonlyPath, type array } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
@@ -26,7 +21,7 @@ export type BranchTraversalContext = {
 }
 
 export class TraversalContext {
-	path: MutablePath = new MutablePath()
+	path: PropertyKey[] = []
 	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []

@@ -42,7 +42,7 @@ export class ArkError<
 		this.path =
 			input.relativePath ? new ReadonlyPath(...ctx.path, ...input.relativePath)
 			: input.path ? new ReadonlyPath(...input.path)
-			: ctx.path.cloneToReadonly()
+			: new ReadonlyPath(...ctx.path)
 		this.data = "data" in input ? input.data : data
 	}
 
