@@ -72,22 +72,28 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		return new MutablePath(...this)
 	}
 
-	private _stringified: string | undefined
-	stringify(): string {
-		if (this._stringified) return this._stringified
-		return (this._stringified = stringifyPath(this))
+	stringify(): string
+	stringify(
+		// alternate strategy for caching since the base object is frozen
+		this: this & { stringify: { result?: string } }
+	): string {
+		if (this.stringify.result) return this.stringify.result
+		return (this.stringify.result = stringifyPath(this))
 	}
 
-	private _stringifiedAncestors: string[] | undefined
-	stringifyAncestors(): string[] {
-		if (this._stringifiedAncestors) return this._stringifiedAncestors
+	stringifyAncestors(): readonly string[]
+	stringifyAncestors(
+		// alternate strategy for caching since the base object is frozen
+		this: this & { stringifyAncestors: { result?: string[] } }
+	): readonly string[] {
+		if (this.stringifyAncestors.result) return this.stringifyAncestors.result
 		let propString = ""
 		const result: string[] = [propString]
 		this.forEach(path => {
 			propString = appendStringifiedKey(propString, path)
 			result.push(propString)
 		})
-		return (this._stringifiedAncestors = result)
+		return (this.stringifyAncestors.result = result)
 	}
 }
 
