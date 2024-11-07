@@ -1038,6 +1038,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				ext: ["string", "=", ".txt"]
 			})
 
-		attest(t.expression).snap()
+		attest(t.expression).snap(
+			'{ storeA: { [string]: string }, ext?: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext?: string = ".txt" }'
+		)
 	})
 })

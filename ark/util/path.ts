@@ -52,9 +52,11 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 		default:
 			if (opts?.stringifyNonKey)
 				propAccessChain = `${path}[${opts.stringifyNonKey(prop as never)}]`
-			throwParseError(
-				`${printable(prop)} must be a PropertyKey or stringifyNonKey must be passed to options`
-			)
+			else {
+				throwParseError(
+					`${printable(prop)} must be a PropertyKey or stringifyNonKey must be passed to options`
+				)
+			}
 	}
 	return propAccessChain
 }
