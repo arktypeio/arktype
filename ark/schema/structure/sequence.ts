@@ -37,7 +37,11 @@ import {
 	type JsonSchema
 } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import {
+	traverseKey,
+	type TraverseAllows,
+	type TraverseApply
+} from "../shared/traversal.ts"
 
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
@@ -301,9 +305,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	traverseApply: TraverseApply<array> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
-			ctx.path.push(i)
-			this.childAtIndex(data, i).traverseApply(data[i], ctx)
-			ctx.path.pop()
+			traverseKey(
+				i,
+				() => this.childAtIndex(data, i).traverseApply(data[i], ctx),
+				ctx
+			)
 		}
 	}
 

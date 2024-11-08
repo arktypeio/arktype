@@ -68,7 +68,7 @@ import {
 } from "./parser/definition.ts"
 import { DynamicState } from "./parser/reduce/dynamic.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
-import { Scanner } from "./parser/shift/scanner.ts"
+import { ArkTypeScanner } from "./parser/shift/scanner.ts"
 import { fullStringParse } from "./parser/string.ts"
 import {
 	InternalTypeParser,
@@ -237,7 +237,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		opts: BaseParseOptions
 	): array<GenericParamDef> {
 		return parseGenericParamName(
-			new Scanner(def),
+			new ArkTypeScanner(def),
 			[],
 			this.createParseContext({ ...opts, def, prefix: "generic" })
 		)
@@ -292,7 +292,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 		if (aliasArrayResolution) return aliasArrayResolution
 
-		const s = new DynamicState(new Scanner(def), ctx)
+		const s = new DynamicState(new ArkTypeScanner(def), ctx)
 
 		const node = fullStringParse(s)
 

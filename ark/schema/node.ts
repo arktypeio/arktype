@@ -5,6 +5,7 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	stringifyPath,
 	throwError,
 	type Dict,
 	type GuardablePredicate,
@@ -55,7 +56,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
-import { isNode, pathToPropString, type arkKind } from "./shared/utils.ts"
+import { isNode, type arkKind } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
@@ -480,7 +481,7 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
-	pathToPropString(path, {
+	stringifyPath(path, {
 		stringifyNonKey: node => node.expression
 	})
 

@@ -15,6 +15,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { registeredReference } from "../shared/registry.ts"
+import { traverseKey } from "../shared/traversal.ts"
 import { BaseProp, intersectProps, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -109,9 +110,11 @@ export class OptionalNode extends BaseProp<"optional"> {
 				// if the value has a morph, pipe context through it
 				this.value.includesMorph ?
 					(data, ctx) => {
-						ctx.path.push(this.key)
-						this.value((data[this.key] = defaultInput()), ctx)
-						ctx.path.pop()
+						traverseKey(
+							this.key,
+							() => this.value((data[this.key] = defaultInput()), ctx),
+							ctx
+						)
 						return data
 					}
 				:	data => {
@@ -130,9 +133,11 @@ export class OptionalNode extends BaseProp<"optional"> {
 			hasDomain(precomputedMorphedDefault, "object") ?
 				// the type signature only allows this if the value was morphed
 				(data, ctx) => {
-					ctx.path.push(this.key)
-					this.value((data[this.key] = defaultInput), ctx)
-					ctx.path.pop()
+					traverseKey(
+						this.key,
+						() => this.value((data[this.key] = defaultInput), ctx),
+						ctx
+					)
 					return data
 				}
 			:	data => {

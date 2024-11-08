@@ -47,9 +47,9 @@ export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 export type isSafelyMappable<t> =
 	{ [k in keyof t]: t[k] } extends t ? true : false
 
-export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
+export type KeySet<key extends string = string> = { readonly [_ in key]?: 1 }
 
-export type keySetOf<o extends object> = keySet<Extract<keyof o, string>>
+export type keySetOf<o extends object> = KeySet<Extract<keyof o, string>>
 
 export type mutable<o, maxDepth extends number = 1> = _mutable<o, [], maxDepth>
 

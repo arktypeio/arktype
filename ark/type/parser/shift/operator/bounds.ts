@@ -5,7 +5,7 @@ import {
 	type BoundKind,
 	type NodeSchema
 } from "@ark/schema"
-import { isKeyOf, throwParseError, type keySet } from "@ark/util"
+import { isKeyOf, throwParseError, type KeySet } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { astToString } from "../../ast/utils.ts"
@@ -25,7 +25,7 @@ import {
 import type { state, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
-import type { Scanner } from "../scanner.ts"
+import type { ArkTypeScanner } from "../scanner.ts"
 
 export const parseBound = (
 	s: DynamicStateWithRoot,
@@ -58,7 +58,7 @@ export type parseBound<
 > =
 	shiftComparator<start, unscanned> extends infer shiftResultOrError ?
 		shiftResultOrError extends (
-			Scanner.shiftResult<
+			ArkTypeScanner.shiftResult<
 				infer comparator extends Comparator,
 				infer nextUnscanned
 			>
@@ -79,7 +79,7 @@ type OneCharComparator = ">" | "<"
 export type ComparatorStartChar =
 	Comparator extends `${infer char}${string}` ? char : never
 
-export const comparatorStartChars: keySet<ComparatorStartChar> = {
+export const comparatorStartChars: KeySet<ComparatorStartChar> = {
 	"<": 1,
 	">": 1,
 	"=": 1

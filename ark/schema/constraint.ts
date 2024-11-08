@@ -137,7 +137,7 @@ export const constraintKeyParser =
 			return nodes.sort((l, r) => (l.hash < r.hash ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, schema)
-		return child.hasOpenIntersection() ? [child] : (child as any)
+		return (child.hasOpenIntersection() ? [child] : child) as never
 	}
 
 type ConstraintGroupKind = satisfy<NodeKind, "intersection" | "structure">

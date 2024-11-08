@@ -5,9 +5,9 @@ import {
 	type Entry,
 	type Json,
 	type JsonData,
+	type KeySet,
 	type arrayIndexOf,
 	type entryOf,
-	type keySet,
 	type keySetOf,
 	type listable,
 	type requireKeys,
@@ -111,7 +111,7 @@ export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 
 export type OrderedNodeKinds = typeof nodeKinds
 
-export const constraintKeys: keySet<ConstraintKind> = flatMorph(
+export const constraintKeys: KeySet<ConstraintKind> = flatMorph(
 	constraintKinds,
 	(i, kind) => [kind, 1] as const
 )

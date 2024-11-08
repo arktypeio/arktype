@@ -1,4 +1,4 @@
-import { isArray, throwParseError, type Key } from "@ark/util"
+import { isArray, stringifyPath, throwParseError, type Key } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { Domain } from "../roots/domain.ts"
@@ -6,7 +6,7 @@ import type { BaseRoot } from "../roots/root.ts"
 import type { Prop } from "../structure/prop.ts"
 import type { BoundKind } from "./implement.ts"
 import { $ark } from "./registry.ts"
-import { isNode, pathToPropString } from "./utils.ts"
+import { isNode } from "./utils.ts"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind
@@ -66,7 +66,7 @@ export class Disjoint extends Array<DisjointEntry> {
 	describeReasons(): string {
 		if (this.length === 1) {
 			const { path, l, r } = this[0]
-			const pathString = pathToPropString(path)
+			const pathString = stringifyPath(path)
 			return writeUnsatisfiableExpressionError(
 				`Intersection${
 					pathString && ` at ${pathString}`

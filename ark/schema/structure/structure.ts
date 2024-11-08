@@ -37,11 +37,12 @@ import {
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import type {
-	TraversalContext,
-	TraversalKind,
-	TraverseAllows,
-	TraverseApply
+import {
+	traverseKey,
+	type TraversalContext,
+	type TraversalKind,
+	type TraverseAllows,
+	type TraverseApply
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -555,14 +556,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				for (const node of this.index) {
 					if (node.signature.traverseAllows(k, ctx)) {
 						if (traversalKind === "Allows") {
-							ctx?.path.push(k)
-							const result = node.value.traverseAllows(data[k as never], ctx)
-							ctx?.path.pop()
+							const result = traverseKey(
+								k,
+								() => node.value.traverseAllows(data[k as never], ctx),
+								ctx
+							)
 							if (!result) return false
 						} else {
-							ctx.path.push(k)
-							node.value.traverseApply(data[k as never], ctx)
-							ctx.path.pop()
+							traverseKey(
+								k,
+								() => node.value.traverseApply(data[k as never], ctx),
+								ctx
+							)
 							if (ctx.failFast && ctx.currentErrorCount > errorCount)
 								return false
 						}
@@ -594,8 +599,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					if (ctx.failFast) return false
 				}
 			}
-
-			ctx?.path.pop()
 		}
 
 		return true

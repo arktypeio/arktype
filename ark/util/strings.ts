@@ -1,3 +1,5 @@
+import type { KeySet } from "./records.ts"
+
 export const capitalize = <s extends string>(s: s): Capitalize<s> =>
 	(s[0].toUpperCase() + s.slice(1)) as never
 
@@ -53,25 +55,25 @@ export const deanchoredSource = (regex: RegExp | string): string => {
 	)
 }
 
-export const escapeToken = "\\"
+export const escapeChar = "\\"
 
-export type EscapeToken = typeof escapeToken
+export type EscapeChar = typeof escapeChar
 
-export const whiteSpaceTokens = {
-	" ": true,
-	"\n": true,
-	"\t": true
-} as const
+export const whitespaceChars = {
+	" ": 1,
+	"\n": 1,
+	"\t": 1
+} as const satisfies KeySet
 
-export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
+export type WhitespaceChar = keyof typeof whitespaceChars
 
 export type trim<s extends string> = trimEnd<trimStart<s>>
 
 export type trimStart<s extends string> =
-	s extends `${WhiteSpaceToken}${infer tail}` ? trimEnd<tail> : s
+	s extends `${WhitespaceChar}${infer tail}` ? trimEnd<tail> : s
 
 export type trimEnd<s extends string> =
-	s extends `${infer init}${WhiteSpaceToken}` ? trimEnd<init> : s
+	s extends `${infer init}${WhitespaceChar}` ? trimEnd<init> : s
 
 // Credit to @gugaguichard for this! https://x.com/gugaguichard/status/1720528864500150534
 export type isStringLiteral<t> =

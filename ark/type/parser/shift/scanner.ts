@@ -1,125 +1,45 @@
 import {
-	escapeToken,
 	isKeyOf,
-	whiteSpaceTokens,
-	type Dict,
-	type EscapeToken,
-	type WhiteSpaceToken
+	Scanner,
+	whitespaceChars,
+	type EscapeChar,
+	type WhitespaceChar
 } from "@ark/util"
 import type { Comparator } from "../reduce/shared.ts"
 
-export class Scanner<lookahead extends string = string> {
-	private chars: string[]
-	private i: number
-
-	constructor(def: string) {
-		this.chars = [...def]
-		this.i = 0
-	}
-
-	/** Get lookahead and advance scanner by one */
-	shift(): lookahead {
-		return (this.chars[this.i++] ?? "") as never
-	}
-
-	get lookahead(): lookahead {
-		return (this.chars[this.i] ?? "") as never
-	}
-
-	get nextLookahead(): string {
-		return this.chars[this.i + 1] ?? ""
-	}
-
-	get length(): number {
-		return this.chars.length
-	}
-
-	shiftUntil(condition: Scanner.UntilCondition): string {
-		let shifted = ""
-		while (this.lookahead) {
-			if (condition(this, shifted)) {
-				if (shifted[shifted.length - 1] === escapeToken)
-					shifted = shifted.slice(0, -1)
-				else break
-			}
-			shifted += this.shift()
-		}
-		return shifted
-	}
-
+export class ArkTypeScanner<
+	lookahead extends string = string
+> extends Scanner<lookahead> {
 	shiftUntilNextTerminator(): string {
 		this.shiftUntilNonWhitespace()
-		return this.shiftUntil(Scanner.lookaheadIsTerminator)
-	}
-
-	shiftUntilNonWhitespace(): string {
-		return this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
-	}
-
-	jumpToIndex(i: number): void {
-		this.i = i < 0 ? this.length + i : i
-	}
-
-	jumpForward(count: number): void {
-		this.i += count
-	}
-
-	get location(): number {
-		return this.i
-	}
-
-	get unscanned(): string {
-		return this.chars.slice(this.i, this.length).join("")
-	}
-
-	get scanned(): string {
-		return this.chars.slice(0, this.i).join("")
-	}
-
-	sliceChars(start: number, end?: number): string {
-		return this.chars.slice(start, end).join("")
-	}
-
-	lookaheadIs<char extends lookahead>(char: char): this is Scanner<char> {
-		return this.lookahead === char
-	}
-
-	lookaheadIsIn<tokens extends Dict>(
-		tokens: tokens
-	): this is Scanner<Extract<keyof tokens, string>> {
-		return this.lookahead in tokens
+		return this.shiftUntil(
+			() => this.lookahead in ArkTypeScanner.terminatingChars
+		)
 	}
 
 	static terminatingChars = {
-		"<": true,
-		">": true,
-		"=": true,
-		"|": true,
-		"&": true,
-		")": true,
-		"[": true,
-		"%": true,
-		",": true,
-		":": true,
-		"?": true,
-		"#": true,
-		...whiteSpaceTokens
+		"<": 1,
+		">": 1,
+		"=": 1,
+		"|": 1,
+		"&": 1,
+		")": 1,
+		"[": 1,
+		"%": 1,
+		",": 1,
+		":": 1,
+		"?": 1,
+		"#": 1,
+		...whitespaceChars
 	} as const
 
 	static finalizingLookaheads = {
-		">": true,
-		",": true,
-		"": true,
-		"=": true,
-		"?": true
+		">": 1,
+		",": 1,
+		"": 1,
+		"=": 1,
+		"?": 1
 	} as const
-
-	static lookaheadIsTerminator: Scanner.UntilCondition = (scanner: Scanner) =>
-		scanner.lookahead in this.terminatingChars
-
-	static lookaheadIsNotWhitespace: Scanner.UntilCondition = (
-		scanner: Scanner
-	) => !(scanner.lookahead in whiteSpaceTokens)
 
 	static lookaheadIsFinalizing = (
 		lookahead: string,
@@ -132,7 +52,7 @@ export class Scanner<lookahead extends string = string> {
 				unscanned[1] === "="
 				// if > is the end of a generic instantiation, the next token will be an operator or the end of the string
 			:	unscanned.trimStart() === "" ||
-				isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
+				isKeyOf(unscanned.trimStart()[0], ArkTypeScanner.terminatingChars)
 			// "=" is a finalizer on its own (representing a default value),
 			// but not with a second "=" (an equality comparator)
 		: lookahead === "=" ? unscanned[0] !== "="
@@ -140,7 +60,7 @@ export class Scanner<lookahead extends string = string> {
 		: lookahead === "," || lookahead === "?"
 }
 
-export declare namespace Scanner {
+export declare namespace ArkTypeScanner {
 	export type lookaheadIsFinalizing<
 		lookahead extends string,
 		unscanned extends string
@@ -150,7 +70,7 @@ export declare namespace Scanner {
 				nextUnscanned extends `=${string}` ?
 					true
 				:	false
-			: Scanner.skipWhitespace<unscanned> extends (
+			: ArkTypeScanner.skipWhitespace<unscanned> extends (
 				"" | `${TerminatingChar}${string}`
 			) ?
 				true
@@ -162,17 +82,10 @@ export declare namespace Scanner {
 		: lookahead extends "," | "?" ? true
 		: false
 
-	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
+	export type TerminatingChar = keyof typeof ArkTypeScanner.terminatingChars
 
-	export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
-
-	export type ShiftUntilOptions = {
-		onInputEnd?: OnInputEndFn
-	}
-
-	export type TerminatingChar = keyof typeof Scanner.terminatingChars
-
-	export type FinalizingLookahead = keyof typeof Scanner.finalizingLookaheads
+	export type FinalizingLookahead =
+		keyof typeof ArkTypeScanner.finalizingLookaheads
 
 	export type InfixToken =
 		| Comparator
@@ -201,7 +114,7 @@ export declare namespace Scanner {
 	> =
 		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
 			lookahead extends terminator ?
-				scanned extends `${infer base}${EscapeToken}` ?
+				scanned extends `${infer base}${EscapeChar}` ?
 					shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
 				:	[scanned, unscanned]
 			:	shiftUntil<nextUnscanned, terminator, `${scanned}${lookahead}`>
@@ -225,7 +138,7 @@ export declare namespace Scanner {
 
 	export type skipWhitespace<unscanned extends string> = shiftUntilNot<
 		unscanned,
-		WhiteSpaceToken
+		WhitespaceChar
 	>[1]
 
 	export type shiftResult<scanned extends string, unscanned extends string> = [
