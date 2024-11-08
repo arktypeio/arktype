@@ -4,8 +4,10 @@ import { escapeChar, whitespaceChars } from "./strings.ts"
 export class Scanner<lookahead extends string = string> {
 	chars: string[]
 	i: number
+	def: string
 
-	constructor(public def: string) {
+	constructor(def: string) {
+		this.def = def
 		this.chars = [...def]
 		this.i = 0
 	}
