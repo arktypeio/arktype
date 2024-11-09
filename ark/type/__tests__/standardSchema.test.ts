@@ -7,14 +7,16 @@ contextualize(() => {
 	it("validation conforms to spec", () => {
 		const t = type({ foo: "string" })
 		const standard: v1.StandardSchema<{ foo: string }> = t
-		const standardOut = standard["~validate"]({ value: { foo: "bar" } })
-		attest<promisable<v1.StandardOutput<{ foo: string }>>>(standardOut).equals({
+		const standardOut = standard["~standard"].validate({
+			foo: "bar"
+		})
+		attest<promisable<v1.StandardResult<{ foo: string }>>>(standardOut).equals({
 			value: { foo: "bar" }
 		})
 
-		const badStandardOut = standard["~validate"]({
-			value: { foo: 5 }
-		}) as v1.StandardFailureOutput
+		const badStandardOut = standard["~standard"].validate({
+			foo: 5
+		}) as v1.StandardFailureResult
 
 		attest(badStandardOut.issues).instanceOf(type.errors)
 		attest(badStandardOut.issues.toString()).snap(

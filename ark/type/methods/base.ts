@@ -1,5 +1,6 @@
 import type {
 	ArkErrors,
+	ArkTypeStandardSchemaProps,
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
@@ -7,7 +8,6 @@ import type {
 	Morph,
 	Predicate,
 	PredicateCast,
-	StandardSchema,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -45,7 +45,7 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t = unknown, $ = {}>
 	extends Callable<
 		(data: unknown) => distill.Out<t> | ArkErrors,
-		StandardSchema.ConstantProps
+		ArkTypeStandardSchemaProps
 	> {
 	[inferred]: t
 
@@ -285,13 +285,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $>
 
 	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
-	// Static properties are attached via Callable, so this is just those that depend on `t`.
-	// Important for type performance that we declare these directly as props rather than
-	// extend them so TS can be lazy about evaluating them (as is the case for props like `.inferIn`)
-
-	"~validate": StandardSchema.Validator<this["inferOut"]>
-
-	"~types": StandardSchema.Types<this["inferIn"], this["inferOut"]>
+	"~standard": ArkTypeStandardSchemaProps<this["inferIn"], this["inferOut"]>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
