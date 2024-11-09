@@ -13,7 +13,6 @@ const versionedFlags =
 		),
 		"--import tsx")
 
-execSync(
-	`node --conditions ark-ts ${versionedFlags} ${process.argv.slice(2).join(" ")}`,
-	{ stdio: "inherit" }
-)
+process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS ?? ""} --conditions ark-ts ${versionedFlags}`
+
+execSync(`node ${process.argv.slice(2).join(" ")}`, { stdio: "inherit" })

@@ -8,7 +8,11 @@ import {
 	type VersionedTypeAssertion
 } from "../cache/getCachedAssertions.ts"
 import { getConfig, type AttestConfig } from "../config.ts"
-import { assertEquals, typeEqualityMapping } from "./assertions.ts"
+import {
+	assertEquals,
+	typeEqualityMapping,
+	type TypeAssertionMapping
+} from "./assertions.ts"
 import {
 	ChainableAssertions,
 	type AssertionKind,
@@ -29,8 +33,10 @@ export type AttestFn = {
 	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
 
+export type VersionableActual = {} | null | undefined | TypeAssertionMapping
+
 export type AssertionContext = {
-	actual: unknown
+	versionableActual: VersionableActual
 	originalAssertedValue: unknown
 	cfg: AttestConfig
 	allowRegex: boolean
@@ -54,7 +60,7 @@ export const attestInternal = (
 	const position = caller()
 	const cfg = { ...getConfig(), ...cfgHooks }
 	const ctx: AssertionContext = {
-		actual: value,
+		versionableActual: value,
 		allowRegex: false,
 		originalAssertedValue: value,
 		position,
