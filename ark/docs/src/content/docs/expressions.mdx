@@ -50,6 +50,10 @@ const arrays = type({
 
 </Tabs>
 
+### Brands
+
+### Casts
+
 ### Divisibility
 
 Constrain a `number` to a multiple of the specified integer.
@@ -121,18 +125,6 @@ const exactValueFromSet = type("===", 1337, true, null)
 
 </Tabs>
 
-### Parenthetical
-
-By default, ArkType's operators follow the same precedence as TypeScript's. Also like in TypeScript, this can be overridden by wrapping an expression in parentheses.
-
-```ts
-// hover to see the distinction!
-const groups = type({
-	stringOrArrayOfNumbers: "string | number[]",
-	arrayOfStringsOrNumbers: "(string | number)[]"
-})
-```
-
 ### instanceof
 
 Most builtin instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
@@ -173,6 +165,34 @@ const instances = type({
     </SyntaxTab>
 
 </Tabs>
+
+### Intersections
+
+### keyof
+
+### Merge
+
+### Meta
+
+### Morphs
+
+### Narrows
+
+### Parenthetical
+
+By default, ArkType's operators follow the same precedence as TypeScript's. Also like in TypeScript, this can be overridden by wrapping an expression in parentheses.
+
+```ts
+// hover to see the distinction!
+const groups = type({
+	stringOrArrayOfNumbers: "string | number[]",
+	arrayOfStringsOrNumbers: "(string | number)[]"
+})
+```
+
+### Property Acccess
+
+### Ranges
 
 ### Union
 

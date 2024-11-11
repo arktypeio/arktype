@@ -123,6 +123,14 @@ export default defineConfig({
 							link: "/expressions#array"
 						},
 						{
+							label: "Brands",
+							link: "/expressions#brands"
+						},
+						{
+							label: "Casts",
+							link: "/expressions#casts"
+						},
+						{
 							label: "Divisibility",
 							link: "/expressions#divisibility"
 						},
@@ -131,12 +139,44 @@ export default defineConfig({
 							link: "/expressions#equality"
 						},
 						{
+							label: "instanceof",
+							link: "/expressions#instanceof"
+						},
+						{
+							label: "Intersections",
+							link: "/expressions#intersections"
+						},
+						{
+							label: "keyof",
+							link: "/expressions#keyof"
+						},
+						{
+							label: "Merge",
+							link: "/expressions#merge"
+						},
+						{
+							label: "Meta",
+							link: "/expressions#meta"
+						},
+						{
+							label: "Morphs",
+							link: "/expressions#morphs"
+						},
+						{
+							label: "Narrows",
+							link: "/expressions#narrows"
+						},
+						{
 							label: "Parenthetical",
 							link: "/expressions#parenthetical"
 						},
 						{
-							label: "instanceof",
-							link: "/expressions#instanceof"
+							label: "Property Access",
+							link: "/expressions#property-access"
+						},
+						{
+							label: "Ranges",
+							link: "/expressions#range"
 						},
 						{
 							label: "Union",
