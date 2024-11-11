@@ -124,11 +124,11 @@ export default defineConfig({
 						},
 						{
 							label: "Brands",
-							link: "/expressions#brands"
+							link: "/expressions#brand"
 						},
 						{
 							label: "Casts",
-							link: "/expressions#casts"
+							link: "/expressions#cast"
 						},
 						{
 							label: "Divisibility",
@@ -144,7 +144,7 @@ export default defineConfig({
 						},
 						{
 							label: "Intersections",
-							link: "/expressions#intersections"
+							link: "/expressions#intersection"
 						},
 						{
 							label: "keyof",
@@ -160,11 +160,11 @@ export default defineConfig({
 						},
 						{
 							label: "Morphs",
-							link: "/expressions#morphs"
+							link: "/expressions#morph"
 						},
 						{
 							label: "Narrows",
-							link: "/expressions#narrows"
+							link: "/expressions#narrow"
 						},
 						{
 							label: "Parenthetical",
@@ -175,12 +175,21 @@ export default defineConfig({
 							link: "/expressions#property-access"
 						},
 						{
-							label: "Ranges",
+							label: "Range",
 							link: "/expressions#range"
 						},
 						{
 							label: "Union",
 							link: "/expressions#union"
+						}
+					]
+				},
+				{
+					label: "Configuration",
+					items: [
+						{
+							label: "Error",
+							link: "/configuration#error"
 						}
 					]
 				},
