@@ -385,7 +385,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	get nestableExpression(): string {
 		// avoid adding unnecessary parentheses around boolean since it's
 		// already collapsed to a single keyword
-		return this.isBoolean ? "boolean" : super.nestableExpression
+		return this.isBoolean ? "boolean" : `(${this.expression})`
 	}
 
 	discriminate(): Discriminant | null {

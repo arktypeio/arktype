@@ -12,7 +12,7 @@ import {
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
-import type { StandardFailureResult } from "./standardSchema.ts"
+import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
 
@@ -84,7 +84,7 @@ export class ArkError<
 
 export class ArkErrors
 	extends ReadonlyArray<ArkError>
-	implements StandardFailureResult
+	implements StandardSchemaV1.FailureResult
 {
 	protected ctx: TraversalContext
 
