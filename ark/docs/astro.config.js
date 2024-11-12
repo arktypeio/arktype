@@ -191,9 +191,9 @@ export default defineConfig({
 							label: "dates",
 							collapsed: true,
 							items: [
-								{ label: "Keywords", link: "/dates#keywords" },
-								{ label: "Literals", link: "/dates#literals" },
-								{ label: "Ranges", link: "/dates#ranges" }
+								{ label: "keywords", link: "/dates#keywords" },
+								{ label: "literals", link: "/dates#literals" },
+								{ label: "ranges", link: "/dates#ranges" }
 							]
 						}
 					]
