@@ -44,74 +44,157 @@ export default defineConfig({
 					}
 				},
 				{
-					label: "Keywords",
-					collapsed: true,
+					label: "Primitives",
 					items: [
 						{
-							label: "TypeScript",
-							link: "/keywords#typescript"
+							label: "string",
+							collapsed: true,
+							items: [
+								{
+									label: "keywords",
+									link: "/definitions#string-keywords"
+								},
+								{ label: "literals", link: "/definitions#string-literals" },
+								{
+									label: "patterns",
+									link: "/strings#patterns"
+								},
+								{
+									label: "lengths",
+									link: "/strings#lengths"
+								}
+							]
 						},
 						{
-							label: "Subtype",
-							link: "/keywords#subtype"
+							label: "number",
+							collapsed: true,
+							items: [
+								{
+									label: "keywords",
+									link: "/primitives#number-keywords"
+								},
+								{ label: "literals", link: "/primitives#number-literals" },
+								{
+									label: "ranges",
+									link: "/numbers#ranges"
+								},
+								{
+									label: "divisors",
+									link: "/numbers#divisors"
+								}
+							]
 						},
 						{
-							label: "this",
-							link: "/keywords#this"
+							label: "more",
+							collapsed: true,
+							items: [
+								{
+									label: "bigint",
+									link: "/primitives#bigint"
+								},
+								{
+									label: "boolean",
+									link: "/primitives#boolean"
+								},
+								{
+									label: "symbol",
+									link: "/primitives#symbol"
+								},
+								{
+									label: "null",
+									link: "/primitives#null"
+								},
+								{
+									label: "undefined",
+									link: "/primitives#undefined"
+								}
+							]
 						}
-					]
-				},
-				{
-					label: "Literals",
-					collapsed: true,
-					items: [
-						{ label: "String", link: "/literals#string" },
-						{ label: "Number", link: "/literals#number" },
-						{ label: "Bigint", link: "/literals#bigint" },
-						{ label: "Date", link: "/literals#date" },
-						{ label: "Regex", link: "/literals#regex" }
 					]
 				},
 				{
 					label: "Objects",
 					items: [
 						{
-							label: "Required Properties",
-							link: "/objects#required-properties"
+							label: "properties",
+							items: [
+								{
+									label: "required",
+									link: "/objects#required-properties"
+								},
+								{
+									label: "optional",
+									link: "/objects#optional-properties"
+								},
+								{
+									label: "defaultable",
+									link: "/objects#defaultable-properties"
+								},
+								{
+									label: "index",
+									link: "/objects#index-signatures"
+								},
+								{
+									label: "undeclared",
+									link: "/expressions#onundeclaredkey"
+								},
+								{
+									label: "more",
+									collapsed: true,
+									items: [
+										{
+											label: "merge",
+											link: "/expressions#merge"
+										},
+										{
+											label: "keyof",
+											link: "/expressions#keyof"
+										},
+										{
+											label: "get",
+											link: "/expressions#get"
+										}
+									]
+								}
+							]
 						},
 						{
-							label: "Optional Properties",
-							link: "/objects#optional-properties"
+							label: "arrays",
+							collapsed: true,
+							items: [
+								{ label: "lengths", link: "/arrays#lengths" },
+								{
+									label: "tuples",
+									collapsed: true,
+									items: [
+										{
+											label: "prefix",
+											link: "/tuples#prefix"
+										},
+										{
+											label: "optional",
+											link: "/tuples#optional"
+										},
+										{
+											label: "variadic",
+											link: "/tuples#variadic"
+										},
+										{
+											label: "postfix",
+											link: "/tuples#postfix"
+										}
+									]
+								}
+							]
 						},
 						{
-							label: "Defaultable Properties",
-							link: "/objects#defaultable-properties"
-						},
-						{
-							label: "Index Signatures",
-							link: "/objects#index-signatures"
-						}
-					]
-				},
-				{
-					label: "Tuples",
-					collapsed: true,
-					items: [
-						{
-							label: "Prefix Elements",
-							link: "/tuples#prefix-elements"
-						},
-						{
-							label: "Optional Elements",
-							link: "/tuples#optional-elements"
-						},
-						{
-							label: "Variadic Elements",
-							link: "/tuples#variadic-elements"
-						},
-						{
-							label: "Postfix Elements",
-							link: "/tuples#postfix-elements"
+							label: "dates",
+							collapsed: true,
+							items: [
+								{ label: "Keywords", link: "/dates#keywords" },
+								{ label: "Literals", link: "/dates#literals" },
+								{ label: "Ranges", link: "/dates#ranges" }
+							]
 						}
 					]
 				},
@@ -119,85 +202,69 @@ export default defineConfig({
 					label: "Expressions",
 					items: [
 						{
-							label: "Array",
-							link: "/expressions#array"
-						},
-						{
-							label: "Brands",
-							link: "/expressions#brand"
-						},
-						{
-							label: "Casts",
-							link: "/expressions#cast"
-						},
-						{
-							label: "Divisibility",
-							link: "/expressions#divisibility"
-						},
-						{
-							label: "Equality",
-							link: "/expressions#equality"
-						},
-						{
-							label: "instanceof",
-							link: "/expressions#instanceof"
-						},
-						{
-							label: "Intersections",
+							label: "intersection",
 							link: "/expressions#intersection"
 						},
 						{
-							label: "keyof",
-							link: "/expressions#keyof"
+							label: "union",
+							link: "/expressions#union"
 						},
 						{
-							label: "Merge",
-							link: "/expressions#merge"
+							label: "brand",
+							link: "/expressions#brand"
 						},
 						{
-							label: "Meta",
-							link: "/expressions#meta"
-						},
-						{
-							label: "Morphs",
-							link: "/expressions#morph"
-						},
-						{
-							label: "Narrows",
+							label: "narrow",
 							link: "/expressions#narrow"
 						},
 						{
-							label: "Parenthetical",
-							link: "/expressions#parenthetical"
+							label: "morph",
+							link: "/expressions#morph"
 						},
 						{
-							label: "Property Access",
-							link: "/expressions#property-access"
-						},
-						{
-							label: "Range",
-							link: "/expressions#range"
-						},
-						{
-							label: "Union",
-							link: "/expressions#union"
+							label: "more",
+							collapsed: true,
+							items: [
+								{
+									label: "equality",
+									link: "/expressions#equality"
+								},
+								{
+									label: "meta",
+									link: "/expressions#meta"
+								},
+								{
+									label: "cast",
+									link: "/expressions#cast"
+								},
+								{
+									label: "parenthetical",
+									link: "/expressions#parenthetical"
+								},
+								{
+									label: "this",
+									link: "/keywords#this"
+								}
+							]
 						}
 					]
 				},
 				{
-					label: "Configuration",
+					label: "Advanced",
 					items: [
 						{
-							label: "Error",
-							link: "/configuration#error"
+							label: "configuration",
+							link: "/advanced#configuration"
+						},
+						{
+							label: "scopes",
+							link: "/advanced#scopes"
+						},
+						{
+							label: "generics",
+							link: "/advanced#generics"
 						}
 					]
-				},
-				{
-					label: "Reference",
-					autogenerate: {
-						directory: "reference"
-					}
 				}
 			],
 			components: {
