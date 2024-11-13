@@ -70,7 +70,6 @@ Built with [Starlight](https://starlight.astro.build/)
     - cast
     - parenthetical
     - this
-    - thunk
 
 # Other stuff
 
@@ -93,9 +92,10 @@ Built with [Starlight](https://starlight.astro.build/)
 - Scopes (advanced)
 
   - syntax
-  - private
   - modules
+  - visibility
   - submodules
+  - thunks
 
 - Generics (advanced)
 

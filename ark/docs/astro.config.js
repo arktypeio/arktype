@@ -52,16 +52,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/definitions#string-keywords"
+									link: "/string#keywords"
 								},
-								{ label: "literals", link: "/definitions#string-literals" },
+								{ label: "literals", link: "/string#literals" },
 								{
 									label: "patterns",
-									link: "/strings#patterns"
+									link: "/string#patterns"
 								},
 								{
 									label: "lengths",
-									link: "/strings#lengths"
+									link: "/string#lengths"
 								}
 							]
 						},
@@ -71,16 +71,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/primitives#number-keywords"
+									link: "/number#keywords"
 								},
-								{ label: "literals", link: "/primitives#number-literals" },
+								{ label: "literals", link: "/number#literals" },
 								{
 									label: "ranges",
-									link: "/numbers#ranges"
+									link: "/number#ranges"
 								},
 								{
 									label: "divisors",
-									link: "/numbers#divisors"
+									link: "/number#divisors"
 								}
 							]
 						},
@@ -120,23 +120,23 @@ export default defineConfig({
 							items: [
 								{
 									label: "required",
-									link: "/objects#required-properties"
+									link: "/properties#required"
 								},
 								{
 									label: "optional",
-									link: "/objects#optional-properties"
+									link: "/properties#optional"
 								},
 								{
 									label: "defaultable",
-									link: "/objects#defaultable-properties"
+									link: "/properties#defaultable"
 								},
 								{
 									label: "index",
-									link: "/objects#index-signatures"
+									link: "/properties#index"
 								},
 								{
 									label: "undeclared",
-									link: "/expressions#onundeclaredkey"
+									link: "/properties#undeclared"
 								},
 								{
 									label: "more",
@@ -144,15 +144,15 @@ export default defineConfig({
 									items: [
 										{
 											label: "merge",
-											link: "/expressions#merge"
+											link: "/properties#merge"
 										},
 										{
 											label: "keyof",
-											link: "/expressions#keyof"
+											link: "/properties#keyof"
 										},
 										{
 											label: "get",
-											link: "/expressions#get"
+											link: "/properties#get"
 										}
 									]
 								}
@@ -169,19 +169,19 @@ export default defineConfig({
 									items: [
 										{
 											label: "prefix",
-											link: "/tuples#prefix"
+											link: "/arrays#prefix"
 										},
 										{
 											label: "optional",
-											link: "/tuples#optional"
+											link: "/arrays#optional"
 										},
 										{
 											label: "variadic",
-											link: "/tuples#variadic"
+											link: "/arrays#variadic"
 										},
 										{
 											label: "postfix",
-											link: "/tuples#postfix"
+											link: "/arrays#postfix"
 										}
 									]
 								}
@@ -194,6 +194,20 @@ export default defineConfig({
 								{ label: "keywords", link: "/dates#keywords" },
 								{ label: "literals", link: "/dates#literals" },
 								{ label: "ranges", link: "/dates#ranges" }
+							]
+						},
+						{
+							label: "instanceof",
+							collapsed: true,
+							items: [
+								{
+									label: "expression",
+									link: "/instanceof#expression"
+								},
+								{
+									label: "keywords",
+									link: "/instanceof#keywords"
+								}
 							]
 						}
 					]
@@ -226,8 +240,12 @@ export default defineConfig({
 							collapsed: true,
 							items: [
 								{
-									label: "equality",
-									link: "/expressions#equality"
+									label: "unit",
+									link: "/expressions#unit"
+								},
+								{
+									label: "enumerated",
+									link: "/expressions#enumerated"
 								},
 								{
 									label: "meta",
@@ -243,28 +261,120 @@ export default defineConfig({
 								},
 								{
 									label: "this",
-									link: "/keywords#this"
+									link: "/expressions#this"
 								}
 							]
 						}
 					]
 				},
 				{
-					label: "Advanced",
+					label: "Types",
 					items: [
 						{
-							label: "configuration",
-							link: "/advanced#configuration"
+							label: "usage",
+							link: "/types#usage"
 						},
 						{
-							label: "scopes",
-							link: "/advanced#scopes"
+							label: "properties",
+							link: "/types#properties"
+						},
+						{ label: "utilities", link: "/types#utilities" }
+					]
+				},
+				{
+					label: "Configuration",
+					items: [
+						{
+							label: "errors",
+							link: "/configuration#errors"
 						},
 						{
-							label: "generics",
-							link: "/advanced#generics"
+							label: "clone",
+							link: "/configuration#clone"
+						},
+						{
+							label: "onUndeclaredKey",
+							link: "/configuration#onundeclaredkey"
+						},
+						{
+							label: "jitless",
+							link: "/configuration#jitless"
 						}
 					]
+				},
+				{
+					label: "Scopes",
+					badge: "advanced",
+					items: [
+						{
+							label: "syntax",
+							link: "/scopes#syntax"
+						},
+						{
+							label: "modules",
+							link: "/scopes#modules"
+						},
+						{
+							label: "visibility",
+							link: "/scopes#visibility"
+						},
+						{
+							label: "submodules",
+							link: "/scopes#submodules"
+						},
+						{
+							label: "thunks",
+							link: "/scopes#thunks"
+						}
+					]
+				},
+				{
+					label: "Generics",
+					badge: "advanced",
+					items: [
+						{
+							label: "keywords",
+							link: "/generics#keywords"
+						},
+						{
+							label: "syntax",
+							link: "/generics#syntax"
+						},
+						{
+							label: "hkt",
+							link: "/generics#hkt",
+							badge: "advanced++"
+						}
+					]
+				},
+				{
+					label: "Integrations",
+					items: [
+						{
+							label: "Standard Schema",
+							link: "/integrations#standard-schema"
+						},
+						{
+							label: "tRPC",
+							link: "/integrations#trpc"
+						},
+						{
+							label: "react-hook-form",
+							link: "/integrations#react-hook-form"
+						},
+						{
+							label: "hono",
+							link: "/integrations#hono"
+						}
+					]
+				},
+				{
+					label: "FAQ",
+					link: "/faq"
+				},
+				{
+					label: "About the project",
+					link: "/about"
 				}
 			],
 			components: {
