@@ -4,15 +4,19 @@ Source code for ArkType's docs at [arktype.io](https://arktype.io)
 
 Built with [Starlight](https://starlight.astro.build/)
 
+# Definitions
+
 - Primitives
 
   - string
     - keywords
+      - Autogenerate from JSDoc
     - literals
     - patterns
     - lengths
   - number
     - keywords
+      - Autogenerate from JSDoc
     - literals
     - ranges
     - divisors
@@ -45,8 +49,12 @@ Built with [Starlight](https://starlight.astro.build/)
       - postfix
   - dates
     - keywords
+      - Autogenerate from JSDoc
     - literals
     - ranges
+  - instanceOf
+    - keywords
+      - Autogenerate from JSDoc
 
 - Expressions
 
@@ -58,12 +66,22 @@ Built with [Starlight](https://starlight.astro.build/)
   - more
     - unit
     - enumerated
-    - instanceOf
     - meta
     - cast
     - parenthetical
     - this
     - thunk
+
+# Other stuff
+
+- Types (how you can use existing types)
+
+  - Top-level type invocation
+
+  - Autogenerate from JSDoc <!-- properties of a Type instance -->
+
+  - define <!-- type utilities not attached to a type instance -->
+  - raw
 
 - Configuration
 
@@ -71,11 +89,6 @@ Built with [Starlight](https://starlight.astro.build/)
   - clone
   - onUndeclaredKey
   - jitless
-
-- Types
-
-  - infer
-  -
 
 - Scopes (advanced)
 
@@ -87,16 +100,16 @@ Built with [Starlight](https://starlight.astro.build/)
 - Generics (advanced)
 
   - keywords
+    - Autogenerate from JSDoc
   - syntax
   - hkt (advanced++)
 
-- Utilities
-
-  - define
-  - raw
-
 - Integrations
+
   - Standard Schema
   - tRPC
   - react-hook-form
   - hono
+
+- FAQ
+- About the project
