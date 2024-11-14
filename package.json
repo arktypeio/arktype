@@ -61,7 +61,7 @@
 		"eslint-plugin-import": "2.31.0",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.4.1",
-		"knip": "5.36.7",
+		"knip": "5.37.0",
 		"mocha": "10.8.2",
 		"prettier": "3.3.3",
 		"prettier-plugin-astro": "0.14.1",
