@@ -85,30 +85,24 @@ export default defineConfig({
 							]
 						},
 						{
-							label: "more",
-							collapsed: true,
-							items: [
-								{
-									label: "bigint",
-									link: "/primitives#bigint"
-								},
-								{
-									label: "boolean",
-									link: "/primitives#boolean"
-								},
-								{
-									label: "symbol",
-									link: "/primitives#symbol"
-								},
-								{
-									label: "null",
-									link: "/primitives#null"
-								},
-								{
-									label: "undefined",
-									link: "/primitives#undefined"
-								}
-							]
+							label: "bigint",
+							link: "/primitives#bigint"
+						},
+						{
+							label: "boolean",
+							link: "/primitives#boolean"
+						},
+						{
+							label: "symbol",
+							link: "/primitives#symbol"
+						},
+						{
+							label: "null",
+							link: "/primitives#null"
+						},
+						{
+							label: "undefined",
+							link: "/primitives#undefined"
 						}
 					]
 				},
@@ -139,22 +133,16 @@ export default defineConfig({
 									link: "/properties#undeclared"
 								},
 								{
-									label: "more",
-									collapsed: true,
-									items: [
-										{
-											label: "merge",
-											link: "/properties#merge"
-										},
-										{
-											label: "keyof",
-											link: "/properties#keyof"
-										},
-										{
-											label: "get",
-											link: "/properties#get"
-										}
-									]
+									label: "merge",
+									link: "/properties#merge"
+								},
+								{
+									label: "keyof",
+									link: "/properties#keyof"
+								},
+								{
+									label: "get",
+									link: "/properties#get"
 								}
 							]
 						},
@@ -236,34 +224,28 @@ export default defineConfig({
 							link: "/expressions#morph"
 						},
 						{
-							label: "more",
-							collapsed: true,
-							items: [
-								{
-									label: "unit",
-									link: "/expressions#unit"
-								},
-								{
-									label: "enumerated",
-									link: "/expressions#enumerated"
-								},
-								{
-									label: "meta",
-									link: "/expressions#meta"
-								},
-								{
-									label: "cast",
-									link: "/expressions#cast"
-								},
-								{
-									label: "parenthetical",
-									link: "/expressions#parenthetical"
-								},
-								{
-									label: "this",
-									link: "/expressions#this"
-								}
-							]
+							label: "unit",
+							link: "/expressions#unit"
+						},
+						{
+							label: "enumerated",
+							link: "/expressions#enumerated"
+						},
+						{
+							label: "meta",
+							link: "/expressions#meta"
+						},
+						{
+							label: "cast",
+							link: "/expressions#cast"
+						},
+						{
+							label: "parenthetical",
+							link: "/expressions#parenthetical"
+						},
+						{
+							label: "this",
+							link: "/expressions#this"
 						}
 					]
 				},
