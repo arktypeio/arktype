@@ -4,11 +4,46 @@ sidebar:
   order: 3
 ---
 
-Native generic syntax is finally available! 🎉
+### Keywords
 
-Here are some examples of how this powerful feature can be used:
+Record is now available as a builtin keyword.
 
-#### Standalone Type Syntax
+```ts
+import { type } from "arktype"
+
+const stringRecord = type("Record<string, string>")
+```
+
+In addition to `Record`, the following generics from TS are now available in ArkType:
+
+- **Pick**
+- **Omit**
+- **Extract**
+- **Exclude**
+
+These can be instantiated in one of three ways:
+
+```ts
+import { type, type Type } from "arktype"
+
+const createBox = <T extends string>(of: type.Any<T>) =>
+	type({
+		box: of
+	})
+
+const boxType = createBox(type("string"))
+//    ^?
+
+// @ts-expect-error
+const badBox = createBox(type("number"))
+
+console.log(boxType({ box: 5 }).toString())
+console.log(boxType({ box: "foo" }))
+```
+
+### Syntax
+
+#### Definition
 
 ```ts
 import { type } from "arktype"
@@ -48,26 +83,7 @@ const types = scope({
 const out = types.bitBox({ box: 0 })
 ```
 
-#### Builtins
-
-Record is now available as a builtin keyword.
-
-```ts
-import { type } from "arktype"
-
-const stringRecord = type("Record<string, string>")
-```
-
-In addition to `Record`, the following generics from TS are now available in ArkType:
-
-- **Pick**
-- **Omit**
-- **Extract**
-- **Exclude**
-
-These can be instantiated in one of three ways:
-
-### Syntactic Definition
+#### Invocation
 
 ```ts
 import { type } from "arktype"
@@ -75,7 +91,7 @@ import { type } from "arktype"
 const one = type("Extract<0 | 1, 1>")
 ```
 
-### Chained Definition
+##### Chained
 
 ```ts
 import { type } from "arktype"
@@ -90,7 +106,7 @@ const user = type({
 const basicUser = user.pick("name", "age")
 ```
 
-### Invoked Definition
+#### Invoked
 
 ```ts
 import { type } from "arktype"
@@ -98,27 +114,7 @@ import { type } from "arktype"
 const unfalse = type.keywords.Exclude("boolean", "false")
 ```
 
-<!-- ### TS (TODO)
-
-```ts
-import { type, type Type } from "arktype"
-
-const createBox = <T extends string>(of: Type<T>) =>
-	type({
-		box: of
-	})
-
-const boxType = createBox(type("string"))
-//    ^?
-
-// @ts-expect-error
-const badBox = createBox(type("number"))
-
-console.log(boxType({ box: 5 }).toString())
-console.log(boxType({ box: "foo" }))
-``` -->
-
-### Generic HKTs
+### HKT
 
 Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible. As a preview, here's what the implementation of `Partial` looks like internally:
 

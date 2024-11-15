@@ -1,0 +1,49 @@
+---
+title: Number
+---
+
+import { Tabs } from "@astrojs/starlight/components"
+import SyntaxTab from "../../components/SyntaxTab.astro"
+
+### Keywords
+
+{/* TODO:DOC */}
+
+### Literals
+
+```ts
+const literals = type({
+	number: "1337"
+})
+```
+
+### Ranges
+
+{/* TODO:DOC */}
+
+### Divisors
+
+Constrain a `number` to a multiple of the specified integer.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const evens = type({
+	key: "number%2"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const evens = type({
+	key: type.number.divisibleBy(2)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>

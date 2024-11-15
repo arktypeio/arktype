@@ -71,36 +71,3 @@ All builtin keywords and modules are available in `type.keywords`.
     </SyntaxTab>
 
 </Tabs>
-
-### this
-
-`this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
-
-```ts
-const fetchGift = async () => null
-// ---cut---
-const disappointingGift = type({ label: "string", "box?": "this" })
-const myGift = disappointingGift.assert(await fetchGift())
-
-// hover me
-const chainable = myGift.box?.box?.label
-```
-
-Unlike its TypeScript counterpart, ArkType's `this` is not limited to interfaces. It can also be used from within a tuple expression.
-
-```ts
-// boxes now expects an array of our gift object
-const disappointingGifts = type({ label: "string", boxes: "this" }, "[]")
-```
-
-Referencing `this` from within a scope will result in a ParseError. For similar behavior within a scoped definition, just reference the alias by name:
-
-```ts
-const types = scope({
-	disappointingGift: {
-		label: "string",
-		// Resolves correctly to the root of the current type
-		"box?": "disappointingGift"
-	}
-}).export()
-```

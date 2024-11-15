@@ -1,5 +1,5 @@
 ---
-title: Objects
+title: Properties
 ---
 
 import { Tabs } from "@astrojs/starlight/components"
@@ -7,7 +7,7 @@ import SyntaxTab from "../../components/SyntaxTab.astro"
 
 Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
 
-### Required Properties
+### Required
 
 <Tabs>
 	<SyntaxTab string>
@@ -44,7 +44,7 @@ const myObject = type({
 
 </Tabs>
 
-### Optional Properties
+### Optional
 
 <Tabs>
 	<SyntaxTab string>
@@ -126,7 +126,7 @@ objectWithOptionalKey.allows({}) // true
 Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
 :::
 
-### Defaultable Properties
+### Defaultable
 
 <Tabs>
 	<SyntaxTab string>
@@ -171,7 +171,7 @@ const myObject = type({
 
 </Tabs>
 
-### Index Signatures
+### Index
 
 <Tabs>
 	<SyntaxTab string>
@@ -188,3 +188,19 @@ const myObject = type({
     </SyntaxTab>
 
 </Tabs>
+
+### Undeclared
+
+{/* TODO:DOC */}
+
+### Merge
+
+{/* TODO:DOC */}
+
+### keyof
+
+{/* TODO:DOC */}
+
+### Get
+
+{/* TODO:DOC */}

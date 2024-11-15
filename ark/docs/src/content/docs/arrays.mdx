@@ -1,13 +1,62 @@
 ---
-title: Tuples
+title: Arrays
 ---
 
 import { Tabs } from "@astrojs/starlight/components"
 import SyntaxTab from "../../components/SyntaxTab.astro"
 
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const arrays = type({
+	key: "string[]"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const arrays = type({
+	key: type.string.array()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const arrays = type({
+	key: [{ name: "string" }, "[]"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const arrays = type({
+	key: type({ name: "string" }, "[]")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Lengths
+
+{/* TODO:DOC */}
+
+### Tuples
+
 Like objects, tuples are structures whose values are nested definitions. Like TypeScript, ArkType supports prefix, optional, variadic, and postfix elements, with the same restrictions about combining them.
 
-### Prefix Elements
+#### Prefix
 
 <Tabs>
 	<SyntaxTab string>
@@ -40,7 +89,7 @@ const myTuple = type([
 
 </Tabs>
 
-### Optional Elements
+#### Optional
 
 Tuples can include any number of optional elements following its prefix elements.
 
@@ -101,7 +150,7 @@ const myTuple = type([
 
 </Tabs>
 
-### Variadic Elements
+#### Variadic
 
 Like in TypeScript, variadic elements allow zero or more consecutive values of a given type and may occur at most once in a tuple.
 
@@ -128,7 +177,7 @@ const myTuple = type([type.string, "...", type.number.array()])
 
 </Tabs>
 
-### Postfix Elements
+#### Postfix
 
 Postfix elements are required elements following a variadic element.
 
