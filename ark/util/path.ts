@@ -71,11 +71,10 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		stringifyAncestors?: readonly string[]
 	} = {}
 
-	constructor(items: array<PropertyKey>) {
+	constructor(...items: array<PropertyKey>) {
 		super()
 		// avoid case where a single number will create empty slots
 		;(this as any).push(...items)
-		Object.freeze(this)
 	}
 
 	stringify(): string {
