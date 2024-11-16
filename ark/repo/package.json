@@ -9,7 +9,8 @@
 		"arktype": "workspace:*",
 		"type-fest": "4.26.1",
 		"typescript": "catalog:",
-		"zod": "3.23.8"
+		"zod": "3.23.8",
+		"@trpc/server": "10.45.2"
 	},
 	"scripts": {
 		"build": "echo No build required!"

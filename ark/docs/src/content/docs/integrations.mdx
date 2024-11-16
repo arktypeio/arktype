@@ -8,7 +8,16 @@ title: Integrations
 
 ### tRPC
 
-{/* TODO:DOC */}
+ArkType can easily be used with tRPC via the `assert` prop:
+
+```ts
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	}).assert
+)
+```
 
 ### react-hook-form
 

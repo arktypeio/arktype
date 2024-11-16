@@ -146,15 +146,12 @@ In the meantime, check out the examples here and use the type hints you get to l
 ArkType can easily be used with tRPC via the `assert` prop:
 
 ```ts
-...
-t.procedure
-  .input(
-    type({
-      name: "string",
-      "age?": "number"
-    }).assert
-  )
-...
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	}).assert
+)
 ```
 
 ## How?

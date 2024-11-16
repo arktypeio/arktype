@@ -111,6 +111,7 @@ export default defineConfig({
 					items: [
 						{
 							label: "properties",
+							collapsed: true,
 							items: [
 								{
 									label: "required",
@@ -253,8 +254,8 @@ export default defineConfig({
 					label: "Types",
 					items: [
 						{
-							label: "usage",
-							link: "/types#usage"
+							label: "intro",
+							link: "/types"
 						},
 						{
 							label: "properties",
@@ -266,6 +267,10 @@ export default defineConfig({
 				{
 					label: "Configuration",
 					items: [
+						{
+							label: "intro",
+							link: "/types"
+						},
 						{
 							label: "errors",
 							link: "/configuration#errors"
@@ -289,8 +294,8 @@ export default defineConfig({
 					badge: "advanced",
 					items: [
 						{
-							label: "syntax",
-							link: "/scopes#syntax"
+							label: "intro",
+							link: "/scopes"
 						},
 						{
 							label: "modules",
@@ -314,6 +319,10 @@ export default defineConfig({
 					label: "Generics",
 					badge: "advanced",
 					items: [
+						{
+							label: "intro",
+							link: "/types"
+						},
 						{
 							label: "keywords",
 							link: "/generics#keywords"
