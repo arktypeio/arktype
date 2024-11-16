@@ -52,16 +52,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/string#keywords"
+									link: "/primitives/string#keywords"
 								},
-								{ label: "literals", link: "/string#literals" },
+								{ label: "literals", link: "/primitives/string#literals" },
 								{
 									label: "patterns",
-									link: "/string#patterns"
+									link: "/primitives/string#patterns"
 								},
 								{
 									label: "lengths",
-									link: "/string#lengths"
+									link: "/primitives/string#lengths"
 								}
 							]
 						},
@@ -71,16 +71,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/number#keywords"
+									link: "/primitives/number#keywords"
 								},
-								{ label: "literals", link: "/number#literals" },
+								{ label: "literals", link: "/primitives/number#literals" },
 								{
 									label: "ranges",
-									link: "/number#ranges"
+									link: "/primitives/number#ranges"
 								},
 								{
 									label: "divisors",
-									link: "/number#divisors"
+									link: "/primitives/number#divisors"
 								}
 							]
 						},
