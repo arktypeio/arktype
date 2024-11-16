@@ -13,6 +13,28 @@ const ogImageUrl = new URL(
 ---
 
 <BuiltinHead {...Astro.props}>
+	<script>
+		// hack to navigate to the corresponding page expanding a sidebar group
+
+		// considered overriding the component but Sidebar.astro is a huge amount
+		// of logic to vendor for a small change
+
+		// would love if there's a prop or more elegant way to do this in the future
+		// and this can be deleted
+		type SideBarGroup = Element & { hasListener?: true }
+
+		const groups: SideBarGroup[] = Array.from(
+			document.querySelectorAll(".group-label")
+		)
+		groups.forEach(group => {
+			if ("hasListener" in group) return
+			group.hasListener = true
+
+			group.addEventListener("click", async () => {
+				window.location.href = `${window.location.origin}/${group.textContent}`
+			})
+		})
+	</script>
 	<slot />
 </BuiltinHead>
 
