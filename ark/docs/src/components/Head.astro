@@ -31,7 +31,7 @@ const ogImageUrl = new URL(
 			group.hasListener = true
 
 			group.addEventListener("click", async () => {
-				window.location.href = `${window.location.origin}/${group.textContent}`
+				window.location.href = `${window.location.origin}/${group.textContent!.trim()}`
 			})
 		})
 	</script>

@@ -369,7 +369,8 @@ export default defineConfig({
 				}
 			],
 			components: {
-				Head: "./src/components/Head.astro"
+				Head: "./src/components/Head.astro",
+				Sidebar: "./src/components/Sidebar.astro"
 			},
 			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],
 			expressiveCode: false,
