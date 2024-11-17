@@ -340,6 +340,7 @@ export default defineConfig({
 				},
 				{
 					label: "Integrations",
+					translations: {},
 					items: [
 						{
 							label: "Standard Schema",

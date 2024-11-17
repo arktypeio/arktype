@@ -1,28 +1,22 @@
 ---
 import type { Props } from "@astrojs/starlight/props"
 import BuiltinSidebar from "@astrojs/starlight/components/Sidebar.astro"
+import { experimental_AstroContainer } from "astro/container"
+
+const container = await experimental_AstroContainer.create()
+const html = await container.renderToString(BuiltinSidebar, Astro)
+
+// hack to navigate to the corresponding page expanding a sidebar group
+// very happy to delete this if there's a better way to do the same thing
+// didn't get a response on the Astro Discord:
+// https://discord.com/channels/830184174198718474/1307440721741086750
+
+const onToggleSrc = `if(!this.open) console.log(this.textContent.trim().split(' ')[0])`
+
+const newHtml = html.replaceAll(
+	/<details (.*?)>/g,
+	(match, p1) => `<details ${p1} onclick="${onToggleSrc}">`
+)
 ---
 
-<BuiltinSidebar {...Astro.props}>
-	<script>
-		// hack to navigate to the corresponding page expanding a sidebar group
-
-		// very happy to delete this if there's a better way to do the same thing
-		// didn't get a response on the Astro Discord:
-		// https://discord.com/channels/830184174198718474/1307440721741086750
-		type SideBarGroup = Element & { hasListener?: true }
-
-		const groups: SideBarGroup[] = Array.from(
-			document.querySelectorAll(".group-label")
-		)
-		groups.forEach(group => {
-			if ("hasListener" in group) return
-			group.hasListener = true
-
-			group.addEventListener("click", async () => {
-				window.location.href = `${window.location.origin}/${group.textContent!.trim().toLowerCase()}`
-			})
-		})
-	</script>
-	<slot />
-</BuiltinSidebar>
+<Fragment set:html={newHtml} />
