@@ -5,7 +5,7 @@ import {
 	type Predicate,
 	type TraversalContext
 } from "@ark/schema"
-import { conflatenateAll, printable } from "@ark/util"
+import { conflatenateAll, getDuplicatesOf, printable } from "@ark/util"
 import type { Out, Type } from "arktype"
 
 import { parseJsonSchema } from "./json.ts"
@@ -138,11 +138,12 @@ const parseRequiredAndOptionalKeys = (
 	const requiredKeys: string[] = []
 	if ("properties" in jsonSchema) {
 		if ("required" in jsonSchema) {
-			if (jsonSchema.required.length !== new Set(jsonSchema.required).size) {
+			const duplicateRequiredKeys = getDuplicatesOf(jsonSchema.required)
+			if (duplicateRequiredKeys.length !== 0) {
 				ctx.reject({
 					path: ["required"],
 					expected: "an array of unique strings",
-					actual: printable(jsonSchema.required)
+					actual: `an array with the following duplicates: ${printable(duplicateRequiredKeys)}`
 				})
 			}
 
