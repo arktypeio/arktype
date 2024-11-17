@@ -1,6 +1,6 @@
 import type { Completion, ErrorMessage, defined } from "@ark/util"
 import type { LimitLiteral } from "../../attributes.ts"
-import type { Scanner } from "../shift/scanner.ts"
+import type { ArkTypeScanner } from "../shift/scanner.ts"
 import type {
 	Comparator,
 	InvertedComparators,
@@ -19,7 +19,7 @@ export type StaticState = {
 	root: unknown
 	branches: BranchState
 	groups: BranchState[]
-	finalizer: Scanner.FinalizingLookahead | ErrorMessage | undefined
+	finalizer: ArkTypeScanner.FinalizingLookahead | ErrorMessage | undefined
 	scanned: string
 	unscanned: string
 }
@@ -252,7 +252,7 @@ export declare namespace state {
 
 	export type finalize<
 		s extends StaticState,
-		finalizer extends Scanner.FinalizingLookahead
+		finalizer extends ArkTypeScanner.FinalizingLookahead
 	> =
 		s["groups"] extends [] ?
 			s["branches"]["leftBound"] extends {} ?

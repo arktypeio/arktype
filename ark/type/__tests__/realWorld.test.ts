@@ -1024,4 +1024,22 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(base.json).equals(identity.json)
 		attest(base.internal.id).equals(identity.internal.id)
 	})
+
+	it("index signature union intersection with default", () => {
+		const t = type({
+			storeA: "Record<string, string>"
+		})
+			.or({
+				storeB: {
+					foo: "Record<string, string>"
+				}
+			})
+			.and({
+				ext: ["string", "=", ".txt"]
+			})
+
+		attest(t.expression).snap(
+			'{ storeA: { [string]: string }, ext?: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext?: string = ".txt" }'
+		)
+	})
 })

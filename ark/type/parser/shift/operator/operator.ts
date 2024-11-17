@@ -1,7 +1,7 @@
-import { isKeyOf, whiteSpaceTokens, type WhiteSpaceToken } from "@ark/util"
+import { isKeyOf, whitespaceChars, type WhitespaceChar } from "@ark/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
-import { Scanner } from "../scanner.ts"
+import { ArkTypeScanner } from "../scanner.ts"
 import {
 	comparatorStartChars,
 	parseBound,
@@ -20,34 +20,36 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 			:	s.error(incompleteArrayTokenMessage)
 		: lookahead === "|" || lookahead === "&" ? s.pushRootToBranch(lookahead)
 		: lookahead === ")" ? s.finalizeGroup()
-		: Scanner.lookaheadIsFinalizing(lookahead, s.scanner.unscanned) ?
+		: ArkTypeScanner.lookaheadIsFinalizing(lookahead, s.scanner.unscanned) ?
 			s.finalize(lookahead)
 		: isKeyOf(lookahead, comparatorStartChars) ? parseBound(s, lookahead)
 		: lookahead === "%" ? parseDivisor(s)
 		: lookahead === "#" ? parseBrand(s)
-		: lookahead in whiteSpaceTokens ? parseOperator(s)
+		: lookahead in whitespaceChars ? parseOperator(s)
 		: s.error(writeUnexpectedCharacterMessage(lookahead))
 	)
 }
 
 export type parseOperator<s extends StaticState, $, args> =
-	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
+	s["unscanned"] extends (
+		ArkTypeScanner.shift<infer lookahead, infer unscanned>
+	) ?
 		lookahead extends "[" ?
-			unscanned extends Scanner.shift<"]", infer nextUnscanned> ?
+			unscanned extends ArkTypeScanner.shift<"]", infer nextUnscanned> ?
 				state.setRoot<s, [s["root"], "[]"], nextUnscanned>
 			:	state.error<incompleteArrayTokenMessage>
 		: lookahead extends "|" | "&" ? state.reduceBranch<s, lookahead, unscanned>
 		: lookahead extends ")" ? state.finalizeGroup<s, unscanned>
-		: Scanner.lookaheadIsFinalizing<lookahead, unscanned> extends true ?
+		: ArkTypeScanner.lookaheadIsFinalizing<lookahead, unscanned> extends true ?
 			state.finalize<
 				state.scanTo<s, unscanned>,
-				lookahead & Scanner.FinalizingLookahead
+				lookahead & ArkTypeScanner.FinalizingLookahead
 			>
 		: lookahead extends ComparatorStartChar ?
 			parseBound<s, lookahead, unscanned, $, args>
 		: lookahead extends "%" ? parseDivisor<s, unscanned>
 		: lookahead extends "#" ? parseBrand<s, unscanned>
-		: lookahead extends WhiteSpaceToken ?
+		: lookahead extends WhitespaceChar ?
 			parseOperator<state.scanTo<s, unscanned>, $, args>
 		:	state.error<writeUnexpectedCharacterMessage<lookahead>>
 	:	state.finalize<s, "">

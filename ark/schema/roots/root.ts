@@ -51,7 +51,10 @@ import {
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { StandardSchema } from "../shared/standardSchema.ts"
+import type {
+	ArkTypeStandardSchemaProps,
+	StandardSchema
+} from "../shared/standardSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -92,21 +95,17 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	get "~standard"(): 1 {
-		return 1
+	get "~standard"(): ArkTypeStandardSchemaProps {
+		return {
+			vendor: "arktype",
+			version: 1,
+			validate: input => {
+				const out = this(input)
+				if (out instanceof ArkErrors) return out
+				return { value: out }
+			}
+		}
 	}
-
-	get "~vendor"(): "arktype" {
-		return "arktype"
-	}
-
-	"~validate"(input: StandardSchema.Input): StandardSchema.Result<unknown> {
-		const out = this(input.value)
-		if (out instanceof ArkErrors) return out
-		return { value: out }
-	}
-
-	declare "~types": StandardSchema.Types<unknown, unknown>
 
 	get optionalMeta(): boolean {
 		return this.cacheGetter(

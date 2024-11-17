@@ -22,7 +22,7 @@ import {
 	getThrownMessage,
 	throwAssertionError
 } from "./assertions.ts"
-import type { AssertionContext } from "./attest.ts"
+import type { AssertionContext, VersionableActual } from "./attest.ts"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -31,6 +31,11 @@ export type ChainableAssertionOptions = {
 
 type AssertionRecord = Record<keyof rootAssertions<any, AssertionKind>, unknown>
 
+export type UnwrapOptions = {
+	versionable?: boolean
+	serialize?: boolean
+}
+
 export class ChainableAssertions implements AssertionRecord {
 	private ctx: AssertionContext
 
@@ -38,22 +43,28 @@ export class ChainableAssertions implements AssertionRecord {
 		this.ctx = ctx
 	}
 
-	private serialize(value: unknown) {
-		return snapshot(value)
-	}
-
-	private get unversionedActual() {
-		if (this.ctx.actual instanceof TypeAssertionMapping) {
-			return this.ctx.actual.fn(
+	private get unversionedActual(): unknown {
+		if (this.versionableActual instanceof TypeAssertionMapping) {
+			return this.versionableActual.fn(
 				this.ctx.typeRelationshipAssertionEntries![0][1],
 				this.ctx
 			)!.actual
 		}
-		return this.ctx.actual
+		return this.versionableActual
 	}
 
-	private get serializedActual() {
-		return this.serialize(this.unversionedActual)
+	private get versionableActual(): VersionableActual {
+		return this.ctx.versionableActual
+	}
+
+	private get serializedActual(): unknown {
+		return snapshot(this.unversionedActual)
+	}
+
+	unwrap(opts?: UnwrapOptions): unknown {
+		const value =
+			opts?.versionable ? this.versionableActual : this.unversionedActual
+		return opts?.serialize ? snapshot(value) : value
 	}
 
 	private snapRequiresUpdate(expectedSerialized: unknown) {
@@ -75,22 +86,25 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	equals(expected: unknown): this {
-		assertEquals(expected, this.ctx.actual, this.ctx)
+		assertEquals(expected, this.versionableActual, this.ctx)
 		return this
 	}
 
 	satisfies(def: unknown): this {
-		assertSatisfies(type.raw(def), this.ctx.actual, this.ctx)
+		assertSatisfies(type.raw(def), this.versionableActual, this.ctx)
 		return this
 	}
 
 	instanceOf(expected: Constructor): this {
-		if (!(this.ctx.actual instanceof expected)) {
+		if (!(this.versionableActual instanceof expected)) {
 			throwAssertionError({
 				stack: this.ctx.assertionStack,
 				message: `Expected an instance of ${expected.name} (was ${
-					typeof this.ctx.actual === "object" && this.ctx.actual !== null ?
-						this.ctx.actual.constructor.name
+					(
+						typeof this.versionableActual === "object" &&
+						this.versionableActual !== null
+					) ?
+						this.versionableActual.constructor.name
 					:	this.serializedActual
 				})`
 			})
@@ -102,7 +116,7 @@ export class ChainableAssertions implements AssertionRecord {
 		// Use variadic args to distinguish undefined being passed explicitly from no args
 		const inline = (...args: unknown[]) => {
 			const snapName = this.ctx.lastSnapName ?? "snap"
-			const expectedSerialized = this.serialize(args[0])
+			const expectedSerialized = snapshot(args[0])
 			if (!args.length || this.ctx.cfg.updateSnapshots) {
 				if (this.snapRequiresUpdate(expectedSerialized)) {
 					const snapshotArgs: SnapshotArgs = {
@@ -157,8 +171,8 @@ export class ChainableAssertions implements AssertionRecord {
 				}
 			}
 			if (this.ctx.allowRegex)
-				assertEqualOrMatching(expected, this.ctx.actual, this.ctx)
-			else assertEquals(expected, this.ctx.actual, this.ctx)
+				assertEqualOrMatching(expected, this.versionableActual, this.ctx)
+			else assertEquals(expected, this.versionableActual, this.ctx)
 
 			return this
 		}
@@ -169,7 +183,7 @@ export class ChainableAssertions implements AssertionRecord {
 
 	get throws(): unknown {
 		const result = callAssertedFunction(this.unversionedActual as Function)
-		this.ctx.actual = getThrownMessage(result, this.ctx)
+		this.ctx.versionableActual = getThrownMessage(result, this.ctx)
 		this.ctx.allowRegex = true
 		this.ctx.defaultExpected = ""
 		return this.immediateOrChained()
@@ -198,7 +212,7 @@ export class ChainableAssertions implements AssertionRecord {
 	get completions(): any {
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
 
-		this.ctx.actual = new TypeAssertionMapping(data => {
+		this.ctx.versionableActual = new TypeAssertionMapping(data => {
 			if (typeof data.completions === "string") {
 				// if the completions were ambiguously defined, e.g. two string
 				// literals with the same value, they are writen as an error
@@ -218,14 +232,14 @@ export class ChainableAssertions implements AssertionRecord {
 		const self = this
 		return {
 			get toString() {
-				self.ctx.actual = new TypeAssertionMapping(data => ({
+				self.ctx.versionableActual = new TypeAssertionMapping(data => ({
 					actual: formatTypeString(data.args[0].type)
 				}))
 				self.ctx.allowRegex = true
 				return self.immediateOrChained()
 			},
 			get errors() {
-				self.ctx.actual = new TypeAssertionMapping(data => ({
+				self.ctx.versionableActual = new TypeAssertionMapping(data => ({
 					actual: data.errors.join("\n")
 				}))
 				self.ctx.allowRegex = true
@@ -311,6 +325,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	satisfies: <def>(def: type.validate<def>) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
+	unwrap: (opts?: UnwrapOptions) => unknown
 }
 
 export type TypeAssertionsRoot = {

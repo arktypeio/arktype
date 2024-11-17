@@ -1,16 +1,20 @@
 import {
 	CastableBase,
 	ReadonlyArray,
+	ReadonlyPath,
+	append,
 	defineProperties,
+	stringifyPath,
+	type array,
 	type propwiseXor,
 	type show
 } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
-import type { StandardSchema } from "./standardSchema.ts"
+import type { StandardFailureResult } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
-import { arkKind, pathToPropString, type TraversalPath } from "./utils.ts"
+import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
@@ -18,7 +22,7 @@ export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
-	path: TraversalPath
+	path: ReadonlyPath
 	data: Prerequisite<code>
 	private nodeConfig: ResolvedArkConfig[code]
 	protected input: ArkErrorContextInput<code>
@@ -35,8 +39,11 @@ export class ArkError<
 			)
 		}
 		this.nodeConfig = ctx.config[this.code] as never
-		this.path = input.path ?? [...ctx.path]
-		if (input.relativePath) this.path.push(...input.relativePath)
+		this.path =
+			input.relativePath ?
+				new ReadonlyPath([...ctx.path, ...input.relativePath])
+			: input.path ? new ReadonlyPath(input.path)
+			: new ReadonlyPath(ctx.path)
 		this.data = "data" in input ? input.data : data
 	}
 
@@ -45,7 +52,7 @@ export class ArkError<
 	}
 
 	get propString(): string {
-		return pathToPropString(this.path)
+		return stringifyPath(this.path)
 	}
 
 	get expected(): string {
@@ -77,7 +84,7 @@ export class ArkError<
 
 export class ArkErrors
 	extends ReadonlyArray<ArkError>
-	implements StandardSchema.Failure
+	implements StandardFailureResult
 {
 	protected ctx: TraversalContext
 
@@ -87,12 +94,27 @@ export class ArkErrors
 	}
 
 	byPath: Record<string, ArkError> = Object.create(null)
+	byAncestorPath: Record<string, ArkError[]> = Object.create(null)
+
 	count = 0
 	private mutable: ArkError[] = this as never
 
 	add(error: ArkError): void {
 		if (this.includes(error)) return
 		this._add(error)
+	}
+
+	affectsPath(path: ReadonlyPath): boolean {
+		if (this.length === 0) return false
+
+		return (
+			// this would occur if there is an existing error at a prefix of path
+			// e.g. the path is ["foo", "bar"] and there is an error at ["foo"]
+			path.stringifyAncestors().some(s => s in this.byPath) ||
+			// this would occur if there is an existing error at a suffix of path
+			// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
+			path.stringify() in this.byAncestorPath
+		)
 	}
 
 	private _add(error: ArkError): void {
@@ -109,17 +131,29 @@ export class ArkErrors
 				this.ctx
 			)
 			const existingIndex = this.indexOf(existing)
-			// If existing is found (which it always should be unless this was externally mutated),
-			// replace it with the new problem intersection. In case it isn't for whatever reason,
-			// just append the intersection.
 			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
 				errorIntersection
+
 			this.byPath[error.propString] = errorIntersection
+			// add the original error here rather than the intersection
+			// since the intersection is reflected by the array of errors at
+			// this path
+			this.addAncestorPaths(error)
 		} else {
 			this.byPath[error.propString] = error
+			this.addAncestorPaths(error)
 			this.mutable.push(error)
 		}
 		this.count++
+	}
+
+	private addAncestorPaths(error: ArkError): void {
+		error.path.stringifyAncestors().forEach(propString => {
+			this.byAncestorPath[propString] = append(
+				this.byAncestorPath[propString],
+				error
+			)
+		})
 	}
 
 	merge(errors: ArkErrors): void {
@@ -127,7 +161,7 @@ export class ArkErrors
 			if (this.includes(e)) return
 			this._add(
 				new ArkError(
-					{ ...e, path: [...e.path, ...this.ctx.path] } as never,
+					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
 					this.ctx
 				)
 			)
@@ -142,7 +176,6 @@ export class ArkErrors
 		return this.toString()
 	}
 
-	/** Reference to this ArkErrors array (for Standard Schema compatibility) */
 	get issues(): this {
 		return this
 	}
@@ -157,7 +190,7 @@ export class ArkErrors
 }
 
 export type ArkErrorsMergeOptions = {
-	relativePath?: TraversalPath
+	relativePath?: array<PropertyKey>
 }
 
 export interface DerivableErrorContext<
@@ -168,14 +201,17 @@ export interface DerivableErrorContext<
 	problem: string
 	message: string
 	data: Prerequisite<code>
-	path: TraversalPath
+	path: array<PropertyKey>
 	propString: string
 }
 
 export type DerivableErrorContextInput<
 	code extends ArkErrorCode = ArkErrorCode
 > = Partial<DerivableErrorContext<code>> &
-	propwiseXor<{ path?: TraversalPath }, { relativePath?: TraversalPath }>
+	propwiseXor<
+		{ path?: array<PropertyKey> },
+		{ relativePath?: array<PropertyKey> }
+	>
 
 export type ArkErrorCode = {
 	[kind in NodeKind]: errorContext<kind> extends null ? never : kind

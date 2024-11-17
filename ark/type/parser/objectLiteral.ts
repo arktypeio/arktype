@@ -12,7 +12,7 @@ import {
 } from "@ark/schema"
 import {
 	append,
-	escapeToken,
+	escapeChar,
 	printable,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
@@ -20,7 +20,7 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
-	type EscapeToken,
+	type EscapeChar,
 	type Key,
 	type listable,
 	type merge,
@@ -218,7 +218,7 @@ export const parseEntry = (
 const parseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol" ? { kind: "required", key }
 	: key.at(-1) === "?" ?
-		key.at(-2) === escapeToken ?
+		key.at(-2) === escapeChar ?
 			{ kind: "required", key: `${key.slice(0, -2)}?` }
 		:	{
 				kind: "optional",
@@ -226,7 +226,7 @@ const parseKey = (key: Key): PreparsedKey =>
 			}
 	: key[0] === "[" && key.at(-1) === "]" ?
 		{ kind: "index", key: key.slice(1, -1) }
-	: key[0] === escapeToken && key[1] === "[" && key.at(-1) === "]" ?
+	: key[0] === escapeChar && key[1] === "[" && key.at(-1) === "]" ?
 		{ kind: "required", key: key.slice(1) }
 	: key === "..." ? { kind: key, key }
 	: key === "+" ? { kind: key, key }
@@ -240,7 +240,7 @@ const parseKey = (key: Key): PreparsedKey =>
 
 type parseKey<k> =
 	k extends `${infer inner}?` ?
-		inner extends `${infer baseName}${EscapeToken}` ?
+		inner extends `${infer baseName}${EscapeChar}` ?
 			PreparsedKey.from<{
 				kind: "required"
 				key: `${baseName}?`
@@ -250,7 +250,7 @@ type parseKey<k> =
 				key: inner
 			}>
 	: k extends MetaKey ? PreparsedKey.from<{ kind: k; key: k }>
-	: k extends `${EscapeToken}${infer escapedMeta extends MetaKey}` ?
+	: k extends `${EscapeChar}${infer escapedMeta extends MetaKey}` ?
 		PreparsedKey.from<{ kind: "required"; key: escapedMeta }>
 	: k extends IndexKey<infer def> ?
 		PreparsedKey.from<{
@@ -259,7 +259,7 @@ type parseKey<k> =
 		}>
 	:	PreparsedKey.from<{
 			kind: "required"
-			key: k extends `${EscapeToken}${infer escapedIndexKey extends IndexKey}` ?
+			key: k extends `${EscapeChar}${infer escapedIndexKey extends IndexKey}` ?
 				escapedIndexKey
 			: k extends Key ? k
 			: `${k & number}`

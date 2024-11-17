@@ -30,7 +30,7 @@ import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator } from "../reduce/shared.ts"
-import type { Scanner } from "../shift/scanner.ts"
+import type { ArkTypeScanner } from "../shift/scanner.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
@@ -182,12 +182,12 @@ export type PrefixExpression<
 > = [operator, operand]
 
 export type PostfixExpression<
-	operator extends Scanner.PostfixToken = Scanner.PostfixToken,
+	operator extends ArkTypeScanner.PostfixToken = ArkTypeScanner.PostfixToken,
 	operand = unknown
 > = readonly [operand, operator]
 
 export type InfixExpression<
-	operator extends Scanner.InfixToken = Scanner.InfixToken,
+	operator extends ArkTypeScanner.InfixToken = ArkTypeScanner.InfixToken,
 	l = unknown,
 	r = unknown
 > = [l, operator, r]

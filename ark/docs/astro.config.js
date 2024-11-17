@@ -168,7 +168,6 @@ export default defineConfig({
 	vite: {
 		resolve: {
 			conditions: ["ark-ts"]
-		},
-		publicDir: "public"
+		}
 	}
 })

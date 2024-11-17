@@ -1,4 +1,4 @@
-import type { array } from "@ark/util"
+import { ReadonlyPath, type array } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
@@ -8,10 +8,10 @@ import {
 	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.ts"
-import { appendPropToPathString, isNode, type TraversalPath } from "./utils.ts"
+import { isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
-	path: TraversalPath
+	path: ReadonlyPath
 	morphs: array<Morph>
 }
 
@@ -21,7 +21,7 @@ export type BranchTraversalContext = {
 }
 
 export class TraversalContext {
-	path: TraversalPath = []
+	path: PropertyKey[] = []
 	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
@@ -42,7 +42,7 @@ export class TraversalContext {
 
 	queueMorphs(morphs: array<Morph>): void {
 		const input: MorphsAtPath = {
-			path: [...this.path],
+			path: new ReadonlyPath(this.path),
 			morphs
 		}
 		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
@@ -75,14 +75,13 @@ export class TraversalContext {
 			for (const { path, morphs } of queuedMorphs) {
 				// even if we already have an error, apply morphs that are not at a path
 				// with errors to capture potential validation errors
-				if (this.pathHasError(path)) continue
-
+				if (this.errors.affectsPath(path)) continue
 				this.applyMorphsAtPath(path, morphs)
 			}
 		}
 	}
 
-	private applyMorphsAtPath(path: TraversalPath, morphs: array<Morph>): void {
+	private applyMorphsAtPath(path: ReadonlyPath, morphs: array<Morph>): void {
 		const key = path.at(-1)
 
 		let parent: any
@@ -94,7 +93,7 @@ export class TraversalContext {
 				parent = parent[path[pathIndex]]
 		}
 
-		this.path = path
+		this.path = [...path]
 
 		for (const morph of morphs) {
 			const morphIsNode = isNode(morph)
@@ -146,19 +145,6 @@ export class TraversalContext {
 		return this.currentErrorCount !== 0
 	}
 
-	pathHasError(path: TraversalPath): boolean {
-		if (!this.hasError()) return false
-
-		let partialPropString: string = ""
-		// this.errors.byPath is null prototyped so indexing by string is safe
-		if (this.errors.byPath[partialPropString]) return true
-		for (let i = 0; i < path.length; i++) {
-			partialPropString = appendPropToPathString(partialPropString, path[i])
-			if (this.errors.byPath[partialPropString]) return true
-		}
-		return false
-	}
-
 	get failFast(): boolean {
 		return this.branches.length !== 0
 	}
@@ -208,6 +194,20 @@ export class TraversalContext {
 	popBranch(): BranchTraversalContext {
 		return this.branches.pop()!
 	}
+}
+
+export const traverseKey = <result>(
+	key: PropertyKey,
+	fn: () => result,
+	// ctx will be undefined if this node isn't context-dependent
+	ctx: TraversalContext | undefined
+): result => {
+	if (!ctx) return fn()
+
+	ctx.path.push(key)
+	const result = fn()
+	ctx.path.pop()
+	return result
 }
 
 export type TraversalMethodsByKind<input = unknown> = {

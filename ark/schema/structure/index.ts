@@ -23,7 +23,11 @@ import {
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import {
+	traverseKey,
+	type TraverseAllows,
+	type TraverseApply
+} from "../shared/traversal.ts"
 
 export declare namespace Index {
 	export type KeyKind = Exclude<RootKind, "unit">
@@ -121,11 +125,11 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).every(entry => {
 			if (this.signature.traverseAllows(entry[0], ctx)) {
-				// ctx will be undefined if this node isn't context-dependent
-				ctx?.path.push(entry[0])
-				const allowed = this.value.traverseAllows(entry[1], ctx)
-				ctx?.path.pop()
-				return allowed
+				return traverseKey(
+					entry[0],
+					() => this.value.traverseAllows(entry[1], ctx),
+					ctx
+				)
 			}
 			return true
 		})
@@ -133,9 +137,11 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).forEach(entry => {
 			if (this.signature.traverseAllows(entry[0], ctx)) {
-				ctx.path.push(entry[0])
-				this.value.traverseApply(entry[1], ctx)
-				ctx.path.pop()
+				traverseKey(
+					entry[0],
+					() => this.value.traverseApply(entry[1], ctx),
+					ctx
+				)
 			}
 		})
 

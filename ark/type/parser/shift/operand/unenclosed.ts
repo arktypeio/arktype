@@ -26,7 +26,7 @@ import { writePrefixedPrivateReferenceMessage } from "../../ast/validate.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
-import type { Scanner } from "../scanner.ts"
+import type { ArkTypeScanner } from "../scanner.ts"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgCountMessage,
@@ -40,8 +40,8 @@ export const parseUnenclosed = (s: DynamicState): void => {
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =
-	Scanner.shiftUntilNextTerminator<s["unscanned"]> extends (
-		Scanner.shiftResult<infer token, infer unscanned>
+	ArkTypeScanner.shiftUntilNextTerminator<s["unscanned"]> extends (
+		ArkTypeScanner.shiftResult<infer token, infer unscanned>
 	) ?
 		tryResolve<s, unscanned, token, $, args> extends state.from<infer s> ?
 			s
@@ -84,7 +84,7 @@ export type parseGenericInstantiation<
 	args
 > =
 	// skip whitepsace to allow instantiations like `Partial    <T>`
-	Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}` ?
+	ArkTypeScanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}` ?
 		parseGenericArgs<name, g, unscanned, $, args> extends infer result ?
 			result extends ParsedArgs<infer argAsts, infer nextUnscanned> ?
 				state.setRoot<s, GenericInstantiationAst<g, argAsts>, nextUnscanned>
@@ -231,9 +231,11 @@ export type unresolvableState<
 	args,
 	submodulePath extends string[]
 > =
-	[token, s["unscanned"]] extends ["", Scanner.shift<"#", infer unscanned>] ?
-		Scanner.shiftUntilNextTerminator<unscanned> extends (
-			Scanner.shiftResult<infer name, string>
+	[token, s["unscanned"]] extends (
+		["", ArkTypeScanner.shift<"#", infer unscanned>]
+	) ?
+		ArkTypeScanner.shiftUntilNextTerminator<unscanned> extends (
+			ArkTypeScanner.shiftResult<infer name, string>
 		) ?
 			state.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never

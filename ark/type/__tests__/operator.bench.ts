@@ -77,22 +77,22 @@ bench("group-deep", () => type("(0|(1|(2|(3|(4|5)[])[])[])[])[]")).types([
 	"instantiations"
 ])
 
-bench("bound-single", () => type("string>5")).types([1673, "instantiations"])
+bench("bound-single", () => type("string>5")).types([1679, "instantiations"])
 
 bench("bound-double", () => type("-7<=string.integer<99")).types([
-	2627,
+	2642,
 	"instantiations"
 ])
 
-bench("divisor", () => type("number%5")).types([1245, "instantiations"])
+bench("divisor", () => type("number%5")).types([1254, "instantiations"])
 
 bench("filter-tuple", () => type(["boolean", ":", b => b])).types([
-	1444,
+	1432,
 	"instantiations"
 ])
 
 bench("filter-chain", () => type("boolean").narrow(b => b)).types([
-	1003,
+	1015,
 	"instantiations"
 ])
 
