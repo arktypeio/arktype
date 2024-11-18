@@ -6,12 +6,10 @@ import { experimental_AstroContainer } from "astro/container"
 const container = await experimental_AstroContainer.create()
 const html = await container.renderToString(BuiltinSidebar, Astro)
 
-// hack to navigate to the corresponding page expanding a sidebar group
-// very happy to delete this if there's a better way to do the same thing
-// didn't get a response on the Astro Discord:
-// https://discord.com/channels/830184174198718474/1307440721741086750
-
-const onToggleSrc = `if(!this.open) console.log(this.textContent.trim().split(' ')[0])`
+const onToggleSrc = `if(!this.open) {
+const groupName = this.textContent.trim().split(' ')[0].toLowerCase()
+window.location.href = window.location.origin + '/' + groupName
+}`.replaceAll("\n", ";")
 
 const newHtml = html.replaceAll(
 	/<details (.*?)>/g,
