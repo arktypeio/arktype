@@ -9,7 +9,9 @@ import { shikiConfig } from "./src/components/shiki.config.js"
 export default defineConfig({
 	site: "https://arktype.io",
 	redirects: {
-		"/discord": "https://discord.gg/xEzdc3fJQC"
+		"/discord": "https://discord.gg/xEzdc3fJQC",
+		"/primitives/string": "/string",
+		"/primitives/number": "/number"
 	},
 	// cannot configure out dir to out to match other packges since dist is hard
 	// coded into: https://github.com/withastro/action/blob/main/action.yml
@@ -52,16 +54,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/primitives/string#keywords"
+									link: "/string#keywords"
 								},
-								{ label: "literals", link: "/primitives/string#literals" },
+								{ label: "literals", link: "/string#literals" },
 								{
 									label: "patterns",
-									link: "/primitives/string#patterns"
+									link: "/string#patterns"
 								},
 								{
 									label: "lengths",
-									link: "/primitives/string#lengths"
+									link: "/string#lengths"
 								}
 							]
 						},
@@ -71,16 +73,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/primitives/number#keywords"
+									link: "/number#keywords"
 								},
-								{ label: "literals", link: "/primitives/number#literals" },
+								{ label: "literals", link: "/number#literals" },
 								{
 									label: "ranges",
-									link: "/primitives/number#ranges"
+									link: "/number#ranges"
 								},
 								{
 									label: "divisors",
-									link: "/primitives/number#divisors"
+									link: "/number#divisors"
 								}
 							]
 						},
@@ -150,29 +152,27 @@ export default defineConfig({
 						{
 							label: "arrays",
 							collapsed: true,
+							items: [{ label: "lengths", link: "/arrays#lengths" }]
+						},
+						{
+							label: "tuples",
+							collapsed: true,
 							items: [
-								{ label: "lengths", link: "/arrays#lengths" },
 								{
-									label: "tuples",
-									collapsed: true,
-									items: [
-										{
-											label: "prefix",
-											link: "/arrays#prefix"
-										},
-										{
-											label: "optional",
-											link: "/arrays#optional"
-										},
-										{
-											label: "variadic",
-											link: "/arrays#variadic"
-										},
-										{
-											label: "postfix",
-											link: "/arrays#postfix"
-										}
-									]
+									label: "prefix",
+									link: "/arrays#prefix"
+								},
+								{
+									label: "optional",
+									link: "/arrays#optional"
+								},
+								{
+									label: "variadic",
+									link: "/arrays#variadic"
+								},
+								{
+									label: "postfix",
+									link: "/arrays#postfix"
 								}
 							]
 						},
@@ -187,17 +187,7 @@ export default defineConfig({
 						},
 						{
 							label: "instanceof",
-							collapsed: true,
-							items: [
-								{
-									label: "expression",
-									link: "/instanceof#expression"
-								},
-								{
-									label: "keywords",
-									link: "/instanceof#keywords"
-								}
-							]
+							link: "/instanceof"
 						}
 					]
 				},
