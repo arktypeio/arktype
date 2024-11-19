@@ -107,11 +107,94 @@ const literals = type({
 
 ## symbol
 
-{/* TODO:DOC */}
+To allow any `symbol` value, use the `"symbol"` keyword.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const symbols = type({
+	key: "symbol"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbols = type({
+	key: type.symbol
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+To reference a specific symbol in your definition, use a [unit expression](/expressions#unit).
+
+No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/objects#properties).
 
 ## boolean
 
-{/* TODO:DOC */}
+To allow `true` or `false`, use the `"boolean"` keyword.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const booleans = type({
+	key: "boolean"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const booleans = type({
+	key: type.boolean
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+##### literals
+
+To require a specific boolean value, use the corresponding literal.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const booleans = type({
+	a: "true",
+	b: "false",
+	// equivalent to the "boolean" keyword
+	c: "true | false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const booleans = type({
+	a: type.keywords.true,
+	b: type.keywords.false,
+	// equivalent to the "boolean" keyword
+	c: type.keywords.true.or(type.keywords.false)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 ## null
 
