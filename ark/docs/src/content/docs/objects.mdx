@@ -50,8 +50,6 @@ const myObject = type({
 <a name="properties/optional" />
 ##### optional
 
-{/* TODO:DOC mention EOPT */}
-
 <Tabs>
 	<SyntaxTab string>
 
@@ -106,6 +104,29 @@ const myObject = type({
     </SyntaxTab>
 
 </Tabs>
+
+:::caution[Optional properties cannot be present with the value `undefined` unless specified]
+
+In TypeScript, there is a setting called `exactOptionalPropertyTypes` that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
+
+ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. If you're interested in a builtin configuration option for this setting, we'd love feedback or contributions on [this issue](https://github.com/arktypeio/arktype/issues/1191).
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const myObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = myObj({})
+
+// Error: key must be a number (was undefined)
+const errorResult = myObj({ key: undefined })
+```
+
+</details>
 
 :::caution[Optional and default only work within objects!]
 Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.

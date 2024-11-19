@@ -163,6 +163,7 @@ const booleans = type({
 
 </Tabs>
 
+<a name="primitives/boolean#literals" />
 ##### literals
 
 To require a specific boolean value, use the corresponding literal.
@@ -198,8 +199,77 @@ const booleans = type({
 
 ## null
 
-{/* TODO:DOC */}
+The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/expressions#union).
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const nullable = type({
+	requiredKey: "number | null"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const nullable = type({
+	requiredKey: type.number.or(type.null)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 ## undefined
 
-{/* TODO:DOC */}
+The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/expressions#union).
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObj = type({
+	requiredKey: "number | undefined"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myObj = type({
+	requiredKey: type.number.or(type.undefined)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+:::caution[Allowing `undefined` as a value does not make the key optional!]
+
+In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
+
+The same is true in ArkType.
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const myObj = type({
+	key: "number | undefined"
+})
+
+// valid data
+const validResult = myObj({ key: undefined })
+
+// Error: name must be a number or undefined (was missing)
+const errorResult = myObj({})
+```
+
+</details>
