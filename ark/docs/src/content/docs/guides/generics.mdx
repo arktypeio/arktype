@@ -1,0 +1,96 @@
+---
+title: Dynamic types
+sidebar:
+  order: 4
+---
+
+Ever wanted to create a function that takes a schema and return another schema ?  
+Arktype call them `generics`, and they are exactly what you think they are.
+
+## Single argument
+
+Let's start simple with a dynamic `payload` property :
+```ts
+import { type } from "arktype"
+
+const eventType = type('<Payload>', { 
+	type: 'string',
+	createdAt: 'number.epoch',
+	payload: 'Payload'
+})
+```
+
+Now you can use `eventType` to create a new type :
+
+```ts
+import { type } from "arktype"
+
+const eventType = type('<Payload>', { 
+	type: 'string',
+	createdAt: 'number.epoch',
+	payload: 'Payload'
+})
+
+// ---cut-before---
+const orderCreatedEvent = eventType({
+	orderId: 'string',
+	numberOfItems: 'number > 0'
+})
+```
+
+You can also add a constraint, just you like you would do it in TypeScript with `<Payload extends Record<string, unknown>>`.
+
+## Multiple arguments
+If you want to have more parameters, you need a new syntax :
+
+```ts
+import { generic } from "arktype"
+
+const eventType = generic(['Type', 'string'], 'Payload')({
+	type: 'Type',
+	createdAt: 'number.epoch',
+	payload: 'Payload'
+});
+```
+
+First thing to notice, there is no bracket using this syntax.  
+Second, if you want to add a constraint to your generic, you need to pass a tuple.  
+Here, `Type` must extends `string`, and because `Payload` is given as is, there is no constraint on it this time.
+
+## Going further
+
+Perhaps you have noticed that the construction of the dynamic type is done in two steps.
+
+```ts
+import { generic } from "arktype"
+
+// We create a function that will accept a type that have access to the generic arguments.
+const genericParser = generic(['Type', 'string'], 'Payload');
+
+// We create a function that will receive the arguments and return a type.
+const eventType = genericParser({
+	type: 'Type',
+	createdAt: 'number.epoch',
+	payload: 'Payload'
+});
+```
+
+The argument given to `genericParser` is, itself, a type definition.  
+This means you can use all available syntaxes to create your dynamic type with generics.  
+For example, if you want to merge types, you can do it :
+
+```ts
+import { generic, type } from "arktype"
+
+const genericParser = generic(['CreatedBy', 'string'], 'Schema');
+
+// ---cut-before---
+const audit = type({
+	createdBy: 'string',
+	createdAt: 'number.epoch'
+})
+
+const withAudit = type('<Schema>', [audit, '&', 'Schema']);
+
+const bookWithAudit = withAudit({ title: 'string' });
+```

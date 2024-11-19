@@ -1,0 +1,76 @@
+---
+title: Write your own literal type
+sidebar:
+  order: 3
+---
+
+Do you want to write types like `type('UserId[]')` ?   
+Arktype offers the concept of `Scope`, and they are for you.
+
+## Introduction
+
+When you create a type with `type('string')`, `string` is actually the name of a type in something called a `Scope`.  
+The `type` object uses the default scope, so you can use all built-in types immediately.
+
+```ts
+import type { PredicateCast } from "@ark/schema" 
+import { scope, type } from "arktype"
+
+type UserId = `user__${string}`;
+
+const isUserId: PredicateCast<string, UserId> = (v, ctx): v is UserId => {
+	if (v.startsWith('user__')) {
+		return true
+	}
+
+	return ctx.mustBe('a UserId')
+}
+
+// ---cut-before---
+const userScope = scope({
+	UserId: type('string').satisfying(isUserId),
+	memberships: { '[UserId]': { joinedAt: 'number.epoch' }}
+});
+```
+
+You may have discovered a new syntax to define records or object with index signature.  
+We can't use `type.Record` when using a type defined in the very scope we are creating.
+
+By using the new syntax, we were able to use the type `UserId` defined in the same scope.
+
+## Building around scopes
+
+Once you have defined a scope, its type are tied to it.  
+But you probably want to use them in other places. To do that, export them :
+```ts
+import { PredicateCast } from "@ark/schema" 
+import { scope, type } from "arktype"
+
+type UserId = `user__${string}`;
+
+const isUserId: PredicateCast<string, UserId> = (v, ctx): v is UserId => {
+	if (v.startsWith('user__')) {
+		return true
+	}
+
+	return ctx.mustBe('a UserId')
+}
+
+const userScope = scope({
+	UserId: type('string').satisfying(isUserId),
+	memberships: { '[UserId]': { joinedAt: 'number.epoch' }}
+});
+
+declare const data: unknown;
+
+// ---cut-before---
+export const userTypes = userScope.export();
+
+// Building another scope
+const teamScope = scope({
+	members: userTypes.UserId.array()
+})
+
+// ...or validating some data
+const memberships = userTypes.memberships.assert(data);
+```

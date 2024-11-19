@@ -1,0 +1,166 @@
+---
+title: The basics
+sidebar:
+  order: 1
+---
+
+## Primitives & validation
+
+The `type` object is the entrypoint for your validation schemas.
+Let's start with a very simple type :
+
+```ts
+import { type } from "arktype"
+
+const someString = type('string')
+```
+
+`type` accepts a variety of values, including `string`, `number`, `symbol`, actual RegEx or literals like `"foobar"`.  Maybe you have noticed that our literal string is wrapped into double quoted. That is because Arktype interpret strings the same way TypeScript interpret types.
+
+Let's validate some data !
+
+```ts
+import { type } from "arktype"
+const someString = type('string')
+
+// ---cut-before---
+const valid = someString('Hello 👋') // ✅ - Hello 👋
+const invalid = someString(1)        // ❌ - ArkErrors
+
+// The following will throw if the data is invalid, instead of returning ArkErrors.
+const str = someString.assert('kaboom?')
+```
+
+When a value doesn't successfully pass the validation, an instance of ArkErrors is returned instead of the value.  
+More on errors later.
+
+## Unions & intersections
+
+There are several ways to create a union or an intersection with Arktype.  
+We'll show case unions, but you can use `&` and `.and()` to create intersections.
+
+```ts
+import { type } from "arktype"
+
+const schema = type('string');
+const schema2 = type('number');
+
+// ---cut-before---
+const method1 = type('string | number')
+const method2 = type('string').or('number')
+const method3 = schema.or(schema2)
+```
+
+Notice that you don't have to pass an instance of `type` to `.or()`, the argument is already interpreted as such.
+If you want to create a larger union, you can use nested tuples :
+
+```ts
+// @errors: 2304
+import { type } from "arktype"
+
+const schema1 = type({ foo: 'string' });
+const schema2 = type({ bar: 'string' });
+const schema3 = type({ bazz: 'string' });
+const schema4 = type({ yolo: '"Hell yeah!"'});
+// ---cut-before---
+
+const method4 = type([
+	schema1, '|', [
+	schema2, '|', [
+	schema3, '|', schema4
+]]])
+```
+
+Because `type` accepts a tuple as argument, and because each element of the tuple is interpreted as an instance of `type`, you can use nested tuples to create more complex types in one go.
+
+## Objects
+
+Creating an object with Arktype is very simple :
+
+```ts
+import { type } from "arktype"
+
+// ---cut-before---
+const userSchema = type({
+	username: 'string',
+	'birthdate?': 'string',           // We make the property as optional with "?" 
+	'connectionCount?': 'number = 1', // We set the default value to 1 
+})
+```
+
+Again, every value is interpreted as an instance of `type`, so you don't need to repeat yourself.
+
+:::note
+The optional marker only allow the property to be missing, not to be `undefined`.  
+To allow both, use `undefined | string?`.
+:::
+
+### Records
+
+If you want to create records, `type` has a utility property that can help you with that :
+
+```ts
+import { type } from "arktype"
+
+// ---cut-before---
+const teamSchema = type({
+	name: 'string',
+	memberships: type.Record(
+		/user__[a-z0-9]/,
+		{ jointedAt: 'number', leftAt: 'number?' }
+	)
+})
+```
+
+### Merging schemas
+
+Quite often, the data you expect will share some properties with other schemas.
+Instead of repeating yourself, you can re-use a schema in others. Hover `orderReceivedEventSchema` to discover the merged type.
+
+```ts
+import { type } from "arktype"
+
+// ---cut-before---
+const baseEventSchema = type({
+	type: '"orderReceived" | "orderAccepted"',
+	createdBy: 'string',
+	createdAt: 'number',
+})
+
+const orderReceivedEventSchema = baseEventSchema.merge({
+	type: '"orderReceived"',
+	payload: {
+		orderId: 'string',
+	}
+})
+```
+
+As you can see by hovering `orderReceivedEventSchema`, the overlapping property defined in the merged object overwrites the one of the base object.
+
+## Arrays & tuples
+
+You can create an array in several ways :
+
+```ts
+import { type } from "arktype"
+
+// ---cut-before---
+const schema = type('string[]')
+const schema2 = type('string').array()
+const schema3 = type.Array('string')
+```
+
+Creating tuples is not more difficult and follow the same rules we've described before :
+
+```ts
+import { type } from "arktype"
+
+const userSchema = type({
+	username: 'string'
+})
+
+// ---cut-before---
+const schema = type(['string', 'number'])
+const schema3 = type(["string", userSchema])
+const schema2 = type(["string", "...", "number[]"])
+```
