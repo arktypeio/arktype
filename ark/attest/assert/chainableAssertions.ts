@@ -155,7 +155,10 @@ export class ChainableAssertions implements AssertionRecord {
 
 			return this
 		}
-		return Object.assign(inline, { toFile })
+		return Object.assign(inline, {
+			toFile,
+			unwrap: this.unwrap.bind(this)
+		})
 	}
 
 	private immediateOrChained() {
@@ -314,18 +317,26 @@ type snapProperty<expected, kind extends AssertionKind> = {
 		id: string,
 		options?: ExternalSnapshotOptions
 	) => nextAssertions<kind>
+	unwrap: Unwrapper<expected>
 }
+
+export type Unwrapper<expected = unknown> = (opts?: UnwrapOptions) => expected
 
 export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	snap: snapProperty<expected, kind>
 	equals: (value: expected) => nextAssertions<kind>
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
-	completions: (value?: Completions) => void
+	completions: CompletionsSnap
 	satisfies: <def>(def: type.validate<def>) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
-	unwrap: (opts?: UnwrapOptions) => unknown
+	unwrap: Unwrapper<expected>
+}
+
+export interface CompletionsSnap {
+	(value?: Completions): void
+	unwrap: Unwrapper<Completions>
 }
 
 export type TypeAssertionsRoot = {
@@ -335,7 +346,7 @@ export type TypeAssertionsRoot = {
 export type TypeAssertionProps = {
 	toString: valueFromTypeAssertion<string | RegExp>
 	errors: valueFromTypeAssertion<string | RegExp, string>
-	completions: (value?: Completions) => void
+	completions: CompletionsSnap
 }
 
 export type ExternalSnapshotOptions = {

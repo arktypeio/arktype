@@ -51,10 +51,7 @@ import {
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type {
-	ArkTypeStandardSchemaProps,
-	StandardSchema
-} from "../shared/standardSchema.ts"
+import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -75,7 +72,7 @@ export abstract class BaseRoot<
 		out d extends InternalRootDeclaration = InternalRootDeclaration
 	>
 	extends BaseNode<d>
-	implements StandardSchema<unknown, unknown>
+	implements StandardSchemaV1
 {
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
@@ -95,7 +92,7 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	get "~standard"(): ArkTypeStandardSchemaProps {
+	get "~standard"(): StandardSchemaV1.ArkTypeProps {
 		return {
 			vendor: "arktype",
 			version: 1,

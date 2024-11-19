@@ -41,25 +41,25 @@ import { uuid } from "./uuid.ts"
 
 export const string = arkModule({
 	root: intrinsic.string,
-	numeric,
-	integer,
 	alpha,
 	alphanumeric,
 	base64,
-	digits,
-	semver,
-	ip,
+	capitalize,
 	creditCard,
+	date: stringDate,
+	digits,
 	email,
-	uuid,
-	url,
+	integer,
+	ip,
 	json,
-	trim,
-	upper,
 	lower,
 	normalize,
-	capitalize,
-	date: stringDate
+	numeric,
+	semver,
+	trim,
+	upper,
+	url,
+	uuid
 })
 
 export type Matching<rule> = {
@@ -121,22 +121,22 @@ export declare namespace string {
 		alpha: alpha
 		alphanumeric: alphanumeric
 		base64: base64.submodule
-		digits: digits
-		numeric: stringNumeric.submodule
-		integer: stringInteger.submodule
+		capitalize: capitalize.submodule
 		creditCard: creditCard
+		date: stringDate.submodule
+		digits: digits
 		email: email
-		uuid: uuid.submodule
-		semver: semver
+		integer: stringInteger.submodule
 		ip: ip.submodule
 		json: stringJson.submodule
-		date: stringDate.submodule
-		url: url.submodule
-		trim: trim.submodule
-		normalize: normalize.submodule
-		capitalize: capitalize.submodule
 		lower: lower.submodule
+		normalize: normalize.submodule
+		numeric: stringNumeric.submodule
+		semver: semver
+		trim: trim.submodule
 		upper: upper.submodule
+		url: url.submodule
+		uuid: uuid.submodule
 	}
 
 	export type branded<rule> = brand<string, Nominal<rule>>

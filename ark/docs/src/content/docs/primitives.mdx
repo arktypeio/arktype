@@ -1,0 +1,300 @@
+---
+title: Primitives
+---
+
+import { Tabs } from "@astrojs/starlight/components"
+import SyntaxTab from "../../components/SyntaxTab.astro"
+
+## string
+
+<a name="string/keywords" />
+##### keywords
+
+🚧 Coming soon ™️🚧
+
+<a name="string/literals" />
+##### literals
+
+```ts
+const literals = type({
+	singleQuoted: "'typescript'",
+	doubleQuoted: '"arktype"'
+})
+```
+
+<a name="string/patterns" />
+##### patterns
+
+Regex literals specify an unanchored regular expression that an input string must match.
+
+They can either be string-embedded or refer directly to a `RegExp` instance.
+
+```ts
+const literals = type({
+	stringEmbedded: "/^a.*z$/",
+	regexLiteral: /^a.*z$/
+})
+```
+
+<a name="string/lengths" />
+##### lengths
+
+🚧 Coming soon ™️🚧
+
+## number
+
+<a name="number/keywords" />
+##### keywords
+
+🚧 Coming soon ™️🚧
+
+<a name="number/literals" />
+##### literals
+
+```ts
+const literals = type({
+	number: "1337"
+})
+```
+
+<a name="number/ranges" />
+##### ranges
+
+🚧 Coming soon ™️🚧
+
+<a name="number/divisors" />
+##### divisors
+
+Constrain a `number` to a multiple of the specified integer.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const evens = type({
+	key: "number % 2"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const evens = type({
+	key: type.number.divisibleBy(2)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+## bigint
+
+To allow any `bigint` value, use the `"bigint"` keyword.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const bigints = type({
+	foo: "bigint"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbols = type({
+	foo: type.bigint
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="bigint/literals" />
+##### literals
+
+To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/primitives#number/literals) to make it a `bigint`.
+
+```ts
+const literals = type({
+	bigint: "1337n"
+})
+```
+
+You may also use a [unit expression](/expressions#unit) to define `bigint` literals.
+
+## symbol
+
+To allow any `symbol` value, use the `"symbol"` keyword.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const symbols = type({
+	key: "symbol"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbols = type({
+	key: type.symbol
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+To reference a specific symbol in your definition, use a [unit expression](/expressions#unit).
+
+No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/objects#properties).
+
+## boolean
+
+To allow `true` or `false`, use the `"boolean"` keyword.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const booleans = type({
+	key: "boolean"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const booleans = type({
+	key: type.boolean
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="primitives/boolean#literals" />
+##### literals
+
+To require a specific boolean value, use the corresponding literal.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const booleans = type({
+	a: "true",
+	b: "false",
+	// equivalent to the "boolean" keyword
+	c: "true | false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const booleans = type({
+	a: type.keywords.true,
+	b: type.keywords.false,
+	// equivalent to the "boolean" keyword
+	c: type.keywords.true.or(type.keywords.false)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+## null
+
+The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/expressions#union).
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const nullable = type({
+	requiredKey: "number | null"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const nullable = type({
+	requiredKey: type.number.or(type.null)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+## undefined
+
+The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/expressions#union).
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObj = type({
+	requiredKey: "number | undefined"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myObj = type({
+	requiredKey: type.number.or(type.undefined)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+:::caution[Allowing `undefined` as a value does not make the key optional!]
+
+In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
+
+The same is true in ArkType.
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const myObj = type({
+	key: "number | undefined"
+})
+
+// valid data
+const validResult = myObj({ key: undefined })
+
+// Error: name must be a number or undefined (was missing)
+const errorResult = myObj({})
+```
+
+</details>

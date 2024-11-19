@@ -168,6 +168,10 @@ h1 {
 	font-weight: 400;
 }
 
+h2 {
+	color: var(--sl-color-accent-high) !important;
+}
+
 header * {
 	/* Ensure navbar items are in front of boat animation but slightly transparent */
 	z-index: 12;

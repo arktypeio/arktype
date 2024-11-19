@@ -1,6 +1,5 @@
 import type {
 	ArkErrors,
-	ArkTypeStandardSchemaProps,
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
@@ -8,6 +7,7 @@ import type {
 	Morph,
 	Predicate,
 	PredicateCast,
+	StandardSchemaV1,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -43,10 +43,7 @@ import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<
-		(data: unknown) => distill.Out<t> | ArkErrors,
-		ArkTypeStandardSchemaProps
-	> {
+	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	[inferred]: t
 
 	//   The top-level generic parameter accepted by the `Type`. Potentially
@@ -285,7 +282,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $>
 
 	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
-	"~standard": ArkTypeStandardSchemaProps<this["inferIn"], this["inferOut"]>
+	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
