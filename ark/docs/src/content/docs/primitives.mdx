@@ -10,7 +10,7 @@ import SyntaxTab from "../../components/SyntaxTab.astro"
 <a name="string/keywords" />
 ##### keywords
 
-{/* TODO:DOC */}
+🚧 Coming soon ™️🚧
 
 <a name="string/literals" />
 ##### literals
@@ -39,14 +39,14 @@ const literals = type({
 <a name="string/lengths" />
 ##### lengths
 
-{/* TODO:DOC */}
+🚧 Coming soon ™️🚧
 
 ## number
 
 <a name="number/keywords" />
 ##### keywords
 
-{/* TODO:DOC */}
+🚧 Coming soon ™️🚧
 
 <a name="number/literals" />
 ##### literals
@@ -60,7 +60,7 @@ const literals = type({
 <a name="number/ranges" />
 ##### ranges
 
-{/* TODO:DOC */}
+🚧 Coming soon ™️🚧
 
 <a name="number/divisors" />
 ##### divisors
@@ -72,7 +72,7 @@ Constrain a `number` to a multiple of the specified integer.
 
 ```ts
 const evens = type({
-	key: "number%2"
+	key: "number % 2"
 })
 ```
 
@@ -92,18 +92,43 @@ const evens = type({
 
 ## bigint
 
-```ts
+To allow any `bigint` value, use the `"bigint"` keyword.
 
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const bigints = type({
+	foo: "bigint"
+})
 ```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbols = type({
+	foo: type.bigint
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 <a name="bigint/literals" />
 ##### literals
+
+To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/primitives#number/literals) to make it a `bigint`.
 
 ```ts
 const literals = type({
 	bigint: "1337n"
 })
 ```
+
+You may also use a [unit expression](/expressions#unit) to define `bigint` literals.
 
 ## symbol
 
