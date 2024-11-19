@@ -2,11 +2,102 @@
 title: Primitives
 ---
 
-### bigint
+import { Tabs } from "@astrojs/starlight/components"
+import SyntaxTab from "../../components/SyntaxTab.astro"
+
+## string
+
+<a name="string/keywords" />
+##### keywords
 
 {/* TODO:DOC */}
 
-#### Literals
+<a name="string/literals" />
+##### literals
+
+```ts
+const literals = type({
+	singleQuoted: "'typescript'",
+	doubleQuoted: '"arktype"'
+})
+```
+
+<a name="string/patterns" />
+##### patterns
+
+Regex literals specify an unanchored regular expression that an input string must match.
+
+They can either be string-embedded or refer directly to a `RegExp` instance.
+
+```ts
+const literals = type({
+	stringEmbedded: "/^a.*z$/",
+	regexLiteral: /^a.*z$/
+})
+```
+
+<a name="string/lengths" />
+##### lengths
+
+{/* TODO:DOC */}
+
+## number
+
+<a name="number/keywords" />
+##### keywords
+
+{/* TODO:DOC */}
+
+<a name="number/literals" />
+##### literals
+
+```ts
+const literals = type({
+	number: "1337"
+})
+```
+
+<a name="number/ranges" />
+##### ranges
+
+{/* TODO:DOC */}
+
+<a name="number/divisors" />
+##### divisors
+
+Constrain a `number` to a multiple of the specified integer.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const evens = type({
+	key: "number%2"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const evens = type({
+	key: type.number.divisibleBy(2)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+## bigint
+
+```ts
+
+```
+
+<a name="bigint/literals" />
+##### literals
 
 ```ts
 const literals = type({
@@ -14,18 +105,18 @@ const literals = type({
 })
 ```
 
-### symbol
+## symbol
 
 {/* TODO:DOC */}
 
-### boolean
+## boolean
 
 {/* TODO:DOC */}
 
-### null
+## null
 
 {/* TODO:DOC */}
 
-### undefined
+## undefined
 
 {/* TODO:DOC */}

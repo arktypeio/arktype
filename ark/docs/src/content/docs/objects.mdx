@@ -1,0 +1,494 @@
+---
+title: Objects
+---
+
+import { Tabs } from "@astrojs/starlight/components"
+import SyntaxTab from "../../components/SyntaxTab.astro"
+
+## properties
+
+Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
+
+<a name="properties/required" />
+##### required
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	requiredKey: "string",
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: "unknown"
+	}
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	requiredKey: type.string,
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: type.unknown
+	}
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="properties/optional" />
+##### optional
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	"optionalKey?": "number[]",
+	[symbolicKey]: "string?"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type.number.array().optional(),
+	[symbolicKey]: type.string.optional()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: [{ type: "'script'" }, "?"],
+	[symbolicKey]: [{ ark: "'type'" }, "?"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type({ type: "'script'" }, "?"),
+	[symbolicKey]: type({ ark: "'type'" }, "?")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+:::caution[Optional and default only work within objects!]
+Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
+
+Rather, it adds metadata that changes how it works when referenced from an object or tuple.
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const optionalString = type.string.optional()
+
+optionalString.allows(undefined) // false
+
+const objectWithOptionalKey = type({
+	foo: optionalString
+})
+
+objectWithOptionalKey.allows({}) // true
+```
+
+</details>
+
+Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
+:::
+
+<a name="properties/defaultable" />
+##### defaultable
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	defaultableKey: "boolean = false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myObject = type({
+	defaultableKey: type.boolean.default(false)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myObject = type({
+	defaultableKey: ["boolean", "=", false]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const myObject = type({
+	defaultableKey: type("boolean", "=", false)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="properties/index" />
+##### index
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	// index signatures do not require a label
+	"[string]": "number.integer",
+	// arbitrary string or symbolic expressions are allowed
+	"[string | symbol]": "number"
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="properties/undeclared" />
+##### undeclared
+
+{/* TODO:DOC */}
+
+<a name="properties/merge" />
+##### merge
+
+{/* TODO:DOC */}
+
+<a name="properties/keyof" />
+##### keyof
+
+{/* TODO:DOC */}
+
+<a name="properties/get" />
+##### get
+
+{/* TODO:DOC */}
+
+## arrays
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const arrays = type({
+	key: "string[]"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const arrays = type({
+	key: type.string.array()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const arrays = type({
+	key: [{ name: "string" }, "[]"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const arrays = type({
+	key: type({ name: "string" }, "[]")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="arrays/lengths" />
+##### lengths
+
+{/* TODO:DOC */}
+
+## tuples
+
+Like objects, tuples are structures whose values are nested definitions. Like TypeScript, ArkType supports prefix, optional, variadic, and postfix elements, with the same restrictions about combining them.
+
+<a name="tuples/prefix" />
+##### prefix
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myTuple = type([
+	"string",
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: ["number", "number"]
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myTuple = type([
+	type.string,
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: [type.number, type.number]
+	}
+])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="tuples/optional" />
+##### optional
+
+Tuples can include any number of optional elements following its prefix elements.
+
+Like in TypeScript, optional elements are mutually exclusive with postfix elements.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myTuple = type(["string", "boolean?", "number?"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myTuple = type([
+	type.string,
+	type.boolean.optional(),
+	type.number.optional()
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"?"
+	]
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const myTuple = type([
+	"string",
+	type(
+		{
+			name: "string"
+		},
+		"?"
+	)
+])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="tuples/variadic" />
+##### variadic
+
+Like in TypeScript, variadic elements allow zero or more consecutive values of a given type and may occur at most once in a tuple.
+
+They are specified with a `"..."` operator preceding an array element.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+// allows a string followed by zero or more numbers
+const myTuple = type(["string", "...", "number[]"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allows a string followed by zero or more numbers
+const myTuple = type([type.string, "...", type.number.array()])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="tuples/postfix" />
+##### postfix
+
+Postfix elements are required elements following a variadic element.
+
+They are mutually exclusive with optional elements.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+// allows zero or more numbers followed by a boolean, then a string
+const myTuple = type(["...", "number[]", "boolean", "string"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allows zero or more numbers followed by a boolean, then a string
+const myTuple = type(["...", type.number.array(), type.boolean, type.string])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+## dates
+
+<a name="dates/keywords" />
+##### keywords
+
+{/* TODO:DOC */}
+
+<a name="dates/literals" />
+##### literals
+
+Date literals represent a Date instance with an exact value.
+
+They're primarily useful in ranges.
+
+```ts
+const literals = type({
+	singleQuoted: "d'01-01-1970'",
+	doubleQuoted: 'd"01-01-1970"'
+})
+```
+
+<a name="dates/ranges" />
+##### ranges
+
+{/* TODO:DOC */}
+
+## instanceof
+
+Most builtin instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
+
+<Tabs>
+    <SyntaxTab fluent>
+
+```ts
+class MyClass {}
+
+const instances = type.instanceOf(MyClass)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+class MyClass {}
+
+const instances = type({
+	key: ["instanceof", MyClass]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+class MyClass {}
+
+const instances = type({
+	key: type("instanceof", MyClass)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+<a name="instanceof/keywords" />
+##### keywords
+
+{/* TODO:DOC */}

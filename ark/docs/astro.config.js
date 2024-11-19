@@ -54,16 +54,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/string#keywords"
+									link: "/primitives#string/keywords"
 								},
 								{ label: "literals", link: "/string#literals" },
 								{
 									label: "patterns",
-									link: "/string#patterns"
+									link: "/primitives#string/patterns"
 								},
 								{
 									label: "lengths",
-									link: "/string#lengths"
+									link: "/primitives#string/lengths"
 								}
 							]
 						},
@@ -73,16 +73,16 @@ export default defineConfig({
 							items: [
 								{
 									label: "keywords",
-									link: "/number#keywords"
+									link: "/primitives#number/keywords"
 								},
-								{ label: "literals", link: "/number#literals" },
+								{ label: "literals", link: "/primitives#number/literals" },
 								{
 									label: "ranges",
-									link: "/number#ranges"
+									link: "/primitives#number/ranges"
 								},
 								{
 									label: "divisors",
-									link: "/number#divisors"
+									link: "/primitives#number/divisors"
 								}
 							]
 						},
@@ -117,42 +117,42 @@ export default defineConfig({
 							items: [
 								{
 									label: "required",
-									link: "/properties#required"
+									link: "/objects#properties/required"
 								},
 								{
 									label: "optional",
-									link: "/properties#optional"
+									link: "/objects#properties/optional"
 								},
 								{
 									label: "defaultable",
-									link: "/properties#defaultable"
+									link: "/objects#properties/defaultable"
 								},
 								{
 									label: "index",
-									link: "/properties#index"
+									link: "/objects#properties/index"
 								},
 								{
 									label: "undeclared",
-									link: "/properties#undeclared"
+									link: "/objects#properties/undeclared"
 								},
 								{
 									label: "merge",
-									link: "/properties#merge"
+									link: "/objects#properties/merge"
 								},
 								{
 									label: "keyof",
-									link: "/properties#keyof"
+									link: "/objects#properties/keyof"
 								},
 								{
 									label: "get",
-									link: "/properties#get"
+									link: "/objects#properties/get"
 								}
 							]
 						},
 						{
 							label: "arrays",
 							collapsed: true,
-							items: [{ label: "lengths", link: "/arrays#lengths" }]
+							items: [{ label: "lengths", link: "/objects#arrays/lengths" }]
 						},
 						{
 							label: "tuples",
@@ -160,19 +160,19 @@ export default defineConfig({
 							items: [
 								{
 									label: "prefix",
-									link: "/arrays#prefix"
+									link: "/objects#tuples/prefix"
 								},
 								{
 									label: "optional",
-									link: "/arrays#optional"
+									link: "/objects#tuples/optional"
 								},
 								{
 									label: "variadic",
-									link: "/arrays#variadic"
+									link: "/objects#tuples/variadic"
 								},
 								{
 									label: "postfix",
-									link: "/arrays#postfix"
+									link: "/objects#tuples/postfix"
 								}
 							]
 						},
@@ -180,14 +180,14 @@ export default defineConfig({
 							label: "dates",
 							collapsed: true,
 							items: [
-								{ label: "keywords", link: "/dates#keywords" },
-								{ label: "literals", link: "/dates#literals" },
-								{ label: "ranges", link: "/dates#ranges" }
+								{ label: "keywords", link: "/objects#dates/keywords" },
+								{ label: "literals", link: "/objects#dates/literals" },
+								{ label: "ranges", link: "/objects#dates/ranges" }
 							]
 						},
 						{
 							label: "instanceof",
-							link: "/instanceof"
+							link: "/objects#instanceof"
 						}
 					]
 				},
@@ -244,10 +244,6 @@ export default defineConfig({
 					label: "Types",
 					items: [
 						{
-							label: "intro",
-							link: "/types"
-						},
-						{
 							label: "properties",
 							link: "/types#properties"
 						},
@@ -257,10 +253,6 @@ export default defineConfig({
 				{
 					label: "Configuration",
 					items: [
-						{
-							label: "intro",
-							link: "/types"
-						},
 						{
 							label: "errors",
 							link: "/configuration#errors"
@@ -284,10 +276,6 @@ export default defineConfig({
 					badge: "advanced",
 					items: [
 						{
-							label: "intro",
-							link: "/scopes"
-						},
-						{
 							label: "modules",
 							link: "/scopes#modules"
 						},
@@ -309,10 +297,6 @@ export default defineConfig({
 					label: "Generics",
 					badge: "advanced",
 					items: [
-						{
-							label: "intro",
-							link: "/types"
-						},
 						{
 							label: "keywords",
 							link: "/generics#keywords"

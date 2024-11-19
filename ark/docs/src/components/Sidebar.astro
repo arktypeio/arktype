@@ -7,8 +7,10 @@ const container = await experimental_AstroContainer.create()
 const html = await container.renderToString(BuiltinSidebar, Astro)
 
 const onToggleSrc = `if(!this.open) {
-const groupName = this.textContent.trim().split(' ')[0].toLowerCase()
-window.location.href = window.location.origin + '/' + groupName
+const firstChildLink = this.querySelector('a').href
+const lastDelimiterIndex = Math.max(firstChildLink.lastIndexOf('/'), firstChildLink.lastIndexOf('#'))
+const groupLink = firstChildLink.slice(0, lastDelimiterIndex)
+window.location.href = groupLink
 }`.replaceAll("\n", ";")
 
 const newHtml = html.replaceAll(
