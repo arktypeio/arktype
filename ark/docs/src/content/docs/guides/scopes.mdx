@@ -33,14 +33,14 @@ const userScope = scope({
 });
 ```
 
-You may have discovered a new syntax to define records or object with index signature.  
-We can't use `type.Record` when using a type defined in the very scope we are creating.
+You may have discovered a new syntax to define records or _object with index signature_ ⚡️.  
 
+This new syntax is necessary because we can't use `type.Record` with a type defined in the very scope we are creating.  
 By using the new syntax, we were able to use the type `UserId` defined in the same scope.
 
 ## Building around scopes
 
-Once you have defined a scope, its type are tied to it.  
+Once you have defined a scope, its types are tied to it.  
 But you probably want to use them in other places. To do that, export them :
 ```ts
 import { PredicateCast } from "@ark/schema" 

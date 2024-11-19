@@ -5,7 +5,7 @@ sidebar:
 ---
 
 Ever wanted to create a function that takes a schema and return another schema ?  
-Arktype call them `generics`, and they are exactly what you think they are.
+Arktype calls them `generics`, and they are exactly what you think they are.
 
 ## Single argument
 
@@ -37,6 +37,7 @@ const orderCreatedEvent = eventType({
 	numberOfItems: 'number > 0'
 })
 ```
+Hover `orderCreatedEvent` to discover your new type !  
 
 You can also add a constraint, just you like you would do it in TypeScript with `<Payload extends Record<string, unknown>>`.
 
@@ -53,9 +54,10 @@ const eventType = generic(['Type', 'string'], 'Payload')({
 });
 ```
 
-First thing to notice, there is no bracket using this syntax.  
+First thing to notice, there is no angle bracket with this syntax.  
+
 Second, if you want to add a constraint to your generic, you need to pass a tuple.  
-Here, `Type` must extends `string`, and because `Payload` is given as is, there is no constraint on it this time.
+Here, `Type` must extends `string`, and because `Payload` is given as is, we have set no constraint on it.
 
 ## Going further
 
@@ -77,7 +79,7 @@ const eventType = genericParser({
 
 The argument given to `genericParser` is, itself, a type definition.  
 This means you can use all available syntaxes to create your dynamic type with generics.  
-For example, if you want to merge types, you can do it :
+For example, if you want to merge types, you can use the tuple syntax :
 
 ```ts
 import { generic, type } from "arktype"
@@ -85,12 +87,20 @@ import { generic, type } from "arktype"
 const genericParser = generic(['CreatedBy', 'string'], 'Schema');
 
 // ---cut-before---
+// We prepare our generic type
 const audit = type({
 	createdBy: 'string',
-	createdAt: 'number.epoch'
+	createdAt: 'number.epoch',
 })
 
 const withAudit = type('<Schema>', [audit, '&', 'Schema']);
 
-const bookWithAudit = withAudit({ title: 'string' });
+// Some app type
+const book = type({ 
+	title: 'string', 
+	authors: 'string[]', 
+})
+
+// We use our generic type to create a new type 🪄
+const bookWithAudit = withAudit(book);
 ```

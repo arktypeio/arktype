@@ -31,46 +31,6 @@ const email = type('string.email')
 const date =  type('string.date.iso')
 ```
 
-### Custom constraints
-Arktype offer some transformation mechanisms. You can apply a constraint before or after the transformations.
-
-
-#### `satisfying`
-
-Use `satisfying` will be apply before any transformation logic.
-
-```ts
-import { type } from "arktype"
-
-// ---cut-before---
-type UserId = `user__${string}`;
-
-const userId = type('string').satisfying((v, ctx): v is UserId => {
-	if (v.startsWith('user__')) {
-		return true
-	}
-	
-	return ctx.mustBe('a UserId')
-});
-```
-
-#### `narrow`
-
-Use `narrow` will be apply after all transformation logic.
-
-```ts
-import { type } from "arktype"
-
-// ---cut-before---
-const stepNumber = type('string.numeric.parse').narrow((v, ctx) => {
-	if (v > 0 && v < 4) {
-		return true
-	}
-	
-	return ctx.mustBe('a step number');
-});
-```
-
 ## Number
 
 ### Range constraints
@@ -92,4 +52,44 @@ import { type } from "arktype"
 const integer =     type('number.integer') 
 const safeInteger = type('number.safe') // number <= Number.MAX_SAFE_INTEGER
 const epoch =       type('number.epoch')
+```
+
+## Custom constraints
+Arktype offers some transformation mechanisms. You can apply constraints before or after the transformations.
+
+
+### `satisfying`
+
+Use `satisfying` and the constraints will be apply before any transformation logic.
+
+```ts
+import { type } from "arktype"
+
+// ---cut-before---
+type UserId = `user__${string}`;
+
+const userId = type('string').satisfying((v, ctx): v is UserId => {
+	if (v.startsWith('user__')) {
+		return true
+	}
+	
+	return ctx.mustBe('a UserId')
+});
+```
+
+### `narrow`
+
+Use `narrow` and the constraints will be apply after all transformation logic.
+
+```ts
+import { type } from "arktype"
+
+// ---cut-before---
+const stepNumber = type('string.numeric.parse').narrow((v, ctx) => {
+	if (v > 0 && v < 4) {
+		return true
+	}
+	
+	return ctx.mustBe('a step number');
+});
 ```

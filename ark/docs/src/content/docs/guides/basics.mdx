@@ -6,7 +6,7 @@ sidebar:
 
 ## Primitives & validation
 
-The `type` object is the entrypoint for your validation schemas.
+The `type` object is the entrypoint for your validation schemas.  
 Let's start with a very simple type :
 
 ```ts
@@ -15,7 +15,8 @@ import { type } from "arktype"
 const someString = type('string')
 ```
 
-`type` accepts a variety of values, including `string`, `number`, `symbol`, actual RegEx or literals like `"foobar"`.  Maybe you have noticed that our literal string is wrapped into double quoted. That is because Arktype interpret strings the same way TypeScript interpret types.
+`type` accepts a variety of values, including `string`, `number`, `symbol`, actual RegEx or literals like `"foobar"`.  
+Maybe you have noticed that our literal string is wrapped into double quoted. That is because Arktype interpret strings the same way TypeScript interpret types.
 
 Let's validate some data !
 
@@ -31,13 +32,13 @@ const invalid = someString(1)        // ❌ - ArkErrors
 const str = someString.assert('kaboom?')
 ```
 
-When a value doesn't successfully pass the validation, an instance of ArkErrors is returned instead of the value.  
+When a value doesn't successfully pass the validation, an instance of `ArkErrors` is returned instead of the value.  
 More on errors later.
 
 ## Unions & intersections
 
 There are several ways to create a union or an intersection with Arktype.  
-We'll show case unions, but you can use `&` and `.and()` to create intersections.
+We will show case unions, but you can use `&` and `.and()` to create intersections.
 
 ```ts
 import { type } from "arktype"
@@ -71,7 +72,7 @@ const method4 = type([
 ]]])
 ```
 
-Because `type` accepts a tuple as argument, and because each element of the tuple is interpreted as an instance of `type`, you can use nested tuples to create more complex types in one go.
+Because `type` also accepts a tuple as an argument, and because each element of the tuple is interpreted as an instance of `type`, you can use nested tuples to create more complex types in one go.
 
 ## Objects
 
@@ -92,7 +93,7 @@ Again, every value is interpreted as an instance of `type`, so you don't need to
 
 :::note
 The optional marker only allow the property to be missing, not to be `undefined`.  
-To allow both, use `undefined | string?`.
+To allow both, use `{ 'birthdate?': 'undefined | string' }`.
 :::
 
 ### Records
@@ -164,3 +165,5 @@ const schema = type(['string', 'number'])
 const schema3 = type(["string", userSchema])
 const schema2 = type(["string", "...", "number[]"])
 ```
+
+Have you noticed the `"..."` operator to create the variable number of elements in the tuple ?
