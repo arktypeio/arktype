@@ -300,6 +300,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 	<tr>
     	<th>Timeraa</th>
 		<th>Phalangers</th>
+		<th>WilliamConnatser</th>
     </tr>
     <tr>
     	<td>
@@ -314,6 +315,13 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     			><img
     				height="64px"
     				src="https://avatars.githubusercontent.com/u/13227796"
+    		/></a>
+    	</td>
+		<td>
+    		<a href="https://github.com/WilliamConnatser"
+    			><img
+    				height="64px"
+    				src="https://avatars.githubusercontent.com/u/43946230"
     		/></a>
     	</td>
     </tr>
