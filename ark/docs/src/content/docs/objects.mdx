@@ -105,7 +105,7 @@ const myObject = type({
 
 </Tabs>
 
-:::caution[Optional properties cannot be present with the value `undefined` unless specified]
+:::caution[Optional properties cannot be present with the value undefined]
 
 In TypeScript, there is a setting called `exactOptionalPropertyTypes` that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
 
@@ -127,30 +127,6 @@ const errorResult = myObj({ key: undefined })
 ```
 
 </details>
-
-:::caution[Optional and default only work within objects!]
-Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
-
-Rather, it adds metadata that changes how it works when referenced from an object or tuple.
-
-<details>
-	<summary>See an example</summary>
-
-```ts
-const optionalString = type.string.optional()
-
-optionalString.allows(undefined) // false
-
-const objectWithOptionalKey = type({
-	foo: optionalString
-})
-
-objectWithOptionalKey.allows({}) // true
-```
-
-</details>
-
-Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
 :::
 
 <a name="properties/defaultable" />
@@ -198,6 +174,31 @@ const myObject = type({
     </SyntaxTab>
 
 </Tabs>
+
+:::caution[Optional and default only work within objects!]
+Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
+
+Rather, it adds metadata that changes how it works when referenced from an object or tuple.
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const optionalString = type.string.optional()
+
+optionalString.allows(undefined) // false
+
+const objectWithOptionalKey = type({
+	foo: optionalString
+})
+
+objectWithOptionalKey.allows({}) // true
+```
+
+</details>
+
+Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
+:::
 
 <a name="properties/index" />
 ##### index
