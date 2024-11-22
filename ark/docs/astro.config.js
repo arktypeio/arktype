@@ -56,7 +56,7 @@ export default defineConfig({
 									label: "keywords",
 									link: "/primitives#string/keywords"
 								},
-								{ label: "literals", link: "/string#literals" },
+								{ label: "literals", link: "/primitives#string/literals" },
 								{
 									label: "patterns",
 									link: "/primitives#string/patterns"
