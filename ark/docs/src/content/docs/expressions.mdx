@@ -7,7 +7,70 @@ import SyntaxTab from "../../components/SyntaxTab.astro"
 
 ### Intersection
 
-🚧 Coming soon ™️🚧
+Like its TypeScript counterpart, an intersection combines two existing `Type`s to create a new `Type` that enforces the constraints of both.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	// an email address with the domain arktype.io
+	intersected: "string.email & /@arktype\\.io$/"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const fooObject = type({
+	foo: "string"
+})
+
+// an object requiring both foo and bar
+const foobarObject = fooObject.and({
+	bar: "number"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// an object requiring both foo and bar
+const foobarObject = type([
+	{
+		foo: "string"
+	},
+	"&",
+	{
+		bar: "number"
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+// an object requiring both foo and bar
+const foobarObject = type(
+	{
+		foo: "string"
+	},
+	"&",
+	{
+		bar: "number"
+	}
+)
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 ### Union
 
