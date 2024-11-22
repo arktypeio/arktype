@@ -9,5 +9,3 @@ interface User extends type.infer<typeof _user> {}
 const user: type<User> = _user
 
 user({}).toString()
-
-const f = /@arktype\.io/
