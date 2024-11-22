@@ -150,7 +150,37 @@ const exactValueFromSet = type("===", 1337, true, mySymbol)
 
 ### Cast
 
-🚧 Coming soon ™️🚧
+Sometimes, you may want to directly specify how a `Type` should be inferred without affecting the runtime behavior. In these cases, you can use a cast expression.
+
+<Tabs>
+
+    <SyntaxTab string>
+
+```ts
+// allow any string, but suggest "foo" and "bar"
+type AutocompletedString = "foo" | "bar" | (string & {})
+
+const myObject = type({
+	autocompletedString: "string" as type.cast<AutocompletedString>
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allow any string, but suggest "foo" and "bar"
+type AutocompletedString = "foo" | "bar" | (string & {})
+
+const myObject = type({
+	autocompletedString: type.string.as<AutocompletedString>()
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 ### Parenthetical
 
