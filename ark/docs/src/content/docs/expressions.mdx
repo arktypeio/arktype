@@ -58,7 +58,33 @@ const unions = type({
 
 ### Brand
 
-🚧 Coming soon ™️🚧
+Add a type-only symbol to an existing type so that the only values that satisfy is are those that have been directly validated.
+
+<Tabs>
+
+    <SyntaxTab string>
+
+```ts
+// hover to see ArkType's representation of a branded type
+const myObject = type({
+	brandedString: "string#id"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// hover to see ArkType's representation of a branded type
+const myObject = type({
+	brandedString: type.string.brand("id")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 ### Narrow
 
