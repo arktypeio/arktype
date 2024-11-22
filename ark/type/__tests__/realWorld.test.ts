@@ -39,7 +39,7 @@ contextualize(() => {
 		const MockTimeStub = class TimeStub {}
 
 		const types = scope({
-			timeStub: ["instanceof", MockTimeStub] as type.cast<TimeStub>,
+			timeStub: ["instanceof", MockTimeStub] as type.as<TimeStub>,
 			account: "clientDocument&accountData",
 			clientDocument: {
 				"id?": "string",

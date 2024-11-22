@@ -440,7 +440,7 @@ b.c.c must be an object (was missing)`)
 					"[string]": "value"
 				},
 				value: "primitive | record | value[]",
-				castValue: "value" as type.cast<Value>
+				castValue: "value" as type.as<Value>
 			}).export()
 
 			// TS type display blows up but it's equivalent to Value

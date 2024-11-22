@@ -569,8 +569,8 @@ contextualize(() => {
 
 		it("allows string sybtyping", () => {
 			type({
-				foo: [/^foo/ as type.cast<`foo${string}`>, "=", "foobar"],
-				bar: [/bar$/ as type.cast<`${string}bar`>, "=", () => "foobar" as const]
+				foo: [/^foo/ as type.as<`foo${string}`>, "=", "foobar"],
+				bar: [/bar$/ as type.as<`${string}bar`>, "=", () => "foobar" as const]
 			})
 		})
 

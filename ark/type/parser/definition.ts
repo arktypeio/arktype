@@ -65,7 +65,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
-	: def extends type.cast<infer t> ?
+	: def extends type.as<infer t> ?
 		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
 		// Unlike in TS however, ArkType object literals are constrained to object
 		// so we use that as the base type inferred when parsing {}.
@@ -98,7 +98,7 @@ export type validateDeclared<declared, def, $, args> =
 	:	validateDefinition<def, $, args>
 
 type validateInference<def, declared, $, args> =
-	def extends RegExp | type.cast<unknown> | ThunkCast | TupleExpression ?
+	def extends RegExp | type.as<unknown> | ThunkCast | TupleExpression ?
 		validateShallowInference<def, declared, $, args>
 	: def extends array ?
 		declared extends array ?
@@ -135,9 +135,9 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = type.cast<unknown> | Fn
+type Terminal = type.as<unknown> | Fn
 
-export type ThunkCast<t = unknown> = () => type.cast<t>
+export type ThunkCast<t = unknown> = () => type.as<t>
 
 type BadDefinitionType = Exclude<Primitive, string>
 

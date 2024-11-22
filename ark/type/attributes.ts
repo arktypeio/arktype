@@ -559,7 +559,7 @@ export type inferPredicate<t, predicate> =
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
-			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			pipes[0] extends type.as<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
 				(In: distill.withAttributes.In<t>) => Out<out>
 			:	never,
