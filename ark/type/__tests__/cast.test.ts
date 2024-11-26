@@ -5,40 +5,40 @@ import { type, type Type } from "arktype"
 contextualize(() => {
 	describe("type.cast", () => {
 		it("primitive", () => {
-			const foo = type("string" as type.as<"foo">).t
+			const foo = type("string" as type.cast<"foo">).t
 			attest<"foo">(foo)
 		})
 
 		it("object", () => {
 			// definitions that are cast can't be validated
-			attest<{ a: "foo" }>(type({ a: "string" } as type.as<{ a: "foo" }>).t)
+			attest<{ a: "foo" }>(type({ a: "string" } as type.cast<{ a: "foo" }>).t)
 		})
 
 		it("primitive to object", () => {
-			attest<{ a: "foo" }>(type("string" as type.as<{ a: "foo" }>).t)
+			attest<{ a: "foo" }>(type("string" as type.cast<{ a: "foo" }>).t)
 		})
 
 		it("object to primitive", () => {
-			attest<"foo">(type({ a: "string" } as type.as<"foo">).t)
+			attest<"foo">(type({ a: "string" } as type.cast<"foo">).t)
 		})
 
 		it("infer function", () => {
 			type F = () => boolean
-			const constructable = type({} as type.as<F>)
+			const constructable = type({} as type.cast<F>)
 			attest<F>(constructable.t)
 			attest<F>(constructable.infer)
 			attest<F>(constructable.in.infer)
 		})
 
 		it("infer constructable", () => {
-			const constructable = type({} as type.as<Constructor>)
+			const constructable = type({} as type.cast<Constructor>)
 			attest<Constructor>(constructable.t)
 			attest<Constructor>(constructable.infer)
 			attest<Constructor>(constructable.in.infer)
 		})
 
 		it("undefined", () => {
-			const foo = type("string" as type.as<"foo">).t
+			const foo = type("string" as type.cast<"foo">).t
 			attest<"foo">(foo)
 		})
 	})

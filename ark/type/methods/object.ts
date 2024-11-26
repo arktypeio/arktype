@@ -43,14 +43,14 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * @example type({ foo: "string" }).get("foo") // Type<string>
 	 */
 	get<const k1 extends arkIndexableOf<t>, r = arkGet<t, k1>>(
-		k1: k1 | type.as<k1>
+		k1: k1 | type.cast<k1>
 	): instantiateType<r, $>
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>
 	>(
-		k1: k1 | type.as<k1>,
-		k2: k2 | type.as<k2>
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>
 	): instantiateType<arkGet<arkGet<t, k1>, k2>, $> extends infer r ? r : never
 	get<
 		const k1 extends arkIndexableOf<t>,
@@ -58,9 +58,9 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>,
 		r = arkGet<arkGet<arkGet<t, k1>, k2>, k3>
 	>(
-		k1: k1 | type.as<k1>,
-		k2: k2 | type.as<k2>,
-		k3: k3 | type.as<k3>
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>,
+		k3: k3 | type.cast<k3>
 	): instantiateType<r, $>
 
 	/**
@@ -68,7 +68,7 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * @example type({ foo: "string", bar: "number" }).pick("foo") // Type<{ foo: string }>
 	 */
 	pick<const key extends arkKeyOf<t> = never>(
-		...keys: (key | type.as<key>)[]
+		...keys: (key | type.cast<key>)[]
 	): Type<
 		{
 			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
@@ -81,7 +81,7 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * @example type({ foo: "string", bar: "number" }).omit("foo") // Type<{ bar: number }>
 	 */
 	omit<const key extends arkKeyOf<t> = never>(
-		...keys: (key | type.as<key>)[]
+		...keys: (key | type.cast<key>)[]
 	): Type<
 		{
 			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
@@ -203,7 +203,7 @@ type BaseMappedTypeProp<k extends Key, v> = merge<
 	BaseMappedPropInner,
 	{
 		key: k
-		value: type.as<v>
+		value: type.cast<v>
 	}
 >
 
@@ -211,7 +211,7 @@ type OptionalMappedTypeProp<k extends Key, v> = merge<
 	OptionalMappedPropInner,
 	{
 		key: k
-		value: type.as<v>
+		value: type.cast<v>
 		default?: v
 	}
 >
