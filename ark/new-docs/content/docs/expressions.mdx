@@ -1,0 +1,198 @@
+---
+title: Expressions
+---
+
+import { Tabs } from "fumadocs-ui/components/tabs"
+import { SyntaxTab } from "@/components/SyntaxTab"
+
+### Intersection
+
+{/* TODO:DOC */}
+
+### Union
+
+All unions are automatically discriminated to optimize check time and error message clarity.
+
+<Tabs items={["string", "fluent", "tuple", "spread"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const unions = type({
+	key: "string | number"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const unions = type({
+	key: type.string.or(type.number)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const unions = type({
+	key: ["string", "|", { name: "string" }]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const unions = type({
+	key: type("string", "|", { name: "string" })
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Brand
+
+{/* TODO:DOC */}
+
+### Narrow
+
+{/* TODO:DOC */}
+
+### Morph
+
+{/* TODO:DOC */}
+
+### Unit
+
+While embedded [literal syntax](/literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serialiazable value like a `symbol` from your type.
+
+<Tabs items={["fluent", "tuple", "spread"]}>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const mySymbol = Symbol()
+
+const exactValue = type.unit(mySymbol)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const mySymbol = Symbol()
+
+const exactValue = type(["===", mySymbol])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const mySymbol = Symbol()
+
+const exactValue = type("===", mySymbol)
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Enumerated
+
+`type.enumerated` defines a type based on a list of allowed values. It is semantically equivalent to `type.unit` if provided a single value.
+
+<Tabs items={["fluent", "tuple", "spread"]}>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const mySymbol = Symbol()
+
+const exactValueFromSet = type.enumerated(1337, true, mySymbol)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const mySymbol = Symbol()
+
+const exactValueFromSet = type(["===", 1337, true, mySymbol])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const mySymbol = Symbol()
+
+const exactValueFromSet = type("===", 1337, true, mySymbol)
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Meta
+
+{/* TODO:DOC */}
+
+### Cast
+
+{/* TODO:DOC */}
+
+### Parenthetical
+
+By default, ArkType's operators follow the same precedence as TypeScript's. Also like in TypeScript, this can be overridden by wrapping an expression in parentheses.
+
+```ts twoslash
+// hover to see the distinction!
+const groups = type({
+	stringOrArrayOfNumbers: "string | number[]",
+	arrayOfStringsOrNumbers: "(string | number)[]"
+})
+```
+
+### this
+
+`this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
+
+```ts twoslash
+const fetchGift = async () => null
+// ---cut---
+const disappointingGift = type({ label: "string", "box?": "this" })
+const myGift = disappointingGift.assert(await fetchGift())
+
+// hover me
+const chainable = myGift.box?.box?.label
+```
+
+Unlike its TypeScript counterpart, ArkType's `this` is not limited to interfaces. It can also be used from within a tuple expression.
+
+```ts twoslash
+// boxes now expects an array of our gift object
+const disappointingGifts = type({ label: "string", boxes: "this" }, "[]")
+```
+
+Referencing `this` from within a scope will result in a ParseError. For similar behavior within a scoped definition, just reference the alias by name:
+
+```ts twoslash
+const types = scope({
+	disappointingGift: {
+		label: "string",
+		// Resolves correctly to the root of the current type
+		"box?": "disappointingGift"
+	}
+}).export()
+```

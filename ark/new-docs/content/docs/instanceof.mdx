@@ -1,0 +1,51 @@
+---
+title: Instanceof
+---
+
+import { Tabs } from "fumadocs-ui/components/tabs"
+import { SyntaxTab } from "@/components/SyntaxTab"
+
+Most builtin instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
+
+### Expression
+
+<Tabs items={["fluent", "tuple", "spread"]}>
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+class MyClass {}
+
+const instances = type.instanceOf(MyClass)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+class MyClass {}
+
+const instances = type({
+	key: ["instanceof", MyClass]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+class MyClass {}
+
+const instances = type({
+	key: type("instanceof", MyClass)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Keywords
+
+{/* TODO:DOC */}

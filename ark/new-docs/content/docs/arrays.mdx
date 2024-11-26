@@ -1,0 +1,205 @@
+---
+title: Arrays
+---
+
+import { Tabs } from "fumadocs-ui/components/tabs"
+import { SyntaxTab } from "@/components/SyntaxTab"
+
+<Tabs items={["string", "fluent", "tuple", "spread"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const arrays = type({
+	key: "string[]"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const arrays = type({
+	key: type.string.array()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const arrays = type({
+	key: [{ name: "string" }, "[]"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const arrays = type({
+	key: type({ name: "string" }, "[]")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Lengths
+
+{/* TODO:DOC */}
+
+### Tuples
+
+Like objects, tuples are structures whose values are nested definitions. Like TypeScript, ArkType supports prefix, optional, variadic, and postfix elements, with the same restrictions about combining them.
+
+#### Prefix
+
+<Tabs items={["string", "fluent"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const myTuple = type([
+	"string",
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: ["number", "number"]
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const myTuple = type([
+	type.string,
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: [type.number, type.number]
+	}
+])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+#### Optional
+
+Tuples can include any number of optional elements following its prefix elements.
+
+Like in TypeScript, optional elements are mutually exclusive with postfix elements.
+
+<Tabs items={["string", "fluent"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const myTuple = type(["string", "boolean?", "number?"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const myTuple = type([
+	type.string,
+	type.boolean.optional(),
+	type.number.optional()
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const myTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"?"
+	]
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const myTuple = type([
+	"string",
+	type(
+		{
+			name: "string"
+		},
+		"?"
+	)
+])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+#### Variadic
+
+Like in TypeScript, variadic elements allow zero or more consecutive values of a given type and may occur at most once in a tuple.
+
+They are specified with a `"..."` operator preceding an array element.
+
+<Tabs items={["string", "fluent"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+// allows a string followed by zero or more numbers
+const myTuple = type(["string", "...", "number[]"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+// allows a string followed by zero or more numbers
+const myTuple = type([type.string, "...", type.number.array()])
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+#### Postfix
+
+Postfix elements are required elements following a variadic element.
+
+They are mutually exclusive with optional elements.
+
+<Tabs items={["string", "fluent"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+// allows zero or more numbers followed by a boolean, then a string
+const myTuple = type(["...", "number[]", "boolean", "string"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+// allows zero or more numbers followed by a boolean, then a string
+const myTuple = type(["...", type.number.array(), type.boolean, type.string])
+```
+
+    </SyntaxTab>
+
+</Tabs>

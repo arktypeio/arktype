@@ -1,0 +1,206 @@
+---
+title: Properties
+---
+
+import { Tabs } from "fumadocs-ui/components/tabs"
+import { SyntaxTab } from "@/components/SyntaxTab"
+
+Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
+
+### Required
+
+<Tabs items={["string", "fluent"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const symbolicKey = Symbol()
+
+const myObject = type({
+	requiredKey: "string",
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: "unknown"
+	}
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const symbolicKey = Symbol()
+
+const myObject = type({
+	requiredKey: type.string,
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: type.unknown
+	}
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Optional
+
+<Tabs items={["string", "fluent", "tuple", "spread"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const symbolicKey = Symbol()
+
+const myObject = type({
+	"optionalKey?": "number[]",
+	[symbolicKey]: "string?"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type.number.array().optional(),
+	[symbolicKey]: type.string.optional()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: [{ type: "'script'" }, "?"],
+	[symbolicKey]: [{ ark: "'type'" }, "?"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type({ type: "'script'" }, "?"),
+	[symbolicKey]: type({ ark: "'type'" }, "?")
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+:::caution[Optional and default only work within objects!]
+Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
+
+Rather, it adds metadata that changes how it works when referenced from an object or tuple.
+
+<details>
+	<summary>See an example</summary>
+
+```ts twoslash
+const optionalString = type.string.optional()
+
+optionalString.allows(undefined) // false
+
+const objectWithOptionalKey = type({
+	foo: optionalString
+})
+
+objectWithOptionalKey.allows({}) // true
+```
+
+</details>
+
+Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
+:::
+
+### Defaultable
+
+<Tabs items={["string", "fluent", "tuple", "spread"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const myObject = type({
+	defaultableKey: "boolean = false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const myObject = type({
+	defaultableKey: type.boolean.default(false)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="tuple">
+
+```ts twoslash
+const myObject = type({
+	defaultableKey: ["boolean", "=", false]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="spread">
+
+```ts twoslash
+const myObject = type({
+	defaultableKey: type("boolean", "=", false)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Index
+
+<Tabs items={["string"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const myObject = type({
+	// index signatures do not require a label
+	"[string]": "number.integer",
+	// arbitrary string or symbolic expressions are allowed
+	"[string | symbol]": "number"
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+### Undeclared
+
+{/* TODO:DOC */}
+
+### Merge
+
+{/* TODO:DOC */}
+
+### keyof
+
+{/* TODO:DOC */}
+
+### Get
+
+{/* TODO:DOC */}
