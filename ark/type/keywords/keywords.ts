@@ -79,8 +79,8 @@ export const keywords: Module<Ark> = ark.export()
 export const type: TypeParser<{}> = ark.type as never
 
 export declare namespace type {
-	export type cast<t> = {
-		[inferred]?: t
+	export interface cast<to> {
+		[inferred]?: to
 	}
 
 	export type errors = ArkErrors

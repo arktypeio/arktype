@@ -1,11 +1,11 @@
+import { configure } from "arktype/config"
+
+configure({ clone: false })
+
 import { type } from "arktype"
 
-const _user = type({
-	name: "string | undefined"
+const userForm = type({
+	age: "string.numeric.parse"
 })
 
-interface User extends type.infer<typeof _user> {}
-
-const user: type<User> = _user
-
-user({}).toString()
+type.keywords.string.integer.root.atLeastLength(2).lessThanLength(6)

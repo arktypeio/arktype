@@ -39,7 +39,65 @@ const literals = type({
 <a name="string/lengths" />
 ##### lengths
 
-🚧 Coming soon ™️🚧
+Constrain a string with an inclusive or exclusive min or max length.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const bounded = type({
+	nonEmpty: "string > 0",
+	atLeastLength3: "string.alphanumeric >= 3",
+	lessThanLength10: "string < 10",
+	atMostLength5: "string <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const bounded = type({
+	nonEmpty: type.string.moreThanLength(0),
+	atLeastLength3: type.keywords.string.alphanumeric.atLeastLength(3),
+	lessThanLength10: type.string.lessThanLength(10),
+	atMostLength5: type.string.atMostLength(5)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const range = type({
+	nonEmptyAtMostLength10: "0 < string <= 10",
+	integerStringWith2To5Digits: "2 <= string.integer < 6"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const range = type({
+	nonEmptyAtMostLength10: type.string.moreThanLength(0).atMostLength(10),
+	integerStringWith2To5Digits: type.keywords.string.integer.root
+		.atLeastLength(2)
+		.lessThanLength(6)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 ## number
 
@@ -60,7 +118,66 @@ const literals = type({
 <a name="number/ranges" />
 ##### ranges
 
-🚧 Coming soon ™️🚧
+Constrain a number with an inclusive or exclusive min or max.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const bounded = type({
+	positive: "number > 0",
+	atLeast3: "number.integer >= 3",
+	lessThanPi: "number < 3.14159",
+	atMost5: "number <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const bounded = type({
+	positive: type.number.moreThan(0),
+	atLeast3: type.keywords.number.integer.atLeast(3),
+	lessThanPi: type.number.lessThan(3.14159),
+	atMost5: type.number.atMost(5)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
+
+Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
+
+<Tabs>
+	<SyntaxTab string>
+
+```ts
+const range = type({
+	positiveAtMostE: "0 < number <= 2.71828",
+	evenNumberAbsoluteValueLessThan50: "-50 < (number % 2) < 50"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const range = type({
+	positiveAtMostE: type.number.moreThan(0).atMost(2.71828),
+	evenNumberAbsoluteValueLessThan50: type.number
+		.divisibleBy(2)
+		.moreThan(-50)
+		.lessThan(50)
+})
+```
+
+    </SyntaxTab>
+
+</Tabs>
 
 <a name="number/divisors" />
 ##### divisors
