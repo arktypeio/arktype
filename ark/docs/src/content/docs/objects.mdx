@@ -294,7 +294,7 @@ Constrain an array with an inclusive or exclusive min or max length.
 
 ```ts
 const bounded = type({
-	nonEmptyStringArray: "string[] > 0"
+	nonEmptyStringArray: "string[] > 0",
 	atLeast3Integers: "number.integer[] >= 3",
 	lessThan10Emails: "string.email[] < 10",
 	atMost5Booleans: "boolean[] <= 5"

@@ -46,7 +46,7 @@ Constrain a string with an inclusive or exclusive min or max length.
 
 ```ts
 const bounded = type({
-	nonEmpty: "string > 0"
+	nonEmpty: "string > 0",
 	atLeastLength3: "string.alphanumeric >= 3",
 	lessThanLength10: "string < 10",
 	atMostLength5: "string <= 5"
@@ -59,7 +59,7 @@ const bounded = type({
 
 ```ts
 const bounded = type({
-	nonEmpty: type.string.moreThanLength(0)
+	nonEmpty: type.string.moreThanLength(0),
 	atLeastLength3: type.keywords.string.alphanumeric.atLeastLength(3),
 	lessThanLength10: type.string.lessThanLength(10),
 	atMostLength5: type.string.atMostLength(5)
@@ -89,7 +89,7 @@ const range = type({
 ```ts
 const range = type({
 	nonEmptyAtMostLength10: type.string.moreThanLength(0).atMostLength(10),
-	integerStringWith2To5Digits: type.keywords.string.integer
+	integerStringWith2To5Digits: type.keywords.string.integer.root
 		.atLeastLength(2)
 		.lessThanLength(6)
 })
@@ -125,7 +125,7 @@ Constrain a number with an inclusive or exclusive min or max.
 
 ```ts
 const bounded = type({
-	positive: "number > 0"
+	positive: "number > 0",
 	atLeast3: "number.integer >= 3",
 	lessThanPi: "number < 3.14159",
 	atMost5: "number <= 5"
@@ -138,7 +138,7 @@ const bounded = type({
 
 ```ts
 const bounded = type({
-	positive: type.number.moreThan(0)
+	positive: type.number.moreThan(0),
 	atLeast3: type.keywords.number.integer.atLeast(3),
 	lessThanPi: type.number.lessThan(3.14159),
 	atMost5: type.number.atMost(5)
