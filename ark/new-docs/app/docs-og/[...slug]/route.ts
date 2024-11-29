@@ -1,17 +1,24 @@
-import { generateOGImage } from "fumadocs-ui/og";
-import { metadataImage } from "@/lib/metadata";
+import { metadataImage } from "@/lib/metadata"
+// import { fromPackageRoot } from "@ark/fs"
+import { generateOGImage } from "fumadocs-ui/og"
 
-export const GET = metadataImage.createAPI((page) => {
-  return generateOGImage({
-    title: page.data.title,
-    description: page.data.description,
-    site: "ArkType",
-  });
-});
+export const GET = metadataImage.createAPI(page =>
+	generateOGImage({
+		title: page.data.title === "ArkType" ? "ArkType" : "ArkType Docs",
+		description:
+			page.data.title === "ArkType" ? page.data.description : page.data.title,
+		site: "ArkType",
+		fonts: [
+			// fromPackageRoot("src", "assets", "Raleway.ttf"),
+			// "https://fonts.googleapis.com/css?family=Raleway:300,400,500,700&display=swap"
+		]
+	})
+)
 
-export function generateStaticParams() {
-  return metadataImage.generateParams();
-}
+export const generateStaticParams = (): {
+	slug: string[]
+	lang?: string
+}[] => metadataImage.generateParams()
 
 // TODO will handle this when moved into arktype repo
 // docs: https://fumadocs.vercel.app/docs/ui/open-graph

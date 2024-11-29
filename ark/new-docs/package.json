@@ -10,6 +10,7 @@
 		"postinstall": "fumadocs-mdx"
 	},
 	"dependencies": {
+		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@icons-pack/react-simple-icons": "^10.2.0",
 		"@shikijs/transformers": "^1.23.1",
