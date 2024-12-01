@@ -1,0 +1,49 @@
+---
+title: Number
+---
+
+import { Tabs } from "fumadocs-ui/components/tabs";
+import { SyntaxTab } from "@/components/SyntaxTab";
+
+### Keywords
+
+{/* TODO:DOC */}
+
+### Literals
+
+```ts twoslash
+const literals = type({
+  number: "1337",
+});
+```
+
+### Ranges
+
+{/* TODO:DOC */}
+
+### Divisors
+
+Constrain a `number` to a multiple of the specified integer.
+
+<Tabs items={["string", "fluent"]}>
+	<SyntaxTab kind="string">
+
+```ts twoslash
+const evens = type({
+  key: "number%2",
+});
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab kind="fluent">
+
+```ts twoslash
+const evens = type({
+  key: type.number.divisibleBy(2),
+});
+```
+
+    </SyntaxTab>
+
+</Tabs>
