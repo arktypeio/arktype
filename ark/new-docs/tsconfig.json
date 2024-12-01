@@ -12,6 +12,9 @@
 		// but actually resolves to ./src/components/shiki.config.js"
 		// can remove this line if it doesn't break the build in the future
 		"rewriteRelativeImportExtensions": false,
+		// we don't need declarations for docs, and enabling it causes
+		// pnpm resolution errors
+		"declaration": false,
 		"paths": {
 			"@/*": ["./*"]
 		},

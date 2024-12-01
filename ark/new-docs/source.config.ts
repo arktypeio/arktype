@@ -1,13 +1,12 @@
-import { defineDocs, defineConfig } from "fumadocs-mdx/config";
-
-import { shikiConfig } from "./lib/shiki";
+import { defineConfig, defineDocs } from "fumadocs-mdx/config"
+import { shikiConfig } from "./lib/shiki.ts"
 
 export const { docs, meta } = defineDocs({
-  dir: "content/docs",
-});
+	dir: "content/docs"
+})
 
 export default defineConfig({
-  mdxOptions: {
-    rehypeCodeOptions: shikiConfig,
-  },
-});
+	mdxOptions: {
+		rehypeCodeOptions: shikiConfig
+	}
+})
