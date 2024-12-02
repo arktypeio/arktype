@@ -7,11 +7,6 @@
 		"moduleResolution": "Bundler",
 		"allowJs": true,
 		"jsx": "preserve",
-		// // leaving this in for now as it results in some nonsense in 5.7 alpha like:
-		// // "This relative import path is unsafe to rewrite because it looks like a file name,
-		// // but actually resolves to ./src/components/shiki.config.js"
-		// // can remove this line if it doesn't break the build in the future
-		// "rewriteRelativeImportExtensions": false,
 		// we don't need declarations for docs, and enabling it causes
 		// pnpm resolution errors
 		"declaration": false,
@@ -21,6 +16,7 @@
 				"name": "next"
 			}
 		],
+		"baseUrl": ".",
 		"paths": {
 			// dummy declaration to allow `.css` imports without creating extra
 			// .d.ts files
@@ -32,7 +28,7 @@
 		"checkMdx": true
 	},
 	"include": [
-		"next.config.js",
+		"next.config.ts",
 		"next-env.d.ts",
 		"**/*.ts",
 		"**/*.tsx",

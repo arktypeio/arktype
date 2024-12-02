@@ -4,9 +4,10 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "next build",
-		"dev": "next dev",
+		"build": "pnpm clean && NODE_OPTIONS=--no-warnings next build",
+		"dev": "NODE_OPTIONS=--no-warnings next dev",
 		"start": "next start",
+		"clean": "rm -rf .next .source out",
 		"postinstall": "fumadocs-mdx"
 	},
 	"dependencies": {

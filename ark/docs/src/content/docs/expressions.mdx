@@ -470,7 +470,7 @@ Sometimes, you may want to directly specify how a `Type` should be inferred with
 type AutocompletedString = "foo" | "bar" | (string & {})
 
 const myObject = type({
-	autocompletedString: "string" as type.as<AutocompletedString>
+	autocompletedString: "string" as type.cast<AutocompletedString>
 })
 ```
 

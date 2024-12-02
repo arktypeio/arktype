@@ -79,6 +79,8 @@ export default tseslint.config(
 			"@typescript-eslint/consistent-type-imports": [
 				"warn",
 				{
+					// can be useful for cjs/esm interop type imports
+					disallowTypeAnnotations: false,
 					fixStyle: "inline-type-imports"
 				}
 			],

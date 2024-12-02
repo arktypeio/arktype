@@ -6,10 +6,10 @@ import { execSync } from "node:child_process"
 const [major, minor] = process.version.replace("v", "").split(".").map(Number)
 
 const versionedFlags =
-	major > 22 || (major === 22 && minor >= 6) ?
-		"--experimental-strip-types --no-warnings"
+	major > 22 || (major === 22 && minor >= 7) ?
+		"--experimental-transform-types --no-warnings"
 	:	(console.log(
-			"--experimental-strip-types requires Node >= 22.6.0, falling back to tsx..."
+			"--experimental-transform-types requires Node >= 22.7.0, falling back to tsx..."
 		),
 		"--import tsx")
 
