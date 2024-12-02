@@ -1,5 +1,5 @@
 import { promises as fs } from "fs"
-import { highlight } from "fumadocs-core/server"
+import { highlight, type HighlightOptions } from "fumadocs-core/server"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
 import { cn } from "fumadocs-ui/components/api"
 import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock"
@@ -30,24 +30,30 @@ export const HighlightedCode: React.FC<{
 		langs: Object.keys(bundledLanguages)
 	})
 
+	const components: HighlightOptions["components"] = {
+		// rounded none is for syntax tabs
+		pre: ({ className, children, ...props }) => (
+			<Pre className={cn(className, "!rounded-none")} {...props}>
+				{children}
+			</Pre>
+		)
+	}
+
+	// overriding these custom components allows hovers to render
+	// correctly in code blocks outside markdown (e.g. on the home page)
+	Object.assign(components, {
+		Popup,
+		PopupContent,
+		PopupTrigger
+	})
+
 	const rendered = await highlight(code, {
 		...shikiConfig,
 		meta: {
 			__raw: "twoslash"
 		},
 		lang,
-		components: {
-			// rounded none is for syntax tabs
-			pre: ({ className, children, ...props }) => (
-				<Pre className={cn(className, "!rounded-none")} {...props}>
-					{children}
-				</Pre>
-			),
-			// @ts-expect-error -- JSX component
-			Popup,
-			PopupContent,
-			PopupTrigger
-		}
+		components
 	})
 
 	return <CodeBlock keepBackground>{rendered}</CodeBlock>
