@@ -13,8 +13,11 @@ const config = {
 	reactStrictMode: true,
 	serverExternalPackages: ["twoslash", "typescript"],
 	webpack: config => {
-		config.module.rules.push({
-			resourceQuery: /raw/, // matches imports with ?raw
+		// this must be added to the beginning of the array
+		// so that imports like ".ts?raw" don't have types stripped
+		config.module.rules.unshift({
+			// match imports ending in ?raw
+			resourceQuery: /raw$/,
 			type: "asset/source"
 		})
 		return config

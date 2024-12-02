@@ -1,5 +1,8 @@
 import type { propwiseXor } from "@ark/util"
-import { highlight, type HighlightOptions } from "fumadocs-core/server"
+import {
+	highlight as shikiHighlight,
+	type HighlightOptions
+} from "fumadocs-core/server"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
 import { cn } from "fumadocs-ui/components/api"
 import {
@@ -24,15 +27,34 @@ const snippetContentsById = {
 
 export type SnippetId = keyof typeof snippetContentsById
 
+export type BuiltinLang = "ts" | "bash" | "jsonc"
+
 export type CodeBlockProps = {
 	/** @default "ts" */
-	lang?: string
+	lang?: BuiltinLang
 } & propwiseXor<{ contents: string }, { fromFile: SnippetId }>
 
 // preload languages for shiki
 // https://github.com/fuma-nama/fumadocs/issues/1095
 await getSingletonHighlighter({
 	langs: Object.keys(bundledLanguages)
+})
+
+const components: HighlightOptions["components"] = {
+	// rounded none is for syntax tabs
+	pre: ({ className, children, ...props }) => (
+		<Pre className={cn(className, "!rounded-none")} {...props}>
+			{children}
+		</Pre>
+	)
+}
+
+// overriding these custom components allows hovers to render
+// correctly in code blocks outside markdown (e.g. on the home page)
+Object.assign(components, {
+	Popup,
+	PopupContent,
+	PopupTrigger
 })
 
 export const CodeBlock: React.FC<CodeBlockProps> = async ({
@@ -42,31 +64,23 @@ export const CodeBlock: React.FC<CodeBlockProps> = async ({
 }) => {
 	contents ??= snippetContentsById[fromFile!]
 
-	const components: HighlightOptions["components"] = {
-		// rounded none is for syntax tabs
-		pre: ({ className, children, ...props }) => (
-			<Pre className={cn(className, "!rounded-none")} {...props}>
-				{children}
-			</Pre>
-		)
+	const highlighted = await highlight(lang, contents)
+
+	return <FumaCodeBlock keepBackground>{highlighted}</FumaCodeBlock>
+}
+
+const highlight = async (lang: BuiltinLang, contents: string) => {
+	try {
+		return await shikiHighlight(contents, {
+			...shikiConfig,
+			meta: {
+				__raw: "twoslash"
+			},
+			lang,
+			components
+		})
+	} catch (e) {
+		console.error(`Failed to transform the following code:\n${contents}`)
+		throw e
 	}
-
-	// overriding these custom components allows hovers to render
-	// correctly in code blocks outside markdown (e.g. on the home page)
-	Object.assign(components, {
-		Popup,
-		PopupContent,
-		PopupTrigger
-	})
-
-	const rendered = await highlight(contents, {
-		...shikiConfig,
-		meta: {
-			__raw: "twoslash"
-		},
-		lang,
-		components
-	})
-
-	return <FumaCodeBlock keepBackground>{rendered}</FumaCodeBlock>
 }

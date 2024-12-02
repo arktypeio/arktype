@@ -11,6 +11,7 @@
 		// pnpm resolution errors
 		"declaration": false,
 		"lib": ["ESNext", "DOM"],
+		"baseUrl": ".",
 		"plugins": [
 			{
 				"name": "next"

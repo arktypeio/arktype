@@ -1,19 +1,35 @@
 import { transformerNotationErrorLevel } from "@shikijs/transformers"
-import { rehypeCodeDefaultOptions } from "fumadocs-core/mdx-plugins"
+import type { RehypeCodeOptions } from "fumadocs-core/mdx-plugins"
 import { transformerTwoslash } from "fumadocs-twoslash"
 import { defaultCompilerOptions } from "twoslash"
 
-const arkdarkPackageJson = (
-	await import("arkdark/package.json", {
-		with: { type: "json" }
-	})
-).default
+const { default: arkTypePackageJson } = await import("arkdark/package.json", {
+	with: { type: "json" }
+})
 
-const arktypeTextmate = (
-	await import("arkdark/tsWithArkType.tmLanguage.json", {
+const { default: arkTypeTmJson } = await import(
+	"arkdark/tsWithArkType.tmLanguage.json",
+	{
 		with: { type: "json" }
-	})
-).default
+	}
+)
+
+const { default: arkDarkTheme } = await import("arkdark/arkdark.json", {
+	with: { type: "json" }
+})
+
+// Theme adjustments
+
+arkDarkTheme.colors["editor.background"] = "#00000027"
+
+arkDarkTheme.tokenColors.push({
+	// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,
+	// but it's not available in Shiki so add a replacement
+	scope: ["meta.brace"],
+	settings: {
+		foreground: "#f5cf8f"
+	}
+})
 
 const twoslashPropertyPrefix = "(property) "
 const twoslash = transformerTwoslash({
@@ -86,7 +102,7 @@ declare global {
 				case "error":
 					// adapted from my ErrorLens implementation at
 					// https://github.com/usernamehw/vscode-error-lens/blob/d1786ddeedee23d70f5f75b16415a6579b554b59/src/utils/extUtils.ts#L127
-					for (const transformation of arkdarkPackageJson.contributes
+					for (const transformation of arkTypePackageJson.contributes
 						.configurationDefaults["errorLens.replace"]) {
 						const regex = new RegExp(transformation.matcher)
 						const matchResult = regex.exec(node.text)
@@ -106,7 +122,7 @@ declare global {
 							node.text = `TypeScript: ${node.text}`
 						}
 					}
-					return false
+					return true
 				default:
 					return true
 			}
@@ -114,25 +130,11 @@ declare global {
 	}
 })
 
-const arkdarkColors = await import("arkdark/arkdark.json", {
-	with: { type: "json" }
-})
-
-export const shikiConfig = {
-	...rehypeCodeDefaultOptions,
+export const shikiConfig: RehypeCodeOptions = {
 	themes: {
-		dark: arkdarkColors.default,
-		light: arkdarkColors.default
+		dark: arkDarkTheme,
+		light: arkDarkTheme
 	},
-	langs: [
-		...(rehypeCodeDefaultOptions.langs ?? []).filter(lang => lang !== "ts"),
-		"json" as const,
-		"bash" as const,
-		{ ...arktypeTextmate, name: "ts" } as never
-	],
-	transformers: [
-		...(rehypeCodeDefaultOptions.transformers ?? []),
-		twoslash,
-		transformerNotationErrorLevel()
-	]
+	langs: ["json", "bash", { ...arkTypeTmJson, name: "ts" }],
+	transformers: [twoslash, transformerNotationErrorLevel()]
 }
