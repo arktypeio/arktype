@@ -106,6 +106,7 @@ declare global {
 							node.text = `TypeScript: ${node.text}`
 						}
 					}
+					return false
 				default:
 					return true
 			}

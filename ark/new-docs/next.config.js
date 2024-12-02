@@ -1,12 +1,14 @@
-import { createMDX } from "fumadocs-mdx/next";
+// @ts-check
 
-const withMDX = createMDX();
+import { createMDX } from "fumadocs-mdx/next"
+
+const withMDX = createMDX()
 
 /** @type {import('next').NextConfig} */
 const config = {
-  output: "export",
-  reactStrictMode: true,
-  serverExternalPackages: ["twoslash", "typescript"],
-};
+	output: "export",
+	reactStrictMode: true,
+	serverExternalPackages: ["twoslash", "typescript"]
+}
 
-export default withMDX(config);
+export default withMDX(config)

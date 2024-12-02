@@ -2,8 +2,7 @@
 title: Number
 ---
 
-import { Tabs } from "fumadocs-ui/components/tabs";
-import { SyntaxTab } from "@/components/SyntaxTab";
+import { SyntaxTab, SyntaxTabs } from "../../../../components/SyntaxTabs.tsx"
 
 ### Keywords
 
@@ -13,8 +12,8 @@ import { SyntaxTab } from "@/components/SyntaxTab";
 
 ```ts twoslash
 const literals = type({
-  number: "1337",
-});
+	number: "1337"
+})
 ```
 
 ### Ranges
@@ -25,13 +24,13 @@ const literals = type({
 
 Constrain a `number` to a multiple of the specified integer.
 
-<Tabs items={["string", "fluent"]}>
+<SyntaxTabs>
 	<SyntaxTab kind="string">
 
 ```ts twoslash
 const evens = type({
-  key: "number%2",
-});
+	key: "number%2"
+})
 ```
 
     </SyntaxTab>
@@ -40,10 +39,10 @@ const evens = type({
 
 ```ts twoslash
 const evens = type({
-  key: type.number.divisibleBy(2),
-});
+	key: type.number.divisibleBy(2)
+})
 ```
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>

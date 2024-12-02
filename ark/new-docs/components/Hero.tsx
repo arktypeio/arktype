@@ -1,6 +1,6 @@
 import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
-import { PlatformCloud } from "./PlatformCloud"
+import { PlatformCloud } from "./PlatformCloud.tsx"
 
 export const Hero = () => (
 	<div className="flex justify-between">
@@ -11,7 +11,7 @@ export const Hero = () => (
 			</div>
 		</div>
 		<div className="relative w-full flex flex-col items-center text-center md:items-start md:text-left">
-			<h1 className="mb-4 text-3xl md:text-8xl">Arktype</h1>
+			<h1 className="mb-4 text-3xl md:text-8xl">ArkType</h1>
 			<p className="text-fd-muted-foreground text-lg">
 				Typescript&apos;s 1:1 validator, optimized from editor to runtime
 			</p>

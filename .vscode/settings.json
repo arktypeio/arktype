@@ -41,7 +41,9 @@
 		" ": true
 	},
 	"search.exclude": {
-		"**/out": true
+		"**/out": true,
+		"**/.next": true,
+		"**/.source": true
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"

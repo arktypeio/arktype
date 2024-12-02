@@ -1,19 +1,13 @@
-import type { ReactNode } from "react";
-import { HomeLayout } from "fumadocs-ui/layouts/home";
-import { baseOptions } from "@/app/layout.config";
-import { FloatYourBoat } from "@/components/FloatYourBoat";
+import { HomeLayout } from "fumadocs-ui/layouts/home"
+import type { ReactNode } from "react"
+import { FloatYourBoat } from "../../components/FloatYourBoat.tsx"
+import { baseOptions } from "../layout.config.tsx"
 
-export default function Layout({
-  children,
-}: {
-  children: ReactNode;
-}): React.ReactElement {
-  return (
-    <HomeLayout
-      {...baseOptions}
-      nav={{ ...baseOptions.nav, children: <FloatYourBoat /> }}
-    >
-      {children}
-    </HomeLayout>
-  );
-}
+export default ({ children }: { children: ReactNode }): React.ReactElement => (
+	<HomeLayout
+		{...baseOptions}
+		nav={{ ...baseOptions.nav, children: <FloatYourBoat /> }}
+	>
+		{children}
+	</HomeLayout>
+)

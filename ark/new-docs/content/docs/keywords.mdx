@@ -2,14 +2,13 @@
 title: Keywords
 ---
 
-import { Tabs } from "fumadocs-ui/components/tabs";
-import { SyntaxTab } from "@/components/SyntaxTab";
+import { SyntaxTab, SyntaxTabs } from "../../components/SyntaxTabs.tsx"
 
 ### TypeScript
 
 All\* builtin TypeScript keywords are directly available.
 
-<Tabs items={["string", "fluent"]}>
+<SyntaxTabs>
 	<SyntaxTab kind="string">
 ```ts twoslash
 const keywords = type({
@@ -23,22 +22,22 @@ const keywords = type({
 
 ```ts twoslash
 const keywords = type({
-  string: type.string,
-  date: type.Date,
-});
+	string: type.string,
+	date: type.Date
+})
 ```
 
 Common keywords are exposed directly on `type`.
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 ### Subtype
 
 Subtype keywords refine or transform their root type.
 
-<Tabs items={["string", "fluent"]}>
+<SyntaxTabs>
 	<SyntaxTab kind="string">
 ```ts twoslash
 const keywords = type({
@@ -57,11 +56,11 @@ You can easily explore available subtypes via autocomplete by with a partial def
 
 ```ts twoslash
 const keywords = type({
-  dateFormattedString: type.keywords.string.date.root,
-  isoFormattedString: type.keywords.string.date.iso.root,
-  transformStringToDate: type.keywords.string.date.parse,
-  transformIsoFormattedStringToDate: type.keywords.string.date.iso.parse,
-});
+	dateFormattedString: type.keywords.string.date.root,
+	isoFormattedString: type.keywords.string.date.iso.root,
+	transformStringToDate: type.keywords.string.date.parse,
+	transformIsoFormattedStringToDate: type.keywords.string.date.iso.parse
+})
 ```
 
 All builtin keywords and modules are available in `type.keywords`.
@@ -70,4 +69,4 @@ All builtin keywords and modules are available in `type.keywords`.
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>

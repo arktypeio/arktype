@@ -4,25 +4,25 @@ sidebar:
   order: 1
 ---
 
-import { Tabs, Tab } from "fumadocs-ui/components/tabs";
-import { Pre, CodeBlock } from "fumadocs-ui/components/codeblock";
-import { HighlightedCode } from "@/components/code-snippets/Code";
+import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock"
+import { Tab, Tabs } from "fumadocs-ui/components/tabs"
+import { HighlightedCode } from "../../../components/code-snippets/Code.tsx"
 
 ## Installation
 
-<Tabs items={["pnpm", "npm", "yarn", "bun"]}>
-  <Tab value="pnpm">
-    <HighlightedCode lang="bash" code="pnpm install arktype" />
-  </Tab>
-  <Tab value="npm">
-    <HighlightedCode lang="bash" code="npm install arktype" />
-  </Tab>
-  <Tab value="yarn">
-    <HighlightedCode lang="bash" code="yarn install arktype" />
-  </Tab>
-  <Tab value="bun">
-    <HighlightedCode lang="bash" code="bun install arktype" />
-  </Tab>
+<Tabs>
+	<Tab value="pnpm">
+		<HighlightedCode lang="bash" code="pnpm install arktype" />
+	</Tab>
+	<Tab value="npm">
+		<HighlightedCode lang="bash" code="npm install arktype" />
+	</Tab>
+	<Tab value="yarn">
+		<HighlightedCode lang="bash" code="yarn install arktype" />
+	</Tab>
+	<Tab value="bun">
+		<HighlightedCode lang="bash" code="bun install arktype" />
+	</Tab>
 </Tabs>
 
 You'll also need...

@@ -2,8 +2,7 @@
 title: Objects
 ---
 
-import { Tabs } from "@astrojs/starlight/components"
-import SyntaxTab from "../../components/SyntaxTab.astro"
+import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 
 ## properties
 
@@ -12,7 +11,7 @@ Objects definitions can include any combination of required, optional, defaultab
 <a name="properties/required" />
 ##### required
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -45,12 +44,12 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="properties/optional" />
 ##### optional
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -103,7 +102,7 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 :::caution[Optional properties cannot be present with the value undefined]
 
@@ -132,7 +131,7 @@ const errorResult = myObj({ key: undefined })
 <a name="properties/defaultable" />
 ##### defaultable
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -173,7 +172,7 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 :::caution[Optional and default only work within objects!]
 Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
@@ -203,7 +202,7 @@ Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
 <a name="properties/index" />
 ##### index
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -217,7 +216,7 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="properties/undeclared" />
 ##### undeclared
@@ -241,7 +240,7 @@ const myObject = type({
 
 ## arrays
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -282,14 +281,14 @@ const arrays = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="arrays/lengths" />
 ##### lengths
 
 Constrain an array with an inclusive or exclusive min or max length.
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -316,11 +315,11 @@ const bounded = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -349,7 +348,7 @@ const range = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 ## tuples
 
@@ -358,7 +357,7 @@ Like objects, tuples are structures whose values are nested definitions. Like Ty
 <a name="tuples/prefix" />
 ##### prefix
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -387,7 +386,7 @@ const myTuple = type([
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="tuples/optional" />
 ##### optional
@@ -396,7 +395,7 @@ Tuples can include any number of optional elements following its prefix elements
 
 Like in TypeScript, optional elements are mutually exclusive with postfix elements.
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -449,7 +448,7 @@ const myTuple = type([
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="tuples/variadic" />
 ##### variadic
@@ -458,7 +457,7 @@ Like in TypeScript, variadic elements allow zero or more consecutive values of a
 
 They are specified with a `"..."` operator preceding an array element.
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -477,7 +476,7 @@ const myTuple = type([type.string, "...", type.number.array()])
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="tuples/postfix" />
 ##### postfix
@@ -486,7 +485,7 @@ Postfix elements are required elements following a variadic element.
 
 They are mutually exclusive with optional elements.
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -505,7 +504,7 @@ const myTuple = type(["...", type.number.array(), type.boolean, type.string])
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 ## dates
 
@@ -530,7 +529,7 @@ Constrain a Date with an inclusive or exclusive min or max.
 
 Bounds can be expressed as either a [number](/primitives#number/literals) representing its corresponding Unix epoch value or a [Date literal](/objects#dates/literals).
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -555,11 +554,11 @@ const bounded = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -588,13 +587,13 @@ const bounded = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 ## instanceof
 
 Most builtin instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
 
-<Tabs>
+<SyntaxTabs>
     <SyntaxTab fluent>
 
 ```ts
@@ -629,7 +628,7 @@ const instances = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="instanceof/keywords" />
 ##### keywords
