@@ -11,7 +11,14 @@ const { createMDX } =
 const config = {
 	output: "export",
 	reactStrictMode: true,
-	serverExternalPackages: ["twoslash", "typescript"]
+	serverExternalPackages: ["twoslash", "typescript"],
+	webpack: config => {
+		config.module.rules.push({
+			resourceQuery: /raw/, // matches imports with ?raw
+			type: "asset/source"
+		})
+		return config
+	}
 } as const satisfies NextConfig
 
 const mdxConfig = createMDX()(config)

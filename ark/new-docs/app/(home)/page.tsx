@@ -1,5 +1,5 @@
 import { ArkCard, ArkCards } from "../../components/ArkCard"
-import { CodeSnippet } from "../../components/code-snippets/Code.tsx"
+import { CodeBlock } from "../../components/CodeBlock.tsx"
 import { Hero } from "../../components/Hero.tsx"
 import { TsIcon } from "../../components/icons/ts.tsx"
 import { LinkCard } from "../../components/LinkCard.tsx"
@@ -24,7 +24,7 @@ export default () => (
 					Type syntax you already know with safety and completions unlike
 					anything you&apos;ve ever seen
 				</p>
-				<CodeSnippet filename="unparalleledDx.twoslash.js" />
+				<CodeBlock fromFile="unparalleledDx" />
 			</ArkCard>
 			<ArkCard title="Faster... everything" icon={<RocketIcon />}>
 				<p>
@@ -38,25 +38,25 @@ export default () => (
 					Definitions are half as long, type errors are twice as readable, and
 					hovers tell you just what really matters
 				</p>
-				<CodeSnippet filename="clarityAndConcision.twoslash.js" />
+				<CodeBlock fromFile="clarityAndConcision" />
 			</ArkCard>
 			<ArkCard title="Better Errors" icon={<MessageCircleWarning />}>
 				<p>Deeply customizable messages with great defaults</p>
-				<CodeSnippet filename="betterErrors.twoslash.ts" />
+				<CodeBlock fromFile="betterErrors" />
 			</ArkCard>
 			<ArkCard title="Deep Introspectability" icon={<SearchIcon />}>
 				<p>
 					ArkType uses set theory to understand and expose the relationships
 					between your types at runtime the way TypeScript does at compile time
 				</p>
-				<CodeSnippet filename="deepIntrospectability.twoslash.js" />
+				<CodeBlock fromFile="deepIntrospectability" />
 			</ArkCard>
 			<ArkCard title="Intrinsic Optimization" icon={<LightbulbIcon />}>
 				<p>
 					Every schema is internally normalized and reduced to its purest and
 					fastest representation
 				</p>
-				<CodeSnippet filename="intrinsicOptimization.twoslash.js" />
+				<CodeBlock fromFile="intrinsicOptimization" />
 			</ArkCard>
 			{/* <Card title="Portable" icon="seti:json">
         <p>

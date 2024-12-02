@@ -16,12 +16,6 @@
 				"name": "next"
 			}
 		],
-		"baseUrl": ".",
-		"paths": {
-			// dummy declaration to allow `.css` imports without creating extra
-			// .d.ts files
-			"*.css": ["./next-env.d.ts"]
-		},
 		"incremental": true
 	},
 	"mdx": {
