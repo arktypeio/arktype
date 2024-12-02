@@ -15,11 +15,11 @@ const config = {
 	webpack: config => {
 		// this must be added to the beginning of the array
 		// so that imports like ".ts?raw" don't have types stripped
-		config.module.rules.unshift({
-			// match imports ending in ?raw
-			resourceQuery: /raw$/,
+		config.module.rules.push({
+			resourceQuery: /raw/,
 			type: "asset/source"
 		})
+
 		return config
 	}
 } as const satisfies NextConfig

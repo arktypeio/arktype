@@ -1,3 +1,8 @@
+import betterErrors from "!./snippets/betterErrors.twoslash.ts?raw"
+import clarityAndConcision from "!./snippets/clarityAndConcision.twoslash.js?raw"
+import deepIntrospectability from "!./snippets/deepIntrospectability.twoslash.js?raw"
+import intrinsicOptimization from "!./snippets/intrinsicOptimization.twoslash.js?raw"
+import unparalleledDx from "!./snippets/unparalleledDx.twoslash.js?raw"
 import type { propwiseXor } from "@ark/util"
 import {
 	highlight as shikiHighlight,
@@ -11,11 +16,6 @@ import {
 } from "fumadocs-ui/components/codeblock"
 import { bundledLanguages, getSingletonHighlighter } from "shiki"
 import { shikiConfig } from "../lib/shiki.ts"
-import betterErrors from "./snippets/betterErrors.twoslash.ts?raw"
-import clarityAndConcision from "./snippets/clarityAndConcision.twoslash.js?raw"
-import deepIntrospectability from "./snippets/deepIntrospectability.twoslash.js?raw"
-import intrinsicOptimization from "./snippets/intrinsicOptimization.twoslash.js?raw"
-import unparalleledDx from "./snippets/unparalleledDx.twoslash.js?raw"
 
 const snippetContentsById = {
 	betterErrors,
