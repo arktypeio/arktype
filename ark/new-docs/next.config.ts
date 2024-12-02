@@ -14,7 +14,9 @@ const config = {
 	serverExternalPackages: ["twoslash", "typescript"],
 	webpack: config => {
 		// this must be added to the beginning of the array
-		// so that imports like ".ts?raw" don't have types stripped
+		// so that imports like the following don't have types stripped:
+
+		// import betterErrors from "!./snippets/betterErrors.twoslash.ts?raw"
 		config.module.rules.push({
 			resourceQuery: /raw/,
 			type: "asset/source"
