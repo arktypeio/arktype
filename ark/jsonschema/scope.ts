@@ -31,6 +31,9 @@ export type ArraySchema = {
 	items?: Schema | Schema[]
 	maxItems?: number
 	minItems?: number
+	// NB: Technically `prefixItems` and `items` are mutually exclusive,
+	// which is reflected at runtime but it's not worth the performance cost to validate this statically.
+	prefixItems?: Schema[]
 	type: "array"
 	uniqueItems?: boolean
 }
@@ -105,6 +108,9 @@ const $: JsonSchemaScope = scope({
 		"items?": "Schema|Schema[]",
 		"maxItems?": "number.integer>=0",
 		"minItems?": "number.integer>=0",
+		// NB: Technically `prefixItems` and `items` are mutually exclusive,
+		// which is reflected at runtime but it's not worth the performance cost to validate this statically.
+		"prefixItems?": "Schema[]",
 		type: "'array'",
 		"uniqueItems?": "boolean"
 	},

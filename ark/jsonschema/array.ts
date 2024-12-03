@@ -55,9 +55,19 @@ const arrayContainsItemMatchingSchema = (
 export const validateJsonSchemaArray: Type<
 	(In: JsonSchema.ArraySchema) => Out<Type<unknown[], {}>>,
 	any
-> = JsonSchema.ArraySchema.pipe(jsonSchema => {
+> = JsonSchema.ArraySchema.pipe((jsonSchema, ctx) => {
 	const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
 		proto: "Array"
+	}
+
+	if ("prefixItems" in jsonSchema) {
+		if ("items" in jsonSchema) {
+			ctx.reject({
+				expected: "a valid array JSON Schema",
+				actual:
+					"an array JSON Schema with mutually exclusive keys 'prefixItems' and 'items' specified"
+			})
+		} else jsonSchema.items = jsonSchema.prefixItems
 	}
 
 	if ("items" in jsonSchema) {
