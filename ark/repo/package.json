@@ -6,11 +6,11 @@
 	"dependencies": {
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
+		"@trpc/server": "10.45.2",
 		"arktype": "workspace:*",
-		"type-fest": "4.26.1",
+		"type-fest": "4.30.0",
 		"typescript": "catalog:",
-		"zod": "3.23.8",
-		"@trpc/server": "10.45.2"
+		"zod": "3.23.8"
 	},
 	"scripts": {
 		"build": "echo No build required!"
