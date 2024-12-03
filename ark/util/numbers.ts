@@ -36,12 +36,14 @@ export const isWellFormedNumber: RegExp["test"] =
 
 /**
  *  Matches a well-formatted numeric expression according to the following rules:
- *    1. Must include an integer portion (i.e. '.321' must be written as '0.321')
- *    2. The first digit of the value must not be 0, unless the entire integer portion is 0
- *    3. The value may not be "-0"
+ *    1. The first digit of the value must not be 0, unless the entire integer portion is 0
+ *    2. The value may not be "-0"
  */
-export const numericStringMatcher: RegExp =
-	/^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d+)?$/
+const integerMatcher = /(?!^-0$)-?(?:0|[1-9]\d*)/
+const decimalMatcher = /(?:\.\d+)/
+export const numericStringMatcher: RegExp = new RegExp(
+	`^(?:(?:${integerMatcher.source}${decimalMatcher.source}?)|${decimalMatcher.source})$`
+)
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
