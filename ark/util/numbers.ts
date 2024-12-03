@@ -1,4 +1,5 @@
 import { throwParseError } from "./errors.ts"
+import { anchoredRegex } from "./strings.ts"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
@@ -41,8 +42,8 @@ export const isWellFormedNumber: RegExp["test"] =
  */
 const integerMatcher = /(?!^-0$)-?(?:0|[1-9]\d*)/
 const decimalMatcher = /(?:\.\d+)/
-export const numericStringMatcher: RegExp = new RegExp(
-	`^(?:(?:${integerMatcher.source}${decimalMatcher.source}?)|${decimalMatcher.source})$`
+export const numericStringMatcher: RegExp = anchoredRegex(
+	`(?:${integerMatcher.source}${decimalMatcher.source}?)|${decimalMatcher.source}`
 )
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
