@@ -10,20 +10,38 @@ contextualize(() => {
 		attest(t.json).snap({ proto: "Array" })
 	})
 
-	it("items & additionalItems", () => {
-		const tItems = parseJsonSchema({
+	it("items & prefixItems", () => {
+		const tItems = parseJsonSchema({ type: "array", items: { type: "string" } })
+		attest(tItems.json).snap({ proto: "Array", sequence: "string" })
+		attest(tItems.allows(["foo"])).equals(true)
+		attest(tItems.allows(["foo", "bar"])).equals(true)
+		attest(tItems.allows(["foo", 3, "bar"])).equals(false)
+
+		const tItemsArr = parseJsonSchema({
 			type: "array",
 			items: [{ type: "string" }, { type: "number" }]
 		})
-		attest(tItems.json).snap({
+		attest(tItemsArr.json).snap({
 			proto: "Array",
 			sequence: { prefix: ["string", "number"] },
 			exactLength: 2
 		})
-		attest(tItems.allows(["foo", 1])).equals(true)
-		attest(tItems.allows([1, "foo"])).equals(false)
-		attest(tItems.allows(["foo", 1, true])).equals(false)
+		attest(tItemsArr.allows(["foo", 1])).equals(true)
+		attest(tItemsArr.allows([1, "foo"])).equals(false)
+		attest(tItemsArr.allows(["foo", 1, true])).equals(false)
 
+		const tPrefixItems = parseJsonSchema({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }]
+		})
+		attest(tPrefixItems.json).snap({
+			proto: "Array",
+			sequence: { prefix: ["string", "number"] },
+			exactLength: 2
+		})
+	})
+
+	it("additionalItems", () => {
 		const tItemsVariadic = parseJsonSchema({
 			type: "array",
 			items: [{ type: "string" }, { type: "number" }],
