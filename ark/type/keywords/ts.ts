@@ -163,12 +163,12 @@ const Extract = genericNode("T", "U")(
 )
 
 export const arkTsGenerics: arkTsGenerics.module = arkModule({
-	Record,
-	Pick,
-	Omit,
 	Exclude,
 	Extract,
+	Omit,
 	Partial,
+	Pick,
+	Record,
 	Required
 })
 
@@ -178,12 +178,12 @@ export declare namespace arkTsGenerics {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		Record: typeof Record.t
-		Pick: typeof Pick.t
-		Omit: typeof Omit.t
 		Exclude: typeof Exclude.t
 		Extract: typeof Extract.t
+		Omit: typeof Omit.t
 		Partial: typeof Partial.t
+		Pick: typeof Pick.t
+		Record: typeof Record.t
 		Required: typeof Required.t
 	}
 }

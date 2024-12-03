@@ -58,7 +58,9 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 	"description"
 >
 
-$ark.config = {}
+// $ark.config could already be set if it were imported previously from the
+// dedicated config entrypoint, in which case we don't want to reinitialize it
+$ark.config ??= {}
 
 export const configure = (config: ArkConfig): ArkConfig =>
 	Object.assign($ark.config, mergeConfigs($ark.config, config))

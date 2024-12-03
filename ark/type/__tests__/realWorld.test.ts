@@ -1042,4 +1042,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			'{ storeA: { [string]: string }, ext?: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext?: string = ".txt" }'
 		)
 	})
+
+	it("correct toString for array of union", () => {
+		const t = type("(string | number)[]")
+		attest(t.expression).snap("(number | string)[]")
+	})
 })

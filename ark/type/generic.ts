@@ -407,7 +407,8 @@ export type GenericParser<$ = {}> = <
 			readonly [infer name, infer def]
 		) ?
 			readonly [name, type.validate<def, $>]
-		:	paramsDef[i]
+		:	// if the param  is only a name, no validation is required
+			paramsDef[i]
 	}
 ) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>
 

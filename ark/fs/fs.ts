@@ -166,7 +166,7 @@ export const readPackageJsonAncestors = (fromDir?: string): any[] =>
 export const fromPackageRoot = (...joinWith: string[]): string =>
 	join(assertPackageRoot(dirOfCaller()), ...joinWith)
 
-export const readPackageJson = (startDir?: string): any =>
+export const readPackageJson = (startDir = dirOfCaller()): any =>
 	readJson(join(assertPackageRoot(startDir), "package.json"))
 
 export const getSourceControlPaths = (): string[] =>
