@@ -8,7 +8,7 @@ import { printable } from "@ark/util"
 import type { Out, Type } from "arktype"
 
 import { parseJsonSchema } from "./json.ts"
-import { JsonSchema } from "./scope.ts"
+import { JsonSchemaScope, type ArraySchema } from "./scope.ts"
 
 const deepNormalize = (data: unknown): unknown =>
 	typeof data === "object" ?
@@ -53,9 +53,9 @@ const arrayContainsItemMatchingSchema = (
 		})
 
 export const validateJsonSchemaArray: Type<
-	(In: JsonSchema.ArraySchema) => Out<Type<unknown[], {}>>,
+	(In: ArraySchema) => Out<Type<unknown[], {}>>,
 	any
-> = JsonSchema.ArraySchema.pipe((jsonSchema, ctx) => {
+> = JsonSchemaScope.ArraySchema.pipe((jsonSchema, ctx) => {
 	const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
 		proto: "Array"
 	}

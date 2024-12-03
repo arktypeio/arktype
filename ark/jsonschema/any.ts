@@ -1,13 +1,8 @@
 import { throwParseError } from "@ark/util"
-import { type Type, type } from "arktype"
-import type { JsonSchema } from "./scope.ts"
+import { type JsonSchema, type Type, type } from "arktype"
 
 export const parseJsonSchemaAnyKeywords = (
-	jsonSchema:
-		| JsonSchema.TypeWithNoKeywords
-		| JsonSchema.TypeWithKeywords
-		| JsonSchema.AnyKeywords
-		| JsonSchema.CompositionKeywords
+	jsonSchema: JsonSchema
 ): Type | undefined => {
 	if ("const" in jsonSchema) {
 		if ("enum" in jsonSchema) {

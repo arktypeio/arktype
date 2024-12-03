@@ -1,12 +1,12 @@
 import { rootSchema, type Intersection } from "@ark/schema"
 import { throwParseError } from "@ark/util"
-import type { Out, Type } from "arktype"
-import { JsonSchema } from "./scope.ts"
+import type { JsonSchema, Out, Type } from "arktype"
+import { JsonSchemaScope } from "./scope.ts"
 
 export const validateJsonSchemaNumber: Type<
-	(In: JsonSchema.NumberSchema) => Out<Type<number, any>>,
+	(In: JsonSchema.Numeric) => Out<Type<number, any>>,
 	any
-> = JsonSchema.NumberSchema.pipe((jsonSchema): Type<number> => {
+> = JsonSchemaScope.NumberSchema.pipe((jsonSchema): Type<number> => {
 	const arktypeNumberSchema: Intersection.Schema<number> = {
 		domain: "number"
 	}

@@ -1,19 +1,18 @@
 import { printable } from "@ark/util"
-import { type, type Type } from "arktype"
+import { type, type JsonSchema, type Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
-import type { JsonSchema } from "./scope.ts"
 
-const validateAllOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]): Type =>
+const validateAllOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.and(validator))
 
-const validateAnyOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]): Type =>
+const validateAnyOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
 
-const validateNotJsonSchema = (jsonSchema: JsonSchema.Schema) => {
+const validateNotJsonSchema = (jsonSchema: JsonSchema) => {
 	const inner = parseJsonSchema(jsonSchema)
 	return type("unknown").narrow((data, ctx) =>
 		inner.allows(data) ?
@@ -25,7 +24,7 @@ const validateNotJsonSchema = (jsonSchema: JsonSchema.Schema) => {
 	) as Type
 }
 
-const validateOneOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]) => {
+const validateOneOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]) => {
 	const oneOfValidators = jsonSchemas.map(nestedSchema =>
 		parseJsonSchema(nestedSchema)
 	)
@@ -58,11 +57,7 @@ const validateOneOfJsonSchemas = (jsonSchemas: JsonSchema.Schema[]) => {
 }
 
 export const parseJsonSchemaCompositionKeywords = (
-	jsonSchema:
-		| JsonSchema.TypeWithNoKeywords
-		| JsonSchema.TypeWithKeywords
-		| JsonSchema.AnyKeywords
-		| JsonSchema.CompositionKeywords
+	jsonSchema: JsonSchema
 ): Type | undefined => {
 	if ("allOf" in jsonSchema) return validateAllOfJsonSchemas(jsonSchema.allOf)
 	if ("anyOf" in jsonSchema) return validateAnyOfJsonSchemas(jsonSchema.anyOf)

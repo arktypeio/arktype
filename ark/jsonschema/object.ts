@@ -6,13 +6,13 @@ import {
 	type TraversalContext
 } from "@ark/schema"
 import { conflatenateAll, getDuplicatesOf, printable } from "@ark/util"
-import type { Out, Type } from "arktype"
+import type { JsonSchema, Out, Type } from "arktype"
 
 import { parseJsonSchema } from "./json.ts"
-import { JsonSchema } from "./scope.ts"
+import { JsonSchemaScope } from "./scope.ts"
 
 const parseMinMaxProperties = (
-	jsonSchema: JsonSchema.ObjectSchema,
+	jsonSchema: JsonSchema.Object,
 	ctx: TraversalContext
 ) => {
 	const predicates: Predicate.Schema[] = []
@@ -51,7 +51,7 @@ const parseMinMaxProperties = (
 }
 
 const parsePatternProperties = (
-	jsonSchema: JsonSchema.ObjectSchema,
+	jsonSchema: JsonSchema.Object,
 	ctx: TraversalContext
 ) => {
 	if (!("patternProperties" in jsonSchema)) return
@@ -98,7 +98,7 @@ const parsePatternProperties = (
 }
 
 const parsePropertyNames = (
-	jsonSchema: JsonSchema.ObjectSchema,
+	jsonSchema: JsonSchema.Object,
 	ctx: TraversalContext
 ) => {
 	if (!("propertyNames" in jsonSchema)) return
@@ -131,7 +131,7 @@ const parsePropertyNames = (
 }
 
 const parseRequiredAndOptionalKeys = (
-	jsonSchema: JsonSchema.ObjectSchema,
+	jsonSchema: JsonSchema.Object,
 	ctx: TraversalContext
 ) => {
 	const optionalKeys: string[] = []
@@ -183,7 +183,7 @@ const parseRequiredAndOptionalKeys = (
 	}
 }
 
-const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
+const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 	if (!("additionalProperties" in jsonSchema)) return
 
 	const properties =
@@ -229,9 +229,9 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.ObjectSchema) => {
 }
 
 export const validateJsonSchemaObject: Type<
-	(In: JsonSchema.ObjectSchema) => Out<Type<object, any>>,
+	(In: JsonSchema.Object) => Out<Type<object, any>>,
 	any
-> = JsonSchema.ObjectSchema.pipe((jsonSchema, ctx): Type<object> => {
+> = JsonSchemaScope.ObjectSchema.pipe((jsonSchema, ctx): Type<object> => {
 	const arktypeObjectSchema: Intersection.Schema<object> = {
 		domain: "object"
 	}
