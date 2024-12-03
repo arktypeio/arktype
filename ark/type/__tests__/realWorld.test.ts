@@ -1047,4 +1047,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const t = type("(string | number)[]")
 		attest(t.expression).snap("(number | string)[]")
 	})
+
+	it("union with length constraint", () => {
+		const feedbackSchema = type({
+			contact: "string.email | string == 0"
+		})
+
+		attest(feedbackSchema.json).snap()
+		attest(feedbackSchema.t).type.toString.snap(`{
+    contact: string.email | string.is<ExactlyLength<0>>;
+}`)
+	})
 })

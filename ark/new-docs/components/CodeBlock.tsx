@@ -32,7 +32,7 @@ export type BuiltinLang = "ts" | "bash" | "jsonc"
 export type CodeBlockProps = {
 	/** @default "ts" */
 	lang?: BuiltinLang
-} & propwiseXor<{ contents: string }, { fromFile: SnippetId }>
+} & propwiseXor<{ children: string }, { fromFile: SnippetId }>
 
 // preload languages for shiki
 // https://github.com/fuma-nama/fumadocs/issues/1095
@@ -59,12 +59,12 @@ Object.assign(components, {
 
 export const CodeBlock: React.FC<CodeBlockProps> = async ({
 	lang = "ts",
-	contents,
+	children,
 	fromFile
 }) => {
-	contents ??= snippetContentsById[fromFile!]
+	children ??= snippetContentsById[fromFile!]
 
-	const highlighted = await highlight(lang, contents)
+	const highlighted = await highlight(lang, children)
 
 	return <FumaCodeBlock keepBackground>{highlighted}</FumaCodeBlock>
 }

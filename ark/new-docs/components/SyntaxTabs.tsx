@@ -1,4 +1,6 @@
+import type { omit } from "@ark/util"
 import { Tab, Tabs, type TabsProps } from "fumadocs-ui/components/tabs"
+import type React from "react"
 
 export const syntaxKinds = [
 	"string",
@@ -10,13 +12,16 @@ export const syntaxKinds = [
 
 export type SyntaxKind = (typeof syntaxKinds)[number]
 
-export const SyntaxTab: React.FC<{ children: string; kind: SyntaxKind }> = ({
+export const SyntaxTabs: React.FC<omit<TabsProps, "items">> = ({
 	children,
-	kind
-}) => <Tab value={kind}>{children}</Tab>
-
-export const SyntaxTabs: React.FC<TabsProps> = ({ children, ...rest }) => (
+	...rest
+}) => (
 	<Tabs {...rest} items={syntaxKinds}>
 		{children}
 	</Tabs>
 )
+
+export const SyntaxTab: React.FC<{
+	children: React.ReactNode
+	kind: SyntaxKind
+}> = ({ children, kind }) => <Tab value={kind}>{children}</Tab>

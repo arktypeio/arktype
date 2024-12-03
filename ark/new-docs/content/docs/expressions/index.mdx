@@ -6,16 +6,79 @@ import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 
 ### Intersection
 
-{/* TODO:DOC */}
+Like its TypeScript counterpart, an intersection combines two existing `Type`s to create a new `Type` that enforces the constraints of both.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	// an email address with the domain arktype.io
+	intersected: "string.email & /@arktype\\.io$/"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const fooObject = type({
+	foo: "string"
+})
+
+// an object requiring both foo and bar
+const foobarObject = fooObject.and({
+	bar: "number"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// an object requiring both foo and bar
+const foobarObject = type([
+	{
+		foo: "string"
+	},
+	"&",
+	{
+		bar: "number"
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+// an object requiring both foo and bar
+const foobarObject = type(
+	{
+		foo: "string"
+	},
+	"&",
+	{
+		bar: "number"
+	}
+)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### Union
 
 All unions are automatically discriminated to optimize check time and error message clarity.
 
 <SyntaxTabs>
-	<SyntaxTab kind="string">
+	<SyntaxTab string>
 
-```ts twoslash
+```ts
 const unions = type({
 	key: "string | number"
 })
@@ -23,9 +86,9 @@ const unions = type({
 
     </SyntaxTab>
 
-    <SyntaxTab kind="fluent">
+    <SyntaxTab fluent>
 
-```ts twoslash
+```ts
 const unions = type({
 	key: type.string.or(type.number)
 })
@@ -33,9 +96,9 @@ const unions = type({
 
     </SyntaxTab>
 
-    <SyntaxTab kind="tuple">
+    <SyntaxTab tuple>
 
-```ts twoslash
+```ts
 const unions = type({
 	key: ["string", "|", { name: "string" }]
 })
@@ -43,9 +106,9 @@ const unions = type({
 
     </SyntaxTab>
 
-    <SyntaxTab kind="spread">
+    <SyntaxTab spread>
 
-```ts twoslash
+```ts
 const unions = type({
 	key: type("string", "|", { name: "string" })
 })
@@ -57,15 +120,208 @@ const unions = type({
 
 ### Brand
 
-{/* TODO:DOC */}
+Add a type-only symbol to an existing type so that the only values that satisfy is are those that have been directly validated.
+
+<SyntaxTabs>
+
+    <SyntaxTab string>
+
+```ts
+// hover to see ArkType's representation of a branded type
+const myObject = type({
+	brandedString: "string#id"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// hover to see ArkType's representation of a branded type
+const myObject = type({
+	brandedString: type.string.brand("id")
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### Narrow
 
-{/* TODO:DOC */}
+Narrow expressions allow you to add custom validation logic and error messages. You can read more about them in [their intro section](/intro/adding-constraints#narrow).
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const form = type({
+	password: "string",
+	confirmPassword: "string"
+}).narrow((data, ctx) => {
+	if (data.password === data.confirmPassword) {
+		return true
+	}
+	return ctx.reject({
+		expected: "identical to password",
+		// don't display the password in the error message!
+		actual: "",
+		path: ["confirmPassword"]
+	})
+})
+
+// ArkErrors: confirmPassword must be identical to password
+const out = form({
+	password: "arktype",
+	confirmPassword: "artkype"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const form = type([
+	{
+		password: "string",
+		confirmPassword: "string"
+	},
+	":",
+	(data, ctx) => {
+		if (data.password === data.confirmPassword) {
+			return true
+		}
+		return ctx.reject({
+			expected: "identical to password",
+			// don't display the password in the error message!
+			actual: "",
+			path: ["confirmPassword"]
+		})
+	}
+])
+
+// ArkErrors: confirmPassword must be identical to password
+const out = form({
+	password: "arktype",
+	confirmPassword: "artkype"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+const form = type(
+	{
+		password: "string",
+		confirmPassword: "string"
+	},
+	":",
+	(data, ctx) => {
+		if (data.password === data.confirmPassword) {
+			return true
+		}
+		return ctx.reject({
+			expected: "identical to password",
+			// don't display the password in the error message!
+			actual: "",
+			path: ["confirmPassword"]
+		})
+	}
+)
+
+// ArkErrors: confirmPassword must be identical to password
+const out = form({
+	password: "arktype",
+	confirmPassword: "artkype"
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+If the return type of a narrow is a type predicate, that will be reflected in the inferred `Type`.
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+// hover to see how the predicate is propagated to the outer `Type`
+const arkString = type("string").narrow(
+	(data, ctx): data is `ark${string}` =>
+		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
+)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// hover to see how the predicate is propagated to the outer `Type`
+const arkString = type([
+	"string",
+	":",
+	(data, ctx): data is `ark${string}` =>
+		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+// hover to see how the predicate is propagated to the outer `Type`
+const arkString = type(
+	"string",
+	":",
+	(data, ctx): data is `ark${string}` =>
+		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
+)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### Morph
 
-{/* TODO:DOC */}
+Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/intro/morphs-and-more/).
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+// hover to see how morphs are represented at a type-level
+const trimStringStart = type("string").pipe(str => str.trimStart())
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// hover to see how morphs are represented at a type-level
+const trimStringStart = type(["string", "=>", str => str.trimStart()])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+// hover to see how morphs are represented at a type-level
+const trimStringStart = type("string", "=>", str => str.trimStart())
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### Unit
 
@@ -73,9 +329,9 @@ While embedded [literal syntax](/literals) is usually ideal for defining exact p
 
 <SyntaxTabs>
 
-    <SyntaxTab kind="fluent">
+    <SyntaxTab fluent>
 
-```ts twoslash
+```ts
 const mySymbol = Symbol()
 
 const exactValue = type.unit(mySymbol)
@@ -83,9 +339,9 @@ const exactValue = type.unit(mySymbol)
 
     </SyntaxTab>
 
-    <SyntaxTab kind="tuple">
+    <SyntaxTab tuple>
 
-```ts twoslash
+```ts
 const mySymbol = Symbol()
 
 const exactValue = type(["===", mySymbol])
@@ -93,9 +349,9 @@ const exactValue = type(["===", mySymbol])
 
     </SyntaxTab>
 
-    <SyntaxTab kind="spread">
+    <SyntaxTab spread>
 
-```ts twoslash
+```ts
 const mySymbol = Symbol()
 
 const exactValue = type("===", mySymbol)
@@ -111,9 +367,9 @@ const exactValue = type("===", mySymbol)
 
 <SyntaxTabs>
 
-    <SyntaxTab kind="fluent">
+    <SyntaxTab fluent>
 
-```ts twoslash
+```ts
 const mySymbol = Symbol()
 
 const exactValueFromSet = type.enumerated(1337, true, mySymbol)
@@ -121,9 +377,9 @@ const exactValueFromSet = type.enumerated(1337, true, mySymbol)
 
     </SyntaxTab>
 
-    <SyntaxTab kind="tuple">
+    <SyntaxTab tuple>
 
-```ts twoslash
+```ts
 const mySymbol = Symbol()
 
 const exactValueFromSet = type(["===", 1337, true, mySymbol])
@@ -131,9 +387,9 @@ const exactValueFromSet = type(["===", 1337, true, mySymbol])
 
     </SyntaxTab>
 
-    <SyntaxTab kind="spread">
+    <SyntaxTab spread>
 
-```ts twoslash
+```ts
 const mySymbol = Symbol()
 
 const exactValueFromSet = type("===", 1337, true, mySymbol)
@@ -145,17 +401,100 @@ const exactValueFromSet = type("===", 1337, true, mySymbol)
 
 ### Meta
 
-{/* TODO:DOC */}
+Metadata allows you to associate arbitrary metadata with your types.
+
+Some metadata is consumed directly by ArkType, for example `description` is referenced by default when building an error message.
+
+Other properties are introspectable, but aren't used by default internally.
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+// this validator's error message will now start with "must be a special string"
+const specialString = type("string").configure({
+	description: "a special string"
+})
+
+// sugar for adding description metadata
+const specialNumber = type("number").describe("a special number")
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// this validator's error message will now start with "must be a special string"
+const specialString = type([
+	"string",
+	"@",
+	{
+		description: "a special string"
+	}
+])
+
+// sugar for adding description metadata
+const specialNumber = type(["number", "@", "a special number"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab spread>
+
+```ts
+// this validator's error message will now start with "must be a special string"
+const specialString = type("string", "@", {
+	description: "a special string"
+})
+
+// sugar for adding description metadata
+const specialNumber = type("number", "@", "a special number")
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### Cast
 
-{/* TODO:DOC */}
+Sometimes, you may want to directly specify how a `Type` should be inferred without affecting the runtime behavior. In these cases, you can use a cast expression.
+
+<SyntaxTabs>
+
+    <SyntaxTab string>
+
+```ts
+// allow any string, but suggest "foo" and "bar"
+type AutocompletedString = "foo" | "bar" | (string & {})
+
+const myObject = type({
+	autocompletedString: "string" as type.cast<AutocompletedString>
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allow any string, but suggest "foo" and "bar"
+type AutocompletedString = "foo" | "bar" | (string & {})
+
+const myObject = type({
+	autocompletedString: type.string.as<AutocompletedString>()
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### Parenthetical
 
 By default, ArkType's operators follow the same precedence as TypeScript's. Also like in TypeScript, this can be overridden by wrapping an expression in parentheses.
 
-```ts twoslash
+```ts
 // hover to see the distinction!
 const groups = type({
 	stringOrArrayOfNumbers: "string | number[]",
@@ -167,7 +506,7 @@ const groups = type({
 
 `this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
 
-```ts twoslash
+```ts
 const fetchGift = async () => null
 // ---cut---
 const disappointingGift = type({ label: "string", "box?": "this" })
@@ -179,14 +518,14 @@ const chainable = myGift.box?.box?.label
 
 Unlike its TypeScript counterpart, ArkType's `this` is not limited to interfaces. It can also be used from within a tuple expression.
 
-```ts twoslash
+```ts
 // boxes now expects an array of our gift object
 const disappointingGifts = type({ label: "string", boxes: "this" }, "[]")
 ```
 
 Referencing `this` from within a scope will result in a ParseError. For similar behavior within a scoped definition, just reference the alias by name:
 
-```ts twoslash
+```ts
 const types = scope({
 	disappointingGift: {
 		label: "string",
