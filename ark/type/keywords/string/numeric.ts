@@ -1,5 +1,5 @@
 import { intrinsic, rootSchema } from "@ark/schema"
-import { wellFormedNumberMatcher } from "@ark/util"
+import { numericStringMatcher } from "@ark/util"
 import type { Nominal, of, To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
@@ -10,7 +10,7 @@ declare namespace string {
 }
 
 const root = regexStringNode(
-	wellFormedNumberMatcher,
+	numericStringMatcher,
 	"a well-formed numeric string"
 )
 
