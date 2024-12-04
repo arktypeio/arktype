@@ -40,10 +40,10 @@ export const isWellFormedNumber: RegExp["test"] =
  *    1. The first digit of the value must not be 0, unless the entire integer portion is 0
  *    2. The value may not be "-0"
  */
-const integerMatcher = /(?!^-0$)-?(?:0|[1-9]\d*)/
+const integerMatcher = /(?!^-0(\.0+)?$)-?(?:0|[1-9]\d*)/
 const decimalMatcher = /(?:\.\d+)/
 export const numericStringMatcher: RegExp = anchoredRegex(
-	`(?:${integerMatcher.source}${decimalMatcher.source}?)|${decimalMatcher.source}`
+	`(?:${integerMatcher.source}${decimalMatcher.source}?)|-?${decimalMatcher.source}`
 )
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
