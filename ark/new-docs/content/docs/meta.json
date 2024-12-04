@@ -1,24 +1,24 @@
 {
-  "root": true,
-  "pages": [
-    "---Intro---",
-    "intro/setup",
-    "intro/morphs-and-more",
-    "intro/your-first-type",
-    "intro/adding-constraints",
-    "---Usage---",
-    "primitives",
-    "objects",
-    "expressions",
-    "types",
-    "configuration",
-    "---Advanced---",
-    "scopes",
-    "generics",
-    "---Other---",
-    "integrations",
-    "faq",
-    "about",
-    "keywords"
-  ]
+	"root": true,
+	"pages": [
+		"---Intro---",
+		"intro/setup",
+		"intro/morphs-and-more",
+		"intro/your-first-type",
+		"intro/adding-constraints",
+		"---Usage---",
+		"primitives",
+		"objects",
+		"expressions",
+		"types",
+		"configuration",
+		"---Advanced---",
+		"scopes",
+		"generics",
+		"---Other---",
+		"integrations",
+		"faq",
+		"about",
+		"keywords"
+	]
 }

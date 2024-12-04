@@ -9,9 +9,9 @@ sidebar:
 Record is now available as a builtin keyword.
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
-const stringRecord = type("Record<string, string>");
+const stringRecord = type("Record<string, string>")
 ```
 
 In addition to `Record`, the following generics from TS are now available in ArkType:
@@ -24,21 +24,21 @@ In addition to `Record`, the following generics from TS are now available in Ark
 These can be instantiated in one of three ways:
 
 ```ts twoslash
-import { type, type Type } from "arktype";
+import { type, type Type } from "arktype"
 
 const createBox = <T extends string>(of: type.Any<T>) =>
-  type({
-    box: of,
-  });
+	type({
+		box: of
+	})
 
-const boxType = createBox(type("string"));
+const boxType = createBox(type("string"))
 //    ^?
 
 // @ts-expect-error
-const badBox = createBox(type("number"));
+const badBox = createBox(type("number"))
 
-console.log(boxType({ box: 5 }).toString());
-console.log(boxType({ box: "foo" }));
+console.log(boxType({ box: 5 }).toString())
+console.log(boxType({ box: "foo" }))
 ```
 
 ### Syntax
@@ -46,12 +46,12 @@ console.log(boxType({ box: "foo" }));
 #### Definition
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
-const boxOf = type("<t>", { box: "t" });
+const boxOf = type("<t>", { box: "t" })
 
 // hover me!
-const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } });
+const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
 ```
 
 #### Constrained Parameters
@@ -59,11 +59,11 @@ const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } });
 All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any builtin keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
-const nonEmpty = type("<arr extends unknown[]>", "arr > 0");
+const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
 
-const nonEmptyNumberArray = nonEmpty("number[]");
+const nonEmptyNumberArray = nonEmpty("number[]")
 ```
 
 #### Scoped
@@ -71,47 +71,47 @@ const nonEmptyNumberArray = nonEmpty("number[]");
 There is a special syntax for specifying generics in a scope:
 
 ```ts twoslash
-import { scope } from "arktype";
+import { scope } from "arktype"
 
 const types = scope({
-  "box<t, u>": {
-    box: "t | u",
-  },
-  bitBox: "box<0, 1>",
-}).export();
+	"box<t, u>": {
+		box: "t | u"
+	},
+	bitBox: "box<0, 1>"
+}).export()
 
-const out = types.bitBox({ box: 0 });
+const out = types.bitBox({ box: 0 })
 ```
 
 #### Invocation
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
-const one = type("Extract<0 | 1, 1>");
+const one = type("Extract<0 | 1, 1>")
 ```
 
 ##### Chained
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
 const user = type({
-  name: "string",
-  "age?": "number",
-  isAdmin: "boolean",
-});
+	name: "string",
+	"age?": "number",
+	isAdmin: "boolean"
+})
 
 // hover me!
-const basicUser = user.pick("name", "age");
+const basicUser = user.pick("name", "age")
 ```
 
 #### Invoked
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
-const unfalse = type.keywords.Exclude("boolean", "false");
+const unfalse = type.keywords.Exclude("boolean", "false")
 ```
 
 ### HKT
@@ -119,14 +119,14 @@ const unfalse = type.keywords.Exclude("boolean", "false");
 Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible. As a preview, here's what the implementation of `Partial` looks like internally:
 
 ```ts twoslash
-import { generic, Hkt } from "arktype";
+import { generic, Hkt } from "arktype"
 
 const Partial = generic(["T", "object"])(
-  (args) => args.T.partial(),
-  class PartialHkt extends Hkt<[object]> {
-    declare body: Partial<this[0]>;
-  }
-);
+	args => args.T.partial(),
+	class PartialHkt extends Hkt<[object]> {
+		declare body: Partial<this[0]>
+	}
+)
 ```
 
 Recursive and cyclic generics are also currently unavailable and will be added soon.

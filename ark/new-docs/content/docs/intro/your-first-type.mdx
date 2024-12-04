@@ -9,23 +9,23 @@ If you already know TypeScript, congratulations- you just learned most of ArkTyp
 ## Define
 
 ```ts twoslash
-import { type } from "arktype";
+import { type } from "arktype"
 
 const user = type({
-  name: "string",
-  platform: "'android' | 'ios'",
-  "versions?": "(number | string)[]",
-});
+	name: "string",
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
+})
 
 // extract the type if needed
-type User = typeof user.infer;
+type User = typeof user.infer
 ```
 
 If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to from your editor, all within TypeScript's type system.
 
 <Callout title="Will ArkType crash my TypeScript server?">
-  Thousands of hours of optimization have gone into making validating native
-  type syntax not just feasible, but often much faster than alternatives ⚡
+	Thousands of hours of optimization have gone into making validating native
+	type syntax not just feasible, but often much faster than alternatives ⚡
 </Callout>
 
 ## Compose
@@ -34,27 +34,27 @@ Suppose we want to move `platform` and `version` from our original type to a new
 
 ```ts twoslash
 const user = type({
-  name: "string",
-  // nested definitions don't need to be wrapped
-  device: {
-    platform: "'android' | 'ios'",
-    "versions?": "(number | string)[]",
-  },
-});
+	name: "string",
+	// nested definitions don't need to be wrapped
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
 ```
 
 To decouple `device` from `user`, just move it to its own type and reference it.
 
 ```ts twoslash
 const device = type({
-  platform: "'android' | 'ios'",
-  "versions?": "(number | string)[]",
-});
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
+})
 
 const user = type({
-  name: "string",
-  device: device,
-});
+	name: "string",
+	device: device
+})
 ```
 
 ## Validate
@@ -63,40 +63,40 @@ At runtime, we can pass `unknown` data to our type and get back either a validat
 
 ```ts twoslash
 const user = type({
-  name: "string",
-  device: {
-    platform: "'android' | 'ios'",
-    "versions?": "(number | string)[]",
-  },
-});
+	name: "string",
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
 
 interface RuntimeErrors extends type.errors {
-  /**device.platform must be "android" or "ios" (was "enigma")
+	/**device.platform must be "android" or "ios" (was "enigma")
 device.versions[2] must be a number or a string (was bigint)*/
-  summary: string;
+	summary: string
 }
 
-const narrowMessage = (e: type.errors): e is RuntimeErrors => true;
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 // ---cut---
 const out = user({
-  name: "Alan Turing",
-  device: {
-    platform: "enigma",
-    versions: [0, "1", 0n],
-  },
-});
+	name: "Alan Turing",
+	device: {
+		platform: "enigma",
+		versions: [0, "1", 0n]
+	}
+})
 
 if (out instanceof type.errors) {
-  // ---cut-start---
-  // just a trick to display the runtime error
-  if (!narrowMessage(out)) throw new Error();
-  // ---cut-end---
-  // hover out.summary to see validation errors
-  console.error(out.summary);
+	// ---cut-start---
+	// just a trick to display the runtime error
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see validation errors
+	console.error(out.summary)
 } else {
-  // hover out to see your validated data
-  console.log(`Hello, ${out.name}`);
+	// hover out to see your validated data
+	console.log(`Hello, ${out.name}`)
 }
 ```
 

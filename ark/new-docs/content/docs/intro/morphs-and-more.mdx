@@ -12,13 +12,13 @@ Morphs can be **piped** before, after or between validators and even chained to 
 
 ```ts twoslash
 // Hover to see the type-level representation
-const parseJson = type("string").pipe((s): object => JSON.parse(s));
+const parseJson = type("string").pipe((s): object => JSON.parse(s))
 
 // object: { ark: "type" }
-const out = parseJson('{ "ark": "type" }');
+const out = parseJson('{ "ark": "type" }')
 
 // ArkErrors: must be a string (was object)
-const badOut = parseJson(out);
+const badOut = parseJson(out)
 ```
 
 This is a good start, but there are still a couple major issues with our morph.
@@ -26,11 +26,11 @@ This is a good start, but there are still a couple major issues with our morph.
 What happens if we pass a string that isn't valid JSON?
 
 ```ts twoslash
-const parseJson = type("string").pipe((s): object => JSON.parse(s));
+const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // ---cut---
 
 // Uncaught SyntaxError: Expected property name ☠️ // [!code error]
-const badOut = parseJson('{ unquoted: "keys" }');
+const badOut = parseJson('{ unquoted: "keys" }')
 ```
 
 Despite what `JSON.parse` might have you believe, throwing exceptions and returning `any` are not very good ways to parse a string. By default, ArkType assumes that if one of your morphs or narrows throws, you intend to crash.
@@ -40,34 +40,34 @@ If you do happen to find yourself at the mercy of an unsafe API, you might consi
 Luckily, there is a built-in API for wrapping `pipe`d functions you don't trust:
 
 ```ts twoslash
-const parseJson = type("string").pipe.try((s): object => JSON.parse(s));
+const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
 
 // Now returns an introspectable error instead of crashing 🎉
-const badOut = parseJson('{ unquoted: "keys" }');
+const badOut = parseJson('{ unquoted: "keys" }')
 
-const out = parseJson('{ "ark": "type" }');
+const out = parseJson('{ "ark": "type" }')
 
-if (out instanceof type.errors) out.throw();
+if (out instanceof type.errors) out.throw()
 // Unfortunately, a validated `object` still isn't very useful...
-else console.log(out);
+else console.log(out)
 ```
 
 The best part about `pipe` is that since any `Type` is root-invokable, `Type`s themselves _are_ already morphs! This means validating out parsed output is as easy as adding another pipe:
 
 ```ts twoslash
 const parseJson = type("string").pipe.try(
-  (s): object => JSON.parse(s),
-  type({
-    name: "string",
-    version: "string.semver",
-  })
-);
+	(s): object => JSON.parse(s),
+	type({
+		name: "string",
+		version: "string.semver"
+	})
+)
 
-const out = parseJson('{ "name": "arktype", "version": "2.0.0" }');
+const out = parseJson('{ "name": "arktype", "version": "2.0.0" }')
 
 if (!(out instanceof type.errors)) {
-  // Logs "arktype:2.0.0"
-  console.log(`${out.name}:${out.version}`);
+	// Logs "arktype:2.0.0"
+	console.log(`${out.name}:${out.version}`)
 }
 ```
 
@@ -75,28 +75,28 @@ At this point, our implementation is starting to look pretty clean, but in many 
 
 ```ts twoslash
 interface RuntimeErrors extends type.errors {
-  /**name must be a string (was true) 
+	/**name must be a string (was true) 
 version must be a semantic version (see https://semver.org/) (was "v2.0.0")*/
-  summary: string;
+	summary: string
 }
 
-const narrowMessage = (e: type.errors): e is RuntimeErrors => true;
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 // ---cut---
 // .to is a sugared .pipe for a single parsed output validator
 const parseJson = type("string.json.parse").to({
-  name: "string",
-  version: "string.semver",
-});
+	name: "string",
+	version: "string.semver"
+})
 
-const out = parseJson('{ "name": true, "version": "v2.0.0" }');
+const out = parseJson('{ "name": true, "version": "v2.0.0" }')
 
 if (out instanceof type.errors) {
-  // ---cut-start---
-  if (!narrowMessage(out)) throw new Error();
-  // ---cut-end---
-  // hover out.summary to see the default error message
-  console.error(out.summary);
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see the default error message
+	console.error(out.summary)
 }
 ```
 

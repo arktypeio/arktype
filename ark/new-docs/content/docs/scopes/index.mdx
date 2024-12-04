@@ -13,34 +13,35 @@ A scope is just like a scope in code- it's a resolution space where you can defi
 A lot of the time, if you don't need to create additional types in your scope, you can just `.export()` it right away.
 
 ```ts twoslash
-import { scope } from "arktype";
+import { scope } from "arktype"
 
 // Scopes are collections of types that can reference each other.
 export const types = scope({
-  package: {
-    name: "string",
-    "dependencies?": "package[]",
-    "contributors?": "contributor[]",
-  },
-  contributor: {
-    // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
-    email: "string.email",
-    "packages?": "package[]",
-  },
-}).export();
+	package: {
+		name: "string",
+		"dependencies?": "package[]",
+		"contributors?": "contributor[]"
+	},
+	contributor: {
+		// Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
+		email: "string.email",
+		"packages?": "package[]"
+	}
+}).export()
 
 // Cyclic types are inferred to arbitrary depth...
-export type Package = typeof types.package.infer;
+export type Package = typeof types.package.infer
 
 // And can validate cyclic data.
 const packageData: Package = {
-  name: "arktype",
-  dependencies: [{ name: "typescript" }],
-  contributors: [{ email: "david@sharktypeio" }],
-};
-packageData.dependencies![0].dependencies = [packageData];
+	name: "arktype",
+	dependencies: [{ name: "typescript" }],
+	contributors: [{ email: "david@sharktypeio" }]
+}
 
-export const out = types.package(packageData);
+packageData.dependencies![0].dependencies = [packageData]
+
+export const out = types.package(packageData)
 ```
 
 ### modules

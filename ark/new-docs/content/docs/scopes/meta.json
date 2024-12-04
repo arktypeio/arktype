@@ -1,9 +1,9 @@
 {
-  "title": "Scopes",
-  "pages": [
-    "[modules](/docs/scopes#modules)",
-    "[visibility](/docs/scopes#visibility)",
-    "[submodules](/docs/scopes#submodules)",
-    "[thunks](/docs/scopes#thunks)"
-  ]
+	"title": "Scopes",
+	"pages": [
+		"[modules](/docs/scopes#modules)",
+		"[visibility](/docs/scopes#visibility)",
+		"[submodules](/docs/scopes#submodules)",
+		"[thunks](/docs/scopes#thunks)"
+	]
 }

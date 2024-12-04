@@ -1,9 +1,9 @@
 {
-  "title": "Configuration",
-  "pages": [
-    "[errors](/docs/configuration#errors)",
-    "[clone](/docs/configuration#clone)",
-    "[onUndeclaredKey](/docs/configuration#onUndeclaredKey)",
-    "[jitless](/docs/configuration#jitless)"
-  ]
+	"title": "Configuration",
+	"pages": [
+		"[errors](/docs/configuration#errors)",
+		"[clone](/docs/configuration#clone)",
+		"[onUndeclaredKey](/docs/configuration#onUndeclaredKey)",
+		"[jitless](/docs/configuration#jitless)"
+	]
 }

@@ -19,14 +19,14 @@ Let's create a new `contact` Type that enforces our example constraints.
 ```ts twoslash
 // hover to see the type-level representation
 const contact = type({
-  // many common constraints are available as built-in keywords
-  email: "string.email",
-  // others can be written as type-safe expressions
-  score: "number.integer < 100",
-});
+	// many common constraints are available as built-in keywords
+	email: "string.email",
+	// others can be written as type-safe expressions
+	score: "number.integer < 100"
+})
 
 // if you need the TS type, just infer it out as normal
-type Contact = typeof contact.infer;
+type Contact = typeof contact.infer
 // This should cut but it isn't working as expected
 
 // this empty line prevents the source syntax highlighting from breaking
@@ -40,19 +40,19 @@ While the expression syntax we've been using is ideal for creating new types, ch
 
 ```ts twoslash
 const _contact = type({
-  email: "string.email",
-  score: "number.integer < 100",
-});
+	email: "string.email",
+	score: "number.integer < 100"
+})
 
-type _Contact = typeof _contact.t;
+type _Contact = typeof _contact.t
 
 interface Contact extends _Contact {}
 
-export const contact: type<Contact> = _contact;
+export const contact: type<Contact> = _contact
 // ---cut-start---
 // a non-empty list of Contact
 // ---cut-end---
-const contacts = contact.array().atLeastLength(1);
+const contacts = contact.array().atLeastLength(1)
 ```
 
 ## Narrow
@@ -61,61 +61,61 @@ Structured constraints like divisors and ranges will only take us so far. Luckil
 
 ```ts twoslash
 const palindromicEmail = type("string.email").narrow((address, ctx) => {
-  if (address === [...address].reverse().join("")) {
-    // congratulations! your email is somehow a palindrome
-    return true;
-  }
-  // add a customizable error and return false
-  return ctx.mustBe("a palindrome");
-});
+	if (address === [...address].reverse().join("")) {
+		// congratulations! your email is somehow a palindrome
+		return true
+	}
+	// add a customizable error and return false
+	return ctx.mustBe("a palindrome")
+})
 
 const palindromicContact = type({
-  email: palindromicEmail,
-  score: "number.integer < 100",
-});
+	email: palindromicEmail,
+	score: "number.integer < 100"
+})
 ```
 
 We can invoke `palindromicContact` anywhere to get validated data or a list of errors with a user-friendly summary.
 
 ```ts twoslash
 const palindromicEmail = type("string.email").narrow((address, ctx) => {
-  if (address === [...address].reverse().join("")) {
-    // congratulations! your email is somehow a palindrome
-    return true;
-  }
-  // add a customizable error and return false
-  return ctx.mustBe("a palindrome");
-});
+	if (address === [...address].reverse().join("")) {
+		// congratulations! your email is somehow a palindrome
+		return true
+	}
+	// add a customizable error and return false
+	return ctx.mustBe("a palindrome")
+})
 
 const palindromicContact = type({
-  email: palindromicEmail,
-  score: "number.integer < 100",
-});
+	email: palindromicEmail,
+	score: "number.integer < 100"
+})
 
 interface RuntimeErrors extends type.errors {
-  /**email must be a palindrome (was "david@arktype.io")
+	/**email must be a palindrome (was "david@arktype.io")
 score (133.7) must be...
   • an integer
   • less than 100*/
-  summary: string;
+	summary: string
 }
 
-const narrowMessage = (e: type.errors): e is RuntimeErrors => true;
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 // ---cut-start---
 const out = palindromicContact({
-  email: "david@arktype.io",
-  score: 133.7,
-});
+	email: "david@arktype.io",
+	score: 133.7
+})
 // ---cut-end---
 
 if (out instanceof type.errors) {
-  // ---cut-start---
-  if (!narrowMessage(out)) throw new Error();
-  // ---cut-end---
-  // hover summary to see validation errors
-  console.error(out.summary);
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover summary to see validation errors
+	console.error(out.summary)
 } else {
-  console.log(out.email);
+	console.log(out.email)
 }
 ```
 
