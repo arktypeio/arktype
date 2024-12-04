@@ -42,7 +42,7 @@
 		"@typescript/analyze-trace": "0.10.1",
 		"@typescript/vfs": "1.6.0",
 		"arktype": "workspace:*",
-		"prettier": "3.4.1"
+		"prettier": "3.4.2"
 	},
 	"devDependencies": {
 		"typescript": "catalog:"
