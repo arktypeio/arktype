@@ -1,4 +1,4 @@
-import type { omit } from "@ark/util"
+import type { omit, unionToPropwiseXor } from "@ark/util"
 import { Tab, Tabs, type TabsProps } from "fumadocs-ui/components/tabs"
 import type React from "react"
 
@@ -21,7 +21,16 @@ export const SyntaxTabs: React.FC<omit<TabsProps, "items">> = ({
 	</Tabs>
 )
 
-export const SyntaxTab: React.FC<{
+type DiscriminatedSyntaxKindProps = unionToPropwiseXor<
+	{
+		[kind in SyntaxKind]: { [k in kind]: true }
+	}[SyntaxKind]
+>
+
+type SyntaxTabProps = DiscriminatedSyntaxKindProps & {
 	children: React.ReactNode
-	kind: SyntaxKind
-}> = ({ children, kind }) => <Tab value={kind}>{children}</Tab>
+}
+
+export const SyntaxTab: React.FC<SyntaxTabProps> = props => (
+	<Tab value={syntaxKinds.find(k => props[k])!}>{props.children}</Tab>
+)
