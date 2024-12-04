@@ -70,12 +70,10 @@ pre.shiki,
 }
 
 div.twoslash-popup-container {
-	/* padding: 0; */
 	border-radius: 1rem;
 	background: #001323aa;
 	backdrop-filter: blur(8px);
 	box-shadow: var(--hover-glow);
-	/* border: none; */
 }
 
 .error {
@@ -103,15 +101,13 @@ div.twoslash-popup-container {
 }
 
 /* avoid double padding + border */
+/* matches popups rendered from react (on the home page) */
 .shiki .shiki,
+/* matches popups rendered from mdx (on most docs pages) */ 
 .twoslash-popup-container pre.p-4 {
 	padding: 0px;
 	border-width: 0px;
 }
-
-/* .fd-twoslash-popover > pre {
-	padding: 0 !important;
-} */
 
 /** display runtime errors on hover */
 .twoslash .twoslash-popup-docs {
