@@ -55,6 +55,11 @@ export const deanchoredSource = (regex: RegExp | string): string => {
 	)
 }
 
+export const RegexPatterns = {
+	negativeLookahead: (pattern: string) => `(?!${pattern})` as const,
+	nonCapturingGroup: (pattern: string) => `(?:${pattern})` as const
+}
+
 export const escapeChar = "\\"
 
 export type EscapeChar = typeof escapeChar
