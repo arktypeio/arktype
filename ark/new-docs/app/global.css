@@ -57,14 +57,16 @@ code {
 	font-family: "Cascadia Mono", monospace;
 }
 
-pre.astro-code,
 pre.shiki,
-.twoslash-popup-container,
-.copy-button {
+.twoslash-popup-container {
 	border-radius: 1rem;
 	border-color: #ba7e4127;
 	border-width: 1px;
 	overflow-x: visible !important;
+}
+
+.bg-fd-secondary\/50 {
+	background-color: unset;
 }
 
 div.twoslash-popup-container {
@@ -101,11 +103,15 @@ div.twoslash-popup-container {
 }
 
 /* avoid double padding + border */
-.shiki > .shiki,
-.twoslash-popup-container > .shiki {
-	padding: 0;
+.shiki .shiki,
+.twoslash-popup-container pre.p-4 {
+	padding: 0px;
 	border-width: 0px;
 }
+
+/* .fd-twoslash-popover > pre {
+	padding: 0 !important;
+} */
 
 /** display runtime errors on hover */
 .twoslash .twoslash-popup-docs {

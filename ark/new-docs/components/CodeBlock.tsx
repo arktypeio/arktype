@@ -14,7 +14,7 @@ import {
 	CodeBlock as FumaCodeBlock,
 	Pre
 } from "fumadocs-ui/components/codeblock"
-import { bundledLanguages, getSingletonHighlighter } from "shiki"
+import { getSingletonHighlighter } from "shiki"
 import { shikiConfig } from "../lib/shiki.ts"
 
 const snippetContentsById = {
@@ -27,7 +27,9 @@ const snippetContentsById = {
 
 export type SnippetId = keyof typeof snippetContentsById
 
-export type BuiltinLang = "ts" | "bash" | "jsonc"
+const langs = ["ts", "bash", "jsonc"] as const satisfies string[]
+
+export type BuiltinLang = (typeof langs)[number]
 
 export type CodeBlockProps = {
 	/** @default "ts" */
@@ -37,7 +39,7 @@ export type CodeBlockProps = {
 // preload languages for shiki
 // https://github.com/fuma-nama/fumadocs/issues/1095
 await getSingletonHighlighter({
-	langs: Object.keys(bundledLanguages)
+	langs
 })
 
 const components: HighlightOptions["components"] = {
