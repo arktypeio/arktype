@@ -1,6 +1,6 @@
 import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
-import { PlatformCloud } from "./PlatformCloud.tsx"
+import { PlatformCloud } from "./PlatformCloud.jsx"
 
 export const Hero = () => (
 	<div className="flex justify-between">

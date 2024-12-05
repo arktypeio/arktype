@@ -9,7 +9,7 @@ import { SyntaxTab, SyntaxTabs } from "../../components/SyntaxTabs.tsx"
 All\* builtin TypeScript keywords are directly available.
 
 <SyntaxTabs>
-	<SyntaxTab kind="string">
+	<SyntaxTab string>
 ```ts twoslash
 const keywords = type({
 	string: "string",
@@ -18,7 +18,7 @@ const keywords = type({
 ```
 	</SyntaxTab>
 
-    <SyntaxTab kind="fluent">
+    <SyntaxTab fluent>
 
 ```ts twoslash
 const keywords = type({
@@ -38,7 +38,7 @@ Common keywords are exposed directly on `type`.
 Subtype keywords refine or transform their root type.
 
 <SyntaxTabs>
-	<SyntaxTab kind="string">
+	<SyntaxTab string>
 ```ts twoslash
 const keywords = type({
 	dateFormattedString: "string.date",
@@ -52,7 +52,7 @@ You can easily explore available subtypes via autocomplete by with a partial def
 
 </SyntaxTab>
 
-    <SyntaxTab kind="fluent">
+    <SyntaxTab fluent>
 
 ```ts twoslash
 const keywords = type({

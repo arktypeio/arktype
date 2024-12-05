@@ -15,7 +15,7 @@ import {
 	Pre
 } from "fumadocs-ui/components/codeblock"
 import { getSingletonHighlighter } from "shiki"
-import { shikiConfig } from "../lib/shiki.ts"
+import { shikiConfig } from "../lib/shiki.js"
 
 const snippetContentsById = {
 	betterErrors,

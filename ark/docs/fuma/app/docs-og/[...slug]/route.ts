@@ -1,4 +1,4 @@
-import { metadataImage } from "../../../lib/metadata.ts"
+import { metadataImage } from "../../../lib/metadata.js"
 // import { fromPackageRoot } from "@ark/fs"
 import { generateOGImage } from "fumadocs-ui/og"
 

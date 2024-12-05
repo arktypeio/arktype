@@ -1,15 +1,15 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { BunIcon } from "./icons/bun.tsx"
-import { ChromiumIcon } from "./icons/chromium.tsx"
-import { DenoIcon } from "./icons/deno.tsx"
-import { IntellijIcon } from "./icons/intellij.tsx"
-import { JsIcon } from "./icons/js.tsx"
-import { NeovimIcon } from "./icons/neovim.tsx"
-import { NodeIcon } from "./icons/node.tsx"
-import { TsIcon } from "./icons/ts.tsx"
-import { VscodeIcon } from "./icons/vscode.tsx"
+import { BunIcon } from "./icons/bun.jsx"
+import { ChromiumIcon } from "./icons/chromium.jsx"
+import { DenoIcon } from "./icons/deno.jsx"
+import { IntellijIcon } from "./icons/intellij.jsx"
+import { JsIcon } from "./icons/js.jsx"
+import { NeovimIcon } from "./icons/neovim.jsx"
+import { NodeIcon } from "./icons/node.jsx"
+import { TsIcon } from "./icons/ts.jsx"
+import { VscodeIcon } from "./icons/vscode.jsx"
 
 export type SvgLogoProps = {
 	name: PlatformName

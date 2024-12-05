@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import React from "react"
-import { BoatIcon } from "./icons/boat.tsx"
+import { BoatIcon } from "./icons/boat.jsx"
 
 const BOB_HEIGHT_PX = 2
 const BOB_WIDTH_PX = 16

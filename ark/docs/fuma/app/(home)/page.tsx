@@ -1,8 +1,8 @@
 import { ArkCard, ArkCards } from "../../components/ArkCard"
-import { CodeBlock } from "../../components/CodeBlock.tsx"
-import { Hero } from "../../components/Hero.tsx"
-import { TsIcon } from "../../components/icons/ts.tsx"
-import { LinkCard } from "../../components/LinkCard.tsx"
+import { CodeBlock } from "../../components/CodeBlock"
+import { Hero } from "../../components/Hero"
+import { TsIcon } from "../../components/icons/ts"
+import { LinkCard } from "../../components/LinkCard"
 import { RuntimeBenchmarksGraph } from "../../components/RuntimeBenchmarksGraph"
 
 import {

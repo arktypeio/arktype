@@ -1,5 +1,5 @@
 {
-	"extends": "../../tsconfig.json",
+	"extends": "../../../tsconfig.json",
 	"compilerOptions": {
 		// unfortunately, twoslash doesn't seem to respect customConditions,
 		// so .d.ts will need to be rebuilt to see its static compilation updated
