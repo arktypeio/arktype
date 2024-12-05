@@ -1056,8 +1056,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(feedbackSchema.expression).snap(
 			"{ contact: string == 0 | string /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
 		)
-		attest(feedbackSchema.t).type.toString.snap(`{
-    contact: string.email | string.is<ExactlyLength<0>>;
-}`)
+		attest(feedbackSchema.t).type.toString.snap(
+			`{ contact: email | is<ExactlyLength<0>> }`
+		)
 	})
 })
