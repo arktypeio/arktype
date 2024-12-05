@@ -1,6 +1,4 @@
 import { rootSchema } from "@ark/schema"
-import type { AtLeast, AtMost, DivisibleBy } from "../../attributes.ts"
-import type { number } from "./number.ts"
 
 /**
  * As per the ECMA-262 specification:
@@ -28,7 +26,3 @@ export const epoch = rootSchema({
 	},
 	meta: "an integer representing a safe Unix timestamp"
 })
-
-export type epoch = number.is<
-	DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
->

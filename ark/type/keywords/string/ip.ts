@@ -1,4 +1,3 @@
-import type { Nominal, of } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
@@ -23,15 +22,6 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z.]{1,})?$"
 )
 
-declare namespace string {
-	export type ip = of<string, Nominal<"ip">>
-
-	export namespace ip {
-		export type v4 = of<string, Nominal<"ip.v4">>
-		export type v6 = of<string, Nominal<"ip.v6">>
-	}
-}
-
 export const ip: ip.module = arkModule({
 	root: ["v4 | v6", "@", "an IP address"],
 	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
@@ -44,8 +34,8 @@ export declare namespace ip {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.ip
-		v4: string.ip.v4
-		v6: string.ip.v6
+		root: string
+		v4: string
+		v6: string
 	}
 }

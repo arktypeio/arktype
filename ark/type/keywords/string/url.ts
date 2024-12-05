@@ -1,11 +1,7 @@
 import { rootSchema, type TraversalContext } from "@ark/schema"
-import type { Nominal, of, To } from "../../attributes.ts"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
-
-declare namespace string {
-	export type url = of<string, Nominal<"url">>
-}
 
 const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)
@@ -48,7 +44,7 @@ export declare namespace url {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.url
-		parse: (In: string.url) => To<URL>
+		root: string
+		parse: (In: string) => To<URL>
 	}
 }

@@ -1,29 +1,18 @@
+import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type {
-	ArkError,
-	ArkErrors,
-	Constraint,
-	constraintKindOf,
-	Morph,
-	NodeSchema
-} from "@ark/schema"
-import {
-	noSuggest,
-	type anyOrNever,
-	type array,
-	type conform,
-	type equals,
-	type Hkt,
-	type intersectArrays,
-	type isSafelyMappable,
-	type Primitive,
-	type show
+	anyOrNever,
+	array,
+	equals,
+	Hkt,
+	intersectArrays,
+	isSafelyMappable,
+	Primitive,
+	show
 } from "@ark/util"
 import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Type } from "./type.ts"
 export type { arkPrototypes as object } from "./keywords/constructors/constructors.ts"
-export type { number } from "./keywords/number/number.ts"
-export type { string } from "./keywords/string/string.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -72,9 +61,9 @@ type _distill<t, opts extends distill.Options> =
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>
-	: t extends array ? distillArray<t, opts>
-	: // we excluded this from TerminallyInferredObjectKind so that those types could be
-	// inferred before checking morphs/defaults, which extend Function
+	: t extends array ?
+		_distillArray<t, opts> // we excluded this from TerminallyInferredObjectKind so that those types could be
+	: // inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
 	: isSafelyMappable<t> extends true ? distillMappable<t, opts>
 	: t
@@ -142,47 +131,18 @@ type inferredOptionalKeyOf<o> =
 		:	never
 	:	never
 
-type distillArray<t extends array, opts extends distill.Options> =
-	// fast path for non-tuple arrays with no extra props
-	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ? alignReadonly<_distill<t[number], opts>[], t>
-	:	distillNonArraykeys<
-			t,
-			alignReadonly<_distillArray<[...t], opts, []>, t>,
-			opts
-		>
+type _distillArray<t extends array, opts extends distill.Options> =
+	t extends unknown[] ? _distillArrayRecurse<t, opts, []>
+	:	// preserve readonly from original array
+		Readonly<_distillArrayRecurse<t, opts, []>>
 
-type alignReadonly<result extends unknown[], original extends array> =
-	original extends unknown[] ? result : Readonly<result>
-
-// re-intersect non-array props for a type like `{ name: string } & string[]`
-type distillNonArraykeys<
-	originalArray extends array,
-	distilledArray,
-	opts extends distill.Options
-> =
-	keyof originalArray extends keyof distilledArray | attributesKey ?
-		distilledArray
-	:	distilledArray &
-			_distill<
-				{
-					[k in keyof originalArray as k extends (
-						| keyof distilledArray
-						| (opts["attributes"] extends true ? never : attributesKey)
-					) ?
-						never
-					:	k]: originalArray[k]
-				},
-				opts
-			>
-
-type _distillArray<
+type _distillArrayRecurse<
 	t extends array,
 	opts extends distill.Options,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
-		_distillArray<tail, opts, [...prefix, _distill<head, opts>]>
+		_distillArrayRecurse<tail, opts, [...prefix, _distill<head, opts>]>
 	:	[...prefix, ...distillPostfix<t, opts>]
 
 type distillPostfix<
@@ -206,20 +166,15 @@ type TerminallyInferredObject =
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		t extends of<unknown, infer constraints> ?
-			"brand" extends keyof t[attributesKey] ?
-				brand<narrowed, constraints>
-			:	of<narrowed, constraints>
-		:	narrowed
-	:	associateAttributes<t, Anonymous>
+		narrowed
+	:	t
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
 			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
-			: inferMorphOut<head> extends infer out ?
-				(In: distill.withAttributes.In<t>) => Out<out>
-			:	never,
+			: inferMorphOut<head> extends infer out ? (In: distill.In<t>) => Out<out>
+			: never,
 			tail
 		>
 	:	t
@@ -235,19 +190,9 @@ export type To<o = any> = ["=>", o, true]
 
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
-export type Optional = {
-	optional: {
-		"=": true
-	}
-}
+export type InferredOptional<t = unknown> = (In?: t) => t
 
-export type InferredOptional<t = unknown> = of<t, Optional>
-
-export type Default<v = any> = {
-	defaultsTo: {
-		value: v
-	}
-}
+export type Default<v = any> = ["=", v]
 
 export type DefaultFor<t> =
 	| (Primitive extends t ? Primitive
@@ -255,7 +200,7 @@ export type DefaultFor<t> =
 	  : never)
 	| (() => t)
 
-export type InferredDefault<t = unknown, v = any> = of<t, Default<v>>
+export type InferredDefault<t = unknown, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | Type<t, any>
 
@@ -275,12 +220,6 @@ type _inferIntersection<l, r, piped extends boolean> =
 		: (In: _inferIntersection<lIn, r, false>) => lOut
 	: r extends InferredMorph<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => rOut
-	: l extends of<infer lBase, infer lAttributes> ?
-		r extends of<infer rBase, infer rAttributes> ?
-			of<_inferIntersection<lBase, rBase, piped>, lAttributes & rAttributes>
-		:	of<_inferIntersection<lBase, r, piped>, lAttributes>
-	: r extends of<infer rBase, infer rAttributes> ?
-		of<_inferIntersection<rBase, l, piped>, rAttributes>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?

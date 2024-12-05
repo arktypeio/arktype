@@ -4,7 +4,7 @@ import {
 	rootSchema,
 	type TraversalContext
 } from "@ark/schema"
-import type { Nominal, To, of } from "../../attributes.ts"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
@@ -157,15 +157,6 @@ const iso = arkModule({
 	})
 })
 
-declare namespace string {
-	export type date = of<string, Nominal<"date">>
-
-	export namespace date {
-		export type epoch = of<string, Nominal<"date.epoch">>
-		export type iso = of<string, Nominal<"date.iso">>
-	}
-}
-
 export const stringDate: stringDate.module = arkModule({
 	root: parsableDate,
 	parse: rootSchema({
@@ -188,8 +179,8 @@ export declare namespace stringDate {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.date
-		parse: (In: string.date) => To<Date>
+		root: string
+		parse: (In: string) => To<Date>
 		iso: iso.submodule
 		epoch: epoch.submodule
 	}
@@ -198,8 +189,8 @@ export declare namespace stringDate {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			root: string.date.iso
-			parse: (In: string.date.iso) => To<Date>
+			root: string
+			parse: (In: string) => To<Date>
 		}
 	}
 
@@ -207,8 +198,8 @@ export declare namespace stringDate {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			root: string.date.epoch
-			parse: (In: string.date.epoch) => To<Date>
+			root: string
+			parse: (In: string) => To<Date>
 		}
 	}
 }

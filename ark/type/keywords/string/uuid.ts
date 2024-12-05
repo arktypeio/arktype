@@ -1,4 +1,3 @@
-import type { Nominal, of } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
@@ -46,35 +45,20 @@ export const uuid = arkModule({
 	)
 })
 
-declare namespace string {
-	export type uuid = of<string, Nominal<"uuid">>
-
-	export namespace uuid {
-		export type v1 = of<string, Nominal<"uuid.v1">>
-		export type v2 = of<string, Nominal<"uuid.v2">>
-		export type v3 = of<string, Nominal<"uuid.v3">>
-		export type v4 = of<string, Nominal<"uuid.v4">>
-		export type v5 = of<string, Nominal<"uuid.v5">>
-		export type v6 = of<string, Nominal<"uuid.v6">>
-		export type v7 = of<string, Nominal<"uuid.v7">>
-		export type v8 = of<string, Nominal<"uuid.v8">>
-	}
-}
-
 export declare namespace uuid {
 	export type module = Module<submodule>
 
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.uuid
-		v1: string.uuid.v1
-		v2: string.uuid.v2
-		v3: string.uuid.v3
-		v4: string.uuid.v4
-		v5: string.uuid.v5
-		v6: string.uuid.v6
-		v7: string.uuid.v7
-		v8: string.uuid.v8
+		root: string
+		v1: string
+		v2: string
+		v3: string
+		v4: string
+		v5: string
+		v6: string
+		v7: string
+		v8: string
 	}
 }

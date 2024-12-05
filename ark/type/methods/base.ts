@@ -27,7 +27,6 @@ import type {
 	inferMorphOut,
 	inferPipes,
 	InferredMorph,
-	Optional,
 	Out,
 	To
 } from "../attributes.ts"
@@ -194,8 +193,7 @@ interface Type<out t = unknown, $ = {}>
 
 	satisfying<
 		narrowed extends this["inferIn"] = never,
-		r = [narrowed] extends [never] ?
-			associateAttributesFromSchema<t, "predicate", Predicate>
+		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(

@@ -1,19 +1,8 @@
 import { rootSchema } from "@ark/schema"
 import { flatMorph } from "@ark/util"
-import type { Nominal, of, To } from "../../attributes.ts"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
-
-declare namespace string {
-	export type normalized = normalized.NFC
-
-	export namespace normalized {
-		export type NFC = of<string, Nominal<"normalized.NFC">>
-		export type NFD = of<string, Nominal<"normalized.NFD">>
-		export type NFKC = of<string, Nominal<"normalized.NFKC">>
-		export type NFKD = of<string, Nominal<"normalized.NFKD">>
-	}
-}
 
 export const normalizedForms = ["NFC", "NFD", "NFKC", "NFKD"] as const
 
@@ -79,7 +68,7 @@ export declare namespace normalize {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: (In: string) => To<string.normalized.NFC>
+		root: (In: string) => To<string>
 		NFC: NFC.submodule
 		NFD: NFD.submodule
 		NFKC: NFKC.submodule
@@ -90,8 +79,8 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			root: (In: string) => To<string.normalized.NFC>
-			preformatted: string.normalized.NFC
+			root: (In: string) => To<string>
+			preformatted: string
 		}
 	}
 
@@ -99,8 +88,8 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			root: (In: string) => To<string.normalized.NFD>
-			preformatted: string.normalized.NFD
+			root: (In: string) => To<string>
+			preformatted: string
 		}
 	}
 
@@ -108,8 +97,8 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			root: (In: string) => To<string.normalized.NFKC>
-			preformatted: string.normalized.NFKC
+			root: (In: string) => To<string>
+			preformatted: string
 		}
 	}
 
@@ -117,8 +106,8 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			root: (In: string) => To<string.normalized.NFKD>
-			preformatted: string.normalized.NFKD
+			root: (In: string) => To<string>
+			preformatted: string
 		}
 	}
 }

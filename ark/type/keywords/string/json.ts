@@ -4,13 +4,10 @@ import {
 	type Morph,
 	type TraversalContext
 } from "@ark/schema"
-import type { Nominal, To, of } from "../../attributes.ts"
+import type { Json } from "@ark/util"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
-
-declare namespace string {
-	export type json = of<string, Nominal<"json">>
-}
 
 const jsonStringDescription = "a JSON string"
 
@@ -72,7 +69,7 @@ export declare namespace stringJson {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.json
-		parse: (In: string.json) => To<object>
+		root: string
+		parse: (In: string) => To<Json>
 	}
 }

@@ -28,7 +28,6 @@ import {
 	type Thunk
 } from "@ark/util"
 import type {
-	associateAttributes,
 	Default,
 	DefaultFor,
 	distill,
@@ -36,7 +35,6 @@ import type {
 	inferMorphOut,
 	inferPredicate,
 	InferredOptional,
-	Optional,
 	Out
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
@@ -45,7 +43,6 @@ import type { inferDefinition, validateDefinition } from "./definition.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { ArkTypeScanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
-
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
@@ -383,12 +380,11 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		associateAttributes<
-			inferDefinition<def[0], $, args>,
-			Default<def[2] extends Thunk<infer returnValue> ? returnValue : def[2]>
-		>
+		(
+			In?: inferDefinition<def[0], $, args>
+		) => Default<def[2] extends Thunk<infer returnValue> ? returnValue : def[2]>
 	: def[1] extends "?" ?
-		associateAttributes<inferDefinition<def[0], $, args>, Optional>
+		(In?: inferDefinition<def[0], $, args>) => inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]
@@ -504,9 +500,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
 		inferMorphOut<morph> extends infer out ?
-			(
-				In: distill.withAttributes.In<inferDefinition<inDef, $, args>>
-			) => Out<out>
+			(In: distill.In<inferDefinition<inDef, $, args>>) => Out<out>
 		:	never
 	:	never
 

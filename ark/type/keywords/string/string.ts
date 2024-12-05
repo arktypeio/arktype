@@ -1,53 +1,156 @@
-import { intrinsic } from "@ark/schema"
-import type { satisfy } from "@ark/util"
-import type {
-	Anonymous,
-	AtLeastLength,
-	AtMostLength,
-	AttributeKind,
-	Attributes,
-	Default,
-	ExactlyLength,
-	LengthAttributeKind,
-	LessThanLength,
-	MoreThanLength,
-	Nominal,
-	Optional,
-	brand,
-	constraint,
-	of
-} from "../../attributes.ts"
+import { intrinsic, rootSchema } from "@ark/schema"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
-import { alpha } from "./alpha.ts"
-import { alphanumeric } from "./alphanumeric.ts"
-import { base64 } from "./base64.ts"
-import { capitalize } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
 import { stringDate } from "./date.ts"
-import { digits } from "./digits.ts"
-import { email } from "./email.ts"
 import { integer, type stringInteger } from "./integer.ts"
 import { ip } from "./ip.ts"
 import { json, type stringJson } from "./json.ts"
-import { lower } from "./lower.ts"
 import { normalize } from "./normalize.ts"
 import { numeric, type stringNumeric } from "./numeric.ts"
-import { semver } from "./semver.ts"
-import { trim } from "./trim.ts"
-import { upper } from "./upper.ts"
 import { url } from "./url.ts"
+import { regexStringNode } from "./utils.ts"
 import { uuid } from "./uuid.ts"
+
+const base64 = arkModule({
+	root: regexStringNode(
+		/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
+		"base64-encoded"
+	),
+	url: regexStringNode(
+		/^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==|%3D%3D)?|[A-Za-z0-9_-]{3}(?:=|%3D)?)?$/,
+		"base64url-encoded"
+	)
+})
+
+declare namespace base64 {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: string
+		url: string
+	}
+}
+
+const preformattedCapitalize = regexStringNode(/^[A-Z].*$/, "capitalized")
+
+export const capitalize: capitalize.module = arkModule({
+	root: rootSchema({
+		in: "string",
+		morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
+		declaredOut: preformattedCapitalize
+	}),
+	preformatted: preformattedCapitalize
+})
+
+export declare namespace capitalize {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: (In: string) => To<string>
+		preformatted: string
+	}
+}
+
+const email = regexStringNode(
+	// https://www.regular-expressions.info/email.html
+	/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+	"an email address"
+)
+
+const preformattedLower = regexStringNode(/^[a-z]*$/, "only lowercase letters")
+
+const lower: lower.module = arkModule({
+	root: rootSchema({
+		in: "string",
+		morphs: (s: string) => s.toLowerCase(),
+		declaredOut: preformattedLower
+	}),
+	preformatted: preformattedLower
+})
+
+export declare namespace lower {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: (In: string) => To<string>
+		preformatted: string
+	}
+}
+
+// https://semver.org/
+const semverMatcher =
+	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
+const semver = regexStringNode(
+	semverMatcher,
+	"a semantic version (see https://semver.org/)"
+)
+
+const preformattedTrim = regexStringNode(
+	// no leading or trailing whitespace
+	/^\S.*\S$|^\S?$/,
+	"trimmed"
+)
+
+const trim: trim.module = arkModule({
+	root: rootSchema({
+		in: "string",
+		morphs: (s: string) => s.trim(),
+		declaredOut: preformattedTrim
+	}),
+	preformatted: preformattedTrim
+})
+
+export declare namespace trim {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: (In: string) => To<string>
+		preformatted: string
+	}
+}
+
+const preformattedUpper = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
+
+const upper: upper.module = arkModule({
+	root: rootSchema({
+		in: "string",
+		morphs: (s: string) => s.toUpperCase(),
+		declaredOut: preformattedUpper
+	}),
+	preformatted: preformattedUpper
+})
+
+declare namespace upper {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: (In: string) => To<string>
+		preformatted: string
+	}
+}
 
 export const string = arkModule({
 	root: intrinsic.string,
-	alpha,
-	alphanumeric,
+	alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
+	alphanumeric: regexStringNode(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),
 	base64,
 	capitalize,
 	creditCard,
 	date: stringDate,
-	digits,
+	digits: regexStringNode(/^\d*$/, "only digits 0-9"),
 	email,
 	integer,
 	ip,
@@ -62,116 +165,31 @@ export const string = arkModule({
 	uuid
 })
 
-export type Matching<rule> = {
-	matching: constraint<rule>
-}
-
 export declare namespace string {
-	export type atLeastLength<rule> = of<string, AtLeastLength<rule>>
-
-	export type moreThanLength<rule> = of<string, MoreThanLength<rule>>
-
-	export type atMostLength<rule> = of<string, AtMostLength<rule>>
-
-	export type lessThanLength<rule> = of<string, LessThanLength<rule>>
-
-	export type exactlyLength<rule> = of<string, ExactlyLength<rule>>
-
-	export type matching<rule> = of<string, Matching<rule>>
-
-	export type anonymous = of<string, Anonymous>
-
-	export type optional = of<string, Optional>
-
-	export type defaultsTo<rule> = of<string, Default<rule>>
-
-	export type nominal<rule> = of<string, Nominal<rule>>
-
-	export type is<attributes extends Attributes> = of<string, attributes>
-
-	export type AttributableKind = satisfy<
-		AttributeKind,
-		"matching" | LengthAttributeKind
-	>
-
-	export type withSingleAttribute<
-		kind extends AttributableKind,
-		value extends Attributes[kind]
-	> = raw.withSingleAttribute<kind, value>
-
-	export namespace raw {
-		export type withSingleAttribute<kind, value> =
-			kind extends "nominal" ? nominal<value>
-			: kind extends "matching" ? matching<value>
-			: kind extends "atLeastLength" ? atLeastLength<value>
-			: kind extends "atMostLength" ? atMostLength<value>
-			: kind extends "moreThanLength" ? moreThanLength<value>
-			: kind extends "lessThanLength" ? lessThanLength<value>
-			: kind extends "optional" ? optional
-			: kind extends "defaultsTo" ? defaultsTo<value>
-			: never
-	}
-
 	export type module = Module<string.submodule>
 
 	export type submodule = Submodule<$>
 
 	export type $ = {
 		root: string
-		alpha: alpha
-		alphanumeric: alphanumeric
+		alpha: string
+		alphanumeric: string
 		base64: base64.submodule
 		capitalize: capitalize.submodule
-		creditCard: creditCard
+		creditCard: string
 		date: stringDate.submodule
-		digits: digits
-		email: email
+		digits: string
+		email: string
 		integer: stringInteger.submodule
 		ip: ip.submodule
 		json: stringJson.submodule
 		lower: lower.submodule
 		normalize: normalize.submodule
 		numeric: stringNumeric.submodule
-		semver: semver
+		semver: string
 		trim: trim.submodule
 		upper: upper.submodule
 		url: url.submodule
 		uuid: uuid.submodule
-	}
-
-	export type branded<rule> = brand<string, Nominal<rule>>
-
-	export namespace branded {
-		export type atLeastLength<rule> = brand<string, AtLeastLength<rule>>
-
-		export type moreThanLength<rule> = brand<string, MoreThanLength<rule>>
-
-		export type atMostLength<rule> = brand<string, AtMostLength<rule>>
-
-		export type lessThanLength<rule> = brand<string, LessThanLength<rule>>
-
-		export type exactlyLength<rule> = brand<string, ExactlyLength<rule>>
-
-		export type matching<rule> = brand<string, Matching<rule>>
-
-		export type anonymous = brand<string, Anonymous>
-
-		export type is<attributes extends Attributes> = brand<string, attributes>
-
-		export type withSingleAttribute<
-			kind extends AttributableKind,
-			value extends Attributes[kind]
-		> = raw.withSingleAttribute<kind, value>
-
-		export namespace raw {
-			export type withSingleAttribute<kind, value> =
-				kind extends "nominal" ? branded<value>
-				: kind extends "matching" ? matching<value>
-				: kind extends "atLeastLength" ? atLeastLength<value>
-				: kind extends "atMostLength" ? atMostLength<value>
-				: kind extends "moreThanLength" ? moreThanLength<value>
-				: kind extends "lessThanLength" ? lessThanLength<value>
-				: never
-		}
 	}
 }

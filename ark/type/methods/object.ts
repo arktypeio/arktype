@@ -19,7 +19,7 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { Default, Optional } from "../attributes.ts"
+import type { Default } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -124,47 +124,50 @@ type typePropOf<o, $> =
 		:	never
 	:	never
 
+throw new Error()
+
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
-	t extends of<infer base, infer attributes> ?
-		attributes extends Default<infer defaultValue> ?
-			DefaultedTypeProp<
-				k & Key,
-				keyof attributes extends keyof Default ? base
-				:	of<
-						base,
-						// Shouldn't need this extends check, logged a TS bug:
-						// https://github.com/microsoft/TypeScript/issues/60233
-						Omit<attributes, keyof Default> extends (
-							infer attributes extends Attributes
-						) ?
-							attributes
-						:	never
-					>,
-				defaultValue,
-				$
-			>
-		: attributes extends Optional ?
-			BaseTypeProp<
-				"optional",
-				k & Key,
-				keyof attributes extends keyof Optional ? base
-				:	of<
-						base,
-						Omit<attributes, keyof Default> extends (
-							infer attributes extends Attributes
-						) ?
-							attributes
-						:	never
-					>,
-				$
-			>
-		:	never
-	:	BaseTypeProp<
-			k extends optionalKeyOf<o> ? "optional" : "required",
-			k & Key,
-			t,
-			$
-		>
+	// t extends of<infer base, infer attributes> ?
+	// 	attributes extends Default<infer defaultValue> ?
+	// 		DefaultedTypeProp<
+	// 			k & Key,
+	// 			keyof attributes extends keyof Default ? base
+	// 			:	of<
+	// 					base,
+	// 					// Shouldn't need this extends check, logged a TS bug:
+	// 					// https://github.com/microsoft/TypeScript/issues/60233
+	// 					Omit<attributes, keyof Default> extends (
+	// 						infer attributes extends Attributes
+	// 					) ?
+	// 						attributes
+	// 					:	never
+	// 				>,
+	// 			defaultValue,
+	// 			$
+	// 		>
+	// 	: attributes extends Optional ?
+	// 		BaseTypeProp<
+	// 			"optional",
+	// 			k & Key,
+	// 			keyof attributes extends keyof Optional ? base
+	// 			:	of<
+	// 					base,
+	// 					Omit<attributes, keyof Default> extends (
+	// 						infer attributes extends Attributes
+	// 					) ?
+	// 						attributes
+	// 					:	never
+	// 				>,
+	// 			$
+	// 		>
+	// 	:	never
+	// :
+	BaseTypeProp<
+		k extends optionalKeyOf<o> ? "optional" : "required",
+		k & Key,
+		t,
+		$
+	>
 
 export interface BaseTypeProp<
 	kind extends Prop.Kind = Prop.Kind,

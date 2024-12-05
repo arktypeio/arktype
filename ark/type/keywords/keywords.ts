@@ -104,11 +104,11 @@ export declare namespace type {
 		>
 
 		export namespace withAttributes {
-			export type In<def, $ = {}, args = {}> = distill.withAttributes.In<
+			export type In<def, $ = {}, args = {}> = distill.In<
 				inferDefinition<def, $, args>
 			>
 
-			export type Out<def, $ = {}, args = {}> = distill.withAttributes.Out<
+			export type Out<def, $ = {}, args = {}> = distill.Out<
 				inferDefinition<def, $, args>
 			>
 		}

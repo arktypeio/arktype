@@ -19,7 +19,6 @@ import {
 	type show
 } from "@ark/util"
 import type { type } from "../keywords/keywords.ts"
-import type { string } from "../keywords/string/string.ts"
 import type { validateString } from "./ast/validate.ts"
 import {
 	parseObjectLiteral,
@@ -73,7 +72,7 @@ export type inferDefinition<def, $, args> =
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
-	: def extends RegExp ? string.matching<string>
+	: def extends RegExp ? string
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 

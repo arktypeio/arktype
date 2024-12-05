@@ -1,13 +1,9 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import { numericStringMatcher } from "@ark/util"
-import type { Nominal, of, To } from "../../attributes.ts"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
-
-declare namespace string {
-	export type numeric = of<string, Nominal<"numeric">>
-}
 
 const root = regexStringNode(
 	numericStringMatcher,
@@ -29,7 +25,7 @@ export declare namespace stringNumeric {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.numeric
-		parse: (In: string.numeric) => To<number>
+		root: string
+		parse: (In: string) => To<number>
 	}
 }

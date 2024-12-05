@@ -1,14 +1,9 @@
 import { intrinsic, rootSchema, type TraversalContext } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
-import type { Nominal, of, To } from "../../attributes.ts"
+import type { To } from "../../attributes.ts"
 import type { Module, Submodule } from "../../module.ts"
-import type { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
-
-declare namespace string {
-	export type integer = of<string, Nominal<"integer">>
-}
 
 const root = regexStringNode(
 	wellFormedIntegerMatcher,
@@ -37,7 +32,7 @@ export declare namespace stringInteger {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: string.integer
-		parse: (In: string.integer) => To<number.divisibleBy<1>>
+		root: string
+		parse: (In: string) => To<number>
 	}
 }
