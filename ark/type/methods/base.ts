@@ -20,9 +20,6 @@ import type {
 	unset
 } from "@ark/util"
 import type {
-	associateAttributes,
-	associateAttributesFromSchema,
-	brandName,
 	Default,
 	DefaultFor,
 	distill,
@@ -54,8 +51,7 @@ interface Type<out t = unknown, $ = {}>
 	// A type representing the output the `Type` will return (after morphs are
 	// applied to valid input)
 	infer: this["inferOut"]
-	inferInWithAttributes: distill.withAttributes.In<t>
-	inferOutWithAttributes: distill.withAttributes.Out<t>
+
 	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
 	// A type representing the input the `Type` will accept (before morphs are applied)
@@ -135,15 +131,11 @@ interface Type<out t = unknown, $ = {}>
 		name: name
 	): instantiateType<r, $>
 
-	brandAttributes(): instantiateType<distill.brand<t>, $>
-
-	unbrandAttributes(): instantiateType<distill.unbrand<t>, $>
-
 	/**
 	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
 	 * @example const inputT = T.in
 	 */
-	get in(): instantiateType<this["inferInWithAttributes"], $>
+	get in(): instantiateType<this["inferIn"], $>
 	/**
 	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
 	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
@@ -190,16 +182,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
-		r = [narrowed] extends [never] ?
-			t extends InferredMorph<infer i, infer o> ?
-				o extends To ?
-					(
-						In: i
-					) => To<associateAttributesFromSchema<o[1], "predicate", Predicate>>
-				:	(
-						In: i
-					) => Out<associateAttributesFromSchema<o[1], "predicate", Predicate>>
-			:	associateAttributesFromSchema<t, "predicate", Predicate>
+		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<infer i, infer o> ?
 			o extends To ?
 				(In: i) => To<narrowed>
