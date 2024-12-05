@@ -1,0 +1,72 @@
+---
+title: Keywords
+---
+
+import { SyntaxTab, SyntaxTabs } from "../../components/SyntaxTabs.tsx"
+
+### TypeScript
+
+All\* builtin TypeScript keywords are directly available.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+```ts twoslash
+const keywords = type({
+	string: "string",
+	date: "Date"
+})
+```
+	</SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts twoslash
+const keywords = type({
+	string: type.string,
+	date: type.Date
+})
+```
+
+Common keywords are exposed directly on `type`.
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Subtype
+
+Subtype keywords refine or transform their root type.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+```ts twoslash
+const keywords = type({
+	dateFormattedString: "string.date",
+	transformStringToDate: "string.date.parse",
+	isoFormattedString: "string.date.iso",
+	transformIsoFormattedStringToDate: "string.date.iso.parse"
+})
+```
+
+You can easily explore available subtypes via autocomplete by with a partial definition like `"string."`.
+
+</SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts twoslash
+const keywords = type({
+	dateFormattedString: type.keywords.string.date.root,
+	isoFormattedString: type.keywords.string.date.iso.root,
+	transformStringToDate: type.keywords.string.date.parse,
+	transformIsoFormattedStringToDate: type.keywords.string.date.iso.parse
+})
+```
+
+All builtin keywords and modules are available in `type.keywords`.
+
+`.root` gets the base type of a subtyped module so that it can be used as a `Type` directly.
+
+    </SyntaxTab>
+
+</SyntaxTabs>

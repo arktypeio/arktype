@@ -1,0 +1,29 @@
+---
+title: Integrations
+---
+
+### Standard Schema
+
+{/* TODO:DOC */}
+
+### tRPC
+
+ArkType can easily be used with tRPC via the `assert` prop:
+
+```ts twoslash
+// @noErrors
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	}).assert
+)
+```
+
+### react-hook-form
+
+{/* TODO:DOC */}
+
+### hono
+
+{/* TODO:DOC */}

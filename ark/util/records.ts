@@ -3,6 +3,7 @@ import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
 import type { Key } from "./keys.ts"
+import type { intersectUnion } from "./unionToTuple.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -20,6 +21,19 @@ export type dict<v = unknown, k extends string = string> = {
 export type propwiseXor<a, b> =
 	| show<a & { [k in keyof b]?: undefined }>
 	| show<b & { [k in keyof a]?: undefined }>
+
+export type unionToPropwiseXor<
+	props extends object,
+	branchKey extends PropertyKey = keyof intersectUnion<props>
+> =
+	props extends infer distributed ?
+		show<
+			distributed & {
+				// ensure keys not present on the current branch are undefined
+				[k in branchKey]?: k extends keyof distributed ? unknown : undefined
+			}
+		>
+	:	never
 
 export type requireKeys<o, key extends keyof o> = o & {
 	[requiredKey in key]-?: defined<o[requiredKey]>

@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.29.0",
+	"version": "0.30.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -36,13 +36,13 @@
 		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@typescript/vfs": "1.6.0",
+		"@prettier/sync": "0.5.2",
 		"@typescript/analyze-trace": "0.10.1",
-		"prettier": "3.3.3",
-		"@prettier/sync": "0.5.2"
+		"@typescript/vfs": "1.6.0",
+		"arktype": "workspace:*",
+		"prettier": "3.4.2"
 	},
 	"devDependencies": {
 		"typescript": "catalog:"

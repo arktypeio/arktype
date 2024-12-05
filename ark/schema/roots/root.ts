@@ -529,7 +529,9 @@ export abstract class BaseRoot<
 		}
 
 		const partialIntersection = this.$.node("intersection", {
-			[kind]: constraint
+			// important this is constraint.kind instead of kind in case
+			// the node was reduced during parsing
+			[constraint.kind]: constraint
 		})
 
 		const result =

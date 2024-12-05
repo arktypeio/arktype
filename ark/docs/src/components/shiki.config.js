@@ -37,8 +37,8 @@ export const twoslash = transformerTwoslash({
 declare global {
 	const type: typeof a.type
 	namespace type {
-		export interface as<castTo> {
-			[a.inferred]?: castTo
+		export interface cast<to> {
+			[a.inferred]?: to
 		}
 
 		export type errors = a.ArkErrors

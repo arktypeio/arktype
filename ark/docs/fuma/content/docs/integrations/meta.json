@@ -1,0 +1,9 @@
+{
+	"title": "Integrations",
+	"pages": [
+		"[Standard Schema](/docs/integrations#standard-schema)",
+		"[tRPC](/docs/integrations#trpc)",
+		"[react-hook-form](/docs/integrations#react-hook-form)",
+		"[hono](/docs/integrations#hono)"
+	]
+}

@@ -941,7 +941,7 @@ contextualize(() => {
 			const defaulted = type({ a }).default(() => ({}))
 
 			attest(defaulted.expression).snap(
-				'{ a?: (In: string /^(?:(?:(?!^-0(\\.0+)?$)-?(?:0|[1-9]\\d*)(?:\\.\\d+)?)|-?(?:\\.\\d+))$/) => Out<number> = "1" }'
+				'{ a?: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)?))$/) => Out<number> = "1" }'
 			)
 			attest(defaulted).type.toString.snap(`Type<
 	of<

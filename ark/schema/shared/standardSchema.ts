@@ -1,9 +1,9 @@
-/** Subset of types from https://github.com/standard-schema/standard-schema */
+/** From https://github.com/standard-schema/standard-schema */
 
 /**
  * The Standard Schema interface.
  */
-export interface StandardSchemaV1<Input = unknown, Output = Input> {
+export type StandardSchemaV1<Input = unknown, Output = Input> = {
 	/**
 	 * The Standard Schema properties.
 	 */
@@ -43,12 +43,12 @@ export declare namespace StandardSchemaV1 {
 	/**
 	 * The result interface of the validate function.
 	 */
-	type Result<Output> = SuccessResult<Output> | FailureResult
+	export type Result<Output> = SuccessResult<Output> | FailureResult
 
 	/**
 	 * The result interface if validation succeeds.
 	 */
-	interface SuccessResult<Output> {
+	export interface SuccessResult<Output> {
 		/**
 		 * The typed output value.
 		 */
@@ -86,7 +86,7 @@ export declare namespace StandardSchemaV1 {
 	/**
 	 * The path segment interface of the issue.
 	 */
-	interface PathSegment {
+	export interface PathSegment {
 		/**
 		 * The key representing a path segment.
 		 */
@@ -94,9 +94,9 @@ export declare namespace StandardSchemaV1 {
 	}
 
 	/**
-	 * The base types interface of Standard Schema.
+	 * The Standard Schema types interface.
 	 */
-	interface Types<Input, Output> {
+	export interface Types<Input = unknown, Output = Input> {
 		/**
 		 * The input type of the schema.
 		 */
@@ -106,4 +106,21 @@ export declare namespace StandardSchemaV1 {
 		 */
 		readonly output: Output
 	}
+
+	/**
+	 * Infers the input type of a Standard Schema.
+	 */
+	export type InferInput<Schema extends StandardSchemaV1> = NonNullable<
+		Schema["~standard"]["types"]
+	>["input"]
+
+	/**
+	 * Infers the output type of a Standard Schema.
+	 */
+	export type InferOutput<Schema extends StandardSchemaV1> = NonNullable<
+		Schema["~standard"]["types"]
+	>["output"]
+
+	// biome-ignore lint/complexity/noUselessEmptyExport: needed for granular visibility control of TS namespace
+	export {}
 }

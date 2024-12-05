@@ -1,5 +1,6 @@
 {
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"biome.enabled": false,
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
@@ -40,7 +41,9 @@
 		" ": true
 	},
 	"search.exclude": {
-		"**/out": true
+		"**/out": true,
+		"**/.next": true,
+		"**/.source": true
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"
