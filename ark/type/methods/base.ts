@@ -22,7 +22,7 @@ import type {
 import type {
 	associateAttributes,
 	associateAttributesFromSchema,
-	brandAttributes,
+	brandName,
 	Default,
 	DefaultFor,
 	distill,
@@ -30,7 +30,6 @@ import type {
 	inferMorphOut,
 	inferPipes,
 	InferredMorph,
-	Nominal,
 	Optional,
 	Out,
 	To
@@ -132,7 +131,7 @@ interface Type<out t = unknown, $ = {}>
 		...args: validateChainedAsArgs<castTo>
 	): instantiateType<castTo, $>
 
-	brand<const name extends string, r = brandAttributes<t, Nominal<name>>>(
+	brand<const name extends string, r = brandName<t, name>>(
 		name: name
 	): instantiateType<r, $>
 

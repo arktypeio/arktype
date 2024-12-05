@@ -172,46 +172,70 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export type AttributeInferenceBehavior = "brand" | "associate"
-
 export type associateAttributes<
 	t,
 	attributes extends Attributes
-> = attachAttributes<t, attributes, "associate">
+> = attachAttributes<
+	t,
+	attributes,
+	{ behavior: "associate"; endpoint: "in"; replaceExisting: false }
+>
 
 export type brandAttributes<
 	t,
 	attributes extends Attributes
-> = attachAttributes<t, attributes, "brand">
+> = attachAttributes<
+	t,
+	attributes,
+	{ behavior: "brand"; endpoint: "in"; replaceExisting: false }
+>
+
+export type brandName<t, name extends string> = attachAttributes<
+	t,
+	Nominal<name>,
+	{ behavior: "brand"; endpoint: "out"; replaceExisting: true }
+>
+
+type AttachAttributesOptions = {
+	behavior: "brand" | "associate"
+	endpoint: distill.Endpoint
+	replaceExisting: boolean
+}
 
 type attachAttributes<
 	t,
 	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior = "associate",
+	opts extends AttachAttributesOptions,
 	unmorphedT = Exclude<t, InferredMorph>
 > =
 	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
-	:	leftIfEqual<unmorphedT, _attachAttributes<unmorphedT, attributes, behavior>>
+		opts["endpoint"] extends "out" ?
+			(In: i) => leftIfEqual<o, _attachAttributes<o, attributes, opts>>
+		:	(In: leftIfEqual<i, _attachAttributes<i, attributes, opts>>) => o
+	:	leftIfEqual<unmorphedT, _attachAttributes<unmorphedT, attributes, opts>>
 
 type _attachAttributes<
 	t,
 	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior,
+	opts extends AttachAttributesOptions,
 	distributed = t
 > =
 	distributed extends null | undefined ? distributed
-	: distributed extends of<infer base, infer existingAttributes> ?
-		"brand" extends keyof distributed[attributesKey] | behavior ?
+	: [distributed, opts["replaceExisting"]] extends (
+		[of<infer base, infer existingAttributes>, false]
+	) ?
+		"brand" extends (
+			keyof distributed[attributesKey & keyof distributed] | opts["behavior"]
+		) ?
 			brandMultiple<base, existingAttributes & attributes>
 		:	associateMultiple<base, existingAttributes & attributes>
 	: extractIfSingleAttributeEntry<attributes> extends (
 		AttributeEntry<infer kind, infer value>
 	) ?
-		"brand" extends behavior ?
+		"brand" extends opts["behavior"] ?
 			brandSingle<t, attributes, kind, value>
 		:	associateSingle<t, attributes, kind, value>
-	: "brand" extends behavior ? brandMultiple<t, attributes>
+	: "brand" extends opts["behavior"] ? brandMultiple<t, attributes>
 	: associateMultiple<t, attributes>
 
 type associateMultiple<t, attributes extends Attributes> =

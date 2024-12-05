@@ -14,6 +14,30 @@ contextualize(() => {
 		attest<string.branded<"foo"> | type.errors>(out)
 	})
 
+	it("from morph", () => {
+		const fluent = type("string.numeric.parse").brand("num")
+
+		attest(fluent.t)
+
+		throw Error()
+
+		const string = type("string.numeric.parse#num")
+
+		attest(string.t)
+	})
+
+	it("replaces existing attributes", () => {
+		const fluent = type("string.numeric.parse").brand("num")
+
+		attest(fluent.t)
+
+		throw Error()
+
+		const string = type("string.numeric.parse#num")
+
+		attest(string.t)
+	})
+
 	it("string-embedded", () => {
 		const t = type("number#cool")
 		attest(t.t).type.toString.snap('branded<"cool">')
