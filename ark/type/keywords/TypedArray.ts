@@ -1,5 +1,5 @@
-import type { Module, Submodule } from "../../module.ts"
-import { arkModule } from "../utils.ts"
+import type { Module, Submodule } from "../module.ts"
+import { arkModule } from "./utils.ts"
 
 export const TypedArray: TypedArray.module = arkModule({
 	Int8: ["instanceof", Int8Array],

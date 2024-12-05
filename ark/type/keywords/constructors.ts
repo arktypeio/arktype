@@ -6,11 +6,11 @@ import {
 	type KeySet,
 	type PlatformObjects
 } from "@ark/util"
-import type { Module, Submodule } from "../../module.ts"
-import { arkModule } from "../utils.ts"
+import type { Module, Submodule } from "../module.ts"
 import { arkArray } from "./Array.ts"
 import { arkFormData } from "./FormData.ts"
 import { TypedArray } from "./TypedArray.ts"
+import { arkModule } from "./utils.ts"
 
 const omittedPrototypes = {
 	Boolean: 1,

@@ -1,8 +1,8 @@
 import { genericNode, intrinsic, rootSchema } from "@ark/schema"
 import { Hkt, liftArray, type Digit } from "@ark/util"
-import type { To } from "../../attributes.ts"
-import type { Module, Submodule } from "../../module.ts"
-import { arkModule } from "../utils.ts"
+import type { To } from "../attributes.ts"
+import type { Module, Submodule } from "../module.ts"
+import { arkModule } from "./utils.ts"
 
 class liftFromHkt extends Hkt<[element: unknown]> {
 	declare body: liftArray<this[0]> extends infer lifted ?

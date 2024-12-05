@@ -9,10 +9,10 @@ import type {
 	Primitive,
 	show
 } from "@ark/util"
-import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
+import type { arkPrototypes } from "./keywords/constructors.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Type } from "./type.ts"
-export type { arkPrototypes as object } from "./keywords/constructors/constructors.ts"
+export type { arkPrototypes as object } from "./keywords/constructors.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 

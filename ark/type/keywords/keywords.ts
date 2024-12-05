@@ -17,9 +17,9 @@ import type {
 	TypeParser
 } from "../type.ts"
 import { arkBuiltins } from "./builtins.ts"
-import { arkPrototypes } from "./constructors/constructors.ts"
-import { number } from "./number/number.ts"
-import { string } from "./string/string.ts"
+import { arkPrototypes } from "./constructors.ts"
+import { number } from "./number.ts"
+import { string } from "./string.ts"
 import { arkTsGenerics, arkTsKeywords, object, unknown } from "./ts.ts"
 
 export interface Ark
