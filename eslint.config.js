@@ -184,7 +184,7 @@ export default tseslint.config(
 		}
 	},
 	{
-		files: ["**/ark/repo/**", "**/ark/docs/**", "**/ark/new-docs/**"],
+		files: ["**/ark/repo/**", "**/ark/docs/**"],
 		rules: {
 			"@typescript-eslint/explicit-module-boundary-types": "off"
 		}
