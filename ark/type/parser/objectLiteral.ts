@@ -106,15 +106,17 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
-		DefaultValueTuple<infer baseDef, infer thunkableValue>
-	) ?
-		[def[k]] extends [anyOrNever] ?
-			def[k]
-		:	withDefault<
-				inferDefinition<baseDef, $, args>,
-				unwrapDefault<thunkableValue>
-			>
+	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: [
+		def[k]
+	] extends [anyOrNever] ?
+		def[k]
+	: def[k] extends DefaultValueTuple<infer baseDef, infer thunkableValue> ?
+		withDefault<
+			inferDefinition<baseDef, $, args>,
+			unwrapDefault<thunkableValue>
+		>
+	: def[k] extends OptionalValueTuple<infer baseDef> ?
+		inferDefinition<baseDef, $, args>
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFromEntry<
