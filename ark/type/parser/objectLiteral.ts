@@ -8,6 +8,7 @@ import {
 	type Required,
 	type Structure,
 	type UndeclaredKeyBehavior,
+	type unwrapDefault,
 	type writeInvalidPropertyKeyMessage
 } from "@ark/schema"
 import {
@@ -17,6 +18,7 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type anyOrNever,
+	type conform,
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
@@ -27,6 +29,8 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
+import type { DefaultFor, withDefault } from "../attributes.ts"
+import type { type } from "../keywords/keywords.ts"
 import type { astToString } from "./ast/utils.ts"
 import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
@@ -99,10 +103,15 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: [
-		def[k]
-	] extends [anyOrNever] ?
-		def[k]
+	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
+		DefaultValueTuple<infer baseDef, infer thunkableValue>
+	) ?
+		[def[k]] extends [anyOrNever] ?
+			def[k]
+		:	withDefault<
+				inferDefinition<baseDef, $, args>,
+				unwrapDefault<thunkableValue>
+			>
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
@@ -127,8 +136,47 @@ export type validateObjectLiteral<def, $, args> = {
 			validateDefinition<def[k], $, args>
 		:	ErrorType<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	: k extends "+" ? UndeclaredKeyBehavior
-	: validateDefinition<def[k], $, args>
+	: validateDefaultableValue<def, k, $, args>
 }
+
+type validateDefaultableValue<def, k extends keyof def, $, args> =
+	def[k] extends DefaultValueTuple ?
+		[def[k]] extends [anyOrNever] ?
+			/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
+			 * like the following are not prematurely validated by the outer call:
+			 *
+			 * ```ts
+			 * type({
+			 * 	"test?": type("string").pipe(x => x === "true")
+			 * })
+			 * ```
+			 */
+			def[k]
+		:	validateDefaultValueTuple<def[k], k, $, args>
+	:	validateDefinition<def[k], $, args>
+
+type DefaultValueTuple<baseDef = unknown, thunkableValue = unknown> = readonly [
+	baseDef,
+	"=",
+	thunkableValue
+]
+
+type validateDefaultValueTuple<
+	def extends DefaultValueTuple,
+	k extends PropertyKey,
+	$,
+	args
+> =
+	parseKey<k>["kind"] extends "required" ?
+		conform<
+			def,
+			readonly [
+				validateDefinition<def[0], $, args>,
+				"=",
+				DefaultFor<type.infer.In<def[0], $, args>>
+			]
+		>
+	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
@@ -195,6 +243,32 @@ export const parseEntry = (
 		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
 	const parsedValue = ctx.$.parseOwnDefinitionFormat(value, ctx)
+
+	// const parsedValue: ParsedDefault | BaseRoot =
+	// 	isArray(value) && value[1] === "=" ?
+	// 		[ctx.$.parse(value[0], ctx), "=", value[2]]
+	// 	:	ctx.$.parse(value, ctx, true)
+
+	// if (isArray(parsedValue)) {
+	// 	if (parsedKey.kind !== "required")
+	// 		throwParseError(invalidDefaultKeyKindMessage)
+
+	// 	const out = parsedValue[0].traverse(parsedValue[2])
+	// 	if (out instanceof ArkErrors) {
+	// 		throwParseError(
+	// 			writeUnassignableDefaultValueMessage(
+	// 				printable(parsedKey.key),
+	// 				out.message
+	// 			)
+	// 		)
+	// 	}
+
+	// 	return ctx.$.node("optional", {
+	// 		key: parsedKey.key,
+	// 		value: parsedValue[0],
+	// 		default: parsedValue[2]
+	// 	})
+	// }
 
 	if (parsedKey.kind === "index") {
 		const signature = ctx.$.parseOwnDefinitionFormat(parsedKey.key, ctx)
@@ -263,6 +337,11 @@ type parseKey<k> =
 			: k extends Key ? k
 			: `${k & number}`
 		}>
+
+// single quote use here is better for TypeScript's inlined error to avoid escapes
+export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
+
+export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
 
 export const writeInvalidSpreadTypeMessage = <def extends string>(
 	def: def

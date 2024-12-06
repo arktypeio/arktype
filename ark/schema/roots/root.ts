@@ -1,6 +1,7 @@
 import {
 	includes,
 	inferred,
+	isThunk,
 	omit,
 	throwInternalError,
 	throwParseError,
@@ -376,7 +377,9 @@ export abstract class BaseRoot<
 		return this.withMeta({ optional: true })
 	}
 
-	default(value: unknown): this {
+	default(thunkableValue: unknown): this {
+		const value = isThunk(thunkableValue) ? thunkableValue() : thunkableValue
+
 		assertDefaultValueAssignability(this, value)
 
 		return this.withMeta({ default: value })

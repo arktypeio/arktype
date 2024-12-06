@@ -24,18 +24,15 @@ import {
 	type Constructor,
 	type Domain,
 	type ErrorMessage,
-	type show,
-	type Thunk
+	type show
 } from "@ark/util"
 import type {
-	DefaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
 	inferPredicate,
 	InferredOptional,
-	Out,
-	withDefault
+	Out
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { PostfixExpression } from "./ast/infer.ts"
@@ -379,11 +376,6 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
-	: def[1] extends "=" ?
-		withDefault<
-			inferDefinition<def[0], $, args>,
-			def[2] extends Thunk<infer returnValue> ? returnValue : def[2]
-		>
 	: def[1] extends "?" ?
 		(In?: inferDefinition<def[0], $, args>) => inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]
@@ -421,7 +413,6 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: def[1] extends "=" ? DefaultFor<type.infer.In<def[0], $, args>>
 			: validateDefinition<def[2], $, args>
 		]
 
