@@ -1,14 +1,10 @@
-import {
-	ArkErrors,
-	writeUnassignableDefaultValueMessage,
-	type BaseParseContext,
-	type BaseRoot,
-	type UndeclaredKeyBehavior
+import type {
+	BaseParseContext,
+	BaseRoot,
+	UndeclaredKeyBehavior
 } from "@ark/schema"
 import {
 	isArray,
-	printable,
-	throwParseError,
 	type anyOrNever,
 	type conform,
 	type ErrorMessage,
@@ -19,11 +15,61 @@ import type { DefaultFor } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type {
-	PreparsedKeyKind,
+	ParsedKeyKind,
 	writeInvalidSpreadTypeMessage
 } from "./objectLiteral.ts"
 
-export type validateEntry<def, keyKind extends PreparsedKeyKind, $, args> =
+export type ParsedValueKind = "plain" | "optional" | "defaultable"
+
+export type ParsedValue =
+	| ParsedRequiredValue
+	| ParsedOptionalValue
+	| ParsedDefaultableValue
+
+export type ParsedRequiredValue = {
+	kind: "plain"
+	valueNode: BaseRoot
+}
+
+export type ParsedOptionalValue = {
+	kind: "optional"
+	valueNode: BaseRoot
+}
+
+export type ParsedDefaultableValue = {
+	kind: "defaultable"
+	value: BaseRoot
+	default: unknown
+}
+
+export const parseValue = (
+	def: unknown,
+	ctx: BaseParseContext
+): ParsedValue => {
+	if (isArray(def)) {
+		if (def[1] === "=") {
+			return {
+				kind: "defaultable",
+				value: ctx.$.parseOwnDefinitionFormat(def[0], ctx),
+				default: def[2]
+			}
+		}
+
+		if (def[1] === "?") {
+			return {
+				kind: "optional",
+				valueNode: ctx.$.parseOwnDefinitionFormat(def[0], ctx)
+			}
+		}
+	}
+
+	return {
+		kind: "plain",
+		valueNode: ctx.$.parseOwnDefinitionFormat(def, ctx)
+	}
+}
+
+export type validateEntry<def, keyKind extends ParsedKeyKind, $, args> =
 	[def] extends [anyOrNever] ?
 		/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
 		 * like the following are not prematurely validated by the outer call:
@@ -50,7 +96,7 @@ type validateSpread<def, inferredValue, $, args> =
 
 type validateDefaultValueTuple<
 	def extends DefaultValueTuple,
-	keyKind extends PreparsedKeyKind,
+	keyKind extends ParsedKeyKind,
 	$,
 	args
 > =
@@ -67,7 +113,7 @@ type validateDefaultValueTuple<
 
 type validateOptionalValueTuple<
 	def extends OptionalValueTuple,
-	keyKind extends PreparsedKeyKind,
+	keyKind extends ParsedKeyKind,
 	$,
 	args
 > =
@@ -85,60 +131,6 @@ export type DefaultValueTuple<
 export type OptionalValueDefinition = OptionalValueTuple
 
 export type OptionalValueTuple<baseDef = unknown> = readonly [baseDef, "?"]
-
-export type ParsedValue =
-	| ParsedBaseValue
-	| ParsedOptionalValue
-	| ParsedDefaultValue
-
-type ParsedBaseValue = {
-	kind: "raw"
-	node: BaseRoot
-}
-
-type ParsedOptionalValue = {
-	kind: "optional"
-	node: BaseRoot
-}
-
-type ParsedDefaultValue = {
-	kind: "default"
-	node: BaseRoot
-	value: unknown
-}
-
-export const parsePropertyValue = (
-	value: unknown,
-	ctx: BaseParseContext
-): ParsedValue => {
-	if (!isArray(value) || (value[0] !== "=" && value[0] !== "?"))
-		return { kind: "raw", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
-
-	const parsedValue = ctx.$.parseOwnDefinitionFormat(value[0], ctx)
-
-	if (value[1] === "?") {
-		return {
-			kind: "optional",
-			node: parsedValue
-		}
-	}
-
-	const out = parsedValue.traverse(value[2])
-	if (out instanceof ArkErrors) {
-		throwParseError(
-			writeUnassignableDefaultValueMessage(
-				printable(parsedKey.key),
-				out.message
-			)
-		)
-	}
-
-	return {
-		kind: "default",
-		node: parsedValue,
-		value: value[2]
-	}
-}
 
 // single quote use here is better for TypeScript's inlined error to avoid escapes
 export const invalidOptionalKeyKindMessage = `Only required keys may make their values optional, e.g. { [mySymbol]: ['number', '?'] }`
