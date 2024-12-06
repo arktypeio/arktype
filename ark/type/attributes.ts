@@ -69,14 +69,10 @@ type distillMappable<o, endpoint extends distill.Endpoint, seen> =
 		show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
-				[k in keyof o as k extends inferredOptionalOrDefaultKeyOf<o> ? never
+				[k in keyof o as k extends inferredDefaultKeyOf<o> ? never
 				:	k]: _distill<o[k], endpoint, seen>
 			} & {
-				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<
-					o[k],
-					endpoint,
-					seen
-				>
+				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], endpoint, seen>
 			}
 		>
 	:	{ [k in keyof o]: _distill<o[k], endpoint, seen> }
@@ -94,25 +90,12 @@ type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
 		:	(In: i) => Out<r>
 	:	never
 
-export type inferredOptionalOrDefaultKeyOf<o> =
-	| inferredDefaultKeyOf<o>
-	| inferredOptionalKeyOf<o>
+type BaseDefault = (In?: never, defaultsTo?: never) => Out
 
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			o[k] extends Default ?
-				o[k] extends anyOrNever ?
-					never
-				:	k
-			:	never
-		:	never
-	:	never
-
-type inferredOptionalKeyOf<o> =
-	keyof o extends infer k ?
-		k extends keyof o ?
-			o[k] extends InferredOptional ?
+			o[k] extends BaseDefault ?
 				o[k] extends anyOrNever ?
 					never
 				:	k
@@ -197,10 +180,10 @@ export type InferredOptional<t = any> = (In?: t) => t
 export type withOptional<t> =
 	t extends InferredMorph<infer i, infer o> ? (In?: i) => o : (In?: t) => t
 
-export type Default<t = any, v = any> = (In: t, defaultsTo: v) => Out<t>
+export type Default<t = any, v = any> = (In?: t, defaultsTo?: v) => Out<t>
 
 export type withDefault<t, v = any> =
-	t extends InferredMorph<infer i, infer o> ? (In: i, defaultsTo: v) => o
+	t extends InferredMorph<infer i, infer o> ? (In?: i, defaultsTo?: v) => o
 	:	Default<t, v>
 
 export type DefaultFor<t> =

@@ -211,7 +211,7 @@ contextualize(() => {
 			})
 
 			attest<{
-				bool_value: (In: string, defaultsTo: "off") => Out<boolean>
+				bool_value: (In?: string, defaultsTo?: "off") => Out<boolean>
 			}>(processForm.t)
 			attest<{
 				// key should still be distilled as optional even inside a morph
