@@ -373,16 +373,20 @@ export abstract class BaseRoot<
 		return this.configure({ description })
 	}
 
-	optional(): this {
-		return this.withMeta({ optional: true })
+	// these should ideally be implemented in arktype since they use its syntax
+	// https://github.com/arktypeio/arktype/issues/1223
+	optional(): [this, "?"] {
+		return [this, "?"]
 	}
 
-	default(thunkableValue: unknown): this {
+	// these should ideally be implemented in arktype since they use its syntax
+	// https://github.com/arktypeio/arktype/issues/1223
+	default(thunkableValue: unknown): [this, "=", unknown] {
 		const value = isThunk(thunkableValue) ? thunkableValue() : thunkableValue
 
 		assertDefaultValueAssignability(this, value)
 
-		return this.withMeta({ default: value })
+		return [this, "=", value]
 	}
 
 	from(input: unknown): unknown {

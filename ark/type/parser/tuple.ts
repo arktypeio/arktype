@@ -40,6 +40,7 @@ import type { inferDefinition, validateDefinition } from "./definition.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { ArkTypeScanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
+
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
@@ -461,9 +462,9 @@ export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
-export type TuplePostfixOperator = "[]" | "?"
+export type TuplePostfixOperator = "[]"
 
-export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@" | "="
+export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@"
 
 export type IndexOneExpression<
 	token extends IndexOneOperator = IndexOneOperator
@@ -513,23 +514,15 @@ const parseAttributeTuple: IndexOneParser<"@"> = (def, ctx) =>
 		def[2] as never
 	)
 
-const parseDefaultTuple: IndexOneParser<"="> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).default(def[2] as never)
-
-const parseOptionalTuple: IndexOneParser<"?"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).optional()
-
 const indexOneParsers: {
 	[token in IndexOneOperator]: IndexOneParser<token>
 } = {
 	"[]": parseArrayTuple,
-	"?": parseOptionalTuple,
 	"|": parseBranchTuple,
 	"&": parseBranchTuple,
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
-	"@": parseAttributeTuple,
-	"=": parseDefaultTuple
+	"@": parseAttributeTuple
 }
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "==="

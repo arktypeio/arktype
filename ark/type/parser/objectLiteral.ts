@@ -1,6 +1,7 @@
 import {
 	ArkErrors,
 	normalizeIndex,
+	writeUnassignableDefaultValueMessage,
 	type BaseParseContext,
 	type BaseRoot,
 	type Index,
@@ -157,12 +158,6 @@ type validateDefaultableValue<def, k extends keyof def, $, args> =
 		:	validateDefaultValueTuple<def[k], k, $, args>
 	:	validateDefinition<def[k], $, args>
 
-type DefaultValueTuple<baseDef = unknown, thunkableValue = unknown> = readonly [
-	baseDef,
-	"=",
-	thunkableValue
-]
-
 type validateDefaultValueTuple<
 	def extends DefaultValueTuple,
 	k extends PropertyKey,
@@ -228,6 +223,12 @@ export type ParsedSpreadEntry = {
 	node: BaseRoot
 }
 
+type DefaultValueTuple<baseDef = unknown, thunkableValue = unknown> = readonly [
+	baseDef,
+	"=",
+	thunkableValue
+]
+
 export const parseEntry = (
 	key: Key,
 	value: unknown,
@@ -244,16 +245,20 @@ export const parseEntry = (
 	if (parsedKey.kind === "...")
 		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
-	const parsedValue: ParsedDefault | BaseRoot =
-		isArray(value) && value[1] === "=" ?
-			[ctx.$.parseOwnDefinitionFormat(value[0], ctx), "=", value[2]]
-		:	ctx.$.parseOwnDefinitionFormat(value, ctx)
-
-	if (isArray(parsedValue)) {
+	if (isArray(value) && (value[1] === "=" || value[1] === "?")) {
 		if (parsedKey.kind !== "required")
 			throwParseError(invalidDefaultKeyKindMessage)
 
-		const out = parsedValue[0].traverse(parsedValue[2])
+		const parsedValue = ctx.$.parseOwnDefinitionFormat(value[0], ctx)
+
+		if (value[1] === "?") {
+			return ctx.$.node("optional", {
+				key: parsedKey.key,
+				value: parsedValue
+			})
+		}
+
+		const out = parsedValue.traverse(value[2])
 		if (out instanceof ArkErrors) {
 			throwParseError(
 				writeUnassignableDefaultValueMessage(
@@ -265,10 +270,12 @@ export const parseEntry = (
 
 		return ctx.$.node("optional", {
 			key: parsedKey.key,
-			value: parsedValue[0],
-			default: parsedValue[2]
+			value: parsedValue,
+			default: value[2]
 		})
 	}
+
+	const parsedValue = ctx.$.parseOwnDefinitionFormat(value, ctx)
 
 	if (parsedKey.kind === "index") {
 		const signature = ctx.$.parseOwnDefinitionFormat(parsedKey.key, ctx)
@@ -337,6 +344,11 @@ type parseKey<k> =
 			: k extends Key ? k
 			: `${k & number}`
 		}>
+
+// single quote use here is better for TypeScript's inlined error to avoid escapes
+export const invalidOptionalKeyKindMessage = `Only required keys may specify optional values, e.g. { [mySymbol]: ['number', '?'] }`
+
+export type invalidOptionalKeyKindMessage = typeof invalidOptionalKeyKindMessage
 
 // single quote use here is better for TypeScript's inlined error to avoid escapes
 export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
