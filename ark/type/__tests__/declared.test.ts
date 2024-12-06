@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
 import { declare, type } from "arktype"
-import type { string } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("shallow", () => {
@@ -53,8 +52,8 @@ contextualize(() => {
 	})
 
 	it("regexp", () => {
-		const t = declare<string.matching<"?">>().type(/.*/)
-		attest<string.matching<"?">>(t.t)
+		const t = declare<string>().type(/.*/)
+		attest<string>(t.t)
 		attest<string>(t.infer)
 	})
 

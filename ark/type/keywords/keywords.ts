@@ -1,6 +1,6 @@
 import type { ArkErrors, arkKind } from "@ark/schema"
-import type { inferred } from "@ark/util"
-import type { distill } from "../attributes.ts"
+import type { Branded, inferred } from "@ark/util"
+import type { distill, InferredMorph } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
@@ -103,16 +103,6 @@ export declare namespace type {
 			inferDefinition<def, $, args>
 		>
 
-		export namespace withAttributes {
-			export type In<def, $ = {}, args = {}> = distill.In<
-				inferDefinition<def, $, args>
-			>
-
-			export type Out<def, $ = {}, args = {}> = distill.Out<
-				inferDefinition<def, $, args>
-			>
-		}
-
 		export namespace introspectable {
 			export type Out<def, $ = {}, args = {}> = distill.introspectable.Out<
 				inferDefinition<def, $, args>
@@ -125,6 +115,10 @@ export declare namespace type {
 		$,
 		args
 	>
+
+	export type brand<t, id> =
+		t extends InferredMorph<infer i, infer o> ? (In: i) => Branded<o, id>
+		:	Branded<t, id>
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>

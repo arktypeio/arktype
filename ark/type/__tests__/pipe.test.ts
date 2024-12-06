@@ -8,7 +8,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, To, of } from "arktype/internal/attributes.ts"
+import type { Out, To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -613,7 +613,7 @@ contextualize(() => {
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
-		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		attest<{ a: (In: 1) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
 			types.a.internal.firstReferenceOfKindOrThrow("morph")
 

@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import type { Out, string } from "arktype/internal/attributes.ts"
+import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("empty", () => {
@@ -218,7 +218,7 @@ contextualize(() => {
 		})
 
 		attest<{
-			bool_value: (In: string.optional) => Out<boolean>
+			bool_value: (In: string) => Out<boolean>
 		}>(processForm.t)
 		attest<{
 			// key should still be distilled as optional even inside a morph

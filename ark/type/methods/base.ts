@@ -13,6 +13,7 @@ import type {
 import type {
 	anyOrNever,
 	array,
+	Branded,
 	Callable,
 	ErrorMessage,
 	inferred,
@@ -126,7 +127,7 @@ interface Type<out t = unknown, $ = {}>
 		...args: validateChainedAsArgs<castTo>
 	): instantiateType<castTo, $>
 
-	brand<const name extends string, r = brandName<t, name>>(
+	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
 	): instantiateType<r, $>
 

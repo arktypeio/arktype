@@ -5,16 +5,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
-import type {
-	Anonymous,
-	AtLeastLength,
-	AtMostLength,
-	Out,
-	To,
-	number,
-	of,
-	string
-} from "arktype/internal/attributes.ts"
+import type { Out, To } from "arktype/internal/attributes.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -349,9 +340,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest<
-			| ((In: string) => To<string.is<AtLeastLength<1> & AtMostLength<3>>>)
-			| null
-			| undefined,
+			((In: string) => To<string>) | null | undefined,
 			typeof CreatePatientInput.t.first_name
 		>()
 
@@ -464,9 +453,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest<
 			Module<{
 				svgMap: {
-					[x: string.matching<string>]: string
+					[x: string]: string
 				}
-				svgPath: string.matching<string>
+				svgPath: string
 			}>
 		>(test)
 		attest(test.svgMap({ "./f.svg": "123", bar: 5 })).unknown.snap({
@@ -587,7 +576,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(() => true)
 			.describe('This will "fail"')
 
-		attest<string.anonymous>(t.t)
+		attest<string>(t.t)
 
 		const serializedPredicate =
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
@@ -623,7 +612,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(s => parseInt(s))
 			.narrow(() => true)
 
-		attest<(In: string) => Out<number.anonymous>>(t.t)
+		attest<(In: string) => Out<number>>(t.t)
 
 		const u = t.pipe(
 			n => `${n}`,
@@ -703,7 +692,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Anonymous>>>(Amount.t)
+		attest<(In: string | number) => Out<bigint>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]

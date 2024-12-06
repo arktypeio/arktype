@@ -33,14 +33,14 @@ import {
 	hasDomain,
 	isThunk,
 	throwParseError,
+	type Branded,
 	type Dict,
 	type ErrorType,
 	type Json,
 	type anyOrNever,
 	type array,
 	type flattenListable,
-	type noSuggest,
-	type nominal
+	type noSuggest
 } from "@ark/util"
 import type { ArkSchemaRegistry } from "./config.ts"
 import {
@@ -105,7 +105,7 @@ export type ModuleParser = <const def>(
 export type bindThis<def> = { this: Def<def> }
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
-type Def<def = {}> = nominal<def, "unparsed">
+type Def<def = {}> = Branded<def, "unparsed">
 
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"

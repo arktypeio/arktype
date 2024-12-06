@@ -6,7 +6,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distill, string } from "arktype/internal/attributes.ts"
+import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -462,9 +462,9 @@ b.c.c must be an object (was missing)`)
 		}).export()
 		attest<
 			Module<{
-				string: string.atLeastLength<1>
+				string: string
 				foo: {
-					bar: string.atLeastLength<1>
+					bar: string
 				}
 			}>
 		>(types)

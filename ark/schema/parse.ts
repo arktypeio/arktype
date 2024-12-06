@@ -8,11 +8,11 @@ import {
 	throwInternalError,
 	throwParseError,
 	unset,
-	type JsonData,
-	type PartialRecord,
+	type Branded,
 	type dict,
+	type JsonData,
 	type listable,
-	type nominal
+	type PartialRecord
 } from "@ark/util"
 import {
 	nodeClassesByKind,
@@ -130,7 +130,7 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export type NodeId = nominal<string, "NodeId">
+export type NodeId = Branded<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 
