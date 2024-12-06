@@ -117,11 +117,10 @@ type _inferObjectLiteral<def extends object, $, args> = {
 			>
 	:	inferDefinition<def[k], $, args>
 } & {
-	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
-		def[k],
-		$,
-		args
-	>
+	-readonly [k in keyof def as optionalKeyFromEntry<
+		k,
+		def[k]
+	>]?: inferDefinition<def[k], $, args>
 }
 
 export type validateObjectLiteral<def, $, args> = {
@@ -187,8 +186,10 @@ type nonOptionalKeyFrom<k, $, args> =
 		// "+" has no effect on inference
 		never
 
-type optionalKeyFrom<k> =
-	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
+type optionalKeyFromEntry<key extends PropertyKey, v> =
+	parseKey<key> extends PreparsedKey<"optional", infer name> ? name
+	: v extends OptionalValueTuple ? key
+	: never
 
 export type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
