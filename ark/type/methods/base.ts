@@ -8,7 +8,8 @@ import type {
 	Predicate,
 	PredicateCast,
 	StandardSchemaV1,
-	UndeclaredKeyBehavior
+	UndeclaredKeyBehavior,
+	unwrapDefault
 } from "@ark/schema"
 import type {
 	anyOrNever,
@@ -27,9 +28,7 @@ import type {
 	inferPipes,
 	InferredMorph,
 	Out,
-	To,
-	withDefault,
-	withOptional
+	To
 } from "../attributes.ts"
 import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
@@ -243,9 +242,7 @@ interface Type<out t = unknown, $ = {}>
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
 	): reduceOut
 
-	// inferring r into an alias in the return doesn't
-	// work the way it does for the other methods here
-	optional<r = withOptional<t>>(): instantiateType<r, $>
+	optional(): [this, "?"]
 
 	/**
 	 * Add a default value for this `Type` when it is used as a property.\
@@ -255,9 +252,9 @@ interface Type<out t = unknown, $ = {}>
 	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
 	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
 	 */
-	default<const value extends this["inferIn"], r = withDefault<t, value>>(
-		value: DefaultFor<value>
-	): instantiateType<r, $>
+	default<const value extends DefaultFor<this["inferIn"]>>(
+		value: value
+	): [this, "=", unwrapDefault<value>]
 
 	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>

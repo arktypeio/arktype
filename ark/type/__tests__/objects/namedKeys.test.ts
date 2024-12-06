@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
-import { type } from "arktype"
+import { type, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
@@ -34,8 +34,7 @@ contextualize(() => {
 
 	it("chained optional", () => {
 		const optionalString = type("string").optional()
-		attest<string.optional>(optionalString.t)
-		attest<string>(optionalString.infer)
+		attest<[Type<string>, "?"]>(optionalString)
 
 		const o = type({ a: optionalString })
 		// directly inferring the optional key causes recursive generics/intersections to fail,
@@ -60,7 +59,7 @@ contextualize(() => {
 		const t = type({ [s]: "string?" })
 
 		attest<{
-			[s]: string.optional
+			[s]?: string
 		}>(t.t)
 		attest<{ [s]?: string }>(t.infer)
 

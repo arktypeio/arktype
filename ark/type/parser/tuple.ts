@@ -377,8 +377,6 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
-	: def[1] extends "?" ?
-		(In?: inferDefinition<def[0], $, args>) => inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]
@@ -401,7 +399,7 @@ export type validatePostfixExpression<
 	args
 	// conform here is needed to preserve completions for shallow tuple
 	// expressions at index 1 after TS 5.1
-> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]" | "?"]>
+> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
 export type validateInfixExpression<def extends InfixExpression, $, args> =
 	def["length"] extends 2 ?

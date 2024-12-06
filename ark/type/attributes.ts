@@ -54,9 +54,9 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever | seen] ? t
 	: unknown extends t ? unknown
-	: t extends Default<infer inner> ? inner
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint, seen>
+	: t extends Default<infer inner> ? inner
 	: t extends array ? _distillArray<t, endpoint, seen | t>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
@@ -206,7 +206,7 @@ export type InferredOptional<t = any> = (In?: t) => t
 export type withOptional<t> =
 	t extends InferredMorph<infer i, infer o> ? (In?: i) => o : (In?: t) => t
 
-export type Default<t = any, v = any> = (In: t, defaultsTo: v) => t
+export type Default<t = any, v = any> = (In: t, defaultsTo: v) => Out<t>
 
 export type withDefault<t, v = any> =
 	t extends InferredMorph<infer i, infer o> ? (In: i, defaultsTo: v) => o
