@@ -28,7 +28,12 @@ contextualize(() => {
 	bar: defaultsTo<5>
 	baz: defaultsTo<5>
 }`)
-			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
+			attest<{
+				a: string
+				foo?: number | undefined
+				bar?: number | undefined
+				baz?: number | undefined
+			}>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
 
 			attest(o.json).snap({
@@ -514,7 +519,7 @@ contextualize(() => {
 				foo: "string = 'foo'"
 			})
 
-			attest<{ foo?: string }>(t.in.infer)
+			attest<{ foo?: string | undefined }>(t.in.infer)
 			attest<{ foo: string }>(t.out.infer)
 			attest(t.in.expression).snap('{ foo?: string = "foo" }')
 			attest(t.out.expression).snap("{ foo: string }")

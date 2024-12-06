@@ -180,7 +180,7 @@ export type InferredOptional<t = any> = (In?: t) => t
 export type withOptional<t> =
 	t extends InferredMorph<infer i, infer o> ? (In?: i) => o : (In?: t) => t
 
-export type Default<t = any, v = any> = (In?: t, defaultsTo?: v) => Out<t>
+export type Default<t = any, v = any> = (In?: t, defaultsTo?: v) => To<t>
 
 export type withDefault<t, v = any> =
 	t extends InferredMorph<infer i, infer o> ? (In?: i, defaultsTo?: v) => o
