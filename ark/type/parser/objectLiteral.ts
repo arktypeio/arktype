@@ -30,11 +30,11 @@ import type { inferDefinition, validateDefinition } from "./definition.ts"
 import {
 	invalidDefaultKeyKindMessage,
 	invalidOptionalKeyKindMessage,
-	parseValue,
-	type DefaultValueTuple,
-	type OptionalValueTuple,
-	type validateValue
-} from "./value.ts"
+	parseProperty,
+	type DefaultablePropertyTuple,
+	type OptionalPropertyTuple,
+	type validateProperty
+} from "./property.ts"
 
 type MutableStructureSchema = mutable<NodeSchema<"structure">, 2>
 
@@ -73,7 +73,7 @@ export const parseObjectLiteral = (
 			continue
 		}
 
-		const parsedValue = parseValue(v, ctx)
+		const parsedValue = parseProperty(v, ctx)
 		const parsedEntryKey = parsedKey as PreparsedEntryKey
 
 		if (parsedValue.kind === "optional") {
@@ -95,7 +95,7 @@ export const parseObjectLiteral = (
 				structure.optional,
 				ctx.$.node("optional", {
 					key: parsedKey.key,
-					value: parsedValue.value,
+					value: parsedValue.valueNode,
 					default: parsedValue.default
 				})
 			)
@@ -139,7 +139,9 @@ type _inferObjectLiteral<def extends object, $, args> = {
 		def[k]
 	] extends [anyOrNever] ?
 		def[k]
-	: def[k] extends DefaultValueTuple<infer baseDef, infer thunkableValue> ?
+	: def[k] extends (
+		DefaultablePropertyTuple<infer baseDef, infer thunkableValue>
+	) ?
 		withDefault<
 			inferDefinition<baseDef, $, args>,
 			unwrapDefault<thunkableValue>
@@ -149,7 +151,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	-readonly [k in keyof def as optionalKeyFromEntry<
 		k,
 		def[k]
-	>]?: def[k] extends OptionalValueTuple<infer baseDef> ?
+	>]?: def[k] extends OptionalPropertyTuple<infer baseDef> ?
 		inferDefinition<baseDef, $, args>
 	:	inferDefinition<def[k], $, args>
 }
@@ -167,13 +169,13 @@ export type validateObjectLiteral<def, $, args> = {
 				// move on to the validating the value definition
 				validateDefinition<def[k], $, args>
 			:	ErrorMessage<writeInvalidPropertyKeyMessage<indexDef>>
-		:	validateValue<def[k], parsedKey["kind"], $, args>
+		:	validateProperty<def[k], parsedKey["kind"], $, args>
 	:	never
 }
 
 type nonOptionalKeyFromEntry<k, v, $, args> =
 	preparseKey<k> extends PreparsedEntryKey<"required", infer inner> ?
-		v extends OptionalValueTuple ?
+		v extends OptionalPropertyTuple ?
 			never
 		:	inner
 	: preparseKey<k> extends PreparsedEntryKey<"index", infer inner> ?
@@ -186,7 +188,7 @@ type nonOptionalKeyFromEntry<k, v, $, args> =
 
 type optionalKeyFromEntry<key extends PropertyKey, v> =
 	preparseKey<key> extends PreparsedEntryKey<"optional", infer name> ? name
-	: v extends OptionalValueTuple ? key
+	: v extends OptionalPropertyTuple ? key
 	: never
 
 export const writeInvalidUndeclaredBehaviorMessage = (

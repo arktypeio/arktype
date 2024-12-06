@@ -35,7 +35,7 @@ import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	TupleInfixOperator
-} from "./parser/tuple.ts"
+} from "./parser/tupleExpressions.ts"
 import type {
 	InternalScope,
 	ModuleParser,

@@ -19,38 +19,38 @@ import type {
 	writeInvalidSpreadTypeMessage
 } from "./objectLiteral.ts"
 
-export type ParsedValueKind = "plain" | "optional" | "defaultable"
+export type ParsedPropertyKind = "plain" | "optional" | "defaultable"
 
-export type ParsedValue =
-	| ParsedRequiredValue
-	| ParsedOptionalValue
-	| ParsedDefaultableValue
+export type ParsedProperty =
+	| ParsedRequiredProperty
+	| ParsedOptionalProperty
+	| ParsedDefaultableProperty
 
-export type ParsedRequiredValue = {
+export type ParsedRequiredProperty = {
 	kind: "plain"
 	valueNode: BaseRoot
 }
 
-export type ParsedOptionalValue = {
+export type ParsedOptionalProperty = {
 	kind: "optional"
 	valueNode: BaseRoot
 }
 
-export type ParsedDefaultableValue = {
+export type ParsedDefaultableProperty = {
 	kind: "defaultable"
-	value: BaseRoot
+	valueNode: BaseRoot
 	default: unknown
 }
 
-export const parseValue = (
+export const parseProperty = (
 	def: unknown,
 	ctx: BaseParseContext
-): ParsedValue => {
+): ParsedProperty => {
 	if (isArray(def)) {
 		if (def[1] === "=") {
 			return {
 				kind: "defaultable",
-				value: ctx.$.parseOwnDefinitionFormat(def[0], ctx),
+				valueNode: ctx.$.parseOwnDefinitionFormat(def[0], ctx),
 				default: def[2]
 			}
 		}
@@ -69,7 +69,7 @@ export const parseValue = (
 	}
 }
 
-export type validateValue<def, keyKind extends ParsedKeyKind, $, args> =
+export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 	[def] extends [anyOrNever] ?
 		/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
 		 * like the following are not prematurely validated by the outer call:
@@ -81,21 +81,21 @@ export type validateValue<def, keyKind extends ParsedKeyKind, $, args> =
 		 * ```
 		 */
 		def
-	: def extends DefaultValueTuple ?
-		validateDefaultValueTuple<def, keyKind, $, args>
-	: def extends OptionalValueTuple ?
-		validateOptionalValueTuple<def, keyKind, $, args>
+	: def extends DefaultablePropertyTuple ?
+		validateDefaultablePropertyTuple<def, keyKind, $, args>
+	: def extends OptionalPropertyTuple ?
+		validateOptionalPropertyTuple<def, keyKind, $, args>
 	: keyKind extends "spread" ?
 		validateSpread<def, inferDefinition<def, $, args>, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
 	: validateDefinition<def, $, args>
 
-type validateSpread<def, inferredValue, $, args> =
-	inferredValue extends object ? validateDefinition<def, $, args>
-	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredValue>>>
+type validateSpread<def, inferredProperty, $, args> =
+	inferredProperty extends object ? validateDefinition<def, $, args>
+	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredProperty>>>
 
-type validateDefaultValueTuple<
-	def extends DefaultValueTuple,
+type validateDefaultablePropertyTuple<
+	def extends DefaultablePropertyTuple,
 	keyKind extends ParsedKeyKind,
 	$,
 	args
@@ -111,8 +111,8 @@ type validateDefaultValueTuple<
 		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
-type validateOptionalValueTuple<
-	def extends OptionalValueTuple,
+type validateOptionalPropertyTuple<
+	def extends OptionalPropertyTuple,
 	keyKind extends ParsedKeyKind,
 	$,
 	args
@@ -121,16 +121,16 @@ type validateOptionalValueTuple<
 		conform<def, readonly [validateDefinition<def[0], $, args>, "?"]>
 	:	ErrorMessage<invalidOptionalKeyKindMessage>
 
-export type DefaultValueDefinition = DefaultValueTuple
+export type DefaultPropertyDefinition = DefaultablePropertyTuple
 
-export type DefaultValueTuple<
+export type DefaultablePropertyTuple<
 	baseDef = unknown,
-	thunkableValue = unknown
-> = readonly [baseDef, "=", thunkableValue]
+	thunkableProperty = unknown
+> = readonly [baseDef, "=", thunkableProperty]
 
-export type OptionalValueDefinition = OptionalValueTuple
+export type OptionalPropertyDefinition = OptionalPropertyTuple
 
-export type OptionalValueTuple<baseDef = unknown> = readonly [baseDef, "?"]
+export type OptionalPropertyTuple<baseDef = unknown> = readonly [baseDef, "?"]
 
 // single quote use here is better for TypeScript's inlined error to avoid escapes
 export const invalidOptionalKeyKindMessage = `Only required keys may make their values optional, e.g. { [mySymbol]: ['number', '?'] }`

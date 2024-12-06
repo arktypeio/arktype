@@ -4,17 +4,17 @@ import {
 	objectKindOf,
 	printable,
 	throwParseError,
-	type Dict,
-	type ErrorMessage,
-	type Fn,
-	type Primitive,
 	type anyOrNever,
 	type array,
 	type defined,
+	type Dict,
 	type equals,
+	type ErrorMessage,
+	type Fn,
 	type ifEmptyObjectLiteral,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
+	type Primitive,
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
@@ -27,11 +27,16 @@ import {
 } from "./objectLiteral.ts"
 import type { BaseCompletions, inferString } from "./string.ts"
 import {
-	parseTuple,
-	type TupleExpression,
-	type inferTuple,
-	type validateTuple
-} from "./tuple.ts"
+	maybeParseTupleExpression,
+	type inferTupleExpression,
+	type maybeValidateTupleExpression,
+	type TupleExpression
+} from "./tupleExpressions.ts"
+import {
+	parseTupleLiteral,
+	type inferTupleLiteral,
+	type validateTupleLiteral
+} from "./tupleLiteral.ts"
 
 export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
@@ -90,6 +95,20 @@ export type validateDefinition<def, $, args> =
 		BaseCompletions<$, args> | {}
 	: RegExp extends def ? def
 	: validateObjectLiteral<def, $, args>
+
+export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
+	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
+
+export type validateTuple<def extends array, $, args> =
+	maybeValidateTupleExpression<def, $, args> extends infer result ?
+		result extends null ?
+			validateTupleLiteral<def, $, args>
+		:	result
+	:	never
+
+export type inferTuple<def extends array, $, args> =
+	def extends TupleExpression ? inferTupleExpression<def, $, args>
+	:	inferTupleLiteral<def, $, args>
 
 export type validateDeclared<declared, def, $, args> =
 	def extends validateDefinition<def, $, args> ?

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
-import { writeInvalidSpreadTypeMessage } from "arktype/internal/parser/objectLiteral.ts"
+import { writeInvalidSpreadTypeMessage } from "../../parser/objectLiteral.ts"
 
 contextualize(() => {
 	it("within scope", () => {

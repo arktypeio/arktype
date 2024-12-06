@@ -3,7 +3,7 @@ import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage
-} from "arktype/internal/parser/tuple.ts"
+} from "../../parser/tupleLiteral.ts"
 
 contextualize(() => {
 	it("spreads simple arrays", () => {
