@@ -6,7 +6,7 @@ import {
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
-import type { InferredDefault, Out } from "arktype/internal/attributes.ts"
+import type { Default, Out } from "arktype/internal/attributes.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -136,7 +136,7 @@ contextualize(() => {
 
 			attest<{
 				foo: string
-				bar: InferredDefault<number, 5>
+				bar: Default<number, 5>
 			}>(types.stringDefault.t)
 
 			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
@@ -219,7 +219,7 @@ contextualize(() => {
 			})
 
 			attest<{
-				bool_value: (In: string.defaultsTo<"off">) => Out<boolean>
+				bool_value: (In: string, defaultsTo: "off") => Out<boolean>
 			}>(processForm.t)
 			attest<{
 				// key should still be distilled as optional even inside a morph
@@ -246,7 +246,7 @@ contextualize(() => {
 			})
 
 			attest<{
-				bool_value: (In: string.defaultsTo<"off">) => Out<boolean>
+				bool_value: (In: string, defaultsTo: "off") => Out<boolean>
 			}>(processForm.t)
 
 			const out = processForm({})
@@ -349,7 +349,10 @@ contextualize(() => {
 
 			const t = type({ foo: toNestedString })
 			attest<{
-				foo: (In: string.defaultsTo<"foo">) => Out<{
+				foo: (
+					In: string,
+					defaultsTo: "off"
+				) => Out<{
 					nest: string
 				}>
 			}>(t.t)
@@ -401,7 +404,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: InferredDefault<Date, Date.nominal<"1993-05-21">>
+				key: Default<Date, Date>
 			}>(t.t)
 		})
 

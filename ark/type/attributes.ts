@@ -6,7 +6,6 @@ import type {
 	Hkt,
 	intersectArrays,
 	isSafelyMappable,
-	Json,
 	Primitive,
 	show
 } from "@ark/util"
@@ -33,7 +32,7 @@ export type normalizeLimit<limit> =
 export type distill<
 	t,
 	endpoint extends distill.Endpoint
-> = finalizeDistillation<t, _distill<t, endpoint>>
+> = finalizeDistillation<t, _distill<t, endpoint, never>>
 
 export declare namespace distill {
 	export type Endpoint = "in" | "out" | "out.introspectable"
@@ -50,53 +49,55 @@ export declare namespace distill {
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
-type _distill<t, endpoint extends distill.Endpoint> =
+type _distill<t, endpoint extends distill.Endpoint, seen> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
-	: [t] extends [anyOrNever] ? t
+	: [t] extends [anyOrNever | seen] ? t
 	: unknown extends t ? unknown
+	: t extends Default<infer inner> ? inner
 	: t extends TerminallyInferredObject | Primitive ? t
-	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint>
-	: t extends array ? _distillArray<t, endpoint>
+	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint, seen>
+	: t extends array ? _distillArray<t, endpoint, seen | t>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
-	: isSafelyMappable<t> extends true ?
-		equals<t, Json> extends true ?
-			t
-		:	distillMappable<t, endpoint>
-	:	t
+	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint, seen | t>
+	: t
 
-type distillMappable<o, endpoint extends distill.Endpoint> =
+type distillMappable<o, endpoint extends distill.Endpoint, seen> =
 	endpoint extends "in" ?
 		show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
 				[k in keyof o as k extends inferredOptionalOrDefaultKeyOf<o> ? never
-				:	k]: _distill<o[k], endpoint>
+				:	k]: _distill<o[k], endpoint, seen>
 			} & {
-				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<o[k], endpoint>
+				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<
+					o[k],
+					endpoint,
+					seen
+				>
 			}
 		>
 	:	show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
 				[k in keyof o as k extends inferredOptionalKeyOf<o> ? never
-				:	k]: _distill<o[k], endpoint>
+				:	k]: _distill<o[k], endpoint, seen>
 			} & {
 				[k in keyof o as k extends inferredOptionalKeyOf<o> ? k
-				:	never]?: _distill<o[k], endpoint>
+				:	never]?: _distill<o[k], endpoint, seen>
 			}
 		>
 
-type distillIo<i, o extends Out, endpoint extends distill.Endpoint> =
-	endpoint extends "in" ? _distill<i, endpoint>
+type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
+	endpoint extends "in" ? _distill<i, endpoint, seen>
 	: endpoint extends "out.introspectable" ?
 		o extends To<infer validatedOut> ?
-			_distill<validatedOut, endpoint>
+			_distill<validatedOut, endpoint, seen>
 		:	unknown
-	: endpoint extends "out" ? _distill<o[1], endpoint>
-	: _distill<o[1], endpoint> extends infer r ?
+	: endpoint extends "out" ? _distill<o[1], endpoint, seen>
+	: _distill<o[1], endpoint, seen> extends infer r ?
 		o extends To ?
 			(In: i) => To<r>
 		:	(In: i) => Out<r>
@@ -106,17 +107,13 @@ export type inferredOptionalOrDefaultKeyOf<o> =
 	| inferredDefaultKeyOf<o>
 	| inferredOptionalKeyOf<o>
 
-type inExtends<v, t> =
-	[v] extends [anyOrNever] ? false
-	: [v] extends [t] ? true
-	: [v] extends [InferredMorph<infer i>] ? inExtends<i, t>
-	: false
-
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inExtends<o[k], InferredDefault> extends true ?
-				k
+			o[k] extends Default ?
+				o[k] extends anyOrNever ?
+					never
+				:	k
 			:	never
 		:	never
 	:	never
@@ -124,34 +121,49 @@ type inferredDefaultKeyOf<o> =
 type inferredOptionalKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inExtends<o[k], InferredOptional> extends true ?
-				k
+			o[k] extends InferredOptional ?
+				o[k] extends anyOrNever ?
+					never
+				:	k
 			:	never
 		:	never
 	:	never
 
-type _distillArray<t extends array, endpoint extends distill.Endpoint> =
-	t extends unknown[] ? _distillArrayRecurse<t, endpoint, []>
-	:	// preserve readonly from original array
-		Readonly<_distillArrayRecurse<t, endpoint, []>>
+type _distillArray<
+	t extends array,
+	endpoint extends distill.Endpoint,
+	seen
+> = _distillArrayRecurse<t, endpoint, seen, []>
 
 type _distillArrayRecurse<
 	t extends array,
 	endpoint extends distill.Endpoint,
+	seen,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
-		_distillArrayRecurse<tail, endpoint, [...prefix, _distill<head, endpoint>]>
-	:	[...prefix, ...distillPostfix<t, endpoint>]
+		_distillArrayRecurse<
+			tail,
+			endpoint,
+			seen,
+			[...prefix, _distill<head, endpoint, seen>]
+		>
+	:	[...prefix, ...distillPostfix<t, endpoint, seen, []>]
 
 type distillPostfix<
 	t extends array,
 	endpoint extends distill.Endpoint,
-	postfix extends array = []
+	seen,
+	postfix extends array
 > =
 	t extends readonly [...infer init, infer last] ?
-		distillPostfix<init, endpoint, [_distill<last, endpoint>, ...postfix]>
-	:	[...{ [i in keyof t]: _distill<t[i], endpoint> }, ...postfix]
+		distillPostfix<
+			init,
+			endpoint,
+			seen,
+			[_distill<last, endpoint, seen>, ...postfix]
+		>
+	:	[...{ [i in keyof t]: _distill<t[i], endpoint, seen> }, ...postfix]
 
 type BuiltinTerminalObjectKind = Exclude<
 	keyof arkPrototypes.instances,
@@ -189,24 +201,22 @@ export type To<o = any> = ["=>", o, true]
 
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
-export type InferredOptional<t = unknown> = (In?: t) => t
+export type InferredOptional<t = any> = (In?: t) => t
 
 export type withOptional<t> =
 	t extends InferredMorph<infer i, infer o> ? (In?: i) => o : (In?: t) => t
 
-export type Default<v = any> = ["=", v]
+export type Default<t = any, v = any> = (In: t, defaultsTo: v) => t
 
 export type withDefault<t, v = any> =
 	t extends InferredMorph<infer i, infer o> ? (In: i, defaultsTo: v) => o
-	:	(In: t, defaultsTo: v) => Default<t>
+	:	Default<t, v>
 
 export type DefaultFor<t> =
 	| (Primitive extends t ? Primitive
 	  : t extends Primitive ? t
 	  : never)
 	| (() => t)
-
-export type InferredDefault<t = unknown, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | Type<t, any>
 

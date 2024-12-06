@@ -1,10 +1,10 @@
 import type { GenericAst } from "@ark/schema"
 import type { arkKeyOf, array, Branded, Hkt } from "@ark/util"
 import type {
-	Default,
 	distill,
 	inferIntersection,
-	LimitLiteral
+	LimitLiteral,
+	withDefault
 } from "../../attributes.ts"
 import type { type } from "../../keywords/keywords.ts"
 import type { UnparsedScope } from "../../scope.ts"
@@ -78,7 +78,7 @@ export type inferExpression<ast, $, args> =
 			// unscoped type.infer is safe since the default value is always a literal
 			// as of TS5.6, inlining defaultValue causes a bunch of extra types and instantiations
 			type.infer<ast[2]> extends infer defaultValue ?
-				(In?: inferExpression<ast[0], $, args>) => Default<defaultValue>
+				withDefault<inferExpression<ast[0], $, args>, defaultValue>
 			:	never
 		: ast[1] extends "#" ? Branded<inferExpression<ast[0], $, args>, ast[2]>
 		: ast[1] extends Comparator ?

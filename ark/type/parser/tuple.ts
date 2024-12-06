@@ -28,14 +28,14 @@ import {
 	type Thunk
 } from "@ark/util"
 import type {
-	Default,
 	DefaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
 	inferPredicate,
 	InferredOptional,
-	Out
+	Out,
+	withDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { PostfixExpression } from "./ast/infer.ts"
@@ -380,9 +380,10 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def[1] extends "=" ?
-		(
-			In?: inferDefinition<def[0], $, args>
-		) => Default<def[2] extends Thunk<infer returnValue> ? returnValue : def[2]>
+		withDefault<
+			inferDefinition<def[0], $, args>,
+			def[2] extends Thunk<infer returnValue> ? returnValue : def[2]
+		>
 	: def[1] extends "?" ?
 		(In?: inferDefinition<def[0], $, args>) => inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]
