@@ -2,7 +2,8 @@ import {
 	ArkErrors,
 	writeUnassignableDefaultValueMessage,
 	type BaseParseContext,
-	type BaseRoot
+	type BaseRoot,
+	type UndeclaredKeyBehavior
 } from "@ark/schema"
 import {
 	isArray,
@@ -10,14 +11,20 @@ import {
 	throwParseError,
 	type anyOrNever,
 	type conform,
-	type ErrorMessage
+	type ErrorMessage,
+	type ErrorType,
+	type typeToString
 } from "@ark/util"
 import type { DefaultFor } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { validateDefinition } from "./definition.ts"
+import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type {
+	PreparsedKeyKind,
+	writeInvalidSpreadTypeMessage
+} from "./objectLiteral.ts"
 
-export type validateDefaultableValue<def, k extends keyof def, $, args> =
-	[def[k]] extends [anyOrNever] ?
+export type validateEntry<def, keyKind extends PreparsedKeyKind, $, args> =
+	[def] extends [anyOrNever] ?
 		/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
 		 * like the following are not prematurely validated by the outer call:
 		 *
@@ -27,20 +34,27 @@ export type validateDefaultableValue<def, k extends keyof def, $, args> =
 		 * })
 		 * ```
 		 */
-		def[k]
-	: def[k] extends DefaultValueTuple ?
-		validateDefaultValueTuple<def[k], k, $, args>
-	: def[k] extends OptionalValueTuple ?
-		readonly [validateDefinition<def[k][0], $, args>, "?"]
-	:	validateDefinition<def[k], $, args>
+		def
+	: def extends DefaultValueTuple ?
+		validateDefaultValueTuple<def, keyKind, $, args>
+	: def extends OptionalValueTuple ?
+		validateOptionalValueTuple<def, keyKind, $, args>
+	: keyKind extends "spread" ?
+		validateSpread<def, inferDefinition<def, $, args>, $, args>
+	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
+	: validateDefinition<def, $, args>
+
+type validateSpread<def, inferredValue, $, args> =
+	inferredValue extends object ? validateDefinition<def, $, args>
+	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredValue>>>
 
 type validateDefaultValueTuple<
 	def extends DefaultValueTuple,
-	k extends PropertyKey,
+	keyKind extends PreparsedKeyKind,
 	$,
 	args
 > =
-	parseKey<k>["kind"] extends "required" ?
+	keyKind extends "required" ?
 		conform<
 			def,
 			readonly [
@@ -51,10 +65,24 @@ type validateDefaultValueTuple<
 		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
+type validateOptionalValueTuple<
+	def extends OptionalValueTuple,
+	keyKind extends PreparsedKeyKind,
+	$,
+	args
+> =
+	keyKind extends "required" ?
+		conform<def, readonly [validateDefinition<def[0], $, args>, "?"]>
+	:	ErrorMessage<invalidOptionalKeyKindMessage>
+
+export type DefaultValueDefinition = DefaultValueTuple
+
 export type DefaultValueTuple<
 	baseDef = unknown,
 	thunkableValue = unknown
 > = readonly [baseDef, "=", thunkableValue]
+
+export type OptionalValueDefinition = OptionalValueTuple
 
 export type OptionalValueTuple<baseDef = unknown> = readonly [baseDef, "?"]
 
@@ -111,3 +139,13 @@ export const parsePropertyValue = (
 		value: value[2]
 	}
 }
+
+// single quote use here is better for TypeScript's inlined error to avoid escapes
+export const invalidOptionalKeyKindMessage = `Only required keys may make their values optional, e.g. { [mySymbol]: ['number', '?'] }`
+
+export type invalidOptionalKeyKindMessage = typeof invalidOptionalKeyKindMessage
+
+// single quote use here is better for TypeScript's inlined error to avoid escapes
+export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
+
+export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
