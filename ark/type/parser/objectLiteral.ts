@@ -106,7 +106,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: [
+	-readonly [k in keyof def as nonOptionalKeyFromEntry<k, def[k], $, args>]: [
 		def[k]
 	] extends [anyOrNever] ?
 		def[k]
@@ -115,14 +115,14 @@ type _inferObjectLiteral<def extends object, $, args> = {
 			inferDefinition<baseDef, $, args>,
 			unwrapDefault<thunkableValue>
 		>
-	: def[k] extends OptionalValueTuple<infer baseDef> ?
-		inferDefinition<baseDef, $, args>
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFromEntry<
 		k,
 		def[k]
-	>]?: inferDefinition<def[k], $, args>
+	>]?: def[k] extends OptionalValueTuple<infer baseDef> ?
+		inferDefinition<baseDef, $, args>
+	:	inferDefinition<def[k], $, args>
 }
 
 export type validateObjectLiteral<def, $, args> = {
@@ -178,8 +178,11 @@ type validateDefaultValueTuple<
 		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
-type nonOptionalKeyFrom<k, $, args> =
-	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
+type nonOptionalKeyFromEntry<k, v, $, args> =
+	parseKey<k> extends PreparsedKey<"required", infer inner> ?
+		v extends OptionalValueTuple ?
+			never
+		:	inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
 		inferDefinition<inner, $, args> extends infer t extends Key ?
 			t
