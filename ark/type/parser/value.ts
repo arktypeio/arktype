@@ -69,7 +69,7 @@ export const parseValue = (
 	}
 }
 
-export type validateEntry<def, keyKind extends ParsedKeyKind, $, args> =
+export type validateValue<def, keyKind extends ParsedKeyKind, $, args> =
 	[def] extends [anyOrNever] ?
 		/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
 		 * like the following are not prematurely validated by the outer call:

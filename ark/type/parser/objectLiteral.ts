@@ -33,8 +33,8 @@ import {
 	parseValue,
 	type DefaultValueTuple,
 	type OptionalValueTuple,
-	type validateEntry
-} from "./entry.ts"
+	type validateValue
+} from "./value.ts"
 
 type MutableStructureSchema = mutable<NodeSchema<"structure">, 2>
 
@@ -167,7 +167,7 @@ export type validateObjectLiteral<def, $, args> = {
 				// move on to the validating the value definition
 				validateDefinition<def[k], $, args>
 			:	ErrorMessage<writeInvalidPropertyKeyMessage<indexDef>>
-		:	validateEntry<def[k], parsedKey["kind"], $, args>
+		:	validateValue<def[k], parsedKey["kind"], $, args>
 	:	never
 }
 
