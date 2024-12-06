@@ -79,16 +79,7 @@ type distillMappable<o, endpoint extends distill.Endpoint, seen> =
 				>
 			}
 		>
-	:	show<
-			{
-				// this is homomorphic so includes parsed optional keys like "key?": "string"
-				[k in keyof o as k extends inferredOptionalKeyOf<o> ? never
-				:	k]: _distill<o[k], endpoint, seen>
-			} & {
-				[k in keyof o as k extends inferredOptionalKeyOf<o> ? k
-				:	never]?: _distill<o[k], endpoint, seen>
-			}
-		>
+	:	{ [k in keyof o]: _distill<o[k], endpoint, seen> }
 
 type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
 	endpoint extends "in" ? _distill<i, endpoint, seen>

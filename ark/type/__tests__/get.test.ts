@@ -80,29 +80,25 @@ contextualize(() => {
 
 		const a = t.get("foo")
 
-		attest<{ a: 1 }>(a.infer)
+		attest<{ a: 1 } | { b: 1 }>(a.infer)
 		attest(a.expression).snap("{ a: 1 } | undefined")
 
 		const b = t.get("oof")
-		attest<{ b: 1 }>(b.infer)
+		attest<{ a: 1 } | { b: 1 }>(b.infer)
 		attest(b.expression).snap("{ b: 1 } | undefined")
 
 		const c = t.get("fof" as string)
-		attest<{
-			a: 1
-			b: 1
-		}>(c.infer)
+		attest<
+			| {
+					a: 1
+			  }
+			| { b: 1 }
+		>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
 		const d = t.get("foof")
-		// should include { c: 1 } as well but it seems TS can't infer it for now
-		attest<
-			{
-				a: 1
-			} & {
-				b: 1
-			}
-		>(d.infer)
+
+		attest<{ c: 1 }>(d.infer)
 		attest(d.expression).snap("{ a: 1, b: 1, c: 1 }")
 
 		attest(() => t.get("goog").expression).throws(
