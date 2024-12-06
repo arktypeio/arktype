@@ -5,153 +5,25 @@ import {
 	type BaseParseContext,
 	type BaseRoot,
 	type Index,
-	type NodeSchema,
 	type Optional,
 	type Required,
-	type Structure,
-	type UndeclaredKeyBehavior,
-	type unwrapDefault,
-	type writeInvalidPropertyKeyMessage
+	type UndeclaredKeyBehavior
 } from "@ark/schema"
 import {
-	append,
 	escapeChar,
 	isArray,
 	printable,
-	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type anyOrNever,
 	type conform,
-	type Dict,
 	type ErrorMessage,
-	type ErrorType,
 	type EscapeChar,
 	type Key,
-	type listable,
-	type merge,
-	type mutable,
-	type show
+	type listable
 } from "@ark/util"
-import type { DefaultFor, withDefault } from "../attributes.ts"
+import type { DefaultFor } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { astToString } from "./ast/utils.ts"
-import type { validateString } from "./ast/validate.ts"
-import type { inferDefinition, validateDefinition } from "./definition.ts"
-
-export const parseObjectLiteral = (
-	def: Dict,
-	ctx: BaseParseContext
-): BaseRoot => {
-	let spread: Structure.Node | undefined
-	const structure: mutable<NodeSchema<"structure">, 2> = {}
-	// We only allow a spread operator to be used as the first key in an object
-	// because to match JS behavior any keys before the spread are overwritten
-	// by the values in the target object, so there'd be no useful purpose in having it
-	// anywhere except for the beginning.
-	const parsedEntries = stringAndSymbolicEntriesOf(def).flatMap(entry =>
-		parseEntry(entry[0], entry[1], ctx)
-	)
-	if (parsedEntries[0]?.kind === "spread") {
-		// remove the spread entry so we can iterate over the remaining entries
-		// expecting non-spread entries
-		const spreadEntry = parsedEntries.shift()! as ParsedSpreadEntry
-		if (
-			!spreadEntry.node.hasKind("intersection") ||
-			!spreadEntry.node.structure
-		) {
-			return throwParseError(
-				writeInvalidSpreadTypeMessage(typeof spreadEntry.node.expression)
-			)
-		}
-		spread = spreadEntry.node.structure
-	}
-	for (const entry of parsedEntries) {
-		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
-		if (entry.kind === "undeclared") {
-			structure.undeclared = entry.behavior
-			continue
-		}
-		structure[entry.kind] = append(structure[entry.kind], entry) as never
-	}
-
-	const structureNode = ctx.$.node("structure", structure)
-
-	return ctx.$.parseSchema({
-		domain: "object",
-		structure: spread?.merge(structureNode) ?? structureNode
-	})
-}
-
-export type inferObjectLiteral<def extends object, $, args> = show<
-	"..." extends keyof def ?
-		merge<
-			inferDefinition<def["..."], $, args>,
-			_inferObjectLiteral<def, $, args>
-		>
-	:	_inferObjectLiteral<def, $, args>
->
-
-/**
- * Infers the contents of an object literal, ignoring a spread definition
- */
-type _inferObjectLiteral<def extends object, $, args> = {
-	// since def is a const parameter, we remove the readonly modifier here
-	// support for builtin readonly tracked here:
-	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFromEntry<k, def[k], $, args>]: [
-		def[k]
-	] extends [anyOrNever] ?
-		def[k]
-	: def[k] extends DefaultValueTuple<infer baseDef, infer thunkableValue> ?
-		withDefault<
-			inferDefinition<baseDef, $, args>,
-			unwrapDefault<thunkableValue>
-		>
-	:	inferDefinition<def[k], $, args>
-} & {
-	-readonly [k in keyof def as optionalKeyFromEntry<
-		k,
-		def[k]
-	>]?: def[k] extends OptionalValueTuple<infer baseDef> ?
-		inferDefinition<baseDef, $, args>
-	:	inferDefinition<def[k], $, args>
-}
-
-export type validateObjectLiteral<def, $, args> = {
-	[k in keyof def]: k extends IndexKey<infer indexDef> ?
-		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
-			// add a nominal type here to avoid allowing the error message as input
-			ErrorType<message>
-		: inferDefinition<indexDef, $, args> extends Key ?
-			// if the indexDef is syntactically and semantically valid,
-			// move on to the validating the value definition
-			validateDefinition<def[k], $, args>
-		:	ErrorType<writeInvalidPropertyKeyMessage<indexDef>>
-	: k extends "..." ?
-		inferDefinition<def[k], $, args> extends object ?
-			validateDefinition<def[k], $, args>
-		:	ErrorType<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
-	: k extends "+" ? UndeclaredKeyBehavior
-	: validateDefaultableValue<def, k, $, args>
-}
-
-type nonOptionalKeyFromEntry<k, v, $, args> =
-	parseKey<k> extends PreparsedKey<"required", infer inner> ?
-		v extends OptionalValueTuple ?
-			never
-		:	inner
-	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
-		inferDefinition<inner, $, args> extends infer t extends Key ?
-			t
-		:	never
-	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
-		// "+" has no effect on inference
-		never
-
-type optionalKeyFromEntry<key extends PropertyKey, v> =
-	parseKey<key> extends PreparsedKey<"optional", infer name> ? name
-	: v extends OptionalValueTuple ? key
-	: never
+import type { validateDefinition } from "./definition.ts"
 
 export const writeInvalidUndeclaredBehaviorMessage = (
 	actual: unknown
@@ -251,12 +123,8 @@ export const parseEntry = (
 		return { kind: "undeclared", behavior: value }
 	}
 
-	if (parsedKey.kind === "...") {
-		return {
-			kind: "spread",
-			node: ctx.$.parseOwnDefinitionFormat(value, ctx)
-		}
-	}
+	if (parsedKey.kind === "...")
+		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
 	if (isArray(value) && (value[1] === "=" || value[1] === "?")) {
 		if (parsedKey.kind !== "required")
