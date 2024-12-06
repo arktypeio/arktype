@@ -1,4 +1,5 @@
 import {
+	ArkErrors,
 	normalizeIndex,
 	type BaseParseContext,
 	type BaseRoot,
@@ -14,6 +15,7 @@ import {
 import {
 	append,
 	escapeChar,
+	isArray,
 	printable,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
@@ -242,33 +244,31 @@ export const parseEntry = (
 	if (parsedKey.kind === "...")
 		return { kind: "spread", node: ctx.$.parseOwnDefinitionFormat(value, ctx) }
 
-	const parsedValue = ctx.$.parseOwnDefinitionFormat(value, ctx)
+	const parsedValue: ParsedDefault | BaseRoot =
+		isArray(value) && value[1] === "=" ?
+			[ctx.$.parseOwnDefinitionFormat(value[0], ctx), "=", value[2]]
+		:	ctx.$.parseOwnDefinitionFormat(value, ctx)
 
-	// const parsedValue: ParsedDefault | BaseRoot =
-	// 	isArray(value) && value[1] === "=" ?
-	// 		[ctx.$.parse(value[0], ctx), "=", value[2]]
-	// 	:	ctx.$.parse(value, ctx, true)
+	if (isArray(parsedValue)) {
+		if (parsedKey.kind !== "required")
+			throwParseError(invalidDefaultKeyKindMessage)
 
-	// if (isArray(parsedValue)) {
-	// 	if (parsedKey.kind !== "required")
-	// 		throwParseError(invalidDefaultKeyKindMessage)
+		const out = parsedValue[0].traverse(parsedValue[2])
+		if (out instanceof ArkErrors) {
+			throwParseError(
+				writeUnassignableDefaultValueMessage(
+					printable(parsedKey.key),
+					out.message
+				)
+			)
+		}
 
-	// 	const out = parsedValue[0].traverse(parsedValue[2])
-	// 	if (out instanceof ArkErrors) {
-	// 		throwParseError(
-	// 			writeUnassignableDefaultValueMessage(
-	// 				printable(parsedKey.key),
-	// 				out.message
-	// 			)
-	// 		)
-	// 	}
-
-	// 	return ctx.$.node("optional", {
-	// 		key: parsedKey.key,
-	// 		value: parsedValue[0],
-	// 		default: parsedValue[2]
-	// 	})
-	// }
+		return ctx.$.node("optional", {
+			key: parsedKey.key,
+			value: parsedValue[0],
+			default: parsedValue[2]
+		})
+	}
 
 	if (parsedKey.kind === "index") {
 		const signature = ctx.$.parseOwnDefinitionFormat(parsedKey.key, ctx)

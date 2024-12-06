@@ -124,8 +124,6 @@ type typePropOf<o, $> =
 		:	never
 	:	never
 
-throw new Error()
-
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
 	// t extends of<infer base, infer attributes> ?
 	// 	attributes extends Default<infer defaultValue> ?

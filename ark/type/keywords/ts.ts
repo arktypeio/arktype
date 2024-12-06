@@ -1,7 +1,7 @@
 import { genericNode, intrinsic, node } from "@ark/schema"
 import {
 	Hkt,
-	type JsonStructure,
+	type Json,
 	type Key,
 	type omit,
 	type pick,
@@ -65,19 +65,17 @@ export const json = arkModule({
 	root: intrinsic.json,
 	stringify: node("morph", {
 		in: intrinsic.json,
-		morphs: (data: JsonStructure) => JSON.stringify(data),
+		morphs: (data: Json) => JSON.stringify(data),
 		declaredOut: intrinsic.string
 	})
 })
-
-throw new Error()
 
 export declare namespace json {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		root: JsonStructure
-		stringify: (In: JsonStructure) => To<string>
+		root: Json
+		stringify: (In: Json) => To<string>
 	}
 }
 
