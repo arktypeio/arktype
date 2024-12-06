@@ -55,7 +55,7 @@ export const fullStringParse = (s: DynamicState): BaseRoot => {
 	}
 
 	if (s.finalizer === "=") result = parseDefault(s as DynamicStateWithRoot)
-	else if (s.finalizer === "?") result = result.optional()
+	else if (s.finalizer === "?") result = result.withOptionalMeta()
 
 	s.scanner.shiftUntilNonWhitespace()
 	if (s.scanner.lookahead) {

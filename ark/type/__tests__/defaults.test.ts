@@ -191,14 +191,6 @@ contextualize(() => {
 				)
 		})
 
-		it("spread", () => {
-			const t = type("number", "=", 5)
-
-			const expected = type(["number", "=", 5])
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
 		it("invalid spread", () => {
 			// @ts-expect-error
 			attest(() => type("number", "=", true))

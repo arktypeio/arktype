@@ -1,7 +1,6 @@
 import {
 	flatMorph,
 	isArray,
-	isThunk,
 	noSuggest,
 	type array,
 	type mutable,
@@ -68,8 +67,3 @@ export const isNode = (value: unknown): value is BaseNode =>
 
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue
-
-export const unwrapDefault = <thunkableValue>(
-	thunkableValue: thunkableValue
-): unwrapDefault<thunkableValue> =>
-	(isThunk(thunkableValue) ? thunkableValue() : thunkableValue) as never

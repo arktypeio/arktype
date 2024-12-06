@@ -1,7 +1,6 @@
 import {
 	includes,
 	inferred,
-	isThunk,
 	omit,
 	throwInternalError,
 	throwParseError,
@@ -379,14 +378,22 @@ export abstract class BaseRoot<
 		return [this, "?"]
 	}
 
+	withOptionalMeta(): this {
+		return this.withMeta({ optional: true })
+	}
+
 	// these should ideally be implemented in arktype since they use its syntax
 	// https://github.com/arktypeio/arktype/issues/1223
 	default(thunkableValue: unknown): [this, "=", unknown] {
-		const value = isThunk(thunkableValue) ? thunkableValue() : thunkableValue
+		assertDefaultValueAssignability(this, thunkableValue)
 
-		assertDefaultValueAssignability(this, value)
+		return [this, "=", thunkableValue]
+	}
 
-		return [this, "=", value]
+	withDefaultMeta(thunkableValue: unknown): this {
+		assertDefaultValueAssignability(this, thunkableValue)
+
+		return this.withMeta({ default: thunkableValue })
 	}
 
 	from(input: unknown): unknown {

@@ -31,7 +31,7 @@ export const parseDefault = (s: DynamicStateWithRoot): BaseRoot => {
 		defaultNode.unit instanceof Date ?
 			() => new Date(defaultNode.unit as Date)
 		:	defaultNode.unit
-	return baseNode.default(defaultValue)
+	return baseNode.withDefaultMeta(defaultValue)
 }
 
 export type parseDefault<root, unscanned extends string> =

@@ -1,5 +1,6 @@
 import {
 	hasDomain,
+	isThunk,
 	omit,
 	printable,
 	throwParseError,
@@ -163,10 +164,13 @@ export const assertDefaultValueAssignability = (
 	value: unknown,
 	key = ""
 ): unknown => {
-	if (hasDomain(value, "object") && typeof value !== "function")
+	const wrapped = isThunk(value)
+
+	if (hasDomain(value, "object") && !wrapped)
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	const out = node.in(typeof value === "function" ? value() : value)
+	const out = node.in(wrapped ? value() : value)
+
 	if (out instanceof ArkErrors)
 		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
 
