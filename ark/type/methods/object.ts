@@ -11,7 +11,7 @@ import type {
 	ErrorType,
 	inferred,
 	intersectUnion,
-	Json,
+	JsonStructure,
 	Key,
 	listable,
 	merge,
@@ -19,7 +19,7 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { Default } from "../attributes.ts"
+import type { withDefault } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -180,7 +180,7 @@ export interface BaseTypeProp<
 	key: k
 	value: instantiateType<v, $>
 	meta: ArkEnv.meta
-	toJSON: () => Json
+	toJSON: () => JsonStructure
 }
 
 export interface DefaultedTypeProp<
@@ -234,9 +234,9 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
 			{ kind: "optional"; default: unknown }
-		>["key"]]: associateAttributes<
+		>["key"]]: withDefault<
 			prop["value"][inferred],
-			Default<prop["default" & keyof prop]>
+			prop["default" & keyof prop]
 		>
 	}
 >

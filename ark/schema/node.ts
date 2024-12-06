@@ -9,7 +9,7 @@ import {
 	throwError,
 	type Dict,
 	type GuardablePredicate,
-	type Json,
+	type JsonStructure,
 	type Key,
 	type array,
 	type conform,
@@ -244,7 +244,7 @@ export abstract class BaseNode<
 		return this.$.node(this.kind, ioInner)
 	}
 
-	toJSON(): Json {
+	toJSON(): JsonStructure {
 		return this.json
 	}
 

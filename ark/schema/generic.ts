@@ -5,7 +5,7 @@ import {
 	throwParseError,
 	type array,
 	type Hkt,
-	type Json
+	type JsonStructure
 } from "@ark/util"
 import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
@@ -126,7 +126,7 @@ export class GenericRoot<
 		return value
 	}
 
-	get json(): Json {
+	get json(): JsonStructure {
 		return this.cacheGetter("json", {
 			params: this.params.map(param =>
 				param[1].isUnknown() ? param[0] : [param[0], param[1].json]

@@ -10,7 +10,7 @@ import {
 	unset,
 	type Branded,
 	type dict,
-	type JsonData,
+	type Json,
 	type listable,
 	type PartialRecord
 } from "@ark/util"
@@ -272,7 +272,7 @@ export const createNode = (
 		metaJson,
 		json,
 		hash,
-		collapsibleJson: collapsibleJson as JsonData,
+		collapsibleJson: collapsibleJson as Json,
 		children
 	}
 

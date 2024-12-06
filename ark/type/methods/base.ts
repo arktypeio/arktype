@@ -13,15 +13,13 @@ import type {
 import type {
 	anyOrNever,
 	array,
-	Branded,
 	Callable,
 	ErrorMessage,
 	inferred,
-	Json,
+	JsonStructure,
 	unset
 } from "@ark/util"
 import type {
-	Default,
 	DefaultFor,
 	distill,
 	inferIntersection,
@@ -29,7 +27,9 @@ import type {
 	inferPipes,
 	InferredMorph,
 	Out,
-	To
+	To,
+	withDefault,
+	withOptional
 } from "../attributes.ts"
 import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
@@ -66,8 +66,8 @@ interface Type<out t = unknown, $ = {}>
 	: true
 
 	/** Internal JSON representation of this `Type` */
-	json: Json
-	toJSON(): Json
+	json: JsonStructure
+	toJSON(): JsonStructure
 	meta: ArkAmbient.meta
 	precompilation: string | undefined
 	toJsonSchema(): JsonSchema
@@ -245,7 +245,7 @@ interface Type<out t = unknown, $ = {}>
 
 	// inferring r into an alias in the return doesn't
 	// work the way it does for the other methods here
-	optional<r = associateAttributes<t, Optional>>(): instantiateType<r, $>
+	optional<r = withOptional<t>>(): instantiateType<r, $>
 
 	/**
 	 * Add a default value for this `Type` when it is used as a property.\
@@ -255,10 +255,7 @@ interface Type<out t = unknown, $ = {}>
 	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
 	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
 	 */
-	default<
-		const value extends this["inferIn"],
-		r = associateAttributes<t, Default<value>>
-	>(
+	default<const value extends this["inferIn"], r = withDefault<t, value>>(
 		value: DefaultFor<value>
 	): instantiateType<r, $>
 

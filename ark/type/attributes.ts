@@ -6,6 +6,7 @@ import type {
 	Hkt,
 	intersectArrays,
 	isSafelyMappable,
+	Json,
 	Primitive,
 	show
 } from "@ark/util"
@@ -56,12 +57,15 @@ type _distill<t, endpoint extends distill.Endpoint> =
 	: unknown extends t ? unknown
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint>
-	: t extends array ?
-		_distillArray<t, endpoint> // we excluded this from TerminallyInferredObjectKind so that those types could be
-	: // inferred before checking morphs/defaults, which extend Function
+	: t extends array ? _distillArray<t, endpoint>
+	: // we excluded this from TerminallyInferredObjectKind so that those types could be
+	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
-	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint>
-	: t
+	: isSafelyMappable<t> extends true ?
+		equals<t, Json> extends true ?
+			t
+		:	distillMappable<t, endpoint>
+	:	t
 
 type distillMappable<o, endpoint extends distill.Endpoint> =
 	endpoint extends "in" ?
@@ -187,7 +191,14 @@ export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
 export type InferredOptional<t = unknown> = (In?: t) => t
 
+export type withOptional<t> =
+	t extends InferredMorph<infer i, infer o> ? (In?: i) => o : (In?: t) => t
+
 export type Default<v = any> = ["=", v]
+
+export type withDefault<t, v = any> =
+	t extends InferredMorph<infer i, infer o> ? (In: i, defaultsTo: v) => o
+	:	(In: t, defaultsTo: v) => Default<t>
 
 export type DefaultFor<t> =
 	| (Primitive extends t ? Primitive
