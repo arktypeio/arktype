@@ -184,8 +184,11 @@ type nonOptionalKeyFromEntry<k extends PropertyKey, v, $, args> =
 	) ?
 		parsedKey["kind"] extends "index" ?
 			inferDefinition<parsedKey["normalized"], $, args> & Key
-		: v extends OptionalPropertyDefinition ? never
-		: parsedKey["normalized"]
+		: [v] extends [OptionalPropertyDefinition] ?
+			[v] extends [anyOrNever] ?
+				parsedKey["normalized"]
+			:	never
+		:	parsedKey["normalized"]
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference
 		never
