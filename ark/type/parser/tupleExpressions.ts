@@ -41,8 +41,7 @@ export const maybeParseTupleExpression = (
 
 export type maybeValidateTupleExpression<def extends array, $, args> =
 	def extends IndexZeroExpression ? validatePrefixExpression<def, $, args>
-	: def extends PostfixExpression ? validatePostfixExpression<def, $, args>
-	: def extends InfixExpression ? validateInfixExpression<def, $, args>
+	: def extends IndexOneExpression ? validateIndexOneExpression<def, $, args>
 	: def extends (
 		readonly ["", ...unknown[]] | readonly [unknown, "", ...unknown[]]
 	) ?
@@ -91,12 +90,17 @@ export type validatePostfixExpression<
 	// expressions at index 1 after TS 5.1
 > = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
-export type validateInfixExpression<def extends InfixExpression, $, args> =
-	def["length"] extends 2 ?
-		readonly [def[0], writeMissingRightOperandMessage<def[1]>]
+export type validateIndexOneExpression<
+	def extends IndexOneExpression,
+	$,
+	args
+> =
+	def[1] extends TuplePostfixOperator ?
+		readonly [validateDefinition<def[0], $, args>, TuplePostfixOperator]
 	:	readonly [
 			validateDefinition<def[0], $, args>,
-			def[1],
+			def["length"] extends 2 ? writeMissingRightOperandMessage<def[1]>
+			:	def[1],
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>

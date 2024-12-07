@@ -32,7 +32,7 @@ import {
 	invalidOptionalKeyKindMessage,
 	parseProperty,
 	type DefaultablePropertyTuple,
-	type OptionalPropertyTuple,
+	type OptionalPropertyDefinition,
 	type validateProperty
 } from "./property.ts"
 
@@ -154,7 +154,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	-readonly [k in keyof def as optionalKeyFromEntry<
 		k,
 		def[k]
-	>]?: def[k] extends OptionalPropertyTuple<infer baseDef> ?
+	>]?: def[k] extends OptionalPropertyDefinition<infer baseDef> ?
 		inferDefinition<baseDef, $, args>
 	:	inferDefinition<def[k], $, args>
 }
@@ -178,22 +178,21 @@ export type validateObjectLiteral<def, $, args> = {
 	:	never
 }
 
-type nonOptionalKeyFromEntry<k, v, $, args> =
-	preparseKey<k> extends PreparsedEntryKey<"required", infer inner> ?
-		v extends OptionalPropertyTuple ?
-			never
-		:	inner
-	: preparseKey<k> extends PreparsedEntryKey<"index", infer inner> ?
-		inferDefinition<inner, $, args> extends infer t extends Key ?
-			t
-		:	never
+type nonOptionalKeyFromEntry<k extends PropertyKey, v, $, args> =
+	preparseKey<k> extends (
+		infer parsedKey extends PreparsedEntryKey<"required" | "index">
+	) ?
+		parsedKey["kind"] extends "index" ?
+			inferDefinition<parsedKey["normalized"], $, args> & Key
+		: v extends OptionalPropertyDefinition ? never
+		: parsedKey["normalized"]
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference
 		never
 
-type optionalKeyFromEntry<key extends PropertyKey, v> =
-	preparseKey<key> extends PreparsedEntryKey<"optional", infer name> ? name
-	: v extends OptionalPropertyTuple ? key
+type optionalKeyFromEntry<k extends PropertyKey, v> =
+	preparseKey<k> extends PreparsedEntryKey<"optional", infer name> ? name
+	: v extends OptionalPropertyDefinition ? k
 	: never
 
 export const writeInvalidUndeclaredBehaviorMessage = (

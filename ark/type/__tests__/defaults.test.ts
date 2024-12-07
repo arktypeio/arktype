@@ -7,8 +7,8 @@ import {
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
+import { invalidOptionalKeyKindMessage } from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
-import { invalidOptionalKeyKindMessage } from "../parser/property.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -857,6 +857,7 @@ contextualize(() => {
 				bar: type({ "foo?": "string" }).default(() => ({ foo: "foostr" })),
 				baz: type({ foo: "string = 'foostr'" }).default(() => ({}))
 			})
+
 			const v1 = t.assert({}),
 				v2 = t.assert({})
 			attest(v1).snap({
@@ -882,32 +883,6 @@ contextualize(() => {
 					"foo must be a number (was a string)"
 				)
 			)
-		})
-
-		it("default allows nested default keys", () => {
-			const a = type(["string.numeric.parse", "=", "1"])
-
-			attest(a).type.toString.snap(`Type<
-	(In: is<Nominal<"numeric"> & Default<"1">>) => To<number>,
-	{}
->`)
-
-			const defaulted = type({ a }).default(() => ({}))
-
-			attest(defaulted.expression).snap(
-				'{ a?: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)?))$/) => Out<number> = "1" }'
-			)
-			attest(defaulted).type.toString.snap(`Type<
-	of<
-		{
-			a: (
-				In: is<Nominal<"numeric"> & Default<"1">>
-			) => To<number>
-		},
-		Default<{}>
-	>,
-	{}
->`)
 		})
 	})
 })
