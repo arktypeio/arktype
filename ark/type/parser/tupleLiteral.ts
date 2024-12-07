@@ -11,13 +11,12 @@ import {
 	append,
 	isEmptyObject,
 	throwParseError,
-	type anyOrNever,
 	type array,
 	type conform,
 	type ErrorMessage
 } from "@ark/util"
-import type { InferredOptional } from "../attributes.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { OptionalPropertyDefinition } from "./property.ts"
 
 export const parseTupleLiteral = (
 	def: array,
@@ -166,6 +165,7 @@ type PreparsedElement = {
 	head: unknown
 	tail: array
 	inferred: unknown
+	validated: unknown
 	optional: boolean
 	spread: boolean
 }
@@ -176,38 +176,34 @@ declare namespace PreparsedElement {
 
 type preparseNextState<s extends SequenceParseState, $, args> =
 	s["unscanned"] extends readonly ["...", infer head, ...infer tail] ?
-		preparseNextElement<head, inferDefinition<head, $, args>, tail, true>
+		preparseNextElement<head, tail, true, $, args>
 	: s["unscanned"] extends readonly [infer head, ...infer tail] ?
-		preparseNextElement<head, inferDefinition<head, $, args>, tail, false>
+		preparseNextElement<head, tail, false, $, args>
 	:	null
 
 type preparseNextElement<
 	head,
-	inferredHead,
 	tail extends array,
-	spread extends boolean
+	spread extends boolean,
+	$,
+	args
 > =
-	[inferredHead] extends [anyOrNever] ?
+	head extends OptionalPropertyDefinition<infer baseDef> ?
 		PreparsedElement.from<{
 			head: head
 			tail: tail
-			inferred: inferredHead
-			optional: false
-			spread: spread
-		}>
-	: [inferredHead] extends [InferredOptional<infer base>] ?
-		PreparsedElement.from<{
-			head: head
-			tail: tail
-			inferred: base
-			// this will be an error we have to handle
+			inferred: inferDefinition<baseDef, $, args>
+			validated: validateDefinition<baseDef, $, args>
+			// if inferredHead is optional and the element is spread, this will be an error
+			// handled in nextValidatedSpreadElements
 			optional: true
 			spread: spread
 		}>
 	:	PreparsedElement.from<{
 			head: head
 			tail: tail
-			inferred: inferredHead
+			inferred: inferDefinition<head, $, args>
+			validated: validateDefinition<head, $, args>
 			optional: false
 			spread: spread
 		}>
@@ -242,11 +238,11 @@ type nextValidated<
 	args
 > = [
 	...s["validated"],
-	...nextValidatedSpreadElements<s, next>,
+	...nextValidatedSpreadOperatorIfPresent<s, next>,
 	nextValidatedElement<s, next, $, args>
 ]
 
-type nextValidatedSpreadElements<
+type nextValidatedSpreadOperatorIfPresent<
 	s extends SequenceParseState,
 	next extends PreparsedElement
 > =
@@ -264,18 +260,16 @@ type nextValidatedSpreadElements<
 
 type nextValidatedElement<
 	s extends SequenceParseState,
-	next extends PreparsedElement,
-	$,
-	args
+	next extends PreparsedElement
 > =
 	next["optional"] extends true ?
 		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
 		: number extends s["inferred"]["length"] ?
 			ErrorMessage<optionalPostVariadicMessage>
-		:	validateDefinition<next["head"], $, args>
+		:	next["validated"]
 	: [s["includesOptional"], next["spread"]] extends [true, false] ?
 		ErrorMessage<requiredPostOptionalMessage>
-	:	validateDefinition<next["head"], $, args>
+	:	next["validated"]
 
 type nextIncludesOptional<
 	includesOptional extends boolean,

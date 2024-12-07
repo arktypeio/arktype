@@ -5,7 +5,7 @@ import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/opera
 import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage
-} from "../../parser/tupleLiteral.ts"
+} from "arktype/internal/parser/tupleLiteral.ts"
 
 contextualize(() => {
 	describe("non-tuple", () => {

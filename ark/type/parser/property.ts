@@ -128,7 +128,8 @@ export type DefaultablePropertyTuple<
 	thunkableProperty = unknown
 > = readonly [baseDef, "=", thunkableProperty]
 
-export type OptionalPropertyDefinition = OptionalPropertyTuple
+export type OptionalPropertyDefinition<baseDef = unknown> =
+	OptionalPropertyTuple<baseDef>
 
 export type OptionalPropertyTuple<baseDef = unknown> = readonly [baseDef, "?"]
 
