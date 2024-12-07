@@ -2,6 +2,7 @@ import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
+	Branded,
 	equals,
 	Hkt,
 	intersectArrays,
@@ -54,9 +55,9 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever | seen] ? t
 	: unknown extends t ? unknown
+	: t extends Default<infer constraint> ? constraint
 	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint, seen>
-	: t extends Default<infer inner> ? inner
 	: t extends array ? _distillArray<t, endpoint, seen | t>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
@@ -90,13 +91,11 @@ type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
 		:	(In: i) => Out<r>
 	:	never
 
-type BaseDefault = (In?: never, defaultsTo?: never) => Out
-
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			o[k] extends BaseDefault ?
-				o[k] extends anyOrNever ?
+			o[k] extends Default<infer t> | InferredMorph<infer t> ?
+				t extends anyOrNever ?
 					never
 				:	k
 			:	never
@@ -175,18 +174,15 @@ export type To<o = any> = ["=>", o, true]
 
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
-export type InferredOptional<t = any> = (In?: t) => t
+declare const defaultsTo: unique symbol
 
-export type withOptional<t> =
-	t extends InferredMorph<infer i, infer o> ? (In?: i) => o : (In?: t) => t
+export type Default<t = unknown, v = unknown> = t & { [defaultsTo]: [t, v] }
 
-export type Default<t = any, v = any> = (In?: t, defaultsTo?: v) => To<t>
-
-export type withDefault<t, v = any> =
-	t extends InferredMorph<infer i, infer o> ? (In?: i, defaultsTo?: v) => o
+export type withDefault<t, v> =
+	t extends InferredMorph<infer i, infer o> ? (In: Default<i, v>) => o
 	:	Default<t, v>
 
-export type DefaultFor<t> =
+export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
 	  : t extends Primitive ? t
 	  : never)

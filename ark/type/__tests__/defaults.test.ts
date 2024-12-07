@@ -163,15 +163,11 @@ contextualize(() => {
 
 		it("chained", () => {
 			const defaultedString = type("string").default("")
-			attest(defaultedString.t).type.toString.snap('defaultsTo<"">')
-			attest(defaultedString.json).snap({
-				domain: "string",
-				meta: { default: "" }
-			})
+			attest(defaultedString).type.toString.snap('[Type<string, {}>, "=", ""]')
 
 			const o = type({ a: defaultedString })
-			attest(o.t).type.toString.snap('{ a: defaultsTo<""> }')
-			attest<{ a?: string }>(o.inferIn)
+			attest(o.t).type.toString.snap('{ a: Default<string, ""> }')
+			attest<{ a?: string | undefined }>(o.inferIn)
 			attest<{ a: string }>(o.infer)
 			attest(o.json).snap({
 				optional: [
@@ -216,7 +212,7 @@ contextualize(() => {
 			})
 
 			attest<{
-				bool_value: (In?: string, defaultsTo?: "off") => Out<boolean>
+				bool_value: (In: Default<string, "off">) => Out<boolean>
 			}>(processForm.t)
 			attest<{
 				// key should still be distilled as optional even inside a morph
@@ -243,7 +239,7 @@ contextualize(() => {
 			})
 
 			attest<{
-				bool_value: (In: string, defaultsTo: "off") => Out<boolean>
+				bool_value: (In: Default<string, "off">) => Out<boolean>
 			}>(processForm.t)
 
 			const out = processForm({})
@@ -341,15 +337,12 @@ contextualize(() => {
 
 		it("primitive morphed to object not premorphed", () => {
 			const toNestedString = type("string")
-				.default("foo")
 				.pipe(s => ({ nest: s }))
+				.default("foo")
 
 			const t = type({ foo: toNestedString })
 			attest<{
-				foo: (
-					In: string,
-					defaultsTo: "off"
-				) => Out<{
+				foo: (In: Default<string, "foo">) => Out<{
 					nest: string
 				}>
 			}>(t.t)
@@ -679,45 +672,6 @@ contextualize(() => {
 				baz2: "123",
 				baz3: "123"
 			})
-		})
-
-		it("boolean not distributed during inference", () => {
-			const t = type("boolean", "=", false)
-
-			attest(t.json).snap({
-				branches: [{ unit: false }, { unit: true }],
-				meta: { default: false }
-			})
-
-			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
-		})
-
-		it("union not distributed during inference with morph", () => {
-			const parseDateToFuture = (s: string) => {
-				const d = new Date(s)
-				d.setFullYear(d.getFullYear() + 100)
-				return d
-			}
-
-			const narrowFutureInput = () => true
-
-			const t = type("boolean | number", "=", false)
-				.or(["string", "=>", parseDateToFuture])
-				.satisfying(narrowFutureInput)
-
-			attest(t.json).snap([
-				{ domain: "number", predicate: ["$ark.narrowFutureInput"] },
-				{
-					in: { domain: "string", predicate: ["$ark.narrowFutureInput"] },
-					morphs: ["$ark.parseDateToFuture"]
-				},
-				{ unit: false },
-				{ unit: true }
-			])
-
-			attest(t.t).type.toString
-				.snap(`	| of<number | boolean, Default<false> & Anonymous>
-	| ((In: nominal<"?">) => Out<Date>)`)
 		})
 	})
 

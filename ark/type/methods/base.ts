@@ -21,7 +21,7 @@ import type {
 	unset
 } from "@ark/util"
 import type {
-	DefaultFor,
+	defaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
@@ -252,7 +252,7 @@ interface Type<out t = unknown, $ = {}>
 	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
 	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
 	 */
-	default<const value extends DefaultFor<this["inferIn"]>>(
+	default<const value extends defaultFor<this["inferIn"]>>(
 		value: value
 	): [this, "=", unwrapDefault<value>]
 

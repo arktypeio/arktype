@@ -26,7 +26,7 @@ import {
 } from "@ark/util"
 import type { withDefault } from "../attributes.ts"
 import type { validateString } from "./ast/validate.ts"
-import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { inferDefinition } from "./definition.ts"
 import {
 	invalidDefaultKeyKindMessage,
 	invalidOptionalKeyKindMessage,
@@ -83,7 +83,7 @@ export const parseObjectLiteral = (
 			structure.optional = append(
 				structure.optional,
 				ctx.$.node("optional", {
-					key: parsedKey.key,
+					key: parsedKey.normalized,
 					value: parsedValue.valueNode
 				})
 			)
@@ -94,13 +94,16 @@ export const parseObjectLiteral = (
 			structure.optional = append(
 				structure.optional,
 				ctx.$.node("optional", {
-					key: parsedKey.key,
+					key: parsedKey.normalized,
 					value: parsedValue.valueNode,
 					default: parsedValue.default
 				})
 			)
 		} else {
-			const signature = ctx.$.parseOwnDefinitionFormat(parsedEntryKey.key, ctx)
+			const signature = ctx.$.parseOwnDefinitionFormat(
+				parsedEntryKey.normalized,
+				ctx
+			)
 			const normalized = normalizeIndex(signature, parsedValue.valueNode, ctx.$)
 
 			if (normalized.index)
@@ -160,15 +163,17 @@ export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: preparseKey<k> extends (
 		infer parsedKey extends PreparsedKey
 	) ?
-		k extends IndexKey<infer indexDef> ?
-			validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
+		parsedKey extends PreparsedEntryKey<"index"> ?
+			validateString<parsedKey["normalized"], $, args> extends (
+				ErrorMessage<infer message>
+			) ?
 				// add a nominal type here to avoid allowing the error message as input
 				ErrorType<message>
-			: inferDefinition<indexDef, $, args> extends Key ?
-				// if the indexDef is syntactically and semantically valid,
+			: inferDefinition<parsedKey["normalized"], $, args> extends Key ?
+				// if the index def is syntactically and semantically valid,
 				// move on to the validating the value definition
-				validateDefinition<def[k], $, args>
-			:	ErrorMessage<writeInvalidPropertyKeyMessage<indexDef>>
+				validateProperty<def[k], parsedKey["kind"], $, args>
+			:	ErrorMessage<writeInvalidPropertyKeyMessage<parsedKey["normalized"]>>
 		:	validateProperty<def[k], parsedKey["kind"], $, args>
 	:	never
 }
@@ -201,12 +206,15 @@ export const nonLeadingSpreadError =
 
 export type PreparsedKey = PreparsedEntryKey | PreparsedSpecialKey
 
+type normalizedKeyKind<kind extends EntryKeyKind> =
+	kind extends "index" ? string : Key
+
 export type PreparsedEntryKey<
 	kind extends EntryKeyKind = EntryKeyKind,
-	key extends Key = Key
+	normalized extends normalizedKeyKind<kind> = normalizedKeyKind<kind>
 > = {
 	kind: kind
-	key: key
+	normalized: normalized
 }
 
 export type PreparsedSpecialKey<kind extends SpecialKeyKind = SpecialKeyKind> =
@@ -229,23 +237,23 @@ export type MetaKey = "..." | "+"
 export type IndexKey<def extends string = string> = `[${def}]`
 
 export const preparseKey = (key: Key): PreparsedKey =>
-	typeof key === "symbol" ? { kind: "required", key }
+	typeof key === "symbol" ? { kind: "required", normalized: key }
 	: key.at(-1) === "?" ?
 		key.at(-2) === escapeChar ?
-			{ kind: "required", key: `${key.slice(0, -2)}?` }
+			{ kind: "required", normalized: `${key.slice(0, -2)}?` }
 		:	{
 				kind: "optional",
-				key: key.slice(0, -1)
+				normalized: key.slice(0, -1)
 			}
 	: key[0] === "[" && key.at(-1) === "]" ?
-		{ kind: "index", key: key.slice(1, -1) }
+		{ kind: "index", normalized: key.slice(1, -1) }
 	: key[0] === escapeChar && key[1] === "[" && key.at(-1) === "]" ?
-		{ kind: "required", key: key.slice(1) }
+		{ kind: "required", normalized: key.slice(1) }
 	: key === "..." ? { kind: "spread" }
 	: key === "+" ? { kind: "undeclared" }
 	: {
 			kind: "required",
-			key:
+			normalized:
 				key === "\\..." ? "..."
 				: key === "\\+" ? "+"
 				: key
@@ -256,24 +264,26 @@ export type preparseKey<k> =
 		inner extends `${infer baseName}${EscapeChar}` ?
 			PreparsedKey.from<{
 				kind: "required"
-				key: `${baseName}?`
+				normalized: `${baseName}?`
 			}>
 		:	PreparsedKey.from<{
 				kind: "optional"
-				key: inner
+				normalized: inner
 			}>
 	: k extends "+" ? { kind: "undeclared" }
 	: k extends "..." ? { kind: "spread" }
 	: k extends `${EscapeChar}${infer escapedMeta extends MetaKey}` ?
-		PreparsedKey.from<{ kind: "required"; key: escapedMeta }>
+		PreparsedKey.from<{ kind: "required"; normalized: escapedMeta }>
 	: k extends IndexKey<infer def> ?
 		PreparsedKey.from<{
 			kind: "index"
-			key: def
+			normalized: def
 		}>
 	:	PreparsedKey.from<{
 			kind: "required"
-			key: k extends `${EscapeChar}${infer escapedIndexKey extends IndexKey}` ?
+			normalized: k extends (
+				`${EscapeChar}${infer escapedIndexKey extends IndexKey}`
+			) ?
 				escapedIndexKey
 			: k extends Key ? k
 			: `${k & number}`

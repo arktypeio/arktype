@@ -15,7 +15,7 @@ import {
 	type array,
 	type conform
 } from "@ark/util"
-import type { DefaultFor, distill } from "./attributes.ts"
+import type { distill } from "./attributes.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -81,7 +81,6 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
-			: one extends "=" ? [DefaultFor<distill.In<type.infer<NoInfer<zero>, $>>>]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r

@@ -11,7 +11,7 @@ import {
 	type ErrorType,
 	type typeToString
 } from "@ark/util"
-import type { DefaultFor } from "../attributes.ts"
+import type { defaultFor } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type {
@@ -106,7 +106,7 @@ type validateDefaultablePropertyTuple<
 			readonly [
 				validateDefinition<def[0], $, args>,
 				"=",
-				DefaultFor<type.infer.In<def[0], $, args>>
+				defaultFor<type.infer.In<def[0], $, args>>
 			]
 		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
@@ -121,7 +121,10 @@ type validateOptionalPropertyTuple<
 		conform<def, readonly [validateDefinition<def[0], $, args>, "?"]>
 	:	ErrorMessage<invalidOptionalKeyKindMessage>
 
-export type DefaultPropertyDefinition = DefaultablePropertyTuple
+export type DefaultablePropertyDefinition<
+	baseDef = unknown,
+	thunkableProperty = unknown
+> = DefaultablePropertyTuple<baseDef, thunkableProperty>
 
 export type DefaultablePropertyTuple<
 	baseDef = unknown,
