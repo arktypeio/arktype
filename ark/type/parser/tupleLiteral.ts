@@ -174,64 +174,46 @@ declare namespace PreparsedElement {
 	export type from<result extends PreparsedElement> = result
 }
 
-type preparseNextElement<s extends SequenceParseState, $, args> =
+type preparseNextState<s extends SequenceParseState, $, args> =
 	s["unscanned"] extends readonly ["...", infer head, ...infer tail] ?
-		inferDefinition<head, $, args> extends infer t ?
-			[t] extends [anyOrNever] ?
-				PreparsedElement.from<{
-					head: head
-					tail: tail
-					inferred: t
-					optional: false
-					spread: true
-				}>
-			: [t] extends [InferredOptional<infer base>] ?
-				PreparsedElement.from<{
-					head: head
-					tail: tail
-					inferred: base
-					// this will be an error we have to handle
-					optional: true
-					spread: true
-				}>
-			:	PreparsedElement.from<{
-					head: head
-					tail: tail
-					inferred: t
-					optional: false
-					spread: true
-				}>
-		:	never
+		preparseNextElement<head, inferDefinition<head, $, args>, tail, true>
 	: s["unscanned"] extends readonly [infer head, ...infer tail] ?
-		inferDefinition<head, $, args> extends infer t ?
-			[t] extends [anyOrNever] ?
-				PreparsedElement.from<{
-					head: head
-					tail: tail
-					inferred: t
-					optional: false
-					spread: false
-				}>
-			: [t] extends [InferredOptional<infer base>] ?
-				PreparsedElement.from<{
-					head: head
-					tail: tail
-					inferred: base
-					optional: true
-					spread: false
-				}>
-			:	PreparsedElement.from<{
-					head: head
-					tail: tail
-					inferred: t
-					optional: false
-					spread: false
-				}>
-		:	never
+		preparseNextElement<head, inferDefinition<head, $, args>, tail, false>
 	:	null
 
+type preparseNextElement<
+	head,
+	inferredHead,
+	tail extends array,
+	spread extends boolean
+> =
+	[inferredHead] extends [anyOrNever] ?
+		PreparsedElement.from<{
+			head: head
+			tail: tail
+			inferred: inferredHead
+			optional: false
+			spread: spread
+		}>
+	: [inferredHead] extends [InferredOptional<infer base>] ?
+		PreparsedElement.from<{
+			head: head
+			tail: tail
+			inferred: base
+			// this will be an error we have to handle
+			optional: true
+			spread: spread
+		}>
+	:	PreparsedElement.from<{
+			head: head
+			tail: tail
+			inferred: inferredHead
+			optional: false
+			spread: spread
+		}>
+
 type parseNextElement<s extends SequenceParseState, $, args> =
-	preparseNextElement<s, $, args> extends infer next extends PreparsedElement ?
+	preparseNextState<s, $, args> extends infer next extends PreparsedElement ?
 		parseNextElement<
 			{
 				unscanned: next["tail"]
