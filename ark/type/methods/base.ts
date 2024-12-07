@@ -8,8 +8,7 @@ import type {
 	Predicate,
 	PredicateCast,
 	StandardSchemaV1,
-	UndeclaredKeyBehavior,
-	unwrapDefault
+	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
 	anyOrNever,
@@ -35,7 +34,6 @@ import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
-
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
@@ -254,7 +252,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	default<const value extends defaultFor<this["inferIn"]>>(
 		value: value
-	): [this, "=", unwrapDefault<value>]
+	): [this, "=", value]
 
 	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>

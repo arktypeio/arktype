@@ -6,8 +6,9 @@ import {
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
-import type { Default, Out } from "arktype/internal/attributes.ts"
+import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
+import { invalidOptionalKeyKindMessage } from "../parser/property.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -30,9 +31,9 @@ contextualize(() => {
 }`)
 			attest<{
 				a: string
-				foo?: number | undefined
-				bar?: number | undefined
-				baz?: number | undefined
+				foo?: number
+				bar?: number
+				baz?: number
 			}>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
 
@@ -167,7 +168,7 @@ contextualize(() => {
 
 			const o = type({ a: defaultedString })
 			attest(o.t).type.toString.snap('{ a: Default<string, ""> }')
-			attest<{ a?: string | undefined }>(o.inferIn)
+			attest<{ a?: string }>(o.inferIn)
 			attest<{ a: string }>(o.infer)
 			attest(o.json).snap({
 				optional: [
@@ -485,19 +486,15 @@ contextualize(() => {
 		})
 
 		it("optional with default", () => {
-			const t = type({ foo: "string", "bar?": "number = 5" })
-			attest<{
-				foo: string
-				bar?: number
-			}>(t.inferIn)
-			attest<{
-				foo: string
-				bar?: number
-			}>(t.infer)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": "number = 5" })
+			).throwsAndHasTypeError(invalidOptionalKeyKindMessage)
 
-			const fromTuple = type({ foo: "string", "bar?": ["number", "=", 5] })
-			attest<typeof t.t>(fromTuple.t)
-			attest(fromTuple.json).equals(t.json)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": ["number", "=", 5] })
+			).throwsAndHasTypeError(invalidOptionalKeyKindMessage)
 		})
 
 		it("shallow default", () => {
@@ -512,7 +509,7 @@ contextualize(() => {
 				foo: "string = 'foo'"
 			})
 
-			attest<{ foo?: string | undefined }>(t.in.infer)
+			attest<{ foo?: string }>(t.in.infer)
 			attest<{ foo: string }>(t.out.infer)
 			attest(t.in.expression).snap('{ foo?: string = "foo" }')
 			attest(t.out.expression).snap("{ foo: string }")
@@ -722,19 +719,11 @@ contextualize(() => {
 
 	describe("functions", () => {
 		it("works in tuple", () => {
-			const t = type({ foo: ["string", "=", () => "bar"] })
-			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
-		})
+			const t = type({ foo: ["string", "=", () => "bar" as const] })
 
-		it("works in type tuple", () => {
-			const foo = type(["string", "=", () => "bar"])
-			const t = type({ foo })
-			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
-		})
-
-		it("works in type args", () => {
-			const foo = type("string", "=", () => "bar")
-			const t = type({ foo })
+			attest(t.t).type.toString(`{
+    foo: Default<string, "bar">;
+}`)
 			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
 		})
 
@@ -742,25 +731,37 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["number", "=", () => "bar"] })
-			}).throws.snap(
-				"ParseError: Default value is not assignable: must be a number (was a string)"
-			)
+			})
+				.throws.snap(
+					"ParseError: Default value is not assignable: must be a number (was a string)"
+				)
+				.type.errors.snap()
+
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["number[]", "=", () => "bar"] })
-			}).throws.snap(
-				"ParseError: Default value is not assignable: must be an array (was string)"
-			)
+			})
+				.throws.snap(
+					"ParseError: Default value is not assignable: must be an array (was string)"
+				)
+				.type.errors.snap()
+
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: [{ a: "number" }, "=", () => ({ a: "bar" })] })
-			}).throws.snap(
-				"ParseError: Default value is not assignable: a must be a number (was a string)"
-			)
+			})
+				.throws.snap(
+					"ParseError: Default value is not assignable: a must be a number (was a string)"
+				)
+				.type.errors.snap()
 		})
 
 		it("morphs the returned value", () => {
 			const t = type({ foo: ["string.numeric.parse", "=", () => "123"] })
+
+			attest<{
+				foo: (In: Default<string, string>) => To<number>
+			}>(t.t)
 			attest(t.assert({})).snap({ foo: 123 })
 		})
 
@@ -793,12 +794,15 @@ contextualize(() => {
 		it("default function factory", () => {
 			let i = 0
 			const t = type({
-				// this requires explicit type argument
-				bar: type("Function").default<() => number>(() => {
+				bar: type("Function").default(() => {
 					const j = ++i
 					return () => j
 				})
 			})
+
+			attest<{
+				bar: Default<Function, () => number>
+			}>(t.t)
 			attest(t.assert({}).bar()).snap(3)
 			attest(t.assert({}).bar()).snap(4)
 		})
@@ -824,6 +828,7 @@ contextualize(() => {
 			attest(v1).snap({ foo: [1], bar: ["1"] })
 			attest(v1.foo !== v2.foo)
 		})
+
 		it("default array is checked", () => {
 			attest(() => {
 				// @ts-expect-error

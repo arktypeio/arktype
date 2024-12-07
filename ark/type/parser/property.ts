@@ -101,14 +101,11 @@ type validateDefaultablePropertyTuple<
 	args
 > =
 	keyKind extends "required" ?
-		conform<
-			def,
-			readonly [
-				validateDefinition<def[0], $, args>,
-				"=",
-				defaultFor<type.infer.In<def[0], $, args>>
-			]
-		>
+		readonly [
+			validateDefinition<def[0], $, args>,
+			"=",
+			defaultFor<type.infer.In<def[0], $, args>>
+		]
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
 type validateOptionalPropertyTuple<
