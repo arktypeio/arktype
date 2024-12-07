@@ -16,6 +16,10 @@ import type {
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
 import type { Generic } from "../../generic.ts"
+import type {
+	DefaultablePropertyTuple,
+	OptionalPropertyTuple
+} from "../property.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
@@ -113,16 +117,38 @@ type validateInferredAst<inferred, def extends string> =
 	: def extends ErrorMessage ? def
 	: undefined
 
-export type validateString<def extends string, $, args> =
-	validateAst<parseString<def, $, args>, $, args> extends (
-		infer result extends ErrorMessage
-	) ?
-		result extends Completion<infer text> ?
-			text
-		:	result
-	:	def
+export type validateString<
+	def extends string,
+	$,
+	args,
+	definitionDepth extends "shallow" | "deep"
+> =
+	parseString<def, $, args> extends infer ast ?
+		validateAst<ast, $, args> extends infer result extends ErrorMessage ?
+			// completions have the same suffix as error messages as a sentinel
+			// but don't want to include that in what TS suggests
+			result extends Completion<infer text> ?
+				text
+			:	result
+		: [definitionDepth, ast] extends ["shallow", DeepOnlyTypeAst] ?
+			ErrorMessage<shallowDefaultableMessage>
+		:	// return the original definition when valid to allow it
+			def
+	:	never
+
+type DeepOnlyTypeAst = DefaultablePropertyTuple | OptionalPropertyTuple
 
 type validateInfix<ast extends InfixExpression, $, args> =
 	validateAst<ast[0], $, args> extends infer e extends ErrorMessage ? e
 	: validateAst<ast[2], $, args> extends infer e extends ErrorMessage ? e
 	: undefined
+
+export const shallowOptionalMessage =
+	"Optional definitions like 'string?' are only valid as properties in an object or tuple"
+
+export type shallowOptionalMessage = typeof shallowOptionalMessage
+
+export const shallowDefaultableMessage =
+	"Defaultable definitions like 'string = 5' are only valid as properties in an object or tuple"
+
+export type shallowDefaultableMessage = typeof shallowDefaultableMessage

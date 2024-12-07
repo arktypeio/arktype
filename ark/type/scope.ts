@@ -345,11 +345,12 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	validateDefinition<def[k], bootstrapAliases<def>, {}>
+					:	validateDefinition<def[k], bootstrapAliases<def>, {}, "shallow">
 				:	validateDefinition<
 						def[k],
 						bootstrapAliases<def>,
-						baseGenericConstraints<params>
+						baseGenericConstraints<params>,
+						"shallow"
 					>
 			:	// if we get here, the params failed to parse- return the error
 				params

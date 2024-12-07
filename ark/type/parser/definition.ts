@@ -81,11 +81,16 @@ export type inferDefinition<def, $, args> =
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
-export type validateDefinition<def, $, args> =
+export type validateDefinition<
+	def,
+	$,
+	args,
+	depth extends "shallow" | "deep" = "deep"
+> =
 	null extends undefined ?
 		ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
 	: [def] extends [Terminal] ? def
-	: def extends string ? validateString<def, $, args>
+	: def extends string ? validateString<def, $, args, depth>
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
 		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
