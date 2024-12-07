@@ -54,13 +54,15 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever | seen] ? t
 	: unknown extends t ? unknown
-	: t extends TerminallyInferredObject | Primitive ? t
-	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint, seen>
+	: // Function is excluded from TerminallyInferredObjectKind so that
+	// those types could be inferred before checking for morphs
+	t extends TerminallyInferredObject | Primitive ? t
+	: t extends Function ?
+		t extends InferredMorph<infer i, infer o> ?
+			distillIo<i, o, endpoint, seen>
+		:	t
 	: t extends Default<infer constraint> ? _distill<constraint, endpoint, seen>
 	: t extends array ? _distillArray<t, endpoint, seen | t>
-	: // we excluded this from TerminallyInferredObjectKind so that those types could be
-	// inferred before checking morphs/defaults, which extend Function
-	t extends Function ? t
 	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint, seen | t>
 	: t
 
