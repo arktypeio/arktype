@@ -193,7 +193,9 @@ type preparseNextElement<
 			head: head
 			tail: tail
 			inferred: inferDefinition<baseDef, $, args>
-			validated: validateDefinition<baseDef, $, args>
+			validated: OptionalPropertyDefinition<
+				validateDefinition<baseDef, $, args>
+			>
 			// if inferredHead is optional and the element is spread, this will be an error
 			// handled in nextValidatedSpreadElements
 			optional: true
@@ -214,7 +216,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 			{
 				unscanned: next["tail"]
 				inferred: nextInferred<s, next>
-				validated: nextValidated<s, next, $, args>
+				validated: nextValidated<s, next>
 				includesOptional: nextIncludesOptional<
 					s["includesOptional"],
 					next["optional"]
@@ -233,13 +235,11 @@ type nextInferred<s extends SequenceParseState, next extends PreparsedElement> =
 
 type nextValidated<
 	s extends SequenceParseState,
-	next extends PreparsedElement,
-	$,
-	args
+	next extends PreparsedElement
 > = [
 	...s["validated"],
 	...nextValidatedSpreadOperatorIfPresent<s, next>,
-	nextValidatedElement<s, next, $, args>
+	nextValidatedElement<s, next>
 ]
 
 type nextValidatedSpreadOperatorIfPresent<
