@@ -2,7 +2,6 @@ import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
-	Branded,
 	equals,
 	Hkt,
 	intersectArrays,
