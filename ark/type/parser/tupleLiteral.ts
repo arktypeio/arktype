@@ -235,42 +235,70 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 		parseNextElement<
 			{
 				unscanned: next["tail"]
-				inferred: next["spread"] extends true ?
-					[...s["inferred"], ...conform<next["inferred"], array>]
-				: next["optional"] extends true ? [...s["inferred"], next["inferred"]?]
-				: [...s["inferred"], next["inferred"]]
-				validated: [
-					...s["validated"],
-					...(next["spread"] extends true ?
-						[
-							next["inferred"] extends infer spreadOperand extends array ?
-								[number, number] extends (
-									[s["inferred"]["length"], spreadOperand["length"]]
-								) ?
-									ErrorMessage<multipleVariadicMessage>
-								:	"..."
-							:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
-						]
-					:	[]),
-					next["optional"] extends true ?
-						next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
-						: number extends s["inferred"]["length"] ?
-							ErrorMessage<optionalPostVariadicMessage>
-						:	validateDefinition<next["head"], $, args>
-					: [s["includesOptional"], next["spread"]] extends [true, false] ?
-						ErrorMessage<requiredPostOptionalMessage>
-					:	validateDefinition<next["head"], $, args>
-				]
-				includesOptional: s["includesOptional"] | next["optional"] extends (
-					false
-				) ?
-					false
-				:	true
+				inferred: nextInferred<s, next>
+				validated: nextValidated<s, next, $, args>
+				includesOptional: nextIncludesOptional<
+					s["includesOptional"],
+					next["optional"]
+				>
 			},
 			$,
 			args
 		>
 	:	s
+
+type nextInferred<s extends SequenceParseState, next extends PreparsedElement> =
+	next["spread"] extends true ?
+		[...s["inferred"], ...conform<next["inferred"], array>]
+	: next["optional"] extends true ? [...s["inferred"], next["inferred"]?]
+	: [...s["inferred"], next["inferred"]]
+
+type nextValidated<
+	s extends SequenceParseState,
+	next extends PreparsedElement,
+	$,
+	args
+> = [
+	...s["validated"],
+	...nextValidatedSpreadElements<s, next>,
+	nextValidatedElement<s, next, $, args>
+]
+
+type nextValidatedSpreadElements<
+	s extends SequenceParseState,
+	next extends PreparsedElement
+> =
+	next["spread"] extends true ?
+		[
+			next["inferred"] extends infer spreadOperand extends array ?
+				[number, number] extends (
+					[s["inferred"]["length"], spreadOperand["length"]]
+				) ?
+					ErrorMessage<multipleVariadicMessage>
+				:	"..."
+			:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
+		]
+	:	[]
+
+type nextValidatedElement<
+	s extends SequenceParseState,
+	next extends PreparsedElement,
+	$,
+	args
+> =
+	next["optional"] extends true ?
+		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
+		: number extends s["inferred"]["length"] ?
+			ErrorMessage<optionalPostVariadicMessage>
+		:	validateDefinition<next["head"], $, args>
+	: [s["includesOptional"], next["spread"]] extends [true, false] ?
+		ErrorMessage<requiredPostOptionalMessage>
+	:	validateDefinition<next["head"], $, args>
+
+type nextIncludesOptional<
+	includesOptional extends boolean,
+	nextIsOptional extends boolean
+> = includesOptional | nextIsOptional extends false ? false : true
 
 export const writeNonArraySpreadMessage = <operand extends string>(
 	operand: operand
