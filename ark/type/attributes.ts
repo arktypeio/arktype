@@ -188,25 +188,30 @@ export type withDefault<t, v> =
 type addDefaultToNonMorph<t, v> = t extends unknown ? Default<t, v> : never
 
 type addDefaultToMorph<t extends InferredMorph, v> =
-	allMorphInputsEqual<t> extends true ?
-		Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
-			(In: Default<i, v>) => o
-		:	never
-	: t extends InferredMorph<infer i, infer o> ? (In: Default<i, v>) => o
-	: never
+	[normalizeMorphDistribution<t>] extends [InferredMorph<infer i, infer o>] ?
+		(In: Default<i, v>) => o
+	:	never
 
 // will return `boolean` if some morphs are unequal
 // so should be compared against `true`
-type allMorphInputsEqual<
-	t extends InferredMorph,
-	undistributedInput = Parameters<t>[0],
-	undistributedOutput = ReturnType<t>
-> =
-	t extends InferredMorph<infer i, infer o> ?
-		[undistributedInput] extends [i] ? true
-		: [undistributedOutput] extends [o] ? true
-		: false
+type normalizeMorphDistribution<
+	t,
+	undistributedIn = t extends InferredMorph<infer i> ? i : never,
+	undistributedOut extends Out = [t] extends [InferredMorph<any, infer o>] ?
+		[o] extends [To<infer unwrappedOut>] ?
+			To<unwrappedOut>
+		:	o
 	:	never
+> =
+	// using Extract here rather than distributing normally helps TS collapse the union
+	// was otherwise getting duplicated branches, e.g.:
+	// (In: boolean) => To<boolean> | (In: boolean) => To<boolean>
+	// revert to `t extends InferredMorph...` if it doesn't break the tests in the future
+	Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
+		[undistributedOut] extends [o] ? (In: undistributedIn) => undistributedOut
+		: [undistributedIn] extends [i] ? (In: undistributedIn) => undistributedOut
+		: t
+	:	Exclude<t, InferredMorph>
 
 export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
@@ -218,7 +223,9 @@ export type termOrType<t> = t | Type<t, any>
 
 export type inferIntersection<l, r> = _inferIntersection<l, r, false>
 
-export type inferPipe<l, r> = _inferIntersection<l, r, true>
+export type inferPipe<l, r> = normalizeMorphDistribution<
+	_inferIntersection<l, r, true>
+>
 
 type _inferIntersection<l, r, piped extends boolean> =
 	[l & r] extends [infer t extends anyOrNever] ? t
