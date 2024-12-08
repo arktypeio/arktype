@@ -157,7 +157,7 @@ export type inferPredicate<t, predicate> =
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
-			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ? (In: distill.In<t>) => Out<out>
 			: never,
 			tail
@@ -211,7 +211,7 @@ type normalizeMorphDistribution<
 		[undistributedOut] extends [o] ? (In: undistributedIn) => undistributedOut
 		: [undistributedIn] extends [i] ? (In: undistributedIn) => undistributedOut
 		: t
-	:	Exclude<t, InferredMorph>
+	:	5 //Exclude<t, InferredMorph>
 
 export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
@@ -221,7 +221,9 @@ export type defaultFor<t = unknown> =
 
 export type termOrType<t> = t | Type<t, any>
 
-export type inferIntersection<l, r> = _inferIntersection<l, r, false>
+export type inferIntersection<l, r> = normalizeMorphDistribution<
+	_inferIntersection<l, r, false>
+>
 
 export type inferPipe<l, r> = normalizeMorphDistribution<
 	_inferIntersection<l, r, true>
