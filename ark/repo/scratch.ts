@@ -8,4 +8,5 @@ import { type } from "arktype"
 //     "instantiations": 7316952
 // }
 
+// false
 const t = type({ foo: "string" }).extends("Record<string, string>")

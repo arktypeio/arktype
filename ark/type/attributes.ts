@@ -179,9 +179,34 @@ declare const defaultsTo: unique symbol
 
 export type Default<t = unknown, v = unknown> = { [defaultsTo]: [t, v] }
 
+// we have to distribute over morphs to preserve the i/o relationship
+// this avoids stuff like:
+// Default<boolean, true> => Default<true, true> | Default<false, true>
 export type withDefault<t, v> =
-	t extends InferredMorph<infer i, infer o> ? (In: Default<i, v>) => o
-	:	Default<t, v>
+	t extends InferredMorph ? addDefaultToMorph<t, v> : addDefaultToNonMorph<t, v>
+
+type addDefaultToNonMorph<t, v> = t extends unknown ? Default<t, v> : never
+
+type addDefaultToMorph<t extends InferredMorph, v> =
+	allMorphInputsEqual<t> extends true ?
+		Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
+			(In: Default<i, v>) => o
+		:	never
+	: t extends InferredMorph<infer i, infer o> ? (In: Default<i, v>) => o
+	: never
+
+// will return `boolean` if some morphs are unequal
+// so should be compared against `true`
+type allMorphInputsEqual<
+	t extends InferredMorph,
+	undistributedInput = Parameters<t>[0],
+	undistributedOutput = ReturnType<t>
+> =
+	t extends InferredMorph<infer i, infer o> ?
+		[undistributedInput] extends [i] ? true
+		: [undistributedOutput] extends [o] ? true
+		: false
+	:	never
 
 export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
