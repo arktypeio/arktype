@@ -9,6 +9,7 @@ import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { invalidOptionalKeyKindMessage } from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
+import { shallowDefaultableMessage } from "../parser/ast/validate.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -196,6 +197,7 @@ contextualize(() => {
 			attest<{
 				bool_value: (In: Default<string, "off">) => Out<boolean>
 			}>(processForm.t)
+
 			attest<{
 				// key should still be distilled as optional even inside a morph
 				bool_value?: string
@@ -203,26 +205,6 @@ contextualize(() => {
 			attest<{
 				bool_value: boolean
 			}>(processForm.infer)
-
-			const out = processForm({})
-
-			attest(out).snap({ bool_value: false })
-
-			attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
-
-			attest(processForm({ bool_value: true }).toString()).snap(
-				"bool_value must be a string (was boolean)"
-			)
-		})
-
-		it("morphed from defaulted", () => {
-			const processForm = type({
-				bool_value: type("string='off'").pipe(v => (v === "on" ? true : false))
-			})
-
-			attest<{
-				bool_value: (In: Default<string, "off">) => Out<boolean>
-			}>(processForm.t)
 
 			const out = processForm({})
 
@@ -245,24 +227,27 @@ contextualize(() => {
 
 			const toggleRef = registeredReference(toggle)
 
-			const defaultablePipedBoolean = type("boolean = false").pipe(toggle)
-
-			attest(defaultablePipedBoolean.t).type.toString.snap(
-				"(In: of<boolean, Default<false>>) => Out<boolean>"
-			)
-			attest(defaultablePipedBoolean.json).snap({
-				in: [{ unit: false }, { unit: true }],
-				morphs: [toggleRef],
-				meta: { default: false }
-			})
-
 			const t = type({
-				blep: defaultablePipedBoolean
+				blep: type("boolean").pipe(toggle).default(false)
 			})
 
 			attest(t.t).type.toString.snap(`{
 	blep: (In: of<boolean, Default<false>>) => Out<boolean>
 }`)
+
+			attest(t.json).snap({
+				optional: [
+					{
+						default: false,
+						key: "a",
+						value: {
+							in: [{ unit: false }, { unit: true }],
+							morphs: [toggleRef]
+						}
+					}
+				],
+				domain: "object"
+			})
 
 			const out = t({})
 
@@ -283,16 +268,12 @@ contextualize(() => {
 
 			const toggleRef = registeredReference(toggle)
 
-			const z = type("boolean").pipe(toggle).to("boolean")
-
 			const t = type({
 				blep: type("boolean").pipe(toggle).to("boolean")
 			})
 
 			attest(t.t).type.toString.snap(`{
-	blep:
-		| ((In: of<boolean, Default<false>>) => To<false>)
-		| ((In: of<boolean, Default<false>>) => To<true>)
+    blep: (In: boolean) => To<boolean>;
 }`)
 
 			attest(t.json).snap({
@@ -301,10 +282,7 @@ contextualize(() => {
 						default: "",
 						key: "a",
 						value: {
-							in: {
-								branches: [{ unit: false }, { unit: true }],
-								meta: { default: false }
-							},
+							in: [{ unit: false }, { unit: true }],
 							morphs: [toggleRef, [{ unit: false }, { unit: true }]]
 						}
 					}
@@ -483,10 +461,15 @@ contextualize(() => {
 		})
 
 		it("shallow default", () => {
-			const t = type("string='foo'")
-			const expected = type("string").default("foo")
-			attest<typeof expected.t>(t.t)
-			attest(t.json).equals(expected.json)
+			// @ts-expect-error
+			attest(() => type("string='foo'")).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
+
+			// @ts-expect-error
+			attest(() => type(["string", "=", "foo"])).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
 		})
 
 		it("extracts output as required", () => {
@@ -640,9 +623,7 @@ contextualize(() => {
 				foo3: ["string.numeric.parse", "=", () => "123"],
 				bar1: [numtos, "=", 123],
 				bar2: [numtos, "=", () => 123],
-				baz1: type(numtos, "=", 123),
-				baz2: type(numtos, "=", () => 123),
-				baz3: type(numtos).default(123)
+				baz1: type(numtos).default(123)
 			})
 			attest(f.assert({})).snap({
 				foo1: 123,
@@ -650,9 +631,7 @@ contextualize(() => {
 				foo3: 123,
 				bar1: "123",
 				bar2: "123",
-				baz1: "123",
-				baz2: "123",
-				baz3: "123"
+				baz1: "123"
 			})
 		})
 	})
