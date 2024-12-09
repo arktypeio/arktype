@@ -17,8 +17,8 @@ import type {
 } from "@ark/util"
 import type { Generic } from "../../generic.ts"
 import type {
-	DefaultablePropertyTuple,
-	OptionalPropertyTuple
+	DefaultablePropertyDefinition,
+	OptionalPropertyDefinition
 } from "../property.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
@@ -130,13 +130,15 @@ export type validateString<
 			result extends Completion<infer text> ?
 				text
 			:	result
-		: [definitionDepth, ast] extends ["shallow", DeepOnlyTypeAst] ?
-			ErrorMessage<shallowDefaultableMessage>
-		:	// return the original definition when valid to allow it
-			def
+		: definitionDepth extends "shallow" ?
+			ast extends DefaultablePropertyDefinition ?
+				ErrorMessage<shallowDefaultableMessage>
+			: ast extends OptionalPropertyDefinition ?
+				ErrorMessage<shallowOptionalMessage>
+			:	// return the original definition when valid to allow it
+				def
+		:	def
 	:	never
-
-type DeepOnlyTypeAst = DefaultablePropertyTuple | OptionalPropertyTuple
 
 type validateInfix<ast extends InfixExpression, $, args> =
 	validateAst<ast[0], $, args> extends infer e extends ErrorMessage ? e
@@ -149,6 +151,6 @@ export const shallowOptionalMessage =
 export type shallowOptionalMessage = typeof shallowOptionalMessage
 
 export const shallowDefaultableMessage =
-	"Defaultable definitions like 'string = 5' are only valid as properties in an object or tuple"
+	"Defaultable definitions like 'number = 0' are only valid as properties in an object or tuple"
 
 export type shallowDefaultableMessage = typeof shallowDefaultableMessage
