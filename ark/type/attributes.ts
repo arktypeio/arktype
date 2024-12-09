@@ -207,11 +207,14 @@ type normalizeMorphDistribution<
 	// was otherwise getting duplicated branches, e.g.:
 	// (In: boolean) => To<boolean> | (In: boolean) => To<boolean>
 	// revert to `t extends InferredMorph...` if it doesn't break the tests in the future
-	Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
-		[undistributedOut] extends [o] ? (In: undistributedIn) => undistributedOut
-		: [undistributedIn] extends [i] ? (In: undistributedIn) => undistributedOut
-		: t
-	:	5 //Exclude<t, InferredMorph>
+	| (Extract<t, InferredMorph> extends anyOrNever ? never
+	  : Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
+			[undistributedOut] extends [o] ? (In: undistributedIn) => undistributedOut
+			: [undistributedIn] extends [i] ?
+				(In: undistributedIn) => undistributedOut
+			:	t
+	  :	never)
+	| Exclude<t, InferredMorph>
 
 export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
