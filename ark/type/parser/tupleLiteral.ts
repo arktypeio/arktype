@@ -16,7 +16,7 @@ import {
 	type ErrorMessage
 } from "@ark/util"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import type { OptionalPropertyDefinition } from "./property.ts"
+import { parseProperty, type OptionalPropertyDefinition } from "./property.ts"
 
 export const parseTupleLiteral = (
 	def: array,
@@ -31,32 +31,32 @@ export const parseTupleLiteral = (
 			i++
 		}
 
-		const element = ctx.$.parseOwnDefinitionFormat(def[i], ctx)
+		const { valueNode, kind } = parseProperty(def[i], ctx)
 
 		i++
 		if (spread) {
-			if (!element.extends($ark.intrinsic.Array))
-				return throwParseError(writeNonArraySpreadMessage(element.expression))
+			if (!valueNode.extends($ark.intrinsic.Array))
+				return throwParseError(writeNonArraySpreadMessage(valueNode.expression))
 
 			// a spread must be distributed over branches e.g.:
 			// def: [string, ...(number[] | [true, false])]
 			// nodes: [string, ...number[]] | [string, true, false]
 			sequences = sequences.flatMap(base =>
 				// since appendElement mutates base, we have to shallow-ish clone it for each branch
-				element.distribute(branch =>
+				valueNode.distribute(branch =>
 					appendSpreadBranch(makeRootAndArrayPropertiesMutable(base), branch)
 				)
 			)
 		} else {
 			sequences = sequences.map(base =>
-				appendElement(
-					base,
-					element.meta.optional ? "optional" : "required",
-					element
-				)
+				kind === "optional" ? appendOptionalElement(base, valueNode)
+				: kind === "defaultable" ?
+					appendDefaultableElement(base, valueNode, def[i])
+				:	appendRequiredElement(base, valueNode)
 			)
 		}
 	}
+
 	return ctx.$.parseSchema(
 		sequences.map(sequence =>
 			isEmptyObject(sequence) ?
@@ -82,49 +82,58 @@ export type inferTupleLiteral<def extends array, $, args> =
 		s["inferred"]
 	:	never
 
-type ElementKind = "optional" | "required" | "variadic"
-
-const appendElement = (
+const appendRequiredElement = (
 	base: mutableInnerOfKind<"sequence">,
-	kind: ElementKind,
 	element: BaseRoot
 ): mutableInnerOfKind<"sequence"> => {
-	switch (kind) {
-		case "required":
-			if (base.optionals)
-				// e.g. [string?, number]
-				return throwParseError(requiredPostOptionalMessage)
-			if (base.variadic) {
-				// e.g. [...string[], number]
-				base.postfix = append(base.postfix, element)
-			} else {
-				// e.g. [string, number]
-				base.prefix = append(base.prefix, element)
-			}
-			return base
-		case "optional":
-			if (base.variadic)
-				// e.g. [...string[], number?]
-				return throwParseError(optionalPostVariadicMessage)
-			// e.g. [string, number?]
-			base.optionals = append(base.optionals, element)
-			return base
-		case "variadic":
-			// e.g. [...string[], number, ...string[]]
-			if (base.postfix) throwParseError(multipleVariadicMesage)
-			if (base.variadic) {
-				if (!base.variadic.equals(element)) {
-					// e.g. [...string[], ...number[]]
-					throwParseError(multipleVariadicMesage)
-				}
-				// e.g. [...string[], ...string[]]
-				// do nothing, second spread doesn't change the type
-			} else {
-				// e.g. [string, ...number[]]
-				base.variadic = element.internal
-			}
-			return base
+	if (base.optionals)
+		// e.g. [string?, number]
+		return throwParseError(requiredPostOptionalMessage)
+	if (base.variadic) {
+		// e.g. [...string[], number]
+		base.postfix = append(base.postfix, element)
+	} else {
+		// e.g. [string, number]
+		base.prefix = append(base.prefix, element)
 	}
+	return base
+}
+
+const appendOptionalElement = (
+	base: mutableInnerOfKind<"sequence">,
+	element: BaseRoot
+): mutableInnerOfKind<"sequence"> => {
+	if (base.optionals)
+		// e.g. [string?, number]
+		return throwParseError(requiredPostOptionalMessage)
+	if (base.variadic) {
+		// e.g. [...string[], number]
+		base.postfix = append(base.postfix, element)
+	} else {
+		// e.g. [string, number]
+		base.prefix = append(base.prefix, element)
+	}
+	return base
+}
+
+const appendVariadicElement = (
+	base: mutableInnerOfKind<"sequence">,
+	element: BaseRoot
+): mutableInnerOfKind<"sequence"> => {
+	// e.g. [...string[], number, ...string[]]
+	if (base.postfix) throwParseError(multipleVariadicMesage)
+	if (base.variadic) {
+		if (!base.variadic.equals(element)) {
+			// e.g. [...string[], ...number[]]
+			throwParseError(multipleVariadicMesage)
+		}
+		// e.g. [...string[], ...string[]]
+		// do nothing, second spread doesn't change the type
+	} else {
+		// e.g. [string, ...number[]]
+		base.variadic = element.internal
+	}
+	return base
 }
 
 const appendSpreadBranch = (
@@ -134,12 +143,14 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", $ark.intrinsic.unknown)
+		return appendVariadicElement(base, $ark.intrinsic.unknown)
 	}
-	spread.prefix?.forEach(node => appendElement(base, "required", node))
-	spread.optionals?.forEach(node => appendElement(base, "optional", node))
-	if (spread.variadic) appendElement(base, "variadic", spread.variadic)
-	spread.postfix?.forEach(node => appendElement(base, "required", node))
+
+	spread.prefix?.forEach(node => appendRequiredElement(base, node))
+	spread.optionals?.forEach(node => appendOptionalElement(base, node))
+	if (spread.variadic) appendVariadicElement(base, spread.variadic)
+	spread.postfix?.forEach(node => appendRequiredElement(base, node))
+
 	return base
 }
 

@@ -4,17 +4,11 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
-	unset,
 	type Fn,
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type {
-	NodeSchema,
-	mutableNormalizedRootOfKind,
-	nodeOfKind,
-	reducibleKindOf
-} from "../kinds.ts"
+import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
@@ -102,43 +96,6 @@ export abstract class BaseRoot<
 				return { value: out }
 			}
 		}
-	}
-
-	get optionalMeta(): boolean {
-		return this.cacheGetter(
-			"optionalMeta",
-			this.meta.optional === true ||
-				(this.hasKind("morph") && this.in.meta.optional === true)
-		)
-	}
-
-	/** returns unset if there is no default */
-	get defaultMeta(): unknown {
-		return this.cacheGetter(
-			"defaultMeta",
-			"default" in this.meta ? this.meta.default
-			: this.hasKind("morph") ? this.in.defaultMeta
-			: unset
-		)
-	}
-
-	withoutOptionalOrDefaultMeta(): this {
-		if (!this.optionalMeta && this.defaultMeta === unset) return this
-		const meta = { ...this.meta }
-		delete meta.default
-		delete meta.optional
-
-		if (
-			!this.hasKind("morph") ||
-			(!this.in.optionalMeta && this.in.defaultMeta === unset)
-		)
-			return this.withMeta(meta)
-
-		return this.$.node("morph", {
-			...this.inner,
-			in: this.in.withoutOptionalOrDefaultMeta(),
-			meta
-		}) as never
 	}
 
 	as(): this {
@@ -378,22 +335,12 @@ export abstract class BaseRoot<
 		return [this, "?"]
 	}
 
-	withOptionalMeta(): this {
-		return this.withMeta({ optional: true })
-	}
-
 	// these should ideally be implemented in arktype since they use its syntax
 	// https://github.com/arktypeio/arktype/issues/1223
 	default(thunkableValue: unknown): [this, "=", unknown] {
 		assertDefaultValueAssignability(this, thunkableValue)
 
 		return [this, "=", thunkableValue]
-	}
-
-	withDefaultMeta(thunkableValue: unknown): this {
-		assertDefaultValueAssignability(this, thunkableValue)
-
-		return this.withMeta({ default: thunkableValue })
 	}
 
 	from(input: unknown): unknown {
@@ -456,15 +403,7 @@ export abstract class BaseRoot<
 						in: branch,
 						morphs: [morph]
 					}),
-			branches => {
-				if (!this.hasKind("union")) return this.$.parseSchema(branches[0])
-				const schema: mutableNormalizedRootOfKind<"union"> = {
-					branches
-				}
-				if ("default" in this.meta) schema.meta = { default: this.meta.default }
-				else if (this.meta.optional) schema.meta = { optional: true }
-				return this.$.parseSchema(schema)
-			}
+			this.$.parseSchema
 		)
 	}
 

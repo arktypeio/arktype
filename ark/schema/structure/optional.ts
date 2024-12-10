@@ -4,7 +4,6 @@ import {
 	omit,
 	printable,
 	throwParseError,
-	unset,
 	type keySetOf
 } from "@ark/util"
 import type { Morph } from "../roots/morph.ts"
@@ -54,13 +53,7 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 				preserveUndefined: true
 			}
 		},
-		// safe to spread here as a node will never be passed to normalize
-		normalize: ({ ...schema }, $) => {
-			const value = $.parseSchema(schema.value)
-			schema.value = value
-			if (value.defaultMeta !== unset) schema.default ??= value.defaultMeta
-			return schema
-		},
+		normalize: schema => schema,
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		},

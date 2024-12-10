@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { writeInvalidUndeclaredBehaviorMessage } from "../../parser/objectLiteral.ts"
+import { writeInvalidUndeclaredBehaviorMessage } from "arktype/internal/parser/objectLiteral.ts"
 
 contextualize(() => {
 	it("can parse an undeclared restriction", () => {

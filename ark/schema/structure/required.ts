@@ -1,4 +1,3 @@
-import { unset } from "@ark/util"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { ArkErrorContextInput } from "../shared/errors.ts"
 import {
@@ -7,7 +6,6 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { BaseProp, intersectProps, type Prop } from "./prop.ts"
-
 export declare namespace Required {
 	export interface ErrorContext extends BaseErrorContext<"required"> {
 		missingValueDescription: string
@@ -23,7 +21,6 @@ export declare namespace Required {
 			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
-			reducibleTo: "optional"
 		}
 	>
 
@@ -43,15 +40,6 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			}
 		},
 		normalize: schema => schema,
-		reduce: (inner, $) => {
-			if (inner.value.defaultMeta !== unset) {
-				return $.node("optional", {
-					...inner,
-					default: inner.value.defaultMeta
-				})
-			}
-			if (inner.value.optionalMeta) return $.node("optional", inner)
-		},
 		defaults: {
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,

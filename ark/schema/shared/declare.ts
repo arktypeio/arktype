@@ -10,7 +10,6 @@ type withMetaPrefixedKeys<o> = {
 
 export interface BaseMeta extends JsonSchema.Meta {
 	alias?: string
-	optional?: true
 }
 
 declare global {

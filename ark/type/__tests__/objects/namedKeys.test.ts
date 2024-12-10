@@ -46,7 +46,7 @@ contextualize(() => {
 			optional: [
 				{
 					key: "a",
-					value: { domain: "string", meta: { optional: true } }
+					value: "string"
 				}
 			],
 			domain: "object"
@@ -67,7 +67,7 @@ contextualize(() => {
 			optional: [
 				{
 					key: ref,
-					value: { domain: "string", meta: { optional: true } }
+					value: "string"
 				}
 			],
 			domain: "object"
@@ -87,8 +87,7 @@ contextualize(() => {
 					key: ref,
 					value: {
 						required: [{ key: "foo", value: "string" }],
-						domain: "object",
-						meta: { optional: true }
+						domain: "object"
 					}
 				}
 			],
@@ -202,7 +201,7 @@ contextualize(() => {
 			optional: [
 				{
 					key: keyReference,
-					value: { domain: "number", meta: { optional: true } }
+					value: "number"
 				}
 			],
 			domain: "object"
