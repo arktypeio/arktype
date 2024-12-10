@@ -59,8 +59,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		def: validateDefinition<
 			def,
 			$,
-			baseGenericConstraints<parseValidGenericParams<params, $>>,
-			null
+			baseGenericConstraints<parseValidGenericParams<params, $>>
 		>
 	): Generic<parseValidGenericParams<params, $>, def, $>
 

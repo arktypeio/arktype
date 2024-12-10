@@ -16,7 +16,6 @@ import {
 	type conform,
 	type Constructor,
 	type Domain,
-	type ErrorMessage,
 	type show
 } from "@ark/util"
 import type {
@@ -34,15 +33,7 @@ import {
 	shallowDefaultableMessage,
 	shallowOptionalMessage
 } from "./ast/validate.ts"
-import type {
-	inferDefinition,
-	KeyParseContext,
-	validateDefinition
-} from "./definition.ts"
-import type {
-	invalidDefaultableKeyKindMessage,
-	invalidOptionalKeyKindMessage
-} from "./property.ts"
+import type { inferDefinition, validateDefinition } from "./definition.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { ArkTypeScanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
@@ -55,16 +46,9 @@ export const maybeParseTupleExpression = (
 	: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
 	: null
 
-export type maybeValidateTupleExpression<
-	def extends array,
-	$,
-	args,
-	keyCtx extends KeyParseContext
-> =
-	def extends IndexZeroExpression ?
-		validatePrefixExpression<def, $, args, keyCtx>
-	: def extends IndexOneExpression ?
-		validateIndexOneExpression<def, $, args, keyCtx>
+export type maybeValidateTupleExpression<def extends array, $, args> =
+	def extends IndexZeroExpression ? validatePrefixExpression<def, $, args>
+	: def extends IndexOneExpression ? validateIndexOneExpression<def, $, args>
 	: def extends (
 		readonly ["", ...unknown[]] | readonly [unknown, "", ...unknown[]]
 	) ?
@@ -100,15 +84,10 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[0] extends "keyof" ? inferKeyOfExpression<def[1], $, args>
 	: never
 
-export type validatePrefixExpression<
-	def extends IndexZeroExpression,
-	$,
-	args,
-	keyCtx extends KeyParseContext
-> =
+export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
 	def["length"] extends 1 ? readonly [writeMissingRightOperandMessage<def[0]>]
 	: def[0] extends "keyof" ?
-		readonly [def[0], validateDefinition<def[1], $, args, keyCtx>]
+		readonly [def[0], validateDefinition<def[1], $, args>]
 	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof" ? readonly [def[0], ...Constructor[]]
 	: never
@@ -116,47 +95,32 @@ export type validatePrefixExpression<
 export type validatePostfixExpression<
 	def extends PostfixExpression,
 	$,
-	args,
-	keyCtx extends KeyParseContext
+	args
 	// conform here is needed to preserve completions for shallow tuple
 	// expressions at index 1 after TS 5.1
-> = conform<def, readonly [validateDefinition<def[0], $, args, keyCtx>, "[]"]>
+> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
 export type validateIndexOneExpression<
 	def extends IndexOneExpression,
 	$,
-	args,
-	keyCtx extends KeyParseContext
+	args
 > =
 	def[1] extends TuplePostfixOperator ?
 		readonly [
-			validateDefinition<def[0], $, args, keyCtx>,
-			def[1] extends "?" ?
-				keyCtx extends "required" ?
-					"?"
-				:	ErrorMessage<
-						keyCtx extends null ? shallowOptionalMessage
-						:	invalidOptionalKeyKindMessage
-					>
-			:	"[]"
+			validateDefinition<def[0], $, args>,
+			def[1] extends "?" ? "?" : "[]"
 		]
 	:	readonly [
-			validateDefinition<def[0], $, args, keyCtx>,
+			validateDefinition<def[0], $, args>,
 			def["length"] extends 2 ? writeMissingRightOperandMessage<def[1]>
 			:	def[1],
-			def[1] extends "|" ? validateDefinition<def[2], $, args, keyCtx>
-			: def[1] extends "&" ? validateDefinition<def[2], $, args, keyCtx>
+			def[1] extends "|" ? validateDefinition<def[2], $, args>
+			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
-			: def[1] extends "=" ?
-				keyCtx extends "required" ?
-					defaultFor<type.infer.In<def[0], $, args>>
-				:	ErrorMessage<
-						keyCtx extends null ? shallowDefaultableMessage
-						:	invalidDefaultableKeyKindMessage
-					>
+			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: validateDefinition<def[2], $, args, keyCtx>
+			: validateDefinition<def[2], $, args>
 		]
 
 export type UnparsedTupleExpressionInput = {

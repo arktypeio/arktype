@@ -414,7 +414,7 @@ export type GenericParser<$ = {}> = <
 
 interface GenericBodyParser<params extends array<GenericParamAst>, $> {
 	<const body>(
-		body: validateDefinition<body, $, baseGenericConstraints<params>, null>
+		body: validateDefinition<body, $, baseGenericConstraints<params>>
 	): Generic<params, body, $, $>
 
 	<hkt extends Hkt.constructor>(

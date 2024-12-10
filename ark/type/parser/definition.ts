@@ -23,7 +23,6 @@ import type { validateString } from "./ast/validate.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
-	type ParsedKeyKind,
 	type validateObjectLiteral
 } from "./objectLiteral.ts"
 import type { BaseCompletions, inferString } from "./string.ts"
@@ -82,12 +81,12 @@ export type inferDefinition<def, $, args> =
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
-export type validateDefinition<def, $, args, keyCtx extends KeyParseContext> =
+export type validateDefinition<def, $, args> =
 	null extends undefined ?
 		ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
 	: [def] extends [Terminal] ? def
-	: def extends string ? validateString<def, $, args, keyCtx>
-	: def extends array ? validateTuple<def, $, args, keyCtx>
+	: def extends string ? validateString<def, $, args>
+	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
 		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
 	: unknown extends def ?
@@ -97,18 +96,11 @@ export type validateDefinition<def, $, args, keyCtx extends KeyParseContext> =
 	: RegExp extends def ? def
 	: validateObjectLiteral<def, $, args>
 
-export type KeyParseContext = ParsedKeyKind | null
-
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export type validateTuple<
-	def extends array,
-	$,
-	args,
-	keyCtx extends KeyParseContext
-> =
-	maybeValidateTupleExpression<def, $, args, keyCtx> extends infer result ?
+export type validateTuple<def extends array, $, args> =
+	maybeValidateTupleExpression<def, $, args> extends infer result ?
 		result extends null ?
 			validateTupleLiteral<def, $, args>
 		:	result
@@ -119,9 +111,9 @@ export type inferTuple<def extends array, $, args> =
 	:	inferTupleLiteral<def, $, args>
 
 export type validateDeclared<declared, def, $, args> =
-	def extends validateDefinition<def, $, args, null> ?
+	def extends validateDefinition<def, $, args> ?
 		validateInference<def, declared, $, args>
-	:	validateDefinition<def, $, args, null>
+	:	validateDefinition<def, $, args>
 
 type validateInference<def, declared, $, args> =
 	def extends RegExp | type.cast<unknown> | ThunkCast | TupleExpression ?

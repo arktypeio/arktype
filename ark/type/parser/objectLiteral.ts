@@ -155,7 +155,7 @@ export type validateObjectLiteral<def, $, args> = {
 		infer parsedKey extends PreparsedKey
 	) ?
 		parsedKey extends PreparsedEntryKey<"index"> ?
-			validateString<parsedKey["normalized"], $, args, null> extends (
+			validateString<parsedKey["normalized"], $, args> extends (
 				ErrorMessage<infer message>
 			) ?
 				// add a nominal type here to avoid allowing the error message as input

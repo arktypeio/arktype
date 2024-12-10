@@ -15,13 +15,7 @@ import type {
 	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
-import type { Default } from "../../attributes.ts"
 import type { Generic } from "../../generic.ts"
-import type { KeyParseContext } from "../definition.ts"
-import type {
-	invalidDefaultableKeyKindMessage,
-	invalidOptionalKeyKindMessage
-} from "../property.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
@@ -35,28 +29,10 @@ import type {
 	inferAstRoot,
 	InferredAst,
 	InfixExpression,
-	Optional,
 	PostfixExpression
 } from "./infer.ts"
 import type { validateKeyof } from "./keyof.ts"
 import type { astToString } from "./utils.ts"
-
-export type validateAstRoot<ast, $, args, keyCtx extends KeyParseContext> =
-	ast extends [infer operand, "?"] ?
-		keyCtx extends "required" ?
-			validateAst<operand, $, args>
-		:	ErrorMessage<
-				keyCtx extends null ? shallowOptionalMessage
-				:	invalidOptionalKeyKindMessage
-			>
-	: ast extends [infer operand, "=", infer defaultValue] ?
-		keyCtx extends "required" ?
-			validateDefault<operand, defaultValue & UnitLiteral, $, args>
-		:	ErrorMessage<
-				keyCtx extends null ? shallowDefaultableMessage
-				:	invalidDefaultableKeyKindMessage
-			>
-	:	validateAst<ast, $, args>
 
 export type validateAst<ast, $, args> =
 	ast extends ErrorMessage ? ast
@@ -135,26 +111,14 @@ type validateInferredAst<inferred, def extends string> =
 	: def extends ErrorMessage ? def
 	: undefined
 
-export type validateString<
-	def extends string,
-	$,
-	args,
-	keyCtx extends KeyParseContext
-> =
+export type validateString<def extends string, $, args> =
 	parseString<def, $, args> extends infer ast ?
-		validateAstRoot<ast, $, args, keyCtx> extends (
-			infer result extends ErrorMessage
-		) ?
+		validateAst<ast, $, args> extends infer result extends ErrorMessage ?
 			// completions have the same suffix as error messages as a sentinel
 			// but don't want to include that in what TS suggests
 			result extends Completion<infer text> ?
 				text
 			:	result
-		: keyCtx extends null ?
-			ast extends Default ? ErrorMessage<shallowDefaultableMessage>
-			: ast extends Optional ? ErrorMessage<shallowOptionalMessage>
-			: // return the original definition when valid to allow it
-				def
 		:	def
 	:	never
 
