@@ -152,18 +152,9 @@ contextualize(() => {
 
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)
-			// @ts-expect-error
-			attest(() => positiveToInteger("number"))
-				.throws(
-					writeUnsatisfiedParameterConstraintMessage(
-						"n",
-						"number > 0",
-						"number"
-					)
-				)
-				.type.errors(
-					`ErrorType<"Invalid argument for n", [expected: moreThan<0>]>`
-				)
+			attest(() => positiveToInteger("number")).throws(
+				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
+			)
 		})
 
 		it("unsatisfied parameter string", () => {

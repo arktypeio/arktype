@@ -263,7 +263,7 @@ describe("Arbitrary Generation", () => {
 		})
 		it("multiple index signatures", () => {
 			const t = type({
-				"[string?]": "number|string",
+				"[string]": "number|string",
 				"[symbol]": "string"
 			})
 			const arbitrary = arkToArbitrary(t)
