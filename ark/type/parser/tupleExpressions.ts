@@ -31,12 +31,16 @@ import type {
 import type { type } from "../keywords/keywords.ts"
 import type { Optional, PostfixExpression } from "./ast/infer.ts"
 import type {
+	shallowDefaultableMessage,
+	shallowOptionalMessage
+} from "./ast/validate.ts"
+import type {
 	inferDefinition,
 	KeyParseContext,
 	validateDefinition
 } from "./definition.ts"
 import type {
-	invalidDefaultKeyKindMessage,
+	invalidDefaultableKeyKindMessage,
 	invalidOptionalKeyKindMessage
 } from "./property.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
@@ -128,9 +132,12 @@ export type validateIndexOneExpression<
 		readonly [
 			validateDefinition<def[0], $, args, keyCtx>,
 			def[1] extends "?" ?
-				"required" extends "required" ?
+				keyCtx extends "required" ?
 					"?"
-				:	ErrorMessage<invalidOptionalKeyKindMessage>
+				:	ErrorMessage<
+						keyCtx extends null ? shallowOptionalMessage
+						:	invalidOptionalKeyKindMessage
+					>
 			:	"[]"
 		]
 	:	readonly [
@@ -142,9 +149,12 @@ export type validateIndexOneExpression<
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=" ?
-				"required" extends "required" ?
+				keyCtx extends "required" ?
 					defaultFor<type.infer.In<def[0], $, args>>
-				:	ErrorMessage<invalidDefaultKeyKindMessage>
+				:	ErrorMessage<
+						keyCtx extends null ? shallowDefaultableMessage
+						:	invalidDefaultableKeyKindMessage
+					>
 			: def[1] extends "@" ? MetaSchema
 			: validateDefinition<def[2], $, args, keyCtx>
 		]

@@ -101,6 +101,7 @@ export const invalidOptionalKeyKindMessage = `Only required keys may make their 
 export type invalidOptionalKeyKindMessage = typeof invalidOptionalKeyKindMessage
 
 // single quote use here is better for TypeScript's inlined error to avoid escapes
-export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
+export const invalidDefaultableKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
 
-export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
+export type invalidDefaultableKeyKindMessage =
+	typeof invalidDefaultableKeyKindMessage

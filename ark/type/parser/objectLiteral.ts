@@ -26,7 +26,7 @@ import {
 import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition } from "./definition.ts"
 import {
-	invalidDefaultKeyKindMessage,
+	invalidDefaultableKeyKindMessage,
 	invalidOptionalKeyKindMessage,
 	parseProperty,
 	type OptionalPropertyDefinition,
@@ -86,7 +86,7 @@ export const parseObjectLiteral = (
 			)
 		} else if (parsedValue.kind === "defaultable") {
 			if (parsedKey.kind !== "required")
-				throwParseError(invalidDefaultKeyKindMessage)
+				throwParseError(invalidDefaultableKeyKindMessage)
 
 			structure.optional = append(
 				structure.optional,

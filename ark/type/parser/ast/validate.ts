@@ -18,6 +18,10 @@ import type {
 import type { Default } from "../../attributes.ts"
 import type { Generic } from "../../generic.ts"
 import type { KeyParseContext } from "../definition.ts"
+import type {
+	invalidDefaultableKeyKindMessage,
+	invalidOptionalKeyKindMessage
+} from "../property.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
@@ -37,6 +41,23 @@ import type {
 import type { validateKeyof } from "./keyof.ts"
 import type { astToString } from "./utils.ts"
 
+export type validateAstRoot<ast, $, args, keyCtx extends KeyParseContext> =
+	ast extends [infer operand, "?"] ?
+		keyCtx extends "required" ?
+			validateAst<operand, $, args>
+		:	ErrorMessage<
+				keyCtx extends null ? shallowOptionalMessage
+				:	invalidOptionalKeyKindMessage
+			>
+	: ast extends [infer operand, "=", infer defaultValue] ?
+		keyCtx extends "required" ?
+			validateDefault<operand, defaultValue & UnitLiteral, $, args>
+		:	ErrorMessage<
+				keyCtx extends null ? shallowDefaultableMessage
+				:	invalidDefaultableKeyKindMessage
+			>
+	:	validateAst<ast, $, args>
+
 export type validateAst<ast, $, args> =
 	ast extends ErrorMessage ? ast
 	: ast extends InferredAst ? validateInferredAst<ast[0], ast[2]>
@@ -44,10 +65,8 @@ export type validateAst<ast, $, args> =
 		ast[2] extends PrivateDeclaration<infer name> ?
 			ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 		:	undefined
-	: ast extends PostfixExpression<infer operator, infer operand> ?
-		operator extends "[]" ? validateAst<operand, $, args>
-		: operator extends "?" ? validateAst<operand, $, args>
-		: never
+	: ast extends PostfixExpression<"[]", infer operand> ?
+		validateAst<operand, $, args>
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
 		operator extends "&" | "|" ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
@@ -123,7 +142,9 @@ export type validateString<
 	keyCtx extends KeyParseContext
 > =
 	parseString<def, $, args> extends infer ast ?
-		validateAst<ast, $, args> extends infer result extends ErrorMessage ?
+		validateAstRoot<ast, $, args, keyCtx> extends (
+			infer result extends ErrorMessage
+		) ?
 			// completions have the same suffix as error messages as a sentinel
 			// but don't want to include that in what TS suggests
 			result extends Completion<infer text> ?
