@@ -6,13 +6,9 @@ import type {
 import {
 	isArray,
 	type anyOrNever,
-	type conform,
-	type ErrorMessage,
 	type ErrorType,
 	type typeToString
 } from "@ark/util"
-import type { defaultFor } from "../attributes.ts"
-import type { type } from "../keywords/keywords.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type {
 	ParsedKeyKind,
@@ -81,10 +77,6 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 		 * ```
 		 */
 		def
-	: def extends DefaultablePropertyTuple ?
-		validateDefaultablePropertyTuple<def, keyKind, $, args>
-	: def extends OptionalPropertyTuple ?
-		validateOptionalPropertyTuple<def, keyKind, $, args>
 	: keyKind extends "spread" ?
 		validateSpread<def, inferDefinition<def, $, args>, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
@@ -94,42 +86,12 @@ type validateSpread<def, inferredProperty, $, args> =
 	inferredProperty extends object ? validateDefinition<def, $, args>
 	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredProperty>>>
 
-type validateDefaultablePropertyTuple<
-	def extends DefaultablePropertyTuple,
-	keyKind extends ParsedKeyKind,
-	$,
-	args
-> =
-	keyKind extends "required" ?
-		readonly [
-			validateDefinition<def[0], $, args>,
-			"=",
-			defaultFor<type.infer.In<def[0], $, args>>
-		]
-	:	ErrorMessage<invalidDefaultKeyKindMessage>
-
-type validateOptionalPropertyTuple<
-	def extends OptionalPropertyTuple,
-	keyKind extends ParsedKeyKind,
-	$,
-	args
-> =
-	keyKind extends "required" ?
-		conform<def, readonly [validateDefinition<def[0], $, args>, "?"]>
-	:	ErrorMessage<invalidOptionalKeyKindMessage>
-
-export type DefaultablePropertyDefinition<
-	baseDef = unknown,
-	thunkableProperty = unknown
-> = DefaultablePropertyTuple<baseDef, thunkableProperty>
-
-export type DefaultablePropertyTuple<
-	baseDef = unknown,
-	thunkableProperty = unknown
-> = readonly [baseDef, "=", thunkableProperty]
-
 export type OptionalPropertyDefinition<baseDef = unknown> =
-	OptionalPropertyTuple<baseDef>
+	| OptionalPropertyTuple<baseDef>
+	| OptionalPropertyString<baseDef & string>
+
+export type OptionalPropertyString<baseDef extends string = string> =
+	`${baseDef}?`
 
 export type OptionalPropertyTuple<baseDef = unknown> = readonly [baseDef, "?"]
 

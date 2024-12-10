@@ -15,11 +15,8 @@ import type {
 	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
+import type { Default } from "../../attributes.ts"
 import type { Generic } from "../../generic.ts"
-import type {
-	DefaultablePropertyDefinition,
-	OptionalPropertyDefinition
-} from "../property.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
@@ -33,6 +30,7 @@ import type {
 	inferAstRoot,
 	InferredAst,
 	InfixExpression,
+	Optional,
 	PostfixExpression
 } from "./infer.ts"
 import type { validateKeyof } from "./keyof.ts"
@@ -131,11 +129,9 @@ export type validateString<
 				text
 			:	result
 		: definitionDepth extends "shallow" ?
-			ast extends DefaultablePropertyDefinition ?
-				ErrorMessage<shallowDefaultableMessage>
-			: ast extends OptionalPropertyDefinition ?
-				ErrorMessage<shallowOptionalMessage>
-			:	// return the original definition when valid to allow it
+			ast extends Default ? ErrorMessage<shallowDefaultableMessage>
+			: ast extends Optional ? ErrorMessage<shallowOptionalMessage>
+			: // return the original definition when valid to allow it
 				def
 		:	def
 	:	never

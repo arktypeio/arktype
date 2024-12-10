@@ -43,6 +43,8 @@ type resolveScope<g$, $> =
 	:	// Otherwise, use the scope that was explicitly bound to it.
 		g$
 
+export type Optional<t = unknown> = Branded<t, "?">
+
 export type inferExpression<ast, $, args> =
 	ast extends array ?
 		ast extends InferredAst<infer resolution> ? resolution

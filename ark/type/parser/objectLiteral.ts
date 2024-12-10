@@ -4,7 +4,6 @@ import {
 	type BaseRoot,
 	type NodeSchema,
 	type Structure,
-	type unwrapDefault,
 	type writeInvalidPropertyKeyMessage
 } from "@ark/schema"
 import {
@@ -24,14 +23,12 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { withDefault } from "../attributes.ts"
 import type { validateString } from "./ast/validate.ts"
 import type { inferDefinition } from "./definition.ts"
 import {
 	invalidDefaultKeyKindMessage,
 	invalidOptionalKeyKindMessage,
 	parseProperty,
-	type DefaultablePropertyTuple,
 	type OptionalPropertyDefinition,
 	type validateProperty
 } from "./property.ts"
@@ -138,18 +135,12 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFromEntry<k, def[k], $, args>]: [
-		def[k]
-	] extends [anyOrNever] ?
-		def[k]
-	: def[k] extends (
-		DefaultablePropertyTuple<infer baseDef, infer thunkableValue>
-	) ?
-		withDefault<
-			inferDefinition<baseDef, $, args>,
-			unwrapDefault<thunkableValue>
-		>
-	:	inferDefinition<def[k], $, args>
+	-readonly [k in keyof def as nonOptionalKeyFromEntry<
+		k,
+		def[k],
+		$,
+		args
+	>]: inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFromEntry<
 		k,

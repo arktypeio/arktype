@@ -5,7 +5,8 @@ import {
 	type BaseRoot,
 	type MetaSchema,
 	type Morph,
-	type Predicate
+	type Predicate,
+	type unwrapDefault
 } from "@ark/schema"
 import {
 	objectKindOrDomainOf,
@@ -15,18 +16,25 @@ import {
 	type conform,
 	type Constructor,
 	type Domain,
+	type ErrorMessage,
 	type show
 } from "@ark/util"
 import type {
+	defaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
 	inferPredicate,
-	Out
+	Out,
+	withDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { PostfixExpression } from "./ast/infer.ts"
+import type { Optional, PostfixExpression } from "./ast/infer.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type {
+	invalidDefaultKeyKindMessage,
+	invalidOptionalKeyKindMessage
+} from "./property.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { ArkTypeScanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
@@ -55,6 +63,7 @@ export type maybeValidateTupleExpression<def extends array, $, args> =
 
 export type inferTupleExpression<def extends TupleExpression, $, args> =
 	def[1] extends "[]" ? inferDefinition<def[0], $, args>[]
+	: def[1] extends "?" ? Optional<inferDefinition<def[0], $, args>>
 	: def[1] extends "&" ?
 		inferIntersection<
 			inferDefinition<def[0], $, args>,
@@ -65,6 +74,8 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends ":" ?
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
+	: def[1] extends "=" ?
+		withDefault<inferDefinition<def[0], $, args>, unwrapDefault<def[2]>>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
@@ -96,7 +107,14 @@ export type validateIndexOneExpression<
 	args
 > =
 	def[1] extends TuplePostfixOperator ?
-		readonly [validateDefinition<def[0], $, args>, TuplePostfixOperator]
+		readonly [
+			validateDefinition<def[0], $, args>,
+			def[1] extends "?" ?
+				"required" extends "required" ?
+					"?"
+				:	ErrorMessage<invalidOptionalKeyKindMessage>
+			:	"[]"
+		]
 	:	readonly [
 			validateDefinition<def[0], $, args>,
 			def["length"] extends 2 ? writeMissingRightOperandMessage<def[1]>
@@ -105,6 +123,10 @@ export type validateIndexOneExpression<
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
+			: def[1] extends "=" ?
+				"required" extends "required" ?
+					defaultFor<type.infer.In<def[0], $, args>>
+				:	ErrorMessage<invalidDefaultKeyKindMessage>
 			: def[1] extends "@" ? MetaSchema
 			: validateDefinition<def[2], $, args>
 		]
@@ -154,9 +176,9 @@ export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
-export type TuplePostfixOperator = "[]"
+export type TuplePostfixOperator = "[]" | "?"
 
-export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@"
+export type TupleInfixOperator = "&" | "|" | "=>" | "=" | ":" | "@"
 
 export type IndexOneExpression<
 	token extends IndexOneOperator = IndexOneOperator
