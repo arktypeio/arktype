@@ -41,13 +41,21 @@ export type validateAst<ast, $, args> =
 		ast[2] extends PrivateDeclaration<infer name> ?
 			ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 		:	undefined
-	: ast extends PostfixExpression<"[]", infer operand> ?
+	: ast extends PostfixExpression<"[]" | "?", infer operand> ?
+		// shallowOptionalMessage is handled in type.validate
+		// invalidOptionalKeyKindMessage is handled in property parsing
+
+		// it would be natural to handle them here by adding context
+		// to the generic args, but it makes the cache less reusable
+		// (was tested and had a significant impact on repo-wide perf)
 		validateAst<operand, $, args>
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
 		operator extends "&" | "|" ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
-		: operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
+		: // shallowDefaultableMessage is handled in type.validate
+		// invalidDefaultableKeyKindMessage is handled in property parsing
+		operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
 		: operator extends "#" ? validateAst<l, $, args>
 		: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>

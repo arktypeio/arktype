@@ -253,7 +253,12 @@ export const preparseKey = (key: Key): PreparsedKey =>
 		}
 
 export type preparseKey<k> =
-	k extends `${infer inner}?` ?
+	k extends symbol ?
+		PreparsedKey.from<{
+			kind: "required"
+			normalized: k
+		}>
+	: k extends `${infer inner}?` ?
 		inner extends `${infer baseName}${EscapeChar}` ?
 			PreparsedKey.from<{
 				kind: "required"
