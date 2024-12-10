@@ -80,10 +80,10 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 	: keyKind extends "spread" ?
 		validateSpread<def, inferDefinition<def, $, args>, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
-	: validateDefinition<def, $, args>
+	: validateDefinition<def, $, args, keyKind>
 
 type validateSpread<def, inferredProperty, $, args> =
-	inferredProperty extends object ? validateDefinition<def, $, args>
+	inferredProperty extends object ? validateDefinition<def, $, args, null>
 	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredProperty>>>
 
 export type OptionalPropertyDefinition<baseDef = unknown> =

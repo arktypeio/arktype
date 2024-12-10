@@ -17,6 +17,7 @@ import type {
 } from "@ark/util"
 import type { Default } from "../../attributes.ts"
 import type { Generic } from "../../generic.ts"
+import type { KeyParseContext } from "../definition.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
@@ -119,7 +120,7 @@ export type validateString<
 	def extends string,
 	$,
 	args,
-	definitionDepth extends "shallow" | "deep"
+	keyCtx extends KeyParseContext
 > =
 	parseString<def, $, args> extends infer ast ?
 		validateAst<ast, $, args> extends infer result extends ErrorMessage ?
@@ -128,7 +129,7 @@ export type validateString<
 			result extends Completion<infer text> ?
 				text
 			:	result
-		: definitionDepth extends "shallow" ?
+		: keyCtx extends null ?
 			ast extends Default ? ErrorMessage<shallowDefaultableMessage>
 			: ast extends Optional ? ErrorMessage<shallowOptionalMessage>
 			: // return the original definition when valid to allow it

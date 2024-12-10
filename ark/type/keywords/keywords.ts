@@ -114,7 +114,7 @@ export declare namespace type {
 		def,
 		$,
 		args,
-		"shallow"
+		null
 	>
 
 	export type brand<t, id> =

@@ -194,7 +194,7 @@ type preparseNextElement<
 			tail: tail
 			inferred: inferDefinition<baseDef, $, args>
 			validated: OptionalPropertyDefinition<
-				validateDefinition<baseDef, $, args>
+				validateDefinition<baseDef, $, args, "optional">
 			>
 			// if inferredHead is optional and the element is spread, this will be an error
 			// handled in nextValidatedSpreadElements
@@ -205,7 +205,7 @@ type preparseNextElement<
 			head: head
 			tail: tail
 			inferred: inferDefinition<head, $, args>
-			validated: validateDefinition<head, $, args>
+			validated: validateDefinition<head, $, args, "required">
 			optional: false
 			spread: spread
 		}>
