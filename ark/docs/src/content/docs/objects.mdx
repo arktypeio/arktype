@@ -514,7 +514,11 @@ const myTuple = type(["...", type.number.array(), type.boolean, type.string])
 
 Date literals represent a Date instance with an exact value.
 
-They're primarily useful in ranges.
+It is recommended that the date literal string content be in [JavaScript date-time format](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date#date_time_string_format).
+The value of a Date literal is determined by constructing a `new Date(dateLiteralContents)`, though, so [any string format accepted by `Date()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date#datestring) is acceptable.
+A Date literal that results in an invalid Date will throw a ParseError.
+
+Date literals are primarily useful in ranges.
 
 ```ts
 const literals = type({
