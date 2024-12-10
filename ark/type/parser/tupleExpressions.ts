@@ -30,7 +30,7 @@ import type {
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { Optional, PostfixExpression } from "./ast/infer.ts"
-import type {
+import {
 	shallowDefaultableMessage,
 	shallowOptionalMessage
 } from "./ast/validate.ts"
@@ -264,7 +264,11 @@ const indexOneParsers: {
 	"&": parseBranchTuple,
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
-	"@": parseAttributeTuple
+	"@": parseAttributeTuple,
+	// since object and tuple literals parse there via `parseProperty`,
+	// they must be shallow if parsed directly as a tuple expression
+	"=": () => throwParseError(shallowDefaultableMessage),
+	"?": () => throwParseError(shallowOptionalMessage)
 }
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "==="
