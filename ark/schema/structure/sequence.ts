@@ -27,7 +27,6 @@ import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type IntersectionContext,
-	type NodeKeyImplementation,
 	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -42,11 +41,13 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
+import { assertDefaultValueAssignability } from "./optional.ts"
 
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>
 		readonly optionals?: array<RootSchema>
+		readonly defaults?: array
 		readonly variadic?: RootSchema
 		readonly minVariadicLength?: number
 		readonly postfix?: array<RootSchema>
@@ -59,6 +60,9 @@ export declare namespace Sequence {
 		readonly prefix?: array<BaseRoot>
 		// a list of optional elements following prefix
 		readonly optionals?: array<BaseRoot>
+		// a list of default values associated with the optional elements
+		// at the corresponding indices
+		readonly defaults?: array
 		// the variadic element (only checked if all optional elements are present)
 		readonly variadic?: BaseRoot
 		readonly minVariadicLength?: number
@@ -80,18 +84,11 @@ export declare namespace Sequence {
 	export type Node = SequenceNode
 }
 
-const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
-	Sequence.Declaration,
-	"prefix" | "postfix" | "optionals"
-> = {
-	child: true,
-	parse: (schema, ctx) =>
-		schema.length === 0 ?
-			// empty affixes are omitted. an empty array should therefore
-			// be specified as `{ proto: Array, length: 0 }`
-			undefined
-		:	schema.map(element => ctx.$.parseSchema(element))
-}
+const defaultsWithoutOptionalsMessage =
+	"'defaults' specifies values for optional elements at corresponding indices and cannot be present without an 'optionals' key."
+
+const tooManyDefaultsMessage =
+	"'defaults' specifies values for optional elements at corresponding indices and must have length less than or equal that of 'optionals'."
 
 const implementation: nodeImplementationOf<Sequence.Declaration> =
 	implementNode<Sequence.Declaration>({
@@ -99,8 +96,40 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		hasAssociatedError: false,
 		collapsibleKey: "variadic",
 		keys: {
-			prefix: fixedSequenceKeySchemaDefinition,
-			optionals: fixedSequenceKeySchemaDefinition,
+			prefix: {
+				child: true,
+				parse: (schema, ctx) => {
+					// empty affixes are omitted. an empty array should therefore
+					// be specified as `{ proto: Array, length: 0 }`
+					if (schema.length === 0) return undefined
+
+					return schema.map(element => ctx.$.parseSchema(element))
+				}
+			},
+			optionals: {
+				child: true,
+				parse: (schema, ctx) => {
+					if (schema.length === 0) return undefined
+
+					const nodes = schema.map(element => ctx.$.parseSchema(element))
+
+					ctx.def.defaults?.forEach((defaultValue, i) => {
+						if (i > nodes.length - 1) throwParseError(tooManyDefaultsMessage)
+						assertDefaultValueAssignability(nodes[i], defaultValue)
+					})
+
+					return nodes
+				}
+			},
+			defaults: {
+				parse: (defaults, ctx) => {
+					if (!ctx.def.optionals)
+						throwParseError(defaultsWithoutOptionalsMessage)
+					// remaining validation handled by optionals so that we can
+					// instantiate the nodes first
+					return defaults
+				}
+			},
 			variadic: {
 				child: true,
 				parse: (schema, ctx) => ctx.$.parseSchema(schema, ctx)
@@ -111,7 +140,14 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				// node it implies
 				parse: min => (min === 0 ? undefined : min)
 			},
-			postfix: fixedSequenceKeySchemaDefinition
+			postfix: {
+				child: true,
+				parse: (schema, ctx) => {
+					if (schema.length === 0) return undefined
+
+					return schema.map(element => ctx.$.parseSchema(element))
+				}
+			}
 		},
 		normalize: schema => {
 			if (typeof schema === "string") return { variadic: schema }

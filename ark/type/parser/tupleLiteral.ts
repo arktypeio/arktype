@@ -48,12 +48,16 @@ export const parseTupleLiteral = (
 				)
 			)
 		} else {
-			sequences = sequences.map(base =>
-				kind === "optional" ? appendOptionalElement(base, valueNode)
-				: kind === "defaultable" ?
-					appendDefaultableElement(base, valueNode, def[i])
-				:	appendRequiredElement(base, valueNode)
-			)
+			sequences = sequences.map(base => {
+				if (kind === "optional") return appendOptionalElement(base, valueNode)
+
+				if (kind === "defaultable") {
+					base.defaults = append(base.defaults, def[i])
+					return appendOptionalElement(base, valueNode)
+				}
+
+				return appendRequiredElement(base, valueNode)
+			})
 		}
 	}
 
@@ -103,16 +107,11 @@ const appendOptionalElement = (
 	base: mutableInnerOfKind<"sequence">,
 	element: BaseRoot
 ): mutableInnerOfKind<"sequence"> => {
-	if (base.optionals)
-		// e.g. [string?, number]
-		return throwParseError(requiredPostOptionalMessage)
-	if (base.variadic) {
-		// e.g. [...string[], number]
-		base.postfix = append(base.postfix, element)
-	} else {
-		// e.g. [string, number]
-		base.prefix = append(base.prefix, element)
-	}
+	if (base.variadic)
+		// e.g. [...string[], number?]
+		return throwParseError(optionalPostVariadicMessage)
+	// e.g. [string, number?]
+	base.optionals = append(base.optionals, element)
 	return base
 }
 
