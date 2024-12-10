@@ -1,14 +1,7 @@
-import {
-	hasDomain,
-	isThunk,
-	omit,
-	printable,
-	throwParseError,
-	type keySetOf
-} from "@ark/util"
+import { hasDomain, isThunk, printable, throwParseError } from "@ark/util"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import type { BaseMeta, declareNode } from "../shared/declare.ts"
+import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
 	implementNode,
@@ -78,10 +71,6 @@ export class OptionalNode extends BaseProp<"optional"> {
 		if (!this.hasDefault()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner
 
-		requiredInner.value = requiredInner.value.withMeta(meta =>
-			omit(meta, optionalValueMetaKeys)
-		)
-
 		return this.cacheGetter(
 			"outProp",
 			this.$.node("required", requiredInner, { prereduced: true }) as never
@@ -145,11 +134,6 @@ export class OptionalNode extends BaseProp<"optional"> {
 export const Optional = {
 	implementation,
 	Node: OptionalNode
-}
-
-const optionalValueMetaKeys: keySetOf<BaseMeta> = {
-	default: 1,
-	optional: 1
 }
 
 export const assertDefaultValueAssignability = (
