@@ -111,9 +111,9 @@ export type inferTuple<def extends array, $, args> =
 	:	inferTupleLiteral<def, $, args>
 
 export type validateDeclared<declared, def, $, args> =
-	def extends validateDefinition<def, $, args> ?
+	def extends type.validate<def, $, args> ?
 		validateInference<def, declared, $, args>
-	:	validateDefinition<def, $, args>
+	:	type.validate<def, $, args>
 
 type validateInference<def, declared, $, args> =
 	def extends RegExp | type.cast<unknown> | ThunkCast | TupleExpression ?

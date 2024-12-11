@@ -27,10 +27,7 @@ import type {
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
-import type {
-	validateDeclared,
-	validateDefinition
-} from "./parser/definition.ts"
+import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -43,7 +40,6 @@ import type {
 	ScopeParser,
 	bindThis
 } from "./scope.ts"
-
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
 	// map over to remove call signatures
@@ -56,7 +52,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 
 	<const params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
-		def: validateDefinition<
+		def: type.validate<
 			def,
 			$,
 			baseGenericConstraints<parseValidGenericParams<params, $>>

@@ -7,23 +7,19 @@ import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
-import {
-	invalidDefaultableKeyKindMessage,
-	invalidOptionalKeyKindMessage
-} from "arktype/internal/parser/property.ts"
+import { invalidDefaultableKeyKindMessage } from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {
-			const fn5 = () => 5 as const
+			const fnDefaultTo5 = () => 5 as const
 			const o = type({
 				a: "string",
 				foo: "number = 5",
 				bar: ["number", "=", 5],
-				baz: ["number", "=", fn5]
+				baz: ["number", "=", fnDefaultTo5]
 			})
-			const fn5reg = registeredReference(fn5)
 
 			attest(o.t).type.toString.snap(`{
     a: string
@@ -42,21 +38,9 @@ contextualize(() => {
 			attest(o.json).snap({
 				required: [{ key: "a", value: "string" }],
 				optional: [
-					{
-						default: fn5reg,
-						key: "baz",
-						value: { domain: "number" }
-					},
-					{
-						default: 5,
-						key: "bar",
-						value: { domain: "number" }
-					},
-					{
-						default: 5,
-						key: "foo",
-						value: { domain: "number" }
-					}
+					{ default: "$ark.fnDefaultTo5", key: "baz", value: "number" },
+					{ default: 5, key: "bar", value: "number" },
+					{ default: 5, key: "foo", value: "number" }
 				],
 				domain: "object"
 			})
@@ -116,13 +100,25 @@ contextualize(() => {
 					{
 						default: 5,
 						key: "bar",
-						value: { domain: "number" }
+						value: "number"
 					}
 				],
 				domain: "object"
 			})
 
 			attest(types.tupleDefault.json).equals(types.stringDefault.json)
+		})
+
+		it("no shallow default in scope", () => {
+			// @ts-expect-error
+			attest(() => scope({ foo: "string = ''" })).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
+
+			// @ts-expect-error
+			attest(() => scope({ foo: ["string", "=", ""] })).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
 		})
 
 		it("chained", () => {
@@ -138,7 +134,7 @@ contextualize(() => {
 					{
 						default: "",
 						key: "a",
-						value: { domain: "string" }
+						value: "string"
 					}
 				],
 				domain: "object"
@@ -431,7 +427,7 @@ contextualize(() => {
 			$.export()
 
 			attest($.json).snap({
-				specialNumber: { domain: "number" },
+				specialNumber: "number",
 				obj: {
 					required: [{ key: "foo", value: "string" }],
 					optional: [

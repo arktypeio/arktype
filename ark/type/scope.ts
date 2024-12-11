@@ -63,8 +63,7 @@ import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
-	type inferDefinition,
-	type validateDefinition
+	type inferDefinition
 } from "./parser/definition.ts"
 import { DynamicState } from "./parser/reduce/dynamic.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
@@ -345,8 +344,8 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-				:	validateDefinition<
+					:	type.validate<def[k], bootstrapAliases<def>, {}>
+				:	type.validate<
 						def[k],
 						bootstrapAliases<def>,
 						baseGenericConstraints<params>
