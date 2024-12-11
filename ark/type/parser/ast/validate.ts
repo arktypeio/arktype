@@ -1,18 +1,14 @@
 import type {
 	arkKind,
-	GenericParamAst,
 	PrivateDeclaration,
-	writeMissingSubmoduleAccessMessage,
-	writeUnsatisfiedParameterConstraintMessage
+	writeMissingSubmoduleAccessMessage
 } from "@ark/schema"
 import type {
 	anyOrNever,
-	array,
 	BigintLiteral,
 	Completion,
 	ErrorMessage,
 	NumberLiteral,
-	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
 import type { Generic } from "../../generic.ts"
@@ -24,9 +20,11 @@ import type { validateRange } from "./bounds.ts"
 import type { validateDefault } from "./default.ts"
 import type { validateDivisor } from "./divisor.ts"
 import type {
-	DefAst,
 	GenericInstantiationAst,
-	inferAstRoot,
+	validateGenericInstantiation
+} from "./generic.ts"
+import type {
+	DefAst,
 	InferredAst,
 	InfixExpression,
 	PostfixExpression
@@ -60,33 +58,13 @@ export type validateAst<ast, $, args> =
 		: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
 	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
+		validateGenericInstantiation<g, argAsts, $, args>
 	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {
 			ast: ast
 		}
 
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`
-
-type validateGenericArgs<
-	params extends array<GenericParamAst>,
-	argAsts extends array,
-	$,
-	args,
-	indices extends 1[]
-> =
-	argAsts extends readonly [infer arg, ...infer argsTail] ?
-		validateAst<arg, $, args> extends infer e extends ErrorMessage ? e
-		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
-			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
-		:	ErrorMessage<
-				writeUnsatisfiedParameterConstraintMessage<
-					params[indices["length"]][0],
-					typeToString<params[indices["length"]][1]>,
-					astToString<arg>
-				>
-			>
-	:	undefined
 
 export const writePrefixedPrivateReferenceMessage = <name extends string>(
 	name: name

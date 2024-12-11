@@ -1,5 +1,4 @@
-import type { GenericAst } from "@ark/schema"
-import type { arkKeyOf, array, Hkt } from "@ark/util"
+import type { arkKeyOf, array } from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
@@ -7,10 +6,13 @@ import type {
 	withDefault
 } from "../../attributes.ts"
 import type { type } from "../../keywords/keywords.ts"
-import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { ArkTypeScanner } from "../shift/scanner.ts"
+import type {
+	GenericInstantiationAst,
+	inferGenericInstantiation
+} from "./generic.ts"
 
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
@@ -31,41 +33,12 @@ export type InferredAst<t = unknown, def extends string = string> = [
 	def
 ]
 
-export type GenericInstantiationAst<
-	generic extends GenericAst = GenericAst,
-	argAsts extends unknown[] = unknown[]
-> = [generic, "<>", argAsts]
-
-type resolveScope<g$, $> =
-	// If the generic was defined in the current scope, its definition can be
-	// resolved using the same scope as that of the input args.
-	g$ extends UnparsedScope ? $
-	:	// Otherwise, use the scope that was explicitly bound to it.
-		g$
-
 export type inferExpression<ast, $, args> =
 	ast extends array ?
 		ast extends InferredAst<infer resolution> ? resolution
 		: ast extends DefAst<infer def> ? inferDefinition<def, $, args>
 		: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-			g["bodyDef"] extends Hkt ?
-				Hkt.apply<
-					g["bodyDef"],
-					{ [i in keyof argAsts]: inferExpression<argAsts[i], $, args> }
-				>
-			:	inferDefinition<
-					g["bodyDef"],
-					resolveScope<g["$"], $>,
-					{
-						// intersect `${number}` to ensure that only array indices are mapped
-						[i in keyof g["names"] &
-							`${number}` as g["names"][i]]: inferExpression<
-							argAsts[i & keyof argAsts],
-							resolveScope<g["arg$"], $>,
-							args
-						>
-					}
-				>
+			inferGenericInstantiation<g, argAsts, $, args>
 		: ast[1] extends "[]" ? inferExpression<ast[0], $, args>[]
 		: ast[1] extends "|" ?
 			inferExpression<ast[0], $, args> | inferExpression<ast[2], $, args>
