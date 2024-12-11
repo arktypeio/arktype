@@ -82,7 +82,9 @@ export abstract class BaseNode<
 
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
-					return pipedFromCtx.data
+					return pipedFromCtx.hasError() ?
+							pipedFromCtx.errors
+						:	pipedFromCtx.data
 				}
 
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)

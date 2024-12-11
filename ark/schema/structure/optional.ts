@@ -1,6 +1,7 @@
 import { hasDomain, isThunk, printable, throwParseError } from "@ark/util"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import { compileSerializedValue } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
@@ -58,13 +59,8 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
-		if ("default" in this.inner) {
-			assertDefaultValueAssignability(
-				this.value,
-				this.inner.default,
-				this.serializedKey
-			)
-		}
+		if ("default" in this.inner)
+			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
 	}
 
 	get outProp(): Prop.Node {
@@ -139,7 +135,7 @@ export const Optional = {
 export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
-	key = ""
+	key: PropertyKey | null
 ): unknown => {
 	const wrapped = isThunk(value)
 
@@ -148,24 +144,36 @@ export const assertDefaultValueAssignability = (
 
 	const out = node.in(wrapped ? value() : value)
 
-	if (out instanceof ArkErrors)
-		throwParseError(writeUnassignableDefaultValueMessage(out.message, key))
+	if (out instanceof ArkErrors) {
+		// error summaries are computed via getters, so it is safe to
+		// mutate the paths to include key to ensure messages are
+		// generated the integrate the location with the reason
+		if (key !== null) out.forEach(e => (e.path as any).push(key))
+
+		const message =
+			key === null ?
+				// e.g. "Default must be assignable to number (was string)"
+				`Default ${out.message}`
+				// e.g. "Default for bar must be assignable to number (was string)"
+				// e.g. "Default for value at [0] must be assignable to number (was string)"
+			:	`Default for ${out.message}`
+		throwParseError(message)
+	}
 
 	return value
 }
 
-export const writeUnassignableDefaultValueMessage = (
-	message: string,
-	key = ""
-): string =>
-	`Default value${key && ` for key ${key}`} is not assignable: ${message}`
-
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
 	defaultValue extends string
-> = `Default value ${defaultValue} is not assignable to ${baseDef}`
+> = `Default value ${defaultValue} must be assignable to ${baseDef}`
 
 export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
-	key: string
-): string =>
-	`Default value${key && ` for key ${key}`} is not primitive so it should be specified as a function like () => ({my: 'object'})`
+	key: PropertyKey | null
+): string => {
+	const keyDescription =
+		key === null ? ""
+		: typeof key === "number" ? `for value at [${key}] `
+		: `for ${compileSerializedValue(key)} `
+	return `Non-primitive default ${keyDescription}must be specified as a function like () => ({my: 'object'})`
+}

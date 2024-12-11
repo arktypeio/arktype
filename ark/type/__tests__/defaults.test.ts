@@ -1,8 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
-	writeNonPrimitiveNonFunctionDefaultValueMessage,
-	writeUnassignableDefaultValueMessage
+	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
@@ -148,10 +147,8 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: "string", bar: ["number", "=", "5"] })
 			)
-				.throws(
-					writeUnassignableDefaultValueMessage(
-						"must be a number (was a string)"
-					)
+				.throws.snap(
+					"ParseError: Default for bar must be a number (was a string)"
 				)
 				.type.errors(
 					"Type 'string' is not assignable to type 'DefaultFor<number>'."
@@ -171,17 +168,15 @@ contextualize(() => {
 					]
 				})
 			)
-				.throws(
-					writeUnassignableDefaultValueMessage("must be true (was false)")
-				)
+				.throws.snap("ParseError: Default for foo.foo must be true (was false)")
 				.type.errors.snap("Type 'false' is not assignable to type 'true'")
 		})
 
 		it("unassignable default string", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "number = true" }))
-				.throws(
-					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was boolean)"
 				)
 				.type.errors.snap("Default value true is not assignable to number ")
 		})
@@ -411,8 +406,8 @@ contextualize(() => {
 		it("incorrect default type", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
-				.throws(
-					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+				.throws.snap(
+					"ParseError: Default for bar must be a number (was boolean)"
 				)
 				.type.errors("true is not assignable to number")
 		})
@@ -795,11 +790,10 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ bar: type("number[]").default(() => ["a"]) })
-			}).throws(
-				writeUnassignableDefaultValueMessage(
-					"value at [0] must be a number (was a string)"
-				)
+			}).throws.snap(
+				"ParseError: Default value at [0] must be a number (was a string)"
 			)
+
 			attest(() => {
 				type({
 					baz: type("number[]")
@@ -807,12 +801,11 @@ contextualize(() => {
 						// @ts-expect-error
 						.default(() => ["a"])
 				})
-			}).throws(
-				writeUnassignableDefaultValueMessage(
-					"value at [0] must be a number (was a string)"
-				)
+			}).throws.snap(
+				"ParseError: Default value at [0] must be a number (was a string)"
 			)
 		})
+
 		it("default object", () => {
 			const t = type({
 				foo: type({ "foo?": "string" }).default(() => ({})),
@@ -822,6 +815,7 @@ contextualize(() => {
 
 			const v1 = t.assert({}),
 				v2 = t.assert({})
+
 			attest(v1).snap({
 				foo: {},
 				bar: { foo: "foostr" },
@@ -834,17 +828,14 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: type({ foo: "string" }).default({}) })
-			}).throws(writeNonPrimitiveNonFunctionDefaultValueMessage(""))
+			}).throws(writeNonPrimitiveNonFunctionDefaultValueMessage(null))
+
 			attest(() => {
 				type({
 					// @ts-expect-error
 					bar: type({ foo: "number" }).default(() => ({ foo: "foostr" }))
 				})
-			}).throws(
-				writeUnassignableDefaultValueMessage(
-					"foo must be a number (was a string)"
-				)
-			)
+			}).throws.snap("ParseError: Default foo must be a number (was a string)")
 		})
 	})
 })

@@ -338,7 +338,7 @@ export abstract class BaseRoot<
 	// these should ideally be implemented in arktype since they use its syntax
 	// https://github.com/arktypeio/arktype/issues/1223
 	default(thunkableValue: unknown): [this, "=", unknown] {
-		assertDefaultValueAssignability(this, thunkableValue)
+		assertDefaultValueAssignability(this, thunkableValue, null)
 
 		return [this, "=", thunkableValue]
 	}

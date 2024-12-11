@@ -115,7 +115,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 
 					ctx.def.defaults?.forEach((defaultValue, i) => {
 						if (i > nodes.length - 1) throwParseError(tooManyDefaultsMessage)
-						assertDefaultValueAssignability(nodes[i], defaultValue)
+						assertDefaultValueAssignability(nodes[i], defaultValue, i)
 					})
 
 					return nodes

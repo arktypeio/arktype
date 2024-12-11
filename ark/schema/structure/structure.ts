@@ -465,7 +465,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const { optional, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
-			required: this.props
+			required: this.props.map(prop =>
+				prop.hasKind("optional") ?
+					{
+						key: prop.key,
+						value: prop.value
+					}
+				:	prop
+			)
 		})
 	}
 
