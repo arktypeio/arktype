@@ -1,5 +1,5 @@
 import type { GenericAst } from "@ark/schema"
-import type { arkKeyOf, array, Branded, Hkt } from "@ark/util"
+import type { arkKeyOf, array, Hkt } from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
@@ -43,8 +43,6 @@ type resolveScope<g$, $> =
 	:	// Otherwise, use the scope that was explicitly bound to it.
 		g$
 
-export type Optional<t = unknown> = Branded<t, "?">
-
 export type inferExpression<ast, $, args> =
 	ast extends array ?
 		ast extends InferredAst<infer resolution> ? resolution
@@ -82,7 +80,7 @@ export type inferExpression<ast, $, args> =
 			type.infer<ast[2]> extends infer defaultValue ?
 				withDefault<inferExpression<ast[0], $, args>, defaultValue>
 			:	never
-		: ast[1] extends "#" ? Branded<inferExpression<ast[0], $, args>, ast[2]>
+		: ast[1] extends "#" ? type.brand<inferExpression<ast[0], $, args>, ast[2]>
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
 				inferExpression<ast[2], $, args>

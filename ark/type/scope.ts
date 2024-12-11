@@ -33,7 +33,7 @@ import {
 	hasDomain,
 	isThunk,
 	throwParseError,
-	type Branded,
+	type Brand,
 	type Dict,
 	type ErrorType,
 	type JsonStructure,
@@ -104,7 +104,7 @@ export type ModuleParser = <const def>(
 export type bindThis<def> = { this: Def<def> }
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
-type Def<def = {}> = Branded<def, "unparsed">
+type Def<def = {}> = Brand<def, "unparsed">
 
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"

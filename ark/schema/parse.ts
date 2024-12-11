@@ -8,7 +8,7 @@ import {
 	throwInternalError,
 	throwParseError,
 	unset,
-	type Branded,
+	type Brand,
 	type dict,
 	type Json,
 	type listable,
@@ -130,7 +130,7 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export type NodeId = Branded<string, "NodeId">
+export type NodeId = Brand<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 

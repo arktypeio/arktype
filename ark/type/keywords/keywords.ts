@@ -1,6 +1,6 @@
 import type { ArkErrors, arkKind } from "@ark/schema"
-import type { anyOrNever, Branded, ErrorMessage, inferred } from "@ark/util"
-import type { distill, InferredMorph } from "../attributes.ts"
+import type { anyOrNever, Brand, ErrorMessage, inferred } from "@ark/util"
+import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
@@ -131,8 +131,11 @@ export declare namespace type {
 		:	validateDefinition<def, $, args>
 
 	export type brand<t, id> =
-		t extends InferredMorph<infer i, infer o> ? (In: i) => Branded<o, id>
-		:	Branded<t, id>
+		t extends InferredMorph<infer i, infer o> ?
+			o["introspectable"] extends true ?
+				(In: i) => To<Brand<o["t"], id>>
+			:	(In: i) => Out<Brand<o["t"], id>>
+		:	(In: t) => To<Brand<t, id>>
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>

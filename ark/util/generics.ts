@@ -69,11 +69,11 @@ export type exactEquals<l, r> =
  */
 export const keyNonimal = " keyNonimal"
 
-export type Branded<t = unknown, id = unknown> = t & {
+export type Brand<t = unknown, id = unknown> = t & {
 	readonly [keyNonimal]: [t, id]
 }
 
-export type unbrand<t> = t extends Branded<infer base, string> ? base : never
+export type unbrand<t> = t extends Brand<infer base, string> ? base : never
 
 export type satisfy<base, t extends base> = t
 

@@ -85,8 +85,8 @@ type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
 		o extends To<infer validatedOut> ?
 			_distill<validatedOut, endpoint, seen>
 		:	unknown
-	: endpoint extends "out" ? _distill<o[1], endpoint, seen>
-	: _distill<o[1], endpoint, seen> extends infer r ?
+	: endpoint extends "out" ? _distill<o["t"], endpoint, seen>
+	: _distill<o["t"], endpoint, seen> extends infer r ?
 		o extends To ?
 			(In: i) => To<r>
 		:	(In: i) => Out<r>
@@ -169,9 +169,17 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 	ArkError | ArkErrors
 >
 
-export type Out<o = any> = ["=>", o, boolean]
+declare const morphOutSymbol: unique symbol
 
-export type To<o = any> = ["=>", o, true]
+export interface Out<o = any> {
+	[morphOutSymbol]: true
+	t: o
+	introspectable: boolean
+}
+
+export interface To<o = any> extends Out<o> {
+	introspectable: true
+}
 
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 

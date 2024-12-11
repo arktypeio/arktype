@@ -28,7 +28,7 @@ import type {
 	withDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { Optional, PostfixExpression } from "./ast/infer.ts"
+import type { PostfixExpression } from "./ast/infer.ts"
 import {
 	shallowDefaultableMessage,
 	shallowOptionalMessage
@@ -62,7 +62,7 @@ export type maybeValidateTupleExpression<def extends array, $, args> =
 
 export type inferTupleExpression<def extends TupleExpression, $, args> =
 	def[1] extends "[]" ? inferDefinition<def[0], $, args>[]
-	: def[1] extends "?" ? Optional<inferDefinition<def[0], $, args>>
+	: def[1] extends "?" ? inferDefinition<def[0], $, args>
 	: def[1] extends "&" ?
 		inferIntersection<
 			inferDefinition<def[0], $, args>,
