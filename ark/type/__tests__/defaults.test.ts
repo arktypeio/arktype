@@ -7,7 +7,10 @@ import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
-import { invalidOptionalKeyKindMessage } from "arktype/internal/parser/property.ts"
+import {
+	invalidDefaultableKeyKindMessage,
+	invalidOptionalKeyKindMessage
+} from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
@@ -234,7 +237,7 @@ contextualize(() => {
 				optional: [
 					{
 						default: false,
-						key: "a",
+						key: "blep",
 						value: {
 							in: [{ unit: false }, { unit: true }],
 							morphs: [toggleRef]
@@ -264,7 +267,7 @@ contextualize(() => {
 			const toggleRef = registeredReference(toggle)
 
 			const t = type({
-				blep: type("boolean").pipe(toggle).to("boolean")
+				blep: type("boolean").pipe(toggle).to("boolean").default(false)
 			})
 
 			attest(t.t).type.toString.snap(`{
@@ -274,8 +277,8 @@ contextualize(() => {
 			attest(t.json).snap({
 				optional: [
 					{
-						default: "",
-						key: "a",
+						default: false,
+						key: "blep",
 						value: {
 							in: [{ unit: false }, { unit: true }],
 							morphs: [toggleRef, [{ unit: false }, { unit: true }]]
@@ -447,12 +450,24 @@ contextualize(() => {
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", "bar?": "number = 5" })
-			).throwsAndHasTypeError(invalidOptionalKeyKindMessage)
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
 
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", "bar?": ["number", "=", 5] })
-			).throwsAndHasTypeError(invalidOptionalKeyKindMessage)
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
+		})
+
+		it("index with default", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "[string]": "number = 5" })
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
+
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "[string]": ["number", "=", 5] })
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
 		})
 
 		it("shallow default", () => {
@@ -505,13 +520,14 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: ["unknown", "=", { foo: "bar" }] })
 			})
-				.throws("is not primitive")
+				.throws(writeNonPrimitiveNonFunctionDefaultValueMessage("foo"))
 				.type.errors("'foo' does not exist in type '() => unknown'.")
+
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["unknown.any", "=", { foo: "bar" }] })
 			})
-				.throws("is not primitive")
+				.throws(writeNonPrimitiveNonFunctionDefaultValueMessage("foo"))
 				.type.errors("'foo' does not exist in type '() => any'.")
 		})
 
@@ -690,7 +706,7 @@ contextualize(() => {
 				type({ foo: ["number", "=", () => "bar"] })
 			})
 				.throws.snap(
-					"ParseError: Default value is not assignable: must be a number (was a string)"
+					"ParseError: Default for foo must be a number (was a string)"
 				)
 				.type.errors.snap()
 
@@ -699,7 +715,7 @@ contextualize(() => {
 				type({ foo: ["number[]", "=", () => "bar"] })
 			})
 				.throws.snap(
-					"ParseError: Default value is not assignable: must be an array (was string)"
+					"ParseError: Default for foo must be an array (was string)"
 				)
 				.type.errors.snap()
 
@@ -708,7 +724,7 @@ contextualize(() => {
 				type({ foo: [{ a: "number" }, "=", () => ({ a: "bar" })] })
 			})
 				.throws.snap(
-					"ParseError: Default value is not assignable: a must be a number (was a string)"
+					"ParseError: Default for foo.a must be a number (was a string)"
 				)
 				.type.errors.snap()
 		})
@@ -769,8 +785,8 @@ contextualize(() => {
 			const t = type({
 				foo: [["number", "|", "number[]"], "=", () => (i % 2 ? ++i : [++i])]
 			})
+			attest(t.assert({})).snap({ foo: 2 })
 			attest(t.assert({})).snap({ foo: [3] })
-			attest(t.assert({})).snap({ foo: 4 })
 		})
 
 		it("default array", () => {

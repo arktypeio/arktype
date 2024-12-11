@@ -148,7 +148,7 @@ export const assertDefaultValueAssignability = (
 		// error summaries are computed via getters, so it is safe to
 		// mutate the paths to include key to ensure messages are
 		// generated the integrate the location with the reason
-		if (key !== null) out.forEach(e => (e.path as any).push(key))
+		if (key !== null) out.forEach(e => (e.path as any).unshift(key))
 
 		const message =
 			key === null ?
