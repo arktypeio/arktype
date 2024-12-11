@@ -427,7 +427,9 @@ contextualize(() => {
 			$.export()
 
 			attest($.json).snap({
-				specialNumber: "number",
+				specialNumber: {
+					domain: "number"
+				},
 				obj: {
 					required: [{ key: "foo", value: "string" }],
 					optional: [
