@@ -16,6 +16,7 @@ import type {
 	ParsedKeyKind,
 	writeInvalidSpreadTypeMessage
 } from "./objectLiteral.ts"
+import type { ParsedDefaultableProperty } from "./shift/operator/default.ts"
 import type { parseString } from "./string.ts"
 
 export type ParsedPropertyKind = "plain" | "optional" | "defaultable"
@@ -25,47 +26,23 @@ export type ParsedProperty =
 	| ParsedOptionalProperty
 	| ParsedDefaultableProperty
 
-export type ParsedRequiredProperty = {
-	kind: "plain"
-	valueNode: BaseRoot
-}
+export type ParsedRequiredProperty = BaseRoot
 
-export type ParsedOptionalProperty = {
-	kind: "optional"
-	valueNode: BaseRoot
-}
-
-export type ParsedDefaultableProperty = {
-	kind: "defaultable"
-	valueNode: BaseRoot
-	default: unknown
-}
+export type ParsedOptionalProperty = readonly [BaseRoot, "?"]
 
 export const parseProperty = (
 	def: unknown,
 	ctx: BaseParseContext
 ): ParsedProperty => {
 	if (isArray(def)) {
-		if (def[1] === "=") {
-			return {
-				kind: "defaultable",
-				valueNode: ctx.$.parseOwnDefinitionFormat(def[0], ctx),
-				default: def[2]
-			}
-		}
+		if (def[1] === "=")
+			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "=", def[2]]
 
-		if (def[1] === "?") {
-			return {
-				kind: "optional",
-				valueNode: ctx.$.parseOwnDefinitionFormat(def[0], ctx)
-			}
-		}
+		if (def[1] === "?")
+			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "?"]
 	}
 
-	return {
-		kind: "plain",
-		valueNode: ctx.$.parseOwnDefinitionFormat(def, ctx)
-	}
+	return ctx.$.parseOwnDefinitionFormat(def, ctx)
 }
 
 export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =

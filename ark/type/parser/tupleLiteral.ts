@@ -9,6 +9,7 @@ import {
 } from "@ark/schema"
 import {
 	append,
+	isArray,
 	isEmptyObject,
 	throwParseError,
 	type array,
@@ -31,7 +32,10 @@ export const parseTupleLiteral = (
 			i++
 		}
 
-		const { valueNode, kind } = parseProperty(def[i], ctx)
+		const parsedProperty = parseProperty(def[i], ctx)
+
+		const [valueNode, operator, possibleDefaultValue] =
+			!isArray(parsedProperty) ? [parsedProperty] : parsedProperty
 
 		i++
 		if (spread) {
@@ -49,10 +53,10 @@ export const parseTupleLiteral = (
 			)
 		} else {
 			sequences = sequences.map(base => {
-				if (kind === "optional") return appendOptionalElement(base, valueNode)
+				if (operator === "?") return appendOptionalElement(base, valueNode)
 
-				if (kind === "defaultable") {
-					base.defaults = append(base.defaults, def[i])
+				if (operator === "=") {
+					base.defaults = append(base.defaults, possibleDefaultValue)
 					return appendOptionalElement(base, valueNode)
 				}
 

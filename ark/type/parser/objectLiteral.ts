@@ -2,13 +2,16 @@ import {
 	normalizeIndex,
 	type BaseParseContext,
 	type BaseRoot,
+	type Inner,
 	type NodeSchema,
+	type Prop,
 	type Structure,
 	type writeInvalidPropertyKeyMessage
 } from "@ark/schema"
 import {
 	append,
 	escapeChar,
+	isArray,
 	isEmptyObject,
 	printable,
 	stringAndSymbolicEntriesOf,
@@ -73,42 +76,72 @@ export const parseObjectLiteral = (
 		const parsedValue = parseProperty(v, ctx)
 		const parsedEntryKey = parsedKey as PreparsedEntryKey
 
-		if (parsedValue.kind === "optional") {
-			if (parsedKey.kind !== "required")
-				throwParseError(invalidOptionalKeyKindMessage)
+		if (parsedKey.kind === "required") {
+			if (!isArray(parsedValue)) {
+				appendNamedProp(
+					structure,
+					"required",
+					{
+						key: parsedKey.normalized,
+						value: parsedValue
+					},
+					ctx
+				)
+			} else {
+				appendNamedProp(
+					structure,
+					"optional",
+					parsedValue[1] === "=" ?
+						{
+							key: parsedKey.normalized,
+							value: parsedValue[0],
+							default: parsedValue[2]
+						}
+					:	{
+							key: parsedKey.normalized,
+							value: parsedValue[0]
+						},
+					ctx
+				)
+			}
+			continue
+		}
+		if (isArray(parsedValue)) {
+			if (parsedValue[1] === "?") throwParseError(invalidOptionalKeyKindMessage)
 
-			structure.optional = append(
-				structure.optional,
-				ctx.$.node("optional", {
-					key: parsedKey.normalized,
-					value: parsedValue.valueNode
-				})
-			)
-		} else if (parsedValue.kind === "defaultable") {
-			if (parsedKey.kind !== "required")
+			if (parsedValue[1] === "=")
 				throwParseError(invalidDefaultableKeyKindMessage)
+		}
 
-			structure.optional = append(
-				structure.optional,
-				ctx.$.node("optional", {
+		// value must be a BaseRoot at this point
+
+		if (parsedKey.kind === "optional") {
+			appendNamedProp(
+				structure,
+				"optional",
+				{
 					key: parsedKey.normalized,
-					value: parsedValue.valueNode,
-					default: parsedValue.default
-				})
-			)
-		} else {
-			const signature = ctx.$.parseOwnDefinitionFormat(
-				parsedEntryKey.normalized,
+					value: parsedValue
+				},
 				ctx
 			)
-			const normalized = normalizeIndex(signature, parsedValue.valueNode, ctx.$)
-
-			if (normalized.index)
-				structure.index = append(structure.index, normalized.index)
-
-			if (normalized.required)
-				structure.required = append(structure.required, normalized.required)
+			continue
 		}
+
+		// must be index at this point
+
+		const signature = ctx.$.parseOwnDefinitionFormat(
+			parsedEntryKey.normalized,
+			ctx
+		)
+
+		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
+
+		if (normalized.index)
+			structure.index = append(structure.index, normalized.index)
+
+		if (normalized.required)
+			structure.required = append(structure.required, normalized.required)
 	}
 
 	const structureNode = ctx.$.node("structure", structure)
@@ -117,6 +150,15 @@ export const parseObjectLiteral = (
 		domain: "object",
 		structure: spread?.merge(structureNode) ?? structureNode
 	})
+}
+
+const appendNamedProp = <kind extends Prop.Kind>(
+	structure: MutableStructureSchema,
+	kind: kind,
+	inner: Inner<kind>,
+	ctx: BaseParseContext
+) => {
+	structure[kind] = append(structure[kind], ctx.$.node(kind, inner))
 }
 
 export type inferObjectLiteral<def extends object, $, args> = show<
