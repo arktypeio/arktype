@@ -68,7 +68,7 @@ import {
 import { DynamicState } from "./parser/reduce/dynamic.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
-import { fullStringParse } from "./parser/string.ts"
+import { fullStringParse, type StringParseResult } from "./parser/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -280,7 +280,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: BaseParseContext): BaseRoot {
+	parseString(def: string, ctx: BaseParseContext): StringParseResult {
 		const aliasResolution = this.maybeResolveRoot(def)
 		if (aliasResolution) return aliasResolution
 
@@ -298,7 +298,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		if (s.finalizer === ">")
 			throwParseError(writeUnexpectedCharacterMessage(">"))
 
-		return node as never
+		return node
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
