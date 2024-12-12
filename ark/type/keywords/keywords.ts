@@ -135,7 +135,7 @@ export declare namespace type {
 			o["introspectable"] extends true ?
 				(In: i) => To<Brand<o["t"], id>>
 			:	(In: i) => Out<Brand<o["t"], id>>
-		:	(In: t) => To<Brand<t, id>>
+		:	Brand<t, id>
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>

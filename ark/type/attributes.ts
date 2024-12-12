@@ -2,6 +2,7 @@ import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
+	Brand,
 	equals,
 	Hkt,
 	intersectArrays,
@@ -54,6 +55,10 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever | seen] ? t
 	: unknown extends t ? unknown
+	: t extends Brand<infer base> ?
+		endpoint extends "in" ?
+			base
+		:	t
 	: // Function is excluded from TerminallyInferredObjectKind so that
 	// those types could be inferred before checking for morphs
 	t extends TerminallyInferredObject | Primitive ? t
@@ -80,17 +85,11 @@ type distillMappable<o, endpoint extends distill.Endpoint, seen> =
 	:	{ [k in keyof o]: _distill<o[k], endpoint, seen> }
 
 type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
-	endpoint extends "in" ? _distill<i, endpoint, seen>
-	: endpoint extends "out.introspectable" ?
-		o extends To<infer validatedOut> ?
-			_distill<validatedOut, endpoint, seen>
-		:	unknown
-	: endpoint extends "out" ? _distill<o["t"], endpoint, seen>
-	: _distill<o["t"], endpoint, seen> extends infer r ?
-		o extends To ?
-			(In: i) => To<r>
-		:	(In: i) => Out<r>
-	:	never
+	endpoint extends "out" ? _distill<o["t"], endpoint, seen>
+	: endpoint extends "in" ? _distill<i, endpoint, seen>
+	: // out.introspectable only respects To (schema-validated output)
+	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint, seen>
+	: unknown
 
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
