@@ -42,6 +42,7 @@ export const parseProperty = (
 			return [ctx.$.parseOwnDefinitionFormat(def[0], ctx), "?"]
 	}
 
+	// string-embedded defaults/optionals are handled by the string parser
 	return ctx.$.parseOwnDefinitionFormat(def, ctx)
 }
 

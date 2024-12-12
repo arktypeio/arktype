@@ -48,6 +48,14 @@ contextualize(() => {
 		}>(t.inferIn)
 	})
 
+	it("in union", () => {
+		const t = type("string#foo | boolean")
+
+		attest(t.t).type.toString.snap(`boolean | Brand<string, "foo">`)
+		attest<boolean | Brand<string, "foo">>(t.infer)
+		attest<boolean | string>(t.inferIn)
+	})
+
 	it("from morph", () => {
 		const fluent = type("string.numeric.parse").brand("num")
 
