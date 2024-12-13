@@ -61,7 +61,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 	: keyKind extends "spread" ?
 		validateSpread<def, inferDefinition<def, $, args>, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
-	: keyKind extends "required" ? validateDefinition<def, $, args>
+	: keyKind extends "required" ? validateDefinition<def, $, args, true>
 	: // check to ensure we don't have an optional or defaultable value on
 	// an already optional or index key
 	def extends OptionalPropertyDefinition ?
@@ -75,7 +75,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 			args,
 			invalidDefaultableKeyKindMessage
 		>
-	:	validateDefinition<def, $, args>
+	:	validateDefinition<def, $, args, true>
 
 export type validatePossibleStringDefault<
 	def extends string,
@@ -88,7 +88,7 @@ export type validatePossibleStringDefault<
 	:	validateString<def, $, args>
 
 type validateSpread<def, inferredProperty, $, args> =
-	inferredProperty extends object ? validateDefinition<def, $, args>
+	inferredProperty extends object ? validateDefinition<def, $, args, true>
 	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredProperty>>>
 
 export type OptionalPropertyDefinition<baseDef = unknown> =

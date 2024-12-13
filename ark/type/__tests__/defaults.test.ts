@@ -109,6 +109,18 @@ contextualize(() => {
 			attest(types.tupleDefault.json).equals(types.stringDefault.json)
 		})
 
+		it("no shallow default in tuple expression", () => {
+			attest(() =>
+				// @ts-expect-error
+				type(["string = 'foo'", "|", "number"])
+			).throwsAndHasTypeError(shallowDefaultableMessage)
+
+			attest(() =>
+				// @ts-expect-error
+				type(["string", "|", ["number", "=", 5]])
+			).throwsAndHasTypeError(shallowDefaultableMessage)
+		})
+
 		it("no shallow default in scope", () => {
 			// @ts-expect-error
 			attest(() => scope({ foo: "string = ''" })).throwsAndHasTypeError(

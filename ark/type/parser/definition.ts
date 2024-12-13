@@ -19,12 +19,22 @@ import {
 	type show
 } from "@ark/util"
 import type { type } from "../keywords/keywords.ts"
-import type { validateString } from "./ast/validate.ts"
+import type {
+	shallowDefaultableMessage,
+	shallowOptionalMessage,
+	validateString
+} from "./ast/validate.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.ts"
+import type {
+	DefaultablePropertyTuple,
+	OptionalPropertyDefinition,
+	PossibleDefaultableStringDefinition,
+	validatePossibleStringDefault
+} from "./property.ts"
 import type { BaseCompletions, inferString } from "./string.ts"
 import {
 	maybeParseTupleExpression,
@@ -81,9 +91,28 @@ export type inferDefinition<def, $, args> =
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
-export type validateDefinition<def, $, args> =
+// export type validateDefinition<def, $, args> =
+// 	[def] extends [anyOrNever] ? def
+// 	: def extends OptionalPropertyDefinition ?
+// 		ErrorMessage<shallowOptionalMessage>
+// 	: def extends DefaultablePropertyTuple ?
+// 		ErrorMessage<shallowDefaultableMessage>
+// 	: def extends PossibleDefaultableStringDefinition ?
+// 		validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
+// 	: validateInnerDefinition<def, $, args>
+
+export type validateDefinition<def, $, args, isProperty extends boolean> =
 	null extends undefined ?
 		ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
+	: isProperty extends false ?
+		[def] extends [anyOrNever] ? def
+		: def extends OptionalPropertyDefinition ?
+			ErrorMessage<shallowOptionalMessage>
+		: def extends DefaultablePropertyTuple ?
+			ErrorMessage<shallowDefaultableMessage>
+		: def extends PossibleDefaultableStringDefinition ?
+			validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
+		:	validateDefinition<def, $, args, true>
 	: [def] extends [Terminal] ? def
 	: def extends string ? validateString<def, $, args>
 	: def extends array ? validateTuple<def, $, args>

@@ -13,7 +13,6 @@ import {
 	throwParseError,
 	type array,
 	type BuiltinObjectKind,
-	type conform,
 	type Constructor,
 	type Domain,
 	type show
@@ -28,7 +27,6 @@ import type {
 	withDefault
 } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
-import type { PostfixExpression } from "./ast/infer.ts"
 import {
 	shallowDefaultableMessage,
 	shallowOptionalMessage
@@ -87,18 +85,10 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
 	def["length"] extends 1 ? readonly [writeMissingRightOperandMessage<def[0]>]
 	: def[0] extends "keyof" ?
-		readonly [def[0], validateDefinition<def[1], $, args>]
+		readonly [def[0], validateDefinition<def[1], $, args, false>]
 	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof" ? readonly [def[0], ...Constructor[]]
 	: never
-
-export type validatePostfixExpression<
-	def extends PostfixExpression,
-	$,
-	args
-	// conform here is needed to preserve completions for shallow tuple
-	// expressions at index 1 after TS 5.1
-> = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
 export type validateIndexOneExpression<
 	def extends IndexOneExpression,
@@ -106,21 +96,20 @@ export type validateIndexOneExpression<
 	args
 > =
 	def[1] extends TuplePostfixOperator ?
-		readonly [
-			validateDefinition<def[0], $, args>,
-			def[1] extends "?" ? "?" : "[]"
-		]
+		// use type.validate here since optional/defaultables are not allowed
+		// within tuple expressions
+		readonly [validateDefinition<def[0], $, args, false>, def[1]]
 	:	readonly [
-			validateDefinition<def[0], $, args>,
+			validateDefinition<def[0], $, args, false>,
 			def["length"] extends 2 ? writeMissingRightOperandMessage<def[1]>
 			:	def[1],
-			def[1] extends "|" ? validateDefinition<def[2], $, args>
-			: def[1] extends "&" ? validateDefinition<def[2], $, args>
+			def[1] extends "|" ? validateDefinition<def[2], $, args, false>
+			: def[1] extends "&" ? validateDefinition<def[2], $, args, false>
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: validateDefinition<def[2], $, args>
+			: validateDefinition<def[2], $, args, false>
 		]
 
 export type UnparsedTupleExpressionInput = {

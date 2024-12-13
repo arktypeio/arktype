@@ -1,23 +1,13 @@
 import type { ArkErrors, arkKind } from "@ark/schema"
-import type { anyOrNever, Brand, ErrorMessage, inferred } from "@ark/util"
+import type { Brand, inferred } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
-	shallowDefaultableMessage,
-	shallowOptionalMessage
-} from "../parser/ast/validate.ts"
-import type {
 	inferDefinition,
 	validateDefinition
 } from "../parser/definition.ts"
-import type {
-	DefaultablePropertyTuple,
-	OptionalPropertyDefinition,
-	PossibleDefaultableStringDefinition,
-	validatePossibleStringDefault
-} from "../parser/property.ts"
 import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
@@ -120,15 +110,12 @@ export declare namespace type {
 		}
 	}
 
-	export type validate<def, $ = {}, args = bindThis<def>> =
-		[def] extends [anyOrNever] ? def
-		: def extends OptionalPropertyDefinition ?
-			ErrorMessage<shallowOptionalMessage>
-		: def extends DefaultablePropertyTuple ?
-			ErrorMessage<shallowDefaultableMessage>
-		: def extends PossibleDefaultableStringDefinition ?
-			validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
-		:	validateDefinition<def, $, args>
+	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
+		def,
+		$,
+		args,
+		false
+	>
 
 	export type brand<t, id> =
 		t extends InferredMorph<infer i, infer o> ?
