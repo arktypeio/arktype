@@ -85,7 +85,7 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
 	def["length"] extends 1 ? readonly [writeMissingRightOperandMessage<def[0]>]
 	: def[0] extends "keyof" ?
-		readonly [def[0], validateDefinition<def[1], $, args, false>]
+		readonly [def[0], validateDefinition<def[1], $, args>]
 	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof" ? readonly [def[0], ...Constructor[]]
 	: never
@@ -98,18 +98,18 @@ export type validateIndexOneExpression<
 	def[1] extends TuplePostfixOperator ?
 		// use type.validate here since optional/defaultables are not allowed
 		// within tuple expressions
-		readonly [validateDefinition<def[0], $, args, false>, def[1]]
+		readonly [validateDefinition<def[0], $, args>, def[1]]
 	:	readonly [
-			validateDefinition<def[0], $, args, false>,
+			validateDefinition<def[0], $, args>,
 			def["length"] extends 2 ? writeMissingRightOperandMessage<def[1]>
 			:	def[1],
-			def[1] extends "|" ? validateDefinition<def[2], $, args, false>
-			: def[1] extends "&" ? validateDefinition<def[2], $, args, false>
+			def[1] extends "|" ? validateDefinition<def[2], $, args>
+			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: validateDefinition<def[2], $, args, false>
+			: validateDefinition<def[2], $, args>
 		]
 
 export type UnparsedTupleExpressionInput = {

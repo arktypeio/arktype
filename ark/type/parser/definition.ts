@@ -91,22 +91,31 @@ export type inferDefinition<def, $, args> =
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
-export type validateDefinition<def, $, args, isProperty extends boolean> =
+// validates a shallow definition, ensuring it does not represent an optional or
+// defaultable before drilling down further. a definition is shallow if it is either...
+
+// 1. the root value passed to type()
+// 2. a tuple expression
+export type validateDefinition<def, $, args> =
 	null extends undefined ?
 		ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
-	: isProperty extends false ?
-		// inlining this condition rather than extracting it to its own type
-		// is about 20% less instantiations and 10% faster at a repo-level.
-		// if this is not true in the future, we should update it.
-		[def] extends [anyOrNever] ? def
-		: def extends OptionalPropertyDefinition ?
-			ErrorMessage<shallowOptionalMessage>
-		: def extends DefaultablePropertyTuple ?
-			ErrorMessage<shallowDefaultableMessage>
-		: def extends PossibleDefaultableStringDefinition ?
-			validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
-		:	validateDefinition<def, $, args, true>
-	: [def] extends [Terminal] ? def
+	: [def] extends [anyOrNever] ? def
+	: def extends OptionalPropertyDefinition ?
+		ErrorMessage<shallowOptionalMessage>
+	: def extends DefaultablePropertyTuple ?
+		ErrorMessage<shallowDefaultableMessage>
+	: def extends PossibleDefaultableStringDefinition ?
+		validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
+	:	validateInnerDefinition<def, $, args>
+
+// validates the definition without checking for optionals/defaults this should
+// be used when one of these is true...
+
+// 1. we are validating a shallow definition and have already ensured it does not
+//    represent an optional or defaultable
+// 2. we are validating the root of a property definition
+export type validateInnerDefinition<def, $, args> =
+	[def] extends [Terminal] ? def
 	: def extends string ? validateString<def, $, args>
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?

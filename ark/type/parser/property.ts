@@ -11,7 +11,7 @@ import {
 	type typeToString
 } from "@ark/util"
 import type { validateString } from "./ast/validate.ts"
-import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
 import type {
 	ParsedKeyKind,
 	writeInvalidSpreadTypeMessage
@@ -61,7 +61,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 	: keyKind extends "spread" ?
 		validateSpread<def, inferDefinition<def, $, args>, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
-	: keyKind extends "required" ? validateDefinition<def, $, args, true>
+	: keyKind extends "required" ? validateInnerDefinition<def, $, args>
 	: // check to ensure we don't have an optional or defaultable value on
 	// an already optional or index key
 	def extends OptionalPropertyDefinition ?
@@ -75,7 +75,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 			args,
 			invalidDefaultableKeyKindMessage
 		>
-	:	validateDefinition<def, $, args, true>
+	:	validateInnerDefinition<def, $, args>
 
 export type validatePossibleStringDefault<
 	def extends string,
@@ -88,7 +88,7 @@ export type validatePossibleStringDefault<
 	:	validateString<def, $, args>
 
 type validateSpread<def, inferredProperty, $, args> =
-	inferredProperty extends object ? validateDefinition<def, $, args, true>
+	inferredProperty extends object ? validateInnerDefinition<def, $, args>
 	:	ErrorType<writeInvalidSpreadTypeMessage<typeToString<inferredProperty>>>
 
 export type OptionalPropertyDefinition<baseDef = unknown> =

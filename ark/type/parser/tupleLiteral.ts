@@ -16,7 +16,7 @@ import {
 	type conform,
 	type ErrorMessage
 } from "@ark/util"
-import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
 import { parseProperty, type OptionalPropertyDefinition } from "./property.ts"
 
 export const parseTupleLiteral = (
@@ -207,9 +207,9 @@ type preparseNextElement<
 			head: head
 			tail: tail
 			inferred: inferDefinition<baseDef, $, args>
-			validated: baseDef extends validateDefinition<baseDef, $, args, true> ?
+			validated: baseDef extends validateInnerDefinition<baseDef, $, args> ?
 				head
-			:	validateDefinition<baseDef, $, args, true>
+			:	validateInnerDefinition<baseDef, $, args>
 			// if inferredHead is optional and the element is spread, this will be an error
 			// handled in nextValidatedSpreadElements
 			optional: true
@@ -219,7 +219,7 @@ type preparseNextElement<
 			head: head
 			tail: tail
 			inferred: inferDefinition<head, $, args>
-			validated: validateDefinition<head, $, args, true>
+			validated: validateInnerDefinition<head, $, args>
 			optional: false
 			spread: spread
 		}>

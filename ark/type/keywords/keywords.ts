@@ -113,8 +113,7 @@ export declare namespace type {
 	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
 		def,
 		$,
-		args,
-		false
+		args
 	>
 
 	export type brand<t, id> =
