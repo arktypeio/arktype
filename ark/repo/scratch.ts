@@ -14,5 +14,14 @@ import { type } from "arktype"
 //     "instantiations": 4850453
 // }
 
+// 12/13/2024
+// {
+//     "checkTime": 15.84,
+//     "types": 412039,
+//     "instantiations": 5075017
+// }
+
 // false
 const t = type({ foo: "string" }).extends("Record<string, string>")
+
+const tt = type(["string = 'foo'", "|", "number = 5"])

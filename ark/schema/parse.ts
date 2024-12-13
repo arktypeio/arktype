@@ -41,11 +41,6 @@ export type ContextualArgs = Record<string, BaseRoot | NodeId>
 export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
 	prereduced?: prereduced
-	/** Instead of creating the node, compute the innerHash of the definition and
-	 * point it to the specified resolution.
-	 *
-	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
-	 **/
 	args?: ContextualArgs
 	id?: NodeId
 }

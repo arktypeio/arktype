@@ -31,6 +31,7 @@ import {
 	domainOf,
 	flatMorph,
 	hasDomain,
+	isArray,
 	isThunk,
 	throwParseError,
 	type Brand,
@@ -61,14 +62,20 @@ import type {
 } from "./module.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
+	shallowDefaultableMessage,
+	shallowOptionalMessage
+} from "./parser/ast/validate.ts"
+import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition
 } from "./parser/definition.ts"
+import type { ParsedOptionalProperty } from "./parser/property.ts"
 import { DynamicState } from "./parser/reduce/dynamic.ts"
+import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
-import { fullStringParse, type StringParseResult } from "./parser/string.ts"
+import { fullStringParse } from "./parser/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -183,7 +190,7 @@ export interface InternalScope {
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	private parseCache: Record<string, BaseRoot> = {}
+	private parseCache: Record<string, InnerParseResult> = {}
 
 	protected cacheGetter<name extends keyof this>(
 		name: name,
@@ -259,14 +266,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 	}
 
-	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
-		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
-
-		// if the definition being parsed is not a scope alias and is not a
-		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-
-		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
-
+	parseInnerDefinition(def: unknown, ctx: BaseParseContext): InnerParseResult {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -280,7 +280,27 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: BaseParseContext): StringParseResult {
+	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
+		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
+
+		// if the definition being parsed is not a scope alias and is not a
+		// generic instantiation (i.e. opts don't include args), add `this` as a resolution.
+
+		// if we're parsing a nested string, ctx.args will have already been set
+		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
+
+		const result = this.parseInnerDefinition(def, ctx)
+
+		if (isArray(result)) {
+			if (result[1] === "=") return throwParseError(shallowDefaultableMessage)
+
+			if (result[1] === "?") return throwParseError(shallowOptionalMessage)
+		}
+
+		return result
+	}
+
+	parseString(def: string, ctx: BaseParseContext): InnerParseResult {
 		const aliasResolution = this.maybeResolveRoot(def)
 		if (aliasResolution) return aliasResolution
 
@@ -440,3 +460,8 @@ type parseGenericScopeKey<name extends string, params extends string, def> = {
 	name: name
 	params: parseGenericParams<params, bootstrapAliases<def>>
 }
+
+export type InnerParseResult =
+	| BaseRoot
+	| ParsedOptionalProperty
+	| ParsedDefaultableProperty
