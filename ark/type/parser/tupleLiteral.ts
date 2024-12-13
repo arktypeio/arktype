@@ -17,7 +17,12 @@ import {
 	type ErrorMessage
 } from "@ark/util"
 import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
-import { parseProperty, type OptionalPropertyDefinition } from "./property.ts"
+import {
+	parseProperty,
+	type DefaultablePropertyTuple,
+	type OptionalPropertyDefinition,
+	type PossibleDefaultableStringDefinition
+} from "./property.ts"
 
 export const parseTupleLiteral = (
 	def: array,
@@ -201,28 +206,19 @@ type preparseNextElement<
 	spread extends boolean,
 	$,
 	args
-> =
-	head extends OptionalPropertyDefinition<infer baseDef> ?
-		PreparsedElement.from<{
-			head: head
-			tail: tail
-			inferred: inferDefinition<baseDef, $, args>
-			validated: baseDef extends validateInnerDefinition<baseDef, $, args> ?
-				head
-			:	validateInnerDefinition<baseDef, $, args>
-			// if inferredHead is optional and the element is spread, this will be an error
-			// handled in nextValidatedSpreadElements
-			optional: true
-			spread: spread
-		}>
-	:	PreparsedElement.from<{
-			head: head
-			tail: tail
-			inferred: inferDefinition<head, $, args>
-			validated: validateInnerDefinition<head, $, args>
-			optional: false
-			spread: spread
-		}>
+> = PreparsedElement.from<{
+	head: head
+	tail: tail
+	inferred: inferDefinition<head, $, args>
+	validated: validateInnerDefinition<head, $, args>
+	// if inferredHead is optional and the element is spread, this will be an error
+	// handled in nextValidatedSpreadElements
+	optional: head extends OptionalPropertyDefinition | DefaultablePropertyTuple ?
+		true
+	: head extends PossibleDefaultableStringDefinition ? true
+	: false
+	spread: spread
+}>
 
 type parseNextElement<s extends SequenceParseState, $, args> =
 	preparseNextState<s, $, args> extends infer next extends PreparsedElement ?

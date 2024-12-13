@@ -52,7 +52,7 @@ contextualize(() => {
 		attest(t([5, 5]).toString()).snap()
 	})
 
-	// it("default after undefaulted optional", () => {
-	// 	const t = type(["number?", "number = 5"])
-	// })
+	it("default after undefaulted optional", () => {
+		const t = type(["number?", "number = 5"])
+	})
 })
