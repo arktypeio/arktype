@@ -91,20 +91,13 @@ export type inferDefinition<def, $, args> =
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
-// export type validateDefinition<def, $, args> =
-// 	[def] extends [anyOrNever] ? def
-// 	: def extends OptionalPropertyDefinition ?
-// 		ErrorMessage<shallowOptionalMessage>
-// 	: def extends DefaultablePropertyTuple ?
-// 		ErrorMessage<shallowDefaultableMessage>
-// 	: def extends PossibleDefaultableStringDefinition ?
-// 		validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
-// 	: validateInnerDefinition<def, $, args>
-
 export type validateDefinition<def, $, args, isProperty extends boolean> =
 	null extends undefined ?
 		ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
 	: isProperty extends false ?
+		// inlining this condition rather than extracting it to its own type
+		// is about 20% less instantiations and 10% faster at a repo-level.
+		// if this is not true in the future, we should update it.
 		[def] extends [anyOrNever] ? def
 		: def extends OptionalPropertyDefinition ?
 			ErrorMessage<shallowOptionalMessage>
