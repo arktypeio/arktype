@@ -5,6 +5,7 @@ import {
 	type BaseRoot,
 	type mutableInnerOfKind,
 	type nodeOfKind,
+	type Sequence,
 	type Union
 } from "@ark/schema"
 import {
@@ -14,7 +15,8 @@ import {
 	throwParseError,
 	type array,
 	type conform,
-	type ErrorMessage
+	type ErrorMessage,
+	type satisfy
 } from "@ark/util"
 import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
 import {
@@ -166,7 +168,10 @@ type SequenceParseState = {
 	unscanned: array
 	inferred: array
 	validated: array
-	includesOptional: boolean
+	phase: satisfy<
+		keyof Sequence.Inner,
+		"prefix" | "optionals" | "defaults" | "variadic" | "postfix"
+	>
 }
 
 type parseSequence<def extends array, $, args> = parseNextElement<
@@ -174,7 +179,7 @@ type parseSequence<def extends array, $, args> = parseNextElement<
 		unscanned: def
 		inferred: []
 		validated: []
-		includesOptional: false
+		phase: "prefix"
 	},
 	$,
 	args
@@ -186,6 +191,7 @@ type PreparsedElement = {
 	inferred: unknown
 	validated: unknown
 	optional: boolean
+	defaultable: boolean
 	spread: boolean
 }
 
@@ -213,8 +219,8 @@ type preparseNextElement<
 	validated: validateInnerDefinition<head, $, args>
 	// if inferredHead is optional and the element is spread, this will be an error
 	// handled in nextValidatedSpreadElements
-	optional: head extends OptionalPropertyDefinition | DefaultablePropertyTuple ?
-		true
+	optional: head extends OptionalPropertyDefinition ? true : false
+	defaultable: head extends DefaultablePropertyTuple ? true
 	: head extends PossibleDefaultableStringDefinition ? true
 	: false
 	spread: spread
@@ -227,10 +233,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 				unscanned: next["tail"]
 				inferred: nextInferred<s, next>
 				validated: nextValidated<s, next>
-				includesOptional: nextIncludesOptional<
-					s["includesOptional"],
-					next["optional"]
-				>
+				phase: s["phase"]
 			},
 			$,
 			args
@@ -277,14 +280,9 @@ type nextValidatedElement<
 		: number extends s["inferred"]["length"] ?
 			ErrorMessage<optionalPostVariadicMessage>
 		:	next["validated"]
-	: [s["includesOptional"], next["spread"]] extends [true, false] ?
+	: [s["phase"], next["spread"]] extends ["optionals" | " defaults", false] ?
 		ErrorMessage<requiredPostOptionalMessage>
 	:	next["validated"]
-
-type nextIncludesOptional<
-	includesOptional extends boolean,
-	nextIsOptional extends boolean
-> = includesOptional | nextIsOptional extends false ? false : true
 
 export const writeNonArraySpreadMessage = <operand extends string>(
 	operand: operand
