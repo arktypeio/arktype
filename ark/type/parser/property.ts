@@ -11,7 +11,11 @@ import {
 	type typeToString
 } from "@ark/util"
 import type { validateString } from "./ast/validate.ts"
-import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
+import {
+	parseInnerDefinition,
+	type inferDefinition,
+	type validateInnerDefinition
+} from "./definition.ts"
 import type {
 	ParsedKeyKind,
 	writeInvalidSpreadTypeMessage
@@ -43,7 +47,7 @@ export const parseProperty = (
 	}
 
 	// string-embedded defaults/optionals are handled by the string parser
-	return ctx.$.parseOwnDefinitionFormat(def, ctx)
+	return parseInnerDefinition(def, ctx)
 }
 
 export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =

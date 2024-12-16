@@ -63,6 +63,12 @@ export const parseTupleLiteral = (
 				if (operator === "?") return appendOptionalElement(base, valueNode)
 
 				if (operator === "=") {
+					if (
+						base.optionals &&
+						(!base.defaults || base.optionals.length > base.defaults.length)
+					)
+						throwParseError(defaultablePostOptionalMessage)
+
 					base.defaults = append(base.defaults, possibleDefaultValue)
 					return appendOptionalElement(base, valueNode)
 				}
@@ -204,11 +210,7 @@ declare namespace PreparsedElement {
 
 type preparseNextState<s extends SequenceParseState, $, args> =
 	s["unscanned"] extends readonly ["...", infer head, ...infer tail] ?
-		head extends array ?
-			number extends head["length"] ?
-				preparseNextElement<head, tail, true, $, args>
-			:	{}
-		:	preparseNextElement<head, tail, true, $, args>
+		preparseNextElement<head, tail, true, $, args>
 	: s["unscanned"] extends readonly [infer head, ...infer tail] ?
 		preparseNextElement<head, tail, false, $, args>
 	:	null
@@ -243,7 +245,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 				validated: nextValidated<s, next>
 				phase: next["kind"] extends "optional" ? "optionals"
 				: next["kind"] extends "defaultable" ? "defaults"
-				: number extends s["inferred"]["length"] ? "postfix"
+				: number extends nextInferred<s, next>["length"] ? "postfix"
 				: "prefix"
 			},
 			$,
@@ -286,10 +288,16 @@ type nextValidatedElement<
 	s extends SequenceParseState,
 	next extends PreparsedElement
 > =
-	next["kind"] extends "optional" | "defaultable" ?
+	next["kind"] extends "optional" ?
 		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
-		: number extends s["inferred"]["length"] ?
-			ErrorMessage<optionalPostVariadicMessage>
+		: s["phase"] extends "postfix" ? ErrorMessage<optionalPostVariadicMessage>
+		: next["validated"]
+	: next["kind"] extends "defaultable" ?
+		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
+		: s["phase"] extends "optionals" ?
+			ErrorMessage<defaultablePostOptionalMessage>
+		: s["phase"] extends "postfix" ?
+			ErrorMessage<defaultablePostVariadicMessage>
 		:	next["validated"]
 	: [s["phase"], next["spread"]] extends ["optionals" | " defaults", false] ?
 		ErrorMessage<requiredPostOptionalMessage>

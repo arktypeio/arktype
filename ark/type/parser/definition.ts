@@ -1,5 +1,7 @@
 import { hasArkKind, type BaseParseContext, type BaseRoot } from "@ark/schema"
 import {
+	domainOf,
+	hasDomain,
 	isThunk,
 	objectKindOf,
 	printable,
@@ -19,6 +21,7 @@ import {
 	type show
 } from "@ark/util"
 import type { type } from "../keywords/keywords.ts"
+import type { InnerParseResult } from "../scope.ts"
 import type {
 	shallowDefaultableMessage,
 	shallowOptionalMessage,
@@ -35,7 +38,11 @@ import type {
 	PossibleDefaultableStringDefinition,
 	validatePossibleStringDefault
 } from "./property.ts"
-import type { BaseCompletions, inferString } from "./string.ts"
+import {
+	parseString,
+	type BaseCompletions,
+	type inferString
+} from "./string.ts"
 import {
 	maybeParseTupleExpression,
 	type inferTupleExpression,
@@ -47,6 +54,28 @@ import {
 	type inferTupleLiteral,
 	type validateTupleLiteral
 } from "./tupleLiteral.ts"
+
+const parseCache: {
+	[scopeId: string]: { [def: string]: InnerParseResult } | undefined
+} = {}
+
+export const parseInnerDefinition = (
+	def: unknown,
+	ctx: BaseParseContext
+): InnerParseResult => {
+	if (typeof def === "string") {
+		if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
+			// we can only rely on the cache if there are no contextual
+			// resolutions like "this" or generic args
+			return parseString(def, ctx)
+		}
+		const scopeCache = (parseCache[ctx.$.id] ??= {})
+		return (scopeCache[def] ??= parseString(def, ctx))
+	}
+	return hasDomain(def, "object") ?
+			parseObject(def, ctx)
+		:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+}
 
 export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)

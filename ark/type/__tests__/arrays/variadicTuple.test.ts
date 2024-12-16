@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
+	optionalPostVariadicMessage,
 	writeNonArraySpreadMessage
 } from "arktype/internal/parser/tupleLiteral.ts"
 
@@ -76,18 +77,16 @@ contextualize(() => {
 
 	it("errors on multiple variadic", () => {
 		attest(() =>
-			type([
-				"...",
-				"string[]",
-				// @ts-expect-error
-				"...",
-				"number[]"
-			])
+			// @ts-expect-error
+			type(["...", "string[]", "...", "number[]"])
 		).throwsAndHasTypeError(multipleVariadicMesage)
 	})
 
 	it("error on optional post-variadic in spread", () => {
-		// @ts-expect-error
-		const tt = type(["...", "string[]", "...", ["string?"]])
+		// no type error yet, ideally would have one if tuple
+		// parsing were more precise for nested spread tuples
+		attest(() => type(["...", "string[]", "...", ["string?"]])).throws(
+			optionalPostVariadicMessage
+		)
 	})
 })

@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
+import { defaultablePostOptionalMessage } from "arktype/internal/parser/tupleLiteral.ts"
 
 contextualize(() => {
 	it("single element tuple", () => {
@@ -54,6 +55,8 @@ contextualize(() => {
 
 	it("default after undefaulted optional", () => {
 		// @ts-expect-error
-		const t = type(["number?", "number = 5"])
+		attest(() => type(["number?", "number = 5"])).throwsAndHasTypeError(
+			defaultablePostOptionalMessage
+		)
 	})
 })

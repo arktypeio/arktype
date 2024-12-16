@@ -28,9 +28,7 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
-	domainOf,
 	flatMorph,
-	hasDomain,
 	isArray,
 	isThunk,
 	throwParseError,
@@ -66,16 +64,12 @@ import {
 	shallowOptionalMessage
 } from "./parser/ast/validate.ts"
 import {
-	parseObject,
-	writeBadDefinitionTypeMessage,
+	parseInnerDefinition,
 	type inferDefinition
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
-import { DynamicState } from "./parser/reduce/dynamic.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
-import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
-import { fullStringParse } from "./parser/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -190,8 +184,6 @@ export interface InternalScope {
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	private parseCache: Record<string, InnerParseResult> = {}
-
 	protected cacheGetter<name extends keyof this>(
 		name: name,
 		value: this[name]
@@ -266,20 +258,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 	}
 
-	parseInnerDefinition(def: unknown, ctx: BaseParseContext): InnerParseResult {
-		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
-				// we can only rely on the cache if there are no contextual
-				// resolutions like "this" or generic args
-				return this.parseString(def, ctx)
-			}
-			return (this.parseCache[def] ??= this.parseString(def, ctx))
-		}
-		return hasDomain(def, "object") ?
-				parseObject(def, ctx)
-			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
-	}
-
 	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
 		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
 
@@ -289,7 +267,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		// if we're parsing a nested string, ctx.args will have already been set
 		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
 
-		const result = this.parseInnerDefinition(def, ctx)
+		const result = parseInnerDefinition(def, ctx)
 
 		if (isArray(result)) {
 			if (result[1] === "=") return throwParseError(shallowDefaultableMessage)
@@ -298,27 +276,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 
 		return result
-	}
-
-	parseString(def: string, ctx: BaseParseContext): InnerParseResult {
-		const aliasResolution = this.maybeResolveRoot(def)
-		if (aliasResolution) return aliasResolution
-
-		const aliasArrayResolution =
-			def.endsWith("[]") ?
-				this.maybeResolveRoot(def.slice(0, -2))?.array()
-			:	undefined
-
-		if (aliasArrayResolution) return aliasArrayResolution
-
-		const s = new DynamicState(new ArkTypeScanner(def), ctx)
-
-		const node = fullStringParse(s)
-
-		if (s.finalizer === ">")
-			throwParseError(writeUnexpectedCharacterMessage(">"))
-
-		return node
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
