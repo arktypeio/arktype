@@ -164,14 +164,16 @@ const appendSpreadBranch = (
 	return base
 }
 
+type SequenceParsePhase = satisfy<
+	keyof Sequence.Inner,
+	"prefix" | "optionals" | "defaults" | "postfix"
+>
+
 type SequenceParseState = {
 	unscanned: array
 	inferred: array
 	validated: array
-	phase: satisfy<
-		keyof Sequence.Inner,
-		"prefix" | "optionals" | "defaults" | "variadic" | "postfix"
-	>
+	phase: SequenceParsePhase
 }
 
 type parseSequence<def extends array, $, args> = parseNextElement<
@@ -185,13 +187,14 @@ type parseSequence<def extends array, $, args> = parseNextElement<
 	args
 >
 
+type PreparsedElementKind = "required" | "optional" | "defaultable"
+
 type PreparsedElement = {
 	head: unknown
 	tail: array
 	inferred: unknown
 	validated: unknown
-	optional: boolean
-	defaultable: boolean
+	kind: PreparsedElementKind
 	spread: boolean
 }
 
@@ -201,7 +204,11 @@ declare namespace PreparsedElement {
 
 type preparseNextState<s extends SequenceParseState, $, args> =
 	s["unscanned"] extends readonly ["...", infer head, ...infer tail] ?
-		preparseNextElement<head, tail, true, $, args>
+		head extends array ?
+			number extends head["length"] ?
+				preparseNextElement<head, tail, true, $, args>
+			:	{}
+		:	preparseNextElement<head, tail, true, $, args>
 	: s["unscanned"] extends readonly [infer head, ...infer tail] ?
 		preparseNextElement<head, tail, false, $, args>
 	:	null
@@ -219,10 +226,11 @@ type preparseNextElement<
 	validated: validateInnerDefinition<head, $, args>
 	// if inferredHead is optional and the element is spread, this will be an error
 	// handled in nextValidatedSpreadElements
-	optional: head extends OptionalPropertyDefinition ? true : false
-	defaultable: head extends DefaultablePropertyTuple ? true
-	: head extends PossibleDefaultableStringDefinition ? true
-	: false
+	kind: head extends OptionalPropertyDefinition ? "optional"
+	: head extends DefaultablePropertyTuple ? "defaultable"
+	: // TODO: more precise
+	head extends PossibleDefaultableStringDefinition ? "defaultable"
+	: "required"
 	spread: spread
 }>
 
@@ -233,7 +241,10 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 				unscanned: next["tail"]
 				inferred: nextInferred<s, next>
 				validated: nextValidated<s, next>
-				phase: s["phase"]
+				phase: next["kind"] extends "optional" ? "optionals"
+				: next["kind"] extends "defaultable" ? "defaults"
+				: number extends s["inferred"]["length"] ? "postfix"
+				: "prefix"
 			},
 			$,
 			args
@@ -243,7 +254,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 type nextInferred<s extends SequenceParseState, next extends PreparsedElement> =
 	next["spread"] extends true ?
 		[...s["inferred"], ...conform<next["inferred"], array>]
-	: next["optional"] extends true ? [...s["inferred"], next["inferred"]?]
+	: next["kind"] extends "optional" ? [...s["inferred"], next["inferred"]?]
 	: [...s["inferred"], next["inferred"]]
 
 type nextValidated<
@@ -262,9 +273,9 @@ type nextValidatedSpreadOperatorIfPresent<
 	next["spread"] extends true ?
 		[
 			next["inferred"] extends infer spreadOperand extends array ?
-				[number, number] extends (
-					[s["inferred"]["length"], spreadOperand["length"]]
-				) ?
+				// if the spread operand is a fixed-length tuple, it won't be a variadic element
+				// and therefore doesn't need to be validated as one
+				[s["phase"], number] extends ["postfix", spreadOperand["length"]] ?
 					ErrorMessage<multipleVariadicMessage>
 				:	"..."
 			:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
@@ -275,17 +286,11 @@ type nextValidatedElement<
 	s extends SequenceParseState,
 	next extends PreparsedElement
 > =
-	next["optional"] extends true ?
+	next["kind"] extends "optional" | "defaultable" ?
 		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
 		: number extends s["inferred"]["length"] ?
 			ErrorMessage<optionalPostVariadicMessage>
 		:	next["validated"]
-	: next["defaultable"] extends true ?
-		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
-		: number extends s["inferred"]["length"] ?
-			ErrorMessage<defaultablePostVariadicMessage>
-		: s["phase"] extends "optionals" ? ErrorMessage<"foo">
-		: next["validated"]
 	: [s["phase"], next["spread"]] extends ["optionals" | " defaults", false] ?
 		ErrorMessage<requiredPostOptionalMessage>
 	:	next["validated"]
