@@ -85,4 +85,9 @@ contextualize(() => {
 			])
 		).throwsAndHasTypeError(multipleVariadicMesage)
 	})
+
+	it("error on optional post-variadic in spread", () => {
+		// @ts-expect-error
+		const tt = type(["...", "string[]", "...", ["string?"]])
+	})
 })
