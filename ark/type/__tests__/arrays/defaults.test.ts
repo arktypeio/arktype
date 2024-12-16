@@ -53,6 +53,7 @@ contextualize(() => {
 	})
 
 	it("default after undefaulted optional", () => {
+		// @ts-expect-error
 		const t = type(["number?", "number = 5"])
 	})
 })

@@ -280,6 +280,12 @@ type nextValidatedElement<
 		: number extends s["inferred"]["length"] ?
 			ErrorMessage<optionalPostVariadicMessage>
 		:	next["validated"]
+	: next["defaultable"] extends true ?
+		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
+		: number extends s["inferred"]["length"] ?
+			ErrorMessage<defaultablePostVariadicMessage>
+		: s["phase"] extends "optionals" ? ErrorMessage<"foo">
+		: next["validated"]
 	: [s["phase"], next["spread"]] extends ["optionals" | " defaults", false] ?
 		ErrorMessage<requiredPostOptionalMessage>
 	:	next["validated"]
@@ -310,4 +316,18 @@ type optionalPostVariadicMessage = typeof optionalPostVariadicMessage
 
 export const spreadOptionalMessage = "A spread element cannot be optional"
 
-type spreadOptionalMessage = typeof optionalPostVariadicMessage
+type spreadOptionalMessage = typeof spreadOptionalMessage
+
+export const spreadDefaultableMessage = "A spread element cannot have a default"
+
+type spreadDefaultableMessage = typeof spreadDefaultableMessage
+
+export const defaultablePostVariadicMessage =
+	"A defaultable element may not follow a variadic element"
+
+type defaultablePostVariadicMessage = typeof defaultablePostVariadicMessage
+
+export const defaultablePostOptionalMessage =
+	"A defaultable element may not follow an optional element without a default"
+
+type defaultablePostOptionalMessage = typeof defaultablePostOptionalMessage
