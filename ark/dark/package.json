@@ -2,12 +2,19 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
-	"version": "5.12.2",
+	"version": "5.13.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
 	"scripts": {
-		"publishExtension": "pnpx vsce publish"
+		"publishExtension": "pnpm packageExtension && pnpm publishVsce && pnpm publishOvsx",
+		"packageExtension": "vsce package --out arkdark.vsix",
+		"publishVsce": "vsce publish -i arkdark.vsix",
+		"publishOvsx": "ovsx publish -i arkdark.vsix"
+	},
+	"devDependencies": {
+		"vsce": "2.15.0",
+		"ovsx": "0.10.1"
 	},
 	"files": [
 		"*.json"
