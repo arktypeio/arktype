@@ -223,10 +223,16 @@ export const createNode = (
 
 		innerJson[k] = serialize(v as never)
 
-		if (keyImpl.child) {
+		if (keyImpl.child === true) {
 			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) children.push(...listableNode)
 			else children.push(listableNode)
+		} else if (typeof keyImpl.child === "function")
+			children.push(...keyImpl.child(v as never))
+		else {
+			throwInternalError(
+				`Unexpected value for key's child property: ${printable(keyImpl.child)}`
+			)
 		}
 	})
 

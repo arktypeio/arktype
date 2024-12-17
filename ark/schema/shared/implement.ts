@@ -275,7 +275,7 @@ export type NodeKeyImplementation<
 > = requireKeys<
 	{
 		preserveUndefined?: true
-		child?: boolean
+		child?: boolean | ((value: instantiated) => BaseNode[])
 		serialize?: (schema: instantiated) => Json
 		reduceIo?: (
 			ioKind: "in" | "out",

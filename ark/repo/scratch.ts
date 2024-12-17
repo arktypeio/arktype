@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { type, type Ark } from "arktype"
 
 // type stats 12/7/2024 on main
 // {

@@ -25,6 +25,7 @@ import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
+	defaultValueSerializer,
 	implementNode,
 	type IntersectionContext,
 	type RootKind,
@@ -46,8 +47,8 @@ import { assertDefaultValueAssignability } from "./optional.ts"
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>
+		readonly defaultables?: array<DefaultableSchema>
 		readonly optionals?: array<RootSchema>
-		readonly defaults?: array
 		readonly variadic?: RootSchema
 		readonly minVariadicLength?: number
 		readonly postfix?: array<RootSchema>
@@ -55,14 +56,17 @@ export declare namespace Sequence {
 
 	export type Schema = NormalizedSchema | RootSchema
 
+	export type DefaultableSchema = [schema: RootSchema, defaultValue: unknown]
+
+	export type DefaultableElement = [node: BaseRoot, defaultValue: unknown]
+
 	export interface Inner {
 		// a list of fixed position elements starting at index 0
 		readonly prefix?: array<BaseRoot>
-		// a list of optional elements following prefix
+		// a list of optional elements with default values following prefix
+		readonly defaultables?: array<DefaultableElement>
+		// a list of optional elements without default values following defaultables
 		readonly optionals?: array<BaseRoot>
-		// a list of default values associated with the optional elements
-		// at the corresponding indices
-		readonly defaults?: array
 		// the variadic element (only checked if all optional elements are present)
 		readonly variadic?: BaseRoot
 		readonly minVariadicLength?: number
@@ -83,12 +87,6 @@ export declare namespace Sequence {
 
 	export type Node = SequenceNode
 }
-
-const defaultsWithoutOptionalsMessage =
-	"'defaults' specifies values for optional elements at corresponding indices and cannot be present without an 'optionals' key."
-
-const tooManyDefaultsMessage =
-	"'defaults' specifies values for optional elements at corresponding indices and must have length less than or equal that of 'optionals'."
 
 const implementation: nodeImplementationOf<Sequence.Declaration> =
 	implementNode<Sequence.Declaration>({
@@ -111,24 +109,22 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				parse: (schema, ctx) => {
 					if (schema.length === 0) return undefined
 
-					const nodes = schema.map(element => ctx.$.parseSchema(element))
-
-					ctx.def.defaults?.forEach((defaultValue, i) => {
-						if (i > nodes.length - 1) throwParseError(tooManyDefaultsMessage)
-						assertDefaultValueAssignability(nodes[i], defaultValue, i)
-					})
-
-					return nodes
+					return schema.map(element => ctx.$.parseSchema(element))
 				}
 			},
-			defaults: {
-				parse: (defaults, ctx) => {
-					if (!ctx.def.optionals)
-						throwParseError(defaultsWithoutOptionalsMessage)
-					// remaining validation handled by optionals so that we can
-					// instantiate the nodes first
-					return defaults
-				}
+			defaultables: {
+				child: defaultables => defaultables.map(element => element[0]),
+				parse: (defaultables, ctx) =>
+					defaultables.map(element => {
+						const node = ctx.$.parseSchema(element[0])
+						assertDefaultValueAssignability(node, element[1], null)
+						return [node, element[1]]
+					}),
+				serialize: defaults =>
+					defaults.map(element => [
+						element[0].collapsibleJson,
+						defaultValueSerializer(element[1])
+					])
 			},
 			variadic: {
 				child: true,
