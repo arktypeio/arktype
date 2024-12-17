@@ -79,9 +79,7 @@ export const intersectProps = (
 			r.hasDefault() ?
 				l.default === r.default ?
 					l.default
-				:	throwParseError(
-						`Invalid intersection of default values ${printable(l.default)} & ${printable(r.default)}`
-					)
+				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
 			:	l.default
 		: r.hasDefault() ? r.default
 		: unset
@@ -172,3 +170,9 @@ export abstract class BaseProp<
 		if (js.traversalKind === "Allows") js.return(true)
 	}
 }
+
+export const writeDefaultIntersectionMessage = (
+	lValue: unknown,
+	rValue: unknown
+): string =>
+	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`

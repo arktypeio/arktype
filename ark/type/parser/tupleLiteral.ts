@@ -62,16 +62,8 @@ export const parseTupleLiteral = (
 			sequences = sequences.map(base => {
 				if (operator === "?") return appendOptionalElement(base, valueNode)
 
-				if (operator === "=") {
-					if (
-						base.optionals &&
-						(!base.defaults || base.optionals.length > base.defaults.length)
-					)
-						throwParseError(defaultablePostOptionalMessage)
-
-					base.defaults = append(base.defaults, possibleDefaultValue)
-					return appendOptionalElement(base, valueNode)
-				}
+				if (operator === "=")
+					return appendDefaultableElement(base, valueNode, possibleDefaultValue)
 
 				return appendRequiredElement(base, valueNode)
 			})
@@ -132,6 +124,25 @@ const appendOptionalElement = (
 	return base
 }
 
+const appendDefaultableElement = (
+	base: mutableInnerOfKind<"sequence">,
+	element: BaseRoot,
+	value: unknown
+): mutableInnerOfKind<"sequence"> => {
+	if (base.variadic)
+		// e.g. [...string[], number = 0]
+		return throwParseError(defaultablePostVariadicMessage)
+	if (base.optionals)
+		// e.g. [string?, number = 0]
+		return throwParseError(defaultablePostOptionalMessage)
+
+	// value's assignability to element will be checked when the
+	// sequence is instantiated by @ark/schema
+	// e.g. [string, number = 0]
+	base.defaultables = append(base.defaultables, [element, value])
+	return base
+}
+
 const appendVariadicElement = (
 	base: mutableInnerOfKind<"sequence">,
 	element: BaseRoot
@@ -172,7 +183,7 @@ const appendSpreadBranch = (
 
 type SequenceParsePhase = satisfy<
 	keyof Sequence.Inner,
-	"prefix" | "optionals" | "defaults" | "postfix"
+	"prefix" | "optionals" | "defaultables" | "postfix"
 >
 
 type SequenceParseState = {
@@ -193,7 +204,7 @@ type parseSequence<def extends array, $, args> = parseNextElement<
 	args
 >
 
-type PreparsedElementKind = "required" | "optional" | "defaultable"
+type PreparsedElementKind = "required" | "optionals" | "defaultables"
 
 type PreparsedElement = {
 	head: unknown
@@ -228,10 +239,10 @@ type preparseNextElement<
 	validated: validateInnerDefinition<head, $, args>
 	// if inferredHead is optional and the element is spread, this will be an error
 	// handled in nextValidatedSpreadElements
-	kind: head extends OptionalPropertyDefinition ? "optional"
-	: head extends DefaultablePropertyTuple ? "defaultable"
+	kind: head extends OptionalPropertyDefinition ? "optionals"
+	: head extends DefaultablePropertyTuple ? "defaultables"
 	: // TODO: more precise
-	head extends PossibleDefaultableStringDefinition ? "defaultable"
+	head extends PossibleDefaultableStringDefinition ? "defaultables"
 	: "required"
 	spread: spread
 }>
@@ -243,8 +254,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 				unscanned: next["tail"]
 				inferred: nextInferred<s, next>
 				validated: nextValidated<s, next>
-				phase: next["kind"] extends "optional" ? "optionals"
-				: next["kind"] extends "defaultable" ? "defaults"
+				phase: next["kind"] extends "optionals" | "defaultables" ? next["kind"]
 				: number extends nextInferred<s, next>["length"] ? "postfix"
 				: "prefix"
 			},
@@ -256,7 +266,7 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 type nextInferred<s extends SequenceParseState, next extends PreparsedElement> =
 	next["spread"] extends true ?
 		[...s["inferred"], ...conform<next["inferred"], array>]
-	: next["kind"] extends "optional" ? [...s["inferred"], next["inferred"]?]
+	: next["kind"] extends "optionals" ? [...s["inferred"], next["inferred"]?]
 	: [...s["inferred"], next["inferred"]]
 
 type nextValidated<
@@ -288,11 +298,11 @@ type nextValidatedElement<
 	s extends SequenceParseState,
 	next extends PreparsedElement
 > =
-	next["kind"] extends "optional" ?
+	next["kind"] extends "optionals" ?
 		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
 		: s["phase"] extends "postfix" ? ErrorMessage<optionalPostVariadicMessage>
 		: next["validated"]
-	: next["kind"] extends "defaultable" ?
+	: next["kind"] extends "defaultables" ?
 		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
 		: s["phase"] extends "optionals" ?
 			ErrorMessage<defaultablePostOptionalMessage>

@@ -406,7 +406,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			} else {
 				const index = Number.parseInt(key as string)
 				if (index < this.sequence.prevariadic.length) {
-					const fixedElement = this.sequence.prevariadic[index]
+					const fixedElement = this.sequence.prevariadic[index].node
 					value = value?.and(fixedElement) ?? fixedElement
 					required ||= index < this.sequence.prefixLength
 				} else if (this.sequence.variadic) {

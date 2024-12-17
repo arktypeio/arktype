@@ -5,7 +5,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	type array,
-	type mutable
+	type mutable,
+	type satisfy
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { RootSchema, mutableInnerOfKind } from "../kinds.ts"
@@ -43,6 +44,7 @@ import {
 	type TraverseApply
 } from "../shared/traversal.ts"
 import { assertDefaultValueAssignability } from "./optional.ts"
+import { writeDefaultIntersectionMessage } from "./prop.ts"
 
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
@@ -370,8 +372,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			refs,
 			this.prevariadic.flatMap((element, i) =>
 				append(
-					element.flatRefs.map(ref => flatRef([`${i}`, ...ref.path], ref.node)),
-					flatRef([`${i}`], element)
+					element.node.flatRefs.map(ref =>
+						flatRef([`${i}`, ...ref.path], ref.node)
+					),
+					flatRef([`${i}`], element.node)
 				)
 			)
 		)
@@ -531,6 +535,11 @@ export type SequenceElement =
 	| VariadicSequenceElement
 	| PostfixSequenceElement
 
+export type SequenceElementKind = satisfy<
+	keyof Sequence.Inner,
+	SequenceElement["kind"]
+>
+
 export type PrevariadicSequenceElement =
 	| PrefixSequenceElement
 	| DefaultableSequenceElement
@@ -586,14 +595,14 @@ const _intersectSequences = (
 
 	const kind: SequenceElementKind =
 		lHead.kind === "prefix" || rHead.kind === "prefix" ? "prefix"
-		: lHead.kind === "optionals" || rHead.kind === "optionals" ?
+		: lHead.kind === "postfix" || rHead.kind === "postfix" ? "postfix"
+		: lHasPostfix || rHasPostfix ? "prefix"
 			// if either operand has postfix elements, the full-length
 			// intersection can't include optional elements (though they may
 			// exist in some of the fixed length variants)
-			lHasPostfix || rHasPostfix ?
-				"prefix"
-			:	"optionals"
-		: lHead.kind === "postfix" || rHead.kind === "postfix" ? "postfix"
+		: lHead.kind === "defaultables" || rHead.kind === "defaultables" ?
+			"defaultables"
+		: lHead.kind === "optionals" || rHead.kind === "optionals" ? "optionals"
 		: "variadic"
 
 	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
@@ -648,6 +657,30 @@ const _intersectSequences = (
 				r: lTail.map(element => ({ ...element, kind: "prefix" }))
 			})
 		}
+	} else if (kind === "defaultables") {
+		if (
+			lHead.kind === "defaultables" &&
+			rHead.kind === "defaultables" &&
+			lHead.default !== rHead.default
+		) {
+			throwParseError(
+				writeDefaultIntersectionMessage(lHead.default, rHead.default)
+			)
+		}
+
+		s.result = [
+			...s.result,
+			{
+				kind,
+				node: result,
+				default:
+					lHead.kind === "defaultables" ? lHead.default
+					: rHead.kind === "defaultables" ? rHead.default
+					: throwInternalError(
+							`Unexpected defaultable intersection from ${lHead.kind} and ${rHead.kind} elements.`
+						)
+			}
+		]
 	} else s.result = [...s.result, { kind, node: result }]
 
 	const lRemaining = s.l.length
