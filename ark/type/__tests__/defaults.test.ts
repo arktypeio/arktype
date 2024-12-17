@@ -718,7 +718,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for foo must be a number (was a string)"
 				)
-				.type.errors.snap()
+				.type.errors("Type 'string' is not assignable to type 'number'.")
 
 			attest(() => {
 				// @ts-expect-error
@@ -727,7 +727,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for foo must be an array (was string)"
 				)
-				.type.errors.snap()
+				.type.errors.snap("Type 'string' is not assignable to type 'number[]'.")
 
 			attest(() => {
 				// @ts-expect-error
@@ -736,7 +736,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for foo.a must be a number (was a string)"
 				)
-				.type.errors.snap()
+				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
 		})
 
 		it("morphs the returned value", () => {
