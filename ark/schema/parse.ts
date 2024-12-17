@@ -229,11 +229,6 @@ export const createNode = (
 			else children.push(listableNode)
 		} else if (typeof keyImpl.child === "function")
 			children.push(...keyImpl.child(v as never))
-		else {
-			throwInternalError(
-				`Unexpected value for key's child property: ${printable(keyImpl.child)}`
-			)
-		}
 	})
 
 	if (impl.finalizeInnerJson)

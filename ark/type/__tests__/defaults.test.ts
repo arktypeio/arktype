@@ -499,7 +499,7 @@ contextualize(() => {
 
 			attest<{ foo?: string }>(t.in.infer)
 			attest<{ foo: string }>(t.out.infer)
-			attest(t.in.expression).snap('{ foo?: string = "foo" }')
+			attest(t.in.expression).snap('{ foo: string = "foo" }')
 			attest(t.out.expression).snap("{ foo: string }")
 		})
 	})

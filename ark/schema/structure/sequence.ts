@@ -116,12 +116,15 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			},
 			defaultables: {
 				child: defaultables => defaultables.map(element => element[0]),
-				parse: (defaultables, ctx) =>
-					defaultables.map(element => {
+				parse: (defaultables, ctx) => {
+					if (defaultables.length === 0) return undefined
+
+					return defaultables.map(element => {
 						const node = ctx.$.parseSchema(element[0])
 						assertDefaultValueAssignability(node, element[1], null)
 						return [node, element[1]]
-					}),
+					})
+				},
 				serialize: defaults =>
 					defaults.map(element => [
 						element[0].collapsibleJson,

@@ -1028,7 +1028,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			})
 
 		attest(t.expression).snap(
-			'{ storeA: { [string]: string }, ext?: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext?: string = ".txt" }'
+			'{ storeA: { [string]: string }, ext: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext: string = ".txt" }'
 		)
 	})
 
