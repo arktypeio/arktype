@@ -1,11 +1,11 @@
 import {
 	append,
 	conflatenate,
+	printable,
 	throwInternalError,
 	throwParseError,
 	type array,
-	type mutable,
-	type satisfy
+	type mutable
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { RootSchema, mutableInnerOfKind } from "../kinds.ts"
@@ -151,6 +151,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			if (
 				"variadic" in schema ||
 				"prefix" in schema ||
+				"defaultables" in schema ||
 				"optionals" in schema ||
 				"postfix" in schema ||
 				"minVariadicLength" in schema
@@ -159,7 +160,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					if (!schema.variadic)
 						return throwParseError(postfixWithoutVariadicMessage)
 
-					if (schema.optionals?.length)
+					if (schema.optionals?.length || schema.defaultables?.length)
 						return throwParseError(postfixFollowingOptionalMessage)
 				}
 				if (schema.minVariadicLength && !schema.variadic) {
@@ -174,13 +175,14 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		reduce: (raw, $) => {
 			let minVariadicLength = raw.minVariadicLength ?? 0
 			const prefix = raw.prefix?.slice() ?? []
-			const optional = raw.optionals?.slice() ?? []
+			const defaultables = raw.defaultables?.slice() ?? []
+			const optionals = raw.optionals?.slice() ?? []
 			const postfix = raw.postfix?.slice() ?? []
 			if (raw.variadic) {
 				// optional elements equivalent to the variadic parameter are redundant
-				while (optional.at(-1)?.equals(raw.variadic)) optional.pop()
+				while (optionals.at(-1)?.equals(raw.variadic)) optionals.pop()
 
-				if (optional.length === 0) {
+				if (optionals.length === 0 && defaultables.length === 0) {
 					// If there are no optional, normalize prefix
 					// elements adjacent and equivalent to variadic:
 					// 		{ variadic: number, prefix: [string, number] }
@@ -199,8 +201,8 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					postfix.shift()
 					minVariadicLength++
 				}
-			} else if (optional.length === 0) {
-				// if there's no variadic or optional parameters,
+			} else if (optionals.length === 0 && defaultables.length === 0) {
+				// if there's no variadic, optional or defaultable elements,
 				// postfix can just be appended to prefix
 				prefix.push(...postfix.splice(0))
 			}
@@ -217,8 +219,9 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 						...raw,
 						// empty lists will be omitted during parsing
 						prefix,
+						defaultables,
+						optionals,
 						postfix,
-						optionals: optional,
 						minVariadicLength
 					},
 					{ prereduced: true }
@@ -230,7 +233,10 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				if (node.isVariadicOnly) return `${node.variadic!.nestableExpression}[]`
 				const innerDescription = node.tuple
 					.map(element =>
-						element.kind === "optionals" ? `${element.node.nestableExpression}?`
+						element.kind === "defaultables" ?
+							`${element.node.nestableExpression} = ${printable(element.default)}`
+						: element.kind === "optionals" ?
+							`${element.node.nestableExpression}?`
 						: element.kind === "variadic" ?
 							`...${element.node.nestableExpression}[]`
 						:	element.node.expression
@@ -282,10 +288,18 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
 
+	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
+
 	prefixLength: number = this.prefix?.length ?? 0
+	defaultablesLength: number = this.defaultables?.length ?? 0
 	optionalsLength: number = this.optionals?.length ?? 0
 	postfixLength: number = this.postfix?.length ?? 0
-	prevariadic: array<BaseRoot> = conflatenate(this.prefix, this.optionals)
+	prevariadic: array<PrevariadicSequenceElement> = this.tuple.filter(
+		el =>
+			el.kind === "prefix" ||
+			el.kind === "defaultables" ||
+			el.kind === "optionals"
+	)
 
 	variadicOrPostfix: array<BaseRoot> = conflatenate(
 		this.variadic && [this.variadic],
@@ -314,23 +328,27 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
-	protected childAtIndex(data: array, index: number): BaseRoot {
-		if (index < this.prevariadic.length) return this.prevariadic[index]
+	protected elementAtIndex(data: array, index: number): SequenceElement {
+		if (index < this.prevariadic.length) return this.tuple[index]
 		const firstPostfixIndex = data.length - this.postfixLength
 		if (index >= firstPostfixIndex)
-			return this.postfix![index - firstPostfixIndex]
-		return (
-			this.variadic ??
-			throwInternalError(
-				`Unexpected attempt to access index ${index} on ${this}`
-			)
-		)
+			return { kind: "postfix", node: this.postfix![index - firstPostfixIndex] }
+		return {
+			kind: "variadic",
+			node:
+				this.variadic ??
+				throwInternalError(
+					`Unexpected attempt to access index ${index} on ${this}`
+				)
+		}
 	}
 
 	// minLength/maxLength should be checked by Intersection before either traversal
 	traverseAllows: TraverseAllows<array> = (data, ctx) => {
-		for (let i = 0; i < data.length; i++)
-			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) return false
+		for (let i = 0; i < data.length; i++) {
+			if (!this.elementAtIndex(data, i).node.traverseAllows(data[i], ctx))
+				return false
+		}
 
 		return true
 	}
@@ -339,7 +357,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		for (let i = 0; i < data.length; i++) {
 			traverseKey(
 				i,
-				() => this.childAtIndex(data, i).traverseApply(data[i], ctx),
+				() => this.elementAtIndex(data, i).node.traverseApply(data[i], ctx),
 				ctx
 			)
 		}
@@ -426,7 +444,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return result
 	}
 
-	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
 
@@ -476,6 +493,9 @@ export const Sequence = {
 const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
 	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
+	inner.defaultables?.forEach(([node, defaultValue]) =>
+		tuple.push({ kind: "defaultables", node, default: defaultValue })
+	)
 	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
 	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
 	inner.postfix?.forEach(node => tuple.push({ kind: "postfix", node }))
@@ -483,15 +503,20 @@ const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 }
 
 const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
-	tuple.reduce<mutableInnerOfKind<"sequence">>((result, node) => {
-		if (node.kind === "variadic") result.variadic = node.node
-		else result[node.kind] = append(result[node.kind], node.node)
+	tuple.reduce<mutableInnerOfKind<"sequence">>((result, element) => {
+		if (element.kind === "variadic") result.variadic = element.node
+		else if (element.kind === "defaultables") {
+			result.defaultables = append(result.defaultables, [
+				element.node,
+				element.default
+			])
+		} else result[element.kind] = append(result[element.kind], element.node)
 
 		return result
 	}, {})
 
 export const postfixFollowingOptionalMessage =
-	"A postfix required element cannot follow an optional element"
+	"A postfix required element cannot follow an optional or defaultable element"
 
 export type postfixFollowingOptionalMessage =
 	typeof postfixFollowingOptionalMessage
@@ -501,15 +526,42 @@ export const postfixWithoutVariadicMessage =
 
 export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage
 
-export type SequenceElementKind = satisfy<
-	keyof Sequence.Inner,
-	"prefix" | "optionals" | "variadic" | "postfix"
->
+export type SequenceElement =
+	| PrevariadicSequenceElement
+	| VariadicSequenceElement
+	| PostfixSequenceElement
 
-export type SequenceElement = {
-	kind: SequenceElementKind
+export type PrevariadicSequenceElement =
+	| PrefixSequenceElement
+	| DefaultableSequenceElement
+	| OptionalSequenceElement
+
+export type PrefixSequenceElement = {
+	kind: "prefix"
 	node: BaseRoot
 }
+
+export type OptionalSequenceElement = {
+	kind: "optionals"
+	node: BaseRoot
+}
+
+export type PostfixSequenceElement = {
+	kind: "postfix"
+	node: BaseRoot
+}
+
+export type VariadicSequenceElement = {
+	kind: "variadic"
+	node: BaseRoot
+}
+
+export type DefaultableSequenceElement = {
+	kind: "defaultables"
+	node: BaseRoot
+	default: unknown
+}
+
 export type SequenceTuple = array<SequenceElement>
 
 type SequenceIntersectionState = {
