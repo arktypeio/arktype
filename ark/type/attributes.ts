@@ -67,7 +67,7 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 			distillIo<i, o, endpoint, seen>
 		:	t
 	: t extends Default<infer constraint> ? _distill<constraint, endpoint, seen>
-	: t extends array ? _distillArray<t, endpoint, seen | t>
+	: t extends array ? distillArray<t, endpoint, seen | t>
 	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint, seen | t>
 	: t
 
@@ -109,37 +109,62 @@ type inferredDefaultKeyOf<o> =
 		:	never
 	:	never
 
-type _distillArray<t extends array, endpoint extends distill.Endpoint, seen> =
-	_distillArrayRecurse<t, endpoint, seen, []> extends infer result ?
-		// align readonly of the distilled output with that of the original array
-		t extends unknown[] ?
-			result
-		:	Readonly<result>
-	:	never
+type distillArray<t extends array, endpoint extends distill.Endpoint, seen> =
+	// fast path for non-tuple arrays with no extra props
+	// this also allows TS to infer certain recursive arrays like JSON
+	t[number][] extends t ?
+		alignReadonly<_distill<t[number], endpoint, seen>[], t>
+	:	distillNonArraykeys<
+			t,
+			alignReadonly<distillArrayFromPrefix<[...t], endpoint, seen, []>, t>,
+			endpoint,
+			seen
+		>
 
-type _distillArrayRecurse<
+type alignReadonly<result extends unknown[], original extends array> =
+	original extends unknown[] ? result : Readonly<result>
+
+// re-intersect non-array props for a type like `{ name: string } & string[]`
+type distillNonArraykeys<
+	originalArray extends array,
+	distilledArray,
+	endpoint extends distill.Endpoint,
+	seen
+> =
+	keyof originalArray extends keyof distilledArray ? distilledArray
+	:	distilledArray &
+			_distill<
+				{
+					[k in keyof originalArray as k extends keyof distilledArray ? never
+					:	k]: originalArray[k]
+				},
+				endpoint,
+				seen
+			>
+
+type distillArrayFromPrefix<
 	t extends array,
 	endpoint extends distill.Endpoint,
 	seen,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
-		_distillArrayRecurse<
+		distillArrayFromPrefix<
 			tail,
 			endpoint,
 			seen,
 			[...prefix, _distill<head, endpoint, seen>]
 		>
-	:	[...prefix, ...distillPostfix<t, endpoint, seen, []>]
+	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, seen, []>]
 
-type distillPostfix<
+type distillArrayFromPostfix<
 	t extends array,
 	endpoint extends distill.Endpoint,
 	seen,
 	postfix extends array
 > =
 	t extends readonly [...infer init, infer last] ?
-		distillPostfix<
+		distillArrayFromPostfix<
 			init,
 			endpoint,
 			seen,
