@@ -321,8 +321,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			// cast is safe here as the only time this would not be a
 			// MinLengthNode would be when minLength is 0
 		:	(this.$.node("minLength", this.minLength) as never)
-	maxLength: number | null =
-		this.variadic ? null : this.minLength + this.optionalsLength
+	maxLength: number | null = this.variadic ? null : this.tuple.length
 	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
 	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =

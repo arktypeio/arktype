@@ -10,7 +10,7 @@ contextualize(() => {
 		attest(t.json).snap({
 			sequence: { defaultables: [["number", 5]] },
 			proto: "Array",
-			exactLength: 0
+			maxLength: 1
 		})
 		attest(t([])).equals([5])
 		attest(t([1])).equals([1])
