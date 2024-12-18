@@ -91,11 +91,18 @@ type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
 	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint, seen>
 	: unknown
 
+type unwrapInput<t> =
+	t extends InferredMorph<infer i> ?
+		t extends anyOrNever ?
+			t
+		:	i
+	:	t
+
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			o[k] extends Default<infer t> | InferredMorph<Default<infer t>> ?
-				t extends anyOrNever ?
+			unwrapInput<o[k]> extends Default<infer t> ?
+				[t] extends [anyOrNever] ?
 					never
 				:	k
 			:	never
@@ -189,10 +196,9 @@ export type Default<t = unknown, v = unknown> = { [defaultsTo]: [t, v] }
 // we have to distribute over morphs to preserve the i/o relationship
 // this avoids stuff like:
 // Default<boolean, true> => Default<true, true> | Default<false, true>
-export type withDefault<t, v> =
-	t extends InferredMorph ? addDefaultToMorph<t, v> : addDefaultToNonMorph<t, v>
-
-type addDefaultToNonMorph<t, v> = t extends unknown ? Default<t, v> : never
+export type withDefault<t, v, undistributed = t> =
+	t extends InferredMorph ? addDefaultToMorph<t, v>
+	:	Default<Exclude<undistributed, InferredMorph>, v>
 
 type addDefaultToMorph<t extends InferredMorph, v> =
 	[normalizeMorphDistribution<t>] extends [InferredMorph<infer i, infer o>] ?

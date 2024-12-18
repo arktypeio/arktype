@@ -287,8 +287,8 @@ contextualize(() => {
 				b: { a: "a|true" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | cyclic } }
 	b: { a: true | { b: false | cyclic } }
+	a: { b: false | { a: true | cyclic } }
 }>`)
 		})
 

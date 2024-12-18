@@ -189,7 +189,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for foo must be a number (was boolean)"
 				)
-				.type.errors("Default value true is not assignable to number ")
+				.type.errors("Default value true must be assignable to number ")
 		})
 
 		it("morphed", () => {
@@ -420,7 +420,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for bar must be a number (was boolean)"
 				)
-				.type.errors("true is not assignable to number")
+				.type.errors("Default value true must be assignable to number")
 		})
 
 		it("non-literal", () => {
@@ -541,7 +541,7 @@ contextualize(() => {
 				.type.errors("'foo' does not exist in type '() => any'.")
 		})
 
-		it("allows string sybtyping", () => {
+		it("allows string subtyping", () => {
 			type({
 				foo: [/^foo/ as type.cast<`foo${string}`>, "=", "foobar"],
 				bar: [/bar$/ as type.cast<`${string}bar`>, "=", () => "foobar" as const]
@@ -553,7 +553,9 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type({ foo: ["number", "=", true] })
 			)
-				.throws()
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was boolean)"
+				)
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type 'defaultFor<number>'."
 				)
@@ -561,7 +563,7 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type({ foo: ["number[]", "=", true] })
 			)
-				.throws()
+				.throws.snap("AggregateError: must be an array (was boolean)")
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type '() => number[]'."
 				)
@@ -569,7 +571,9 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type({ foo: [{ bar: "false" }, "=", true] })
 			)
-				.throws()
+				.throws.snap(
+					"ParseError: Default for foo must be an object (was boolean)"
+				)
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type '() => { bar: false; }'."
 				)
@@ -577,15 +581,17 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type({ foo: [["number[]", "|", "string"], "=", true] })
 			)
-				.throws()
+				.throws.snap(
+					"AggregateError: must be a string or an array (was boolean)"
+				)
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."
 				)
-			attest(
-				// @ts-expect-error
-				() => type(["number[]", "|", "string"], "=", true)
-			)
-				.throws()
+			// @ts-expect-error
+			attest(() => type({ foo: [["number[]", "|", "string"], "=", true] }))
+				.throws.snap(
+					"AggregateError: must be a string or an array (was boolean)"
+				)
 				.type.errors.snap(
 					"Argument of type 'boolean' is not assignable to parameter of type 'defaultFor<string | number[]>'."
 				)
@@ -594,7 +600,9 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type("number[]", "|", "string").default(true)
 			)
-				.throws()
+				.throws.snap(
+					"ParseError: Default must be a string or an object (was boolean)"
+				)
 				.type.errors.snap(
 					"Argument of type 'boolean' is not assignable to parameter of type 'defaultFor<string | number[]>'."
 				)
@@ -603,7 +611,9 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type("number[]", "|", "string").default(() => true)
 			)
-				.throws()
+				.throws.snap(
+					"ParseError: Default must be a string or an object (was boolean)"
+				)
 				.type.errors(
 					"Type 'boolean' is not assignable to type 'string | number[]'."
 				)
@@ -614,7 +624,7 @@ contextualize(() => {
 			attest(() => type({ foo: ["string.numeric.parse = true"] }))
 				.throws("must be a string (was boolean)")
 				.type.errors(
-					"Default value true is not assignable to string.numeric.parse"
+					"Default value true must be assignable to string.numeric.parse"
 				)
 			// @ts-expect-error
 			attest(() => type({ foo: ["string.numeric.parse", "=", true] }))
