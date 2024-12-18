@@ -593,7 +593,7 @@ contextualize(() => {
 					"AggregateError: must be a string or an array (was boolean)"
 				)
 				.type.errors.snap(
-					"Argument of type 'boolean' is not assignable to parameter of type 'defaultFor<string | number[]>'."
+					"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."
 				)
 			// should not cause "instantiation is excessively deep"
 			attest(

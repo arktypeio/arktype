@@ -109,11 +109,13 @@ type inferredDefaultKeyOf<o> =
 		:	never
 	:	never
 
-type _distillArray<
-	t extends array,
-	endpoint extends distill.Endpoint,
-	seen
-> = _distillArrayRecurse<t, endpoint, seen, []>
+type _distillArray<t extends array, endpoint extends distill.Endpoint, seen> =
+	_distillArrayRecurse<t, endpoint, seen, []> extends infer result ?
+		// align readonly of the distilled output with that of the original array
+		t extends unknown[] ?
+			result
+		:	Readonly<result>
+	:	never
 
 type _distillArrayRecurse<
 	t extends array,
