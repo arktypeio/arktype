@@ -11,7 +11,7 @@ Objects definitions can include any combination of required, optional, defaultab
 <a name="properties/required" />
 ##### required
 
-<SyntaxTabs>
+<Tabs>
 	<SyntaxTab string>
 
 ```ts
@@ -44,12 +44,12 @@ const myObject = type({
 
     </SyntaxTab>
 
-</SyntaxTabs>
+</Tabs>
 
 <a name="properties/optional" />
 ##### optional
 
-<SyntaxTabs>
+<Tabs>
 	<SyntaxTab string>
 
 ```ts
@@ -102,7 +102,7 @@ const myObject = type({
 
     </SyntaxTab>
 
-</SyntaxTabs>
+</Tabs>
 
 :::caution[Optional properties cannot be present with the value undefined]
 
@@ -131,7 +131,7 @@ const errorResult = myObj({ key: undefined })
 <a name="properties/defaultable" />
 ##### defaultable
 
-<SyntaxTabs>
+<Tabs>
 	<SyntaxTab string>
 
 ```ts
@@ -162,42 +162,20 @@ const myObject = type({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+</Tabs>
+
+:::caution[Optional and default only work within objects and tuples!]
+Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
+
+This reflects the fact that in ArkType's type system, optionality and defaultability are only meaningful in reference to a property. Attempting to create an optional or defaultable value outside an object like `type("string?")` will result in a `ParseError`.
+
+To create a `Type` accepting `string` or `undefined`, use a union like `type("string | undefined")`.
+
+To have it transform `undefined` to an empty string, use an explicit morph like:
 
 ```ts
-const myObject = type({
-	defaultableKey: type("boolean", "=", false)
-})
+const fallbackString = type("string | undefined").pipe(v => v ?? "")
 ```
-
-    </SyntaxTab>
-
-</SyntaxTabs>
-
-:::caution[Optional and default only work within objects!]
-Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
-
-Rather, it adds metadata that changes how it works when referenced from an object or tuple.
-
-<details>
-	<summary>See an example</summary>
-
-```ts
-const optionalString = type.string.optional()
-
-optionalString.allows(undefined) // false
-
-const objectWithOptionalKey = type({
-	foo: optionalString
-})
-
-objectWithOptionalKey.allows({}) // true
-```
-
-</details>
-
-Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
-:::
 
 <a name="properties/index" />
 ##### index
