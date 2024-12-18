@@ -123,14 +123,14 @@ contextualize(() => {
 
 		it("no shallow default in scope", () => {
 			// @ts-expect-error
-			attest(() => scope({ foo: "string = ''" })).throwsAndHasTypeError(
+			attest(() => type.module({ foo: "string = ''" })).throwsAndHasTypeError(
 				shallowDefaultableMessage
 			)
 
-			// @ts-expect-error
-			attest(() => scope({ foo: ["string", "=", ""] })).throwsAndHasTypeError(
-				shallowDefaultableMessage
-			)
+			attest(() =>
+				// @ts-expect-error
+				type.module({ foo: ["string", "=", ""] })
+			).throwsAndHasTypeError(shallowDefaultableMessage)
 		})
 
 		it("chained", () => {

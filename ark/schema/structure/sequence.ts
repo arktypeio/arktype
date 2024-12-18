@@ -622,14 +622,14 @@ const _intersectSequences = (
 	const kind: SequenceElementKind =
 		lHead.kind === "prefix" || rHead.kind === "prefix" ? "prefix"
 		: lHead.kind === "postfix" || rHead.kind === "postfix" ? "postfix"
-		: lHasPostfix || rHasPostfix ? "prefix"
+		: lHead.kind === "variadic" && rHead.kind === "variadic" ? "variadic"
 			// if either operand has postfix elements, the full-length
 			// intersection can't include optional elements (though they may
 			// exist in some of the fixed length variants)
+		: lHasPostfix || rHasPostfix ? "prefix"
 		: lHead.kind === "defaultables" || rHead.kind === "defaultables" ?
 			"defaultables"
-		: lHead.kind === "optionals" || rHead.kind === "optionals" ? "optionals"
-		: "variadic"
+		:	"optionals"
 
 	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
 		const postfixBranchResult = _intersectSequences({
@@ -665,7 +665,7 @@ const _intersectSequences = (
 				)
 			)
 			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
-		} else if (kind === "optionals") {
+		} else if (kind === "optionals" || kind === "defaultables") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple
 			// ends before the disjoint element would occur

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { type } from "arktype"
 import { shallowOptionalMessage } from "arktype/internal/parser/ast/validate.ts"
 
 contextualize(() => {
@@ -16,12 +17,12 @@ contextualize(() => {
 
 	it("no shallow default in scope", () => {
 		// @ts-expect-error
-		attest(() => scope({ foo: "string?" })).throwsAndHasTypeError(
+		attest(() => type.module({ foo: "string?" })).throwsAndHasTypeError(
 			shallowOptionalMessage
 		)
 
 		// @ts-expect-error
-		attest(() => scope({ foo: ["string", "?"] })).throwsAndHasTypeError(
+		attest(() => type.module({ foo: ["string", "?"] })).throwsAndHasTypeError(
 			shallowOptionalMessage
 		)
 	})
