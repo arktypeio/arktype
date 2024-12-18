@@ -1,7 +1,7 @@
 import { HomeLayout } from "fumadocs-ui/layouts/home"
 import type { ReactNode } from "react"
-import { FloatYourBoat } from "../../components/FloatYourBoat.jsx"
-import { baseOptions } from "../layout.config.jsx"
+import { FloatYourBoat } from "../../components/FloatYourBoat.tsx"
+import { baseOptions } from "../layout.config.tsx"
 
 export type LayoutProps = {
 	children: ReactNode

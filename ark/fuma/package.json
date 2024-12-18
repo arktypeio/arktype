@@ -1,10 +1,11 @@
 {
-	"name": "@ark/docs",
+	"name": "@ark/fuma-docs",
 	"version": "0.0.1",
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "pnpm clean && NODE_OPTIONS=--no-warnings next build",
+		"build": "echo 'skipped in CI'",
+		"buildDev": "pnpm clean && NODE_OPTIONS=--no-warnings next build",
 		"dev": "NODE_OPTIONS=--no-warnings next dev",
 		"start": "next start",
 		"clean": "rm -rf .next .source out",

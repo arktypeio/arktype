@@ -8,7 +8,7 @@ import {
 	DocsTitle
 } from "fumadocs-ui/page"
 import { notFound } from "next/navigation"
-import { source } from "../../../lib/source.js"
+import { source } from "../../../lib/source.ts"
 
 export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 	const params = await props.params

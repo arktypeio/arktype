@@ -1,5 +1,5 @@
 import { defineConfig, defineDocs } from "fumadocs-mdx/config"
-import { shikiConfig } from "./lib/shiki.js"
+import { shikiConfig } from "./lib/shiki.ts"
 
 export const { docs, meta } = defineDocs({
 	dir: "content/docs"

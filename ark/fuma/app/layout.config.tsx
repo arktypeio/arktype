@@ -5,7 +5,7 @@ import {
 	SiX
 } from "@icons-pack/react-simple-icons"
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared"
-import { ArkTypeLogo } from "../components/icons/arktype-logo"
+import { ArkTypeLogo } from "../components/icons/arktype-logo.tsx"
 
 /**
  * Shared layout configurations
