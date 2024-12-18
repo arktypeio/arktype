@@ -78,61 +78,56 @@ export class OptionalNode extends BaseProp<"optional"> {
 			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorphs: Morph[] = this.computeDefaultValueMorphs()
+	defaultValueMorphs: Morph[] =
+		this.hasDefault() ?
+			computeDefaultValueMorphs(this.key, this.value, this.default)
+		:	[]
 
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
-
-	private computeDefaultValueMorphs(): Morph[] {
-		if (!this.hasDefault()) return []
-
-		const defaultInput = this.default
-
-		if (typeof defaultInput === "function") {
-			return [
-				// if the value has a morph, pipe context through it
-				this.value.includesMorph ?
-					(data, ctx) => {
-						traverseKey(
-							this.key,
-							() => this.value((data[this.key] = defaultInput()), ctx),
-							ctx
-						)
-						return data
-					}
-				:	data => {
-						data[this.key] = defaultInput()
-						return data
-					}
-			]
-		}
-
-		// non-functional defaults can be safely cached as long as the morph is
-		// guaranteed to be pure and the output is primitive
-		const precomputedMorphedDefault =
-			this.value.includesMorph ? this.value.assert(defaultInput) : defaultInput
-
-		return [
-			hasDomain(precomputedMorphedDefault, "object") ?
-				// the type signature only allows this if the value was morphed
-				(data, ctx) => {
-					traverseKey(
-						this.key,
-						() => this.value((data[this.key] = defaultInput), ctx),
-						ctx
-					)
-					return data
-				}
-			:	data => {
-					data[this.key] = precomputedMorphedDefault
-					return data
-				}
-		]
-	}
 }
 
 export const Optional = {
 	implementation,
 	Node: OptionalNode
+}
+
+export const computeDefaultValueMorphs = (
+	key: PropertyKey,
+	value: BaseRoot,
+	defaultInput: unknown
+): Morph[] => {
+	if (typeof defaultInput === "function") {
+		return [
+			// if the value has a morph, pipe context through it
+			value.includesMorph ?
+				(data, ctx) => {
+					traverseKey(key, () => value((data[key] = defaultInput()), ctx), ctx)
+					return data
+				}
+			:	data => {
+					data[key] = defaultInput()
+					return data
+				}
+		]
+	}
+
+	// non-functional defaults can be safely cached as long as the morph is
+	// guaranteed to be pure and the output is primitive
+	const precomputedMorphedDefault =
+		value.includesMorph ? value.assert(defaultInput) : defaultInput
+
+	return [
+		hasDomain(precomputedMorphedDefault, "object") ?
+			// the type signature only allows this if the value was morphed
+			(data, ctx) => {
+				traverseKey(key, () => value((data[key] = defaultInput), ctx), ctx)
+				return data
+			}
+		:	data => {
+				data[key] = precomputedMorphedDefault
+				return data
+			}
+	]
 }
 
 export const assertDefaultValueAssignability = (

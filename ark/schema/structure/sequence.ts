@@ -21,6 +21,7 @@ import {
 import type { ExactLengthNode } from "../refinements/exactLength.ts"
 import type { MaxLengthNode } from "../refinements/maxLength.ts"
 import type { MinLengthNode } from "../refinements/minLength.ts"
+import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
@@ -37,15 +38,17 @@ import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
 } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
-import { assertDefaultValueAssignability } from "./optional.ts"
+import {
+	assertDefaultValueAssignability,
+	computeDefaultValueMorphs
+} from "./optional.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
-
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>
@@ -332,6 +335,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
+	defaultValueMorphs: Morph[][] =
+		this.defaultables?.map(([node, defaultValue], i) =>
+			computeDefaultValueMorphs(this.prefixLength + i, node, defaultValue)
+		) ?? []
+
+	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
 		const firstPostfixIndex = data.length - this.postfixLength
@@ -358,13 +368,17 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	traverseApply: TraverseApply<array> = (data, ctx) => {
-		for (let i = 0; i < data.length; i++) {
+		let i = 0
+		for (; i < data.length; i++) {
 			traverseKey(
 				i,
 				() => this.elementAtIndex(data, i).node.traverseApply(data[i], ctx),
 				ctx
 			)
 		}
+
+		for (; i < this.prefixLength + this.defaultablesLength; i++)
+			ctx.queueMorphs(this.defaultValueMorphs[i - this.prefixLength])
 	}
 
 	override get flatRefs(): FlatRef[] {
@@ -411,8 +425,19 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.prefix?.forEach((node, i) =>
 			js.traverseKey(`${i}`, `data[${i}]`, node)
 		)
-		this.optionals?.forEach((node, i) => {
+
+		this.defaultables?.forEach((node, i) => {
 			const dataIndex = `${i + this.prefixLength}`
+			js.if(`${dataIndex} >= ${js.data}.length`, () =>
+				js.traversalKind === "Allows" ?
+					js.return(true)
+				:	js.return(`ctx.queueMorphs(${this.defaultValueMorphsReference}[${i}])`)
+			)
+			js.traverseKey(dataIndex, `data[${dataIndex}]`, node[0])
+		})
+
+		this.optionals?.forEach((node, i) => {
+			const dataIndex = `${i + this.prefixLength + this.defaultablesLength}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
