@@ -16,8 +16,7 @@ In other words, **they just work**.
 
 Let's create a new `contact` Type that enforces our example constraints.
 
-```ts twoslash
-// hover to see the type-level representation
+```ts
 const contact = type({
 	// many common constraints are available as built-in keywords
 	email: "string.email",
@@ -27,9 +26,10 @@ const contact = type({
 
 // if you need the TS type, just infer it out as normal
 type Contact = typeof contact.infer
-// This should cut but it isn't working as expected
-
+// ---cut-start---
 // this empty line prevents the source syntax highlighting from breaking
+
+// ---cut-end---
 ```
 
 ## Compose
