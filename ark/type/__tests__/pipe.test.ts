@@ -56,14 +56,7 @@ contextualize(() => {
 			restringifyUser
 		])
 
-		attest(t.t).type.toString.snap(`(
-	In: string & {
-		" attributes": {
-			base: string
-			attributes: Nominal<"json">
-		}
-	}
-) => Out<string>`)
+		attest(t.t).type.toString.snap("(In: string) => Out<string>")
 
 		attest<string>(t.infer)
 		attest(t.json).snap({
@@ -378,9 +371,9 @@ contextualize(() => {
 		attest(types.c).type.toString.snap(`Type<
 	(In: { a: 1; b: 2 }) => Out<string>,
 	{
+		b: { b: 2 }
 		a: (In: { a: 1 }) => Out<string>
 		c: (In: { a: 1; b: 2 }) => Out<string>
-		b: { b: 2 }
 	}
 >`)
 		assertNodeKind(types.c.internal, "morph")
@@ -788,8 +781,8 @@ contextualize(() => {
 		})
 
 		attest(t).type.toString.snap(`Type<
-	| { l: 1; n: (In: numeric) => To<number> }
-	| { r: 1; n: (In: numeric) => To<number> },
+	| { l: 1; n: (In: string) => To<number> }
+	| { r: 1; n: (In: string) => To<number> },
 	{}
 >`)
 
@@ -820,7 +813,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 	it("multiple chained pipes", () => {
 		const t = type("string.trim").to("string.lower")
 
-		attest(t.t).type.toString.snap("(In: string) => To<lowercase>")
+		attest(t.t).type.toString.snap("(In: string) => To<string>")
 
 		attest(t("Success")).equals("success")
 		attest(t("success")).equals("success")

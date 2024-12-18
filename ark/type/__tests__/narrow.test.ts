@@ -208,13 +208,13 @@ contextualize(() => {
 		attest<{ foo: number }>(object.in.infer)
 
 		const nested = type({ foo: ["number.integer", "=>", n => n++] })
-		attest(nested.t).type.toString.snap("{ foo: (In: integer) => Out<number> }")
+		attest(nested.t).type.toString.snap("{ foo: (In: number) => Out<number> }")
 		attest<{ foo: number }>(nested.inferIn)
 		attest<{ foo: number }>(nested.in.infer)
 
 		const map = type.keywords.Map.narrow(() => true).pipe(m => m)
 		attest(map.t).type.toString.snap(`(
-	In: of<Map<unknown, unknown>, Anonymous>
+	In: Map<unknown, unknown>
 ) => Out<Map<unknown, unknown>>`)
 		attest(map.infer).type.toString.snap("Map<unknown, unknown>")
 		attest(map.inferIn).type.toString("Map<unknown, unknown>")
@@ -254,10 +254,9 @@ contextualize(() => {
 	})
 
 	it("unknown is narrowable", () => {
-		const t = type("unknown").narrow(() => true)
-		attest(t.t).type.toString.snap(`{
-	" attributes": { base: unknown; attributes: Anonymous }
-}`)
-		attest(t.expression).snap("unknown")
+		const unknownPredicate854 = () => true
+		const t = type("unknown").narrow(unknownPredicate854)
+		attest(t.t).type.toString.snap("unknown")
+		attest(t.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
 })

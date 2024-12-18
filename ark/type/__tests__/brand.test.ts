@@ -35,8 +35,8 @@ contextualize(() => {
 		})
 
 		attest(t.t).type.toString.snap(`{
-    foo: Brand<string, "foo">
-    bar: (In: string) => To<Brand<Json, "json">>
+	foo: Brand<string, "foo">
+	bar: (In: string) => To<Brand<Json, "json">>
 }`)
 		attest<{
 			foo: Brand<string, "foo">

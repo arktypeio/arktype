@@ -276,8 +276,8 @@ contextualize(() => {
 				b: { a: "a&b" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
 	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
+	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
 }>`)
 		})
 

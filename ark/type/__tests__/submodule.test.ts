@@ -96,7 +96,7 @@ contextualize.each(
 		it("can reference subaliases in expression", () => {
 			const dateFrom = type("string.date.parse | Date")
 
-			attest(dateFrom.t).type.toString.snap("Date | ((In: date) => To<Date>)")
+			attest(dateFrom.t).type.toString.snap("Date | ((In: string) => To<Date>)")
 
 			attest(dateFrom("05-21-1993")).instanceOf(Date)
 			attest(dateFrom(new Date())).instanceOf(Date)

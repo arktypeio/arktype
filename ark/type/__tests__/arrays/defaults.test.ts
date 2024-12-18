@@ -41,7 +41,7 @@ contextualize(() => {
 
 	it("defaults following prefix", () => {
 		const t = type(["string", "number = 5"])
-		attest(t.t).type.toString.snap("[Default<string, 5>, number]")
+		attest(t.t).type.toString.snap("[string, Default<number, 5>]")
 		attest(t.expression).snap("[string, number = 5]")
 		attest(t.json).snap({
 			sequence: { defaultables: [["number", 5]], prefix: ["string"] },
@@ -60,7 +60,9 @@ contextualize(() => {
 
 	it("defaults preceding variadic", () => {
 		const t = type(["number", "string = 'foo'", "...", "number[]"])
-		attest(t.t).type.toString.snap("[Default<string, 'foo'>, ...number[]]")
+		attest(t.t).type.toString.snap(
+			'[number, Default<string, "foo">, ...number[]]'
+		)
 		attest(t.expression).snap('[number, string = "foo", ...number[]]')
 		attest(t.json).snap({
 			sequence: {

@@ -717,11 +717,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.expression).snap(
 			"{ first_name?: (In: string) => Out<string <= 3 & >= 1> }"
 		)
-		attest(t.t).type.toString.snap(`{
-	first_name?: (
-		In: string
-	) => To<is<AtMostLength<3> & AtLeastLength<1>>>
-}`)
+		attest(t.t).type.toString.snap(
+			"{ first_name?: (In: string) => To<string> }"
+		)
 	})
 
 	it("cyclic narrow in scope", () => {
@@ -748,25 +746,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			root: "file|directory"
 		}).resolve("root")
 
-		attest(root.t).type.toString.snap(`	| {
-			type: "file"
-			name: is<LessThanLength<255> & MoreThanLength<0>>
-	  }
+		attest(root.t).type.toString.snap(`	| { type: "file"; name: string }
 	| {
 			type: "directory"
-			name: is<LessThanLength<255> & MoreThanLength<0>>
-			children: of<
-				(
-					| {
-							type: "file"
-							name: is<
-								LessThanLength<255> & MoreThanLength<0>
-							>
-					  }
-					| cyclic
-				)[],
-				Anonymous
-			>
+			name: string
+			children: ({ type: "file"; name: string } | cyclic)[]
 	  }`)
 	})
 
@@ -1045,8 +1029,6 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(feedbackSchema.expression).snap(
 			"{ contact: string == 0 | string /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
 		)
-		attest(feedbackSchema.t).type.toString.snap(
-			`{ contact: email | is<ExactlyLength<0>> }`
-		)
+		attest(feedbackSchema.t).type.toString.snap(`{ contact: string }`)
 	})
 })

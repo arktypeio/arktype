@@ -16,7 +16,7 @@ contextualize(() => {
 	(
 		In: FormData
 	) => To<{
-		email: email
+		email: string
 		file: File
 		tags: (In: string | string[]) => To<string[]>
 	}>,
