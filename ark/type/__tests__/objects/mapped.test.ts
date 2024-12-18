@@ -151,6 +151,6 @@ contextualize(() => {
 			bar?: number
 			foo: Default<string, "foot">
 		}>(t.t)
-		attest(t.expression).snap('{ foo?: string = "foot", bar?: number }')
+		attest(t.expression).snap('{ foo: string = "foot", bar?: number }')
 	})
 })
