@@ -1,8 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
 import { keywords, type } from "arktype"
-import type { of, string } from "arktype/internal/attributes.ts"
-import type { Matching } from "arktype/internal/keywords/string/string.ts"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
@@ -62,11 +60,10 @@ contextualize(() => {
 			named: "1"
 		})
 
-		const a = t.get("foo" as string & string.matching<"^f">)
+		const a = t.get("foo" as string)
 		attest<0>(a.t)
 		attest(a.expression).snap("undefined | 0")
 
-		// @ts-expect-error
 		attest(() => t.get("bar")).throws(
 			writeInvalidKeysMessage(t.expression, ["bar"])
 		)
@@ -81,34 +78,29 @@ contextualize(() => {
 			foof: { c: "1" }
 		})
 
-		const a = t.get("foo" as string.matching<"^f">)
+		const a = t.get("foo")
 
-		attest<{ a: 1 }>(a.infer)
+		attest<{ a: 1 } | { b: 1 }>(a.infer)
 		attest(a.expression).snap("{ a: 1 } | undefined")
 
-		const b = t.get("oof" as string.matching<"f$">)
-		attest<{ b: 1 }>(b.infer)
+		const b = t.get("oof")
+		attest<{ a: 1 } | { b: 1 }>(b.infer)
 		attest(b.expression).snap("{ b: 1 } | undefined")
 
-		const c = t.get("fof" as string.matching<"^f"> & string.matching<"f$">)
-		attest<{
-			a: 1
-			b: 1
-		}>(c.infer)
+		const c = t.get("fof" as string)
+		attest<
+			| {
+					a: 1
+			  }
+			| { b: 1 }
+		>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
-		const d = t.get("foof" as of<"foof", Matching<"^f"> & Matching<"f$">>)
-		// should include { c: 1 } as well but it seems TS can't infer it for now
-		attest<
-			{
-				a: 1
-			} & {
-				b: 1
-			}
-		>(d.infer)
+		const d = t.get("foof")
+
+		attest<{ c: 1 }>(d.infer)
 		attest(d.expression).snap("{ a: 1, b: 1, c: 1 }")
 
-		// @ts-expect-error
 		attest(() => t.get("goog").expression).throws(
 			writeInvalidKeysMessage(t.expression, ["goog"])
 		)

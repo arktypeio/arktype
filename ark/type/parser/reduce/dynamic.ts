@@ -35,7 +35,7 @@ export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	// set root type to `any` so that all constraints can be applied
-	root: BaseRoot<any> | undefined
+	root: BaseRoot | undefined
 	branches: BranchState = {
 		prefixes: [],
 		leftBound: null,

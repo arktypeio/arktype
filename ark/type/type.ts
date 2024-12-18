@@ -15,7 +15,7 @@ import {
 	type array,
 	type conform
 } from "@ark/util"
-import type { DefaultFor, distill } from "./attributes.ts"
+import type { distill } from "./attributes.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -27,15 +27,12 @@ import type {
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
-import type {
-	validateDeclared,
-	validateDefinition
-} from "./parser/definition.ts"
+import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	TupleInfixOperator
-} from "./parser/tuple.ts"
+} from "./parser/tupleExpressions.ts"
 import type {
 	InternalScope,
 	ModuleParser,
@@ -43,7 +40,6 @@ import type {
 	ScopeParser,
 	bindThis
 } from "./scope.ts"
-
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
 	// map over to remove call signatures
@@ -56,7 +52,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 
 	<const params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
-		def: validateDefinition<
+		def: type.validate<
 			def,
 			$,
 			baseGenericConstraints<parseValidGenericParams<params, $>>
@@ -81,7 +77,6 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
-			: one extends "=" ? [DefaultFor<distill.In<type.infer<NoInfer<zero>, $>>>]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r

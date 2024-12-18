@@ -1,5 +1,11 @@
 import { caller } from "@ark/fs"
-import { printable, snapshot, type Constructor } from "@ark/util"
+import {
+	printable,
+	snapshot,
+	type Constructor,
+	type ErrorType,
+	type isDisjoint
+} from "@ark/util"
 import prettier from "@prettier/sync"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
@@ -322,13 +328,33 @@ type snapProperty<expected, kind extends AssertionKind> = {
 
 export type Unwrapper<expected = unknown> = (opts?: UnwrapOptions) => expected
 
+export const nonOverlappingSatisfiesMessage =
+	"The type of your actual value and expected satisfies constraint have no overlap"
+
+export type nonOverlappingSatisfiesMessage =
+	typeof nonOverlappingSatisfiesMessage
+
+type validateExpectedOverlaps<expected, satisfies> =
+	isDisjoint<expected, satisfies> extends true ?
+		ErrorType<
+			nonOverlappingSatisfiesMessage,
+			{
+				actual: expected
+				satisfies: satisfies
+			}
+		>
+	:	unknown
+
 export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	snap: snapProperty<expected, kind>
 	equals: (value: expected) => nextAssertions<kind>
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: CompletionsSnap
-	satisfies: <def>(def: type.validate<def>) => nextAssertions<kind>
+	satisfies: <const def>(
+		def: type.validate<def> &
+			validateExpectedOverlaps<expected, type.infer.In<def>>
+	) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 	unwrap: Unwrapper<expected>

@@ -1,13 +1,13 @@
-import type { BaseRoot, resolvableReferenceIn } from "@ark/schema"
+import type { BaseParseContext, resolvableReferenceIn } from "@ark/schema"
 import {
 	throwInternalError,
 	throwParseError,
 	type ErrorMessage
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
-import type { resolutionToAst } from "../scope.ts"
+import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { inferAstRoot } from "./ast/infer.ts"
-import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.ts"
+import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
 import type { state, StaticState } from "./reduce/static.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
@@ -16,6 +16,30 @@ import {
 	writeUnexpectedCharacterMessage,
 	type parseOperator
 } from "./shift/operator/operator.ts"
+import { ArkTypeScanner } from "./shift/scanner.ts"
+
+export const parseString = (
+	def: string,
+	ctx: BaseParseContext
+): InnerParseResult => {
+	const aliasResolution = ctx.$.maybeResolveRoot(def)
+	if (aliasResolution) return aliasResolution
+
+	const aliasArrayResolution =
+		def.endsWith("[]") ?
+			ctx.$.maybeResolveRoot(def.slice(0, -2))?.array()
+		:	undefined
+
+	if (aliasArrayResolution) return aliasArrayResolution
+
+	const s = new DynamicState(new ArkTypeScanner(def), ctx)
+
+	const node = fullStringParse(s)
+
+	if (s.finalizer === ">") throwParseError(writeUnexpectedCharacterMessage(">"))
+
+	return node
+}
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -45,9 +69,9 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): BaseRoot => {
+export const fullStringParse = (s: DynamicState): InnerParseResult => {
 	s.parseOperand()
-	let result = parseUntilFinalizer(s).root
+	let result: InnerParseResult = parseUntilFinalizer(s).root
 	if (!result) {
 		return throwInternalError(
 			`Root was unexpectedly unset after parsing string '${s.scanner.scanned}'`
@@ -55,7 +79,7 @@ export const fullStringParse = (s: DynamicState): BaseRoot => {
 	}
 
 	if (s.finalizer === "=") result = parseDefault(s as DynamicStateWithRoot)
-	else if (s.finalizer === "?") result = result.optional()
+	else if (s.finalizer === "?") result = [result, "?"]
 
 	s.scanner.shiftUntilNonWhitespace()
 	if (s.scanner.lookahead) {

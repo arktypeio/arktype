@@ -16,16 +16,13 @@ import {
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
-	type Json,
+	type JsonStructure,
 	type WhitespaceChar
 } from "@ark/util"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
-import type {
-	inferDefinition,
-	validateDefinition
-} from "./parser/definition.ts"
+import type { inferDefinition } from "./parser/definition.ts"
 import { DynamicState } from "./parser/reduce/dynamic.ts"
 import type { state, StaticState } from "./parser/reduce/static.ts"
 import type { ArkTypeScanner } from "./parser/shift/scanner.ts"
@@ -252,7 +249,7 @@ export interface Generic<
 	arg$: Scope<arg$>
 
 	internal: GenericRoot
-	json: Json
+	json: JsonStructure
 }
 
 export type GenericConstructor<
@@ -414,7 +411,7 @@ export type GenericParser<$ = {}> = <
 
 interface GenericBodyParser<params extends array<GenericParamAst>, $> {
 	<const body>(
-		body: validateDefinition<body, $, baseGenericConstraints<params>>
+		body: type.validate<body, $, baseGenericConstraints<params>>
 	): Generic<params, body, $, $>
 
 	<hkt extends Hkt.constructor>(

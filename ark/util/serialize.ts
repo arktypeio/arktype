@@ -12,17 +12,17 @@ export type SerializationOptions = {
 	onBigInt?: (value: bigint) => string
 }
 
-export type Json = JsonObject | JsonArray
+export type JsonStructure = JsonObject | JsonArray
 
 export interface JsonObject {
-	[k: string]: JsonData
+	[k: string]: Json
 }
 
-export type JsonArray = JsonData[]
+export type JsonArray = Json[]
 
 export type JsonPrimitive = string | boolean | number | null
 
-export type JsonData = Json | JsonPrimitive
+export type Json = JsonStructure | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,

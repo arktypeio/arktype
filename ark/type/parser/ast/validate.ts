@@ -1,18 +1,14 @@
 import type {
 	arkKind,
-	GenericParamAst,
 	PrivateDeclaration,
-	writeMissingSubmoduleAccessMessage,
-	writeUnsatisfiedParameterConstraintMessage
+	writeMissingSubmoduleAccessMessage
 } from "@ark/schema"
 import type {
 	anyOrNever,
-	array,
 	BigintLiteral,
 	Completion,
 	ErrorMessage,
 	NumberLiteral,
-	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
 import type { Generic } from "../../generic.ts"
@@ -24,9 +20,11 @@ import type { validateRange } from "./bounds.ts"
 import type { validateDefault } from "./default.ts"
 import type { validateDivisor } from "./divisor.ts"
 import type {
-	DefAst,
 	GenericInstantiationAst,
-	inferAstRoot,
+	validateGenericInstantiation
+} from "./generic.ts"
+import type {
+	DefAst,
 	InferredAst,
 	InfixExpression,
 	PostfixExpression
@@ -41,46 +39,32 @@ export type validateAst<ast, $, args> =
 		ast[2] extends PrivateDeclaration<infer name> ?
 			ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 		:	undefined
-	: ast extends PostfixExpression<infer operator, infer operand> ?
-		operator extends "[]" ? validateAst<operand, $, args>
-		: operator extends "?" ? validateAst<operand, $, args>
-		: never
+	: ast extends PostfixExpression<"[]" | "?", infer operand> ?
+		// shallowOptionalMessage is handled in type.validate
+		// invalidOptionalKeyKindMessage is handled in property parsing
+
+		// it would be natural to handle them here by adding context
+		// to the generic args, but it makes the cache less reusable
+		// (was tested and had a significant impact on repo-wide perf)
+		validateAst<operand, $, args>
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
 		operator extends "&" | "|" ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
-		: operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
+		: // shallowDefaultableMessage is handled in type.validate
+		// invalidDefaultableKeyKindMessage is handled in property parsing
+		operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
 		: operator extends "#" ? validateAst<l, $, args>
 		: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
 	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
+		validateGenericInstantiation<g, argAsts, $, args>
 	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {
 			ast: ast
 		}
 
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`
-
-type validateGenericArgs<
-	params extends array<GenericParamAst>,
-	argAsts extends array,
-	$,
-	args,
-	indices extends 1[]
-> =
-	argAsts extends readonly [infer arg, ...infer argsTail] ?
-		validateAst<arg, $, args> extends infer e extends ErrorMessage ? e
-		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
-			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
-		:	ErrorMessage<
-				writeUnsatisfiedParameterConstraintMessage<
-					params[indices["length"]][0],
-					typeToString<params[indices["length"]][1]>,
-					astToString<arg>
-				>
-			>
-	:	undefined
 
 export const writePrefixedPrivateReferenceMessage = <name extends string>(
 	name: name
@@ -114,15 +98,27 @@ type validateInferredAst<inferred, def extends string> =
 	: undefined
 
 export type validateString<def extends string, $, args> =
-	validateAst<parseString<def, $, args>, $, args> extends (
-		infer result extends ErrorMessage
-	) ?
-		result extends Completion<infer text> ?
-			text
-		:	result
-	:	def
+	parseString<def, $, args> extends infer ast ?
+		validateAst<ast, $, args> extends infer result extends ErrorMessage ?
+			// completions have the same suffix as error messages as a sentinel
+			// but don't want to include that in what TS suggests
+			result extends Completion<infer text> ?
+				text
+			:	result
+		:	def
+	:	never
 
 type validateInfix<ast extends InfixExpression, $, args> =
 	validateAst<ast[0], $, args> extends infer e extends ErrorMessage ? e
 	: validateAst<ast[2], $, args> extends infer e extends ErrorMessage ? e
 	: undefined
+
+export const shallowOptionalMessage =
+	"Optional definitions like 'string?' are only valid as properties in an object or tuple"
+
+export type shallowOptionalMessage = typeof shallowOptionalMessage
+
+export const shallowDefaultableMessage =
+	"Defaultable definitions like 'number = 0' are only valid as properties in an object or tuple"
+
+export type shallowDefaultableMessage = typeof shallowDefaultableMessage

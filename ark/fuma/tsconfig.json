@@ -1,0 +1,33 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		// unfortunately, twoslash doesn't seem to respect customConditions,
+		// so .d.ts will need to be rebuilt to see its static compilation updated
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"allowJs": true,
+		"jsx": "preserve",
+		// we don't need declarations for docs, and enabling it causes
+		// pnpm resolution errors
+		"declaration": false,
+		"lib": ["ESNext", "DOM"],
+		"baseUrl": ".",
+		"plugins": [
+			{
+				"name": "next"
+			}
+		],
+		"incremental": true
+	},
+	"mdx": {
+		"checkMdx": true
+	},
+	"include": [
+		"next.config.ts",
+		"next-env.d.ts",
+		"**/*.ts",
+		"**/*.tsx",
+		".next/types/**/*.ts"
+	],
+	"exclude": ["node_modules"]
+}

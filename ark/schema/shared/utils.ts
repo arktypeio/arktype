@@ -4,7 +4,8 @@ import {
 	noSuggest,
 	type array,
 	type mutable,
-	type show
+	type show,
+	type Thunk
 } from "@ark/util"
 import type { BaseConstraint } from "../constraint.ts"
 import type { GenericRoot } from "../generic.ts"
@@ -63,3 +64,6 @@ export const hasArkKind = <kind extends ArkKind>(
 
 export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "root") || hasArkKind(value, "constraint")
+
+export type unwrapDefault<thunkableValue> =
+	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue

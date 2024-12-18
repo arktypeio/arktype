@@ -9,7 +9,7 @@ import {
 	printable,
 	throwParseError,
 	type JsTypeOf,
-	type Json,
+	type JsonStructure,
 	type Key,
 	type SerializedPrimitive,
 	type array,
@@ -519,7 +519,7 @@ export const Union = {
 	Node: UnionNode
 }
 
-const discriminantToJson = (discriminant: Discriminant): Json => ({
+const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 	kind: discriminant.kind,
 	path: discriminant.path.map(k =>
 		typeof k === "string" ? k : compileSerializedValue(k)

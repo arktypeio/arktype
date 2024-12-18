@@ -163,42 +163,20 @@ const myObject = type({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
-
-```ts
-const myObject = type({
-	defaultableKey: type("boolean", "=", false)
-})
-```
-
-    </SyntaxTab>
-
 </Tabs>
 
-:::caution[Optional and default only work within objects!]
-Adding a `optional` or `default` to a `Type` doesn't alter its standalone behavior.
+:::caution[Optional and default only work within objects and tuples!]
+Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
 
-Rather, it adds metadata that changes how it works when referenced from an object or tuple.
+This reflects the fact that in ArkType's type system, optionality and defaultability are only meaningful in reference to a property. Attempting to create an optional or defaultable value outside an object like `type("string?")` will result in a `ParseError`.
 
-<details>
-	<summary>See an example</summary>
+To create a `Type` accepting `string` or `undefined`, use a union like `type("string | undefined")`.
+
+To have it transform `undefined` to an empty string, use an explicit morph like:
 
 ```ts
-const optionalString = type.string.optional()
-
-optionalString.allows(undefined) // false
-
-const objectWithOptionalKey = type({
-	foo: optionalString
-})
-
-objectWithOptionalKey.allows({}) // true
+const fallbackString = type("string | undefined").pipe(v => v ?? "")
 ```
-
-</details>
-
-Prefer the key-embedded syntax (`"optionalKey?":`) where possible.
-:::
 
 <a name="properties/index" />
 ##### index

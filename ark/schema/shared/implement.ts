@@ -4,7 +4,7 @@ import {
 	throwParseError,
 	type Entry,
 	type Json,
-	type JsonData,
+	type JsonStructure,
 	type KeySet,
 	type arrayIndexOf,
 	type entryOf,
@@ -254,7 +254,7 @@ type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
 	keyof BaseNormalizedSchema
 >
 
-export const defaultValueSerializer = (v: unknown): JsonData => {
+export const defaultValueSerializer = (v: unknown): Json => {
 	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
 
 	if (typeof v === "number") {
@@ -275,8 +275,8 @@ export type NodeKeyImplementation<
 > = requireKeys<
 	{
 		preserveUndefined?: true
-		child?: boolean
-		serialize?: (schema: instantiated) => JsonData
+		child?: boolean | ((value: instantiated) => BaseNode[])
+		serialize?: (schema: instantiated) => Json
 		reduceIo?: (
 			ioKind: "in" | "out",
 			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
@@ -300,7 +300,9 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: keySchemaDefinitions<d>
 	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
-	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
+	finalizeInnerJson?: (json: {
+		[k in keyof d["inner"]]: Json
+	}) => JsonStructure
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
@@ -374,7 +376,7 @@ export interface UnknownAttachments {
 
 	readonly json: object
 	readonly hash: string
-	readonly collapsibleJson: JsonData
+	readonly collapsibleJson: Json
 	readonly children: BaseNode[]
 }
 
@@ -382,9 +384,9 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
-	json: Json
-	innerJson: Json
-	collapsibleJson: JsonData
+	json: JsonStructure
+	innerJson: JsonStructure
+	collapsibleJson: Json
 	children: nodeOfKind<d["childKind"]>[]
 }
 

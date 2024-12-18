@@ -406,7 +406,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			} else {
 				const index = Number.parseInt(key as string)
 				if (index < this.sequence.prevariadic.length) {
-					const fixedElement = this.sequence.prevariadic[index]
+					const fixedElement = this.sequence.prevariadic[index].node
 					value = value?.and(fixedElement) ?? fixedElement
 					required ||= index < this.sequence.prefixLength
 				} else if (this.sequence.variadic) {
@@ -465,15 +465,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const { optional, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
-			required: this.props.map(prop => {
-				if (prop.hasKind("required")) return prop
-				// strip default/optional meta from the value so that it
-				// isn't reduced back to an optional prop
-				return this.$.node("required", {
-					key: prop.key,
-					value: prop.value.withoutOptionalOrDefaultMeta()
-				})
-			})
+			required: this.props.map(prop =>
+				prop.hasKind("optional") ?
+					{
+						key: prop.key,
+						value: prop.value
+					}
+				:	prop
+			)
 		})
 	}
 

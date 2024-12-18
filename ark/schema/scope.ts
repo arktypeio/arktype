@@ -10,7 +10,7 @@ import {
 	type Constructor,
 	type Dict,
 	type Fn,
-	type Json,
+	type JsonStructure,
 	type anyOrNever,
 	type array,
 	type conform,
@@ -142,7 +142,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
-	readonly json: Json = {}
+	readonly json: JsonStructure = {}
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
@@ -612,7 +612,7 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 	return resolution
 }
 
-const resolutionsToJson = (resolutions: InternalResolutions): Json =>
+const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>
 	flatMorph(resolutions, (k, v) => [
 		k,
 		hasArkKind(v, "root") || hasArkKind(v, "generic") ? v.json

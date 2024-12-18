@@ -24,8 +24,8 @@ contextualize(() => {
 
 			attest(json({})).equals({})
 			attest(json([])).equals([])
-			attest(json(5).toString()).snap("must be an object or an array (was 5)")
-			attest(json({ foo: [5n] }).toString()).snap(
+			attest(json(5)?.toString()).snap("must be an object or an array (was 5)")
+			attest(json({ foo: [5n] })?.toString()).snap(
 				"foo[0] must be an object (was a bigint) or must be an array (was object)"
 			)
 		})

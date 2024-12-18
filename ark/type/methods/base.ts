@@ -16,22 +16,16 @@ import type {
 	Callable,
 	ErrorMessage,
 	inferred,
-	Json,
+	JsonStructure,
 	unset
 } from "@ark/util"
 import type {
-	associateAttributes,
-	associateAttributesFromSchema,
-	brandAttributes,
-	Default,
-	DefaultFor,
+	defaultFor,
 	distill,
 	inferIntersection,
 	inferMorphOut,
 	inferPipes,
 	InferredMorph,
-	Nominal,
-	Optional,
 	Out,
 	To
 } from "../attributes.ts"
@@ -40,7 +34,6 @@ import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
-
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
@@ -55,8 +48,7 @@ interface Type<out t = unknown, $ = {}>
 	// A type representing the output the `Type` will return (after morphs are
 	// applied to valid input)
 	infer: this["inferOut"]
-	inferInWithAttributes: distill.withAttributes.In<t>
-	inferOutWithAttributes: distill.withAttributes.Out<t>
+
 	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
 	// A type representing the input the `Type` will accept (before morphs are applied)
@@ -71,8 +63,8 @@ interface Type<out t = unknown, $ = {}>
 	: true
 
 	/** Internal JSON representation of this `Type` */
-	json: Json
-	toJSON(): Json
+	json: JsonStructure
+	toJSON(): JsonStructure
 	meta: ArkAmbient.meta
 	precompilation: string | undefined
 	toJsonSchema(): JsonSchema
@@ -132,19 +124,15 @@ interface Type<out t = unknown, $ = {}>
 		...args: validateChainedAsArgs<castTo>
 	): instantiateType<castTo, $>
 
-	brand<const name extends string, r = brandAttributes<t, Nominal<name>>>(
+	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
 	): instantiateType<r, $>
-
-	brandAttributes(): instantiateType<distill.brand<t>, $>
-
-	unbrandAttributes(): instantiateType<distill.unbrand<t>, $>
 
 	/**
 	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
 	 * @example const inputT = T.in
 	 */
-	get in(): instantiateType<this["inferInWithAttributes"], $>
+	get in(): instantiateType<this["inferIn"], $>
 	/**
 	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
 	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
@@ -191,16 +179,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
-		r = [narrowed] extends [never] ?
-			t extends InferredMorph<infer i, infer o> ?
-				o extends To ?
-					(
-						In: i
-					) => To<associateAttributesFromSchema<o[1], "predicate", Predicate>>
-				:	(
-						In: i
-					) => Out<associateAttributesFromSchema<o[1], "predicate", Predicate>>
-			:	associateAttributesFromSchema<t, "predicate", Predicate>
+		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<infer i, infer o> ?
 			o extends To ?
 				(In: i) => To<narrowed>
@@ -212,8 +191,7 @@ interface Type<out t = unknown, $ = {}>
 
 	satisfying<
 		narrowed extends this["inferIn"] = never,
-		r = [narrowed] extends [never] ?
-			associateAttributesFromSchema<t, "predicate", Predicate>
+		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(
@@ -262,9 +240,7 @@ interface Type<out t = unknown, $ = {}>
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
 	): reduceOut
 
-	// inferring r into an alias in the return doesn't
-	// work the way it does for the other methods here
-	optional<r = associateAttributes<t, Optional>>(): instantiateType<r, $>
+	optional(): [this, "?"]
 
 	/**
 	 * Add a default value for this `Type` when it is used as a property.\
@@ -274,12 +250,9 @@ interface Type<out t = unknown, $ = {}>
 	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
 	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
 	 */
-	default<
-		const value extends this["inferIn"],
-		r = associateAttributes<t, Default<value>>
-	>(
-		value: DefaultFor<value>
-	): instantiateType<r, $>
+	default<const value extends defaultFor<this["inferIn"]>>(
+		value: value
+	): [this, "=", value]
 
 	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>

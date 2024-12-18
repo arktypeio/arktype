@@ -151,9 +151,6 @@ const pipeMorphed = (
 
 			let meta: BaseMeta | undefined
 
-			if ("default" in from.meta) meta = { default: from.meta.default }
-			else if (from.meta.optional) meta = { optional: true }
-
 			if (viableBranches.length === 1) {
 				const onlyBranch = viableBranches[0]
 				if (!meta) return onlyBranch

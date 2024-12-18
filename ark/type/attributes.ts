@@ -1,33 +1,19 @@
+import type { ArkError, ArkErrors, Morph } from "@ark/schema"
 import type {
-	ArkError,
-	ArkErrors,
-	Constraint,
-	constraintKindOf,
-	Morph,
-	NodeSchema
-} from "@ark/schema"
-import {
-	noSuggest,
-	type anyOrNever,
-	type array,
-	type conform,
-	type equals,
-	type Hkt,
-	type intersectArrays,
-	type isSafelyMappable,
-	type leftIfEqual,
-	type Primitive,
-	type show
+	anyOrNever,
+	array,
+	Brand,
+	equals,
+	Hkt,
+	intersectArrays,
+	isSafelyMappable,
+	Primitive,
+	show
 } from "@ark/util"
-import type { arkPrototypes } from "./keywords/constructors/constructors.ts"
-import type { Date } from "./keywords/constructors/Date.ts"
+import type { arkPrototypes } from "./keywords/constructors.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { number } from "./keywords/number/number.ts"
-import type { Matching, string } from "./keywords/string/string.ts"
 import type { Type } from "./type.ts"
-export type { arkPrototypes as object } from "./keywords/constructors/constructors.ts"
-export type { number } from "./keywords/number/number.ts"
-export type { string } from "./keywords/string/string.ts"
+export type { arkPrototypes as object } from "./keywords/constructors.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -37,64 +23,6 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export const attributesKey = noSuggest("attributes")
-
-export type attributesKey = typeof attributesKey
-
-export type of<base, attributes extends Attributes> = base & {
-	[attributesKey]: {
-		base: base
-		attributes: attributes
-	}
-}
-
-export type brand<base, attributes extends Attributes> = base & {
-	[attributesKey]: {
-		base: base
-		attributes: attributes
-		brand: true
-	}
-}
-
-export interface ConstrainingAttributeValuesByKind {
-	divisibleBy: number
-	moreThan: number
-	atLeast: number
-	atMost: number
-	lessThan: number
-	matching: string
-	moreThanLength: number
-	atLeastLength: number
-	atMostLength: number
-	lessThanLength: number
-	atOrAfter: string
-	after: string
-	atOrBefore: string
-	before: string
-	nominal: string
-}
-
-export type ConstrainingAttributeKind = keyof ConstrainingAttributeValuesByKind
-
-export type ConstrainingAttributesByKind = {
-	[k in ConstrainingAttributeKind]?: Record<
-		ConstrainingAttributeValuesByKind[k],
-		true
-	>
-}
-
-export interface MetaAttributeValuesByKind extends Optional, Default {}
-
-export type MetaAttributeKind = keyof MetaAttributeValuesByKind
-
-export type MetaAttributesByKind = Partial<MetaAttributeValuesByKind>
-
-export interface Attributes
-	extends ConstrainingAttributesByKind,
-		MetaAttributesByKind {}
-
-export type AttributeKind = keyof Attributes
-
 export type LimitLiteral = number | DateLiteral
 
 export type normalizeLimit<limit> =
@@ -102,397 +30,95 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-export type constraint<rule> = { [k in rule & PropertyKey]: true }
-
-export type Anonymous = Nominal<"?">
-
-export type Nominal<name> = {
-	nominal: constraint<name>
-}
-
-export type AtLeast<rule> = {
-	atLeast: constraint<rule>
-}
-
-export type AtMost<rule> = {
-	atMost: constraint<rule>
-}
-
-export type MoreThan<rule> = {
-	moreThan: constraint<rule>
-}
-
-export type LessThan<rule> = {
-	lessThan: constraint<rule>
-}
-
-export type DivisibleBy<rule> = {
-	divisibleBy: constraint<rule>
-}
-
-export type AtOrAfter<rule> = {
-	atOrAfter: constraint<rule>
-}
-
-export type AtOrBefore<rule> = {
-	atOrBefore: constraint<rule>
-}
-
-export type After<rule> = {
-	after: constraint<rule>
-}
-
-export type Before<rule> = {
-	before: constraint<rule>
-}
-
-export type primitiveConstraintKindOf<In> = Extract<
-	Constraint.PrimitiveKind,
-	constraintKindOf<In>
->
-
-export type AtLeastLength<rule> = {
-	atLeastLength: constraint<rule>
-}
-
-export type AtMostLength<rule> = {
-	atMostLength: constraint<rule>
-}
-
-export type MoreThanLength<rule> = {
-	moreThanLength: constraint<rule>
-}
-
-export type LessThanLength<rule> = {
-	lessThanLength: constraint<rule>
-}
-
-export type ExactlyLength<rule> = {
-	atLeastLength: constraint<rule>
-	atMostLength: constraint<rule>
-}
-
-export type AttributeInferenceBehavior = "brand" | "associate"
-
-export type associateAttributes<
-	t,
-	attributes extends Attributes
-> = attachAttributes<t, attributes, "associate">
-
-export type brandAttributes<
-	t,
-	attributes extends Attributes
-> = attachAttributes<t, attributes, "brand">
-
-type attachAttributes<
-	t,
-	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior = "associate",
-	unmorphedT = Exclude<t, InferredMorph>
-> =
-	t extends InferredMorph<infer i, infer o> ?
-		(In: leftIfEqual<i, _attachAttributes<i, attributes, behavior>>) => o
-	:	leftIfEqual<unmorphedT, _attachAttributes<unmorphedT, attributes, behavior>>
-
-type _attachAttributes<
-	t,
-	attributes extends Attributes,
-	behavior extends AttributeInferenceBehavior,
-	distributed = t
-> =
-	distributed extends null | undefined ? distributed
-	: distributed extends of<infer base, infer existingAttributes> ?
-		"brand" extends keyof distributed[attributesKey] | behavior ?
-			brandMultiple<base, existingAttributes & attributes>
-		:	associateMultiple<base, existingAttributes & attributes>
-	: extractIfSingleAttributeEntry<attributes> extends (
-		AttributeEntry<infer kind, infer value>
-	) ?
-		"brand" extends behavior ?
-			brandSingle<t, attributes, kind, value>
-		:	associateSingle<t, attributes, kind, value>
-	: "brand" extends behavior ? brandMultiple<t, attributes>
-	: associateMultiple<t, attributes>
-
-type associateMultiple<t, attributes extends Attributes> =
-	[t, string] extends [string, t] ? string.is<attributes>
-	: [t, number] extends [number, t] ? number.is<attributes>
-	: [t, Date] extends [Date, t] ? Date.is<attributes>
-	: of<t, attributes>
-
-type brandMultiple<t, attributes extends Attributes> =
-	[t, string] extends [string, t] ? string.branded.is<attributes>
-	: [t, number] extends [number, t] ? number.branded.is<attributes>
-	: [t, Date] extends [Date, t] ? Date.branded.is<attributes>
-	: brand<t, attributes>
-
-type associateSingle<
-	t,
-	attributes extends Attributes,
-	kind extends AttributeKind,
-	value
-> =
-	[t, string] extends [string, t] ? string.raw.withSingleAttribute<kind, value>
-	: [t, number] extends [number, t] ?
-		number.raw.withSingleAttribute<kind, value>
-	: [t, Date] extends [Date, t] ? Date.raw.withSingleAttribute<kind, value>
-	: of<t, attributes>
-
-type brandSingle<
-	t,
-	attributes extends Attributes,
-	kind extends AttributeKind,
-	value
-> =
-	[t, string] extends [string, t] ?
-		string.branded.raw.withSingleAttribute<kind, value>
-	: [t, number] extends [number, t] ?
-		number.branded.raw.withSingleAttribute<kind, value>
-	: [t, Date] extends [Date, t] ?
-		Date.branded.raw.withSingleAttribute<kind, value>
-	:	brand<t, attributes>
-
-type AttributeEntry<kind extends AttributeKind, value> = [kind, value]
-
-/**
- * Check if attributes is a single attribute kind + value that can be collapsed
- * for display purposes, e.g.:
- *
- * // has multiple attribute kinds
- * { divisibleBy: { 2: true }, moreThan: { 3: true } } => null
- *
- * // has multiple attribute values of a single kind
- * { divisibleBy: { 2: true, 3: true } } => null
- *
- * // has a single attribute kind + value, can be collapsed
- * { divisibleBy: { 2: true } } => ["divisibleBy", 2]
- */
-type extractIfSingleAttributeEntry<attributes extends Attributes> =
-	extractIfSingleEntry<attributes> extends (
-		AttributeEntry<infer kind, infer attributesValue>
-	) ?
-		extractIfSingleEntry<attributesValue> extends [infer key, infer value] ?
-			// the relevant values for optional and default aren't
-			// stored in keys like constraining attributes
-			AttributeEntry<kind, kind extends MetaAttributeKind ? value : key>
-		:	null
-	:	null
-
-type extractIfSingleEntry<o> = {
-	[k in keyof o]: keyof o extends k ? [key: k, value: o[k]] : null
-}[keyof o]
-
-export interface LengthAttributeValuesByKind {
-	moreThanLength: number
-	atLeastLength: number
-	atMostLength: number
-	lessThanLength: number
-}
-
-export type LengthAttributeKind = keyof LengthAttributeValuesByKind
-
-export type normalizePrimitiveConstraintRoot<
-	schema extends NodeSchema<Constraint.PrimitiveKind>
-> =
-	"rule" extends keyof schema ? conform<schema["rule"], PropertyKey>
-	:	conform<schema, PropertyKey>
-
-type minLengthSchemaToConstraint<schema, rule> =
-	schema extends { exclusive: true } ? MoreThanLength<rule>
-	:	AtLeastLength<rule>
-
-type maxLengthSchemaToConstraint<schema, rule> =
-	schema extends { exclusive: true } ? LessThanLength<rule> : AtMostLength<rule>
-
-export type associateAttributesFromSchema<
-	t,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = associateAttributes<t, schemaToAttributes<kind, schema>>
-
-// useful for helping TypeScript infer that adding attributes to a type
-// like string will still be a string for methods like .matching
-export type associateAttributesFromStringSchema<
-	t extends string,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = conform<associateAttributes<t, schemaToAttributes<kind, schema>>, string>
-
-export type associateAttributesFromNumberSchema<
-	t extends number,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = conform<associateAttributes<t, schemaToAttributes<kind, schema>>, number>
-
-export type associateAttributesFromDateSchema<
-	t extends Date,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = conform<associateAttributes<t, schemaToAttributes<kind, schema>>, Date>
-
-export type associateAttributesFromArraySchema<
-	t extends readonly unknown[],
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> = conform<
-	associateAttributes<t, schemaToAttributes<kind, schema>>,
-	readonly unknown[]
->
-
-export type schemaToAttributes<
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> =
-	normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-		kind extends "pattern" ? Matching<rule>
-		: kind extends "divisor" ? DivisibleBy<rule>
-		: kind extends "min" ? number.minSchemaToConstraint<schema, rule>
-		: kind extends "max" ? number.maxSchemaToConstraint<schema, rule>
-		: kind extends "minLength" ? minLengthSchemaToConstraint<schema, rule>
-		: kind extends "maxLength" ? maxLengthSchemaToConstraint<schema, rule>
-		: kind extends "exactLength" ? ExactlyLength<rule>
-		: kind extends "after" ? Date.afterSchemaToConstraint<schema, rule>
-		: kind extends "before" ? Date.beforeSchemaToConstraint<schema, rule>
-		: Anonymous
-	:	never
-
 export type distill<
 	t,
-	opts extends distill.Options = {}
-> = finalizeDistillation<t, _distill<t, opts>>
+	endpoint extends distill.Endpoint
+> = finalizeDistillation<t, _distill<t, endpoint, never>>
 
 export declare namespace distill {
 	export type Endpoint = "in" | "out" | "out.introspectable"
 
-	export type Options = {
-		endpoint?: Endpoint
-		attributes?: "preserve" | "brand" | "unbrand"
-	}
+	export type In<t> = distill<t, "in">
 
-	export type In<t> = distill<t, { endpoint: "in" }>
-
-	export type Out<t> = distill<t, { endpoint: "out" }>
-
-	export namespace withAttributes {
-		export type In<t> = distill<t, { endpoint: "in"; attributes: "preserve" }>
-
-		export type Out<t> = distill<t, { endpoint: "out"; attributes: "preserve" }>
-
-		export namespace introspectable {
-			export type Out<t> = distill<
-				t,
-				{ endpoint: "out.introspectable"; attributes: "preserve" }
-			>
-		}
-	}
-
-	export type brand<t> = distill<t, { attributes: "brand" }>
-
-	export type unbrand<t> = distill<t, { attributes: "unbrand" }>
+	export type Out<t> = distill<t, "out">
 
 	export namespace introspectable {
-		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
+		export type Out<t> = distill<t, "out.introspectable">
 	}
 }
 
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
-type _distill<t, opts extends distill.Options> =
+type _distill<t, endpoint extends distill.Endpoint, seen> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
-	: [t] extends [anyOrNever] ? t
-	: t extends of<infer base, infer attributes> ?
-		opts["attributes"] extends "preserve" ?
-			associateAttributes<_distill<base, opts>, attributes>
-		: opts["attributes"] extends "unbrand" ?
-			associateAttributes<_distill<base, opts>, attributes>
-		: opts["attributes"] extends "brand" ?
-			brand<_distill<base, opts>, attributes>
-		: "brand" extends keyof t[attributesKey] ?
-			brand<_distill<base, opts>, attributes>
-		:	_distill<base, opts>
+	: [t] extends [anyOrNever | seen] ? t
 	: unknown extends t ? unknown
-	: t extends TerminallyInferredObject | Primitive ? t
-	: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, opts>
-	: t extends array ? distillArray<t, opts>
-	: // we excluded this from TerminallyInferredObjectKind so that those types could be
-	// inferred before checking morphs/defaults, which extend Function
-	t extends Function ? t
-	: isSafelyMappable<t> extends true ? distillMappable<t, opts>
+	: t extends Brand<infer base> ?
+		endpoint extends "in" ?
+			base
+		:	t
+	: // Function is excluded from TerminallyInferredObjectKind so that
+	// those types could be inferred before checking for morphs
+	t extends TerminallyInferredObject | Primitive ? t
+	: t extends Function ?
+		t extends InferredMorph<infer i, infer o> ?
+			distillIo<i, o, endpoint, seen>
+		:	t
+	: t extends Default<infer constraint> ? _distill<constraint, endpoint, seen>
+	: t extends array ? distillArray<t, endpoint, seen | t>
+	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint, seen | t>
 	: t
 
-type distillMappable<o, opts extends distill.Options> =
-	opts["endpoint"] extends "in" ?
+type distillMappable<o, endpoint extends distill.Endpoint, seen> =
+	endpoint extends "in" ?
 		show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
-				[k in keyof o as k extends inferredOptionalOrDefaultKeyOf<o> ? never
-				:	k]: _distill<o[k], opts>
+				[k in keyof o as k extends inferredDefaultKeyOf<o> ? never
+				:	k]: _distill<o[k], endpoint, seen>
 			} & {
-				[k in inferredOptionalOrDefaultKeyOf<o>]?: _distill<o[k], opts>
+				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], endpoint, seen>
 			}
 		>
-	:	show<
-			{
-				// this is homomorphic so includes parsed optional keys like "key?": "string"
-				[k in keyof o as k extends inferredOptionalKeyOf<o> ? never
-				:	k]: _distill<o[k], opts>
-			} & {
-				[k in keyof o as k extends inferredOptionalKeyOf<o> ? k
-				:	never]?: _distill<o[k], opts>
-			}
-		>
+	:	{ [k in keyof o]: _distill<o[k], endpoint, seen> }
 
-type distillIo<i, o extends Out, opts extends distill.Options> =
-	opts["endpoint"] extends "in" ? _distill<i, opts>
-	: opts["endpoint"] extends "out.introspectable" ?
-		o extends To<infer validatedOut> ?
-			_distill<validatedOut, opts>
-		:	unknown
-	: opts["endpoint"] extends "out" ? _distill<o[1], opts>
-	: _distill<o[1], opts> extends infer r ?
-		o extends To ?
-			(In: i) => To<r>
-		:	(In: i) => Out<r>
-	:	never
+type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
+	endpoint extends "out" ? _distill<o["t"], endpoint, seen>
+	: endpoint extends "in" ? _distill<i, endpoint, seen>
+	: // out.introspectable only respects To (schema-validated output)
+	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint, seen>
+	: unknown
 
-export type inferredOptionalOrDefaultKeyOf<o> =
-	| inferredDefaultKeyOf<o>
-	| inferredOptionalKeyOf<o>
-
-type inExtends<v, t> =
-	[v] extends [anyOrNever] ? false
-	: [v] extends [t] ? true
-	: [v] extends [InferredMorph<infer i>] ? inExtends<i, t>
-	: false
+type unwrapInput<t> =
+	t extends InferredMorph<infer i> ?
+		t extends anyOrNever ?
+			t
+		:	i
+	:	t
 
 type inferredDefaultKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
-			inExtends<o[k], InferredDefault> extends true ?
-				k
+			unwrapInput<o[k]> extends Default<infer t> ?
+				[t] extends [anyOrNever] ?
+					never
+				:	k
 			:	never
 		:	never
 	:	never
 
-type inferredOptionalKeyOf<o> =
-	keyof o extends infer k ?
-		k extends keyof o ?
-			inExtends<o[k], InferredOptional> extends true ?
-				k
-			:	never
-		:	never
-	:	never
-
-type distillArray<t extends array, opts extends distill.Options> =
+type distillArray<t extends array, endpoint extends distill.Endpoint, seen> =
 	// fast path for non-tuple arrays with no extra props
 	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ? alignReadonly<_distill<t[number], opts>[], t>
+	t[number][] extends t ?
+		alignReadonly<_distill<t[number], endpoint, seen>[], t>
 	:	distillNonArraykeys<
 			t,
-			alignReadonly<_distillArray<[...t], opts, []>, t>,
-			opts
+			alignReadonly<distillArrayFromPrefix<[...t], endpoint, seen, []>, t>,
+			endpoint,
+			seen
 		>
 
 type alignReadonly<result extends unknown[], original extends array> =
@@ -502,40 +128,49 @@ type alignReadonly<result extends unknown[], original extends array> =
 type distillNonArraykeys<
 	originalArray extends array,
 	distilledArray,
-	opts extends distill.Options
+	endpoint extends distill.Endpoint,
+	seen
 > =
-	keyof originalArray extends keyof distilledArray | attributesKey ?
-		distilledArray
+	keyof originalArray extends keyof distilledArray ? distilledArray
 	:	distilledArray &
 			_distill<
 				{
-					[k in keyof originalArray as k extends (
-						| keyof distilledArray
-						| (opts["attributes"] extends true ? never : attributesKey)
-					) ?
-						never
+					[k in keyof originalArray as k extends keyof distilledArray ? never
 					:	k]: originalArray[k]
 				},
-				opts
+				endpoint,
+				seen
 			>
 
-type _distillArray<
+type distillArrayFromPrefix<
 	t extends array,
-	opts extends distill.Options,
+	endpoint extends distill.Endpoint,
+	seen,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
-		_distillArray<tail, opts, [...prefix, _distill<head, opts>]>
-	:	[...prefix, ...distillPostfix<t, opts>]
+		distillArrayFromPrefix<
+			tail,
+			endpoint,
+			seen,
+			[...prefix, _distill<head, endpoint, seen>]
+		>
+	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, seen, []>]
 
-type distillPostfix<
+type distillArrayFromPostfix<
 	t extends array,
-	opts extends distill.Options,
-	postfix extends array = []
+	endpoint extends distill.Endpoint,
+	seen,
+	postfix extends array
 > =
 	t extends readonly [...infer init, infer last] ?
-		distillPostfix<init, opts, [_distill<last, opts>, ...postfix]>
-	:	[...{ [i in keyof t]: _distill<t[i], opts> }, ...postfix]
+		distillArrayFromPostfix<
+			init,
+			endpoint,
+			seen,
+			[_distill<last, endpoint, seen>, ...postfix]
+		>
+	:	[...{ [i in keyof t]: _distill<t[i], endpoint, seen> }, ...postfix]
 
 type BuiltinTerminalObjectKind = Exclude<
 	keyof arkPrototypes.instances,
@@ -549,20 +184,15 @@ type TerminallyInferredObject =
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		t extends of<unknown, infer constraints> ?
-			"brand" extends keyof t[attributesKey] ?
-				brand<narrowed, constraints>
-			:	of<narrowed, constraints>
-		:	narrowed
-	:	associateAttributes<t, Anonymous>
+		narrowed
+	:	t
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
-			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
-			: inferMorphOut<head> extends infer out ?
-				(In: distill.withAttributes.In<t>) => Out<out>
-			:	never,
+			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			: inferMorphOut<head> extends infer out ? (In: distill.In<t>) => Out<out>
+			: never,
 			tail
 		>
 	:	t
@@ -572,39 +202,75 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 	ArkError | ArkErrors
 >
 
-export type Out<o = any> = ["=>", o, boolean]
+declare const morphOutSymbol: unique symbol
 
-export type To<o = any> = ["=>", o, true]
+export interface Out<o = any> {
+	[morphOutSymbol]: true
+	t: o
+	introspectable: boolean
+}
+
+export interface To<o = any> extends Out<o> {
+	introspectable: true
+}
 
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
-export type Optional = {
-	optional: {
-		"=": true
-	}
-}
+declare const defaultsTo: unique symbol
 
-export type InferredOptional<t = unknown> = of<t, Optional>
+export type Default<t = unknown, v = unknown> = { [defaultsTo]: [t, v] }
 
-export type Default<v = any> = {
-	defaultsTo: {
-		value: v
-	}
-}
+// we have to distribute over morphs to preserve the i/o relationship
+// this avoids stuff like:
+// Default<boolean, true> => Default<true, true> | Default<false, true>
+export type withDefault<t, v, undistributed = t> =
+	t extends InferredMorph ? addDefaultToMorph<t, v>
+	:	Default<Exclude<undistributed, InferredMorph>, v>
 
-export type DefaultFor<t> =
+type addDefaultToMorph<t extends InferredMorph, v> =
+	[normalizeMorphDistribution<t>] extends [InferredMorph<infer i, infer o>] ?
+		(In: Default<i, v>) => o
+	:	never
+
+// will return `boolean` if some morphs are unequal
+// so should be compared against `true`
+type normalizeMorphDistribution<
+	t,
+	undistributedIn = t extends InferredMorph<infer i> ? i : never,
+	undistributedOut extends Out = [t] extends [InferredMorph<any, infer o>] ?
+		[o] extends [To<infer unwrappedOut>] ?
+			To<unwrappedOut>
+		:	o
+	:	never
+> =
+	// using Extract here rather than distributing normally helps TS collapse the union
+	// was otherwise getting duplicated branches, e.g.:
+	// (In: boolean) => To<boolean> | (In: boolean) => To<boolean>
+	// revert to `t extends InferredMorph...` if it doesn't break the tests in the future
+	| (Extract<t, InferredMorph> extends anyOrNever ? never
+	  : Extract<t, InferredMorph> extends InferredMorph<infer i, infer o> ?
+			[undistributedOut] extends [o] ? (In: undistributedIn) => undistributedOut
+			: [undistributedIn] extends [i] ?
+				(In: undistributedIn) => undistributedOut
+			:	t
+	  :	never)
+	| Exclude<t, InferredMorph>
+
+export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
 	  : t extends Primitive ? t
 	  : never)
 	| (() => t)
 
-export type InferredDefault<t = unknown, v = any> = of<t, Default<v>>
-
 export type termOrType<t> = t | Type<t, any>
 
-export type inferIntersection<l, r> = _inferIntersection<l, r, false>
+export type inferIntersection<l, r> = normalizeMorphDistribution<
+	_inferIntersection<l, r, false>
+>
 
-export type inferPipe<l, r> = _inferIntersection<l, r, true>
+export type inferPipe<l, r> = normalizeMorphDistribution<
+	_inferIntersection<l, r, true>
+>
 
 type _inferIntersection<l, r, piped extends boolean> =
 	[l & r] extends [infer t extends anyOrNever] ? t
@@ -618,12 +284,6 @@ type _inferIntersection<l, r, piped extends boolean> =
 		: (In: _inferIntersection<lIn, r, false>) => lOut
 	: r extends InferredMorph<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => rOut
-	: l extends of<infer lBase, infer lAttributes> ?
-		r extends of<infer rBase, infer rAttributes> ?
-			of<_inferIntersection<lBase, rBase, piped>, lAttributes & rAttributes>
-		:	of<_inferIntersection<lBase, r, piped>, lAttributes>
-	: r extends of<infer rBase, infer rAttributes> ?
-		of<_inferIntersection<rBase, l, piped>, rAttributes>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?

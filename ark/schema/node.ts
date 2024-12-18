@@ -9,7 +9,7 @@ import {
 	throwError,
 	type Dict,
 	type GuardablePredicate,
-	type Json,
+	type JsonStructure,
 	type Key,
 	type array,
 	type conform,
@@ -82,7 +82,9 @@ export abstract class BaseNode<
 
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
-					return pipedFromCtx.data
+					return pipedFromCtx.hasError() ?
+							pipedFromCtx.errors
+						:	pipedFromCtx.data
 				}
 
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
@@ -112,6 +114,7 @@ export abstract class BaseNode<
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||
+		(this.hasKind("sequence") && this.defaultablesLength !== 0) ||
 		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
 
@@ -244,7 +247,7 @@ export abstract class BaseNode<
 		return this.$.node(this.kind, ioInner)
 	}
 
-	toJSON(): Json {
+	toJSON(): JsonStructure {
 		return this.json
 	}
 

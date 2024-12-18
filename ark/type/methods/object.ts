@@ -11,7 +11,7 @@ import type {
 	ErrorType,
 	inferred,
 	intersectUnion,
-	Json,
+	JsonStructure,
 	Key,
 	listable,
 	merge,
@@ -19,13 +19,7 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type {
-	associateAttributes,
-	Attributes,
-	Default,
-	of,
-	Optional
-} from "../attributes.ts"
+import type { Default, withDefault } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -131,40 +125,8 @@ type typePropOf<o, $> =
 	:	never
 
 type typeProp<o, k extends keyof o, $, t = o[k] & ({} | null)> =
-	t extends of<infer base, infer attributes> ?
-		attributes extends Default<infer defaultValue> ?
-			DefaultedTypeProp<
-				k & Key,
-				keyof attributes extends keyof Default ? base
-				:	of<
-						base,
-						// Shouldn't need this extends check, logged a TS bug:
-						// https://github.com/microsoft/TypeScript/issues/60233
-						Omit<attributes, keyof Default> extends (
-							infer attributes extends Attributes
-						) ?
-							attributes
-						:	never
-					>,
-				defaultValue,
-				$
-			>
-		: attributes extends Optional ?
-			BaseTypeProp<
-				"optional",
-				k & Key,
-				keyof attributes extends keyof Optional ? base
-				:	of<
-						base,
-						Omit<attributes, keyof Default> extends (
-							infer attributes extends Attributes
-						) ?
-							attributes
-						:	never
-					>,
-				$
-			>
-		:	never
+	t extends Default<infer t, infer defaultValue> ?
+		DefaultedTypeProp<k & Key, t, defaultValue, $>
 	:	BaseTypeProp<
 			k extends optionalKeyOf<o> ? "optional" : "required",
 			k & Key,
@@ -183,7 +145,7 @@ export interface BaseTypeProp<
 	key: k
 	value: instantiateType<v, $>
 	meta: ArkEnv.meta
-	toJSON: () => Json
+	toJSON: () => JsonStructure
 }
 
 export interface DefaultedTypeProp<
@@ -237,9 +199,9 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		[prop in props[number] as Extract<
 			applyHomomorphicOptionality<t, prop>,
 			{ kind: "optional"; default: unknown }
-		>["key"]]: associateAttributes<
+		>["key"]]: withDefault<
 			prop["value"][inferred],
-			Default<prop["default" & keyof prop]>
+			prop["default" & keyof prop]
 		>
 	}
 >

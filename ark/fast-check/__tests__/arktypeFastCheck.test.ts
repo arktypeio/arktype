@@ -1,10 +1,10 @@
-import { attest } from "@ark/attest"
+import { attest, contextualize } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
 import { scope, type } from "arktype"
 import { type Arbitrary, assert, property } from "fast-check"
 import { describe } from "mocha"
 
-describe("Arbitrary Generation", () => {
+contextualize(() => {
 	describe("union", () => {
 		it("boolean", () => {
 			const t = type("boolean")
@@ -17,6 +17,7 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 	})
+
 	describe("number", () => {
 		it("number", () => {
 			const t = type("number")
@@ -66,6 +67,7 @@ describe("Arbitrary Generation", () => {
 			)
 		})
 	})
+
 	describe("string", () => {
 		it("string", () => {
 			const t = type("string")
@@ -98,6 +100,7 @@ describe("Arbitrary Generation", () => {
 			attest(() => arkToArbitrary(t)).throws("Bounded regex is not supported.")
 		})
 	})
+
 	describe("misc", () => {
 		it("unknown", () => {
 			const t = type("unknown")
@@ -178,6 +181,7 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 	})
+
 	describe("tuple", () => {
 		it("empty tuple", () => {
 			const t = type([])
@@ -216,6 +220,7 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 	})
+
 	describe("object", () => {
 		it("{}", () => {
 			const t = type({})
@@ -263,7 +268,7 @@ describe("Arbitrary Generation", () => {
 		})
 		it("multiple index signatures", () => {
 			const t = type({
-				"[string?]": "number|string",
+				"[string]": "number|string",
 				"[symbol]": "string"
 			})
 			const arbitrary = arkToArbitrary(t)
@@ -314,6 +319,7 @@ describe("Arbitrary Generation", () => {
 			assertProperty(arbitrary, t)
 		})
 	})
+
 	describe("proto", () => {
 		it("Set", () => {
 			const t = type("Set")
