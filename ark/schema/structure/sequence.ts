@@ -514,8 +514,7 @@ const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
 		if (element.kind === "variadic") result.variadic = element.node
 		else if (element.kind === "defaultables") {
 			result.defaultables = append(result.defaultables, [
-				element.node,
-				element.default
+				[element.node, element.default]
 			])
 		} else result[element.kind] = append(result[element.kind], element.node)
 

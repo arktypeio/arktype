@@ -158,7 +158,11 @@ const appendNamedProp = <kind extends Prop.Kind>(
 	inner: Inner<kind>,
 	ctx: BaseParseContext
 ) => {
-	structure[kind] = append(structure[kind], ctx.$.node(kind, inner))
+	structure[kind] = append(
+		// doesn't seem like this cast should be necessary
+		structure[kind] as MutableStructureSchema[Prop.Kind],
+		ctx.$.node(kind, inner)
+	)
 }
 
 export type inferObjectLiteral<def extends object, $, args> = show<

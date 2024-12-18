@@ -139,7 +139,7 @@ const appendDefaultableElement = (
 	// value's assignability to element will be checked when the
 	// sequence is instantiated by @ark/schema
 	// e.g. [string, number = 0]
-	base.defaultables = append(base.defaultables, [element, value])
+	base.defaultables = append(base.defaultables, [[element, value]])
 	return base
 }
 

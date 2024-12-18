@@ -6,11 +6,11 @@ contextualize(() => {
 	it("single element tuple", () => {
 		const t = type([["number", "=", 5]])
 		attest(t.t).type.toString.snap("[Default<number, 5>]")
-		attest(t.expression).snap("[number?]")
+		attest(t.expression).snap("[number = 5]")
 		attest(t.json).snap({
-			sequence: { defaults: [5], optionals: ["number"] },
+			sequence: { defaultables: [["number", 5]] },
 			proto: "Array",
-			maxLength: 1
+			exactLength: 0
 		})
 		attest(t([])).equals([5])
 		attest(t([1])).equals([1])

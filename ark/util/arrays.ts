@@ -174,7 +174,7 @@ export type AppendOptions = {
  */
 export const append = <
 	to extends unknown[] | undefined,
-	value extends listable<(to & {})[number]>
+	value extends appendableValue<to>
 >(
 	to: to,
 	value: value,
@@ -198,6 +198,14 @@ export const append = <
 	return to as never
 }
 
+// ensure a nested array element is not treated as a list to append
+export type appendableValue<to extends array | undefined> =
+	to extends array<infer element> ?
+		element extends array ?
+			array<element>
+		:	listable<element>
+	:	never
+
 /**
  * Concatenates an element or list with a readonly list
  *
@@ -206,7 +214,7 @@ export const append = <
  */
 export const conflatenate = <element>(
 	to: readonly element[] | undefined | null,
-	elementOrList: listable<element> | undefined | null
+	elementOrList: appendableValue<readonly element[]> | undefined | null
 ): readonly element[] => {
 	if (elementOrList === undefined || elementOrList === null)
 		return to ?? ([] as never)
@@ -219,13 +227,12 @@ export const conflatenate = <element>(
 /**
  * Concatenates a variadic list of elements or lists with a readonly list
  *
- * @param {to} to - The base list.
  * @param {elementsOrLists} elementsOrLists - The elements or lists to concatenate.
  */
 export const conflatenateAll = <element>(
 	...elementsOrLists: (listable<element> | undefined | null)[]
 ): readonly element[] =>
-	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
+	elementsOrLists.reduce<readonly element[]>(conflatenate as never, [])
 
 export interface ComparisonOptions<t = unknown> {
 	isEqual?: (l: t, r: t) => boolean
