@@ -178,13 +178,18 @@ export default tseslint.config(
 		}
 	},
 	{
-		files: ["**/ark/attest/**", "**/ark/fs/**", "**/ark/docs/**"],
+		files: [
+			"**/ark/attest/**",
+			"**/ark/fs/**",
+			"**/ark/docs/**",
+			"**/ark/fuma/**"
+		],
 		rules: {
 			"import/no-extraneous-dependencies": "warn"
 		}
 	},
 	{
-		files: ["**/ark/repo/**", "**/ark/docs/**"],
+		files: ["**/ark/repo/**", "**/ark/docs/**", "**/ark/fuma/**"],
 		rules: {
 			"@typescript-eslint/explicit-module-boundary-types": "off"
 		}
