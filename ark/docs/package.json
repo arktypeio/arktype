@@ -22,7 +22,7 @@
 		"@shikijs/twoslash": "1.22.2",
 		"arkdark": "workspace:*",
 		"arktype": "workspace:*",
-		"astro": "4.16.17",
+		"astro": "4.16.18",
 		"astro-og-canvas": "0.5.4",
 		"canvaskit-wasm": "0.39.1",
 		"framer-motion": "11.11.17",
