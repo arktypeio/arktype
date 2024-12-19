@@ -1,14 +1,15 @@
 import type { ArkError, ArkErrors, Morph } from "@ark/schema"
-import type {
-	anyOrNever,
-	array,
-	Brand,
-	equals,
-	Hkt,
-	intersectArrays,
-	isSafelyMappable,
-	Primitive,
-	show
+import {
+	noSuggest,
+	type anyOrNever,
+	type array,
+	type Brand,
+	type equals,
+	type Hkt,
+	type intersectArrays,
+	type isSafelyMappable,
+	type Primitive,
+	type show
 } from "@ark/util"
 import type { arkPrototypes } from "./keywords/constructors.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -202,10 +203,10 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 	ArkError | ArkErrors
 >
 
-declare const morphOutSymbol: unique symbol
+const isMorphOutKey = noSuggest("isMorphOut")
 
 export interface Out<o = any> {
-	[morphOutSymbol]: true
+	[isMorphOutKey]: true
 	t: o
 	introspectable: boolean
 }
@@ -216,9 +217,9 @@ export interface To<o = any> extends Out<o> {
 
 export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
 
-declare const defaultsTo: unique symbol
+const defaultsToKey = noSuggest("defaultsTo")
 
-export type Default<t = unknown, v = unknown> = { [defaultsTo]: [t, v] }
+export type Default<t = unknown, v = unknown> = { [defaultsToKey]: [t, v] }
 
 // we have to distribute over morphs to preserve the i/o relationship
 // this avoids stuff like:
