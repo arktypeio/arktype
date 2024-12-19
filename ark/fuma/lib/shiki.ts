@@ -130,11 +130,19 @@ declare global {
 	}
 })
 
-export const shikiConfig: RehypeCodeOptions = {
+export const shikiConfig = {
 	themes: {
 		dark: arkDarkTheme,
 		light: arkDarkTheme
 	},
-	langs: ["json", "bash", { ...arkTypeTmJson, name: "ts" }],
+	langs: ["json", "bash", { ...arkTypeTmJson, name: "ark-ts" }],
 	transformers: [twoslash, transformerNotationErrorLevel()]
-}
+} as const satisfies RehypeCodeOptions
+
+export type shikiConfig = typeof shikiConfig
+
+export type BuiltinLang = {
+	[i in keyof shikiConfig["langs"]]: extractName<shikiConfig["langs"][i]>
+}[number]
+
+type extractName<lang> = lang extends { name: infer name } ? name : lang

@@ -1,6 +1,6 @@
 import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../module.ts"
-import { arkModule } from "./utils.ts"
+import { Scope } from "../scope.ts"
 
 /**
  * As per the ECMA-262 specification:
@@ -34,7 +34,7 @@ export const integer = rootSchema({
 	divisor: 1
 })
 
-export const number: number.module = arkModule({
+export const number: number.module = Scope.module({
 	root: intrinsic.number,
 	integer,
 	epoch,

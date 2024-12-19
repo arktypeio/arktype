@@ -11,7 +11,7 @@ Objects definitions can include any combination of required, optional, defaultab
 <a name="properties/required" />
 ##### required
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -44,12 +44,12 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 <a name="properties/optional" />
 ##### optional
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -102,7 +102,7 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 :::caution[Optional properties cannot be present with the value undefined]
 
@@ -131,7 +131,7 @@ const errorResult = myObj({ key: undefined })
 <a name="properties/defaultable" />
 ##### defaultable
 
-<Tabs>
+<SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
@@ -162,7 +162,7 @@ const myObject = type({
 
     </SyntaxTab>
 
-</Tabs>
+</SyntaxTabs>
 
 :::caution[Optional and default only work within objects and tuples!]
 Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
@@ -176,6 +176,8 @@ To have it transform `undefined` to an empty string, use an explicit morph like:
 ```ts
 const fallbackString = type("string | undefined").pipe(v => v ?? "")
 ```
+
+:::
 
 <a name="properties/index" />
 ##### index

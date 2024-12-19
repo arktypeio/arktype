@@ -9,9 +9,9 @@ import {
 } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
-import { arkModule } from "./utils.ts"
+import { Scope } from "../scope.ts"
 
-export const arkTsKeywords: arkTsKeywords = arkModule({
+export const arkTsKeywords: arkTsKeywords = Scope.module({
 	bigint: intrinsic.bigint,
 	boolean: intrinsic.boolean,
 	false: intrinsic.false,
@@ -47,7 +47,7 @@ export declare namespace arkTsKeywords {
 	}
 }
 
-export const unknown = arkModule({
+export const unknown = Scope.module({
 	root: intrinsic.unknown,
 	any: intrinsic.unknown
 })
@@ -61,7 +61,7 @@ export declare namespace unknown {
 	}
 }
 
-export const json = arkModule({
+export const json = Scope.module({
 	root: intrinsic.json,
 	stringify: node("morph", {
 		in: intrinsic.json,
@@ -79,7 +79,7 @@ export declare namespace json {
 	}
 }
 
-export const object = arkModule({
+export const object = Scope.module({
 	root: intrinsic.object,
 	json
 })
@@ -162,7 +162,7 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-export const arkTsGenerics: arkTsGenerics.module = arkModule({
+export const arkTsGenerics: arkTsGenerics.module = Scope.module({
 	Exclude,
 	Extract,
 	Omit,

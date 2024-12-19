@@ -4,18 +4,18 @@ import deepIntrospectability from "!./snippets/deepIntrospectability.twoslash.js
 import intrinsicOptimization from "!./snippets/intrinsicOptimization.twoslash.js?raw"
 import unparalleledDx from "!./snippets/unparalleledDx.twoslash.js?raw"
 import type { propwiseXor } from "@ark/util"
-import {
-	highlight as shikiHighlight,
-	type HighlightOptions
-} from "fumadocs-core/server"
+import type { HighlightOptions } from "fumadocs-core/server"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
 import { cn } from "fumadocs-ui/components/api"
 import {
 	CodeBlock as FumaCodeBlock,
 	Pre
 } from "fumadocs-ui/components/codeblock"
+import { toJsxRuntime } from "hast-util-to-jsx-runtime"
+import React from "react"
+import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import { getSingletonHighlighter } from "shiki"
-import { shikiConfig } from "../lib/shiki.ts"
+import { shikiConfig, type BuiltinLang } from "../lib/shiki.ts"
 
 const snippetContentsById = {
 	betterErrors,
@@ -27,10 +27,6 @@ const snippetContentsById = {
 
 export type SnippetId = keyof typeof snippetContentsById
 
-const langs = ["ts", "bash", "jsonc"] as const satisfies string[]
-
-export type BuiltinLang = (typeof langs)[number]
-
 export type CodeBlockProps = {
 	/** @default "ts" */
 	lang?: BuiltinLang
@@ -38,8 +34,8 @@ export type CodeBlockProps = {
 
 // preload languages for shiki
 // https://github.com/fuma-nama/fumadocs/issues/1095
-await getSingletonHighlighter({
-	langs
+const highlighter = await getSingletonHighlighter({
+	langs: shikiConfig.langs
 })
 
 const components: HighlightOptions["components"] = {
@@ -59,26 +55,30 @@ Object.assign(components, {
 	PopupTrigger
 })
 
-export const CodeBlock: React.FC<CodeBlockProps> = async ({
-	lang = "ts",
+export const CodeBlock: React.FC<CodeBlockProps> = ({
+	lang = "ark-ts",
 	children,
 	fromFile
 }) => {
 	children ??= snippetContentsById[fromFile!]
 
-	const highlighted = await highlight(lang, children)
+	const highlighted = highlight(lang, children)
 
 	return <FumaCodeBlock keepBackground>{highlighted}</FumaCodeBlock>
 }
 
-const highlight = async (lang: BuiltinLang, contents: string) => {
+const highlight = (lang: BuiltinLang, contents: string) => {
 	try {
-		return await shikiHighlight(contents, {
+		const hast = highlighter.codeToHast(contents, {
 			...shikiConfig,
-			meta: {
-				__raw: "twoslash"
-			},
-			lang,
+			lang
+		})
+
+		return toJsxRuntime(hast, {
+			Fragment,
+			jsx,
+			jsxs,
+			development: false,
 			components
 		})
 	} catch (e) {

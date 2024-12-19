@@ -335,8 +335,6 @@ export declare namespace scope {
 	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
 }
 
-export const module: ModuleParser = InternalScope.module
-
 export interface Scope<$ = {}> {
 	t: $
 	[arkKind]: "scope"
