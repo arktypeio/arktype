@@ -24,7 +24,7 @@ export default () => (
 					Type syntax you already know with safety and completions unlike
 					anything you&apos;ve ever seen
 				</p>
-				<CodeBlock fromFile="unparalleledDx" />
+				<CodeBlock fromFile="unparalleledDx" includesCompletions />
 			</ArkCard>
 			<ArkCard title="Faster... everything" icon={<RocketIcon />}>
 				<p>

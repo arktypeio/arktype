@@ -116,6 +116,10 @@ div.twoslash-popup-container {
 	white-space: pre;
 }
 
+.completions-block code {
+	padding-bottom: 3rem;
+}
+
 /* Firefox specific rules */
 @-moz-document url-prefix() {
 	/* The backdrop-filter above doesn't work by default yet on Firefox so we do this instead  */

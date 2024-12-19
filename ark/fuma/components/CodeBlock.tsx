@@ -30,12 +30,16 @@ export type SnippetId = keyof typeof snippetContentsById
 export type CodeBlockProps = {
 	/** @default "ts" */
 	lang?: BuiltinLang
+	style?: React.CSSProperties
+	className?: string
+	includesCompletions?: boolean
 } & propwiseXor<{ children: string }, { fromFile: SnippetId }>
 
 // preload languages for shiki
 // https://github.com/fuma-nama/fumadocs/issues/1095
 const highlighter = await getSingletonHighlighter({
-	langs: shikiConfig.langs
+	langs: shikiConfig.langs,
+	themes: [shikiConfig.themes.dark]
 })
 
 const components: HighlightOptions["components"] = {
@@ -56,15 +60,29 @@ Object.assign(components, {
 })
 
 export const CodeBlock: React.FC<CodeBlockProps> = ({
-	lang = "ark-ts",
+	lang = "ts",
 	children,
-	fromFile
+	fromFile,
+	style,
+	className,
+	includesCompletions
 }) => {
 	children ??= snippetContentsById[fromFile!]
 
 	const highlighted = highlight(lang, children)
 
-	return <FumaCodeBlock keepBackground>{highlighted}</FumaCodeBlock>
+	return (
+		<FumaCodeBlock
+			className={cn(
+				className,
+				includesCompletions ? "completions-block" : undefined
+			)}
+			keepBackground
+			style={style}
+		>
+			{highlighted}
+		</FumaCodeBlock>
+	)
 }
 
 const highlight = (lang: BuiltinLang, contents: string) => {
@@ -78,7 +96,6 @@ const highlight = (lang: BuiltinLang, contents: string) => {
 			Fragment,
 			jsx,
 			jsxs,
-			development: false,
 			components
 		})
 	} catch (e) {

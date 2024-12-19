@@ -135,7 +135,7 @@ export const shikiConfig = {
 		dark: arkDarkTheme,
 		light: arkDarkTheme
 	},
-	langs: ["json", "bash", { ...arkTypeTmJson, name: "ark-ts" }],
+	langs: ["json", "bash", { ...arkTypeTmJson, name: "ts" }],
 	transformers: [twoslash, transformerNotationErrorLevel()]
 } as const satisfies RehypeCodeOptions
 
