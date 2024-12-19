@@ -120,6 +120,10 @@ div.twoslash-popup-container {
 	padding-bottom: 3rem;
 }
 
+:focus-visible {
+	outline: none;
+}
+
 /* Firefox specific rules */
 @-moz-document url-prefix() {
 	/* The backdrop-filter above doesn't work by default yet on Firefox so we do this instead  */
