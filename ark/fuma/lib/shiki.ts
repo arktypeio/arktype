@@ -1,22 +1,25 @@
 import { transformerNotationErrorLevel } from "@shikijs/transformers"
 import type { RehypeCodeOptions } from "fumadocs-core/mdx-plugins"
 import { transformerTwoslash } from "fumadocs-twoslash"
+import { createRequire } from "node:module"
 import { defaultCompilerOptions } from "twoslash"
 
-const { default: arkTypePackageJson } = await import("arkdark/package.json", {
-	with: { type: "json" }
-})
+/** for some reason a standard import with an attribute like:
+ 
+    import arkDarkTheme from "arkdark/arkdark.json" with { type: "json" }
+    
+results in an error like:
 
-const { default: arkTypeTmJson } = await import(
-	"arkdark/tsWithArkType.tmLanguage.json",
-	{
-		with: { type: "json" }
-	}
-)
+	Module "file:///home/ssalb/arktype/ark/dark/arkdark.json" needs an import attribute of "type: json"
 
-const { default: arkDarkTheme } = await import("arkdark/arkdark.json", {
-	with: { type: "json" }
-})
+despite it having the attribute. Using require as a workaround- convert to an import
+like the one above if possible in the future without breaking the build.*/
+
+const require = createRequire(import.meta.url)
+
+const arkDarkTheme = require("arkdark/arkdark.json")
+const arkTypePackageJson = require("arkdark/package.json")
+const arkTypeTmJson = require("arkdark/tsWithArkType.tmLanguage.json")
 
 // Theme adjustments
 /** should match the css rule for .bg-fd-secondary\/50 */
