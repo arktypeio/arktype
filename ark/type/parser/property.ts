@@ -10,7 +10,6 @@ import {
 	type ErrorType,
 	type typeToString
 } from "@ark/util"
-import type { validateString } from "./ast/validate.ts"
 import {
 	parseInnerDefinition,
 	type inferDefinition,
@@ -70,26 +69,17 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 	// an already optional or index key
 	def extends OptionalPropertyDefinition ?
 		ErrorMessage<invalidOptionalKeyKindMessage>
-	: def extends DefaultablePropertyTuple ?
+	: isDefaultable<def, $, args> extends true ?
 		ErrorMessage<invalidDefaultableKeyKindMessage>
-	: def extends PossibleDefaultableStringDefinition ?
-		validatePossibleStringDefault<
-			def,
-			$,
-			args,
-			invalidDefaultableKeyKindMessage
-		>
 	:	validateInnerDefinition<def, $, args>
 
-export type validatePossibleStringDefault<
-	def extends string,
-	$,
-	args,
-	errorMessage extends string
-> =
-	parseString<def, $, args> extends DefaultablePropertyTuple ?
-		ErrorMessage<errorMessage>
-	:	validateString<def, $, args>
+export type isDefaultable<def, $, args> =
+	def extends DefaultablePropertyTuple ? true
+	: def extends PossibleDefaultableStringDefinition ?
+		parseString<def, $, args> extends DefaultablePropertyTuple ?
+			true
+		:	false
+	:	false
 
 type validateSpread<def, inferredProperty, $, args> =
 	inferredProperty extends object ? validateInnerDefinition<def, $, args>

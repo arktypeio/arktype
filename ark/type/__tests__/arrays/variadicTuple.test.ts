@@ -104,4 +104,12 @@ contextualize(() => {
 			type(["number = 0", "...", "boolean[]", "symbol"])
 		).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
 	})
+
+	it("doesn't mistake a string literal containing '=' for defaultable", () => {
+		const t = type(["'='", "number"])
+
+		attest<["=", number]>(t.t)
+		attest(t.infer).type.toString.snap(`["=", number]`)
+		attest(t.expression).snap('["=", number]')
+	})
 })

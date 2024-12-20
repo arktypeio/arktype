@@ -23,8 +23,8 @@ import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
 import {
 	parseProperty,
 	type DefaultablePropertyTuple,
-	type OptionalPropertyDefinition,
-	type PossibleDefaultableStringDefinition
+	type isDefaultable,
+	type OptionalPropertyDefinition
 } from "./property.ts"
 
 export const parseTupleLiteral = (
@@ -240,6 +240,12 @@ type PreparsedElement = {
 
 declare namespace PreparsedElement {
 	export type from<result extends PreparsedElement> = result
+
+	export type required = "required"
+
+	export type optionals = "optionals"
+
+	export type defaultables = "defaultables"
 }
 
 type preparseNextState<s extends SequenceParseState, $, args> =
@@ -262,11 +268,10 @@ type preparseNextElement<
 	validated: validateInnerDefinition<head, $, args>
 	// if inferredHead is optional and the element is spread, this will be an error
 	// handled in nextValidatedSpreadElements
-	kind: head extends OptionalPropertyDefinition ? SequencePhase.optionals
-	: head extends DefaultablePropertyTuple ? SequencePhase.defaultables
-	: // TODO: more precise
-	head extends PossibleDefaultableStringDefinition ? SequencePhase.defaultables
-	: "required"
+	kind: head extends OptionalPropertyDefinition ? PreparsedElement.optionals
+	: head extends DefaultablePropertyTuple ? PreparsedElement.defaultables
+	: isDefaultable<head, $, args> extends true ? PreparsedElement.defaultables
+	: PreparsedElement.required
 	spread: spread
 }>
 
@@ -317,8 +322,11 @@ type nextValidatedSpreadOperatorIfPresent<
 			next["inferred"] extends infer spreadOperand extends array ?
 				// if the spread operand is a fixed-length tuple, it won't be a variadic element
 				// and therefore doesn't need to be validated as one
-				[s["phase"], number] extends (
-					[SequencePhase.postfix, spreadOperand["length"]]
+				// there are some edge cases around spreads like `[string?, ...[number?]]` which should
+				// result in a type error but currently don't. TS also doesn't handle those,
+				// but would be nice to have at some point regardless.
+				[number, number] extends (
+					[s["inferred"]["length"], spreadOperand["length"]]
 				) ?
 					ErrorMessage<multipleVariadicMessage>
 				:	"..."
