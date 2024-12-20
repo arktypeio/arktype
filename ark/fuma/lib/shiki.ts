@@ -19,8 +19,8 @@ const { default: arkDarkTheme } = await import("arkdark/arkdark.json", {
 })
 
 // Theme adjustments
-
-arkDarkTheme.colors["editor.background"] = "#00000027"
+/** should match the css rule for .bg-fd-secondary\/50 */
+arkDarkTheme.colors["editor.background"] = "#0006"
 
 arkDarkTheme.tokenColors.push({
 	// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,

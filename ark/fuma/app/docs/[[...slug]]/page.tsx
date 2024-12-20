@@ -28,7 +28,6 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 						Popup,
 						PopupContent,
 						PopupTrigger,
-
 						pre: ({ ref: _, ...props }) => (
 							<CodeBlock {...props}>
 								<Pre>{props.children}</Pre>
