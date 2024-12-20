@@ -1,10 +1,4 @@
-// import betterErrors from "!./snippets/betterErrors.twoslash.ts?raw"
-// import clarityAndConcision from "!./snippets/clarityAndConcision.twoslash.js?raw"
-// import deepIntrospectability from "!./snippets/deepIntrospectability.twoslash.js?raw"
-// import intrinsicOptimization from "!./snippets/intrinsicOptimization.twoslash.js?raw"
-// import unparalleledDx from "!./snippets/unparalleledDx.twoslash.js?raw"
-import { fromHere, readFile } from "@ark/fs"
-import { flatMorph, throwInternalError, type propwiseXor } from "@ark/util"
+import type { propwiseXor } from "@ark/util"
 import type { HighlightOptions } from "fumadocs-core/server"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
 import { cn } from "fumadocs-ui/components/api"
@@ -13,34 +7,12 @@ import {
 	Pre
 } from "fumadocs-ui/components/codeblock"
 import { toJsxRuntime } from "hast-util-to-jsx-runtime"
-import { existsSync } from "node:fs"
 import React from "react"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import { getSingletonHighlighter } from "shiki"
 import { shikiConfig, type BuiltinLang } from "../lib/shiki.ts"
-
-const snippetIds = [
-	"betterErrors",
-	"clarityAndConcision",
-	"deepIntrospectability",
-	"intrinsicOptimization",
-	"unparalleledDx"
-] as const
-
-export type SnippetId = (typeof snippetIds)[number]
-
-const snippetContentsById = flatMorph(snippetIds, (i, id) => {
-	const tsPath = fromHere("snippets", `${id}.twoslash.ts`)
-	const jsPath = fromHere("snippets", `${id}.twoslash.js`)
-
-	if (existsSync(tsPath)) return [id, readFile(tsPath)]
-
-	if (existsSync(jsPath)) return [id, readFile(jsPath)]
-
-	return throwInternalError(
-		`Expected a snippet file at ${tsPath} or ${jsPath} (neither existed).`
-	)
-})
+import type { SnippetId } from "../next.config.ts"
+import snippetContentsById from "./snippets/contentsById.ts"
 
 export type CodeBlockProps = {
 	/** @default "ts" */
