@@ -1,8 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
+import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
-	optionalPostVariadicMessage,
+	optionalOrDefaultableAfterVariadicMessage,
 	writeNonArraySpreadMessage
 } from "arktype/internal/parser/tupleLiteral.ts"
 
@@ -86,7 +87,21 @@ contextualize(() => {
 		// no type error yet, ideally would have one if tuple
 		// parsing were more precise for nested spread tuples
 		attest(() => type(["...", "string[]", "...", ["string?"]])).throws(
-			optionalPostVariadicMessage
+			optionalOrDefaultableAfterVariadicMessage
 		)
+	})
+
+	it("errors on postfix following optional", () => {
+		attest(() =>
+			// @ts-expect-error
+			type(["number?", "...", "boolean[]", "symbol"])
+		).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
+	})
+
+	it("errors on postfix following defaultable", () => {
+		attest(() =>
+			// @ts-expect-error
+			type(["number = 0", "...", "boolean[]", "symbol"])
+		).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
 	})
 })

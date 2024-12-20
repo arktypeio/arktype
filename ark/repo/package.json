@@ -7,10 +7,11 @@
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@trpc/server": "10.45.2",
+		"@sinclair/typebox": "0.34.13",
 		"arktype": "workspace:*",
 		"type-fest": "4.30.0",
 		"typescript": "catalog:",
-		"zod": "3.23.8"
+		"zod": "3.24.1"
 	},
 	"scripts": {
 		"build": "echo No build required!"
