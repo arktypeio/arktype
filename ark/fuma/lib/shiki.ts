@@ -2,7 +2,6 @@ import { transformerNotationErrorLevel } from "@shikijs/transformers"
 import type { RehypeCodeOptions } from "fumadocs-core/mdx-plugins"
 import { transformerTwoslash } from "fumadocs-twoslash"
 import { createRequire } from "node:module"
-import { defaultCompilerOptions } from "twoslash"
 
 /** for some reason a standard import with an attribute like:
  
@@ -40,8 +39,7 @@ const twoslash = transformerTwoslash({
 	langs: ["ts", "js"],
 	twoslashOptions: {
 		compilerOptions: {
-			...defaultCompilerOptions,
-			exactOptionalPropertyTypes: true,
+			// avoid ... in certain longer types on hover
 			noErrorTruncation: true
 		},
 		extraFiles: {

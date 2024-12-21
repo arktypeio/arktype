@@ -10,7 +10,7 @@ import { toJsxRuntime } from "hast-util-to-jsx-runtime"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import { getSingletonHighlighter } from "shiki"
 import { shikiConfig, type BuiltinLang } from "../lib/shiki.ts"
-import type { SnippetId } from "../next.config.ts"
+import type { SnippetId } from "../lib/writeSnippetsEntrypoint.ts"
 import snippetContentsById from "./snippets/contentsById.ts"
 
 export type CodeBlockProps = {

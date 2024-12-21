@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import { nodeDevOptions } from "../repo/nodeOptions.js"
 import { writeSnippetsEntrypoint } from "./lib/writeSnippetsEntrypoint.ts"
 
 // Next can only treat next.config.ts as CJS, but fumadocs-mdx only supports ESM
@@ -15,6 +16,9 @@ const config = {
 	output: "export",
 	reactStrictMode: true,
 	cleanDistDir: true,
+	env: {
+		NODE_OPTIONS: nodeDevOptions
+	},
 	serverExternalPackages: ["twoslash", "typescript"]
 } as const satisfies NextConfig
 
