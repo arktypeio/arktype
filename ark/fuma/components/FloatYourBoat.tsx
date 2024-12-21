@@ -1,16 +1,16 @@
 "use client"
 
 import { motion } from "framer-motion"
-import React from "react"
+import { useLayoutEffect, useMemo, useState } from "react"
 import { BoatIcon } from "./icons/boat.tsx"
 
 const BOB_HEIGHT_PX = 2
 const BOB_WIDTH_PX = 16
 
 export const FloatYourBoat = () => {
-	const [loopDuration, setLoopDuration] = React.useState<number | null>(null)
+	const [loopDuration, setLoopDuration] = useState<number | null>(null)
 
-	const bobFrames = React.useMemo(() => {
+	const bobFrames = useMemo(() => {
 		if (!loopDuration) return []
 		const frames: number[] = []
 		for (let i = 0; i < loopDuration; i++)
@@ -18,7 +18,7 @@ export const FloatYourBoat = () => {
 		return frames
 	}, [loopDuration])
 
-	React.useLayoutEffect(() => {
+	useLayoutEffect(() => {
 		const width = window.innerWidth
 		setLoopDuration(width / BOB_WIDTH_PX)
 	}, [])

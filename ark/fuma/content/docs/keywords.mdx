@@ -10,7 +10,7 @@ All\* builtin TypeScript keywords are directly available.
 
 <SyntaxTabs>
 	<SyntaxTab string>
-```ts twoslash
+```ts
 const keywords = type({
 	string: "string",
 	date: "Date"
@@ -20,7 +20,7 @@ const keywords = type({
 
     <SyntaxTab fluent>
 
-```ts twoslash
+```ts
 const keywords = type({
 	string: type.string,
 	date: type.Date
@@ -39,7 +39,7 @@ Subtype keywords refine or transform their root type.
 
 <SyntaxTabs>
 	<SyntaxTab string>
-```ts twoslash
+```ts
 const keywords = type({
 	dateFormattedString: "string.date",
 	transformStringToDate: "string.date.parse",
@@ -54,7 +54,7 @@ You can easily explore available subtypes via autocomplete by with a partial def
 
     <SyntaxTab fluent>
 
-```ts twoslash
+```ts
 const keywords = type({
 	dateFormattedString: type.keywords.string.date.root,
 	isoFormattedString: type.keywords.string.date.iso.root,

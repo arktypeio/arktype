@@ -7,7 +7,6 @@ import {
 	Pre
 } from "fumadocs-ui/components/codeblock"
 import { toJsxRuntime } from "hast-util-to-jsx-runtime"
-import React from "react"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import { getSingletonHighlighter } from "shiki"
 import { shikiConfig, type BuiltinLang } from "../lib/shiki.ts"

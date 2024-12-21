@@ -1,14 +1,11 @@
 {
-	"root": true,
 	"pages": [
 		"---Intro---",
-		"intro/setup",
-		"intro/morphs-and-more",
-		"intro/your-first-type",
-		"intro/adding-constraints",
+		"...intro",
 		"---Primitives---",
-		"primitives/string",
-		"primitives/number",
+		"...primitives",
+		"---Objects---",
+		"...objects",
 		"---Advanced---",
 		"scopes",
 		"generics",

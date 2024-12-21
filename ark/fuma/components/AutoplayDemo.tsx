@@ -1,5 +1,3 @@
-import React from "react"
-
 export type AutoplayDemoProps = React.DetailedHTMLProps<
 	React.VideoHTMLAttributes<HTMLVideoElement>,
 	HTMLVideoElement

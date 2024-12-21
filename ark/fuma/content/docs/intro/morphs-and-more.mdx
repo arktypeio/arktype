@@ -10,7 +10,7 @@ Sometimes, data at the boundaries of your code requires more than validation bef
 
 Morphs can be **piped** before, after or between validators and even chained to other morphs.
 
-```ts twoslash
+```ts
 // Hover to see the type-level representation
 const parseJson = type("string").pipe((s): object => JSON.parse(s))
 
@@ -25,7 +25,7 @@ This is a good start, but there are still a couple major issues with our morph.
 
 What happens if we pass a string that isn't valid JSON?
 
-```ts twoslash
+```ts
 const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // ---cut---
 
@@ -39,7 +39,7 @@ If you do happen to find yourself at the mercy of an unsafe API, you might consi
 
 Luckily, there is a built-in API for wrapping `pipe`d functions you don't trust:
 
-```ts twoslash
+```ts
 const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
 
 // Now returns an introspectable error instead of crashing 🎉
@@ -54,7 +54,7 @@ else console.log(out)
 
 The best part about `pipe` is that since any `Type` is root-invokable, `Type`s themselves _are_ already morphs! This means validating out parsed output is as easy as adding another pipe:
 
-```ts twoslash
+```ts
 const parseJson = type("string").pipe.try(
 	(s): object => JSON.parse(s),
 	type({
@@ -73,7 +73,7 @@ if (!(out instanceof type.errors)) {
 
 At this point, our implementation is starting to look pretty clean, but in many cases like this one, we can skip straight to the punch line with one of ArkType's many built-in aliases for validation and parsing, `string.json.parse`:
 
-```ts twoslash
+```ts
 interface RuntimeErrors extends type.errors {
 	/**name must be a string (was true) 
 version must be a semantic version (see https://semver.org/) (was "v2.0.0")*/

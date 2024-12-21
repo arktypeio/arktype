@@ -8,7 +8,7 @@ If you already know TypeScript, congratulations- you just learned most of ArkTyp
 
 ## Define
 
-```ts twoslash
+```ts
 import { type } from "arktype"
 
 const user = type({
@@ -32,7 +32,7 @@ If you make a mistake, don't worry- every definition gets the autocomplete and v
 
 Suppose we want to move `platform` and `version` from our original type to a new `device` property.
 
-```ts twoslash
+```ts
 const user = type({
 	name: "string",
 	// nested definitions don't need to be wrapped
@@ -45,7 +45,7 @@ const user = type({
 
 To decouple `device` from `user`, just move it to its own type and reference it.
 
-```ts twoslash
+```ts
 const device = type({
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
@@ -61,7 +61,7 @@ const user = type({
 
 At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
 
-```ts twoslash
+```ts
 const user = type({
 	name: "string",
 	device: {

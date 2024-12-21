@@ -34,7 +34,7 @@ Imagine we want to define a new Type representing a non-empty list of `Contact`.
 
 While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
 
-```ts twoslash
+```ts
 const _contact = type({
 	email: "string.email",
 	score: "number.integer < 100"
@@ -55,7 +55,7 @@ const contacts = contact.array().atLeastLength(1)
 
 Structured constraints like divisors and ranges will only take us so far. Luckily, they integrate seamlessly with whatever custom validation logic you need.
 
-```ts twoslash
+```ts
 const palindromicEmail = type("string.email").narrow((address, ctx) => {
 	if (address === [...address].reverse().join("")) {
 		// congratulations! your email is somehow a palindrome
@@ -73,7 +73,7 @@ const palindromicContact = type({
 
 We can invoke `palindromicContact` anywhere to get validated data or a list of errors with a user-friendly summary.
 
-```ts twoslash
+```ts
 const palindromicEmail = type("string.email").narrow((address, ctx) => {
 	if (address === [...address].reverse().join("")) {
 		// congratulations! your email is somehow a palindrome

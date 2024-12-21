@@ -30,7 +30,7 @@
 		"fumadocs-twoslash": "2.0.2",
 		"fumadocs-ui": "14.6.2",
 		"hast-util-to-jsx-runtime": "2.3.2",
-		"lucide-react": "0.468.0",
+		"lucide-react": "0.469.0",
 		"next": "15.1.2",
 		"postcss": "8.4.49",
 		"prettier-plugin-tailwindcss": "0.6.9",

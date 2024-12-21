@@ -1,5 +1,4 @@
 import { cn } from "fumadocs-ui/components/api"
-import React from "react"
 
 const barStyles: React.CSSProperties = {
 	height: "30px",

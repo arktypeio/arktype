@@ -1,9 +1,8 @@
 {
 	"title": "Objects",
 	"pages": [
-		"[properties](/docs/objects#properties)",
-		"[arrays](/docs/objects#arrays)",
-		"[tuples](/docs/objects#tuples)",
+		"properties",
+		"arrays",
 		"[dates](/docs/objects#dates)",
 		"[instanceof](/docs/objects#instanceof)"
 	]
