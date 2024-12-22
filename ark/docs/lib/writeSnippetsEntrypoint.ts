@@ -1,4 +1,4 @@
-import { fromHere, readFile, writeFile } from "@ark/fs"
+import { fromHere, readFile, shell, writeFile } from "@ark/fs"
 import { flatMorph, throwInternalError } from "@ark/util"
 import { existsSync } from "fs"
 
@@ -30,10 +30,14 @@ export const writeSnippetsEntrypoint = () => {
 		return [id, readFile(path)]
 	})
 
+	const toPath = snippetPath("contentsById.ts")
+
 	writeFile(
-		snippetPath("contentsById.ts"),
+		toPath,
 		`export default ${JSON.stringify(snippetContentsById, null, 4)}`
 	)
+
+	shell(`pnpm prettier --write ${toPath}`)
 }
 
 const snippetIds = [
