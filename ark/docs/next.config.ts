@@ -12,10 +12,16 @@ const { createMDX } =
 writeSnippetsEntrypoint()
 
 const config = {
-	output: "export",
 	reactStrictMode: true,
 	cleanDistDir: true,
-	serverExternalPackages: ["twoslash", "typescript"]
+	serverExternalPackages: ["twoslash", "typescript"],
+	// the following properties are required by nextjs-github-pages:
+	// https://github.com/gregrickaby/nextjs-github-pages
+	output: "export",
+	basePath: "/arktype",
+	images: {
+		unoptimized: true
+	}
 } as const satisfies NextConfig
 
 const mdxConfig = createMDX()(config)

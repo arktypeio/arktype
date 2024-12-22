@@ -23,12 +23,10 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      - name: Install, build, and upload your site
-        uses: withastro/action@v2
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: ./ark/docs # The root location of your Astro project inside the repository. (optional)
-          # node-version: 20 # The specific version of Node that should be used to build your site. Defaults to 20. (optional)
-          package-manager: pnpm@latest # The Node package manager that should be used to install dependencies and build your site. Automatically detected based on your lockfile. (optional)
+          path: ./ark/docs/out
 
   deploy:
     needs: update-gh-pages
