@@ -1,6 +1,6 @@
 import type { omit, unionToPropwiseXor } from "@ark/util"
 import { Tab, Tabs, type TabsProps } from "fumadocs-ui/components/tabs"
-import type { FC } from "react"
+import { Children, isValidElement, type FC } from "react"
 
 export const syntaxKinds = [
 	"string",
@@ -16,7 +16,17 @@ export const SyntaxTabs: React.FC<omit<TabsProps, "items">> = ({
 	children,
 	...rest
 }) => (
-	<Tabs {...rest} items={syntaxKinds}>
+	<Tabs
+		{...rest}
+		// only include the tabs that were actually used
+		items={syntaxKinds.filter(kind =>
+			Children.toArray(children).some(
+				child =>
+					isValidElement(child) &&
+					(child.props as SyntaxTabProps | undefined)?.[kind]
+			)
+		)}
+	>
 		{children}
 	</Tabs>
 )

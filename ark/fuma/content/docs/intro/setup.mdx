@@ -5,24 +5,11 @@ sidebar:
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs"
-import { CodeBlock } from "../../../components/CodeBlock.tsx"
+import { InstallationTabs } from "../../../components/InstallationTabs.tsx"
 
 ## Installation
 
-<Tabs items={["pnpm", "npm", "yarn", "bun"]}>
-	<Tab value="pnpm">
-		<CodeBlock lang="bash">pnpm install arktype</CodeBlock>
-	</Tab>
-	<Tab value="npm">
-		<CodeBlock lang="bash">npm install arktype</CodeBlock>
-	</Tab>
-	<Tab value="yarn">
-		<CodeBlock lang="bash">yarn install arktype</CodeBlock>
-	</Tab>
-	<Tab value="bun">
-		<CodeBlock lang="bash">bun install arktype</CodeBlock>
-	</Tab>
-</Tabs>
+<InstallationTabs />
 
 You'll also need...
 

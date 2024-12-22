@@ -8,8 +8,7 @@ import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 
 Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
 
-<a name="properties/required" />
-##### required
+### required [#properties-required]
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -46,8 +45,7 @@ const myObject = type({
 
 </SyntaxTabs>
 
-<a name="properties/optional" />
-##### optional
+### optional [#properties-optional]
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -104,32 +102,32 @@ const myObject = type({
 
 </SyntaxTabs>
 
-:::caution[Optional properties cannot be present with the value undefined]
+<Callout type="warn" title="Optional properties cannot be present with the value undefined">
 
-In TypeScript, there is a setting called `exactOptionalPropertyTypes` that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
+    In TypeScript, there is a setting called [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
 
-ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. If you're interested in a builtin configuration option for this setting, we'd love feedback or contributions on [this issue](https://github.com/arktypeio/arktype/issues/1191).
+    ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. If you're interested in a builtin configuration option for this setting, we'd love feedback or contributions on [this issue](https://github.com/arktypeio/arktype/issues/1191).
 
-<details>
-	<summary>See an example</summary>
+    <details>
+    	<summary>See an example</summary>
 
-```ts
-const myObj = type({
-	"key?": "number"
-})
+    ```ts
+    const myObj = type({
+    	"key?": "number"
+    })
 
-// valid data
-const validResult = myObj({})
+    // valid data
+    const validResult = myObj({})
 
-// Error: key must be a number (was undefined)
-const errorResult = myObj({ key: undefined })
-```
+    // Error: key must be a number (was undefined)
+    const errorResult = myObj({ key: undefined })
+    ```
 
-</details>
-:::
+    </details>
 
-<a name="properties/defaultable" />
-##### defaultable
+</Callout>
+
+### defaultable [#properties-defaultable]
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -164,23 +162,22 @@ const myObject = type({
 
 </SyntaxTabs>
 
-:::caution[Optional and default only work within objects and tuples!]
-Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
+<Callout type="warn" title="Optional and default only work within objects and tuples!">
+    Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
 
-This reflects the fact that in ArkType's type system, optionality and defaultability are only meaningful in reference to a property. Attempting to create an optional or defaultable value outside an object like `type("string?")` will result in a `ParseError`.
+    This reflects the fact that in ArkType's type system, optionality and defaultability are only meaningful in reference to a property. Attempting to create an optional or defaultable value outside an object like `type("string?")` will result in a `ParseError`.
 
-To create a `Type` accepting `string` or `undefined`, use a union like `type("string | undefined")`.
+    To create a `Type` accepting `string` or `undefined`, use a union like `type("string | undefined")`.
 
-To have it transform `undefined` to an empty string, use an explicit morph like:
+    To have it transform `undefined` to an empty string, use an explicit morph like:
 
-```ts
-const fallbackString = type("string | undefined").pipe(v => v ?? "")
-```
+    ```ts
+    const fallbackString = type("string | undefined").pipe(v => v ?? "")
+    ```
 
-:::
+</Callout>
 
-<a name="properties/index" />
-##### index
+### index [#properties-index]
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -198,23 +195,19 @@ const myObject = type({
 
 </SyntaxTabs>
 
-<a name="properties/undeclared" />
-##### undeclared
+### undeclared [#properties-undeclared]
 
 🚧 Coming soon ™️🚧
 
-<a name="properties/merge" />
-##### merge
+### merge [#properties-merge]
 
 🚧 Coming soon ™️🚧
 
-<a name="properties/keyof" />
-##### keyof
+### keyof [#properties-keyof]
 
 🚧 Coming soon ™️🚧
 
-<a name="properties/get" />
-##### get
+### get [#properties-get]
 
 🚧 Coming soon ™️🚧
 
@@ -263,8 +256,7 @@ const arrays = type({
 
 </SyntaxTabs>
 
-<a name="arrays/lengths" />
-##### lengths
+### lengths [#arrays-lengths]
 
 Constrain an array with an inclusive or exclusive min or max length.
 
@@ -334,8 +326,7 @@ const range = type({
 
 Like objects, tuples are structures whose values are nested definitions. Like TypeScript, ArkType supports prefix, optional, variadic, and postfix elements, with the same restrictions about combining them.
 
-<a name="tuples/prefix" />
-##### prefix
+### prefix [#tuples-prefix]
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -368,13 +359,11 @@ const myTuple = type([
 
 </SyntaxTabs>
 
-<a name="tuples/defaultable" />
-##### defaultable
+### defaultable [#tuples-defaultable]
 
 {/* TODO:DOC */}
 
-<a name="tuples/optional" />
-##### optional
+### optional [#tuples-optional]
 
 Tuples can include any number of optional elements following its prefix elements.
 
@@ -435,8 +424,7 @@ const myTuple = type([
 
 </SyntaxTabs>
 
-<a name="tuples/variadic" />
-##### variadic
+### variadic [#tuples-variadic]
 
 Like in TypeScript, variadic elements allow zero or more consecutive values of a given type and may occur at most once in a tuple.
 
@@ -463,8 +451,7 @@ const myTuple = type([type.string, "...", type.number.array()])
 
 </SyntaxTabs>
 
-<a name="tuples/postfix" />
-##### postfix
+### postfix [#tuples-postfix]
 
 Postfix elements are required elements following a variadic element.
 
@@ -493,8 +480,7 @@ const myTuple = type(["...", type.number.array(), type.boolean, type.string])
 
 ## dates
 
-<a name="dates/literals" />
-##### literals
+### literals [#dates-literals]
 
 Date literals represent a Date instance with an exact value.
 
@@ -507,8 +493,7 @@ const literals = type({
 })
 ```
 
-<a name="dates/ranges" />
-##### ranges
+### ranges [#dates-ranges]
 
 Constrain a Date with an inclusive or exclusive min or max.
 
@@ -615,7 +600,6 @@ const instances = type({
 
 </SyntaxTabs>
 
-<a name="instanceof/keywords" />
-##### keywords
+### keywords [#instanceof-keywords]
 
 🚧 Coming soon ™️🚧

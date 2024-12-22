@@ -84,7 +84,10 @@ div.twoslash-popup-container {
 	box-shadow: var(--hover-glow);
 }
 
-.error {
+/** .error.highlighted matches error lines explicitly added in the snippet
+    source via [!code error] */
+
+.error.highlighted {
 	position: relative;
 	background-color: #f8585822;
 	border-left: 3px solid var(--ark-runtime-error);
@@ -95,10 +98,11 @@ div.twoslash-popup-container {
 	width: max-content;
 }
 
-.error > span {
+.error.highlighted > span {
 	color: var(--ark-runtime-error) !important;
 }
 
+/** .twoslash-error matches errors added by twoslash itself, e.g. type errors */
 .twoslash .twoslash-error {
 	/* Override the builtin error squiggle to match our theme */
 	background: url("/image/errorSquiggle.svg") repeat-x bottom left;

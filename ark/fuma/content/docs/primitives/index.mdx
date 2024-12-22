@@ -6,12 +6,11 @@ import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 
 ## string
 
-<a name="string/keywords" />
-##### keywords
+### keywords [#string-literals]
 
 🚧 Coming soon ™️🚧
 
-##### literals [#string-literals]
+### literals [#string-literals]
 
 ```ts
 const literals = type({
@@ -20,8 +19,7 @@ const literals = type({
 })
 ```
 
-<a name="string/patterns" />
-##### patterns
+### patterns [#string-patterns]
 
 Regex literals specify an unanchored regular expression that an input string must match.
 
@@ -35,7 +33,7 @@ const literals = type({
 ```
 
 <a name="string/lengths" />
-##### lengths
+### lengths [#string-lengths]
 
 Constrain a string with an inclusive or exclusive min or max length.
 
@@ -99,13 +97,11 @@ const range = type({
 
 ## number
 
-<a name="number/keywords" />
-##### keywords
+### keywords [#number-keywords]
 
 🚧 Coming soon ™️🚧
 
-<a name="number/literals" />
-##### literals
+### literals [#number-literals]
 
 ```ts
 const literals = type({
@@ -113,8 +109,7 @@ const literals = type({
 })
 ```
 
-<a name="number/ranges" />
-##### ranges
+### ranges [#number-ranges]
 
 Constrain a number with an inclusive or exclusive min or max.
 
@@ -177,8 +172,7 @@ const range = type({
 
 </SyntaxTabs>
 
-<a name="number/divisors" />
-##### divisors
+### divisors [#number-divisors]
 
 Constrain a `number` to a multiple of the specified integer.
 
@@ -232,8 +226,7 @@ const symbols = type({
 
 </SyntaxTabs>
 
-<a name="bigint/literals" />
-##### literals
+### literals [#bigint-literals]
 
 To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/primitives#number/literals) to make it a `bigint`.
 
@@ -303,8 +296,7 @@ const booleans = type({
 
 </SyntaxTabs>
 
-<a name="primitives/boolean#literals" />
-##### literals
+### literals [#boolean-literals]
 
 To require a specific boolean value, use the corresponding literal.
 
@@ -391,25 +383,27 @@ const myObj = type({
 
 </SyntaxTabs>
 
-:::caution[Allowing `undefined` as a value does not make the key optional!]
+<Callout type="warn" title="Allowing undefined as a value does not make the key optional!">
 
-In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
+    In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
 
-The same is true in ArkType.
+    The same is true in ArkType.
 
-<details>
-	<summary>See an example</summary>
+    <details>
+    	<summary>See an example</summary>
 
-```ts
-const myObj = type({
-	key: "number | undefined"
-})
+    ```ts
+    const myObj = type({
+    	key: "number | undefined"
+    })
 
-// valid data
-const validResult = myObj({ key: undefined })
+    // valid data
+    const validResult = myObj({ key: undefined })
 
-// Error: name must be a number or undefined (was missing)
-const errorResult = myObj({})
-```
+    // Error: name must be a number or undefined (was missing)
+    const errorResult = myObj({})
+    ```
 
-</details>
+    </details>
+
+</Callout>
