@@ -18,7 +18,8 @@ const config = {
 	// the following properties are required by nextjs-github-pages:
 	// https://github.com/gregrickaby/nextjs-github-pages
 	output: "export",
-	basePath: "/arktype",
+	basePath:
+		process.env.NODE_ENV === "development" ? (undefined as never) : "/arktype",
 	images: {
 		unoptimized: true
 	}
