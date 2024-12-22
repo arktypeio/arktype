@@ -1,115 +1,26 @@
-# arktype.io
+# my-app
 
-Source code for ArkType's docs at [arktype.io](https://arktype.io)
+This is a Next.js application generated with
+[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
 
-Built with [Starlight](https://starlight.astro.build/)
+Run development server:
 
-# Definitions
+```bash
+npm run dev
+# or
+pnpm dev
+# or
+yarn dev
+```
 
-- Primitives
+Open http://localhost:3000 with your browser to see the result.
 
-  - string
-    - keywords
-      - Autogenerate from JSDoc
-    - literals
-    - patterns
-    - lengths
-  - number
-    - keywords
-      - Autogenerate from JSDoc
-    - literals
-    - ranges
-    - divisors
-  - more
-    - bigint
-    - boolean
-    - symbol
-    - null
-    - undefined
+## Learn More
 
-- Objects
+To learn more about Next.js and Fumadocs, take a look at the following
+resources:
 
-  - properties
-    - required
-    - optional
-    - defaultable
-    - index
-    - undeclared
-    - more
-      - merge
-      - keyof
-      - get
-      - map
-  - arrays
-    - lengths
-    - tuples
-      - prefix
-      - optional
-      - variadic
-      - postfix
-  - dates
-    - keywords
-      - Autogenerate from JSDoc
-    - literals
-    - ranges
-  - instanceOf
-    - keywords
-      - Autogenerate from JSDoc
-
-- Expressions
-
-  - intersection
-  - union
-  - brand
-  - narrow
-  - morph
-  - more
-    - unit
-    - enumerated
-    - meta
-    - cast
-    - parenthetical
-    - this
-
-# Other stuff
-
-- Types (how you can use existing types)
-
-  - Top-level type invocation
-
-  - Autogenerate from JSDoc <!-- properties of a Type instance -->
-
-  - define <!-- type utilities not attached to a type instance -->
-  - raw
-
-- Configuration
-
-  - errors
-  - clone
-  - onUndeclaredKey
-  - jitless
-
-- Scopes (advanced)
-
-  - syntax
-  - modules
-  - visibility
-  - submodules
-  - thunks
-
-- Generics (advanced)
-
-  - keywords
-    - Autogenerate from JSDoc
-  - syntax
-  - hkt (advanced++)
-
-- Integrations
-
-  - Standard Schema
-  - tRPC
-  - react-hook-form
-  - hono
-
-- FAQ
-- About the project
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
+  features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Fumadocs](https://fumadocs.vercel.app) - learn about Fumadocs

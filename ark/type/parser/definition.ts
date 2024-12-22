@@ -32,12 +32,7 @@ import {
 	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.ts"
-import type {
-	DefaultablePropertyTuple,
-	OptionalPropertyDefinition,
-	PossibleDefaultableStringDefinition,
-	validatePossibleStringDefault
-} from "./property.ts"
+import type { isDefaultable, OptionalPropertyDefinition } from "./property.ts"
 import {
 	parseString,
 	type BaseCompletions,
@@ -131,10 +126,8 @@ export type validateDefinition<def, $, args> =
 	: [def] extends [anyOrNever] ? def
 	: def extends OptionalPropertyDefinition ?
 		ErrorMessage<shallowOptionalMessage>
-	: def extends DefaultablePropertyTuple ?
+	: isDefaultable<def, $, args> extends true ?
 		ErrorMessage<shallowDefaultableMessage>
-	: def extends PossibleDefaultableStringDefinition ?
-		validatePossibleStringDefault<def, $, args, shallowDefaultableMessage>
 	:	validateInnerDefinition<def, $, args>
 
 // validates the definition without checking for optionals/defaults this should

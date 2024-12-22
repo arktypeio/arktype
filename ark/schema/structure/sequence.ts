@@ -169,7 +169,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 						return throwParseError(postfixWithoutVariadicMessage)
 
 					if (schema.optionals?.length || schema.defaultables?.length)
-						return throwParseError(postfixFollowingOptionalMessage)
+						return throwParseError(postfixAfterOptionalOrDefaultableMessage)
 				}
 				if (schema.minVariadicLength && !schema.variadic) {
 					return throwParseError(
@@ -545,11 +545,11 @@ const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
 		return result
 	}, {})
 
-export const postfixFollowingOptionalMessage =
+export const postfixAfterOptionalOrDefaultableMessage =
 	"A postfix required element cannot follow an optional or defaultable element"
 
-export type postfixFollowingOptionalMessage =
-	typeof postfixFollowingOptionalMessage
+export type postfixAfterOptionalOrDefaultableMessage =
+	typeof postfixAfterOptionalOrDefaultableMessage
 
 export const postfixWithoutVariadicMessage =
 	"A postfix element requires a variadic element"

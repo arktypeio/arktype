@@ -15,8 +15,8 @@ import {
 } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
+import { Scope } from "../scope.ts"
 import { number } from "./number.ts"
-import { arkModule } from "./utils.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -38,7 +38,7 @@ const stringIntegerRoot = regexStringNode(
 	"a well-formed integer string"
 )
 
-export const stringInteger: stringInteger.module = arkModule({
+export const stringInteger: stringInteger.module = Scope.module({
 	root: stringIntegerRoot,
 	parse: rootSchema({
 		in: stringIntegerRoot,
@@ -65,7 +65,7 @@ export declare namespace stringInteger {
 	}
 }
 
-const base64 = arkModule({
+const base64 = Scope.module({
 	root: regexStringNode(
 		/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
 		"base64-encoded"
@@ -89,7 +89,7 @@ declare namespace base64 {
 
 const preformattedCapitalize = regexStringNode(/^[A-Z].*$/, "capitalized")
 
-export const capitalize: capitalize.module = arkModule({
+export const capitalize: capitalize.module = Scope.module({
 	root: rootSchema({
 		in: "string",
 		morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
@@ -269,7 +269,7 @@ const epochRoot = stringInteger.root.internal
 	})
 	.assertHasKind("intersection")
 
-const epoch = arkModule({
+const epoch = Scope.module({
 	root: epochRoot,
 	parse: rootSchema({
 		in: epochRoot,
@@ -283,7 +283,7 @@ const isoRoot = regexStringNode(
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
-const iso = arkModule({
+const iso = Scope.module({
 	root: isoRoot,
 	parse: rootSchema({
 		in: isoRoot,
@@ -292,7 +292,7 @@ const iso = arkModule({
 	})
 })
 
-export const stringDate: stringDate.module = arkModule({
+export const stringDate: stringDate.module = Scope.module({
 	root: parsableDate,
 	parse: rootSchema({
 		declaredIn: parsableDate,
@@ -365,7 +365,7 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z.]{1,})?$"
 )
 
-export const ip: ip.module = arkModule({
+export const ip: ip.module = Scope.module({
 	root: ["v4 | v6", "@", "an IP address"],
 	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
 	v6: regexStringNode(ipv6Matcher, "an IPv6 address")
@@ -428,7 +428,7 @@ const parseJson: Morph<string> = (s: string, ctx: TraversalContext) => {
 	}
 }
 
-export const json: stringJson.module = arkModule({
+export const json: stringJson.module = Scope.module({
 	root: jsonRoot,
 	parse: rootSchema({
 		in: "string",
@@ -450,7 +450,7 @@ export declare namespace stringJson {
 
 const preformattedLower = regexStringNode(/^[a-z]*$/, "only lowercase letters")
 
-const lower: lower.module = arkModule({
+const lower: lower.module = Scope.module({
 	root: rootSchema({
 		in: "string",
 		morphs: (s: string) => s.toLowerCase(),
@@ -500,27 +500,27 @@ const normalizeNodes = flatMorph(
 		] as const
 )
 
-export const NFC = arkModule({
+export const NFC = Scope.module({
 	root: normalizeNodes.NFC,
 	preformatted: preformattedNodes.NFC
 })
 
-export const NFD = arkModule({
+export const NFD = Scope.module({
 	root: normalizeNodes.NFD,
 	preformatted: preformattedNodes.NFD
 })
 
-export const NFKC = arkModule({
+export const NFKC = Scope.module({
 	root: normalizeNodes.NFKC,
 	preformatted: preformattedNodes.NFKC
 })
 
-export const NFKD = arkModule({
+export const NFKD = Scope.module({
 	root: normalizeNodes.NFKD,
 	preformatted: preformattedNodes.NFKD
 })
 
-export const normalize = arkModule({
+export const normalize = Scope.module({
 	root: "NFC",
 	NFC,
 	NFD,
@@ -583,7 +583,7 @@ const numericRoot = regexStringNode(
 	"a well-formed numeric string"
 )
 
-export const numeric: stringNumeric.module = arkModule({
+export const numeric: stringNumeric.module = Scope.module({
 	root: numericRoot,
 	parse: rootSchema({
 		in: numericRoot,
@@ -618,7 +618,7 @@ const preformattedTrim = regexStringNode(
 	"trimmed"
 )
 
-const trim: trim.module = arkModule({
+const trim: trim.module = Scope.module({
 	root: rootSchema({
 		in: "string",
 		morphs: (s: string) => s.trim(),
@@ -640,7 +640,7 @@ export declare namespace trim {
 
 const preformattedUpper = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
 
-const upper: upper.module = arkModule({
+const upper: upper.module = Scope.module({
 	root: rootSchema({
 		in: "string",
 		morphs: (s: string) => s.toUpperCase(),
@@ -679,7 +679,7 @@ const urlRoot = rootSchema({
 	}
 })
 
-export const url: url.module = arkModule({
+export const url: url.module = Scope.module({
 	root: urlRoot,
 	parse: rootSchema({
 		declaredIn: urlRoot,
@@ -707,7 +707,7 @@ export declare namespace url {
 }
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-export const uuid = arkModule({
+export const uuid = Scope.module({
 	// the meta tuple expression ensures the error message does not delegate
 	// to the individual branches, which are too detailed
 	root: ["versioned | nil | max", "@", "a UUID"],
@@ -767,7 +767,7 @@ export declare namespace uuid {
 	}
 }
 
-export const string = arkModule({
+export const string = Scope.module({
 	root: intrinsic.string,
 	alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
 	alphanumeric: regexStringNode(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),

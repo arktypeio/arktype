@@ -1,0 +1,105 @@
+---
+title: Your First Type
+sidebar:
+  order: 2
+---
+
+If you already know TypeScript, congratulations- you just learned most of ArkType's syntax 🎉
+
+## Define
+
+```ts
+import { type } from "arktype"
+
+const user = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
+})
+
+// extract the type if needed
+type User = typeof user.infer
+```
+
+If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to from your editor, all within TypeScript's type system.
+
+<Callout title="Will ArkType crash my TypeScript server?">
+	Thousands of hours of optimization have gone into making validating native
+	type syntax not just feasible, but often much faster than alternatives ⚡
+</Callout>
+
+## Compose
+
+Suppose we want to move `platform` and `version` from our original type to a new `device` property.
+
+```ts
+const user = type({
+	name: "string",
+	// nested definitions don't need to be wrapped
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
+```
+
+To decouple `device` from `user`, just move it to its own type and reference it.
+
+```ts
+const device = type({
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
+})
+
+const user = type({
+	name: "string",
+	device: device
+})
+```
+
+## Validate
+
+At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
+
+```ts
+const user = type({
+	name: "string",
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
+
+interface RuntimeErrors extends type.errors {
+	/**device.platform must be "android" or "ios" (was "enigma")
+device.versions[2] must be a number or a string (was bigint)*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+
+// ---cut---
+const out = user({
+	name: "Alan Turing",
+	device: {
+		platform: "enigma",
+		versions: [0, "1", 0n]
+	}
+})
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	// just a trick to display the runtime error
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see validation errors
+	console.error(out.summary)
+} else {
+	// hover out to see your validated data
+	console.log(`Hello, ${out.name}`)
+}
+```
+
+And that's it! You now know how to to define a `Type` use it to check your data at runtime.
+
+Next, we'll take a look at how ArkType extends TypeScript's type system to handle runtime constraints like `maxLength` and `pattern`.

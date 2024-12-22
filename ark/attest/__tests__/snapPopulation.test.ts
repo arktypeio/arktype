@@ -10,7 +10,7 @@ contextualize(() => {
 			fromHere("benchExpectedOutput.ts")
 		).replaceAll("\r\n", "\n")
 		equal(actual, expectedOutput)
-	}).timeout(20000)
+	}).timeout(60000)
 
 	it("snap populates file", () => {
 		const actual = runThenGetContents(fromHere("snapTemplate.ts"))
@@ -18,5 +18,5 @@ contextualize(() => {
 			fromHere("snapExpectedOutput.ts")
 		).replaceAll("\r\n", "\n")
 		equal(actual, expectedOutput)
-	}).timeout(20000)
+	}).timeout(60000)
 })

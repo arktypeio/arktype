@@ -1,0 +1,9 @@
+{
+	"title": "Generics",
+	"icon": "Advanced",
+	"pages": [
+		"[keywords](/docs/generics#keywords)",
+		"[syntax](/docs/generics#syntax)",
+		"[hkt](/docs/generics#hkt)"
+	]
+}

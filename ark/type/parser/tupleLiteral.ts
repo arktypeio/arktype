@@ -1,6 +1,7 @@
 import {
 	$ark,
 	makeRootAndArrayPropertiesMutable,
+	postfixAfterOptionalOrDefaultableMessage,
 	type BaseParseContext,
 	type BaseRoot,
 	type mutableInnerOfKind,
@@ -22,8 +23,8 @@ import type { inferDefinition, validateInnerDefinition } from "./definition.ts"
 import {
 	parseProperty,
 	type DefaultablePropertyTuple,
-	type OptionalPropertyDefinition,
-	type PossibleDefaultableStringDefinition
+	type isDefaultable,
+	type OptionalPropertyDefinition
 } from "./property.ts"
 
 export const parseTupleLiteral = (
@@ -99,9 +100,15 @@ const appendRequiredElement = (
 	base: mutableInnerOfKind<"sequence">,
 	element: BaseRoot
 ): mutableInnerOfKind<"sequence"> => {
-	if (base.optionals)
-		// e.g. [string?, number]
-		return throwParseError(requiredPostOptionalMessage)
+	if (base.defaultables || base.optionals) {
+		return throwParseError(
+			base.variadic ?
+				// e.g. [boolean = true, ...string[], number]
+				postfixAfterOptionalOrDefaultableMessage
+				// e.g. [string?, number]
+			:	requiredPostOptionalMessage
+		)
+	}
 	if (base.variadic) {
 		// e.g. [...string[], number]
 		base.postfix = append(base.postfix, element)
@@ -118,7 +125,7 @@ const appendOptionalElement = (
 ): mutableInnerOfKind<"sequence"> => {
 	if (base.variadic)
 		// e.g. [...string[], number?]
-		return throwParseError(optionalPostVariadicMessage)
+		return throwParseError(optionalOrDefaultableAfterVariadicMessage)
 	// e.g. [string, number?]
 	base.optionals = append(base.optionals, element)
 	return base
@@ -131,7 +138,7 @@ const appendDefaultableElement = (
 ): mutableInnerOfKind<"sequence"> => {
 	if (base.variadic)
 		// e.g. [...string[], number = 0]
-		return throwParseError(defaultablePostVariadicMessage)
+		return throwParseError(optionalOrDefaultableAfterVariadicMessage)
 	if (base.optionals)
 		// e.g. [string?, number = 0]
 		return throwParseError(defaultablePostOptionalMessage)
@@ -181,16 +188,29 @@ const appendSpreadBranch = (
 	return base
 }
 
-type SequenceParsePhase = satisfy<
+type SequencePhase = satisfy<
 	keyof Sequence.Inner,
-	"prefix" | "optionals" | "defaultables" | "postfix"
+	| SequencePhase.prefix
+	| SequencePhase.optionals
+	| SequencePhase.defaultables
+	| SequencePhase.postfix
 >
+
+declare namespace SequencePhase {
+	export type prefix = "prefix"
+
+	export type optionals = "optionals"
+
+	export type defaultables = "defaultables"
+
+	export type postfix = "postfix"
+}
 
 type SequenceParseState = {
 	unscanned: array
 	inferred: array
 	validated: array
-	phase: SequenceParsePhase
+	phase: SequencePhase
 }
 
 type parseSequence<def extends array, $, args> = parseNextElement<
@@ -198,13 +218,16 @@ type parseSequence<def extends array, $, args> = parseNextElement<
 		unscanned: def
 		inferred: []
 		validated: []
-		phase: "prefix"
+		phase: SequencePhase.prefix
 	},
 	$,
 	args
 >
 
-type PreparsedElementKind = "required" | "optionals" | "defaultables"
+type PreparsedElementKind =
+	| "required"
+	| SequencePhase.optionals
+	| SequencePhase.defaultables
 
 type PreparsedElement = {
 	head: unknown
@@ -217,6 +240,12 @@ type PreparsedElement = {
 
 declare namespace PreparsedElement {
 	export type from<result extends PreparsedElement> = result
+
+	export type required = "required"
+
+	export type optionals = "optionals"
+
+	export type defaultables = "defaultables"
 }
 
 type preparseNextState<s extends SequenceParseState, $, args> =
@@ -239,11 +268,10 @@ type preparseNextElement<
 	validated: validateInnerDefinition<head, $, args>
 	// if inferredHead is optional and the element is spread, this will be an error
 	// handled in nextValidatedSpreadElements
-	kind: head extends OptionalPropertyDefinition ? "optionals"
-	: head extends DefaultablePropertyTuple ? "defaultables"
-	: // TODO: more precise
-	head extends PossibleDefaultableStringDefinition ? "defaultables"
-	: "required"
+	kind: head extends OptionalPropertyDefinition ? PreparsedElement.optionals
+	: head extends DefaultablePropertyTuple ? PreparsedElement.defaultables
+	: isDefaultable<head, $, args> extends true ? PreparsedElement.defaultables
+	: PreparsedElement.required
 	spread: spread
 }>
 
@@ -254,9 +282,15 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 				unscanned: next["tail"]
 				inferred: nextInferred<s, next>
 				validated: nextValidated<s, next>
-				phase: next["kind"] extends "optionals" | "defaultables" ? next["kind"]
-				: number extends nextInferred<s, next>["length"] ? "postfix"
-				: "prefix"
+				phase: next["kind"] extends (
+					SequencePhase.optionals | SequencePhase.defaultables
+				) ?
+					next["kind"]
+				: // if we're parsing the variadic element, don't update the phase
+				// so that we can still check it to ensure we don't have
+				// postfix elements following optionals or defaultables
+				number extends nextInferred<s, next>["length"] ? s["phase"]
+				: SequencePhase.prefix
 			},
 			$,
 			args
@@ -266,8 +300,9 @@ type parseNextElement<s extends SequenceParseState, $, args> =
 type nextInferred<s extends SequenceParseState, next extends PreparsedElement> =
 	next["spread"] extends true ?
 		[...s["inferred"], ...conform<next["inferred"], array>]
-	: next["kind"] extends "optionals" ? [...s["inferred"], next["inferred"]?]
-	: [...s["inferred"], next["inferred"]]
+	: next["kind"] extends SequencePhase.optionals ?
+		[...s["inferred"], next["inferred"]?]
+	:	[...s["inferred"], next["inferred"]]
 
 type nextValidated<
 	s extends SequenceParseState,
@@ -287,7 +322,12 @@ type nextValidatedSpreadOperatorIfPresent<
 			next["inferred"] extends infer spreadOperand extends array ?
 				// if the spread operand is a fixed-length tuple, it won't be a variadic element
 				// and therefore doesn't need to be validated as one
-				[s["phase"], number] extends ["postfix", spreadOperand["length"]] ?
+				// there are some edge cases around spreads like `[string?, ...[number?]]` which should
+				// result in a type error but currently don't. TS also doesn't handle those,
+				// but would be nice to have at some point regardless.
+				[number, number] extends (
+					[s["inferred"]["length"], spreadOperand["length"]]
+				) ?
 					ErrorMessage<multipleVariadicMessage>
 				:	"..."
 			:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
@@ -298,19 +338,22 @@ type nextValidatedElement<
 	s extends SequenceParseState,
 	next extends PreparsedElement
 > =
-	next["kind"] extends "optionals" ?
+	next["kind"] extends SequencePhase.optionals ?
 		next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
-		: s["phase"] extends "postfix" ? ErrorMessage<optionalPostVariadicMessage>
-		: next["validated"]
-	: next["kind"] extends "defaultables" ?
-		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
-		: s["phase"] extends "optionals" ?
-			ErrorMessage<defaultablePostOptionalMessage>
-		: s["phase"] extends "postfix" ?
-			ErrorMessage<defaultablePostVariadicMessage>
+		: s["phase"] extends SequencePhase.postfix ?
+			ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
 		:	next["validated"]
-	: [s["phase"], next["spread"]] extends ["optionals" | " defaults", false] ?
-		ErrorMessage<requiredPostOptionalMessage>
+	: next["kind"] extends SequencePhase.defaultables ?
+		next["spread"] extends true ? ErrorMessage<spreadDefaultableMessage>
+		: s["phase"] extends SequencePhase.optionals ?
+			ErrorMessage<defaultablePostOptionalMessage>
+		: s["phase"] extends SequencePhase.postfix ?
+			ErrorMessage<optionalOrDefaultableAfterVariadicMessage>
+		:	next["validated"]
+	: [s["phase"], next["spread"]] extends (
+		[SequencePhase.optionals | SequencePhase.defaultables, false]
+	) ?
+		ErrorMessage<postfixAfterOptionalOrDefaultableMessage>
 	:	next["validated"]
 
 export const writeNonArraySpreadMessage = <operand extends string>(
@@ -332,10 +375,11 @@ export const requiredPostOptionalMessage =
 
 type requiredPostOptionalMessage = typeof requiredPostOptionalMessage
 
-export const optionalPostVariadicMessage =
+export const optionalOrDefaultableAfterVariadicMessage =
 	"An optional element may not follow a variadic element"
 
-type optionalPostVariadicMessage = typeof optionalPostVariadicMessage
+type optionalOrDefaultableAfterVariadicMessage =
+	typeof optionalOrDefaultableAfterVariadicMessage
 
 export const spreadOptionalMessage = "A spread element cannot be optional"
 
@@ -344,11 +388,6 @@ type spreadOptionalMessage = typeof spreadOptionalMessage
 export const spreadDefaultableMessage = "A spread element cannot have a default"
 
 type spreadDefaultableMessage = typeof spreadDefaultableMessage
-
-export const defaultablePostVariadicMessage =
-	"A defaultable element may not follow a variadic element"
-
-type defaultablePostVariadicMessage = typeof defaultablePostVariadicMessage
 
 export const defaultablePostOptionalMessage =
 	"A defaultable element may not follow an optional element without a default"

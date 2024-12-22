@@ -1,0 +1,10 @@
+{
+	"title": "Objects",
+	"defaultOpen": true,
+	"pages": [
+		"properties",
+		"arrays",
+		"[dates](/docs/objects#dates)",
+		"[instanceof](/docs/objects#instanceof)"
+	]
+}

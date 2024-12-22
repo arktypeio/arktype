@@ -1,0 +1,11 @@
+{
+	"title": "arrays and tuples",
+	"pages": [
+		"lengths",
+		"[prefix](/docs/objects#arrays/prefix)",
+		"[optional](/docs/objects#arrays/optional)",
+		"[defaultable](/docs/objects#arrays/defaultable)",
+		"[variadic](/docs/objects#arrays/variadic)",
+		"[postfix](/docs/objects#arrays/postfix)"
+	]
+}

@@ -1,5 +1,6 @@
 {
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"prettier.prettierPath": "./node_modules/prettier",
 	"biome.enabled": false,
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",

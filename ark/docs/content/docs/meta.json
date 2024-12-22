@@ -1,0 +1,16 @@
+{
+	"pages": [
+		"intro",
+		"primitives",
+		"objects",
+		"keywords",
+		"expressions",
+		"type-api",
+		"configuration",
+		"integrations",
+		"scopes",
+		"generics",
+		"faq",
+		"about"
+	]
+}

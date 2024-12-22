@@ -1,0 +1,120 @@
+---
+title: Adding Constraints
+sidebar:
+  order: 3
+---
+
+TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `integer less than 100`?
+
+In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
+
+Constraints are a first-class citizen of ArkType. They are fully composable with TypeScript's built-in operators and governed by the same underlying principles of set-theory.
+
+## Define
+
+Let's create a new `contact` Type that enforces our example constraints.
+
+```ts
+const contact = type({
+	// many common constraints are available as built-in keywords
+	email: "string.email",
+	// others can be written as type-safe expressions
+	score: "number.integer < 100"
+})
+
+// if you need the TS type, just infer it out as normal
+type Contact = typeof contact.infer
+```
+
+## Compose
+
+Imagine we want to define a new Type representing a non-empty list of `Contact`.
+
+While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
+
+```ts
+const _contact = type({
+	email: "string.email",
+	score: "number.integer < 100"
+})
+
+type _Contact = typeof _contact.t
+
+interface Contact extends _Contact {}
+
+export const contact: type<Contact> = _contact
+// ---cut-start---
+// a non-empty list of Contact
+// ---cut-end---
+const contacts = contact.array().atLeastLength(1)
+```
+
+## Narrow
+
+Structured constraints like divisors and ranges will only take us so far. Luckily, they integrate seamlessly with whatever custom validation logic you need.
+
+```ts
+const palindromicEmail = type("string.email").narrow((address, ctx) => {
+	if (address === [...address].reverse().join("")) {
+		// congratulations! your email is somehow a palindrome
+		return true
+	}
+	// add a customizable error and return false
+	return ctx.mustBe("a palindrome")
+})
+
+const palindromicContact = type({
+	email: palindromicEmail,
+	score: "number.integer < 100"
+})
+```
+
+We can invoke `palindromicContact` anywhere to get validated data or a list of errors with a user-friendly summary.
+
+```ts
+const palindromicEmail = type("string.email").narrow((address, ctx) => {
+	if (address === [...address].reverse().join("")) {
+		// congratulations! your email is somehow a palindrome
+		return true
+	}
+	// add a customizable error and return false
+	return ctx.mustBe("a palindrome")
+})
+
+const palindromicContact = type({
+	email: palindromicEmail,
+	score: "number.integer < 100"
+})
+
+interface RuntimeErrors extends type.errors {
+	/**email must be a palindrome (was "david@arktype.io")
+score (133.7) must be...
+  • an integer
+  • less than 100*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+// ---cut-start---
+const out = palindromicContact({
+	email: "david@arktype.io",
+	score: 133.7
+})
+// ---cut-end---
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover summary to see validation errors
+	console.error(out.summary)
+} else {
+	console.log(out.email)
+}
+```
+
+You now know how to refine your types to enforce additional constraints at runtime.
+
+But what if once your input is fully validated, you still need to make some adjustments before it's ready to use?
+
+The final section of intro will cover **morphs**, an extremely powerful tool for composing and transforming Types.
