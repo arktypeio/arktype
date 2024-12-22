@@ -1,28 +1,55 @@
-import { flatMorph } from "@ark/util"
+import { entriesOf, hasKey } from "@ark/util"
 import { ark } from "arktype"
 import { Fragment } from "react"
 
-const flattened = flatMorph(ark.internal.resolutions, (k, v) =>
-	"description" in v ? [k, v.description] : []
-)
+type DescriptionEntry = [alias: string, description: string]
 
-const groupedEntries = Object.entries(flattened).reduce(
-	(acc, [k, v]) => {
-		if (!k.includes(".")) acc.root.push([k, v])
-		else {
-			const [group, ...rest] = k.split(".")
-			acc.other[group] ??= { vals: [] }
-			const groupType = rest.join(".")
-			if (groupType === "root") acc.other[group].description = v
-			else acc.other[group].vals.push([groupType, v])
-		}
-		return acc
-	},
-	{ root: [], other: {} } as {
-		root: [string, string][]
-		other: Record<string, { description?: string; vals: [string, string][] }>
-	}
-)
+const root: DescriptionEntry[] = []
+const other: Record<
+	string,
+	{ description?: string; vals: DescriptionEntry[] }
+> = {}
+
+entriesOf(ark.internal.resolutions).forEach(([k, v]) => {
+	if (!hasKey(v, "description")) return
+
+	if (!k.includes(".")) return root.push([k, v.description])
+
+	const [group, ...rest] = k.split(".")
+	other[group] ??= { vals: [] }
+	const groupType = rest.join(".")
+	if (groupType === "root") other[group].description = v.description
+	else other[group].vals.push([groupType, v.description])
+})
+
+const rootElements = root.map(([k, v]) => (
+	<tr key={k}>
+		<td>{k}</td>
+		<td>{v}</td>
+	</tr>
+))
+
+const otherElements = Object.entries(other).map(([k, v]) => (
+	<Fragment key={k}>
+		<tr className="font-bold" id={k}>
+			<td colSpan={3}>
+				<a
+					href={`#${k}`}
+					className="w-full h-full no-underline hover:underline"
+				>
+					{k}
+					{v.description ? ` - ${v.description}` : ""}
+				</a>
+			</td>
+		</tr>
+		{v.vals.map(([k, v]) => (
+			<tr key={k}>
+				<td>{k}</td>
+				<td>{v}</td>
+			</tr>
+		))}
+	</Fragment>
+))
 
 export const AutoDocs = () => (
 	<table>
@@ -33,33 +60,8 @@ export const AutoDocs = () => (
 			</tr>
 		</thead>
 		<tbody>
-			{groupedEntries.root.map(([k, v]) => (
-				<tr key={k}>
-					<td>{k}</td>
-					<td>{v}</td>
-				</tr>
-			))}
-			{Object.entries(groupedEntries.other).map(([key, v]) => (
-				<Fragment key={key}>
-					<tr className="font-bold" id={key}>
-						<td colSpan={3}>
-							<a
-								href={`#${key}`}
-								className="w-full h-full no-underline hover:underline"
-							>
-								{key}
-								{v.description ? ` - ${v.description}` : ""}
-							</a>
-						</td>
-					</tr>
-					{v.vals.map(([k, v]) => (
-						<tr key={k}>
-							<td>{k}</td>
-							<td>{v}</td>
-						</tr>
-					))}
-				</Fragment>
-			))}
+			{...rootElements}
+			{...otherElements}
 		</tbody>
 	</table>
 )
