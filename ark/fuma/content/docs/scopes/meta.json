@@ -1,5 +1,6 @@
 {
 	"title": "Scopes",
+	"icon": "Advanced",
 	"pages": [
 		"[modules](/docs/scopes#modules)",
 		"[visibility](/docs/scopes#visibility)",

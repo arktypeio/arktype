@@ -1,4 +1,5 @@
 {
 	"title": "Intro",
+	"defaultOpen": true,
 	"pages": ["setup", "morphs-and-more", "your-first-type", "adding-constraints"]
 }

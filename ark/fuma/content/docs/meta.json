@@ -1,18 +1,13 @@
 {
 	"pages": [
-		"---Intro---",
-		"...intro",
-		"---Primitives---",
-		"...primitives",
-		"---Objects---",
-		"...objects",
-		"---Advanced---",
+		"intro",
+		"primitives",
+		"objects",
+		"keywords",
 		"scopes",
 		"generics",
-		"---Other---",
 		"integrations",
 		"faq",
-		"about",
-		"keywords"
+		"about"
 	]
 }

@@ -1,5 +1,6 @@
 {
 	"title": "Objects",
+	"defaultOpen": true,
 	"pages": [
 		"properties",
 		"arrays",

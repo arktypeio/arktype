@@ -141,3 +141,8 @@ div.twoslash-popup-container {
 		background: #001323ee;
 	}
 }
+
+/* allow us to inject a badge at order 1 */
+#nd-sidebar .lucide-chevron-down {
+	order: 2;
+}

@@ -1,5 +1,6 @@
 {
 	"title": "Primitives",
+	"defaultOpen": true,
 	"pages": [
 		"string",
 		"number",
