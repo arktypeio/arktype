@@ -23,6 +23,9 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      - name: Build docs
+        run: pnpm buildDocs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

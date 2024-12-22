@@ -15,9 +15,11 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm bench && pnpm testTsVersions",
+		"prChecks": "pnpm lint && pnpm buildRepo && pnpm testRepo && pnpm bench && pnpm testTsVersions",
 		"attest": "ts ./ark/attest/cli/cli.ts",
-		"build": "pnpm -r build",
+		"build": "pnpm -r --filter !'@ark/docs' build",
+		"buildRepo": "pnpm -r build",
+		"buildDocs": "pnpm -r --filter '@ark/docs' build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"rmBuild": "pnpm -r exec rm -rf out",
 		"ts": "node ./ark/repo/ts.js",
