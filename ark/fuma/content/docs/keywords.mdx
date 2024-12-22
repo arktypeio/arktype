@@ -2,11 +2,12 @@
 title: Keywords
 ---
 
+import { Asterisk } from "../../components/Asterisk.tsx"
 import { SyntaxTab, SyntaxTabs } from "../../components/SyntaxTabs.tsx"
 
 ### TypeScript
 
-All\* builtin TypeScript keywords are directly available.
+All<Asterisk/> builtin TypeScript keywords are directly available.
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -32,6 +33,11 @@ Common keywords are exposed directly on `type`.
     </SyntaxTab>
 
 </SyntaxTabs>
+
+<sup>
+	<Asterisk /> `any` and `void` are misleading and unnecessary for runtime
+	validation and so are not included as keywords by default.
+</sup>
 
 ### Subtype
 

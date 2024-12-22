@@ -4,9 +4,12 @@
 		"primitives",
 		"objects",
 		"keywords",
+		"expressions",
+		"type-api",
+		"configuration",
+		"integrations",
 		"scopes",
 		"generics",
-		"integrations",
 		"faq",
 		"about"
 	]
