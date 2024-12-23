@@ -73,8 +73,9 @@ pre.shiki,
 
 /** avoid border on hover: 
     https://github.com/arktypeio/arktype/issues/1217 */
-.twoslash-popup-container .bg-fd-secondary\/50 {
-	background-color: unset;
+.twoslash-popup-container pre.shiki,
+figure.shiki {
+	background-color: unset !important;
 }
 
 div.twoslash-popup-container {
