@@ -95,6 +95,9 @@ export declare namespace object {
 
 class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
+
+	description =
+		"a generic type that instantiates an object from a single index signature and corresponding value type"
 }
 
 const Record = genericNode(["K", intrinsic.key], "V")(

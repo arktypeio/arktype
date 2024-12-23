@@ -7,9 +7,9 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	type Constructor,
 	type Dict,
 	type Fn,
+	type Hkt,
 	type JsonStructure,
 	type anyOrNever,
 	type array,
@@ -224,12 +224,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	generic: GenericRootParser = (...params) => {
 		const $: BaseScope = this as never
-		return (def: unknown, possibleHkt?: Constructor) =>
+		return (def: unknown, possibleHkt?: Hkt.constructor) =>
 			new GenericRoot(
 				params,
 				possibleHkt ? new LazyGenericBody(def as Fn) : def,
 				$,
-				$
+				$,
+				possibleHkt ?? null
 			) as never
 	}
 
@@ -323,7 +324,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 					reference.params as never,
 					reference.bodyDef,
 					reference.$,
-					this as never
+					this as never,
+					reference.hkt
 				)
 
 		if (!this.resolved) {

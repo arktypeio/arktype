@@ -6,9 +6,7 @@ import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 
 ## string
 
-### keywords [#string-keywords]
-
-🚧 Coming soon ™️🚧
+A full list of string keywords can be found [here](/docs/keywords#string).
 
 ### literals [#string-literals]
 
@@ -97,9 +95,7 @@ const range = type({
 
 ## number
 
-### keywords [#number-keywords]
-
-🚧 Coming soon ™️🚧
+A full list of number keywords can be found [here](/docs/keywords#number).
 
 ### literals [#number-literals]
 
@@ -228,7 +224,7 @@ const symbols = type({
 
 ### literals [#bigint-literals]
 
-To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/primitives#number/literals) to make it a `bigint`.
+To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/docs/primitives#number-literals) to make it a `bigint`.
 
 ```ts
 const literals = type({
@@ -236,7 +232,7 @@ const literals = type({
 })
 ```
 
-You may also use a [unit expression](/expressions#unit) to define `bigint` literals.
+You may also use a [unit expression](/docs/expressions#unit) to define `bigint` literals.
 
 ## symbol
 
@@ -265,9 +261,9 @@ const symbols = type({
 
 </SyntaxTabs>
 
-To reference a specific symbol in your definition, use a [unit expression](/expressions#unit).
+To reference a specific symbol in your definition, use a [unit expression](/docs/expressions#unit).
 
-No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/objects#properties).
+No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/docs/objects#properties).
 
 ## boolean
 
@@ -331,7 +327,7 @@ const booleans = type({
 
 ## null
 
-The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/expressions#union).
+The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/docs/expressions#union).
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -358,7 +354,7 @@ const nullable = type({
 
 ## undefined
 
-The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/expressions#union).
+The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/docs/expressions#union).
 
 <SyntaxTabs>
 	<SyntaxTab string>

@@ -102,8 +102,7 @@ export default tseslint.config(
 								"**/attest/**",
 								"**/schema/**",
 								"**/type/**",
-								"**/util/**",
-								"arktype/internal/**"
+								"**/util/**"
 							],
 
 							message:
