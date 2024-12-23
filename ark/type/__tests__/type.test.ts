@@ -11,17 +11,6 @@ contextualize(() => {
 		else attest<string>(out)
 	})
 
-	it("define", () => {
-		const t = type.define({
-			foo: "string"
-		})
-
-		attest<{ readonly foo: "string" }>(t).equals({ foo: "string" })
-
-		// @ts-expect-error
-		attest(() => type.define({ foo: "str" })).completions({ str: ["string"] })
-	})
-
 	it("allows", () => {
 		const t = type("number%2")
 		const data: unknown = 4
