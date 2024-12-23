@@ -18,6 +18,10 @@ export default ({ children }: { children: ReactNode }) => (
 						type: "static"
 					}
 				}}
+				theme={{
+					enableSystem: false,
+					defaultTheme: "dark"
+				}}
 			>
 				{children}
 			</RootProvider>
