@@ -1,7 +1,5 @@
 ---
 title: Setup
-sidebar:
-  order: 1
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs"
@@ -16,9 +14,9 @@ You'll also need...
 - TypeScript version `>=5.1`.
 - A `package.json` with `"type": "module"` (or an environment that supports ESM imports)
 - A `tsconfig.json` with...
-  - [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig/#strictNullChecks) (**required**)
-  - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes) (strongly recommended, see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules))
-  - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes) (recommended)
+  - [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig#strictNullChecks) (**required**)
+  - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) (strongly recommended, see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules))
+  - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) (recommended)
 
 ## VSCode
 
