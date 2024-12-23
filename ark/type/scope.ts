@@ -292,7 +292,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		type: this.type
 	})
 
-	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
+	define<def>(def: def): def {
+		return def
+	}
 
 	static scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 		new InternalScope(def, config)) as never

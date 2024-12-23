@@ -8,6 +8,6 @@ import { type } from "arktype"
 // }
 
 // false
-const t = type({ foo: "string" }).extends("Record<string, string>")
+// const t = type({ foo: "string" }).extends("Record<string, string>")
 
-const tt = type(["...", "string[]", "...", ["string?"]])
+type.define("'foo'")
