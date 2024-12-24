@@ -1,4 +1,5 @@
-import { type } from "arktype"
+import { flatMorph } from "@ark/util"
+import { ark, type } from "arktype"
 
 // type stats on attribute removal merge 12/18/2024
 // {
@@ -8,6 +9,8 @@ import { type } from "arktype"
 // }
 
 // false
-const t = type({ foo: "string" }).extends("Record<string, string>")
+// const t = type({ foo: "string" }).extends("Record<string, string>")
 
-const tt = type(["...", "string[]", "...", ["string?"]])
+flatMorph(ark.internal.resolutions, (k, v) => [k, v])
+
+console.log(Object.keys(ark.internal.resolutions))

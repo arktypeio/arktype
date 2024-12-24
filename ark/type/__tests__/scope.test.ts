@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { define, scope, type, type Module } from "arktype"
+import { scope, type, type Module } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
@@ -185,37 +185,6 @@ contextualize(() => {
 		attest(out).snap({ pear: { tasty: true } })
 	})
 
-	describe("define", () => {
-		it("ark", () => {
-			const def = define({
-				a: "string|number",
-				b: ["boolean"]
-			})
-			attest<{ a: "string|number"; b: readonly ["boolean"] }>(def)
-		})
-
-		it("ark error", () => {
-			// currently is a no-op, so only has type error
-			// @ts-expect-error
-			attest(() => define({ a: "boolean|foo" })).type.errors(
-				writeUnresolvableMessage("foo")
-			)
-		})
-
-		it("custom scope", () => {
-			const $ = scope({
-				a: "string[]"
-			})
-
-			const ok = $.define(["a[]|boolean"])
-			attest<readonly ["a[]|boolean"]>(ok)
-
-			// @ts-expect-error
-			attest(() => $.define({ not: "ok" })).type.errors(
-				writeUnresolvableMessage("ok")
-			)
-		})
-	})
 	describe("cyclic", () => {
 		it("base", () => {
 			const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()

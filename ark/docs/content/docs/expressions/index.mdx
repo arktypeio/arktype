@@ -150,7 +150,7 @@ const myObject = type({
 
 ### Narrow
 
-Narrow expressions allow you to add custom validation logic and error messages. You can read more about them in [their intro section](/intro/adding-constraints#narrow).
+Narrow expressions allow you to add custom validation logic and error messages. You can read more about them in [their intro section](/docs/intro/adding-constraints#narrow).
 
 <SyntaxTabs>
     <SyntaxTab fluent>
@@ -291,7 +291,7 @@ const arkString = type(
 
 ### Morph
 
-Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/intro/morphs-and-more/).
+Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
 
 <SyntaxTabs>
     <SyntaxTab fluent>
@@ -325,7 +325,7 @@ const trimStringStart = type("string", "=>", str => str.trimStart())
 
 ### Unit
 
-While embedded [literal syntax](/literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serialiazable value like a `symbol` from your type.
+While embedded [literal syntax](/docs/primitives#number-literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serialiazable value like a `symbol` from your type.
 
 <SyntaxTabs>
 

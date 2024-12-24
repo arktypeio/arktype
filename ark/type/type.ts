@@ -162,7 +162,8 @@ export class InternalTypeParser extends Callable<
 						params,
 						args[1],
 						$ as never,
-						$ as never
+						$ as never,
+						null
 					) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows

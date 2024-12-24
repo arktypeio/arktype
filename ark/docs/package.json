@@ -9,7 +9,8 @@
 		"start": "next start",
 		"clean": "rm -rf .next .source out",
 		"postinstall": "fumadocs-mdx",
-		"upDeps": "pnpm up --latest"
+		"upDeps": "pnpm up --latest",
+		"checkLinks": "linkinator https://arktype.io -r"
 	},
 	"dependencies": {
 		"@ark/fs": "workspace:*",
@@ -30,6 +31,7 @@
 		"fumadocs-twoslash": "2.0.2",
 		"fumadocs-ui": "14.6.2",
 		"hast-util-to-jsx-runtime": "2.3.2",
+		"linkinator": "6.1.2",
 		"lucide-react": "0.469.0",
 		"next": "15.1.2",
 		"postcss": "8.4.49",

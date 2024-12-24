@@ -1,13 +1,13 @@
 {
 	"title": "properties",
 	"pages": [
-		"[required](/docs/objects#properties/required)",
-		"[optional](/docs/objects#properties/optional)",
-		"[defaultable](/docs/objects#properties/defaultable)",
-		"[index](/docs/objects#properties/index)",
-		"[undeclared](/docs/objects#properties/undeclared)",
-		"[merge](/docs/objects#properties/merge)",
-		"[keyof](/docs/objects#properties/keyof)",
-		"[get](/docs/objects#properties/get)"
+		"[required](/docs/objects#properties-required)",
+		"[optional](/docs/objects#properties-optional)",
+		"[defaultable](/docs/objects#properties-defaultable)",
+		"[index](/docs/objects#properties-index)",
+		"[undeclared](/docs/objects#properties-undeclared)",
+		"[merge](/docs/objects#properties-merge)",
+		"[keyof](/docs/objects#properties-keyof)",
+		"[get](/docs/objects#properties-get)"
 	]
 }
