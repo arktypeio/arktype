@@ -14,3 +14,32 @@ import { ark, type } from "arktype"
 flatMorph(ark.internal.resolutions, (k, v) => [k, v])
 
 console.log(Object.keys(ark.internal.resolutions))
+
+export const types = type
+	.scope({
+		package: {
+			name: "string",
+			"dependencies?": "package[]",
+			"contributors?": "contributor[]"
+		},
+		contributor: {
+			email: "string.email",
+			"packages?": "package[]"
+		}
+	})
+	.export()
+
+export type Package = typeof types.package.infer
+
+const packageData: Package = {
+	name: "arktype",
+	dependencies: [{ name: "typescript" }],
+	contributors: [{ email: "david@sharktypeio" }]
+}
+
+// update arktype to depend on itself
+packageData.dependencies![0].dependencies = [packageData]
+
+const out = types.package(packageData)
+
+console.log(out.toString())
