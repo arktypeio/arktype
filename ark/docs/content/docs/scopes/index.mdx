@@ -2,6 +2,8 @@
 title: Scopes
 ---
 
+<a id="intro" />
+
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
 
 A scope is just like a scope in code- a resolution space where you can define types, generics, or other scopes. The `type` export is a actually just a method on our default `Scope`!
@@ -189,19 +191,147 @@ const out = types.package(packageData)
 
 <Callout type="warn" title="Some `any`s are not what they seem!">
 
-By default, TypeScript represents anonymous cycles as `...`. However, if you have `noErrorTruncation` enabled, they will are visually displayed as `any`😬
+By default, TypeScript represents anonymous cycles as `...`. However, if you have `noErrorTruncation` enabled, they are visually displayed as `any`😬
 
-Luckily, despite its appearance, the type otherwise behaves as you'd expect. Rest assured, TypeScript will complain as normal if you access a non-existent property.
+Luckily, despite its appearance, the type otherwise behaves as you'd expect- TypeScript will provide completions and will complain as normal if you access a non-existent property.
 
 </Callout>
 
 ### visibility
 
-🚧 Coming soon ™️🚧
+Intermediate aliases can be useful for composing Scoped definitions from aliases. Sometimes, you may not want to expose those aliases externally as `Type`s when your `Scope` is `export`ed.
+
+This can be done using _private_ aliases:
+
+```ts
+const shapeScope = scope({
+	// aliases with a "#" prefix are treated as private
+	"#baseShapeProps": {
+		perimeter: "number",
+		area: "number"
+	},
+	ellipse: {
+		// when referencing a private alias, the "#" should not be included
+		"...": "baseShapeProps",
+		radii: ["number", "number"]
+	},
+	rectangle: {
+		"...": "baseShapeProps",
+		width: "number",
+		height: "number"
+	}
+})
+
+// private aliases can be referenced from any scoped definition,
+// even outside the original scope
+const partialShape = shapeScope.type("Partial<baseShapeProps>")
+
+// when the scope is exported to a Module, they will not be included
+// hover to see the Scope's exports
+const shapeModule = shapeScope.export()
+```
+
+#### `import()`
+
+Private aliases are especially useful for building scopes without polluting them with every alias you might want to reference internally. To facilitate this, Scopes have an `import()` method that behaves identically to `export()` but converts all exported aliases to `private`.
+
+```ts
+const utilityScope = scope({
+	"withId<o extends object>": {
+		"...": "o",
+		id: "string"
+	}
+})
+
+const userModule = type.module({
+	// because we use `import()` here, we can reference our utilities
+	// internally, but they will not be included in `userModule`.
+	// if we used `export()` instead, `withId` could be accessed on `userModule`.
+	...utilityScope.import(),
+	payload: {
+		name: "string",
+		age: "number"
+	},
+	db: "withId<payload>"
+})
+```
 
 ### submodules
 
-🚧 Coming soon ™️🚧
+If you've used keywords like `string.email` or `number.integer`, you may wonder if aliases can be grouped in your own Scopes. Recall from [the introduction to Scopes](#intro) that `type` is actually just a method on ArkType's default `Scope`, meaning all of its functionality is available externally, including alias groups called _Submodules_.
+
+Submodules are groups of aliases with a shared prefix. To define one, just assign the value of the prefix to a `Module` with the names you want:
+
+```ts
+const subAliases = type.module({ alias: "number" })
+
+const rootScope = scope({
+	a: "string",
+	b: "sub.alias",
+	sub: subAliases
+})
+
+const myType = rootScope.type({
+	someKey: "sub.alias[]"
+})
+```
+
+Submodules are parsed bottom-up. This means subaliases can be referenced directly in the root scope,
+but root aliases can't be referenced from the submodule, even if it's inlined.
+
+#### nested
+
+Submodules can be nested to arbitrary depth:
+
+```ts
+const subAliases = type.module({ alias: "number" })
+
+const rootScope = scope({
+	a: "string",
+	b: "sub.alias",
+	sub: subAliases
+})
+// ---cut---
+
+const rootScopeSquared = scope({
+	// reference rootScope from our previous example
+	newRoot: rootScope.export()
+})
+
+const myNewType = rootScopeSquared.type({
+	someOtherKey: "newRoot.sub.alias | boolean"
+})
+```
+
+#### rooted
+
+The Submodules from our previous examples group `Type`s together, but cannot be referenced as `Type`s themselves the way `string` and `number` can. To define a _Rooted Submodule_, just use an alias called `root`:
+
+```ts
+const userModule = type.module({
+	root: {
+		name: "string"
+	},
+	// subaliases can extend a base type by referencing 'root'
+	// like any other alias
+	admin: {
+		"...": "root",
+		isAdmin: "true"
+	},
+	saiyan: {
+		"...": "root",
+		powerLevel: "number > 9000"
+	}
+})
+
+const rootModule = type.module({
+	user: userModule,
+	// user can now be referenced directly in a definition
+	group: "user[]",
+	// or used as a prefix to access subaliases
+	elevatedUser: "user.admin | user.saiyan"
+})
+```
 
 ### thunks
 
