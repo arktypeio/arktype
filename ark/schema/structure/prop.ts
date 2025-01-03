@@ -146,7 +146,8 @@ export abstract class BaseProp<
 				() => this.value.traverseApply((data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required")) ctx.error(this.errorContext)
+		} else if (this.hasKind("required"))
+			ctx.errorFromNodeContext(this.errorContext)
 		else if (this.hasDefault()) ctx.queueMorphs(this.defaultValueMorphs)
 	}
 
@@ -157,9 +158,11 @@ export abstract class BaseProp<
 
 		if (this.hasKind("required")) {
 			js.else(() => {
-				if (js.traversalKind === "Apply")
-					return js.line(`ctx.error(${this.compiledErrorContext})`)
-				else return js.return(false)
+				if (js.traversalKind === "Apply") {
+					return js.line(
+						`ctx.errorFromNodeContext(${this.compiledErrorContext})`
+					)
+				} else return js.return(false)
 			})
 		} else if (js.traversalKind === "Apply" && this.hasDefault()) {
 			js.else(() =>

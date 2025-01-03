@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
 import { rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
@@ -64,6 +63,32 @@ contextualize(() => {
 		attest<{ myKey: false }>(t.infer)
 		attest(t({ myKey: true }).toString()).snap(
 			"myKey must be untrue (was true)"
+		)
+	})
+
+	it("shallow node writer config", () => {
+		const customOne = type("1", "@", {
+			expected: ctx => `custom expected ${ctx.description}`,
+			actual: data => `custom actual ${data}`,
+			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+			message: ctx => `custom message ${ctx.problem}`
+		})
+		attest<1>(customOne.infer)
+		attest(customOne(2).toString()).snap(
+			"custom message custom problem custom expected 1 custom actual 2"
+		)
+	})
+
+	it("node writer config works on nested constraint", () => {
+		const customEven = type("number % 2", "@", {
+			expected: ctx => `custom expected ${ctx.description}`,
+			actual: data => `custom actual ${data}`,
+			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+			message: ctx => `custom message ${ctx.problem}`
+		})
+		attest<number>(customEven.infer)
+		attest(customEven(3).toString()).snap(
+			"custom message custom problem custom expected a multiple of 2 custom actual 3"
 		)
 	})
 

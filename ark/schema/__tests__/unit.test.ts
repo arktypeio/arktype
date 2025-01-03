@@ -33,7 +33,8 @@ contextualize(() => {
 		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "7n",
-			unit: 7n
+			unit: 7n,
+			meta: {}
 		})
 		attest(t.allows(6n)).equals(false)
 		attest(t.allows(7n)).equals(true)
@@ -47,7 +48,8 @@ contextualize(() => {
 		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "undefined",
-			unit: undefined
+			unit: undefined,
+			meta: {}
 		})
 		attest(t.allows(null)).equals(false)
 		attest(t.allows(undefined)).equals(true)
@@ -65,7 +67,8 @@ contextualize(() => {
 		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "Symbol(status)",
-			unit: status
+			unit: status,
+			meta: {}
 		})
 		attest(t.allows(status)).equals(true)
 		attest(t.allows(Symbol("test"))).equals(false)
@@ -80,7 +83,8 @@ contextualize(() => {
 		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "{}",
-			unit: o
+			unit: o,
+			meta: {}
 		})
 		attest(t.allows(o)).equals(true)
 		attest(t.allows(new Object())).equals(false)

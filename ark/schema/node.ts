@@ -130,6 +130,7 @@ export abstract class BaseNode<
 		(result, child) => Object.assign(result, child.referencesById),
 		{ [this.id]: this }
 	)
+	readonly compiledMeta: string = JSON.stringify(this.metaJson)
 
 	protected cacheGetter<name extends keyof this>(
 		name: name,

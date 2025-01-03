@@ -45,12 +45,15 @@ type NodeConfigsByKind = {
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
-type UnknownNodeConfig = {
-	description?: DescriptionWriter
+export interface UnknownErrorWriters {
 	expected?: ExpectedWriter
 	actual?: ActualWriter
 	problem?: ProblemWriter
 	message?: MessageWriter
+}
+
+interface UnknownNodeConfig extends UnknownErrorWriters {
+	description?: DescriptionWriter
 }
 
 export type ResolvedUnknownNodeConfig = requireKeys<

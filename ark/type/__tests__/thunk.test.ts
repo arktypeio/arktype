@@ -2,8 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
 import type { Brand } from "@ark/util"
 import { scope, type, type Scope } from "arktype"
+import type { Out } from "arktype/internal/attributes.ts"
 import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
-import type { Out } from "../attributes.ts"
 
 contextualize(() => {
 	it("in type", () => {

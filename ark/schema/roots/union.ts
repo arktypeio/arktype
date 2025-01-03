@@ -291,7 +291,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			errors.push(ctx.popBranch().error!)
 		}
-		ctx.error({ code: "union", errors })
+		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}
 
 	compile(js: NodeCompiler): void {
@@ -350,10 +350,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`${serializedTypeOfDescriptions}[${condition}]`
 			:	`${serializedPrintable}(${condition})`
 
-		js.line(`ctx.error({
+		// TODO: should have its own error code
+		js.line(`ctx.errorFromNodeContext({
+	code: "predicate",
 	expected: ${serializedExpected},
 	actual: ${serializedActual},
-	relativePath: [${serializedPathSegments}]
+	relativePath: [${serializedPathSegments}],
+	meta: ${this.compiledMeta}
 })`)
 	}
 
@@ -373,7 +376,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					)
 					.line("errors.push(ctx.popBranch().error)")
 			)
-			js.line(`ctx.error({ code: "union", errors })`)
+			js.line(
+				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
+			)
 		} else {
 			this.branches.forEach(branch =>
 				js.if(`${js.invoke(branch)}`, () => js.return(true))

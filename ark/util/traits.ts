@@ -1,5 +1,6 @@
 import type { array } from "./arrays.ts"
 import { hasDomain } from "./domain.ts"
+import { noSuggest } from "./errors.ts"
 import type { conform, satisfy, show } from "./generics.ts"
 import type { intersectParameters } from "./intersections.ts"
 import { type Constructor, ancestorsOf } from "./objectKinds.ts"
@@ -40,7 +41,7 @@ export type TraitComposition = <
 
 // even though the value we attach will be identical, we use this so classes
 // won't be treated as instanceof a Trait
-const implementedTraits = Symbol("implementedTraits")
+const implementedTraits = noSuggest("implementedTraits")
 
 export const hasTrait =
 	(traitClass: Constructor) =>
