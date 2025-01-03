@@ -124,7 +124,19 @@ contextualize(() => {
 		const shapeModule = shapeScope.export()
 
 		attest(Object.keys(shapeModule)).equals(["ellipse", "rectangle"])
-		attest(shapeModule).type.toString.snap()
+		attest(shapeModule).type.toString.snap(`Module<{
+	ellipse: {
+		perimeter: number
+		area: number
+		radii: [number, number]
+	}
+	rectangle: {
+		perimeter: number
+		area: number
+		width: number
+		height: number
+	}
+}>`)
 	})
 
 	it("docs import example", () => {
@@ -148,7 +160,10 @@ contextualize(() => {
 		})
 
 		attest(Object.keys(userModule)).equals(["payload", "db"])
-		attest(userModule).type.toString.snap()
+		attest(userModule).type.toString.snap(`Module<{
+	payload: { name: string; age: number }
+	db: { name: string; age: number; id: string }
+}>`)
 	})
 
 	it("binds destructured exports", () => {

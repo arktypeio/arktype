@@ -106,7 +106,7 @@ contextualize(() => {
 		attest<{
 			foo: string
 		}>(t.t)
-		attest(t.expression).snap()
+		attest(t.expression).snap("{ foo: string }")
 	})
 
 	it("narrowed object keyword treated as empty", () => {
