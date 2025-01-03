@@ -1,5 +1,5 @@
 import type { merge, show } from "@ark/util"
-import type { UnknownErrorWriters } from "arktype"
+import type { UnknownErrorWriters } from "../config.ts"
 import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import type { Disjoint } from "./disjoint.ts"
 import type { NarrowedAttachments, NodeKind } from "./implement.ts"
