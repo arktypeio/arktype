@@ -665,6 +665,28 @@ contextualize(() => {
 				baz1: "123"
 			})
 		})
+
+		it("pipes from undefined or not present", () => {
+			const defaultDate = new Date("2020-01-01")
+
+			const ParsedDate = type("string | undefined").pipe(
+				(input: string | undefined) => (input ? new Date(input) : defaultDate)
+			)
+
+			const searchSchema = type({
+				week: ParsedDate.default(defaultDate.toISOString())
+			})
+
+			attest(searchSchema({ week: "2023-01-01" })).snap({
+				week: "2023-01-01T00:00:00.000Z"
+			})
+
+			attest(searchSchema({ week: undefined })).snap({
+				week: "2020-01-01T00:00:00.000Z"
+			})
+
+			attest(searchSchema({})).snap({ week: "2020-01-01T00:00:00.000Z" })
+		})
 	})
 
 	describe("intersection", () => {

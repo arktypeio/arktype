@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { scope, type, type Module } from "arktype"
+import { scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
@@ -33,6 +33,70 @@ contextualize(() => {
 				readonly foo: "foo"
 			}
 		}>(aliases).snap({ foo: "string", bar: { foo: "foo" } })
+	})
+
+	it("docs example", () => {
+		const $ = type.scope({
+			// builtin keywords are still available in your scope
+			id: "string",
+			// but you can also reference your own aliases directly!
+			user: { id: "id", friends: "id[]" },
+			// your aliases will be autocompleted alongside builtin keywords
+			usersById: {
+				"[id]": "user | undefined"
+			}
+		})
+
+		$.export()
+
+		attest<
+			Scope<{
+				id: string
+				user: {
+					id: string
+					friends: string[]
+				}
+				usersById: {
+					[x: string]:
+						| {
+								id: string
+								friends: string[]
+						  }
+						| undefined
+				}
+			}>
+		>($)
+		attest($.json).snap({
+			id: { domain: "string" },
+			user: {
+				required: [
+					{ key: "friends", value: { sequence: "string", proto: "Array" } },
+					{ key: "id", value: "string" }
+				],
+				domain: "object"
+			},
+			usersById: {
+				index: [
+					{
+						signature: "string",
+						value: [
+							{
+								required: [
+									{
+										key: "friends",
+										value: { sequence: "string", proto: "Array" }
+									},
+									{ key: "id", value: "string" }
+								],
+								domain: "object"
+							},
+							{ unit: "undefined" }
+						]
+					}
+				],
+				domain: "object"
+			}
+		})
 	})
 
 	it("type definition inline", () => {

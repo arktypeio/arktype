@@ -4,16 +4,145 @@ title: Scopes
 
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
 
-A scope is just like a scope in code- it's a resolution space where you can define types, generics, etc. `type` is a actually just a method on a Scope!
+A scope is just like a scope in code- a resolution space where you can define types, generics, or other scopes. The `type` export is a actually just a method on our default `Scope`!
 
-`Scope` also has a method is called `export`. That method takes all the public names in your scope, and wraps them in an object called a `Module` so you can access them directly.
+## Defining a Scope
 
-A lot of the time, if you don't need to create additional types in your scope, you can just `.export()` it right away.
+To define a scope, you may either `import { scope } from "arktype"` or use `type.scope` on the default `type` export.
+
+A scope is specified as an object literal mapping names to definitions.
 
 ```ts
-import { scope } from "arktype"
+import { type } from "arktype"
 
-// Scopes are collections of types that can reference each other.
+const coolScope = scope({
+	// keywords are still available in your scope
+	id: "string",
+	// but you can also reference your own aliases directly!
+	user: { id: "id", friends: "id[]" },
+	// your aliases will be autocompleted and validated alongside ArkType's keywords
+	usersById: {
+		"[id]": "user | undefined"
+	}
+})
+```
+
+`coolScope` is an object with reusable methods like `type` and `generic`. You can use it to create additional `Type`s that can reference your **aliases**- `id`, `user` and `usersById`.
+
+```ts
+const coolScope = scope({
+	// keywords are still available in your scope
+	id: "string",
+	// but you can also reference your own aliases directly!
+	user: { id: "id", friends: "id[]" },
+	// your aliases will be autocompleted and validated alongside ArkType's keywords
+	usersById: {
+		"[id]": "user | undefined"
+	}
+})
+// ---cut---
+
+const group = coolScope.type({
+	name: "string",
+	members: "user[]"
+})
+
+// chained definitions are parsed in the same scope as the original Type
+const ownedGroup = group.and({
+	ownerId: "id"
+})
+```
+
+To use the scoped types directly, you must `.export()` your `Scope` to a `Module`. A `Module` is just an object mapping aliases to `Type`s. They can be used for validation or in any other context a `Type` can be used.
+
+```ts
+const coolScope = scope({
+	// keywords are still available in your scope
+	id: "string",
+	// but you can also reference your own aliases directly!
+	user: { id: "id", friends: "id[]" },
+	// your aliases will be autocompleted and validated alongside ArkType's keywords
+	usersById: {
+		"[id]": "user | undefined"
+	}
+})
+
+interface RuntimeErrors extends type.errors {
+	/**friends[1] must be a string (was a number)*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+// ---cut---
+
+const coolModule = coolScope.export()
+
+const out = coolModule.user({
+	id: "99",
+	friends: ["7", 8, "9"]
+})
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover summary to see validation errors
+	console.error(out.summary)
+}
+```
+
+`.export()` is also useful in combination with the spread operator for extending your `Scope`s. Recall that a `Type` can be referenced as a definition. This means that spreading a `Module` into the definition you pass to `scope` includes all of that Module's aliases in your new `Scope`.
+
+```ts
+const coolScope = scope({
+	// keywords are still available in your scope
+	id: "string",
+	// but you can also reference your own aliases directly!
+	user: { id: "id", friends: "id[]" },
+	// your aliases will be autocompleted and validated alongside ArkType's keywords
+	usersById: {
+		"[id]": "user | undefined"
+	}
+})
+// ---cut---
+
+const threeSixtyNoScope = scope({
+	three: "3",
+	sixty: "60",
+	no: "'no'"
+})
+
+const superScope = scope({
+	...coolScope.export(),
+	// if you don't want to include the entire scope, you can pass a list of ...aliases
+	...threeSixtyNoScope.export("three", "sixty"),
+	saiyan: {
+		powerLevel: "number > 9000"
+	}
+})
+```
+
+If you don't plan to reuse your `Scope` to create additional types, it is common to export it inline:
+
+```ts
+const ezModule = scope({
+	ez: "'moochi'"
+}).export()
+```
+
+`type.module` is available as sugar for this pattern:
+
+```ts
+const ezModule = type.module({
+	ez: "'moochi'"
+})
+```
+
+### Cyclic Types
+
+Scopes make it easy to create recursive `Type`s. Just reference the alias like you would any other:
+
+```ts
 export const types = scope({
 	package: {
 		name: "string",
@@ -21,30 +150,50 @@ export const types = scope({
 		"contributors?": "contributor[]"
 	},
 	contributor: {
-		// Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
 		email: "string.email",
 		"packages?": "package[]"
 	}
 }).export()
+```
 
-// Cyclic types are inferred to arbitrary depth...
+Cyclic types are inferred to arbitrary depth. At runtime, they can safely validate cyclic data.
+
+```ts
+export const types = scope({
+	package: {
+		name: "string",
+		"dependencies?": "package[]",
+		"contributors?": "contributor[]"
+	},
+	contributor: {
+		email: "string.email",
+		"packages?": "package[]"
+	}
+}).export()
+// ---cut---
+
 export type Package = typeof types.package.infer
 
-// And can validate cyclic data.
 const packageData: Package = {
 	name: "arktype",
 	dependencies: [{ name: "typescript" }],
 	contributors: [{ email: "david@sharktypeio" }]
 }
 
+// update arktype to depend on itself
 packageData.dependencies![0].dependencies = [packageData]
 
-export const out = types.package(packageData)
+// ArkErrors: contributors[0].email must be an email address (was "david@sharktypeio")
+const out = types.package(packageData)
 ```
 
-### modules
+<Callout type="warn" title="Some `any`s are not what they seem!">
 
-🚧 Coming soon ™️🚧
+By default, TypeScript represents anonymous cycles as `...`. However, if you have `noErrorTruncation` enabled, they will are visually displayed as `any`😬
+
+Luckily, despite its appearance, the type otherwise behaves as you'd expect. Rest assured, TypeScript will complain as normal if you access a non-existent property.
+
+</Callout>
 
 ### visibility
 

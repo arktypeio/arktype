@@ -87,19 +87,6 @@ const myObject = type({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
-
-```ts
-const symbolicKey = Symbol()
-
-const myObject = type({
-	optionalKey: type({ type: "'script'" }, "?"),
-	[symbolicKey]: type({ ark: "'type'" }, "?")
-})
-```
-
-    </SyntaxTab>
-
 </SyntaxTabs>
 
 <Callout type="warn" title="Optional properties cannot be present with the value undefined">

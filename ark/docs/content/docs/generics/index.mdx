@@ -30,7 +30,6 @@ const createBox = <T extends string>(of: type.Any<T>) =>
 	})
 
 const boxType = createBox(type("string"))
-//    ^?
 
 // @ts-expect-error
 const badBox = createBox(type("number"))
