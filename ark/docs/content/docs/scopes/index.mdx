@@ -2,6 +2,8 @@
 title: Scopes
 ---
 
+<a id="intro" />
+
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
 
 A scope is just like a scope in code- a resolution space where you can define types, generics, or other scopes. The `type` export is a actually just a method on our default `Scope`!
@@ -201,7 +203,80 @@ Luckily, despite its appearance, the type otherwise behaves as you'd expect- Typ
 
 ### submodules
 
-🚧 Coming soon ™️🚧
+If you've used keywords like `string.email` or `number.integer`, you may wonder if aliases can be grouped in your own Scopes. Recall from [the introduction to Scopes](#intro) that `type` is actually just a method on ArkType's default `Scope`, meaning all of its functionality is available externally, including alias groups called _Submodules_.
+
+Submodules are groups of aliases with a shared prefix. To define one, just assign the value of the prefix to a `Module` with the names you want:
+
+```ts
+const subAliases = type.module({ alias: "number" })
+
+const rootScope = scope({
+	a: "string",
+	b: "sub.alias",
+	sub: subAliases
+})
+
+const myType = rootScope.type({
+	someKey: "sub.alias[]"
+})
+```
+
+Submodules are parsed bottom-up. This means subaliases can be referenced directly in the root scope,
+but root aliases can't be referenced from the submodule, even if it's inlined.
+
+#### nested
+
+Submodules can be nested to arbitrary depth:
+
+```ts
+const subAliases = type.module({ alias: "number" })
+
+const rootScope = scope({
+	a: "string",
+	b: "sub.alias",
+	sub: subAliases
+})
+// ---cut---
+
+const rootScopeSquared = scope({
+	// reference rootScope from our previous example
+	newRoot: rootScope.export()
+})
+
+const myNewType = rootScopeSquared.type({
+	someOtherKey: "newRoot.sub.alias | boolean"
+})
+```
+
+#### rooted
+
+The Submodules from our previous examples group `Type`s together, but cannot be referenced as `Type`s themselves the way `string` and `number` can. To define a _Rooted Submodule_, just use an alias called `root`:
+
+```ts
+const userModule = type.module({
+	root: {
+		name: "string"
+	},
+	// subaliases can extend a base type by referencing 'root'
+	// like any other alias
+	admin: {
+		"...": "root",
+		isAdmin: "true"
+	},
+	saiyan: {
+		"...": "root",
+		powerLevel: "number > 9000"
+	}
+})
+
+const rootModule = type.module({
+	user: userModule,
+	// user can now be referenced directly in a definition
+	group: "user[]",
+	// or used as a prefix to access subaliases
+	elevatedUser: "user.admin | user.saiyan"
+})
+```
 
 ### thunks
 

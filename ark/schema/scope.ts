@@ -142,7 +142,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
-	readonly json: JsonStructure = {}
+
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
@@ -216,6 +216,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	get internal(): this {
 		return this
+	}
+
+	// json is populated when the scope is exported, so ensure it is populated
+	// before allowing external access
+	private _json: JsonStructure | undefined
+	get json(): JsonStructure {
+		if (!this._json) this.export()
+		return this._json!
 	}
 
 	defineSchema<def extends RootSchema>(def: def): def {
@@ -485,7 +493,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
-			Object.assign(this.json, resolutionsToJson(this._exportedResolutions))
+			this._json = resolutionsToJson(this._exportedResolutions)
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
