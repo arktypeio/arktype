@@ -11,11 +11,17 @@ export abstract class InternalBasis<
 	declare structure: undefined
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)
+		if (!this.traverseAllows(data, ctx))
+			ctx.errorFromNodeContext(this.errorContext as never)
 	}
 
 	get errorContext(): d["errorContext"] {
-		return { code: this.kind, description: this.description, ...this.inner }
+		return {
+			code: this.kind,
+			description: this.description,
+			meta: this.meta,
+			...this.inner
+		}
 	}
 
 	get compiledErrorContext(): string {

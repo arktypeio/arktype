@@ -291,7 +291,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			errors.push(ctx.popBranch().error!)
 		}
-		ctx.error({ code: "union", errors })
+		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}
 
 	compile(js: NodeCompiler): void {

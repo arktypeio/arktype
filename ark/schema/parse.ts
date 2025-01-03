@@ -241,7 +241,7 @@ export const createNode = (
 		metaJson = flatMorph(meta, (k, v) => [
 			k,
 			k === "examples" ? v : defaultValueSerializer(v)
-		]) as BaseMeta & dict
+		]) as never
 		json.meta = possiblyCollapse(metaJson, "description", true)
 	}
 

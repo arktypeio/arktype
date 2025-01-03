@@ -39,7 +39,7 @@ import {
 } from "../shared/registry.ts"
 import {
 	traverseKey,
-	type TraversalContext,
+	type InternalTraversalContext,
 	type TraversalKind,
 	type TraverseAllows,
 	type TraverseApply
@@ -520,7 +520,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	protected _traverse = (
 		traversalKind: TraversalKind,
 		data: object,
-		ctx: TraversalContext
+		ctx: InternalTraversalContext
 	): boolean => {
 		const errorCount = ctx?.currentErrorCount ?? 0
 		for (let i = 0; i < this.props.length; i++) {
@@ -584,9 +584,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					$ark.intrinsic.nonNegativeIntegerString.allows(k)
 				if (!matched) {
 					if (traversalKind === "Allows") return false
-					if (this.undeclared === "reject")
-						ctx.error({ expected: "removed", actual: "", relativePath: [k] })
-					else {
+					if (this.undeclared === "reject") {
+						ctx.errorFromNodeContext({
+							// TODO: this should have its own error code
+							code: "predicate",
+							expected: "removed",
+							actual: "",
+							relativePath: [k],
+							meta: this.meta
+						})
+					} else {
 						ctx.queueMorphs([
 							data => {
 								delete data[k]

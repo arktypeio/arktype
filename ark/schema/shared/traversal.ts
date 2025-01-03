@@ -6,7 +6,8 @@ import {
 	ArkErrors,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
-	type ArkErrorInput
+	type ArkErrorInput,
+	type NodeErrorContextInput
 } from "./errors.ts"
 import { isNode } from "./utils.ts"
 
@@ -19,6 +20,12 @@ export type BranchTraversalContext = {
 	error: ArkError | undefined
 	queuedMorphs: MorphsAtPath[]
 }
+
+// avoid sugar methods internally
+export type InternalTraversalContext = Omit<
+	TraversalContext,
+	"error" | "mustBe" | "reject"
+>
 
 export class TraversalContext {
 	path: PropertyKey[] = []
@@ -34,6 +41,13 @@ export class TraversalContext {
 	constructor(root: unknown, config: ResolvedArkConfig) {
 		this.root = root
 		this.config = config
+	}
+
+	// convenience for casting from InternalTraversalContext to TraversalContext
+	// for cases where the extra methods on the external type are expected, e.g.
+	// a morph or predicate
+	get external(): this {
+		return this
 	}
 
 	get currentBranch(): BranchTraversalContext | undefined {
@@ -149,17 +163,29 @@ export class TraversalContext {
 		return this.branches.length !== 0
 	}
 
+	errorFromNodeContext<input extends NodeErrorContextInput>(
+		input: input
+	): ArkError<input["code"]>
+	errorFromNodeContext(input: NodeErrorContextInput): ArkError {
+		return this.errorFromContext(input)
+	}
+
 	error<input extends ArkErrorInput>(
 		input: input
 	): ArkError<
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
-	> {
+	>
+	error(input: ArkErrorInput): ArkError {
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
 				input.code ?
 					input
 				:	{ ...input, code: "predicate" }
 			:	{ code: "predicate", expected: input }
+		return this.errorFromContext(errCtx)
+	}
+
+	private errorFromContext(errCtx: ArkErrorContextInput): ArkError {
 		const error = new ArkError(errCtx, this)
 		if (this.currentBranch) this.currentBranch.error = error
 		else this.errors.add(error)
@@ -200,7 +226,7 @@ export const traverseKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
 	// ctx will be undefined if this node isn't context-dependent
-	ctx: TraversalContext | undefined
+	ctx: InternalTraversalContext | undefined
 ): result => {
 	if (!ctx) return fn()
 
@@ -219,9 +245,9 @@ export type TraversalKind = keyof TraversalMethodsByKind
 
 export type TraverseAllows<data = unknown> = (
 	data: data,
-	ctx: TraversalContext
+	ctx: InternalTraversalContext
 ) => boolean
 export type TraverseApply<data = unknown> = (
 	data: data,
-	ctx: TraversalContext
+	ctx: InternalTraversalContext
 ) => void

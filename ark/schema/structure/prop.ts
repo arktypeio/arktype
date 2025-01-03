@@ -146,7 +146,8 @@ export abstract class BaseProp<
 				() => this.value.traverseApply((data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required")) ctx.error(this.errorContext)
+		} else if (this.hasKind("required"))
+			ctx.errorFromNodeContext(this.errorContext)
 		else if (this.hasDefault()) ctx.queueMorphs(this.defaultValueMorphs)
 	}
 

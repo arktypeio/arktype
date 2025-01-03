@@ -84,18 +84,19 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	impliedBasis = null
 
 	expression: string = this.serializedPredicate
-	traverseAllows: TraverseAllows = this.predicate
+	traverseAllows: TraverseAllows = this.predicate as never
 
 	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
-		description: this.description
+		description: this.description,
+		meta: this.meta
 	}
 
 	compiledErrorContext = compileErrorContext(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.predicate(data, ctx) && !ctx.hasError())
-			ctx.error(this.errorContext)
+		if (!this.predicate(data, ctx.external) && !ctx.hasError())
+			ctx.errorFromNodeContext(this.errorContext)
 	}
 
 	compile(js: NodeCompiler): void {

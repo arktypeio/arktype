@@ -1,5 +1,5 @@
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import type { ArkErrorContextInput } from "../shared/errors.ts"
+import type { NodeErrorContextInput } from "../shared/errors.ts"
 import {
 	compileErrorContext,
 	implementNode,
@@ -54,10 +54,11 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
-	errorContext: ArkErrorContextInput<"required"> = Object.freeze({
+	errorContext: NodeErrorContextInput<"required"> = Object.freeze({
 		code: "required",
 		missingValueDescription: this.value.shortDescription,
-		relativePath: [this.key]
+		relativePath: [this.key],
+		meta: this.meta
 	})
 
 	compiledErrorContext: string = compileErrorContext(this.errorContext)

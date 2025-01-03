@@ -1,4 +1,5 @@
 import type { merge, show } from "@ark/util"
+import type { UnknownErrorWriters } from "arktype"
 import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import type { Disjoint } from "./disjoint.ts"
 import type { NarrowedAttachments, NodeKind } from "./implement.ts"
@@ -8,7 +9,7 @@ type withMetaPrefixedKeys<o> = {
 	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
 }
 
-export interface BaseMeta extends JsonSchema.Meta {
+export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
 	alias?: string
 }
 
@@ -44,6 +45,7 @@ interface DeclarationInput {
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
 	readonly description?: string
 	readonly code: kind
+	readonly meta: BaseMeta
 }
 
 export type defaultErrorContext<d extends DeclarationInput> = show<

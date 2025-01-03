@@ -4,13 +4,16 @@ import {
 	ReadonlyPath,
 	append,
 	defineProperties,
+	hasKey,
 	stringifyPath,
 	type array,
+	type merge,
 	type propwiseXor,
 	type show
 } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
+import type { BaseMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { TraversalContext } from "./traversal.ts"
@@ -27,9 +30,11 @@ export class ArkError<
 	private nodeConfig: ResolvedArkConfig[code]
 	protected input: ArkErrorContextInput<code>
 
-	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext) {
+	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext)
+	// TS gets confused by <code>, so internally we just use the base type for input
+	constructor(input: ArkErrorContextInput, ctx: TraversalContext) {
 		super()
-		this.input = input
+		this.input = input as never
 		defineProperties(this, input)
 		const data = ctx.data
 		if (input.code === "union") {
@@ -44,6 +49,7 @@ export class ArkError<
 			: input.path ? new ReadonlyPath(...input.path)
 			: new ReadonlyPath(...ctx.path)
 		this.data = "data" in input ? input.data : data
+		if (hasKey(input, "meta") && input.meta) this.meta = input.meta
 	}
 
 	hasCode<code extends ArkErrorCode>(code: code): this is ArkError<code> {
@@ -56,20 +62,34 @@ export class ArkError<
 
 	get expected(): string {
 		return (
-			this.input.expected ?? this.nodeConfig.expected?.(this.input as never)
+			this.input.expected ??
+			this.meta?.expected?.(this.input as never) ??
+			this.nodeConfig.expected?.(this.input as never)
 		)
 	}
 
 	get actual(): string {
-		return this.input.actual ?? this.nodeConfig.actual?.(this.data as never)
+		return (
+			this.input.actual ??
+			this.meta?.actual?.(this.data as never) ??
+			this.nodeConfig.actual?.(this.data as never)
+		)
 	}
 
 	get problem(): string {
-		return this.input.problem ?? this.nodeConfig.problem(this as never)
+		return (
+			this.input.problem ??
+			this.meta?.problem?.(this as never) ??
+			this.nodeConfig.problem(this as never)
+		)
 	}
 
 	get message(): string {
-		return this.input.message ?? this.nodeConfig.message(this as never)
+		return (
+			this.input.message ??
+			this.meta?.message?.(this as never) ??
+			this.nodeConfig.message(this as never)
+		)
 	}
 
 	toString(): string {
@@ -221,7 +241,10 @@ type ArkErrorContextInputsByCode = {
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorContextInputsByCode[code]
+	merge<ArkErrorContextInputsByCode[code], { meta?: BaseMeta }>
+
+export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
+	ArkErrorContextInputsByCode[code] & { meta: BaseMeta }
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkError<code>,

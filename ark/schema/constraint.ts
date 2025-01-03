@@ -98,7 +98,8 @@ export abstract class InternalPrimitiveConstraint<
 	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)
+		if (!this.traverseAllows(data, ctx))
+			ctx.errorFromNodeContext(this.errorContext as never)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -111,7 +112,12 @@ export abstract class InternalPrimitiveConstraint<
 	}
 
 	get errorContext(): d["errorContext"] {
-		return { code: this.kind, description: this.description, ...this.inner }
+		return {
+			code: this.kind,
+			description: this.description,
+			meta: this.meta,
+			...this.inner
+		}
 	}
 
 	get compiledErrorContext(): string {
