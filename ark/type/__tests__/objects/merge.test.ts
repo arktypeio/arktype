@@ -96,4 +96,37 @@ contextualize(() => {
 			]
 		})
 	})
+
+	it("object keyword treated as empty", () => {
+		const t = type({
+			"...": "object",
+			foo: "string"
+		})
+
+		attest<{
+			foo: string
+		}>(t.t)
+		attest(t.expression).snap()
+	})
+
+	it("narrowed object keyword treated as empty", () => {
+		const t = type({
+			"...": type.object.narrow(() => true),
+			foo: "string"
+		})
+
+		attest<{
+			foo: string
+		}>(t.t)
+		attest(t.expression).snap("{ foo: string }")
+	})
+
+	it("errors on proto node", () => {
+		attest(() =>
+			type({
+				"...": "Date",
+				foo: "string"
+			})
+		).throws(writeInvalidSpreadTypeMessage("Date"))
+	})
 })

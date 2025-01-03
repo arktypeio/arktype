@@ -55,6 +55,9 @@ contextualize(() => {
 
 				const exports = imported.export()
 
+				attest(Object.keys(exports)).equals(["a"])
+				attest(exports.a.expression).snap('"no" | "yes" | 3 | 60 | true')
+
 				attest<Module<{ a: 3 | 60 | "no" | "yes" | true }>>(exports)
 			})
 
@@ -82,6 +85,71 @@ contextualize(() => {
 			})
 		}
 	)
+
+	it("docs example", () => {
+		const shapeScope = scope({
+			// aliases with a "#" prefix are treated as private
+			"#baseShapeProps": {
+				perimeter: "number",
+				area: "number"
+			},
+			ellipse: {
+				// when referencing a private alias, the "#" should not be included
+				"...": "baseShapeProps",
+				radii: ["number", "number"]
+			},
+			rectangle: {
+				"...": "baseShapeProps",
+				width: "number",
+				height: "number"
+			}
+		})
+
+		// private aliases can be referenced from any scoped definition,
+		// even outside the original scope
+		const partialShape = shapeScope.type("Partial<baseShapeProps>")
+
+		attest<{
+			perimeter?: number
+			area?: number
+		}>(partialShape.t)
+		attest<typeof shapeScope>(partialShape.$)
+
+		attest(partialShape.expression).snap(
+			"{ area?: number, perimeter?: number }"
+		)
+
+		// when the scope is exported to a Module, they will not be included
+		// hover to see the Scope's exports
+		const shapeModule = shapeScope.export()
+
+		attest(Object.keys(shapeModule)).equals(["ellipse", "rectangle"])
+		attest(shapeModule).type.toString.snap()
+	})
+
+	it("docs import example", () => {
+		const utilityScope = scope({
+			"withId<o extends object>": {
+				"...": "o",
+				id: "string"
+			}
+		})
+
+		const userModule = type.module({
+			// because we use `import()` here, we can reference our utilities
+			// internally, but they will not be included in `userModule`.
+			// if we used `export()` instead, `withId` could be accessed on `userModule`.
+			...utilityScope.import(),
+			payload: {
+				name: "string",
+				age: "number"
+			},
+			db: "withId<payload>"
+		})
+
+		attest(Object.keys(userModule)).equals(["payload", "db"])
+		attest(userModule).type.toString.snap()
+	})
 
 	it("binds destructured exports", () => {
 		const types = scope({

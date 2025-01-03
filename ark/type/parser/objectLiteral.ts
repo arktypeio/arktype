@@ -1,4 +1,5 @@
 import {
+	intrinsic,
 	normalizeIndex,
 	type BaseParseContext,
 	type BaseRoot,
@@ -57,7 +58,13 @@ export const parseObjectLiteral = (
 			if (!isEmptyObject(structure))
 				return throwParseError(nonLeadingSpreadError)
 			const operand = ctx.$.parseOwnDefinitionFormat(v, ctx)
-			if (!operand.hasKind("intersection") || !operand.structure) {
+			// treat object domain as empty for spreading (useful for generic constraints)
+			if (operand.equals(intrinsic.object)) continue
+			if (
+				!operand.hasKind("intersection") ||
+				// still error on attempts to spread proto nodes like ...Date
+				!operand.basis?.equals(intrinsic.object)
+			) {
 				return throwParseError(
 					writeInvalidSpreadTypeMessage(operand.expression)
 				)
