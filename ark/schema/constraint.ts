@@ -25,7 +25,7 @@ import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
-	compileErrorContext,
+	compileObjectLiteral,
 	constraintKeys,
 	type ConstraintKind,
 	type IntersectionContext,
@@ -106,7 +106,7 @@ export abstract class InternalPrimitiveConstraint<
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
 		else {
 			js.if(this.compiledNegation, () =>
-				js.line(`${js.ctx}.error(${this.compiledErrorContext})`)
+				js.line(`${js.ctx}.errorFromNodeContext(${this.compiledErrorContext})`)
 			)
 		}
 	}
@@ -121,7 +121,7 @@ export abstract class InternalPrimitiveConstraint<
 	}
 
 	get compiledErrorContext(): string {
-		return compileErrorContext(this.errorContext!)
+		return compileObjectLiteral(this.errorContext!)
 	}
 }
 

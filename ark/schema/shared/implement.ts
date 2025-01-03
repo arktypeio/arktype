@@ -318,11 +318,10 @@ export interface UnknownNodeImplementation
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
-export const compileErrorContext = (ctx: object): string => {
+export const compileObjectLiteral = (ctx: object): string => {
 	let result = "{ "
 	for (const [k, v] of Object.entries(ctx))
 		result += `${k}: ${compileSerializedValue(v)}, `
-
 	return result + " }"
 }
 

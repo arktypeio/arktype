@@ -663,7 +663,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return this.undeclared === "reject" ?
 						js
 							.line(
-								`ctx.error({ expected: "removed", actual: "", relativePath: [k] })`
+								// TODO: should have its own error code
+								`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
 							)
 							.if("ctx.failFast", () => js.return())
 					:	js.line(`ctx.queueMorphs([data => { delete data[k]; return data }])`)

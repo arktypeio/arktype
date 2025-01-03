@@ -1,7 +1,7 @@
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
 import {
-	compileErrorContext,
+	compileObjectLiteral,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -61,7 +61,7 @@ export class RequiredNode extends BaseProp<"required"> {
 		meta: this.meta
 	})
 
-	compiledErrorContext: string = compileErrorContext(this.errorContext)
+	compiledErrorContext: string = compileObjectLiteral(this.errorContext)
 }
 
 export const Required = {

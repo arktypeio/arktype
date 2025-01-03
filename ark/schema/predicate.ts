@@ -7,7 +7,7 @@ import type {
 	declareNode
 } from "./shared/declare.ts"
 import {
-	compileErrorContext,
+	compileObjectLiteral,
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
@@ -92,7 +92,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		meta: this.meta
 	}
 
-	compiledErrorContext = compileErrorContext(this.errorContext)
+	compiledErrorContext = compileObjectLiteral(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (!this.predicate(data, ctx.external) && !ctx.hasError())
@@ -105,7 +105,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			return
 		}
 		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
-			js.line(`ctx.error(${this.compiledErrorContext})`)
+			js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
 		)
 	}
 

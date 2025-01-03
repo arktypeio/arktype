@@ -4,7 +4,6 @@ import {
 	ReadonlyPath,
 	append,
 	defineProperties,
-	hasKey,
 	stringifyPath,
 	type array,
 	type merge,
@@ -49,7 +48,6 @@ export class ArkError<
 			: input.path ? new ReadonlyPath(...input.path)
 			: new ReadonlyPath(...ctx.path)
 		this.data = "data" in input ? input.data : data
-		if (hasKey(input, "meta") && input.meta) this.meta = input.meta
 	}
 
 	hasCode<code extends ArkErrorCode>(code: code): this is ArkError<code> {
