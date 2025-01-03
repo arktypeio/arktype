@@ -1,7 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
-import { scope, type } from "arktype"
+import type { Brand } from "@ark/util"
+import { scope, type, type Scope } from "arktype"
 import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
+import type { Out } from "../attributes.ts"
 
 contextualize(() => {
 	it("in type", () => {
@@ -95,5 +97,91 @@ contextualize(() => {
 			a: () => $.type("bad")
 		})
 		attest(() => $.export()).throws(writeUnresolvableMessage("bad"))
+	})
+
+	it("docs example", () => {
+		const $ = type.scope({
+			id: "string#id",
+			expandUserGroup: () =>
+				$.type({
+					name: "string",
+					id: "id"
+				})
+					.or("id")
+					.pipe(user =>
+						typeof user === "string" ? { id: user, name: "Anonymous" } : user
+					)
+					.array()
+					.atLeastLength(2)
+		})
+
+		attest<
+			Scope<{
+				id: Brand<string, "id">
+				expandUserGroup: ((
+					In:
+						| string
+						| {
+								name: string
+								id: string
+						  }
+				) => Out<{
+					name: string
+					id: Brand<string, "id">
+				}>)[]
+			}>
+		>($)
+
+		const types = $.export()
+
+		const flattenUserMorphs =
+			types.expandUserGroup.internal.firstReferenceOfKindOrThrow(
+				"morph"
+			).serializedMorphs
+
+		attest($.json).snap({
+			id: { domain: "string" },
+			expandUserGroup: {
+				sequence: {
+					in: [
+						"string",
+						{
+							required: [
+								{ key: "id", value: "string" },
+								{ key: "name", value: "string" }
+							],
+							domain: "object"
+						}
+					],
+					morphs: flattenUserMorphs
+				},
+				proto: "Array",
+				minLength: 2
+			}
+		})
+
+		const groups = types.expandUserGroup([
+			{ name: "Magical Crawdad", id: "777" },
+			"778"
+		])
+
+		type BrandedId = typeof types.id.t
+
+		attest(groups).snap([
+			{ name: "Magical Crawdad", id: "777" as BrandedId },
+			{ id: "778" as BrandedId, name: "Anonymous" }
+		])
+	})
+
+	it("docs inelegant", () => {
+		// you *can* use them anywhere, but *should* you? (no)
+		const myInelegantType = type(() =>
+			type({ inelegantKey: () => type("'inelegant value'") })
+		)
+
+		attest(myInelegantType.t).type.toString.snap()
+		attest(myInelegantType.expression).snap(
+			'{ inelegantKey: "inelegant value" }'
+		)
 	})
 })

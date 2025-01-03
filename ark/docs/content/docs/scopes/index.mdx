@@ -2,6 +2,8 @@
 title: Scopes
 ---
 
+import { CodeBlock } from "../../../components/CodeBlock.tsx"
+
 <a id="intro" />
 
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
@@ -337,14 +339,54 @@ const rootModule = type.module({
 
 When users are first learning about Scopes, one of the most common mistakes is to reference an alias in a nested `type` call:
 
+<CodeBlock fromFile="nestedTypeInScopeError" />
+
+This error occurs because although the `id` alias would be resolvable in the current Scope directly, `type` only allows references to builtin keywords. In this case, the `type` wrapper is redundant and the fix is to simply remove it:
+
 ```ts
-// @noErrors
 const myScope = scope({
 	id: "string#id",
-	user: type({
+	user: {
+		name: "string",
+		// now resolves correctly
 		id: "id"
-	})
+	}
 })
 ```
 
-It's a very common mistake to reference a scoped keyword
+However, even if it is _possible_ to define your scope without invoking `type` by composing aliases and tuple expressions, the fluent methods available on `Type` can define complex types that can be cumbersome to express otherwise. In these situations, you can use a **thunk definition** to access the `type` method on the Scope you're currently defining:
+
+```ts
+const $ = scope({
+	id: "string#id",
+	expandUserGroup: () =>
+		$.type({
+			name: "string",
+			id: "id"
+		})
+			.or("id")
+			.pipe(user =>
+				typeof user === "string" ? { id: user, name: "Anonymous" } : user
+			)
+			.array()
+			.atLeastLength(2)
+})
+
+const types = $.export()
+
+// input is validated and transformed to:
+// [{ name: "Magical Crawdad", id: "777" }, { name: "Anonymous", id: "778" }]
+const groups = types.expandUserGroup([
+	{ name: "Magical Crawdad", id: "777" },
+	"778"
+])
+```
+
+Though thunk definitions are really only useful when defining a Scope, they can be used anywhere a `Type` definition is expected:
+
+```ts
+// you *can* use them anywhere, but *should* you? (no)
+const myInelegantType = type(() =>
+	type({ inelegantKey: () => type("'inelegant value'") })
+)
+```

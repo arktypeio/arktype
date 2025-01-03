@@ -14,11 +14,3 @@ import { ark, type } from "arktype"
 flatMorph(ark.internal.resolutions, (k, v) => [k, v])
 
 console.log(Object.keys(ark.internal.resolutions))
-
-const myScope = type.scope({
-	id: "string#id",
-	user: type({
-		// ParseError: 'id' is not resolvable
-		id: "id"
-	})
-})
