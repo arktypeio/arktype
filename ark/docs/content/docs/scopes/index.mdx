@@ -335,4 +335,16 @@ const rootModule = type.module({
 
 ### thunks
 
-🚧 Coming soon ™️🚧
+When users are first learning about Scopes, one of the most common mistakes is to reference an alias in a nested `type` call:
+
+```ts
+// @noErrors
+const myScope = scope({
+	id: "string#id",
+	user: type({
+		id: "id"
+	})
+})
+```
+
+It's a very common mistake to reference a scoped keyword

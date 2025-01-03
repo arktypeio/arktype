@@ -7,12 +7,20 @@ import {
 	DocsPage,
 	DocsTitle
 } from "fumadocs-ui/page"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { source } from "../../../lib/source.tsx"
 
 export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 	const params = await props.params
+
+	if (
+		!params.slug?.length ||
+		(params.slug?.length === 1 && params.slug[0] === "intro")
+	)
+		redirect("/docs/intro/setup")
+
 	const page = source.getPage(params.slug)
+
 	if (!page) notFound()
 
 	const MDX = page.data.body
@@ -40,7 +48,11 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 	)
 }
 
-export const generateStaticParams = async () => source.generateParams()
+export const generateStaticParams = async () => [
+	...source.generateParams(),
+	{ slug: [] },
+	{ slug: ["intro"] }
+]
 
 export const generateMetadata = async (props: {
 	params: Promise<{ slug?: string[] }>
