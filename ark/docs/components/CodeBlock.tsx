@@ -1,4 +1,4 @@
-import type { propwiseXor } from "@ark/util"
+import { throwInternalError, type propwiseXor } from "@ark/util"
 import type { HighlightOptions } from "fumadocs-core/server"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
 import { cn } from "fumadocs-ui/components/api"
@@ -54,6 +54,14 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 	includesCompletions
 }) => {
 	children ??= snippetContentsById[fromFile!]
+
+	if (!children) {
+		throwInternalError(
+			fromFile ?
+				`Specified snippet '${fromFile}' does not have a corresponding file`
+			:	`CodeBlock requires either a fromFile prop or a string child representing its text contents`
+		)
+	}
 
 	const highlighted = highlight(lang, children)
 

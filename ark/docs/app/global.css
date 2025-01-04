@@ -129,6 +129,11 @@ div.twoslash-popup-container {
 	white-space: pre;
 }
 
+/** avoid empty lines being rendered with 0 height */
+.twoslash .line {
+	min-height: 20px;
+}
+
 .completions-block code {
 	padding-bottom: 3rem;
 }
