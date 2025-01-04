@@ -15,3 +15,13 @@ import { ark, type } from "arktype"
 flatMorph(ark.internal.resolutions, (k, v) => [k, v])
 
 console.log(Object.keys(ark.internal.resolutions))
+
+const customEven = type("number % 2", "@", {
+	expected: ctx => `custom expected ${ctx.description}`,
+	actual: data => `custom actual ${data}`,
+	problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+	message: ctx => `custom message ${ctx.problem}`
+})
+
+// custom message custom problem custom expected a multiple of 2 custom actual 3
+customEven(3)

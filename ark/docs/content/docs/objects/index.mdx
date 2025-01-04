@@ -184,7 +184,87 @@ const myObject = type({
 
 ### undeclared [#properties-undeclared]
 
-🚧 Coming soon ™️🚧
+TypeScript's structural type system explicitly allows assigning objects with additional keys so long as all declared constraints are satisfied. ArkType mirrors this behavior by default because generally...
+
+- Existing objects can be reused more often.
+- Validation is much more efficient if you don't need to check for undeclared keys.
+- Extra properties don't usually matter as long as those you've declared are satisfied.
+
+However, sometimes the way you're using the object would make undeclared properties problematic. Even though they can't be reflected by TypeScript ([_yet_- please +1 the issue!](https://github.com/microsoft/TypeScript/issues/12936#issuecomment-1854411301)), ArkType _does_ support rejection or deletion of undeclared keys. This behavior can be defined for individual objects using the syntax below or [via configuration](/docs/configuration#undeclared) if you want to change the default across all objects.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// fail if any key other than "onlyAllowedKey" is present
+const myClosedObject = type({
+	"+": "reject",
+	onlyAllowedKey: "string"
+})
+
+// delete all non-symbolic keys other than "onlyPreservedStringKey"
+const myStrippedObject = type({
+	"+": "delete",
+	"[symbol]": "unknown",
+	onlyPreservedStringKey: "string"
+})
+
+// allow and preserve undeclared keys (the default behavior)
+const myOpenObject = type({
+	// only specify "ignore" if you explicitly configured the default elsewhere
+	"+": "ignore",
+	nonexclusiveKey: "number"
+})
+```
+
+    </SyntaxTab>
+
+    	<SyntaxTab fluent>
+
+```ts
+// fail if any key other than "onlyAllowedKey" is present
+const myClosedObject = type({
+	onlyAllowedKey: "string"
+}).onUndeclaredKey("reject")
+
+// delete all non-symbolic keys other than "onlyPreservedStringKey"
+const myStrippedObject = type({
+	"[symbol]": "unknown",
+	onlyPreservedStringKey: "string"
+}).onUndeclaredKey("delete")
+
+// allow and preserve undeclared keys (the default behavior)
+const myOpenObject = type({
+	nonexclusiveKey: "number"
+	// only specify "ignore" if you explicitly configured the default elsewhere
+}).onUndeclaredKey("ignore")
+
+// there is also a method for altering nested objects recursively
+const myDeeplyStrippedObject = type({
+	preserved: "string",
+	nested: {
+		preserved: "string"
+	}
+}).onDeepUndeclaredKey("delete")
+```
+
+<Callout type="info" title="Prefer in-object syntax where possible">
+	Certain methods like `.onUndeclaredKey` or `.configure` require a full traversal and transformation of the node created by the initial `type` call.
+
+    <details>
+    	<summary>**Learn to recognize when chaining creates unnecessary overhead**</summary>
+
+Though they can be convenient if you need both variants of the type, most of the time you incur a significant performance cost instantiating your Type compared to the embedded syntax.
+
+Though how a Type is defined will never affect validation performance, depending on your sensitivity to initialization, you may want to avoid chained methods that transform rather than compose their base type. Methods like `.or` and `.pipe` that create new `Types` that directly reference the original incur no such overhead, so feel free to use whichever syntax is more convenient for those operations.
+
+    </details>
+
+</Callout>
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### merge [#properties-merge]
 
