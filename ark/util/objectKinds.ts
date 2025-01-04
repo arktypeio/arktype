@@ -112,8 +112,17 @@ export type builtinConstructors = typeof builtinConstructors
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
+export type GlobalName = keyof typeof globalThis
+
 type instantiateConstructors<kind extends BuiltinObjectKind> = {
-	[k in kind]: InstanceType<builtinConstructors[k]>
+	// one of these conditions will always be true internally, but they prevent
+	// failed resolutions from being inferred as any if TS is configured
+	// in such a way that they are unavailable:
+	// https://github.com/arktypeio/arktype/issues/1246
+	[k in kind]: k extends GlobalName ? InstanceType<(typeof globalThis)[k]>
+	: `${k}Constructor` extends GlobalName ?
+		InstanceType<(typeof globalThis)[`${k}Constructor`]>
+	:	never
 }
 
 export type BuiltinObjects = instantiateConstructors<BuiltinObjectKind>
