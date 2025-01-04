@@ -471,7 +471,51 @@ for identical sets of underlying values. Therefore, numeric keys are one of a ha
 
 ### get [#properties-get]
 
-🚧 Coming soon ™️🚧
+Like an index access expression in TypeScript (e.g. `User["name"]`), the `get` operator extracts the Type of a value based on a specified key definition from an object:
+
+```ts
+const snorfUsage = type.enumerated("eating plants", "looking adorable")
+
+const manatee = type({
+	isFriendly: "true",
+	snorf: {
+		uses: snorfUsage.array()
+	}
+})
+
+const trueType = manatee.get("isFriendly")
+
+// nested properties can be accessed directly by passing additional args
+const snorfUsageArray = manatee.get("snorf", "uses")
+```
+
+<Callout
+	type="warn"
+	title="Expressions like `get` and `omit` that extract a portion of an exising Type can be an antipattern!"
+>
+	Before using `get` to extract the type of a property you've defined, consider
+	whether you may be able to define the property value directly as a standalone
+	Type that can be easily referenced and composed as needed.
+
+    Usually, composing Types from the bottom up is clearer and more efficient than trying to rip the part you need out of an existing Type.
+
+</Callout>
+
+Though cases like this are quite straightforward, there are number of more nuanced behaviors to consider when accessing an arbitrary key that could be a union, literal, or index signature on an object Type that could also be a union including optional keys or index signatures.
+
+If you're interested in a deeper dive into this (or anything else in ArkType), [our unit tests](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/get.test.ts) are the closest thing we have to a comprehensive spec.
+
+Not your cup of tea? No worries- the inferred types and errors you'll see in editor will always be guiding you in the right direction 🧭
+
+<Callout
+	type="info"
+	title="Support for TypeScript's index access syntax is planned!"
+>
+	Leave a comment on [the
+	issue](https://github.com/arktypeio/arktype/issues/831) letting us know if
+	you're interested in using- or even helping implement- type-level parsing for
+	string-embedded index access 🤓
+</Callout>
 
 ## arrays
 

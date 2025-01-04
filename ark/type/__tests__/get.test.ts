@@ -60,7 +60,7 @@ contextualize(() => {
 			named: "1"
 		})
 
-		const a = t.get("foo" as string)
+		const a = t.get("foo")
 		attest<0>(a.t)
 		attest(a.expression).snap("undefined | 0")
 
