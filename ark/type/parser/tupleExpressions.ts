@@ -157,6 +157,8 @@ export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
 export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
+export type ArgTwoOperator = Exclude<IndexOneOperator, "?" | "=">
+
 export type TuplePostfixOperator = "[]" | "?"
 
 export type TupleInfixOperator = "&" | "|" | "=>" | "=" | ":" | "@"

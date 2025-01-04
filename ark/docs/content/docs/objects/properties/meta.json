@@ -6,7 +6,7 @@
 		"[defaultable](/docs/objects#properties-defaultable)",
 		"[index](/docs/objects#properties-index)",
 		"[undeclared](/docs/objects#properties-undeclared)",
-		"[merge](/docs/objects#properties-merge)",
+		"[spread](/docs/objects#properties-spread)",
 		"[keyof](/docs/objects#properties-keyof)",
 		"[get](/docs/objects#properties-get)"
 	]

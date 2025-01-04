@@ -1,11 +1,11 @@
 {
 	"title": "arrays and tuples",
 	"pages": [
-		"lengths",
-		"[prefix](/docs/objects#arrays-prefix)",
-		"[optional](/docs/objects#arrays-optional)",
-		"[defaultable](/docs/objects#arrays-defaultable)",
-		"[variadic](/docs/objects#arrays-variadic)",
-		"[postfix](/docs/objects#arrays-postfix)"
+		"[lengths](/docs/objects#arrays-lengths)",
+		"[prefix](/docs/objects#tuples-prefix)",
+		"[defaultable](/docs/objects#tuples-defaultable)",
+		"[optional](/docs/objects#tuples-optional)",
+		"[variadic](/docs/objects#tuples-variadic)",
+		"[postfix](/docs/objects#tuples-postfix)"
 	]
 }

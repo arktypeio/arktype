@@ -29,7 +29,7 @@ import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type { validateDeclared } from "./parser/definition.ts"
 import type {
-	IndexOneOperator,
+	ArgTwoOperator,
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tupleExpressions.ts"
@@ -70,7 +70,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		_1: zero extends "keyof" ? type.validate<one, $>
 		: zero extends "instanceof" ? conform<one, Constructor>
 		: zero extends "===" ? conform<one, unknown>
-		: conform<one, IndexOneOperator>,
+		: conform<one, ArgTwoOperator>,
 		..._2: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
@@ -187,9 +187,11 @@ export type DeclarationParser<$> = <preinferred>() => {
 }
 
 export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>
+
 export type InstanceOfTypeParser<$> = <const t extends object>(
 	ctor: Constructor<t>
 ) => Type<t, $>
+
 export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>

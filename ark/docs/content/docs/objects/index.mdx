@@ -623,19 +623,17 @@ const myTuple = type([
 
 ### defaultable [#tuples-defaultable]
 
-🚧 Coming soon ™️🚧
+Defaultable elements are optional elements that will be assigned their specified default if not present in the tuple's input.
 
-### optional [#tuples-optional]
+A tuple may include zero or more defaultable elements following its prefix elements and preceding its non-defaultable optional elements.
 
-Tuples can include any number of optional elements following its prefix elements.
-
-Like in TypeScript, optional elements are mutually exclusive with postfix elements.
+Like optional elements, defaultable elements are mutually exclusive with postfix elements.
 
 <SyntaxTabs>
 	<SyntaxTab string>
 
 ```ts
-const myTuple = type(["string", "boolean?", "number?"])
+const myTuple = type(["string", "boolean = false", "number = 0"])
 ```
 
     </SyntaxTab>
@@ -645,6 +643,55 @@ const myTuple = type(["string", "boolean?", "number?"])
 ```ts
 const myTuple = type([
 	type.string,
+	type.boolean.default(false),
+	type.number.default(0)
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"=",
+		() => ({ name: "Anon Eemuss" })
+	]
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### optional [#tuples-optional]
+
+Optional elements are tuple elements that may or may not be present in the input that do not have a default value.
+
+A tuple may include zero or more optional elements following its prefix and defaultable elements and preceding either a variadic element or the end of the tuple.
+
+Like in TypeScript, optional elements are mutually exclusive with postfix elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myTuple = type(["string", "bigint = 999n", "boolean?", "number?"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myTuple = type([
+	type.string,
+	type.bigint.default(999n),
 	type.boolean.optional(),
 	type.number.optional()
 ])
@@ -663,22 +710,6 @@ const myTuple = type([
 		},
 		"?"
 	]
-])
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab args>
-
-```ts
-const myTuple = type([
-	"string",
-	type(
-		{
-			name: "string"
-		},
-		"?"
-	)
 ])
 ```
 
