@@ -266,9 +266,71 @@ Though how a Type is defined will never affect validation performance, depending
 
 </SyntaxTabs>
 
-### merge [#properties-merge]
+### spread [#properties-spread]
 
-🚧 Coming soon ™️🚧
+The **spread operator** is great for merging sets of properties. When applied to two distinct (i.e. non-overlapping) sets of properties, it is equivalent to [intersection](/docs/expressions#intersection). However, if a key appears in both the base and merged objects, the base value will be discarded in favor of the merged rather than recursively intersected.
+
+Spreading bypasses a lot of the behavioral complexity and computational overhead of an intersection and should be the preferred method of combining property sets.
+
+A base object definition can be spread if `"..."` is the first key specified in an object literal. Subsequent properties will be merged into those from the base object, just like the `...` operator [in JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax).
+
+```ts
+const user = type({ isAdmin: "false", name: "string" })
+
+// hover to see the newly merged object
+const admin = type({
+	"...": user,
+	// in an intersection, non-overlapping values at isAdmin would result in a ParseError
+	isAdmin: "true",
+	permissions: "string[]"
+})
+```
+
+The spread operator is semantically equivalent to the generic `Merge` keyword, which can be instantiated via a dedicated method on `Type` in addition to the standard keyword syntax.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const types = type.module({
+	base: {
+		"foo?": "0",
+		"bar?": "0"
+	},
+	merged: {
+		bar: "1",
+		"baz?": "1"
+	},
+	result: "Merge<base, merged>"
+})
+
+// hover to see the inferred result
+type Result = typeof types.result.infer
+```
+
+    </SyntaxTab>
+
+    	<SyntaxTab fluent>
+
+```ts
+const zildjian = Symbol()
+
+const base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// hover to see the inferred result
+const chainedResult = base.merge({
+	"[string]": "bigint",
+	"foo?": "1n"
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
 
 ### keyof [#properties-keyof]
 
