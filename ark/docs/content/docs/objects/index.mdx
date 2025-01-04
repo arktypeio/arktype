@@ -310,7 +310,7 @@ type Result = typeof types.result.infer
 
     </SyntaxTab>
 
-    	<SyntaxTab fluent>
+    <SyntaxTab fluent>
 
 ```ts
 const zildjian = Symbol()
@@ -334,7 +334,140 @@ const chainedResult = base.merge({
 
 ### keyof [#properties-keyof]
 
-🚧 Coming soon ™️🚧
+Like in TypeScript, the `keyof` operator extracts the keys of an object as a union:
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const usedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const usedCarKey = usedCar.keyof()
+
+type UsedCarKey = typeof usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab string>
+
+```ts
+const types = type.module({
+	usedCar: {
+		originallyPurchased: "string.date",
+		remainingWheels: "number"
+	},
+	usedCarKey: "keyof usedCar"
+})
+
+type UsedCarKey = typeof types.usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const usedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const usedCarKey = type(["keyof", usedCar])
+
+type UsedCarKey = typeof usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const usedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const usedCarKey = type("keyof", usedCar)
+
+type UsedCarKey = typeof usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Also like in TypeScript, if an object includes an index signature like `[string]` alongside named properties, the union from `keyof` will reduce to `string`:
+
+```ts
+const recordWithSpecialKeys = type({
+	"[string]": "unknown",
+	verySpecialKey: "0 < number <= 3.14159",
+	moderatelySpecialKey: "-9.51413 <= number < 0"
+})
+
+// in a union with the `string` index signature, string literals
+// "verySpecialKey" and "moderatelySpecialKey" are redundant and will be pruned
+const key = recordWithSpecialKeys.keyof()
+
+// key is identical to the base `string` Type
+console.log(key.equals("string"))
+```
+
+<Callout type="warn" title="ArkType's `keyof` will never include `number`">
+	Though TypeScript's `keyof` operator can yield a `number`, the concept of
+	numeric keys does not exist in JavaScript at runtime. This leads to confusing
+	and inconsistent behavior. In ArkType, `keyof` will always return a `string`
+	or `symbol` in accordance with the construction of a JavaScript object.
+
+    <details>
+    	<summary>Learn more about our motivation for diverging from TypeScript on this issue</summary>
+
+In JavaScript, you can use a number literal to define a key, but the constructed value has no way to represent a numeric key, so it is coerced to a string.
+
+```ts
+const numberLiteralObj = {
+	4: true,
+	5: true
+}
+
+const stringLiteralObj = {
+	"4": true,
+	"5": true
+}
+
+// numberLiteralObj and stringLiteralObj are indistinguishable at this point
+Object.keys(numberLiteralObj) // ["4", "5"]
+Object.keys(stringLiteralObj) // ["4", "5"]
+```
+
+For a set-based type system to be correct, any two types representing the same set of underlying values must share a single representation. TypeScript's decision to have distinct numeric and string representations for the same underlying key has led to some if its most confusing inference pitfalls:
+
+```ts
+type Thing1 = {
+	[x: string]: unknown
+}
+
+// Thing2 is apparently identical to Thing1
+type Thing2 = Record<string, unknown>
+
+// and yet...
+type Key1 = keyof Thing1
+//   ^?
+
+type Key2 = keyof Thing2
+//   ^?
+```
+
+This sort of inconsistency is inevitable for a type system that has to reconcile multiple representations
+for identical sets of underlying values. Therefore, numeric keys are one of a handful of cases where ArkType intentionally diverges from TypeScript. ArkType will never return a `number` from `keyof`. Keys will always be normalized to a `string` or `symbol`, the two distinct property types that can be uniquely attached to a JavaScript object.
+
+    </details>
+
+</Callout>
 
 ### get [#properties-get]
 
@@ -373,7 +506,7 @@ const arrays = type({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 const arrays = type({
@@ -535,7 +668,7 @@ const myTuple = type([
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 const myTuple = type([
@@ -715,7 +848,7 @@ const instances = type({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 class MyClass {}

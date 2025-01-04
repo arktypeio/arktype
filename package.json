@@ -116,6 +116,9 @@
 			"allowedVersions": {
 				"eslint": "*"
 			}
+		},
+		"overrides": {
+			"@shikijs/types": "1.26.1"
 		}
 	},
 	"packageManager": "pnpm@9.14.4"

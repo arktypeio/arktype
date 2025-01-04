@@ -6,7 +6,7 @@ export const syntaxKinds = [
 	"string",
 	"fluent",
 	"tuple",
-	"spread"
+	"args"
 	// don't infer as readonly since Fumadocs (incorrectly) doesn't support that
 ] as const satisfies string[]
 
@@ -15,21 +15,25 @@ export type SyntaxKind = (typeof syntaxKinds)[number]
 export const SyntaxTabs: React.FC<omit<TabsProps, "items">> = ({
 	children,
 	...rest
-}) => (
-	<Tabs
-		{...rest}
-		// only include the tabs that were actually used
-		items={syntaxKinds.filter(kind =>
-			Children.toArray(children).some(
-				child =>
-					isValidElement(child) &&
-					(child.props as SyntaxTabProps | undefined)?.[kind]
-			)
-		)}
-	>
-		{children}
-	</Tabs>
-)
+}) => {
+	const usedKinds = Children.toArray(children).flatMap(child => {
+		if (!isValidElement(child)) return []
+		if (!child.props) return []
+
+		const props = child.props as SyntaxTabProps
+
+		const matchingKind = syntaxKinds.find(k => props[k])
+		if (!matchingKind) return []
+
+		return matchingKind
+	})
+
+	return (
+		<Tabs {...rest} items={usedKinds}>
+			{children}
+		</Tabs>
+	)
+}
 
 type DiscriminatedSyntaxKindProps = unionToPropwiseXor<
 	{

@@ -25,3 +25,14 @@ const customEven = type("number % 2", "@", {
 
 // custom message custom problem custom expected a multiple of 2 custom actual 3
 customEven(3)
+
+type Thing1 = {
+	[x: string]: unknown
+}
+
+// Thing2 is apparently identical to Thing1, and yet...
+type Thing2 = Record<string, unknown>
+
+type A = keyof Thing1 // number | string
+
+type B = keyof Thing2 // string

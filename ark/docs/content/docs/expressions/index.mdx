@@ -52,7 +52,7 @@ const foobarObject = type([
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 // an object requiring both foo and bar
@@ -106,7 +106,7 @@ const unions = type({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 const unions = type({
@@ -211,7 +211,7 @@ const out = form({
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 const form = type(
@@ -273,7 +273,7 @@ const arkString = type([
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 // hover to see how the predicate is propagated to the outer `Type`
@@ -312,7 +312,7 @@ const trimStringStart = type(["string", "=>", str => str.trimStart()])
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 // hover to see how morphs are represented at a type-level
@@ -349,7 +349,7 @@ const exactValue = type(["===", mySymbol])
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 const mySymbol = Symbol()
@@ -387,7 +387,7 @@ const exactValueFromSet = type(["===", 1337, true, mySymbol])
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 const mySymbol = Symbol()
@@ -440,7 +440,7 @@ const specialNumber = type(["number", "@", "a special number"])
 
     </SyntaxTab>
 
-    <SyntaxTab spread>
+    <SyntaxTab args>
 
 ```ts
 // this validator's error message will now start with "must be a special string"
