@@ -124,7 +124,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 			instantiatedConfig = instantiateTsconfigFromPath(configFilePath)
 	}
 
-	if (!instantiatedConfig) instantiatedConfig = instantiateNoFileConfig()
+	instantiatedConfig ??= instantiateNoFileConfig()
 
 	return {
 		path: configFilePath,
