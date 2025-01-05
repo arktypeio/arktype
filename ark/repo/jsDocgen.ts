@@ -1,5 +1,4 @@
-import { writeFile } from "@ark/fs"
-import { entriesOf, throwParseError } from "@ark/util"
+import { throwParseError } from "@ark/util"
 import { existsSync } from "fs"
 import { join } from "path"
 import {
@@ -17,6 +16,8 @@ const inheritDocToken = "@inheritDoc"
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
 const filesToRewrite: { [path: string]: string } = {}
+
+let docgenCount = 0
 
 export const jsDocgen = () => {
 	const project = new Project()
@@ -37,12 +38,14 @@ export const jsDocgen = () => {
 
 	project.getSourceFiles().forEach(docgenForFile)
 
-	const rewriteEntries = entriesOf(filesToRewrite)
+	project.saveSync()
 
-	rewriteEntries.forEach(([path, contents]) => writeFile(path, contents))
+	// const rewriteEntries = entriesOf(filesToRewrite)
+
+	// rewriteEntries.forEach(([path, contents]) => writeFile(path, contents))
 
 	console.log(
-		`📚 Successfully generated JSDoc for ${rewriteEntries.length} build files.`
+		`📚 Successfully generated ${docgenCount} JSDoc comments on your build output.`
 	)
 }
 
@@ -89,21 +92,16 @@ const docgenForFile = (sourceFile: SourceFile) => {
 				)
 			}
 
-			const closeBraceIndex = openTagEndIndex + innerTagLength
-
-			const textToReplace = text.slice(openBraceIndex, closeBraceIndex + 1)
-
 			const sourceName = textFollowingOpenTag.slice(0, innerTagLength).trim()
 
 			return {
 				sourceName,
-				textToReplace,
 				identifier
 			}
 		})
 	)
 
-	matchContexts.forEach(({ sourceName, textToReplace, identifier }) => {
+	matchContexts.forEach(({ sourceName, identifier }) => {
 		const sourceDeclaration = sourceFile
 			.getDescendantsOfKind(ts.SyntaxKind.Identifier)
 			.find(i => i.getText() === sourceName)
@@ -114,32 +112,28 @@ const docgenForFile = (sourceFile: SourceFile) => {
 
 		const parent = identifier.getParent()
 
-		const sourceDescription = sourceDeclaration.getJsDocs()[0].getDescription()
+		if (!canHaveJsDoc(parent)) return
 
-		if (canHaveJsDoc(parent)) {
-			const inheritedDescription = sourceDeclaration
-				.getJsDocs()[0]
-				.getDescription()
+		const matchedJsdoc = parent.getJsDocs()[0]
 
-			const description = `${ownDescription}\n${inheritedDescription}`
-			parent.addJsDocs([
-				{
-					description
-				}
-			])
-		}
+		const matchedDescription = matchedJsdoc.getDescription()
 
-		if (canHaveJsDoc(parent)) {
-			const file = parent.getSourceFile()
-			const path = file.getFilePath()
-			filesToRewrite[path] ??= file.getText()
-			const originalText = filesToRewrite[path]
+		const matchedSummary = matchedDescription.slice(
+			0,
+			matchedDescription.indexOf("{")
+		)
 
-			filesToRewrite[path] = originalText.replace(
-				textToReplace,
-				sourceDescription
-			)
-		}
+		const inheritedDescription = sourceDeclaration
+			.getJsDocs()[0]
+			.getDescription()
+
+		let updatedContents = matchedSummary
+
+		updatedContents += `${inheritedDescription}`
+
+		parent.addJsDoc(updatedContents)
+
+		docgenCount++
 	})
 }
 
