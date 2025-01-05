@@ -15,8 +15,6 @@ const inheritDocToken = "@inheritDoc"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
-const filesToRewrite: { [path: string]: string } = {}
-
 let docgenCount = 0
 
 export const jsDocgen = () => {
