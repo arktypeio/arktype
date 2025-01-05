@@ -26,38 +26,55 @@ export const jsDocgen = () => {
 					.length
 		)
 
-	for (const identifier of identifiers) {
-		for (const comment of identifier.getLeadingCommentRanges()) {
+	const commentsToRemove: string[] = []
+
+	const matchContexts = identifiers.flatMap(identifier =>
+		identifier.getLeadingCommentRanges().flatMap(comment => {
 			const text = comment.getText()
 			const match = text.match(/@docFrom\s+(\w+):\s*(.*)/)
 
-			if (!match) continue
+			if (!match) return []
 
 			const sourceName = match[1]
 			const ownDescription = match[2]
+			commentsToRemove.push(text)
 
-			const sourceDeclaration = sourceFile
-				.getDescendantsOfKind(ts.SyntaxKind.Identifier)
-				.find(i => i.getText() === sourceName)
-				?.getDefinitions()[0]
-				.getDeclarationNode()
-
-			if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) continue
-
-			const sourceDescription = sourceDeclaration
-				.getJsDocs()[0]
-				.getDescription()
-
-			const parent = identifier.getParent()
-			if (canHaveJsDoc(parent)) {
-				parent.addJsDoc({
-					description: `${ownDescription}\n${sourceDescription}`
-				})
-
-				sourceFile.saveSync()
+			return {
+				sourceName,
+				ownDescription,
+				identifier
 			}
+		})
+	)
+
+	matchContexts.forEach(({ sourceName, ownDescription, identifier }) => {
+		const sourceDeclaration = sourceFile
+			.getDescendantsOfKind(ts.SyntaxKind.Identifier)
+			.find(i => i.getText() === sourceName)
+			?.getDefinitions()[0]
+			.getDeclarationNode()
+
+		if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
+
+		const sourceDescription = sourceDeclaration.getJsDocs()[0].getDescription()
+
+		const parent = identifier.getParent()
+
+		if (canHaveJsDoc(parent)) {
+			parent.addJsDoc({
+				description: `${ownDescription}\n${sourceDescription}`
+			})
 		}
-	}
+	})
+
+	const updatedSource = commentsToRemove.reduce(
+		(src, commentText) => src.replace(commentText, ""),
+		sourceFile.getText()
+	)
+
+	sourceFile.replaceWithText(updatedSource)
+
+	sourceFile.saveSync()
 }
 
 const canHaveJsDoc = (node: Node): node is Node & JSDocableNode =>
