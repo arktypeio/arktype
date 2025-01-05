@@ -1,5 +1,5 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
-import { printable, throwInternalError, type dict } from "@ark/util"
+import { printable, throwError, throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -34,7 +34,7 @@ export class TsServer {
 
 		const system = tsvfs.createFSBackedSystem(
 			tsLibPaths.defaultMapFromNodeModules,
-			dirname(this.tsConfigInfo.path),
+			this.tsConfigInfo.path ? dirname(this.tsConfigInfo.path) : fromCwd(),
 			ts
 		)
 
@@ -105,63 +105,98 @@ export const getAbsolutePosition = (
 }
 
 export type TsconfigInfo = {
-	path: string
+	path: string | undefined
 	parsed: ts.ParsedCommandLine
 }
 
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 	const config = getConfig()
 	const tsconfig = config.tsconfig
-	const configFilePath =
-		tsconfig ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
-	if (!configFilePath) {
-		throw new Error(
-			`File ${tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist`
-		)
+
+	let instantiatedConfig: ts.ParsedCommandLine | undefined
+	let configFilePath: string | undefined
+
+	if (tsconfig !== null) {
+		configFilePath =
+			tsconfig ??
+			ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
+		if (configFilePath)
+			instantiatedConfig = instantiateTsconfigFromPath(configFilePath)
 	}
 
-	const configFileText = readFileSync(configFilePath).toString()
-	const result = ts.parseConfigFileTextToJson(configFilePath, configFileText)
-	if (result.error) {
-		throw new Error(
-			ts.formatDiagnostics([result.error], {
-				getCanonicalFileName: fileName => fileName,
-				getCurrentDirectory: process.cwd,
-				getNewLine: () => ts.sys.newLine
-			})
-		)
-	}
-
-	const configJson: dict & { compilerOptions: ts.CompilerOptions } =
-		result.config
-
-	configJson.compilerOptions = Object.assign(
-		configJson.compilerOptions ?? {},
-		config.compilerOptions
-	)
-	const configParseResult = ts.parseJsonConfigFileContent(
-		configJson,
-		ts.sys,
-		dirname(configFilePath),
-		{},
-		configFilePath
-	)
-
-	if (configParseResult.errors.length > 0) {
-		throw new Error(
-			ts.formatDiagnostics(configParseResult.errors, {
-				getCanonicalFileName: fileName => fileName,
-				getCurrentDirectory: process.cwd,
-				getNewLine: () => ts.sys.newLine
-			})
-		)
-	}
+	if (!instantiatedConfig) instantiatedConfig = instantiateNoFileConfig()
 
 	return {
 		path: configFilePath,
-		parsed: configParseResult
+		parsed: instantiatedConfig
 	}
 }
+
+type RawTsConfigJson = dict & { compilerOptions: ts.CompilerOptions }
+
+type InstantiatedTsConfigJson = ts.ParsedCommandLine
+
+const instantiateNoFileConfig = (): InstantiatedTsConfigJson => {
+	const arkConfig = getConfig()
+
+	const instantiatedConfig = ts.parseJsonConfigFileContent(
+		{
+			compilerOptions: arkConfig.compilerOptions
+		},
+		ts.sys,
+		fromCwd()
+	)
+
+	if (instantiatedConfig.errors.length > 0)
+		throwConfigInstantiationError(instantiatedConfig)
+
+	return instantiatedConfig
+}
+
+const instantiateTsconfigFromPath = (
+	path: string
+): InstantiatedTsConfigJson => {
+	const arkConfig = getConfig()
+	const configFileText = readFileSync(path).toString()
+	const result = ts.parseConfigFileTextToJson(path, configFileText)
+	if (result.error) throwConfigParseError(result.error)
+
+	const rawConfig: RawTsConfigJson = result.config
+
+	rawConfig.compilerOptions = Object.assign(
+		rawConfig.compilerOptions ?? {},
+		arkConfig.compilerOptions
+	)
+
+	const instantiatedConfig = ts.parseJsonConfigFileContent(
+		rawConfig,
+		ts.sys,
+		dirname(path),
+		{},
+		path
+	)
+
+	if (instantiatedConfig.errors.length > 0)
+		throwConfigInstantiationError(instantiatedConfig)
+
+	return instantiatedConfig
+}
+
+const defaultDiagnosticHost: ts.FormatDiagnosticsHost = {
+	getCanonicalFileName: fileName => fileName,
+	getCurrentDirectory: process.cwd,
+	getNewLine: () => ts.sys.newLine
+}
+
+const throwConfigParseError = (error: ts.Diagnostic) =>
+	throwError(ts.formatDiagnostics([error], defaultDiagnosticHost))
+
+const throwConfigInstantiationError = (
+	instantiatedConfig: InstantiatedTsConfigJson
+): never =>
+	throwError(
+		ts.formatDiagnostics(instantiatedConfig.errors, defaultDiagnosticHost)
+	)
 
 type TsLibFiles = {
 	defaultMapFromNodeModules: Map<string, string>

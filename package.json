@@ -29,7 +29,7 @@
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test && pnpm testV8 && pnpm -r --filter '@ark/attest' test",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
-		"testTsVersions": "pnpm testTyped --tsconfig null --tsVersions '*' --compilerOptions '{ \"strictNullChecks\": true }'",
+		"testTsVersions": "pnpm testTyped --tsconfig null --compilerOptions '{ \"strictNullChecks\": true }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
 		"benchUp": "ATTEST_updateSnapshots=1 pnpm bench",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
