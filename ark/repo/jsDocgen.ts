@@ -130,8 +130,10 @@ const docgenForFile = (sourceFile: SourceFile) => {
 
 		updatedContents += `${inheritedDescription}`
 
+		// replace the original JSDoc node in the AST with a new one
+		// created from updatedContents
+		matchedJsdoc.remove()
 		parent.addJsDoc(updatedContents)
-
 		docgenCount++
 	})
 }
