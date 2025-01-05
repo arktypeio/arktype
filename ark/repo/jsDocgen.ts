@@ -1,4 +1,5 @@
-import { throwParseError } from "@ark/util"
+import { writeFile } from "@ark/fs"
+import { entriesOf, throwParseError } from "@ark/util"
 import { existsSync } from "fs"
 import { join } from "path"
 import {
@@ -15,7 +16,7 @@ const inheritDocToken = "@inheritDoc"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
-let docgenCount = 0
+const filesToRewrite: { [path: string]: string } = {}
 
 export const jsDocgen = () => {
 	const project = new Project()
@@ -36,12 +37,17 @@ export const jsDocgen = () => {
 
 	project.getSourceFiles().forEach(docgenForFile)
 
-	project.saveSync()
+	const rewriteEntries = entriesOf(filesToRewrite)
 
-	console.log(`📚 Successfully generated JSDoc for ${docgenCount} build files.`)
+	rewriteEntries.forEach(([path, contents]) => writeFile(path, contents))
+
+	console.log(
+		`📚 Successfully generated JSDoc for ${rewriteEntries.length} build files.`
+	)
 }
 
 const docgenForFile = (sourceFile: SourceFile) => {
+	const path = sourceFile.getFilePath()
 	const identifiers = sourceFile
 		.getDescendants()
 		.filter(
@@ -59,77 +65,92 @@ const docgenForFile = (sourceFile: SourceFile) => {
 			const tokenStartIndex = text.indexOf(inheritDocToken)
 			const prefix = text.slice(0, tokenStartIndex)
 
-			const lastNonWhitespaceIndex = prefix.trimEnd().length - 1
-			const lastNonWhitespaceChar = prefix[lastNonWhitespaceIndex]
+			const openBraceIndex = prefix.trimEnd().length - 1
 
-			if (lastNonWhitespaceChar !== "{") {
-				throwParseError(
-					`Expected '{' before @inheritDoc but got '${lastNonWhitespaceChar}'`
+			if (text[openBraceIndex] !== "{") {
+				throwJsDocgenParseError(
+					path,
+					text,
+					` Expected '{' before @inheritDoc but got '${text[openBraceIndex]}'`
 				)
 			}
 
-			const updatedPrefix = prefix.slice(0, lastNonWhitespaceIndex)
+			const openTagEndIndex = tokenStartIndex + inheritDocToken.length
 
-			const textFollowingOpenTag = text
-				.slice(tokenStartIndex + inheritDocToken.length)
-				.trimStart()
+			const textFollowingOpenTag = text.slice(openTagEndIndex)
 
-			if (textFollowingOpenTag[0] !== "}") {
-				throwParseError(
+			const innerTagLength = textFollowingOpenTag.indexOf("}")
+
+			if (innerTagLength === -1) {
+				throwJsDocgenParseError(
+					path,
+					text,
 					`Expected '}' after @inheritDoc but got '${textFollowingOpenTag[0]}'`
 				)
 			}
 
-			const textFollowingToken = textFollowingOpenTag.slice(1)
+			const closeBraceIndex = openTagEndIndex + innerTagLength
 
-			const maybeBlockEndIndex = textFollowingToken.indexOf("*")
-			const blockEndIndex =
-				maybeBlockEndIndex === -1 ?
-					textFollowingToken.length
-				:	maybeBlockEndIndex
+			const textToReplace = text.slice(openBraceIndex, closeBraceIndex + 1)
 
-			// extract the text until whitespace or block comment end (*)
-			const sourceName = textFollowingToken.slice(0, blockEndIndex)
+			const sourceName = textFollowingOpenTag.slice(0, innerTagLength).trim()
 
 			return {
 				sourceName,
-				updatedPrefix,
-				ownDescription: "",
-				identifier,
-				comment
+				textToReplace,
+				identifier
 			}
 		})
 	)
 
-	matchContexts.forEach(
-		({ sourceName, ownDescription, identifier, comment }) => {
-			const sourceDeclaration = sourceFile
-				.getDescendantsOfKind(ts.SyntaxKind.Identifier)
-				.find(i => i.getText() === sourceName)
-				?.getDefinitions()[0]
-				.getDeclarationNode()
+	matchContexts.forEach(({ sourceName, textToReplace, identifier }) => {
+		const sourceDeclaration = sourceFile
+			.getDescendantsOfKind(ts.SyntaxKind.Identifier)
+			.find(i => i.getText() === sourceName)
+			?.getDefinitions()[0]
+			.getDeclarationNode()
 
-			if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
+		if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
 
-			const parent = identifier.getParent()
-			parent.replaceWithText(parent.getText().replace(comment.getText(), ""))
+		const parent = identifier.getParent()
 
-			const sourceDescription = sourceDeclaration
+		const sourceDescription = sourceDeclaration.getJsDocs()[0].getDescription()
+
+		if (canHaveJsDoc(parent)) {
+			const inheritedDescription = sourceDeclaration
 				.getJsDocs()[0]
 				.getDescription()
 
-			if (canHaveJsDoc(parent)) {
-				const description = `${ownDescription}\n${sourceDescription}`
-				parent.addJsDocs([
-					{
-						description
-					}
-				])
-				docgenCount++
-			}
+			const description = `${ownDescription}\n${inheritedDescription}`
+			parent.addJsDocs([
+				{
+					description
+				}
+			])
 		}
-	)
+
+		if (canHaveJsDoc(parent)) {
+			const file = parent.getSourceFile()
+			const path = file.getFilePath()
+			filesToRewrite[path] ??= file.getText()
+			const originalText = filesToRewrite[path]
+
+			filesToRewrite[path] = originalText.replace(
+				textToReplace,
+				sourceDescription
+			)
+		}
+	})
 }
 
 const canHaveJsDoc = (node: Node): node is Node & JSDocableNode =>
 	"addJsDoc" in node
+
+const throwJsDocgenParseError = (
+	path: string,
+	commentText: string,
+	message: string
+): never =>
+	throwParseError(
+		`jsDocgen ParseError in ${path}: ${message}\nComment text: ${commentText}`
+	)
