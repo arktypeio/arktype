@@ -12,4 +12,4 @@ import { jsDocgen } from "./jsDocgen.ts"
 
 const t = type({ name: "string" })
 
-jsDocgen()
+// jsDocgen()

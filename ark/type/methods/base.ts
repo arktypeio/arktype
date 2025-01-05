@@ -38,45 +38,51 @@ import type { instantiateType } from "./instantiate.ts"
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
-	[inferred]: t
-
 	//   The top-level generic parameter accepted by the `Type`. Potentially
 	//   includes morphs and subtype constraints not reflected in the types
 	//   fully-inferred input (via `inferIn`) or output (via `infer` or
 	//   `inferOut`)
 	t: t
 
+	/** The {@link Scope} of the Type*/
+	$: Scope<$>
+
 	// A type representing the output the `Type` will return (after morphs are
 	// applied to valid input)
 	infer: this["inferOut"]
 
-	inferIntrospectableOut: distill.introspectable.Out<t>
 	inferOut: distill.Out<t>
+
 	// A type representing the input the `Type` will accept (before morphs are applied)
 	// @example export type MyTypeInput = typeof MyType.inferIn
 	inferIn: distill.In<t>
-	inferredOutIsIntrospectable: t extends InferredMorph<any, infer o> ?
-		[o] extends [anyOrNever] ? true
-		: o extends To ? true
-		: false
-	: // special-case unknown here to preserve assignability
-	unknown extends t ? boolean
-	: true
+
+	/**
+	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
+	 * @example const inputT = T.in
+	 */
+	get in(): instantiateType<this["inferIn"], $>
+
+	/**
+	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
+	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
+	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
+	 * @example const outputT = T.out
+	 */
+	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	/** The internal JSON representation. */
 	json: JsonStructure
-	toJSON(): JsonStructure
-	meta: ArkAmbient.meta
-	precompilation: string | undefined
+
 	/** Generate a JSON Schema. */
 	toJsonSchema(): JsonSchema
+
+	meta: ArkAmbient.meta
+
 	/** An English description of the Type */
 	description: string
 	/** A syntactic representation of the Type */
 	expression: string
-	internal: BaseRoot
-	/** The {@link Scope} of the Type*/
-	$: Scope<$>
 
 	/**
 	 * Attempt to apply validation and morph logic, either returning valid output or throwing.
@@ -91,8 +97,6 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
-	traverse(data: unknown): this["infer"] | ArkErrors
-
 	configure(meta: MetaSchema): this
 
 	describe(description: string): this
@@ -100,11 +104,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Clone to a new Type with the specified undeclared key behavior.
 	 *
-	 * `"ignore"` (default) - allow and preserve extra properties
-	 *
-	 * `"reject"` - disallow extra properties
-	 *
-	 * `"delete"` - clone and remove extra properties from output
+	 * {@inheritDoc UndeclaredKeyBehavior}
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
@@ -134,31 +134,6 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $>
 
 	/**
-	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
-	 * @example const inputT = T.in
-	 */
-	get in(): instantiateType<this["inferIn"], $>
-	/**
-	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
-	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
-	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
-	 * @example const outputT = T.out
-	 */
-	get out(): instantiateType<this["inferIntrospectableOut"], $>
-
-	// inferring r into an alias improves perf and avoids return type inference
-	// that can lead to incorrect results. See:
-	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
-	/**
-	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
-	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
-	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
-	 */
-	intersect<const def, r = type.infer<def, $>>(
-		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $> | Disjoint
-
-	/**
 	 * Intersect another `Type` definition, throwing an error if the result is unsatisfiable.
 	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
 	 */
@@ -177,6 +152,31 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<t | r, $>
 
 	/**
+	 * Create a `Type` for array with elements of this `Type`
+	 * @example const T = type(/^foo/); const array = T.array() // Type<string[]>
+	 */
+	array(): ArrayType<t[], $>
+
+	distribute<mapOut, reduceOut = mapOut[]>(
+		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
+		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
+	): reduceOut
+
+	optional(): [this, "?"]
+
+	/**
+	 * Add a default value for this `Type` when it is used as a property.\
+	 * Default value should be a valid input value for this `Type, or a function that returns a valid input value.\
+	 * If the type has a morph, it will be applied to the default value.
+	 * @example const withDefault = type({ foo: type("string").default("bar") }); withDefault({}) // { foo: "bar" }
+	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
+	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
+	 */
+	default<const value extends defaultFor<this["inferIn"]>>(
+		value: value
+	): [this, "=", value]
+
+	/**
 	 * Add a custom predicate to this `Type`.
 	 * @example const nan = type('number').narrow(n => Number.isNaN(n)) // Type<number>
 	 * @example const foo = type("string").narrow((s): s is `foo${string}` => s.startsWith('foo') || ctx.mustBe('string starting with "foo"')) // Type<"foo${string}">
@@ -193,23 +193,6 @@ interface Type<out t = unknown, $ = {}>
 	>(
 		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
 	): instantiateType<r, $>
-
-	satisfying<
-		narrowed extends this["inferIn"] = never,
-		r = [narrowed] extends [never] ? t
-		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
-		: narrowed
-	>(
-		predicate:
-			| Predicate<this["inferIn"]>
-			| PredicateCast<this["inferIn"], narrowed>
-	): instantiateType<r, $>
-
-	/**
-	 * Create a `Type` for array with elements of this `Type`
-	 * @example const T = type(/^foo/); const array = T.array() // Type<string[]>
-	 */
-	array(): ArrayType<t[], $>
 
 	/**
 	 * Morph this `Type` through a chain of morphs.
@@ -240,24 +223,55 @@ interface Type<out t = unknown, $ = {}>
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, r>, $>
 
-	distribute<mapOut, reduceOut = mapOut[]>(
-		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
-		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
-	): reduceOut
+	// ---- Properties above this line are a stable part of the Type API as published to arktype.io ------------
+	// ---------------------------------------------------------------------------------------------------------
+	// ---- Properties below this line are unstable and should be designated either... -------------------------
+	//     `@internal` - intended for internal consumption or deep integrations
+	//     `@experimental` - a candidate for addition to the core API based feedback and internal evaluation
 
-	optional(): [this, "?"]
+	[inferred]: t
 
+	internal: BaseRoot
+
+	inferIntrospectableOut: distill.introspectable.Out<t>
+
+	inferredOutIsIntrospectable: t extends InferredMorph<any, infer o> ?
+		[o] extends [anyOrNever] ? true
+		: o extends To ? true
+		: false
+	: // special-case unknown here to preserve assignability
+	unknown extends t ? boolean
+	: true
+
+	// allows a Type to be serialized directly through `JSON.stringify`
+	toJSON(): JsonStructure
+
+	precompilation: string | undefined
+
+	traverse(data: unknown): this["infer"] | ArkErrors
+
+	// inferring r into an alias improves perf and avoids return type inference
+	// that can lead to incorrect results. See:
+	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
 	/**
-	 * Add a default value for this `Type` when it is used as a property.\
-	 * Default value should be a valid input value for this `Type, or a function that returns a valid input value.\
-	 * If the type has a morph, it will be applied to the default value.
-	 * @example const withDefault = type({ foo: type("string").default("bar") }); withDefault({}) // { foo: "bar" }
-	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
-	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
+	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
+	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
+	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
 	 */
-	default<const value extends defaultFor<this["inferIn"]>>(
-		value: value
-	): [this, "=", value]
+	intersect<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
+	): instantiateType<inferIntersection<t, r>, $> | Disjoint
+
+	satisfying<
+		narrowed extends this["inferIn"] = never,
+		r = [narrowed] extends [never] ? t
+		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
+		: narrowed
+	>(
+		predicate:
+			| Predicate<this["inferIn"]>
+			| PredicateCast<this["inferIn"], narrowed>
+	): instantiateType<r, $>
 
 	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>
