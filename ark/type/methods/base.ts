@@ -35,15 +35,6 @@ import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
-/**
- * @name Grokelate
- * @description
- * Here is the description of the grokelation process.
- *
- * @example
- * var g = new Grokelate(opts);
- */
-
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
