@@ -1,6 +1,6 @@
-import { fromHere } from "@ark/fs"
+import { throwParseError } from "@ark/util"
 import { existsSync } from "fs"
-import { join, relative } from "path"
+import { join } from "path"
 import {
 	Project,
 	type Identifier,
@@ -11,7 +11,7 @@ import {
 import ts from "typescript"
 import { repoDirs } from "./shared.ts"
 
-const docFromToken = "@docFrom"
+const inheritDocToken = "@inheritDoc"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
@@ -54,37 +54,47 @@ const docgenForFile = (sourceFile: SourceFile) => {
 		identifier.getLeadingCommentRanges().flatMap(comment => {
 			const text = comment.getText()
 
-			if (!text.includes(docFromToken)) return []
+			if (!text.includes(inheritDocToken)) return []
 
-			const docFromIndex = text.indexOf(docFromToken)
-			const afterDocFrom = text
-				.slice(docFromIndex + docFromToken.length)
+			const tokenStartIndex = text.indexOf(inheritDocToken)
+			const prefix = text.slice(0, tokenStartIndex)
+
+			const lastNonWhitespaceIndex = prefix.trimEnd().length - 1
+			const lastNonWhitespaceChar = prefix[lastNonWhitespaceIndex]
+
+			if (lastNonWhitespaceChar !== "{") {
+				throwParseError(
+					`Expected '{' before @inheritDoc but got '${lastNonWhitespaceChar}'`
+				)
+			}
+
+			const updatedPrefix = prefix.slice(0, lastNonWhitespaceIndex)
+
+			const textFollowingOpenTag = text
+				.slice(tokenStartIndex + inheritDocToken.length)
 				.trimStart()
 
-			const splitIndex = afterDocFrom.indexOf(":")
-			const maybeBlockEndIndex = afterDocFrom.indexOf("*")
-			const blockEndIndex =
-				maybeBlockEndIndex === -1 ? afterDocFrom.length : maybeBlockEndIndex
-
-			let sourceName: string
-			let ownDescription: string
-
-			if (splitIndex === -1) {
-				// if there's no colon, extract the text until whitespace or
-				// block comment end (*)
-				sourceName = afterDocFrom.slice(0, blockEndIndex)
-				ownDescription = ""
-			} else {
-				// otherwise, extract and trim text until the colon
-				sourceName = afterDocFrom.slice(0, splitIndex).trim()
-				ownDescription = afterDocFrom
-					.slice(splitIndex + 1, blockEndIndex)
-					.trim()
+			if (textFollowingOpenTag[0] !== "}") {
+				throwParseError(
+					`Expected '}' after @inheritDoc but got '${textFollowingOpenTag[0]}'`
+				)
 			}
+
+			const textFollowingToken = textFollowingOpenTag.slice(1)
+
+			const maybeBlockEndIndex = textFollowingToken.indexOf("*")
+			const blockEndIndex =
+				maybeBlockEndIndex === -1 ?
+					textFollowingToken.length
+				:	maybeBlockEndIndex
+
+			// extract the text until whitespace or block comment end (*)
+			const sourceName = textFollowingToken.slice(0, blockEndIndex)
 
 			return {
 				sourceName,
-				ownDescription,
+				updatedPrefix,
+				ownDescription: "",
 				identifier,
 				comment
 			}
