@@ -49,6 +49,7 @@ import {
 	computeDefaultValueMorphs
 } from "./optional.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
+
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>

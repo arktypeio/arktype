@@ -40,6 +40,7 @@ import type {
 	ScopeParser,
 	bindThis
 } from "./scope.ts"
+
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
 	// map over to remove call signatures
