@@ -48,8 +48,27 @@ export type TypeParserAttachments =
 export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
+	/**
+	 * Create a Type from your definition.
+	 *
+	 * @param def The definition to parse.
+	 *
+	 * @example type({ name: "string" })
+	 */
 	<const def, r = Type<type.infer<def, $>, $>>(def: type.validate<def, $>): r
 
+	/**
+	 * Create a Generic from a parameter string and body definition.
+	 *
+	 * @param params A string like "<t, n extends number>" specifying the
+	 * Generic's parameters and any associated constraints via `extends`.
+	 *
+	 * @param def The definition for the body of the Generic. Can reference the
+	 * parameter names specified in the previous argument in addition to aliases
+	 * from its Scope.
+	 *
+	 * @example const boxOf = type("<t extends string | number>", { contents: "t" })
+	 */
 	<const params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
 		def: type.validate<
@@ -59,7 +78,12 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		>
 	): Generic<parseValidGenericParams<params, $>, def, $>
 
-	// Spread version of a tuple expression
+	/**
+	 * Create a Type from a [tuple expression](http://localhost:3000/docs/expressions)
+	 * spread as this function's arguments.
+	 *
+	 * @example type("string", "|", { foo: "number" })
+	 */
 	<
 		const zero,
 		const one,
@@ -82,7 +106,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	): r
 
 	/**
-	 * Error class for validation errors
+	 * An alias for ArkErrors, an instance of which is returned by a Type on invalid input.
 	 * Calling type instance returns an instance of this class on failure
 	 * @example if ( T(data) instanceof type.errors ) { ... }
 	 */
