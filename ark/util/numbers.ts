@@ -233,9 +233,7 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 /**
  * Returns the next or previous representable floating-point number after the given input.
  *
- * @param {number} n - The input number.
  * @param {"+" | "-"} [direction="+"] - The direction to find the nearest float. "+" for the next float, "-" for the previous float.
- * @returns {number} The nearest representable floating-point number after or before the input.
  * @throws {Error} If the input is not a finite number.
  *
  * @example

@@ -46,26 +46,26 @@ export type TypeParserAttachments =
 	Omit<TypeParser, never>
 
 export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
-	// Parse and check the definition, returning either the original input for a
-	// valid definition or a string representing an error message.
 	/**
-	 * Create a Type from your definition.
+	 * Create a {@link Type} from your definition.
 	 *
-	 * @param def The definition to parse.
-	 *
-	 * @example type({ name: "string" })
+	 * @example const person = type({ name: "string" })
 	 */
-	<const def, r = Type<type.infer<def, $>, $>>(def: type.validate<def, $>): r
+	<const def, r = Type<type.infer<def, $>, $>>(
+		// Parse and check the definition, returning either the original input for a
+		// valid definition or a string representing an error message.
+		def: type.validate<def, $>
+	): r
 
 	/**
-	 * Create a Generic from a parameter string and body definition.
+	 * Create a {@link Generic} from a parameter string and body definition.
 	 *
 	 * @param params A string like "<t, n extends number>" specifying the
-	 * Generic's parameters and any associated constraints via `extends`.
+	 * {@link Generic}'s parameters and any associated constraints via `extends`.
 	 *
-	 * @param def The definition for the body of the Generic. Can reference the
+	 * @param def The definition for the body of the {@link Generic}. Can reference the
 	 * parameter names specified in the previous argument in addition to aliases
-	 * from its Scope.
+	 * from its {@link Scope}.
 	 *
 	 * @example const boxOf = type("<t extends string | number>", { contents: "t" })
 	 */
@@ -79,7 +79,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	): Generic<parseValidGenericParams<params, $>, def, $>
 
 	/**
-	 * Create a Type from a [tuple expression](http://localhost:3000/docs/expressions)
+	 * Create a {@link Type} from a [tuple expression](http://localhost:3000/docs/expressions)
 	 * spread as this function's arguments.
 	 *
 	 * @example type("string", "|", { foo: "number" })
@@ -106,7 +106,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	): r
 
 	/**
-	 * An alias of the ArkErrors class, an instance of which is returned when a Type
+	 * An alias of the {@link ArkErrors} class, an instance of which is returned when a {@link Type}
 	 * is invoked with invalid input.
 	 *
 	 * @example
@@ -119,7 +119,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	hkt: typeof Hkt
 	keywords: typeof keywords
 	/**
-	 * The Scope in which definitions passed to this function will be parsed.
+	 * The {@link Scope} in which definitions passed to this function will be parsed.
 	 */
 	$: Scope<$>
 	/**
@@ -134,20 +134,20 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	generic: GenericParser<$>
 	schema: SchemaParser<$>
 	/**
-	 * Create a `Type` that is satisfied only by a value strictly equal (`===`) to the argument passed to this function.
-	 * @example const foo = type.unit('foo') // Type<'foo'>
-	 * @example const sym: unique symbol = Symbol(); type.unit(sym) // Type<typeof sym>
+	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to the argument passed to this function.
+	 * @example const foo = type.unit('foo') // {@link Type}<'foo'>
+	 * @example const sym: unique symbol = Symbol(); type.unit(sym) // {@link Type}<typeof sym>
 	 */
 	unit: UnitTypeParser<$>
 	/**
-	 * Create a `Type` that is satisfied only by a value strictly equal (`===`) to one of the arguments passed to this function.
+	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to one of the arguments passed to this function.
 	 * @example const enum = type.enumerated('foo', 'bar', obj) // obj is a by-reference object
 	 * @example const tupleForm = type(['===', 'foo', 'bar', obj])
 	 * @example const argsForm = type('===', 'foo', 'bar', obj)
 	 */
 	enumerated: EnumeratedTypeParser<$>
 	/**
-	 * Create a `Type` that is satisfied only by a value of a specific class.
+	 * Create a {@link Type} that is satisfied only by a value of a specific class.
 	 * @example const array = type.instanceOf(Array)
 	 */
 	instanceOf: InstanceOfTypeParser<$>

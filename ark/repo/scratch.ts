@@ -26,4 +26,4 @@ const customEven = type("number % 2", "@", {
 // custom message custom problem custom expected a multiple of 2 custom actual 3
 customEven(3)
 
-const t = type.unit(5)
+const t = type("<t>", "string")

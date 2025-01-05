@@ -125,9 +125,6 @@ const _serialize = (
 
 /**
  * Converts a Date instance to a human-readable description relative to its precision
- *
- * @param {Date} date
- * @returns {string} - The generated description
  */
 export const describeCollapsibleDate = (date: Date): string => {
 	const year = date.getFullYear()

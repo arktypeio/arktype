@@ -268,9 +268,6 @@ export type instanceOf<constructor> =
 
 /**
  * Returns an array of constructors for all ancestors (i.e., prototypes) of a given object.
- *
- * @param {object} o - The object to find the ancestors of.
- * @returns {Function[]} An array of constructors for all ancestors of the object.
  */
 export const ancestorsOf = (o: object): Function[] => {
 	let proto = Object.getPrototypeOf(o)

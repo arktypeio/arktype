@@ -92,9 +92,6 @@ export type entriesOf<o extends object> = entryOf<o>[]
 /**
  * Object.entries wrapper providing narrowed types for objects with known sets
  * of keys, e.g. those defined internally as configs
- *
- * @param o the object to get narrowed entries from
- * @returns a narrowed array of entries based on that object's type
  */
 export const entriesOf: <o extends object>(o: o) => entryOf<o>[] =
 	Object.entries as never
