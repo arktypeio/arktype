@@ -1,6 +1,11 @@
 import * as fs from "fs"
 import * as path from "path"
+import { Project } from "ts-morph"
 import ts from "typescript"
+
+const project = new Project({
+	tsConfigFilePath: "tsconfig.json"
+})
 
 interface DocRef {
 	file: string
@@ -40,30 +45,36 @@ const findRefs = (file: string): DocRef[] => {
 	return refs
 }
 
-const expandRefs = (refs: DocRef[], program: ts.Program) => {
-	const checker = program.getTypeChecker()
-
+const expandRefs = (refs: DocRef[]) => {
 	refs.forEach(ref => {
-		const src = program.getSourceFile(ref.file)!
-		const symbol = checker
-			.getSymbolsInScope(src, ts.SymbolFlags.Type)
-			.find(s => s.name === ref.symbol)
-
-		if (!symbol) return
-
-		const docs = ts.displayPartsToString(
-			symbol.getDocumentationComment(checker)
+		// Find declaration using ts-morph
+		const allFiles = project.getSourceFiles()
+		const declarations = allFiles.flatMap(file =>
+			file.getDescendantsOfKind(ts.SyntaxKind.Identifier).flatMap(i => {
+				if (i.getText() !== ref.symbol) return []
+				const declaration = i.getSymbol()?.getDeclarations()?.[0]
+				return declaration?.asKind(ts.SyntaxKind.TypeAliasDeclaration) ?? []
+			})
 		)
+
+		const declaration = declarations[0]
+		if (!declaration) return
+
+		// Get JSDoc from declaration
+		const docs = declaration.getJsDocs()?.[0]?.getDescription()?.trim() ?? ""
+
+		console.log(docs)
 
 		const newDoc = `/**\n * ${ref.desc}\n *\n${docs
 			.split("\n")
 			.map(l => ` * ${l}`)
 			.join("\n")}\n */`
 
+		// Update file
 		const content = fs.readFileSync(ref.file, "utf8")
 		const lines = content.split("\n")
 		lines[ref.line] = newDoc
-		fs.writeFileSync(ref.file, lines.join("\n"))
+		// fs.writeFileSync(ref.file, lines.join("\n"))
 	})
 }
 

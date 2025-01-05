@@ -117,15 +117,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
-	/**
-	 * Deeply clone to a new Type with the specified undeclared key behavior.
-	 *
-	 * `"ignore"` (default) - allow and preserve extra properties
-	 *
-	 * `"reject"` - disallow extra properties
-	 *
-	 * `"delete"` - clone and remove extra properties from output
-	 */
+	// @docFrom UndeclaredKeyBehavior: Deeply clone to a new Type with the specified undeclared key behavior.
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
