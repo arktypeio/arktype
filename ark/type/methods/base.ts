@@ -223,11 +223,13 @@ interface Type<out t = unknown, $ = {}>
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, r>, $>
 
-	// ---- Properties above this line are a stable part of the Type API as published to arktype.io ------------
+	// ---- Properties above the horizon a stable part of the Type API as published to arktype.io -------------
 	// ---------------------------------------------------------------------------------------------------------
-	// ---- Properties below this line are unstable and should be designated either... -------------------------
-	//     `@internal` - intended for internal consumption or deep integrations
-	//     `@experimental` - a candidate for addition to the core API based feedback and internal evaluation
+	//                                    ⛵ WARNING: UNCHARTED WATERS 🦑
+	// ---------------------------------------------------------------------------------------------------------
+	// ---- Properties below the horizon are not stable and must include at least one of these tags -----------
+	//         `@internal` - intended for internal consumption or deep integrations
+	//         `@experimental` - a candidate for addition to the core API based feedback and internal evaluation
 
 	[inferred]: t
 
