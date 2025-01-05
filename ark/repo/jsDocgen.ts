@@ -1,3 +1,6 @@
+import { fromHere } from "@ark/fs"
+import { existsSync } from "fs"
+import { join, relative } from "path"
 import {
 	Project,
 	type Identifier,
@@ -6,17 +9,36 @@ import {
 	type SourceFile
 } from "ts-morph"
 import ts from "typescript"
+import { repoDirs } from "./shared.ts"
 
 const docFromToken = "@docFrom"
+
+const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
+
+let docgenCount = 0
 
 export const jsDocgen = () => {
 	const project = new Project()
 
-	project.addSourceFilesAtPaths("**/out/**/*.d.ts")
+	if (!existsSync(arkTypeBuildDir)) {
+		throw new Error(
+			`jsDocgen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
+		)
+	}
+
+	project.addSourceFilesAtPaths(`${arkTypeBuildDir}/**/*.d.ts`)
+
+	const sourceFiles = project.getSourceFiles()
+
+	console.log(
+		`✍️ Generating JSDoc for ${sourceFiles.length} files in ${arkTypeBuildDir}...`
+	)
 
 	project.getSourceFiles().forEach(docgenForFile)
 
 	project.saveSync()
+
+	console.log(`📚 Successfully generated JSDoc for ${docgenCount} build files.`)
 }
 
 const docgenForFile = (sourceFile: SourceFile) => {
@@ -87,11 +109,13 @@ const docgenForFile = (sourceFile: SourceFile) => {
 				.getDescription()
 
 			if (canHaveJsDoc(parent)) {
+				const description = `${ownDescription}\n${sourceDescription}`
 				parent.addJsDocs([
 					{
-						description: `${ownDescription}\n${sourceDescription}`
+						description
 					}
 				])
+				docgenCount++
 			}
 		}
 	)
