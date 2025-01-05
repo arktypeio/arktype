@@ -223,13 +223,14 @@ interface Type<out t = unknown, $ = {}>
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, r>, $>
 
-	// ---- Properties above the horizon a stable part of the Type API as published to arktype.io -------------
-	// ---------------------------------------------------------------------------------------------------------
-	//                                    ⛵ WARNING: UNCHARTED WATERS 🦑
-	// ---------------------------------------------------------------------------------------------------------
-	// ---- Properties below the horizon are not stable and must include at least one of these tags -----------
+	// ---- Properties above the horizon a stable part of the Type API as published to arktype.io ------------
+	// -------------------------------------------------------------------------------------------------------
+	// 🌊🌊🌊🌊🌊🌊🌊⛵🌊🌊🌊🌊🌊🌊🌊 WARNING: UNCHARTED WATERS AHEAD 🌊🌊🌊🌊🌊🌊🌊🦑🌊🌊🌊🌊🌊🌊🌊
+	// -------------------------------------------------------------------------------------------------------
+	// ---- Properties below the horizon are unstable or deprecated and will have >=1 of these tags ----------
 	//         `@internal` - intended for internal consumption or deep integrations
-	//         `@experimental` - a candidate for addition to the core API based feedback and internal evaluation
+	//         `@experimental` - a candidate for addition to the core API pending further evaluation
+	//         `@deprecated` - will be removed from the core API in the next major version
 
 	[inferred]: t
 
