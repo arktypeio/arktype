@@ -2,22 +2,24 @@ import {
 	Project,
 	type Identifier,
 	type JSDocableNode,
-	type Node
+	type Node,
+	type SourceFile
 } from "ts-morph"
 import ts from "typescript"
-
-const file = "/home/ssalb/arktype/ark/type/out/methods/base.d.ts"
-
-let project: Project | undefined
 
 const docFromToken = "@docFrom"
 
 export const jsDocgen = () => {
-	project ??= new Project()
+	const project = new Project()
 
-	project.addSourceFileAtPath(file)
-	const sourceFile = project.getSourceFileOrThrow(file)
+	project.addSourceFilesAtPaths("**/out/**/*.d.ts")
 
+	project.getSourceFiles().forEach(docgenForFile)
+
+	project.saveSync()
+}
+
+const docgenForFile = (sourceFile: SourceFile) => {
 	const identifiers = sourceFile
 		.getDescendants()
 		.filter(
@@ -93,8 +95,6 @@ export const jsDocgen = () => {
 			}
 		}
 	)
-
-	project.saveSync()
 }
 
 const canHaveJsDoc = (node: Node): node is Node & JSDocableNode =>
