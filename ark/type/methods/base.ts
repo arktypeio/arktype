@@ -63,7 +63,7 @@ interface Type<out t = unknown, $ = {}>
 	unknown extends t ? boolean
 	: true
 
-	/** Internal JSON representation of this `Type` */
+	/** The Type's internal JSON representation. */
 	json: JsonStructure
 	toJSON(): JsonStructure
 	meta: ArkAmbient.meta
@@ -75,9 +75,9 @@ interface Type<out t = unknown, $ = {}>
 	$: Scope<$>
 
 	/**
-	 * Validate data, throwing `type.errors` instance on failure
-	 * @returns a valid value
-	 * @example const validData = T.assert(rawData)
+	 * Apply the Type's validation and morph logic, returning output and throwing on failure.
+	 *
+	 * @throws {AggregateError}
 	 */
 	assert(data: unknown): this["infer"]
 
@@ -255,7 +255,7 @@ interface Type<out t = unknown, $ = {}>
 		value: value
 	): [this, "=", value]
 
-	// Standard Schema Compatibility (https://github.com/standard-schema/standard-schema)
+	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>
 
 	// deprecate Function methods so they are deprioritized as suggestions
