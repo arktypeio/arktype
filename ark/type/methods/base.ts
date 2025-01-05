@@ -44,7 +44,7 @@ interface Type<out t = unknown, $ = {}>
 	//   `inferOut`)
 	t: t
 
-	/** The {@link Scope} of the Type*/
+	/** The {@link Scope} in which definitions for this Type its chained methods are parsed */
 	$: Scope<$>
 
 	// A type representing the output the `Type` will return (after morphs are
