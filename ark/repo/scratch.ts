@@ -1,97 +1,74 @@
-import * as fs from "fs"
-import * as path from "path"
-import { Project } from "ts-morph"
+import { fromHere } from "@ark/fs"
+import {
+	Project,
+	type Identifier,
+	type JSDocableNode,
+	type Node
+} from "ts-morph"
 import ts from "typescript"
 
 const project = new Project({
-	tsConfigFilePath: "tsconfig.json"
+	tsConfigFilePath: fromHere("../../tsconfig.json")
 })
 
 interface DocRef {
-	file: string
-	symbol: string
+	node: Node
+	sourceName: string
 	desc: string
-	line: number
+}
+
+const canHaveJsDoc = (node: Node): node is Node & JSDocableNode => {
+	return "addJsDoc" in node
 }
 
 const findRefs = (file: string): DocRef[] => {
-	const content = fs.readFileSync(file, "utf8")
-	const src = ts.createSourceFile(file, content, ts.ScriptTarget.Latest)
+	const sourceFile = project.getSourceFileOrThrow(file)
 	const refs: DocRef[] = []
 
-	const visit = (node: ts.Node) => {
-		const comments = ts.getLeadingCommentRanges(content, node.pos)
+	// Get all nodes with leading comments
+	const identifiers = sourceFile
+		.getDescendants()
+		.filter(
+			(node): node is Identifier =>
+				!!node.asKind(ts.SyntaxKind.Identifier)?.getLeadingCommentRanges()
+					.length
+		)
 
-		if (comments?.length) {
-			comments.forEach(comment => {
-				const text = content.slice(comment.pos, comment.end)
-				const match = text.match(/@docFrom\s+(\w+):\s*(.*)/)
+	for (const identifier of identifiers) {
+		// Check each comment for @docFrom
+		for (const comment of identifier.getLeadingCommentRanges()) {
+			const text = comment.getText()
+			const match = text.match(/@docFrom\s+(\w+):\s*(.*)/)
 
-				if (match) {
-					refs.push({
-						file,
-						symbol: match[1],
-						desc: match[2],
-						line: src.getLineAndCharacterOfPosition(comment.pos).line
-					})
-				}
-			})
+			if (!match) continue
+
+			const sourceName = match[1]
+			const ownDescription = match[2]
+
+			const sourceDeclaration = sourceFile
+				.getDescendantsOfKind(ts.SyntaxKind.Identifier)
+				.find(i => i.getText() === "UndeclaredKeyBehavior")
+				?.getDefinitions()[0]
+				.getDeclarationNode()
+
+			if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) continue
+
+			const sourceDescription = sourceDeclaration
+				.getJsDocs()[0]
+				.getDescription()
+
+			const parent = identifier.getParent()
+			if (canHaveJsDoc(parent)) {
+				parent.addJsDoc({
+					description: `${ownDescription}\n${sourceDescription}`
+				})
+
+				console.log(parent.getJsDocs()[0].getDescription())
+			}
 		}
-
-		ts.forEachChild(node, visit)
 	}
 
-	ts.forEachChild(src, visit)
 	return refs
 }
 
-const expandRefs = (refs: DocRef[]) => {
-	refs.forEach(ref => {
-		// Find declaration using ts-morph
-		const allFiles = project.getSourceFiles()
-		const declarations = allFiles.flatMap(file =>
-			file.getDescendantsOfKind(ts.SyntaxKind.Identifier).flatMap(i => {
-				if (i.getText() !== ref.symbol) return []
-				const declaration = i.getSymbol()?.getDeclarations()?.[0]
-				return declaration?.asKind(ts.SyntaxKind.TypeAliasDeclaration) ?? []
-			})
-		)
-
-		const declaration = declarations[0]
-		if (!declaration) return
-
-		// Get JSDoc from declaration
-		const docs = declaration.getJsDocs()?.[0]?.getDescription()?.trim() ?? ""
-
-		console.log(docs)
-
-		const newDoc = `/**\n * ${ref.desc}\n *\n${docs
-			.split("\n")
-			.map(l => ` * ${l}`)
-			.join("\n")}\n */`
-
-		// Update file
-		const content = fs.readFileSync(ref.file, "utf8")
-		const lines = content.split("\n")
-		lines[ref.line] = newDoc
-		// fs.writeFileSync(ref.file, lines.join("\n"))
-	})
-}
-
-// Usage: ts-node scripts/expandDocs.ts <file>
-const config = ts.findConfigFile(
-	process.cwd(),
-	ts.sys.fileExists,
-	"tsconfig.json"
-)!
-
-const { config: cfg } = ts.readConfigFile(config, ts.sys.readFile)
-const { options, fileNames } = ts.parseJsonConfigFileContent(
-	cfg,
-	ts.sys,
-	path.dirname(config)
-)
-
-const program = ts.createProgram(fileNames, options)
-const refs = findRefs(process.argv[2])
-expandRefs(refs, program)
+const refs = findRefs("/home/ssalb/arktype/ark/type/methods/base.ts")
