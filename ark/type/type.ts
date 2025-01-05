@@ -106,14 +106,27 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	): r
 
 	/**
-	 * An alias for ArkErrors, an instance of which is returned by a Type on invalid input.
-	 * Calling type instance returns an instance of this class on failure
-	 * @example if ( T(data) instanceof type.errors ) { ... }
+	 * An alias of the ArkErrors class, an instance of which is returned when a Type
+	 * is invoked with invalid input.
+	 *
+	 * @example
+	 * const out = myType(data)
+	 *
+	 * if(out instanceof type.errors) console.log(out.summary)
+	 *
 	 */
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
 	keywords: typeof keywords
+	/**
+	 * The Scope in which definitions passed to this function will be parsed.
+	 */
 	$: Scope<$>
+	/**
+	 * An alias of `type` with no type-level validation or inference.
+	 *
+	 * Useful when wrapping `type` or using it to parse a dynamic definition.
+	 */
 	raw(def: unknown): BaseType<any, $>
 	module: ModuleParser
 	scope: ScopeParser
