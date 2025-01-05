@@ -1,4 +1,3 @@
-import { fromHere } from "@ark/fs"
 import {
 	Project,
 	type Identifier,
@@ -7,15 +6,16 @@ import {
 } from "ts-morph"
 import ts from "typescript"
 
-const file = "/home/ssalb/arktype/ark/type/methods/base.ts"
+const file = "/home/ssalb/arktype/ark/type/out/methods/base.d.ts"
 
 let project: Project | undefined
 
-export const jsDocgen = () => {
-	project ??= new Project({
-		tsConfigFilePath: fromHere("../../tsconfig.json")
-	})
+const docFromToken = "@docFrom"
 
+export const jsDocgen = () => {
+	project ??= new Project()
+
+	project.addSourceFileAtPath(file)
 	const sourceFile = project.getSourceFileOrThrow(file)
 
 	const identifiers = sourceFile
@@ -26,55 +26,75 @@ export const jsDocgen = () => {
 					.length
 		)
 
-	const commentsToRemove: string[] = []
-
 	const matchContexts = identifiers.flatMap(identifier =>
 		identifier.getLeadingCommentRanges().flatMap(comment => {
 			const text = comment.getText()
-			const match = text.match(/@docFrom\s+(\w+):\s*(.*)/)
 
-			if (!match) return []
+			if (!text.includes(docFromToken)) return []
 
-			const sourceName = match[1]
-			const ownDescription = match[2]
-			commentsToRemove.push(text)
+			const docFromIndex = text.indexOf(docFromToken)
+			const afterDocFrom = text
+				.slice(docFromIndex + docFromToken.length)
+				.trimStart()
+
+			const splitIndex = afterDocFrom.indexOf(":")
+			const maybeBlockEndIndex = afterDocFrom.indexOf("*")
+			const blockEndIndex =
+				maybeBlockEndIndex === -1 ? afterDocFrom.length : maybeBlockEndIndex
+
+			let sourceName: string
+			let ownDescription: string
+
+			if (splitIndex === -1) {
+				// if there's no colon, extract the text until whitespace or
+				// block comment end (*)
+				sourceName = afterDocFrom.slice(0, blockEndIndex)
+				ownDescription = ""
+			} else {
+				// otherwise, extract and trim text until the colon
+				sourceName = afterDocFrom.slice(0, splitIndex).trim()
+				ownDescription = afterDocFrom
+					.slice(splitIndex + 1, blockEndIndex)
+					.trim()
+			}
 
 			return {
 				sourceName,
 				ownDescription,
-				identifier
+				identifier,
+				comment
 			}
 		})
 	)
 
-	matchContexts.forEach(({ sourceName, ownDescription, identifier }) => {
-		const sourceDeclaration = sourceFile
-			.getDescendantsOfKind(ts.SyntaxKind.Identifier)
-			.find(i => i.getText() === sourceName)
-			?.getDefinitions()[0]
-			.getDeclarationNode()
+	matchContexts.forEach(
+		({ sourceName, ownDescription, identifier, comment }) => {
+			const sourceDeclaration = sourceFile
+				.getDescendantsOfKind(ts.SyntaxKind.Identifier)
+				.find(i => i.getText() === sourceName)
+				?.getDefinitions()[0]
+				.getDeclarationNode()
 
-		if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
+			if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
 
-		const sourceDescription = sourceDeclaration.getJsDocs()[0].getDescription()
+			const parent = identifier.getParent()
+			parent.replaceWithText(parent.getText().replace(comment.getText(), ""))
 
-		const parent = identifier.getParent()
+			const sourceDescription = sourceDeclaration
+				.getJsDocs()[0]
+				.getDescription()
 
-		if (canHaveJsDoc(parent)) {
-			parent.addJsDoc({
-				description: `${ownDescription}\n${sourceDescription}`
-			})
+			if (canHaveJsDoc(parent)) {
+				parent.addJsDocs([
+					{
+						description: `${ownDescription}\n${sourceDescription}`
+					}
+				])
+			}
 		}
-	})
-
-	const updatedSource = commentsToRemove.reduce(
-		(src, commentText) => src.replace(commentText, ""),
-		sourceFile.getText()
 	)
 
-	sourceFile.replaceWithText(updatedSource)
-
-	sourceFile.saveSync()
+	project.saveSync()
 }
 
 const canHaveJsDoc = (node: Node): node is Node & JSDocableNode =>

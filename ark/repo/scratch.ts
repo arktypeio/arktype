@@ -13,3 +13,13 @@ import { jsDocgen } from "./jsDocgen.ts"
 const t = type({ name: "string" })
 
 jsDocgen()
+
+// const src =
+// 	"\tonUndeclaredKey(behavior: UndeclaredKeyBehavior): this\n" +
+// 	"\t/**\n" +
+// 	"     * Deeply clone to a new Type with the specified undeclared key behavior. **/\n" +
+// 	"     *\n" +
+// 	"     * How to handle undeclared object keys on data passed to a Type.\n" +
+// 	"     *\n"
+
+// console.log(src)
