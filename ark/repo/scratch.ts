@@ -1,27 +1,86 @@
-import { attest } from "@ark/attest"
-import { flatMorph } from "@ark/util"
-import { ark, type } from "arktype"
+import * as fs from "fs"
+import * as path from "path"
+import ts from "typescript"
 
-// type stats on attribute removal merge 12/18/2024
-// {
-//     "checkTime": 10.98,
-//     "types": 409252,
-//     "instantiations": 5066185
-// }
+interface DocRef {
+	file: string
+	symbol: string
+	desc: string
+	line: number
+}
 
-// false
-// const t = type({ foo: "string" }).extends("Record<string, string>")
+const findRefs = (file: string): DocRef[] => {
+	const content = fs.readFileSync(file, "utf8")
+	const src = ts.createSourceFile(file, content, ts.ScriptTarget.Latest)
+	const refs: DocRef[] = []
 
-flatMorph(ark.internal.resolutions, (k, v) => [k, v])
+	const visit = (node: ts.Node) => {
+		const comments = ts.getLeadingCommentRanges(content, node.pos)
 
-console.log(Object.keys(ark.internal.resolutions))
+		if (comments?.length) {
+			comments.forEach(comment => {
+				const text = content.slice(comment.pos, comment.end)
+				const match = text.match(/@docFrom\s+(\w+):\s*(.*)/)
 
-const customEven = type("number % 2", "@", {
-	expected: ctx => `custom expected ${ctx.description}`,
-	actual: data => `custom actual ${data}`,
-	problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
-	message: ctx => `custom message ${ctx.problem}`
-})
+				if (match) {
+					refs.push({
+						file,
+						symbol: match[1],
+						desc: match[2],
+						line: src.getLineAndCharacterOfPosition(comment.pos).line
+					})
+				}
+			})
+		}
 
-// custom message custom problem custom expected a multiple of 2 custom actual 3
-customEven(3)
+		ts.forEachChild(node, visit)
+	}
+
+	ts.forEachChild(src, visit)
+	return refs
+}
+
+const expandRefs = (refs: DocRef[], program: ts.Program) => {
+	const checker = program.getTypeChecker()
+
+	refs.forEach(ref => {
+		const src = program.getSourceFile(ref.file)!
+		const symbol = checker
+			.getSymbolsInScope(src, ts.SymbolFlags.Type)
+			.find(s => s.name === ref.symbol)
+
+		if (!symbol) return
+
+		const docs = ts.displayPartsToString(
+			symbol.getDocumentationComment(checker)
+		)
+
+		const newDoc = `/**\n * ${ref.desc}\n *\n${docs
+			.split("\n")
+			.map(l => ` * ${l}`)
+			.join("\n")}\n */`
+
+		const content = fs.readFileSync(ref.file, "utf8")
+		const lines = content.split("\n")
+		lines[ref.line] = newDoc
+		fs.writeFileSync(ref.file, lines.join("\n"))
+	})
+}
+
+// Usage: ts-node scripts/expandDocs.ts <file>
+const config = ts.findConfigFile(
+	process.cwd(),
+	ts.sys.fileExists,
+	"tsconfig.json"
+)!
+
+const { config: cfg } = ts.readConfigFile(config, ts.sys.readFile)
+const { options, fileNames } = ts.parseJsonConfigFileContent(
+	cfg,
+	ts.sys,
+	path.dirname(config)
+)
+
+const program = ts.createProgram(fileNames, options)
+const refs = findRefs(process.argv[2])
+expandRefs(refs, program)

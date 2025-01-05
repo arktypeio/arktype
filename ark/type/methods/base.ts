@@ -35,6 +35,15 @@ import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
+/**
+ * @name Grokelate
+ * @description
+ * Here is the description of the grokelation process.
+ *
+ * @example
+ * var g = new Grokelate(opts);
+ */
+
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
@@ -63,28 +72,31 @@ interface Type<out t = unknown, $ = {}>
 	unknown extends t ? boolean
 	: true
 
-	/** The Type's internal JSON representation. */
+	/** The internal JSON representation. */
 	json: JsonStructure
 	toJSON(): JsonStructure
 	meta: ArkAmbient.meta
 	precompilation: string | undefined
+	/** Generate a JSON Schema. */
 	toJsonSchema(): JsonSchema
+	/** An English description of the Type */
 	description: string
+	/** A syntactic representation of the Type */
 	expression: string
 	internal: BaseRoot
+	/** The {@link Scope} of the Type*/
 	$: Scope<$>
 
 	/**
-	 * Apply the Type's validation and morph logic, returning output and throwing on failure.
-	 *
+	 * Attempt to apply validation and morph logic, either returning valid output or throwing.
 	 * @throws {AggregateError}
 	 */
 	assert(data: unknown): this["infer"]
 
 	/**
-	 * Check if data matches the input shape.
-	 * Doesn't process any morphs, but does check narrows.
-	 * @example type({ foo: "number" }).allows({ foo: "bar" }) // false
+	 * Check rrors.
+	 * @example
+	 * type.string.allo9) // false
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
@@ -95,19 +107,24 @@ interface Type<out t = unknown, $ = {}>
 	describe(description: string): this
 
 	/**
-	 * Create a copy of this `Type` with updated unknown key behavior
-	 * - `ignore`: ignore unknown properties (default)
-	 * - 'reject': disallow objects with unknown properties
-	 * - 'delete': clone the object and keep only known properties
+	 * Clone to a new Type with the specified undeclared key behavior.
+	 *
+	 * `"ignore"` (default) - allow and preserve extra properties
+	 *
+	 * `"reject"` - disallow extra properties
+	 *
+	 * `"delete"` - clone and remove extra properties from output
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Create a copy of this `Type` with updated unknown key behavior\
-	 * The behavior applies to the whole object tree, not just the immediate properties.
-	 * - `ignore`: ignore unknown properties (default)
-	 * - 'reject': disallow objects with unknown properties
-	 * - 'delete': clone the object and keep only known properties
+	 * Deeply clone to a new Type with the specified undeclared key behavior.
+	 *
+	 * `"ignore"` (default) - allow and preserve extra properties
+	 *
+	 * `"reject"` - disallow extra properties
+	 *
+	 * `"delete"` - clone and remove extra properties from output
 	 */
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
