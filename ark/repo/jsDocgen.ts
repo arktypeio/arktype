@@ -116,16 +116,17 @@ const docgenForFile = (sourceFile: SourceFile) => {
 
 		const matchedDescription = matchedJsdoc.getDescription()
 
-		const matchedSummary = matchedDescription.slice(
-			0,
-			matchedDescription.indexOf("{")
-		)
-
 		const inheritedDescription = sourceDeclaration
 			.getJsDocs()[0]
 			.getDescription()
 
-		let updatedContents = matchedSummary
+		let updatedContents = ""
+
+		const matchedSummary = matchedDescription
+			.slice(0, matchedDescription.indexOf("{"))
+			.trim()
+
+		if (matchedSummary) updatedContents += `${matchedSummary}\n`
 
 		updatedContents += `${inheritedDescription}`
 

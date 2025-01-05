@@ -57,8 +57,6 @@ import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcherReference } from "./shared.ts"
 
 /**
- * How to handle undeclared object keys on data passed to a Type.
- *
  * `"ignore"` (default) - allow and preserve extra properties
  *
  * `"reject"` - disallow extra properties
