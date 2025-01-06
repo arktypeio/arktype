@@ -1,9 +1,4 @@
-import {
-	domainDescriptions,
-	domainOf,
-	throwParseError,
-	type Domain as _Domain
-} from "@ark/util"
+import { domainDescriptions, domainOf, type Domain as _Domain } from "@ark/util"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
@@ -94,7 +89,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 
 	protected innerToJsonSchema(): JsonSchema.Constrainable {
 		if (this.domain === "bigint" || this.domain === "symbol")
-			return throwParseError(JsonSchema.writeUnjsonifiableMessage(this.domain))
+			return JsonSchema.throwUnjsonifiableError(this.domain)
 		return {
 			type: this.domain
 		}

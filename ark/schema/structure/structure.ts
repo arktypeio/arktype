@@ -683,10 +683,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return this.reduceObjectJsonSchema(schema)
 			case "array":
 				if (this.props.length || this.index) {
-					throwParseError(
-						JsonSchema.writeUnjsonifiableMessage(
-							`Additional properties on array ${this.expression}`
-						)
+					return JsonSchema.throwUnjsonifiableError(
+						`Additional properties on array ${this.expression}`
 					)
 				}
 				return this.sequence?.reduceJsonSchema(schema) ?? schema
@@ -700,10 +698,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			schema.properties = {}
 			this.props.forEach(prop => {
 				if (typeof prop.key === "symbol") {
-					return throwParseError(
-						JsonSchema.writeUnjsonifiableMessage(
-							`Sybolic key ${prop.serializedKey}`
-						)
+					return JsonSchema.throwUnjsonifiableError(
+						`Sybolic key ${prop.serializedKey}`
 					)
 				}
 
@@ -718,10 +714,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return (schema.additionalProperties = index.value.toJsonSchema())
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
-				return throwParseError(
-					JsonSchema.writeUnjsonifiableMessage(
-						`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
-					)
+				return JsonSchema.throwUnjsonifiableError(
+					`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
 				)
 			}
 
@@ -730,10 +724,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					!keyBranch.hasKind("intersection") ||
 					keyBranch.pattern?.length !== 1
 				) {
-					return throwParseError(
-						JsonSchema.writeUnjsonifiableMessage(`Index signature ${keyBranch}`)
+					return JsonSchema.throwUnjsonifiableError(
+						`Index signature ${keyBranch}`
 					)
 				}
+
 				schema.patternProperties ??= {}
 				schema.patternProperties[keyBranch.pattern[0].rule] =
 					index.value.toJsonSchema()

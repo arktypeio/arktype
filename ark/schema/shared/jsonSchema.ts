@@ -1,6 +1,7 @@
 import {
 	isKeyOf,
 	printable,
+	throwError,
 	throwInternalError,
 	type autocomplete,
 	type JsonArray,
@@ -92,23 +93,31 @@ const unjsonifiableExplanations = {
 		"cyclic types are not yet convertible to JSON Schema. If this feature is important to you, please add your feedback at https://github.com/arktypeio/arktype/issues/1087"
 }
 
+type UnjsonifiableExplanation = autocomplete<"morph" | "cyclic">
+
+const writeUnjsonifiableMessage = (
+	description: string,
+	explanation?: UnjsonifiableExplanation
+): string => {
+	let message = `${description} is not convertible to JSON Schema`
+
+	if (explanation) {
+		const normalizedExplanation =
+			isKeyOf(explanation, unjsonifiableExplanations) ?
+				unjsonifiableExplanations[explanation]
+			:	explanation
+		message += ` because ${normalizedExplanation}`
+	}
+
+	return message
+}
+
 export const JsonSchema = {
-	writeUnjsonifiableMessage: (
-		description: string,
-		additionalExplanation?: autocomplete<"morph" | "cyclic">
-	): string => {
-		let message = `${description} is not convertible to JSON Schema`
-
-		if (additionalExplanation) {
-			const normalizedExplanation =
-				isKeyOf(additionalExplanation, unjsonifiableExplanations) ?
-					unjsonifiableExplanations[additionalExplanation]
-				:	additionalExplanation
-			message += ` because ${normalizedExplanation}`
-		}
-
-		return message
-	},
+	writeUnjsonifiableMessage,
+	UnjsonifiableError: class UnjsonifiableError extends Error {},
+	throwUnjsonifiableError: (
+		...args: Parameters<typeof writeUnjsonifiableMessage>
+	): never => throwError(writeUnjsonifiableMessage(...args)),
 	throwInternalOperandError: (
 		kind: ConstraintKind,
 		schema: JsonSchema

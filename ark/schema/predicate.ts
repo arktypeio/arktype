@@ -1,4 +1,3 @@
-import { throwParseError } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
@@ -110,9 +109,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	}
 
 	reduceJsonSchema(): never {
-		return throwParseError(
-			JsonSchema.writeUnjsonifiableMessage(`Predicate ${this.expression}`)
-		)
+		return JsonSchema.throwUnjsonifiableError(`Predicate ${this.expression}`)
 	}
 }
 

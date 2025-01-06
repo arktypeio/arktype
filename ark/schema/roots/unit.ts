@@ -2,7 +2,6 @@ import {
 	domainDescriptions,
 	domainOf,
 	printable,
-	throwParseError,
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
@@ -134,9 +133,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	protected innerToJsonSchema(): JsonSchema {
 		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
 				{ const: this.unit }
-			:	throwParseError(
-					JsonSchema.writeUnjsonifiableMessage(this.shortDescription)
-				)
+			:	JsonSchema.throwUnjsonifiableError(this.shortDescription)
 	}
 
 	traverseAllows: TraverseAllows =

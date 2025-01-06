@@ -1,4 +1,4 @@
-import { describeCollapsibleDate, throwParseError } from "@ark/util"
+import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -84,9 +84,7 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
 	reduceJsonSchema(): JsonSchema {
-		return throwParseError(
-			JsonSchema.writeUnjsonifiableMessage("Date instance")
-		)
+		return JsonSchema.throwUnjsonifiableError("Date instance")
 	}
 }
 

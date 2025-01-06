@@ -4,7 +4,6 @@ import {
 	getBuiltinNameOfConstructor,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
-	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor
 } from "@ark/util"
@@ -117,9 +116,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 					type: "array"
 				}
 			default:
-				return throwParseError(
-					JsonSchema.writeUnjsonifiableMessage(this.description)
-				)
+				return JsonSchema.throwUnjsonifiableError(this.description)
 		}
 	}
 

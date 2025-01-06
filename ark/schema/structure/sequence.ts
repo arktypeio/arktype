@@ -481,10 +481,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
 
 		if (this.optionals) {
-			throwParseError(
-				JsonSchema.writeUnjsonifiableMessage(
-					`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
-				)
+			return JsonSchema.throwUnjsonifiableError(
+				`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
 			)
 		}
 
@@ -503,10 +501,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		if (this.postfix) {
-			throwParseError(
-				JsonSchema.writeUnjsonifiableMessage(
-					`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-				)
+			return JsonSchema.throwUnjsonifiableError(
+				`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
 			)
 		}
 

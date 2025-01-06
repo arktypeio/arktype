@@ -144,9 +144,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
-		return throwParseError(
-			JsonSchema.writeUnjsonifiableMessage(this.expression, "cyclic")
-		)
+		return JsonSchema.throwUnjsonifiableError(this.expression, "cyclic")
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

@@ -1,4 +1,3 @@
-import { throwParseError } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type {
@@ -82,10 +81,8 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 
 	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
 		if (schema.pattern) {
-			return throwParseError(
-				JsonSchema.writeUnjsonifiableMessage(
-					`Intersection of patterns ${schema.pattern} & ${this.rule}`
-				)
+			return JsonSchema.throwUnjsonifiableError(
+				`Intersection of patterns ${schema.pattern} & ${this.rule}`
 			)
 		}
 		schema.pattern = this.rule

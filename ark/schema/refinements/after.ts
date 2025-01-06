@@ -1,4 +1,4 @@
-import { describeCollapsibleDate, throwParseError } from "@ark/util"
+import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
@@ -77,9 +77,7 @@ export class AfterNode extends BaseRange<After.Declaration> {
 	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
 
 	reduceJsonSchema(): JsonSchema {
-		return throwParseError(
-			JsonSchema.writeUnjsonifiableMessage("Date instance")
-		)
+		return JsonSchema.throwUnjsonifiableError("Date instance")
 	}
 }
 
