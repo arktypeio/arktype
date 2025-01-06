@@ -40,12 +40,26 @@ interface Type<out t = unknown, $ = {}>
 	internal: BaseRoot
 	[inferred]: t
 
+	/**
+	 * @internal
+	 * The precompiled JS used to optimize validation.
+	 * Will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode.
+	 */
 	precompilation: string | undefined
 
-	//   The top-level generic parameter accepted by the `Type`. Potentially
+	//   The top-level generic parameter accepted by the `Type`.
 	//   includes morphs and subtype constraints not reflected in the types
 	//   fully-inferred input (via `inferIn`) or output (via `infer` or
 	//   `inferOut`)
+	/**
+	 * The generic parameter representing this Type
+	 *
+	 * ⚠️ This property is used to infer types and will be `undefined` at runtime.
+	 *
+	 * ⚠️ May contain types representing morphs or default values that would
+	 * be inaccurate if used directly for runtime values. In those cases,
+	 * you should use {@link infer} or {@link inferIn} on this object instead.
+	 */
 	t: t
 
 	/** The {@link Scope} in which definitions for this Type its chained methods are parsed */
@@ -66,14 +80,16 @@ interface Type<out t = unknown, $ = {}>
 	/** Alias of {@link json} for `JSON.stringify` compatibility */
 	toJSON(): JsonStructure
 
-	/** Generate a JSON Schema*/
+	/** Generate a JSON Schema
+	 * @throws {JsonSchema.UnjsonifiableError} if this is not convertible to JSON Schema
+	 */
 	toJsonSchema(): JsonSchema
 
 	meta: ArkAmbient.meta
 
-	/** An English description of the Type */
+	/** An English description */
 	description: string
-	/** A syntactic representation of the Type */
+	/** A syntactic representation */
 	expression: string
 
 	/**
@@ -163,11 +179,6 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	array(): ArrayType<t[], $>
 
-	distribute<mapOut, reduceOut = mapOut[]>(
-		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
-		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
-	): reduceOut
-
 	optional(): [this, "?"]
 
 	/**
@@ -251,6 +262,24 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<Exclude<t, r>, $>
 
 	traverse(data: unknown): this["infer"] | ArkErrors
+
+	/**
+	 * @experimental
+	 * Map and optionally reduce branches of a union. Types that are not unions
+	 * are treated as a single branch.
+	 *
+	 * @param mapBranch - the mapping function, accepting a branch Type
+	 *     Returning another `Type` is common, but any value can be returned and
+	 *     inferred as part of the output.
+	 *
+	 * @param [reduceMapped] - an operation to perform on the mapped branches
+	 *     Can be used to e.g. merge an array of returned Types representing
+	 *     branches back to a single union.
+	 */
+	distribute<mapOut, reduceOut = mapOut[]>(
+		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
+		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
+	): reduceOut
 
 	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>

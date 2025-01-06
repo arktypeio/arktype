@@ -4,6 +4,7 @@ import { join } from "path"
 import {
 	Project,
 	type Identifier,
+	type JSDoc,
 	type JSDocableNode,
 	type Node,
 	type SourceFile
@@ -12,6 +13,9 @@ import ts from "typescript"
 import { repoDirs } from "./shared.ts"
 
 const inheritDocToken = "@inheritDoc"
+const typeLevelToken = "@typeLevel"
+const typeLevelMessage =
+	"⚠️ Inference-only property that will be `undefined` at runtime"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
@@ -38,17 +42,21 @@ export const jsDocgen = () => {
 
 	project.saveSync()
 
-	// const rewriteEntries = entriesOf(filesToRewrite)
-
-	// rewriteEntries.forEach(([path, contents]) => writeFile(path, contents))
-
 	console.log(
 		`📚 Successfully generated ${docgenCount} JSDoc comments on your build output.`
 	)
 }
 
+type MatchContext = {
+	matchedJsdoc: JSDoc
+	updateJsdoc: (text: string) => void
+	inheritDocsSource: string | undefined
+	includesTypeLevel: boolean
+}
+
 const docgenForFile = (sourceFile: SourceFile) => {
 	const path = sourceFile.getFilePath()
+
 	const identifiers = sourceFile
 		.getDescendants()
 		.filter(
@@ -57,85 +65,120 @@ const docgenForFile = (sourceFile: SourceFile) => {
 					.length
 		)
 
-	const matchContexts = identifiers.flatMap(identifier =>
-		identifier.getLeadingCommentRanges().flatMap(comment => {
-			const text = comment.getText()
-
-			if (!text.includes(inheritDocToken)) return []
-
-			const tokenStartIndex = text.indexOf(inheritDocToken)
-			const prefix = text.slice(0, tokenStartIndex)
-
-			const openBraceIndex = prefix.trimEnd().length - 1
-
-			if (text[openBraceIndex] !== "{") {
-				throwJsDocgenParseError(
-					path,
-					text,
-					` Expected '{' before @inheritDoc but got '${text[openBraceIndex]}'`
-				)
-			}
-
-			const openTagEndIndex = tokenStartIndex + inheritDocToken.length
-
-			const textFollowingOpenTag = text.slice(openTagEndIndex)
-
-			const innerTagLength = textFollowingOpenTag.indexOf("}")
-
-			if (innerTagLength === -1) {
-				throwJsDocgenParseError(
-					path,
-					text,
-					`Expected '}' after @inheritDoc but got '${textFollowingOpenTag[0]}'`
-				)
-			}
-
-			const sourceName = textFollowingOpenTag.slice(0, innerTagLength).trim()
-
-			return {
-				sourceName,
-				identifier
-			}
-		})
-	)
-
-	matchContexts.forEach(({ sourceName, identifier }) => {
-		const sourceDeclaration = sourceFile
-			.getDescendantsOfKind(ts.SyntaxKind.Identifier)
-			.find(i => i.getText() === sourceName)
-			?.getDefinitions()[0]
-			.getDeclarationNode()
-
-		if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
-
+	const matchContexts: MatchContext[] = identifiers.flatMap(identifier => {
 		const parent = identifier.getParent()
 
-		if (!canHaveJsDoc(parent)) return
+		if (!canHaveJsDoc(parent)) return []
 
 		const matchedJsdoc = parent.getJsDocs()[0]
 
-		const matchedDescription = matchedJsdoc.getDescription()
+		if (!matchedJsdoc) return []
 
-		const inheritedDescription = sourceDeclaration
-			.getJsDocs()[0]
-			.getDescription()
+		const text = matchedJsdoc.getText()
+
+		const inheritDocsSource = extractInheritDocName(path, text)
+		const includesTypeLevel = text.includes(typeLevelToken)
+
+		if (!inheritDocsSource && !includesTypeLevel) return []
+
+		return {
+			matchedJsdoc,
+			inheritDocsSource,
+			includesTypeLevel,
+			updateJsdoc: text => {
+				// replace the original JSDoc node in the AST with a new one
+				// created from updatedContents
+				matchedJsdoc.remove()
+				parent.addJsDoc(text)
+			}
+		}
+	})
+
+	matchContexts.forEach(ctx => {
+		const inheritedDocs = findInheritedDocs(sourceFile, ctx)
 
 		let updatedContents = ""
 
-		const matchedSummary = matchedDescription
-			.slice(0, matchedDescription.indexOf("{"))
-			.trim()
+		if (inheritedDocs)
+			updatedContents = `${inheritedDocs.originalSummary}\n${inheritedDocs.inheritedDescription}`
 
-		if (matchedSummary) updatedContents += `${matchedSummary}\n`
+		if (ctx.includesTypeLevel) {
+			updatedContents = updatedContents.replace(
+				typeLevelToken,
+				typeLevelMessage
+			)
+		}
 
-		updatedContents += `${inheritedDescription}`
-
-		// replace the original JSDoc node in the AST with a new one
-		// created from updatedContents
-		matchedJsdoc.remove()
-		parent.addJsDoc(updatedContents)
+		ctx.updateJsdoc(updatedContents)
 		docgenCount++
 	})
+}
+
+const findInheritedDocs = (
+	sourceFile: SourceFile,
+	{ inheritDocsSource, matchedJsdoc }: MatchContext
+) => {
+	if (!inheritDocsSource) return
+
+	const sourceDeclaration = sourceFile
+		.getDescendantsOfKind(ts.SyntaxKind.Identifier)
+		.find(i => i.getText() === inheritDocsSource)
+		?.getDefinitions()[0]
+		.getDeclarationNode()
+
+	if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
+
+	const matchedDescription = matchedJsdoc.getDescription()
+
+	const inheritedDescription = sourceDeclaration.getJsDocs()[0].getDescription()
+
+	const originalSummary = matchedDescription
+		.slice(0, matchedDescription.indexOf("{"))
+		.trim()
+
+	return {
+		originalSummary,
+		inheritedDescription
+	}
+}
+
+const extractInheritDocName = (
+	path: string,
+	text: string
+): string | undefined => {
+	const inheritDocTokenIndex = text.indexOf(inheritDocToken)
+
+	if (inheritDocTokenIndex === -1) return
+
+	const prefix = text.slice(0, inheritDocTokenIndex)
+
+	const openBraceIndex = prefix.trimEnd().length - 1
+
+	if (text[openBraceIndex] !== "{") {
+		throwJsDocgenParseError(
+			path,
+			text,
+			` Expected '{' before @inheritDoc but got '${text[openBraceIndex]}'`
+		)
+	}
+
+	const openTagEndIndex = inheritDocTokenIndex + inheritDocToken.length
+
+	const textFollowingOpenTag = text.slice(openTagEndIndex)
+
+	const innerTagLength = textFollowingOpenTag.indexOf("}")
+
+	if (innerTagLength === -1) {
+		throwJsDocgenParseError(
+			path,
+			text,
+			`Expected '}' after @inheritDoc but got '${textFollowingOpenTag[0]}'`
+		)
+	}
+
+	const sourceName = textFollowingOpenTag.slice(0, innerTagLength).trim()
+
+	return sourceName
 }
 
 const canHaveJsDoc = (node: Node): node is Node & JSDocableNode =>

@@ -84,6 +84,10 @@ export declare namespace JsonSchema {
 	export type LengthBoundable = String | Array
 
 	export type Structure = Object | Array
+
+	export type UnjsonifiableError = InstanceType<
+		typeof JsonSchema.UnjsonifiableError
+	>
 }
 
 const unjsonifiableExplanations = {
