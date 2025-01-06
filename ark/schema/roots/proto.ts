@@ -19,10 +19,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
@@ -121,7 +118,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 				}
 			default:
 				return throwParseError(
-					writeUnsupportedJsonSchemaTypeMessage(this.description)
+					JsonSchema.writeUnjsonifiableMessage(this.description)
 				)
 		}
 	}

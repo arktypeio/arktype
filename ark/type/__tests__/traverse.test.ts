@@ -234,7 +234,7 @@ age must be more than 18 (was 2)`)
 		let callCount = 0
 		const t = type({
 			foo: ["unknown", "=>", () => callCount++]
-		}).satisfying((data, ctx) => ctx.mustBe("valid"))
+		}).filter((data, ctx) => ctx.mustBe("valid"))
 
 		attest(t.t).type.toString.snap("{ foo: (In: unknown) => Out<number> }")
 		const out = t({ foo: 1 })

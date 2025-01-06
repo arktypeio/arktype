@@ -10,10 +10,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 
 export declare namespace Pattern {
@@ -86,7 +83,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
 		if (schema.pattern) {
 			return throwParseError(
-				writeUnsupportedJsonSchemaTypeMessage(
+				JsonSchema.writeUnjsonifiableMessage(
 					`Intersection of patterns ${schema.pattern} & ${this.rule}`
 				)
 			)

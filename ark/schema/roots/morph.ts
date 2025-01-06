@@ -16,10 +16,7 @@ import {
 	type RootKind
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import {
-	writeJsonSchemaMorphMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import type {
 	TraversalContext,
@@ -192,7 +189,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
-		return throwParseError(writeJsonSchemaMorphMessage(this.expression))
+		return throwParseError(
+			JsonSchema.writeUnjsonifiableMessage(this.expression)
+		)
 	}
 
 	compile(js: NodeCompiler): void {

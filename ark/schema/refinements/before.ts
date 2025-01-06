@@ -6,10 +6,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
@@ -88,7 +85,7 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 
 	reduceJsonSchema(): JsonSchema {
 		return throwParseError(
-			writeUnsupportedJsonSchemaTypeMessage("Date instance")
+			JsonSchema.writeUnjsonifiableMessage("Date instance")
 		)
 	}
 }

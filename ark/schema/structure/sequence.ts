@@ -34,10 +34,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import {
 	traverseKey,
@@ -485,7 +482,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		if (this.optionals) {
 			throwParseError(
-				writeUnsupportedJsonSchemaTypeMessage(
+				JsonSchema.writeUnjsonifiableMessage(
 					`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
 				)
 			)
@@ -507,7 +504,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		if (this.postfix) {
 			throwParseError(
-				writeUnsupportedJsonSchemaTypeMessage(
+				JsonSchema.writeUnjsonifiableMessage(
 					`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
 				)
 			)

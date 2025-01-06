@@ -14,10 +14,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
 
@@ -97,7 +94,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 
 	protected innerToJsonSchema(): JsonSchema.Constrainable {
 		if (this.domain === "bigint" || this.domain === "symbol")
-			return throwParseError(writeUnsupportedJsonSchemaTypeMessage(this.domain))
+			return throwParseError(JsonSchema.writeUnjsonifiableMessage(this.domain))
 		return {
 			type: this.domain
 		}

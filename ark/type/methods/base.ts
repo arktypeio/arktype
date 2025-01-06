@@ -37,6 +37,11 @@ import type { instantiateType } from "./instantiate.ts"
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
+	internal: BaseRoot
+	[inferred]: t
+
+	precompilation: string | undefined
+
 	//   The top-level generic parameter accepted by the `Type`. Potentially
 	//   includes morphs and subtype constraints not reflected in the types
 	//   fully-inferred input (via `inferIn`) or output (via `infer` or
@@ -49,31 +54,19 @@ interface Type<out t = unknown, $ = {}>
 	// A type representing the output the `Type` will return (after morphs are
 	// applied to valid input)
 	infer: this["inferOut"]
-
 	inferOut: distill.Out<t>
-
+	inferIntrospectableOut: distill.introspectable.Out<t>
 	// A type representing the input the `Type` will accept (before morphs are applied)
 	// @example export type MyTypeInput = typeof MyType.inferIn
 	inferIn: distill.In<t>
 
-	/**
-	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
-	 * @example const inputT = T.in
-	 */
-	get in(): instantiateType<this["inferIn"], $>
-
-	/**
-	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
-	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
-	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
-	 * @example const outputT = T.out
-	 */
-	get out(): instantiateType<this["inferIntrospectableOut"], $>
-
-	/** The internal JSON representation. */
+	/** The internal JSON representation */
 	json: JsonStructure
 
-	/** Generate a JSON Schema. */
+	/** Alias of {@link json} for `JSON.stringify` compatibility */
+	toJSON(): JsonStructure
+
+	/** Generate a JSON Schema*/
 	toJsonSchema(): JsonSchema
 
 	meta: ArkAmbient.meta
@@ -119,6 +112,20 @@ interface Type<out t = unknown, $ = {}>
 	 * @example const ConfigT = type({ foo: "string" }); export const config = ConfigT.from({ foo: "bar" })
 	 */
 	from(literal: this["inferIn"]): this["infer"]
+
+	/**
+	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
+	 * @example const inputT = T.in
+	 */
+	get in(): instantiateType<this["inferIn"], $>
+
+	/**
+	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
+	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
+	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
+	 * @example const outputT = T.out
+	 */
+	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	/**
 	 * Cast the way this `Type` is inferred (has no effect at runtime).
@@ -174,6 +181,15 @@ interface Type<out t = unknown, $ = {}>
 	default<const value extends defaultFor<this["inferIn"]>>(
 		value: value
 	): [this, "=", value]
+
+	filter<
+		narrowed extends this["inferIn"] = never,
+		r = [narrowed] extends [never] ? t
+		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
+		: narrowed
+	>(
+		predicate: Predicate.Castable<this["inferIn"]>
+	): instantiateType<r, $>
 
 	/**
 	 * Add a custom predicate to this `Type`.
@@ -234,45 +250,7 @@ interface Type<out t = unknown, $ = {}>
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, r>, $>
 
-	// ---- Properties above the horizon a stable part of the Type API as published to arktype.io ------------
-	// -------------------------------------------------------------------------------------------------------
-	// 🌊🌊🌊🌊🌊🌊🌊⛵🌊🌊🌊🌊🌊🌊🌊 WARNING: UNCHARTED WATERS AHEAD 🌊🌊🌊🌊🌊🌊🌊🦑🌊🌊🌊🌊🌊🌊🌊
-	// -------------------------------------------------------------------------------------------------------
-	// ---- Properties below the horizon are unstable or deprecated and will have >=1 of these tags ----------
-	//         `@internal` - intended for internal consumption or deep integrations
-	//         `@experimental` - a candidate for addition to the core API pending further evaluation
-	//         `@deprecated` - will be removed from the core API in the next major version
-
-	[inferred]: t
-
-	internal: BaseRoot
-
-	inferIntrospectableOut: distill.introspectable.Out<t>
-
-	inferredOutIsIntrospectable: t extends InferredMorph<any, infer o> ?
-		[o] extends [anyOrNever] ? true
-		: o extends To ? true
-		: false
-	: // special-case unknown here to preserve assignability
-	unknown extends t ? boolean
-	: true
-
-	// allows a Type to be serialized directly through `JSON.stringify`
-	toJSON(): JsonStructure
-
-	precompilation: string | undefined
-
 	traverse(data: unknown): this["infer"] | ArkErrors
-
-	// TODO: rename to predicate?
-	satisfying<
-		narrowed extends this["inferIn"] = never,
-		r = [narrowed] extends [never] ? t
-		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
-		: narrowed
-	>(
-		predicate: Predicate.Castable<this["inferIn"]>
-	): instantiateType<r, $>
 
 	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
 	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>

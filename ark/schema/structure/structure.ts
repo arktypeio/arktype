@@ -27,11 +27,7 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { intersectNodesRoot } from "../shared/intersections.ts"
-import {
-	throwInternalJsonSchemaOperandError,
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
@@ -688,14 +684,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			case "array":
 				if (this.props.length || this.index) {
 					throwParseError(
-						writeUnsupportedJsonSchemaTypeMessage(
+						JsonSchema.writeUnjsonifiableMessage(
 							`Additional properties on array ${this.expression}`
 						)
 					)
 				}
 				return this.sequence?.reduceJsonSchema(schema) ?? schema
 			default:
-				return throwInternalJsonSchemaOperandError("structure", schema)
+				return JsonSchema.throwInternalOperandError("structure", schema)
 		}
 	}
 
@@ -705,7 +701,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.props.forEach(prop => {
 				if (typeof prop.key === "symbol") {
 					return throwParseError(
-						writeUnsupportedJsonSchemaTypeMessage(
+						JsonSchema.writeUnjsonifiableMessage(
 							`Sybolic key ${prop.serializedKey}`
 						)
 					)
@@ -723,7 +719,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
 				return throwParseError(
-					writeUnsupportedJsonSchemaTypeMessage(
+					JsonSchema.writeUnjsonifiableMessage(
 						`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
 					)
 				)
@@ -735,9 +731,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					keyBranch.pattern?.length !== 1
 				) {
 					return throwParseError(
-						writeUnsupportedJsonSchemaTypeMessage(
-							`Index signature ${keyBranch}`
-						)
+						JsonSchema.writeUnjsonifiableMessage(`Index signature ${keyBranch}`)
 					)
 				}
 				schema.patternProperties ??= {}

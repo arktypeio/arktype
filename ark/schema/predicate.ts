@@ -11,7 +11,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
-import { writeUnsupportedJsonSchemaTypeMessage } from "./shared/jsonSchema.ts"
+import { JsonSchema } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
@@ -111,9 +111,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 
 	reduceJsonSchema(): never {
 		return throwParseError(
-			writeUnsupportedJsonSchemaTypeMessage({
-				description: `Predicate ${this.expression}`
-			})
+			JsonSchema.writeUnjsonifiableMessage(`Predicate ${this.expression}`)
 		)
 	}
 }
