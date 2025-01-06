@@ -6,7 +6,6 @@ import type {
 	MetaSchema,
 	Morph,
 	Predicate,
-	PredicateCast,
 	StandardSchemaV1,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
@@ -191,7 +190,7 @@ interface Type<out t = unknown, $ = {}>
 			:	(In: i) => Out<narrowed>
 		:	narrowed
 	>(
-		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
+		predicate: Predicate.Castable<this["infer"], narrowed>
 	): instantiateType<r, $>
 
 	/**
@@ -199,7 +198,19 @@ interface Type<out t = unknown, $ = {}>
 	 * @example const dedupe = type('string[]').pipe(a => Array.from(new Set(a)))
 	 * @example type({codes: 'string.numeric[]'}).pipe(obj => obj.codes).to('string.numeric.parse[]')
 	 */
-	pipe: ChainedPipes<t, $>
+	pipe: ChainedPipe<t, $>
+
+	// inferring r into an alias improves perf and avoids return type inference
+	// that can lead to incorrect results. See:
+	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
+	/**
+	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
+	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
+	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
+	 */
+	intersect<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
+	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
 	equals<const def>(def: type.validate<def, $>): boolean
 
@@ -253,27 +264,14 @@ interface Type<out t = unknown, $ = {}>
 
 	traverse(data: unknown): this["infer"] | ArkErrors
 
-	// inferring r into an alias improves perf and avoids return type inference
-	// that can lead to incorrect results. See:
-	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
-	/**
-	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
-	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
-	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
-	 */
-	intersect<const def, r = type.infer<def, $>>(
-		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $> | Disjoint
-
+	// TODO: rename to predicate?
 	satisfying<
 		narrowed extends this["inferIn"] = never,
 		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(
-		predicate:
-			| Predicate<this["inferIn"]>
-			| PredicateCast<this["inferIn"], narrowed>
+		predicate: Predicate.Castable<this["inferIn"]>
 	): instantiateType<r, $>
 
 	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
@@ -394,7 +392,7 @@ interface ChainedPipeSignature<t, $> {
 	): NoInfer<r> extends infer result ? result : never
 }
 
-export interface ChainedPipes<t, $> extends ChainedPipeSignature<t, $> {
+export interface ChainedPipe<t, $> extends ChainedPipeSignature<t, $> {
 	try: ChainedPipeSignature<t, $>
 }
 

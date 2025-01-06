@@ -128,7 +128,13 @@ export type Predicate<data = any> = (
 	ctx: TraversalContext
 ) => boolean
 
-export type PredicateCast<input = never, narrowed extends input = input> = (
-	input: input,
-	ctx: TraversalContext
-) => input is narrowed
+export declare namespace Predicate {
+	export type Casted<input = never, narrowed extends input = input> = (
+		input: input,
+		ctx: TraversalContext
+	) => input is narrowed
+
+	export type Castable<input = never, narrowed extends input = input> =
+		| Predicate<input>
+		| Casted<input, narrowed>
+}
