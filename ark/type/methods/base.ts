@@ -60,6 +60,7 @@ interface Type<out t = unknown, $ = {}>
 
 	/**
 	 * The {@link Scope} in which definitions for this Type its chained methods are parsed
+	 * @api Type
 	 */
 	$: Scope<$>
 
@@ -71,6 +72,7 @@ interface Type<out t = unknown, $ = {}>
 	 * type ParsedNumber = typeof parseNumber.infer // number
 	 *
 	 * @typeonly
+	 * @api Type
 	 */
 	infer: this["inferOut"]
 
@@ -95,10 +97,14 @@ interface Type<out t = unknown, $ = {}>
 	 * type UnparsedNumber = typeof parseNumber.inferIn // string
 	 *
 	 * @typeonly
+	 * @api Type
 	 */
 	inferIn: distill.In<t>
 
-	/** The internal JSON representation */
+	/**
+	 * The internal JSON representation
+	 * @api Type
+	 */
 	json: JsonStructure
 
 	/** Alias of {@link json} for `JSON.stringify` compatibility */
@@ -107,6 +113,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Generate a JSON Schema
 	 * @throws {JsonSchema.UnjsonifiableError} if this is not convertible to JSON Schema
+	 * @api Type
 	 */
 	toJsonSchema(): JsonSchema
 
@@ -114,18 +121,26 @@ interface Type<out t = unknown, $ = {}>
 	 * Metadata like custom descriptions and error messages
 	 *
 	 * The type of this property [can be extended](https://arktype.io/docs/configuration#custom) by your project.
+	 * @api Type
 	 */
 	meta: ArkAmbient.meta
 
-	/** An English description */
+	/**
+	 * An english description
+	 * @api Type
+	 */
 	description: string
 
-	/** A syntactic representation */
+	/**
+	 * A syntactic representation similar to native TypeScript
+	 * @api Type
+	 */
 	expression: string
 
 	/**
 	 * Attempt to apply validation and morph logic, either returning valid output or throwing.
 	 * @throws {AggregateError}
+	 * @api Type
 	 */
 	assert(data: unknown): this["infer"]
 

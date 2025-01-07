@@ -1,38 +1,31 @@
-import { append, entriesOf, flatMorph } from "@ark/util"
-import { ark, Generic } from "arktype"
-import { arkPrototypes } from "arktype/internal/keywords/constructors.ts"
 import type { JSX } from "react"
+import { apiDocsByGroup } from "./apiData.ts"
 
-const tableNames = ["Type"] as const
-
-type TableName = (typeof tableNames)[number]
-
-const tableRowsByName = flatMorph(tableNames, (i, name) => [
-	name,
-	[] as JSX.Element[]
-])
-
-export type KeywordTableProps = {
-	name: TableName
+export type ApiTableProps = {
+	group: keyof typeof apiDocsByGroup
 	rows: JSX.Element[]
 }
 
-export const KeywordTable = ({ name, rows }: KeywordTableProps) => (
-	<>
-		<h2>{name}</h2>
-		<table>
-			<thead>
-				<tr>
-					<th className="font-bold">Alias</th>
-					<th className="font-bold">Description</th>
-				</tr>
-			</thead>
-			<tbody>{...rows}</tbody>
-		</table>
-	</>
-)
-
-export const AllKeywordTables = () =>
-	tableNames.map(name => (
-		<KeywordTable name={name} rows={tableRowsByName[name]} />
+export const ApiTable = ({ group }: ApiTableProps) => {
+	const rows = apiDocsByGroup[group].map(({ name, description }) => (
+		<tr key={name}>
+			<td>{name}</td>
+			<td>{description}</td>
+		</tr>
 	))
+
+	return (
+		<>
+			<h2>{group}</h2>
+			<table>
+				<thead>
+					<tr>
+						<th className="font-bold">Alias</th>
+						<th className="font-bold">Description</th>
+					</tr>
+				</thead>
+				<tbody>{...rows}</tbody>
+			</table>
+		</>
+	)
+}

@@ -18,7 +18,7 @@
 		"prChecks": "pnpm lint && pnpm buildRepo && pnpm testRepoWithVersionsAndBenches",
 		"attest": "ts ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r --filter !'@ark/docs' build",
-		"buildRepo": "ts ./ark/repo/buildRepo.ts",
+		"buildRepo": "pnpm rmBuild && pnpm build && pnpm buildDocs",
 		"buildDocs": "pnpm -r --filter '@ark/docs' build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"rmBuild": "pnpm -r exec rm -rf out",

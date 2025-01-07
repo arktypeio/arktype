@@ -1,9 +1,19 @@
-import { fromHere, readJson } from "@ark/fs"
-import { flatMorph } from "@ark/util"
+import {
+	fileName,
+	findPackageAncestors,
+	readJson,
+	readPackageJson
+} from "@ark/fs"
+import { flatMorph, throwInternalError } from "@ark/util"
 import { join } from "node:path"
 import type { PackageJson } from "type-fest"
 
-const root = fromHere("..", "..")
+const root = findPackageAncestors().find(
+	dir => readPackageJson(dir).name === "ark"
+)
+
+if (!root) throwInternalError(`Can't find repo root from ${fileName()}!`)
+
 const arkDir = join(root, "ark")
 const docs = join(arkDir, "docs")
 

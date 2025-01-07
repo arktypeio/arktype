@@ -1,4 +1,9 @@
-import { throwParseError } from "@ark/util"
+// used to bootstrap build
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { flatMorph, includes, throwInternalError } from "../util/index.ts"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { writeFile } from "../fs/index.ts"
+
 import { existsSync } from "fs"
 import { join } from "path"
 import {
@@ -38,9 +43,7 @@ const createProject = () => {
 	return project
 }
 
-export const jsdocGen = () => {
-	const project = createProject()
-
+export const jsdocGen = (project: Project) => {
 	const sourceFiles = project.getSourceFiles()
 
 	console.log(
@@ -56,9 +59,41 @@ export const jsdocGen = () => {
 	)
 }
 
-export const getAllJsdoc = () => {
-	const project = createProject()
+const apiGroups = ["Type"] as const
 
+export type ApiGroup = (typeof apiGroups)[number]
+
+export const buildApi = () => {
+	const project = createProject()
+	jsdocGen(project)
+	const docs = getAllJsDoc(project)
+
+	const apiDocsByGroup = flatMorph(docs, (i, doc) => {
+		const name = doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText()
+
+		const group = doc
+			.getTags()
+			.find(t => t.getTagName() === "api")
+			?.getCommentText()
+
+		if (!group) return []
+
+		if (!includes(apiGroups, group)) {
+			throwInternalError(
+				`Invalid API group ${group} for name ${name}. Should be defined like @api Type`
+			)
+		}
+
+		return [{ group }, { name, description: doc.getCommentText() }]
+	})
+
+	writeFile(
+		join(repoDirs.docs, "components", "apiData.ts"),
+		`export const apiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)}`
+	)
+}
+
+export const getAllJsDoc = (project: Project) => {
 	const sourceFiles = project.getSourceFiles()
 
 	return sourceFiles.flatMap(file =>
@@ -194,7 +229,8 @@ const throwJsDocgenParseError = (
 	path: string,
 	commentText: string,
 	message: string
-): never =>
-	throwParseError(
+): never => {
+	throw new Error(
 		`jsdocGen ParseError in ${path}: ${message}\nComment text: ${commentText}`
 	)
+}
