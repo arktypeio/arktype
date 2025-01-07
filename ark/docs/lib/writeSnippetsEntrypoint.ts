@@ -16,7 +16,7 @@ import { existsSync } from "fs"
  * the contents.ts file and just import that directly. It is
  * then committed to git as normal.
  */
-export const writeSnippetsEntrypoint = () => {
+export const updateSnippetsEntrypoint = () => {
 	const snippetContentsById = flatMorph(snippetIds, (i, id) => {
 		const tsPath = snippetPath(`${id}.twoslash.ts`)
 		const jsPath = snippetPath(`${id}.twoslash.js`)
@@ -32,12 +32,12 @@ export const writeSnippetsEntrypoint = () => {
 
 	const toPath = snippetPath("contentsById.ts")
 
-	writeFile(
-		toPath,
-		`export default ${JSON.stringify(snippetContentsById, null, 4)}`
-	)
+	const contents = `export default ${JSON.stringify(snippetContentsById, null, 4)}`
 
-	shell(`pnpm prettier --write ${toPath}`)
+	if (!existsSync(toPath) || readFile(toPath) !== contents) {
+		writeFile(toPath, contents)
+		shell(`pnpm prettier --write ${toPath}`)
+	}
 }
 
 const snippetIds = [
