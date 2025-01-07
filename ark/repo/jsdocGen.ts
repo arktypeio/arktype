@@ -64,10 +64,10 @@ export type JsdocComment = ReturnType<JSDoc["getComment"]>
 
 export type JsdocPart = Extract<JsdocComment, readonly unknown[]>[number] & {}
 
-export type ParsedJsdocPart =
-	| { kind: "text"; text: string }
-	| { kind: "reference"; to: string }
-	| { kind: "link"; text: string; url: string }
+export type ParsedJsDocPart =
+	| { kind: "text"; value: string }
+	| { kind: "reference"; value: string }
+	| { kind: "link"; value: string; url: string }
 
 export const buildApi = () => {
 	const project = createProject()
@@ -84,17 +84,17 @@ export const buildApi = () => {
 
 	writeFile(
 		join(repoDirs.docs, "components", "apiData.ts"),
-		`export const apiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)}`
+		`export const apiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)} as const`
 	)
 }
 
-type ParsedBlock = {
+export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
-	parts: ParsedJsdocPart[]
+	parts: ParsedJsDocPart[]
 }
 
-const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
+const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	const name = doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText()
 
 	if (!name) return
@@ -116,9 +116,9 @@ const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
 
 	if (!rawParts) return
 
-	let parts: ParsedJsdocPart[]
+	let parts: ParsedJsDocPart[]
 
-	if (typeof rawParts === "string") parts = [{ kind: "text", text: rawParts }]
+	if (typeof rawParts === "string") parts = [{ kind: "text", value: rawParts }]
 	// remove any undefined parts before parsing
 	else parts = rawParts.filter(part => !!part).map(parseJsdocPart)
 
@@ -129,18 +129,39 @@ const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
 	}
 }
 
-const parseJsdocPart = (part: JsdocPart): ParsedJsdocPart => {
+const describedLinkRegex =
+	/\{@link\s+(https?:\/\/[^\s|}]+)(?:\s*\|\s*([^}]*))?\}/
+
+const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
 	switch (part.getKindName()) {
 		case "JSDocText":
 			return {
 				kind: "text",
 				// using part.getText() here seems to include comment syntax
-				text: part.compilerNode.text
+				value: part.compilerNode.text
 			}
 		case "JSDocLink":
+			const linkText = part.getText()
+			const match = describedLinkRegex.exec(linkText)
+
+			if (match) {
+				const url = match[1].trim()
+				const value = match[2]?.trim() || url
+
+				return {
+					kind: "link",
+					url,
+					value
+				}
+			}
+
+			const identifier = part
+				.getFirstChildByKindOrThrow(SyntaxKind.Identifier)
+				.getText()
+
 			return {
 				kind: "reference",
-				to: part.getFirstChildByKindOrThrow(SyntaxKind.Identifier).getText()
+				value: identifier
 			}
 		default:
 			return throwInternalError(

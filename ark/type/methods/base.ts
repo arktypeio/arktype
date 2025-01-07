@@ -116,11 +116,10 @@ interface Type<out t = unknown, $ = {}>
 	 * @api Type
 	 */
 	toJsonSchema(): JsonSchema
-
 	/**
 	 * Metadata like custom descriptions and error messages
 	 *
-	 * The type of this property [can be extended](https://arktype.io/docs/configuration#custom) by your project.
+	 * The type of this property {@link https://arktype.io/docs/configuration#custom | can be extended} by your project.
 	 * @api Type
 	 */
 	meta: ArkAmbient.meta
