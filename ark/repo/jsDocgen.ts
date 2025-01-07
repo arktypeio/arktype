@@ -13,9 +13,11 @@ import ts from "typescript"
 import { repoDirs } from "./shared.ts"
 
 const inheritDocToken = "@inheritDoc"
-const typeLevelToken = "@typelevel"
-const typeLevelMessage =
-	"⚠️ Inference-only property that will be `undefined` at runtime"
+const typeOnlyToken = "@typeonly"
+const typeOnlyMessage =
+	"🥸 Inference-only property that will be `undefined` at runtime"
+const typeNoopToken = "@typenoop"
+const typeNoopMessage = "🥸 Inference-only function that does nothing runtime"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
@@ -51,7 +53,6 @@ type MatchContext = {
 	matchedJsdoc: JSDoc
 	updateJsdoc: (text: string) => void
 	inheritDocsSource: string | undefined
-	includesTypeLevel: boolean
 }
 
 const docgenForFile = (sourceFile: SourceFile) => {
@@ -77,14 +78,17 @@ const docgenForFile = (sourceFile: SourceFile) => {
 		const text = matchedJsdoc.getText()
 
 		const inheritDocsSource = extractInheritDocName(path, text)
-		const includesTypeLevel = text.includes(typeLevelToken)
 
-		if (!inheritDocsSource && !includesTypeLevel) return []
+		if (
+			!inheritDocsSource &&
+			!text.includes(typeOnlyToken) &&
+			!text.includes(typeNoopToken)
+		)
+			return []
 
 		return {
 			matchedJsdoc,
 			inheritDocsSource,
-			includesTypeLevel,
 			updateJsdoc: text => {
 				// replace the original JSDoc node in the AST with a new one
 				// created from updatedContents
@@ -103,12 +107,8 @@ const docgenForFile = (sourceFile: SourceFile) => {
 		if (inheritedDocs)
 			updatedContents = `${inheritedDocs.originalSummary}\n${inheritedDocs.inheritedDescription}`
 
-		if (ctx.includesTypeLevel) {
-			updatedContents = updatedContents.replace(
-				typeLevelToken,
-				typeLevelMessage
-			)
-		}
+		updatedContents = updatedContents.replace(typeOnlyToken, typeOnlyMessage)
+		updatedContents = updatedContents.replace(typeNoopToken, typeNoopMessage)
 
 		ctx.updateJsdoc(updatedContents)
 	})

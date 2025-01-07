@@ -47,10 +47,6 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	precompilation: string | undefined
 
-	//   The top-level generic parameter accepted by the `Type`.
-	//   includes morphs and subtype constraints not reflected in the types
-	//   fully-inferred input (via `inferIn`) or output (via `infer` or
-	//   `inferOut`)
 	/**
 	 * The generic parameter representing this Type
 	 *
@@ -58,20 +54,46 @@ interface Type<out t = unknown, $ = {}>
 	 * be inaccurate if used directly for runtime values. In those cases,
 	 * you should use {@link infer} or {@link inferIn} on this object instead.
 	 *
-	 * @typelevel
+	 * @typeonly
 	 */
 	t: t
 
 	/** The {@link Scope} in which definitions for this Type its chained methods are parsed */
 	$: Scope<$>
 
-	// A type representing the output the `Type` will return (after morphs are
-	// applied to valid input)
+	/**
+	 * The type of data this returns
+	 *
+	 * @example
+	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
+	 * type ParsedNumber = typeof parseNumber.infer // number
+	 *
+	 * @typeonly
+	 */
 	infer: this["inferOut"]
+
+	/**
+	 * Alias of {@link infer}
+	 *
+	 * @example
+	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
+	 * type ParsedNumber = typeof parseNumber.infer // number
+	 *
+	 * @typeonly
+	 */
 	inferOut: distill.Out<t>
+
 	inferIntrospectableOut: distill.introspectable.Out<t>
-	// A type representing the input the `Type` will accept (before morphs are applied)
-	// @example export type MyTypeInput = typeof MyType.inferIn
+
+	/**
+	 * The type of data this expects
+	 *
+	 * @example
+	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
+	 * type UnparsedNumber = typeof parseNumber.inferIn // string
+	 *
+	 * @typeonly
+	 */
 	inferIn: distill.In<t>
 
 	/** The internal JSON representation */
@@ -80,15 +102,22 @@ interface Type<out t = unknown, $ = {}>
 	/** Alias of {@link json} for `JSON.stringify` compatibility */
 	toJSON(): JsonStructure
 
-	/** Generate a JSON Schema
+	/**
+	 * Generate a JSON Schema
 	 * @throws {JsonSchema.UnjsonifiableError} if this is not convertible to JSON Schema
 	 */
 	toJsonSchema(): JsonSchema
 
+	/**
+	 * Metadata like custom descriptions and error messages
+	 *
+	 * The type of this property [can be extended](https://arktype.io/docs/configuration#custom) by your project.
+	 */
 	meta: ArkAmbient.meta
 
 	/** An English description */
 	description: string
+
 	/** A syntactic representation */
 	expression: string
 

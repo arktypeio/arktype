@@ -74,3 +74,23 @@ const myObject = type({
 	foo: "string"
 })
 ```
+
+### custom
+
+```ts
+// add this anywhere in your project
+declare global {
+	interface ArkEnv {
+		meta(): {
+			// meta properties should always be optional
+			secretIngredient?: string
+		}
+	}
+}
+
+// now types you define can specify and access your metadata
+const mrPingsSecretIngredientSoup = type({
+	broth: "'miso' | 'vegetable'",
+	ingredients: "string[]"
+}).configure({ secretIngredient: "nothing!" })
+```
