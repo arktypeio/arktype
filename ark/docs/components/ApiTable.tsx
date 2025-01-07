@@ -1,3 +1,4 @@
+import { throwInternalError } from "@ark/util"
 import type { JSX } from "react"
 import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
@@ -52,6 +53,17 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 					<a href={`#${part.value}`} key={i}>
 						{part.value}
 					</a>
+				)
+			case "tag":
+				return (
+					<p style={{ display: "inline" }} key={i}>
+						{part.name} {JsDocParts(part.value)}
+					</p>
+				)
+			default:
+				const exhaustive = part satisfies never as ParsedJsDocPart
+				return throwInternalError(
+					`Unexpected JsdocPart kind "${exhaustive.kind}"`
 				)
 		}
 	})

@@ -68,6 +68,17 @@ export type ParsedJsDocPart =
 	| { kind: "text"; value: string }
 	| { kind: "reference"; value: string }
 	| { kind: "link"; value: string; url: string }
+	| ParsedJsDocTag
+
+export type ParsedJsDocTag = {
+	kind: "tag"
+	name: string
+	value: ParsedJsDocPart[]
+}
+
+export type ApiDocsByGroup = {
+	readonly [k in ApiGroup]: readonly ParsedJsDocBlock[]
+}
 
 export const buildApi = () => {
 	const project = createProject()
@@ -84,7 +95,9 @@ export const buildApi = () => {
 
 	writeFile(
 		join(repoDirs.docs, "components", "apiData.ts"),
-		`export const apiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)} as const`
+		`import type { ApiDocsByGroup } from "../../repo/jsdocGen.ts"
+
+export const apiDocsByGroup: ApiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)}`
 	)
 }
 
@@ -99,10 +112,8 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	if (!name) return
 
-	const group = doc
-		.getTags()
-		.find(t => t.getTagName() === "api")
-		?.getCommentText()
+	const tags = doc.getTags()
+	const group = tags.find(t => t.getTagName() === "api")?.getCommentText()
 
 	if (!group) return
 
@@ -116,11 +127,14 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	if (!rawParts) return
 
-	let parts: ParsedJsDocPart[]
+	const parts = parseJsdocComment(rawParts)
+	const tagParts: ParsedJsDocTag[] = tags.flatMap(tag => ({
+		kind: "tag",
+		name: tag.getTagName(),
+		value: parseJsdocComment(tag.getComment())
+	}))
 
-	if (typeof rawParts === "string") parts = [{ kind: "text", value: rawParts }]
-	// remove any undefined parts before parsing
-	else parts = rawParts.filter(part => !!part).map(parseJsdocPart)
+	parts.push(...tagParts)
 
 	return {
 		group,
@@ -129,8 +143,47 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	}
 }
 
+const parseJsdocComment = (comment: JsdocComment): ParsedJsDocPart[] => {
+	if (!comment) return []
+
+	return typeof comment === "string" ?
+			[{ kind: "text", value: comment }]
+			// remove any undefined parts before parsing
+		:	comment.filter(part => !!part).map(parseJsdocPart)
+}
+
 const describedLinkRegex =
 	/\{@link\s+(https?:\/\/[^\s|}]+)(?:\s*\|\s*([^}]*))?\}/
+
+const parseJsdocLink = (part: JsdocPart): ParsedJsDocPart => {
+	const linkText = part.getText()
+	const match = describedLinkRegex.exec(linkText)
+	if (match) {
+		const url = match[1].trim()
+		const value = match[2]?.trim() || url
+		return { kind: "link", url, value }
+	}
+
+	const referencedName = part
+		.getChildren()
+		.find(
+			child =>
+				child.isKind(SyntaxKind.Identifier) ||
+				child.isKind(SyntaxKind.QualifiedName)
+		)
+		?.getText()
+
+	if (!referencedName) {
+		return throwInternalError(
+			`Unable to parse referenced name from ${part.getText()}`
+		)
+	}
+
+	return {
+		kind: "reference",
+		value: referencedName
+	}
+}
 
 const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
 	switch (part.getKindName()) {
@@ -141,39 +194,7 @@ const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
 				value: part.compilerNode.text
 			}
 		case "JSDocLink":
-			const linkText = part.getText()
-			const match = describedLinkRegex.exec(linkText)
-
-			if (match) {
-				const url = match[1].trim()
-				const value = match[2]?.trim() || url
-
-				return {
-					kind: "link",
-					url,
-					value
-				}
-			}
-
-			const referencedName = part
-				.getChildren()
-				.find(
-					child =>
-						child.isKind(SyntaxKind.Identifier) ||
-						child.isKind(SyntaxKind.QualifiedName)
-				)
-				?.getText()
-
-			if (!referencedName) {
-				return throwInternalError(
-					`Unable to parse referenced name from ${part.getText()}`
-				)
-			}
-
-			return {
-				kind: "reference",
-				value: referencedName
-			}
+			return parseJsdocLink(part)
 		default:
 			return throwInternalError(
 				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
