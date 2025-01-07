@@ -181,15 +181,33 @@ interface Type<out t = unknown, $ = {}>
 	expression: string
 
 	/**
-	 * Attempt to apply validation and morph logic, either returning valid output or throwing.
+	 * Validate and morph data, throwing a descriptive AggregateError if it fails
+	 *
+	 * Useful to avoid needing to check for {@link type.errrors} if it would be unrecoverable
+	 *
+	 * @example
+	 * const criticalPayload = type({
+	 *     superImportantValue: "string"
+	 * })
+	 * // throws AggregateError: superImportantValue must be a string (was missing)
+	 * const data = criticalPayload.assert({ irrelevantValue: "whoops" })
+	 * console.log(data.superImportantValue) // valid output can be accessed directly
+	 *
 	 * @throws {AggregateError}
 	 * @api Type
 	 */
 	assert(data: unknown): this["infer"]
 
 	/**
-	 * Check errors.
-	 * @example type.string.allows(9) // false
+	 * Validate input data without applying morphs
+	 *
+	 * Highly optimized and best for cases where you need to know if data
+	 * satisifes a Type's input without needing specific errors on rejection.
+	 *
+	 * @example
+	 * const numeric = type("number | bigint")
+	 * // [0, 2n]
+	 * const numerics = [0, "one", 2n].filter(numeric.allows)
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
