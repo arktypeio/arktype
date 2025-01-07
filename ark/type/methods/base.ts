@@ -151,9 +151,11 @@ interface Type<out t = unknown, $ = {}>
 	meta: ArkAmbient.meta
 
 	/**
-	 * An english description
+	 * An English description
 	 *
-	 * Well-suited for human-readable errors, especially on primitive Types
+	 * Best suited for...
+	 * 	   audience - English speakers
+	 *     data - primitives
 	 *
 	 * @example
 	 * const n = type("0 < number <= 100")
@@ -165,6 +167,10 @@ interface Type<out t = unknown, $ = {}>
 
 	/**
 	 * A syntactic representation similar to native TypeScript
+	 *
+	 * Best suited for...
+	 * 	   audience - other developers
+	 *     data - primitives or structures
 	 *
 	 * @example
 	 * const loc = type({ coords: ["number", "number"] })
