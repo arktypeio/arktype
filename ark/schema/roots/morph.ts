@@ -189,7 +189,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
-		return JsonSchema.throwUnjsonifiableError(this.expression)
+		return JsonSchema.throwUnjsonifiableError(this.expression, "morph")
 	}
 
 	compile(js: NodeCompiler): void {

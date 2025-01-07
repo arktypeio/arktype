@@ -58,7 +58,8 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 		},
 		intersections: {
 			min: (l, r) => (l.isStricterThan(r) ? l : r)
-		}
+		},
+		obviatesBasisDescription: true
 	})
 
 export class MinNode extends BaseRange<Min.Declaration> {

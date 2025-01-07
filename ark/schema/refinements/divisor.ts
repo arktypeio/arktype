@@ -63,7 +63,8 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 					)
 				})
-		}
+		},
+		obviatesBasisDescription: true
 	})
 
 export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {

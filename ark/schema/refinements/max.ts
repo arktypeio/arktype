@@ -65,7 +65,8 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 						ctx.$.node("unit", { unit: max.rule })
 					:	null
 				:	Disjoint.init("range", max, min)
-		}
+		},
+		obviatesBasisDescription: true
 	})
 
 export class MaxNode extends BaseRange<Max.Declaration> {

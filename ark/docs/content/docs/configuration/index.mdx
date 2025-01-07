@@ -54,7 +54,7 @@ console.log(formData.age)
 
 ### jitless
 
-By default, when a `Type` is instantiated, ArkType will precompile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudlflare Workers.
+By default, when a `Type` is instantiated, ArkType will precompile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
 
 If you'd like to opt out of it for another reason, you can set the `jitless` config option to `true`.
 

@@ -12,6 +12,6 @@ import { repoDirs } from "./shared.ts"
 //     "instantiations": 5066185
 // }
 
-const t = type({ name: "string" })
+const t = type("0 < number.integer <= 10")
 
-buildApi()
+t.description //?

@@ -87,6 +87,29 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	inferOut: distill.Out<t>
 
+	/**
+	 * The type of output that can be introspected at runtime (e.g. via {@link out})
+	 *
+	 * If your Type contains morphs, they will be inferred as `unknown` unless
+	 * they are an ArkType keyword or have an explicitly defined output validator.
+	 *
+	 * @example
+	 * const unmorphed = type("string")
+	 * // with no morphs, we can introspect the input and output as a single Type
+	 * type UnmorphedOut = typeof unmorphed.inferIntrospectableOut // string
+	 *
+	 * const morphed = type("string").pipe(s => s.length)
+	 * // with a standard user-defined morph, TypeScript can infer a
+	 * // return type from your function, but we have no way to
+	 * // know the shape at runtime
+	 * type MorphOut = typeof morphed.inferIntrospectableOut  // unknown
+	 *
+	 * const validated = type("string").pipe(s => s.length).to("number")
+	 * // morphs with validated output, including all morph keywords, are introspectable
+	 * type ValidatedMorphOut = typeof validated.inferIntrospectableOut
+	 *
+	 * @typeonly
+	 */
 	inferIntrospectableOut: distill.introspectable.Out<t>
 
 	/**
@@ -107,15 +130,18 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	json: JsonStructure
 
-	/** Alias of {@link json} for `JSON.stringify` compatibility */
+	/**
+	 * Alias of {@link json} for `JSON.stringify` compatibility
+	 */
 	toJSON(): JsonStructure
 
 	/**
 	 * Generate a JSON Schema
-	 * @throws {JsonSchema.UnjsonifiableError} if this is not convertible to JSON Schema
+	 * @throws {JsonSchema.UnjsonifiableError} if this cannot be converted to JSON Schema
 	 * @api Type
 	 */
 	toJsonSchema(): JsonSchema
+
 	/**
 	 * Metadata like custom descriptions and error messages
 	 *
@@ -126,12 +152,24 @@ interface Type<out t = unknown, $ = {}>
 
 	/**
 	 * An english description
+	 *
+	 * Well-suited for human-readable errors, especially on primitive Types
+	 *
+	 * @example
+	 * const loc = type("0 < number.integer <= 100")
+	 * console.log(loc.expression) // { coords: [number, number] }
+	 *
 	 * @api Type
 	 */
 	description: string
 
 	/**
 	 * A syntactic representation similar to native TypeScript
+	 *
+	 * @example
+	 * const loc = type({ coords: ["number", "number"] })
+	 * console.log(loc.expression) // { coords: [number, number] }
+	 *
 	 * @api Type
 	 */
 	expression: string
