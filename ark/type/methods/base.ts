@@ -54,11 +54,11 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * The generic parameter representing this Type
 	 *
-	 * ⚠️ This property is used to infer types and will be `undefined` at runtime.
-	 *
 	 * ⚠️ May contain types representing morphs or default values that would
 	 * be inaccurate if used directly for runtime values. In those cases,
 	 * you should use {@link infer} or {@link inferIn} on this object instead.
+	 *
+	 * @typelevel
 	 */
 	t: t
 
@@ -99,9 +99,8 @@ interface Type<out t = unknown, $ = {}>
 	assert(data: unknown): this["infer"]
 
 	/**
-	 * Check rrors.
-	 * @example
-	 * type.string.allo9) // false
+	 * Check errors.
+	 * @example type.string.allows(9) // false
 	 */
 	allows(data: unknown): data is this["inferIn"]
 

@@ -13,13 +13,13 @@ import ts from "typescript"
 import { repoDirs } from "./shared.ts"
 
 const inheritDocToken = "@inheritDoc"
-const typeLevelToken = "@typeLevel"
+const typeLevelToken = "@typelevel"
 const typeLevelMessage =
 	"⚠️ Inference-only property that will be `undefined` at runtime"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 
-let docgenCount = 0
+let updateCount = 0
 
 export const jsDocgen = () => {
 	const project = new Project()
@@ -43,7 +43,7 @@ export const jsDocgen = () => {
 	project.saveSync()
 
 	console.log(
-		`📚 Successfully generated ${docgenCount} JSDoc comments on your build output.`
+		`📚 Successfully updated ${updateCount} JSDoc comments on your build output.`
 	)
 }
 
@@ -90,6 +90,7 @@ const docgenForFile = (sourceFile: SourceFile) => {
 				// created from updatedContents
 				matchedJsdoc.remove()
 				parent.addJsDoc(text)
+				updateCount++
 			}
 		}
 	})
@@ -97,7 +98,7 @@ const docgenForFile = (sourceFile: SourceFile) => {
 	matchContexts.forEach(ctx => {
 		const inheritedDocs = findInheritedDocs(sourceFile, ctx)
 
-		let updatedContents = ""
+		let updatedContents = ctx.matchedJsdoc.getInnerText()
 
 		if (inheritedDocs)
 			updatedContents = `${inheritedDocs.originalSummary}\n${inheritedDocs.inheritedDescription}`
@@ -110,7 +111,6 @@ const docgenForFile = (sourceFile: SourceFile) => {
 		}
 
 		ctx.updateJsdoc(updatedContents)
-		docgenCount++
 	})
 }
 
