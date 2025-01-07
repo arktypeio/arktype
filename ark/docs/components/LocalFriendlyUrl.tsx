@@ -14,6 +14,7 @@ export const LocalFriendlyUrl = (props: LocalFriendlyUrlProps) => {
 	if (process.env.NODE_ENV === "development") {
 		useEffect(() => {
 			const devFriendlyUrl = new URL(props.url)
+			devFriendlyUrl.protocol = "http:"
 			devFriendlyUrl.host = window.location.host
 			setLocallyAccessibleUrl(devFriendlyUrl.toString())
 		}, [props.url])
