@@ -1,6 +1,8 @@
 // used to bootstrap build
+
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { flatMorph, includes, throwInternalError } from "../util/index.ts"
+
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { writeFile } from "../fs/index.ts"
 
@@ -63,34 +65,71 @@ const apiGroups = ["Type"] as const
 
 export type ApiGroup = (typeof apiGroups)[number]
 
+export type JsdocComment = ReturnType<JSDoc["getComment"]>
+
+export type JsdocCommentPart =
+	| string
+	| { kind: "reference"; to: string }
+	| { kind: "link"; text: string; url: string }
+
 export const buildApi = () => {
 	const project = createProject()
 	jsdocGen(project)
 	const docs = getAllJsDoc(project)
 
 	const apiDocsByGroup = flatMorph(docs, (i, doc) => {
-		const name = doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText()
+		const block = parseBlock(doc)
 
-		const group = doc
-			.getTags()
-			.find(t => t.getTagName() === "api")
-			?.getCommentText()
+		if (!block) return []
 
-		if (!group) return []
-
-		if (!includes(apiGroups, group)) {
-			throwInternalError(
-				`Invalid API group ${group} for name ${name}. Should be defined like @api Type`
-			)
-		}
-
-		return [{ group }, { name, description: doc.getCommentText() }]
+		return [{ group: block.group }, block]
 	})
 
 	writeFile(
 		join(repoDirs.docs, "components", "apiData.ts"),
 		`export const apiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)}`
 	)
+}
+
+type ParsedBlock = {
+	group: ApiGroup
+	name: string
+	parts: JsdocCommentPart[]
+}
+
+const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
+	const name = doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText()
+
+	if (!name) return
+
+	const group = doc
+		.getTags()
+		.find(t => t.getTagName() === "api")
+		?.getCommentText()
+
+	if (!group) return
+
+	if (!includes(apiGroups, group)) {
+		throwInternalError(
+			`Invalid API group ${group} for name ${name}. Should be defined like @api Type`
+		)
+	}
+
+	const comment = doc.getComment()
+
+	if (!comment) return
+
+	return {
+		group,
+		name,
+		parts:
+			typeof comment === "string" ?
+				[comment]
+			:	comment.flatMap(part => {
+					if (!part) return []
+					return part.getText()
+				})
+	}
 }
 
 export const getAllJsDoc = (project: Project) => {

@@ -2,7 +2,7 @@ import { attest } from "@ark/attest"
 import { flatMorph, groupBy } from "@ark/util"
 import { ark, type } from "arktype"
 import { SyntaxKind, type JSDocableNode } from "ts-morph"
-import { getAllJsDoc } from "./jsdocGen.ts"
+import { buildApi, getAllJsDoc } from "./jsdocGen.ts"
 import { repoDirs } from "./shared.ts"
 
 // type stats on attribute removal merge 12/18/2024
@@ -14,4 +14,4 @@ import { repoDirs } from "./shared.ts"
 
 const t = type({ name: "string" })
 
-console.log(repoDirs.root)
+buildApi()
