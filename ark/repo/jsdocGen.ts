@@ -3,7 +3,7 @@ import { existsSync } from "fs"
 import { join } from "path"
 import {
 	Project,
-	type Identifier,
+	SyntaxKind,
 	type JSDoc,
 	type JSDocableNode,
 	type Node,
@@ -20,19 +20,26 @@ const typeNoopToken = "@typenoop"
 const typeNoopMessage = "🥸 Inference-only function that does nothing runtime"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
+const jsdocSourcesGlob = `${arkTypeBuildDir}/**/*.d.ts`
 
 let updateCount = 0
 
-export const jsDocgen = () => {
+const createProject = () => {
 	const project = new Project()
 
 	if (!existsSync(arkTypeBuildDir)) {
 		throw new Error(
-			`jsDocgen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
+			`jsdocGen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
 		)
 	}
 
-	project.addSourceFilesAtPaths(`${arkTypeBuildDir}/**/*.d.ts`)
+	project.addSourceFilesAtPaths(jsdocSourcesGlob)
+
+	return project
+}
+
+export const jsdocGen = () => {
+	const project = createProject()
 
 	const sourceFiles = project.getSourceFiles()
 
@@ -49,6 +56,16 @@ export const jsDocgen = () => {
 	)
 }
 
+export const getAllJsdoc = () => {
+	const project = createProject()
+
+	const sourceFiles = project.getSourceFiles()
+
+	return sourceFiles.flatMap(file =>
+		file.getDescendantsOfKind(SyntaxKind.JSDoc)
+	)
+}
+
 type MatchContext = {
 	matchedJsdoc: JSDoc
 	updateJsdoc: (text: string) => void
@@ -58,24 +75,10 @@ type MatchContext = {
 const docgenForFile = (sourceFile: SourceFile) => {
 	const path = sourceFile.getFilePath()
 
-	const identifiers = sourceFile
-		.getDescendants()
-		.filter(
-			(node): node is Identifier =>
-				!!node.asKind(ts.SyntaxKind.Identifier)?.getLeadingCommentRanges()
-					.length
-		)
+	const jsdocNodes = sourceFile.getDescendantsOfKind(SyntaxKind.JSDoc)
 
-	const matchContexts: MatchContext[] = identifiers.flatMap(identifier => {
-		const parent = identifier.getParent()
-
-		if (!canHaveJsDoc(parent)) return []
-
-		const matchedJsdoc = parent.getJsDocs()[0]
-
-		if (!matchedJsdoc) return []
-
-		const text = matchedJsdoc.getText()
+	const matchContexts: MatchContext[] = jsdocNodes.flatMap(jsdoc => {
+		const text = jsdoc.getText()
 
 		const inheritDocsSource = extractInheritDocName(path, text)
 
@@ -87,13 +90,16 @@ const docgenForFile = (sourceFile: SourceFile) => {
 			return []
 
 		return {
-			matchedJsdoc,
+			matchedJsdoc: jsdoc,
 			inheritDocsSource,
 			updateJsdoc: text => {
+				const parent = jsdoc.getParent() as JSDocableNode
+
 				// replace the original JSDoc node in the AST with a new one
 				// created from updatedContents
-				matchedJsdoc.remove()
+				jsdoc.remove()
 				parent.addJsDoc(text)
+
 				updateCount++
 			}
 		}
@@ -190,5 +196,5 @@ const throwJsDocgenParseError = (
 	message: string
 ): never =>
 	throwParseError(
-		`jsDocgen ParseError in ${path}: ${message}\nComment text: ${commentText}`
+		`jsdocGen ParseError in ${path}: ${message}\nComment text: ${commentText}`
 	)

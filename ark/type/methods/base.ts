@@ -58,7 +58,9 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	t: t
 
-	/** The {@link Scope} in which definitions for this Type its chained methods are parsed */
+	/**
+	 * The {@link Scope} in which definitions for this Type its chained methods are parsed
+	 */
 	$: Scope<$>
 
 	/**

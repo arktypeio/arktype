@@ -14,25 +14,13 @@ writeSnippetsEntrypoint()
 const config = {
 	reactStrictMode: true,
 	cleanDistDir: true,
-	serverExternalPackages: ["twoslash", "typescript"],
+	serverExternalPackages: ["twoslash", "typescript", "ts-morph"],
 	// the following properties are required by nextjs-github-pages:
 	// https://github.com/gregrickaby/nextjs-github-pages
 	output: "export",
 	images: {
 		unoptimized: true
 	}
-	// redirects: async () => [
-	// 	{
-	// 		source: "/docs",
-	// 		destination: "/docs/intro/setup",
-	// 		permanent: true
-	// 	},
-	// 	{
-	// 		source: "/docs/intro",
-	// 		destination: "/docs/intro/setup",
-	// 		permanent: true
-	// 	}
-	// ]
 } as const satisfies NextConfig
 
 const mdxConfig = createMDX()(config)

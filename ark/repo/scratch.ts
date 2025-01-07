@@ -1,7 +1,8 @@
 import { attest } from "@ark/attest"
-import { flatMorph } from "@ark/util"
+import { flatMorph, groupBy } from "@ark/util"
 import { ark, type } from "arktype"
-import { jsDocgen } from "./jsDocgen.ts"
+import { SyntaxKind, type JSDocableNode } from "ts-morph"
+import { getAllJsdoc } from "./jsdocGen.ts"
 
 // type stats on attribute removal merge 12/18/2024
 // {
@@ -12,4 +13,21 @@ import { jsDocgen } from "./jsDocgen.ts"
 
 const t = type({ name: "string" })
 
-// jsDocgen()
+const docs = getAllJsdoc()
+
+const jsdocsByName = flatMorph(docs, (i, doc) => {
+	const apiGroup = doc
+		.getTags()
+		.find(t => t.getTagName() === "api")
+		?.getCommentText()
+
+	if (!apiGroup) return []
+
+	return [{ group: apiGroup }, doc.getCommentText()]
+})
+
+const result = flatMorph({ a: true, b: false, c: 0, d: 1 }, (k, v) =>
+	typeof v === "boolean" ?
+		([{ group: "bools" }, v] as const)
+	:	([{ group: "nums" }, v] as const)
+)
