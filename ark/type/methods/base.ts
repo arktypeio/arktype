@@ -211,8 +211,43 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
+	/**
+	 * Clone and add metadata to shallow references
+	 *
+	 * Does not affect error messages within properties of an object
+	 * Overlapping keys on existing meta will be overwritten
+	 *
+	 * @example
+	 * const notOdd = type("number % 2").configure({ description: "not odd" })
+	 * // all constraints at the root are affected
+	 * const odd = notOdd(3) // must be not odd (was 3)
+	 * const nonNumber = notOdd("two") // must be not odd (was "two")
+	 *
+	 * const notOddBox = type({
+	 *    // we should have referenced notOdd or added meta here
+	 *    notOdd: "number % 2",
+	 * // but instead chained from the root object
+	 * }).configure({ description: "not odd" })
+	 * // error message at path notOdd is not affected
+	 * const odd = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
+	 * // error message at root is affected, leading to a misleading description
+	 * const nonObject = notOddBox(null) // must be not odd (was null)
+	 */
 	configure(meta: MetaSchema): this
 
+	/**
+	 * Clone and add the description to shallow references (equivalent to `.configure({ description })`)
+	 *
+	 * Does not affect error messages within properties of an object
+	 * @see {@link configure} for usage notes
+	 *
+	 * @example
+	 * const aToZ = type(/^a.*z$/).describe("a string like 'a...z'")
+	 * const good = aToZ("alcatraz") // "alcatraz"
+	 * // notice how our description is integrated with other parts of the message
+	 * const badPattern = aToZ("albatross") // must be a string like 'a...z' (was "albatross")
+	 * const nonString = aToZ(123) // must be a string like 'a...z' (was 123)
+	 */
 	describe(description: string): this
 
 	/**
