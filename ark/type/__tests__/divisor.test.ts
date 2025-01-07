@@ -33,6 +33,12 @@ contextualize(() => {
 			)
 		})
 
+		it("docs example", () => {
+			const n = type("0 < number <= 100")
+
+			attest(n.description).snap("positive and at most 100")
+		})
+
 		it("allows non-narrowed divisor", () => {
 			const d = 5 as number
 			attest<number>(type(`number%${d}`).infer)

@@ -156,8 +156,8 @@ interface Type<out t = unknown, $ = {}>
 	 * Well-suited for human-readable errors, especially on primitive Types
 	 *
 	 * @example
-	 * const loc = type("0 < number.integer <= 100")
-	 * console.log(loc.expression) // { coords: [number, number] }
+	 * const n = type("0 < number <= 100")
+	 * console.log(n.description) // positive and at most 100
 	 *
 	 * @api Type
 	 */

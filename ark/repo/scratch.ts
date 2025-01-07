@@ -12,6 +12,7 @@ import { repoDirs } from "./shared.ts"
 //     "instantiations": 5066185
 // }
 
-const t = type("0 < number.integer <= 10")
+const t = type("(number % 2) > 0")
 
 t.description //?
+// an integer and more than 0 and at most 10

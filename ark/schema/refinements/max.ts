@@ -54,8 +54,10 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
-			description: node =>
-				`${node.exclusive ? "less than" : "at most"} ${node.rule}`
+			description: node => {
+				if (node.rule === 0) return node.exclusive ? "negative" : "non-positive"
+				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
+			}
 		},
 		intersections: {
 			max: (l, r) => (l.isStricterThan(r) ? l : r),
