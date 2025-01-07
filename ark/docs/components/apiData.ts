@@ -6,7 +6,7 @@ export const apiDocsByGroup = {
             "parts": [
                 {
                     "kind": "text",
-                    "text": "/**\n     * The "
+                    "text": "The "
                 },
                 {
                     "kind": "reference",
@@ -14,7 +14,7 @@ export const apiDocsByGroup = {
                 },
                 {
                     "kind": "text",
-                    "text": "in which definitions for this Type its chained methods are parsed\n     * "
+                    "text": " in which definitions for this Type its chained methods are parsed"
                 }
             ]
         },

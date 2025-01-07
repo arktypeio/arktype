@@ -8,6 +8,13 @@ import { flatMorph, throwInternalError } from "@ark/util"
 import { join } from "node:path"
 import type { PackageJson } from "type-fest"
 
+// allow other utils invoked from build to bootstrap utils
+
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+export * as bootstrapFs from "../fs/index.ts"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+export * as bootstrapUtil from "../util/index.ts"
+
 const root = findPackageAncestors().find(
 	dir => readPackageJson(dir).name === "ark"
 )

@@ -1,14 +1,3 @@
-// used to bootstrap build
-
-import {
-	flatMorph,
-	includes,
-	throwInternalError,
-	type array
-} from "../util/index.ts"
-
-import { writeFile } from "../fs/index.ts"
-
 import { existsSync } from "fs"
 import { join } from "path"
 import {
@@ -20,7 +9,10 @@ import {
 	type SourceFile
 } from "ts-morph"
 import ts from "typescript"
-import { repoDirs } from "./shared.ts"
+import { bootstrapFs, bootstrapUtil, repoDirs } from "./shared.ts"
+
+const { flatMorph, includes, throwInternalError } = bootstrapUtil
+const { writeFile } = bootstrapFs
 
 const inheritDocToken = "@inheritDoc"
 const typeOnlyToken = "@typeonly"
@@ -70,7 +62,7 @@ export type ApiGroup = (typeof apiGroups)[number]
 
 export type JsdocComment = ReturnType<JSDoc["getComment"]>
 
-export type JsdocPart = Extract<JsdocComment, array>[number] & {}
+export type JsdocPart = Extract<JsdocComment, readonly unknown[]>[number] & {}
 
 export type ParsedJsdocPart =
 	| { kind: "text"; text: string }
@@ -115,7 +107,7 @@ const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
 	if (!group) return
 
 	if (!includes(apiGroups, group)) {
-		throwInternalError(
+		return throwInternalError(
 			`Invalid API group ${group} for name ${name}. Should be defined like @api Type`
 		)
 	}
@@ -142,7 +134,8 @@ const parseJsdocPart = (part: JsdocPart): ParsedJsdocPart => {
 		case "JSDocText":
 			return {
 				kind: "text",
-				text: part.getText()
+				// using part.getText() here seems to include comment syntax
+				text: part.compilerNode.text
 			}
 		case "JSDocLink":
 			return {
@@ -150,7 +143,7 @@ const parseJsdocPart = (part: JsdocPart): ParsedJsdocPart => {
 				to: part.getFirstChildByKindOrThrow(SyntaxKind.Identifier).getText()
 			}
 		default:
-			throwInternalError(
+			return throwInternalError(
 				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
 			)
 	}
