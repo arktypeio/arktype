@@ -1,40 +1,69 @@
 export const apiDocsByGroup = {
     "Type": [
         {
+            "group": "Type",
             "name": "$",
-            "description": "The {@link Scope} in which definitions for this Type its chained methods are parsed"
+            "parts": [
+                "/**\n     * The ",
+                "{@link Scope}",
+                "in which definitions for this Type its chained methods are parsed\n     * "
+            ]
         },
         {
+            "group": "Type",
             "name": "infer",
-            "description": "The type of data this returns"
+            "parts": [
+                "The type of data this returns"
+            ]
         },
         {
+            "group": "Type",
             "name": "inferIn",
-            "description": "The type of data this expects"
+            "parts": [
+                "The type of data this expects"
+            ]
         },
         {
+            "group": "Type",
             "name": "json",
-            "description": "The internal JSON representation"
+            "parts": [
+                "The internal JSON representation"
+            ]
         },
         {
+            "group": "Type",
             "name": "toJsonSchema",
-            "description": "Generate a JSON Schema"
+            "parts": [
+                "Generate a JSON Schema"
+            ]
         },
         {
+            "group": "Type",
             "name": "meta",
-            "description": "Metadata like custom descriptions and error messages\n\nThe type of this property [can be extended](https://arktype.io/docs/configuration#custom) by your project."
+            "parts": [
+                "Metadata like custom descriptions and error messages\n\nThe type of this property [can be extended](https://arktype.io/docs/configuration#custom) by your project."
+            ]
         },
         {
+            "group": "Type",
             "name": "description",
-            "description": "An english description"
+            "parts": [
+                "An english description"
+            ]
         },
         {
+            "group": "Type",
             "name": "expression",
-            "description": "A syntactic representation similar to native TypeScript"
+            "parts": [
+                "A syntactic representation similar to native TypeScript"
+            ]
         },
         {
+            "group": "Type",
             "name": "assert",
-            "description": "Attempt to apply validation and morph logic, either returning valid output or throwing."
+            "parts": [
+                "Attempt to apply validation and morph logic, either returning valid output or throwing."
+            ]
         }
     ]
 }

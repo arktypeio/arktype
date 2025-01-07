@@ -7,10 +7,10 @@ export type ApiTableProps = {
 }
 
 export const ApiTable = ({ group }: ApiTableProps) => {
-	const rows = apiDocsByGroup[group].map(({ name, description }) => (
+	const rows = apiDocsByGroup[group].map(({ name, parts }) => (
 		<tr key={name}>
 			<td>{name}</td>
-			<td>{description}</td>
+			<td>{parts.join("")}</td>
 		</tr>
 	))
 
