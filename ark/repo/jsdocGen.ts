@@ -1,9 +1,12 @@
 // used to bootstrap build
 
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { flatMorph, includes, throwInternalError } from "../util/index.ts"
+import {
+	flatMorph,
+	includes,
+	throwInternalError,
+	type array
+} from "../util/index.ts"
 
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { writeFile } from "../fs/index.ts"
 
 import { existsSync } from "fs"
@@ -67,8 +70,10 @@ export type ApiGroup = (typeof apiGroups)[number]
 
 export type JsdocComment = ReturnType<JSDoc["getComment"]>
 
-export type JsdocCommentPart =
-	| string
+export type JsdocPart = Extract<JsdocComment, array>[number] & {}
+
+export type ParsedJsdocPart =
+	| { kind: "text"; text: string }
 	| { kind: "reference"; to: string }
 	| { kind: "link"; text: string; url: string }
 
@@ -94,7 +99,7 @@ export const buildApi = () => {
 type ParsedBlock = {
 	group: ApiGroup
 	name: string
-	parts: JsdocCommentPart[]
+	parts: ParsedJsdocPart[]
 }
 
 const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
@@ -115,20 +120,39 @@ const parseBlock = (doc: JSDoc): ParsedBlock | undefined => {
 		)
 	}
 
-	const comment = doc.getComment()
+	const rawParts = doc.getComment()
 
-	if (!comment) return
+	if (!rawParts) return
+
+	let parts: ParsedJsdocPart[]
+
+	if (typeof rawParts === "string") parts = [{ kind: "text", text: rawParts }]
+	// remove any undefined parts before parsing
+	else parts = rawParts.filter(part => !!part).map(parseJsdocPart)
 
 	return {
 		group,
 		name,
-		parts:
-			typeof comment === "string" ?
-				[comment]
-			:	comment.flatMap(part => {
-					if (!part) return []
-					return part.getText()
-				})
+		parts
+	}
+}
+
+const parseJsdocPart = (part: JsdocPart): ParsedJsdocPart => {
+	switch (part.getKindName()) {
+		case "JSDocText":
+			return {
+				kind: "text",
+				text: part.getText()
+			}
+		case "JSDocLink":
+			return {
+				kind: "reference",
+				to: part.getFirstChildByKindOrThrow(SyntaxKind.Identifier).getText()
+			}
+		default:
+			throwInternalError(
+				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
+			)
 	}
 }
 
