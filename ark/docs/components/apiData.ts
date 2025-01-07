@@ -85,7 +85,8 @@ export const apiDocsByGroup = {
 			parts: [
 				{
 					kind: "text",
-					value: "An english description"
+					value:
+						"An English description\n\nBest suited for...\n\t   audience - English speakers\n    data - primitives"
 				}
 			]
 		},
@@ -95,7 +96,8 @@ export const apiDocsByGroup = {
 			parts: [
 				{
 					kind: "text",
-					value: "A syntactic representation similar to native TypeScript"
+					value:
+						"A syntactic representation similar to native TypeScript\n\nBest suited for...\n\t   audience - other developers\n    data - primitives or structures"
 				}
 			]
 		},
@@ -106,7 +108,48 @@ export const apiDocsByGroup = {
 				{
 					kind: "text",
 					value:
-						"Attempt to apply validation and morph logic, either returning valid output or throwing."
+						"Validate and morph data, throwing a descriptive AggregateError if it fails\n\nUseful to avoid needing to check for "
+				},
+				{
+					kind: "reference",
+					value: "type.errors"
+				},
+				{
+					kind: "text",
+					value: " if it would be unrecoverable"
+				}
+			]
+		},
+		{
+			group: "Type",
+			name: "allows",
+			parts: [
+				{
+					kind: "text",
+					value:
+						"Validate input data without applying morphs\n\nHighly optimized and best for cases where you need to know if data\nsatisifes a Type's input without needing specific errors on rejection."
+				}
+			]
+		},
+		{
+			group: "Type",
+			name: "configure",
+			parts: [
+				{
+					kind: "text",
+					value:
+						"Clone and add metadata to shallow references\n\nDoes not affect error messages within properties of an object\nOverlapping keys on existing meta will be overwritten"
+				}
+			]
+		},
+		{
+			group: "Type",
+			name: "describe",
+			parts: [
+				{
+					kind: "text",
+					value:
+						"Clone and add the description to shallow references (equivalent to `.configure({ description })`)\n\nDoes not affect error messages within properties of an object"
 				}
 			]
 		}

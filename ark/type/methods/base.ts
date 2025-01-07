@@ -183,7 +183,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Validate and morph data, throwing a descriptive AggregateError if it fails
 	 *
-	 * Useful to avoid needing to check for {@link type.errrors} if it would be unrecoverable
+	 * Useful to avoid needing to check for {@link type.errors} if it would be unrecoverable
 	 *
 	 * @example
 	 * const criticalPayload = type({
@@ -208,6 +208,8 @@ interface Type<out t = unknown, $ = {}>
 	 * const numeric = type("number | bigint")
 	 * // [0, 2n]
 	 * const numerics = [0, "one", 2n].filter(numeric.allows)
+	 *
+	 * @api Type
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
@@ -232,6 +234,8 @@ interface Type<out t = unknown, $ = {}>
 	 * const odd = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
+	 *
+	 * @api Type
 	 */
 	configure(meta: MetaSchema): this
 
@@ -247,6 +251,8 @@ interface Type<out t = unknown, $ = {}>
 	 * // notice how our description is integrated with other parts of the message
 	 * const badPattern = aToZ("albatross") // must be a string like 'a...z' (was "albatross")
 	 * const nonString = aToZ(123) // must be a string like 'a...z' (was 123)
+	 *
+	 * @api Type
 	 */
 	describe(description: string): this
 
@@ -254,6 +260,7 @@ interface Type<out t = unknown, $ = {}>
 	 * Clone to a new Type with the specified undeclared key behavior.
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
+	 * @api Type
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
@@ -261,6 +268,7 @@ interface Type<out t = unknown, $ = {}>
 	 * Deeply clone to a new Type with the specified undeclared key behavior.
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
+	 * @api Type
 	 **/
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 

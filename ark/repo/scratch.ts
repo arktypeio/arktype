@@ -1,9 +1,5 @@
-import { attest } from "@ark/attest"
-import { flatMorph, groupBy } from "@ark/util"
-import { ark, type } from "arktype"
-import { SyntaxKind, type JSDocableNode } from "ts-morph"
-import { buildApi, getAllJsDoc } from "./jsdocGen.ts"
-import { repoDirs } from "./shared.ts"
+import { type } from "arktype"
+import { buildApi, jsdocGen } from "./jsdocGen.ts"
 
 // type stats on attribute removal merge 12/18/2024
 // {
@@ -13,6 +9,8 @@ import { repoDirs } from "./shared.ts"
 // }
 
 const t = type("(number % 2) > 0")
+
+buildApi()
 
 t.description //?
 // an integer and more than 0 and at most 10

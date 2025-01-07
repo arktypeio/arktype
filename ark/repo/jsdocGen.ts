@@ -155,13 +155,24 @@ const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
 				}
 			}
 
-			const identifier = part
-				.getFirstChildByKindOrThrow(SyntaxKind.Identifier)
-				.getText()
+			const referencedName = part
+				.getChildren()
+				.find(
+					child =>
+						child.isKind(SyntaxKind.Identifier) ||
+						child.isKind(SyntaxKind.QualifiedName)
+				)
+				?.getText()
+
+			if (!referencedName) {
+				return throwInternalError(
+					`Unable to parse referenced name from ${part.getText()}`
+				)
+			}
 
 			return {
 				kind: "reference",
-				value: identifier
+				value: referencedName
 			}
 		default:
 			return throwInternalError(
