@@ -10,33 +10,50 @@ export type ApiTableProps = {
 	rows: JSX.Element[]
 }
 
-export const ApiTable = ({ group }: ApiTableProps) => {
-	const rows = apiDocsByGroup[group].map(({ name, body, example }) => (
-		<tr key={name}>
-			<td>{name}</td>
-			<td>{JsDocParts(body)}</td>
-			<td>
-				{example ?
-					<CodeBlock decorators={["@noErrors"]}>{example}</CodeBlock>
-				:	null}
-			</td>
+export const ApiTable = ({ group }: ApiTableProps) => (
+	<>
+		<h2>{group}</h2>
+		<table className="w-full border-collapse">
+			<ApiTableHeader />
+			<tbody>
+				{apiDocsByGroup[group].map(props => (
+					<ApiTableRow key={props.name} {...props} />
+				))}
+			</tbody>
+		</table>
+	</>
+)
+
+const ApiTableHeader = () => (
+	<thead>
+		<tr>
+			<th className="p-2 text-left align-top whitespace-nowrap w-auto min-w-[100px]">
+				Name
+			</th>
+			<th className="w-1/4 p-2 text-left align-top min-w-[200px]">Summary</th>
+			<th className="w-full p-2 text-left align-top">Example</th>
 		</tr>
-	))
+	</thead>
+)
+
+interface ApiTableRowProps {
+	name: string
+	summary: ParsedJsDocPart[]
+	example?: string
+}
+
+const ApiTableRow = ({ name, summary, example }: ApiTableRowProps) => {
+	const lines = example?.split("\n").length ?? 0
+	const isShort = lines <= 3
 
 	return (
-		<>
-			<h2>{group}</h2>
-			<table>
-				<thead>
-					<tr>
-						<th className="font-bold">Alias</th>
-						<th className="font-bold">Description</th>
-						<th className="font-bold">Example</th>
-					</tr>
-				</thead>
-				<tbody>{...rows}</tbody>
-			</table>
-		</>
+		<tr key={name}>
+			<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
+			<td className="w-1/4 p-2 align-top">{JsDocParts(summary)}</td>
+			<td className="w-full p-2 align-top">
+				<ApiExample example={example} isShort={isShort} />
+			</td>
+		</tr>
 	)
 }
 
@@ -74,3 +91,23 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 				)
 		}
 	})
+
+interface ApiExampleProps {
+	example: string
+	isShort: boolean
+}
+
+const ApiExample = ({ example, isShort }: ApiExampleProps) => {
+	if (!example) return null
+
+	return isShort ?
+			<CodeBlock style={{ margin: 0 }} decorators={["@noErrors"]}>
+				{example}
+			</CodeBlock>
+		:	<details>
+				<summary>View Example</summary>
+				<CodeBlock style={{ margin: 0 }} decorators={["@noErrors"]}>
+					{example}
+				</CodeBlock>
+			</details>
+}

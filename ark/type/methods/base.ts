@@ -151,9 +151,10 @@ interface Type<out t = unknown, $ = {}>
 	meta: ArkAmbient.meta
 
 	/**
-	 * An English description
+	 * @summary An English description
 	 *
-	 * Best suited for...
+	 *
+	 * @description Best suited for...
 	 * 	   audience - English speakers
 	 *     data - primitives
 	 *

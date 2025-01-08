@@ -5,7 +5,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "$",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "The "
@@ -23,7 +23,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "infer",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "The type of data this returns"
@@ -34,7 +34,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "inferIn",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "The type of data this expects"
@@ -45,7 +45,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "json",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "The internal JSON representation"
@@ -55,7 +55,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "toJsonSchema",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "Generate a JSON Schema"
@@ -65,7 +65,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "meta",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "Metadata like custom descriptions and error messages\n\nThe type of this property "
@@ -84,10 +84,10 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "description",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
-                    "value": "An English description\n\nBest suited for...\n\t   audience - English speakers\n    data - primitives"
+                    "value": "An English description"
                 }
             ],
             "example": "const n = type(\"0 < number <= 100\")\nconsole.log(n.description) // positive and at most 100"
@@ -95,7 +95,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "expression",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "A syntactic representation similar to native TypeScript\n\nBest suited for...\n\t   audience - other developers\n    data - primitives or structures"
@@ -106,7 +106,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "assert",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "Validate and morph data, throwing a descriptive AggregateError if it fails\n\nUseful to avoid needing to check for "
@@ -125,7 +125,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "allows",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "Validate input data without applying morphs\n\nHighly optimized and best for cases where you need to know if data\nsatisifes a Type's input without needing specific errors on rejection."
@@ -136,7 +136,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "configure",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "Clone and add metadata to shallow references\n\nDoes not affect error messages within properties of an object\nOverlapping keys on existing meta will be overwritten"
@@ -147,7 +147,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         {
             "group": "Type",
             "name": "describe",
-            "body": [
+            "summary": [
                 {
                     "kind": "text",
                     "value": "Clone and add the description to shallow references (equivalent to `.configure({ description })`)\n\nDoes not affect error messages within properties of an object"

@@ -99,7 +99,8 @@ export type ApiDocsByGroup = {
 export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
-	body: ParsedJsDocPart[]
+	summary: ParsedJsDocPart[]
+	description?: ParsedJsDocPart[]
 	example?: string
 }
 
@@ -133,18 +134,23 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 		)
 	}
 
-	const rawParts = doc.getComment()
+	const summary =
+		tags.find(t => t.getTagName() === "summary")?.getComment() ??
+		doc.getComment()
 
-	if (!rawParts) return
+	if (!summary) {
+		return throwInternalError(
+			`Expected @summary or root description for ${group}/${name}`
+		)
+	}
 
 	const result: ParsedJsDocBlock = {
 		group,
 		name,
-		body: parseJsdocComment(rawParts)
+		summary: parseJsdocComment(summary)
 	}
 
 	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
-
 	if (example) result.example = example
 
 	return result
