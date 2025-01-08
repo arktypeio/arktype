@@ -1,4 +1,3 @@
-import { throwInternalError } from "@ark/util"
 import type { JSX } from "react"
 import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
