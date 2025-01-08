@@ -143,9 +143,9 @@ interface Type<out t = unknown, $ = {}>
 	toJsonSchema(): JsonSchema
 
 	/**
-	 * Metadata like custom descriptions and error messages
+	 * @summary Metadata like custom descriptions and error messages
 	 *
-	 * The type of this property {@link https://arktype.io/docs/configuration#custom | can be extended} by your project.
+	 * @description The type of this property {@link https://arktype.io/docs/configuration#custom | can be extended} by your project.
 	 * @api Type
 	 */
 	meta: ArkAmbient.meta
@@ -153,10 +153,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * @summary An English description
 	 *
-	 *
-	 * @description Best suited for...
-	 * 	   audience - English speakers
-	 *     data - primitives
+	 * @description Best suited for representing __primitives__ to __any English speaker__.
 	 *
 	 * @example
 	 * const n = type("0 < number <= 100")
@@ -167,11 +164,9 @@ interface Type<out t = unknown, $ = {}>
 	description: string
 
 	/**
-	 * A syntactic representation similar to native TypeScript
+	 * @summary A syntactic representation similar to native TypeScript
 	 *
-	 * Best suited for...
-	 * 	   audience - other developers
-	 *     data - primitives or structures
+	 * @description Best suited for representing __primitives or structures__ to __other developers__.
 	 *
 	 * @example
 	 * const loc = type({ coords: ["number", "number"] })

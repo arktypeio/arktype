@@ -12,7 +12,7 @@ import ts from "typescript"
 import { bootstrapFs, bootstrapUtil, repoDirs } from "./shared.ts"
 
 const { flatMorph, includes, throwInternalError } = bootstrapUtil
-const { writeFile } = bootstrapFs
+const { writeFile, shell } = bootstrapFs
 
 const inheritDocToken = "@inheritDoc"
 const typeOnlyToken = "@typeonly"
@@ -39,12 +39,16 @@ export const buildApi = () => {
 		return [{ group: block.group }, block]
 	})
 
+	const apiDataPath = join(repoDirs.docs, "components", "apiData.ts")
+
 	writeFile(
-		join(repoDirs.docs, "components", "apiData.ts"),
+		apiDataPath,
 		`import type { ApiDocsByGroup } from "../../repo/jsdocGen.ts"
 
 export const apiDocsByGroup: ApiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)}`
 	)
+
+	shell(`prettier --write ${apiDataPath}`)
 }
 
 export const jsdocGen = (project: Project) => {
@@ -134,9 +138,10 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 		)
 	}
 
+	const rootComment = doc.getComment()
+
 	const summary =
-		tags.find(t => t.getTagName() === "summary")?.getComment() ??
-		doc.getComment()
+		tags.find(t => t.getTagName() === "summary")?.getComment() ?? rootComment
 
 	if (!summary) {
 		return throwInternalError(
@@ -149,6 +154,13 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 		name,
 		summary: parseJsdocComment(summary)
 	}
+
+	const description =
+		tags.find(t => t.getTagName() === "description")?.getComment() ??
+		// if @description is not explicitly defined and @summary is,
+		// treat root comment as description
+		(summary === rootComment ? undefined : rootComment)
+	if (description) result.description = parseJsdocComment(description)
 
 	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
 	if (example) result.example = example

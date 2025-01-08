@@ -47,13 +47,20 @@ interface ApiTableRowProps {
 	name: string
 	summary: ParsedJsDocPart[]
 	example?: string
+	description?: ParsedJsDocPart[]
 }
 
-const ApiTableRow = ({ name, summary, example }: ApiTableRowProps) => (
+const ApiTableRow = ({
+	name,
+	summary,
+	example,
+	description
+}: ApiTableRowProps) => (
 	<tr key={name}>
 		<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
 		<td className="p-2 align-top">{JsDocParts(summary)}</td>
 		<td className="p-2 align-top">
+			{description && JsDocParts(description)}
 			<ApiExample>{example}</ApiExample>
 		</td>
 	</tr>
@@ -62,12 +69,18 @@ const ApiTableRow = ({ name, summary, example }: ApiTableRowProps) => (
 const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 	parts.map((part, i) => {
 		switch (part.kind) {
-			case "text":
+			case "text": {
+				const replaced = part.value
+					.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
+					.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
 				return (
-					<p style={{ display: "inline" }} key={i}>
-						{part.value}
-					</p>
+					<p
+						style={{ display: "inline" }}
+						key={i}
+						dangerouslySetInnerHTML={{ __html: replaced }}
+					/>
 				)
+			}
 			case "link":
 				return (
 					<LocalFriendlyUrl url={part.url} key={i}>
@@ -100,10 +113,7 @@ interface ApiExampleProps {
 
 const ApiExample = ({ children }: ApiExampleProps) =>
 	children && (
-		<CodeBlock
-			style={{ margin: 0, overflow: "scroll" }}
-			decorators={["@noErrors"]}
-		>
+		<CodeBlock style={{ margin: 0 }} decorators={["@noErrors"]}>
 			{children}
 		</CodeBlock>
 	)
