@@ -118,6 +118,8 @@ const _serialize = (
 			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
+		case "string":
+			return (data as string).replaceAll("\\", "\\\\")
 		default:
 			return data
 	}
