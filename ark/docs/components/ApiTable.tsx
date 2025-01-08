@@ -13,14 +13,21 @@ export type ApiTableProps = {
 export const ApiTable = ({ group }: ApiTableProps) => (
 	<>
 		<h2>{group}</h2>
-		<table className="w-full border-collapse">
-			<ApiTableHeader />
-			<tbody>
-				{apiDocsByGroup[group].map(props => (
-					<ApiTableRow key={props.name} {...props} />
-				))}
-			</tbody>
-		</table>
+		<div className="w-full overflow-x-auto">
+			<table className="w-full table-fixed border-collapse">
+				<colgroup>
+					<col className="w-28" />
+					<col className="w-1/4" />
+					<col className="w-full" />
+				</colgroup>
+				<ApiTableHeader />
+				<tbody>
+					{apiDocsByGroup[group].map(props => (
+						<ApiTableRow key={props.name} {...props} />
+					))}
+				</tbody>
+			</table>
+		</div>
 	</>
 )
 
@@ -30,8 +37,8 @@ const ApiTableHeader = () => (
 			<th className="p-2 text-left align-top whitespace-nowrap w-auto min-w-[100px]">
 				Name
 			</th>
-			<th className="w-1/4 p-2 text-left align-top min-w-[200px]">Summary</th>
-			<th className="w-full p-2 text-left align-top">Example</th>
+			<th className="p-2 text-left align-top min-w-[200px]">Summary</th>
+			<th className="p-2 text-left align-top">Example</th>
 		</tr>
 	</thead>
 )
@@ -42,20 +49,15 @@ interface ApiTableRowProps {
 	example?: string
 }
 
-const ApiTableRow = ({ name, summary, example }: ApiTableRowProps) => {
-	const lines = example?.split("\n").length ?? 0
-	const isShort = lines <= 3
-
-	return (
-		<tr key={name}>
-			<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
-			<td className="w-1/4 p-2 align-top">{JsDocParts(summary)}</td>
-			<td className="w-full p-2 align-top">
-				<ApiExample example={example} isShort={isShort} />
-			</td>
-		</tr>
-	)
-}
+const ApiTableRow = ({ name, summary, example }: ApiTableRowProps) => (
+	<tr key={name}>
+		<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
+		<td className="p-2 align-top">{JsDocParts(summary)}</td>
+		<td className="p-2 align-top">
+			<ApiExample>{example}</ApiExample>
+		</td>
+	</tr>
+)
 
 const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 	parts.map((part, i) => {
@@ -93,21 +95,15 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 	})
 
 interface ApiExampleProps {
-	example: string
-	isShort: boolean
+	children: string | undefined
 }
 
-const ApiExample = ({ example, isShort }: ApiExampleProps) => {
-	if (!example) return null
-
-	return isShort ?
-			<CodeBlock style={{ margin: 0 }} decorators={["@noErrors"]}>
-				{example}
-			</CodeBlock>
-		:	<details>
-				<summary>View Example</summary>
-				<CodeBlock style={{ margin: 0 }} decorators={["@noErrors"]}>
-					{example}
-				</CodeBlock>
-			</details>
-}
+const ApiExample = ({ children }: ApiExampleProps) =>
+	children && (
+		<CodeBlock
+			style={{ margin: 0, overflow: "scroll" }}
+			decorators={["@noErrors"]}
+		>
+			{children}
+		</CodeBlock>
+	)
