@@ -47,65 +47,49 @@ interface ApiTableRowProps {
 	name: string
 	summary: ParsedJsDocPart[]
 	example?: string
-	description?: ParsedJsDocPart[]
+	notes: ParsedJsDocPart[][]
 }
 
-const ApiTableRow = ({
-	name,
-	summary,
-	example,
-	description
-}: ApiTableRowProps) => (
+const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
 	<tr key={name}>
 		<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
 		<td className="p-2 align-top">{JsDocParts(summary)}</td>
 		<td className="p-2 align-top">
-			{description && JsDocParts(description)}
+			{notes.map((note, i) => (
+				<div key={i}>{JsDocParts(note)} </div>
+			))}
 			<ApiExample>{example}</ApiExample>
 		</td>
 	</tr>
 )
 
 const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
-	parts.map((part, i) => {
-		switch (part.kind) {
-			case "text": {
-				const replaced = part.value
-					.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
-					.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
-				return (
-					<p
-						style={{ display: "inline" }}
-						key={i}
-						dangerouslySetInnerHTML={{ __html: replaced }}
-					/>
-				)
+	parts.map((part, i) => (
+		<span key={i} style={{ marginRight: "0.25em" }}>
+			{part.kind === "link" ?
+				<LocalFriendlyUrl url={part.url} key={i}>
+					{part.value}
+				</LocalFriendlyUrl>
+			: part.kind === "reference" ?
+				<a href={`#${part.value}`} key={i}>
+					{part.value}
+				</a>
+			: part.kind === "tag" ?
+				<p key={i}>
+					{part.name} {JsDocParts(part.value)}
+				</p>
+			:	<p
+					style={{ display: "inline" }}
+					key={i}
+					dangerouslySetInnerHTML={{
+						__html: part.value
+							.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
+							.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
+					}}
+				/>
 			}
-			case "link":
-				return (
-					<LocalFriendlyUrl url={part.url} key={i}>
-						{part.value}
-					</LocalFriendlyUrl>
-				)
-			case "reference":
-				return (
-					<a href={`#${part.value}`} key={i}>
-						{part.value}
-					</a>
-				)
-			case "tag":
-				return (
-					<p style={{ display: "inline" }} key={i}>
-						{part.name} {JsDocParts(part.value)}
-					</p>
-				)
-			default:
-				const exhaustive = part satisfies never as ParsedJsDocPart
-				return throwInternalError(
-					`Unexpected JsdocPart kind "${exhaustive.kind}"`
-				)
-		}
-	})
+		</span>
+	))
 
 interface ApiExampleProps {
 	children: string | undefined

@@ -8,7 +8,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "The "
+					value: "The"
 				},
 				{
 					kind: "reference",
@@ -17,9 +17,10 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				{
 					kind: "text",
 					value:
-						" in which definitions for this Type its chained methods are parsed"
+						"in which definitions for this Type its chained methods are parsed"
 				}
-			]
+			],
+			notes: []
 		},
 		{
 			group: "Type",
@@ -30,8 +31,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "The type of data this returns"
 				}
 			],
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value:
+							"🥸 Inference-only property that will be `undefined` at runtime"
+					}
+				]
+			],
 			example:
-				'const parseNumber = type("string").pipe(s => Number.parseInt(s))\ntype ParsedNumber = typeof parseNumber.infer // number\n\n🥸 Inference-only property that will be `undefined` at runtime'
+				'const parseNumber = type("string").pipe(s => Number.parseInt(s))\ntype ParsedNumber = typeof parseNumber.infer // number'
 		},
 		{
 			group: "Type",
@@ -42,8 +52,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "The type of data this expects"
 				}
 			],
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value:
+							"🥸 Inference-only property that will be `undefined` at runtime"
+					}
+				]
+			],
 			example:
-				'const parseNumber = type("string").pipe(s => Number.parseInt(s))\ntype UnparsedNumber = typeof parseNumber.inferIn // string\n\n🥸 Inference-only property that will be `undefined` at runtime'
+				'const parseNumber = type("string").pipe(s => Number.parseInt(s))\ntype UnparsedNumber = typeof parseNumber.inferIn // string'
 		},
 		{
 			group: "Type",
@@ -53,7 +72,8 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					kind: "text",
 					value: "The internal JSON representation"
 				}
-			]
+			],
+			notes: []
 		},
 		{
 			group: "Type",
@@ -63,7 +83,8 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					kind: "text",
 					value: "Generate a JSON Schema"
 				}
-			]
+			],
+			notes: []
 		},
 		{
 			group: "Type",
@@ -74,21 +95,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "Metadata like custom descriptions and error messages"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value: "The type of this property "
-				},
-				{
-					kind: "link",
-					url: "https://arktype.io/docs/configuration#custom",
-					value: "can be extended"
-				},
-				{
-					kind: "text",
-					value: " by your project."
-				}
-			]
+			notes: []
 		},
 		{
 			group: "Type",
@@ -99,12 +106,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "An English description"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value:
-						"Best suited for representing __primitives__ to __any English speaker__."
-				}
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: "Work best for primitive values"
+					}
+				]
 			],
 			example:
 				'const n = type("0 < number <= 100")\nconsole.log(n.description) // positive and at most 100'
@@ -118,12 +126,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "A syntactic representation similar to native TypeScript"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value:
-						"Best suited for representing __primitives or structures__ to __other developers__."
-				}
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: "Works well for both primitives and structures"
+					}
+				]
 			],
 			example:
 				'const loc = type({ coords: ["number", "number"] })\nconsole.log(loc.expression) // { coords: [number, number] }'
@@ -135,22 +144,24 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				{
 					kind: "text",
 					value:
-						"Validate and morph data, throwing a descriptive AggregateError if it fails"
+						"Validate and morph data, throwing a descriptive AggregateError on failure"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value: "Useful to avoid needing to check for "
-				},
-				{
-					kind: "reference",
-					value: "type.errors"
-				},
-				{
-					kind: "text",
-					value: " if it would be unrecoverable"
-				}
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: "Sugar to avoid checking for"
+					},
+					{
+						kind: "reference",
+						value: "type.errors"
+					},
+					{
+						kind: "text",
+						value: "if they are unrecoverable"
+					}
+				]
 			],
 			example:
 				'const criticalPayload = type({\n    superImportantValue: "string"\n})\n// throws AggregateError: superImportantValue must be a string (was missing)\nconst data = criticalPayload.assert({ irrelevantValue: "whoops" })\nconsole.log(data.superImportantValue) // valid output can be accessed directly'
@@ -164,12 +175,14 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "Validate input data without applying morphs"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value:
-						"Highly optimized and best for cases where you need to know if data\nsatisifes a Type's input without needing specific errors on rejection."
-				}
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value:
+							"Good for cases like filtering that don't benefit from detailed errors"
+					}
+				]
 			],
 			example:
 				'const numeric = type("number | bigint")\n// [0, 2n]\nconst numerics = [0, "one", 2n].filter(numeric.allows)'
@@ -183,11 +196,20 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "Clone and add metadata to shallow references"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value: "Does not affect error messages within properties of an object"
-				}
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value:
+							"Does not affect error messages within properties of an object"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "Overlapping keys on existing meta will be overwritten"
+					}
+				]
 			],
 			example:
 				'const notOdd = type("number % 2").configure({ description: "not odd" })\n// all constraints at the root are affected\nconst odd = notOdd(3) // must be not odd (was 3)\nconst nonNumber = notOdd("two") // must be not odd (was "two")\n\nconst notOddBox = type({\n   // we should have referenced notOdd or added meta here\n   notOdd: "number % 2",\n// but instead chained from the root object\n}).configure({ description: "not odd" })\n// error message at path notOdd is not affected\nconst oddProp = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)\n// error message at root is affected, leading to a misleading description\nconst nonObject = notOddBox(null) // must be not odd (was null)'
@@ -201,19 +223,28 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "Clone and add the description to shallow references"
 				}
 			],
-			description: [
-				{
-					kind: "text",
-					value: "Equivalent to `.configure({ description })` (see "
-				},
-				{
-					kind: "reference",
-					value: "configure"
-				},
-				{
-					kind: "text",
-					value: ")"
-				}
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: "Equivalent to `.configure({ description })` (see"
+					},
+					{
+						kind: "reference",
+						value: "configure"
+					},
+					{
+						kind: "text",
+						value: ")"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"Does not affect error messages within properties of an object"
+					}
+				]
 			],
 			example:
 				'const aToZ = type(/^a.*z$/).describe("a string like \'a...z\'")\nconst good = aToZ("alcatraz") // "alcatraz"\n// notice how our description is integrated with other parts of the message\nconst badPattern = aToZ("albatross") // must be a string like \'a...z\' (was "albatross")\nconst nonString = aToZ(123) // must be a string like \'a...z\' (was 123)'

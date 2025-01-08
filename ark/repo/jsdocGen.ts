@@ -17,9 +17,9 @@ const { writeFile, shell } = bootstrapFs
 const inheritDocToken = "@inheritDoc"
 const typeOnlyToken = "@typeonly"
 const typeOnlyMessage =
-	"🥸 Inference-only property that will be `undefined` at runtime"
+	"- 🥸 Inference-only property that will be `undefined` at runtime"
 const typeNoopToken = "@typenoop"
-const typeNoopMessage = "🥸 Inference-only function that does nothing runtime"
+const typeNoopMessage = "- 🥸 Inference-only function that does nothing runtime"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 const jsdocSourcesGlob = `${arkTypeBuildDir}/**/*.d.ts`
@@ -87,6 +87,7 @@ export type ParsedJsDocPart = ShallowJsDocPart | ParsedJsDocTag
 
 export type ShallowJsDocPart =
 	| { kind: "text"; value: string }
+	| { kind: "noteStart"; value: string }
 	| { kind: "reference"; value: string }
 	| { kind: "link"; value: string; url: string }
 
@@ -104,7 +105,7 @@ export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
 	summary: ParsedJsDocPart[]
-	description?: ParsedJsDocPart[]
+	notes: ParsedJsDocPart[][]
 	example?: string
 }
 
@@ -140,27 +141,30 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	const rootComment = doc.getComment()
 
-	const summary =
-		tags.find(t => t.getTagName() === "summary")?.getComment() ?? rootComment
+	if (!rootComment)
+		return throwInternalError(`Expected root comment for ${group}/${name}`)
 
-	if (!summary) {
-		return throwInternalError(
-			`Expected @summary or root description for ${group}/${name}`
-		)
-	}
+	const allParts: ParsedJsDocPart[] =
+		typeof rootComment === "string" ?
+			parseJsdocText(rootComment)
+			// remove any undefined parts before parsing
+		:	rootComment.filter(part => !!part).flatMap(parseJsdocPart)
+
+	const summaryParts: ParsedJsDocPart[] = []
+	const notePartGroups: ParsedJsDocPart[][] = []
+
+	allParts.forEach(part => {
+		if (part.kind === "noteStart") notePartGroups.push([part])
+		else if (notePartGroups.length) notePartGroups.at(-1)!.push(part)
+		else summaryParts.push(part)
+	})
 
 	const result: ParsedJsDocBlock = {
 		group,
 		name,
-		summary: parseJsdocComment(summary)
+		summary: summaryParts,
+		notes: notePartGroups
 	}
-
-	const description =
-		tags.find(t => t.getTagName() === "description")?.getComment() ??
-		// if @description is not explicitly defined and @summary is,
-		// treat root comment as description
-		(summary === rootComment ? undefined : rootComment)
-	if (description) result.description = parseJsdocComment(description)
 
 	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
 	if (example) result.example = example
@@ -168,30 +172,25 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	return result
 }
 
-const parseJsdocComment = (comment: JsdocComment): ParsedJsDocPart[] => {
-	if (!comment) return []
-
-	return typeof comment === "string" ?
-			[{ kind: "text", value: comment }]
-			// remove any undefined parts before parsing
-		:	comment.filter(part => !!part).map(parseJsdocPart)
-}
-
-const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
+const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart[] => {
 	switch (part.getKindName()) {
 		case "JSDocText":
-			return {
-				kind: "text",
-				// using part.getText() here seems to include comment syntax
-				value: part.compilerNode.text
-			}
+			return parseJsdocText(part.compilerNode.text)
 		case "JSDocLink":
-			return parseJsdocLink(part)
+			return [parseJsdocLink(part)]
 		default:
 			return throwInternalError(
 				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
 			)
 	}
+}
+
+const parseJsdocText = (text: string): ParsedJsDocPart[] => {
+	const sections = text.split(/\n\s*-/)
+	return sections.map((sectionText, i) => ({
+		kind: i === 0 ? "text" : "noteStart",
+		value: sectionText.trim()
+	}))
 }
 
 const describedLinkRegex =

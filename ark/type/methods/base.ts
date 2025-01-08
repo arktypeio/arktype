@@ -49,11 +49,11 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * The generic parameter representing this Type
 	 *
-	 * ⚠️ May contain types representing morphs or default values that would
+	 * @typeonly
+	 *
+	 * - ⚠️ May contain types representing morphs or default values that would
 	 * be inaccurate if used directly for runtime values. In those cases,
 	 * you should use {@link infer} or {@link inferIn} on this object instead.
-	 *
-	 * @typeonly
 	 */
 	t: t
 
@@ -66,11 +66,12 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * The type of data this returns
 	 *
+	 * @typeonly
+	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type ParsedNumber = typeof parseNumber.infer // number
 	 *
-	 * @typeonly
 	 * @api Type
 	 */
 	infer: this["inferOut"]
@@ -78,11 +79,11 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Alias of {@link infer}
 	 *
+	 * @typeonly
+	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type ParsedNumber = typeof parseNumber.infer // number
-	 *
-	 * @typeonly
 	 */
 	inferOut: distill.Out<t>
 
@@ -91,6 +92,7 @@ interface Type<out t = unknown, $ = {}>
 	 *
 	 * - If your Type contains morphs, they will be inferred as `unknown` unless
 	 * they are an ArkType keyword or have an explicitly defined output validator.
+	 * @typeonly
 	 *
 	 * @example
 	 * const unmorphed = type("string")
@@ -106,19 +108,17 @@ interface Type<out t = unknown, $ = {}>
 	 * const validated = type("string").pipe(s => s.length).to("number")
 	 * // morphs with validated output, including all morph keywords, are introspectable
 	 * type ValidatedMorphOut = typeof validated.inferIntrospectableOut
-	 *
-	 * @typeonly
 	 */
 	inferIntrospectableOut: distill.introspectable.Out<t>
 
 	/**
 	 * The type of data this expects
 	 *
+	 * @typeonly
+	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type UnparsedNumber = typeof parseNumber.inferIn // string
-	 *
-	 * @typeonly
 	 * @api Type
 	 */
 	inferIn: distill.In<t>
@@ -163,7 +163,7 @@ interface Type<out t = unknown, $ = {}>
 	description: string
 
 	/**
-	 * A syntactic representation similar to native TypeScript
+	 * A syntax string similar to native TypeScript
 	 *
 	 * - Works well for both primitives and structures
 	 *
