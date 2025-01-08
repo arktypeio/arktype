@@ -71,8 +71,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value:
-						"Metadata like custom descriptions and error messages\n\nThe type of this property "
+					value: "Metadata like custom descriptions and error messages"
+				}
+			],
+			description: [
+				{
+					kind: "text",
+					value: "The type of this property "
 				},
 				{
 					kind: "link",
@@ -130,7 +135,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				{
 					kind: "text",
 					value:
-						"Validate and morph data, throwing a descriptive AggregateError if it fails\n\nUseful to avoid needing to check for "
+						"Validate and morph data, throwing a descriptive AggregateError if it fails"
+				}
+			],
+			description: [
+				{
+					kind: "text",
+					value: "Useful to avoid needing to check for "
 				},
 				{
 					kind: "reference",
@@ -150,8 +161,14 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
+					value: "Validate input data without applying morphs"
+				}
+			],
+			description: [
+				{
+					kind: "text",
 					value:
-						"Validate input data without applying morphs\n\nHighly optimized and best for cases where you need to know if data\nsatisifes a Type's input without needing specific errors on rejection."
+						"Highly optimized and best for cases where you need to know if data\nsatisifes a Type's input without needing specific errors on rejection."
 				}
 			],
 			example:
@@ -163,8 +180,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value:
-						"Clone and add metadata to shallow references\n\nDoes not affect error messages within properties of an object\nOverlapping keys on existing meta will be overwritten"
+					value: "Clone and add metadata to shallow references"
+				}
+			],
+			description: [
+				{
+					kind: "text",
+					value: "Does not affect error messages within properties of an object"
 				}
 			],
 			example:
@@ -176,8 +198,21 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value:
-						"Clone and add the description to shallow references (equivalent to `.configure({ description })`)\n\nDoes not affect error messages within properties of an object"
+					value: "Clone and add the description to shallow references"
+				}
+			],
+			description: [
+				{
+					kind: "text",
+					value: "Equivalent to `.configure({ description })` (see "
+				},
+				{
+					kind: "reference",
+					value: "configure"
+				},
+				{
+					kind: "text",
+					value: ")"
 				}
 			],
 			example:

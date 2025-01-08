@@ -41,7 +41,6 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	/**
-	 * @internal
 	 * The precompiled JS used to optimize validation.
 	 * Will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode.
 	 */
@@ -90,7 +89,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * The type of output that can be introspected at runtime (e.g. via {@link out})
 	 *
-	 * If your Type contains morphs, they will be inferred as `unknown` unless
+	 * - If your Type contains morphs, they will be inferred as `unknown` unless
 	 * they are an ArkType keyword or have an explicitly defined output validator.
 	 *
 	 * @example
@@ -143,7 +142,7 @@ interface Type<out t = unknown, $ = {}>
 	toJsonSchema(): JsonSchema
 
 	/**
-	 * @summary Metadata like custom descriptions and error messages
+	 * Metadata like custom descriptions and error messages
 	 *
 	 * @description The type of this property {@link https://arktype.io/docs/configuration#custom | can be extended} by your project.
 	 * @api Type
@@ -151,9 +150,9 @@ interface Type<out t = unknown, $ = {}>
 	meta: ArkAmbient.meta
 
 	/**
-	 * @summary An English description
+	 * An English description
 	 *
-	 * @description Best suited for representing __primitives__ to __any English speaker__.
+	 * - Work best for primitive values
 	 *
 	 * @example
 	 * const n = type("0 < number <= 100")
@@ -164,9 +163,9 @@ interface Type<out t = unknown, $ = {}>
 	description: string
 
 	/**
-	 * @summary A syntactic representation similar to native TypeScript
+	 * A syntactic representation similar to native TypeScript
 	 *
-	 * @description Best suited for representing __primitives or structures__ to __other developers__.
+	 * - Works well for both primitives and structures
 	 *
 	 * @example
 	 * const loc = type({ coords: ["number", "number"] })
@@ -177,9 +176,9 @@ interface Type<out t = unknown, $ = {}>
 	expression: string
 
 	/**
-	 * Validate and morph data, throwing a descriptive AggregateError if it fails
+	 * Validate and morph data, throwing a descriptive AggregateError on failure
 	 *
-	 * Useful to avoid needing to check for {@link type.errors} if it would be unrecoverable
+	 * - Sugar to avoid checking for {@link type.errors} if they are unrecoverable
 	 *
 	 * @example
 	 * const criticalPayload = type({
@@ -197,8 +196,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Validate input data without applying morphs
 	 *
-	 * Highly optimized and best for cases where you need to know if data
-	 * satisifes a Type's input without needing specific errors on rejection.
+	 * - Good for cases like filtering that don't benefit from detailed errors
 	 *
 	 * @example
 	 * const numeric = type("number | bigint")
@@ -212,8 +210,8 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * Clone and add metadata to shallow references
 	 *
-	 * Does not affect error messages within properties of an object
-	 * Overlapping keys on existing meta will be overwritten
+	 * - Does not affect error messages within properties of an object
+	 * - Overlapping keys on existing meta will be overwritten
 	 *
 	 * @example
 	 * const notOdd = type("number % 2").configure({ description: "not odd" })
@@ -236,10 +234,10 @@ interface Type<out t = unknown, $ = {}>
 	configure(meta: MetaSchema): this
 
 	/**
-	 * Clone and add the description to shallow references (equivalent to `.configure({ description })`)
+	 * Clone and add the description to shallow references
 	 *
-	 * Does not affect error messages within properties of an object
-	 * @see {@link configure} for usage notes
+	 * - Equivalent to `.configure({ description })` (see {@link configure})
+	 * - Does not affect error messages within properties of an object
 	 *
 	 * @example
 	 * const aToZ = type(/^a.*z$/).describe("a string like 'a...z'")
