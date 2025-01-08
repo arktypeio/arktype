@@ -5,7 +5,7 @@ contextualize(() => {
 	it("divisible", () => {
 		const t = type("number%2")
 		attest(t(4)).snap(4)
-		attest(t(5).toString()).snap("must be a multiple of 2 (was 5)")
+		attest(t(5).toString()).snap("must be even (was 5)")
 	})
 
 	it("range", () => {
@@ -143,15 +143,14 @@ contextualize(() => {
 		const naturalNumber = type("number.integer>0")
 		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
   • an integer
-  • more than 0`)
+  • positive`)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
-		attest(naturalAtPath({ natural: -0.1 }).toString()).snap(
-			`natural (-0.1) must be...
+		attest(naturalAtPath({ natural: -0.1 }).toString())
+			.snap(`natural (-0.1) must be...
   • an integer
-  • more than 0`
-		)
+  • positive`)
 	})
 
 	it("homepage example", () => {

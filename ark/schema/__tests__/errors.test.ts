@@ -65,9 +65,7 @@ contextualize(() => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber.traverse(5)?.toString()).snap(
-			"must be a multiple of 2 (was 5)"
-		)
+		attest(evenNumber.traverse(5)?.toString()).snap("must be even (was 5)")
 	})
 
 	it("can configure error writers at a node level", () => {

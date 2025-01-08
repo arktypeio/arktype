@@ -88,7 +88,7 @@ contextualize(() => {
 		})
 		attest<number>(customEven.infer)
 		attest(customEven(3).toString()).snap(
-			"custom message custom problem custom expected a multiple of 2 custom actual 3"
+			"custom message custom problem custom expected even custom actual 3"
 		)
 	})
 

@@ -55,7 +55,7 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 		defaults: {
 			description: node =>
 				node.rule === 1 ? "an integer"
-				: node.rule === 2 ? "an even number"
+				: node.rule === 2 ? "even"
 				: `a multiple of ${node.rule}`
 		},
 		intersections: {
