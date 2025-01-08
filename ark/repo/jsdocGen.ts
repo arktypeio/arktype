@@ -1,4 +1,3 @@
-import type { PartialRecord } from "@ark/util"
 import { existsSync } from "fs"
 import { join } from "path"
 import {
@@ -101,10 +100,8 @@ export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
 	body: ParsedJsDocPart[]
-	tags: PartialRecord<ParsedTagName, ParsedJsDocPart[]>
+	example?: string
 }
-
-export type ParsedTagName = "example" | "api" | "throws" | "see"
 
 const createProject = () => {
 	const project = new Project()
@@ -140,16 +137,17 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	if (!rawParts) return
 
-	return {
+	const result: ParsedJsDocBlock = {
 		group,
 		name,
-		body: parseJsdocComment(rawParts),
-		tags: flatMorph(
-			tags,
-			(i, tag) =>
-				[tag.getTagName(), parseJsdocComment(tag.getComment())] as const
-		)
+		body: parseJsdocComment(rawParts)
 	}
+
+	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
+
+	if (example) result.example = example
+
+	return result
 }
 
 const parseJsdocComment = (comment: JsdocComment): ParsedJsDocPart[] => {

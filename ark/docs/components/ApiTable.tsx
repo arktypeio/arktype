@@ -2,6 +2,7 @@ import { throwInternalError } from "@ark/util"
 import type { JSX } from "react"
 import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
+import { CodeBlock } from "./CodeBlock.tsx"
 import { LocalFriendlyUrl } from "./LocalFriendlyUrl.tsx"
 
 export type ApiTableProps = {
@@ -10,11 +11,15 @@ export type ApiTableProps = {
 }
 
 export const ApiTable = ({ group }: ApiTableProps) => {
-	const rows = apiDocsByGroup[group].map(({ name, body, tags }) => (
+	const rows = apiDocsByGroup[group].map(({ name, body, example }) => (
 		<tr key={name}>
 			<td>{name}</td>
 			<td>{JsDocParts(body)}</td>
-			<td>{tags.example ? JsDocParts(tags.example) : null}</td>
+			<td>
+				{example ?
+					<CodeBlock decorators={["@noErrors"]}>{example}</CodeBlock>
+				:	null}
+			</td>
 		</tr>
 	))
 

@@ -231,7 +231,7 @@ interface Type<out t = unknown, $ = {}>
 	 * // but instead chained from the root object
 	 * }).configure({ description: "not odd" })
 	 * // error message at path notOdd is not affected
-	 * const odd = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
+	 * const oddProp = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
 	 *
