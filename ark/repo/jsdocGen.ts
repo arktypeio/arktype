@@ -1,3 +1,4 @@
+import type { PartialRecord } from "@ark/util"
 import { existsSync } from "fs"
 import { join } from "path"
 import {
@@ -89,7 +90,7 @@ export type ShallowJsDocPart =
 export type ParsedJsDocTag = {
 	kind: "tag"
 	name: string
-	value: ShallowJsDocPart[]
+	value: ParsedJsDocPart[]
 }
 
 export type ApiDocsByGroup = {
@@ -99,8 +100,11 @@ export type ApiDocsByGroup = {
 export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
-	parts: ParsedJsDocPart[]
+	body: ParsedJsDocPart[]
+	tags: PartialRecord<ParsedTagName, ParsedJsDocPart[]>
 }
+
+export type ParsedTagName = "example" | "api" | "throws" | "see"
 
 const createProject = () => {
 	const project = new Project()
@@ -136,31 +140,15 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	if (!rawParts) return
 
-	const parts = parseJsdocComment(rawParts)
-	const tagParts: ParsedJsDocTag[] = tags.flatMap(tag => {
-		const rawSubparts = parseJsdocComment(tag.getComment())
-
-		const validatedSubparts = rawSubparts.filter(
-			(p): p is ShallowJsDocPart =>
-				p.kind !== "tag" ||
-				throwInternalError(
-					`Unexpectedly found tag ${p.name} referenced in tag ${tag.getTagName()}`
-				)
-		)
-
-		return {
-			kind: "tag",
-			name: tag.getTagName(),
-			value: validatedSubparts
-		}
-	})
-
-	parts.push(...tagParts)
-
 	return {
 		group,
 		name,
-		parts
+		body: parseJsdocComment(rawParts),
+		tags: flatMorph(
+			tags,
+			(i, tag) =>
+				[tag.getTagName(), parseJsdocComment(tag.getComment())] as const
+		)
 	}
 }
 

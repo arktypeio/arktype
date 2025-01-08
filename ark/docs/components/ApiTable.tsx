@@ -10,10 +10,11 @@ export type ApiTableProps = {
 }
 
 export const ApiTable = ({ group }: ApiTableProps) => {
-	const rows = apiDocsByGroup[group].map(({ name, parts }) => (
+	const rows = apiDocsByGroup[group].map(({ name, body, tags }) => (
 		<tr key={name}>
 			<td>{name}</td>
-			<td>{JsDocParts(parts)}</td>
+			<td>{JsDocParts(body)}</td>
+			<td>{tags.example ? JsDocParts(tags.example) : null}</td>
 		</tr>
 	))
 
@@ -25,6 +26,7 @@ export const ApiTable = ({ group }: ApiTableProps) => {
 					<tr>
 						<th className="font-bold">Alias</th>
 						<th className="font-bold">Description</th>
+						<th className="font-bold">Example</th>
 					</tr>
 				</thead>
 				<tbody>{...rows}</tbody>
