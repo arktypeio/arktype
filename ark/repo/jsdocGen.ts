@@ -26,60 +26,6 @@ const jsdocSourcesGlob = `${arkTypeBuildDir}/**/*.d.ts`
 
 let updateCount = 0
 
-const createProject = () => {
-	const project = new Project()
-
-	if (!existsSync(arkTypeBuildDir)) {
-		throw new Error(
-			`jsdocGen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
-		)
-	}
-
-	project.addSourceFilesAtPaths(jsdocSourcesGlob)
-
-	return project
-}
-
-export const jsdocGen = (project: Project) => {
-	const sourceFiles = project.getSourceFiles()
-
-	console.log(
-		`✍️ Generating JSDoc for ${sourceFiles.length} files in ${arkTypeBuildDir}...`
-	)
-
-	project.getSourceFiles().forEach(docgenForFile)
-
-	project.saveSync()
-
-	console.log(
-		`📚 Successfully updated ${updateCount} JSDoc comments on your build output.`
-	)
-}
-
-const apiGroups = ["Type"] as const
-
-export type ApiGroup = (typeof apiGroups)[number]
-
-export type JsdocComment = ReturnType<JSDoc["getComment"]>
-
-export type JsdocPart = Extract<JsdocComment, readonly unknown[]>[number] & {}
-
-export type ParsedJsDocPart =
-	| { kind: "text"; value: string }
-	| { kind: "reference"; value: string }
-	| { kind: "link"; value: string; url: string }
-	| ParsedJsDocTag
-
-export type ParsedJsDocTag = {
-	kind: "tag"
-	name: string
-	value: ParsedJsDocPart[]
-}
-
-export type ApiDocsByGroup = {
-	readonly [k in ApiGroup]: readonly ParsedJsDocBlock[]
-}
-
 export const buildApi = () => {
 	const project = createProject()
 	jsdocGen(project)
@@ -101,10 +47,73 @@ export const apiDocsByGroup: ApiDocsByGroup = ${JSON.stringify(apiDocsByGroup, n
 	)
 }
 
+export const jsdocGen = (project: Project) => {
+	const sourceFiles = project.getSourceFiles()
+
+	console.log(
+		`✍️ Generating JSDoc for ${sourceFiles.length} files in ${arkTypeBuildDir}...`
+	)
+
+	project.getSourceFiles().forEach(docgenForFile)
+
+	project.saveSync()
+
+	console.log(
+		`📚 Successfully updated ${updateCount} JSDoc comments on your build output.`
+	)
+}
+
+export const getAllJsDoc = (project: Project) => {
+	const sourceFiles = project.getSourceFiles()
+
+	return sourceFiles.flatMap(file =>
+		file.getDescendantsOfKind(SyntaxKind.JSDoc)
+	)
+}
+
+const apiGroups = ["Type"] as const
+
+export type ApiGroup = (typeof apiGroups)[number]
+
+export type JsdocComment = ReturnType<JSDoc["getComment"]>
+
+export type JsdocPart = Extract<JsdocComment, readonly unknown[]>[number] & {}
+
+export type ParsedJsDocPart = ShallowJsDocPart | ParsedJsDocTag
+
+export type ShallowJsDocPart =
+	| { kind: "text"; value: string }
+	| { kind: "reference"; value: string }
+	| { kind: "link"; value: string; url: string }
+
+export type ParsedJsDocTag = {
+	kind: "tag"
+	name: string
+	value: ShallowJsDocPart[]
+}
+
+export type ApiDocsByGroup = {
+	readonly [k in ApiGroup]: readonly ParsedJsDocBlock[]
+}
+
 export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
 	parts: ParsedJsDocPart[]
+}
+
+const createProject = () => {
+	const project = new Project()
+
+	if (!existsSync(arkTypeBuildDir)) {
+		throw new Error(
+			`jsdocGen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
+		)
+	}
+
+	project.addSourceFilesAtPaths(jsdocSourcesGlob)
+
+	return project
 }
 
 const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
@@ -128,11 +137,23 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	if (!rawParts) return
 
 	const parts = parseJsdocComment(rawParts)
-	const tagParts: ParsedJsDocTag[] = tags.flatMap(tag => ({
-		kind: "tag",
-		name: tag.getTagName(),
-		value: parseJsdocComment(tag.getComment())
-	}))
+	const tagParts: ParsedJsDocTag[] = tags.flatMap(tag => {
+		const rawSubparts = parseJsdocComment(tag.getComment())
+
+		const validatedSubparts = rawSubparts.filter(
+			(p): p is ShallowJsDocPart =>
+				p.kind !== "tag" ||
+				throwInternalError(
+					`Unexpectedly found tag ${p.name} referenced in tag ${tag.getTagName()}`
+				)
+		)
+
+		return {
+			kind: "tag",
+			name: tag.getTagName(),
+			value: validatedSubparts
+		}
+	})
 
 	parts.push(...tagParts)
 
@@ -150,6 +171,23 @@ const parseJsdocComment = (comment: JsdocComment): ParsedJsDocPart[] => {
 			[{ kind: "text", value: comment }]
 			// remove any undefined parts before parsing
 		:	comment.filter(part => !!part).map(parseJsdocPart)
+}
+
+const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
+	switch (part.getKindName()) {
+		case "JSDocText":
+			return {
+				kind: "text",
+				// using part.getText() here seems to include comment syntax
+				value: part.compilerNode.text
+			}
+		case "JSDocLink":
+			return parseJsdocLink(part)
+		default:
+			return throwInternalError(
+				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
+			)
+	}
 }
 
 const describedLinkRegex =
@@ -183,31 +221,6 @@ const parseJsdocLink = (part: JsdocPart): ParsedJsDocPart => {
 		kind: "reference",
 		value: referencedName
 	}
-}
-
-const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart => {
-	switch (part.getKindName()) {
-		case "JSDocText":
-			return {
-				kind: "text",
-				// using part.getText() here seems to include comment syntax
-				value: part.compilerNode.text
-			}
-		case "JSDocLink":
-			return parseJsdocLink(part)
-		default:
-			return throwInternalError(
-				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
-			)
-	}
-}
-
-export const getAllJsDoc = (project: Project) => {
-	const sourceFiles = project.getSourceFiles()
-
-	return sourceFiles.flatMap(file =>
-		file.getDescendantsOfKind(SyntaxKind.JSDoc)
-	)
 }
 
 type MatchContext = {
