@@ -90,9 +90,9 @@ div.twoslash-popup-container {
 
 .error.highlighted {
 	position: relative;
-	background-color: #f8585822;
-	border-left: 3px solid var(--ark-runtime-error);
 	padding: 4px;
+	background-color: var(--twoslash-error-bg);
+	border-left: 3px solid var(--ark-error);
 	padding-right: 16px;
 	margin: 0.2em 0;
 	min-width: 100%;
@@ -100,6 +100,15 @@ div.twoslash-popup-container {
 }
 
 .error.highlighted > span {
+	color: var(--twoslash-error-color) !important;
+}
+
+.error.highlighted.runtime-error {
+	background-color: #f8585822;
+	border-left: 3px solid var(--ark-runtime-error);
+}
+
+.error.highlighted.runtime-error > span {
 	color: var(--ark-runtime-error) !important;
 }
 

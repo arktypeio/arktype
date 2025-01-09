@@ -384,6 +384,27 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					}
 				]
 			]
+		},
+		{
+			group: "Type",
+			name: "from",
+			summary: [
+				{
+					kind: "text",
+					value: "alias for"
+				},
+				{
+					kind: "reference",
+					value: "assert"
+				},
+				{
+					kind: "text",
+					value: "with typed input"
+				}
+			],
+			notes: [],
+			example:
+				'const t = type({ foo: "string" });\n// TypeScript: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });'
 		}
 	]
 }

@@ -248,8 +248,11 @@ interface Type<out t = unknown, $ = {}>
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Alias for {@link assert} with typed input
-	 * @example const ConfigT = type({ foo: "string" }); export const config = ConfigT.from({ foo: "bar" })
+	 * #### alias for {@link assert} with typed input
+	 * @example
+	 * const t = type({ foo: "string" });
+	 * // ArkErrors: foo must be a string (was 5)
+	 * const data = t.from({ foo: 5 });
 	 */
 	from(literal: this["inferIn"]): this["infer"]
 
