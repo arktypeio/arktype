@@ -167,7 +167,18 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				parse: constraintKeyParser("sequence")
 			},
 			undeclared: {
-				parse: behavior => (behavior === "ignore" ? undefined : behavior)
+				parse: behavior => (behavior === "ignore" ? undefined : behavior),
+				reduceIo: (ioKind, inner, value) => {
+					if (value !== "delete") return
+
+					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
+					// on input and "reject" on output
+
+					if (value === "delete") {
+						if (ioKind === "in") delete inner.undeclared
+						else inner.undeclared = "reject"
+					}
+				}
 			}
 		},
 		defaults: {
@@ -439,9 +450,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return required ? result : result.or($ark.intrinsic.undefined)
 	}
 
-	readonly exhaustive: boolean =
-		this.undeclared !== undefined || this.index !== undefined
-
 	pick(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("pick", keys))
@@ -542,7 +550,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (!this.exhaustive) return true
+		if (!requireExhasutiveTraversal(this, traversalKind)) return true
 
 		const keys: Key[] = Object.keys(data)
 		keys.push(...Object.getOwnPropertySymbols(data))
@@ -624,7 +632,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
 		}
 
-		if (this.exhaustive) {
+		if (requireExhasutiveTraversal(this, js.traversalKind)) {
 			js.const("keys", "Object.keys(data)")
 			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
@@ -756,6 +764,19 @@ export interface OptionalMappedPropInner extends Optional.Schema {
 export const Structure = {
 	implementation,
 	Node: StructureNode
+}
+
+const requireExhasutiveTraversal = (
+	node: Structure.Node,
+	traversalKind: TraversalKind
+) => {
+	if (node.index || node.undeclared === "reject") return true
+
+	// when applying key deletion, we must queue morphs for all undeclared keys
+	// when checking whether an input is allowed, they are irrelevant because it always will be
+	if (node.undeclared === "delete" && traversalKind === "Apply") return true
+
+	return false
 }
 
 const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {
