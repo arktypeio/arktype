@@ -133,12 +133,15 @@ declare global {
 })
 
 type HastElement = Parameters<ShikiTransformer["line"] & {}>[0]
-const descendantIncludesText = (node: HastElement, text: string): boolean =>
+const descendantIncludesText = (
+	node: HastElement,
+	...texts: string[]
+): boolean =>
 	node.children &&
 	node.children.some(
 		c =>
-			(c.type === "text" && c.value.includes(text)) ||
-			descendantIncludesText(c as never, text)
+			(c.type === "text" && texts.some(s => c.value.includes(s))) ||
+			descendantIncludesText(c as never, ...texts)
 	)
 
 export const shikiConfig = {
@@ -150,7 +153,7 @@ export const shikiConfig = {
 	transformers: [
 		{
 			line(node) {
-				if (descendantIncludesText(node, "// ArkErrors:")) {
+				if (descendantIncludesText(node, "// ArkErrors:", "// ParseError:")) {
 					this.addClassToHast(node, "highlighted")
 					this.addClassToHast(node, "error")
 					this.addClassToHast(node, "runtime-error")

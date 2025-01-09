@@ -118,6 +118,47 @@ const unions = type({
 
 </SyntaxTabs>
 
+<a id="union-morphs" />
+
+<Callout
+	type="warn"
+	title="A union that could apply different morphs to the same data throws a ParseError!"
+>
+```ts
+// operands overlap, but neither transforms data
+const okay = type("number > 0").or("number < 10")
+// operand transforms data, but there's no overlap between the inputs
+const alsoOkay = type("string.numeric.parse").or({ box: "string" })
+// operands overlap and transform data, but in the same way
+const stillOkay = type("string > 5", "=>", Number.parseFloat).or([
+	"0 < string < 10",
+	"=>",
+	Number.parseFloat
+])
+// ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
+const bad = type({ box: "string.numeric.parse" }).or({ box: "string" })
+const sameError = type({ a: "string.numeric.parse" }).or({ b: "string.numeric.parse" })
+```
+
+<details>
+	<summary>Learn the basic set theory behind this restriction</summary>
+
+If you're relatively new to set-based types, that error might be daunting, but if you take a second to think through the example, it becomes clear why this isn't allowed. The logic of `bad` is essentially:
+
+- If the input is an object where `box` is a `string`, parse and return it as a number
+- If the input is an object where `box` is a `string`, return it as a string
+
+There is no way to deterministically return an output for this type without sacrificing the [commutativity](https://en.wikipedia.org/wiki/Commutative_property) of the union operator.
+
+`sameError` may look more innocuous, but has the same problem for an input like `{ a: "1", b: "2" }`.
+
+- Left branch would only parse `a`, resulting in `{ a: 1, b: "2" }`
+- Right branch would only parse `b`, resulting in `{ a: "1", b: 2 }`
+
+</details>
+
+</Callout>
+
 ### Brand
 
 Add a type-only symbol to an existing type so that the only values that satisfy is are those that have been directly validated.

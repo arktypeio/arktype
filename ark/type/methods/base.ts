@@ -249,72 +249,140 @@ interface Type<out t = unknown, $ = {}>
 
 	/**
 	 * #### alias for {@link assert} with typed input
+	 *
 	 * @example
 	 * const t = type({ foo: "string" });
-	 * // ArkErrors: foo must be a string (was 5)
+	 * // TypeScript: foo must be a string (was 5)
 	 * const data = t.from({ foo: 5 });
 	 */
 	from(literal: this["inferIn"]): this["infer"]
 
 	/**
-	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
-	 * @example const inputT = T.in
+	 * #### deeply extract inputs to a new Type
+	 *
+	 * ✅ will never include morphs
+	 * ✅ good for generating JSON Schema or other non-transforming formats
+	 *
+	 * @example
+	 * const createUser = type({
+	 *    age: "string.numeric.parse"
+	 * })
+	 * // { age: 25 } (age parsed to a number)
+	 * const out = createUser({ age: "25" })
+	 * // { age: "25" } (age is still a string)
+	 * const inOut = createUser.in({ age: "25" })
 	 */
 	get in(): instantiateType<this["inferIn"], $>
 
 	/**
-	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
-	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
-	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
-	 * @example const outputT = T.out
+	 * #### deeply extract outputs to a new Type
+	 *
+	 * ✅ will never include morphs
+	 * ⚠️ if your type includes morphs, their output will likely be unknown unless they
+	 * were defined with an explicit output validator via `.to(outputDef)` or `.pipe(morph, outputType)`
+	 *
+	 * @example
+	 * const userMorph = type("string[]").pipe(a => a.join(","))
+	 *
+	 * const t = type({
+	 *    // all keywords have introspectable output
+	 *    keyword: "string.numeric.parse",
+	 *    // TypeScript knows this returns a boolean, but we can't introspect that at runtime
+	 *    unvalidated: userMorph,
+	 *    // if needed, it can be made introspectable with an output validator
+	 *    validated: userMorph.to("string")
+	 * })
+	 *
+	 * // Type<{ keyword: number; unvalidated: unknown; validated: string }>
+	 * const baseOut = base.out
 	 */
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	/**
-	 * Cast the way this `Type` is inferred (has no effect at runtime).
-	 * const branded = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
+	 * #### cast the way this is inferred
+	 *
+	 * @typenoop
+	 *
+	 * @example
+	 * const t = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
 	 */
 	as<castTo = unset>(
 		...args: validateChainedAsArgs<castTo>
 	): instantiateType<castTo, $>
 
+	/**
+	 * #### add a compile-time brand to output
+	 *
+	 * @typenoop
+	 *
+	 * @example
+	 * const t = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
+	 */
 	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
 	): instantiateType<r, $>
 
 	/**
-	 * Intersect another `Type` definition, throwing an error if the result is unsatisfiable.
-	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
+	 * #### create an intersection with another Type, throwing if the result is unsatisfiable
+	 *
+	 * @example
+	 * // Type<{ foo: number; bar: string }>
+	 * const t = type({ foo: "number" }).and({ bar: "string" })
+	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
+	 * const bad = type({ foo: "number" }).and({ foo: "string" })
 	 */
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $>
 
 	/**
-	 * Union another `Type` definition.\
-	 * If the types contain morphs, input shapes should be distinct. Otherwise an error will be thrown.
-	 * @example const union = type({ foo: "number" }).or({ foo: "string" }) // Type<{ foo: number } | { foo: string }>
-	 * @example const union = type("string.numeric.parse").or("number") // Type<((In: string) => Out<number>) | number>
+	 * #### create a union with another Type
+	 *
+	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
+	 *
+	 * @example
+	 * // Type<string | { box: string }>
+	 * const t = type("string").or({ box: "string" })
 	 */
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<t | r, $>
 
 	/**
-	 * Create a `Type` for array with elements of this `Type`
-	 * @example const T = type(/^foo/); const array = T.array() // Type<string[]>
+	 * #### create a Type representing an array of this
+	 *
+	 * @example
+	 * // Type<{ rebmun: number }[]>
+	 * const t = type({ rebmun: "number" }).array();
 	 */
 	array(): ArrayType<t[], $>
 
+	/**
+	 * #### create an [optional definition](https://arktype.io/docs/objects#properties-optional) for this
+	 *
+	 * @chainedDefinition
+	 *
+	 * @example
+	 * const prop = type({ foo: "number" })
+	 * // Type<{ bar?: { foo: number } }>
+	 * const obj = type({ bar: prop.optional() })
+	 */
 	optional(): [this, "?"]
 
 	/**
-	 * Add a default value for this `Type` when it is used as a property.\
-	 * Default value should be a valid input value for this `Type, or a function that returns a valid input value.\
-	 * If the type has a morph, it will be applied to the default value.
-	 * @example const withDefault = type({ foo: type("string").default("bar") }); withDefault({}) // { foo: "bar" }
-	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
-	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
+	 * #### create a [defaultable definition](https://arktype.io/docs/objects#properties-defaultable) for this
+	 *
+	 * ✅ object defaults can be returned from a function
+	 * ⚠️ throws if the default value is not allowed
+	 * @chainedDefinition
+	 *
+	 * @example
+	 * // Type<{ count: Default<number, 0> }>
+	 * const state = type({ count: type.number.default(0) })
+	 * const prop = type({ nested: "boolean" })
+	 * const forObj = type({
+	 *     key: nested.default(() => ({ nested: false }))
+	 * })
 	 */
 	default<const value extends defaultFor<this["inferIn"]>>(
 		value: value

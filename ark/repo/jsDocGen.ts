@@ -15,7 +15,6 @@ const { flatMorph, throwInternalError, emojiToUnicode } = bootstrapUtil
 const { writeFile, shell } = bootstrapFs
 
 const inheritDocToken = "@inheritDoc"
-const typeOnlyToken = "@typeonly"
 
 // used to delimit notes in JSDoc.
 // add to the list if you need new ones!
@@ -24,19 +23,21 @@ const noteEmoji = ["✅", "🥸", "⚠️", "🔗"]
 const noteEmojiUnicode = noteEmoji.map(emojiToUnicode)
 const noteDelimiterRegex = new RegExp(`(?=\\n\\s*[-${noteEmojiUnicode}])`, "u")
 
-const typeOnlyMessage =
-	"🥸 inference-only property that will be `undefined` at runtime"
-const typeNoopToken = "@typenoop"
-const typeNoopMessage = "🥸 inference-only function that does nothing runtime"
+const replacedDecorators = {
+	"@typeonly": "🥸 inference-only property that will be `undefined` at runtime",
+	"@typenoop": "🥸 inference-only function that does nothing runtime",
+	"@chainedDefinition":
+		"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)"
+} as const
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
-const jsdocSourcesGlob = `${arkTypeBuildDir}/**/*.d.ts`
+const jsDocSourcesGlob = `${arkTypeBuildDir}/**/*.d.ts`
 
 let updateCount = 0
 
 export const buildApi = () => {
 	const project = createProject()
-	jsdocGen(project)
+	jsDocGen(project)
 	const docs = getAllJsDoc(project)
 
 	const apiDocsByGroup = flatMorph(docs, (i, doc) => {
@@ -51,7 +52,7 @@ export const buildApi = () => {
 
 	writeFile(
 		apiDataPath,
-		`import type { ApiDocsByGroup } from "../../repo/jsdocGen.ts"
+		`import type { ApiDocsByGroup } from "../../repo/jsDocGen.ts"
 
 export const apiDocsByGroup: ApiDocsByGroup = ${JSON.stringify(apiDocsByGroup, null, 4)}`
 	)
@@ -59,7 +60,7 @@ export const apiDocsByGroup: ApiDocsByGroup = ${JSON.stringify(apiDocsByGroup, n
 	shell(`prettier --write ${apiDataPath}`)
 }
 
-export const jsdocGen = (project: Project) => {
+export const jsDocGen = (project: Project) => {
 	const sourceFiles = project.getSourceFiles()
 
 	console.log(
@@ -85,23 +86,18 @@ export const getAllJsDoc = (project: Project) => {
 
 export type ApiGroup = "Type"
 
-export type JsdocComment = ReturnType<JSDoc["getComment"]>
+export type JsDocComment = ReturnType<JSDoc["getComment"]>
 
-export type JsdocPart = Extract<JsdocComment, readonly unknown[]>[number] & {}
+export type RawJsDocPart = Extract<
+	JsDocComment,
+	readonly unknown[]
+>[number] & {}
 
-export type ParsedJsDocPart = ShallowJsDocPart | ParsedJsDocTag
-
-export type ShallowJsDocPart =
+export type ParsedJsDocPart =
 	| { kind: "text"; value: string }
 	| { kind: "noteStart"; value: string }
 	| { kind: "reference"; value: string }
 	| { kind: "link"; value: string; url: string }
-
-export type ParsedJsDocTag = {
-	kind: "tag"
-	name: string
-	value: ParsedJsDocPart[]
-}
 
 export type ApiDocsByGroup = {
 	readonly [k in ApiGroup]: readonly ParsedJsDocBlock[]
@@ -120,11 +116,11 @@ const createProject = () => {
 
 	if (!existsSync(arkTypeBuildDir)) {
 		throw new Error(
-			`jsdocGen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
+			`jsDocGen rewrites ${arkTypeBuildDir} but that directory doesn't exist. Did you run "pnpm build" there first?`
 		)
 	}
 
-	project.addSourceFilesAtPaths(jsdocSourcesGlob)
+	project.addSourceFilesAtPaths(jsDocSourcesGlob)
 
 	return project
 }
@@ -150,9 +146,9 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	const allParts: ParsedJsDocPart[] =
 		typeof rootComment === "string" ?
-			parseJsdocText(rootComment)
+			parseJsDocText(rootComment)
 			// remove any undefined parts before parsing
-		:	rootComment.filter(part => !!part).flatMap(parseJsdocPart)
+		:	rootComment.filter(part => !!part).flatMap(parseJsDocPart)
 
 	const summaryParts: ParsedJsDocPart[] = []
 	const notePartGroups: ParsedJsDocPart[][] = []
@@ -182,12 +178,12 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	return result
 }
 
-const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart[] => {
+const parseJsDocPart = (part: RawJsDocPart): ParsedJsDocPart[] => {
 	switch (part.getKindName()) {
 		case "JSDocText":
-			return parseJsdocText(part.compilerNode.text)
+			return parseJsDocText(part.compilerNode.text)
 		case "JSDocLink":
-			return [parseJsdocLink(part)]
+			return [parseJsDocLink(part)]
 		default:
 			return throwInternalError(
 				`Unsupported JSDoc part kind ${part.getKindName()} at position ${part.getPos()} in ${part.getSourceFile().getFilePath()}`
@@ -195,7 +191,7 @@ const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart[] => {
 	}
 }
 
-const parseJsdocText = (text: string): ParsedJsDocPart[] => {
+const parseJsDocText = (text: string): ParsedJsDocPart[] => {
 	const sections = text.split(noteDelimiterRegex)
 	return sections.map((sectionText, i) => ({
 		kind: i === 0 ? "text" : "noteStart",
@@ -206,7 +202,7 @@ const parseJsdocText = (text: string): ParsedJsDocPart[] => {
 const describedLinkRegex =
 	/\{@link\s+(https?:\/\/[^\s|}]+)(?:\s*\|\s*([^}]*))?\}/
 
-const parseJsdocLink = (part: JsdocPart): ParsedJsDocPart => {
+const parseJsDocLink = (part: RawJsDocPart): ParsedJsDocPart => {
 	const linkText = part.getText()
 	const match = describedLinkRegex.exec(linkText)
 	if (match) {
@@ -237,37 +233,36 @@ const parseJsdocLink = (part: JsdocPart): ParsedJsDocPart => {
 }
 
 type MatchContext = {
-	matchedJsdoc: JSDoc
-	updateJsdoc: (text: string) => void
+	matchedJsDoc: JSDoc
+	updateJsDoc: (text: string) => void
 	inheritDocsSource: string | undefined
 }
 
 const docgenForFile = (sourceFile: SourceFile) => {
 	const path = sourceFile.getFilePath()
 
-	const jsdocNodes = sourceFile.getDescendantsOfKind(SyntaxKind.JSDoc)
+	const jsDocNodes = sourceFile.getDescendantsOfKind(SyntaxKind.JSDoc)
 
-	const matchContexts: MatchContext[] = jsdocNodes.flatMap(jsdoc => {
-		const text = jsdoc.getText()
+	const matchContexts: MatchContext[] = jsDocNodes.flatMap(jsDoc => {
+		const text = jsDoc.getText()
 
 		const inheritDocsSource = extractInheritDocName(path, text)
 
 		if (
 			!inheritDocsSource &&
-			!text.includes(typeOnlyToken) &&
-			!text.includes(typeNoopToken)
+			!Object.keys(replacedDecorators).some(k => text.includes(k))
 		)
 			return []
 
 		return {
-			matchedJsdoc: jsdoc,
+			matchedJsDoc: jsDoc,
 			inheritDocsSource,
-			updateJsdoc: text => {
-				const parent = jsdoc.getParent() as JSDocableNode
+			updateJsDoc: text => {
+				const parent = jsDoc.getParent() as JSDocableNode
 
 				// replace the original JSDoc node in the AST with a new one
 				// created from updatedContents
-				jsdoc.remove()
+				jsDoc.remove()
 				parent.addJsDoc(text)
 
 				updateCount++
@@ -278,21 +273,23 @@ const docgenForFile = (sourceFile: SourceFile) => {
 	matchContexts.forEach(ctx => {
 		const inheritedDocs = findInheritedDocs(sourceFile, ctx)
 
-		let updatedContents = ctx.matchedJsdoc.getInnerText()
+		let updatedContents = ctx.matchedJsDoc.getInnerText()
 
 		if (inheritedDocs)
 			updatedContents = `${inheritedDocs.originalSummary}\n${inheritedDocs.inheritedDescription}`
 
-		updatedContents = updatedContents.replace(typeOnlyToken, typeOnlyMessage)
-		updatedContents = updatedContents.replace(typeNoopToken, typeNoopMessage)
+		updatedContents = Object.entries(replacedDecorators).reduce(
+			(contents, [decorator, message]) => contents.replace(decorator, message),
+			updatedContents
+		)
 
-		ctx.updateJsdoc(updatedContents)
+		ctx.updateJsDoc(updatedContents)
 	})
 }
 
 const findInheritedDocs = (
 	sourceFile: SourceFile,
-	{ inheritDocsSource, matchedJsdoc }: MatchContext
+	{ inheritDocsSource, matchedJsDoc }: MatchContext
 ) => {
 	if (!inheritDocsSource) return
 
@@ -304,7 +301,7 @@ const findInheritedDocs = (
 
 	if (!sourceDeclaration || !canHaveJsDoc(sourceDeclaration)) return
 
-	const matchedDescription = matchedJsdoc.getDescription()
+	const matchedDescription = matchedJsDoc.getDescription()
 
 	const inheritedDescription = sourceDeclaration.getJsDocs()[0].getDescription()
 
@@ -366,6 +363,6 @@ const throwJsDocgenParseError = (
 	message: string
 ): never => {
 	throw new Error(
-		`jsdocGen ParseError in ${path}: ${message}\nComment text: ${commentText}`
+		`jsDocGen ParseError in ${path}: ${message}\nComment text: ${commentText}`
 	)
 }

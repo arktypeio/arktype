@@ -1,4 +1,4 @@
-import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
+import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsDocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
 import { CodeBlock } from "./CodeBlock.tsx"
 import { LocalFriendlyUrl } from "./LocalFriendlyUrl.tsx"
@@ -78,13 +78,9 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 					{part.value}
 				</LocalFriendlyUrl>
 			: part.kind === "reference" ?
-				<a href={`#${part.value}`} key={i}>
+				<a style={{ display: "inline-block" }} href={`#${part.value}`} key={i}>
 					{part.value}
 				</a>
-			: part.kind === "tag" ?
-				<p key={i}>
-					{part.name} {JsDocParts(part.value)}
-				</p>
 			:	<p
 					style={{ display: "inline" }}
 					key={i}

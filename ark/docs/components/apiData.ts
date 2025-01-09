@@ -1,4 +1,4 @@
-import type { ApiDocsByGroup } from "../../repo/jsdocGen.ts"
+import type { ApiDocsByGroup } from "../../repo/jsDocGen.ts"
 
 export const apiDocsByGroup: ApiDocsByGroup = {
 	Type: [
@@ -349,7 +349,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			],
 			notes: [],
 			example:
-				'const t = type({ foo: "string" });\n// ArkErrors: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });'
+				'const t = type({ foo: "string" });\n// TypeScript: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });'
 		}
 	]
 }

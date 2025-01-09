@@ -9,7 +9,7 @@ import {
 	shell,
 	writeJson
 } from "../fs/index.ts"
-import { buildApi } from "./jsdocGen.ts"
+import { buildApi } from "./jsDocGen.ts"
 
 const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
