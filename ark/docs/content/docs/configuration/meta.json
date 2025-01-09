@@ -3,7 +3,7 @@
 	"pages": [
 		"[errors](/docs/configuration#errors)",
 		"[clone](/docs/configuration#clone)",
-		"[onUndeclaredKey](/docs/configuration#onUndeclaredKey)",
+		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
 		"[jitless](/docs/configuration#jitless)"
 	]
 }

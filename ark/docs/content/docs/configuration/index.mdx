@@ -50,7 +50,31 @@ console.log(formData.age)
 
 ### onUndeclaredKey
 
-🚧 Coming soon ™️🚧
+Like TypeScript, ArkType defaults to ignoring undeclared keys during validation. However, it also supports two additional behaviors:
+
+- `"ignore"` (default): Allow undeclared keys on input, preserve them on output
+- `"delete"`: Allow undeclared keys on input, delete them before returning output
+- `"reject"`: Reject input with undeclared keys
+
+These behaviors can be associated with individual Types via the builtin `"+"` syntax (see [those docs](/docs/objects/properties-undeclared) for more on how they work). You can also change the default globally:
+
+```ts
+import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+
+import { type } from "arktype"
+
+const userForm = type({
+	name: "string"
+})
+
+// out is now { name: "Alice" }
+const out = userForm({
+	name: "Alice",
+	age: "42"
+})
+```
 
 ### jitless
 

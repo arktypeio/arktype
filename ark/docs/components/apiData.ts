@@ -123,7 +123,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "A syntactic representation similar to native TypeScript"
+					value: "A syntax string similar to native TypeScript"
 				}
 			],
 			notes: [
