@@ -11,15 +11,23 @@ import {
 import ts from "typescript"
 import { bootstrapFs, bootstrapUtil, repoDirs } from "./shared.ts"
 
-const { flatMorph, includes, throwInternalError } = bootstrapUtil
+const { flatMorph, throwInternalError, emojiToUnicode } = bootstrapUtil
 const { writeFile, shell } = bootstrapFs
 
 const inheritDocToken = "@inheritDoc"
 const typeOnlyToken = "@typeonly"
+
+// used to delimit notes in JSDoc.
+// add to the list if you need new ones!
+const noteEmoji = ["✅", "🥸", "⚠️", "🔗"]
+
+const noteEmojiUnicode = noteEmoji.map(emojiToUnicode)
+const noteDelimiterRegex = new RegExp(`(?=\\n\\s*[-${noteEmojiUnicode}])`, "u")
+
 const typeOnlyMessage =
-	"- 🥸 Inference-only property that will be `undefined` at runtime"
+	"🥸 inference-only property that will be `undefined` at runtime"
 const typeNoopToken = "@typenoop"
-const typeNoopMessage = "- 🥸 Inference-only function that does nothing runtime"
+const typeNoopMessage = "🥸 inference-only function that does nothing runtime"
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
 const jsdocSourcesGlob = `${arkTypeBuildDir}/**/*.d.ts`
@@ -75,9 +83,7 @@ export const getAllJsDoc = (project: Project) => {
 	)
 }
 
-const apiGroups = ["Type"] as const
-
-export type ApiGroup = (typeof apiGroups)[number]
+export type ApiGroup = "Type"
 
 export type JsdocComment = ReturnType<JSDoc["getComment"]>
 
@@ -128,16 +134,14 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	if (!name) return
 
+	const filePath = doc.getSourceFile().getFilePath()
+	let group: ApiGroup
+	if (filePath.includes("methods")) group = "Type"
+	else return
+
+	if (!doc.getInnerText().trim().startsWith("#")) return
+
 	const tags = doc.getTags()
-	const group = tags.find(t => t.getTagName() === "api")?.getCommentText()
-
-	if (!group) return
-
-	if (!includes(apiGroups, group)) {
-		return throwInternalError(
-			`Invalid API group ${group} for name ${name}. Should be defined like @api Type`
-		)
-	}
 
 	const rootComment = doc.getComment()
 
@@ -152,6 +156,11 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 
 	const summaryParts: ParsedJsDocPart[] = []
 	const notePartGroups: ParsedJsDocPart[][] = []
+
+	if (allParts[0].kind === "text") {
+		allParts[0].value = allParts[0].value.replace(/^#+\s*/, "")
+		if (allParts[0].value === "") allParts.shift()
+	}
 
 	allParts.forEach(part => {
 		if (part.kind === "noteStart") notePartGroups.push([part])
@@ -186,7 +195,7 @@ const parseJsdocPart = (part: JsdocPart): ParsedJsDocPart[] => {
 }
 
 const parseJsdocText = (text: string): ParsedJsDocPart[] => {
-	const sections = text.split(/\n\s*-/)
+	const sections = text.split(noteDelimiterRegex)
 	return sections.map((sectionText, i) => ({
 		kind: i === 0 ? "text" : "noteStart",
 		value: sectionText.trim()

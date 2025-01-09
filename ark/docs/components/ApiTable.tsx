@@ -6,7 +6,6 @@ import { LocalFriendlyUrl } from "./LocalFriendlyUrl.tsx"
 
 export type ApiTableProps = {
 	group: ApiGroup
-	rows: JSX.Element[]
 }
 
 export const ApiTable = ({ group }: ApiTableProps) => (
@@ -37,7 +36,7 @@ const ApiTableHeader = () => (
 				Name
 			</th>
 			<th className="p-2 text-left align-top min-w-[200px]">Summary</th>
-			<th className="p-2 text-left align-top">Example</th>
+			<th className="p-2 text-left align-top">Notes & Examples</th>
 		</tr>
 	</thead>
 )
@@ -51,7 +50,17 @@ interface ApiTableRowProps {
 
 const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
 	<tr key={name}>
-		<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
+		<td
+			style={{
+				fontSize:
+					name.length < 12 ? "1rem"
+					: name.length < 16 ? "0.7rem"
+					: "0.6rem"
+			}}
+			className="p-2 align-top whitespace-nowrap w-auto"
+		>
+			{name}
+		</td>
 		<td className="p-2 align-top">{JsDocParts(summary)}</td>
 		<td className="p-2 align-top">
 			{notes.map((note, i) => (
@@ -84,6 +93,8 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 						__html: part.value
 							.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
 							.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
+							.replace(/`([^`]+)`/g, "<code>$1</code>")
+							.replace(/\s*-(.*)/g, "• $1")
 					}}
 				/>
 			}

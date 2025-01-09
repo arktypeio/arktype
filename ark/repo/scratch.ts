@@ -10,17 +10,4 @@ import { buildApi, jsdocGen } from "./jsdocGen.ts"
 
 const t = type("(number % 2) > 0")
 
-// buildApi()
-
-t.configure
-
-t.description //?
-// an integer and more than 0 and at most 10
-
-const text = `FOo bar
-- baz
-    - back
-    track 
- -squz`
-const s = text.split(/\n\s*-/)
-console.log(s)
+buildApi()

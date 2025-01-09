@@ -41,43 +41,41 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	/**
-	 * The precompiled JS used to optimize validation.
-	 * Will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode.
+	 * the precompiled JS used to optimize validation
+	 *
+	 * ⚠️ will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode
 	 */
 	precompilation: string | undefined
 
 	/**
-	 * The generic parameter representing this Type
+	 * the generic parameter representing this Type
 	 *
 	 * @typeonly
 	 *
-	 * - ⚠️ May contain types representing morphs or default values that would
+	 * ⚠️ May contain types representing morphs or default values that would
 	 * be inaccurate if used directly for runtime values. In those cases,
 	 * you should use {@link infer} or {@link inferIn} on this object instead.
 	 */
 	t: t
 
 	/**
-	 * The {@link Scope} in which definitions for this Type its chained methods are parsed
-	 * @api Type
+	 * #### {@link Scope} in which chained methods are parsed
 	 */
 	$: Scope<$>
 
 	/**
-	 * The type of data this returns
+	 * #### type of data this returns
 	 *
 	 * @typeonly
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type ParsedNumber = typeof parseNumber.infer // number
-	 *
-	 * @api Type
 	 */
 	infer: this["inferOut"]
 
 	/**
-	 * Alias of {@link infer}
+	 * alias of {@link infer}
 	 *
 	 * @typeonly
 	 *
@@ -88,10 +86,11 @@ interface Type<out t = unknown, $ = {}>
 	inferOut: distill.Out<t>
 
 	/**
-	 * The type of output that can be introspected at runtime (e.g. via {@link out})
+	 * type of output that can be introspected at runtime (e.g. via {@link out})
 	 *
-	 * - If your Type contains morphs, they will be inferred as `unknown` unless
+	 * ⚠️ If your Type contains morphs, they will be inferred as `unknown` unless
 	 * they are an ArkType keyword or have an explicitly defined output validator.
+	 *
 	 * @typeonly
 	 *
 	 * @example
@@ -112,73 +111,66 @@ interface Type<out t = unknown, $ = {}>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 
 	/**
-	 * The type of data this expects
+	 * #### type of data this expects
 	 *
 	 * @typeonly
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type UnparsedNumber = typeof parseNumber.inferIn // string
-	 * @api Type
 	 */
 	inferIn: distill.In<t>
 
 	/**
-	 * The internal JSON representation
-	 * @api Type
+	 * #### internal JSON representation
 	 */
 	json: JsonStructure
 
 	/**
-	 * Alias of {@link json} for `JSON.stringify` compatibility
+	 * alias of {@link json} for `JSON.stringify` compatibility
 	 */
 	toJSON(): JsonStructure
 
 	/**
-	 * Generate a JSON Schema
+	 * #### generate a JSON Schema
+	 *
 	 * @throws {JsonSchema.UnjsonifiableError} if this cannot be converted to JSON Schema
-	 * @api Type
 	 */
 	toJsonSchema(): JsonSchema
 
 	/**
-	 * Metadata like custom descriptions and error messages
+	 * #### metadata like custom descriptions and error messages
 	 *
-	 * @description The type of this property {@link https://arktype.io/docs/configuration#custom | can be extended} by your project.
-	 * @api Type
+	 * ✅ type {@link https://arktype.io/docs/configuration#custom | can be customized} for your project
 	 */
 	meta: ArkAmbient.meta
 
 	/**
-	 * An English description
+	 * #### a human-readable English description
 	 *
-	 * - Work best for primitive values
+	 * ✅ works best for primitive values
 	 *
 	 * @example
 	 * const n = type("0 < number <= 100")
 	 * console.log(n.description) // positive and at most 100
-	 *
-	 * @api Type
 	 */
 	description: string
 
 	/**
-	 * A syntax string similar to native TypeScript
+	 * #### syntax string similar to native TypeScript
 	 *
-	 * - Works well for both primitives and structures
+	 * ✅ works well for both primitives and structures
 	 *
 	 * @example
 	 * const loc = type({ coords: ["number", "number"] })
 	 * console.log(loc.expression) // { coords: [number, number] }
-	 *
-	 * @api Type
 	 */
 	expression: string
 
 	/**
-	 * Validate and morph data, throwing a descriptive AggregateError on failure
+	 * #### validate and return transformed data or throw
 	 *
-	 * - Sugar to avoid checking for {@link type.errors} if they are unrecoverable
+	 * ✅ sugar to avoid checking for {@link type.errors} if they are unrecoverable
 	 *
 	 * @example
 	 * const criticalPayload = type({
@@ -189,29 +181,25 @@ interface Type<out t = unknown, $ = {}>
 	 * console.log(data.superImportantValue) // valid output can be accessed directly
 	 *
 	 * @throws {AggregateError}
-	 * @api Type
 	 */
 	assert(data: unknown): this["infer"]
 
 	/**
-	 * Validate input data without applying morphs
+	 * #### check input without applying morphs
 	 *
-	 * - Good for cases like filtering that don't benefit from detailed errors
+	 * ✅ good for stuff like filtering that doesn't benefit from detailed errors
 	 *
 	 * @example
 	 * const numeric = type("number | bigint")
 	 * // [0, 2n]
 	 * const numerics = [0, "one", 2n].filter(numeric.allows)
-	 *
-	 * @api Type
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
 	/**
-	 * Clone and add metadata to shallow references
+	 * #### clone and add metadata to shallow references
 	 *
-	 * - Does not affect error messages within properties of an object
-	 * - Overlapping keys on existing meta will be overwritten
+	 * ⚠️ does not affect error messages within properties of an object
 	 *
 	 * @example
 	 * const notOdd = type("number % 2").configure({ description: "not odd" })
@@ -228,16 +216,14 @@ interface Type<out t = unknown, $ = {}>
 	 * const oddProp = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
-	 *
-	 * @api Type
 	 */
 	configure(meta: MetaSchema): this
 
 	/**
-	 * Clone and add the description to shallow references
+	 * #### clone and add the description to shallow references
 	 *
-	 * - Equivalent to `.configure({ description })` (see {@link configure})
-	 * - Does not affect error messages within properties of an object
+	 * 🔗 equivalent to `.configure({ description })` (see {@link configure})
+	 * ⚠️ does not affect error messages within properties of an object
 	 *
 	 * @example
 	 * const aToZ = type(/^a.*z$/).describe("a string like 'a...z'")
@@ -245,29 +231,25 @@ interface Type<out t = unknown, $ = {}>
 	 * // notice how our description is integrated with other parts of the message
 	 * const badPattern = aToZ("albatross") // must be a string like 'a...z' (was "albatross")
 	 * const nonString = aToZ(123) // must be a string like 'a...z' (was 123)
-	 *
-	 * @api Type
 	 */
 	describe(description: string): this
 
 	/**
-	 * Clone to a new Type with the specified undeclared key behavior.
+	 * #### clone to a new Type with the specified undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
-	 * @api Type
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Deeply clone to a new Type with the specified undeclared key behavior.
+	 * #### deeply clone to a new Type with the specified undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
-	 * @api Type
 	 **/
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Identical to `assert`, but with a typed input as a convenience for providing a typed value.
+	 * Alias for {@link assert} with typed input
 	 * @example const ConfigT = type({ foo: "string" }); export const config = ConfigT.from({ foo: "bar" })
 	 */
 	from(literal: this["inferIn"]): this["infer"]

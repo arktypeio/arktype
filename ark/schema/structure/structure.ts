@@ -53,11 +53,9 @@ import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcherReference } from "./shared.ts"
 
 /**
- * `"ignore"` (default) - allow and preserve extra properties
- *
- * `"reject"` - disallow extra properties
- *
- * `"delete"` - clone and remove extra properties from output
+ * - `"ignore"` (default) - allow and preserve extra properties
+ * - `"reject"` - disallow extra properties
+ * - `"delete"` - clone and remove extra properties from output
  */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 

@@ -7,17 +7,12 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			name: "$",
 			summary: [
 				{
-					kind: "text",
-					value: "The"
-				},
-				{
 					kind: "reference",
 					value: "Scope"
 				},
 				{
 					kind: "text",
-					value:
-						"in which definitions for this Type its chained methods are parsed"
+					value: "in which chained methods are parsed"
 				}
 			],
 			notes: []
@@ -28,15 +23,21 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "The type of data this returns"
+					value: "type of data this returns"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
 						value:
-							"🥸 Inference-only property that will be `undefined` at runtime"
+							"🥸 inference-only property that will be `undefined` at runtime"
 					}
 				]
 			],
@@ -49,15 +50,21 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "The type of data this expects"
+					value: "type of data this expects"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
 						value:
-							"🥸 Inference-only property that will be `undefined` at runtime"
+							"🥸 inference-only property that will be `undefined` at runtime"
 					}
 				]
 			],
@@ -70,7 +77,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "The internal JSON representation"
+					value: "internal JSON representation"
 				}
 			],
 			notes: []
@@ -81,7 +88,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "Generate a JSON Schema"
+					value: "generate a JSON Schema"
 				}
 			],
 			notes: []
@@ -92,10 +99,32 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "Metadata like custom descriptions and error messages"
+					value: "metadata like custom descriptions and error messages"
 				}
 			],
-			notes: []
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ type"
+					},
+					{
+						kind: "link",
+						url: "https://arktype.io/docs/configuration#custom",
+						value: "can be customized"
+					},
+					{
+						kind: "text",
+						value: "for your project"
+					}
+				]
+			]
 		},
 		{
 			group: "Type",
@@ -103,14 +132,20 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "An English description"
+					value: "a human-readable English description"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
-						value: "Work best for primitive values"
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ works best for primitive values"
 					}
 				]
 			],
@@ -123,14 +158,20 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "A syntax string similar to native TypeScript"
+					value: "syntax string similar to native TypeScript"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
-						value: "Works well for both primitives and structures"
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ works well for both primitives and structures"
 					}
 				]
 			],
@@ -143,15 +184,20 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value:
-						"Validate and morph data, throwing a descriptive AggregateError on failure"
+					value: "validate and return transformed data or throw"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
-						value: "Sugar to avoid checking for"
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ sugar to avoid checking for"
 					},
 					{
 						kind: "reference",
@@ -172,15 +218,21 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "Validate input data without applying morphs"
+					value: "check input without applying morphs"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
 						value:
-							"Good for cases like filtering that don't benefit from detailed errors"
+							"✅ good for stuff like filtering that doesn't benefit from detailed errors"
 					}
 				]
 			],
@@ -193,21 +245,21 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "Clone and add metadata to shallow references"
+					value: "clone and add metadata to shallow references"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
-						value:
-							"Does not affect error messages within properties of an object"
+						value: ""
 					}
 				],
 				[
 					{
 						kind: "noteStart",
-						value: "Overlapping keys on existing meta will be overwritten"
+						value:
+							"⚠️ does not affect error messages within properties of an object"
 					}
 				]
 			],
@@ -220,14 +272,20 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "Clone and add the description to shallow references"
+					value: "clone and add the description to shallow references"
 				}
 			],
 			notes: [
 				[
 					{
 						kind: "noteStart",
-						value: "Equivalent to `.configure({ description })` (see"
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "🔗 equivalent to `.configure({ description })` (see"
 					},
 					{
 						kind: "reference",
@@ -242,12 +300,114 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					{
 						kind: "noteStart",
 						value:
-							"Does not affect error messages within properties of an object"
+							"⚠️ does not affect error messages within properties of an object"
 					}
 				]
 			],
 			example:
 				'const aToZ = type(/^a.*z$/).describe("a string like \'a...z\'")\nconst good = aToZ("alcatraz") // "alcatraz"\n// notice how our description is integrated with other parts of the message\nconst badPattern = aToZ("albatross") // must be a string like \'a...z\' (was "albatross")\nconst nonString = aToZ(123) // must be a string like \'a...z\' (was 123)'
+		},
+		{
+			group: "Type",
+			name: "onUndeclaredKey",
+			summary: [
+				{
+					kind: "text",
+					value:
+						"clone to a new Type with the specified undeclared key behavior"
+				}
+			],
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							'- `"ignore"` (default) - allow and preserve extra properties'
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: '- `"reject"` - disallow extra properties'
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							'- `"delete"` - clone and remove extra properties from output'
+					}
+				]
+			]
+		},
+		{
+			group: "Type",
+			name: "onDeepUndeclaredKey",
+			summary: [
+				{
+					kind: "text",
+					value:
+						"deeply clone to a new Type with the specified undeclared key behavior"
+				}
+			],
+			notes: [
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							'- `"ignore"` (default) - allow and preserve extra properties'
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: '- `"reject"` - disallow extra properties'
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: ""
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							'- `"delete"` - clone and remove extra properties from output'
+					}
+				]
+			]
 		}
 	]
 }

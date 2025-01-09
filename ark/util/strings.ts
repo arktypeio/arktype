@@ -90,3 +90,12 @@ export type isStringLiteral<t> =
 			:	false
 		:	false
 	:	false
+
+export const emojiToUnicode = (emoji: string): string =>
+	emoji
+		.split("")
+		.map(char => {
+			const codePoint = char.codePointAt(0)
+			return codePoint ? `\\u${codePoint.toString(16).padStart(4, "0")}` : ""
+		})
+		.join("")
