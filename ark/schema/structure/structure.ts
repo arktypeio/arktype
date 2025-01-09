@@ -703,7 +703,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.props.forEach(prop => {
 				if (typeof prop.key === "symbol") {
 					return JsonSchema.throwUnjsonifiableError(
-						`Sybolic key ${prop.serializedKey}`
+						`Symbolic key ${prop.serializedKey}`
 					)
 				}
 
