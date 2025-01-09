@@ -54,8 +54,10 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
-			description: node =>
-				`${node.exclusive ? "less than" : "at most"} ${node.rule}`
+			description: node => {
+				if (node.rule === 0) return node.exclusive ? "negative" : "non-positive"
+				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
+			}
 		},
 		intersections: {
 			max: (l, r) => (l.isStricterThan(r) ? l : r),
@@ -65,7 +67,8 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 						ctx.$.node("unit", { unit: max.rule })
 					:	null
 				:	Disjoint.init("range", max, min)
-		}
+		},
+		obviatesBasisDescription: true
 	})
 
 export class MaxNode extends BaseRange<Max.Declaration> {

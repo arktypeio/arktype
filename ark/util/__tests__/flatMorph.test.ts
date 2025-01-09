@@ -82,4 +82,17 @@ contextualize(() => {
 		)
 		attest<(1 | 3)[]>(result).equals([1, 3])
 	})
+
+	it("groupable", () => {
+		const result = flatMorph({ a: true, b: false, c: 0, d: 1 }, (k, v) =>
+			typeof v === "boolean" ?
+				([{ group: "bools" }, v] as const)
+			:	([{ group: "nums" }, v] as const)
+		)
+
+		attest<{
+			bools: boolean[]
+			nums: (0 | 1)[]
+		}>(result).snap({ bools: [true, false], nums: [0, 1] })
+	})
 })

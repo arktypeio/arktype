@@ -223,11 +223,31 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				pipe: false
 			}) as nodeOfKind<"intersection" | Intersection.BasisKind>,
 		defaults: {
-			description: node =>
-				node.children.length === 0 ?
-					"unknown"
-				:	(node.structure?.description ??
-					node.children.map(child => child.description).join(" and ")),
+			description: node => {
+				if (node.children.length === 0) return "unknown"
+				if (node.structure) return node.structure.description
+
+				const childDescriptions: string[] = []
+
+				if (
+					node.basis &&
+					!node.refinements.some(r => r.impl.obviatesBasisDescription)
+				)
+					childDescriptions.push(node.basis.description)
+
+				if (node.refinements.length) {
+					const sortedRefinementDescriptions = node.refinements
+						// override alphabetization to describe min before max
+						.toSorted((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
+						.map(r => r.description)
+					childDescriptions.push(...sortedRefinementDescriptions)
+				}
+
+				if (node.predicate)
+					childDescriptions.push(...node.predicate.map(p => p.description))
+
+				return childDescriptions.join(" and ")
+			},
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
 			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`

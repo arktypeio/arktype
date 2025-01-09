@@ -179,7 +179,9 @@ contextualize(() => {
 			type({ inelegantKey: () => type("'inelegant value'") })
 		)
 
-		attest(myInelegantType.t).type.toString.snap()
+		attest(myInelegantType.t).type.toString.snap(
+			'{ inelegantKey: "inelegant value" }'
+		)
 		attest(myInelegantType.expression).snap(
 			'{ inelegantKey: "inelegant value" }'
 		)

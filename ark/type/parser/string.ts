@@ -25,12 +25,10 @@ export const parseString = (
 	const aliasResolution = ctx.$.maybeResolveRoot(def)
 	if (aliasResolution) return aliasResolution
 
-	const aliasArrayResolution =
-		def.endsWith("[]") ?
-			ctx.$.maybeResolveRoot(def.slice(0, -2))?.array()
-		:	undefined
-
-	if (aliasArrayResolution) return aliasArrayResolution
+	if (def.endsWith("[]")) {
+		const possibleElementResolution = ctx.$.maybeResolveRoot(def.slice(0, -2))
+		if (possibleElementResolution) return possibleElementResolution.array()
+	}
 
 	const s = new DynamicState(new ArkTypeScanner(def), ctx)
 

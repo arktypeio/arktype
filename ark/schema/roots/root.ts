@@ -519,7 +519,7 @@ export abstract class BaseRoot<
 		return this.onUndeclaredKey({ rule: behavior, deep: true })
 	}
 
-	satisfying(predicate: Predicate): BaseRoot {
+	filter(predicate: Predicate): BaseRoot {
 		return this.constrain("predicate", predicate)
 	}
 

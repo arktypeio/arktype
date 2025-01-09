@@ -6,6 +6,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { BaseProp, intersectProps, type Prop } from "./prop.ts"
+
 export declare namespace Required {
 	export interface ErrorContext extends BaseErrorContext<"required"> {
 		missingValueDescription: string

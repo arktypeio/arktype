@@ -27,11 +27,7 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { intersectNodesRoot } from "../shared/intersections.ts"
-import {
-	throwInternalJsonSchemaOperandError,
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
@@ -56,6 +52,13 @@ import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcherReference } from "./shared.ts"
 
+/**
+ * `"ignore"` (default) - allow and preserve extra properties
+ *
+ * `"reject"` - disallow extra properties
+ *
+ * `"delete"` - clone and remove extra properties from output
+ */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
 export type UndeclaredKeyHandling = "reject" | "delete"
@@ -680,15 +683,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return this.reduceObjectJsonSchema(schema)
 			case "array":
 				if (this.props.length || this.index) {
-					throwParseError(
-						writeUnsupportedJsonSchemaTypeMessage(
-							`Additional properties on array ${this.expression}`
-						)
+					return JsonSchema.throwUnjsonifiableError(
+						`Additional properties on array ${this.expression}`
 					)
 				}
 				return this.sequence?.reduceJsonSchema(schema) ?? schema
 			default:
-				return throwInternalJsonSchemaOperandError("structure", schema)
+				return JsonSchema.throwInternalOperandError("structure", schema)
 		}
 	}
 
@@ -697,10 +698,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			schema.properties = {}
 			this.props.forEach(prop => {
 				if (typeof prop.key === "symbol") {
-					return throwParseError(
-						writeUnsupportedJsonSchemaTypeMessage(
-							`Sybolic key ${prop.serializedKey}`
-						)
+					return JsonSchema.throwUnjsonifiableError(
+						`Sybolic key ${prop.serializedKey}`
 					)
 				}
 
@@ -715,10 +714,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return (schema.additionalProperties = index.value.toJsonSchema())
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
-				return throwParseError(
-					writeUnsupportedJsonSchemaTypeMessage(
-						`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
-					)
+				return JsonSchema.throwUnjsonifiableError(
+					`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
 				)
 			}
 
@@ -727,12 +724,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					!keyBranch.hasKind("intersection") ||
 					keyBranch.pattern?.length !== 1
 				) {
-					return throwParseError(
-						writeUnsupportedJsonSchemaTypeMessage(
-							`Index signature ${keyBranch}`
-						)
+					return JsonSchema.throwUnjsonifiableError(
+						`Index signature ${keyBranch}`
 					)
 				}
+
 				schema.patternProperties ??= {}
 				schema.patternProperties[keyBranch.pattern[0].rule] =
 					index.value.toJsonSchema()

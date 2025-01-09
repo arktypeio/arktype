@@ -1,11 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	$ark,
-	intrinsic,
-	rootSchema,
-	writeCyclicJsonSchemaMessage,
-	writeJsonSchemaMorphMessage
-} from "@ark/schema"
+import { $ark, intrinsic, JsonSchema, rootSchema } from "@ark/schema"
 
 contextualize(() => {
 	it("base primitives", () => {
@@ -216,13 +210,13 @@ contextualize(() => {
 		})
 
 		attest(() => morph.toJsonSchema()).throws(
-			writeJsonSchemaMorphMessage(morph.expression)
+			JsonSchema.writeUnjsonifiableMessage(morph.expression, "morph")
 		)
 	})
 
 	it("errors on cyclic", () => {
 		attest(() => $ark.intrinsic.json.toJsonSchema()).throws(
-			writeCyclicJsonSchemaMessage("jsonObject")
+			JsonSchema.writeUnjsonifiableMessage("jsonObject", "cyclic")
 		)
 	})
 })

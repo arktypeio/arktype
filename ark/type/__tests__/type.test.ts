@@ -22,6 +22,12 @@ contextualize(() => {
 		attest(t.allows(5)).equals(false)
 	})
 
+	it("allows doc example", () => {
+		const numeric = type("number | bigint")
+		const numerics = [0, "one", 2n].filter(numeric.allows)
+		attest(numerics).snap([0, 2n])
+	})
+
 	it("errors can be thrown", () => {
 		const t = type("number")
 		try {

@@ -118,6 +118,8 @@ const _serialize = (
 			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
+		case "string":
+			return (data as string).replaceAll("\\", "\\\\")
 		default:
 			return data
 	}
@@ -125,9 +127,6 @@ const _serialize = (
 
 /**
  * Converts a Date instance to a human-readable description relative to its precision
- *
- * @param {Date} date
- * @returns {string} - The generated description
  */
 export const describeCollapsibleDate = (date: Date): string => {
 	const year = date.getFullYear()

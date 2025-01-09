@@ -34,10 +34,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import {
 	traverseKey,
@@ -49,6 +46,7 @@ import {
 	computeDefaultValueMorphs
 } from "./optional.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
+
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>
@@ -483,10 +481,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
 
 		if (this.optionals) {
-			throwParseError(
-				writeUnsupportedJsonSchemaTypeMessage(
-					`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
-				)
+			return JsonSchema.throwUnjsonifiableError(
+				`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
 			)
 		}
 
@@ -505,10 +501,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		if (this.postfix) {
-			throwParseError(
-				writeUnsupportedJsonSchemaTypeMessage(
-					`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-				)
+			return JsonSchema.throwUnjsonifiableError(
+				`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
 			)
 		}
 

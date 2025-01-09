@@ -1,4 +1,3 @@
-import { throwParseError } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
@@ -11,7 +10,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
-import { writeUnsupportedJsonSchemaTypeMessage } from "./shared/jsonSchema.ts"
+import { JsonSchema } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
@@ -110,11 +109,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	}
 
 	reduceJsonSchema(): never {
-		return throwParseError(
-			writeUnsupportedJsonSchemaTypeMessage({
-				description: `Predicate ${this.expression}`
-			})
-		)
+		return JsonSchema.throwUnjsonifiableError(`Predicate ${this.expression}`)
 	}
 }
 
@@ -128,7 +123,13 @@ export type Predicate<data = any> = (
 	ctx: TraversalContext
 ) => boolean
 
-export type PredicateCast<input = never, narrowed extends input = input> = (
-	input: input,
-	ctx: TraversalContext
-) => input is narrowed
+export declare namespace Predicate {
+	export type Casted<input = never, narrowed extends input = input> = (
+		input: input,
+		ctx: TraversalContext
+	) => input is narrowed
+
+	export type Castable<input = never, narrowed extends input = input> =
+		| Predicate<input>
+		| Casted<input, narrowed>
+}

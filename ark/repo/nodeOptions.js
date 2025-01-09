@@ -12,8 +12,5 @@ const versionedFlags =
 
 export const nodeDevOptions = `${process.env.NODE_OPTIONS ?? ""} --conditions ark-ts ${versionedFlags}`
 
-/**
- * @param {string} [extraOpts]
- */
 export const addNodeDevOptions = extraOpts =>
 	(process.env.NODE_OPTIONS = `${nodeDevOptions} ${extraOpts ?? ""}`)

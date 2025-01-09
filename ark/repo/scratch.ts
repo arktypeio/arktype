@@ -1,6 +1,5 @@
-import { attest } from "@ark/attest"
-import { flatMorph } from "@ark/util"
-import { ark, type } from "arktype"
+import { type } from "arktype"
+import { buildApi, jsdocGen } from "./jsdocGen.ts"
 
 // type stats on attribute removal merge 12/18/2024
 // {
@@ -9,30 +8,19 @@ import { ark, type } from "arktype"
 //     "instantiations": 5066185
 // }
 
-// false
-// const t = type({ foo: "string" }).extends("Record<string, string>")
+const t = type("(number % 2) > 0")
 
-flatMorph(ark.internal.resolutions, (k, v) => [k, v])
+// buildApi()
 
-console.log(Object.keys(ark.internal.resolutions))
+t.configure
 
-const customEven = type("number % 2", "@", {
-	expected: ctx => `custom expected ${ctx.description}`,
-	actual: data => `custom actual ${data}`,
-	problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
-	message: ctx => `custom message ${ctx.problem}`
-})
+t.description //?
+// an integer and more than 0 and at most 10
 
-// custom message custom problem custom expected a multiple of 2 custom actual 3
-customEven(3)
-
-type Thing1 = {
-	[x: string]: unknown
-}
-
-// Thing2 is apparently identical to Thing1, and yet...
-type Thing2 = Record<string, unknown>
-
-type A = keyof Thing1 // number | string
-
-type B = keyof Thing2 // string
+const text = `FOo bar
+- baz
+    - back
+    track 
+ -squz`
+const s = text.split(/\n\s*-/)
+console.log(s)

@@ -53,12 +53,15 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
-			description: node =>
-				`${node.exclusive ? "more than" : "at least"} ${node.rule}`
+			description: node => {
+				if (node.rule === 0) return node.exclusive ? "positive" : "non-negative"
+				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
+			}
 		},
 		intersections: {
 			min: (l, r) => (l.isStricterThan(r) ? l : r)
-		}
+		},
+		obviatesBasisDescription: true
 	})
 
 export class MinNode extends BaseRange<Min.Declaration> {

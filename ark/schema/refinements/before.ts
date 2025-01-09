@@ -1,4 +1,4 @@
-import { describeCollapsibleDate, throwParseError } from "@ark/util"
+import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -6,10 +6,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
@@ -87,9 +84,7 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
 	reduceJsonSchema(): JsonSchema {
-		return throwParseError(
-			writeUnsupportedJsonSchemaTypeMessage("Date instance")
-		)
+		return JsonSchema.throwUnjsonifiableError("Date instance")
 	}
 }
 

@@ -99,6 +99,12 @@ export class ArkError<
 	}
 }
 
+/**
+ * A ReadonlyArray of `ArkError`s returned by a Type on invalid input.
+ *
+ * Subsequent errors added at an existing path are merged into an
+ * ArkError intersection.
+ */
 export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
@@ -110,17 +116,56 @@ export class ArkErrors
 		this.ctx = ctx
 	}
 
+	/**
+	 * Errors by a pathString representing their location.
+	 */
 	byPath: Record<string, ArkError> = Object.create(null)
+
+	/**
+	 * All pathStrings at which errors are present mapped to the errors occuring
+	 * at that path or any nested path within it.
+	 */
 	byAncestorPath: Record<string, ArkError[]> = Object.create(null)
 
 	count = 0
 	private mutable: ArkError[] = this as never
 
+	/**
+	 * Throw an AggregateError based on these errors.
+	 */
+	throw(): never {
+		throw new AggregateError(this, this.summary)
+	}
+
+	/**
+	 * Append an ArkError to this array, ignoring duplicates.
+	 *
+	 * Add
+	 */
 	add(error: ArkError): void {
 		if (this.includes(error)) return
 		this._add(error)
 	}
 
+	/**
+	 * Add all errors from an ArkErrors instance, ignoring duplicates and
+	 * prefixing their paths with that of the current TraversalContext.
+	 */
+	merge(errors: ArkErrors): void {
+		errors.forEach(e => {
+			if (this.includes(e)) return
+			this._add(
+				new ArkError(
+					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
+					this.ctx
+				)
+			)
+		})
+	}
+
+	/**
+	 * @internal
+	 */
 	affectsPath(path: ReadonlyPath): boolean {
 		if (this.length === 0) return false
 
@@ -132,6 +177,31 @@ export class ArkErrors
 			// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
 			path.stringify() in this.byAncestorPath
 		)
+	}
+
+	/**
+	 * A human-readable summary of all errors.
+	 */
+	get summary(): string {
+		return this.toString()
+	}
+
+	/**
+	 * Alias of `summary` for StandardSchema compatibility.
+	 */
+	get message(): string {
+		return this.toString()
+	}
+
+	/**
+	 * Alias of this ArkErrors instance for StandardSchema compatibility.
+	 */
+	get issues(): this {
+		return this
+	}
+
+	toString(): string {
+		return this.join("\n")
 	}
 
 	private _add(error: ArkError): void {
@@ -171,38 +241,6 @@ export class ArkErrors
 				error
 			)
 		})
-	}
-
-	merge(errors: ArkErrors): void {
-		errors.forEach(e => {
-			if (this.includes(e)) return
-			this._add(
-				new ArkError(
-					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
-					this.ctx
-				)
-			)
-		})
-	}
-
-	get summary(): string {
-		return this.toString()
-	}
-
-	get message(): string {
-		return this.toString()
-	}
-
-	get issues(): this {
-		return this
-	}
-
-	toString(): string {
-		return this.join("\n")
-	}
-
-	throw(): never {
-		throw new AggregateError(this, this.message)
 	}
 }
 

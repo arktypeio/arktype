@@ -19,7 +19,10 @@ export type CodeBlockProps = {
 	style?: React.CSSProperties
 	className?: string
 	includesCompletions?: boolean
+	decorators?: CodeBlockDecorator[]
 } & propwiseXor<{ children: string }, { fromFile: SnippetId }>
+
+export type CodeBlockDecorator = "@noErrors"
 
 // preload languages for shiki
 // https://github.com/fuma-nama/fumadocs/issues/1095
@@ -51,11 +54,12 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 	fromFile,
 	style,
 	className,
-	includesCompletions
+	includesCompletions,
+	decorators
 }) => {
-	children ??= snippetContentsById[fromFile!]
+	let src = children ?? snippetContentsById[fromFile!]
 
-	if (!children) {
+	if (!src) {
 		throwInternalError(
 			fromFile ?
 				`Specified snippet '${fromFile}' does not have a corresponding file`
@@ -63,7 +67,11 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 		)
 	}
 
-	const highlighted = highlight(lang, children)
+	decorators?.forEach(d => {
+		if (!src.includes(d)) src = `// ${d}\n${src}`
+	})
+
+	const highlighted = highlight(lang, src)
 
 	return (
 		<FumaCodeBlock

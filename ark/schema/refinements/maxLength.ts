@@ -5,10 +5,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	throwInternalJsonSchemaOperandError,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
@@ -97,7 +94,7 @@ export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 				schema.maxItems = this.rule
 				return schema
 			default:
-				return throwInternalJsonSchemaOperandError("maxLength", schema)
+				return JsonSchema.throwInternalOperandError("maxLength", schema)
 		}
 	}
 }

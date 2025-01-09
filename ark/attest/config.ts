@@ -105,6 +105,8 @@ const getParamValue = (param: keyof AttestConfig) => {
 
 	if (raw === "false") return false
 
+	if (raw === "null") return null
+
 	if (param === "benchPercentThreshold")
 		return tryParseNumber(raw, { errorOnFail: true })
 

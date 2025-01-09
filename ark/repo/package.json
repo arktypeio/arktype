@@ -10,6 +10,7 @@
 		"@trpc/server": "10.45.2",
 		"arktype": "workspace:*",
 		"type-fest": "4.31.0",
+		"ts-morph": "25.0.0",
 		"typescript": "catalog:",
 		"zod": "3.24.1"
 	},

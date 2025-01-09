@@ -29,8 +29,14 @@ contextualize(() => {
 			const expected = type("number%8").and("7<number<222")
 			attest(t.json).equals(expected.json)
 			attest(t.description).snap(
-				"a number and a multiple of 8 and less than 222 and more than 7"
+				"a multiple of 8 and more than 7 and less than 222"
 			)
+		})
+
+		it("docs example", () => {
+			const n = type("0 < number <= 100")
+
+			attest(n.description).snap("positive and at most 100")
 		})
 
 		it("allows non-narrowed divisor", () => {
