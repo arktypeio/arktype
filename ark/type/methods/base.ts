@@ -306,8 +306,8 @@ interface Type<out t = unknown, $ = {}>
 	 * @typenoop
 	 *
 	 * @example
-	 * // Type<`a${string}`>
-	 * const t = type(/^a/).as<`a${string}`>()
+	 * // Type<`LEEEEEEEE${string}ROY`>
+	 * const leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()
 	 */
 	as<castTo = unset>(
 		...args: validateChainedAsArgs<castTo>
@@ -330,7 +330,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $>
 
 	/**
-	 * #### intersect another Type, throwing if the result is unsatisfiable
+	 * #### intersect the parsed Type, throwing if the result is unsatisfiable
 	 *
 	 * @example
 	 * // Type<{ foo: number; bar: string }>
@@ -343,7 +343,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<inferIntersection<t, r>, $>
 
 	/**
-	 * #### union with another Type
+	 * #### union with the parsed Type
 	 *
 	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
 	 *
@@ -458,7 +458,7 @@ interface Type<out t = unknown, $ = {}>
 	// that can lead to incorrect results. See:
 	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
 	/**
-	 * #### intersect another Type, returning an introspectable {@link Disjoint} if the result is unsatisfiable
+	 * #### intersect the parsed Type, returning an introspectable {@link Disjoint} if the result is unsatisfiable
 	 *
 	 * @example
 	 * // Type<{ foo: number; bar: string }>
@@ -472,7 +472,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
 	/**
-	 * #### check if another Type's constraints are identical
+	 * #### check if the parsed Type's constraints are identical
 	 *
 	 * ✅ equal types have identical input and output constraints and transforms
 	 * @ignoresMeta
@@ -492,6 +492,8 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * #### narrow this based on an {@link equals} check
 	 *
+	 * @ignoresMeta
+	 *
 	 * @example
 	 * const n = type.raw(`${Math.random()}`)
 	 * // Type<0.5> | undefined
@@ -502,7 +504,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $> | undefined
 
 	/**
-	 * #### check if this is a subtype of another Type
+	 * #### check if this is a subtype of the parsed Type
 	 *
 	 * ✅ a subtype must include all constraints from the base type
 	 * ✅ unlike {@link equals}, additional constraints may be present
@@ -517,6 +519,8 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * #### narrow this based on an {@link extends} check
 	 *
+	 * @ignoresMeta
+	 *
 	 * @example
 	 * const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
 	 * const ez = n.ifExtends("boolean") // Type<true> | undefined
@@ -525,17 +529,43 @@ interface Type<out t = unknown, $ = {}>
 		other: type.validate<def, $>
 	): instantiateType<r, $> | undefined
 
+	/**
+	 * #### check if a value could satisfy this and the parsed Type
+	 *
+	 * ⚠️ will return true unless a {@link Disjoint} can be proven
+	 *
+	 * @example
+	 * type.string.overlaps("string | number") // true (e.g. "foo")
+	 * type("string | number").overlaps("1") // true (1)
+	 * type("number > 0").overlaps("number < 0") // false (no values exist)
+	 *
+	 * const noAt = type("string").narrow(s => !s.includes("@"))
+	 * noAt.overlaps("string.email") // true (no values exist, but not provable)
+	 */
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
+	/**
+	 * #### extract branches {@link extend}ing the parsed Type
+	 *
+	 * @example
+	 * // Type<true | 0 | 2>
+	 * const t = type("boolean | 0 | 'one' | 2 | bigint").extract("number | 0n | true")
+	 */
 	extract<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
 	): instantiateType<Extract<t, r>, $>
 
+	/**
+	 * #### exclude branches {@link extend}ing the parsed Type
+	 *
+	 * @example
+	 *
+	 * // Type<false | 'one' | bigint>
+	 * const t = type("boolean | 0 | 'one' | 2 | bigint").exclude("number | 0n | true")
+	 */
 	exclude<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, r>, $>
-
-	traverse(data: unknown): this["infer"] | ArkErrors
 
 	/**
 	 * @experimental
