@@ -30,17 +30,16 @@ const palindrome = type("string")
 	.narrow(s => s === [...s].reverse().join(""))
 	.brand("palindrome")
 
-const out = palindrome("racecar")
-
 const stringifyUser = type({ name: "string" }).pipe(user =>
 	JSON.stringify(user)
 )
-const stringifySafe = stringifyUser.filter(user => user.name !== "Bobby Tables")
-//
-const stringifyUnsafe = stringifyUser.filter(
-	(user): user is { name: "Bobby Tables" } => user.name === "Bobby Tables"
+
+const parseZDate = type("string.date.parse").filter((s): s is `${string}Z` =>
+	s.endsWith("Z")
 )
 
-const z = stringifyUser.filter(
-	(user): user is { name: "Bobby Tables" } => user.name === "Bobby Tables"
+new Date().getFullYear()
+
+const withPredicate = type("string").narrow((s): s is `${string}.tsx` =>
+	/\.tsx?$/.test(s)
 )

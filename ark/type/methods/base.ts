@@ -399,13 +399,16 @@ interface Type<out t = unknown, $ = {}>
 	 * #### apply a predicate function to input
 	 *
 	 * ⚠️ the behavior of {@link narrow}, this method's output counterpart, is usually more desirable
-	 * ✅ useful primarily when dealing with morphs whose inputs have richer types than their outputs
+	 * ✅ most useful for morphs with input types that are re-used externally
+	 * @predicateCast
 	 *
 	 * @example
 	 * const stringifyUser = type({ name: "string" }).pipe(user => JSON.stringify(user))
 	 * const stringifySafe = stringifyUser.filter(user => user.name !== "Bobby Tables")
-	 * //
-	 * const stringifyUnsafe = stringifyUser.filter((user) => user.name === "Bobby Tables")
+	 * // Type<(In: `${string}Z`) => To<Date>>
+	 * const withPredicate = type("string.date.parse").filter((s): s is `${string}Z` =>
+	 *     s.endsWith("Z")
+	 * )
 	 */
 	filter<
 		narrowed extends this["inferIn"] = never,
@@ -417,10 +420,20 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<r, $>
 
 	/**
-	 * Add a custom predicate to this `Type`.
-	 * @example const nan = type('number').narrow(n => Number.isNaN(n)) // Type<number>
-	 * @example const foo = type("string").narrow((s): s is `foo${string}` => s.startsWith('foo') || ctx.mustBe('string starting with "foo"')) // Type<"foo${string}">
-	 * @example const unique = type('string[]').narrow((a, ctx) => new Set(a).size === a.length || ctx.mustBe('array with unique elements'))
+	 * #### apply a predicate function to output
+	 *
+	 * ✅ go-to fallback for validation not composable via built-in types and operators
+	 * ✅ runs after all other validators and morphs, if present
+	 * @predicateCast
+	 *
+	 * @example
+	 * const palindrome = type("string").narrow(s => s === [...s].reverse().join(""))
+	 *
+	 * const palindromicEmail = type("string.date.parse").narrow((date, ctx) =>
+	 *		date.getFullYear() === 2025 || ctx.mustBe("the current year")
+	 * )
+	 * // Type<`${string}.tsx`>
+	 * const withPredicate = type("string").narrow((s): s is `${string}.tsx` => /\.tsx?$/.test(s))
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,

@@ -27,7 +27,9 @@ const replacedDecorators = {
 	"@typeonly": "🥸 inference-only property that will be `undefined` at runtime",
 	"@typenoop": "🥸 inference-only function that does nothing runtime",
 	"@chainedDefinition":
-		"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)"
+		"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)",
+	"@predicateCast":
+		"🥸 {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates | Type predicates} can be used to cast"
 } as const
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")
