@@ -458,31 +458,69 @@ interface Type<out t = unknown, $ = {}>
 	// that can lead to incorrect results. See:
 	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
 	/**
-	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
-	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
-	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
-	 */
-	/**
 	 * #### intersect another Type, returning an introspectable {@link Disjoint} if the result is unsatisfiable
 	 *
 	 * @example
 	 * // Type<{ foo: number; bar: string }>
 	 * const t = type({ foo: "number" }).intersect({ bar: "string" })
-	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
-	 * const bad = type({ foo: "number" }).intersect({ foo: "string" })
+	 * const bad = type("number > 10").intersect("number < 5")
+	 * // logs "Intersection of > 10 and < 5 results in an unsatisfiable type"
+	 * if (bad instanceof Disjoint) console.log(`${bad.summary}`)
 	 */
 	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
+	/**
+	 * #### check if another Type's constraints are identical
+	 *
+	 * ✅ equal types have identical input and output constraints and transforms
+	 * @ignoresMeta
+	 *
+	 * @example
+	 * const divisibleBy6 = type.number.divisibleBy(6).moreThan(0)
+	 * // false (left side must also be positive)
+	 * divisibleBy6.equals("number % 6")
+	 * // false (right side has an additional <100 constraint)
+	 * console.log(divisibleBy6.equals("0 < (number % 6) < 100"))
+	 * const thirdTry = type("(number % 2) > 0").divisibleBy(3)
+	 * // true (types are normalized and reduced)
+	 * console.log(divisibleBy6.equals(thirdTry))
+	 */
 	equals<const def>(def: type.validate<def, $>): boolean
 
+	/**
+	 * #### narrow this based on an {@link equals} check
+	 *
+	 * @example
+	 * const n = type.raw(`${Math.random()}`)
+	 * // Type<0.5> | undefined
+	 * const ez = n.ifEquals("0.5")
+	 */
 	ifEquals<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<r, $> | undefined
 
+	/**
+	 * #### check if this is a subtype of another Type
+	 *
+	 * ✅ a subtype must include all constraints from the base type
+	 * ✅ unlike {@link equals}, additional constraints may be present
+	 * @ignoresMeta
+	 *
+	 * @example
+	 * type.string.extends("unknown") // true
+	 * type.string.extends(/^a.*z$/) // false
+	 */
 	extends<const def>(other: type.validate<def, $>): boolean
 
+	/**
+	 * #### narrow this based on an {@link extends} check
+	 *
+	 * @example
+	 * const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
+	 * const ez = n.ifExtends("boolean") // Type<true> | undefined
+	 */
 	ifExtends<const def, r = type.infer<def, $>>(
 		other: type.validate<def, $>
 	): instantiateType<r, $> | undefined

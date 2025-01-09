@@ -444,13 +444,12 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			name: "optional",
 			summary: [
 				{
-					kind: "text",
-					value:
-						"[optional definition](https://arktype.io/docs/objects#properties-optional) for this"
+					kind: "link",
+					url: "https://arktype.io/docs/objects#properties-optional",
+					value: "optional definition"
 				}
 			],
 			notes: [
-				[],
 				[
 					{
 						kind: "noteStart",
@@ -467,13 +466,12 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			name: "default",
 			summary: [
 				{
-					kind: "text",
-					value:
-						"[defaultable definition](https://arktype.io/docs/objects#properties-defaultable) for this"
+					kind: "link",
+					url: "https://arktype.io/docs/objects#properties-defaultable",
+					value: "defaultable definition"
 				}
 			],
 			notes: [
-				[],
 				[
 					{
 						kind: "noteStart",
@@ -542,7 +540,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					},
 					{
 						kind: "text",
-						value: "can be used to cast"
+						value: "can be used as casts"
 					}
 				]
 			],
@@ -585,12 +583,161 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					},
 					{
 						kind: "text",
-						value: "can be used to cast"
+						value: "can be used as casts"
 					}
 				]
 			],
 			example:
 				'const palindrome = type("string").narrow(s => s === [...s].reverse().join(""))\n\nconst palindromicEmail = type("string.date.parse").narrow((date, ctx) =>\n\t\tdate.getFullYear() === 2025 || ctx.mustBe("the current year")\n)\n// Type<`${string}.tsx`>\nconst withPredicate = type("string").narrow((s): s is `${string}.tsx` => /\\.tsx?$/.test(s))'
+		},
+		{
+			group: "Type",
+			name: "intersect",
+			summary: [
+				{
+					kind: "text",
+					value: "intersect another Type, returning an introspectable"
+				},
+				{
+					kind: "reference",
+					value: "Disjoint"
+				},
+				{
+					kind: "text",
+					value: "if the result is unsatisfiable"
+				}
+			],
+			notes: [],
+			example:
+				'// Type<{ foo: number; bar: string }>\nconst t = type({ foo: "number" }).intersect({ bar: "string" })\nconst bad = type("number > 10").intersect("number < 5")\n// logs "Intersection of > 10 and < 5 results in an unsatisfiable type"\nif (bad instanceof Disjoint) console.log(`${bad.summary}`)'
+		},
+		{
+			group: "Type",
+			name: "equals",
+			summary: [
+				{
+					kind: "text",
+					value: "check if another Type's constraints are identical"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"✅ equal types have identical input and output constraints and transforms"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ ignores associated"
+					},
+					{
+						kind: "reference",
+						value: "meta"
+					},
+					{
+						kind: "text",
+						value: ", which does not affect the set of allowed values"
+					}
+				]
+			],
+			example:
+				'const divisibleBy6 = type.number.divisibleBy(6).moreThan(0)\n// false (left side must also be positive)\ndivisibleBy6.equals("number % 6")\n// false (right side has an additional <100 constraint)\nconsole.log(divisibleBy6.equals("0 < (number % 6) < 100"))\nconst thirdTry = type("(number % 2) > 0").divisibleBy(3)\n// true (types are normalized and reduced)\nconsole.log(divisibleBy6.equals(thirdTry))'
+		},
+		{
+			group: "Type",
+			name: "ifEquals",
+			summary: [
+				{
+					kind: "text",
+					value: "narrow this based on an"
+				},
+				{
+					kind: "reference",
+					value: "equals"
+				},
+				{
+					kind: "text",
+					value: "check"
+				}
+			],
+			notes: [],
+			example:
+				'const n = type.raw(`${Math.random()}`)\n// Type<0.5> | undefined\nconst ez = n.ifEquals("0.5")'
+		},
+		{
+			group: "Type",
+			name: "extends",
+			summary: [
+				{
+					kind: "text",
+					value: "check if this is a subtype of another Type"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"✅ a subtype must include all constraints from the base type"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ unlike"
+					},
+					{
+						kind: "reference",
+						value: "equals"
+					},
+					{
+						kind: "text",
+						value: ", additional constraints may be present"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ ignores associated"
+					},
+					{
+						kind: "reference",
+						value: "meta"
+					},
+					{
+						kind: "text",
+						value: ", which does not affect the set of allowed values"
+					}
+				]
+			],
+			example:
+				'type.string.extends("unknown") // true\ntype.string.extends(/^a.*z$/) // false'
+		},
+		{
+			group: "Type",
+			name: "ifExtends",
+			summary: [
+				{
+					kind: "text",
+					value: "narrow this based on an"
+				},
+				{
+					kind: "reference",
+					value: "extends"
+				},
+				{
+					kind: "text",
+					value: "check"
+				}
+			],
+			notes: [],
+			example:
+				'const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>\nconst ez = n.ifExtends("boolean") // Type<true> | undefined'
 		}
 	]
 }
