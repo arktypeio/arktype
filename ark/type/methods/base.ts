@@ -228,9 +228,8 @@ interface Type<out t = unknown, $ = {}>
 	 * @example
 	 * const aToZ = type(/^a.*z$/).describe("a string like 'a...z'")
 	 * const good = aToZ("alcatraz") // "alcatraz"
-	 * // notice how our description is integrated with other parts of the message
-	 * const badPattern = aToZ("albatross") // must be a string like 'a...z' (was "albatross")
-	 * const nonString = aToZ(123) // must be a string like 'a...z' (was 123)
+	 * // ArkErrors: must be a string like 'a...z' (was "albatross")
+	 * const badPattern = aToZ("albatross")
 	 */
 	describe(description: string): this
 

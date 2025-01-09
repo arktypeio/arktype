@@ -305,7 +305,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				]
 			],
 			example:
-				'const aToZ = type(/^a.*z$/).describe("a string like \'a...z\'")\nconst good = aToZ("alcatraz") // "alcatraz"\n// notice how our description is integrated with other parts of the message\nconst badPattern = aToZ("albatross") // must be a string like \'a...z\' (was "albatross")\nconst nonString = aToZ(123) // must be a string like \'a...z\' (was 123)'
+				'const aToZ = type(/^a.*z$/).describe("a string like \'a...z\'")\nconst good = aToZ("alcatraz") // "alcatraz"\n// ArkErrors: must be a string like \'a...z\' (was "albatross")\nconst badPattern = aToZ("albatross")'
 		},
 		{
 			group: "Type",
@@ -334,19 +334,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				[
 					{
 						kind: "noteStart",
-						value: ""
-					}
-				],
-				[
-					{
-						kind: "noteStart",
 						value: '- `"reject"` - disallow extra properties'
-					}
-				],
-				[
-					{
-						kind: "noteStart",
-						value: ""
 					}
 				],
 				[
@@ -385,19 +373,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				[
 					{
 						kind: "noteStart",
-						value: ""
-					}
-				],
-				[
-					{
-						kind: "noteStart",
 						value: '- `"reject"` - disallow extra properties'
-					}
-				],
-				[
-					{
-						kind: "noteStart",
-						value: ""
 					}
 				],
 				[

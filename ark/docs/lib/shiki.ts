@@ -2,6 +2,7 @@ import { transformerNotationErrorLevel } from "@shikijs/transformers"
 import type { RehypeCodeOptions } from "fumadocs-core/mdx-plugins"
 import { transformerTwoslash } from "fumadocs-twoslash"
 import { createRequire } from "node:module"
+import type { ShikiTransformer } from "shiki"
 
 /** for some reason a standard import with an attribute like:
  
@@ -131,13 +132,33 @@ declare global {
 	}
 })
 
+type HastElement = Parameters<ShikiTransformer["line"] & {}>[0]
+const includesErrorDescendant = (node: HastElement): boolean =>
+	node.children &&
+	node.children.some(
+		c =>
+			(c.type === "text" && c.value.includes("ArkErrors:")) ||
+			includesErrorDescendant(c as never)
+	)
+
 export const shikiConfig = {
 	themes: {
 		dark: arkDarkTheme,
 		light: arkDarkTheme
 	},
 	langs: ["json", "bash", { ...arkTypeTmJson, name: "ts" }],
-	transformers: [twoslash, transformerNotationErrorLevel()]
+	transformers: [
+		{
+			line(node) {
+				if (includesErrorDescendant(node)) {
+					this.addClassToHast(node, "highlighted")
+					this.addClassToHast(node, "error")
+				}
+			}
+		},
+		twoslash,
+		transformerNotationErrorLevel()
+	]
 } as const satisfies RehypeCodeOptions
 
 export type shikiConfig = typeof shikiConfig
