@@ -1,10 +1,4 @@
-import {
-	deepClone,
-	envHasCsp,
-	flatMorph,
-	type array,
-	type listable
-} from "@ark/util"
+import { deepClone, flatMorph, type array, type listable } from "@ark/util"
 import type { ResolvedArkConfig } from "./config.ts"
 import type { BaseNode } from "./node.ts"
 import { Predicate } from "./predicate.ts"
