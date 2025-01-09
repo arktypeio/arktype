@@ -41,14 +41,14 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	/**
-	 * the precompiled JS used to optimize validation
+	 * precompiled JS used to optimize validation
 	 *
 	 * ⚠️ will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode
 	 */
 	precompilation: string | undefined
 
 	/**
-	 * the generic parameter representing this Type
+	 * generic parameter representing this Type
 	 *
 	 * @typeonly
 	 *
@@ -64,7 +64,7 @@ interface Type<out t = unknown, $ = {}>
 	$: Scope<$>
 
 	/**
-	 * #### type of data this returns
+	 * #### type of output this returns
 	 *
 	 * @typeonly
 	 *
@@ -75,9 +75,11 @@ interface Type<out t = unknown, $ = {}>
 	infer: this["inferOut"]
 
 	/**
-	 * alias of {@link infer}
+	 * type of output this returns
 	 *
+	 * 🔗 alias of {@link infer}
 	 * @typeonly
+	 *
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
@@ -111,7 +113,7 @@ interface Type<out t = unknown, $ = {}>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 
 	/**
-	 * #### type of data this expects
+	 * #### type of input this allows
 	 *
 	 * @typeonly
 	 *
@@ -146,7 +148,7 @@ interface Type<out t = unknown, $ = {}>
 	meta: ArkAmbient.meta
 
 	/**
-	 * #### a human-readable English description
+	 * #### human-readable English description
 	 *
 	 * ✅ works best for primitive values
 	 *
@@ -197,7 +199,7 @@ interface Type<out t = unknown, $ = {}>
 	allows(data: unknown): data is this["inferIn"]
 
 	/**
-	 * #### clone and add metadata to shallow references
+	 * #### add metadata to shallow references
 	 *
 	 * ⚠️ does not affect error messages within properties of an object
 	 *
@@ -220,7 +222,7 @@ interface Type<out t = unknown, $ = {}>
 	configure(meta: MetaSchema): this
 
 	/**
-	 * #### clone and add the description to shallow references
+	 * #### add description to shallow references
 	 *
 	 * 🔗 equivalent to `.configure({ description })` (see {@link configure})
 	 * ⚠️ does not affect error messages within properties of an object
@@ -234,14 +236,14 @@ interface Type<out t = unknown, $ = {}>
 	describe(description: string): this
 
 	/**
-	 * #### clone to a new Type with the specified undeclared key behavior
+	 * #### apply undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * #### deeply clone to a new Type with the specified undeclared key behavior
+	 * #### deeply apply undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
 	 **/
@@ -258,7 +260,7 @@ interface Type<out t = unknown, $ = {}>
 	from(literal: this["inferIn"]): this["infer"]
 
 	/**
-	 * #### deeply extract inputs to a new Type
+	 * #### deeply extract inputs
 	 *
 	 * ✅ will never include morphs
 	 * ✅ good for generating JSON Schema or other non-transforming formats
@@ -275,7 +277,7 @@ interface Type<out t = unknown, $ = {}>
 	get in(): instantiateType<this["inferIn"], $>
 
 	/**
-	 * #### deeply extract outputs to a new Type
+	 * #### deeply extract outputs
 	 *
 	 * ✅ will never include morphs
 	 * ⚠️ if your type includes morphs, their output will likely be unknown unless they
@@ -304,7 +306,8 @@ interface Type<out t = unknown, $ = {}>
 	 * @typenoop
 	 *
 	 * @example
-	 * const t = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
+	 * // Type<`a${string}`>
+	 * const t = type(/^a/).as<`a${string}`>()
 	 */
 	as<castTo = unset>(
 		...args: validateChainedAsArgs<castTo>
@@ -316,14 +319,18 @@ interface Type<out t = unknown, $ = {}>
 	 * @typenoop
 	 *
 	 * @example
-	 * const t = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
+	 * const palindrome = type("string")
+	 *     .narrow(s => s === [...s].reverse().join(""))
+	 *     .brand("palindrome")
+	 * // Brand<string, "palindrome">
+	 * const out = palindrome.assert("racecar")
 	 */
 	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
 	): instantiateType<r, $>
 
 	/**
-	 * #### create an intersection with another Type, throwing if the result is unsatisfiable
+	 * #### intersect another Type, throwing if the result is unsatisfiable
 	 *
 	 * @example
 	 * // Type<{ foo: number; bar: string }>
@@ -336,7 +343,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<inferIntersection<t, r>, $>
 
 	/**
-	 * #### create a union with another Type
+	 * #### union with another Type
 	 *
 	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
 	 *
@@ -349,7 +356,7 @@ interface Type<out t = unknown, $ = {}>
 	): instantiateType<t | r, $>
 
 	/**
-	 * #### create a Type representing an array of this
+	 * #### an array of this
 	 *
 	 * @example
 	 * // Type<{ rebmun: number }[]>
@@ -358,7 +365,7 @@ interface Type<out t = unknown, $ = {}>
 	array(): ArrayType<t[], $>
 
 	/**
-	 * #### create an [optional definition](https://arktype.io/docs/objects#properties-optional) for this
+	 * #### [optional definition](https://arktype.io/docs/objects#properties-optional) for this
 	 *
 	 * @chainedDefinition
 	 *
@@ -370,7 +377,7 @@ interface Type<out t = unknown, $ = {}>
 	optional(): [this, "?"]
 
 	/**
-	 * #### create a [defaultable definition](https://arktype.io/docs/objects#properties-defaultable) for this
+	 * #### [defaultable definition](https://arktype.io/docs/objects#properties-defaultable) for this
 	 *
 	 * ✅ object defaults can be returned from a function
 	 * ⚠️ throws if the default value is not allowed
@@ -388,13 +395,25 @@ interface Type<out t = unknown, $ = {}>
 		value: value
 	): [this, "=", value]
 
+	/**
+	 * #### apply a predicate function to input
+	 *
+	 * ⚠️ the behavior of {@link narrow}, this method's output counterpart, is usually more desirable
+	 * ✅ useful primarily when dealing with morphs whose inputs have richer types than their outputs
+	 *
+	 * @example
+	 * const stringifyUser = type({ name: "string" }).pipe(user => JSON.stringify(user))
+	 * const stringifySafe = stringifyUser.filter(user => user.name !== "Bobby Tables")
+	 * //
+	 * const stringifyUnsafe = stringifyUser.filter((user) => user.name === "Bobby Tables")
+	 */
 	filter<
 		narrowed extends this["inferIn"] = never,
 		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(
-		predicate: Predicate.Castable<this["inferIn"]>
+		predicate: Predicate.Castable<this["inferIn"], narrowed>
 	): instantiateType<r, $>
 
 	/**

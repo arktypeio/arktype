@@ -23,3 +23,24 @@ const state = type({ count: type.number.default(0) })
 const forObj = type({
 	key: type({ nested: "boolean" }).default(() => ({ nested: false }))
 })
+
+const t = type("string").brand("id")
+
+const palindrome = type("string")
+	.narrow(s => s === [...s].reverse().join(""))
+	.brand("palindrome")
+
+const out = palindrome("racecar")
+
+const stringifyUser = type({ name: "string" }).pipe(user =>
+	JSON.stringify(user)
+)
+const stringifySafe = stringifyUser.filter(user => user.name !== "Bobby Tables")
+//
+const stringifyUnsafe = stringifyUser.filter(
+	(user): user is { name: "Bobby Tables" } => user.name === "Bobby Tables"
+)
+
+const z = stringifyUser.filter(
+	(user): user is { name: "Bobby Tables" } => user.name === "Bobby Tables"
+)

@@ -520,7 +520,7 @@ export abstract class BaseRoot<
 	}
 
 	filter(predicate: Predicate): BaseRoot {
-		return this.constrain("predicate", predicate)
+		return this.constrainIn("predicate", predicate)
 	}
 
 	divisibleBy(schema: Divisor.Schema): BaseRoot {
