@@ -23,7 +23,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "type of data this returns"
+					value: "type of output this returns"
 				}
 			],
 			notes: [
@@ -45,7 +45,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "type of data this expects"
+					value: "type of input this allows"
 				}
 			],
 			notes: [
@@ -117,7 +117,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "a human-readable English description"
+					value: "human-readable English description"
 				}
 			],
 			notes: [
@@ -210,7 +210,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "clone and add metadata to shallow references"
+					value: "add metadata to shallow references"
 				}
 			],
 			notes: [
@@ -232,7 +232,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "clone and add the description to shallow references"
+					value: "add description to shallow references"
 				}
 			],
 			notes: [
@@ -268,8 +268,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value:
-						"clone to a new Type with the specified undeclared key behavior"
+					value: "apply undeclared key behavior"
 				}
 			],
 			notes: [
@@ -302,8 +301,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value:
-						"deeply clone to a new Type with the specified undeclared key behavior"
+					value: "deeply apply undeclared key behavior"
 				}
 			],
 			notes: [
@@ -350,6 +348,249 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			notes: [],
 			example:
 				'const t = type({ foo: "string" });\n// TypeScript: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });'
+		},
+		{
+			group: "Type",
+			name: "as",
+			summary: [
+				{
+					kind: "text",
+					value: "cast the way this is inferred"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "🥸 inference-only function that does nothing runtime"
+					}
+				]
+			],
+			example: "// Type<`a${string}`>\nconst t = type(/^a/).as<`a${string}`>()"
+		},
+		{
+			group: "Type",
+			name: "brand",
+			summary: [
+				{
+					kind: "text",
+					value: "add a compile-time brand to output"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "🥸 inference-only function that does nothing runtime"
+					}
+				]
+			],
+			example:
+				'const palindrome = type("string")\n    .narrow(s => s === [...s].reverse().join(""))\n    .brand("palindrome")\n// Brand<string, "palindrome">\nconst out = palindrome.assert("racecar")'
+		},
+		{
+			group: "Type",
+			name: "and",
+			summary: [
+				{
+					kind: "text",
+					value:
+						"intersect another Type, throwing if the result is unsatisfiable"
+				}
+			],
+			notes: [],
+			example:
+				'// Type<{ foo: number; bar: string }>\nconst t = type({ foo: "number" }).and({ bar: "string" })\n// ParseError: Intersection at foo of number and string results in an unsatisfiable type\nconst bad = type({ foo: "number" }).and({ foo: "string" })'
+		},
+		{
+			group: "Type",
+			name: "or",
+			summary: [
+				{
+					kind: "text",
+					value: "union with another Type"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))"
+					}
+				]
+			],
+			example:
+				'// Type<string | { box: string }>\nconst t = type("string").or({ box: "string" })'
+		},
+		{
+			group: "Type",
+			name: "array",
+			summary: [
+				{
+					kind: "text",
+					value: "an array of this"
+				}
+			],
+			notes: [],
+			example:
+				'// Type<{ rebmun: number }[]>\nconst t = type({ rebmun: "number" }).array();'
+		},
+		{
+			group: "Type",
+			name: "optional",
+			summary: [
+				{
+					kind: "text",
+					value:
+						"[optional definition](https://arktype.io/docs/objects#properties-optional) for this"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)"
+					}
+				]
+			],
+			example:
+				'const prop = type({ foo: "number" })\n// Type<{ bar?: { foo: number } }>\nconst obj = type({ bar: prop.optional() })'
+		},
+		{
+			group: "Type",
+			name: "default",
+			summary: [
+				{
+					kind: "text",
+					value:
+						"[defaultable definition](https://arktype.io/docs/objects#properties-defaultable) for this"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ object defaults can be returned from a function"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "⚠️ throws if the default value is not allowed"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)"
+					}
+				]
+			],
+			example:
+				'// Type<{ count: Default<number, 0> }>\nconst state = type({ count: type.number.default(0) })\nconst prop = type({ nested: "boolean" })\nconst forObj = type({\n    key: nested.default(() => ({ nested: false }))\n})'
+		},
+		{
+			group: "Type",
+			name: "filter",
+			summary: [
+				{
+					kind: "text",
+					value: "apply a predicate function to input"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "⚠️ the behavior of"
+					},
+					{
+						kind: "reference",
+						value: "narrow"
+					},
+					{
+						kind: "text",
+						value:
+							", this method's output counterpart, is usually more desirable"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"✅ most useful for morphs with input types that are re-used externally"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "🥸"
+					},
+					{
+						kind: "link",
+						url: "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates",
+						value: "Type predicates"
+					},
+					{
+						kind: "text",
+						value: "can be used to cast"
+					}
+				]
+			],
+			example:
+				'const stringifyUser = type({ name: "string" }).pipe(user => JSON.stringify(user))\nconst stringifySafe = stringifyUser.filter(user => user.name !== "Bobby Tables")\n// Type<(In: `${string}Z`) => To<Date>>\nconst withPredicate = type("string.date.parse").filter((s): s is `${string}Z` =>\n    s.endsWith("Z")\n)'
+		},
+		{
+			group: "Type",
+			name: "narrow",
+			summary: [
+				{
+					kind: "text",
+					value: "apply a predicate function to output"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value:
+							"✅ go-to fallback for validation not composable via built-in types and operators"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ runs after all other validators and morphs, if present"
+					}
+				],
+				[
+					{
+						kind: "noteStart",
+						value: "🥸"
+					},
+					{
+						kind: "link",
+						url: "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates",
+						value: "Type predicates"
+					},
+					{
+						kind: "text",
+						value: "can be used to cast"
+					}
+				]
+			],
+			example:
+				'const palindrome = type("string").narrow(s => s === [...s].reverse().join(""))\n\nconst palindromicEmail = type("string.date.parse").narrow((date, ctx) =>\n\t\tdate.getFullYear() === 2025 || ctx.mustBe("the current year")\n)\n// Type<`${string}.tsx`>\nconst withPredicate = type("string").narrow((s): s is `${string}.tsx` => /\\.tsx?$/.test(s))'
 		}
 	]
 }

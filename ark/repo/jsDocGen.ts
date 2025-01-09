@@ -29,7 +29,7 @@ const replacedDecorators = {
 	"@chainedDefinition":
 		"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)",
 	"@predicateCast":
-		"🥸 {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates | Type predicates} can be used to cast"
+		"🥸 {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates | Type predicates} can be used as casts"
 } as const
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")

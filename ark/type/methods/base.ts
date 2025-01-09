@@ -365,7 +365,7 @@ interface Type<out t = unknown, $ = {}>
 	array(): ArrayType<t[], $>
 
 	/**
-	 * #### [optional definition](https://arktype.io/docs/objects#properties-optional) for this
+	 * #### {@link https://arktype.io/docs/objects#properties-optional | optional definition}
 	 *
 	 * @chainedDefinition
 	 *
@@ -377,7 +377,7 @@ interface Type<out t = unknown, $ = {}>
 	optional(): [this, "?"]
 
 	/**
-	 * #### [defaultable definition](https://arktype.io/docs/objects#properties-defaultable) for this
+	 * #### {@link https://arktype.io/docs/objects#properties-defaultable | defaultable definition}
 	 *
 	 * ✅ object defaults can be returned from a function
 	 * ⚠️ throws if the default value is not allowed
@@ -461,6 +461,15 @@ interface Type<out t = unknown, $ = {}>
 	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
 	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
 	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
+	 */
+	/**
+	 * #### intersect another Type, returning an introspectable {@link Disjoint} if the result is unsatisfiable
+	 *
+	 * @example
+	 * // Type<{ foo: number; bar: string }>
+	 * const t = type({ foo: "number" }).intersect({ bar: "string" })
+	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
+	 * const bad = type({ foo: "number" }).intersect({ foo: "string" })
 	 */
 	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
