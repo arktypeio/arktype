@@ -93,7 +93,7 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 							.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
 							.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
 							.replace(/`([^`]+)`/g, "<code>$1</code>")
-							.replace(/\s*-(.*)/g, "• $1")
+							.replace(/^-(.*)/g, "• $1")
 					}}
 				/>
 			}

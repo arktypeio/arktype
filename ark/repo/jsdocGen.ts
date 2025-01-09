@@ -163,7 +163,8 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	}
 
 	allParts.forEach(part => {
-		if (part.kind === "noteStart") notePartGroups.push([part])
+		if (part.kind === "noteStart") notePartGroups.push(part.value ? [part] : [])
+		else if (part.value === "") return
 		else if (notePartGroups.length) notePartGroups.at(-1)!.push(part)
 		else summaryParts.push(part)
 	})

@@ -27,12 +27,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -54,12 +49,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -103,12 +93,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -136,12 +121,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -162,12 +142,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -188,12 +163,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -222,12 +192,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -249,12 +214,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -276,12 +236,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -318,12 +273,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -357,12 +307,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				}
 			],
 			notes: [
-				[
-					{
-						kind: "noteStart",
-						value: ""
-					}
-				],
+				[],
 				[
 					{
 						kind: "noteStart",
@@ -404,7 +349,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			],
 			notes: [],
 			example:
-				'const t = type({ foo: "string" });\n// TypeScript: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });'
+				'const t = type({ foo: "string" });\n// ArkErrors: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });'
 		}
 	]
 }
