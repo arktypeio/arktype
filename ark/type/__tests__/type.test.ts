@@ -122,6 +122,7 @@ contextualize(() => {
 			true: "true",
 			unknown: "unknown",
 			undefined: "undefined",
+			arrayIndex: type.arrayIndex.expression,
 			Key: "string | symbol",
 			Record: keywords.Record.internal.json,
 			Date: "Date",

@@ -16,3 +16,5 @@ const n = type.raw(`${Math.random()}`)
 const ez = n.ifEquals("0.5")
 
 const tt = type(Math.random() > 0.5 ? "1" : "0")
+
+const z = type("string[]").get(type.keywords.Array.index)
