@@ -367,7 +367,8 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					}
 				]
 			],
-			example: "// Type<`a${string}`>\nconst t = type(/^a/).as<`a${string}`>()"
+			example:
+				"// Type<`LEEEEEEEE${string}ROY`>\nconst leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()"
 		},
 		{
 			group: "Type",
@@ -397,7 +398,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 				{
 					kind: "text",
 					value:
-						"intersect another Type, throwing if the result is unsatisfiable"
+						"intersect the parsed Type, throwing if the result is unsatisfiable"
 				}
 			],
 			notes: [],
@@ -410,7 +411,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "union with another Type"
+					value: "union with the parsed Type"
 				}
 			],
 			notes: [
@@ -596,7 +597,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "intersect another Type, returning an introspectable"
+					value: "intersect the parsed Type, returning an introspectable"
 				},
 				{
 					kind: "reference",
@@ -617,7 +618,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "check if another Type's constraints are identical"
+					value: "check if the parsed Type's constraints are identical"
 				}
 			],
 			notes: [
@@ -664,7 +665,23 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "check"
 				}
 			],
-			notes: [],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ ignores associated"
+					},
+					{
+						kind: "reference",
+						value: "meta"
+					},
+					{
+						kind: "text",
+						value: ", which does not affect the set of allowed values"
+					}
+				]
+			],
 			example:
 				'const n = type.raw(`${Math.random()}`)\n// Type<0.5> | undefined\nconst ez = n.ifEquals("0.5")'
 		},
@@ -674,7 +691,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 			summary: [
 				{
 					kind: "text",
-					value: "check if this is a subtype of another Type"
+					value: "check if this is a subtype of the parsed Type"
 				}
 			],
 			notes: [
@@ -735,9 +752,96 @@ export const apiDocsByGroup: ApiDocsByGroup = {
 					value: "check"
 				}
 			],
-			notes: [],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "✅ ignores associated"
+					},
+					{
+						kind: "reference",
+						value: "meta"
+					},
+					{
+						kind: "text",
+						value: ", which does not affect the set of allowed values"
+					}
+				]
+			],
 			example:
 				'const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>\nconst ez = n.ifExtends("boolean") // Type<true> | undefined'
+		},
+		{
+			group: "Type",
+			name: "overlaps",
+			summary: [
+				{
+					kind: "text",
+					value: "check if a value could satisfy this and the parsed Type"
+				}
+			],
+			notes: [
+				[],
+				[
+					{
+						kind: "noteStart",
+						value: "⚠️ will return true unless a"
+					},
+					{
+						kind: "reference",
+						value: "Disjoint"
+					},
+					{
+						kind: "text",
+						value: "can be proven"
+					}
+				]
+			],
+			example:
+				'type.string.overlaps("string | number") // true (e.g. "foo")\ntype("string | number").overlaps("1") // true (1)\ntype("number > 0").overlaps("number < 0") // false (no values exist)\n\nconst noAt = type("string").narrow(s => !s.includes("@"))\nnoAt.overlaps("string.email") // true (no values exist, but not provable)'
+		},
+		{
+			group: "Type",
+			name: "extract",
+			summary: [
+				{
+					kind: "text",
+					value: "extract branches"
+				},
+				{
+					kind: "reference",
+					value: "extend"
+				},
+				{
+					kind: "text",
+					value: "ing the parsed Type"
+				}
+			],
+			notes: [],
+			example:
+				'// Type<true | 0 | 2>\nconst t = type("boolean | 0 | \'one\' | 2 | bigint").extract("number | 0n | true")'
+		},
+		{
+			group: "Type",
+			name: "exclude",
+			summary: [
+				{
+					kind: "text",
+					value: "exclude branches"
+				},
+				{
+					kind: "reference",
+					value: "extend"
+				},
+				{
+					kind: "text",
+					value: "ing the parsed Type"
+				}
+			],
+			notes: [],
+			example:
+				"// Type<false | 'one' | bigint>\nconst t = type(\"boolean | 0 | 'one' | 2 | bigint\").exclude(\"number | 0n | true\")"
 		}
 	]
 }

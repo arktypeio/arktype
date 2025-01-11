@@ -9,8 +9,8 @@
 		"@sinclair/typebox": "0.34.13",
 		"@trpc/server": "10.45.2",
 		"arktype": "workspace:*",
-		"type-fest": "4.31.0",
 		"ts-morph": "25.0.0",
+		"type-fest": "4.32.0",
 		"typescript": "catalog:",
 		"zod": "3.24.1"
 	},
