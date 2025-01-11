@@ -1,5 +1,5 @@
 {
-	"title": "Objects",
+	"title": "Blog",
 	"defaultOpen": true,
-	"pages": ["[Announcing ArkType 2.0](/docs/blog/2.0)"]
+	"pages": ["[2.0 Announcement](/docs/blog/2.0)"]
 }

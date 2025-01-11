@@ -3,8 +3,10 @@
 import { usePathname } from "next/navigation"
 import { Banner } from "./Banner.tsx"
 
-const text = "🎉 ArkType 2.0 Released 🎉"
+const text = "🎉 Announcing ArkType 2.0 🎉"
 
 export const ReleaseBanner = () => (
-	<Banner boat={usePathname().includes("docs")}>{text}</Banner>
+	<Banner style={{ fontSize: 16 }} boat={usePathname().includes("docs")}>
+		{text}
+	</Banner>
 )

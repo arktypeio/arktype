@@ -32,8 +32,13 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 			toc={isApiPage ? [] : page.data.toc}
 			full={page.data.full ?? false}
 		>
-			<DocsTitle>{page.data.title}</DocsTitle>
-			<DocsDescription>{page.data.description}</DocsDescription>
+			<DocsTitle>
+				{page.data.title}
+				<DocsDescription style={{ margin: 0 }}>
+					{page.data.description}
+				</DocsDescription>
+			</DocsTitle>
+
 			<DocsBody>
 				<MDX
 					components={{
