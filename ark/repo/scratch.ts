@@ -8,13 +8,3 @@ import { buildApi, jsDocGen } from "./jsDocGen.ts"
 //     "types": 409252,
 //     "instantiations": 5066185
 // }
-console.log(2 ** 100)
-
-const t = type("number > 10").intersect("number < 5")
-const n = type.raw(`${Math.random()}`)
-
-const ez = n.ifEquals("0.5")
-
-const tt = type(Math.random() > 0.5 ? "1" : "0")
-
-const z = type("string[]").get(type.keywords.Array.index)
