@@ -33,7 +33,7 @@ contextualize(() => {
 		attest(n.expression).satisfies("string | boolean")
 		attest(n.t).type.toString.snap("string | boolean")
 		const ez = n.ifExtends("boolean")
-		attest(ez?.expression).satisfies("boolean | undefined")
+		attest(ez?.expression).satisfies("'boolean' | undefined")
 		attest(ez?.t).type.toString.snap("boolean | undefined")
 	})
 

@@ -1,4 +1,4 @@
-import { ReadonlyPath, type array } from "@ark/util"
+import { ReadonlyPath, stringifyPath, type array } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
@@ -28,6 +28,29 @@ export type InternalTraversalContext = Omit<
 >
 
 export class TraversalContext {
+	/**
+	 * #### the path being validated or morphed
+	 *
+	 *
+	 * ✅ array indices represented as numbers
+	 * ⚠️ mutated during traversal - use `path.slice(0)` to snapshot
+	 * 🔗 use {@link propString} for a stringified version
+	 *
+	 * @example
+	 * const notFoo = type.string.narrow((s, ctx) => {
+	 *     if (s !== "foo") return true
+	 *     // ["names", 1]
+	 *     console.warn(ctx.path)
+	 *     return ctx.mustBe("not foo")
+	 * })
+	 *
+	 * const obj = type({
+	 *     names: notFoo.array()
+	 * })
+	 *
+	 * // ArkErrors: names[1] must be not foo (was "foo")
+	 * obj({ names: ["bar", "foo"] })
+	 */
 	path: PropertyKey[] = []
 	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
@@ -48,6 +71,10 @@ export class TraversalContext {
 	// a morph or predicate
 	get external(): this {
 		return this
+	}
+
+	get propString(): string {
+		return stringifyPath(this.path)
 	}
 
 	get currentBranch(): BranchTraversalContext | undefined {

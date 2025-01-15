@@ -8,3 +8,30 @@ import { buildApi, jsDocGen } from "./jsDocGen.ts"
 //     "types": 409252,
 //     "instantiations": 5066185
 // }
+
+const uniqueStrings = type("string[]").narrow((arr, ctx) => {
+	const seen: Record<string, number> = {}
+	for (let i = 0; i < arr.length; i++) {
+		if (arr[i] in seen) {
+			return ctx.reject({
+				expected: "a unique string",
+				actual: `a duplicate of '${arr[i]}' at index ${seen[arr[i]]}`,
+				relativePath: [i]
+			})
+		} else seen[arr[i]] = i
+	}
+	return true
+})
+
+const notFoo = type.string.narrow((s, ctx) => {
+	if (s !== "foo") return true
+	// ["names", 1]
+	console.warn(ctx.path)
+	return ctx.mustBe("not foo")
+})
+
+const obj = type({
+	names: notFoo.array()
+})
+
+obj.assert({ names: ["bar", "foo"] }) //?

@@ -241,4 +241,29 @@ age must be more than 18 (was 2)`)
 		attest(out.toString()).snap('must be valid (was {"foo":1})')
 		attest(callCount).equals(0)
 	})
+
+	it("ctx.path docs example", () => {
+		const symbolicKey = Symbol("ctxPathExampleSymbol")
+
+		let path: PropertyKey[] | undefined
+
+		const notFoo = type.string.narrow((s, ctx) => {
+			if (s !== "foo") return true
+			path = ctx.path.slice(0)
+			return ctx.mustBe("not foo")
+		})
+
+		const obj = type({
+			stringKey: {
+				[symbolicKey]: notFoo.array()
+			}
+		})
+
+		attest(
+			obj({ stringKey: { [symbolicKey]: ["bar", "foo"] } }).toString()
+		).snap(
+			'stringKey[Symbol(ctxPathExampleSymbol)][1] must be not foo (was "foo")'
+		)
+		attest(path).snap(["stringKey", "Symbol(ctxPathExampleSymbol)", 1])
+	})
 })
