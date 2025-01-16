@@ -19,7 +19,7 @@ import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import type {
-	TraversalContext,
+	Traversal,
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.ts"
@@ -54,7 +54,7 @@ export declare namespace Morph {
 	export type Node = MorphNode
 }
 
-export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
+export type Morph<i = any, o = unknown> = (In: i, ctx: Traversal) => o
 
 const implementation: nodeImplementationOf<Morph.Declaration> =
 	implementNode<Morph.Declaration>({

@@ -5,7 +5,7 @@ import {
 	rootSchema,
 	type IntersectionNode,
 	type Morph,
-	type TraversalContext
+	type Traversal
 } from "@ark/schema"
 import {
 	flatMorph,
@@ -42,7 +42,7 @@ export const stringInteger: stringInteger.module = Scope.module({
 	root: stringIntegerRoot,
 	parse: rootSchema({
 		in: stringIntegerRoot,
-		morphs: (s: string, ctx: TraversalContext) => {
+		morphs: (s: string, ctx: Traversal) => {
 			const parsed = Number.parseInt(s)
 			return Number.isSafeInteger(parsed) ? parsed : (
 					ctx.error(
@@ -297,7 +297,7 @@ export const stringDate: stringDate.module = Scope.module({
 	parse: rootSchema({
 		declaredIn: parsableDate,
 		in: "string",
-		morphs: (s: string, ctx: TraversalContext) => {
+		morphs: (s: string, ctx: Traversal) => {
 			const date = new Date(s)
 			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
 			return date
@@ -409,7 +409,7 @@ const jsonRoot = rootSchema({
 	}
 })
 
-const parseJson: Morph<string> = (s: string, ctx: TraversalContext) => {
+const parseJson: Morph<string> = (s: string, ctx: Traversal) => {
 	if (s.length === 0) {
 		return ctx.error({
 			code: "predicate",
@@ -684,7 +684,7 @@ export const url: url.module = Scope.module({
 	parse: rootSchema({
 		declaredIn: urlRoot,
 		in: "string",
-		morphs: (s: string, ctx: TraversalContext) => {
+		morphs: (s: string, ctx: Traversal) => {
 			try {
 				return new URL(s)
 			} catch {

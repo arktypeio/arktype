@@ -16,7 +16,7 @@ import {
 	registeredReference
 } from "./shared/registry.ts"
 import type {
-	TraversalContext,
+	Traversal,
 	TraverseAllows,
 	TraverseApply
 } from "./shared/traversal.ts"
@@ -118,15 +118,12 @@ export const Predicate = {
 	Node: PredicateNode
 }
 
-export type Predicate<data = any> = (
-	data: data,
-	ctx: TraversalContext
-) => boolean
+export type Predicate<data = any> = (data: data, ctx: Traversal) => boolean
 
 export declare namespace Predicate {
 	export type Casted<input = never, narrowed extends input = input> = (
 		input: input,
-		ctx: TraversalContext
+		ctx: Traversal
 	) => input is narrowed
 
 	export type Castable<input = never, narrowed extends input = input> =

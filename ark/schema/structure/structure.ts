@@ -35,7 +35,7 @@ import {
 } from "../shared/registry.ts"
 import {
 	traverseKey,
-	type InternalTraversalContext,
+	type InternalTraversal,
 	type TraversalKind,
 	type TraverseAllows,
 	type TraverseApply
@@ -528,7 +528,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	protected _traverse = (
 		traversalKind: TraversalKind,
 		data: object,
-		ctx: InternalTraversalContext
+		ctx: InternalTraversal
 	): boolean => {
 		const errorCount = ctx?.currentErrorCount ?? 0
 		for (let i = 0; i < this.props.length; i++) {

@@ -95,7 +95,7 @@ export const getAllJsDoc = (project: Project) => {
 	)
 }
 
-export type ApiGroup = "Type" | "TraversalContext"
+export type ApiGroup = "Type" | "Traversal"
 
 export type JsDocComment = ReturnType<JSDoc["getComment"]>
 
@@ -150,7 +150,7 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	const filePath = doc.getSourceFile().getFilePath()
 	let group: ApiGroup
 	if (filePath.includes("methods")) group = "Type"
-	else if (filePath.endsWith("traversal.d.ts")) group = "TraversalContext"
+	else if (filePath.endsWith("traversal.d.ts")) group = "Traversal"
 	else return
 
 	if (!doc.getInnerText().trim().startsWith("#")) return

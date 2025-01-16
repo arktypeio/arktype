@@ -802,9 +802,9 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "example": "// Type<false | 'one' | bigint>\nconst t = type(\"boolean | 0 | 'one' | 2 | bigint\").exclude(\"number | 0n | true\")"
         }
     ],
-    "TraversalContext": [
+    "Traversal": [
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "path",
             "summary": [
                 {
@@ -843,7 +843,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ]
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "errors",
             "summary": [
                 {
@@ -866,7 +866,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ]
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "root",
             "summary": [
                 {
@@ -877,7 +877,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             "notes": []
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "config",
             "summary": [
                 {
@@ -908,7 +908,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ]
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "reject",
             "summary": [
                 {
@@ -935,7 +935,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ]
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "mustBe",
             "summary": [
                 {
@@ -976,7 +976,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ]
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "error",
             "summary": [
                 {
@@ -998,7 +998,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ]
         },
         {
-            "group": "TraversalContext",
+            "group": "Traversal",
             "name": "hasError",
             "summary": [
                 {

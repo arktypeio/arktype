@@ -16,18 +16,15 @@ export type MorphsAtPath = {
 	morphs: array<Morph>
 }
 
-export type BranchTraversalContext = {
+export type BranchTraversal = {
 	error: ArkError | undefined
 	queuedMorphs: MorphsAtPath[]
 }
 
 // avoid sugar methods internally
-export type InternalTraversalContext = Omit<
-	TraversalContext,
-	"error" | "mustBe" | "reject"
->
+export type InternalTraversal = Omit<Traversal, "error" | "mustBe" | "reject">
 
-export class TraversalContext {
+export class Traversal {
 	/**
 	 * #### the path being validated or morphed
 	 *
@@ -59,7 +56,7 @@ export class TraversalContext {
 	config: ResolvedConfig
 
 	queuedMorphs: MorphsAtPath[] = []
-	branches: BranchTraversalContext[] = []
+	branches: BranchTraversal[] = []
 	seen: { [id in string]?: unknown[] } = {}
 
 	constructor(root: unknown, config: ResolvedConfig) {
@@ -136,7 +133,7 @@ export class TraversalContext {
 		return this.currentErrorCount !== 0
 	}
 
-	get currentBranch(): BranchTraversalContext | undefined {
+	get currentBranch(): BranchTraversal | undefined {
 		return this.branches.at(-1)
 	}
 
@@ -186,13 +183,13 @@ export class TraversalContext {
 		})
 	}
 
-	popBranch(): BranchTraversalContext | undefined {
+	popBranch(): BranchTraversal | undefined {
 		return this.branches.pop()
 	}
 
 	/**
 	 * @internal
-	 * Convenience for casting from InternalTraversalContext to TraversalContext
+	 * Convenience for casting from InternalTraversal to Traversal
 	 * for cases where the extra methods on the external type are expected, e.g.
 	 * a morph or predicate.
 	 */
@@ -289,7 +286,7 @@ export const traverseKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
 	// ctx will be undefined if this node isn't context-dependent
-	ctx: InternalTraversalContext | undefined
+	ctx: InternalTraversal | undefined
 ): result => {
 	if (!ctx) return fn()
 
@@ -308,9 +305,9 @@ export type TraversalKind = keyof TraversalMethodsByKind
 
 export type TraverseAllows<data = unknown> = (
 	data: data,
-	ctx: InternalTraversalContext
+	ctx: InternalTraversal
 ) => boolean
 export type TraverseApply<data = unknown> = (
 	data: data,
-	ctx: InternalTraversalContext
+	ctx: InternalTraversal
 ) => void
