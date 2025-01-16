@@ -1,17 +1,17 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-rc.33",
+	"version": "2.0.0",
 	"license": "MIT",
-	"author": {
-		"name": "David Blass",
-		"email": "david@arktype.io",
-		"url": "https://arktype.io"
-	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git",
 		"directory": "ark/type"
+	},
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
 	},
 	"type": "module",
 	"main": "./out/index.js",
