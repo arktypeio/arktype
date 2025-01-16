@@ -75,11 +75,11 @@ declare global {
 					if (node.text.startsWith("const")) {
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
-							"version?: never",
+							"version?: undefined",
 							`version?: number | string`
 						)
 						node.text = node.text.replace(
-							"versions?: never",
+							"versions?: undefined",
 							"versions?: (number | string)[]"
 						)
 						// filter out the type of Type's invocation
