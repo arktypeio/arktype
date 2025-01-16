@@ -179,4 +179,21 @@ contextualize(() => {
 		configure({ numberAllowsNaN: false })
 		attest(type("number").allows(Number.NaN)).equals(false)
 	})
+
+	it("rebinds config in new scope", () => {
+		const t = type({
+			foo: "string"
+		})
+		const types = type.module(
+			{
+				foo: t
+			},
+			{ onUndeclaredKey: "reject" }
+		)
+		attest(types.foo.json).snap({
+			undeclared: "reject",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+	})
 })
