@@ -1,9 +1,9 @@
 import "app/global.css"
-import { ReleaseBanner } from "components/ReleaseBanner.tsx"
 import "fumadocs-twoslash/twoslash.css"
 import { RootProvider } from "fumadocs-ui/provider"
 import { Raleway } from "next/font/google"
 import type { ReactNode } from "react"
+import { ReleaseBanner } from "../components/ReleaseBanner.tsx"
 
 const raleway = Raleway({
 	subsets: ["latin"]
