@@ -164,3 +164,6 @@ const highlighted = type({
 	pattern: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/",
 	bar: "(string | number)[]"
 })
+
+// chained calls should be highlighted
+highlighted.or("string[]").or({ object: "string[]" })

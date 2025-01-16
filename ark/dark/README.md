@@ -45,6 +45,20 @@ To determine which scopes need to be changed, you can view scopes applied to any
 
 Changes to `injected.tmLanguage.json` should be mirrored to [tsWithArkType.tmLanguage.json](./tsWithArkType.tmLanguage.json).
 
+#### Testing tsWithArkType.tmLanguage.json
+
+To test the standalone rules for TS w/ ArkType highlighting, replace `grammars` in `package.json` with the following:
+
+```json
+	"grammars": {
+				"scopeName": "source.ts",
+				"language": "typescript",
+				"path": "tsWithArkType.tmLanguage.json"
+			}
+```
+
+Be sure to switch back before publishing!
+
 > [!IMPORTANT]  
 > You must reload the extension host window to see scope changes reflected
 

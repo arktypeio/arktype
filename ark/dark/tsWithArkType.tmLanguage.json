@@ -499,6 +499,9 @@
 					"include": "#arkDefinition"
 				},
 				{
+					"include": "#arkChained"
+				},
+				{
 					"include": "#string"
 				},
 				{
