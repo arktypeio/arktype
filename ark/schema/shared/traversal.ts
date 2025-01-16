@@ -130,7 +130,7 @@ export class TraversalContext {
 	}
 
 	/**
-	 * #### whether {@link currentBranch} (or the traversal root, outside a union)
+	 * #### whether {@link currentBranch} (or the traversal root, outside a union) has one or more errors
 	 */
 	hasError(): boolean {
 		return this.currentErrorCount !== 0
@@ -186,8 +186,8 @@ export class TraversalContext {
 		})
 	}
 
-	popBranch(): BranchTraversalContext {
-		return this.branches.pop()!
+	popBranch(): BranchTraversalContext | undefined {
+		return this.branches.pop()
 	}
 
 	/**
