@@ -158,7 +158,7 @@ export abstract class BaseNode<
 		return this.cacheGetter(
 			"shallowReferences",
 			this.hasKind("structure") ?
-				[this as BaseNode, ...this.children]
+				[this as BaseNode, ...(this.children as never)]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
 					[this]

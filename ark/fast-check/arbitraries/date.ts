@@ -6,8 +6,8 @@ export const buildDateArbitrary = (
 ): fc.Arbitrary<Date> => {
 	if (node.hasKind("intersection")) {
 		const fastCheckDateConstraints: fc.DateConstraints = {}
-		if (node.after) fastCheckDateConstraints.min = node.after.rule
-		if (node.before) fastCheckDateConstraints.max = node.before.rule
+		if (node.inner.after) fastCheckDateConstraints.min = node.inner.after.rule
+		if (node.inner.before) fastCheckDateConstraints.max = node.inner.before.rule
 
 		return fc.date(fastCheckDateConstraints)
 	}

@@ -727,7 +727,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			index.signature.branches.forEach(keyBranch => {
 				if (
 					!keyBranch.hasKind("intersection") ||
-					keyBranch.pattern?.length !== 1
+					keyBranch.inner.pattern?.length !== 1
 				) {
 					return JsonSchema.throwUnjsonifiableError(
 						`Index signature ${keyBranch}`
@@ -735,7 +735,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 
 				schema.patternProperties ??= {}
-				schema.patternProperties[keyBranch.pattern[0].rule] =
+				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
 					index.value.toJsonSchema()
 			})
 		})

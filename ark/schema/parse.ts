@@ -261,7 +261,7 @@ export const createNode = (
 		const cached = $.nodesByHash[hash]
 		if (cached.configSnapshot.hash !== configSnapshot.hash)
 			// update to show the node reflects the latest parse config, if it has changed
-			(cached as any).config = configSnapshot
+			Object.assign(cached, { configSnapshot } satisfies Partial<BaseNode>)
 
 		return cached
 	}
@@ -283,8 +283,10 @@ export const createNode = (
 		configSnapshot
 	}
 
-	for (const k in inner)
-		if (k !== "in" && k !== "out") attachments[k] = inner[k]
+	if (kind !== "intersection") {
+		for (const k in inner)
+			if (k !== "in" && k !== "out") attachments[k] = inner[k]
+	}
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 

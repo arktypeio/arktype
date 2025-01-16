@@ -75,7 +75,7 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 	const numberConstraints: fc.DoubleConstraints & {
 		divisor?: number
 	} = {
-		noNaN: !node.domain?.numberAllowsNaN
+		noNaN: !node.inner.domain?.numberAllowsNaN
 	}
 
 	for (const refinement of node.refinements) {
