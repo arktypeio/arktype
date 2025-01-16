@@ -31,7 +31,12 @@ const replacedDecorators = {
 	"@predicateCast":
 		"🥸 {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates | Type predicates} can be used as casts",
 	"@ignoresMeta":
-		"✅ ignores associated {@link meta}, which does not affect the set of allowed values"
+		"✅ ignores associated {@link meta}, which does not affect the set of allowed values",
+	"@propString":
+		"✅ uses `.access` {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors#dot_notation | where allowed by JS}, falling back to `[indexAccess]`\n" +
+		`@example
+const path = ["key1", Symbol("key2"), "key3", 4, "~key5"]
+const propString = 'key1[Symbol(key2)].key3[4]["~key5"]'`
 } as const
 
 const arkTypeBuildDir = join(repoDirs.arkDir, "type", "out")

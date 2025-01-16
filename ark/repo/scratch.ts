@@ -23,6 +23,20 @@ const uniqueStrings = type("string[]").narrow((arr, ctx) => {
 	return true
 })
 
+//   const notFoo = type.string.narrow((s, ctx) => {
+//       if (s !== "foo") return true
+//       // ["names", 1]
+//       console.warn(ctx.path)
+//       return ctx.mustBe("not foo")
+//   })
+
+//  const obj = type({
+//       names: notFoo.array()
+//   })
+
+//  // ArkErrors: names[1] must be not foo (was "foo")
+//  obj({ names: ["bar", "foo"] })
+
 const notFoo = type.string.narrow((s, ctx) => {
 	if (s !== "foo") return true
 	// ["names", 1]
