@@ -218,18 +218,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 		scopesById[this.id] = this
 	}
 
-	private _lastGlobalConfig: ArkConfig | undefined
+	private _lastGlobalResolvedConfig: ArkConfig | undefined
 	private _parseConfig: ArkScopeConfig | undefined
 	private _parseConfigHash: string | undefined
 	private _resolvedConfig: ResolvedScopeConfig | undefined
 	private updateConfig(): void {
-		if (this._lastGlobalConfig === $ark.resolvedConfig) return
+		// can't use $ark.config for this check since it gets mutated
+		if (this._lastGlobalResolvedConfig === $ark.resolvedConfig) return
 
 		this._parseConfig =
 			this.config ? mergeConfigs($ark.config, this.config) : $ark.config
 		this._parseConfigHash = serializeConfig(this._parseConfig)
 		this._resolvedConfig = mergeConfigs($ark.defaultConfig, this._parseConfig)
-		this._lastGlobalConfig = $ark.config
+		this._lastGlobalResolvedConfig = $ark.resolvedConfig
 	}
 
 	get resolvedConfig(): ResolvedScopeConfig {
