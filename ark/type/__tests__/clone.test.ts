@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { $ark } from "@ark/schema"
 import { configure, type } from "arktype"
 
 contextualize(() => {
@@ -112,5 +113,7 @@ contextualize(() => {
 		// the original object's age key is now a number
 		attest(formData.age).unknown.equals(42)
 		attest(formData).unknown.equals(out)
+
+		configure({ clone: $ark.defaultConfig.clone })
 	})
 })

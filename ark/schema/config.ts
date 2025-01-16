@@ -92,13 +92,19 @@ export const mergeConfigs = <base extends ArkConfig>(
 	const result: any = {}
 
 	for (const k of keys) {
-		result[k] =
-			isNodeKind(k) ?
-				{
-					...base[k],
-					...extensions[k]
-				}
-			:	extensions[k]
+		let v: unknown
+		if (isNodeKind(k)) {
+			if (base[k]) {
+				if (extensions[k]) {
+					v = {
+						...base[k],
+						...extensions[k]
+					}
+				} else v = base[k]
+			} else v = extensions[k]
+		} else v = extensions[k] === undefined ? base[k] : extensions[k]
+
+		if (v !== undefined) result[k] = v
 	}
 
 	return result

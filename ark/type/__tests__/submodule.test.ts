@@ -37,8 +37,8 @@ contextualize.each(
 
 			attest<number>(types.sub.alias.infer)
 			const expected = type("number").json
-			attest(types.sub.alias.json).is(expected)
-			attest(types.b.json).is(expected)
+			attest(types.sub.alias.json).equals(expected)
+			attest(types.b.json).equals(expected)
 		})
 
 		it("non-submodule dot access", $ => {
