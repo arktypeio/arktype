@@ -74,7 +74,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 					throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
 				:	schema
 
-			if (normalized.domain === "number" && $.resolvedConfig.numberAllowsNaN)
+			if (normalized.domain === "number" && $.parseConfig.numberAllowsNaN)
 				return { ...normalized, allowNaN: true }
 
 			return normalized

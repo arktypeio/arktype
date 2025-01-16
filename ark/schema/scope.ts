@@ -19,7 +19,12 @@ import {
 	type listable,
 	type noSuggest
 } from "@ark/util"
-import { resolveConfig, type ArkConfig } from "./config.ts"
+import {
+	mergeConfigs,
+	serializeConfig,
+	type ArkConfig,
+	type resolveConfig
+} from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
@@ -123,15 +128,14 @@ export interface ArkScopeConfig extends ArkConfig {
 	prereducedAliases?: boolean
 }
 
-export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
+export type ResolvedScopeConfig = resolveConfig<ArkScopeConfig>
 
 $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
 
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly config: ArkScopeConfig
-	readonly resolvedConfig: ResolvedArkScopeConfig
+	readonly config: ArkScopeConfig | undefined
 	readonly id = `${Object.keys(scopesById).length}$`
 
 	get [arkKind](): "scope" {
@@ -148,7 +152,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 	readonly nodesByHash: Record<string, BaseNode> = {}
-	protected readonly hasDefaultConfig: boolean
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -156,9 +159,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkScopeConfig
 	) {
-		this.config = config ?? {}
-		this.hasDefaultConfig = config === undefined || isEmptyObject(config)
-		this.resolvedConfig = resolveConfig(config)
+		this.config = config && !isEmptyObject(config) ? config : undefined
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
@@ -215,6 +216,35 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 
 		scopesById[this.id] = this
+	}
+
+	private _lastGlobalConfig: ArkConfig | undefined
+	private _parseConfig: ArkScopeConfig | undefined
+	private _parseConfigHash: string | undefined
+	private _resolvedConfig: ResolvedScopeConfig | undefined
+	private updateConfig(): void {
+		if (this._lastGlobalConfig === $ark.resolvedConfig) return
+
+		this._parseConfig =
+			this.config ? mergeConfigs($ark.config, this.config) : $ark.config
+		this._parseConfigHash = serializeConfig(this._parseConfig)
+		this._resolvedConfig = mergeConfigs($ark.defaultConfig, this._parseConfig)
+		this._lastGlobalConfig = $ark.config
+	}
+
+	get resolvedConfig(): ResolvedScopeConfig {
+		this.updateConfig()
+		return this._resolvedConfig!
+	}
+
+	get parseConfig(): ArkScopeConfig {
+		this.updateConfig()
+		return this._parseConfig!
+	}
+
+	get parseConfigHash(): string {
+		this.updateConfig()
+		return this._parseConfigHash!
 	}
 
 	get internal(): this {
@@ -329,20 +359,27 @@ export abstract class BaseScope<$ extends {} = {}> {
 	): reference {
 		let bound: reference
 
-		if (reference.$ === this) bound = reference
-		else if (isNode(reference)) {
+		if (isNode(reference)) {
 			bound =
-				this.hasDefaultConfig ?
-					new (reference.constructor as any)(reference.attachments, this)
+				reference.parseConfigHash === this.parseConfigHash ?
+					reference.$ === this ?
+						reference
+					:	new (reference.constructor as any)(reference.attachments, this)
 				:	this.node(reference.kind, reference.toNormalizedSchema())
 		} else {
-			bound = new GenericRoot(
-				reference.params as never,
-				reference.bodyDef,
-				reference.$,
-				this as never,
-				reference.hkt
-			) as never
+			bound =
+				reference.$ === this ?
+					// for now, we don't worry about parseConfig updates on generics since
+					// they will be reflected when the type is instantiated, although we may
+					// want to reconsider this behavior for constraints
+					reference
+				:	(new GenericRoot(
+						reference.params as never,
+						reference.bodyDef,
+						reference.$,
+						this as never,
+						reference.hkt
+					) as never)
 		}
 
 		if (!this.resolved) {
@@ -488,13 +525,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.lazyResolutions.forEach(node => node.resolution)
 
-			if (this.resolvedConfig.ambient === true)
+			if (this.parseConfig.ambient === true)
 				// spread all exports to ambient
 				Object.assign($ark.ambient as {}, this._exports)
-			else if (typeof this.resolvedConfig.ambient === "string") {
+			else if (typeof this.parseConfig.ambient === "string") {
 				// add exports as a subscope with the config value as a name
 				Object.assign($ark.ambient as {}, {
-					[this.resolvedConfig.ambient]: new RootModule({
+					[this.parseConfig.ambient]: new RootModule({
 						...this._exports
 					})
 				})
@@ -506,7 +543,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) {
+			if (!this.parseConfig.jitless) {
 				this.precompilation = writePrecompilation(this.references)
 				bindPrecompilation(this.references, this.precompilation)
 			}
@@ -544,9 +581,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesByRegisteredId[ctx.id] = this.bindReference(
-			parseNode(ctx)
-		)) as never
+		const node = parseNode(ctx)
+
+		const bound = this.bindReference(node)
+
+		return (nodesByRegisteredId[ctx.id] = bound) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -574,7 +613,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	finalize<node extends BaseRoot>(node: node): node {
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.resolvedConfig.jitless)
+		if (!node.precompilation && !this.parseConfig.jitless)
 			precompile(node.references)
 		return node
 	}

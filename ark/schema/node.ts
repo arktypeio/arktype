@@ -151,14 +151,10 @@ export abstract class BaseNode<
 	}
 
 	get description(): string {
-		const writer =
-			this.$?.resolvedConfig[this.kind].description ??
-			$ark.config[this.kind]?.description ??
-			$ark.defaultConfig[this.kind].description
-
 		return this.cacheGetter(
 			"description",
-			this.meta?.description ?? writer(this as never)
+			this.meta?.description ??
+				this.resolvedConfig[this.kind].description(this as never)
 		)
 	}
 

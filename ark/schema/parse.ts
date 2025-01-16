@@ -252,9 +252,17 @@ export const createNode = (
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
 	const hash = JSON.stringify({ kind, ...json })
 
+	const parseConfigProps = {
+		parseConfig: $.parseConfig,
+		parseConfigHash: $.parseConfigHash,
+		resolvedConfig: $.resolvedConfig
+	} satisfies Partial<UnknownAttachments>
+
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
+	if ($.nodesByHash[hash] && !ignoreCache)
+		// update to show the node reflects the latest parse config, if it has changed
+		return Object.assign($.nodesByHash[hash], parseConfigProps)
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -269,7 +277,8 @@ export const createNode = (
 		json,
 		hash,
 		collapsibleJson: collapsibleJson as Json,
-		children
+		children,
+		...parseConfigProps
 	}
 
 	for (const k in inner)

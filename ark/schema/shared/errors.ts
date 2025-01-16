@@ -10,7 +10,7 @@ import {
 	type propwiseXor,
 	type show
 } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.ts"
+import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { BaseMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
@@ -26,7 +26,7 @@ export class ArkError<
 	readonly [arkKind] = "error"
 	path: ReadonlyPath
 	data: Prerequisite<code>
-	private nodeConfig: ResolvedArkConfig[code]
+	private nodeConfig: ResolvedConfig[code]
 	protected input: ArkErrorContextInput<code>
 
 	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext)

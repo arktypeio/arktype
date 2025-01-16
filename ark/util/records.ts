@@ -308,6 +308,16 @@ export const defineProperties: <base extends object, merged extends object>(
 		Object.getOwnPropertyDescriptors(merged)
 	) as never
 
+/** Copies enumerable keys of o to a new object in alphabetical order */
+export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
+	const keys = Object.keys(o).sort()
+	const result: any = {}
+
+	for (let i = 0; i < keys.length; i++) result[keys[i]] = o[keys[i]]
+
+	return result
+}
+
 export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 	[k in t[keyof t]]: {
 		[k2 in keyof t]: t[k2] extends k ? k2 : never

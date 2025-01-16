@@ -1,5 +1,5 @@
 import { ReadonlyPath, stringifyPath, type array } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.ts"
+import type { ResolvedConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
@@ -56,13 +56,13 @@ export class TraversalContext {
 	 * ✅ defaults < global config < scope config
 	 * ✅ does not include options configured on individual types
 	 */
-	config: ResolvedArkConfig
+	config: ResolvedConfig
 
 	queuedMorphs: MorphsAtPath[] = []
 	branches: BranchTraversalContext[] = []
 	seen: { [id in string]?: unknown[] } = {}
 
-	constructor(root: unknown, config: ResolvedArkConfig) {
+	constructor(root: unknown, config: ResolvedConfig) {
 		this.root = root
 		this.config = config
 	}
