@@ -87,7 +87,7 @@ export abstract class BaseNode<
 						:	pipedFromCtx.data
 				}
 
-				const ctx = new Traversal(data, this.$.resolvedConfig)
+				const ctx = new Traversal(data, this.$.configSnapshot.resolved)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
@@ -95,16 +95,6 @@ export abstract class BaseNode<
 		)
 		this.attachments = attachments
 		this.$ = $
-	}
-
-	toSchema(): NormalizedSchema<d["kind"]> {
-		const result: NormalizedSchema<d["kind"]> = { ...this.inner }
-		if (this.hasNonEmptyMeta()) (result as any).meta = this.meta
-		return result
-	}
-
-	hasNonEmptyMeta(): boolean {
-		return "meta" in this.json
 	}
 
 	withMeta(
@@ -154,7 +144,7 @@ export abstract class BaseNode<
 		return this.cacheGetter(
 			"description",
 			this.meta?.description ??
-				this.resolvedConfig[this.kind].description(this as never)
+				this.configSnapshot.resolved[this.kind].description(this as never)
 		)
 	}
 
@@ -212,7 +202,7 @@ export abstract class BaseNode<
 		if (this.allowsRequiresContext) {
 			return this.traverseAllows(
 				data as never,
-				new Traversal(data, this.$.resolvedConfig)
+				new Traversal(data, this.$.configSnapshot.resolved)
 			)
 		}
 		return (this.traverseAllows as any)(data)

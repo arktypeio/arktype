@@ -144,7 +144,7 @@ export const registerNodeId = (prefix: string): NodeId => {
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
 	const configuredSchema =
-		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
+		impl.applyConfig?.(ctx.def, ctx.$.configSnapshot.resolved) ?? ctx.def
 	const inner: dict = {}
 	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
 		meta?: MetaSchema
@@ -254,17 +254,17 @@ export const createNode = (
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
 	const hash = JSON.stringify({ kind, ...json })
 
-	const parseConfigProps = {
-		parseConfig: $.parseConfig,
-		parseConfigHash: $.parseConfigHash,
-		resolvedConfig: $.resolvedConfig
-	} satisfies Partial<UnknownAttachments>
-
+	const configSnapshot = $.configSnapshot
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodesByHash[hash] && !ignoreCache)
-		// update to show the node reflects the latest parse config, if it has changed
-		return Object.assign($.nodesByHash[hash], parseConfigProps)
+	if ($.nodesByHash[hash] && !ignoreCache) {
+		const cached = $.nodesByHash[hash]
+		if (cached.configSnapshot.hash !== configSnapshot.hash)
+			// update to show the node reflects the latest parse config, if it has changed
+			(cached as any).config = configSnapshot
+
+		return cached
+	}
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -280,7 +280,7 @@ export const createNode = (
 		hash,
 		collapsibleJson: collapsibleJson as Json,
 		children,
-		...parseConfigProps
+		configSnapshot
 	}
 
 	for (const k in inner)

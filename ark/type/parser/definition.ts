@@ -72,7 +72,7 @@ export const parseInnerDefinition = (
 
 		// include parseConfigHash in cacheId to ensure that if global config
 		// is updated, we reparse strings
-		const cacheId = `${ctx.$.id}:${ctx.$.parseConfigHash}`
+		const cacheId = `${ctx.$.id}:${ctx.$.configSnapshot.hash}`
 		const scopeCache = (parseCache[cacheId] ??= {})
 		const cachedResult = scopeCache[def]
 		if (cachedResult) {

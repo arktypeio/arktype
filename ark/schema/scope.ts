@@ -15,6 +15,7 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
+	type dict,
 	type flattenListable,
 	type listable,
 	type noSuggest
@@ -64,7 +65,11 @@ import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
-import type { NodeKind, RootKind } from "./shared/implement.ts"
+import type {
+	NodeKind,
+	ParseConfigSnapshot,
+	RootKind
+} from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
@@ -227,33 +232,26 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	private _lastGlobalResolvedConfig: ArkConfig | undefined
-	private _parseConfig: ArkScopeConfig | undefined
-	private _parseConfigHash: string | undefined
-	private _resolvedConfig: ResolvedScopeConfig | undefined
-	private updateConfig(): void {
+	private _lastConfigSnapshot: ParseConfigSnapshot | undefined
+	get configSnapshot(): ParseConfigSnapshot {
 		// can't use $ark.config for this check since it gets mutated
-		if (this._lastGlobalResolvedConfig === $ark.resolvedConfig) return
-
-		this._parseConfig =
+		if (
+			this._lastConfigSnapshot &&
+			this._lastGlobalResolvedConfig === $ark.resolvedConfig
+		)
+			return this._lastConfigSnapshot
+		const configured =
 			this.config ? mergeConfigs($ark.config, this.config) : $ark.config
-		this._parseConfigHash = serializeConfig(this._parseConfig)
-		this._resolvedConfig = mergeConfigs($ark.defaultConfig, this._parseConfig)
+		const hash = serializeConfig(configured)
+		const resolved = mergeConfigs($ark.defaultConfig, configured)
+
 		this._lastGlobalResolvedConfig = $ark.resolvedConfig
-	}
 
-	get resolvedConfig(): ResolvedScopeConfig {
-		this.updateConfig()
-		return this._resolvedConfig!
-	}
-
-	get parseConfig(): ArkScopeConfig {
-		this.updateConfig()
-		return this._parseConfig!
-	}
-
-	get parseConfigHash(): string {
-		this.updateConfig()
-		return this._parseConfigHash!
+		return {
+			configured,
+			hash,
+			resolved
+		}
 	}
 
 	get internal(): this {
@@ -373,11 +371,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (isNode(reference)) {
 			bound =
-				reference.parseConfigHash === this.parseConfigHash ?
+				reference.configSnapshot.hash === this.configSnapshot.hash ?
 					reference.$ === this ?
 						reference
 					:	new (reference.constructor as any)(reference.attachments, this)
-				:	this.node(reference.kind, reference.toSchema())
+				:	this.node(reference.kind, nodeToSchema(reference))
 		} else {
 			bound =
 				reference.$ === this ?
@@ -537,13 +535,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.lazyResolutions.forEach(node => node.resolution)
 
-			if (this.resolvedConfig.ambient === true)
+			if (this.configSnapshot.resolved.ambient === true)
 				// spread all exports to ambient
 				Object.assign($ark.ambient as {}, this._exports)
-			else if (typeof this.resolvedConfig.ambient === "string") {
+			else if (typeof this.configSnapshot.resolved.ambient === "string") {
 				// add exports as a subscope with the config value as a name
 				Object.assign($ark.ambient as {}, {
-					[this.resolvedConfig.ambient]: new RootModule({
+					[this.configSnapshot.resolved.ambient]: new RootModule({
 						...this._exports
 					})
 				})
@@ -555,7 +553,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) {
+			if (!this.configSnapshot.resolved.jitless) {
 				this.precompilation = writePrecompilation(this.references)
 				bindPrecompilation(this.references, this.precompilation)
 			}
@@ -625,7 +623,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	finalize<node extends BaseRoot>(node: node): node {
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.resolvedConfig.jitless)
+		if (!node.precompilation && !this.configSnapshot.resolved.jitless)
 			precompile(node.references)
 		return node
 	}
@@ -680,6 +678,12 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 			})
 		})
 	return resolution
+}
+
+const nodeToSchema = (node: BaseNode): dict => {
+	const result: dict = { ...node.inner }
+	if (!isEmptyObject(node.meta)) result.meta = node.meta
+	return result
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>
