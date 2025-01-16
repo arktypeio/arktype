@@ -94,6 +94,7 @@ export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
 	clone?: boolean | CloneImplementation
 	onUndeclaredKey?: UndeclaredKeyBehavior
+	numberAllowsNaN?: boolean
 }
 
 export type resolveConfig<config extends ArkConfig> = show<

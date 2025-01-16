@@ -97,6 +97,16 @@ export abstract class BaseNode<
 		this.$ = $
 	}
 
+	toNormalizedSchema(): NormalizedSchema<d["kind"]> {
+		return this.hasNonEmptyMeta() ?
+				{ ...this.inner, meta: this.meta }
+			:	this.inner
+	}
+
+	hasNonEmptyMeta(): boolean {
+		return "meta" in this.json
+	}
+
 	withMeta(
 		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
 	): this {

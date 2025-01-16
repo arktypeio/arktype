@@ -157,4 +157,19 @@ contextualize(() => {
 		})
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
+
+	it("numberAllowsNaN", () => {
+		const { nanable } = type.module(
+			{ nanable: "number" },
+			{ numberAllowsNaN: true }
+		)
+
+		attest(nanable.allows(Number.NaN)).equals(true)
+
+		const { nonNanable } = type.module({
+			nonNanable: "number"
+		})
+
+		attest(nonNanable.allows(Number.NaN)).equals(false)
+	})
 })

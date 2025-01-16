@@ -2,9 +2,61 @@
 title: Configuration
 ---
 
-### Errors
+ArkType aims to have great defaults supports four levels of configuration:
 
-🚧 Coming soon ™️🚧
+<table>
+  <thead>
+    <tr>
+      <th>Level</th>
+      <th>Description</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Defaults</td>
+      <td>Built-in defaults that apply unless overridden.</td>
+      <td>n/a</td>
+    </tr>
+    <tr>
+      <td>Global</td>
+      <td>Use <code>configure()</code> to set options once.</td>
+      <td>
+```ts
+import { configure } from "arktype/config"
+configure({ clone: structuredClone, onUndeclaredKey: "reject" })
+```
+     </td>
+    </tr>
+    <tr>
+      <td>Scope</td>
+      <td>Pass a config object when creating or extending a Scope.</td>
+      <td>
+```ts
+const myScope = scope({})
+```
+      </td>
+    </tr>
+    <tr>
+      <td>Type</td>
+      <td>Configure options directly on a Type to affect only that Type’s behavior.</td>
+      <td>
+
+```ts
+import { type } from "arktype"
+
+const t = type("number % 2").configure({})
+```
+
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+Some options only make sense at specific levels. For example, the "clone" option is global or scope-level, while "meta" is typically applied at the type-level.
+
+### Errors
 
 ### Clone
 

@@ -39,13 +39,12 @@ export const number: number.module = Scope.module({
 	integer,
 	epoch,
 	safe: rootSchema({
-		domain: "number",
+		domain: {
+			domain: "number",
+			allowNaN: false
+		},
 		min: Number.MIN_SAFE_INTEGER,
-		max: Number.MAX_SAFE_INTEGER,
-		predicate: {
-			predicate: n => !Number.isNaN(n),
-			meta: "a safe number"
-		}
+		max: Number.MAX_SAFE_INTEGER
 	}),
 	NaN: ["===", Number.NaN],
 	Infinity: ["===", Number.POSITIVE_INFINITY],

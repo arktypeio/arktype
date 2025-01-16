@@ -88,7 +88,8 @@ $ark.defaultConfig = Object.assign(
 	{
 		jitless: envHasCsp(),
 		clone: deepClone,
-		onUndeclaredKey: "ignore"
+		onUndeclaredKey: "ignore",
+		numberAllowsNaN: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
 ) as never
 

@@ -3,6 +3,7 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
+	isEmptyObject,
 	isThunk,
 	printable,
 	throwInternalError,
@@ -147,6 +148,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 	readonly nodesByHash: Record<string, BaseNode> = {}
+	protected readonly hasDefaultConfig: boolean
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -155,6 +157,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		config?: ArkScopeConfig
 	) {
 		this.config = config ?? {}
+		this.hasDefaultConfig = config === undefined || isEmptyObject(config)
 		this.resolvedConfig = resolveConfig(config)
 
 		const aliasEntries = Object.entries(def).map(entry =>
@@ -324,17 +327,23 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		const bound: reference =
-			reference.$ === this ? reference
-			: isNode(reference) ?
-				new (reference.constructor as any)(reference.attachments, this)
-			:	new GenericRoot(
-					reference.params as never,
-					reference.bodyDef,
-					reference.$,
-					this as never,
-					reference.hkt
-				)
+		let bound: reference
+
+		if (reference.$ === this) bound = reference
+		else if (isNode(reference)) {
+			bound =
+				this.hasDefaultConfig ?
+					new (reference.constructor as any)(reference.attachments, this)
+				:	this.node(reference.kind, reference.toNormalizedSchema())
+		} else {
+			bound = new GenericRoot(
+				reference.params as never,
+				reference.bodyDef,
+				reference.$,
+				this as never,
+				reference.hkt
+			) as never
+		}
 
 		if (!this.resolved) {
 			// we're still parsing the scope itself, so defer compilation but
