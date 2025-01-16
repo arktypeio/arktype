@@ -33,7 +33,7 @@ export const updateSnippetsEntrypoint = () => {
 
 	const toPath = snippetPath("contentsById.ts")
 
-	const contents = `// prettier-ignore\nexport default ${JSON.stringify(snippetContentsById, null, 4)}`
+	const contents = `// prettier-ignore\nexport default ${JSON.stringify(snippetContentsById, null, 4)}\n`
 
 	if (!existsSync(toPath) || readFile(toPath) !== contents)
 		writeFile(toPath, contents)
