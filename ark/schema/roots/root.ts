@@ -107,14 +107,6 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	brandAttributes(): this {
-		return this
-	}
-
-	unbrandAttributes(): this {
-		return this
-	}
-
 	readonly(): this {
 		return this
 	}

@@ -289,14 +289,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		node.isRefinement()
 	)
 
-	get expression(): string {
-		let expression =
-			this.structure?.expression ||
-			`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
-			"unknown"
-		if (expression === "Array == 0") expression = "[]"
-		return this.cacheGetter("expression", expression)
-	}
+	expression: string = describeIntersection(this)
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"
@@ -384,6 +377,15 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 export const Intersection = {
 	implementation,
 	Node: IntersectionNode
+}
+
+const describeIntersection = (node: Intersection.Node) => {
+	let expression =
+		node.structure?.expression ||
+		`${node.basis ? node.basis.nestableExpression + " " : ""}${node.refinements.join(" & ")}` ||
+		"unknown"
+	if (expression === "Array == 0") expression = "[]"
+	return expression
 }
 
 const intersectIntersections = (
