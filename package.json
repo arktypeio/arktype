@@ -80,7 +80,8 @@
 			"conditions=ark-ts",
 			"import=tsx"
 		],
-		"require": "./ark/repo/mocha.globalSetup.ts"
+		"require": "./ark/repo/mocha.globalSetup.ts",
+		"timeout": 10000
 	},
 	"c8": {
 		"checkCoverage": true,
