@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { configure, rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -171,5 +171,12 @@ contextualize(() => {
 		})
 
 		attest(nonNanable.allows(Number.NaN)).equals(false)
+	})
+
+	it("references recompiled on global config change", () => {
+		configure({ numberAllowsNaN: true })
+		attest(type("number").allows(Number.NaN)).equals(true)
+		configure({ numberAllowsNaN: false })
+		attest(type("number").allows(Number.NaN)).equals(false)
 	})
 })

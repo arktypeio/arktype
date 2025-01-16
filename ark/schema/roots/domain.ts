@@ -27,15 +27,13 @@ export declare namespace Domain {
 
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
 		readonly domain: domain
-		readonly allowNaN?: true
+		readonly allowNaN?: boolean
 	}
 
 	export interface NormalizedSchema<
 		domain extends NonEnumerable = NonEnumerable
-	> extends BaseNormalizedSchema {
-		readonly domain: domain
-		readonly allowNaN?: boolean
-	}
+	> extends BaseNormalizedSchema,
+			Inner<domain> {}
 
 	export type Schema<
 		// only domains with an infinite number of values are allowed as bases
@@ -63,22 +61,21 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 		collapsibleKey: "domain",
 		keys: {
 			domain: {},
-			allowNaN: {
-				parse: schema => schema === true || undefined
-			}
+			allowNaN: {}
 		},
-		normalize: (schema, $) => {
-			const normalized =
-				typeof schema === "string" ? { domain: schema }
-				: schema.allowNaN && schema.domain !== "number" ?
-					throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
-				:	schema
-
-			if (normalized.domain === "number" && $.parseConfig.numberAllowsNaN)
-				return { ...normalized, allowNaN: true }
-
-			return normalized
-		},
+		normalize: schema =>
+			typeof schema === "string" ? { domain: schema }
+			: schema.allowNaN && schema.domain !== "number" ?
+				throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
+			:	schema,
+		deriveConfigInner: (schema, config) =>
+			(
+				schema.allowNaN === undefined &&
+				schema.domain === "number" &&
+				config.numberAllowsNaN
+			) ?
+				{ allowNaN: true }
+			:	undefined,
 		defaults: {
 			description: node => domainDescriptions[node.domain],
 			actual: data =>

@@ -118,14 +118,13 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: (schema, $) => {
-			if (!schema.undeclared && $.resolvedConfig.onUndeclaredKey !== "ignore") {
+		normalize: schema => schema,
+		deriveConfigInner: (schema, config) => {
+			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
 				return {
-					...schema,
-					undeclared: $.resolvedConfig.onUndeclaredKey
+					undeclared: config.onUndeclaredKey
 				}
 			}
-			return schema
 		},
 		keys: {
 			required: {

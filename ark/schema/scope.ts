@@ -218,6 +218,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		scopesById[this.id] = this
 	}
 
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
 	private _lastGlobalResolvedConfig: ArkConfig | undefined
 	private _parseConfig: ArkScopeConfig | undefined
 	private _parseConfigHash: string | undefined
@@ -336,8 +344,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 		}
 
+		if (isNode(schema) && schema.kind === kind) return schema
+
 		const impl = nodeImplementationsByKind[kind]
 		const normalizedSchema = impl.normalize?.(schema, this) ?? schema
+
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
@@ -366,7 +377,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					reference.$ === this ?
 						reference
 					:	new (reference.constructor as any)(reference.attachments, this)
-				:	this.node(reference.kind, reference.toNormalizedSchema())
+				:	this.node(reference.kind, reference.toUnconfiguredSchema())
 		} else {
 			bound =
 				reference.$ === this ?
@@ -422,7 +433,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
-			if (typeof cached !== "string") return cached
+			if (typeof cached !== "string") return this.bindReference(cached)
 
 			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
@@ -526,13 +537,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.lazyResolutions.forEach(node => node.resolution)
 
-			if (this.parseConfig.ambient === true)
+			if (this.resolvedConfig.ambient === true)
 				// spread all exports to ambient
 				Object.assign($ark.ambient as {}, this._exports)
-			else if (typeof this.parseConfig.ambient === "string") {
+			else if (typeof this.resolvedConfig.ambient === "string") {
 				// add exports as a subscope with the config value as a name
 				Object.assign($ark.ambient as {}, {
-					[this.parseConfig.ambient]: new RootModule({
+					[this.resolvedConfig.ambient]: new RootModule({
 						...this._exports
 					})
 				})
@@ -544,7 +555,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.parseConfig.jitless) {
+			if (!this.resolvedConfig.jitless) {
 				this.precompilation = writePrecompilation(this.references)
 				bindPrecompilation(this.references, this.precompilation)
 			}
@@ -614,7 +625,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	finalize<node extends BaseRoot>(node: node): node {
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.parseConfig.jitless)
+		if (!node.precompilation && !this.resolvedConfig.jitless)
 			precompile(node.references)
 		return node
 	}
