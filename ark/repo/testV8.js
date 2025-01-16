@@ -1,21 +1,14 @@
 import { fromHere } from "@ark/fs"
 import { type } from "arktype"
-import { rootSchema } from "../schema/out/index.js"
 
 console.log(
 	"⏱️  Checking for V8 fast properties (https://v8.dev/blog/fast-properties) on Type...\n"
 )
 
-const t = rootSchema({
-	domain: "number",
-	divisor: 2
-	// required: [{ key: "a", value: "string" }]
+const t = type({
+	name: "string",
+	age: "number"
 })
-
-// const tt = type({
-// 	name: "string",
-// 	age: "number"
-// })
 
 let hasFastProperties
 
