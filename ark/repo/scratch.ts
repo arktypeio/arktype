@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { Disjoint } from "../schema/shared/disjoint.ts"
 import { buildApi, jsDocGen } from "./jsDocGen.ts"
 
@@ -37,15 +37,39 @@ const uniqueStrings = type("string[]").narrow((arr, ctx) => {
 //  // ArkErrors: names[1] must be not foo (was "foo")
 //  obj({ names: ["bar", "foo"] })
 
-const notFoo = type.string.narrow((s, ctx) => {
-	if (s !== "foo") return true
-	// ["names", 1]
-	console.warn(ctx.path)
-	return ctx.mustBe("not foo")
-})
+const closedObjectScope = scope(
+	{
+		user: {
+			name: "string"
+		}
+	},
+	{
+		onUndeclaredKey: "reject"
+	}
+)
+const types = closedObjectScope.export()
+types.user({ name: "Alice", age: 99 }).toString() //?
 
-const obj = type({
-	names: notFoo.array()
+const user = type({
+	password: "string >= 8"
+}).configure({
+	message: ctx =>
+		`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
 })
+// ArkErrors: (root): a string isn't an object
+const out1 = user("ez123")
+// but `.configure` only applies shallowly, so the nested error isn't changed!
+// ArkErrors: password must be at least length 8 (was 5)
+const out2 = user({ password: "ez123" })
 
-obj.assert({ names: ["bar", "foo"] }) //?
+const mod = type.module(
+	{ isEven: "number%2" },
+	{
+		divisor: {
+			expected: ctx => `% ${ctx.rule} !== 0`,
+			problem: ctx => `${ctx.actual} ${ctx.expected}`
+		}
+	}
+)
+// ArkErrors: 3 % 2 !== 0
+mod.isEven(3)

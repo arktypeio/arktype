@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { configure, rootSchema } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -173,27 +173,70 @@ contextualize(() => {
 		attest(nonNanable.allows(Number.NaN)).equals(false)
 	})
 
-	it("references recompiled on global config change", () => {
-		configure({ numberAllowsNaN: true })
-		attest(type("number").allows(Number.NaN)).equals(true)
-		configure({ numberAllowsNaN: false })
-		attest(type("number").allows(Number.NaN)).equals(false)
+	it("dateAllowsInvalid", () => {
+		const { invalidable } = type.module(
+			{ invalidable: "Date" },
+			{ dateAllowsInvalid: true }
+		)
+
+		attest(invalidable.allows(new Date("!"))).equals(true)
+
+		const { uninvalidable } = type.module({
+			uninvalidable: "number"
+		})
+
+		attest(uninvalidable.allows(new Date("!"))).equals(false)
 	})
 
 	it("rebinds config in new scope", () => {
 		const t = type({
 			foo: "string"
 		})
+
 		const types = type.module(
 			{
 				foo: t
 			},
 			{ onUndeclaredKey: "reject" }
 		)
+
 		attest(types.foo.json).snap({
 			undeclared: "reject",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
+	})
+
+	it("docs actual example", () => {
+		// avoid logging "was xxx" for password
+		const password = type("string >= 8", "@", { actual: () => "" })
+
+		const user = type({
+			email: "string.email",
+			password
+		})
+
+		const out = user({
+			email: "david@arktype.io",
+			password: "ez123"
+		})
+
+		attest(out.toString()).snap("password must be at least length 8")
+	})
+
+	it("docs message example", () => {
+		const user = type({
+			password: "string >= 8"
+		}).configure({
+			message: ctx =>
+				`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
+		})
+		// ArkErrors: (root): a string isn't an object
+		const out1 = user("ez123")
+		attest(out1.toString()).snap("(root): a string isn't an object")
+		// but `.configure` only applies shallowly, so the nested error isn't changed!
+		// ArkErrors: password must be at least length 8 (was 5)
+		const out2 = user({ password: "ez123" })
+		attest(out2.toString()).snap("password must be at least length 8 (was 5)")
 	})
 })

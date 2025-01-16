@@ -143,14 +143,10 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
-	const configDerivedInner = impl.deriveConfigInner?.(
-		ctx.def,
-		ctx.$.resolvedConfig
-	)
-	const def =
-		configDerivedInner ? { ...ctx.def, ...configDerivedInner } : ctx.def
+	const configuredSchema =
+		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
 	const inner: dict = {}
-	const { meta: metaSchema, ...schema } = def as dict & {
+	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
 		meta?: MetaSchema
 	}
 
@@ -161,7 +157,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const innerSchemaEntries = entriesOf(schema)
+	const innerSchemaEntries = entriesOf(innerSchema)
 		.sort(([lKey], [rKey]) =>
 			isNodeKind(lKey) ?
 				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
@@ -203,14 +199,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
-	const node = createNode(
-		ctx.id,
-		ctx.kind,
-		configDerivedInner,
-		inner,
-		meta,
-		ctx.$
-	)
+	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
 
 	return node
 }
@@ -218,7 +207,6 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 export const createNode = (
 	id: NodeId,
 	kind: NodeKind,
-	configDerivedInner: dict | undefined,
 	inner: dict,
 	meta: BaseMeta,
 	$: BaseScope,
@@ -282,7 +270,6 @@ export const createNode = (
 		id,
 		kind,
 		impl,
-		configDerivedInner,
 		inner,
 		innerEntries,
 		innerJson,
@@ -309,15 +296,7 @@ export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	// have to ignore cache to force creation of new potentially cyclic id
-	return createNode(
-		id,
-		node.kind,
-		node.configDerivedInner,
-		node.inner,
-		node.meta,
-		node.$,
-		true
-	) as never
+	return createNode(id, node.kind, node.inner, node.meta, node.$, true) as never
 }
 
 export const withMeta = <node extends BaseNode>(
@@ -330,7 +309,6 @@ export const withMeta = <node extends BaseNode>(
 	return createNode(
 		id ?? registerNodeId(meta.alias ?? node.kind),
 		node.kind,
-		node.configDerivedInner,
 		node.inner,
 		meta,
 		node.$

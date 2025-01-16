@@ -1,6 +1,7 @@
 import {
 	domainDescriptions,
 	domainOf,
+	hasKey,
 	throwParseError,
 	type Domain as _Domain
 } from "@ark/util"
@@ -27,7 +28,7 @@ export declare namespace Domain {
 
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
 		readonly domain: domain
-		readonly allowNaN?: boolean
+		readonly numberAllowsNaN?: boolean
 	}
 
 	export interface NormalizedSchema<
@@ -61,21 +62,21 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 		collapsibleKey: "domain",
 		keys: {
 			domain: {},
-			allowNaN: {}
+			numberAllowsNaN: {}
 		},
 		normalize: schema =>
 			typeof schema === "string" ? { domain: schema }
-			: schema.allowNaN && schema.domain !== "number" ?
+			: hasKey(schema, "numberAllowsNaN") && schema.domain !== "number" ?
 				throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
 			:	schema,
-		deriveConfigInner: (schema, config) =>
+		applyConfig: (schema, config) =>
 			(
-				schema.allowNaN === undefined &&
+				schema.numberAllowsNaN === undefined &&
 				schema.domain === "number" &&
 				config.numberAllowsNaN
 			) ?
-				{ allowNaN: true }
-			:	undefined,
+				{ ...schema, numberAllowsNaN: true }
+			:	schema,
 		defaults: {
 			description: node => domainDescriptions[node.domain],
 			actual: data =>
@@ -84,9 +85,9 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 		intersections: {
 			domain: (l, r) =>
 				// since l === r is handled by default, remaining cases are disjoint
-				// outside those include options like allowNaN
+				// outside those including options like numberAllowsNaN
 				l.domain === "number" && r.domain === "number" ?
-					l.allowNaN ?
+					l.numberAllowsNaN ?
 						r
 					:	l
 				:	Disjoint.init("domain", l, r)
@@ -94,7 +95,8 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 	})
 
 export class DomainNode extends InternalBasis<Domain.Declaration> {
-	private readonly requiresNaNCheck = this.domain === "number" && !this.allowNaN
+	private readonly requiresNaNCheck =
+		this.domain === "number" && !this.numberAllowsNaN
 
 	readonly traverseAllows: TraverseAllows =
 		this.requiresNaNCheck ?
@@ -111,10 +113,11 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 			`((typeof data !== "object" || data === null) && typeof data !== "function")`
 		:	`typeof data !== "${this.domain}"${this.requiresNaNCheck ? " || Number.isNaN(data)" : ""}`
 
-	readonly expression: string = this.allowNaN ? "number | NaN" : this.domain
+	readonly expression: string =
+		this.numberAllowsNaN ? "number | NaN" : this.domain
 
 	get nestableExpression(): string {
-		return this.allowNaN ? `(${this.expression})` : this.expression
+		return this.numberAllowsNaN ? `(${this.expression})` : this.expression
 	}
 
 	get shortDescription(): string {
@@ -136,5 +139,5 @@ export const Domain = {
 	writeBadAllowNanMessage: (
 		actual: Exclude<Domain.NonEnumerable, "number">
 	): string =>
-		`allowNaN may only be specified with domain "number" (was ${actual})`
+		`numberAllowsNaN may only be specified with domain "number" (was ${actual})`
 }

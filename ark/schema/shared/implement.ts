@@ -303,10 +303,10 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
 	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
-	deriveConfigInner?: (
-		inner: d["inner"],
-		resolvedConfig: ResolvedScopeConfig
-	) => Partial<d["inner"]> | undefined
+	applyConfig?: (
+		schema: d["normalizedSchema"],
+		config: ResolvedScopeConfig
+	) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: {
 		[k in keyof d["inner"]]: Json
@@ -374,7 +374,6 @@ export interface UnknownAttachments {
 	readonly impl: UnknownNodeImplementation
 	readonly id: NodeId
 
-	readonly configDerivedInner: Record<string, any> | undefined
 	readonly inner: Record<string, any>
 	readonly innerEntries: readonly Entry<string>[]
 	readonly innerJson: object

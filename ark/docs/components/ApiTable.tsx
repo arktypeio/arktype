@@ -8,24 +8,21 @@ export type ApiTableProps = {
 }
 
 export const ApiTable = ({ group }: ApiTableProps) => (
-	<>
-		<h2>{group}</h2>
-		<div className="w-full overflow-x-auto">
-			<table className="w-full table-fixed border-collapse">
-				<colgroup>
-					<col className="w-28" />
-					<col className="w-1/4" />
-					<col className="w-full" />
-				</colgroup>
-				<ApiTableHeader />
-				<tbody>
-					{apiDocsByGroup[group].map(props => (
-						<ApiTableRow key={props.name} {...props} />
-					))}
-				</tbody>
-			</table>
-		</div>
-	</>
+	<div className="w-full overflow-x-auto">
+		<table className="w-full table-fixed border-collapse">
+			<colgroup>
+				<col className="w-28" />
+				<col className="w-1/4" />
+				<col className="w-full" />
+			</colgroup>
+			<ApiTableHeader />
+			<tbody>
+				{apiDocsByGroup[group].map(props => (
+					<ApiTableRow key={props.name} {...props} />
+				))}
+			</tbody>
+		</table>
+	</div>
 )
 
 const ApiTableHeader = () => (

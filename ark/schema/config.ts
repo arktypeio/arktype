@@ -119,6 +119,7 @@ export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	clone?: boolean | CloneImplementation
 	onUndeclaredKey?: UndeclaredKeyBehavior
 	numberAllowsNaN?: boolean
+	dateAllowsInvalid?: boolean
 }
 
 export type resolveConfig<config extends ArkConfig> = show<

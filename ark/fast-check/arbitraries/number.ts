@@ -8,7 +8,7 @@ export const buildNumberArbitrary = (
 ): fc.Arbitrary<number> => {
 	if (node.hasKind("domain")) {
 		return fc.double({
-			noNaN: !node.allowNaN
+			noNaN: !node.numberAllowsNaN
 		})
 	}
 	const numberConstraints = getFastCheckNumberConstraints(node)
@@ -75,7 +75,7 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 	const numberConstraints: fc.DoubleConstraints & {
 		divisor?: number
 	} = {
-		noNaN: !node.domain?.allowNaN
+		noNaN: !node.domain?.numberAllowsNaN
 	}
 
 	for (const refinement of node.refinements) {

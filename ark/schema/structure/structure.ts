@@ -119,12 +119,14 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		kind: "structure",
 		hasAssociatedError: false,
 		normalize: schema => schema,
-		deriveConfigInner: (schema, config) => {
+		applyConfig: (schema, config) => {
 			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
 				return {
+					...schema,
 					undeclared: config.onUndeclaredKey
 				}
 			}
+			return schema
 		},
 		keys: {
 			required: {

@@ -377,7 +377,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					reference.$ === this ?
 						reference
 					:	new (reference.constructor as any)(reference.attachments, this)
-				:	this.node(reference.kind, reference.toUnconfiguredSchema())
+				:	this.node(reference.kind, reference.toSchema())
 		} else {
 			bound =
 				reference.$ === this ?

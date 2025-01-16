@@ -91,7 +91,8 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			jitless: envHasCsp(),
 			clone: deepClone,
 			onUndeclaredKey: "ignore",
-			numberAllowsNaN: false
+			numberAllowsNaN: false,
+			dateAllowsInvalid: false
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )

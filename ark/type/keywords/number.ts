@@ -41,7 +41,7 @@ export const number: number.module = Scope.module({
 	safe: rootSchema({
 		domain: {
 			domain: "number",
-			allowNaN: false
+			numberAllowsNaN: false
 		},
 		min: Number.MIN_SAFE_INTEGER,
 		max: Number.MAX_SAFE_INTEGER

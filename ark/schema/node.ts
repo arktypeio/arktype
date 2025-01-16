@@ -13,7 +13,6 @@ import {
 	type Key,
 	type array,
 	type conform,
-	type dict,
 	type listable,
 	type mutable
 } from "@ark/util"
@@ -98,14 +97,8 @@ export abstract class BaseNode<
 		this.$ = $
 	}
 
-	toUnconfiguredSchema(): NormalizedSchema<d["kind"]> {
-		const result: NormalizedSchema<d["kind"]> =
-			this.configDerivedInner ?
-				flatMorph(this.inner as dict, (k, v) =>
-					k in this.configDerivedInner! ? [] : [k, v]
-				)
-			:	{ ...this.inner }
-
+	toSchema(): NormalizedSchema<d["kind"]> {
+		const result: NormalizedSchema<d["kind"]> = { ...this.inner }
 		if (this.hasNonEmptyMeta()) (result as any).meta = this.meta
 		return result
 	}
