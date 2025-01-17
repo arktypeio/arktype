@@ -132,7 +132,7 @@ contextualize(() => {
 			writeInvalidKeysMessage(t.expression, ["5.5"])
 		)
 
-		attest(t.get(keywords.Array.index).expression).snap("string | undefined")
+		attest(t.get(type.arrayIndex).expression).snap("string | undefined")
 	})
 
 	it("number access on non-variadic", () => {

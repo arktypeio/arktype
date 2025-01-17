@@ -286,10 +286,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			this.branches[i].traverseApply(data, ctx)
 			if (!ctx.hasError()) {
 				if (this.branches[i].includesMorph)
-					return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+					return ctx.queuedMorphs.push(...ctx.popBranch()!.queuedMorphs)
 				return ctx.popBranch()
 			}
-			errors.push(ctx.popBranch().error!)
+			errors.push(ctx.popBranch()!.error!)
 		}
 		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}

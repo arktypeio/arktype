@@ -28,6 +28,15 @@ contextualize(() => {
 		attest(numerics).snap([0, 2n])
 	})
 
+	it("extends doc example", () => {
+		const n = type(Math.random() > 0.5 ? "boolean" : "string")
+		attest(n.expression).satisfies("string | boolean")
+		attest(n.t).type.toString.snap("string | boolean")
+		const ez = n.ifExtends("boolean")
+		attest(ez?.expression).satisfies("'boolean' | undefined")
+		attest(ez?.t).type.toString.snap("boolean | undefined")
+	})
+
 	it("errors can be thrown", () => {
 		const t = type("number")
 		try {
@@ -113,6 +122,7 @@ contextualize(() => {
 			true: "true",
 			unknown: "unknown",
 			undefined: "undefined",
+			arrayIndex: type.arrayIndex.expression,
 			Key: "string | symbol",
 			Record: keywords.Record.internal.json,
 			Date: "Date",

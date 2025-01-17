@@ -1,13 +1,17 @@
-import type { nodeOfKind, RefinementKind } from "@ark/schema"
-import { hasKey, nearestFloat, throwInternalError, type array } from "@ark/util"
+import type { IntersectionNode } from "@ark/schema"
+import { hasKey, nearestFloat, throwInternalError } from "@ark/util"
 import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
 
 export const buildNumberArbitrary = (
 	node: DomainInputNode
 ): fc.Arbitrary<number> => {
-	if (node.hasKind("domain")) return fc.integer()
-	const numberConstraints = getFastCheckNumberConstraints(node.refinements)
+	if (node.hasKind("domain")) {
+		return fc.double({
+			noNaN: !node.numberAllowsNaN
+		})
+	}
+	const numberConstraints = getFastCheckNumberConstraints(node)
 	const hasMax = hasKey(numberConstraints, "max")
 	const hasMin = hasKey(numberConstraints, "min")
 
@@ -64,16 +68,17 @@ export const buildNumberArbitrary = (
 	return integersDivisibleByDivisor
 }
 
-const getFastCheckNumberConstraints = (
-	refinements: array<nodeOfKind<RefinementKind>>
-) => {
-	const hasDivisor = refinements.find(refinement =>
+const getFastCheckNumberConstraints = (node: IntersectionNode) => {
+	const hasDivisor = node.refinements.find(refinement =>
 		refinement.hasKind("divisor")
 	)
-	const numberConstraints: fc.IntegerConstraints & {
+	const numberConstraints: fc.DoubleConstraints & {
 		divisor?: number
-	} = {}
-	for (const refinement of refinements) {
+	} = {
+		noNaN: !node.inner.domain?.numberAllowsNaN
+	}
+
+	for (const refinement of node.refinements) {
 		if (refinement.hasKindIn("min", "max")) {
 			let rule = refinement.rule
 			if ("exclusive" in refinement) {

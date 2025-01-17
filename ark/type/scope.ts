@@ -184,14 +184,6 @@ export interface InternalScope {
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	protected cacheGetter<name extends keyof this>(
-		name: name,
-		value: this[name]
-	): this[name] {
-		Object.defineProperty(this, name, { value })
-		return value
-	}
-
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(
@@ -237,7 +229,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return parseGenericParamName(
 			new ArkTypeScanner(def),
 			[],
-			this.createParseContext({ ...opts, def, prefix: "generic" })
+			this.createParseContext({
+				...opts,
+				def,
+				prefix: "generic"
+			})
 		)
 	}
 

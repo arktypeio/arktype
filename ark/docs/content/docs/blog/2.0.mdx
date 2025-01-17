@@ -1,0 +1,52 @@
+---
+title: Announcing ArkType 2.0
+description: 100x faster validation with DX that will blow your mind
+---
+
+import { CodeBlock } from "../../../components/CodeBlock.tsx"
+import { RuntimeBenchmarksGraph } from "../../../components/RuntimeBenchmarksGraph.tsx"
+
+As of today, `arktype@2.0.0` is generally available and fully stable.
+
+ArkType 2.0 brings types to runtime JS in a way that, until today, was a pipedream. Whether you're a first-time TypeScript dev trying to validate a form or a library author introspecting relationships, ArkType offers fundamentally better tools for navigating the perils of JavaScript.
+
+### Unparalleled DX
+
+Type syntax you already know with safety and completions unlike anything
+you&apos;ve ever seen
+
+<CodeBlock fromFile="unparalleledDx" includesCompletions />
+
+### Faster... everything
+
+100x faster than Zod at runtime with editor performance that will remind you
+how autocomplete is supposed to feel
+
+<RuntimeBenchmarksGraph className="mt-2" />
+
+### Clarity and Concision
+
+Definitions are half as long, type errors are twice as readable, and hovers
+tell you just what really matters
+
+<CodeBlock fromFile="clarityAndConcision" />
+
+### Better Errors
+
+Deeply customizable messages with great defaults
+
+<CodeBlock fromFile="betterErrors" />
+
+### Deep Introspectability
+
+ArkType uses set theory to understand and expose the relationships between
+your types at runtime the way TypeScript does at compile time
+
+<CodeBlock fromFile="deepIntrospectability" />
+
+### Intrinsic Optimization
+
+Every schema is internally normalized and reduced to its purest and fastest
+representation
+
+<CodeBlock fromFile="intrinsicOptimization" />

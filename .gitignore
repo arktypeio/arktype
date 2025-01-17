@@ -1,5 +1,6 @@
 dist
 out
+*.vsix
 node_modules
 temp
 tmp

@@ -5,11 +5,13 @@
 		"objects",
 		"keywords",
 		"expressions",
-		"type-api",
 		"configuration",
+		"type-api",
+		"traversal-api",
 		"integrations",
 		"scopes",
 		"generics",
+		"blog",
 		"faq"
 	]
 }

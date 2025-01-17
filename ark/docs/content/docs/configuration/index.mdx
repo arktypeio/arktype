@@ -2,9 +2,237 @@
 title: Configuration
 ---
 
+A great out-of-the-box experience is a core goal of ArkType, including safe defaults and helpful messages for complex errors.
+
+However, it's equally important that when you need different behavior, you can easily configure it with the right granularity.
+
+<table>
+  <thead>
+    <tr>
+      <th>Level</th>
+      <th>Applies To</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>**default**</td>
+      <td>built-in defaults for all Types</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>**global**</td>
+      <td>all Types parsed after the config is applied</td>
+      <td>
+```ts
+import { configure } from "arktype/config"
+// importing from "arktype/config" first is recommended (see note)
+configure({ numberAllowsNaN: true })
+
+import { type } from "arktype"
+// true
+type.number.allows(Number.NaN) 
+```
+     </td>
+    </tr>
+    <tr>
+      <td>**scope**</td>
+      <td>all Types parsed in the configured Scope</td>
+      <td>
+```ts
+const closedObjectScope = scope(
+	{ user: {  name: "string" } },
+	{ onUndeclaredKey: "reject" }
+)
+const types = closedObjectScope.export()
+// ArkErrors: age must be removed
+types.user({ name: "Alice", age: 99 })
+const parsedAfter = closedObjectScope.type({
+  name: "string"
+})
+// ArkErrors: age must be removed
+parsedAfter({ name: "Alice", age: 99 })
+```
+      </td>
+    </tr>
+    <tr>
+      <td>**type**</td>
+      <td>all Types shallowly referenced by the configured Type</td>
+      <td>
+```ts
+// avoid logging "was xxx" for password
+const password = type("string >= 8").configure({ actual: () => "" })
+const user = type({
+	email: "string.email",
+	password
+})
+// ArkErrors: password must be at least length 8
+const out = user({
+	email: "david@arktype.io",
+	password: "ez123"
+})
+```
+
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+Some options only apply at specific levels, as reflected in the corresponding input types.
+
+<Callout
+	type="warn"
+	title='Use the `"arktype/config"` entrypoint if for global config!'
+>
+	If you need your config to apply to built-in keywords (important for options
+	like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and
+	`configure` from `"arktype/config"` before importing anything from
+	`"arktype"`.
+
+Otherwise, keywords will have already been parsed by the time your config applies!
+
+</Callout>
+
 ### Errors
 
-🚧 Coming soon ™️🚧
+To allow custom errors to be integrated seemlessly with built-in logic for composite errors (i.e. `union` and `intersection`), ArkType supports a set of composable options:
+
+<table>
+<thead>
+<tr>
+<th>optional</th>
+<th>description</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>**description**</td>
+<td>
+✅ a summary of the constraint that could complete the phrase "must be ___"
+
+🥇 reused by other metadata and should be your first go-to for customizing a message
+
+</td>
+<td>
+```ts
+const password = type.string.atLeastLength(8).describe("a valid password")
+// ArkErrors: must be a valid password
+const out = password("ez123")
+```
+</td>
+</tr>
+<tr>
+<td>**expected**</td>
+<td>
+✅ a function accepting the error context and returning a string of the format "must be ___"
+
+✅ specific to errors and takes precedence over `description` in those cases
+
+</td>
+    <td>
+```ts
+const password = type.string.atLeastLength(8).configure({
+	expected: ctx =>
+		ctx.code === "minLength" ? `${ctx.rule} characters or better` : "way better"
+})
+// ArkErrors: must be 8 characters or better (was 5)
+const out1 = password("ez123").toString()
+// ArkErrors: must be way better (was a number)
+const out2 = password(12345678).toString()
+```
+</td>
+</tr>
+<tr>
+<td>**actual**</td>
+<td>
+✅ a function accepting the data that caused the error and returning a string of the format "(was ___)"
+
+✅ if an empty string is returned, the actual portion of the message will be omitted
+
+</td>
+    <td>
+```ts
+const password = type("string >= 8").configure({ actual: () => "" })
+// ArkErrors: password must be at least length 8
+const out = password("ez123")
+```
+</td>
+</tr>
+<tr>
+<td>**problem**</td>
+<td>
+✅ a function accepting the results of `expected` and `actual` in addition to other context and returning a complete description of the problem like "must be a string (was a number)"
+
+❌ may not apply to composite errors like unions
+
+</td>
+<td>
+```ts
+const password = type("string >= 8").configure({
+	problem: ctx => `${ctx.actual} isn't ${ctx.expected}`
+})
+// ArkErrors: 5 isn't at least length 8
+const out1 = password("ez123")
+// ArkErrors: a number isn't a string
+const out2 = password(12345678)
+```
+</td>
+</tr>
+<tr>
+<td>**message**</td>
+<td>
+✅ a function accepting the result of `problem` in addition to other context and returning a complete description of the problem including the path at which it occurred
+
+❌ may not apply to composite errors like unions
+
+</td>
+<td>
+```ts
+const user = type({
+	password: "string >= 8"
+}).configure({
+	message: ctx =>
+		`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
+})
+// ArkErrors: (root): a string isn't an object
+const out1 = user("ez123")
+// `.configure` only applies shallowly, so the nested error isn't changed!
+// ArkErrors: password must be at least length 8 (was 5)
+const out2 = user({ password: "ez123" })
+```
+</td>
+</tr>
+</tbody>
+</table>
+
+#### By Code
+
+Errors can also be configured by their associated `code` property at a _scope_ or _global_ level.
+
+For example:
+
+```ts
+const mod = type.module(
+	{ isEven: "number%2" },
+	{
+		divisor: {
+			// the available `ctx` types will include data specific to your errors
+			expected: ctx => `% ${ctx.rule} !== 0`,
+			problem: ctx => `${ctx.actual} ${ctx.expected}`
+		}
+	}
+)
+// ArkErrors: 3 % 2 !== 0
+mod.isEven(3)
+```
+
+#### ArkErrors
+
+For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` array returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+
+These `ArkError` instances can be arbitrarily transformed and composed with an internationalization library. This is still a topic we're working on investigating and documenting, so please reach out with any questions or feedback!
 
 ### Clone
 
@@ -50,7 +278,31 @@ console.log(formData.age)
 
 ### onUndeclaredKey
 
-🚧 Coming soon ™️🚧
+Like TypeScript, ArkType defaults to ignoring undeclared keys during validation. However, it also supports two additional behaviors:
+
+- `"ignore"` (default): Allow undeclared keys on input, preserve them on output
+- `"delete"`: Allow undeclared keys on input, delete them before returning output
+- `"reject"`: Reject input with undeclared keys
+
+These behaviors can be associated with individual Types via the builtin `"+"` syntax (see [those docs](/docs/objects/properties-undeclared) for more on how they work). You can also change the default globally:
+
+```ts
+import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+
+import { type } from "arktype"
+
+const userForm = type({
+	name: "string"
+})
+
+// out is now { name: "Alice" }
+const out = userForm({
+	name: "Alice",
+	age: "42"
+})
+```
 
 ### jitless
 
@@ -60,10 +312,6 @@ If you'd like to opt out of it for another reason, you can set the `jitless` con
 
 ```ts
 import { configure } from "arktype/config"
-
-// IMPORTANT: make sure you import from the "arktype/config" entry point
-// and invoke configure before importing anything else from ArkType
-// unless you want the builtin types to be precompiled
 
 configure({ jitless: true })
 

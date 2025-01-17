@@ -20,7 +20,11 @@ export const LocalFriendlyUrl = (props: LocalFriendlyUrlProps) => {
 	}
 
 	return (
-		<a href={locallyAccessibleUrl} key={props.key}>
+		<a
+			style={{ display: "inline-block" }}
+			href={locallyAccessibleUrl}
+			key={props.key}
+		>
 			{props.children}
 		</a>
 	)

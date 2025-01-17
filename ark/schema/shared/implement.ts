@@ -22,7 +22,11 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { BaseScope } from "../scope.ts"
+import type {
+	ArkScopeConfig,
+	BaseScope,
+	ResolvedScopeConfig
+} from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -299,6 +303,10 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
 	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
+	applyConfig?: (
+		schema: d["normalizedSchema"],
+		config: ResolvedScopeConfig
+	) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: {
 		[k in keyof d["inner"]]: Json
@@ -360,6 +368,12 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: nodeOfKind<kind>
 ) => string
 
+export interface ParseConfigSnapshot {
+	configured: ArkScopeConfig
+	hash: string
+	resolved: ResolvedScopeConfig
+}
+
 export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
@@ -378,6 +392,8 @@ export interface UnknownAttachments {
 	readonly hash: string
 	readonly collapsibleJson: Json
 	readonly children: BaseNode[]
+
+	readonly configSnapshot: ParseConfigSnapshot
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>

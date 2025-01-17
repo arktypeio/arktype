@@ -1031,4 +1031,43 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		)
 		attest(feedbackSchema.t).type.toString.snap(`{ contact: string }`)
 	})
+
+	it("deleted undeclared keys allowed in input", () => {
+		const t = type({ foo: "string" }).onUndeclaredKey("delete")
+
+		attest(t.json).snap({
+			undeclared: "delete",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		attest(t.in.json).snap({
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		const extras = { foo: "hi", bar: 3 }
+
+		attest(t(extras)).equals({ foo: "hi" })
+		attest(t.allows(extras)).equals(true)
+		attest(t.in(extras)).equals(extras)
+	})
+
+	it("deleted undeclared keys rejected in output", () => {
+		const t = type({ foo: "string" }).onUndeclaredKey("delete")
+
+		attest(t.json).snap({
+			undeclared: "delete",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		attest(t.out.json).snap({
+			undeclared: "reject",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		attest(t.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
+	})
 })

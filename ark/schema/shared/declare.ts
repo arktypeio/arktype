@@ -72,7 +72,12 @@ type prerequisiteOf<d extends DeclarationInput> =
 	"prerequisite" extends keyof d ? d["prerequisite"] : unknown
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =
-	NarrowedAttachments<d> & d["inner"]
+	NarrowedAttachments<d> & attachedInner<d>
+
+// some nonsense to allow TS to infer attache properties on nodes with
+// a base declaration like Prop and Range
+type attachedInner<d extends BaseNodeDeclaration> =
+	"intersection" & d["kind"] extends never ? d["inner"] : {}
 
 export interface BaseNodeDeclaration {
 	kind: NodeKind

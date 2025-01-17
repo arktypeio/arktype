@@ -1,33 +1,28 @@
-import type { JSX } from "react"
-import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
+import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsDocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
 import { CodeBlock } from "./CodeBlock.tsx"
 import { LocalFriendlyUrl } from "./LocalFriendlyUrl.tsx"
 
 export type ApiTableProps = {
 	group: ApiGroup
-	rows: JSX.Element[]
 }
 
 export const ApiTable = ({ group }: ApiTableProps) => (
-	<>
-		<h2>{group}</h2>
-		<div className="w-full overflow-x-auto">
-			<table className="w-full table-fixed border-collapse">
-				<colgroup>
-					<col className="w-28" />
-					<col className="w-1/4" />
-					<col className="w-full" />
-				</colgroup>
-				<ApiTableHeader />
-				<tbody>
-					{apiDocsByGroup[group].map(props => (
-						<ApiTableRow key={props.name} {...props} />
-					))}
-				</tbody>
-			</table>
-		</div>
-	</>
+	<div className="w-full overflow-x-auto">
+		<table className="w-full table-fixed border-collapse">
+			<colgroup>
+				<col className="w-28" />
+				<col className="w-1/4" />
+				<col className="w-full" />
+			</colgroup>
+			<ApiTableHeader />
+			<tbody>
+				{apiDocsByGroup[group].map(props => (
+					<ApiTableRow key={props.name} {...props} />
+				))}
+			</tbody>
+		</table>
+	</div>
 )
 
 const ApiTableHeader = () => (
@@ -37,7 +32,7 @@ const ApiTableHeader = () => (
 				Name
 			</th>
 			<th className="p-2 text-left align-top min-w-[200px]">Summary</th>
-			<th className="p-2 text-left align-top">Example</th>
+			<th className="p-2 text-left align-top">Notes & Examples</th>
 		</tr>
 	</thead>
 )
@@ -51,7 +46,17 @@ interface ApiTableRowProps {
 
 const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
 	<tr key={name}>
-		<td className="p-2 align-top whitespace-nowrap w-auto">{name}</td>
+		<td
+			style={{
+				fontSize:
+					name.length < 12 ? "1rem"
+					: name.length < 16 ? "0.7rem"
+					: "0.6rem"
+			}}
+			className="p-2 align-top whitespace-nowrap w-auto"
+		>
+			{name}
+		</td>
 		<td className="p-2 align-top">{JsDocParts(summary)}</td>
 		<td className="p-2 align-top">
 			{notes.map((note, i) => (
@@ -70,13 +75,9 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 					{part.value}
 				</LocalFriendlyUrl>
 			: part.kind === "reference" ?
-				<a href={`#${part.value}`} key={i}>
+				<a style={{ display: "inline-block" }} href={`#${part.value}`} key={i}>
 					{part.value}
 				</a>
-			: part.kind === "tag" ?
-				<p key={i}>
-					{part.name} {JsDocParts(part.value)}
-				</p>
 			:	<p
 					style={{ display: "inline" }}
 					key={i}
@@ -84,6 +85,8 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 						__html: part.value
 							.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
 							.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
+							.replace(/`([^`]+)`/g, "<code>$1</code>")
+							.replace(/^-(.*)/g, "• $1")
 					}}
 				/>
 			}

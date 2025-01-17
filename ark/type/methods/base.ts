@@ -41,45 +41,45 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	/**
-	 * The precompiled JS used to optimize validation.
-	 * Will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode.
+	 * precompiled JS used to optimize validation
+	 *
+	 * ⚠️ will be `undefined` in [jitless](https://arktype.io/docs/configuration#jitless) mode
 	 */
 	precompilation: string | undefined
 
 	/**
-	 * The generic parameter representing this Type
+	 * generic parameter representing this Type
 	 *
 	 * @typeonly
 	 *
-	 * - ⚠️ May contain types representing morphs or default values that would
+	 * ⚠️ May contain types representing morphs or default values that would
 	 * be inaccurate if used directly for runtime values. In those cases,
 	 * you should use {@link infer} or {@link inferIn} on this object instead.
 	 */
 	t: t
 
 	/**
-	 * The {@link Scope} in which definitions for this Type its chained methods are parsed
-	 * @api Type
+	 * #### {@link Scope} in which chained methods are parsed
 	 */
 	$: Scope<$>
 
 	/**
-	 * The type of data this returns
+	 * #### type of output this returns
 	 *
 	 * @typeonly
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type ParsedNumber = typeof parseNumber.infer // number
-	 *
-	 * @api Type
 	 */
 	infer: this["inferOut"]
 
 	/**
-	 * Alias of {@link infer}
+	 * type of output this returns
 	 *
+	 * 🔗 alias of {@link infer}
 	 * @typeonly
+	 *
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
@@ -88,10 +88,11 @@ interface Type<out t = unknown, $ = {}>
 	inferOut: distill.Out<t>
 
 	/**
-	 * The type of output that can be introspected at runtime (e.g. via {@link out})
+	 * type of output that can be introspected at runtime (e.g. via {@link out})
 	 *
-	 * - If your Type contains morphs, they will be inferred as `unknown` unless
+	 * ⚠️ If your Type contains morphs, they will be inferred as `unknown` unless
 	 * they are an ArkType keyword or have an explicitly defined output validator.
+	 *
 	 * @typeonly
 	 *
 	 * @example
@@ -112,73 +113,66 @@ interface Type<out t = unknown, $ = {}>
 	inferIntrospectableOut: distill.introspectable.Out<t>
 
 	/**
-	 * The type of data this expects
+	 * #### type of input this allows
 	 *
 	 * @typeonly
 	 *
 	 * @example
 	 * const parseNumber = type("string").pipe(s => Number.parseInt(s))
 	 * type UnparsedNumber = typeof parseNumber.inferIn // string
-	 * @api Type
 	 */
 	inferIn: distill.In<t>
 
 	/**
-	 * The internal JSON representation
-	 * @api Type
+	 * #### internal JSON representation
 	 */
 	json: JsonStructure
 
 	/**
-	 * Alias of {@link json} for `JSON.stringify` compatibility
+	 * alias of {@link json} for `JSON.stringify` compatibility
 	 */
 	toJSON(): JsonStructure
 
 	/**
-	 * Generate a JSON Schema
+	 * #### generate a JSON Schema
+	 *
 	 * @throws {JsonSchema.UnjsonifiableError} if this cannot be converted to JSON Schema
-	 * @api Type
 	 */
 	toJsonSchema(): JsonSchema
 
 	/**
-	 * Metadata like custom descriptions and error messages
+	 * #### metadata like custom descriptions and error messages
 	 *
-	 * @description The type of this property {@link https://arktype.io/docs/configuration#custom | can be extended} by your project.
-	 * @api Type
+	 * ✅ type {@link https://arktype.io/docs/configuration#custom | can be customized} for your project
 	 */
 	meta: ArkAmbient.meta
 
 	/**
-	 * An English description
+	 * #### human-readable English description
 	 *
-	 * - Work best for primitive values
+	 * ✅ works best for primitive values
 	 *
 	 * @example
 	 * const n = type("0 < number <= 100")
 	 * console.log(n.description) // positive and at most 100
-	 *
-	 * @api Type
 	 */
 	description: string
 
 	/**
-	 * A syntax string similar to native TypeScript
+	 * #### syntax string similar to native TypeScript
 	 *
-	 * - Works well for both primitives and structures
+	 * ✅ works well for both primitives and structures
 	 *
 	 * @example
 	 * const loc = type({ coords: ["number", "number"] })
 	 * console.log(loc.expression) // { coords: [number, number] }
-	 *
-	 * @api Type
 	 */
 	expression: string
 
 	/**
-	 * Validate and morph data, throwing a descriptive AggregateError on failure
+	 * #### validate and return transformed data or throw
 	 *
-	 * - Sugar to avoid checking for {@link type.errors} if they are unrecoverable
+	 * ✅ sugar to avoid checking for {@link type.errors} if they are unrecoverable
 	 *
 	 * @example
 	 * const criticalPayload = type({
@@ -189,29 +183,25 @@ interface Type<out t = unknown, $ = {}>
 	 * console.log(data.superImportantValue) // valid output can be accessed directly
 	 *
 	 * @throws {AggregateError}
-	 * @api Type
 	 */
 	assert(data: unknown): this["infer"]
 
 	/**
-	 * Validate input data without applying morphs
+	 * #### check input without applying morphs
 	 *
-	 * - Good for cases like filtering that don't benefit from detailed errors
+	 * ✅ good for stuff like filtering that doesn't benefit from detailed errors
 	 *
 	 * @example
 	 * const numeric = type("number | bigint")
 	 * // [0, 2n]
 	 * const numerics = [0, "one", 2n].filter(numeric.allows)
-	 *
-	 * @api Type
 	 */
 	allows(data: unknown): data is this["inferIn"]
 
 	/**
-	 * Clone and add metadata to shallow references
+	 * #### add metadata to shallow references
 	 *
-	 * - Does not affect error messages within properties of an object
-	 * - Overlapping keys on existing meta will be overwritten
+	 * ⚠️ does not affect error messages within properties of an object
 	 *
 	 * @example
 	 * const notOdd = type("number % 2").configure({ description: "not odd" })
@@ -228,128 +218,222 @@ interface Type<out t = unknown, $ = {}>
 	 * const oddProp = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
-	 *
-	 * @api Type
 	 */
 	configure(meta: MetaSchema): this
 
 	/**
-	 * Clone and add the description to shallow references
+	 * #### add description to shallow references
 	 *
-	 * - Equivalent to `.configure({ description })` (see {@link configure})
-	 * - Does not affect error messages within properties of an object
+	 * 🔗 equivalent to `.configure({ description })` (see {@link configure})
+	 * ⚠️ does not affect error messages within properties of an object
 	 *
 	 * @example
 	 * const aToZ = type(/^a.*z$/).describe("a string like 'a...z'")
 	 * const good = aToZ("alcatraz") // "alcatraz"
-	 * // notice how our description is integrated with other parts of the message
-	 * const badPattern = aToZ("albatross") // must be a string like 'a...z' (was "albatross")
-	 * const nonString = aToZ(123) // must be a string like 'a...z' (was 123)
-	 *
-	 * @api Type
+	 * // ArkErrors: must be a string like 'a...z' (was "albatross")
+	 * const badPattern = aToZ("albatross")
 	 */
 	describe(description: string): this
 
 	/**
-	 * Clone to a new Type with the specified undeclared key behavior.
+	 * #### apply undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
-	 * @api Type
 	 */
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Deeply clone to a new Type with the specified undeclared key behavior.
+	 * #### deeply apply undeclared key behavior
 	 *
 	 * {@inheritDoc UndeclaredKeyBehavior}
-	 * @api Type
 	 **/
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	/**
-	 * Identical to `assert`, but with a typed input as a convenience for providing a typed value.
-	 * @example const ConfigT = type({ foo: "string" }); export const config = ConfigT.from({ foo: "bar" })
+	 * #### alias for {@link assert} with typed input
+	 *
+	 * @example
+	 * const t = type({ foo: "string" });
+	 * // TypeScript: foo must be a string (was 5)
+	 * const data = t.from({ foo: 5 });
 	 */
 	from(literal: this["inferIn"]): this["infer"]
 
 	/**
-	 * A `Type` representing the deeply-extracted input of the `Type` (before morphs are applied).
-	 * @example const inputT = T.in
+	 * #### deeply extract inputs
+	 *
+	 * ✅ will never include morphs
+	 * ✅ good for generating JSON Schema or other non-transforming formats
+	 *
+	 * @example
+	 * const createUser = type({
+	 *    age: "string.numeric.parse"
+	 * })
+	 * // { age: 25 } (age parsed to a number)
+	 * const out = createUser({ age: "25" })
+	 * // { age: "25" } (age is still a string)
+	 * const inOut = createUser.in({ age: "25" })
 	 */
 	get in(): instantiateType<this["inferIn"], $>
 
 	/**
-	 * A `Type` representing the deeply-extracted output of the `Type` (after morphs are applied).\
-	 * **IMPORTANT**: If your type includes morphs, their output will likely be unknown
-	 *   unless they were defined with an explicit output validator via `.to(outputType)`, `.pipe(morph, outputType)`, etc.
-	 * @example const outputT = T.out
+	 * #### deeply extract outputs
+	 *
+	 * ✅ will never include morphs
+	 * ⚠️ if your type includes morphs, their output will likely be unknown unless they
+	 * were defined with an explicit output validator via `.to(outputDef)` or `.pipe(morph, outputType)`
+	 *
+	 * @example
+	 * const userMorph = type("string[]").pipe(a => a.join(","))
+	 *
+	 * const t = type({
+	 *    // all keywords have introspectable output
+	 *    keyword: "string.numeric.parse",
+	 *    // TypeScript knows this returns a boolean, but we can't introspect that at runtime
+	 *    unvalidated: userMorph,
+	 *    // if needed, it can be made introspectable with an output validator
+	 *    validated: userMorph.to("string")
+	 * })
+	 *
+	 * // Type<{ keyword: number; unvalidated: unknown; validated: string }>
+	 * const baseOut = base.out
 	 */
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	/**
-	 * Cast the way this `Type` is inferred (has no effect at runtime).
-	 * const branded = type(/^a/).as<`a${string}`>() // Type<`a${string}`>
+	 * #### cast the way this is inferred
+	 *
+	 * @typenoop
+	 *
+	 * @example
+	 * // Type<`LEEEEEEEE${string}ROY`>
+	 * const leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()
 	 */
 	as<castTo = unset>(
 		...args: validateChainedAsArgs<castTo>
 	): instantiateType<castTo, $>
 
+	/**
+	 * #### add a compile-time brand to output
+	 *
+	 * @typenoop
+	 *
+	 * @example
+	 * const palindrome = type("string")
+	 *     .narrow(s => s === [...s].reverse().join(""))
+	 *     .brand("palindrome")
+	 * // Brand<string, "palindrome">
+	 * const out = palindrome.assert("racecar")
+	 */
 	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
 	): instantiateType<r, $>
 
 	/**
-	 * Intersect another `Type` definition, throwing an error if the result is unsatisfiable.
-	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
+	 * #### intersect the parsed Type, throwing if the result is unsatisfiable
+	 *
+	 * @example
+	 * // Type<{ foo: number; bar: string }>
+	 * const t = type({ foo: "number" }).and({ bar: "string" })
+	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
+	 * const bad = type({ foo: "number" }).and({ foo: "string" })
 	 */
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $>
 
 	/**
-	 * Union another `Type` definition.\
-	 * If the types contain morphs, input shapes should be distinct. Otherwise an error will be thrown.
-	 * @example const union = type({ foo: "number" }).or({ foo: "string" }) // Type<{ foo: number } | { foo: string }>
-	 * @example const union = type("string.numeric.parse").or("number") // Type<((In: string) => Out<number>) | number>
+	 * #### union with the parsed Type
+	 *
+	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
+	 *
+	 * @example
+	 * // Type<string | { box: string }>
+	 * const t = type("string").or({ box: "string" })
 	 */
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<t | r, $>
 
 	/**
-	 * Create a `Type` for array with elements of this `Type`
-	 * @example const T = type(/^foo/); const array = T.array() // Type<string[]>
+	 * #### an array of this
+	 *
+	 * @example
+	 * // Type<{ rebmun: number }[]>
+	 * const t = type({ rebmun: "number" }).array();
 	 */
 	array(): ArrayType<t[], $>
 
+	/**
+	 * #### {@link https://arktype.io/docs/objects#properties-optional | optional definition}
+	 *
+	 * @chainedDefinition
+	 *
+	 * @example
+	 * const prop = type({ foo: "number" })
+	 * // Type<{ bar?: { foo: number } }>
+	 * const obj = type({ bar: prop.optional() })
+	 */
 	optional(): [this, "?"]
 
 	/**
-	 * Add a default value for this `Type` when it is used as a property.\
-	 * Default value should be a valid input value for this `Type, or a function that returns a valid input value.\
-	 * If the type has a morph, it will be applied to the default value.
-	 * @example const withDefault = type({ foo: type("string").default("bar") }); withDefault({}) // { foo: "bar" }
-	 * @example const withFactory = type({ foo: type("number[]").default(() => [1])) }); withFactory({baz: 'a'}) // { foo: [1], baz: 'a' }
-	 * @example const withMorph = type({ foo: type("string.numeric.parse").default("123") }); withMorph({}) // { foo: 123 }
+	 * #### {@link https://arktype.io/docs/objects#properties-defaultable | defaultable definition}
+	 *
+	 * ✅ object defaults can be returned from a function
+	 * ⚠️ throws if the default value is not allowed
+	 * @chainedDefinition
+	 *
+	 * @example
+	 * // Type<{ count: Default<number, 0> }>
+	 * const state = type({ count: type.number.default(0) })
+	 * const prop = type({ nested: "boolean" })
+	 * const forObj = type({
+	 *     key: nested.default(() => ({ nested: false }))
+	 * })
 	 */
 	default<const value extends defaultFor<this["inferIn"]>>(
 		value: value
 	): [this, "=", value]
 
+	/**
+	 * #### apply a predicate function to input
+	 *
+	 * ⚠️ the behavior of {@link narrow}, this method's output counterpart, is usually more desirable
+	 * ✅ most useful for morphs with input types that are re-used externally
+	 * @predicateCast
+	 *
+	 * @example
+	 * const stringifyUser = type({ name: "string" }).pipe(user => JSON.stringify(user))
+	 * const stringifySafe = stringifyUser.filter(user => user.name !== "Bobby Tables")
+	 * // Type<(In: `${string}Z`) => To<Date>>
+	 * const withPredicate = type("string.date.parse").filter((s): s is `${string}Z` =>
+	 *     s.endsWith("Z")
+	 * )
+	 */
 	filter<
 		narrowed extends this["inferIn"] = never,
 		r = [narrowed] extends [never] ? t
 		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
 		: narrowed
 	>(
-		predicate: Predicate.Castable<this["inferIn"]>
+		predicate: Predicate.Castable<this["inferIn"], narrowed>
 	): instantiateType<r, $>
 
 	/**
-	 * Add a custom predicate to this `Type`.
-	 * @example const nan = type('number').narrow(n => Number.isNaN(n)) // Type<number>
-	 * @example const foo = type("string").narrow((s): s is `foo${string}` => s.startsWith('foo') || ctx.mustBe('string starting with "foo"')) // Type<"foo${string}">
-	 * @example const unique = type('string[]').narrow((a, ctx) => new Set(a).size === a.length || ctx.mustBe('array with unique elements'))
+	 * #### apply a predicate function to output
+	 *
+	 * ✅ go-to fallback for validation not composable via built-in types and operators
+	 * ✅ runs after all other validators and morphs, if present
+	 * @predicateCast
+	 *
+	 * @example
+	 * const palindrome = type("string").narrow(s => s === [...s].reverse().join(""))
+	 *
+	 * const palindromicEmail = type("string.date.parse").narrow((date, ctx) =>
+	 *		date.getFullYear() === 2025 || ctx.mustBe("the current year")
+	 * )
+	 * // Type<`${string}.tsx`>
+	 * const withPredicate = type("string").narrow((s): s is `${string}.tsx` => /\.tsx?$/.test(s))
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
@@ -374,37 +458,114 @@ interface Type<out t = unknown, $ = {}>
 	// that can lead to incorrect results. See:
 	// https://discord.com/channels/957797212103016458/1285420361415917680/1285545752172429312
 	/**
-	 * Intersect another `Type` definition, returning an introspectable `Disjoint` if the result is unsatisfiable.
-	 * @example const intersection = type({ foo: "number" }).intersect({ bar: "string" }) // Type<{ foo: number; bar: string }>
-	 * @example const intersection = type({ foo: "number" }).intersect({ foo: "string" }) // Disjoint
+	 * #### intersect the parsed Type, returning an introspectable {@link Disjoint} if the result is unsatisfiable
+	 *
+	 * @example
+	 * // Type<{ foo: number; bar: string }>
+	 * const t = type({ foo: "number" }).intersect({ bar: "string" })
+	 * const bad = type("number > 10").intersect("number < 5")
+	 * // logs "Intersection of > 10 and < 5 results in an unsatisfiable type"
+	 * if (bad instanceof Disjoint) console.log(`${bad.summary}`)
 	 */
 	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
+	/**
+	 * #### check if the parsed Type's constraints are identical
+	 *
+	 * ✅ equal types have identical input and output constraints and transforms
+	 * @ignoresMeta
+	 *
+	 * @example
+	 * const divisibleBy6 = type.number.divisibleBy(6).moreThan(0)
+	 * // false (left side must also be positive)
+	 * divisibleBy6.equals("number % 6")
+	 * // false (right side has an additional <100 constraint)
+	 * console.log(divisibleBy6.equals("0 < (number % 6) < 100"))
+	 * const thirdTry = type("(number % 2) > 0").divisibleBy(3)
+	 * // true (types are normalized and reduced)
+	 * console.log(divisibleBy6.equals(thirdTry))
+	 */
 	equals<const def>(def: type.validate<def, $>): boolean
 
+	/**
+	 * #### narrow this based on an {@link equals} check
+	 *
+	 * @ignoresMeta
+	 *
+	 * @example
+	 * const n = type.raw(`${Math.random()}`)
+	 * // Type<0.5> | undefined
+	 * const ez = n.ifEquals("0.5")
+	 */
 	ifEquals<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
 	): instantiateType<r, $> | undefined
 
+	/**
+	 * #### check if this is a subtype of the parsed Type
+	 *
+	 * ✅ a subtype must include all constraints from the base type
+	 * ✅ unlike {@link equals}, additional constraints may be present
+	 * @ignoresMeta
+	 *
+	 * @example
+	 * type.string.extends("unknown") // true
+	 * type.string.extends(/^a.*z$/) // false
+	 */
 	extends<const def>(other: type.validate<def, $>): boolean
 
+	/**
+	 * #### narrow this based on an {@link extends} check
+	 *
+	 * @ignoresMeta
+	 *
+	 * @example
+	 * const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
+	 * const ez = n.ifExtends("boolean") // Type<true> | undefined
+	 */
 	ifExtends<const def, r = type.infer<def, $>>(
 		other: type.validate<def, $>
 	): instantiateType<r, $> | undefined
 
+	/**
+	 * #### check if a value could satisfy this and the parsed Type
+	 *
+	 * ⚠️ will return true unless a {@link Disjoint} can be proven
+	 *
+	 * @example
+	 * type.string.overlaps("string | number") // true (e.g. "foo")
+	 * type("string | number").overlaps("1") // true (1)
+	 * type("number > 0").overlaps("number < 0") // false (no values exist)
+	 *
+	 * const noAt = type("string").narrow(s => !s.includes("@"))
+	 * noAt.overlaps("string.email") // true (no values exist, but not provable)
+	 */
 	overlaps<const def>(r: type.validate<def, $>): boolean
 
+	/**
+	 * #### extract branches {@link extend}ing the parsed Type
+	 *
+	 * @example
+	 * // Type<true | 0 | 2>
+	 * const t = type("boolean | 0 | 'one' | 2 | bigint").extract("number | 0n | true")
+	 */
 	extract<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
 	): instantiateType<Extract<t, r>, $>
 
+	/**
+	 * #### exclude branches {@link extend}ing the parsed Type
+	 *
+	 * @example
+	 *
+	 * // Type<false | 'one' | bigint>
+	 * const t = type("boolean | 0 | 'one' | 2 | bigint").exclude("number | 0n | true")
+	 */
 	exclude<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
 	): instantiateType<Exclude<t, r>, $>
-
-	traverse(data: unknown): this["infer"] | ArkErrors
 
 	/**
 	 * @experimental

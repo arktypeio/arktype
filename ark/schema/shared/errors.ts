@@ -10,12 +10,12 @@ import {
 	type propwiseXor,
 	type show
 } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.ts"
+import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { BaseMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
-import type { TraversalContext } from "./traversal.ts"
+import type { Traversal } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
@@ -26,12 +26,12 @@ export class ArkError<
 	readonly [arkKind] = "error"
 	path: ReadonlyPath
 	data: Prerequisite<code>
-	private nodeConfig: ResolvedArkConfig[code]
+	private nodeConfig: ResolvedConfig[code]
 	protected input: ArkErrorContextInput<code>
 
-	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext)
+	constructor(input: ArkErrorContextInput<code>, ctx: Traversal)
 	// TS gets confused by <code>, so internally we just use the base type for input
-	constructor(input: ArkErrorContextInput, ctx: TraversalContext) {
+	constructor(input: ArkErrorContextInput, ctx: Traversal) {
 		super()
 		this.input = input as never
 		defineProperties(this, input)
@@ -109,9 +109,9 @@ export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
 {
-	protected ctx: TraversalContext
+	protected ctx: Traversal
 
-	constructor(ctx: TraversalContext) {
+	constructor(ctx: Traversal) {
 		super()
 		this.ctx = ctx
 	}
@@ -149,7 +149,7 @@ export class ArkErrors
 
 	/**
 	 * Add all errors from an ArkErrors instance, ignoring duplicates and
-	 * prefixing their paths with that of the current TraversalContext.
+	 * prefixing their paths with that of the current Traversal.
 	 */
 	merge(errors: ArkErrors): void {
 		errors.forEach(e => {

@@ -42,6 +42,7 @@ export declare namespace Ark {
 	}
 
 	export interface typeAttachments extends arkTsKeywords.$ {
+		arrayIndex: arkPrototypes.$["Array"]["index"]
 		Key: arkBuiltins.$["Key"]
 		Record: arkTsGenerics.$["Record"]
 		Date: arkPrototypes.$["Date"]
@@ -54,6 +55,7 @@ export declare namespace Ark {
 
 $arkTypeRegistry.typeAttachments = {
 	...arkTsKeywords,
+	arrayIndex: arkPrototypes.Array.index,
 	Key: arkBuiltins.Key,
 	Record: arkTsGenerics.Record,
 	Array: arkPrototypes.Array.root,

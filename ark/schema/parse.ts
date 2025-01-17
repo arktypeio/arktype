@@ -143,8 +143,10 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
+	const configuredSchema =
+		impl.applyConfig?.(ctx.def, ctx.$.configSnapshot.resolved) ?? ctx.def
 	const inner: dict = {}
-	const { meta: metaSchema, ...schema } = ctx.def as dict & {
+	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
 		meta?: MetaSchema
 	}
 
@@ -155,7 +157,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const innerSchemaEntries = entriesOf(schema)
+	const innerSchemaEntries = entriesOf(innerSchema)
 		.sort(([lKey], [rKey]) =>
 			isNodeKind(lKey) ?
 				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
@@ -252,9 +254,17 @@ export const createNode = (
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
 	const hash = JSON.stringify({ kind, ...json })
 
+	const configSnapshot = $.configSnapshot
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
+	if ($.nodesByHash[hash] && !ignoreCache) {
+		const cached = $.nodesByHash[hash]
+		if (cached.configSnapshot.hash !== configSnapshot.hash)
+			// update to show the node reflects the latest parse config, if it has changed
+			Object.assign(cached, { configSnapshot } satisfies Partial<BaseNode>)
+
+		return cached
+	}
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -269,11 +279,14 @@ export const createNode = (
 		json,
 		hash,
 		collapsibleJson: collapsibleJson as Json,
-		children
+		children,
+		configSnapshot
 	}
 
-	for (const k in inner)
-		if (k !== "in" && k !== "out") attachments[k] = inner[k]
+	if (kind !== "intersection") {
+		for (const k in inner)
+			if (k !== "in" && k !== "out") attachments[k] = inner[k]
+	}
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 

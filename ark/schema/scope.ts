@@ -3,6 +3,7 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
+	isEmptyObject,
 	isThunk,
 	printable,
 	throwInternalError,
@@ -14,11 +15,17 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
+	type dict,
 	type flattenListable,
 	type listable,
 	type noSuggest
 } from "@ark/util"
-import { resolveConfig, type ArkConfig } from "./config.ts"
+import {
+	mergeConfigs,
+	serializeConfig,
+	type ArkConfig,
+	type resolveConfig
+} from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
@@ -58,7 +65,11 @@ import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
-import type { NodeKind, RootKind } from "./shared/implement.ts"
+import type {
+	NodeKind,
+	ParseConfigSnapshot,
+	RootKind
+} from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
@@ -122,15 +133,14 @@ export interface ArkScopeConfig extends ArkConfig {
 	prereducedAliases?: boolean
 }
 
-export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
+export type ResolvedScopeConfig = resolveConfig<ArkScopeConfig>
 
 $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
 
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly config: ArkScopeConfig
-	readonly resolvedConfig: ResolvedArkScopeConfig
+	readonly config: ArkScopeConfig | undefined
 	readonly id = `${Object.keys(scopesById).length}$`
 
 	get [arkKind](): "scope" {
@@ -154,8 +164,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkScopeConfig
 	) {
-		this.config = config ?? {}
-		this.resolvedConfig = resolveConfig(config)
+		this.config = config && !isEmptyObject(config) ? config : undefined
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
@@ -212,6 +221,37 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 
 		scopesById[this.id] = this
+	}
+
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
+	private _lastGlobalResolvedConfig: ArkConfig | undefined
+	private _lastConfigSnapshot: ParseConfigSnapshot | undefined
+	get configSnapshot(): ParseConfigSnapshot {
+		// can't use $ark.config for this check since it gets mutated
+		if (
+			this._lastConfigSnapshot &&
+			this._lastGlobalResolvedConfig === $ark.resolvedConfig
+		)
+			return this._lastConfigSnapshot
+		const configured =
+			this.config ? mergeConfigs($ark.config, this.config) : $ark.config
+		const hash = serializeConfig(configured)
+		const resolved = mergeConfigs($ark.defaultConfig, configured)
+
+		this._lastGlobalResolvedConfig = $ark.resolvedConfig
+
+		return {
+			configured,
+			hash,
+			resolved
+		}
 	}
 
 	get internal(): this {
@@ -302,8 +342,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 		}
 
+		if (isNode(schema) && schema.kind === kind) return schema
+
 		const impl = nodeImplementationsByKind[kind]
 		const normalizedSchema = impl.normalize?.(schema, this) ?? schema
+
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
@@ -324,17 +367,30 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		const bound: reference =
-			reference.$ === this ? reference
-			: isNode(reference) ?
-				new (reference.constructor as any)(reference.attachments, this)
-			:	new GenericRoot(
-					reference.params as never,
-					reference.bodyDef,
-					reference.$,
-					this as never,
-					reference.hkt
-				)
+		let bound: reference
+
+		if (isNode(reference)) {
+			bound =
+				reference.configSnapshot.hash === this.configSnapshot.hash ?
+					reference.$ === this ?
+						reference
+					:	new (reference.constructor as any)(reference.attachments, this)
+				:	this.node(reference.kind, nodeToSchema(reference))
+		} else {
+			bound =
+				reference.$ === this ?
+					// for now, we don't worry about parseConfig updates on generics since
+					// they will be reflected when the type is instantiated, although we may
+					// want to reconsider this behavior for constraints
+					reference
+				:	(new GenericRoot(
+						reference.params as never,
+						reference.bodyDef,
+						reference.$,
+						this as never,
+						reference.hkt
+					) as never)
+		}
 
 		if (!this.resolved) {
 			// we're still parsing the scope itself, so defer compilation but
@@ -375,7 +431,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
-			if (typeof cached !== "string") return cached
+			if (typeof cached !== "string") return this.bindReference(cached)
 
 			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
@@ -479,13 +535,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.lazyResolutions.forEach(node => node.resolution)
 
-			if (this.resolvedConfig.ambient === true)
+			if (this.configSnapshot.resolved.ambient === true)
 				// spread all exports to ambient
 				Object.assign($ark.ambient as {}, this._exports)
-			else if (typeof this.resolvedConfig.ambient === "string") {
+			else if (typeof this.configSnapshot.resolved.ambient === "string") {
 				// add exports as a subscope with the config value as a name
 				Object.assign($ark.ambient as {}, {
-					[this.resolvedConfig.ambient]: new RootModule({
+					[this.configSnapshot.resolved.ambient]: new RootModule({
 						...this._exports
 					})
 				})
@@ -497,7 +553,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) {
+			if (!this.configSnapshot.resolved.jitless) {
 				this.precompilation = writePrecompilation(this.references)
 				bindPrecompilation(this.references, this.precompilation)
 			}
@@ -535,9 +591,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesByRegisteredId[ctx.id] = this.bindReference(
-			parseNode(ctx)
-		)) as never
+		const node = parseNode(ctx)
+
+		const bound = this.bindReference(node)
+
+		return (nodesByRegisteredId[ctx.id] = bound) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -565,7 +623,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	finalize<node extends BaseRoot>(node: node): node {
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.resolvedConfig.jitless)
+		if (!node.precompilation && !this.configSnapshot.resolved.jitless)
 			precompile(node.references)
 		return node
 	}
@@ -620,6 +678,12 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 			})
 		})
 	return resolution
+}
+
+const nodeToSchema = (node: BaseNode): dict => {
+	const result: dict = { ...node.inner }
+	if (!isEmptyObject(node.meta)) result.meta = node.meta
+	return result
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>

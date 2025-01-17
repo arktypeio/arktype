@@ -1,4 +1,4 @@
-import { fromHere, readFile, shell, writeFile } from "@ark/fs"
+import { fromHere, readFile, writeFile } from "@ark/fs"
 import { flatMorph, throwInternalError } from "@ark/util"
 import { existsSync } from "fs"
 
@@ -27,17 +27,16 @@ export const updateSnippetsEntrypoint = () => {
 			: throwInternalError(
 					`Expected a snippet file at ${tsPath} or ${jsPath} (neither existed).`
 				)
-		return [id, readFile(path)]
+		// don't include trailing newline
+		return [id, readFile(path).trimEnd()]
 	})
 
 	const toPath = snippetPath("contentsById.ts")
 
-	const contents = `export default ${JSON.stringify(snippetContentsById, null, 4)}`
+	const contents = `// prettier-ignore\nexport default ${JSON.stringify(snippetContentsById, null, 4)}\n`
 
-	if (!existsSync(toPath) || readFile(toPath) !== contents) {
+	if (!existsSync(toPath) || readFile(toPath) !== contents)
 		writeFile(toPath, contents)
-		shell(`pnpm prettier --write ${toPath}`)
-	}
 }
 
 const snippetIds = [

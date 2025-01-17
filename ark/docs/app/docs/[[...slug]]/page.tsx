@@ -25,10 +25,21 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 
 	const MDX = page.data.body
 
+	const isApiPage =
+		page.data.title.endsWith("API") || page.data.title.endsWith("Configuration")
+
 	return (
-		<DocsPage toc={page.data.toc} full={page.data.full ?? false}>
-			<DocsTitle>{page.data.title}</DocsTitle>
-			<DocsDescription>{page.data.description}</DocsDescription>
+		<DocsPage
+			toc={isApiPage ? [] : page.data.toc}
+			full={page.data.full ?? false}
+		>
+			<DocsTitle>
+				{page.data.title}
+				<DocsDescription style={{ margin: 0 }}>
+					{page.data.description}
+				</DocsDescription>
+			</DocsTitle>
+
 			<DocsBody>
 				<MDX
 					components={{

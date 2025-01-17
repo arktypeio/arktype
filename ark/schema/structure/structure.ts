@@ -35,7 +35,7 @@ import {
 } from "../shared/registry.ts"
 import {
 	traverseKey,
-	type InternalTraversalContext,
+	type InternalTraversal,
 	type TraversalKind,
 	type TraverseAllows,
 	type TraverseApply
@@ -53,11 +53,9 @@ import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcherReference } from "./shared.ts"
 
 /**
- * `"ignore"` (default) - allow and preserve extra properties
- *
- * `"reject"` - disallow extra properties
- *
- * `"delete"` - clone and remove extra properties from output
+ * - `"ignore"` (default) - allow and preserve extra properties
+ * - `"reject"` - disallow extra properties
+ * - `"delete"` - clone and remove extra properties from output
  */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
@@ -120,11 +118,12 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: (schema, $) => {
-			if (!schema.undeclared && $.resolvedConfig.onUndeclaredKey !== "ignore") {
+		normalize: schema => schema,
+		applyConfig: (schema, config) => {
+			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
 				return {
 					...schema,
-					undeclared: $.resolvedConfig.onUndeclaredKey
+					undeclared: config.onUndeclaredKey
 				}
 			}
 			return schema
@@ -169,7 +168,16 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				parse: constraintKeyParser("sequence")
 			},
 			undeclared: {
-				parse: behavior => (behavior === "ignore" ? undefined : behavior)
+				parse: behavior => (behavior === "ignore" ? undefined : behavior),
+				reduceIo: (ioKind, inner, value) => {
+					if (value !== "delete") return
+
+					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
+					// on input and "reject" on output
+
+					if (ioKind === "in") delete inner.undeclared
+					else inner.undeclared = "reject"
+				}
 			}
 		},
 		defaults: {
@@ -441,9 +449,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return required ? result : result.or($ark.intrinsic.undefined)
 	}
 
-	readonly exhaustive: boolean =
-		this.undeclared !== undefined || this.index !== undefined
-
 	pick(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("pick", keys))
@@ -523,7 +528,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	protected _traverse = (
 		traversalKind: TraversalKind,
 		data: object,
-		ctx: InternalTraversalContext
+		ctx: InternalTraversal
 	): boolean => {
 		const errorCount = ctx?.currentErrorCount ?? 0
 		for (let i = 0; i < this.props.length; i++) {
@@ -544,7 +549,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (!this.exhaustive) return true
+		if (!requireExhasutiveTraversal(this, traversalKind)) return true
 
 		const keys: Key[] = Object.keys(data)
 		keys.push(...Object.getOwnPropertySymbols(data))
@@ -626,7 +631,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
 		}
 
-		if (this.exhaustive) {
+		if (requireExhasutiveTraversal(this, js.traversalKind)) {
 			js.const("keys", "Object.keys(data)")
 			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
@@ -699,7 +704,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.props.forEach(prop => {
 				if (typeof prop.key === "symbol") {
 					return JsonSchema.throwUnjsonifiableError(
-						`Sybolic key ${prop.serializedKey}`
+						`Symbolic key ${prop.serializedKey}`
 					)
 				}
 
@@ -722,7 +727,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			index.signature.branches.forEach(keyBranch => {
 				if (
 					!keyBranch.hasKind("intersection") ||
-					keyBranch.pattern?.length !== 1
+					keyBranch.inner.pattern?.length !== 1
 				) {
 					return JsonSchema.throwUnjsonifiableError(
 						`Index signature ${keyBranch}`
@@ -730,7 +735,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 
 				schema.patternProperties ??= {}
-				schema.patternProperties[keyBranch.pattern[0].rule] =
+				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
 					index.value.toJsonSchema()
 			})
 		})
@@ -758,6 +763,19 @@ export interface OptionalMappedPropInner extends Optional.Schema {
 export const Structure = {
 	implementation,
 	Node: StructureNode
+}
+
+const requireExhasutiveTraversal = (
+	node: Structure.Node,
+	traversalKind: TraversalKind
+) => {
+	if (node.index || node.undeclared === "reject") return true
+
+	// when applying key deletion, we must queue morphs for all undeclared keys
+	// when checking whether an input is allowed, they are irrelevant because it always will be
+	if (node.undeclared === "delete" && traversalKind === "Apply") return true
+
+	return false
 }
 
 const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {

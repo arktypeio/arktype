@@ -1,4 +1,11 @@
-import type { ArkRegistry, mutable, requireKeys, show } from "@ark/util"
+import {
+	keysOf,
+	type ArkRegistry,
+	type dict,
+	type mutable,
+	type requireKeys,
+	type show
+} from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type {
@@ -9,6 +16,7 @@ import type {
 	ProblemWriter
 } from "./shared/errors.ts"
 import {
+	defaultValueSerializer,
 	isNodeKind,
 	type DescriptionWriter,
 	type NodeKind
@@ -19,7 +27,8 @@ import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkConfig
-	defaultConfig: ResolvedArkConfig
+	defaultConfig: ResolvedConfig
+	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 }
 
@@ -65,24 +74,39 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 // dedicated config entrypoint, in which case we don't want to reinitialize it
 $ark.config ??= {}
 
-export const configure = (config: ArkConfig): ArkConfig =>
-	Object.assign($ark.config, mergeConfigs($ark.config, config))
+export const configure = (config: ArkConfig): ArkConfig => {
+	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
-export const mergeConfigs = (
-	base: ArkConfig,
+	$ark.resolvedConfig &&= mergeConfigs($ark.resolvedConfig, result)
+
+	return result
+}
+
+export const mergeConfigs = <base extends ArkConfig>(
+	base: base,
 	extensions: ArkConfig
-): mutable<ArkConfig> => {
-	const result: any = { ...base }
-	let k: keyof ArkConfig
-	for (k in extensions) {
-		result[k] =
-			isNodeKind(k) ?
-				{
-					...base[k],
-					...extensions[k]
-				}
-			:	extensions[k]
+): mutable<base extends ResolvedConfig ? ResolvedConfig : ArkConfig> => {
+	// always maintains alphabetized keys (important for normalized comparisons)
+	const keys = keysOf({ ...base, ...extensions }).sort()
+
+	const result: any = {}
+
+	for (const k of keys) {
+		let v: unknown
+		if (isNodeKind(k)) {
+			if (base[k]) {
+				if (extensions[k]) {
+					v = {
+						...base[k],
+						...extensions[k]
+					}
+				} else v = base[k]
+			} else v = extensions[k]
+		} else v = extensions[k] === undefined ? base[k] : extensions[k]
+
+		if (v !== undefined) result[k] = v
 	}
+
 	return result
 }
 
@@ -94,6 +118,8 @@ export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
 	clone?: boolean | CloneImplementation
 	onUndeclaredKey?: UndeclaredKeyBehavior
+	numberAllowsNaN?: boolean
+	dateAllowsInvalid?: boolean
 }
 
 export type resolveConfig<config extends ArkConfig> = show<
@@ -104,18 +130,28 @@ export type resolveConfig<config extends ArkConfig> = show<
 	} & Omit<config, keyof ArkConfig>
 >
 
-export type ResolvedArkConfig = resolveConfig<ArkConfig>
+export type ResolvedConfig = resolveConfig<ArkConfig>
 
-export const extendConfig = (
-	base: ArkConfig,
-	extension: ArkConfig | undefined
-): ArkConfig => {
-	if (!extension) return base
-	const result = mergeConfigs(base, extension)
-	return result
+export const serializeConfig = (config: ArkConfig): string => {
+	const keys = keysOf(config).sort()
+	const serializableConfig: dict = {}
+
+	for (const k of keys) {
+		serializableConfig[k] =
+			isNodeKind(k) ?
+				serializeNodeConfig(config[k]!)
+			:	defaultValueSerializer(config[k])
+	}
+
+	return JSON.stringify(serializableConfig)
 }
 
-export const resolveConfig = <config extends ArkConfig>(
-	config: config | undefined
-): resolveConfig<config> =>
-	extendConfig(extendConfig($ark.defaultConfig, $ark.config), config) as never
+const serializeNodeConfig = (nodeConfig: dict) => {
+	const keys = Object.keys(nodeConfig).sort()
+
+	const result: dict = {}
+
+	for (const k of keys) result[k] = defaultValueSerializer(nodeConfig[k])
+
+	return result
+}

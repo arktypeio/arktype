@@ -1,5 +1,5 @@
-import { ReadonlyPath, type array } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.ts"
+import { ReadonlyPath, stringifyPath, type array } from "@ark/util"
+import type { ResolvedConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
@@ -16,41 +16,124 @@ export type MorphsAtPath = {
 	morphs: array<Morph>
 }
 
-export type BranchTraversalContext = {
+export type BranchTraversal = {
 	error: ArkError | undefined
 	queuedMorphs: MorphsAtPath[]
 }
 
 // avoid sugar methods internally
-export type InternalTraversalContext = Omit<
-	TraversalContext,
-	"error" | "mustBe" | "reject"
->
+export type InternalTraversal = Omit<Traversal, "error" | "mustBe" | "reject">
 
-export class TraversalContext {
+export class Traversal {
+	/**
+	 * #### the path being validated or morphed
+	 *
+	 * ✅ array indices represented as numbers
+	 * ⚠️ mutated during traversal - use `path.slice(0)` to snapshot
+	 * 🔗 use {@link propString} for a stringified version
+	 */
 	path: PropertyKey[] = []
-	queuedMorphs: MorphsAtPath[] = []
-	errors: ArkErrors = new ArkErrors(this)
-	branches: BranchTraversalContext[] = []
 
+	/**
+	 * #### {@link ArkErrors} that will be part of this traversal's finalized result
+	 *
+	 * ✅ will always be an empty array for a valid traversal
+	 */
+	errors: ArkErrors = new ArkErrors(this)
+
+	/**
+	 * #### the original value being traversed
+	 */
+	root: unknown
+
+	/**
+	 * #### configuration for this traversal
+	 *
+	 * ✅ options can affect traversal results and error messages
+	 * ✅ defaults < global config < scope config
+	 * ✅ does not include options configured on individual types
+	 */
+	config: ResolvedConfig
+
+	queuedMorphs: MorphsAtPath[] = []
+	branches: BranchTraversal[] = []
 	seen: { [id in string]?: unknown[] } = {}
 
-	root: unknown
-	config: ResolvedArkConfig
-
-	constructor(root: unknown, config: ResolvedArkConfig) {
+	constructor(root: unknown, config: ResolvedConfig) {
 		this.root = root
 		this.config = config
 	}
 
-	// convenience for casting from InternalTraversalContext to TraversalContext
-	// for cases where the extra methods on the external type are expected, e.g.
-	// a morph or predicate
-	get external(): this {
-		return this
+	/**
+	 * #### the data being validated or morphed
+	 *
+	 * ✅ extracted from {@link root} at {@link path}
+	 */
+	get data(): unknown {
+		let result: any = this.root
+		for (const segment of this.path) result = result?.[segment]
+
+		return result
 	}
 
-	get currentBranch(): BranchTraversalContext | undefined {
+	/**
+	 * #### a string representing {@link path}
+	 *
+	 * @propString
+	 */
+	get propString(): string {
+		return stringifyPath(this.path)
+	}
+
+	/**
+	 * #### add an {@link ArkError} and return `false`
+	 *
+	 * ✅ useful for predicates like `.narrow`
+	 */
+	reject(input: ArkErrorInput): false {
+		this.error(input)
+		return false
+	}
+
+	/**
+	 * #### add an {@link ArkError} from a description and return `false`
+	 *
+	 * ✅ useful for predicates like `.narrow`
+	 * 🔗 equivalent to {@link reject}({ expected })
+	 */
+	mustBe(expected: string): false {
+		this.error(expected)
+		return false
+	}
+
+	/**
+	 * #### add and return an {@link ArkError}
+	 *
+	 * ✅ useful for morphs like `.pipe`
+	 */
+	error<input extends ArkErrorInput>(
+		input: input
+	): ArkError<
+		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
+	>
+	error(input: ArkErrorInput): ArkError {
+		const errCtx: ArkErrorContextInput =
+			typeof input === "object" ?
+				input.code ?
+					input
+				:	{ ...input, code: "predicate" }
+			:	{ code: "predicate", expected: input }
+		return this.errorFromContext(errCtx)
+	}
+
+	/**
+	 * #### whether {@link currentBranch} (or the traversal root, outside a union) has one or more errors
+	 */
+	hasError(): boolean {
+		return this.currentErrorCount !== 0
+	}
+
+	get currentBranch(): BranchTraversal | undefined {
 		return this.branches.at(-1)
 	}
 
@@ -77,6 +160,59 @@ export class TraversalContext {
 		this.applyQueuedMorphs()
 
 		return this.hasError() ? this.errors : this.root
+	}
+
+	get currentErrorCount(): number {
+		return (
+			this.currentBranch ?
+				this.currentBranch.error ?
+					1
+				:	0
+			:	this.errors.count
+		)
+	}
+
+	get failFast(): boolean {
+		return this.branches.length !== 0
+	}
+
+	pushBranch(): void {
+		this.branches.push({
+			error: undefined,
+			queuedMorphs: []
+		})
+	}
+
+	popBranch(): BranchTraversal | undefined {
+		return this.branches.pop()
+	}
+
+	/**
+	 * @internal
+	 * Convenience for casting from InternalTraversal to Traversal
+	 * for cases where the extra methods on the external type are expected, e.g.
+	 * a morph or predicate.
+	 */
+	get external(): this {
+		return this
+	}
+
+	/**
+	 * @internal
+	 */
+	errorFromNodeContext<input extends NodeErrorContextInput>(
+		input: input
+	): ArkError<input["code"]>
+	errorFromNodeContext(input: NodeErrorContextInput): ArkError {
+		return this.errorFromContext(input)
+	}
+
+	private errorFromContext(errCtx: ArkErrorContextInput): ArkError {
+		const error = new ArkError(errCtx, this)
+		if (this.currentBranch) this.currentBranch.error = error
+		else this.errors.add(error)
+
+		return error as never
 	}
 
 	private applyQueuedMorphs() {
@@ -144,89 +280,13 @@ export class TraversalContext {
 			this.applyQueuedMorphs()
 		}
 	}
-
-	get currentErrorCount(): number {
-		return (
-			this.currentBranch ?
-				this.currentBranch.error ?
-					1
-				:	0
-			:	this.errors.count
-		)
-	}
-
-	hasError(): boolean {
-		return this.currentErrorCount !== 0
-	}
-
-	get failFast(): boolean {
-		return this.branches.length !== 0
-	}
-
-	errorFromNodeContext<input extends NodeErrorContextInput>(
-		input: input
-	): ArkError<input["code"]>
-	errorFromNodeContext(input: NodeErrorContextInput): ArkError {
-		return this.errorFromContext(input)
-	}
-
-	error<input extends ArkErrorInput>(
-		input: input
-	): ArkError<
-		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
-	>
-	error(input: ArkErrorInput): ArkError {
-		const errCtx: ArkErrorContextInput =
-			typeof input === "object" ?
-				input.code ?
-					input
-				:	{ ...input, code: "predicate" }
-			:	{ code: "predicate", expected: input }
-		return this.errorFromContext(errCtx)
-	}
-
-	private errorFromContext(errCtx: ArkErrorContextInput): ArkError {
-		const error = new ArkError(errCtx, this)
-		if (this.currentBranch) this.currentBranch.error = error
-		else this.errors.add(error)
-
-		return error as never
-	}
-
-	get data(): unknown {
-		let result: any = this.root
-		for (const segment of this.path) result = result?.[segment]
-
-		return result
-	}
-
-	reject(input: ArkErrorInput): false {
-		this.error(input)
-		return false
-	}
-
-	mustBe(expected: string): false {
-		this.error(expected)
-		return false
-	}
-
-	pushBranch(): void {
-		this.branches.push({
-			error: undefined,
-			queuedMorphs: []
-		})
-	}
-
-	popBranch(): BranchTraversalContext {
-		return this.branches.pop()!
-	}
 }
 
 export const traverseKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
 	// ctx will be undefined if this node isn't context-dependent
-	ctx: InternalTraversalContext | undefined
+	ctx: InternalTraversal | undefined
 ): result => {
 	if (!ctx) return fn()
 
@@ -245,9 +305,9 @@ export type TraversalKind = keyof TraversalMethodsByKind
 
 export type TraverseAllows<data = unknown> = (
 	data: data,
-	ctx: InternalTraversalContext
+	ctx: InternalTraversal
 ) => boolean
 export type TraverseApply<data = unknown> = (
 	data: data,
-	ctx: InternalTraversalContext
+	ctx: InternalTraversal
 ) => void

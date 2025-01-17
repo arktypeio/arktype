@@ -2,6 +2,7 @@ import { transformerNotationErrorLevel } from "@shikijs/transformers"
 import type { RehypeCodeOptions } from "fumadocs-core/mdx-plugins"
 import { transformerTwoslash } from "fumadocs-twoslash"
 import { createRequire } from "node:module"
+import type { ShikiTransformer } from "shiki"
 
 /** for some reason a standard import with an attribute like:
  
@@ -74,11 +75,11 @@ declare global {
 					if (node.text.startsWith("const")) {
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
-							"version?: never",
+							"version?: undefined",
 							`version?: number | string`
 						)
 						node.text = node.text.replace(
-							"versions?: never",
+							"versions?: undefined",
 							"versions?: (number | string)[]"
 						)
 						// filter out the type of Type's invocation
@@ -131,13 +132,40 @@ declare global {
 	}
 })
 
+type HastElement = Parameters<ShikiTransformer["line"] & {}>[0]
+const descendantIncludesText = (
+	node: HastElement,
+	...texts: string[]
+): boolean =>
+	node.children &&
+	node.children.some(
+		c =>
+			(c.type === "text" && texts.some(s => c.value.includes(s))) ||
+			descendantIncludesText(c as never, ...texts)
+	)
+
 export const shikiConfig = {
 	themes: {
 		dark: arkDarkTheme,
 		light: arkDarkTheme
 	},
 	langs: ["json", "bash", { ...arkTypeTmJson, name: "ts" }],
-	transformers: [twoslash, transformerNotationErrorLevel()]
+	transformers: [
+		{
+			line(node) {
+				if (descendantIncludesText(node, "// ArkErrors:", "// ParseError:")) {
+					this.addClassToHast(node, "highlighted")
+					this.addClassToHast(node, "error")
+					this.addClassToHast(node, "runtime-error")
+				} else if (descendantIncludesText(node, "// TypeScript:")) {
+					this.addClassToHast(node, "highlighted")
+					this.addClassToHast(node, "error")
+				}
+			}
+		},
+		twoslash,
+		transformerNotationErrorLevel()
+	]
 } as const satisfies RehypeCodeOptions
 
 export type shikiConfig = typeof shikiConfig

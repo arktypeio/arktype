@@ -107,14 +107,6 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	brandAttributes(): this {
-		return this
-	}
-
-	unbrandAttributes(): this {
-		return this
-	}
-
 	readonly(): this {
 		return this
 	}
@@ -520,7 +512,7 @@ export abstract class BaseRoot<
 	}
 
 	filter(predicate: Predicate): BaseRoot {
-		return this.constrain("predicate", predicate)
+		return this.constrainIn("predicate", predicate)
 	}
 
 	divisibleBy(schema: Divisor.Schema): BaseRoot {

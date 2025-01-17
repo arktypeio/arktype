@@ -52,7 +52,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
-	TraversalContext,
+	Traversal,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
@@ -64,7 +64,7 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
-	(data: d["prerequisite"], ctx?: TraversalContext) => unknown,
+	(data: d["prerequisite"], ctx?: Traversal) => unknown,
 	attachmentsOf<d>
 > {
 	attachments: UnknownAttachments
@@ -72,7 +72,7 @@ export abstract class BaseNode<
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
-			(data: any, pipedFromCtx?: TraversalContext) => {
+			(data: any, pipedFromCtx?: Traversal) => {
 				if (
 					!this.includesMorph &&
 					!this.allowsRequiresContext &&
@@ -87,7 +87,7 @@ export abstract class BaseNode<
 						:	pipedFromCtx.data
 				}
 
-				const ctx = new TraversalContext(data, this.$.resolvedConfig)
+				const ctx = new Traversal(data, this.$.configSnapshot.resolved)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
@@ -141,14 +141,10 @@ export abstract class BaseNode<
 	}
 
 	get description(): string {
-		const writer =
-			this.$?.resolvedConfig[this.kind].description ??
-			$ark.config[this.kind]?.description ??
-			$ark.defaultConfig[this.kind].description
-
 		return this.cacheGetter(
 			"description",
-			this.meta?.description ?? writer(this as never)
+			this.meta?.description ??
+				this.configSnapshot.resolved[this.kind].description(this as never)
 		)
 	}
 
@@ -162,7 +158,7 @@ export abstract class BaseNode<
 		return this.cacheGetter(
 			"shallowReferences",
 			this.hasKind("structure") ?
-				[this as BaseNode, ...this.children]
+				[this as BaseNode, ...(this.children as never)]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
 					[this]
@@ -206,7 +202,7 @@ export abstract class BaseNode<
 		if (this.allowsRequiresContext) {
 			return this.traverseAllows(
 				data as never,
-				new TraversalContext(data, this.$.resolvedConfig)
+				new Traversal(data, this.$.configSnapshot.resolved)
 			)
 		}
 		return (this.traverseAllows as any)(data)
