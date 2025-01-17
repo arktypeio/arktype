@@ -3,7 +3,7 @@ import { packages, type ArkPackage } from "./shared.ts"
 
 const tagsToPublish: string[] = []
 
-const existingTags = getShellOutput("git tag")
+const existingTags = getShellOutput("git tag").split("\n")
 
 const publishPackage = (pkg: ArkPackage, alias?: string) => {
 	const tagName = `${alias ?? pkg.name}@${pkg.version}`
