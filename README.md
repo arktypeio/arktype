@@ -332,5 +332,12 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     				src="https://avatars.githubusercontent.com/u/47925045"
     		/></a>
 		</td>
+		<td>
+    		<a href="https://github.com/tylim88"
+    			><img
+    				height="64px"
+    				src="https://avatars.githubusercontent.com/u/5227509"
+    		/></a>
+		</td>
     </tr>
 </table>

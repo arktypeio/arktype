@@ -2,20 +2,24 @@ export type AutoplayDemoProps = React.DetailedHTMLProps<
 	React.VideoHTMLAttributes<HTMLVideoElement>,
 	HTMLVideoElement
 > & { src: string }
-
-// Note: not currently used, but copied over in case it's needed
-
 export const AutoplayDemo = (props: AutoplayDemoProps) => (
-	<video
-		autoPlay
-		loop
-		controls={true}
-		// required for autoplay on Safari
-		playsInline
-		// there's no audio, but required for autoplay on Chrome
-		muted
-		// picture in picture doesn't work well since the page is designed around the demo
-		disablePictureInPicture={true}
-		{...props}
-	/>
+	<div style={{ opacity: 0.8 }}>
+		<video
+			autoPlay
+			loop
+			controls={true}
+			playsInline
+			muted
+			disablePictureInPicture={true}
+			style={{
+				borderRadius: "1rem",
+				boxShadow: "0 0 10px rgba(0, 0, 0, 0.3)"
+			}}
+			{...props}
+		/>
+		<p style={{ fontSize: "1rem" }}>
+			Type-level feedback on keystroke-{" "}
+			<b>no plugins or build steps required</b>.
+		</p>
+	</div>
 )

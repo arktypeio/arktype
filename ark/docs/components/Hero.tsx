@@ -1,9 +1,10 @@
 import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
+import { AutoplayDemo } from "./AutoplayDemo.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
 
 export const Hero = () => (
-	<div className="flex justify-between">
+	<div className="flex flex-col md:flex-row justify-between">
 		<div className="absolute top-2 left-0 right-0">
 			<div className="flex justify-between">
 				<PlatformCloud main="ts" right="vscode" top="neovim" left="intellij" />
@@ -24,12 +25,8 @@ export const Hero = () => (
 				<ArrowRightIcon />
 			</Link>
 		</div>
-		<img
-			alt="A serene ark, sailing to runtime"
-			src="/image/splash.png"
-			className="-mt-16 hidden md:block"
-			height={400}
-			width={400}
-		/>
+		<div style={{ padding: "2rem", position: "relative" }}>
+			<AutoplayDemo src="https://github.com/user-attachments/assets/895c439e-fcd3-4420-93fa-299e829fcf26" />
+		</div>
 	</div>
 )

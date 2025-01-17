@@ -25,7 +25,6 @@
 		// has a "type" export
 		"^(node:)?os$"
 	],
-	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "./node_modules/typescript/lib",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
 	"mochaExplorer.nodeArgv": ["--conditions", "ark-ts", "--import", "tsx"],
