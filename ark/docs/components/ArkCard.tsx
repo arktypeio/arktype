@@ -37,7 +37,9 @@ export const ArkCard: React.FC<CardProps> = ({
 		{...props}
 		className={cn(
 			"ark-card", // special class for ArkCards targeting
-			"sm:even:translate-y-10 [&>h3]:text-2xl [&>h3]:font-semibold border-[#003b62]",
+			"sm:even:translate-y-10 [&>h3]:text-2xl [&>h3]:font-semibold [&_.prose-no-margin]:text-lg border-[#003b62]",
+			"[&>.prose-no-margin]:flex [&>.prose-no-margin]:flex-col [&>.prose-no-margin]:flex-grow",
+			"flex flex-col",
 			className
 		)}
 	>
