@@ -164,7 +164,7 @@ export const shikiConfig = {
 			}
 		},
 		twoslash,
-		transformerNotationErrorLevel()
+		transformerNotationErrorLevel({ matchAlgorithm: "v3" })
 	]
 } as const satisfies RehypeCodeOptions
 

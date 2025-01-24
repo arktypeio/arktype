@@ -26,7 +26,7 @@ export const Hero = () => (
 			</Link>
 		</div>
 		<div style={{ padding: "2rem", position: "relative" }}>
-			<AutoplayDemo src="https://github.com/user-attachments/assets/895c439e-fcd3-4420-93fa-299e829fcf26" />
+			<AutoplayDemo src="https://github.com/user-attachments/assets/64bb7429-ac5c-4600-bfec-f1426177efc7" />
 		</div>
 	</div>
 )

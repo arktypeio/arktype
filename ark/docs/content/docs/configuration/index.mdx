@@ -42,7 +42,7 @@ type.number.allows(Number.NaN)
 ```ts
 const closedObjectScope = scope(
 	{ user: {  name: "string" } },
-	{ onUndeclaredKey: "reject" }
+	{  }
 )
 const types = closedObjectScope.export()
 // ArkErrors: age must be removed

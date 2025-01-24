@@ -11,10 +11,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => (
 			playsInline
 			muted
 			disablePictureInPicture={true}
-			style={{
-				borderRadius: "1rem",
-				boxShadow: "0 0 10px rgba(0, 0, 0, 0.3)"
-			}}
 			{...props}
 		/>
 		<p style={{ fontSize: "1rem" }}>

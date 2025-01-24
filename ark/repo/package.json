@@ -6,11 +6,11 @@
 	"dependencies": {
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
-		"@sinclair/typebox": "0.34.13",
+		"@sinclair/typebox": "0.34.14",
 		"@trpc/server": "10.45.2",
 		"arktype": "workspace:*",
 		"ts-morph": "25.0.0",
-		"type-fest": "4.32.0",
+		"type-fest": "4.33.0",
 		"typescript": "catalog:",
 		"zod": "3.24.1"
 	},
