@@ -40,18 +40,22 @@ type.number.allows(Number.NaN)
       <td>all Types parsed in the configured Scope</td>
       <td>
 ```ts
-const closedObjectScope = scope(
-	{ user: {  name: "string" } },
-	{ onUndeclaredKey: "reject" }
+const myScope = scope(
+	{ user: { age: "number < 100" } },
+	{
+		max: {
+			actual: () => "unacceptably large"
+		}
+	}
 )
-const types = closedObjectScope.export()
-// ArkErrors: age must be removed
-types.user({ name: "Alice", age: 99 })
-const parsedAfter = closedObjectScope.type({
-  name: "string"
+const types = myScope.export()
+// ArkErrors: age must be less than 100 (was unacceptably large)
+types.user({ name: "Alice", age: 101 })
+const parsedAfter = myScope.type({
+	age: "number <= 100"
 })
-// ArkErrors: age must be removed
-parsedAfter({ name: "Alice", age: 99 })
+// ArkErrors: age must be at most 100 (was unacceptably large)
+parsedAfter({ age: 101 })
 ```
       </td>
     </tr>

@@ -2,8 +2,13 @@ export type AutoplayDemoProps = React.DetailedHTMLProps<
 	React.VideoHTMLAttributes<HTMLVideoElement>,
 	HTMLVideoElement
 > & { src: string }
+
+export const MainAutoplayDemo = () => (
+	<AutoplayDemo src="https://github.com/user-attachments/assets/eaace5f0-310e-4fc8-9a95-1c0afc6fd110" />
+)
+
 export const AutoplayDemo = (props: AutoplayDemoProps) => (
-	<div style={{ opacity: 0.8 }}>
+	<div>
 		<video
 			autoPlay
 			loop
@@ -11,14 +16,10 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => (
 			playsInline
 			muted
 			disablePictureInPicture={true}
-			style={{
-				borderRadius: "1rem",
-				boxShadow: "0 0 10px rgba(0, 0, 0, 0.3)"
-			}}
 			{...props}
 		/>
-		<p style={{ fontSize: "1rem" }}>
-			Type-level feedback on keystroke-{" "}
+		<p>
+			Type-level feedback with each keystroke-{" "}
 			<b>no plugins or build steps required</b>.
 		</p>
 	</div>

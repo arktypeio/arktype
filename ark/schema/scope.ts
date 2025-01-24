@@ -3,7 +3,6 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
-	isEmptyObject,
 	isThunk,
 	printable,
 	throwInternalError,
@@ -15,16 +14,16 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
-	type dict,
 	type flattenListable,
 	type listable,
-	type noSuggest
+	type noSuggest,
+	type satisfy
 } from "@ark/util"
 import {
 	mergeConfigs,
 	serializeConfig,
 	type ArkConfig,
-	type resolveConfig
+	type ResolvedConfig
 } from "./config.ts"
 import {
 	GenericRoot,
@@ -65,11 +64,7 @@ import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
-import type {
-	NodeKind,
-	ParseConfigSnapshot,
-	RootKind
-} from "./shared/implement.ts"
+import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
@@ -128,19 +123,33 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 
 const scopesById: Record<string, BaseScope | undefined> = {}
 
-export interface ArkScopeConfig extends ArkConfig {
+export type GlobalOnlyConfigOptionName = satisfy<
+	keyof ArkConfig,
+	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey"
+>
+
+export interface ScopeOnlyConfigOptions {
 	ambient?: boolean | string
 	prereducedAliases?: boolean
 }
 
-export type ResolvedScopeConfig = resolveConfig<ArkScopeConfig>
+export interface ArkScopeConfig
+	extends Omit<ArkConfig, GlobalOnlyConfigOptionName>,
+		ScopeOnlyConfigOptions {}
+
+export interface ResolvedScopeConfig
+	extends ResolvedConfig,
+		ScopeOnlyConfigOptions {}
 
 $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
 
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly config: ArkScopeConfig | undefined
+	readonly ownConfig: ArkScopeConfig
+	readonly config: ArkScopeConfig
+	readonly configHash: string
+	readonly resolvedConfig: ResolvedScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
 
 	get [arkKind](): "scope" {
@@ -164,8 +173,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkScopeConfig
 	) {
-		this.config = config && !isEmptyObject(config) ? config : undefined
-
+		this.ownConfig = config ?? {}
+		this.config = mergeConfigs($ark.config, config)
+		this.configHash = serializeConfig(this.config)
+		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
 		)
@@ -229,29 +240,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	): this[name] {
 		Object.defineProperty(this, name, { value })
 		return value
-	}
-
-	private _lastGlobalResolvedConfig: ArkConfig | undefined
-	private _lastConfigSnapshot: ParseConfigSnapshot | undefined
-	get configSnapshot(): ParseConfigSnapshot {
-		// can't use $ark.config for this check since it gets mutated
-		if (
-			this._lastConfigSnapshot &&
-			this._lastGlobalResolvedConfig === $ark.resolvedConfig
-		)
-			return this._lastConfigSnapshot
-		const configured =
-			this.config ? mergeConfigs($ark.config, this.config) : $ark.config
-		const hash = serializeConfig(configured)
-		const resolved = mergeConfigs($ark.defaultConfig, configured)
-
-		this._lastGlobalResolvedConfig = $ark.resolvedConfig
-
-		return {
-			configured,
-			hash,
-			resolved
-		}
 	}
 
 	get internal(): this {
@@ -371,17 +359,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (isNode(reference)) {
 			bound =
-				reference.configSnapshot.hash === this.configSnapshot.hash ?
-					reference.$ === this ?
-						reference
-					:	new (reference.constructor as any)(reference.attachments, this)
-				:	this.node(reference.kind, nodeToSchema(reference))
+				reference.$ === this ?
+					reference
+				:	new (reference.constructor as any)(reference.attachments, this)
 		} else {
 			bound =
 				reference.$ === this ?
-					// for now, we don't worry about parseConfig updates on generics since
-					// they will be reflected when the type is instantiated, although we may
-					// want to reconsider this behavior for constraints
 					reference
 				:	(new GenericRoot(
 						reference.params as never,
@@ -535,13 +518,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.lazyResolutions.forEach(node => node.resolution)
 
-			if (this.configSnapshot.resolved.ambient === true)
+			if (this.resolvedConfig.ambient === true)
 				// spread all exports to ambient
 				Object.assign($ark.ambient as {}, this._exports)
-			else if (typeof this.configSnapshot.resolved.ambient === "string") {
+			else if (typeof this.resolvedConfig.ambient === "string") {
 				// add exports as a subscope with the config value as a name
 				Object.assign($ark.ambient as {}, {
-					[this.configSnapshot.resolved.ambient]: new RootModule({
+					[this.resolvedConfig.ambient]: new RootModule({
 						...this._exports
 					})
 				})
@@ -553,7 +536,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.configSnapshot.resolved.jitless) {
+			if (!this.resolvedConfig.jitless) {
 				this.precompilation = writePrecompilation(this.references)
 				bindPrecompilation(this.references, this.precompilation)
 			}
@@ -623,7 +606,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	finalize<node extends BaseRoot>(node: node): node {
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.configSnapshot.resolved.jitless)
+		if (!node.precompilation && !this.resolvedConfig.jitless)
 			precompile(node.references)
 		return node
 	}
@@ -678,12 +661,6 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 			})
 		})
 	return resolution
-}
-
-const nodeToSchema = (node: BaseNode): dict => {
-	const result: dict = { ...node.inner }
-	if (!isEmptyObject(node.meta)) result.meta = node.meta
-	return result
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>

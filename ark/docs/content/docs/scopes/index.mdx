@@ -33,13 +33,33 @@ const coolScope = scope({
 
 `coolScope` is an object with reusable methods like `type` and `generic`. You can use it to create additional `Type`s that can reference your **aliases**- `id`, `user` and `usersById`.
 
+<Callout type="warn" title="Don't wrap your scoped definitions in type!">
+
+Even if you reference it as part of your scope definition, the global 'type' parser only knows about builtin keywords.
+
+```ts
+// @errors: 2322
+const badScope = scope({
+	id: "string",
+	// ❌ wrapping this definition in `type` will fail
+	badEntity: type({
+		id: "id"
+	}),
+	// ✅ reference scoped definitions directly instead of wrapping them
+	goodEntity: {
+		id: "id"
+	}
+})
+```
+
+If you need access to fluent syntax from within a Scope, see [thunks](/docs/scopes#thunks).
+
+</Callout>
+
 ```ts
 const coolScope = scope({
-	// keywords are still available in your scope
 	id: "string",
-	// but you can also reference your own aliases directly!
 	user: { id: "id", friends: "id[]" },
-	// your aliases will be autocompleted and validated alongside ArkType's keywords
 	usersById: {
 		"[id]": "user | undefined"
 	}
@@ -61,11 +81,8 @@ To use the scoped types directly, you must `.export()` your `Scope` to a `Module
 
 ```ts
 const coolScope = scope({
-	// keywords are still available in your scope
 	id: "string",
-	// but you can also reference your own aliases directly!
 	user: { id: "id", friends: "id[]" },
-	// your aliases will be autocompleted and validated alongside ArkType's keywords
 	usersById: {
 		"[id]": "user | undefined"
 	}

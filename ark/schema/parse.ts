@@ -144,7 +144,7 @@ export const registerNodeId = (prefix: string): NodeId => {
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
 	const configuredSchema =
-		impl.applyConfig?.(ctx.def, ctx.$.configSnapshot.resolved) ?? ctx.def
+		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
 	const inner: dict = {}
 	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
 		meta?: MetaSchema
@@ -254,17 +254,9 @@ export const createNode = (
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
 	const hash = JSON.stringify({ kind, ...json })
 
-	const configSnapshot = $.configSnapshot
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodesByHash[hash] && !ignoreCache) {
-		const cached = $.nodesByHash[hash]
-		if (cached.configSnapshot.hash !== configSnapshot.hash)
-			// update to show the node reflects the latest parse config, if it has changed
-			Object.assign(cached, { configSnapshot } satisfies Partial<BaseNode>)
-
-		return cached
-	}
+	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
 
 	const attachments: UnknownAttachments & dict = {
 		id,
@@ -279,8 +271,7 @@ export const createNode = (
 		json,
 		hash,
 		collapsibleJson: collapsibleJson as Json,
-		children,
-		configSnapshot
+		children
 	}
 
 	if (kind !== "intersection") {

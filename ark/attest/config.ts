@@ -180,7 +180,7 @@ const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 			throw new Error(
 				`Specified TypeScript version ${alias} does not exist.` +
 					` It should probably be specified in package.json like:
-"typescript-${alias}": "npm:typescript@latest"`
+"@ark/attest-ts-${alias}": "npm:typescript@latest"`
 			)
 		}
 		return matching
