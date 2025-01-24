@@ -19,7 +19,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => (
 			{...props}
 		/>
 		<p>
-			Type-level feedback on keystroke-{" "}
+			Type-level feedback with each keystroke-{" "}
 			<b>no plugins or build steps required</b>.
 		</p>
 	</div>

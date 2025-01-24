@@ -2,7 +2,6 @@ import { ArrowRightIcon } from "lucide-react"
 import Link from "next/link"
 import { MainAutoplayDemo } from "./AutoplayDemo.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
-import { WithTooltip } from "./WithTooltip.tsx"
 
 export const Hero = () => (
 	<div>
@@ -22,14 +21,7 @@ export const Hero = () => (
 			<div className="relative w-full flex flex-col md:items-start text-center md:text-left">
 				<h1 className="mb-4 text-3xl md:text-8xl">ArkType</h1>
 				<p className="text-fd-muted-foreground text-2xl leading-relaxed">
-					Optimized <b>runtime validation</b>
-					<sup>
-						<WithTooltip
-							text="?"
-							info="A runtime validator like Zod or Yup used for checking data structures at runtime."
-						/>
-					</sup>{" "}
-					from familiar, type-safe syntax.
+					Optimized runtime validation from familiar, type-safe syntax.
 				</p>
 
 				{/* This wrapper grows to fill remaining vertical space, placing the link in the centered area */}
