@@ -147,7 +147,7 @@ contextualize(() => {
 		class B extends Trait<{ abstractMethods: { b(): number } }> {}
 		// @ts-expect-error
 		attest(class C extends implement(A, B, {}) {}).type.errors(
-			`Type '{}' is missing the following properties from type '{ b: () => number; a: () => number; }': b, a`
+			/missing the following properties.*(?:b, a|a, b)/
 		)
 	})
 

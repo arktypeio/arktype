@@ -308,10 +308,12 @@ contextualize(() => {
 				a: { b: "b&a" },
 				b: { a: "a&b" }
 			}).export()
-			attest(types).type.toString.snap(`Module<{
-	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
-	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
-}>`)
+			attest(types.a.t).type.toString.snap(
+				"{ b: { a: { b: cyclic; a: cyclic }; b: cyclic } }"
+			)
+			attest(types.b.t).type.toString.snap(
+				"{ a: { b: { a: cyclic; b: cyclic }; a: cyclic } }"
+			)
 		})
 
 		it("cyclic union", () => {
@@ -319,10 +321,12 @@ contextualize(() => {
 				a: { b: "b|false" },
 				b: { a: "a|true" }
 			}).export()
-			attest(types).type.toString.snap(`Module<{
-	b: { a: true | { b: false | cyclic } }
-	a: { b: false | { a: true | cyclic } }
-}>`)
+			attest(types.a.t).type.toString.snap(
+				"{ b: false | { a: true | cyclic } }"
+			)
+			attest(types.b.t).type.toString.snap(
+				"{ a: true | { b: false | cyclic } }"
+			)
 		})
 
 		it("allows valid", () => {

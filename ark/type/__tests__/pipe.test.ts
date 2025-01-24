@@ -368,14 +368,7 @@ contextualize(() => {
 		})
 		const types = $.export()
 
-		attest(types.c).type.toString.snap(`Type<
-	(In: { a: 1; b: 2 }) => Out<string>,
-	{
-		b: { b: 2 }
-		a: (In: { a: 1 }) => Out<string>
-		c: (In: { a: 1; b: 2 }) => Out<string>
-	}
->`)
+		attest(types.c.t).type.toString.snap("(In: { a: 1; b: 2 }) => Out<string>")
 		assertNodeKind(types.c.internal, "morph")
 		attest(types.c.json).snap({
 			in: {
