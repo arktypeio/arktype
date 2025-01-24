@@ -2,7 +2,6 @@ import {
 	keysOf,
 	type ArkRegistry,
 	type dict,
-	type mutable,
 	type requireKeys,
 	type show
 } from "@ark/util"
@@ -84,29 +83,20 @@ export const configure = (config: ArkConfig): ArkConfig => {
 
 export const mergeConfigs = <base extends ArkConfig>(
 	base: base,
-	extensions: ArkConfig
-): mutable<base extends ResolvedConfig ? ResolvedConfig : ArkConfig> => {
-	// always maintains alphabetized keys (important for normalized comparisons)
-	const keys = keysOf({ ...base, ...extensions }).sort()
-
-	const result: any = {}
-
-	for (const k of keys) {
-		let v: unknown
-		if (isNodeKind(k)) {
-			if (base[k]) {
-				if (extensions[k]) {
-					v = {
-						...base[k],
-						...extensions[k]
-					}
-				} else v = base[k]
-			} else v = extensions[k]
-		} else v = extensions[k] === undefined ? base[k] : extensions[k]
-
-		if (v !== undefined) result[k] = v
+	extensions: ArkConfig | undefined
+): base => {
+	if (!extensions) return base
+	const result: any = { ...base }
+	let k: keyof ArkConfig
+	for (k in extensions) {
+		result[k] =
+			isNodeKind(k) ?
+				{
+					...base[k],
+					...extensions[k]
+				}
+			:	extensions[k]
 	}
-
 	return result
 }
 

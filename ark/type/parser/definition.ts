@@ -1,9 +1,4 @@
-import {
-	hasArkKind,
-	isNode,
-	type BaseParseContext,
-	type BaseRoot
-} from "@ark/schema"
+import { hasArkKind, type BaseParseContext, type BaseRoot } from "@ark/schema"
 import {
 	domainOf,
 	hasDomain,
@@ -69,27 +64,9 @@ export const parseInnerDefinition = (
 			// resolutions like "this" or generic args
 			return parseString(def, ctx)
 		}
-
-		// include parseConfigHash in cacheId to ensure that if global config
-		// is updated, we reparse strings
-		const cacheId = `${ctx.$.id}:${ctx.$.configSnapshot.hash}`
-		const scopeCache = (parseCache[cacheId] ??= {})
-		const cachedResult = scopeCache[def]
-		if (cachedResult) {
-			// even though we know $ is the same, we still need to call bindReference
-			// to ensure config changes have been reflected
-			if (isNode(cachedResult))
-				scopeCache[def] = ctx.$.bindReference(cachedResult)
-			else {
-				// update node element of optional or defaultable tuple
-				;(cachedResult as any)[0] = ctx.$.bindReference(cachedResult[0])
-			}
-			return scopeCache[def]
-		}
-		// if we're parsing from scratch, we don't need to worry about binding
+		const scopeCache = (parseCache[ctx.$.id] ??= {})
 		return (scopeCache[def] ??= parseString(def, ctx))
 	}
-
 	return hasDomain(def, "object") ?
 			parseObject(def, ctx)
 		:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))

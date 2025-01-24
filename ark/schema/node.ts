@@ -87,7 +87,7 @@ export abstract class BaseNode<
 						:	pipedFromCtx.data
 				}
 
-				const ctx = new Traversal(data, this.$.configSnapshot.resolved)
+				const ctx = new Traversal(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
@@ -144,7 +144,7 @@ export abstract class BaseNode<
 		return this.cacheGetter(
 			"description",
 			this.meta?.description ??
-				this.configSnapshot.resolved[this.kind].description(this as never)
+				this.$.resolvedConfig[this.kind].description(this as never)
 		)
 	}
 
@@ -202,7 +202,7 @@ export abstract class BaseNode<
 		if (this.allowsRequiresContext) {
 			return this.traverseAllows(
 				data as never,
-				new Traversal(data, this.$.configSnapshot.resolved)
+				new Traversal(data, this.$.resolvedConfig)
 			)
 		}
 		return (this.traverseAllows as any)(data)

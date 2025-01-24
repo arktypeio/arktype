@@ -1,6 +1,21 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import {
+	$ark,
+	configure,
+	rootSchema,
+	schemaScope,
+	type ArkConfig
+} from "@ark/schema"
 import { scope, type } from "arktype"
+
+const withConfig = (config: ArkConfig, fn: () => void) => {
+	const originalConfig = $ark.config
+	const originalResolvedConfig = $ark.resolvedConfig
+	configure(config)
+	fn()
+	$ark.config = originalConfig
+	$ark.resolvedConfig = originalResolvedConfig
+}
 
 contextualize(() => {
 	it("tuple expression", () => {
@@ -159,51 +174,34 @@ contextualize(() => {
 	})
 
 	it("numberAllowsNaN", () => {
-		const { nanable } = type.module(
-			{ nanable: "number" },
-			{ numberAllowsNaN: true }
-		)
+		withConfig({ numberAllowsNaN: true }, () => {
+			const { nanable } = schemaScope({
+				nanable: "number"
+			}).export()
 
-		attest(nanable.allows(Number.NaN)).equals(true)
+			attest(nanable.allows(Number.NaN)).equals(true)
 
-		const { nonNanable } = type.module({
-			nonNanable: "number"
+			const { nonNanable } = type.module({
+				nonNanable: "number"
+			})
+
+			attest(nonNanable.allows(Number.NaN)).equals(false)
 		})
-
-		attest(nonNanable.allows(Number.NaN)).equals(false)
 	})
 
 	it("dateAllowsInvalid", () => {
-		const { invalidable } = type.module(
-			{ invalidable: "Date" },
-			{ dateAllowsInvalid: true }
-		)
+		withConfig({ dateAllowsInvalid: true }, () => {
+			const { invalidable } = schemaScope({
+				invalidable: Date
+			}).export()
 
-		attest(invalidable.allows(new Date("!"))).equals(true)
+			attest(invalidable.allows(new Date("!"))).equals(true)
 
-		const { uninvalidable } = type.module({
-			uninvalidable: "number"
-		})
+			const { uninvalidable } = type.module({
+				uninvalidable: "number"
+			})
 
-		attest(uninvalidable.allows(new Date("!"))).equals(false)
-	})
-
-	it("rebinds config in new scope", () => {
-		const t = type({
-			foo: "string"
-		})
-
-		const types = type.module(
-			{
-				foo: t
-			},
-			{ onUndeclaredKey: "reject" }
-		)
-
-		attest(types.foo.json).snap({
-			undeclared: "reject",
-			required: [{ key: "foo", value: "string" }],
-			domain: "object"
+			attest(uninvalidable.allows(new Date("!"))).equals(false)
 		})
 	})
 

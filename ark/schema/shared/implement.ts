@@ -22,11 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type {
-	ArkScopeConfig,
-	BaseScope,
-	ResolvedScopeConfig
-} from "../scope.ts"
+import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -368,12 +364,6 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: nodeOfKind<kind>
 ) => string
 
-export interface ParseConfigSnapshot {
-	configured: ArkScopeConfig
-	hash: string
-	resolved: ResolvedScopeConfig
-}
-
 export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
@@ -392,8 +382,6 @@ export interface UnknownAttachments {
 	readonly hash: string
 	readonly collapsibleJson: Json
 	readonly children: BaseNode[]
-
-	readonly configSnapshot: ParseConfigSnapshot
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
