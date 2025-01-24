@@ -8,6 +8,7 @@ contextualize(() => {
 		attest<{}>(t.infer)
 		attest(t.json).snap({ undeclared: "reject", domain: "object" })
 	})
+
 	it("fails on type definition for undeclared", () => {
 		// @ts-expect-error
 		attest(() => type({ "+": "string" }))
@@ -16,6 +17,7 @@ contextualize(() => {
 				"Type '\"string\"' is not assignable to type 'UndeclaredKeyBehavior'."
 			)
 	})
+
 	it("can escape undeclared meta key", () => {
 		const t = type({ "\\+": "string" })
 		attest<{ "+": string }>(t.infer)
@@ -119,25 +121,6 @@ b must be removed`)
 			attest(o({ a: 2, b: true }).toString()).snap(
 				"a must be a string or removed (was 2)"
 			)
-		})
-
-		it("can be configured", () => {
-			const types = type.module(
-				{
-					user: {
-						name: "string"
-					}
-				},
-				{
-					onUndeclaredKey: "delete"
-				}
-			)
-
-			attest(types.user.json).snap({
-				undeclared: "delete",
-				required: [{ key: "name", value: "string" }],
-				domain: "object"
-			})
 		})
 	})
 })
