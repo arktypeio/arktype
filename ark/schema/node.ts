@@ -114,8 +114,8 @@ export abstract class BaseNode<
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||
-		(this.hasKind("sequence") && this.defaultablesLength !== 0) ||
-		(this.hasKind("structure") && this.undeclared === "delete") ||
+		(this.hasKind("sequence") && this.includesDefaultable()) ||
+		(this.hasKind("structure") && this.inner.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
 
 	readonly hasContextualPredicate: boolean =

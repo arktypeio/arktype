@@ -340,6 +340,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
 
+	includesDefaultable(): boolean {
+		// this is called before initialization so must not reference node properties
+		return this.inner.defaultables !== undefined
+	}
+
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
 		const firstPostfixIndex = data.length - this.postfixLength
