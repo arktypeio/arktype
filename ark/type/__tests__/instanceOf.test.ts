@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { Proto, rootSchema } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "arktype/internal/parser/tupleExpressions.ts"
 
@@ -94,6 +94,15 @@ contextualize(() => {
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
+		})
+
+		it("parse error on non-function", () => {
+			// @ts-expect-error
+			attest(() => type.instanceOf({}))
+				.throws(Proto.writeInvalidSchemaMessage({}))
+				.type.errors(
+					"not assignable to parameter of type 'Constructor<object>'"
+				)
 		})
 	})
 

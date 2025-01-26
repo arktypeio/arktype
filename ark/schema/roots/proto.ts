@@ -1,6 +1,7 @@
 import {
 	builtinConstructors,
 	constructorExtends,
+	domainOf,
 	getBuiltinNameOfConstructor,
 	hasKey,
 	objectKindDescriptions,
@@ -85,6 +86,9 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				: typeof schema.proto === "string" ?
 					{ ...schema, proto: builtinConstructors[schema.proto] }
 				:	(schema as never)
+			if (typeof normalized.proto !== "function")
+				throwParseError(Proto.writeInvalidSchemaMessage(normalized.proto))
+
 			if (hasKey(normalized, "dateAllowsInvalid") && normalized.proto !== Date)
 				throwParseError(Proto.writeBadInvalidDateMessage(normalized.proto))
 			return normalized
@@ -176,5 +180,7 @@ export const Proto = {
 	implementation,
 	Node: ProtoNode,
 	writeBadInvalidDateMessage: (actual: Constructor): string =>
-		`dateAllowsInvalid may only be specified with constructor Date (was ${actual.name})`
+		`dateAllowsInvalid may only be specified with constructor Date (was ${actual.name})`,
+	writeInvalidSchemaMessage: (actual: unknown): string =>
+		`instanceOf operand must be a function (was ${domainOf(actual)})`
 }

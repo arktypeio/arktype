@@ -21,7 +21,7 @@ export const Hero = () => (
 			<div className="relative w-full flex flex-col md:items-start text-center md:text-left">
 				<h1 className="mb-4 text-3xl md:text-8xl">ArkType</h1>
 				<p className="text-fd-muted-foreground text-2xl leading-relaxed">
-					Optimized runtime validation from familiar, type-safe syntax.
+					Optimized runtime validation from familiar, type-safe syntax
 				</p>
 
 				{/* This wrapper grows to fill remaining vertical space, placing the link in the centered area */}

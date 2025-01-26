@@ -1070,4 +1070,162 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(t.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
 	})
+
+	it("includesMorph only when expected", () => {
+		const unmorphed = type({
+			"optional?": "string",
+			required: "string",
+			tuple: ["string", "number?"],
+			array: "string[]",
+			closed: {
+				"+": "reject",
+				a: "true"
+			}
+		})
+		attest(unmorphed.internal.includesMorph).equals(false)
+	})
+
+	it("morph includesMorph", () => {
+		const t = type({
+			prop: ["string", "=>", s => s.length]
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("default prop includesMorph", () => {
+		const t = type({
+			prop: "number = 5"
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("default tuple includesMorph", () => {
+		const t = type({
+			tuple: ["number = 5"]
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("onUndeclaredKey delete includesMorph", () => {
+		const t = type({
+			inner: {
+				"+": "delete",
+				foo: "string"
+			}
+		})
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("distill doesn't treat functions returning any/never as morphs", () => {
+		type T = {
+			any(): any
+			never(): never
+		}
+		const t = type("unknown").as<T>()
+
+		attest(t.infer).type.toString.equals("T")
+		attest(t.inferIn).type.toString.equals("T")
+	})
+
+	it("distills morphs returning any/never", () => {
+		const t = type({
+			any: ["unknown", "=>", (): any => {}],
+			never: ["unknown", "=>", () => [] as never]
+		})
+
+		attest(t.t).type.toString.snap(`{
+	any: (In: unknown) => Out<any>
+	never: (In: unknown) => Out<never>
+}`)
+		attest(t.infer).type.toString.snap("{ any: any; never: never }")
+		attest(t.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1263
+	it("fail on non-discriminable union of objects with onUndeclaredKey: delete", () => {
+		const point2d = type({
+			x: "number",
+			y: "number",
+			"+": "delete"
+		})
+
+		const point3d = type({
+			x: "number",
+			y: "number",
+			z: "number",
+			"+": "delete"
+		})
+
+		const t = point2d.or(point3d)
+
+		attest(t.expression).snap(
+			"{ x: number, y: number, + (undeclared): delete }"
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1266
+	it("onUndeclaredKey intersection cases", () => {
+		const types = type.module({
+			// Works: overlapping fields are named the same, have simple type
+			ModelA_V1: { times: "number", "+": "reject" },
+			ModelA_V2: {
+				times: "number",
+				version: "2",
+				"+": "reject"
+			},
+			ModelA: "ModelA_V2 | ModelA_V1",
+			// Works: non-overlapping list fields
+			ModelB_V1: { times: "number.integer[]", "+": "reject" },
+			ModelB_V2: {
+				frames: "number.integer[]",
+				version: "2",
+				"+": "reject"
+			},
+			ModelB: "ModelB_V2 | ModelB_V1",
+			// Does not work: overlapping array field
+			ModelC_V1: { times: "number[]", "+": "reject" },
+			ModelC_V2: {
+				times: "number[]",
+				version: "2",
+				"+": "reject"
+			},
+			ModelC: "ModelC_V2 | ModelC_V1",
+			// Works: overlapping map fields
+			ModelD_V1: { times: "Record<string, number>", "+": "reject" },
+			ModelD_V2: {
+				times: "Record<string, number>",
+				version: "2",
+				"+": "reject"
+			},
+			ModelD: "ModelD_V2 | ModelD_V1",
+			// Works: overlapping user-defined sub-model
+			Time: { value: "number" },
+			ModelE_V1: { time: "Time", "+": "reject" },
+			ModelE_V2: {
+				time: "Time",
+				version: "2",
+				"+": "reject"
+			},
+			ModelE: "ModelE_V2 | ModelE_V1",
+			Times: { values: "number[]" },
+			// Does not work: arrays within overlapping sub-model
+			ModelF_V1: { times: "Times", "+": "reject" },
+			ModelF_V2: {
+				times: "Times",
+				version: "2",
+				"+": "reject"
+			},
+			ModelF: "ModelF_V2 | ModelF_V1"
+		})
+
+		types.ModelA.assert({ times: 0.0, version: 2 })
+		types.ModelB.assert({ frames: [0], version: 2 })
+		types.ModelC.assert({ times: [0.0], version: 2 })
+		types.ModelD.assert({ times: { age: 7.3 }, version: 2 })
+		types.ModelE.assert({ time: { value: 0.0 }, version: 2 })
+		types.ModelF.assert({ times: { values: [0.0] }, version: 2 })
+	})
 })

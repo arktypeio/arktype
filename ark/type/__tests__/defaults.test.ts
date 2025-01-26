@@ -563,7 +563,9 @@ contextualize(() => {
 				// @ts-expect-error
 				() => type({ foo: ["number[]", "=", true] })
 			)
-				.throws.snap("AggregateError: must be an array (was boolean)")
+				.throws.snap(
+					"ParseError: Default for foo must be an array (was boolean)"
+				)
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type '() => number[]'."
 				)
@@ -582,7 +584,7 @@ contextualize(() => {
 				() => type({ foo: [["number[]", "|", "string"], "=", true] })
 			)
 				.throws.snap(
-					"AggregateError: must be a string or an array (was boolean)"
+					"ParseError: Default for must be a string or an array (was boolean)"
 				)
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."
@@ -590,7 +592,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: [["number[]", "|", "string"], "=", true] }))
 				.throws.snap(
-					"AggregateError: must be a string or an array (was boolean)"
+					"ParseError: Default for must be a string or an array (was boolean)"
 				)
 				.type.errors.snap(
 					"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."

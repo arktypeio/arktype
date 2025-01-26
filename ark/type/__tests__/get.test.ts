@@ -135,11 +135,36 @@ contextualize(() => {
 		attest(t.get(type.arrayIndex).expression).snap("string | undefined")
 	})
 
-	it("number access on non-variadic", () => {
+	it("array specific-index access access on non-tuple", () => {
+		const t = type({ foo: "number" }).array()
+
+		attest(t.get(0).expression).snap("{ foo: number } | undefined")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1261
+	it("nested index access on non-tuple", () => {
+		const simple = type({
+			id: "number",
+			array: type({
+				name: "string",
+				age: "number"
+			}).array()
+		})
+
+		const array = simple.get("array")
+		const innerArray = array.get(0)
+
+		attest(innerArray.expression).snap(
+			"{ age: number, name: string } | undefined"
+		)
+		innerArray.assert({ name: "Rico", age: 25 })
+	})
+
+	it("number access on non-tuple", () => {
 		const t = type({ foo: "number" }).array()
 
 		// @ts-expect-error
-		attest(() => t.get(keywords.number.root)).throws(
+		attest(() => t.get(type.number)).throws(
 			writeNumberIndexMessage("number", t.expression)
 		)
 
