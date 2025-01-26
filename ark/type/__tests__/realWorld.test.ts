@@ -1070,4 +1070,52 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(t.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
 	})
+
+	it("includesMorph only when expected", () => {
+		const unmorphed = type({
+			"optional?": "string",
+			required: "string",
+			tuple: ["string", "number?"],
+			array: "string[]",
+			closed: {
+				"+": "reject",
+				a: "true"
+			}
+		})
+		attest(unmorphed.internal.includesMorph).equals(false)
+	})
+
+	it("morph includesMorph", () => {
+		const t = type({
+			prop: ["string", "=>", s => s.length]
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("default prop includesMorph", () => {
+		const t = type({
+			prop: "number = 5"
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("default tuple includesMorph", () => {
+		const t = type({
+			tuple: ["number = 5"]
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("onUndeclaredKey delete includesMorph", () => {
+		const t = type({
+			inner: {
+				"+": "delete",
+				foo: "string"
+			}
+		})
+		attest(t.internal.includesMorph).equals(true)
+	})
 })
