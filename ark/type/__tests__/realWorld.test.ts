@@ -1118,4 +1118,29 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 		attest(t.internal.includesMorph).equals(true)
 	})
+
+	it("distill doesn't treat functions returning any/never as morphs", () => {
+		type T = {
+			any(): any
+			never(): never
+		}
+		const t = type("unknown").as<T>()
+
+		attest(t.infer).type.toString.equals("T")
+		attest(t.inferIn).type.toString.equals("T")
+	})
+
+	it("distills morphs returning any/never", () => {
+		const t = type({
+			any: ["unknown", "=>", (): any => {}],
+			never: ["unknown", "=>", () => [] as never]
+		})
+
+		attest(t.t).type.toString.snap(`{
+	any: (In: unknown) => Out<any>
+	never: (In: unknown) => Out<never>
+}`)
+		attest(t.infer).type.toString.snap("{ any: any; never: never }")
+		attest(t.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
+	})
 })
