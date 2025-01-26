@@ -1,5 +1,9 @@
 <h1 align="center">ArkType</h1>
 
+ArkType is a runtime validation library that parses optimized validators from familiar, type-safe syntax.
+
+It can be used to check external data like JSON payloads or form submissions at the boundaries of your code (similar to Zod or Yup).
+
 <video
 autoPlay
 loop
@@ -9,10 +13,6 @@ muted
 disablePictureInPicture
 src="https://github.com/user-attachments/assets/eaace5f0-310e-4fc8-9a95-1c0afc6fd110"
 />
-
-ArkType is a runtime validation library that parses optimized validators from familiar, type-safe syntax.
-
-It can be used to check external data like JSON payloads or form submissions at the boundaries of your code (similar to Zod or Yup).
 
 ## Docs
 
