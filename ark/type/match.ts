@@ -38,7 +38,10 @@ export type MatchParser<$> = CaseMatchParser<{
 	}>
 }
 
-type addBranches<ctx extends MatchParserContext, branches extends Thens> =
+type addBranches<
+	ctx extends MatchParserContext,
+	branches extends readonly unknown[]
+> =
 	branches extends Thens ?
 		{
 			$: ctx["$"]
@@ -98,12 +101,8 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 	default?: (In: ctx["input"]) => unknown
 }
 
-export type CaseMatchParser<ctx extends MatchParserContext> = <
-	cases,
-	validated = cases extends validateCases<cases, ctx> ? cases
-	:	errorCases<cases, ctx>
->(
-	def: validated
+export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
+	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
 ) => cases extends { default: (...args: never[]) => infer defaultReturn } ?
 	finalizeWithDefault<
 		addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
