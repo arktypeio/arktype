@@ -2,7 +2,7 @@
 	"name": "ark",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"license": "MIT",
-	"funding": "https://github.com/arktypeio/arktype?sponsor=1",
+	"funding": "https://github.com/sponsors/arktypeio",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
