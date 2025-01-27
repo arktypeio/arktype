@@ -2,7 +2,6 @@ import { intrinsic, type BaseRoot, type Morph } from "@ark/schema"
 import {
 	Callable,
 	type array,
-	type conform,
 	type ErrorMessage,
 	type Fn,
 	type isDisjoint,
@@ -34,18 +33,17 @@ export type MatchParser<$> = CaseMatchParser<{
 	}>
 }
 
-type matcherInputs<ctx extends MatchParserContext> = Parameters<
-	ctx["thens"][number]
->[0]
-
 type addBranches<
 	ctx extends MatchParserContext,
 	branches extends readonly unknown[]
-> = {
-	$: ctx["$"]
-	input: ctx["input"]
-	thens: conform<[...ctx["thens"], ...branches], Thens>
-}
+> =
+	branches extends Thens ?
+		{
+			$: ctx["$"]
+			input: ctx["input"]
+			thens: [...ctx["thens"], ...branches]
+		}
+	:	never
 
 // infer the types handled by a match branch, which is identical to `type.infer` while properly
 // excluding cases that are already handled by other branches
@@ -65,17 +63,17 @@ export type ChainableMatchParser<ctx extends MatchParserContext> = {
 
 	// finalizing methods
 	orThrow: () => finalizeMatchParser<
-		addBranches<ctx, [(In: matcherInputs<ctx>) => never]>
+		addBranches<ctx, [(In: ctx["input"]) => never]>
 	>
 	default: MatchParserDefaultInvocation<ctx>
 	finalize: (
-		this: matcherInputs<ctx> extends never ? ChainableMatchParser<ctx>
+		this: ctx["input"] extends never ? ChainableMatchParser<ctx>
 		:	ErrorMessage<"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`">
 	) => finalizeMatchParser<ctx>
 }
 
 type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
-	<f extends (In: matcherInputs<ctx>) => unknown>(
+	<f extends (In: ctx["input"]) => unknown>(
 		f: f
 	): finalizeWithDefault<ctx, ReturnType<f>>
 	<const value>(value: value): finalizeWithDefault<ctx, value>
@@ -83,24 +81,23 @@ type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
 
 type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default" ?
-		(In: matcherInputs<ctx>) => unknown
+		(In: ctx["input"]) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferMatchBranch<def, ctx>) => unknown
 	:	type.validate<def, ctx["$"]>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases]?: def extends "default" ?
-		(In: matcherInputs<ctx>) => unknown
+	[def in keyof cases]?: def extends "default" ? (In: ctx["input"]) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferMatchBranch<def, ctx>) => unknown
 	:	type.validate<def, ctx["$"]>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-		In: distill.Out<inferIntersection<matcherInputs<ctx>, ctx["$"][k]>>
+		In: distill.Out<inferIntersection<ctx["input"], ctx["$"][k]>>
 	) => unknown
 } & {
-	default?: (In: matcherInputs<ctx>) => unknown
+	default?: (In: ctx["input"]) => unknown
 }
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
@@ -115,9 +112,7 @@ export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 type finalizeWithDefault<
 	ctx extends MatchParserContext,
 	defaultReturn
-> = finalizeMatchParser<
-	addBranches<ctx, [(_: matcherInputs<ctx>) => defaultReturn]>
->
+> = finalizeMatchParser<addBranches<ctx, [(_: ctx["input"]) => defaultReturn]>>
 
 type finalizeMatchParser<ctx extends MatchParserContext> = MatchInvocation<{
 	thens: ctx["thens"]
