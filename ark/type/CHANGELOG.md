@@ -2,7 +2,7 @@
 
 ## 2.0.3
 
-- Fix an issue causing some unions with `onUndeclaredKey: "reject"` rejecting valid data ([#1266](https://github.com/arktypeio/arktype/issues/1266))
+- Fix an issue causing some unions with `onUndeclaredKey: "reject"` to reject valid data ([#1266](https://github.com/arktypeio/arktype/issues/1266))
 
 - Fix an issue where Types containing arrays were incorrectly treated as including morphs, leading to some unnecessary validation overhead ([#1268](https://github.com/arktypeio/arktype/issues/1268#issuecomment-2613551907))
 
