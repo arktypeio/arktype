@@ -38,10 +38,7 @@ export type MatchParser<$> = CaseMatchParser<{
 	}>
 }
 
-type addBranches<
-	ctx extends MatchParserContext,
-	branches extends readonly unknown[]
-> =
+type addBranches<ctx extends MatchParserContext, branches extends Thens> =
 	branches extends Thens ?
 		{
 			$: ctx["$"]
@@ -56,7 +53,7 @@ type inferMatchBranch<def, ctx extends MatchParserContext> = distill.Out<
 	inferIntersection<ctx["input"], type.infer<def, ctx["$"]>>
 >
 
-export type ChainableMatchParser<ctx extends MatchParserContext> = {
+type ChainableMatchParser<ctx extends MatchParserContext> = {
 	// chainable methods
 	when: <def, ret>(
 		when: type.validate<def, ctx["$"]>,
@@ -101,8 +98,12 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 	default?: (In: ctx["input"]) => unknown
 }
 
-export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
-	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
+export type CaseMatchParser<ctx extends MatchParserContext> = <
+	cases,
+	validated = cases extends validateCases<cases, ctx> ? cases
+	:	errorCases<cases, ctx>
+>(
+	def: validated
 ) => cases extends { default: (...args: never[]) => infer defaultReturn } ?
 	finalizeWithDefault<
 		addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
