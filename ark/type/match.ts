@@ -1,17 +1,18 @@
-import type { BaseRoot, Morph } from "@ark/schema"
-import type {
-	array,
-	conform,
-	ErrorMessage,
-	Fn,
-	isDisjoint,
-	numericStringKeyOf,
-	propValueOf,
-	unionToTuple
+import { intrinsic, type BaseRoot, type Morph } from "@ark/schema"
+import {
+	Callable,
+	type array,
+	type conform,
+	type ErrorMessage,
+	type Fn,
+	type isDisjoint,
+	type numericStringKeyOf,
+	type propValueOf,
+	type unionToTuple
 } from "@ark/util"
 import type { distill, inferIntersection } from "./attributes.ts"
-import { ark, type type } from "./keywords/keywords.ts"
-import type { Scope } from "./scope.ts"
+import type { type } from "./keywords/keywords.ts"
+import type { InternalScope } from "./scope.ts"
 
 type Thens = array<(In: any) => unknown>
 
@@ -141,64 +142,80 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 	:	ReturnType<ctx["thens"][i]>
 }[numericStringKeyOf<ctx["thens"]>]
 
-export const createMatchParser = <$>($: Scope<$>): MatchParser<$> => {
-	const matchParser = (isRestricted: boolean) => {
-		const handledCases: { when: BaseRoot; then: Morph }[] = []
-		let defaultCase: ((x: unknown) => unknown) | null = null
+export class InternalMatchParser extends Callable<
+	(...args: unknown[]) => BaseRoot
+> {
+	constructor($: InternalScope) {
+		super(
+			(...args) => {
+				const matchParser = (isRestricted: boolean) => {
+					const handledCases: { when: BaseRoot; then: Morph }[] = []
+					let defaultCase: ((x: unknown) => unknown) | null = null
 
-		const parser = {
-			when: (when: unknown, then: Morph) => {
-				handledCases.push({ when: $.parseRoot(when, {}), then })
+					const parser = {
+						when: (when: unknown, then: Morph) => {
+							handledCases.push({
+								when: $.parse(when),
+								then
+							})
 
-				return parser
-			},
+							return parser
+						},
 
-			finalize: () => {
-				const branches = handledCases.flatMap(({ when, then }) => {
-					if (when.kind === "union") {
-						return when.branches.map(branch => ({
-							in: branch,
-							morph: then
-						}))
+						finalize: () => {
+							const branches = handledCases.flatMap(
+								({ when, then }): Morph.Schema[] => {
+									if (when.kind === "union") {
+										return when.branches.map(branch => ({
+											in: branch,
+											morphs: [then]
+										}))
+									}
+									if (when.hasKind("morph"))
+										return [{ in: when, morphs: [...when.morphs, then] }]
+
+									return [{ in: when, morphs: [then] }]
+								}
+							)
+							if (defaultCase)
+								branches.push({ in: intrinsic.unknown, morphs: [defaultCase] })
+
+							const matchers = $.node("union", {
+								branches,
+								ordered: true
+							})
+							return matchers.assert
+						},
+						orThrow: () => {
+							// implicitly finalize, we don't need to do anything else because we throw either way
+							return parser.finalize()
+						},
+						default: (x: unknown) => {
+							if (x instanceof Function) defaultCase = x as never
+							else defaultCase = () => x
+
+							return parser.finalize()
+						}
 					}
-					if (when.kind === "morph")
-						return [{ in: when, morph: [when.morph, then] }]
 
-					return [{ in: when, morph: then }]
-				})
-				if (defaultCase)
-					branches.push({ in: keywordNodes.unknown, morph: defaultCase })
+					return parser
+				}
 
-				const matchers = $.node("union", {
-					branches,
-					ordered: true
-				})
-				return matchers.assert
+				return Object.assign(() => matchParser(false), {
+					only: () => matchParser(true)
+				}) as never
 			},
-
-			orThrow: () => {
-				// implicitly finalize, we don't need to do anything else because we throw either way
-				return parser.finalize()
-			},
-
-			default: (x: unknown) => {
-				if (x instanceof Function) defaultCase = x as never
-				else defaultCase = () => x
-
-				return parser.finalize()
+			{
+				bind: $
 			}
-		}
-
-		return parser
+		)
 	}
-
-	return Object.assign(() => matchParser(false), {
-		only: () => matchParser(true)
-	}) as never
 }
 
-const match = createMatchParser(ark)
+declare const match: MatchParser<{}>
 
-match({
-	string: s => s.length
-})
+const matcher = match({
+	string: s => s.length,
+	number: n => n,
+	bigint: b => b
+}).orThrow()
