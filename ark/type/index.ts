@@ -15,6 +15,7 @@ export {
 	define,
 	generic,
 	keywords,
+	match,
 	type,
 	type Ark
 } from "./keywords/keywords.ts"

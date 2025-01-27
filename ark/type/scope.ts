@@ -52,6 +52,7 @@ import {
 	type parseValidGenericParams
 } from "./generic.ts"
 import type { Ark, type } from "./keywords/keywords.ts"
+import { InternalMatchParser, type MatchParser } from "./match.ts"
 import type {
 	BoundModule,
 	Module,
@@ -284,6 +285,8 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
+	match: InternalMatchParser = new InternalMatchParser(this as never)
+
 	declare = (): { type: InternalTypeParser } => ({
 		type: this.type
 	})
@@ -358,6 +361,8 @@ export interface Scope<$ = {}> {
 	enumerated: EnumeratedTypeParser<$>
 
 	type: TypeParser<$>
+
+	match: MatchParser<$>
 
 	declare: DeclarationParser<$>
 

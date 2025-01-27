@@ -2,7 +2,6 @@ import { intrinsic, type BaseRoot, type Morph } from "@ark/schema"
 import {
 	Callable,
 	type array,
-	type ErrorMessage,
 	type Fn,
 	type isDisjoint,
 	type numericStringKeyOf,
@@ -30,6 +29,12 @@ export type MatchParser<$> = CaseMatchParser<{
 		thens: []
 		$: $
 		input: unknown
+	}>
+
+	from<typedInput>(): ChainableMatchParser<{
+		thens: []
+		$: $
+		input: typedInput
 	}>
 }
 
@@ -66,10 +71,6 @@ export type ChainableMatchParser<ctx extends MatchParserContext> = {
 		addBranches<ctx, [(In: ctx["input"]) => never]>
 	>
 	default: MatchParserDefaultInvocation<ctx>
-	finalize: (
-		this: ctx["input"] extends never ? ChainableMatchParser<ctx>
-		:	ErrorMessage<"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`">
-	) => finalizeMatchParser<ctx>
 }
 
 type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
@@ -206,11 +207,3 @@ export class InternalMatchParser extends Callable<
 		)
 	}
 }
-
-declare const match: MatchParser<{}>
-
-const matcher = match({
-	string: s => s.length,
-	number: n => n,
-	bigint: b => b
-}).orThrow()
