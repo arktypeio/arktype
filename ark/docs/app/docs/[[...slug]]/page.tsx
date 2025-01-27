@@ -15,11 +15,7 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 
 	if (
 		!params.slug?.length ||
-		(params.slug?.length === 1 &&
-			(params.slug[0] === "" || params.slug[0] === "intro")) ||
-		(params.slug.length === 2 &&
-			params.slug[0] === "intro" &&
-			params.slug[1] === "")
+		(params.slug?.length === 1 && params.slug[0] === "intro")
 	)
 		redirect("/docs/intro/setup")
 
