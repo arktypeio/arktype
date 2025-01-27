@@ -11,7 +11,7 @@ controls
 playsInline
 muted
 disablePictureInPicture
-src="https://github.com/user-attachments/assets/eaace5f0-310e-4fc8-9a95-1c0afc6fd110"
+src="https://github.com/user-attachments/assets/69fdded6-50a9-402d-a28c-afa58db63c90"
 />
 
 ## Docs
