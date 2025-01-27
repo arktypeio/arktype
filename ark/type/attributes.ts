@@ -64,10 +64,10 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	// those types could be inferred before checking for morphs
 	t extends TerminallyInferredObject | Primitive ? t
 	: t extends Function ?
-		t extends InferredMorph<infer i, infer o> ?
-			[ReturnType<t>] extends [anyOrNever] ?
-				t
-			:	distillIo<i, o, endpoint, seen>
+		// don't treat functions like () => never as morphs
+		t extends (...args: never) => anyOrNever ? t
+		: t extends InferredMorph<infer i, infer o> ?
+			distillIo<i, o, endpoint, seen>
 		:	t
 	: t extends Default<infer constraint> ? _distill<constraint, endpoint, seen>
 	: t extends array ? distillArray<t, endpoint, seen | t>

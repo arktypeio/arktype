@@ -1,5 +1,24 @@
 # arktype
 
+## next
+
+- Fix an issue causing certain complex morph types to not infer output correctly, e.g.:
+
+```ts
+const types = type.module({
+	From: { a: ["1", "=>", () => 2] },
+	Morph: ["From", "=>", e => e],
+	To: { a: "2" }
+})
+const U = types.Morph.pipe(e => e, types.To)
+
+// was:
+//    (In: never) => To<{ a: 2 }>
+// now fixed to:
+//    { a: 2 }
+const out = U.assert({ a: 1 })
+```
+
 ## 2.0.3
 
 - Fix an issue causing some unions with `onUndeclaredKey: "reject"` to reject valid data ([#1266](https://github.com/arktypeio/arktype/issues/1266))

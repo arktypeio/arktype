@@ -23,7 +23,6 @@
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"rmBuild": "pnpm -r exec rm -rf out",
 		"ts": "node ./ark/repo/ts.js",
-		"tsc": "node ./node_modules/typescript/lib/tsc.js",
 		"testRepoWithVersionsAndBenches": "pnpm testRepo && pnpm bench && pnpm testTsVersions",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
