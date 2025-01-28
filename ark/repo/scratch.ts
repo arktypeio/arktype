@@ -4,5 +4,3 @@ import { declare, scope, type } from "arktype"
 const n = type("1 | number").expression
 
 const t = type("string.trim > 2")
-
-console.log(t.expression)
