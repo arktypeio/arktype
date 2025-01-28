@@ -264,6 +264,17 @@ contextualize(() => {
 			)
 		})
 
+		it("morph", () => {
+			// @ts-expect-error
+			attest(() => type("string.trim > 2"))
+				.throws.snap(
+					"ParseError: MinLength operand must be a string or an array (was a morph)"
+				)
+				.type.errors.snap(
+					"Argument of type '\"string.trim > 2\"' is not assignable to parameter of type '\"To constrain the output of string.trim, pipe like myMorph.to('number > 0').\\\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+				)
+		})
+
 		it("same bound kind union", () => {
 			const t = type("1<(number[]|object[])<10")
 			attest<number[] | object[]>(t.infer)

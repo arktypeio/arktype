@@ -76,6 +76,17 @@ contextualize(() => {
 			)
 		})
 
+		it("morph", () => {
+			// @ts-expect-error
+			attest(() => type("string.numeric.parse > 2"))
+				.throws.snap(
+					"ParseError: MinLength operand must be a string or an array (was a morph)"
+				)
+				.type.errors.snap(
+					"Argument of type '\"string.numeric.parse > 2\"' is not assignable to parameter of type '\"To constrain the output of string.numeric.parse, pipe like myMorph.to('number > 0').\\\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+				)
+		})
+
 		it("chained indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string").divisibleBy(2))

@@ -56,6 +56,7 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 					{ rule: schema.source, flags: schema.flags }
 				:	{ rule: schema.source }
 			:	schema,
+		obviatesBasisDescription: true,
 		hasAssociatedError: true,
 		intersectionIsOpen: true,
 		defaults: {

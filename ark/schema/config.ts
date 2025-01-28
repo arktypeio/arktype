@@ -1,10 +1,4 @@
-import {
-	keysOf,
-	type ArkRegistry,
-	type dict,
-	type requireKeys,
-	type show
-} from "@ark/util"
+import type { ArkRegistry, requireKeys, show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type {
@@ -15,7 +9,6 @@ import type {
 	ProblemWriter
 } from "./shared/errors.ts"
 import {
-	defaultValueSerializer,
 	isNodeKind,
 	type DescriptionWriter,
 	type NodeKind
@@ -121,27 +114,3 @@ export type resolveConfig<config extends ArkConfig> = show<
 >
 
 export type ResolvedConfig = resolveConfig<ArkConfig>
-
-export const serializeConfig = (config: ArkConfig): string => {
-	const keys = keysOf(config).sort()
-	const serializableConfig: dict = {}
-
-	for (const k of keys) {
-		serializableConfig[k] =
-			isNodeKind(k) ?
-				serializeNodeConfig(config[k]!)
-			:	defaultValueSerializer(config[k])
-	}
-
-	return JSON.stringify(serializableConfig)
-}
-
-const serializeNodeConfig = (nodeConfig: dict) => {
-	const keys = Object.keys(nodeConfig).sort()
-
-	const result: dict = {}
-
-	for (const k of keys) result[k] = defaultValueSerializer(nodeConfig[k])
-
-	return result
-}

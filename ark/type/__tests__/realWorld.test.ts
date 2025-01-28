@@ -715,7 +715,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(t.expression).snap(
-			"{ first_name?: (In: string) => Out<string <= 3 & >= 1> }"
+			"{ first_name?: (In: string) => To<string <= 3 & >= 1> }"
 		)
 		attest(t.t).type.toString.snap(
 			"{ first_name?: (In: string) => To<string> }"
@@ -768,7 +768,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
 
 		attest(parseJsonToObj.expression).snap(
-			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
+			'(In: string) => To<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
 		)
 
 		const out = parseJsonToObj(
@@ -942,7 +942,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		// @ts-expect-error
 		attest(() => type("2 < Array.liftFrom<string> < 4"))
 			.throws.snap(
-				"ParseError: MaxLength operand must be a string or an array (was never)"
+				"ParseError: MaxLength operand must be a string or an array (was a morph)"
 			)
 			.type.errors(writeUnboundableMessage("string | string[]"))
 	})

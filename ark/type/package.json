@@ -35,7 +35,8 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
+		"testIntegration": "ts ./__tests__/integration/importConfig.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",
