@@ -2,6 +2,23 @@
 
 ## next
 
+- Better `ParseError` when attempting to constraint a morph
+
+Previously, attempting to directly constrain a transformed type was not a type error but gave a confusing error at runtime:
+
+```ts
+// ParseError: MinLength operand must be a string or an array (was never)
+type("string.trim > 2")
+```
+
+We've added a type error and improved the runtime error:
+
+```ts
+// TypeScript: To constrain the output of string.trim, pipe like myMorph.to('number > 0')
+// ParseError: MinLength operand must be a string or an array (was a morph)
+type("string.trim > 2")
+```
+
 - Fix an issue causing certain complex morph types to not infer output correctly, e.g.:
 
 ```ts
