@@ -143,19 +143,18 @@ export const assertDefaultValueAssignability = (
 	const out = node.in(wrapped ? value() : value)
 
 	if (out instanceof ArkErrors) {
-		// error summaries are computed via getters, so it is safe to
-		// mutate the paths to include key to ensure messages are
-		// generated the integrate the location with the reason
-		if (key !== null) out.forEach(e => (e.path as any).unshift(key))
+		if (key === null) {
+			// e.g. "Default must be assignable to number (was string)"
+			throwParseError(`Default ${out.summary}`)
+		}
 
-		const message =
-			key === null ?
-				// e.g. "Default must be assignable to number (was string)"
-				`Default ${out.message}`
-				// e.g. "Default for bar must be assignable to number (was string)"
-				// e.g. "Default for value at [0] must be assignable to number (was string)"
-			:	`Default for ${out.message}`
-		throwParseError(message)
+		const atPath = out.transform(e =>
+			e.transform(input => ({ ...input, prefixPath: [key] }) as never)
+		)
+
+		// e.g. "Default for bar must be assignable to number (was string)"
+		// e.g. "Default for value at [0] must be assignable to number (was string)"
+		throwParseError(`Default for ${atPath.summary}`)
 	}
 
 	return value

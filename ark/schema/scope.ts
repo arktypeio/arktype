@@ -66,7 +66,11 @@ import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import {
+	Traversal,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
@@ -472,6 +476,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			id,
 			phase: "unresolved" as const
 		}))
+	}
+
+	traversal(root: unknown): Traversal {
+		return new Traversal(root, this.resolvedConfig)
 	}
 
 	import(): SchemaModule<{
