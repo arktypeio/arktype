@@ -2,6 +2,25 @@
 
 ## next
 
+- Fix an issue causing global configs to be overwritten when the primary `"arktype"` entry point is imported:
+
+`config.ts`
+
+```ts
+import { configure } from "arktype/config"
+
+configure({ numberAllowsNaN: true })
+```
+
+`main.ts`
+
+```ts
+import "./config.ts"
+import { type } from "arktype"
+// now correctly allows NaN
+type.number.allows(Number.NaN)
+```
+
 - Better `ParseError` when attempting to constraint a morph
 
 Previously, attempting to directly constrain a transformed type was not a type error but gave a confusing error at runtime:
