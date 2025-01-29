@@ -765,6 +765,10 @@ export declare namespace uuid {
 		v7: string
 		v8: string
 	}
+
+	export namespace $ {
+		export type flat = {}
+	}
 }
 
 export const string = Scope.module({

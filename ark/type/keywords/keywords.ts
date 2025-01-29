@@ -1,4 +1,4 @@
-import type { ArkErrors, arkKind } from "@ark/schema"
+import type { ArkErrors, arkKind, flatResolutionsOf } from "@ark/schema"
 import type { Brand, inferred } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
@@ -40,6 +40,8 @@ export declare namespace Ark {
 		object: object.submodule
 		unknown: unknown.submodule
 	}
+
+	export type flat = flatResolutionsOf<Ark["string"]>
 
 	export interface typeAttachments extends arkTsKeywords.$ {
 		arrayIndex: arkPrototypes.$["Array"]["index"]

@@ -15,9 +15,11 @@ import {
 	type array,
 	type conform,
 	type flattenListable,
+	type intersectUnion,
 	type listable,
 	type noSuggest,
-	type satisfy
+	type satisfy,
+	type show
 } from "@ark/util"
 import { mergeConfigs, type ArkConfig, type ResolvedConfig } from "./config.ts"
 import {
@@ -84,6 +86,36 @@ export type resolvableReferenceIn<$> = {
 
 export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]
+
+export type flatResolutionsOf<$> = show<
+	intersectUnion<
+		resolvableReferenceIn<$> extends infer k ?
+			k extends keyof $ & string ?
+				resolutionsOfReference<$, k>
+			:	unknown
+		:	unknown
+	>
+>
+
+type resolutionsOfReference<
+	$,
+	k extends keyof $ & string
+> = shallowEntryResolution<k, $[k]> & nestedEntryResolutions<k, $[k]>
+
+type shallowEntryResolution<k extends string, v> =
+	v extends RootModule ?
+		[v] extends [anyOrNever] ? { [_ in k]: v }
+		: v extends { root: infer root } ? { [_ in k]: root }
+		: unknown
+	:	{ [_ in k]: v }
+
+type nestedEntryResolutions<k extends string, v> =
+	v extends { [arkKind]: "module" } ? prefixKeys<flatResolutionsOf<v>, k>
+	:	unknown
+
+type prefixKeys<o, prefix extends string> = {
+	[k in keyof o & string as `${prefix}.${k}`]: o[k]
+} & unknown
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
