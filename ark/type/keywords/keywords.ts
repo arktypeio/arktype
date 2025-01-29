@@ -41,7 +41,7 @@ export declare namespace Ark {
 		unknown: unknown.submodule
 	}
 
-	export type flat = flatResolutionsOf<Ark["string"]>
+	export type flat = flatResolutionsOf<Ark>
 
 	export interface typeAttachments extends arkTsKeywords.$ {
 		arrayIndex: arkPrototypes.$["Array"]["index"]

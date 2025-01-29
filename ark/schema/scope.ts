@@ -91,27 +91,21 @@ export type flatResolutionsOf<$> = show<
 	intersectUnion<
 		resolvableReferenceIn<$> extends infer k ?
 			k extends keyof $ & string ?
-				resolutionsOfReference<$, k>
+				resolutionsOfReference<k, $[k]>
 			:	unknown
 		:	unknown
 	>
 >
 
-type resolutionsOfReference<
-	$,
-	k extends keyof $ & string
-> = shallowEntryResolution<k, $[k]> & nestedEntryResolutions<k, $[k]>
-
-type shallowEntryResolution<k extends string, v> =
-	v extends RootModule ?
-		[v] extends [anyOrNever] ? { [_ in k]: v }
-		: v extends { root: infer root } ? { [_ in k]: root }
-		: unknown
+type resolutionsOfReference<k extends string, v> =
+	[v] extends [{ [arkKind]: "module" }] ?
+		[v] extends [anyOrNever] ?
+			{ [_ in k]: v }
+		:	prefixKeys<flatResolutionsOf<v>, k> & {
+				[innerKey in keyof v as innerKey extends "root" ? k
+				:	never]: v[innerKey]
+			}
 	:	{ [_ in k]: v }
-
-type nestedEntryResolutions<k extends string, v> =
-	v extends { [arkKind]: "module" } ? prefixKeys<flatResolutionsOf<v>, k>
-	:	unknown
 
 type prefixKeys<o, prefix extends string> = {
 	[k in keyof o & string as `${prefix}.${k}`]: o[k]
