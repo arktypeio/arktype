@@ -124,6 +124,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	)
 	expression: string = printable(this.unit)
 	domain: Domain = domainOf(this.unit)
+
 	get shortDescription(): string {
 		return this.domain === "object" ?
 				domainDescriptions.object

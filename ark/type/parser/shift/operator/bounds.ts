@@ -123,6 +123,7 @@ export const getBoundKinds = (
 			: ["max"]
 		)
 	}
+
 	if (root.extends($ark.intrinsic.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(

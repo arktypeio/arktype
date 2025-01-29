@@ -1,5 +1,5 @@
 // import { attest } from "@ark/attest"
-// import { match, scope } from "arktype"
+// import { match } from "arktype"
 
 // it("cases only", () => {
 // 	const sizeOf = match({
@@ -27,40 +27,6 @@
 // 	attest<string | number>(matcher(0 as string | number))
 // })
 
-// it("`.when` errors on redundant cases", () => {
-// 	const matcher = match().when("string", s => s)
-
-// 	// @ts-expect-error
-// 	attest(() => matcher.when("string", s => s)).throwsAndHasTypeError(
-// 		"This branch is redundant and will never be reached"
-// 	)
-// })
-
-// it("errors on cases redundant to a previous `cases` block", () => {
-// 	const matcher = match({ string: s => s })
-
-// 	// @ts-expect-error
-// 	attest(() => matcher.cases({ string: s => s })).throwsAndHasTypeError(
-// 		"This branch is redundant and will never be reached"
-// 	)
-// })
-
-// // describe("constraint handling", () => {
-// // 	it("properly considers constrained types as different from their base", () => {
-// // 		const matcher = match
-// // 			.only<number>()
-// // 			.when("number>2", (n) => {
-// // 				attest<number>(n)
-// // 				return n
-// // 			})
-// // 			.when("number", (n) => n)
-// // 			.finalize()
-
-// // 		// for assertions
-// // 		matcher(5)
-// // 	})
-// // })
-
 // describe('"finalizations"', () => {
 // 	it(".orThrow()", () => {
 // 		const matcher = match()
@@ -73,64 +39,64 @@
 // 		attest(() => matcher(4)).throws("FAIL NEEDS ERROR")
 // 	})
 
-// describe(".default", () => {
-// 	it("chained, given a callback", () => {
-// 		const matcher = match()
-// 			.when("string", (s) => s)
-// 			.default((_) => 0)
+// 	describe(".default", () => {
+// 		it("chained, given a callback", () => {
+// 			const matcher = match()
+// 				.when("string", s => s)
+// 				.default(_ => 0)
 
-// 		attest<string>(matcher("abc")).equals("abc")
-// 		attest<number>(matcher(4)).equals(0)
+// 			attest<string>(matcher("abc")).equals("abc")
+// 			attest<number>(matcher(4)).equals(0)
 
-// 		attest<string | number>(matcher(0 as unknown))
+// 			attest<string | number>(matcher(0 as unknown))
+// 		})
+
+// 		it("chained, given a value", () => {
+// 			const matcher = match()
+// 				.when("string", s => s)
+// 				.default(0)
+
+// 			attest<string>(matcher("abc")).equals("abc")
+// 			attest<number>(matcher(4)).equals(0)
+
+// 			attest<string | number>(matcher(0 as unknown))
+// 		})
+
+// 		it("in `cases`, given a callback", () => {
+// 			const matcher = match({ string: s => s, default: _ => 0 })
+
+// 			attest<string>(matcher("abc")).equals("abc")
+// 			attest<number>(matcher(4)).equals(0)
+
+// 			attest<string | number>(matcher(0 as unknown))
+// 		})
 // 	})
 
-// 	it("chained, given a value", () => {
-// 		const matcher = match()
-// 			.when("string", (s) => s)
-// 			.default(0)
-
-// 		attest<string>(matcher("abc")).equals("abc")
-// 		attest<number>(matcher(4)).equals(0)
-
-// 		attest<string | number>(matcher(0 as unknown))
-// 	})
-
-// 	it("in `cases`, given a callback", () => {
-// 		const matcher = match({ string: (s) => s, default: (_) => 0 })
-
-// 		attest<string>(matcher("abc")).equals("abc")
-// 		attest<number>(matcher(4)).equals(0)
-
-// 		attest<string | number>(matcher(0 as unknown))
-// 	})
-// })
-
-// 	it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
+// 	it("errors when attempting to `.orThrow()` a non-exhaustive matcher", () => {
 // 		const matcher = match().when("string", s => s)
 
 // 		// @ts-expect-error
-// 		attest(() => matcher.finalize()).throwsAndHasTypeError(
-// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`"
+// 		attest(() => matcher.orThrow()).throwsAndHasTypeError(
+// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.from<T>`"
 // 		)
 // 	})
 
 // 	it("considers `unknown` exhaustive", () => {
 // 		const matcher = match()
 // 			.when("unknown", x => x)
-// 			.finalize()
+// 			.orThrow()
 
 // 		attest(matcher(4)).equals(4)
 // 	})
 // })
 
-// describe(".only<T>", () => {
+// describe(".from<T>", () => {
 // 	it("does not accept invalid inputs at a type-level", () => {
 // 		const matcher = match
-// 			.only<string | number>()
+// 			.from<string | number>()
 // 			.when("string", s => s)
 // 			.when("number", n => n)
-// 			.finalize()
+// 			.orThrow()
 
 // 		// @ts-expect-error
 // 		attest(() => matcher(true)).throwsAndHasTypeError(
@@ -138,22 +104,12 @@
 // 		)
 // 	})
 
-// 	it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
-// 		const matcher = match.only<string | number>().when("string", s => s)
-
-// 		// @ts-expect-error
-// 		attest(() => matcher.finalize()).throwsAndHasTypeError(
-// 			"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or handling the cases explicitly" +
-//          "should rewrite message. at runtime can we even show a counterexample (serialize the cases not handled)?"
-// 		)
-// 	})
-
 // 	it("allows finalizing exhaustive matchers", _ => {
 // 		const matcher = match
-// 			.only<string | number>()
+// 			.from<string | number>()
 // 			.when("string", s => s)
 // 			.when("number", n => n)
-// 			.finalize()
+// 			.orThrow()
 
 // 		attest<string>(matcher("abc")).equals("abc")
 // 		attest<number>(matcher(4)).equals(4)
@@ -163,7 +119,7 @@
 
 // 	it("infers the parameter to chained .default as the remaining cases", () => {
 // 		const matcher = match
-// 			.only<string | number | boolean>()
+// 			.from<string | number | boolean>()
 // 			.when("string", s => s)
 // 			.default(n => {
 // 				attest<number | boolean>(n)
@@ -175,7 +131,7 @@
 // 	})
 
 // 	it("infers the parameter to in-cases .default", () => {
-// 		const matcher = match.only<string | number | boolean>().cases({
+// 		const matcher = match.from<string | number | boolean>().cases({
 // 			string: s => s,
 // 			default: n => {
 // 				// TS doesn't understand sequentiality in cases, so it's inferred as the in-type
@@ -190,7 +146,7 @@
 
 // 	it("returns `never` on only the specific cases handled by `.orThrow`", () => {
 // 		const matcher = match
-// 			.only<string | number>()
+// 			.from<string | number>()
 // 			.when("string", s => s)
 // 			.orThrow()
 

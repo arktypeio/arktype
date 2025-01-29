@@ -23,7 +23,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<Result, Target>()
 	})
@@ -45,7 +45,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<withJsDoc<Target, Source>, Target>()
 	})
@@ -67,7 +67,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<withJsDoc<Target, Source>, Target>()
 	})
@@ -88,7 +88,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<withJsDoc<Target, Source>, { foo: "foo" }>()
 	})

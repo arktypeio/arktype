@@ -24,21 +24,27 @@ However, it's equally important that when you need different behavior, you can e
       <td>**global**</td>
       <td>all Types parsed after the config is applied</td>
       <td>
-```ts
+```ts title="config.ts"
 import { configure } from "arktype/config"
-// importing from "arktype/config" first is recommended (see note)
+// use the "arktype/config" entrypoint
 configure({ numberAllowsNaN: true })
-
-import { type } from "arktype"
-// true
-type.number.allows(Number.NaN) 
 ```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before your arktype!
+import { type } from "arktype"
+
+type.number.allows(Number.NaN) // true
+```
+
      </td>
     </tr>
     <tr>
       <td>**scope**</td>
       <td>all Types parsed in the configured Scope</td>
       <td>
+
 ```ts
 const myScope = scope(
 	{ user: { age: "number < 100" } },
@@ -57,12 +63,14 @@ const parsedAfter = myScope.type({
 // ArkErrors: age must be at most 100 (was unacceptably large)
 parsedAfter({ age: 101 })
 ```
+
       </td>
     </tr>
     <tr>
       <td>**type**</td>
       <td>all Types shallowly referenced by the configured Type</td>
       <td>
+
 ```ts
 // avoid logging "was xxx" for password
 const password = type("string >= 8").configure({ actual: () => "" })
@@ -87,7 +95,7 @@ Some options only apply at specific levels, as reflected in the corresponding in
 
 <Callout
 	type="warn"
-	title='Use the `"arktype/config"` entrypoint if for global config!'
+	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
 >
 	If you need your config to apply to built-in keywords (important for options
 	like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and

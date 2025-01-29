@@ -70,4 +70,15 @@ contextualize(() => {
 		attest(string.json).equals(fluent.json)
 		attest<typeof fluent.t>(string.t)
 	})
+
+	it("docs example", () => {
+		const fluent = type.number.divisibleBy(2).brand("even")
+
+		attest<Brand<number, "even">>(fluent.t)
+		attest<number>(fluent.inferIn)
+		attest<Brand<number, "even">>(fluent.infer)
+
+		const string = type("(number % 2)#even")
+		attest<typeof fluent>(string).is(fluent)
+	})
 })

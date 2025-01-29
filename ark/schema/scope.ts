@@ -19,12 +19,7 @@ import {
 	type noSuggest,
 	type satisfy
 } from "@ark/util"
-import {
-	mergeConfigs,
-	serializeConfig,
-	type ArkConfig,
-	type ResolvedConfig
-} from "./config.ts"
+import { mergeConfigs, type ArkConfig, type ResolvedConfig } from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
@@ -66,7 +61,11 @@ import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import {
+	Traversal,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
@@ -146,9 +145,7 @@ $ark.ambient ??= {} as never
 let rawUnknownUnion: UnionNode | undefined
 
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly ownConfig: ArkScopeConfig
 	readonly config: ArkScopeConfig
-	readonly configHash: string
 	readonly resolvedConfig: ResolvedScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
 
@@ -173,9 +170,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkScopeConfig
 	) {
-		this.ownConfig = config ?? {}
 		this.config = mergeConfigs($ark.config, config)
-		this.configHash = serializeConfig(this.config)
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
@@ -472,6 +467,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			id,
 			phase: "unresolved" as const
 		}))
+	}
+
+	traversal(root: unknown): Traversal {
+		return new Traversal(root, this.resolvedConfig)
 	}
 
 	import(): SchemaModule<{

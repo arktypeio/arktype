@@ -141,7 +141,7 @@ const sameError = type({ a: "string.numeric.parse" }).or({ b: "string.numeric.pa
 ```
 
 <details>
-	<summary>Learn the basic set theory behind this restriction</summary>
+	<summary>Learn the set theory behind this restriction</summary>
 
 If you're relatively new to set-based types, that error might be daunting, but if you take a second to think through the example, it becomes clear why this isn't allowed. The logic of `bad` is essentially:
 
@@ -168,10 +168,13 @@ Add a type-only symbol to an existing type so that the only values that satisfy 
     <SyntaxTab string>
 
 ```ts
-// hover to see ArkType's representation of a branded type
-const myObject = type({
-	brandedString: "string#id"
-})
+// @noErrors
+const even = type("(number % 2)#even")
+type Even = typeof even.infer
+
+const good: Even = even.assert(2)
+// TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
+const bad: Even = 5
 ```
 
     </SyntaxTab>
@@ -179,15 +182,22 @@ const myObject = type({
     <SyntaxTab fluent>
 
 ```ts
-// hover to see ArkType's representation of a branded type
-const myObject = type({
-	brandedString: type.string.brand("id")
-})
+// @noErrors
+const even = type.number.divisibleBy(2).brand("even")
+type Even = typeof even.infer
+
+const good: Even = even.assert(2)
+// TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
+const bad: Even = 5
 ```
 
     </SyntaxTab>
 
 </SyntaxTabs>
+
+Brands can be a great way to represent constraints that fall outside the scope TypeScript, but remember they don't change anything about what is enforced at runtime!
+
+For more information on branding in general, check out [this excellent article](https://www.learningtypescript.com/articles/branded-types) from [Josh Goldberg](https://github.com/joshuakgoldberg).
 
 ### Narrow
 

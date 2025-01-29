@@ -128,6 +128,8 @@ export declare namespace type {
 
 export type type<t = unknown, $ = {}> = Type<t, $>
 
+// export const match: MatchParser<{}> = ark.match as never
+
 export const generic: GenericParser<{}> = ark.generic as never
 
 export const schema: SchemaParser<{}> = ark.schema as never

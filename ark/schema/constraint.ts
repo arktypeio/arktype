@@ -276,10 +276,16 @@ export const writeInvalidOperandMessage = <
 	kind: kind,
 	expected: expected,
 	actual: actual
-): string =>
-	`${capitalize(kind)} operand must be ${
+): string => {
+	const actualDescription =
+		actual.hasKind("morph") ? actual.shortDescription
+		: actual.isUnknown() ? "unknown"
+		: actual.exclude(expected).shortDescription
+
+	return `${capitalize(kind)} operand must be ${
 		expected.description
-	} (was ${actual.exclude(expected).description})` as never
+	} (was ${actualDescription})` as never
+}
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
