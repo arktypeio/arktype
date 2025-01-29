@@ -1,4 +1,4 @@
-import { intrinsic, type BaseRoot, type Morph } from "@ark/schema"
+import type { BaseRoot } from "@ark/schema"
 import {
 	Callable,
 	type array,
@@ -10,7 +10,6 @@ import {
 } from "@ark/util"
 import type { distill, inferIntersection } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { InternalScope } from "./scope.ts"
 
 type Thens = array<(In: any) => unknown>
 
@@ -141,69 +140,61 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 export class InternalMatchParser extends Callable<
 	(...args: unknown[]) => BaseRoot
 > {
-	constructor($: InternalScope) {
-		super(
-			(...args) => {
-				const matchParser = (isRestricted: boolean) => {
-					const handledCases: { when: BaseRoot; then: Morph }[] = []
-					let defaultCase: ((x: unknown) => unknown) | null = null
-
-					const parser = {
-						when: (when: unknown, then: Morph) => {
-							handledCases.push({
-								when: $.parse(when),
-								then
-							})
-
-							return parser
-						},
-
-						finalize: () => {
-							const branches = handledCases.flatMap(
-								({ when, then }): Morph.Schema[] => {
-									if (when.kind === "union") {
-										return when.branches.map(branch => ({
-											in: branch,
-											morphs: [then]
-										}))
-									}
-									if (when.hasKind("morph"))
-										return [{ in: when, morphs: [...when.morphs, then] }]
-
-									return [{ in: when, morphs: [then] }]
-								}
-							)
-							if (defaultCase)
-								branches.push({ in: intrinsic.unknown, morphs: [defaultCase] })
-
-							const matchers = $.node("union", {
-								branches,
-								ordered: true
-							})
-							return matchers.assert
-						},
-						orThrow: () => {
-							// implicitly finalize, we don't need to do anything else because we throw either way
-							return parser.finalize()
-						},
-						default: (x: unknown) => {
-							if (x instanceof Function) defaultCase = x as never
-							else defaultCase = () => x
-
-							return parser.finalize()
-						}
-					}
-
-					return parser
-				}
-
-				return Object.assign(() => matchParser(false), {
-					only: () => matchParser(true)
-				}) as never
-			},
-			{
-				bind: $
-			}
-		)
-	}
+	// constructor($: InternalScope) {
+	// 	super(
+	// 		(...args) => {
+	// 			const matchParser = (isRestricted: boolean) => {
+	// 				const handledCases: { when: BaseRoot; then: Morph }[] = []
+	// 				let defaultCase: ((x: unknown) => unknown) | null = null
+	// 				const parser = {
+	// 					when: (when: unknown, then: Morph) => {
+	// 						handledCases.push({
+	// 							when: $.parse(when),
+	// 							then
+	// 						})
+	// 						return parser
+	// 					},
+	// 					finalize: () => {
+	// 						const branches = handledCases.flatMap(
+	// 							({ when, then }): Morph.Schema[] => {
+	// 								if (when.kind === "union") {
+	// 									return when.branches.map(branch => ({
+	// 										in: branch,
+	// 										morphs: [then]
+	// 									}))
+	// 								}
+	// 								if (when.hasKind("morph"))
+	// 									return [{ in: when, morphs: [...when.morphs, then] }]
+	// 								return [{ in: when, morphs: [then] }]
+	// 							}
+	// 						)
+	// 						if (defaultCase)
+	// 							branches.push({ in: intrinsic.unknown, morphs: [defaultCase] })
+	// 						const matchers = $.node("union", {
+	// 							branches,
+	// 							ordered: true
+	// 						})
+	// 						return matchers.assert
+	// 					},
+	// 					orThrow: () => {
+	// 						// implicitly finalize, we don't need to do anything else because we throw either way
+	// 						return parser.finalize()
+	// 					},
+	// 					default: (x: unknown) => {
+	// 						if (x instanceof Function) defaultCase = x as never
+	// 						else defaultCase = () => x
+	// 						return parser.finalize()
+	// 					}
+	// 				}
+	// 				return parser
+	// 			}
+	// 			return Object.assign(() => matchParser(false), {
+	// 				only: () => matchParser(true)
+	// 			}) as never
+	// 		},
+	// 		{
+	// 			bind: $
+	// 		}
+	// 	)
+	// }
 }
