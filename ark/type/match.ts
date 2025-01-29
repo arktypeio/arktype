@@ -143,8 +143,8 @@ export class InternalMatchParser extends Callable<
 > {
 	constructor($: InternalScope) {
 		super(
-			(...args) => {
-				const matchParser = (isRestricted: boolean) => {
+			(..._args) => {
+				const matchParser = (_isRestricted: boolean) => {
 					const handledCases: { when: BaseRoot; then: Morph }[] = []
 					let defaultCase: ((x: unknown) => unknown) | null = null
 
@@ -182,10 +182,9 @@ export class InternalMatchParser extends Callable<
 							})
 							return matchers.assert
 						},
-						orThrow: () => {
+						orThrow: () =>
 							// implicitly finalize, we don't need to do anything else because we throw either way
-							return parser.finalize()
-						},
+							parser.finalize(),
 						default: (x: unknown) => {
 							if (x instanceof Function) defaultCase = x as never
 							else defaultCase = () => x
