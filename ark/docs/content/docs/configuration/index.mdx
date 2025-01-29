@@ -32,7 +32,7 @@ configure({ numberAllowsNaN: true })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before your arktype!
+// import your config file before arktype!
 import { type } from "arktype"
 
 type.number.allows(Number.NaN) // true
