@@ -618,14 +618,19 @@ const preformattedTrim = regexStringNode(
 	"trimmed"
 )
 
-const trim: trim.module = Scope.module({
-	root: rootSchema({
-		in: "string",
-		morphs: (s: string) => s.trim(),
-		declaredOut: preformattedTrim
-	}),
-	preformatted: preformattedTrim
-})
+const trim: trim.module = Scope.module(
+	{
+		root: rootSchema({
+			in: "string",
+			morphs: (s: string) => s.trim(),
+			declaredOut: preformattedTrim
+		}),
+		preformatted: preformattedTrim
+	},
+	{
+		name: "string.trim"
+	}
+)
 
 export declare namespace trim {
 	export type module = Module<submodule>

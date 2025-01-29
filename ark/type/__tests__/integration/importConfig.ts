@@ -1,5 +1,5 @@
 import { strictEqual } from "node:assert"
-import "./config.ts"
+import { config } from "./config.ts"
 
 import { keysOf } from "@ark/util"
 import { type } from "arktype"
@@ -9,12 +9,16 @@ const cases = {
 	NaN: () => {
 		strictEqual(type("number").allows(Number.NaN), true)
 	},
-	shallowKeyword: () => {
-		strictEqual(type.string.description, "a configured string")
-		strictEqual(
-			type.string(5).toString(),
-			"must be a configured string (was number)"
-		)
+	shallowModuleKeyword: () => {
+		const expected = config.keywords.string.description
+		strictEqual(type.string.description, expected)
+		strictEqual(type.string(5).toString(), `must be a ${expected} (was number)`)
+	},
+	deepLeafKeyword: () => {
+		const pretrimmed = type.keywords.string.trim.preformatted
+		const expected = config.keywords["string.trim.preformatted"].description
+		strictEqual(pretrimmed.description, expected)
+		strictEqual(pretrimmed(" ").toString(), `must be ${expected} (was " ")`)
 	}
 }
 

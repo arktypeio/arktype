@@ -1,6 +1,6 @@
-import { configure } from "arktype/config"
+import { configure, type ArkConfig } from "arktype/config"
 
-configure({
+export const config = {
 	numberAllowsNaN: true,
 	keywords: {
 		string: {
@@ -8,6 +8,11 @@ configure({
 		},
 		"string.email": {
 			description: "a configured email"
+		},
+		"string.trim.preformatted": {
+			description: "a configured trimmed string"
 		}
 	}
-})
+} as const satisfies ArkConfig
+
+configure(config)

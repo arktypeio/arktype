@@ -1,12 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
-	configure,
 	rootSchema,
 	schemaScope,
 	type ArkSchemaConfig
 } from "@ark/schema"
-import { scope, type } from "arktype"
+import { configure, scope, type } from "arktype"
 
 const withConfig = (config: ArkSchemaConfig, fn: () => void) => {
 	const originalConfig = $ark.config
@@ -202,6 +201,26 @@ contextualize(() => {
 			})
 
 			attest(uninvalidable.allows(new Date("!"))).equals(false)
+		})
+	})
+
+	it("clone", () => {
+		withConfig({ clone: false }, () => {
+			const { userForm } = type.module({
+				userForm: {
+					age: "string.numeric.parse"
+				}
+			})
+
+			const formData = {
+				age: "42"
+			}
+
+			const out = userForm(formData)
+
+			// the original object's age key is now a number
+			attest(formData.age).unknown.equals(42)
+			attest(formData).unknown.equals(out)
 		})
 	})
 

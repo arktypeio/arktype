@@ -4,6 +4,7 @@ import {
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
+	type ArkSchemaRegistry,
 	type ArkSchemaScopeConfig,
 	type BaseNode,
 	type BaseParseContext,
@@ -41,7 +42,6 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
-import type { ArkSchemaRegistry } from "./config.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -72,7 +72,6 @@ import {
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
-import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -269,17 +268,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		// if we're parsing a nested string, ctx.args will have already been set
 		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
 
-		if (
-			ctx.qualifiedAlias &&
-			ctx.qualifiedAlias in this.resolvedConfig.keywords
-		) {
-			def = [
-				def,
-				"@",
-				this.resolvedConfig.keywords[ctx.qualifiedAlias]
-			] satisfies TupleExpression
-		}
-
 		const result = parseInnerDefinition(def, ctx)
 
 		if (isArray(result)) {
@@ -288,7 +276,12 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			if (result[1] === "?") return throwParseError(shallowOptionalMessage)
 		}
 
-		return result
+		const keywordConfig =
+			ctx.qualifiedAlias && this.resolvedConfig.keywords[ctx.qualifiedAlias]
+
+		if (!keywordConfig) return result
+
+		return result.configure(keywordConfig)
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never

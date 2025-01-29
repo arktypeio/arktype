@@ -1,13 +1,14 @@
-import type { ArkSchemaConfig } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-export { configure, type ArkSchemaRegistry } from "@ark/schema/config"
+import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
 
 export type KeywordConfig = { [k in keyof Ark.flat]?: ArkEnv.meta }
 
 export interface ArkConfig extends ArkSchemaConfig {
 	keywords?: KeywordConfig
 }
+
+export const configure: (config: ArkConfig) => ArkConfig = configureSchema
 
 declare global {
 	export interface ArkEnv {

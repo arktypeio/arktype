@@ -66,7 +66,7 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 // dedicated config entrypoint, in which case we don't want to reinitialize it
 $ark.config ??= {}
 
-export const configure = (config: ArkSchemaConfig): ArkSchemaConfig => {
+export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
 	$ark.resolvedConfig &&= mergeConfigs($ark.resolvedConfig, result)
