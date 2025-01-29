@@ -252,11 +252,14 @@ By default, before a [morph](/docs/intro/morphs-and-more) is applied, ArkType wi
 
 You can provide an alternate clone implementation to the `clone` config option.
 
-```ts
+```ts title="config.ts"
 import { configure } from "arktype/config"
 
 configure({ clone: structuredClone })
+```
 
+```ts title="app.ts"
+import "./config.ts"
 import { type } from "arktype"
 
 // will now create a new object using structuredClone
@@ -267,11 +270,14 @@ const userForm = type({
 
 To mutate the input object directly, you can set the `clone` config option to `false`.
 
-```ts
+```ts title="config.ts"
 import { configure } from "arktype/config"
 
 configure({ clone: false })
+```
 
+```ts title="app.ts"
+import "./config.ts"
 import { type } from "arktype"
 
 const userForm = type({
@@ -298,11 +304,14 @@ Like TypeScript, ArkType defaults to ignoring undeclared keys during validation.
 
 These behaviors can be associated with individual Types via the builtin `"+"` syntax (see [those docs](/docs/objects/properties-undeclared) for more on how they work). You can also change the default globally:
 
-```ts
+```ts title="config.ts"
 import { configure } from "arktype/config"
 
 configure({ onUndeclaredKey: "delete" })
+```
 
+```ts title="app.ts"
+import "./config.ts"
 import { type } from "arktype"
 
 const userForm = type({
@@ -322,11 +331,14 @@ By default, when a `Type` is instantiated, ArkType will precompile optimized val
 
 If you'd like to opt out of it for another reason, you can set the `jitless` config option to `true`.
 
-```ts
+```ts title="config.ts"
 import { configure } from "arktype/config"
 
 configure({ jitless: true })
+```
 
+```ts title="app.ts"
+import "./config.ts"
 import { type } from "arktype"
 
 // will not be precompiled
@@ -336,6 +348,10 @@ const myObject = type({
 ```
 
 ### custom
+
+Additional arbitrary metadata can also be associated with a Type.
+
+It can even be made type-safe via an interface extension ArkType exposes for this purpose:
 
 ```ts
 // add this anywhere in your project
