@@ -944,7 +944,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.throws.snap(
 				"ParseError: MaxLength operand must be a string or an array (was a morph)"
 			)
-			.type.errors(writeUnboundableMessage("string | string[]"))
+			.type.errors.snap(
+				"Argument of type '\"2 < Array.liftFrom<string> < 4\"' is not assignable to parameter of type '\"To constrain the output of ... < 4, pipe like myMorph.to('number > 0').\\\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+			)
 	})
 
 	// https://discord.com/channels/957797212103016458/1290304355643293747
