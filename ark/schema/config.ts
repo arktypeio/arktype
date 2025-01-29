@@ -16,8 +16,6 @@ import {
 import { $ark } from "./shared/registry.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
-export { $ark } from "./shared/registry.ts"
-
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkSchemaConfig

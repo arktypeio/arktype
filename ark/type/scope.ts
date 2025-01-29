@@ -72,6 +72,7 @@ import {
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
+import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -267,6 +268,17 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 		// if we're parsing a nested string, ctx.args will have already been set
 		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
+
+		if (
+			ctx.qualifiedAlias &&
+			ctx.qualifiedAlias in this.resolvedConfig.keywords
+		) {
+			def = [
+				def,
+				"@",
+				this.resolvedConfig.keywords[ctx.qualifiedAlias]
+			] satisfies TupleExpression
+		}
 
 		const result = parseInnerDefinition(def, ctx)
 
