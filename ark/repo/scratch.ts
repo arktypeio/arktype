@@ -1,3 +1,3 @@
 import { type } from "arktype"
 
-type("string")
+const even = type.number.divisibleBy(2).brand("even")

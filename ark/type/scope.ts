@@ -52,7 +52,7 @@ import {
 	type parseValidGenericParams
 } from "./generic.ts"
 import type { Ark, type } from "./keywords/keywords.ts"
-import { InternalMatchParser, type MatchParser } from "./match.ts"
+import { InternalMatchParser } from "./match.ts"
 import type {
 	BoundModule,
 	Module,
@@ -362,7 +362,7 @@ export interface Scope<$ = {}> {
 
 	type: TypeParser<$>
 
-	match: MatchParser<$>
+	// match: MatchParser<$>
 
 	declare: DeclarationParser<$>
 

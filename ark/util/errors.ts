@@ -1,4 +1,4 @@
-import type { keyNonimal } from "./generics.ts"
+import type { brand } from "./generics.ts"
 
 export class InternalArktypeError extends Error {}
 
@@ -48,7 +48,7 @@ export interface ErrorType<
 	message extends string = string,
 	ctx extends {} = {}
 > {
-	[keyNonimal]: "ErrorObject"
+	[brand]: "ErrorObject"
 	message: message
 	ctx: ctx
 }
