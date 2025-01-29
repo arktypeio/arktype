@@ -54,7 +54,7 @@ export interface AttachedParseContext {
 	[arkKind]: "context"
 	$: BaseScope
 	id: NodeId
-	qualifiedAlias: string | undefined
+	qualifiedName: string | undefined
 	phase: "unresolved" | "resolving" | "resolved"
 }
 

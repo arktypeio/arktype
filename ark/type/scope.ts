@@ -277,7 +277,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 
 		const keywordConfig =
-			ctx.qualifiedAlias && this.resolvedConfig.keywords[ctx.qualifiedAlias]
+			ctx.qualifiedName && this.resolvedConfig.keywords[ctx.qualifiedName]
 
 		if (!keywordConfig) return result
 
