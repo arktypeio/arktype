@@ -1,6 +1,6 @@
 # arktype
 
-## next
+## 2.0.4
 
 - Fix an issue causing global configs to be overwritten when the primary `"arktype"` entry point is imported:
 
@@ -20,6 +20,8 @@ import { type } from "arktype"
 // now correctly allows NaN
 type.number.allows(Number.NaN)
 ```
+
+Previous versions of the docs mistakenly suggested this was possible in a single file. This is not the case in ESM due to hoisting. See the updated global configuration docs [here](https://arktype.io/docs/expressions#brand).
 
 - Better `ParseError` when attempting to constraint a morph
 
