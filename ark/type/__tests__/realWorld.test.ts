@@ -941,7 +941,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				"ParseError: MaxLength operand must be a string or an array (was a morph)"
 			)
 			.type.errors.snap(
-				"Argument of type '\"2 < Array.liftFrom<string> < 4\"' is not assignable to parameter of type '\"To constrain the output of ... < 4, pipe like myMorph.to('number > 0').\\\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+				"Argument of type '\"2 < Array.liftFrom<string> < 4\"' is not assignable to parameter of type '\"To constrain the output of ... < 4, pipe like myMorph.to('number > 0').\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
 			)
 	})
 
