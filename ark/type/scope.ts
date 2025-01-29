@@ -57,6 +57,7 @@ import type {
 	BoundModule,
 	Module,
 	Submodule,
+	exportScope,
 	instantiateExport
 } from "./module.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
@@ -178,9 +179,10 @@ export type moduleKeyOf<$> = {
 
 export interface ArkTypeRegistry extends ArkSchemaRegistry {
 	typeAttachments?: Ark.boundTypeAttachments<any>
+	ambient: exportScope<Ark>
 }
 
-export const $arkTypeRegistry: ArkTypeRegistry = $ark
+export const $arkTypeRegistry: ArkTypeRegistry = $ark as never
 
 export interface InternalScope {
 	constructor: typeof InternalScope

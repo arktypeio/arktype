@@ -75,10 +75,12 @@ export const ark: Scope<Ark> = scope(
 		object,
 		unknown
 	},
-	{ prereducedAliases: true, ambient: true }
+	{ prereducedAliases: true }
 ) as never
 
 export const keywords: Module<Ark> = ark.export()
+
+Object.assign($arkTypeRegistry.ambient, keywords)
 
 export const type: TypeParser<{}> = ark.type as never
 

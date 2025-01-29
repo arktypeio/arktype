@@ -1,12 +1,7 @@
-import type { ArkSchemaConfig, ArkSchemaRegistry } from "@ark/schema"
+import type { ArkSchemaConfig } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
-import type { exportScope } from "./module.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export { configure, type ArkSchemaRegistry } from "@ark/schema/config"
-
-export interface ArkTypeRegistryContents extends ArkSchemaRegistry {
-	ambient: exportScope<Ark>
-}
 
 export type KeywordConfig = { [k in keyof Ark.flat]?: ArkEnv.meta }
 

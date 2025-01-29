@@ -150,7 +150,7 @@ export type writeDuplicateAliasError<alias extends string> =
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
-const scopesById: Record<string, BaseScope | undefined> = {}
+const scopesByName: Record<string, BaseScope | undefined> = {}
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
@@ -158,7 +158,7 @@ export type GlobalOnlyConfigOptionName = satisfy<
 >
 
 export interface ScopeOnlyConfigOptions {
-	ambient?: boolean | string
+	name?: string
 	prereducedAliases?: boolean
 }
 
@@ -177,7 +177,7 @@ let rawUnknownUnion: UnionNode | undefined
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkSchemaScopeConfig
 	readonly resolvedConfig: ResolvedScopeConfig
-	readonly id = `${Object.keys(scopesById).length}$`
+	readonly name: string
 
 	get [arkKind](): "scope" {
 		return "scope"
@@ -202,6 +202,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 	) {
 		this.config = mergeConfigs($ark.config, config)
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
+
+		this.name =
+			this.resolvedConfig.name ??
+			`anonymousScope${Object.keys(scopesByName).length}`
+		if (this.name in scopesByName)
+			throwParseError(`A Scope already named ${this.name} already exists`)
+		scopesByName[this.name] = this
+
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
 		)
@@ -255,8 +263,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 			{},
 			{ prereduced: true }
 		)
-
-		scopesById[this.id] = this
 	}
 
 	protected cacheGetter<name extends keyof this>(
@@ -546,18 +552,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 
 			this.lazyResolutions.forEach(node => node.resolution)
-
-			if (this.resolvedConfig.ambient === true)
-				// spread all exports to ambient
-				Object.assign($ark.ambient as {}, this._exports)
-			else if (typeof this.resolvedConfig.ambient === "string") {
-				// add exports as a subscope with the config value as a name
-				Object.assign($ark.ambient as {}, {
-					[this.resolvedConfig.ambient]: new RootModule({
-						...this._exports
-					})
-				})
-			}
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
