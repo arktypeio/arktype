@@ -1,9 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	registeredReference,
-	writeUnboundableMessage,
-	type ArkErrors
-} from "@ark/schema"
+import { registeredReference, type ArkErrors } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 
