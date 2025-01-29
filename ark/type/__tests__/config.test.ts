@@ -4,11 +4,11 @@ import {
 	configure,
 	rootSchema,
 	schemaScope,
-	type ArkConfig
+	type ArkSchemaConfig
 } from "@ark/schema"
 import { scope, type } from "arktype"
 
-const withConfig = (config: ArkConfig, fn: () => void) => {
+const withConfig = (config: ArkSchemaConfig, fn: () => void) => {
 	const originalConfig = $ark.config
 	const originalResolvedConfig = $ark.resolvedConfig
 	configure(config)

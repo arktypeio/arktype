@@ -18,7 +18,7 @@ import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
-	config: ArkConfig
+	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
 	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
@@ -66,7 +66,7 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 // dedicated config entrypoint, in which case we don't want to reinitialize it
 $ark.config ??= {}
 
-export const configure = (config: ArkConfig): ArkConfig => {
+export const configure = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
 	$ark.resolvedConfig &&= mergeConfigs($ark.resolvedConfig, result)
@@ -74,13 +74,13 @@ export const configure = (config: ArkConfig): ArkConfig => {
 	return result
 }
 
-export const mergeConfigs = <base extends ArkConfig>(
+export const mergeConfigs = <base extends ArkSchemaConfig>(
 	base: base,
-	extensions: ArkConfig | undefined
+	extensions: ArkSchemaConfig | undefined
 ): base => {
 	if (!extensions) return base
 	const result: any = { ...base }
-	let k: keyof ArkConfig
+	let k: keyof ArkSchemaConfig
 	for (k in extensions) {
 		result[k] =
 			isNodeKind(k) ?
@@ -97,20 +97,21 @@ export type CloneImplementation = <original extends object>(
 	original: original
 ) => original
 
-export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
-	jitless?: boolean
-	clone?: boolean | CloneImplementation
-	onUndeclaredKey?: UndeclaredKeyBehavior
-	numberAllowsNaN?: boolean
-	dateAllowsInvalid?: boolean
+export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
+	readonly jitless?: boolean
+	readonly clone?: boolean | CloneImplementation
+	readonly onUndeclaredKey?: UndeclaredKeyBehavior
+	readonly numberAllowsNaN?: boolean
+	readonly dateAllowsInvalid?: boolean
+	readonly keywords?: Record<string, ArkEnv.meta>
 }
 
-export type resolveConfig<config extends ArkConfig> = show<
+export type resolveConfig<config extends ArkSchemaConfig> = show<
 	{
-		[k in keyof ArkConfig]-?: k extends NodeKind ? Required<config[k]>
+		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
 		: k extends "clone" ? CloneImplementation | false
 		: config[k]
-	} & Omit<config, keyof ArkConfig>
+	} & Omit<config, keyof ArkSchemaConfig>
 >
 
-export type ResolvedConfig = resolveConfig<ArkConfig>
+export type ResolvedConfig = resolveConfig<ArkSchemaConfig>

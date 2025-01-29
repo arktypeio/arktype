@@ -21,7 +21,11 @@ import {
 	type satisfy,
 	type show
 } from "@ark/util"
-import { mergeConfigs, type ArkConfig, type ResolvedConfig } from "./config.ts"
+import {
+	mergeConfigs,
+	type ArkSchemaConfig,
+	type ResolvedConfig
+} from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
@@ -149,7 +153,7 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 const scopesById: Record<string, BaseScope | undefined> = {}
 
 export type GlobalOnlyConfigOptionName = satisfy<
-	keyof ArkConfig,
+	keyof ArkSchemaConfig,
 	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey"
 >
 
@@ -158,8 +162,8 @@ export interface ScopeOnlyConfigOptions {
 	prereducedAliases?: boolean
 }
 
-export interface ArkScopeConfig
-	extends Omit<ArkConfig, GlobalOnlyConfigOptionName>,
+export interface ArkSchemaScopeConfig
+	extends Omit<ArkSchemaConfig, GlobalOnlyConfigOptionName>,
 		ScopeOnlyConfigOptions {}
 
 export interface ResolvedScopeConfig
@@ -171,7 +175,7 @@ $ark.ambient ??= {} as never
 let rawUnknownUnion: UnionNode | undefined
 
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly config: ArkScopeConfig
+	readonly config: ArkSchemaScopeConfig
 	readonly resolvedConfig: ResolvedScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
 
@@ -194,7 +198,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
 		def: Record<string, unknown>,
-		config?: ArkScopeConfig
+		config?: ArkSchemaScopeConfig
 	) {
 		this.config = mergeConfigs($ark.config, config)
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
@@ -744,7 +748,7 @@ export type SchemaScopeParser = <const aliases>(
 			RootSchema | PreparsedNodeResolution
 		>
 	},
-	config?: ArkScopeConfig
+	config?: ArkSchemaScopeConfig
 ) => BaseScope<instantiateAliases<aliases>>
 
 export const schemaScope: SchemaScopeParser = (aliases, config) =>

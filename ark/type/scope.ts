@@ -4,7 +4,7 @@ import {
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
-	type ArkScopeConfig,
+	type ArkSchemaScopeConfig,
 	type BaseNode,
 	type BaseParseContext,
 	type BaseParseContextInput,
@@ -86,6 +86,8 @@ import {
 export type ScopeParserAttachments =
 	// map over to remove call signatures
 	Omit<ScopeParser, never>
+
+export interface ArkScopeConfig extends ArkSchemaScopeConfig {}
 
 export interface ScopeParser {
 	<const def>(
