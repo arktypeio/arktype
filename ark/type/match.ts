@@ -1,4 +1,9 @@
-import { intrinsic, type BaseRoot, type Morph } from "@ark/schema"
+import {
+	intrinsic,
+	type ArkError,
+	type BaseRoot,
+	type Morph
+} from "@ark/schema"
 import {
 	Callable,
 	type array,
@@ -12,7 +17,7 @@ import type { distill, inferIntersection } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { InternalScope } from "./scope.ts"
 
-type Thens = array<(In: any) => unknown>
+type Thens = array<(In: never) => unknown>
 
 type MatchParserContext = {
 	thens: Thens
@@ -69,9 +74,11 @@ type DefaultCase<ctx extends MatchParserContext> =
 	| DefaultCaseKeyword
 	| ((data: ctx["input"]) => unknown)
 
-type DefaultMethod<ctx extends MatchParserContext> = {
-	<const def extends DefaultCase<ctx>>(def: def): finalizeMatchParser<ctx, def>
-}
+type DefaultMethod<ctx extends MatchParserContext> = <
+	const def extends DefaultCase<ctx>
+>(
+	def: def
+) => finalizeMatchParser<ctx, def>
 
 type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default" ?
@@ -100,22 +107,33 @@ export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 	finalizeMatchParser<
 		addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
 		defaultDef
-	>
+	> extends infer finalized ?
+		finalized
+	:	never
 :	ChainableMatchParser<addBranches<ctx, unionToTuple<propValueOf<cases>>>>
+
+type defaultCaseToThen<
+	ctx extends MatchParserContext,
+	defaultCase extends DefaultCase<ctx>
+> =
+	defaultCase extends Fn ? defaultCase
+	: defaultCase extends "never" ? (In: never) => never
+	: defaultCase extends "assert" ? (In: ctx["input"]) => never
+	: (In: ctx["input"]) => ArkError
 
 type finalizeMatchParser<
 	ctx extends MatchParserContext,
 	defaultCase extends DefaultCase<ctx>
 > =
-	defaultCase extends Fn ?
+	// this conditional ensures this is evaluated when displayed externally
+	[...ctx["thens"], defaultCaseToThen<ctx, defaultCase>] extends (
+		infer thens extends Thens
+	) ?
 		MatchInvocation<{
-			thens: [...ctx["thens"], (_: ctx["input"]) => ReturnType<defaultCase>]
+			thens: thens
 			input: ctx["input"]
 		}>
-	:	MatchInvocation<{
-			thens: ctx["thens"]
-			input: ctx["input"]
-		}>
+	:	never
 
 type MatchInvocationContext = {
 	thens: readonly Fn[]

@@ -18,7 +18,7 @@ const sizeOf = match({
 	"string|Array": v => v.length,
 	number: v => v,
 	bigint: v => v,
-	default: "never"
+	default: "assert"
 })
 
 // default: "never" - throw on other value, input is narrowed
