@@ -204,8 +204,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		kind: ctx.kind,
 		inner,
 		meta,
-		$: ctx.$,
-		alias: ctx.alias
+		$: ctx.$
 	})
 
 	return node
@@ -217,7 +216,6 @@ export type CreateNodeInput = {
 	inner: dict
 	meta: BaseMeta
 	$: BaseScope
-	alias: string | undefined
 	ignoreCache?: true
 }
 
@@ -227,7 +225,6 @@ export const createNode = ({
 	inner,
 	meta,
 	$,
-	alias,
 	ignoreCache
 }: CreateNodeInput): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
@@ -278,7 +275,6 @@ export const createNode = ({
 
 	const attachments: UnknownAttachments & dict = {
 		id,
-		alias,
 		kind,
 		impl,
 		inner,
@@ -314,8 +310,7 @@ export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 		inner: node.inner,
 		meta: node.meta,
 		$: node.$,
-		ignoreCache: true,
-		alias: undefined
+		ignoreCache: true
 	}) as never
 }
 
@@ -331,8 +326,7 @@ export const withMeta = <node extends BaseNode>(
 		kind: node.kind,
 		inner: node.inner,
 		meta,
-		$: node.$,
-		alias: undefined
+		$: node.$
 	}) as never
 }
 
