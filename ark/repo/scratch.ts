@@ -1,6 +1,6 @@
 import "./config.ts"
 
-import { match } from "arktype"
+import { match, type } from "arktype"
 
 const sizeOf = match({
 	"string|Array": v => v.length,
@@ -8,10 +8,9 @@ const sizeOf = match({
 	bigint: v => v,
 	default: "assert"
 })
-const size1 = sizeOf("foo") //?
-const size = sizeOf({}) //?
-
-console.log(size)
+const size1 = sizeOf("foo")
+console.log(size1)
+const size = sizeOf({})
 
 // default: "never" - throw on other value, input is narrowed
 // default: "assert" - throw on other value, input is unknown
