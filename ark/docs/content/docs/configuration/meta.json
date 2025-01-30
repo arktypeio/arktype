@@ -1,6 +1,7 @@
 {
 	"title": "Configuration",
 	"pages": [
+		"[keywords](/docs/configuration#keywords)",
 		"[errors](/docs/configuration#errors)",
 		"[clone](/docs/configuration#clone)",
 		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
