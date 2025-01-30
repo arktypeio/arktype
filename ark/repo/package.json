@@ -6,7 +6,7 @@
 	"dependencies": {
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
-		"@sinclair/typebox": "0.34.14",
+		"@sinclair/typebox": "0.34.15",
 		"@trpc/server": "10.45.2",
 		"arktype": "workspace:*",
 		"ts-morph": "25.0.0",
