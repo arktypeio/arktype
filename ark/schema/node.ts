@@ -431,8 +431,14 @@ export abstract class BaseNode<
 		if (isNode(transformedInner))
 			return (transformedNode = transformedInner as never)
 
+		const transformedKeys = Object.keys(transformedInner)
+
+		const hasNoTypedKeys =
+			transformedKeys.length === 0 ||
+			(transformedKeys.length === 1 && transformedKeys[0] === "meta")
+
 		if (
-			isEmptyObject(transformedInner) &&
+			hasNoTypedKeys &&
 			// if inner was previously an empty object (e.g. unknown) ensure it is not pruned
 			!isEmptyObject(this.inner)
 		)
