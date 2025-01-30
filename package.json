@@ -100,12 +100,5 @@
 		"experimentalTernaries": true,
 		"arrowParens": "avoid"
 	},
-	"pnpm": {
-		"peerDependencyRules": {
-			"allowedVersions": {
-				"eslint": "*"
-			}
-		}
-	},
 	"packageManager": "pnpm@9.14.4"
 }
