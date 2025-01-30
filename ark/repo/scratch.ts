@@ -9,7 +9,9 @@ const sizeOf = match({
 	default: "assert"
 })
 
-sizeOf(5) //?
+const size = sizeOf({}) //?
+
+console.log(size)
 
 // default: "never" - throw on other value, input is narrowed
 // default: "assert" - throw on other value, input is unknown
