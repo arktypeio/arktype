@@ -532,7 +532,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "✅ go-to fallback for validation not composable via built-in types and operators"
+                        "value": "✅ go-to fallback for validation not composable via builtin types and operators"
                     }
                 ],
                 [
