@@ -2,6 +2,7 @@ import type { ArkErrors, arkKind, flatResolutionsOf } from "@ark/schema"
 import type { Brand, inferred } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
+import type { MatchParser } from "../match.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
@@ -149,7 +150,7 @@ export declare namespace type {
 
 export type type<t = unknown, $ = {}> = Type<t, $>
 
-// export const match: MatchParser<{}> = ark.match as never
+export const match: MatchParser<{}> = ark.match as never
 
 export const generic: GenericParser<{}> = ark.generic as never
 

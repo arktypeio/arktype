@@ -1,31 +1,31 @@
-// import { attest } from "@ark/attest"
-// import { match } from "arktype"
+import { attest } from "@ark/attest"
+import { match } from "arktype"
 
-// it("cases only", () => {
-// 	const sizeOf = match({
-// 		"string|Array": v => v.length,
-// 		number: v => v,
-// 		bigint: v => v
-// 	}).orThrow()
+it("cases only", () => {
+	const sizeOf = match({
+		"string|Array": v => v.length,
+		number: v => v,
+		bigint: v => v
+	}).orThrow()
 
-// 	attest<number>(sizeOf("abc")).equals(3)
-// 	attest<number>(sizeOf([1, 2, 3])).equals(3)
-// 	attest<bigint>(sizeOf(5n)).equals(5n)
-// })
+	attest<number>(sizeOf("abc")).equals(3)
+	attest<number>(sizeOf([1, 2, 3])).equals(3)
+	attest<bigint>(sizeOf(5n)).equals(5n)
+})
 
-// it("properly infers types of inputs/outputs", () => {
-// 	const matcher = match({ string: s => s, number: n => n })
-// 		.when("boolean", b => b)
-// 		.orThrow()
+it("properly infers types of inputs/outputs", () => {
+	const matcher = match({ string: s => s, number: n => n })
+		.when("boolean", b => b)
+		.orThrow()
 
-// 	// properly infers the type of the output based on the input
-// 	attest<string>(matcher("abc")).equals("abc")
-// 	attest<number>(matcher(4)).equals(4)
-// 	attest<boolean>(matcher(true)).equals(true)
+	// properly infers the type of the output based on the input
+	attest<string>(matcher("abc")).equals("abc")
+	attest<number>(matcher(4)).equals(4)
+	attest<boolean>(matcher(true)).equals(true)
 
-// 	// and properly handles unions in the input type
-// 	attest<string | number>(matcher(0 as string | number))
-// })
+	// and properly handles unions in the input type
+	attest<string | number>(matcher(0 as string | number))
+})
 
 // describe('"finalizations"', () => {
 // 	it(".orThrow()", () => {
