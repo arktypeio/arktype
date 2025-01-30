@@ -1,18 +1,6 @@
 import "./config.ts"
 
-import { match, type } from "arktype"
-
-const user = type({
-	name: "string",
-	email: "string.email"
-})
-
-const out = user({
-	name: 5,
-	email: "449 Canal St"
-})
-
-console.log(out.toString())
+import { match } from "arktype"
 
 const sizeOf = match({
 	"string|Array": v => v.length,
@@ -20,6 +8,8 @@ const sizeOf = match({
 	bigint: v => v,
 	default: "assert"
 })
+
+sizeOf(5) //?
 
 // default: "never" - throw on other value, input is narrowed
 // default: "assert" - throw on other value, input is unknown

@@ -150,7 +150,8 @@ export class InternalMatchParser extends Callable<
 	$: InternalScope
 
 	constructor($: InternalScope) {
-		super((..._args) => {}, {
+		const parser = new InternalChainedMatchParser($)
+		super(parser.switch.bind(parser) as never, {
 			bind: $
 		})
 		this.$ = $
@@ -176,7 +177,8 @@ export class InternalChainedMatchParser {
 		cases: Record<string, CaseHandler | DefaultCase>
 	): InternalChainedMatchParser | {} {
 		const entries = Object.entries(cases)
-		entries.forEach(([def, handler], i) => {
+		for (let i = 0; i < entries.length; i++) {
+			const [def, handler] = entries[i]
 			if (def === "default") {
 				if (i !== entries.length - 1) {
 					throwParseError(
@@ -192,7 +194,7 @@ export class InternalChainedMatchParser {
 			}
 
 			this.when(def, handler)
-		})
+		}
 
 		return this
 	}
