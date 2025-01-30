@@ -1,11 +1,7 @@
-import {
-	intrinsic,
-	type ArkError,
-	type BaseRoot,
-	type Morph
-} from "@ark/schema"
+import { intrinsic, type ArkError, type BaseRoot } from "@ark/schema"
 import {
 	Callable,
+	domainOf,
 	throwParseError,
 	type Fn,
 	type isDisjoint,
@@ -18,12 +14,12 @@ import type { distill, inferIntersection } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { InternalScope } from "./scope.ts"
 
-type Case = (In: never) => unknown
+type CaseHandler = (In: never) => unknown
 
-type MatchParserContext = {
-	cases: Case[]
+type MatchParserContext<input = unknown> = {
+	cases: CaseHandler[]
 	$: unknown
-	input: unknown
+	input: input
 }
 
 export type MatchParser<$> = CaseMatchParser<{
@@ -42,7 +38,7 @@ type addCases<
 	ctx extends MatchParserContext,
 	cases extends readonly unknown[]
 > =
-	cases extends Case[] ?
+	cases extends CaseHandler[] ?
 		satisfy<
 			MatchParserContext,
 			{
@@ -74,7 +70,7 @@ type ChainableMatchParser<ctx extends MatchParserContext> = {
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"
 
-type DefaultCase<ctx extends MatchParserContext> =
+type DefaultCase<ctx extends MatchParserContext = MatchParserContext<never>> =
 	| DefaultCaseKeyword
 	| ((data: ctx["input"]) => unknown)
 
@@ -129,12 +125,15 @@ type finalizeMatchParser<
 > =
 	// this conditional ensures this is evaluated when displayed externally
 	[...ctx["cases"], defaultCaseToThen<ctx, defaultCase>] extends (
-		infer cases extends Case[]
+		infer cases extends CaseHandler[]
 	) ?
 		Match<ctx["input"], cases>
 	:	never
 
-export type Match<input, cases extends Case[]> = <const data extends input>(
+export type Match<
+	input = never,
+	cases extends CaseHandler[] = CaseHandler[]
+> = <const data extends input>(
 	data: data
 ) => {
 	[i in numericStringKeyOf<cases>]: isDisjoint<
@@ -165,64 +164,50 @@ export class InternalChainedMatchParser {
 		this.$ = $
 	}
 
-	protected handledCases: { when: BaseRoot; then: Morph }[] = []
+	protected branches: BaseRoot[] = []
 
-	when(when: unknown, then: Morph): this {
-		this.handledCases.push({
-			when: this.$.parse(when),
-			then
-		})
-
+	when(when: unknown, then: CaseHandler): this {
+		const branch = this.$.parse(when).pipe(then as never)
+		this.branches.push(branch)
 		return this
 	}
 
 	switch(
-		cases: Record<string, Case | DefaultCase<MatchParserContext>>
+		cases: Record<string, CaseHandler | DefaultCase>
 	): InternalChainedMatchParser | {} {
 		const entries = Object.entries(cases)
-		for (let i = 0; i < entries.length; i++) {
-			if (entries[i][0] === "default") {
+		entries.forEach(([def, handler], i) => {
+			if (def === "default") {
 				if (i !== entries.length - 1) {
 					throwParseError(
 						`default may only be specified as the last key of a switch definition`
 					)
 				}
-				return this.finalize(entries[i][1])
+				return this.default(handler)
 			}
-			this.when(...(entries[i] as [never, never]))
-		}
+			if (typeof handler !== "function") {
+				return throwParseError(
+					`Value for case "${def}" must be a function (was ${domainOf(handler)})`
+				)
+			}
+
+			this.when(def, handler)
+		})
+
 		return this
 	}
 
-	protected finalize(defaultCase: DefaultCase<any>): {} {
-		const branches = this.handledCases.flatMap(
-			({ when, then }): Morph.Schema[] => {
-				if (when.kind === "union") {
-					return when.branches.map(branch => ({
-						in: branch,
-						morphs: [then]
-					}))
-				}
-				if (when.hasKind("morph"))
-					return [{ in: when, morphs: [...when.morphs, then] }]
+	default(defaultCase: DefaultCase): Match {
+		if (typeof defaultCase === "function")
+			this.when(intrinsic.unknown, defaultCase)
 
-				return [{ in: when, morphs: [then] }]
-			}
-		)
-		if (this.defaultCase)
-			branches.push({ in: intrinsic.unknown, morphs: [this.defaultCase] })
-
-		const matchers = this.$.node("union", {
-			branches,
+		const matcher = this.$.node("union", {
+			branches: this.branches,
 			ordered: true
 		})
-		return matchers.assert
-	}
 
-	default(x: unknown): unknown {
-		if (typeof x === "function") this.defaultCase = x as never
-		else this.defaultCase = () => x
+		if (defaultCase === "reject") return matcher as never
 
-		return this.finalize()
+		return matcher.assert as never
 	}
 }
