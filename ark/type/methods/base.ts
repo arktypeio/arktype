@@ -422,7 +422,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * #### apply a predicate function to output
 	 *
-	 * ✅ go-to fallback for validation not composable via built-in types and operators
+	 * ✅ go-to fallback for validation not composable via builtin types and operators
 	 * ✅ runs after all other validators and morphs, if present
 	 * @predicateCast
 	 *

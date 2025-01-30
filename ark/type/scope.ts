@@ -15,10 +15,12 @@ import {
 	type GenericParamAst,
 	type GenericParamDef,
 	type GenericRoot,
+	type MetaSchema,
 	type NodeKind,
 	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
+	type ResolvedScopeConfig,
 	type RootKind,
 	type RootSchema,
 	type arkKind,
@@ -188,7 +190,13 @@ export interface InternalScope {
 	constructor: typeof InternalScope
 }
 
+interface ResolvedTypeScopeConfig extends ResolvedScopeConfig {
+	keywords?: Record<string, MetaSchema>
+}
+
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
+	declare resolvedConfig: ResolvedTypeScopeConfig
+
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(
@@ -211,7 +219,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				: alias === "root" ? this.name
 				: `${this.name}.${alias}`
 
-			const config = this.resolvedConfig.keywords[qualifiedName]
+			const config = this.resolvedConfig.keywords?.[qualifiedName]
 
 			if (config) def = [def, "@", config] satisfies TupleExpression
 

@@ -1,5 +1,43 @@
 # arktype
 
+## 2.1.0
+
+### Builtin keywords can now be globally configured
+
+This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	keywords: {
+		string: "shorthand description",
+		"string.email": {
+			actual: () => "definitely fake"
+		}
+	}
+})
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const user = type({
+	name: "string",
+	email: "string.email"
+})
+
+const out = user({
+	// ArkErrors: name must be shorthand description (was a number)
+	name: 5,
+	// ArkErrors: email must be an email address (was definitely fake)
+	email: "449 Canal St"
+})
+```
+
+The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
+
 ## 2.0.4
 
 ### Fix an issue causing global configs to be overwritten when the primary `"arktype"` entry point is imported:

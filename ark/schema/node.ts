@@ -31,6 +31,7 @@ import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
+	BaseMeta,
 	BaseNodeDeclaration,
 	MetaSchema,
 	attachmentsOf
@@ -419,11 +420,11 @@ export abstract class BaseNode<
 
 		delete ctx.seen[this.id]
 
-		const transformedInner = mapper(
-			this.kind,
-			innerWithTransformedChildren as never,
-			ctx
-		)
+		const innerWithMeta = Object.assign(innerWithTransformedChildren, {
+			meta: this.meta
+		})
+
+		const transformedInner = mapper(this.kind, innerWithMeta, ctx)
 
 		if (transformedInner === null) return null
 
@@ -461,10 +462,14 @@ export abstract class BaseNode<
 	}
 
 	configureShallowDescendants(meta: MetaSchema): this {
+		const newMeta = typeof meta === "string" ? { description: meta } : meta
 		return this.$.finalize(
-			this.transform((kind, inner) => ({ ...inner, meta }), {
-				shouldTransform: node => node.kind !== "structure"
-			}) as never
+			this.transform(
+				(kind, inner) => ({ ...inner, meta: { ...inner.meta, ...newMeta } }),
+				{
+					shouldTransform: node => node.kind !== "structure"
+				}
+			) as never
 		)
 	}
 }
@@ -533,6 +538,6 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
-	inner: Inner<kind>,
+	innerWithMeta: Inner<kind> & { meta: BaseMeta },
 	ctx: DeepNodeTransformContext
 ) => NormalizedSchema<kind> | null

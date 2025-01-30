@@ -2,16 +2,17 @@ import type { arkKind } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
+import type { anyOrNever } from "@ark/util"
 
 export type KeywordConfig = {
-	[k in keyof Ark.flat as parseConfigurableFlatAlias<
-		k,
-		Ark.flat[k]
-	>]?: ArkEnv.meta
+	[k in keyof Ark.flat as parseConfigurableFlatAlias<k, Ark.flat[k]>]?:
+		| string
+		| ArkEnv.meta
 }
 
 type parseConfigurableFlatAlias<k extends string, v> =
-	v extends { [arkKind]: "generic" | "module" } ? never
+	[v] extends [anyOrNever] ? k
+	: v extends { [arkKind]: "generic" | "module" } ? never
 	: k extends `${infer prefix}.root` ? prefix
 	: k
 
