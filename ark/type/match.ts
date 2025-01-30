@@ -1,9 +1,13 @@
-import { intrinsic, type ArkError, type BaseRoot } from "@ark/schema"
+import {
+	intrinsic,
+	type ArkError,
+	type BaseRoot,
+	type Morph
+} from "@ark/schema"
 import {
 	Callable,
 	domainOf,
 	throwParseError,
-	type Fn,
 	type isDisjoint,
 	type numericStringKeyOf,
 	type propValueOf,
@@ -14,10 +18,8 @@ import type { distill, inferIntersection } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { InternalScope } from "./scope.ts"
 
-type CaseHandler = (In: never) => unknown
-
 type MatchParserContext<input = unknown> = {
-	cases: CaseHandler[]
+	cases: Morph[]
 	$: unknown
 	input: input
 }
@@ -34,11 +36,11 @@ export type MatchParser<$> = CaseMatchParser<{
 	}>
 }
 
-type addCases<
+type addCasesToContext<
 	ctx extends MatchParserContext,
 	cases extends readonly unknown[]
 > =
-	cases extends CaseHandler[] ?
+	cases extends Morph[] ?
 		satisfy<
 			MatchParserContext,
 			{
@@ -49,6 +51,16 @@ type addCases<
 		>
 	:	never
 
+type finalizeCases<
+	ctx extends MatchParserContext,
+	defaultCase extends DefaultCase<ctx>
+> =
+	defaultCase extends "never" ? ctx["cases"]
+	: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
+	: defaultCase extends "assert" ?
+		[...ctx["cases"], (In: ctx["input"]) => never]
+	:	[...ctx["cases"], (In: ctx["input"]) => ArkError]
+
 // infer the types handled by a match branch, which is identical to `type.infer` while properly
 // excluding cases that are already handled by other branches
 type inferMatchBranch<def, ctx extends MatchParserContext> = distill.Out<
@@ -57,22 +69,23 @@ type inferMatchBranch<def, ctx extends MatchParserContext> = distill.Out<
 
 type ChainableMatchParser<ctx extends MatchParserContext> = {
 	// chainable methods
-	when: <def, ret>(
-		when: type.validate<def, ctx["$"]>,
+	case: <def, ret>(
+		def: type.validate<def, ctx["$"]>,
 		then: (In: inferMatchBranch<def, ctx>) => ret
 	) => ChainableMatchParser<
-		addCases<ctx, [(In: inferMatchBranch<def, ctx>) => ret]>
+		addCasesToContext<ctx, [(In: inferMatchBranch<def, ctx>) => ret]>
 	>
-	switch: CaseMatchParser<ctx>
+
+	match: CaseMatchParser<ctx>
 
 	default: DefaultMethod<ctx>
 }
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"
 
-type DefaultCase<ctx extends MatchParserContext = MatchParserContext<never>> =
+type DefaultCase<ctx extends MatchParserContext = MatchParserContext<any>> =
 	| DefaultCaseKeyword
-	| ((data: ctx["input"]) => unknown)
+	| Morph<ctx["input"]>
 
 type DefaultMethod<ctx extends MatchParserContext> = <
 	const def extends DefaultCase<ctx>
@@ -105,35 +118,22 @@ export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
 ) => cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
 	finalizeMatchParser<
-		addCases<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
+		addCasesToContext<
+			ctx,
+			unionToTuple<cases[Exclude<keyof cases, "default">]>
+		>,
 		defaultDef
 	>
-:	ChainableMatchParser<addCases<ctx, unionToTuple<propValueOf<cases>>>>
-
-type defaultCaseToThen<
-	ctx extends MatchParserContext,
-	defaultCase extends DefaultCase<ctx>
-> =
-	defaultCase extends Fn ? defaultCase
-	: defaultCase extends "never" ? (In: never) => never
-	: defaultCase extends "assert" ? (In: ctx["input"]) => never
-	: (In: ctx["input"]) => ArkError
+:	ChainableMatchParser<addCasesToContext<ctx, unionToTuple<propValueOf<cases>>>>
 
 type finalizeMatchParser<
 	ctx extends MatchParserContext,
 	defaultCase extends DefaultCase<ctx>
-> =
-	// this conditional ensures this is evaluated when displayed externally
-	[...ctx["cases"], defaultCaseToThen<ctx, defaultCase>] extends (
-		infer cases extends CaseHandler[]
-	) ?
-		Match<ctx["input"], cases>
-	:	never
+> = Match<ctx["input"], finalizeCases<ctx, defaultCase>>
 
-export type Match<
-	input = never,
-	cases extends CaseHandler[] = CaseHandler[]
-> = <const data extends input>(
+export type Match<input = any, cases extends Morph[] = Morph[]> = <
+	const data extends input
+>(
 	data: data
 ) => {
 	[i in numericStringKeyOf<cases>]: isDisjoint<
@@ -151,7 +151,7 @@ export class InternalMatchParser extends Callable<
 
 	constructor($: InternalScope) {
 		const parser = new InternalChainedMatchParser($)
-		super(parser.switch.bind(parser) as never, {
+		super(parser.match.bind(parser) as never, {
 			bind: $
 		})
 		this.$ = $
@@ -167,33 +167,33 @@ export class InternalChainedMatchParser {
 
 	protected branches: BaseRoot[] = []
 
-	when(when: unknown, then: CaseHandler): this {
+	case(when: unknown, then: Morph): this {
 		const branch = this.$.parse(when).pipe(then as never)
 		this.branches.push(branch)
 		return this
 	}
 
-	switch(
-		cases: Record<string, CaseHandler | DefaultCase>
+	match(
+		cases: Record<string, Morph | DefaultCase>
 	): InternalChainedMatchParser | {} {
 		const entries = Object.entries(cases)
 		for (let i = 0; i < entries.length; i++) {
-			const [def, handler] = entries[i]
-			if (def === "default") {
+			const [k, v] = entries[i]
+			if (k === "default") {
 				if (i !== entries.length - 1) {
 					throwParseError(
 						`default may only be specified as the last key of a switch definition`
 					)
 				}
-				return this.default(handler)
+				return this.default(v)
 			}
-			if (typeof handler !== "function") {
+			if (typeof v !== "function") {
 				return throwParseError(
-					`Value for case "${def}" must be a function (was ${domainOf(handler)})`
+					`Value for case "${k}" must be a function (was ${domainOf(v)})`
 				)
 			}
 
-			this.when(def, handler)
+			this.case(k, v)
 		}
 
 		return this
@@ -201,7 +201,7 @@ export class InternalChainedMatchParser {
 
 	default(defaultCase: DefaultCase): Match {
 		if (typeof defaultCase === "function")
-			this.when(intrinsic.unknown, defaultCase)
+			this.case(intrinsic.unknown, defaultCase)
 
 		const matcher = this.$.node("union", {
 			branches: this.branches,

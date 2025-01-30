@@ -16,7 +16,7 @@ it("cases only", () => {
 
 it("properly infers types of inputs/outputs", () => {
 	const matcher = match({ string: s => s, number: n => n })
-		.when("boolean", b => b)
+		.case("boolean", b => b)
 		.default("assert")
 
 	// properly infers the type of the output based on the input
