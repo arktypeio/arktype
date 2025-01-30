@@ -199,19 +199,37 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
-	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
+	const node = createNode({
+		id: ctx.id,
+		kind: ctx.kind,
+		inner,
+		meta,
+		$: ctx.$,
+		alias: ctx.alias
+	})
 
 	return node
 }
 
-export const createNode = (
-	id: NodeId,
-	kind: NodeKind,
-	inner: dict,
-	meta: BaseMeta,
-	$: BaseScope,
+export type CreateNodeInput = {
+	id: NodeId
+	kind: NodeKind
+	inner: dict
+	meta: BaseMeta
+	$: BaseScope
+	alias: string | undefined
 	ignoreCache?: true
-): BaseNode => {
+}
+
+export const createNode = ({
+	id,
+	kind,
+	inner,
+	meta,
+	$,
+	alias,
+	ignoreCache
+}: CreateNodeInput): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const innerEntries = entriesOf(inner)
 	const children: BaseNode[] = []
@@ -260,6 +278,7 @@ export const createNode = (
 
 	const attachments: UnknownAttachments & dict = {
 		id,
+		alias,
 		kind,
 		impl,
 		inner,
@@ -289,7 +308,15 @@ export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	// have to ignore cache to force creation of new potentially cyclic id
-	return createNode(id, node.kind, node.inner, node.meta, node.$, true) as never
+	return createNode({
+		id,
+		kind: node.kind,
+		inner: node.inner,
+		meta: node.meta,
+		$: node.$,
+		ignoreCache: true,
+		alias: undefined
+	}) as never
 }
 
 export const withMeta = <node extends BaseNode>(
@@ -299,13 +326,14 @@ export const withMeta = <node extends BaseNode>(
 ): node => {
 	if (id && isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
-	return createNode(
-		id ?? registerNodeId(meta.alias ?? node.kind),
-		node.kind,
-		node.inner,
+	return createNode({
+		id: id ?? registerNodeId(meta.alias ?? node.kind),
+		kind: node.kind,
+		inner: node.inner,
 		meta,
-		node.$
-	) as never
+		$: node.$,
+		alias: undefined
+	}) as never
 }
 
 const possiblyCollapse = <allowPrimitive extends boolean>(

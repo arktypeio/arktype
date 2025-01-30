@@ -1,7 +1,8 @@
-import { strictEqual } from "node:assert"
+import { AssertionError, strictEqual } from "node:assert"
 import { config } from "./config.ts"
 
-import { keysOf } from "@ark/util"
+import { hasArkKind } from "@ark/schema"
+import { flatMorph, keysOf } from "@ark/util"
 import { ark, type } from "arktype"
 import { stdout } from "node:process"
 
@@ -35,8 +36,28 @@ const cases = {
 		strictEqual(pretrimmed(" ").toString(), `must be ${expected} (was " ")`)
 	},
 	allResolutionsHaveMatchingQualifiedName: () => {
-		ark.internal.resolutions
-		console.log("hi")
+		const mismatches = flatMorph(
+			ark.internal.resolutions,
+			(qualifiedAlias, resolution, i: number) => {
+				if (!resolution || typeof resolution === "string") return []
+				if (hasArkKind(resolution, "generic")) return []
+				if (qualifiedAlias !== resolution.meta.alias) {
+					return [
+						i,
+						{ expected: qualifiedAlias, actual: resolution.meta.alias }
+					]
+				}
+				return []
+			}
+		)
+
+		if (mismatches.length) {
+			throw new AssertionError({
+				message:
+					"The following resolutions had mismatching qualifiedNames:\n" +
+					mismatches.map(m => `${m.expected} (was ${m.actual})`).join("\n")
+			})
+		}
 	}
 }
 
