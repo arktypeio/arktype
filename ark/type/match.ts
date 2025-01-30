@@ -129,29 +129,19 @@ type finalizeMatchParser<
 	[...ctx["thens"], defaultCaseToThen<ctx, defaultCase>] extends (
 		infer thens extends Thens
 	) ?
-		MatchInvocation<{
-			thens: thens
-			input: ctx["input"]
-		}>
+		Match<ctx["input"], thens>
 	:	never
 
-type MatchInvocationContext = {
-	thens: readonly Fn[]
-	input: unknown
-}
-
-export type MatchInvocation<ctx extends MatchInvocationContext> = <
-	const data extends ctx["input"]
->(
+export type Match<input, cases extends Thens> = <const data extends input>(
 	data: data
 ) => {
-	[i in numericStringKeyOf<ctx["thens"]>]: isDisjoint<
+	[i in numericStringKeyOf<cases>]: isDisjoint<
 		data,
-		Parameters<ctx["thens"][i]>[0]
+		Parameters<cases[i]>[0]
 	> extends true ?
 		never
-	:	ReturnType<ctx["thens"][i]>
-}[numericStringKeyOf<ctx["thens"]>]
+	:	ReturnType<cases[i]>
+}[numericStringKeyOf<cases>]
 
 export class InternalMatchParser extends Callable<
 	(...args: unknown[]) => unknown
