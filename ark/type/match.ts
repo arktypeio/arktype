@@ -25,12 +25,6 @@ export type MatchParser<$> = CaseMatchParser<{
 	$: $
 	input: unknown
 }> & {
-	(): ChainableMatchParser<{
-		thens: []
-		$: $
-		input: unknown
-	}>
-
 	from<typedInput>(): ChainableMatchParser<{
 		thens: []
 		$: $
@@ -76,9 +70,7 @@ type DefaultCase<ctx extends MatchParserContext> =
 	| ((data: ctx["input"]) => unknown)
 
 type DefaultMethod<ctx extends MatchParserContext> = {
-	<const def extends DefaultCase<ctx>>(
-		def: def
-	): finalizeMatchParser<addDefault<ctx, def>>
+	<const def extends DefaultCase<ctx>>(def: def): finalizeMatchParser<ctx, def>
 }
 
 type validateCases<cases, ctx extends MatchParserContext> = {
@@ -106,21 +98,24 @@ export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
 ) => cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
 	finalizeMatchParser<
-		addDefault<
-			addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
-			defaultDef
-		>
+		addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
+		defaultDef
 	>
 :	ChainableMatchParser<addBranches<ctx, unionToTuple<propValueOf<cases>>>>
 
-type addDefault<ctx extends MatchParserContext, def extends DefaultCase<ctx>> =
-	def extends Fn ? addBranches<ctx, [(_: ctx["input"]) => ReturnType<def>]>
-	:	ctx
-
-type finalizeMatchParser<ctx extends MatchParserContext> = MatchInvocation<{
-	thens: ctx["thens"]
-	input: ctx["input"]
-}>
+type finalizeMatchParser<
+	ctx extends MatchParserContext,
+	defaultCase extends DefaultCase<ctx>
+> =
+	defaultCase extends Fn ?
+		MatchInvocation<{
+			thens: [...ctx["thens"], (_: ctx["input"]) => ReturnType<defaultCase>]
+			input: ctx["input"]
+		}>
+	:	MatchInvocation<{
+			thens: ctx["thens"]
+			input: ctx["input"]
+		}>
 
 type MatchInvocationContext = {
 	thens: readonly Fn[]
@@ -141,70 +136,66 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 }[numericStringKeyOf<ctx["thens"]>]
 
 export class InternalMatchParser extends Callable<
-	(...args: unknown[]) => BaseRoot
+	(...args: unknown[]) => unknown
 > {
+	$: InternalScope
+
 	constructor($: InternalScope) {
-		super(
-			(..._args) => {
-				const matchParser = (_isRestricted: boolean) => {
-					const handledCases: { when: BaseRoot; then: Morph }[] = []
-					let defaultCase: ((x: unknown) => unknown) | null = null
+		super((..._args) => {}, {
+			bind: $
+		})
+		this.$ = $
+	}
+}
 
-					const parser = {
-						when: (when: unknown, then: Morph) => {
-							handledCases.push({
-								when: $.parse(when),
-								then
-							})
+export class InternalChainableMatch {
+	$: InternalScope
 
-							return parser
-						},
+	constructor($: InternalScope) {
+		this.$ = $
+	}
 
-						finalize: () => {
-							const branches = handledCases.flatMap(
-								({ when, then }): Morph.Schema[] => {
-									if (when.kind === "union") {
-										return when.branches.map(branch => ({
-											in: branch,
-											morphs: [then]
-										}))
-									}
-									if (when.hasKind("morph"))
-										return [{ in: when, morphs: [...when.morphs, then] }]
+	protected handledCases: { when: BaseRoot; then: Morph }[] = []
+	protected defaultCase: ((x: unknown) => unknown) | null = null
 
-									return [{ in: when, morphs: [then] }]
-								}
-							)
-							if (defaultCase)
-								branches.push({ in: intrinsic.unknown, morphs: [defaultCase] })
+	when(when: unknown, then: Morph): this {
+		this.handledCases.push({
+			when: this.$.parse(when),
+			then
+		})
 
-							const matchers = $.node("union", {
-								branches,
-								ordered: true
-							})
-							return matchers.assert
-						},
-						orThrow: () =>
-							// implicitly finalize, we don't need to do anything else because we throw either way
-							parser.finalize(),
-						default: (x: unknown) => {
-							if (x instanceof Function) defaultCase = x as never
-							else defaultCase = () => x
+		return this
+	}
 
-							return parser.finalize()
-						}
-					}
-
-					return parser
+	finalize(): unknown {
+		const branches = this.handledCases.flatMap(
+			({ when, then }): Morph.Schema[] => {
+				if (when.kind === "union") {
+					return when.branches.map(branch => ({
+						in: branch,
+						morphs: [then]
+					}))
 				}
+				if (when.hasKind("morph"))
+					return [{ in: when, morphs: [...when.morphs, then] }]
 
-				return Object.assign(() => matchParser(false), {
-					only: () => matchParser(true)
-				}) as never
-			},
-			{
-				bind: $
+				return [{ in: when, morphs: [then] }]
 			}
 		)
+		if (this.defaultCase)
+			branches.push({ in: intrinsic.unknown, morphs: [this.defaultCase] })
+
+		const matchers = this.$.node("union", {
+			branches,
+			ordered: true
+		})
+		return matchers.assert
+	}
+
+	default(x: unknown): unknown {
+		if (x instanceof Function) this.defaultCase = x as never
+		else this.defaultCase = () => x
+
+		return this.finalize()
 	}
 }
