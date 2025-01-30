@@ -8,7 +8,7 @@ const sizeOf = match({
 	bigint: v => v,
 	default: "assert"
 })
-
+const size1 = sizeOf("foo") //?
 const size = sizeOf({}) //?
 
 console.log(size)
