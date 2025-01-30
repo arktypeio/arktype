@@ -776,28 +776,38 @@ export declare namespace uuid {
 	}
 }
 
-export const string = Scope.module({
-	root: intrinsic.string,
-	alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
-	alphanumeric: regexStringNode(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),
-	base64,
-	capitalize,
-	creditCard,
-	date: stringDate,
-	digits: regexStringNode(/^\d*$/, "only digits 0-9"),
-	email,
-	integer: stringInteger,
-	ip,
-	json,
-	lower,
-	normalize,
-	numeric,
-	semver,
-	trim,
-	upper,
-	url,
-	uuid
-})
+export const string = Scope.module(
+	{
+		root: intrinsic.string,
+		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
+		alphanumeric: regexStringNode(
+			/^[A-Za-z\d]*$/,
+			"only letters and digits 0-9"
+		),
+		base64,
+		capitalize,
+		creditCard,
+		date: stringDate,
+		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
+		email,
+		integer: stringInteger,
+		ip,
+		json,
+		lower,
+		normalize,
+		numeric,
+		semver,
+		trim,
+		upper,
+		url,
+		uuid
+	},
+	{
+		name: "string"
+	}
+)
+
+console.log(string.root.description)
 
 export declare namespace string {
 	export type module = Module<string.submodule>

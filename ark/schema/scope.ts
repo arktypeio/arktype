@@ -497,17 +497,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		const id = input.id ?? registerNodeId(input.prefix)
-		const qualifiedName =
-			input.alias &&
-			(this.name === "ark" ? input.alias
-			: input.alias === "root" ? this.name
-			: `${this.name}.${input.alias}`)
 		return (nodesByRegisteredId[id] = Object.assign(input, {
 			[arkKind]: "context" as const,
 			$: this as never,
 			id,
-			phase: "unresolved" as const,
-			qualifiedName
+			phase: "unresolved" as const
 		}))
 	}
 

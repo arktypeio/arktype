@@ -55,15 +55,6 @@ export declare namespace Ark {
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
 
-$arkTypeRegistry.typeAttachments = {
-	...arkTsKeywords,
-	arrayIndex: arkPrototypes.Array.index,
-	Key: arkBuiltins.Key,
-	Record: arkTsGenerics.Record,
-	Array: arkPrototypes.Array.root,
-	Date: arkPrototypes.Date
-}
-
 export const ark: Scope<Ark> = scope(
 	{
 		...arkTsKeywords,
@@ -82,7 +73,33 @@ export const keywords: Module<Ark> = ark.export()
 
 Object.assign($arkTypeRegistry.ambient, keywords)
 
-export const type: TypeParser<{}> = ark.type as never
+$arkTypeRegistry.typeAttachments = {
+	string: keywords.string.root,
+	number: keywords.number.root,
+	bigint: keywords.bigint,
+	boolean: keywords.boolean,
+	symbol: keywords.symbol,
+	undefined: keywords.undefined,
+	null: keywords.null,
+	object: keywords.object.root,
+	unknown: keywords.unknown.root,
+	false: keywords.false,
+	true: keywords.true,
+	never: keywords.never,
+	arrayIndex: keywords.Array.index,
+	Key: keywords.Key,
+	Record: keywords.Record,
+	Array: keywords.Array.root,
+	Date: keywords.Date
+}
+
+export const type: TypeParser<{}> = Object.assign(
+	ark.type,
+	// assign attachments newly parsed in keywords
+	// future scopes add these directly from the
+	// registry when their TypeParsers are instantiated
+	$arkTypeRegistry.typeAttachments
+) as never
 
 export declare namespace type {
 	export interface cast<to> {

@@ -12,7 +12,7 @@ const cases = {
 	shallowModuleKeyword: () => {
 		const expected = config.keywords.string.description
 		strictEqual(type.string.description, expected)
-		strictEqual(type.string(5).toString(), `must be a ${expected} (was number)`)
+		strictEqual(type.string(5).toString(), `must be ${expected} (was a number)`)
 	},
 	deepLeafKeyword: () => {
 		const pretrimmed = type.keywords.string.trim.preformatted

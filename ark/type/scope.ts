@@ -72,6 +72,7 @@ import {
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
+import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -82,7 +83,6 @@ import {
 	type TypeParser,
 	type UnitTypeParser
 } from "./type.ts"
-
 /** The convenience properties attached to `scope` */
 export type ScopeParserAttachments =
 	// map over to remove call signatures
@@ -200,18 +200,32 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
-		const firstParamIndex = k.indexOf("<")
-		if (firstParamIndex === -1) return [k, v]
+	protected preparseOwnAliasEntry(alias: string, def: unknown): AliasDefEntry {
+		const firstParamIndex = alias.indexOf("<")
+		if (firstParamIndex === -1) {
+			if (hasArkKind(def, "module") || hasArkKind(def, "generic"))
+				return [alias, def]
 
-		if (k.at(-1) !== ">") {
+			const qualifiedName =
+				this.name === "ark" ? alias
+				: alias === "root" ? this.name
+				: `${this.name}.${alias}`
+
+			const config = this.resolvedConfig.keywords[qualifiedName]
+
+			if (config) def = [def, "@", config] satisfies TupleExpression
+
+			return [alias, def]
+		}
+
+		if (alias.at(-1) !== ">") {
 			throwParseError(
 				`'>' must be the last character of a generic declaration in a scope`
 			)
 		}
 
-		const name = k.slice(0, firstParamIndex)
-		const paramString = k.slice(firstParamIndex + 1, -1)
+		const name = alias.slice(0, firstParamIndex)
+		const paramString = alias.slice(firstParamIndex + 1, -1)
 
 		return [
 			name,
@@ -220,7 +234,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			() => {
 				const params = this.parseGenericParams(paramString, { alias: name })
 
-				const generic = parseGeneric(params, v, this as never)
+				const generic = parseGeneric(params, def, this as never)
 
 				return generic
 			}
@@ -276,12 +290,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			if (result[1] === "?") return throwParseError(shallowOptionalMessage)
 		}
 
-		const keywordConfig =
-			ctx.qualifiedName && this.resolvedConfig.keywords[ctx.qualifiedName]
-
-		if (!keywordConfig) return result
-
-		return result.configure(keywordConfig)
+		return result
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
