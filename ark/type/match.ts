@@ -6,6 +6,7 @@ import {
 } from "@ark/schema"
 import {
 	Callable,
+	throwParseError,
 	type Fn,
 	type isDisjoint,
 	type numericStringKeyOf,
@@ -66,7 +67,7 @@ type ChainableMatchParser<ctx extends MatchParserContext> = {
 	) => ChainableMatchParser<
 		addCases<ctx, [(In: inferMatchBranch<def, ctx>) => ret]>
 	>
-	cases: CaseMatchParser<ctx>
+	switch: CaseMatchParser<ctx>
 
 	default: DefaultMethod<ctx>
 }
@@ -165,7 +166,6 @@ export class InternalChainedMatchParser {
 	}
 
 	protected handledCases: { when: BaseRoot; then: Morph }[] = []
-	protected defaultCase: ((x: unknown) => unknown) | null = null
 
 	when(when: unknown, then: Morph): this {
 		this.handledCases.push({
@@ -176,7 +176,25 @@ export class InternalChainedMatchParser {
 		return this
 	}
 
-	finalize(): unknown {
+	switch(
+		cases: Record<string, Case | DefaultCase<MatchParserContext>>
+	): InternalChainedMatchParser | {} {
+		const entries = Object.entries(cases)
+		for (let i = 0; i < entries.length; i++) {
+			if (entries[i][0] === "default") {
+				if (i !== entries.length - 1) {
+					throwParseError(
+						`default may only be specified as the last key of a switch definition`
+					)
+				}
+				return this.finalize(entries[i][1])
+			}
+			this.when(...(entries[i] as [never, never]))
+		}
+		return this
+	}
+
+	protected finalize(defaultCase: DefaultCase<any>): {} {
 		const branches = this.handledCases.flatMap(
 			({ when, then }): Morph.Schema[] => {
 				if (when.kind === "union") {
@@ -202,7 +220,7 @@ export class InternalChainedMatchParser {
 	}
 
 	default(x: unknown): unknown {
-		if (x instanceof Function) this.defaultCase = x as never
+		if (typeof x === "function") this.defaultCase = x as never
 		else this.defaultCase = () => x
 
 		return this.finalize()
