@@ -1,6 +1,6 @@
 import "./config.ts"
 
-import { type } from "arktype"
+import { match, type } from "arktype"
 
 const user = type({
 	name: "string",
@@ -13,3 +13,15 @@ const out = user({
 })
 
 console.log(out.toString())
+
+const sizeOf = match({
+	"string|Array": v => v.length,
+	number: v => v,
+	bigint: v => v,
+	default: "never"
+})
+
+// default: "never" - throw on other value, input is narrowed
+// default: "assert" - throw on other value, input is unknown
+// default: "reject" - return ArkError on other value, input is unknown
+// default: () => unknown - specify a default value

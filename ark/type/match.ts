@@ -66,30 +66,31 @@ type ChainableMatchParser<ctx extends MatchParserContext> = {
 	>
 	cases: CaseMatchParser<ctx>
 
-	// finalizing methods
-	orThrow: () => finalizeMatchParser<
-		addBranches<ctx, [(In: ctx["input"]) => never]>
-	>
-	default: MatchParserDefaultInvocation<ctx>
+	default: DefaultMethod<ctx>
 }
 
-type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
-	<f extends (In: ctx["input"]) => unknown>(
-		f: f
-	): finalizeWithDefault<ctx, ReturnType<f>>
-	<const value>(value: value): finalizeWithDefault<ctx, value>
+export type DefaultCaseKeyword = "never" | "assert" | "reject"
+
+type DefaultCase<ctx extends MatchParserContext> =
+	| DefaultCaseKeyword
+	| ((data: ctx["input"]) => unknown)
+
+type DefaultMethod<ctx extends MatchParserContext> = {
+	<const def extends DefaultCase<ctx>>(
+		def: def
+	): finalizeMatchParser<addDefault<ctx, def>>
 }
 
 type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default" ?
-		(In: ctx["input"]) => unknown
+		DefaultCase<ctx>
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferMatchBranch<def, ctx>) => unknown
 	:	type.validate<def, ctx["$"]>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases]?: def extends "default" ? (In: ctx["input"]) => unknown
+	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferMatchBranch<def, ctx>) => unknown
 	:	type.validate<def, ctx["$"]>
@@ -98,22 +99,23 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 		In: distill.Out<inferIntersection<ctx["input"], ctx["$"][k]>>
 	) => unknown
 } & {
-	default?: (In: ctx["input"]) => unknown
+	default?: DefaultCase<ctx>
 }
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
-) => cases extends { default: (...args: never[]) => infer defaultReturn } ?
-	finalizeWithDefault<
-		addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
-		defaultReturn
+) => cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
+	finalizeMatchParser<
+		addDefault<
+			addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
+			defaultDef
+		>
 	>
 :	ChainableMatchParser<addBranches<ctx, unionToTuple<propValueOf<cases>>>>
 
-type finalizeWithDefault<
-	ctx extends MatchParserContext,
-	defaultReturn
-> = finalizeMatchParser<addBranches<ctx, [(_: ctx["input"]) => defaultReturn]>>
+type addDefault<ctx extends MatchParserContext, def extends DefaultCase<ctx>> =
+	def extends Fn ? addBranches<ctx, [(_: ctx["input"]) => ReturnType<def>]>
+	:	ctx
 
 type finalizeMatchParser<ctx extends MatchParserContext> = MatchInvocation<{
 	thens: ctx["thens"]
