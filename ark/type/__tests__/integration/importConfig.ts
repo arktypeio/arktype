@@ -2,7 +2,7 @@ import { strictEqual } from "node:assert"
 import { config } from "./config.ts"
 
 import { keysOf } from "@ark/util"
-import { type } from "arktype"
+import { ark, type } from "arktype"
 import { stdout } from "node:process"
 
 const cases = {
@@ -33,6 +33,10 @@ const cases = {
 		const expected = config.keywords["string.trim.preformatted"].description
 		strictEqual(pretrimmed.description, expected)
 		strictEqual(pretrimmed(" ").toString(), `must be ${expected} (was " ")`)
+	},
+	allResolutionsHaveMatchingQualifiedName: () => {
+		ark.internal.resolutions
+		console.log("hi")
 	}
 }
 
