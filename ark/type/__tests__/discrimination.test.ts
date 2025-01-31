@@ -73,8 +73,24 @@ contextualize(() => {
 
 	it("nested", () => {
 		const $ = getPlaces()
-		const t = $.type("ocean|sky|rainForest|desert")
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const climate = $.type("ocean | sky | rainForest | desert")
+
+		const missingLabel = climate({
+			climate: "wet",
+			color: "blue"
+		})
+
+		attest(missingLabel.toString()).snap("isOcean must be true (was missing)")
+
+		const twoMissingKeys = climate({
+			color: "blue"
+		})
+
+		attest(twoMissingKeys.toString()).snap(
+			'climate must be "dry" or "wet" (was undefined)'
+		)
+
+		attest(climate.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {

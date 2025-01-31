@@ -51,15 +51,22 @@ type addCasesToContext<
 		>
 	:	never
 
-type finalizeCases<
+type addDefaultToContext<
 	ctx extends MatchParserContext,
 	defaultCase extends DefaultCase<ctx>
-> =
-	defaultCase extends "never" ? ctx["cases"]
-	: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
-	: defaultCase extends "assert" ?
-		[...ctx["cases"], (In: ctx["input"]) => never]
-	:	[...ctx["cases"], (In: ctx["input"]) => ArkError]
+> = satisfy<
+	MatchParserContext,
+	{
+		$: ctx["$"]
+		input: defaultCase extends "never" ? Parameters<ctx["cases"][number]>[0]
+		:	ctx["input"]
+		cases: defaultCase extends "never" ? ctx["cases"]
+		: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
+		: defaultCase extends "assert" ?
+			[...ctx["cases"], (In: ctx["input"]) => never]
+		:	[...ctx["cases"], (In: ctx["input"]) => ArkError]
+	}
+>
 
 // infer the types handled by a match branch, which is identical to `type.infer` while properly
 // excluding cases that are already handled by other branches
@@ -129,7 +136,12 @@ export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 type finalizeMatchParser<
 	ctx extends MatchParserContext,
 	defaultCase extends DefaultCase<ctx>
-> = Match<ctx["input"], finalizeCases<ctx, defaultCase>>
+> =
+	addDefaultToContext<ctx, defaultCase> extends (
+		infer ctx extends MatchParserContext
+	) ?
+		Match<ctx["input"], ctx["cases"]>
+	:	never
 
 export type Match<input = any, cases extends Morph[] = Morph[]> = <
 	const data extends input
@@ -144,24 +156,58 @@ export type Match<input = any, cases extends Morph[] = Morph[]> = <
 	:	ReturnType<cases[i]>
 }[numericStringKeyOf<cases>]
 
-export class InternalMatchParser extends Callable<
-	(...args: unknown[]) => unknown
-> {
+export class InternalMatchParser extends Callable<InternalCaseParserFn> {
 	$: InternalScope
 
 	constructor($: InternalScope) {
-		const parser = new InternalChainedMatchParser($)
-		super(parser.match.bind(parser) as never, {
+		super((...args) => new InternalChainedMatchParser($)(...args), {
 			bind: $
 		})
 		this.$ = $
 	}
+
+	from(): InternalChainedMatchParser {
+		return new InternalChainedMatchParser(this.$)
+	}
+
+	case(when: unknown, then: Morph): InternalChainedMatchParser {
+		return new InternalChainedMatchParser(this.$).case(when, then)
+	}
 }
 
-export class InternalChainedMatchParser {
+type InternalCases = Record<string, Morph | DefaultCase>
+
+type InternalCaseParserFn = (
+	cases: InternalCases
+) => InternalChainedMatchParser | Match
+
+export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	$: InternalScope
 
 	constructor($: InternalScope) {
+		super(cases => {
+			const entries = Object.entries(cases)
+			for (let i = 0; i < entries.length; i++) {
+				const [k, v] = entries[i]
+				if (k === "default") {
+					if (i !== entries.length - 1) {
+						throwParseError(
+							`default may only be specified as the last key of a switch definition`
+						)
+					}
+					return this.default(v)
+				}
+				if (typeof v !== "function") {
+					return throwParseError(
+						`Value for case "${k}" must be a function (was ${domainOf(v)})`
+					)
+				}
+
+				this.case(k, v)
+			}
+
+			return this
+		})
 		this.$ = $
 	}
 
@@ -173,30 +219,8 @@ export class InternalChainedMatchParser {
 		return this
 	}
 
-	match(
-		cases: Record<string, Morph | DefaultCase>
-	): InternalChainedMatchParser | {} {
-		const entries = Object.entries(cases)
-		for (let i = 0; i < entries.length; i++) {
-			const [k, v] = entries[i]
-			if (k === "default") {
-				if (i !== entries.length - 1) {
-					throwParseError(
-						`default may only be specified as the last key of a switch definition`
-					)
-				}
-				return this.default(v)
-			}
-			if (typeof v !== "function") {
-				return throwParseError(
-					`Value for case "${k}" must be a function (was ${domainOf(v)})`
-				)
-			}
-
-			this.case(k, v)
-		}
-
-		return this
+	match(cases: InternalCases): InternalChainedMatchParser | Match {
+		return this(cases)
 	}
 
 	default(defaultCase: DefaultCase): Match {
@@ -208,7 +232,8 @@ export class InternalChainedMatchParser {
 			ordered: true
 		})
 
-		if (defaultCase === "reject") return matcher as never
+		if (defaultCase === "reject" || typeof defaultCase === "function")
+			return matcher as never
 
 		return matcher.assert as never
 	}
