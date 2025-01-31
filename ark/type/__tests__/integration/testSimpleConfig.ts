@@ -1,12 +1,17 @@
 import { config } from "./simpleConfig.ts"
 
 import { type } from "arktype"
-import { strictEqual } from "node:assert"
+import { deepStrictEqual, strictEqual } from "node:assert"
 import { cases } from "./util.ts"
 
 cases({
 	NaN: () => {
 		strictEqual(type("number").allows(Number.NaN), true)
+	},
+	onUndeclaredKey: () => {
+		const o = type({ a: "number" })
+		const out = o.assert({ a: 1, b: 2 })
+		deepStrictEqual(out, { a: 1 })
 	},
 	shallowLeafKeyword: () => {
 		const expected = config.keywords.null.description

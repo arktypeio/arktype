@@ -1,6 +1,6 @@
 import "./config.ts"
 
-import { match } from "arktype"
+import { match, type } from "arktype"
 
 const sizeOf = match({
 	"string | Array": v => v.length,

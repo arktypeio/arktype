@@ -52,6 +52,11 @@ export declare namespace Morph {
 		}> {}
 
 	export type Node = MorphNode
+
+	export type In<morph extends Morph> = morph extends Morph<infer i> ? i : never
+
+	export type Out<morph extends Morph> =
+		morph extends Morph<never, infer o> ? o : never
 }
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: Traversal) => o

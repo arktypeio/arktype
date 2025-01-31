@@ -15,7 +15,8 @@ export const config = {
 		"string.trim.preformatted": {
 			description: "a configured trimmed string"
 		}
-	}
+	},
+	onUndeclaredKey: "delete"
 } as const satisfies ArkConfig
 
 configure(config)

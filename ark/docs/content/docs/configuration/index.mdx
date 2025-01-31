@@ -267,6 +267,7 @@ configure({
 
 ```ts title="app.ts"
 import "./config.ts"
+// import your config file before arktype!
 import { type } from "arktype"
 
 const user = type({
@@ -298,6 +299,7 @@ configure({ clone: structuredClone })
 
 ```ts title="app.ts"
 import "./config.ts"
+// import your config file before arktype!
 import { type } from "arktype"
 
 // will now create a new object using structuredClone
@@ -316,6 +318,7 @@ configure({ clone: false })
 
 ```ts title="app.ts"
 import "./config.ts"
+// import your config file before arktype!
 import { type } from "arktype"
 
 const userForm = type({
@@ -350,6 +353,7 @@ configure({ onUndeclaredKey: "delete" })
 
 ```ts title="app.ts"
 import "./config.ts"
+// import your config file before arktype!
 import { type } from "arktype"
 
 const userForm = type({
@@ -377,6 +381,7 @@ configure({ jitless: true })
 
 ```ts title="app.ts"
 import "./config.ts"
+// import your config file before arktype!
 import { type } from "arktype"
 
 // will not be precompiled

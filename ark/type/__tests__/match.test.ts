@@ -66,9 +66,7 @@ contextualize(() => {
 		attest(m("foo")).equals(3)
 		attest(m(5)).equals(5)
 
-		attest(m).type.toString.snap(
-			"Match<unknown, [(s: string) => number, (v: unknown) => unknown]>"
-		)
+		attest(m).type.toString.snap()
 	})
 
 	it("never", () => {
@@ -79,7 +77,7 @@ contextualize(() => {
 
 		attest(m("foo")).equals(3)
 
-		attest(m).type.toString.snap("Match<string, [(s: string) => number]>")
+		attest(m).type.toString.snap()
 	})
 
 	it("within scope", () => {
@@ -127,10 +125,29 @@ contextualize(() => {
 
 	it("does not accept invalid inputs at a type-level", () => {
 		const matcher = match
-			.from<string | number>()
+			.in<string | number>()
 			.case("string", s => s)
 			.case("number", n => n)
+			.default("never")
+
+		// @ts-expect-error
+		attest(() => matcher(true))
+			.throws.snap("AggregateError: must be a string or a number (was boolean)")
+			.type.errors(
+				"Argument of type 'true' is not assignable to parameter of type 'string | number'"
+			)
+	})
+
+	it("from exhaustive", () => {
+		const matcher = match
+			.in("string | number")
+			.match({
+				string: s => s,
+				number: n => n
+			})
 			.default("assert")
+
+		attest(matcher).type.toString()
 
 		// @ts-expect-error
 		attest(() => matcher(true))
