@@ -9,7 +9,9 @@ import {
 	domainOf,
 	throwParseError,
 	type ErrorMessage,
+	type ErrorType,
 	type isDisjoint,
+	type Key,
 	type numericStringKeyOf,
 	type propValueOf,
 	type satisfy,
@@ -23,6 +25,11 @@ type MatchParserContext<input = unknown> = {
 	cases: Morph[]
 	$: unknown
 	input: input
+	key: Key | undefined
+}
+
+declare namespace MatchParserContext {
+	export type from<ctx extends MatchParserContext> = ctx
 }
 
 export interface MatchParser<$>
@@ -30,11 +37,13 @@ export interface MatchParser<$>
 		cases: []
 		$: $
 		input: unknown
+		key: undefined
 	}> {
 	in<const def>(def: type.validate<def, $>): ChainableMatchParser<{
 		cases: []
 		$: $
 		input: type.infer<def, $>
+		key: undefined
 	}>
 	in<const typedInput = never>(
 		...args: [typedInput] extends [never] ?
@@ -46,12 +55,28 @@ export interface MatchParser<$>
 		cases: []
 		$: $
 		input: typedInput
+		key: undefined
 	}>
 	// include this signature a second time so that e.g. `match.from({ foo: "strin" })` shows the right error
 	in<const def>(def: type.validate<def, $>): ChainableMatchParser<{
 		cases: []
 		$: $
 		input: type.infer<def, $>
+		key: undefined
+	}>
+
+	case: CaseMatchParser<{
+		cases: []
+		$: $
+		input: unknown
+		key: undefined
+	}>
+
+	at: AtParser<{
+		cases: []
+		$: $
+		input: unknown
+		key: undefined
 	}>
 }
 
@@ -60,30 +85,26 @@ type addCasesToContext<
 	cases extends unknown[]
 > =
 	cases extends Morph[] ?
-		satisfy<
-			MatchParserContext,
-			{
-				$: ctx["$"]
-				input: ctx["input"]
-				cases: [...ctx["cases"], ...cases]
-			}
-		>
+		MatchParserContext.from<{
+			$: ctx["$"]
+			input: ctx["input"]
+			cases: [...ctx["cases"], ...cases]
+			key: undefined
+		}>
 	:	never
 
 type addDefaultToContext<
 	ctx extends MatchParserContext,
 	defaultCase extends DefaultCase<ctx>
-> = satisfy<
-	MatchParserContext,
-	{
-		$: ctx["$"]
-		input: defaultCase extends "never" ? Morph.In<ctx["cases"][number]>
-		:	ctx["input"]
-		cases: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
-		: defaultCase extends "never" | "assert" ? ctx["cases"]
-		: [...ctx["cases"], (In: ctx["input"]) => ArkError]
-	}
->
+> = MatchParserContext.from<{
+	$: ctx["$"]
+	input: defaultCase extends "never" ? Morph.In<ctx["cases"][number]>
+	:	ctx["input"]
+	cases: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
+	: defaultCase extends "never" | "assert" ? ctx["cases"]
+	: [...ctx["cases"], (In: ctx["input"]) => ArkError]
+	key: undefined
+}>
 
 type inferCaseArg<def, ctx extends MatchParserContext> =
 	type.infer.Out<def, ctx["$"]> extends infer caseArg ?
@@ -92,17 +113,29 @@ type inferCaseArg<def, ctx extends MatchParserContext> =
 		:	Extract<ctx["input"], caseArg>
 	:	never
 
+type CaseParser<ctx extends MatchParserContext> = <def, ret>(
+	def: type.validate<def, ctx["$"]>,
+	resolve: (In: inferCaseArg<def, ctx>) => ret
+) => ChainableMatchParser<
+	addCasesToContext<ctx, [(In: inferCaseArg<def, ctx>) => ret]>
+>
+
+type AtParser<ctx extends MatchParserContext> = <key extends Key>(
+	key: key
+) => ChainableMatchParser<
+	MatchParserContext.from<{
+		cases: ctx["cases"]
+		$: ctx["$"]
+		input: ctx["input"]
+		key: key
+	}>
+>
+
 type ChainableMatchParser<ctx extends MatchParserContext> = {
-	case: <def, ret>(
-		def: type.validate<def, ctx["$"]>,
-		resolve: (In: inferCaseArg<def, ctx>) => ret
-	) => ChainableMatchParser<
-		addCasesToContext<ctx, [(In: inferCaseArg<def, ctx>) => ret]>
-	>
-
+	case: CaseParser<ctx>
 	match: CaseMatchParser<ctx>
-
 	default: DefaultMethod<ctx>
+	at: AtParser<ctx>
 }
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"
@@ -129,7 +162,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx>) => unknown
-	:	type.validate<def, ctx["$"]>
+	:	ErrorType<type.validate<def, ctx["$"]>>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
 		In: distill.Out<inferIntersection<ctx["input"], ctx["$"][k]>>
@@ -187,6 +220,10 @@ export class InternalMatchParser extends Callable<InternalCaseParserFn> {
 		return new InternalChainedMatchParser(this.$)
 	}
 
+	at(key: Key): InternalChainedMatchParser {
+		return new InternalChainedMatchParser(this.$).at(key)
+	}
+
 	case(when: unknown, then: Morph): InternalChainedMatchParser {
 		return new InternalChainedMatchParser(this.$).case(when, then)
 	}
@@ -200,6 +237,8 @@ type InternalCaseParserFn = (
 
 export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	$: InternalScope
+	protected key: Key | undefined
+	protected branches: BaseRoot[] = []
 
 	constructor($: InternalScope) {
 		super(cases => {
@@ -228,10 +267,14 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		this.$ = $
 	}
 
-	protected branches: BaseRoot[] = []
+	at(key: Key): this {
+		this.key = key
+		return this
+	}
 
-	case(when: unknown, then: Morph): this {
-		const branch = this.$.parse(when).pipe(then as never)
+	case(def: unknown, resolver: Morph): this {
+		const wrappableDef = this.key ? { [this.key]: def } : def
+		const branch = this.$.parse(wrappableDef).pipe(resolver as never)
 		this.branches.push(branch)
 		return this
 	}

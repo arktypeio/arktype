@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { hasArkKind } from "@ark/schema"
+import {
+	hasArkKind,
+	writeUnboundableMessage,
+	writeUnresolvableMessage
+} from "@ark/schema"
 import { match, scope } from "arktype"
 
 contextualize(() => {
@@ -123,6 +127,15 @@ contextualize(() => {
 		)
 	})
 
+	it("semantic error in case", () => {
+		attest(() =>
+			match({
+				// @ts-expect-error
+				"boolean < 5": () => true
+			})
+		).throwsAndHasTypeError(writeUnboundableMessage("boolean"))
+	})
+
 	it("does not accept invalid inputs at a type-level", () => {
 		const matcher = match
 			.in<string | number>()
@@ -233,5 +246,15 @@ contextualize(() => {
 
 	it("discriminates", () => {
 		throw new Error()
+	})
+
+	it("at unknown", () => {
+		const m = match.at("foo").match({
+			"'bar'": o => {}
+		})
+	})
+
+	it("at", () => {
+		match.in<{ kind: string }>()
 	})
 })
