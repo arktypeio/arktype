@@ -38,6 +38,18 @@ const out = user({
 
 The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
 
+### Type.toString() now wraps its syntactic representation in `Type<..>`
+
+Previously, `Type.toString()` just returned `Type.expression`. However, in contexts where the source of a message isn't always a `Type`, it could be confusing:
+
+```ts
+// < 2.1.0:  "(was string)"
+// >= 2.1.0: "(was Type<string>)"
+console.log(`(was ${type.string})`)
+```
+
+Hopefully if you interpolate a Type, you'll be less confused by the result from now on!
+
 ## 2.0.4
 
 ### Fix an issue causing global configs to be overwritten when the primary `"arktype"` entry point is imported:
