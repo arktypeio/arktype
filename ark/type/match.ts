@@ -3,6 +3,7 @@ import {
 	type ArkError,
 	type BaseRoot,
 	type Morph,
+	type resolveReference,
 	type Union
 } from "@ark/schema"
 import {
@@ -21,6 +22,7 @@ import {
 } from "@ark/util"
 import type { distill, inferIntersection } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
+import type { BaseCompletions } from "./parser/string.ts"
 import type { InternalScope } from "./scope.ts"
 
 type MatchParserContext<input = unknown> = {
@@ -162,7 +164,9 @@ type DefaultMethod<ctx extends MatchParserContext> = <
 ) => finalizeMatchParser<ctx, def>
 
 type validateCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default" ?
+	[def in
+		| keyof cases
+		| BaseCompletions<ctx["$"], {}, "default">]?: def extends "default" ?
 		DefaultCase<ctx>
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx>) => unknown
@@ -175,8 +179,8 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 		(In: inferCaseArg<def, ctx>) => unknown
 	:	ErrorType<type.validate<def, ctx["$"]>>
 } & {
-	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-		In: distill.Out<inferIntersection<ctx["input"], ctx["$"][k]>>
+	[k in Exclude<BaseCompletions<ctx["$"], {}>, keyof cases>]?: (
+		In: distill.Out<inferIntersection<ctx["input"], type.infer<k, ctx["$"]>>>
 	) => unknown
 } & {
 	default?: DefaultCase<ctx>

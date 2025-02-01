@@ -22,6 +22,55 @@ contextualize(() => {
 		)
 	})
 
+	it("completes case keys", () => {
+		attest(() =>
+			match({
+				// prettier-ignore
+				// @ts-expect-error
+				"big": () => true
+			})
+		).completions()
+	})
+
+	it("completes default key", () => {
+		attest(() =>
+			match({
+				bigint: () => true,
+				// prettier-ignore
+				// @ts-expect-error
+				"defaul": () => false
+			})
+		).completions()
+	})
+
+	it("completes shallow fluent defs", () => {
+		// @ts-expect-error
+		attest(() => match.case("WeakS")).completions()
+	})
+
+	it("completes object fluent defs", () => {
+		attest(() =>
+			match.case(
+				{
+					// @ts-expect-error
+					id: "string | numb"
+				},
+				o => o.id
+			)
+		).completions()
+	})
+
+	it("completes default key", () => {
+		attest(() =>
+			match({
+				bigint: () => true,
+				// prettier-ignore
+				// @ts-expect-error
+				"defaul": () => false
+			})
+		).completions()
+	})
+
 	it("properly infers types of inputs/outputs based on chained", () => {
 		const matcher = match({ string: s => s, number: n => n })
 			.case("boolean", b => b)
