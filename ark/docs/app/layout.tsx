@@ -26,7 +26,7 @@ export default ({ children }: { children: ReactNode }) => (
 				}}
 			>
 				<CSPostHogProvider>
-					<ReleaseBanner href="" />
+					<ReleaseBanner />
 					{children}
 				</CSPostHogProvider>
 			</RootProvider>
