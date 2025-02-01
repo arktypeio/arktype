@@ -1,4 +1,4 @@
-import { hasDomain, printable, throwInternalError } from "@ark/util"
+import { printable, throwInternalError } from "@ark/util"
 import type { type } from "arktype"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"

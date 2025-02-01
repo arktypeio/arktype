@@ -306,7 +306,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(() => m({}))
-				.throws.snap()
+				.throws.snap("AggregateError: n must be 0 or 1 (was missing)")
 				.type.errors.snap()
 		})
 
