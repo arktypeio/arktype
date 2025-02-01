@@ -3,7 +3,6 @@ import {
 	type ArkError,
 	type BaseRoot,
 	type Morph,
-	type resolveReference,
 	type Union
 } from "@ark/schema"
 import {
