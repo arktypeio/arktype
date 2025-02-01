@@ -9,8 +9,11 @@ type withMetaPrefixedKeys<o> = {
 	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
 }
 
+export type TypeCallKind = "assert" | "traverse"
+
 export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
 	alias?: string
+	callKind?: "assert"
 }
 
 declare global {

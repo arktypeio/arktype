@@ -1,6 +1,7 @@
 import { ReadonlyPath, stringifyPath, type array } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
+import type { TypeCallKind } from "./declare.ts"
 import {
 	ArkError,
 	ArkErrors,
@@ -146,7 +147,7 @@ export class Traversal {
 		else this.queuedMorphs.push(input)
 	}
 
-	finalize(): unknown {
+	finalize(callKind: TypeCallKind | undefined): unknown {
 		if (!this.queuedMorphs.length)
 			return this.hasError() ? this.errors : this.root
 
@@ -159,7 +160,9 @@ export class Traversal {
 
 		this.applyQueuedMorphs()
 
-		return this.hasError() ? this.errors : this.root
+		if (!this.hasError) return this.root
+
+		return callKind === "assert" ? this.errors.throw() : this.errors
 	}
 
 	get currentErrorCount(): number {

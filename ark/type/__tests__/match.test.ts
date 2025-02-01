@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { hasArkKind, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
-import type { Match } from "../match.ts"
 
 contextualize(() => {
 	it("single object", () => {

@@ -2,7 +2,8 @@ import {
 	intrinsic,
 	type ArkError,
 	type BaseRoot,
-	type Morph
+	type Morph,
+	type Union
 } from "@ark/schema"
 import {
 	Callable,
@@ -13,6 +14,7 @@ import {
 	type ErrorType,
 	type isDisjoint,
 	type Key,
+	type mutable,
 	type numericStringKeyOf,
 	type propValueOf,
 	type unionToTuple
@@ -296,14 +298,16 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
 
-		const matcher = this.$.node("union", {
+		const schema: mutable<Union.Schema> = {
 			branches: this.branches,
 			ordered: true
-		})
+		}
 
-		if (defaultCase === "reject" || typeof defaultCase === "function")
-			return matcher as never
+		if (defaultCase === "never" || defaultCase === "assert")
+			schema["meta.callKind"] = "assert"
 
-		return matcher.assert as never
+		const matcher = this.$.node("union", schema)
+
+		return matcher as never
 	}
 }
