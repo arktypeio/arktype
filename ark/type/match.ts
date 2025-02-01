@@ -106,12 +106,17 @@ type addDefaultToContext<
 	key: undefined
 }>
 
-type inferCaseArg<def, ctx extends MatchParserContext> =
-	type.infer.Out<def, ctx["$"]> extends infer caseArg ?
-		Extract<ctx["input"], caseArg> extends never ?
-			ctx["input"] & caseArg
-		:	Extract<ctx["input"], caseArg>
-	:	never
+type inferCaseArg<def, ctx extends MatchParserContext> = _finalizeCaseArg<
+	type.infer.Out<
+		ctx["key"] extends Key ? { [k in ctx["key"]]: def } : def,
+		ctx["$"]
+	>,
+	ctx
+>
+
+type _finalizeCaseArg<caseArg, ctx extends MatchParserContext> =
+	Extract<ctx["input"], caseArg> extends never ? ctx["input"] & caseArg
+	:	Extract<ctx["input"], caseArg>
 
 type CaseParser<ctx extends MatchParserContext> = <def, ret>(
 	def: type.validate<def, ctx["$"]>,
