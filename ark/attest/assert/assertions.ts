@@ -1,5 +1,6 @@
 import { printable, throwInternalError } from "@ark/util"
 import type { type } from "arktype"
+import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
 import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.ts"
 import type { AssertionContext } from "./attest.ts"
@@ -80,21 +81,24 @@ export const versionableAssertion =
 const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 	if (expected === actual) return
 
-	if (typeof expected === "object" && typeof actual === "object") {
-		try {
+	try {
+		if (typeof expected === "object" && typeof actual === "object")
 			assert.deepStrictEqual(actual, expected)
-		} catch (e: any) {
-			e.stack = ctx.assertionStack
-			throw e
-		}
-	} else {
+		else if (typeof expected === "function" || typeof actual === "function") {
+			const serializedExpected = printable(expected)
+			const serializedActual = printable(actual)
+			throw new AssertionError({
+				message: `Assertion including at least one function was not between reference eqaul items
+Expected: ${serializedExpected}
+Actual: ${serializedActual}`,
+				expected: serializedExpected,
+				actual: serializedActual
+			})
+		} else assert.equal(actual, expected)
+	} catch (e: any) {
 		// some nonsense to get a good stack trace
-		try {
-			assert.strictEqual(actual, expected)
-		} catch (e: any) {
-			e.stack = ctx.assertionStack
-			throw e
-		}
+		e.stack = ctx.assertionStack
+		throw e
 	}
 }
 
