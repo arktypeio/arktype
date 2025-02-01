@@ -148,21 +148,21 @@ export class Traversal {
 	}
 
 	finalize(callKind: TypeCallKind | undefined): unknown {
-		if (!this.queuedMorphs.length)
-			return this.hasError() ? this.errors : this.root
+		if (this.queuedMorphs.length) {
+			if (
+				typeof this.root === "object" &&
+				this.root !== null &&
+				this.config.clone
+			)
+				this.root = this.config.clone(this.root)
 
-		if (
-			typeof this.root === "object" &&
-			this.root !== null &&
-			this.config.clone
-		)
-			this.root = this.config.clone(this.root)
+			this.applyQueuedMorphs()
+		}
 
-		this.applyQueuedMorphs()
+		if (this.hasError())
+			return callKind === "assert" ? this.errors.throw() : this.errors
 
-		if (!this.hasError) return this.root
-
-		return callKind === "assert" ? this.errors.throw() : this.errors
+		return this.root
 	}
 
 	get currentErrorCount(): number {
