@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { hasArkKind, writeUnboundableMessage } from "@ark/schema"
-import { match, scope } from "arktype"
+import { match, scope, type } from "arktype"
 
 contextualize(() => {
 	it("single object", () => {
@@ -252,5 +252,9 @@ contextualize(() => {
 
 	it("at", () => {
 		match.in<{ kind: string }>()
+	})
+
+	it("on type", () => {
+		attest(type.match).equals(match)
 	})
 })

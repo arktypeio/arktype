@@ -25,6 +25,7 @@ import type {
 	validateParameterString
 } from "./generic.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
+import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type { validateDeclared } from "./parser/definition.ts"
@@ -133,6 +134,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	scope: ScopeParser
 	define: DefinitionParser<$>
 	generic: GenericParser<$>
+	match: MatchParser<$>
 	schema: SchemaParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to the argument passed to this function.
@@ -168,6 +170,7 @@ export class InternalTypeParser extends Callable<
 				module: $.constructor.module,
 				scope: $.constructor.scope,
 				define: $.define as never,
+				match: $.match as never,
 				generic: $.generic as never,
 				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
