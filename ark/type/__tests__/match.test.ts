@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { hasArkKind, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
+import type { Match } from "../match.ts"
 
 contextualize(() => {
 	it("single object", () => {
@@ -244,17 +245,62 @@ contextualize(() => {
 		throw new Error()
 	})
 
-	it("at unknown", () => {
-		const m = match.at("foo").match({
-			"'bar'": o => {}
+	describe("at", () => {
+		it("unknown allows any key", () => {
+			const m = match.at("n").match({
+				"0": o => `${o.n} = 0` as const,
+				"1": o => `${o.n} = 1` as const,
+				default: "never"
+			})
+
+			attest<"0 = 0">(m({ n: 0 })).equals("0 = 0")
+			attest<"1 = 1">(m({ n: 1 })).equals("1 = 1")
+
+			// @ts-expect-error
+			attest(() => m({}))
+				.throws.snap()
+				.type.errors.snap()
+		})
+
+		it("in", () => {
+			const m = match
+				.in<{ kind: string }>()
+				.at("kind")
+				.case("'a'", o => {
+					attest<{
+						kind: "a"
+					}>(o).equals({ kind: "a" })
+					return [o.kind]
+				})
+				.default(o => o.kind)
+
+			attest(m({ kind: "a" })).snap(["a"])
+			attest(m({ kind: "b" })).snap("b")
+
+			// @ts-expect-error
+			attest(() => m({})).type.errors.snap()
+		})
+
+		it("in completions", () => {
+			const base = match.in<{ kind: string }>()
+			// @ts-expect-error
+			attest(() => base.at("")).completions()
+		})
+
+		it("keyless in", () => {
+			const m = match
+				.in<object>()
+				.at("foo")
+				.match({
+					true: t => t,
+					default: "assert"
+				})
+
+			attest(m).type.toString.snap()
 		})
 	})
 
-	it("at", () => {
-		match.in<{ kind: string }>()
-	})
-
-	it("on type", () => {
-		attest(type.match).equals(match)
+	it("attached to type", () => {
+		attest<typeof match>(type.match).equals(match)
 	})
 })

@@ -8,13 +8,13 @@ import {
 	Callable,
 	domainOf,
 	throwParseError,
+	type conform,
 	type ErrorMessage,
 	type ErrorType,
 	type isDisjoint,
 	type Key,
 	type numericStringKeyOf,
 	type propValueOf,
-	type satisfy,
 	type unionToTuple
 } from "@ark/util"
 import type { distill, inferIntersection } from "./attributes.ts"
@@ -115,8 +115,9 @@ type inferCaseArg<def, ctx extends MatchParserContext> = _finalizeCaseArg<
 >
 
 type _finalizeCaseArg<caseArg, ctx extends MatchParserContext> =
-	Extract<ctx["input"], caseArg> extends never ? ctx["input"] & caseArg
-	:	Extract<ctx["input"], caseArg>
+	caseArg extends ctx["input"] ? caseArg
+	: Extract<ctx["input"], caseArg> extends never ? ctx["input"] & caseArg
+	: Extract<ctx["input"], caseArg>
 
 type CaseParser<ctx extends MatchParserContext> = <def, ret>(
 	def: type.validate<def, ctx["$"]>,
@@ -125,8 +126,11 @@ type CaseParser<ctx extends MatchParserContext> = <def, ret>(
 	addCasesToContext<ctx, [(In: inferCaseArg<def, ctx>) => ret]>
 >
 
+type validateKey<key extends Key, ctx extends MatchParserContext> =
+	keyof ctx["input"] extends never ? key : conform<key, keyof ctx["input"]>
+
 type AtParser<ctx extends MatchParserContext> = <key extends Key>(
-	key: key
+	key: validateKey<key, ctx>
 ) => ChainableMatchParser<
 	MatchParserContext.from<{
 		cases: ctx["cases"]
