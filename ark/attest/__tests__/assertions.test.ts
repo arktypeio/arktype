@@ -172,4 +172,12 @@ describe("type assertions", () => {
 Expected: number
 Actual: string`)
 	})
+
+	it("doesn't boom on ArkErrors vs plain object", () => {
+		attest(() => attest(type({ a: "string" })({ a: 5 })).equals({ a: "five" }))
+			.throws
+			.snap(`AssertionError [ERR_ASSERTION]: Objects did not have the same constructor:
+Expected: {"a":"five"}
+Actual: ArkErrors`)
+	})
 })

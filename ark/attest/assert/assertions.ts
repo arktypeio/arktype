@@ -1,4 +1,4 @@
-import { printable, throwInternalError } from "@ark/util"
+import { hasDomain, printable, throwInternalError } from "@ark/util"
 import type { type } from "arktype"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
@@ -82,18 +82,41 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 	if (expected === actual) return
 
 	try {
-		if (typeof expected === "object" && typeof actual === "object")
-			assert.deepStrictEqual(actual, expected)
-		else if (typeof expected === "function" || typeof actual === "function") {
+		if (
+			typeof expected === "object" &&
+			expected !== null &&
+			typeof actual === "object" &&
+			actual !== null
+		) {
+			if (expected.constructor === actual.constructor)
+				assert.deepStrictEqual(actual, expected)
+			else {
+				const serializedExpected = printable(expected)
+				const serializedActual = printable(actual)
+				throw new AssertionError({
+					message: `Objects did not have the same constructor:
+Expected: ${serializedExpected}
+Actual: ${serializedActual}`,
+					expected: serializedExpected,
+					actual: serializedActual
+				})
+			}
+		} else if (
+			typeof expected === "object" ||
+			typeof expected === "function" ||
+			typeof actual === "function" ||
+			typeof actual === "function"
+		) {
 			const serializedExpected = printable(expected)
 			const serializedActual = printable(actual)
 			throw new AssertionError({
-				message: `Assertion including at least one function was not between reference eqaul items
+				message: `Assertion including at least one function or object was not between reference eqaul items
 Expected: ${serializedExpected}
 Actual: ${serializedActual}`,
 				expected: serializedExpected,
 				actual: serializedActual
 			})
+			// guaranteed to be two primitives at this point
 		} else assert.equal(actual, expected)
 	} catch (e: any) {
 		// some nonsense to get a good stack trace
