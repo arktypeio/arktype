@@ -309,8 +309,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	instanceOf: InstanceOfTypeParser<$> = ctor =>
 		this.node("proto", { proto: ctor }, { prereduced: true }) as never
 
-	type: InternalTypeParser = new InternalTypeParser(this as never)
-
 	match: InternalMatchParser = new InternalMatchParser(this as never)
 
 	declare = (): { type: InternalTypeParser } => ({
@@ -320,6 +318,8 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	define<def>(def: def): def {
 		return def
 	}
+
+	type: InternalTypeParser = new InternalTypeParser(this as never)
 
 	static scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 		new InternalScope(def, config)) as never

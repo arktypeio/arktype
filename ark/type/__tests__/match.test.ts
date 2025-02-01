@@ -348,9 +348,9 @@ contextualize(() => {
 		})
 	})
 
-	// it("attached to type", () => {
-	// 	attest<typeof match>(type.match).equals(match)
-	// })
+	it("attached to type", () => {
+		attest<typeof match>(type.match).equals(match)
+	})
 
 	// it("morph key", () => {
 	// 	const parseUrl = match.case({
