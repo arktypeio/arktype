@@ -157,6 +157,11 @@ contextualize(() => {
 			)
 	})
 
+	it("argless `in` type error", () => {
+		// @ts-expect-error
+		attest(() => match.in()).type.errors("Expected 1 arguments, but got 0")
+	})
+
 	it("allows ordered overlapping", () => {
 		const m = match({
 			"0 < number < 10": n => [0, n],
