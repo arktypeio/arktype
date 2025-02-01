@@ -98,8 +98,8 @@ export declare namespace Structure {
 const createStructuralWriter =
 	(childStringProp: "expression" | "description") => (node: StructureNode) => {
 		if (node.props.length || node.index) {
-			const parts = node.index?.map(String) ?? []
-			node.props.forEach(node => parts.push(node[childStringProp]))
+			const parts = node.index?.map(index => index[childStringProp]) ?? []
+			node.props.forEach(prop => parts.push(prop[childStringProp]))
 
 			if (node.undeclared) parts.push(`+ (undeclared): ${node.undeclared}`)
 

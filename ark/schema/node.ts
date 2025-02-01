@@ -250,7 +250,7 @@ export abstract class BaseNode<
 	}
 
 	toString(): string {
-		return this.expression
+		return `Type<${this.expression}>`
 	}
 
 	equals(r: unknown): boolean {
