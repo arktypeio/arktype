@@ -1,9 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	hasArkKind,
-	writeUnboundableMessage,
-	writeUnresolvableMessage
-} from "@ark/schema"
+import { hasArkKind, writeUnboundableMessage } from "@ark/schema"
 import { match, scope } from "arktype"
 
 contextualize(() => {
