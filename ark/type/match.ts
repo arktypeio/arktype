@@ -67,7 +67,7 @@ export interface MatchParser<$>
 		key: undefined
 	}>
 
-	case: CaseMatchParser<{
+	case: CaseParser<{
 		cases: []
 		$: $
 		input: unknown
@@ -121,7 +121,7 @@ type _finalizeCaseArg<caseArg, ctx extends MatchParserContext> =
 	: Extract<ctx["input"], caseArg> extends never ? ctx["input"] & caseArg
 	: Extract<ctx["input"], caseArg>
 
-type CaseParser<ctx extends MatchParserContext> = <def, ret>(
+type CaseParser<ctx extends MatchParserContext> = <const def, ret>(
 	def: type.validate<def, ctx["$"]>,
 	resolve: (In: inferCaseArg<def, ctx>) => ret
 ) => ChainableMatchParser<
@@ -182,7 +182,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 	default?: DefaultCase<ctx>
 }
 
-export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
+export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
 ) => cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
 	finalizeMatchParser<

@@ -302,4 +302,22 @@ contextualize(() => {
 	it("attached to type", () => {
 		attest<typeof match>(type.match).equals(match)
 	})
+
+	it("morph key", () => {
+		const parseUrl = match.case({
+			"string.url.parse": valid => valid,
+			default: () => null
+		})
+
+		const url = parseUrl("https://arktype.io")
+	})
+
+	it("fluent morph", () => {
+		const parseUrl = match.case({
+			"string.url.parse": valid => valid,
+			default: () => null
+		})
+
+		const url = parseUrl("https://arktype.io")
+	})
 })
