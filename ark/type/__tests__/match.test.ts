@@ -263,11 +263,19 @@ contextualize(() => {
 
 	it("prunes subtype cases", () => {
 		const m = match({
-			"0 < number < 10": n => [0, n],
+			"0 < number < 10": function _preservedOne(n) {
+				return [0, n]
+			},
 			// this will never be hit since it is a subtype of a previous case
-			"4 < number < 6": n => [1, n],
-			number: n => [2, n],
-			default: v => [3, v]
+			"4 < number < 6": function _prunedOne(n) {
+				return [1, n]
+			},
+			number: function _preservedTwo(n) {
+				return [2, n]
+			},
+			default: function _preservedDefault(v) {
+				return [3, v]
+			}
 		})
 
 		if (!hasArkKind(m, "root")) throw new Error(`Matcher was not a  node`)
@@ -280,10 +288,10 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark.fn16"]
+					morphs: ["$ark._preservedOne"]
 				},
-				{ in: "number", morphs: ["$ark.number"] },
-				{ in: {}, morphs: ["$ark.default"] }
+				{ in: "number", morphs: ["$ark._preservedTwo"] },
+				{ in: {}, morphs: ["$ark._preservedDefault"] }
 			],
 			ordered: true
 		})
@@ -352,21 +360,21 @@ contextualize(() => {
 		attest<typeof match>(type.match).equals(match)
 	})
 
-	// it("morph key", () => {
-	// 	const parseUrl = match.case({
-	// 		"string.url.parse": valid => valid,
-	// 		default: () => null
-	// 	})
+	it("morph key", () => {
+		const parseUrl = match.case({
+			"string.url.parse": valid => valid,
+			default: () => null
+		})
 
-	// 	const url = parseUrl("https://arktype.io")
-	// })
+		const url = parseUrl("https://arktype.io")
+	})
 
-	// it("fluent morph", () => {
-	// 	const parseUrl = match.case({
-	// 		"string.url.parse": valid => valid,
-	// 		default: () => null
-	// 	})
+	it("fluent morph", () => {
+		const parseUrl = match.case({
+			"string.url.parse": valid => valid,
+			default: () => null
+		})
 
-	// 	const url = parseUrl("https://arktype.io")
-	// })
+		const url = parseUrl("https://arktype.io")
+	})
 })
