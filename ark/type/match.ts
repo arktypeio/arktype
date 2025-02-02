@@ -103,7 +103,7 @@ type addCasesToContext<
 			$: ctx["$"]
 			input: ctx["input"]
 			cases: [...ctx["cases"], ...cases]
-			key: undefined
+			key: ctx["key"]
 		}>
 	:	never
 
@@ -169,15 +169,14 @@ interface AtParser<ctx extends MatchParserContext> {
 		key: validateKey<key, ctx>,
 		cases: cases extends validateCases<cases, ctxAtKey> ? cases
 		:	errorCases<cases, ctxAtKey>
-	): {} extends cases ? ChainableMatchParser<ctxAtKey>
-	:	addCasesToParser<cases, ctx>
+	): addCasesToParser<cases, ctxAtKey>
 }
 
 interface ChainableMatchParser<ctx extends MatchParserContext> {
 	case: CaseParser<ctx>
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
-	at: AtParser<ctx>
+	at: ctx["key"] extends undefined ? AtParser<ctx> : never
 }
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"

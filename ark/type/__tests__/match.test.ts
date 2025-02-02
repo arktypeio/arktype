@@ -363,7 +363,7 @@ contextualize(() => {
 				.at("foo", {
 					string: o => o.foo.length
 				})
-				.at("bar")
+				.at()
 		})
 	})
 
