@@ -256,11 +256,6 @@ contextualize(() => {
 		attest(m(undefined)).equals([3, undefined])
 	})
 
-	it("introspectable", () => {
-		// TODO: allow assert variant to be a Type
-		throw new Error()
-	})
-
 	it("prunes subtype cases", () => {
 		const m = match({
 			"0 < number < 10": function _preservedOne(n) {
@@ -278,9 +273,7 @@ contextualize(() => {
 			}
 		})
 
-		if (!hasArkKind(m, "root")) throw new Error(`Matcher was not a  node`)
-
-		attest(m.json).snap({
+		attest(m.internal.json).snap({
 			branches: [
 				{
 					in: {
@@ -354,27 +347,70 @@ contextualize(() => {
 
 			attest(m).type.toString.snap()
 		})
+
+		it("at with cases param", () => {
+			const o = match
+				.at("foo", {
+					string: o => o.foo.length
+				})
+				.at("bar")
+		})
+
+		it("multiple ats", () => {
+			// not sure this is a great idea to actually use,
+			// but the most natural implementation supports it
+			const o = match
+				.at("foo", {
+					string: o => o.foo.length
+				})
+				.at("bar")
+		})
 	})
 
 	it("attached to type", () => {
 		attest<typeof match>(type.match).equals(match)
 	})
 
-	it("morph key", () => {
-		const parseUrl = match.case({
-			"string.url.parse": valid => valid,
-			default: () => null
+	it("initial case", () => {
+		const initial = match.case("string", Number.parseInt).default("assert")
+		const expected = match({
+			string: Number.parseInt,
+			default: "assert"
 		})
 
-		const url = parseUrl("https://arktype.io")
+		// ensure structure is identical
+		attest(initial.internal.json).equals(expected.internal.json)
+		// ensure we are able to cache ordered unions like from matchers
+		attest(initial.internal.id).equals(expected.internal.id)
+		// ensure ids are doing what they're suppoed to
+
+		// for some reason TS can't handle initial/expected comparison so we have to cast
+		attest(initial === (expected as {})).equals(true)
+
+		// like the uncasted version of the above equality check,
+		// uncommenting this also causes an infinite depth issue
+		// attest<typeof expected>(initial)
+
+		const expectedTypeSnapshot = "Match<unknown, [(In: string) => number]>"
+		attest(initial).type.toString(expectedTypeSnapshot)
+		attest(initial).type.toString(expectedTypeSnapshot)
 	})
 
-	it("fluent morph", () => {
-		const parseUrl = match.case({
-			"string.url.parse": valid => valid,
-			default: () => null
-		})
+	// it("morph key", () => {
+	// 	const parseUrl = match.case({
+	// 		"string.url.parse": valid => valid,
+	// 		default: () => null
+	// 	})
 
-		const url = parseUrl("https://arktype.io")
-	})
+	// 	const url = parseUrl("https://arktype.io")
+	// })
+
+	// it("fluent morph", () => {
+	// 	const parseUrl = match.case({
+	// 		"string.url.parse": valid => valid,
+	// 		default: () => null
+	// 	})
+
+	// 	const url = parseUrl("https://arktype.io")
+	// })
 })

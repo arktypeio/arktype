@@ -33,6 +33,17 @@ type MatchParserContext<input = unknown> = {
 
 declare namespace MatchParserContext {
 	export type from<ctx extends MatchParserContext> = ctx
+
+	export interface withoutKey extends MatchParserContext {
+		key: undefined
+	}
+
+	export type atKey<ctx extends MatchParserContext, key extends Key> = from<{
+		cases: ctx["cases"]
+		$: ctx["$"]
+		input: ctx["input"]
+		key: key
+	}>
 }
 
 export interface MatchParser<$>
@@ -109,6 +120,19 @@ type addDefaultToContext<
 	key: undefined
 }>
 
+type addCasesToParser<cases, ctx extends MatchParserContext> =
+	cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
+		finalizeMatchParser<
+			addCasesToContext<
+				ctx,
+				unionToTuple<cases[Exclude<keyof cases, "default">]>
+			>,
+			defaultDef
+		>
+	:	ChainableMatchParser<
+			addCasesToContext<ctx, unionToTuple<propValueOf<cases>>>
+		>
+
 type inferCaseArg<def, ctx extends MatchParserContext> = _finalizeCaseArg<
 	type.infer.Out<
 		ctx["key"] extends Key ? { [k in ctx["key"]]: def } : def,
@@ -132,18 +156,24 @@ type CaseParser<ctx extends MatchParserContext> = <const def, ret>(
 type validateKey<key extends Key, ctx extends MatchParserContext> =
 	keyof ctx["input"] extends never ? key : conform<key, keyof ctx["input"]>
 
-type AtParser<ctx extends MatchParserContext> = <key extends Key>(
-	key: validateKey<key, ctx>
-) => ChainableMatchParser<
-	MatchParserContext.from<{
-		cases: ctx["cases"]
-		$: ctx["$"]
-		input: ctx["input"]
-		key: key
-	}>
->
+interface AtParser<ctx extends MatchParserContext> {
+	<key extends Key>(
+		key: validateKey<key, ctx>
+	): ChainableMatchParser<MatchParserContext.atKey<ctx, key>>
 
-type ChainableMatchParser<ctx extends MatchParserContext> = {
+	<
+		key extends Key,
+		const cases,
+		ctxAtKey extends MatchParserContext = MatchParserContext.atKey<ctx, key>
+	>(
+		key: validateKey<key, ctx>,
+		cases: cases extends validateCases<cases, ctxAtKey> ? cases
+		:	errorCases<cases, ctxAtKey>
+	): {} extends cases ? ChainableMatchParser<ctxAtKey>
+	:	addCasesToParser<cases, ctx>
+}
+
+interface ChainableMatchParser<ctx extends MatchParserContext> {
 	case: CaseParser<ctx>
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
@@ -179,7 +209,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 	:	ErrorType<type.validate<def, ctx["$"]>>
 } & {
 	[k in Exclude<BaseCompletions<ctx["$"], {}>, keyof cases>]?: (
-		In: distill.Out<inferIntersection<ctx["input"], type.infer<k, ctx["$"]>>>
+		In: distill.Out<inferIntersection<ctx["input"], inferCaseArg<k, ctx>>>
 	) => unknown
 } & {
 	default?: DefaultCase<ctx>
@@ -187,15 +217,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
-) => cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
-	finalizeMatchParser<
-		addCasesToContext<
-			ctx,
-			unionToTuple<cases[Exclude<keyof cases, "default">]>
-		>,
-		defaultDef
-	>
-:	ChainableMatchParser<addCasesToContext<ctx, unionToTuple<propValueOf<cases>>>>
+) => addCasesToParser<cases, ctx>
 
 type finalizeMatchParser<
 	ctx extends MatchParserContext,
@@ -207,18 +229,20 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export type Match<input = any, cases extends Morph[] = Morph[]> = <
-	const data extends input
->(
-	data: data
-) => {
-	[i in numericStringKeyOf<cases>]: isDisjoint<
-		data,
-		Morph.In<cases[i]>
-	> extends true ?
-		never
-	:	Morph.Out<cases[i]>
-}[numericStringKeyOf<cases>]
+export interface Match<input = any, cases extends Morph[] = Morph[]> {
+	<const data extends input>(
+		data: data
+	): {
+		[i in numericStringKeyOf<cases>]: isDisjoint<
+			data,
+			Morph.In<cases[i]>
+		> extends true ?
+			never
+		:	Morph.Out<cases[i]>
+	}[numericStringKeyOf<cases>]
+
+	internal: BaseRoot
+}
 
 export class InternalMatchParser extends Callable<InternalCaseParserFn> {
 	$: InternalScope
