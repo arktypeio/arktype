@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { hasArkKind, writeUnboundableMessage } from "@ark/schema"
+import {
+	hasArkKind,
+	registeredReference,
+	writeUnboundableMessage
+} from "@ark/schema"
 import { match, scope, type } from "arktype"
 import { doubleAtMessage } from "../match.ts"
 
@@ -223,15 +227,22 @@ contextualize(() => {
 
 	it("allows ordered overlapping", () => {
 		const m = match({
-			"0 < number < 10": n => [0, n],
-			"number > 0": n => [1, n],
-			number: n => [2, n],
-			default: v => [3, v]
+			"0 < number < 10": function _overlapping1(n) {
+				return [0, n]
+			},
+			// this will never be hit since it is a subtype of a previous case
+			"number > 0": function _overlapping2(n) {
+				return [1, n]
+			},
+			number: function _overlapping3(n) {
+				return [2, n]
+			},
+			default: function _overlapping4(v) {
+				return [3, v]
+			}
 		})
 
-		if (!hasArkKind(m, "root")) throw new Error(`Matcher was not a  node`)
-
-		attest(m.json).snap({
+		attest(m.internal.json).snap({
 			branches: [
 				{
 					in: {
@@ -239,14 +250,14 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark.fn16"]
+					morphs: ["$ark._overlapping1"]
 				},
 				{
 					in: { domain: "number", min: { exclusive: true, rule: 0 } },
-					morphs: ["$ark.fn17"]
+					morphs: ["$ark._overlapping2"]
 				},
-				{ in: "number", morphs: ["$ark.number"] },
-				{ in: {}, morphs: ["$ark.default"] }
+				{ in: "number", morphs: ["$ark._overlapping3"] },
+				{ in: {}, morphs: ["$ark._overlapping4"] }
 			],
 			ordered: true
 		})
@@ -347,8 +358,12 @@ contextualize(() => {
 
 		it("at with cases param", () => {
 			const m = match.at("foo", {
-				string: o => o.foo.length,
-				number: o => `${o.foo + 1}`,
+				string: function _casesParam1(o) {
+					return o.foo.length
+				},
+				number: function _casesParam2(o) {
+					return `${o.foo + 1}`
+				},
 				default: "never"
 			})
 
@@ -359,31 +374,58 @@ contextualize(() => {
 							required: [{ key: "foo", value: "string" }],
 							domain: "object"
 						},
-						morphs: ["$ark.string"]
+						morphs: ["$ark._casesParam1"]
 					},
 					{
 						in: {
 							required: [{ key: "foo", value: "number" }],
 							domain: "object"
 						},
-						morphs: ["$ark.number"]
+						morphs: ["$ark._casesParam2"]
 					}
 				],
 				ordered: true,
-				meta: { onFail: "$ark.onFail" }
+				meta: { onFail: registeredReference(m.internal.meta.onFail!) }
 			})
 			attest(m).type.toString.snap()
 		})
 
 		it("at after in", () => {
-			const m = match.in<{ id: 0 | 1 | 2 }>().at("id", {
-				"0": (o: { id: 0 }) => o.id
-			})
+			const m = match
+				.in<{ id: 0 | 1 | 2 }>()
+				.at("id")
+				.match({
+					"0": function _atAfterIn1(o) {
+						return o.id
+					},
+					// correctly inferred
+					number: function _atAfterIn2(o) {
+						return o.id
+					},
+					default: "never"
+				})
 
-			const m2 = match.in<{ id: 0 | 1 | 2 }>().at("id", {
-				"'foo'": o => o.id,
-				number: o => o.id
+			attest(m.internal.json).snap({
+				branches: [
+					{
+						in: {
+							required: [{ key: "id", value: { unit: 0 } }],
+							domain: "object"
+						},
+						morphs: ["$ark._atAfterIn1"]
+					},
+					{
+						in: {
+							required: [{ key: "id", value: "number" }],
+							domain: "object"
+						},
+						morphs: ["$ark._atAfterIn2"]
+					}
+				],
+				ordered: true,
+				meta: { onFail: registeredReference(m.internal.meta.onFail!) }
 			})
+			attest(m).type.toString.snap()
 		})
 
 		it("multiple ats", () => {
@@ -427,23 +469,25 @@ contextualize(() => {
 		attest(initial).type.toString(expectedTypeSnapshot)
 	})
 
-	// it("morph key", () => {
-	// 	const parseUrl = match.case({
-	// 		"string.url.parse": valid => valid,
-	// 		default: () => null
-	// 	})
+	it("morph key", () => {
+		const parseUrl = match({
+			"string.url.parse": valid => valid,
+			default: () => null
+		})
 
-	// 	const url = parseUrl("https://arktype.io")
-	// })
+		const url = parseUrl("https://arktype.io")
+		throw new Error("ensure I/O inference is correct")
+	})
 
-	// it("fluent morph", () => {
-	// 	const parseUrl = match.case({
-	// 		"string.url.parse": valid => valid,
-	// 		default: () => null
-	// 	})
+	it("fluent morph", () => {
+		const parseUrl = match({
+			"string.url.parse": valid => valid,
+			default: () => null
+		})
 
-	// 	const url = parseUrl("https://arktype.io")
-	// })
+		const url = parseUrl("https://arktype.io")
+		throw new Error("ensure I/O inference is correct")
+	})
 
 	it("accounts for ordering during discrimination", () => {
 		throw new Error()

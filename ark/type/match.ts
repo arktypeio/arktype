@@ -180,12 +180,14 @@ type validateCases<cases, ctx extends MatchParserContext> = {
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases | "default"]?: def extends "default" ? DefaultCase<ctx>
+	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx>) => unknown
 	:	ErrorType<type.validate<def, ctx["$"]>>
 } & {
 	[k in BaseCompletions<ctx["$"], {}>]?: (In: inferCaseArg<k, ctx>) => unknown
+} & {
+	default?: DefaultCase<ctx>
 }
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(
