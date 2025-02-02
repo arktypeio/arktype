@@ -208,8 +208,8 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export interface Match<input = any, cases extends Morph[] = Morph[]> {
-	<const data extends input>(
+export interface Match<In = any, cases extends Morph[] = Morph[]> {
+	<const data extends In>(
 		data: data
 	): {
 		[i in numericStringKeyOf<cases>]: isDisjoint<
@@ -237,8 +237,8 @@ export class InternalMatchParser extends Callable<InternalCaseParserFn> {
 		return new InternalChainedMatchParser(this.$)
 	}
 
-	at(key: Key): InternalChainedMatchParser {
-		return new InternalChainedMatchParser(this.$).at(key)
+	at(key: Key, cases?: InternalCases): InternalChainedMatchParser | Match {
+		return new InternalChainedMatchParser(this.$).at(key, cases)
 	}
 
 	case(when: unknown, then: Morph): InternalChainedMatchParser {
@@ -284,14 +284,14 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		this.$ = $
 	}
 
-	at(key: Key): this {
+	at(key: Key, cases?: InternalCases): InternalChainedMatchParser | Match {
 		if (this.key) throwParseError(doubleAtMessage)
 		if (this.branches.length) throwParseError(chainedAtMessage)
 		this.key = key
-		return this
+		return cases ? this.match(cases) : this
 	}
 
-	case(def: unknown, resolver: Morph): this {
+	case(def: unknown, resolver: Morph): InternalChainedMatchParser {
 		const wrappableDef = this.key ? { [this.key]: def } : def
 		const branch = this.$.parse(wrappableDef).pipe(resolver as never)
 		this.branches.push(branch)
