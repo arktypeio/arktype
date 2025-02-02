@@ -19,7 +19,6 @@ import {
 	type propValueOf,
 	type unionToTuple
 } from "@ark/util"
-import type { distill, inferIntersection } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { BaseCompletions } from "./parser/string.ts"
 import type { InternalScope } from "./scope.ts"
@@ -28,7 +27,7 @@ type MatchParserContext<input = unknown> = {
 	cases: Morph[]
 	$: unknown
 	input: input
-	key?: Key | undefined
+	key: string | null
 }
 
 declare namespace ctx {
@@ -38,9 +37,10 @@ declare namespace ctx {
 		cases: []
 		$: $
 		input: input
+		key: null
 	}>
 
-	export type atKey<ctx extends MatchParserContext, key extends Key> = from<{
+	export type atKey<ctx extends MatchParserContext, key extends string> = from<{
 		cases: ctx["cases"]
 		$: ctx["$"]
 		input: ctx["input"]
@@ -109,10 +109,8 @@ type addCasesToParser<cases, ctx extends MatchParserContext> =
 		>
 
 type inferCaseArg<def, ctx extends MatchParserContext> = _finalizeCaseArg<
-	type.infer.Out<
-		ctx["key"] extends Key ? { [k in ctx["key"]]: def } : def,
-		ctx["$"]
-	>,
+	ctx["key"] extends null ? type.infer.Out<def, ctx["$"]>
+	:	{ [k in ctx["key"] & string]: type.infer.Out<def, ctx["$"]> },
 	ctx
 >
 
@@ -137,12 +135,12 @@ type validateKey<key extends Key, ctx extends MatchParserContext> =
 	:	ErrorMessage<chainedAtMessage>
 
 interface AtParser<ctx extends MatchParserContext> {
-	<key extends Key>(
+	<const key extends string>(
 		key: validateKey<key, ctx>
 	): ChainableMatchParser<ctx.atKey<ctx, key>>
 
 	<
-		key extends Key,
+		const key extends string,
 		const cases,
 		ctxAtKey extends MatchParserContext = ctx.atKey<ctx, key>
 	>(
@@ -182,16 +180,12 @@ type validateCases<cases, ctx extends MatchParserContext> = {
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
+	[def in keyof cases | "default"]?: def extends "default" ? DefaultCase<ctx>
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx>) => unknown
 	:	ErrorType<type.validate<def, ctx["$"]>>
 } & {
-	[k in Exclude<BaseCompletions<ctx["$"], {}>, keyof cases>]?: (
-		In: distill.Out<inferIntersection<ctx["input"], inferCaseArg<k, ctx>>>
-	) => unknown
-} & {
-	default?: DefaultCase<ctx>
+	[k in BaseCompletions<ctx["$"], {}>]?: (In: inferCaseArg<k, ctx>) => unknown
 }
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(

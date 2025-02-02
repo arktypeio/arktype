@@ -352,8 +352,38 @@ contextualize(() => {
 				default: "never"
 			})
 
-			attest(m.internal.json).snap()
+			attest(m.internal.json).snap({
+				branches: [
+					{
+						in: {
+							required: [{ key: "foo", value: "string" }],
+							domain: "object"
+						},
+						morphs: ["$ark.string"]
+					},
+					{
+						in: {
+							required: [{ key: "foo", value: "number" }],
+							domain: "object"
+						},
+						morphs: ["$ark.number"]
+					}
+				],
+				ordered: true,
+				meta: { onFail: "$ark.onFail" }
+			})
 			attest(m).type.toString.snap()
+		})
+
+		it("at after in", () => {
+			const m = match.in<{ id: 0 | 1 | 2 }>().at("id", {
+				"0": (o: { id: 0 }) => o.id
+			})
+
+			const m2 = match.in<{ id: 0 | 1 | 2 }>().at("id", {
+				"'foo'": o => o.id,
+				number: o => o.id
+			})
 		})
 
 		it("multiple ats", () => {
