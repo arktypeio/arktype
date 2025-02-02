@@ -90,7 +90,7 @@ export abstract class BaseNode<
 
 				const ctx = new Traversal(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
-				return ctx.finalize(this.meta.callKind)
+				return ctx.finalize(this.meta.onFail)
 			},
 			{ attach: attachments as never }
 		)

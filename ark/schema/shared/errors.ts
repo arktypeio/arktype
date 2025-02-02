@@ -13,7 +13,7 @@ import {
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
-import type { BaseMeta } from "./declare.ts"
+import type { BaseArkEnv, BaseMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
@@ -281,6 +281,8 @@ export class ArkErrors
 		})
 	}
 }
+
+export type ArkErrorsHandler = BaseArkEnv["onFail"]
 
 export interface DerivableErrorContext<
 	code extends ArkErrorCode = ArkErrorCode

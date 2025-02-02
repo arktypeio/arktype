@@ -307,7 +307,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		}
 
 		if (defaultCase === "never" || defaultCase === "assert")
-			schema["meta.callKind"] = "assert"
+			schema.meta = { onFail: errors => errors.throw() }
 
 		const matcher = this.$.node("union", schema)
 

@@ -2,6 +2,7 @@ import type { merge, show } from "@ark/util"
 import type { UnknownErrorWriters } from "../config.ts"
 import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import type { Disjoint } from "./disjoint.ts"
+import type { ArkErrors, ArkErrorsHandler } from "./errors.ts"
 import type { NarrowedAttachments, NodeKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 
@@ -11,18 +12,25 @@ type withMetaPrefixedKeys<o> = {
 
 export type TypeCallKind = "assert" | "traverse"
 
+export type ErrorResultKind = "ArkErrors" | "never"
+
+export interface BaseArkEnv {
+	meta(): {}
+	onFail<finalizedResult = unknown>(errors: ArkErrors): finalizedResult
+}
+
 export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
 	alias?: string
-	callKind?: "assert"
+	onFail?: ArkErrorsHandler
 }
 
 declare global {
-	export interface ArkEnv {
-		meta(): {}
-	}
+	export interface ArkEnv extends BaseArkEnv {}
 
 	export namespace ArkEnv {
 		export type meta = show<BaseMeta & ReturnType<ArkEnv["meta"]>>
+
+		export type onFail = ReturnType<ArkEnv["onFail"]>
 	}
 }
 
