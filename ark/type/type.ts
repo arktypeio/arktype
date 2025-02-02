@@ -246,6 +246,16 @@ export type SchemaParser<$> = (
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
 
+// by intersecting the signature without ArkErrors,
+// we create an overload of the top-level call.
+// by making it the LHS of the intersection, we ensure
+// that overload is checked first, which will always match
+// because the parameters (data: unknown) are identical
+export type AssertionType<t = unknown, $ = {}> = ((
+	data: unknown
+) => distill.Out<t>) &
+	instantiateType<t, $>
+
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>

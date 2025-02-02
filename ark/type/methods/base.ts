@@ -1,5 +1,4 @@
 import type {
-	ArkErrors,
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
@@ -36,7 +35,7 @@ import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
+	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail> {
 	internal: BaseRoot
 	[inferred]: t
 

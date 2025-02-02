@@ -14,9 +14,9 @@ export type TypeCallKind = "assert" | "traverse"
 
 export type ErrorResultKind = "ArkErrors" | "never"
 
-export interface BaseArkEnv {
+export interface DefaultArkEnv {
 	meta(): {}
-	onFail<finalizedResult = unknown>(errors: ArkErrors): finalizedResult
+	onFail(errors: ArkErrors): ArkErrors
 }
 
 export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
@@ -25,7 +25,7 @@ export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
 }
 
 declare global {
-	export interface ArkEnv extends BaseArkEnv {}
+	export interface ArkEnv extends DefaultArkEnv {}
 
 	export namespace ArkEnv {
 		export type meta = show<BaseMeta & ReturnType<ArkEnv["meta"]>>
