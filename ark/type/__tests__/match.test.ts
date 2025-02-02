@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { hasArkKind, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
+import { doubleAtMessage } from "../match.ts"
 
 contextualize(() => {
 	it("single object", () => {
@@ -290,10 +291,6 @@ contextualize(() => {
 		})
 	})
 
-	it("discriminates", () => {
-		throw new Error()
-	})
-
 	describe("at", () => {
 		it("unknown allows any key", () => {
 			const m = match.at("n").match({
@@ -349,21 +346,25 @@ contextualize(() => {
 		})
 
 		it("at with cases param", () => {
-			const o = match
-				.at("foo", {
-					string: o => o.foo.length
-				})
-				.at("bar")
+			const m = match.at("foo", {
+				string: o => o.foo.length,
+				number: o => `${o.foo + 1}`,
+				default: "never"
+			})
+
+			attest(m.internal.json).snap()
+			attest(m).type.toString.snap()
 		})
 
 		it("multiple ats", () => {
-			// not sure this is a great idea to actually use,
-			// but the most natural implementation supports it
-			const o = match
-				.at("foo", {
-					string: o => o.foo.length
-				})
-				.at()
+			attest(() => {
+				match
+					.at("foo", {
+						string: o => o.foo.length
+					})
+					// @ts-expect-error
+					.at("bar")
+			}).throwsAndHasTypeError(doubleAtMessage)
 		})
 	})
 
@@ -413,4 +414,8 @@ contextualize(() => {
 
 	// 	const url = parseUrl("https://arktype.io")
 	// })
+
+	it("accounts for ordering during discrimination", () => {
+		throw new Error()
+	})
 })

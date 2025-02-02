@@ -28,15 +28,17 @@ type MatchParserContext<input = unknown> = {
 	cases: Morph[]
 	$: unknown
 	input: input
-	key: Key | undefined
+	key?: Key | undefined
 }
 
-declare namespace MatchParserContext {
+declare namespace ctx {
 	export type from<ctx extends MatchParserContext> = ctx
 
-	export interface withoutKey extends MatchParserContext {
-		key: undefined
-	}
+	export type init<$, input = unknown> = from<{
+		cases: []
+		$: $
+		input: input
+	}>
 
 	export type atKey<ctx extends MatchParserContext, key extends Key> = from<{
 		cases: ctx["cases"]
@@ -46,52 +48,25 @@ declare namespace MatchParserContext {
 	}>
 }
 
-export interface MatchParser<$>
-	extends CaseMatchParser<{
-		cases: []
-		$: $
-		input: unknown
-		key: undefined
-	}> {
-	in<const def>(def: type.validate<def, $>): ChainableMatchParser<{
-		cases: []
-		$: $
-		input: type.infer<def, $>
-		key: undefined
-	}>
+export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
+	in<const def>(
+		def: type.validate<def, $>
+	): ChainableMatchParser<ctx.init<$, type.infer<def, $>>>
 	in<const typedInput = never>(
 		...args: [typedInput] extends [never] ?
 			[
 				ErrorMessage<"from requires a definition or type argument (from('string') or from<string>())">
 			]
 		:	[]
-	): ChainableMatchParser<{
-		cases: []
-		$: $
-		input: typedInput
-		key: undefined
-	}>
+	): ChainableMatchParser<ctx.init<$, typedInput>>
 	// include this signature a second time so that e.g. `match.from({ foo: "strin" })` shows the right error
-	in<const def>(def: type.validate<def, $>): ChainableMatchParser<{
-		cases: []
-		$: $
-		input: type.infer<def, $>
-		key: undefined
-	}>
+	in<const def>(
+		def: type.validate<def, $>
+	): ChainableMatchParser<ctx.init<$, type.infer<def, $>>>
 
-	case: CaseParser<{
-		cases: []
-		$: $
-		input: unknown
-		key: undefined
-	}>
+	case: CaseParser<ctx.init<$>>
 
-	at: AtParser<{
-		cases: []
-		$: $
-		input: unknown
-		key: undefined
-	}>
+	at: AtParser<ctx.init<$>>
 }
 
 type addCasesToContext<
@@ -99,7 +74,7 @@ type addCasesToContext<
 	cases extends unknown[]
 > =
 	cases extends Morph[] ?
-		MatchParserContext.from<{
+		ctx.from<{
 			$: ctx["$"]
 			input: ctx["input"]
 			cases: [...ctx["cases"], ...cases]
@@ -110,14 +85,14 @@ type addCasesToContext<
 type addDefaultToContext<
 	ctx extends MatchParserContext,
 	defaultCase extends DefaultCase<ctx>
-> = MatchParserContext.from<{
+> = ctx.from<{
 	$: ctx["$"]
 	input: defaultCase extends "never" ? Morph.In<ctx["cases"][number]>
 	:	ctx["input"]
 	cases: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
 	: defaultCase extends "never" | "assert" ? ctx["cases"]
 	: [...ctx["cases"], (In: ctx["input"]) => ArkError]
-	key: undefined
+	key: ctx["key"]
 }>
 
 type addCasesToParser<cases, ctx extends MatchParserContext> =
@@ -154,17 +129,22 @@ type CaseParser<ctx extends MatchParserContext> = <const def, ret>(
 >
 
 type validateKey<key extends Key, ctx extends MatchParserContext> =
-	keyof ctx["input"] extends never ? key : conform<key, keyof ctx["input"]>
+	ctx["key"] extends Key ? ErrorMessage<doubleAtMessage>
+	: ctx["cases"]["length"] extends 0 ?
+		keyof ctx["input"] extends never ?
+			key
+		:	conform<key, keyof ctx["input"]>
+	:	ErrorMessage<chainedAtMessage>
 
 interface AtParser<ctx extends MatchParserContext> {
 	<key extends Key>(
 		key: validateKey<key, ctx>
-	): ChainableMatchParser<MatchParserContext.atKey<ctx, key>>
+	): ChainableMatchParser<ctx.atKey<ctx, key>>
 
 	<
 		key extends Key,
 		const cases,
-		ctxAtKey extends MatchParserContext = MatchParserContext.atKey<ctx, key>
+		ctxAtKey extends MatchParserContext = ctx.atKey<ctx, key>
 	>(
 		key: validateKey<key, ctx>,
 		cases: cases extends validateCases<cases, ctxAtKey> ? cases
@@ -176,7 +156,7 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 	case: CaseParser<ctx>
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
-	at: ctx["key"] extends undefined ? AtParser<ctx> : never
+	at: AtParser<ctx>
 }
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"
@@ -305,6 +285,8 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	}
 
 	at(key: Key): this {
+		if (this.key) throwParseError(doubleAtMessage)
+		if (this.branches.length) throwParseError(chainedAtMessage)
 		this.key = key
 		return this
 	}
@@ -337,3 +319,9 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		return matcher as never
 	}
 }
+
+export const chainedAtMessage = `A key matcher must be specified before the first case i.e. match.at('foo') or match.in<object>().at('bar')`
+export type chainedAtMessage = typeof chainedAtMessage
+
+export const doubleAtMessage = `At most one key matcher may be specified per expression`
+export type doubleAtMessage = typeof doubleAtMessage
