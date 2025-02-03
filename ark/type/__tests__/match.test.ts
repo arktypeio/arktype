@@ -1,11 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	hasArkKind,
-	registeredReference,
-	writeUnboundableMessage
-} from "@ark/schema"
+import { registeredReference, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
-import { doubleAtMessage } from "../match.ts"
+import { doubleAtMessage } from "arktype/internal/match.ts"
 
 contextualize(() => {
 	it("single object", () => {
@@ -464,7 +460,7 @@ contextualize(() => {
 			default: () => null
 		})
 
-		const url = parseUrl("https://arktype.io")
+		parseUrl("https://arktype.io")
 		throw new Error("ensure I/O inference is correct")
 	})
 
@@ -474,7 +470,7 @@ contextualize(() => {
 			default: () => null
 		})
 
-		const url = parseUrl("https://arktype.io")
+		parseUrl("https://arktype.io")
 		throw new Error("ensure I/O inference is correct")
 	})
 
