@@ -30,6 +30,7 @@ import type {
 import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
+import type { AssertionType, ConfiguredType } from "../type.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
@@ -218,7 +219,9 @@ interface Type<out t = unknown, $ = {}>
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
 	 */
-	configure(meta: MetaSchema): this
+	configure<meta extends MetaSchema>(
+		meta: meta
+	): meta extends { onFail: unknown } ? ConfiguredType<t, $, meta> : this
 
 	/**
 	 * #### add description to shallow references

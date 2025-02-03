@@ -2,6 +2,7 @@ import {
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
+	type ArkErrorsHandler,
 	type BaseParseOptions,
 	type MetaSchema,
 	type Morph,
@@ -245,6 +246,13 @@ export type SchemaParser<$> = (
 ) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
+
+export type ConfiguredType<t, $, config extends ArkEnv.meta> =
+	config["onFail"] extends ArkErrorsHandler<infer returns> ?
+		returns extends never ?
+			AssertionType<t, $>
+		:	((data: unknown) => distill.Out<t> | returns) & instantiateType<t, $>
+	:	instantiateType<t, $>
 
 // by intersecting the signature without ArkErrors,
 // we create an overload of the top-level call.
