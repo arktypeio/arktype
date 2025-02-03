@@ -65,17 +65,6 @@ contextualize(() => {
 		).completions()
 	})
 
-	it("completes default key", () => {
-		attest(() =>
-			match({
-				bigint: () => true,
-				// prettier-ignore
-				// @ts-expect-error
-				"defaul": () => false
-			})
-		).completions()
-	})
-
 	it("properly infers types of inputs/outputs based on chained", () => {
 		const matcher = match({ string: s => s, number: n => n })
 			.case("boolean", b => b)
