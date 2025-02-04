@@ -473,25 +473,69 @@ contextualize(() => {
 	})
 
 	it("morph key", () => {
-		const parseUrl = match({
-			"string.url.parse": valid => valid,
+		const parseNum = match({
+			"string.numeric.parse": valid => valid,
 			default: () => null
 		})
 
-		parseUrl("https://arktype.io")
+		attest<number | null>(parseNum("12.34")).equals(12.34)
+		attest<null>(parseNum(12.34)).equals(null)
 	})
 
 	it("fluent morph", () => {
-		const parseUrl = match({
-			"string.url.parse": valid => valid,
-			default: () => null
-		})
+		const parseInt = match
+			.case("string.integer.parse", valid => valid)
+			.default(() => null)
 
-		parseUrl("https://arktype.io")
-		throw new Error("ensure I/O inference is correct")
+		attest<number | null>(parseInt("1234")).equals(1234)
+		attest<null>(parseInt(1234)).equals(null)
 	})
 
 	it("accounts for ordering during discrimination", () => {
-		throw new Error()
+		const m = match
+			.case(
+				{
+					id: "string"
+				},
+				o => o.id
+			)
+			.case(
+				{
+					kind: "'string'"
+				},
+				o => o.kind
+			)
+			.case(
+				{
+					kind: "'number'"
+				},
+				o => o.kind
+			)
+			.case(
+				{
+					id: "number"
+				},
+				o => o.id
+			)
+			.default("assert")
+
+		attest(m.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["kind"],
+			cases: {
+				'"string"': { in: {}, morphs: ["$ark.fn17"] },
+				'"number"': { in: {}, morphs: ["$ark.fn18"] },
+				default: {
+					kind: "domain",
+					path: ["id"],
+					cases: {
+						'"number"': { in: {}, morphs: ["$ark.fn19"] },
+						'"string"': { in: {}, morphs: ["$ark.fn16"] },
+						default: { in: {}, morphs: ["$ark.fn20"] }
+					}
+				}
+			}
+		})
+		attest(m).type.toString.snap()
 	})
 })

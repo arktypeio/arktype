@@ -99,9 +99,11 @@ type addDefaultToContext<
 
 type casesToMorphTuple<cases, ctx extends MatchParserContext> = unionToTuple<
 	propValueOf<{
-		[def in Exclude<keyof cases, "default">]: (
-			In: inferCaseArg<def, ctx, "in">
-		) => ReturnType<cases[def]>
+		[def in Exclude<keyof cases, "default">]: cases[def] extends (
+			Morph<never, infer o>
+		) ?
+			(In: inferCaseArg<def, ctx, "in">) => o
+		:	never
 	}>
 >
 
