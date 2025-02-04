@@ -442,11 +442,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 							kind: entry.kind,
 							cases: {
 								[lSerialized]: {
-									branches: [l],
+									branchIndices: [lIndex],
 									caseDiscriminant: entry.l as never
 								},
 								[rSerialized]: {
-									branches: [r],
+									branchIndices: [rIndex],
 									caseDiscriminant: entry.r as never
 								}
 							},
@@ -454,25 +454,25 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						})
 					} else {
 						if (matching.cases[lSerialized]) {
-							matching.cases[lSerialized].branches = appendUnique(
-								matching.cases[lSerialized].branches,
-								l
+							matching.cases[lSerialized].branchIndices = appendUnique(
+								matching.cases[lSerialized].branchIndices,
+								lIndex
 							)
 						} else {
 							matching.cases[lSerialized] ??= {
-								branches: [l],
+								branchIndices: [lIndex],
 								caseDiscriminant: entry.l as never
 							}
 						}
 
 						if (matching.cases[rSerialized]) {
-							matching.cases[rSerialized].branches = appendUnique(
-								matching.cases[rSerialized].branches,
-								r
+							matching.cases[rSerialized].branchIndices = appendUnique(
+								matching.cases[rSerialized].branchIndices,
+								rIndex
 							)
 						} else {
 							matching.cases[rSerialized] ??= {
-								branches: [r],
+								branchIndices: [rIndex],
 								caseDiscriminant: entry.r as never
 							}
 						}
@@ -481,13 +481,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 		}
 
-		const orderedCandidates = candidates
+		const orderedCandidates =
+			this.ordered ? orderCandidates(candidates, this.branches) : candidates
 
 		if (!orderedCandidates.length) return null
 
-		const best = orderedCandidates
-			.sort((l, r) => Object.keys(l.cases).length - Object.keys(r.cases).length)
-			.at(-1)!
+		const best = orderedCandidates.at(-1)!
 
 		let defaultBranches = [...this.branches]
 
@@ -507,7 +506,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			)
 			const prunedBranches: BaseRoot[] = []
 			defaultBranches = defaultBranches.filter(n => {
-				if (caseCtx.branches.includes(n)) return false
+				if (caseCtx.branchIndices.some(i => this.branches[i] === n))
+					return false
 				// we shouldn't need a special case for alias to avoid the below
 				// once alias resolution issues are improved:
 				// https://github.com/arktypeio/arktype/issues/1026
@@ -527,8 +527,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				}
 				return true
 			})
-			for (const branch of caseCtx.branches) {
-				const pruned = pruneDiscriminant(branch, bestCtx)
+			for (const i of caseCtx.branchIndices) {
+				const pruned = pruneDiscriminant(this.branches[i], bestCtx)
 				// if any branch of the union has no constraints (i.e. is unknown)
 				// return it right away
 				if (pruned === null) {
@@ -545,7 +545,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const caseNode =
 				prunedBranches.length === 1 ?
 					prunedBranches[0]
-				:	this.$.node("union", prunedBranches)
+				:	this.$.node(
+						"union",
+						this.ordered ?
+							{ branches: prunedBranches, ordered: true }
+						:	prunedBranches
+					)
 
 			Object.assign(this.referencesById, caseNode.referencesById)
 
@@ -553,9 +558,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}
 
 		if (defaultBranches.length) {
-			cases.default = this.$.node("union", defaultBranches, {
-				prereduced: true
-			})
+			cases.default = this.$.node(
+				"union",
+				this.ordered ?
+					{ branches: defaultBranches, ordered: true }
+				:	defaultBranches,
+				{
+					prereduced: true
+				}
+			)
 
 			Object.assign(this.referencesById, cases.default.referencesById)
 		}
@@ -564,6 +575,52 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			cases
 		})
 	}
+}
+
+const orderCandidates = (
+	candidates: DiscriminantCandidate[],
+	originalBranches: readonly Union.ChildNode[]
+): DiscriminantCandidate[] => {
+	const viableCandidates = candidates.filter(candidate => {
+		// For each candidate, check if the relative order between groups is preserved.
+		const caseGroups = Object.values(candidate.cases).map(
+			caseCtx => caseCtx.branchIndices
+		)
+
+		// Compare each group against all subsequent groups.
+		for (let i = 0; i < caseGroups.length - 1; i++) {
+			const currentGroup = caseGroups[i]
+			for (let j = i + 1; j < caseGroups.length; j++) {
+				const nextGroup = caseGroups[j]
+
+				// Check if any branch in the current group comes after any branch in the next group.
+				for (const currentIndex of currentGroup) {
+					for (const nextIndex of nextGroup) {
+						if (currentIndex > nextIndex) {
+							// If the order is reversed, check if the branches are disjoint.
+							if (
+								originalBranches[currentIndex].overlaps(
+									originalBranches[nextIndex]
+								)
+							) {
+								// If the branches are not disjoint, filter out this candidate.
+								return false
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// If the relative order between groups is preserved or the reversed branches are disjoint, keep the candidate.
+		return true
+	})
+
+	return viableCandidates.sort(
+		(a, b) =>
+			// Sort candidates by the number of cases they have, descending.
+			Object.keys(b.cases).length - Object.keys(a.cases).length
+	)
 }
 
 const discriminantCaseToNode = (
@@ -809,7 +866,7 @@ type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
 }
 
 export type CaseContext = {
-	branches: BaseRoot[]
+	branchIndices: number[]
 	caseDiscriminant: nodeOfKind<DiscriminantKind> | Domain.Enumerable
 }
 

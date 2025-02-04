@@ -519,7 +519,74 @@ contextualize(() => {
 			)
 			.default("assert")
 
-		attest(m.internal.assertHasKind("union").discriminantJson).snap()
+		attest(m.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["kind"],
+			cases: {
+				'"string"': {
+					kind: "domain",
+					path: ["id"],
+					cases: {
+						'"string"': {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn85"] },
+								{ in: {}, morphs: ["$ark.fn82"] },
+								{ in: {}, morphs: ["$ark.fn81"] }
+							],
+							ordered: true
+						},
+						'"number"': {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn84"] },
+								{ in: {}, morphs: ["$ark.fn82"] }
+							],
+							ordered: true
+						},
+						default: {
+							branches: [
+								{
+									in: { required: [{ key: "id", value: "number" }] },
+									morphs: ["$ark.fn84"]
+								},
+								{ in: {}, morphs: ["$ark.fn82"] }
+							],
+							ordered: true
+						}
+					}
+				},
+				'"number"': {
+					branches: [
+						{
+							in: { required: [{ key: "id", value: "string" }] },
+							morphs: ["$ark.fn81"]
+						},
+						{ in: {}, morphs: ["$ark.fn83"] },
+						{ in: {}, morphs: ["$ark.fn85"] }
+					],
+					ordered: true
+				},
+				default: {
+					branches: [
+						{
+							in: {
+								required: [{ key: "id", value: "string" }],
+								domain: "object"
+							},
+							morphs: ["$ark.fn81"]
+						},
+						{
+							in: {
+								required: [{ key: "kind", value: { unit: "number" } }],
+								domain: "object"
+							},
+							morphs: ["$ark.fn83"]
+						},
+						{ in: {}, morphs: ["$ark.fn85"] }
+					],
+					ordered: true
+				}
+			}
+		})
 		attest(m).type.toString.snap()
 	})
 })

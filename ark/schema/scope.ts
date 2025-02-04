@@ -174,6 +174,53 @@ $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
 
+const precompile = (references: readonly BaseNode[]): void =>
+	bindPrecompilation(references, writePrecompilation(references))
+
+const bindPrecompilation = (
+	references: readonly BaseNode[],
+	precompilation: string
+): void => {
+	const compiledTraversals = instantiatePrecompilation(precompilation)
+	for (const node of references) {
+		if (node.precompilation) {
+			// if node has already been bound to another scope or anonymous type, don't rebind it
+			continue
+		}
+		node.traverseAllows =
+			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
+		if (node.isRoot() && !node.allowsRequiresContext) {
+			// if the reference doesn't require context, we can assign over
+			// it directly to avoid having to initialize it
+			node.allows = node.traverseAllows as never
+		}
+		node.traverseApply =
+			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
+		node.precompilation = precompilation
+	}
+}
+
+const instantiatePrecompilation = (precompilation: string) =>
+	new CompiledFunction().return(precompilation).compile<
+		() => {
+			[k: `${string}Allows`]: TraverseAllows
+			[k: `${string}Apply`]: TraverseApply
+		}
+	>()()
+
+const writePrecompilation = (references: readonly BaseNode[]) =>
+	references.reduce((js, node) => {
+		const allowsCompiler = new NodeCompiler("Allows").indent()
+		node.compile(allowsCompiler)
+		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
+
+		const applyCompiler = new NodeCompiler("Apply").indent()
+		node.compile(applyCompiler)
+		const applyJs = applyCompiler.write(`${node.id}Apply`)
+
+		return `${js}${allowsJs},\n${applyJs},\n`
+	}, "{\n") + "}"
+
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkSchemaScopeConfig
 	readonly resolvedConfig: ResolvedScopeConfig
@@ -811,53 +858,6 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
-
-const precompile = (references: readonly BaseNode[]): void =>
-	bindPrecompilation(references, writePrecompilation(references))
-
-const bindPrecompilation = (
-	references: readonly BaseNode[],
-	precompilation: string
-): void => {
-	const compiledTraversals = instantiatePrecompilation(precompilation)
-	for (const node of references) {
-		if (node.precompilation) {
-			// if node has already been bound to another scope or anonymous type, don't rebind it
-			continue
-		}
-		node.traverseAllows =
-			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
-		if (node.isRoot() && !node.allowsRequiresContext) {
-			// if the reference doesn't require context, we can assign over
-			// it directly to avoid having to initialize it
-			node.allows = node.traverseAllows as never
-		}
-		node.traverseApply =
-			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
-		node.precompilation = precompilation
-	}
-}
-
-const instantiatePrecompilation = (precompilation: string) =>
-	new CompiledFunction().return(precompilation).compile<
-		() => {
-			[k: `${string}Allows`]: TraverseAllows
-			[k: `${string}Apply`]: TraverseApply
-		}
-	>()()
-
-const writePrecompilation = (references: readonly BaseNode[]) =>
-	references.reduce((js, node) => {
-		const allowsCompiler = new NodeCompiler("Allows").indent()
-		node.compile(allowsCompiler)
-		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
-
-		const applyCompiler = new NodeCompiler("Apply").indent()
-		node.compile(applyCompiler)
-		const applyJs = applyCompiler.write(`${node.id}Apply`)
-
-		return `${js}${allowsJs},\n${applyJs},\n`
-	}, "{\n") + "}"
 
 // ensure the scope is resolved so JIT will be applied to future types
 rootSchemaScope.export()
