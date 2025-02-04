@@ -529,61 +529,78 @@ contextualize(() => {
 					cases: {
 						'"string"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn85"] },
-								{ in: {}, morphs: ["$ark.fn82"] },
-								{ in: {}, morphs: ["$ark.fn81"] }
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn11"] },
+								{ in: {}, morphs: ["$ark.fn10"] }
 							],
 							ordered: true
 						},
 						'"number"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn84"] },
-								{ in: {}, morphs: ["$ark.fn82"] }
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn11"] },
+								{ in: {}, morphs: ["$ark.fn13"] }
 							],
 							ordered: true
 						},
 						default: {
 							branches: [
-								{
-									in: { required: [{ key: "id", value: "number" }] },
-									morphs: ["$ark.fn84"]
-								},
-								{ in: {}, morphs: ["$ark.fn82"] }
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn11"] }
 							],
 							ordered: true
 						}
 					}
 				},
 				'"number"': {
-					branches: [
-						{
-							in: { required: [{ key: "id", value: "string" }] },
-							morphs: ["$ark.fn81"]
+					kind: "domain",
+					path: ["id"],
+					cases: {
+						'"string"': {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn12"] },
+								{ in: {}, morphs: ["$ark.fn10"] }
+							],
+							ordered: true
 						},
-						{ in: {}, morphs: ["$ark.fn83"] },
-						{ in: {}, morphs: ["$ark.fn85"] }
-					],
-					ordered: true
+						'"number"': {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn12"] },
+								{ in: {}, morphs: ["$ark.fn13"] }
+							],
+							ordered: true
+						},
+						default: {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn12"] }
+							],
+							ordered: true
+						}
+					}
 				},
 				default: {
-					branches: [
-						{
-							in: {
-								required: [{ key: "id", value: "string" }],
-								domain: "object"
-							},
-							morphs: ["$ark.fn81"]
+					kind: "domain",
+					path: ["id"],
+					cases: {
+						'"string"': {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn10"] }
+							],
+							ordered: true
 						},
-						{
-							in: {
-								required: [{ key: "kind", value: { unit: "number" } }],
-								domain: "object"
-							},
-							morphs: ["$ark.fn83"]
+						'"number"': {
+							branches: [
+								{ in: {}, morphs: ["$ark.fn14"] },
+								{ in: {}, morphs: ["$ark.fn13"] }
+							],
+							ordered: true
 						},
-						{ in: {}, morphs: ["$ark.fn85"] }
-					],
-					ordered: true
+						default: { in: {}, morphs: ["$ark.fn14"] }
+					}
 				}
 			}
 		})

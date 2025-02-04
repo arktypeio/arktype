@@ -384,4 +384,35 @@ contextualize(() => {
 		// but still resolve correctly via the { name: string } branch
 		attest(t({ name: "foo", id: 1 })).unknown.snap({ name: "foo", id: 1 })
 	})
+
+	it("correctly dsicriminated onDeclaredKey: reject in the above scenario", () => {
+		const t = type({
+			id: "0",
+			k1: "number"
+		})
+			.or({ id: "1", k1: "number" })
+			.or({
+				"+": "reject",
+				name: "string"
+			})
+
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["id"],
+			cases: {
+				"0": { required: [{ key: "k1", value: "number" }] },
+				"1": { required: [{ key: "k1", value: "number" }] },
+				default: {
+					undeclared: "reject",
+					required: [{ key: "name", value: "string" }],
+					domain: "object"
+				}
+			}
+		})
+
+		// now that we are rejecting undeclared keys, all branches fail
+		attest(t({ name: "foo", id: 1 }).toString()).snap(
+			"k1 must be a number (was missing)"
+		)
+	})
 })
