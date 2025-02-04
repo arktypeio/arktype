@@ -187,29 +187,43 @@ contextualize(() => {
 			"|",
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
+
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
-			path: ["temperature"],
+			path: ["color"],
 			cases: {
-				'"cold"': true,
-				'"hot"': true,
-				default: {
+				'"blue"': {
 					kind: "unit",
-					path: ["color"],
+					path: ["temperature"],
 					cases: {
-						'"blue"': {
+						'"cold"': true,
+						'"hot"': true,
+						default: {
 							required: [
 								{ key: "climate", value: { unit: "wet" } },
 								{ key: "isOcean", value: { unit: true } }
 							]
-						},
-						'"green"': {
+						}
+					}
+				},
+				'"green"': {
+					kind: "unit",
+					path: ["temperature"],
+					cases: {
+						'"cold"': true,
+						'"hot"': true,
+						default: {
 							required: [
 								{ key: "climate", value: { unit: "wet" } },
 								{ key: "isRainForest", value: { unit: true } }
 							]
 						}
 					}
+				},
+				default: {
+					kind: "unit",
+					path: ["temperature"],
+					cases: { '"cold"': true, '"hot"': true }
 				}
 			}
 		})
@@ -277,13 +291,13 @@ contextualize(() => {
 
 		attest(union.discriminantJson).snap({
 			kind: "unit",
-			path: ["innerB", "id"],
+			path: ["innerA", "id"],
 			cases: {
 				"1": true,
 				"2": true,
 				default: {
 					kind: "unit",
-					path: ["innerA", "id"],
+					path: ["innerB", "id"],
 					cases: { "1": true, "2": true }
 				}
 			}
@@ -295,7 +309,7 @@ contextualize(() => {
 		attest(union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
 
 		attest(union({})?.toString()).snap(
-			"innerA.id must be 1 or 2 (was undefined)"
+			"innerB.id must be 1 or 2 (was undefined)"
 		)
 	})
 
