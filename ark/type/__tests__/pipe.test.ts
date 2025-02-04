@@ -800,7 +800,7 @@ contextualize(() => {
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string ) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $jsonData[] | false | null | true } | $jsonData[]> | false | true }`)
+Right: { foo: (In: string) => Out<unknown> | false | true }`)
 	})
 
 	it("multiple chained pipes", () => {

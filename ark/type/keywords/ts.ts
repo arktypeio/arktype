@@ -68,9 +68,9 @@ export declare namespace unknown {
 
 export const json = Scope.module(
 	{
-		root: intrinsic.json,
+		root: intrinsic.jsonObject,
 		stringify: node("morph", {
-			in: intrinsic.json,
+			in: intrinsic.jsonObject,
 			morphs: (data: Json) => JSON.stringify(data),
 			declaredOut: intrinsic.string
 		})

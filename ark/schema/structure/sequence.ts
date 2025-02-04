@@ -659,7 +659,7 @@ const _intersectSequences = (
 				...result.withPrefixKey(
 					// ideally we could handle disjoint paths more precisely here,
 					// but not trivial to serialize postfix elements as keys
-					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`,
+					kind === "prefix" ? s.result.length : `-${lTail.length + 1}`,
 					"required"
 				)
 			)

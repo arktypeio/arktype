@@ -7,10 +7,10 @@ import {
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
+	range,
 	throwParseError,
 	type JsTypeOf,
 	type JsonStructure,
-	type Key,
 	type SerializedPrimitive,
 	type array,
 	type show
@@ -342,7 +342,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 
 		const serializedPathSegments = this.discriminant.path.map(k =>
-			typeof k === "string" ? JSON.stringify(k) : registeredReference(k)
+			typeof k === "symbol" ? registeredReference(k) : JSON.stringify(k)
 		)
 
 		const serializedExpected = JSON.stringify(expected)
@@ -506,10 +506,23 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const prunedBranches: BaseRoot[] = []
 			defaultBranches = defaultBranches.filter(n => {
 				if (caseCtx.branches.includes(n)) return false
+				// we shouldn't need a special case for alias to avoid the below
+				// once alias resolution issues are improved:
+				// https://github.com/arktypeio/arktype/issues/1026
+				if (
+					n.hasKind("alias") &&
+					discriminantNode.hasKind("domain") &&
+					discriminantNode.domain === "object"
+				) {
+					prunedBranches.push(n)
+					return false
+				}
 				// include cases where an object not including the
 				// discriminant path might have that value present as an undeclared key
-				if (n.in.overlaps(discriminantNode))
-					prunedBranches.push(pruneDiscriminant(n, bestCtx)!)
+				if (n.in.overlaps(discriminantNode)) {
+					const overlapping = pruneDiscriminant(n, bestCtx)!
+					prunedBranches.push(overlapping)
+				}
 				return true
 			})
 			for (const branch of caseCtx.branches) {
@@ -553,7 +566,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 const discriminantCaseToNode = (
 	caseDiscriminant: CaseDiscriminant,
-	path: Key[],
+	path: PropertyKey[],
 	$: BaseScope
 ): BaseRoot => {
 	let node: BaseRoot =
@@ -562,15 +575,25 @@ const discriminantCaseToNode = (
 		: caseDiscriminant === "boolean" ? $.units([true, false])
 		: caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
-		node = $.node("intersection", {
-			domain: "object",
-			required: [{ key: path[i], value: node }]
-		})
+		const key = path[i]
+		node = $.node(
+			"intersection",
+			typeof key === "number" ?
+				{
+					proto: "Array",
+					// create unknown for preceding elements (could be optimized with safe imports)
+					sequence: [...range(key).map(_ => ({})), node]
+				}
+			:	{
+					domain: "object",
+					required: [{ key, value: node }]
+				}
+		)
 	}
 	return node
 }
 
-const optionallyChainPropString = (path: Key[]): string =>
+const optionallyChainPropString = (path: PropertyKey[]): string =>
 	path.reduce<string>(
 		(acc, k) => acc + compileLiteralPropAccess(k, true),
 		"data"
@@ -763,7 +786,7 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
 type DiscriminantContext<kind extends DiscriminantKind = DiscriminantKind> = {
-	path: Key[]
+	path: PropertyKey[]
 	optionallyChainedPropString: string
 	kind: kind
 }
@@ -774,7 +797,7 @@ export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
 }
 
 type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
-	path: Key[]
+	path: PropertyKey[]
 	kind: kind
 	cases: CandidateCases<kind>
 }
@@ -816,7 +839,7 @@ export const pruneDiscriminant = (
 		{
 			shouldTransform: (node, ctx) => {
 				// safe to cast here as index nodes are never discriminants
-				const propString = optionallyChainPropString(ctx.path as Key[])
+				const propString = optionallyChainPropString(ctx.path as PropertyKey[])
 
 				if (!discriminantCtx.optionallyChainedPropString.startsWith(propString))
 					return false

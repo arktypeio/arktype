@@ -10,6 +10,7 @@ import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
+	basisKinds,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -81,6 +82,15 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 			...defineRightwardIntersections("alias", (l, r, ctx) => {
 				if (r.isUnknown()) return l
 				if (r.isNever()) return r
+				if (r.isBasis() && !r.overlaps($ark.intrinsic.object)) {
+					// can be more robust as part of https://github.com/arktypeio/arktype/issues/1026
+					return Disjoint.init(
+						"assignability",
+						$ark.intrinsic.object as never,
+						r
+					)
+				}
+
 				return ctx.$.lazilyResolve(
 					() => neverIfDisjoint(intersectOrPipeNodes(l.resolution, r, ctx)),
 					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
