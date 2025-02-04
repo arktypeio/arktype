@@ -1,21 +1,8 @@
-import "./config.ts"
+import { type } from "arktype"
 
-import { match } from "arktype"
-
-const sizeOf = match({
-	"string | Array": v => v.length,
-	number: v => v,
-	bigint: v => v,
-	default: "assert"
+export const pkg = type({
+	name: "string",
+	date: "string.date.iso",
+	"metadata?": "string.json.parse",
+	"tags?": "(number | string)[]"
 })
-
-const size = sizeOf("foo")
-//    ^?
-console.log(size) // 3
-
-// narrows output from case mapping
-const bigSize = sizeOf(999n)
-//     ^?
-
-// MatchError: must be a string or an object, a number or a bigint (was boolean)
-const bad = sizeOf(true)

@@ -481,9 +481,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 		}
 
-		if (!candidates.length) return null
+		const orderedCandidates = candidates
 
-		const best = candidates
+		if (!orderedCandidates.length) return null
+
+		const best = orderedCandidates
 			.sort((l, r) => Object.keys(l.cases).length - Object.keys(r.cases).length)
 			.at(-1)!
 

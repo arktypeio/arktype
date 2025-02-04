@@ -350,4 +350,38 @@ contextualize(() => {
 
 		attest(AorB({ something: "A" })).snap({ something: "A" })
 	})
+
+	it("includes non-disjoint branches in corresponding cases", () => {
+		const t = type({
+			id: "0",
+			k1: "number"
+		})
+			.or({ id: "1", k1: "number" })
+			.or({
+				name: "string"
+			})
+
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["id"],
+			cases: {
+				"0": [
+					{ required: [{ key: "k1", value: "number" }] },
+					{ required: [{ key: "name", value: "string" }] }
+				],
+				"1": [
+					{ required: [{ key: "k1", value: "number" }] },
+					{ required: [{ key: "name", value: "string" }] }
+				],
+				default: {
+					required: [{ key: "name", value: "string" }],
+					domain: "object"
+				}
+			}
+		})
+
+		// should hit the case discriminated for id: 1,
+		// but still resolve correctly via the { name: string } branch
+		attest(t({ name: "foo", id: 1 })).unknown.snap({ name: "foo", id: 1 })
+	})
 })
