@@ -1,8 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
+import type { Out } from "arktype/internal/attributes.ts"
 import { doubleAtMessage } from "arktype/internal/match.ts"
-import type { Out } from "../attributes.ts"
 
 contextualize(() => {
 	it("single object", () => {
@@ -213,17 +213,17 @@ contextualize(() => {
 
 	it("allows ordered overlapping", () => {
 		const m = match({
-			"0 < number < 10": function _overlapping1(n) {
+			"0 < number < 10": function _matchOverlapping1(n) {
 				return [0, n]
 			},
 			// this will never be hit since it is a subtype of a previous case
-			"number > 0": function _overlapping2(n) {
+			"number > 0": function _matchOverlapping2(n) {
 				return [1, n]
 			},
-			number: function _overlapping3(n) {
+			number: function _matchOverlapping3(n) {
 				return [2, n]
 			},
-			default: function _overlapping4(v) {
+			default: function _matchOverlapping4(v) {
 				return [3, v]
 			}
 		})
@@ -256,17 +256,17 @@ contextualize(() => {
 
 	it("prunes subtype cases", () => {
 		const m = match({
-			"0 < number < 10": function _preservedOne(n) {
+			"0 < number < 10": function _matchPreservedOne(n) {
 				return [0, n]
 			},
 			// this will never be hit since it is a subtype of a previous case
-			"4 < number < 6": function _prunedOne(n) {
+			"4 < number < 6": function _matchPrunedOne(n) {
 				return [1, n]
 			},
-			number: function _preservedTwo(n) {
+			number: function _matchPreservedTwo(n) {
 				return [2, n]
 			},
-			default: function _preservedDefault(v) {
+			default: function _matchPreservedDefault(v) {
 				return [3, v]
 			}
 		})
@@ -344,10 +344,10 @@ contextualize(() => {
 
 		it("at with cases param", () => {
 			const m = match.at("foo", {
-				string: function _casesParam1(o) {
+				string: function _atCasesParam1(o) {
 					return o.foo.length
 				},
-				number: function _casesParam2(o) {
+				number: function _atCasesParam2(o) {
 					return `${o.foo + 1}`
 				},
 				default: "never"
@@ -431,6 +431,7 @@ contextualize(() => {
 
 	it("initial case", () => {
 		const initial = match.case("string", Number.parseInt).default("assert")
+
 		const expected = match({
 			string: Number.parseInt,
 			default: "assert"
@@ -474,8 +475,12 @@ contextualize(() => {
 
 	it("morph key", () => {
 		const parseNum = match({
-			"string.numeric.parse": valid => valid,
-			default: () => null
+			"string.numeric.parse": function _matchMorphKey1(valid) {
+				return valid
+			},
+			default: function _matchMorphKey2() {
+				return null
+			}
 		})
 
 		attest<number | null>(parseNum("12.34")).equals(12.34)
@@ -484,8 +489,12 @@ contextualize(() => {
 
 	it("fluent morph", () => {
 		const parseInt = match
-			.case("string.integer.parse", valid => valid)
-			.default(() => null)
+			.case("string.integer.parse", function _matchFluentMorph1(valid) {
+				return valid
+			})
+			.default(function _matchFluentMorph2() {
+				return null
+			})
 
 		attest<number | null>(parseInt("1234")).equals(1234)
 		attest<null>(parseInt(1234)).equals(null)
@@ -497,25 +506,33 @@ contextualize(() => {
 				{
 					id: "string"
 				},
-				o => o.id
+				function _matchOrderedDiscrimination1(o) {
+					return o.id
+				}
 			)
 			.case(
 				{
 					kind: "'string'"
 				},
-				o => o.kind
+				function _matchOrderedDiscrimination2(o) {
+					return o.kind
+				}
 			)
 			.case(
 				{
 					kind: "'number'"
 				},
-				o => o.kind
+				function _matchOrderedDiscrimination3(o) {
+					return o.kind
+				}
 			)
 			.case(
 				{
 					id: "number"
 				},
-				o => o.id
+				function _matchOrderedDiscrimination4(o) {
+					return o.id
+				}
 			)
 			.default("assert")
 
@@ -529,24 +546,24 @@ contextualize(() => {
 					cases: {
 						'"string"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn11"] },
-								{ in: {}, morphs: ["$ark.fn10"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] }
 							],
 							ordered: true
 						},
 						'"number"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn11"] },
-								{ in: {}, morphs: ["$ark.fn13"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
 							],
 							ordered: true
 						},
 						default: {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn11"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] }
 							],
 							ordered: true
 						}
@@ -558,24 +575,24 @@ contextualize(() => {
 					cases: {
 						'"string"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn12"] },
-								{ in: {}, morphs: ["$ark.fn10"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] }
 							],
 							ordered: true
 						},
 						'"number"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn12"] },
-								{ in: {}, morphs: ["$ark.fn13"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
 							],
 							ordered: true
 						},
 						default: {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn12"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] }
 							],
 							ordered: true
 						}
@@ -587,19 +604,19 @@ contextualize(() => {
 					cases: {
 						'"string"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn10"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] }
 							],
 							ordered: true
 						},
 						'"number"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn14"] },
-								{ in: {}, morphs: ["$ark.fn13"] }
+								{ in: {}, morphs: ["$ark.fn78"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
 							],
 							ordered: true
 						},
-						default: { in: {}, morphs: ["$ark.fn14"] }
+						default: { in: {}, morphs: ["$ark.fn78"] }
 					}
 				}
 			}

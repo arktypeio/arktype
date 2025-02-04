@@ -582,28 +582,27 @@ const orderCandidates = (
 	originalBranches: readonly Union.ChildNode[]
 ): DiscriminantCandidate[] => {
 	const viableCandidates = candidates.filter(candidate => {
-		// For each candidate, check if the relative order between groups is preserved.
 		const caseGroups = Object.values(candidate.cases).map(
 			caseCtx => caseCtx.branchIndices
 		)
 
-		// Compare each group against all subsequent groups.
+		// compare each group against all subsequent groups.
 		for (let i = 0; i < caseGroups.length - 1; i++) {
 			const currentGroup = caseGroups[i]
 			for (let j = i + 1; j < caseGroups.length; j++) {
 				const nextGroup = caseGroups[j]
 
-				// Check if any branch in the current group comes after any branch in the next group.
+				// for each group pair, check for branches whose order was reversed
 				for (const currentIndex of currentGroup) {
 					for (const nextIndex of nextGroup) {
 						if (currentIndex > nextIndex) {
-							// If the order is reversed, check if the branches are disjoint.
 							if (
 								originalBranches[currentIndex].overlaps(
 									originalBranches[nextIndex]
 								)
 							) {
-								// If the branches are not disjoint, filter out this candidate.
+								// if the order was not preserved and the branches overlap,
+								// this is not a viable discriminant as it cannot guarantee the same behavior
 								return false
 							}
 						}
@@ -612,14 +611,13 @@ const orderCandidates = (
 			}
 		}
 
-		// If the relative order between groups is preserved or the reversed branches are disjoint, keep the candidate.
+		// branch groups preserved order for non-disjoint pairs and is viable
 		return true
 	})
 
+	// sort candidates by number of cases i.e. the number of distinct branches they discriminate
 	return viableCandidates.sort(
-		(a, b) =>
-			// Sort candidates by the number of cases they have, descending.
-			Object.keys(b.cases).length - Object.keys(a.cases).length
+		(a, b) => Object.keys(b.cases).length - Object.keys(a.cases).length
 	)
 }
 
