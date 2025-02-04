@@ -144,7 +144,7 @@ contextualize(() => {
 		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
-	it("default case", () => {
+	it("overlapping default case", () => {
 		const t = getPlaces().type([
 			"ocean|rainForest",
 			"|",
@@ -155,18 +155,24 @@ contextualize(() => {
 			kind: "unit",
 			path: ["color"],
 			cases: {
-				'"blue"': {
-					required: [
-						{ key: "climate", value: { unit: "wet" } },
-						{ key: "isOcean", value: { unit: true } }
-					]
-				},
-				'"green"': {
-					required: [
-						{ key: "climate", value: { unit: "wet" } },
-						{ key: "isRainForest", value: { unit: true } }
-					]
-				},
+				'"blue"': [
+					{
+						required: [
+							{ key: "climate", value: { unit: "wet" } },
+							{ key: "isOcean", value: { unit: true } }
+						]
+					},
+					{ required: [{ key: "temperature", value: { unit: "hot" } }] }
+				],
+				'"green"': [
+					{
+						required: [
+							{ key: "climate", value: { unit: "wet" } },
+							{ key: "isRainForest", value: { unit: true } }
+						]
+					},
+					{ required: [{ key: "temperature", value: { unit: "hot" } }] }
+				],
 				default: {
 					required: [{ key: "temperature", value: { unit: "hot" } }],
 					domain: "object"

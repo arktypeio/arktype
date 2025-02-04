@@ -16,6 +16,7 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
+import type { BaseScope } from "../scope.ts"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
@@ -440,31 +441,51 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						candidates.push({
 							kind: entry.kind,
 							cases: {
-								[lSerialized]: [l],
-								[rSerialized]: [r]
+								[lSerialized]: {
+									branches: [l],
+									caseDiscriminant: entry.l as never
+								},
+								[rSerialized]: {
+									branches: [r],
+									caseDiscriminant: entry.r as never
+								}
 							},
 							path: entry.path
 						})
 					} else {
-						matching.cases[lSerialized] = appendUnique(
-							matching.cases[lSerialized],
-							l
-						)
+						if (matching.cases[lSerialized]) {
+							matching.cases[lSerialized].branches = appendUnique(
+								matching.cases[lSerialized].branches,
+								l
+							)
+						} else {
+							matching.cases[lSerialized] ??= {
+								branches: [l],
+								caseDiscriminant: entry.l as never
+							}
+						}
 
-						matching.cases[rSerialized] = appendUnique(
-							matching.cases[rSerialized],
-							r
-						)
+						if (matching.cases[rSerialized]) {
+							matching.cases[rSerialized].branches = appendUnique(
+								matching.cases[rSerialized].branches,
+								r
+							)
+						} else {
+							matching.cases[rSerialized] ??= {
+								branches: [r],
+								caseDiscriminant: entry.r as never
+							}
+						}
 					}
 				}
 			}
 		}
 
+		if (!candidates.length) return null
+
 		const best = candidates
 			.sort((l, r) => Object.keys(l.cases).length - Object.keys(r.cases).length)
-			.at(-1)
-
-		if (!best) return null
+			.at(-1)!
 
 		let defaultBranches = [...this.branches]
 
@@ -474,16 +495,37 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			optionallyChainedPropString: optionallyChainPropString(best.path)
 		}
 
-		const cases = flatMorph(best.cases, (k, caseBranches) => {
+		const cases: DiscriminatedCases = {}
+
+		for (const [k, caseCtx] of Object.entries(best.cases)) {
+			const discriminantNode = discriminantCaseToNode(
+				caseCtx.caseDiscriminant,
+				bestCtx.path,
+				this.$
+			)
 			const prunedBranches: BaseRoot[] = []
-			defaultBranches = defaultBranches.filter(n => !caseBranches.includes(n))
-			for (const branch of caseBranches) {
+			defaultBranches = defaultBranches.filter(n => {
+				if (caseCtx.branches.includes(n)) return false
+				// include cases where an object not including the
+				// discriminant path might have that value present as an undeclared key
+				if (n.in.overlaps(discriminantNode))
+					prunedBranches.push(pruneDiscriminant(n, bestCtx)!)
+				return true
+			})
+			for (const branch of caseCtx.branches) {
 				const pruned = pruneDiscriminant(branch, bestCtx)
 				// if any branch of the union has no constraints (i.e. is unknown)
 				// return it right away
-				if (pruned === null) return [k, true as const]
+				if (pruned === null) {
+					cases[k] = true as const
+					break
+				}
 				prunedBranches.push(pruned)
 			}
+
+			if (cases[k] === true) continue
+
+			if (prunedBranches.length === this.branches.length) return null
 
 			const caseNode =
 				prunedBranches.length === 1 ?
@@ -492,8 +534,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 			Object.assign(this.referencesById, caseNode.referencesById)
 
-			return [k, caseNode]
-		})
+			cases[k] = caseNode
+		}
 
 		if (defaultBranches.length) {
 			cases.default = this.$.node("union", defaultBranches, {
@@ -507,6 +549,25 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			cases
 		})
 	}
+}
+
+const discriminantCaseToNode = (
+	caseDiscriminant: CaseDiscriminant,
+	path: Key[],
+	$: BaseScope
+): BaseRoot => {
+	let node: BaseRoot =
+		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
+		: caseDiscriminant === "null" ? $.node("unit", { unit: null })
+		: caseDiscriminant === "boolean" ? $.units([true, false])
+		: caseDiscriminant
+	for (let i = path.length - 1; i >= 0; i--) {
+		node = $.node("intersection", {
+			domain: "object",
+			required: [{ key: path[i], value: node }]
+		})
+	}
+	return node
 }
 
 const optionallyChainPropString = (path: Key[]): string =>
@@ -719,8 +780,15 @@ type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 }
 
 type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
-	[caseKey in CaseKey<kind>]: BaseRoot[]
+	[caseKey in CaseKey<kind>]: CaseContext
 }
+
+export type CaseContext = {
+	branches: BaseRoot[]
+	caseDiscriminant: nodeOfKind<DiscriminantKind> | Domain.Enumerable
+}
+
+export type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
 
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind

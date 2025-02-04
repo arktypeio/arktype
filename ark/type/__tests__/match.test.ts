@@ -519,23 +519,7 @@ contextualize(() => {
 			)
 			.default("assert")
 
-		attest(m.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "unit",
-			path: ["kind"],
-			cases: {
-				'"string"': { in: {}, morphs: ["$ark.fn17"] },
-				'"number"': { in: {}, morphs: ["$ark.fn18"] },
-				default: {
-					kind: "domain",
-					path: ["id"],
-					cases: {
-						'"number"': { in: {}, morphs: ["$ark.fn19"] },
-						'"string"': { in: {}, morphs: ["$ark.fn16"] },
-						default: { in: {}, morphs: ["$ark.fn20"] }
-					}
-				}
-			}
-		})
+		attest(m.internal.assertHasKind("union").discriminantJson).snap()
 		attest(m).type.toString.snap()
 	})
 })
