@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import { doubleAtMessage } from "arktype/internal/match.ts"
+import type { Out } from "../attributes.ts"
 
 contextualize(() => {
 	it("single object", () => {
@@ -369,8 +370,7 @@ contextualize(() => {
 						morphs: ["$ark._casesParam2"]
 					}
 				],
-				ordered: true,
-				meta: { onFail: registeredReference(m.internal.meta.onFail!) }
+				ordered: true
 			})
 			attest(m).type.toString.snap()
 		})
@@ -454,6 +454,24 @@ contextualize(() => {
 		attest(initial).type.toString(expectedTypeSnapshot)
 	})
 
+	it("reference in object", () => {
+		const m = match({
+			string: s => s.length,
+			default: "assert"
+		})
+
+		const t = type({
+			foo: m
+		})
+
+		attest<{
+			foo: (In: string) => Out<number>
+		}>(t.t)
+		attest(t.expression).snap("{ foo: (In: string) => Out<unknown> }")
+		attest(t({ foo: "foo" })).equals({ foo: 3 })
+		attest(t({ foo: 5 }).toString()).snap("foo must be a string (was a number)")
+	})
+
 	it("morph key", () => {
 		const parseUrl = match({
 			"string.url.parse": valid => valid,
@@ -461,7 +479,6 @@ contextualize(() => {
 		})
 
 		parseUrl("https://arktype.io")
-		throw new Error("ensure I/O inference is correct")
 	})
 
 	it("fluent morph", () => {
