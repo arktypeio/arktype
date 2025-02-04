@@ -90,7 +90,7 @@ contextualize(() => {
 			'climate must be "dry" or "wet" (was undefined)'
 		)
 
-		const cases = {
+		attest(climate.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -113,33 +113,6 @@ contextualize(() => {
 						{ key: "climate", value: { unit: "wet" } },
 						{ key: "isRainForest", value: { unit: true } }
 					]
-				}
-			}
-		}
-
-		attest(climate.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "unit",
-			path: ["climate"],
-			cases: {
-				'"dry"': {
-					kind: "unit",
-					path: ["color"],
-					cases: {
-						'"blue"': { required: [{ key: "isSky", value: { unit: true } }] },
-						'"brown"': {
-							required: [{ key: "isDesert", value: { unit: true } }]
-						}
-					}
-				},
-				'"wet"': {
-					kind: "unit",
-					path: ["color"],
-					cases: {
-						'"blue"': { required: [{ key: "isOcean", value: { unit: true } }] },
-						'"green"': {
-							required: [{ key: "isRainForest", value: { unit: true } }]
-						}
-					}
 				}
 			}
 		})

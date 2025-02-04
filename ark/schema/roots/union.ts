@@ -486,7 +486,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		if (!orderedCandidates.length) return null
 
-		const best = orderedCandidates.at(-1)!
+		// sort candidates by number of cases i.e. the number of distinct branches they discriminate
+		const best = orderedCandidates.sort(
+			(l, r) => Object.keys(r.cases).length - Object.keys(l.cases).length
+		)[0]
 
 		let defaultBranches = [...this.branches]
 
@@ -615,10 +618,7 @@ const orderCandidates = (
 		return true
 	})
 
-	// sort candidates by number of cases i.e. the number of distinct branches they discriminate
-	return viableCandidates.sort(
-		(a, b) => Object.keys(b.cases).length - Object.keys(a.cases).length
-	)
+	return viableCandidates
 }
 
 const discriminantCaseToNode = (
