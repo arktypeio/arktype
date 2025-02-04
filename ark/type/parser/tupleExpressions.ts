@@ -3,7 +3,6 @@ import {
 	intersectNodesRoot,
 	type BaseParseContext,
 	type BaseRoot,
-	type MetaSchema,
 	type Morph,
 	type Predicate,
 	type unwrapDefault
@@ -26,6 +25,7 @@ import type {
 	Out,
 	withDefault
 } from "../attributes.ts"
+import type { TypeMetaInput } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
 import {
 	shallowDefaultableMessage,
@@ -108,7 +108,7 @@ export type validateIndexOneExpression<
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
-			: def[1] extends "@" ? MetaSchema
+			: def[1] extends "@" ? TypeMetaInput
 			: validateDefinition<def[2], $, args>
 		]
 

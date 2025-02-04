@@ -15,7 +15,6 @@ import {
 	type GenericParamAst,
 	type GenericParamDef,
 	type GenericRoot,
-	type MetaSchema,
 	type NodeKind,
 	type NodeSchema,
 	type PreparsedNodeResolution,
@@ -44,6 +43,7 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
+import type { TypeMetaInput } from "./config.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -191,7 +191,7 @@ export interface InternalScope {
 }
 
 interface ResolvedTypeScopeConfig extends ResolvedScopeConfig {
-	keywords?: Record<string, MetaSchema>
+	keywords?: Record<string, TypeMetaInput>
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {

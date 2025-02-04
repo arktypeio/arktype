@@ -2,9 +2,7 @@ import {
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
-	type ArkErrorsHandler,
 	type BaseParseOptions,
-	type MetaSchema,
 	type Morph,
 	type Predicate,
 	type RootSchema
@@ -17,6 +15,7 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import type { TypeMetaInput } from "./config.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -103,7 +102,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		: one extends TupleInfixOperator ?
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
-			: one extends "@" ? [MetaSchema]
+			: one extends "@" ? [TypeMetaInput]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r
@@ -246,23 +245,6 @@ export type SchemaParser<$> = (
 ) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
-
-export type ConfiguredType<t, $, config extends ArkEnv.meta> =
-	config["onFail"] extends ArkErrorsHandler<infer returns> ?
-		returns extends never ?
-			AssertionType<t, $>
-		:	((data: unknown) => distill.Out<t> | returns) & instantiateType<t, $>
-	:	instantiateType<t, $>
-
-// by intersecting the signature without ArkErrors,
-// we create an overload of the top-level call.
-// by making it the LHS of the intersection, we ensure
-// that overload is checked first, which will always match
-// because the parameters (data: unknown) are identical
-export type AssertionType<t = unknown, $ = {}> = ((
-	data: unknown
-) => distill.Out<t>) &
-	instantiateType<t, $>
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,

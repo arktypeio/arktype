@@ -1,6 +1,6 @@
 import "./config.ts"
 
-import { match, type } from "arktype"
+import { match } from "arktype"
 
 const sizeOf = match({
 	"string | Array": v => v.length,
@@ -19,12 +19,3 @@ const bigSize = sizeOf(999n)
 
 // MatchError: must be a string or an object, a number or a bigint (was boolean)
 const bad = sizeOf(true)
-
-const t = type(
-	{
-		foo: "string"
-	},
-	"[]"
-).configure({
-	onFail: e => e.throw()
-})

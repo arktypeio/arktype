@@ -4,10 +4,15 @@ import type { Ark } from "./keywords/keywords.ts"
 import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
 import type { anyOrNever } from "@ark/util"
 
+export type TypeMeta = Omit<ArkEnv.meta, "onFail">
+
+export type TypeMetaInput = string | TypeMeta
+
 export type KeywordConfig = {
-	[k in keyof Ark.flat as parseConfigurableFlatAlias<k, Ark.flat[k]>]?:
-		| string
-		| ArkEnv.meta
+	[k in keyof Ark.flat as parseConfigurableFlatAlias<
+		k,
+		Ark.flat[k]
+	>]?: TypeMetaInput
 }
 
 type parseConfigurableFlatAlias<k extends string, v> =
