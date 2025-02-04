@@ -7,7 +7,6 @@ import {
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput,
-	type ArkErrorsHandler,
 	type NodeErrorContextInput
 } from "./errors.ts"
 import { isNode } from "./utils.ts"
@@ -147,7 +146,7 @@ export class Traversal {
 		else this.queuedMorphs.push(input)
 	}
 
-	finalize(onFail?: ArkErrorsHandler): unknown {
+	finalize(onFail?: ArkErrors.Handler): unknown {
 		if (this.queuedMorphs.length) {
 			if (
 				typeof this.root === "object" &&

@@ -15,11 +15,9 @@ export interface DefaultArkEnv {
 	onFail(errors: ArkErrors): ArkErrors
 }
 
-export type ArkErrorsHandler<returns = unknown> = (errors: ArkErrors) => returns
-
 export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
 	alias?: string
-	onFail?: ArkErrorsHandler
+	onFail?: ArkErrors.Handler
 }
 
 declare global {

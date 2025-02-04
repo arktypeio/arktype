@@ -133,6 +133,10 @@ export class ArkError<
 	}
 }
 
+export declare namespace ArkErrors {
+	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
+}
+
 /**
  * A ReadonlyArray of `ArkError`s returned by a Type on invalid input.
  *
