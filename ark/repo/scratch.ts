@@ -1,29 +1,15 @@
-import "./config.ts"
+import { type } from "arktype"
 
-import { scope, type } from "arktype"
+// human-readable descriptions by default
+const l = type("0 < number <= 100").divisibleBy(2)
+console.log(l.description)
 
-export const pkg = type({
-	name: "string",
-	date: type.match({
-		"string | number": s => new Date(s),
-		default: () => {
-			throw new Error()
-		}
-	}),
-	"metadata?": "string.json.parse",
-	"tags?": "(number | string)[]"
-})
+const r = type("number % 3").lessThan(10)
+console.log(r.description)
 
-type Nested = typeof types.nestableToArbitraryDepth.infer
+// intersections automatically reduced to their optimal representation
+const both = l.and(r)
+console.log(both.description)
 
-const types = scope({
-	obj: {
-		foo: "string"
-	},
-	objArray: "obj[]",
-	nestableToArbitraryDepth: {
-		key: {
-			tupleKey: ["obj[]"]
-		}
-	}
-}).export()
+// attempting to create an invalid Type yields a ParseError
+const whoops = both.moreThan(20)
