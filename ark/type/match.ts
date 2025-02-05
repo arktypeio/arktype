@@ -1,6 +1,5 @@
 import {
 	intrinsic,
-	type ArkError,
 	type ArkErrors,
 	type BaseRoot,
 	type Morph,
