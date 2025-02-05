@@ -31,29 +31,23 @@ const validateOneOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]) => {
 	const oneOfValidatorsDescriptions = oneOfValidators.map(
 		validator => `○ ${validator.description}`
 	)
-	return (
-		(
-			type("unknown").narrow((data, ctx) => {
-				let matchedValidator: Type | undefined = undefined
+	return type("unknown").narrow((data, ctx) => {
+		let matchedValidator: Type | undefined = undefined
 
-				for (const validator of oneOfValidators) {
-					if (validator.allows(data)) {
-						if (matchedValidator === undefined) {
-							matchedValidator = validator
-							continue
-						}
-						return ctx.reject({
-							expected: `exactly one of:\n${oneOfValidatorsDescriptions.join("\n")}`,
-							actual: printable(data)
-						})
-					}
+		for (const validator of oneOfValidators) {
+			if (validator.allows(data)) {
+				if (matchedValidator === undefined) {
+					matchedValidator = validator
+					continue
 				}
-				return matchedValidator !== undefined
-			}) as Type
-		)
-			// TODO: Theoretically this shouldn't be necessary due to above `ctx.rejects` in narrow???
-			.describe(`one of:\n${oneOfValidatorsDescriptions.join("\n")}\n`)
-	)
+				return ctx.reject({
+					expected: `exactly one of:\n${oneOfValidatorsDescriptions.join("\n")}`,
+					actual: printable(data)
+				})
+			}
+		}
+		return matchedValidator !== undefined
+	})
 }
 
 export const parseJsonSchemaCompositionKeywords = (
