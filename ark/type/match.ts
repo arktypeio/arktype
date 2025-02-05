@@ -94,7 +94,7 @@ type addDefaultToContext<
 	:	ctx["input"]
 	cases: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
 	: defaultCase extends "never" | "assert" ? ctx["cases"]
-	: [...ctx["cases"], (In: ctx["input"]) => ArkError]
+	: [...ctx["cases"], (In: ctx["input"]) => ArkErrors]
 	key: ctx["key"]
 }>
 
