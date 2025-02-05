@@ -33,8 +33,7 @@ import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail> {
+export interface Inferred<out t = unknown, $ = {}> {
 	internal: BaseRoot
 	[inferred]: t
 
@@ -299,19 +298,6 @@ interface Type<out t = unknown, $ = {}>
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	/**
-	 * #### cast the way this is inferred
-	 *
-	 * @typenoop
-	 *
-	 * @example
-	 * // Type<`LEEEEEEEE${string}ROY`>
-	 * const leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()
-	 */
-	as<castTo = unset>(
-		...args: validateChainedAsArgs<castTo>
-	): instantiateType<castTo, $>
-
-	/**
 	 * #### add a compile-time brand to output
 	 *
 	 * @typenoop
@@ -326,32 +312,6 @@ interface Type<out t = unknown, $ = {}>
 	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
 	): instantiateType<r, $>
-
-	/**
-	 * #### intersect the parsed Type, throwing if the result is unsatisfiable
-	 *
-	 * @example
-	 * // Type<{ foo: number; bar: string }>
-	 * const t = type({ foo: "number" }).and({ bar: "string" })
-	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
-	 * const bad = type({ foo: "number" }).and({ foo: "string" })
-	 */
-	and<const def, r = type.infer<def, $>>(
-		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $>
-
-	/**
-	 * #### union with the parsed Type
-	 *
-	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
-	 *
-	 * @example
-	 * // Type<string | { box: string }>
-	 * const t = type("string").or({ box: "string" })
-	 */
-	or<const def, r = type.infer<def, $>>(
-		def: type.validate<def, $>
-	): instantiateType<t | r, $>
 
 	/**
 	 * #### an array of this
@@ -451,6 +411,50 @@ interface Type<out t = unknown, $ = {}>
 	 * @example type({codes: 'string.numeric[]'}).pipe(obj => obj.codes).to('string.numeric.parse[]')
 	 */
 	pipe: ChainedPipe<t, $>
+}
+
+/** @ts-ignore cast variance */
+interface Type<out t = unknown, $ = {}>
+	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
+		Inferred<t, $> {
+	/**
+	 * #### cast the way this is inferred
+	 *
+	 * @typenoop
+	 *
+	 * @example
+	 * // Type<`LEEEEEEEE${string}ROY`>
+	 * const leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()
+	 */
+	as<castTo = unset>(
+		...args: validateChainedAsArgs<castTo>
+	): instantiateType<castTo, $>
+
+	/**
+	 * #### intersect the parsed Type, throwing if the result is unsatisfiable
+	 *
+	 * @example
+	 * // Type<{ foo: number; bar: string }>
+	 * const t = type({ foo: "number" }).and({ bar: "string" })
+	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
+	 * const bad = type({ foo: "number" }).and({ foo: "string" })
+	 */
+	and<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
+	): instantiateType<inferIntersection<t, r>, $>
+
+	/**
+	 * #### union with the parsed Type
+	 *
+	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
+	 *
+	 * @example
+	 * // Type<string | { box: string }>
+	 * const t = type("string").or({ box: "string" })
+	 */
+	or<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
+	): instantiateType<t | r, $>
 
 	// inferring r into an alias improves perf and avoids return type inference
 	// that can lead to incorrect results. See:

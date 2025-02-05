@@ -12,7 +12,6 @@ import {
 	type conform,
 	type ErrorMessage,
 	type ErrorType,
-	type inferred,
 	type isDisjoint,
 	type Key,
 	type mutable,
@@ -22,6 +21,7 @@ import {
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
+import type { Inferred } from "./methods/base.ts"
 import type { BaseCompletions } from "./parser/string.ts"
 import type { InternalScope } from "./scope.ts"
 
@@ -225,7 +225,10 @@ type finalizeMatchParser<
 		Match<ctx["input"], ctx["cases"]>
 	:	never
 
-export interface Match<In = any, cases extends Morph[] = Morph[]> {
+export interface Match<In = any, cases extends Morph[] = Morph[]>
+	extends Inferred<
+		(In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
+	> {
 	<const data extends In>(
 		data: data
 	): {
@@ -236,10 +239,6 @@ export interface Match<In = any, cases extends Morph[] = Morph[]> {
 			never
 		:	Morph.Out<cases[i]>
 	}[numericStringKeyOf<cases>]
-
-	[inferred]: (In: Morph.In<cases[number]>) => Out<ReturnType<cases[number]>>
-	t: this[inferred]
-	internal: BaseRoot
 }
 
 export class InternalMatchParser extends Callable<InternalCaseParserFn> {

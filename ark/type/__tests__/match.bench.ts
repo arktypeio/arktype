@@ -16,7 +16,7 @@ bench("case(3, define)", () =>
 		.case("-2", n => `${n}` as const)
 		.case("-3", n => `${n}` as const)
 		.default("assert")
-).types([2784, "instantiations"])
+).types([2523, "instantiations"])
 
 bench("case(10, define)", () =>
 	match
@@ -31,7 +31,7 @@ bench("case(10, define)", () =>
 		.case("8", n => `${n}` as const)
 		.case("9", n => `${n}` as const)
 		.default("assert")
-).types([9528, "instantiations"])
+).types([9267, "instantiations"])
 
 bench("match.in<t> cases define and invoke", () => {
 	const matcher = match
@@ -45,7 +45,7 @@ bench("match.in<t> cases define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3035, "instantiations"])
+}).types([2929, "instantiations"])
 
 bench("record(3, define)", () =>
 	match({
@@ -54,7 +54,7 @@ bench("record(3, define)", () =>
 		"22": n => `${n}` as const,
 		default: "assert"
 	})
-).types([2182, "instantiations"])
+).types([2074, "instantiations"])
 
 bench("record(10, define)", () =>
 	match({
@@ -70,7 +70,7 @@ bench("record(10, define)", () =>
 		"-9n": n => `${n}` as const,
 		default: "assert"
 	})
-).types([7297, "instantiations"])
+).types([7189, "instantiations"])
 
 bench("record.in<t> define and invoke", () => {
 	const matcher = match.in<string | number | boolean>().match({
@@ -84,7 +84,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3386, "instantiations"])
+}).types([3273, "instantiations"])
 
 // For some reason, these calls don't register instantiations
 // will have to look into that later, although generally
@@ -100,7 +100,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).mean([6.86, "us"])
+}).mean([875.73, "ns"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -119,10 +119,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).mean([6.99, "us"])
+}).mean([888.88, "ns"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).mean([47.21, "us"])
+}).mean([982.46, "ns"])
