@@ -5,10 +5,9 @@ import {
 	type TraversalContext
 } from "@ark/schema"
 import { printable } from "@ark/util"
-import type { Out, Type } from "arktype"
-
+import type { JsonSchema, Out, Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
-import { JsonSchemaScope, type ArraySchema } from "./scope.ts"
+import { JsonSchemaScope } from "./scope.ts"
 
 const deepNormalize = (data: unknown): unknown =>
 	typeof data === "object" ?
@@ -53,7 +52,7 @@ const arrayContainsItemMatchingSchema = (
 		})
 
 export const validateJsonSchemaArray: Type<
-	(In: ArraySchema) => Out<Type<unknown[], {}>>,
+	(In: JsonSchema.Array) => Out<Type<unknown[], {}>>,
 	any
 > = JsonSchemaScope.ArraySchema.pipe((jsonSchema, ctx) => {
 	const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
@@ -88,7 +87,7 @@ export const validateJsonSchemaArray: Type<
 			}
 		} else {
 			arktypeArraySchema.sequence = {
-				variadic: parseJsonSchema(jsonSchema.items).json
+				variadic: parseJsonSchema(jsonSchema.items).internal
 			}
 		}
 	}
