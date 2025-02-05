@@ -38,6 +38,24 @@ const out = user({
 
 The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
 
+### Tuple and args expressions for `.to`
+
+If a morph returns an `ArkErrors` instance, validation will fail with that result instead of it being treated as a value. This is especially useful for using other Types as morphs to validate output or chain transformations.
+
+To make this easier, there's a special `to` operator that can pipe to a parsed definition without having to wrap it in `type` to make it a function.
+
+This was added before 2.0, but now it comes with a corresponding operator (`|>`) so that it can be expressed via a tuple or args like most other expressions:
+
+```ts
+const fluentStillWorks = type("string.numeric.parse").to("number % 2")
+
+const nowSoDoesTuple = type({
+	someKey: ["string.numeric.parse", "|>", "number % 2"]
+})
+
+const andSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
+```
+
 ### Error configurations now accept a string directly
 
 ```ts
