@@ -77,11 +77,6 @@ export abstract class BaseRoot<
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
 	}
 
-	assert = (data: unknown): unknown => {
-		const result = this.traverse(data)
-		return result instanceof ArkErrors ? result.throw() : result
-	}
-
 	get internal(): this {
 		return this
 	}

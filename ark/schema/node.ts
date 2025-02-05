@@ -65,7 +65,11 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
-	(data: d["prerequisite"], ctx?: Traversal) => unknown,
+	(
+		data: d["prerequisite"],
+		ctx?: Traversal,
+		onFail?: ArkErrors.Handler | null
+	) => unknown,
 	attachmentsOf<d>
 > {
 	attachments: UnknownAttachments
@@ -73,7 +77,11 @@ export abstract class BaseNode<
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
-			(data: any, pipedFromCtx?: Traversal) => {
+			(
+				data: any,
+				pipedFromCtx?: Traversal | undefined,
+				onFail?: ArkErrors.Handler | null
+			) => {
 				if (
 					!this.includesMorph &&
 					!this.allowsRequiresContext &&
@@ -90,7 +98,11 @@ export abstract class BaseNode<
 
 				const ctx = new Traversal(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
-				return ctx.finalize(this.meta.onFail)
+				return ctx.finalize(
+					onFail === null ? undefined
+					: onFail === undefined ? this.meta.onFail
+					: onFail
+				)
 			},
 			{ attach: attachments as never }
 		)
@@ -119,8 +131,10 @@ export abstract class BaseNode<
 		(this.hasKind("structure") && this.inner.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
 
+	// if a predicate accepts exactly one arg, we can safely skip passing context
+	// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
+	// that would break here, but it feels like a pathological case and is better to let people optimize
 	readonly hasContextualPredicate: boolean =
-		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some(child => child.hasContextualPredicate)
 	readonly isCyclic: boolean =
@@ -209,8 +223,16 @@ export abstract class BaseNode<
 		return (this.traverseAllows as any)(data)
 	}
 
-	traverse(data: d["prerequisite"]): ArkErrors | {} | null | undefined {
-		return this(data)
+	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
+	// otherwise, would run into issues with this binding
+	assert = (data: d["prerequisite"], pipedFromCtx?: Traversal): unknown =>
+		this(data, pipedFromCtx, errors => errors.throw())
+
+	traverse(
+		data: d["prerequisite"],
+		pipedFromCtx?: Traversal
+	): ArkErrors | {} | null | undefined {
+		return this(data, pipedFromCtx, null)
 	}
 
 	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
