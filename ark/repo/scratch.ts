@@ -13,3 +13,14 @@ console.log(both.description)
 
 // attempting to create an invalid Type yields a ParseError
 const whoops = both.moreThan(20)
+
+declare global {
+	interface ArkEnv {
+		prototypes(): MySpecialClass
+	}
+}
+
+class MySpecialClass {}
+
+const t = type.instanceOf(MySpecialClass)
+//    ^? Type<MySpecialClass>

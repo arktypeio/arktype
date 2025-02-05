@@ -74,13 +74,14 @@ export abstract class BaseNode<
 > {
 	attachments: UnknownAttachments
 	$: BaseScope
+	onFail: ArkErrors.Handler | null
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
 			(
 				data: any,
 				pipedFromCtx?: Traversal | undefined,
-				onFail?: ArkErrors.Handler | null
+				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
 				if (
 					!this.includesMorph &&
@@ -98,16 +99,13 @@ export abstract class BaseNode<
 
 				const ctx = new Traversal(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
-				return ctx.finalize(
-					onFail === null ? undefined
-					: onFail === undefined ? this.meta.onFail
-					: onFail
-				)
+				return ctx.finalize(onFail)
 			},
 			{ attach: attachments as never }
 		)
 		this.attachments = attachments
 		this.$ = $
+		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
 	}
 
 	withMeta(

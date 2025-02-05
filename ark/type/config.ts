@@ -25,7 +25,8 @@ export interface ArkConfig extends ArkSchemaConfig {
 	keywords?: KeywordConfig
 }
 
-export const configure: (config: ArkConfig) => ArkConfig = configureSchema
+export const configure: <config extends ArkConfig>(config: config) => config =
+	configureSchema as never
 
 declare global {
 	export interface ArkEnv {

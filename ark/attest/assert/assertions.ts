@@ -1,6 +1,5 @@
 import { printable, throwInternalError } from "@ark/util"
 import type { type } from "arktype"
-import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
 import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.ts"
 import type { AssertionContext } from "./attest.ts"
@@ -93,7 +92,7 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 			else {
 				const serializedExpected = printable(expected)
 				const serializedActual = printable(actual)
-				throw new AssertionError({
+				throw new assert.AssertionError({
 					message: `Objects did not have the same constructor:
 Expected: ${serializedExpected}
 Actual: ${serializedActual}`,
@@ -109,7 +108,7 @@ Actual: ${serializedActual}`,
 		) {
 			const serializedExpected = printable(expected)
 			const serializedActual = printable(actual)
-			throw new AssertionError({
+			throw new assert.AssertionError({
 				message: `Assertion including at least one function or object was not between reference eqaul items
 Expected: ${serializedExpected}
 Actual: ${serializedActual}`,

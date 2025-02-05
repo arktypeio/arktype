@@ -32,7 +32,7 @@ configure({ numberAllowsNaN: true })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype!
+// import your config file before arktype
 import { type } from "arktype"
 
 type.number.allows(Number.NaN) // true
@@ -267,7 +267,7 @@ configure({
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype!
+// import your config file before arktype
 import { type } from "arktype"
 
 const user = type({
@@ -299,7 +299,7 @@ configure({ clone: structuredClone })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype!
+// import your config file before arktype
 import { type } from "arktype"
 
 // will now create a new object using structuredClone
@@ -318,7 +318,7 @@ configure({ clone: false })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype!
+// import your config file before arktype
 import { type } from "arktype"
 
 const userForm = type({
@@ -353,7 +353,7 @@ configure({ onUndeclaredKey: "delete" })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype!
+// import your config file before arktype
 import { type } from "arktype"
 
 const userForm = type({
@@ -381,13 +381,48 @@ configure({ jitless: true })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype!
+// import your config file before arktype
 import { type } from "arktype"
 
 // will not be precompiled
 const myObject = type({
 	foo: "string"
 })
+```
+
+### onFail
+
+In some domains, you may always want to throw on failed validation or transform the result in some other way.
+
+By specifying `onFail` in your global config, you can control what happens when you invoke a `Type` on invalid data:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+const config = configure({
+	onFail: errors => errors.throw()
+})
+
+// be sure to specify both the runtime and static configs
+
+declare global {
+	interface ArkEnv {
+		onFail: typeof config.onFail
+	}
+}
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+// data is inferred as string- no need to discriminate!
+const data = type.string("foo")
+
+// now thrown instead of returned
+// ArkErrors: must be a string (was number)
+const bad = type.string(5)
 ```
 
 ### custom
@@ -412,4 +447,25 @@ const mrPingsSecretIngredientSoup = type({
 	broth: "'miso' | 'vegetable'",
 	ingredients: "string[]"
 }).configure({ secretIngredient: "nothing!" })
+```
+
+### prototypes
+
+When you `.infer` your Types, ArkType traverses them and extracts special values like morphs, e.g. `(In: string) => Out<number>`.
+
+Though generally this is able to preserve the original type, it is inefficient and can accidentally expand certain object types.
+
+You can use the type-level `prototypes` config to tell ArkType to treat those types as external:
+
+```ts
+declare global {
+	interface ArkEnv {
+		prototypes(): MySpecialClass
+	}
+}
+
+class MySpecialClass {}
+
+const t = type.instanceOf(MySpecialClass)
+//    ^? Type<MySpecialClass>
 ```

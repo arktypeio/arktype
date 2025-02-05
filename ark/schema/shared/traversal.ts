@@ -146,7 +146,7 @@ export class Traversal {
 		else this.queuedMorphs.push(input)
 	}
 
-	finalize(onFail?: ArkErrors.Handler): unknown {
+	finalize(onFail?: ArkErrors.Handler | null): unknown {
 		if (this.queuedMorphs.length) {
 			if (
 				typeof this.root === "object" &&

@@ -4,6 +4,7 @@ import type { nodesByRegisteredId } from "./parse.ts"
 import type {
 	ActualConfig,
 	ArkErrorCode,
+	ArkErrors,
 	ExpectedConfig,
 	MessageConfig,
 	ProblemConfig
@@ -103,6 +104,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
 	readonly numberAllowsNaN?: boolean
 	readonly dateAllowsInvalid?: boolean
+	readonly onFail?: ArkErrors.Handler | null
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<
