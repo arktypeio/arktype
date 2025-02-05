@@ -10,7 +10,6 @@ import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
-	basisKinds,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
