@@ -39,7 +39,7 @@ export const queueBaselineUpdateIfNeeded = (
 		baselinePath: ctx.qualifiedPath
 	})
 
-	if (ctx.lastSnapFunctionName === "types") writeSnapshotUpdatesOnExit()
+	if (ctx.benchCallPosition) writeSnapshotUpdatesOnExit()
 }
 
 /** Pretty print comparison and set the process.exitCode to 1 if delta threshold is exceeded */

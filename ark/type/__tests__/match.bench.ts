@@ -90,45 +90,39 @@ bench("record.in<t> define and invoke", () => {
 // will have to look into that later, although generally
 // I'd expect the definition to be the more expensive API anyways
 
-// const invokedCases3 = match
-// 	.case("31", n => `${n}` as const)
-// 	.case("32", n => `${n}` as const)
-// 	.case("33", n => `${n}` as const)
-// 	.default("assert")
+const invokedCases3 = match
+	.case("31", n => `${n}` as const)
+	.case("32", n => `${n}` as const)
+	.case("33", n => `${n}` as const)
+	.default("assert")
 
-// bench("case(3, invoke)", () => {
-// 	const zero = invokedCases3(31)
-// 	const one = invokedCases3(32)
-// 	const two = invokedCases3(33)
+bench("case(3, invoke)", () => {
+	invokedCases3(31)
+	invokedCases3(32)
+	invokedCases3(33)
+}).mean([6.86, "us"])
 
-// 	return [zero, one, two]
-// }).types([0, "instantiations"])
+const invokedCases10 = match
+	.case("0n", n => `${n}` as const)
+	.case("1n", n => `${n}` as const)
+	.case("2n", n => `${n}` as const)
+	.case("3n", n => `${n}` as const)
+	.case("4n", n => `${n}` as const)
+	.case("5n", n => `${n}` as const)
+	.case("6n", n => `${n}` as const)
+	.case("7n", n => `${n}` as const)
+	.case("8n", n => `${n}` as const)
+	.case("9n", n => `${n}` as const)
+	.default("assert")
 
-// const invokedCases10 = match
-// 	.case("0n", n => `${n}` as const)
-// 	.case("1n", n => `${n}` as const)
-// 	.case("2n", n => `${n}` as const)
-// 	.case("3n", n => `${n}` as const)
-// 	.case("4n", n => `${n}` as const)
-// 	.case("5n", n => `${n}` as const)
-// 	.case("6n", n => `${n}` as const)
-// 	.case("7n", n => `${n}` as const)
-// 	.case("8n", n => `${n}` as const)
-// 	.case("9n", n => `${n}` as const)
-// 	.default("assert")
+bench("case(10, invoke first)", () => {
+	invokedCases10(0n)
+	invokedCases10(1n)
+	invokedCases10(2n)
+}).mean([6.99, "us"])
 
-// bench("case(10, invoke first)", () => {
-// 	const zero = invokedCases10(0n)
-// 	const one = invokedCases10(1n)
-// 	const two = invokedCases10(2n)
-
-// 	return [zero, one, two]
-// }).types([0, "instantiations"])
-
-// bench("case(10, invoke last)", () => {
-// 	const zero = invokedCases10(8n)
-// 	const one = invokedCases10(9n)
-// 	const two = invokedCases10(10n)
-
-// 	return [zero, one, two]
-// }).types([0, "instantiations"])
+bench("case(10, invoke last)", () => {
+	invokedCases10(7n)
+	invokedCases10(8n)
+	invokedCases10(9n)
+}).mean([47.21, "us"])

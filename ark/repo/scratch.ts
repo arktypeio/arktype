@@ -1,15 +1,16 @@
-import { type } from "arktype"
+import { match } from "arktype"
 
-// human-readable descriptions by default
-const l = type("0 < number <= 100").divisibleBy(2)
-console.log(l.description)
+const invokedCases10 = match
+	.case("0n", n => `${n}` as const)
+	.case("1n", n => `${n}` as const)
+	.case("2n", n => `${n}` as const)
+	.case("3n", n => `${n}` as const)
+	.case("4n", n => `${n}` as const)
+	.case("5n", n => `${n}` as const)
+	.case("6n", n => `${n}` as const)
+	.case("7n", n => `${n}` as const)
+	.case("8n", n => `${n}` as const)
+	.case("9n", n => `${n}` as const)
+	.default("assert")
 
-const r = type("number % 3").lessThan(10)
-console.log(r.description)
-
-// intersections automatically reduced to their optimal representation
-const both = l.and(r)
-console.log(both.description)
-
-// attempting to create an invalid Type yields a ParseError
-const whoops = both.moreThan(20)
+console.log(invokedCases10.internal.precompilation)

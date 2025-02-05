@@ -50,6 +50,25 @@ console.log(`(was ${type.string})`)
 
 Hopefully if you interpolate a Type, you'll be less confused by the result from now on!
 
+### Fix an issue causing some discriminated unions to incorrectly reject default cases
+
+```ts
+const discriminated = type({
+	id: "0",
+	k1: "number"
+})
+	.or({ id: "1", k1: "number" })
+	.or({
+		name: "string"
+	})
+
+// previously, this was rejected as requiring a "k1" key
+
+// will now hit the case discriminated for id: 1,
+// but still correctly be allowed via the { name: string } branch
+discriminated({ name: "foo", id: 1 }))
+```
+
 ## 2.0.4
 
 ### Fix an issue causing global configs to be overwritten when the primary `"arktype"` entry point is imported:
