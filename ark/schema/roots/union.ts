@@ -443,11 +443,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 							cases: {
 								[lSerialized]: {
 									branchIndices: [lIndex],
-									caseDiscriminant: entry.l as never
+									condition: entry.l as never
 								},
 								[rSerialized]: {
 									branchIndices: [rIndex],
-									caseDiscriminant: entry.r as never
+									condition: entry.r as never
 								}
 							},
 							path: entry.path
@@ -461,7 +461,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						} else {
 							matching.cases[lSerialized] ??= {
 								branchIndices: [lIndex],
-								caseDiscriminant: entry.l as never
+								condition: entry.l as never
 							}
 						}
 
@@ -473,7 +473,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						} else {
 							matching.cases[rSerialized] ??= {
 								branchIndices: [rIndex],
-								caseDiscriminant: entry.r as never
+								condition: entry.r as never
 							}
 						}
 					}
@@ -486,86 +486,48 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		if (!orderedCandidates.length) return null
 
-		// sort candidates by number of cases i.e. the number of distinct branches they discriminate
-		const best = orderedCandidates.sort(
-			(l, r) => Object.keys(r.cases).length - Object.keys(l.cases).length
-		)[0]
-
-		let defaultBranches = [...this.branches]
-
-		const bestCtx: DiscriminantContext = {
-			kind: best.kind,
-			path: best.path,
-			optionallyChainedPropString: optionallyChainPropString(best.path)
-		}
+		const ctx = createCaseResolutionContext(orderedCandidates, this)
 
 		const cases: DiscriminatedCases = {}
 
-		for (const [k, caseCtx] of Object.entries(best.cases)) {
-			const discriminantNode = discriminantCaseToNode(
-				caseCtx.caseDiscriminant,
-				bestCtx.path,
-				this.$
-			)
-			const prunedBranches: BaseRoot[] = []
-			defaultBranches = defaultBranches.filter(n => {
-				if (caseCtx.branchIndices.some(i => this.branches[i] === n))
-					return false
-				// we shouldn't need a special case for alias to avoid the below
-				// once alias resolution issues are improved:
-				// https://github.com/arktypeio/arktype/issues/1026
-				if (
-					n.hasKind("alias") &&
-					discriminantNode.hasKind("domain") &&
-					discriminantNode.domain === "object"
-				) {
-					prunedBranches.push(n)
-					return false
-				}
-				// include cases where an object not including the
-				// discriminant path might have that value present as an undeclared key
-				if (n.in.overlaps(discriminantNode)) {
-					const overlapping = pruneDiscriminant(n, bestCtx)!
-					prunedBranches.push(overlapping)
-				}
-				return true
-			})
-			for (const i of caseCtx.branchIndices) {
-				const pruned = pruneDiscriminant(this.branches[i], bestCtx)
-				// if any branch of the union has no constraints (i.e. is unknown)
-				// return it right away
-				if (pruned === null) {
-					cases[k] = true as const
-					break
-				}
-				prunedBranches.push(pruned)
+		for (const k in ctx.best.cases) {
+			const resolution = resolveCase(ctx, k)
+
+			if (resolution === null) {
+				cases[k] = true
+				continue
 			}
 
-			if (cases[k] === true) continue
+			// if all the branches ended up back in pruned, we'd loop if we continued
+			// so just bail out- nothing left to discriminate
+			if (resolution.length === this.branches.length) return null
 
-			if (prunedBranches.length === this.branches.length) return null
+			if (this.ordered) {
+				// ensure the original order of the pruned branches is preserved
+				resolution.sort((l, r) => l.originalIndex - r.originalIndex)
+			}
+
+			const branches = resolution.map(entry => entry.branch)
 
 			const caseNode =
-				prunedBranches.length === 1 ?
-					prunedBranches[0]
+				branches.length === 1 ?
+					branches[0]
 				:	this.$.node(
 						"union",
-						this.ordered ?
-							{ branches: prunedBranches, ordered: true }
-						:	prunedBranches
+						this.ordered ? { branches, ordered: true } : branches
 					)
 
 			Object.assign(this.referencesById, caseNode.referencesById)
-
 			cases[k] = caseNode
 		}
 
-		if (defaultBranches.length) {
+		if (ctx.defaultEntries.length) {
+			// we don't have to worry about order here as it is always preserved
+			// within defaultEntries
+			const branches = ctx.defaultEntries.map(entry => entry.branch)
 			cases.default = this.$.node(
 				"union",
-				this.ordered ?
-					{ branches: defaultBranches, ordered: true }
-				:	defaultBranches,
+				this.ordered ? { branches, ordered: true } : branches,
 				{
 					prereduced: true
 				}
@@ -574,10 +536,110 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			Object.assign(this.referencesById, cases.default.referencesById)
 		}
 
-		return Object.assign(bestCtx, {
+		return Object.assign(ctx.location, {
 			cases
 		})
 	}
+}
+// New context object to carry discrimination state between functions.
+type CaseResolutionContext = {
+	best: DiscriminantCandidate
+	location: DiscriminantLocation
+	defaultEntries: BranchEntry[]
+	node: Union.Node
+}
+
+type BranchEntry = {
+	originalIndex: number
+	branch: BaseRoot
+}
+
+const createCaseResolutionContext = (
+	orderedCandidates: DiscriminantCandidate[],
+	node: Union.Node
+): CaseResolutionContext => {
+	const best = orderedCandidates.sort(
+		(l, r) => Object.keys(r.cases).length - Object.keys(l.cases).length
+	)[0]
+
+	const location: DiscriminantLocation = {
+		kind: best.kind,
+		path: best.path,
+		optionallyChainedPropString: optionallyChainPropString(best.path)
+	}
+
+	const defaultEntries = node.branches.map(
+		(branch, originalIndex): BranchEntry => ({
+			originalIndex,
+			branch
+		})
+	)
+
+	return {
+		best,
+		location,
+		defaultEntries,
+		node
+	}
+}
+
+const resolveCase = (
+	ctx: CaseResolutionContext,
+	key: CaseKey
+): BranchEntry[] | null => {
+	const caseCtx = ctx.best.cases[key]
+	const discriminantNode = discriminantCaseToNode(
+		caseCtx.condition,
+		ctx.location.path,
+		ctx.node.$
+	)
+
+	let resolvedEntries: BranchEntry[] | null = []
+	const nextDefaults: BranchEntry[] = []
+
+	for (let i = 0; i < ctx.defaultEntries.length; i++) {
+		const entry = ctx.defaultEntries[i]
+		if (caseCtx.branchIndices.includes(entry.originalIndex)) {
+			const pruned = pruneDiscriminant(
+				ctx.node.branches[entry.originalIndex],
+				ctx.location
+			)
+			if (pruned === null) {
+				// if any branch of the union has no constraints (i.e. is
+				// unknown), the others won't affect the resolution type, but could still
+				// remove additional cases from defaultEntries
+				resolvedEntries = null
+			} else {
+				resolvedEntries?.push({
+					originalIndex: entry.originalIndex,
+					branch: pruned
+				})
+			}
+		} else if (
+			// we shouldn't need a special case for alias to avoid the below
+			// once alias resolution issues are improved:
+			// https://github.com/arktypeio/arktype/issues/1026
+			entry.branch.hasKind("alias") &&
+			discriminantNode.hasKind("domain") &&
+			discriminantNode.domain === "object"
+		)
+			resolvedEntries?.push(entry)
+		else {
+			if (entry.branch.in.overlaps(discriminantNode)) {
+				// include cases where an object not including the
+				// discriminant path might have that value present as an undeclared key
+				const overlapping = pruneDiscriminant(entry.branch, ctx.location)!
+				resolvedEntries?.push({
+					originalIndex: entry.originalIndex,
+					branch: overlapping
+				})
+			}
+			nextDefaults.push(entry)
+		}
+	}
+
+	ctx.defaultEntries = nextDefaults
+	return resolvedEntries
 }
 
 const orderCandidates = (
@@ -842,14 +904,14 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-type DiscriminantContext<kind extends DiscriminantKind = DiscriminantKind> = {
+type DiscriminantLocation<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: PropertyKey[]
 	optionallyChainedPropString: string
 	kind: kind
 }
 
 export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
-	extends DiscriminantContext<kind> {
+	extends DiscriminantLocation<kind> {
 	cases: DiscriminatedCases<kind>
 }
 
@@ -865,7 +927,7 @@ type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
 
 export type CaseContext = {
 	branchIndices: number[]
-	caseDiscriminant: nodeOfKind<DiscriminantKind> | Domain.Enumerable
+	condition: nodeOfKind<DiscriminantKind> | Domain.Enumerable
 }
 
 export type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
@@ -885,7 +947,7 @@ export type DiscriminantKind = show<keyof DiscriminantKinds>
 
 export const pruneDiscriminant = (
 	discriminantBranch: BaseRoot,
-	discriminantCtx: DiscriminantContext
+	discriminantCtx: DiscriminantLocation
 ): BaseRoot | null =>
 	discriminantBranch.transform(
 		(nodeKind, inner) => {

@@ -324,14 +324,14 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	default(defaultCase: DefaultCase): Match {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
-		else if (defaultCase === "never" || defaultCase === "assert")
-			this.case(intrinsic.unknown, (_, ctx) => ctx.errors.throw())
-		// no case needs to be added for "reject" (that behavior would happen anyways)
 
 		const schema: mutable<Union.Schema> = {
 			branches: this.branches,
 			ordered: true
 		}
+
+		if (defaultCase === "never" || defaultCase === "assert")
+			schema.meta = { onFail: errors => errors.throw() }
 
 		const matcher = this.$.node("union", schema)
 

@@ -236,14 +236,14 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark._overlapping1"]
+					morphs: ["$ark._matchOverlapping1"]
 				},
 				{
 					in: { domain: "number", min: { exclusive: true, rule: 0 } },
-					morphs: ["$ark._overlapping2"]
+					morphs: ["$ark._matchOverlapping2"]
 				},
-				{ in: "number", morphs: ["$ark._overlapping3"] },
-				{ in: {}, morphs: ["$ark._overlapping4"] }
+				{ in: "number", morphs: ["$ark._matchOverlapping3"] },
+				{ in: {}, morphs: ["$ark._matchOverlapping4"] }
 			],
 			ordered: true
 		})
@@ -279,10 +279,10 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark._preservedOne"]
+					morphs: ["$ark._matchPreservedOne"]
 				},
-				{ in: "number", morphs: ["$ark._preservedTwo"] },
-				{ in: {}, morphs: ["$ark._preservedDefault"] }
+				{ in: "number", morphs: ["$ark._matchPreservedTwo"] },
+				{ in: {}, morphs: ["$ark._matchPreservedDefault"] }
 			],
 			ordered: true
 		})
@@ -360,17 +360,18 @@ contextualize(() => {
 							required: [{ key: "foo", value: "string" }],
 							domain: "object"
 						},
-						morphs: ["$ark._casesParam1"]
+						morphs: ["$ark._atCasesParam1"]
 					},
 					{
 						in: {
 							required: [{ key: "foo", value: "number" }],
 							domain: "object"
 						},
-						morphs: ["$ark._casesParam2"]
+						morphs: ["$ark._atCasesParam2"]
 					}
 				],
-				ordered: true
+				ordered: true,
+				meta: { onFail: "$ark.onFail8" }
 			})
 			attest(m).type.toString.snap()
 		})
@@ -537,86 +538,43 @@ contextualize(() => {
 			.default("assert")
 
 		attest(m.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "unit",
-			path: ["kind"],
+			kind: "domain",
+			path: ["id"],
 			cases: {
-				'"string"': {
-					kind: "domain",
-					path: ["id"],
-					cases: {
-						'"string"': {
-							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] }
-							],
-							ordered: true
-						},
-						'"number"': {
-							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
-							],
-							ordered: true
-						},
-						default: {
-							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] }
-							],
-							ordered: true
-						}
-					}
-				},
+				'"string"': { in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] },
 				'"number"': {
-					kind: "domain",
-					path: ["id"],
+					kind: "unit",
+					path: ["kind"],
 					cases: {
 						'"string"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] }
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
+								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
 							],
 							ordered: true
 						},
 						'"number"': {
 							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
 								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] },
 								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
 							],
 							ordered: true
 						},
-						default: {
-							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] }
-							],
-							ordered: true
-						}
+						default: { in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
 					}
 				},
 				default: {
-					kind: "domain",
-					path: ["id"],
+					kind: "unit",
+					path: ["kind"],
 					cases: {
 						'"string"': {
-							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] }
-							],
-							ordered: true
+							in: {},
+							morphs: ["$ark._matchOrderedDiscrimination2"]
 						},
 						'"number"': {
-							branches: [
-								{ in: {}, morphs: ["$ark.fn78"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
-							],
-							ordered: true
-						},
-						default: { in: {}, morphs: ["$ark.fn78"] }
+							in: {},
+							morphs: ["$ark._matchOrderedDiscrimination3"]
+						}
 					}
 				}
 			}
