@@ -16,7 +16,7 @@ bench("object literal", () =>
 		b: "number[]",
 		c: { nested: "boolean[]" }
 	})
-).types([2443, "instantiations"])
+).types([2447, "instantiations"])
 
 bench("object literal with optional keys", () =>
 	type({
@@ -24,10 +24,10 @@ bench("object literal with optional keys", () =>
 		"b?": "number[]",
 		"c?": { "nested?": "boolean[]" }
 	})
-).types([2308, "instantiations"])
+).types([2326, "instantiations"])
 
 bench("tuple", () => type(["string[]", "number[]", ["boolean[]"]])).types([
-	3028,
+	3056,
 	"instantiations"
 ])
 
@@ -35,21 +35,21 @@ bench("inline definition", () =>
 	type({
 		a: "string"
 	})
-).types([948, "instantiations"])
+).types([952, "instantiations"])
 
 bench("referenced type", () => {
 	const a = type("string")
 	return type({
 		a
 	})
-}).types([1070, "instantiations"])
+}).types([1078, "instantiations"])
 
 // https://github.com/arktypeio/arktype/issues/787
 bench("inline reference", () =>
 	type({
 		a: type("string")
 	})
-).types([1296, "instantiations"])
+).types([1304, "instantiations"])
 
 bench("nested type invocations", () =>
 	type({
@@ -71,4 +71,4 @@ bench("nested type invocations", () =>
 			})
 			.array()
 	})
-).types([13449, "instantiations"])
+).types([13357, "instantiations"])
