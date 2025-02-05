@@ -31,7 +31,7 @@ contextualize(() => {
 				// @ts-expect-error
 				"big": () => true
 			})
-		).completions()
+		).completions({ big: ["bigint"] })
 	})
 
 	it("completes default key", () => {
@@ -42,12 +42,12 @@ contextualize(() => {
 				// @ts-expect-error
 				"defaul": () => false
 			})
-		).completions()
+		).completions({ defaul: ["default"] })
 	})
 
 	it("completes shallow fluent defs", () => {
 		// @ts-expect-error
-		attest(() => match.case("WeakS")).completions()
+		attest(() => match.case("WeakS")).completions({ WeakS: ["WeakSet"] })
 	})
 
 	it("completes object fluent defs", () => {
@@ -59,7 +59,7 @@ contextualize(() => {
 				},
 				o => o.id
 			)
-		).completions()
+		).completions({ "string | numb": ["string | number"] })
 	})
 
 	it("properly infers types of inputs/outputs based on chained", () => {
@@ -94,7 +94,10 @@ contextualize(() => {
 		attest<1>(m(1)).equals(1)
 		attest<number>(m(2)).equals(4)
 		attest<number>(m(3)).equals(6)
-		attest(m).type.toString.snap()
+		attest(m).type.toString.snap(`Match<
+	unknown,
+	[(In: 1) => 1, (In: 2) => number, (In: 3) => number]
+>`)
 	})
 
 	it("default value", () => {
@@ -106,7 +109,10 @@ contextualize(() => {
 		attest(m("foo")).equals(3)
 		attest(m(5)).equals(5)
 
-		attest(m).type.toString.snap()
+		attest(m).type.toString.snap(`Match<
+	unknown,
+	[(In: string) => number, (v: unknown) => unknown]
+>`)
 	})
 
 	it("never", () => {
@@ -117,7 +123,7 @@ contextualize(() => {
 
 		attest(m("foo")).equals(3)
 
-		attest(m).type.toString.snap()
+		attest(m).type.toString.snap("Match<string, [(In: string) => number]>")
 	})
 
 	it("within scope", () => {
@@ -183,7 +189,7 @@ contextualize(() => {
 		attest(() => matcher(true))
 			.throws.snap("AggregateError: must be a string or a number (was boolean)")
 			.type.errors(
-				"Argument of type 'true' is not assignable to parameter of type 'string | number'"
+				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
 	})
 
@@ -196,13 +202,16 @@ contextualize(() => {
 			})
 			.default("assert")
 
-		attest(matcher).type.toString()
+		attest(matcher).type.toString.snap(`Match<
+	string | number,
+	[(In: string) => string, (In: number) => number]
+>`)
 
 		// @ts-expect-error
 		attest(() => matcher(true))
 			.throws.snap("AggregateError: must be a string or a number (was boolean)")
 			.type.errors(
-				"Argument of type 'true' is not assignable to parameter of type 'string | number'"
+				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
 	})
 
@@ -302,7 +311,9 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => m({}))
 				.throws.snap("AggregateError: n must be 0 or 1 (was missing)")
-				.type.errors.snap()
+				.type.errors.snap(
+					"Argument of type '{}' is not assignable to parameter of type '{ n: 0; } | { n: 1; }'."
+				)
 		})
 
 		it("in", () => {
@@ -321,13 +332,13 @@ contextualize(() => {
 			attest(m({ kind: "b" })).snap("b")
 
 			// @ts-expect-error
-			attest(() => m({})).type.errors.snap()
+			attest(() => m({})).type.errors("Property 'kind' is missing")
 		})
 
 		it("in completions", () => {
 			const base = match.in<{ kind: string }>()
 			// @ts-expect-error
-			attest(() => base.at("")).completions()
+			attest(() => base.at("")).completions({ "": ["kind"] })
 		})
 
 		it("keyless in", () => {
@@ -339,7 +350,10 @@ contextualize(() => {
 					default: "assert"
 				})
 
-			attest(m).type.toString.snap()
+			attest(m).type.toString.snap(`Match<
+	object,
+	[(In: { foo: true }) => { foo: true }]
+>`)
 		})
 
 		it("at with cases param", () => {
@@ -373,7 +387,13 @@ contextualize(() => {
 				ordered: true,
 				meta: { onFail: "$ark.onFail8" }
 			})
-			attest(m).type.toString.snap()
+			attest(m).type.toString.snap(`Match<
+	{ foo: string } | { foo: number },
+	[
+		(In: { foo: string }) => number,
+		(In: { foo: number }) => string
+	]
+>`)
 		})
 
 		it("at after in", () => {
@@ -411,7 +431,13 @@ contextualize(() => {
 				ordered: true,
 				meta: { onFail: registeredReference(m.internal.meta.onFail!) }
 			})
-			attest(m).type.toString.snap()
+			attest(m).type.toString.snap(`Match<
+	{ id: 0 | 1 | 2 } | { id: 0 },
+	[
+		(In: { id: 0 | 1 | 2 }) => 0 | 1 | 2,
+		(In: { id: 0 }) => 0
+	]
+>`)
 		})
 
 		it("multiple ats", () => {
@@ -579,6 +605,14 @@ contextualize(() => {
 				}
 			}
 		})
-		attest(m).type.toString.snap()
+		attest(m).type.toString.snap(`Match<
+	unknown,
+	[
+		(In: { id: string }) => string,
+		(In: { kind: "string" }) => "string",
+		(In: { kind: "number" }) => "number",
+		(In: { id: number }) => number
+	]
+>`)
 	})
 })
