@@ -469,7 +469,7 @@ export const json: stringJson.module = Scope.module(
 		parse: rootSchema({
 			in: "string",
 			morphs: parseJson,
-			declaredOut: intrinsic.json
+			declaredOut: intrinsic.jsonObject
 		})
 	},
 	{
