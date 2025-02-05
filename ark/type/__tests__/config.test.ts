@@ -94,14 +94,14 @@ contextualize(() => {
 	})
 
 	it("string node configs", () => {
-		const customOne = type("2", "@", {
+		const customTwo = type("2", "@", {
 			expected: "2",
 			actual: "something else",
 			problem: "was terrible",
 			message: "root was terrible"
 		})
-		attest<2>(customOne.infer)
-		attest(customOne(1).toString()).snap("root was terrible")
+		attest<2>(customTwo.infer)
+		attest(customTwo(1).toString()).snap("root was terrible")
 	})
 
 	it("node writer config works on nested constraint", () => {

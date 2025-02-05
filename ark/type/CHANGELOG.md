@@ -38,6 +38,22 @@ const out = user({
 
 The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
 
+### Error configurations now accept a string directly
+
+```ts
+const customOne = type("1", "@", {
+	// previously only a function returning a string was allowed here
+	message: "Yikes."
+})
+
+// ArkErrors: Yikes.
+customOne(2)
+```
+
+Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#errors), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
+
+Though generally, returning a string based on context is the best option, in situations where you always want the same static message, it's now easier to get that!
+
 ### Type.toString() now wraps its syntactic representation in `Type<..>`
 
 Previously, `Type.toString()` just returned `Type.expression`. However, in contexts where the source of a message isn't always a `Type`, it could be confusing:
