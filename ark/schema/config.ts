@@ -2,11 +2,11 @@ import type { ArkRegistry, requireKeys, show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type {
-	ActualWriter,
+	ActualConfig,
 	ArkErrorCode,
-	ExpectedWriter,
-	MessageWriter,
-	ProblemWriter
+	ExpectedConfig,
+	MessageConfig,
+	ProblemConfig
 } from "./shared/errors.ts"
 import {
 	isNodeKind,
@@ -30,10 +30,10 @@ type nodeConfigForKind<kind extends NodeKind> = Readonly<
 			description?: DescriptionWriter<kind>
 		} & (kind extends ArkErrorCode ?
 			{
-				expected?: ExpectedWriter<kind>
-				actual?: ActualWriter<kind>
-				problem?: ProblemWriter<kind>
-				message?: MessageWriter<kind>
+				expected?: ExpectedConfig<kind>
+				actual?: ActualConfig<kind>
+				problem?: ProblemConfig<kind>
+				message?: MessageConfig<kind>
 			}
 		:	{})
 	>
@@ -46,14 +46,14 @@ type NodeConfigsByKind = {
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
-export interface UnknownErrorWriters {
-	expected?: ExpectedWriter
-	actual?: ActualWriter
-	problem?: ProblemWriter
-	message?: MessageWriter
+export interface UnknownErrorConfigs {
+	expected?: ExpectedConfig
+	actual?: ActualConfig
+	problem?: ProblemConfig
+	message?: MessageConfig
 }
 
-interface UnknownNodeConfig extends UnknownErrorWriters {
+interface UnknownNodeConfig extends UnknownErrorConfigs {
 	description?: DescriptionWriter
 }
 

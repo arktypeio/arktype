@@ -1,5 +1,5 @@
 import type { merge, show } from "@ark/util"
-import type { UnknownErrorWriters } from "../config.ts"
+import type { UnknownErrorConfigs } from "../config.ts"
 import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import type { Disjoint } from "./disjoint.ts"
 import type { ArkErrors } from "./errors.ts"
@@ -15,7 +15,7 @@ export interface DefaultArkEnv {
 	onFail(errors: ArkErrors): ArkErrors
 }
 
-export interface BaseMeta extends JsonSchema.Meta, UnknownErrorWriters {
+export interface BaseMeta extends JsonSchema.Meta, UnknownErrorConfigs {
 	alias?: string
 	onFail?: ArkErrors.Handler
 }
