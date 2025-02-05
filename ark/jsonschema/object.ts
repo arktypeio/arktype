@@ -3,7 +3,7 @@ import {
 	rootSchema,
 	type Intersection,
 	type Predicate,
-	type TraversalContext
+	type Traversal
 } from "@ark/schema"
 import { conflatenateAll, getDuplicatesOf, printable } from "@ark/util"
 import type { JsonSchema, Out, Type } from "arktype"
@@ -13,7 +13,7 @@ import { JsonSchemaScope } from "./scope.ts"
 
 const parseMinMaxProperties = (
 	jsonSchema: JsonSchema.Object,
-	ctx: TraversalContext
+	ctx: Traversal
 ) => {
 	const predicates: Predicate.Schema[] = []
 	if ("maxProperties" in jsonSchema) {
@@ -52,7 +52,7 @@ const parseMinMaxProperties = (
 
 const parsePatternProperties = (
 	jsonSchema: JsonSchema.Object,
-	ctx: TraversalContext
+	ctx: Traversal
 ) => {
 	if (!("patternProperties" in jsonSchema)) return
 
@@ -81,7 +81,7 @@ const parsePatternProperties = (
 
 	// NB: We don't validate compatability of schemas for overlapping patternProperties
 	// since getting the intersection of regexes is inherently non-trivial.
-	return (data: object, ctx: TraversalContext) => {
+	return (data: object, ctx: Traversal) => {
 		Object.entries(data).forEach(([dataKey, dataValue]) => {
 			patternProperties.forEach(([pattern, parsedJsonSchema]) => {
 				if (pattern.test(dataKey) && !parsedJsonSchema.allows(dataValue)) {
@@ -97,10 +97,7 @@ const parsePatternProperties = (
 	}
 }
 
-const parsePropertyNames = (
-	jsonSchema: JsonSchema.Object,
-	ctx: TraversalContext
-) => {
+const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
 	if (!("propertyNames" in jsonSchema)) return
 
 	const propertyNamesValidator = parseJsonSchema(jsonSchema.propertyNames)
@@ -116,7 +113,7 @@ const parsePropertyNames = (
 		})
 	}
 
-	return (data: object, ctx: TraversalContext) => {
+	return (data: object, ctx: Traversal) => {
 		Object.keys(data).forEach(key => {
 			if (!propertyNamesValidator.allows(key)) {
 				ctx.reject({
@@ -132,7 +129,7 @@ const parsePropertyNames = (
 
 const parseRequiredAndOptionalKeys = (
 	jsonSchema: JsonSchema.Object,
-	ctx: TraversalContext
+	ctx: Traversal
 ) => {
 	const optionalKeys: string[] = []
 	const requiredKeys: string[] = []
@@ -193,7 +190,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 	const additionalPropertiesSchema = jsonSchema.additionalProperties
 	if (additionalPropertiesSchema === true) return
 
-	return (data: object, ctx: TraversalContext) => {
+	return (data: object, ctx: Traversal) => {
 		Object.keys(data).forEach(key => {
 			if (
 				properties.includes(key) ||

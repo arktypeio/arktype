@@ -2,7 +2,7 @@ import {
 	rootSchema,
 	type Intersection,
 	type Predicate,
-	type TraversalContext
+	type Traversal
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import type { JsonSchema, Out, Type } from "arktype"
@@ -20,10 +20,7 @@ const deepNormalize = (data: unknown): unknown =>
 			)
 	:	data
 
-const arrayItemsAreUnique = (
-	array: readonly unknown[],
-	ctx: TraversalContext
-) => {
+const arrayItemsAreUnique = (array: readonly unknown[], ctx: Traversal) => {
 	const seen: Record<string, true> = {}
 	const duplicates: unknown[] = []
 	for (const item of array) {
@@ -42,7 +39,7 @@ const arrayItemsAreUnique = (
 const arrayContainsItemMatchingSchema = (
 	array: readonly unknown[],
 	schema: Type,
-	ctx: TraversalContext
+	ctx: Traversal
 ) =>
 	array.some(item => schema.allows(item)) === true ?
 		true
