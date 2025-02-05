@@ -1,0 +1,9 @@
+{
+	"title": "string",
+	"pages": [
+		"[keywords](/docs/primitives#string-keywords)",
+		"[literals](/docs/primitives#string-literals)",
+		"[patterns](/docs/primitives#string-patterns)",
+		"[lengths](/docs/primitives#string-lengths)"
+	]
+}

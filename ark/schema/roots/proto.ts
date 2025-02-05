@@ -1,7 +1,9 @@
 import {
 	builtinConstructors,
 	constructorExtends,
+	domainOf,
 	getBuiltinNameOfConstructor,
+	hasKey,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
 	throwParseError,
@@ -19,10 +21,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
@@ -39,14 +38,17 @@ export declare namespace Proto {
 	export interface NormalizedSchema<proto extends Constructor = Constructor>
 		extends BaseNormalizedSchema {
 		readonly proto: proto
+		readonly dateAllowsInvalid?: boolean
 	}
 
 	export interface ExpandedSchema<proto extends Reference = Reference> {
 		readonly proto: proto
+		readonly dateAllowsInvalid?: boolean
 	}
 
 	export interface Inner<proto extends Constructor = Constructor> {
 		readonly proto: proto
+		readonly dateAllowsInvalid?: boolean
 	}
 
 	export interface ErrorContext extends BaseErrorContext<"proto">, Inner {}
@@ -72,26 +74,53 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 			proto: {
 				serialize: ctor =>
 					getBuiltinNameOfConstructor(ctor) ?? defaultValueSerializer(ctor)
-			}
+			},
+			dateAllowsInvalid: {}
 		},
-		normalize: schema =>
-			typeof schema === "string" ? { proto: builtinConstructors[schema] }
-			: typeof schema === "function" ?
-				isNode(schema) ? (schema as {} as ProtoNode)
-				:	{ proto: schema }
-			: typeof schema.proto === "string" ?
-				{ ...schema, proto: builtinConstructors[schema.proto] }
-			:	(schema as Proto.ExpandedSchema<Constructor>),
+		normalize: schema => {
+			const normalized: Proto.NormalizedSchema<Constructor> =
+				typeof schema === "string" ? { proto: builtinConstructors[schema] }
+				: typeof schema === "function" ?
+					isNode(schema) ? (schema as {} as ProtoNode)
+					:	{ proto: schema }
+				: typeof schema.proto === "string" ?
+					{ ...schema, proto: builtinConstructors[schema.proto] }
+				:	(schema as never)
+			if (typeof normalized.proto !== "function")
+				throwParseError(Proto.writeInvalidSchemaMessage(normalized.proto))
+
+			if (hasKey(normalized, "dateAllowsInvalid") && normalized.proto !== Date)
+				throwParseError(Proto.writeBadInvalidDateMessage(normalized.proto))
+			return normalized
+		},
+		applyConfig: (schema, config) => {
+			if (
+				schema.dateAllowsInvalid === undefined &&
+				schema.proto === Date &&
+				config.dateAllowsInvalid
+			)
+				return { ...schema, dateAllowsInvalid: true }
+			return schema
+		},
 		defaults: {
 			description: node =>
 				node.builtinName ?
 					objectKindDescriptions[node.builtinName]
 				:	`an instance of ${node.proto.name}`,
-			actual: data => objectKindOrDomainOf(data)
+			actual: data =>
+				data instanceof Date && data.toString() === "Invalid Date" ?
+					"an invalid Date"
+				:	objectKindOrDomainOf(data)
 		},
 		intersections: {
 			proto: (l, r) =>
-				constructorExtends(l.proto, r.proto) ? l
+				l.proto === Date && r.proto === Date ?
+					// since l === r is handled by default,
+					// exactly one of l or r must have allow invalid dates
+					l.dateAllowsInvalid ?
+						r
+					:	l
+				: constructorExtends(l.proto, r.proto) ? l
 				: constructorExtends(r.proto, l.proto) ? r
 				: Disjoint.init("proto", l, r),
 			domain: (proto, domain) =>
@@ -110,7 +139,16 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 		this.proto
 	)
 	serializedConstructor: string = (this.json as { proto: string }).proto
-	compiledCondition = `data instanceof ${this.serializedConstructor}`
+
+	private readonly requiresInvalidDateCheck =
+		this.proto === Date && !this.dateAllowsInvalid
+
+	traverseAllows: TraverseAllows =
+		this.requiresInvalidDateCheck ?
+			data => data instanceof Date && data.toString() !== "Invalid Date"
+		:	data => data instanceof this.proto
+
+	compiledCondition = `data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 	compiledNegation = `!(${this.compiledCondition})`
 
 	protected innerToJsonSchema(): JsonSchema.Array {
@@ -120,14 +158,17 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 					type: "array"
 				}
 			default:
-				return throwParseError(
-					writeUnsupportedJsonSchemaTypeMessage(this.description)
-				)
+				return JsonSchema.throwUnjsonifiableError(this.description)
 		}
 	}
 
-	traverseAllows: TraverseAllows = data => data instanceof this.proto
-	expression: string = this.proto.name
+	expression: string =
+		this.dateAllowsInvalid ? "Date | InvalidDate" : this.proto.name
+
+	get nestableExpression(): string {
+		return this.dateAllowsInvalid ? `(${this.expression})` : this.expression
+	}
+
 	readonly domain = "object"
 
 	get shortDescription(): string {
@@ -137,5 +178,9 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 export const Proto = {
 	implementation,
-	Node: ProtoNode
+	Node: ProtoNode,
+	writeBadInvalidDateMessage: (actual: Constructor): string =>
+		`dateAllowsInvalid may only be specified with constructor Date (was ${actual.name})`,
+	writeInvalidSchemaMessage: (actual: unknown): string =>
+		`instanceOf operand must be a function (was ${domainOf(actual)})`
 }

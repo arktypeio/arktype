@@ -123,6 +123,7 @@ export const getBoundKinds = (
 			: ["max"]
 		)
 	}
+
 	if (root.extends($ark.intrinsic.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
@@ -130,7 +131,7 @@ export const getBoundKinds = (
 			)
 		}
 		return (
-			comparator === "==" ? ["minLength", "maxLength"]
+			comparator === "==" ? ["exactLength"]
 			: comparator[0] === ">" ? ["minLength"]
 			: ["maxLength"]
 		)
@@ -181,14 +182,20 @@ export const parseRightBound = (
 	const limit = limitNode.unit
 	// apply the newly-parsed right bound
 	const exclusive = comparator.length === 1
-	// if the comparator is ==, both the min and max of that pair will be applied
-	for (const kind of getBoundKinds(
+
+	const boundKinds = getBoundKinds(
 		comparator,
 		typeof limit === "number" ? limit : (limitToken as DateLiteral),
 		previousRoot,
 		"right"
-	))
-		s.constrainRoot(kind, { rule: limit, exclusive })
+	)
+
+	for (const kind of boundKinds) {
+		s.constrainRoot(
+			kind,
+			comparator === "==" ? { rule: limit } : { rule: limit, exclusive }
+		)
+	}
 
 	if (!s.branches.leftBound) return
 

@@ -2,13 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import type { equals } from "@ark/util"
 import { type } from "arktype"
-import type {
-	Anonymous,
-	Out,
-	number,
-	of,
-	string
-} from "arktype/internal/attributes.ts"
+import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("implicit problem", () => {
@@ -48,7 +42,7 @@ contextualize(() => {
 			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
 		)
 
-		attest<number.anonymous>(divisibleBy30.t)
+		attest<number>(divisibleBy30.t)
 
 		attest(divisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
 		attest(divisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
@@ -72,7 +66,7 @@ contextualize(() => {
 			}
 		])
 
-		attest<of<{ a: number; b: number }, Anonymous>>(abEqual.t)
+		attest<{ a: number; b: number }>(abEqual.t)
 		attest<{
 			a: number
 			b: number
@@ -110,7 +104,7 @@ contextualize(() => {
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
-		attest<string.anonymous>(palindrome.t)
+		attest<string>(palindrome.t)
 		attest(palindrome("dad")).snap("dad")
 		attest(palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'
@@ -164,7 +158,7 @@ contextualize(() => {
 
 		const A = type("bigint").narrow(predicate).pipe(toString)
 
-		attest<(In: of<bigint, Anonymous>) => Out<string>>(A.t)
+		attest<(In: bigint) => Out<string>>(A.t)
 		attest<bigint>(A.in.infer)
 		attest<bigint>(A.inferIn)
 		attest<string>(A.infer)
@@ -214,13 +208,13 @@ contextualize(() => {
 		attest<{ foo: number }>(object.in.infer)
 
 		const nested = type({ foo: ["number.integer", "=>", n => n++] })
-		attest(nested.t).type.toString.snap("{ foo: (In: integer) => Out<number> }")
+		attest(nested.t).type.toString.snap("{ foo: (In: number) => Out<number> }")
 		attest<{ foo: number }>(nested.inferIn)
 		attest<{ foo: number }>(nested.in.infer)
 
 		const map = type.keywords.Map.narrow(() => true).pipe(m => m)
 		attest(map.t).type.toString.snap(`(
-	In: of<Map<unknown, unknown>, Anonymous>
+	In: Map<unknown, unknown>
 ) => Out<Map<unknown, unknown>>`)
 		attest(map.infer).type.toString.snap("Map<unknown, unknown>")
 		attest(map.inferIn).type.toString("Map<unknown, unknown>")
@@ -251,7 +245,7 @@ contextualize(() => {
 
 	it("can distill units", () => {
 		const t = type("5").narrow(() => true)
-		attest<of<5, Anonymous>>(t.t)
+		attest<5>(t.t)
 		attest<5>(t.infer)
 		attest<5>(t.inferIn)
 
@@ -260,10 +254,9 @@ contextualize(() => {
 	})
 
 	it("unknown is narrowable", () => {
-		const t = type("unknown").narrow(() => true)
-		attest(t.t).type.toString.snap(`{
-	" attributes": { base: unknown; attributes: Anonymous }
-}`)
-		attest(t.expression).snap("unknown")
+		const unknownPredicate854 = () => true
+		const t = type("unknown").narrow(unknownPredicate854)
+		attest(t.t).type.toString.snap("unknown")
+		attest(t.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
 })

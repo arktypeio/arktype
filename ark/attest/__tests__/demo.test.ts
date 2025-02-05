@@ -46,9 +46,7 @@ contextualize(() => {
 
 	it("type and value assertions", () => {
 		const even = type("number%2")
-		// asserts even.infer is exactly number
-		attest<number>(even.infer)
-		// make assertions about types and values seamlessly
+		// snapshot types and values seamlessly
 		attest(even.infer).type.toString.snap("number")
 		// including object literals- no more long inline strings!
 		attest(even.json).snap({ domain: "number", divisor: 2 })

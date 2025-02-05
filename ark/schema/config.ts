@@ -1,4 +1,4 @@
-import type { ArkRegistry, mutable, requireKeys, show } from "@ark/util"
+import type { ArkRegistry, requireKeys, show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type {
@@ -19,7 +19,8 @@ import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkConfig
-	defaultConfig: ResolvedArkConfig
+	defaultConfig: ResolvedConfig
+	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 }
 
@@ -45,12 +46,15 @@ type NodeConfigsByKind = {
 export type NodeConfig<kind extends NodeKind = NodeKind> =
 	NodeConfigsByKind[kind]
 
-type UnknownNodeConfig = {
-	description?: DescriptionWriter
+export interface UnknownErrorWriters {
 	expected?: ExpectedWriter
 	actual?: ActualWriter
 	problem?: ProblemWriter
 	message?: MessageWriter
+}
+
+interface UnknownNodeConfig extends UnknownErrorWriters {
+	description?: DescriptionWriter
 }
 
 export type ResolvedUnknownNodeConfig = requireKeys<
@@ -62,13 +66,19 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 // dedicated config entrypoint, in which case we don't want to reinitialize it
 $ark.config ??= {}
 
-export const configure = (config: ArkConfig): ArkConfig =>
-	Object.assign($ark.config, mergeConfigs($ark.config, config))
+export const configure = (config: ArkConfig): ArkConfig => {
+	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
-export const mergeConfigs = (
-	base: ArkConfig,
-	extensions: ArkConfig
-): mutable<ArkConfig> => {
+	$ark.resolvedConfig &&= mergeConfigs($ark.resolvedConfig, result)
+
+	return result
+}
+
+export const mergeConfigs = <base extends ArkConfig>(
+	base: base,
+	extensions: ArkConfig | undefined
+): base => {
+	if (!extensions) return base
 	const result: any = { ...base }
 	let k: keyof ArkConfig
 	for (k in extensions) {
@@ -91,6 +101,8 @@ export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
 	clone?: boolean | CloneImplementation
 	onUndeclaredKey?: UndeclaredKeyBehavior
+	numberAllowsNaN?: boolean
+	dateAllowsInvalid?: boolean
 }
 
 export type resolveConfig<config extends ArkConfig> = show<
@@ -101,18 +113,4 @@ export type resolveConfig<config extends ArkConfig> = show<
 	} & Omit<config, keyof ArkConfig>
 >
 
-export type ResolvedArkConfig = resolveConfig<ArkConfig>
-
-export const extendConfig = (
-	base: ArkConfig,
-	extension: ArkConfig | undefined
-): ArkConfig => {
-	if (!extension) return base
-	const result = mergeConfigs(base, extension)
-	return result
-}
-
-export const resolveConfig = <config extends ArkConfig>(
-	config: config | undefined
-): resolveConfig<config> =>
-	extendConfig(extendConfig($ark.defaultConfig, $ark.config), config) as never
+export type ResolvedConfig = resolveConfig<ArkConfig>

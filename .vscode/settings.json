@@ -1,5 +1,7 @@
 {
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"prettier.prettierPath": "./node_modules/prettier",
+	"biome.enabled": false,
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
@@ -23,7 +25,6 @@
 		// has a "type" export
 		"^(node:)?os$"
 	],
-	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "./node_modules/typescript/lib",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
 	"mochaExplorer.nodeArgv": ["--conditions", "ark-ts", "--import", "tsx"],
@@ -40,7 +41,9 @@
 		" ": true
 	},
 	"search.exclude": {
-		"**/out": true
+		"**/out": true,
+		"**/.next": true,
+		"**/.source": true
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"

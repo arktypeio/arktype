@@ -64,14 +64,13 @@ export type exactEquals<l, r> =
 	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
 	:	false
 
-/** You can avoid suggesting completions by prefixing a string key with whitespace.
- *  Isn't that keyNominal?
- */
-export const keyNonimal = " keyNonimal"
+export const brand = noSuggest("brand")
 
-export type nominal<t, id extends string> = t & {
-	readonly [keyNonimal]: [t, id]
+export type Brand<t = unknown, id = unknown> = t & {
+	readonly [brand]: [t, id]
 }
+
+export type unbrand<t> = t extends Brand<infer base, string> ? base : never
 
 export type satisfy<base, t extends base> = t
 

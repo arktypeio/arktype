@@ -54,7 +54,9 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 		hasAssociatedError: true,
 		defaults: {
 			description: node =>
-				node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
+				node.rule === 1 ? "an integer"
+				: node.rule === 2 ? "even"
+				: `a multiple of ${node.rule}`
 		},
 		intersections: {
 			divisor: (l, r, ctx) =>
@@ -63,7 +65,8 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 					)
 				})
-		}
+		},
+		obviatesBasisDescription: true
 	})
 
 export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {

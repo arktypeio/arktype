@@ -1,0 +1,405 @@
+---
+title: Primitives
+---
+
+import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
+
+## string
+
+A full list of string keywords can be found [here](/docs/keywords#string).
+
+### literals [#string-literals]
+
+```ts
+const literals = type({
+	singleQuoted: "'typescript'",
+	doubleQuoted: '"arktype"'
+})
+```
+
+### patterns [#string-patterns]
+
+Regex literals specify an unanchored regular expression that an input string must match.
+
+They can either be string-embedded or refer directly to a `RegExp` instance.
+
+```ts
+const literals = type({
+	stringEmbedded: "/^a.*z$/",
+	regexLiteral: /^a.*z$/
+})
+```
+
+<a name="string/lengths" />
+### lengths [#string-lengths]
+
+Constrain a string with an inclusive or exclusive min or max length.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const bounded = type({
+	nonEmpty: "string > 0",
+	atLeastLength3: "string.alphanumeric >= 3",
+	lessThanLength10: "string < 10",
+	atMostLength5: "string <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const bounded = type({
+	nonEmpty: type.string.moreThanLength(0),
+	atLeastLength3: type.keywords.string.alphanumeric.atLeastLength(3),
+	lessThanLength10: type.string.lessThanLength(10),
+	atMostLength5: type.string.atMostLength(5)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const range = type({
+	nonEmptyAtMostLength10: "0 < string <= 10",
+	integerStringWith2To5Digits: "2 <= string.integer < 6"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const range = type({
+	nonEmptyAtMostLength10: type.string.moreThanLength(0).atMostLength(10),
+	integerStringWith2To5Digits: type.keywords.string.integer.root
+		.atLeastLength(2)
+		.lessThanLength(6)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## number
+
+A full list of number keywords can be found [here](/docs/keywords#number).
+
+### literals [#number-literals]
+
+```ts
+const literals = type({
+	number: "1337"
+})
+```
+
+### ranges [#number-ranges]
+
+Constrain a number with an inclusive or exclusive min or max.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const bounded = type({
+	positive: "number > 0",
+	atLeast3: "number.integer >= 3",
+	lessThanPi: "number < 3.14159",
+	atMost5: "number <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const bounded = type({
+	positive: type.number.moreThan(0),
+	atLeast3: type.keywords.number.integer.atLeast(3),
+	lessThanPi: type.number.lessThan(3.14159),
+	atMost5: type.number.atMost(5)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const range = type({
+	positiveAtMostE: "0 < number <= 2.71828",
+	evenNumberAbsoluteValueLessThan50: "-50 < (number % 2) < 50"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const range = type({
+	positiveAtMostE: type.number.moreThan(0).atMost(2.71828),
+	evenNumberAbsoluteValueLessThan50: type.number
+		.divisibleBy(2)
+		.moreThan(-50)
+		.lessThan(50)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### divisors [#number-divisors]
+
+Constrain a `number` to a multiple of the specified integer.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const evens = type({
+	key: "number % 2"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const evens = type({
+	key: type.number.divisibleBy(2)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## bigint
+
+To allow any `bigint` value, use the `"bigint"` keyword.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const bigints = type({
+	foo: "bigint"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbols = type({
+	foo: type.bigint
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### literals [#bigint-literals]
+
+To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/docs/primitives#number-literals) to make it a `bigint`.
+
+```ts
+const literals = type({
+	bigint: "1337n"
+})
+```
+
+You may also use a [unit expression](/docs/expressions#unit) to define `bigint` literals.
+
+## symbol
+
+To allow any `symbol` value, use the `"symbol"` keyword.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const symbols = type({
+	key: "symbol"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbols = type({
+	key: type.symbol
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+To reference a specific symbol in your definition, use a [unit expression](/docs/expressions#unit).
+
+No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/docs/objects#properties).
+
+## boolean
+
+To allow `true` or `false`, use the `"boolean"` keyword.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const booleans = type({
+	key: "boolean"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const booleans = type({
+	key: type.boolean
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### literals [#boolean-literals]
+
+To require a specific boolean value, use the corresponding literal.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const booleans = type({
+	a: "true",
+	b: "false",
+	// equivalent to the "boolean" keyword
+	c: "true | false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const booleans = type({
+	a: type.keywords.true,
+	b: type.keywords.false,
+	// equivalent to the "boolean" keyword
+	c: type.keywords.true.or(type.keywords.false)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## null
+
+The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/docs/expressions#union).
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const nullable = type({
+	requiredKey: "number | null"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const nullable = type({
+	requiredKey: type.number.or(type.null)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## undefined
+
+The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/docs/expressions#union).
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myObj = type({
+	requiredKey: "number | undefined"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myObj = type({
+	requiredKey: type.number.or(type.undefined)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<Callout type="warn" title="Allowing undefined as a value does not make the key optional!">
+
+    In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
+
+    The same is true in ArkType.
+
+    <details>
+    	<summary>See an example</summary>
+
+    ```ts
+    const myObj = type({
+    	key: "number | undefined"
+    })
+
+    // valid data
+    const validResult = myObj({ key: undefined })
+
+    // Error: name must be a number or undefined (was missing)
+    const errorResult = myObj({})
+    ```
+
+    </details>
+
+</Callout>

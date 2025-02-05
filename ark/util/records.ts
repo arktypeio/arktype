@@ -1,8 +1,10 @@
 import type { array } from "./arrays.ts"
+import { noSuggest } from "./errors.ts"
 import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
 import type { Key } from "./keys.ts"
+import type { intersectUnion } from "./unionToTuple.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -20,6 +22,19 @@ export type dict<v = unknown, k extends string = string> = {
 export type propwiseXor<a, b> =
 	| show<a & { [k in keyof b]?: undefined }>
 	| show<b & { [k in keyof a]?: undefined }>
+
+export type unionToPropwiseXor<
+	props extends object,
+	branchKey extends PropertyKey = keyof intersectUnion<props>
+> =
+	props extends infer distributed ?
+		show<
+			distributed & {
+				// ensure keys not present on the current branch are undefined
+				[k in branchKey]?: k extends keyof distributed ? unknown : undefined
+			}
+		>
+	:	never
 
 export type requireKeys<o, key extends keyof o> = o & {
 	[requiredKey in key]-?: defined<o[requiredKey]>
@@ -77,9 +92,6 @@ export type entriesOf<o extends object> = entryOf<o>[]
 /**
  * Object.entries wrapper providing narrowed types for objects with known sets
  * of keys, e.g. those defined internally as configs
- *
- * @param o the object to get narrowed entries from
- * @returns a narrowed array of entries based on that object's type
  */
 export const entriesOf: <o extends object>(o: o) => entryOf<o>[] =
 	Object.entries as never
@@ -296,6 +308,16 @@ export const defineProperties: <base extends object, merged extends object>(
 		Object.getOwnPropertyDescriptors(merged)
 	) as never
 
+/** Copies enumerable keys of o to a new object in alphabetical order */
+export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
+	const keys = Object.keys(o).sort()
+	const result: any = {}
+
+	for (let i = 0; i < keys.length; i++) result[keys[i]] = o[keys[i]]
+
+	return result
+}
+
 export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 	[k in t[keyof t]]: {
 		[k2 in keyof t]: t[k2] extends k ? k2 : never
@@ -306,7 +328,7 @@ export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
 ): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
 
-export const unset = Symbol("represents an uninitialized value")
+export const unset = noSuggest("represents an uninitialized value")
 
 export type unset = typeof unset
 

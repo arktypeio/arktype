@@ -1,4 +1,6 @@
-const args = "~args"
+import { noSuggest } from "./errors.ts"
+
+const args = noSuggest("args")
 type args = typeof args
 
 export abstract class Hkt<constraints extends unknown[] = any> {
@@ -10,6 +12,10 @@ export abstract class Hkt<constraints extends unknown[] = any> {
 	declare 2: this[args] extends [any, any, infer arg, ...any] ? arg : never
 	declare 3: this[args] extends [any, any, any, infer arg, ...any] ? arg : never
 	abstract body: unknown
+
+	declare description?: string
+
+	constructor() {}
 }
 
 /** A small set of HKT utility types based on https://github.com/gvergnaud/hotscript

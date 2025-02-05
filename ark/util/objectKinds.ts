@@ -112,8 +112,17 @@ export type builtinConstructors = typeof builtinConstructors
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
+export type GlobalName = keyof typeof globalThis
+
 type instantiateConstructors<kind extends BuiltinObjectKind> = {
-	[k in kind]: InstanceType<builtinConstructors[k]>
+	// one of these conditions will always be true internally, but they prevent
+	// failed resolutions from being inferred as any if TS is configured
+	// in such a way that they are unavailable:
+	// https://github.com/arktypeio/arktype/issues/1246
+	[k in kind]: k extends GlobalName ? InstanceType<(typeof globalThis)[k]>
+	: `${k}Constructor` extends GlobalName ?
+		InstanceType<(typeof globalThis)[`${k}Constructor`]>
+	:	never
 }
 
 export type BuiltinObjects = instantiateConstructors<BuiltinObjectKind>
@@ -259,9 +268,6 @@ export type instanceOf<constructor> =
 
 /**
  * Returns an array of constructors for all ancestors (i.e., prototypes) of a given object.
- *
- * @param {object} o - The object to find the ancestors of.
- * @returns {Function[]} An array of constructors for all ancestors of the object.
  */
 export const ancestorsOf = (o: object): Function[] => {
 	let proto = Object.getPrototypeOf(o)

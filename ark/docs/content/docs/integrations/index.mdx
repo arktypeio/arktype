@@ -1,0 +1,70 @@
+---
+title: Integrations
+---
+
+### Standard Schema
+
+ArkType is proud to support and co-author the new [Standard Schema](https://github.com/standard-schema/standard-schema) API with [Valibot](https://github.com/fabian-hiller/valibot) and [Zod](https://github.com/colinhacks/zod).
+
+Standard Schema allows you and your dependencies to integrate library-agnostic validation logic. If you're building or maintaining a library with a peer dependency on ArkType and/or other validation libraries, we'd recommend consuming it through Standard Schema's API if possible so that your users can choose the solution that best suits their needs!
+
+### tRPC
+
+ArkType can easily be used with tRPC via the `assert` prop:
+
+```ts
+// @noErrors
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	}).assert
+)
+```
+
+### react-hook-form
+
+react-hook-form has builtin support for ArkType via [`@hookform/resolvers`](https://github.com/react-hook-form/resolvers/tree/master):
+
+```ts
+// @noErrors
+import { useForm } from "react-hook-form"
+import { arktypeResolver } from "@hookform/resolvers/arktype"
+import { type } from "arktype"
+
+const user = type({
+	firstName: "string",
+	age: "number.integer > 0"
+})
+
+// in your component
+const {
+	register,
+	handleSubmit,
+	formState: { errors }
+} = useForm({
+	resolver: arktypeResolver(user)
+})
+```
+
+### hono
+
+Hono has builtin support for ArkType via [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator):
+
+```ts
+// @noErrors
+const user = type({
+	name: "string",
+	age: "number"
+})
+
+app.post("/author", arktypeValidator("json", user), c => {
+	const data = c.req.valid("json")
+	return c.json({
+		success: true,
+		message: `${data.name} is ${data.age}`
+	})
+})
+```
+
+[`hono-openapi`](https://github.com/rhinobase/hono-openapi) also offers experimental support for OpenAPI docgen.

@@ -1,5 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import type { merge, mergeExact, withJsDoc } from "@ark/util"
+import type {
+	merge,
+	mergeExact,
+	unionToPropwiseXor,
+	withJsDoc
+} from "@ark/util"
 
 contextualize(() => {
 	it("identical keys", () => {
@@ -18,7 +23,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<Result, Target>()
 	})
@@ -40,7 +45,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<withJsDoc<Target, Source>, Target>()
 	})
@@ -62,7 +67,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<withJsDoc<Target, Source>, Target>()
 	})
@@ -83,7 +88,7 @@ contextualize(() => {
 		// should have annotation "is a foo"
 		const { foo } = result
 
-		console.log(foo)
+		attest(foo)
 
 		attest<withJsDoc<Target, Source>, { foo: "foo" }>()
 	})
@@ -117,6 +122,32 @@ contextualize(() => {
 				bar: 0
 				baz?: 0
 			},
+			t
+		>()
+	})
+
+	it("unionToPropwiseXor", () => {
+		type t = unionToPropwiseXor<{ a: 1; b?: 2 } | { c: 3 } | { d?: 4 }>
+
+		attest<
+			| {
+					a: 1
+					b?: 2
+					c?: undefined
+					d?: undefined
+			  }
+			| {
+					c: 3
+					a?: undefined
+					b?: undefined
+					d?: undefined
+			  }
+			| {
+					d?: 4
+					a?: undefined
+					b?: undefined
+					c?: undefined
+			  },
 			t
 		>()
 	})

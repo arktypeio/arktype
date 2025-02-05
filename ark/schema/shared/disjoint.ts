@@ -63,6 +63,10 @@ export class Disjoint extends Array<DisjointEntry> {
 		return this
 	}
 
+	get summary(): string {
+		return this.describeReasons()
+	}
+
 	describeReasons(): string {
 		if (this.length === 1) {
 			const { path, l, r } = this[0]

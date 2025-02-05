@@ -1,5 +1,6 @@
 dist
 out
+*.vsix
 node_modules
 temp
 tmp
@@ -10,6 +11,7 @@ tmp
 .docusaurus
 .astro
 .next
+.source
 .cache-loader
 .attest
 coverage

@@ -50,16 +50,13 @@ export default tseslint.config(
 			curly: ["warn", "multi-or-nest"],
 			"no-lone-blocks": "warn",
 			"object-shorthand": "warn",
-
 			"prefer-arrow-functions/prefer-arrow-functions": [
 				"warn",
 				{
 					disallowPrototype: true
 				}
 			],
-
 			"arrow-body-style": ["warn", "as-needed"],
-
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
 				{
@@ -68,38 +65,33 @@ export default tseslint.config(
 					ignoreRestSiblings: true
 				}
 			],
-
 			"@typescript-eslint/default-param-last": "warn",
 			"@typescript-eslint/no-empty-interface": "off",
 			"import/no-cycle": "warn",
 			// Exporting types and values with the same name is a common pattern in the repo
 			"import/export": "off",
-
 			"@typescript-eslint/explicit-module-boundary-types": [
 				"warn",
 				{
 					allowArgumentsExplicitlyTypedAsAny: true
 				}
 			],
-
 			"@typescript-eslint/consistent-type-imports": [
 				"warn",
 				{
+					// can be useful for cjs/esm interop type imports
+					disallowTypeAnnotations: false,
 					fixStyle: "inline-type-imports"
 				}
 			],
-
 			"@typescript-eslint/no-import-type-side-effects": "warn",
-
 			"import/no-duplicates": [
 				"warn",
 				{
 					"prefer-inline": true
 				}
 			],
-
 			"no-restricted-imports": "off",
-
 			"@typescript-eslint/no-restricted-imports": [
 				"warn",
 				{
@@ -110,8 +102,7 @@ export default tseslint.config(
 								"**/attest/**",
 								"**/schema/**",
 								"**/type/**",
-								"**/util/**",
-								"arktype/internal/**"
+								"**/util/**"
 							],
 
 							message:
@@ -129,7 +120,6 @@ export default tseslint.config(
 					]
 				}
 			],
-
 			"@typescript-eslint/no-empty-object-type": "off",
 			"@typescript-eslint/no-unsafe-function-type": "off",
 			"@typescript-eslint/no-wrapper-object-types": "off",
@@ -141,7 +131,6 @@ export default tseslint.config(
 			"@typescript-eslint/no-empty-function": "off",
 			"@typescript-eslint/no-this-alias": "off",
 			"no-case-declarations": "off",
-
 			"@typescript-eslint/ban-ts-comment": [
 				"warn",
 				{
@@ -152,7 +141,6 @@ export default tseslint.config(
 	},
 	{
 		files: ["**/ark/type/**", "**/ark/schema/**", "**/ark/util/**"],
-
 		rules: {
 			"import/no-nodejs-modules": "warn",
 			"import/no-extraneous-dependencies": "warn"
@@ -160,7 +148,6 @@ export default tseslint.config(
 	},
 	{
 		files: ["**/ark/schema/structure/**"],
-
 		rules: {
 			"@typescript-eslint/no-restricted-imports": [
 				"warn",
@@ -191,27 +178,23 @@ export default tseslint.config(
 	},
 	{
 		files: ["**/ark/attest/**", "**/ark/fs/**", "**/ark/docs/**"],
-
 		rules: {
 			"import/no-extraneous-dependencies": "warn"
 		}
 	},
 	{
 		files: ["**/ark/repo/**", "**/ark/docs/**"],
-
 		rules: {
 			"@typescript-eslint/explicit-module-boundary-types": "off"
 		}
 	},
 	{
 		files: ["**/__tests__/**", "**/*.bench.ts", "**/*.test.ts"],
-
 		rules: {
 			"@typescript-eslint/ban-ts-comment": "off",
 			"@typescript-eslint/explicit-module-boundary-types": "off",
 			"import/no-extraneous-dependencies": "off",
 			"import/no-nodejs-modules": "off",
-
 			"@typescript-eslint/no-restricted-imports": [
 				"warn",
 				{

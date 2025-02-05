@@ -154,7 +154,10 @@ export const findPackageAncestors = (fromDir?: string): string[] => {
 
 	while (dir) {
 		dir = findPackageRoot(dir)
-		if (dir) dirs.push(dir)
+		if (dir) {
+			dirs.push(dir)
+			dir = join(dir, "..")
+		}
 	}
 
 	return dirs

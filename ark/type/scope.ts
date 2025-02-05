@@ -28,19 +28,18 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
-	domainOf,
 	flatMorph,
-	hasDomain,
+	isArray,
 	isThunk,
 	throwParseError,
+	type Brand,
 	type Dict,
 	type ErrorType,
-	type Json,
+	type JsonStructure,
 	type anyOrNever,
 	type array,
 	type flattenListable,
-	type noSuggest,
-	type nominal
+	type noSuggest
 } from "@ark/util"
 import type { ArkSchemaRegistry } from "./config.ts"
 import {
@@ -53,6 +52,7 @@ import {
 	type parseValidGenericParams
 } from "./generic.ts"
 import type { Ark, type } from "./keywords/keywords.ts"
+import { InternalMatchParser } from "./match.ts"
 import type {
 	BoundModule,
 	Module,
@@ -61,15 +61,16 @@ import type {
 } from "./module.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
-	parseObject,
-	writeBadDefinitionTypeMessage,
-	type inferDefinition,
-	type validateDefinition
+	shallowDefaultableMessage,
+	shallowOptionalMessage
+} from "./parser/ast/validate.ts"
+import {
+	parseInnerDefinition,
+	type inferDefinition
 } from "./parser/definition.ts"
-import { DynamicState } from "./parser/reduce/dynamic.ts"
-import { writeUnexpectedCharacterMessage } from "./parser/shift/operator/operator.ts"
+import type { ParsedOptionalProperty } from "./parser/property.ts"
+import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import { ArkTypeScanner } from "./parser/shift/scanner.ts"
-import { fullStringParse } from "./parser/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -105,7 +106,7 @@ export type ModuleParser = <const def>(
 export type bindThis<def> = { this: Def<def> }
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
-type Def<def = {}> = nominal<def, "unparsed">
+type Def<def = {}> = Brand<def, "unparsed">
 
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"
@@ -184,16 +185,6 @@ export interface InternalScope {
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	private parseCache: Record<string, BaseRoot> = {}
-
-	protected cacheGetter<name extends keyof this>(
-		name: name,
-		value: this[name]
-	): this[name] {
-		Object.defineProperty(this, name, { value })
-		return value
-	}
-
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(
@@ -239,7 +230,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return parseGenericParamName(
 			new ArkTypeScanner(def),
 			[],
-			this.createParseContext({ ...opts, def, prefix: "generic" })
+			this.createParseContext({
+				...opts,
+				def,
+				prefix: "generic"
+			})
 		)
 	}
 
@@ -264,42 +259,20 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		const isScopeAlias = ctx.alias && ctx.alias in this.aliases
 
 		// if the definition being parsed is not a scope alias and is not a
-		// generic instantiation (i.e. opts don't include args), add this as a resolution.
+		// generic instantiation (i.e. opts don't include args), add `this` as a resolution.
 
+		// if we're parsing a nested string, ctx.args will have already been set
 		if (!isScopeAlias && !ctx.args) ctx.args = { this: ctx.id }
 
-		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
-				// we can only rely on the cache if there are no contextual
-				// resolutions like "this" or generic args
-				return this.parseString(def, ctx)
-			}
-			return (this.parseCache[def] ??= this.parseString(def, ctx))
+		const result = parseInnerDefinition(def, ctx)
+
+		if (isArray(result)) {
+			if (result[1] === "=") return throwParseError(shallowDefaultableMessage)
+
+			if (result[1] === "?") return throwParseError(shallowOptionalMessage)
 		}
-		return hasDomain(def, "object") ?
-				parseObject(def, ctx)
-			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
-	}
 
-	parseString(def: string, ctx: BaseParseContext): BaseRoot {
-		const aliasResolution = this.maybeResolveRoot(def)
-		if (aliasResolution) return aliasResolution
-
-		const aliasArrayResolution =
-			def.endsWith("[]") ?
-				this.maybeResolveRoot(def.slice(0, -2))?.array()
-			:	undefined
-
-		if (aliasArrayResolution) return aliasArrayResolution
-
-		const s = new DynamicState(new ArkTypeScanner(def), ctx)
-
-		const node = fullStringParse(s)
-
-		if (s.finalizer === ">")
-			throwParseError(writeUnexpectedCharacterMessage(">"))
-
-		return node as never
+		return result
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
@@ -312,11 +285,15 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
+	match: InternalMatchParser = new InternalMatchParser(this as never)
+
 	declare = (): { type: InternalTypeParser } => ({
 		type: this.type
 	})
 
-	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
+	define<def>(def: def): def {
+		return def
+	}
 
 	static scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 		new InternalScope(def, config)) as never
@@ -345,8 +322,8 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-				:	validateDefinition<
+					:	type.validate<def[k], bootstrapAliases<def>, {}>
+				:	type.validate<
 						def[k],
 						bootstrapAliases<def>,
 						baseGenericConstraints<params>
@@ -359,14 +336,12 @@ export declare namespace scope {
 	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
 }
 
-export const module: ModuleParser = InternalScope.module
-
 export interface Scope<$ = {}> {
 	t: $
 	[arkKind]: "scope"
 	config: ArkScopeConfig
 	references: readonly BaseNode[]
-	json: Json
+	json: JsonStructure
 	exportedNames: array<exportedNameOf<$>>
 
 	/** The set of names defined at the root-level of the scope mapped to their
@@ -386,6 +361,8 @@ export interface Scope<$ = {}> {
 	enumerated: EnumeratedTypeParser<$>
 
 	type: TypeParser<$>
+
+	// match: MatchParser<$>
 
 	declare: DeclarationParser<$>
 
@@ -441,3 +418,8 @@ type parseGenericScopeKey<name extends string, params extends string, def> = {
 	name: name
 	params: parseGenericParams<params, bootstrapAliases<def>>
 }
+
+export type InnerParseResult =
+	| BaseRoot
+	| ParsedOptionalProperty
+	| ParsedDefaultableProperty

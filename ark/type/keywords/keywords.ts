@@ -1,6 +1,6 @@
 import type { ArkErrors, arkKind } from "@ark/schema"
-import type { inferred } from "@ark/util"
-import type { distill } from "../attributes.ts"
+import type { Brand, inferred } from "@ark/util"
+import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { BoundModule, Module } from "../module.ts"
@@ -17,9 +17,9 @@ import type {
 	TypeParser
 } from "../type.ts"
 import { arkBuiltins } from "./builtins.ts"
-import { arkPrototypes } from "./constructors/constructors.ts"
-import { number } from "./number/number.ts"
-import { string } from "./string/string.ts"
+import { arkPrototypes } from "./constructors.ts"
+import { number } from "./number.ts"
+import { string } from "./string.ts"
 import { arkTsGenerics, arkTsKeywords, object, unknown } from "./ts.ts"
 
 export interface Ark
@@ -42,6 +42,7 @@ export declare namespace Ark {
 	}
 
 	export interface typeAttachments extends arkTsKeywords.$ {
+		arrayIndex: arkPrototypes.$["Array"]["index"]
 		Key: arkBuiltins.$["Key"]
 		Record: arkTsGenerics.$["Record"]
 		Date: arkPrototypes.$["Date"]
@@ -54,6 +55,7 @@ export declare namespace Ark {
 
 $arkTypeRegistry.typeAttachments = {
 	...arkTsKeywords,
+	arrayIndex: arkPrototypes.Array.index,
 	Key: arkBuiltins.Key,
 	Record: arkTsGenerics.Record,
 	Array: arkPrototypes.Array.root,
@@ -103,16 +105,6 @@ export declare namespace type {
 			inferDefinition<def, $, args>
 		>
 
-		export namespace withAttributes {
-			export type In<def, $ = {}, args = {}> = distill.withAttributes.In<
-				inferDefinition<def, $, args>
-			>
-
-			export type Out<def, $ = {}, args = {}> = distill.withAttributes.Out<
-				inferDefinition<def, $, args>
-			>
-		}
-
 		export namespace introspectable {
 			export type Out<def, $ = {}, args = {}> = distill.introspectable.Out<
 				inferDefinition<def, $, args>
@@ -125,9 +117,18 @@ export declare namespace type {
 		$,
 		args
 	>
+
+	export type brand<t, id> =
+		t extends InferredMorph<infer i, infer o> ?
+			o["introspectable"] extends true ?
+				(In: i) => To<Brand<o["t"], id>>
+			:	(In: i) => Out<Brand<o["t"], id>>
+		:	Brand<t, id>
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>
+
+// export const match: MatchParser<{}> = ark.match as never
 
 export const generic: GenericParser<{}> = ark.generic as never
 

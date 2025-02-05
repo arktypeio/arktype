@@ -25,7 +25,7 @@ import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
-	compileErrorContext,
+	compileObjectLiteral,
 	constraintKeys,
 	type ConstraintKind,
 	type IntersectionContext,
@@ -98,24 +98,30 @@ export abstract class InternalPrimitiveConstraint<
 	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)
+		if (!this.traverseAllows(data, ctx))
+			ctx.errorFromNodeContext(this.errorContext as never)
 	}
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
 		else {
 			js.if(this.compiledNegation, () =>
-				js.line(`${js.ctx}.error(${this.compiledErrorContext})`)
+				js.line(`${js.ctx}.errorFromNodeContext(${this.compiledErrorContext})`)
 			)
 		}
 	}
 
 	get errorContext(): d["errorContext"] {
-		return { code: this.kind, description: this.description, ...this.inner }
+		return {
+			code: this.kind,
+			description: this.description,
+			meta: this.meta,
+			...this.inner
+		}
 	}
 
 	get compiledErrorContext(): string {
-		return compileErrorContext(this.errorContext!)
+		return compileObjectLiteral(this.errorContext!)
 	}
 }
 
@@ -270,10 +276,16 @@ export const writeInvalidOperandMessage = <
 	kind: kind,
 	expected: expected,
 	actual: actual
-): string =>
-	`${capitalize(kind)} operand must be ${
+): string => {
+	const actualDescription =
+		actual.hasKind("morph") ? actual.shortDescription
+		: actual.isUnknown() ? "unknown"
+		: actual.exclude(expected).shortDescription
+
+	return `${capitalize(kind)} operand must be ${
 		expected.description
-	} (was ${actual.exclude(expected).description})` as never
+	} (was ${actualDescription})` as never
+}
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,

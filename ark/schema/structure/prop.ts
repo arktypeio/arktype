@@ -79,9 +79,7 @@ export const intersectProps = (
 			r.hasDefault() ?
 				l.default === r.default ?
 					l.default
-				:	throwParseError(
-						`Invalid intersection of default values ${printable(l.default)} & ${printable(r.default)}`
-					)
+				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
 			:	l.default
 		: r.hasDefault() ? r.default
 		: unset
@@ -148,7 +146,8 @@ export abstract class BaseProp<
 				() => this.value.traverseApply((data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required")) ctx.error(this.errorContext)
+		} else if (this.hasKind("required"))
+			ctx.errorFromNodeContext(this.errorContext)
 		else if (this.hasDefault()) ctx.queueMorphs(this.defaultValueMorphs)
 	}
 
@@ -159,9 +158,11 @@ export abstract class BaseProp<
 
 		if (this.hasKind("required")) {
 			js.else(() => {
-				if (js.traversalKind === "Apply")
-					return js.line(`ctx.error(${this.compiledErrorContext})`)
-				else return js.return(false)
+				if (js.traversalKind === "Apply") {
+					return js.line(
+						`ctx.errorFromNodeContext(${this.compiledErrorContext})`
+					)
+				} else return js.return(false)
 			})
 		} else if (js.traversalKind === "Apply" && this.hasDefault()) {
 			js.else(() =>
@@ -172,3 +173,9 @@ export abstract class BaseProp<
 		if (js.traversalKind === "Allows") js.return(true)
 	}
 }
+
+export const writeDefaultIntersectionMessage = (
+	lValue: unknown,
+	rValue: unknown
+): string =>
+	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`

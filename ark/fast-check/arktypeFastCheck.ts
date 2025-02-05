@@ -110,11 +110,13 @@ export const buildStructureArbitrary = (
 		return buildObjectArbitrary(structure, ctx)
 	}
 
-	if (node.exactLength?.rule === 0) return fc.tuple()
+	if (node.inner.exactLength?.rule === 0) return fc.tuple()
 
 	const fcArrayConstraints: fc.ArrayConstraints = {}
-	if (node.minLength) fcArrayConstraints.minLength = node.minLength.rule
-	if (node.maxLength) fcArrayConstraints.maxLength = node.maxLength.rule
+	if (node.inner.minLength)
+		fcArrayConstraints.minLength = node.inner.minLength.rule
+	if (node.inner.maxLength)
+		fcArrayConstraints.maxLength = node.inner.maxLength.rule
 
 	const arrArbitrary =
 		structure?.sequence ?

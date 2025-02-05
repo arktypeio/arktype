@@ -5,7 +5,7 @@ contextualize(() => {
 	it("divisible", () => {
 		const t = type("number%2")
 		attest(t(4)).snap(4)
-		attest(t(5).toString()).snap("must be a multiple of 2 (was 5)")
+		attest(t(5).toString()).snap("must be even (was 5)")
 	})
 
 	it("range", () => {
@@ -143,15 +143,14 @@ contextualize(() => {
 		const naturalNumber = type("number.integer>0")
 		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
   • an integer
-  • more than 0`)
+  • positive`)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
-		attest(naturalAtPath({ natural: -0.1 }).toString()).snap(
-			`natural (-0.1) must be...
+		attest(naturalAtPath({ natural: -0.1 }).toString())
+			.snap(`natural (-0.1) must be...
   • an integer
-  • more than 0`
-		)
+  • positive`)
 	})
 
 	it("homepage example", () => {
@@ -234,15 +233,37 @@ age must be more than 18 (was 2)`)
 		let callCount = 0
 		const t = type({
 			foo: ["unknown", "=>", () => callCount++]
-		}).satisfying((data, ctx) => ctx.mustBe("valid"))
+		}).filter((data, ctx) => ctx.mustBe("valid"))
 
-		attest(t.t).type.toString.snap(`of<
-	{ foo: (In: unknown) => Out<number> },
-	Anonymous
->`)
+		attest(t.t).type.toString.snap("{ foo: (In: unknown) => Out<number> }")
 		const out = t({ foo: 1 })
 
 		attest(out.toString()).snap('must be valid (was {"foo":1})')
 		attest(callCount).equals(0)
+	})
+
+	it("ctx.path docs example", () => {
+		const symbolicKey = Symbol("ctxPathExampleSymbol")
+
+		let path: PropertyKey[] | undefined
+
+		const notFoo = type.string.narrow((s, ctx) => {
+			if (s !== "foo") return true
+			path = ctx.path.slice(0)
+			return ctx.mustBe("not foo")
+		})
+
+		const obj = type({
+			stringKey: {
+				[symbolicKey]: notFoo.array()
+			}
+		})
+
+		attest(
+			obj({ stringKey: { [symbolicKey]: ["bar", "foo"] } }).toString()
+		).snap(
+			'stringKey[Symbol(ctxPathExampleSymbol)][1] must be not foo (was "foo")'
+		)
+		attest(path).snap(["stringKey", "Symbol(ctxPathExampleSymbol)", 1])
 	})
 })

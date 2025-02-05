@@ -1,13 +1,13 @@
 import type { writeUnboundableMessage } from "@ark/schema"
 import type { ErrorMessage, array, typeToString } from "@ark/util"
-import type { LimitLiteral } from "../../attributes.ts"
+import type { InferredMorph, LimitLiteral } from "../../attributes.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type {
 	BoundExpressionKind,
 	writeInvalidLimitMessage
 } from "../shift/operator/bounds.ts"
-import type { inferAstIn } from "./infer.ts"
-import type { astToString } from "./utils.ts"
+import type { inferAstRoot } from "./infer.ts"
+import type { astToString, writeConstrainedMorphMessage } from "./utils.ts"
 import type { validateAst } from "./validate.ts"
 
 export type validateRange<l, comparator extends Comparator, r, $, args> =
@@ -24,7 +24,7 @@ export type validateBound<
 	$,
 	args
 > =
-	inferAstIn<boundedAst, $, args> extends infer bounded ?
+	inferAstRoot<boundedAst, $, args> extends infer bounded ?
 		isNumericallyBoundable<bounded> extends true ?
 			limit extends number ?
 				validateAst<boundedAst, $, args>
@@ -32,6 +32,8 @@ export type validateBound<
 		: [bounded] extends [Date] ?
 			// allow numeric or date literal as a Date limit
 			validateAst<boundedAst, $, args>
+		: [bounded] extends [InferredMorph] ?
+			ErrorMessage<writeConstrainedMorphMessage<boundedAst>>
 		:	ErrorMessage<writeUnboundableMessage<typeToString<bounded>>>
 	:	never
 

@@ -8,11 +8,11 @@ import {
 	throwInternalError,
 	throwParseError,
 	unset,
-	type JsonData,
-	type PartialRecord,
+	type Brand,
 	type dict,
+	type Json,
 	type listable,
-	type nominal
+	type PartialRecord
 } from "@ark/util"
 import {
 	nodeClassesByKind,
@@ -41,11 +41,6 @@ export type ContextualArgs = Record<string, BaseRoot | NodeId>
 export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
 	prereduced?: prereduced
-	/** Instead of creating the node, compute the innerHash of the definition and
-	 * point it to the specified resolution.
-	 *
-	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
-	 **/
 	args?: ContextualArgs
 	id?: NodeId
 }
@@ -130,7 +125,7 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export type NodeId = nominal<string, "NodeId">
+export type NodeId = Brand<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 
@@ -148,8 +143,10 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
+	const configuredSchema =
+		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
 	const inner: dict = {}
-	const { meta: metaSchema, ...schema } = ctx.def as dict & {
+	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
 		meta?: MetaSchema
 	}
 
@@ -160,7 +157,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const innerSchemaEntries = entriesOf(schema)
+	const innerSchemaEntries = entriesOf(innerSchema)
 		.sort(([lKey], [rKey]) =>
 			isNodeKind(lKey) ?
 				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
@@ -228,11 +225,12 @@ export const createNode = (
 
 		innerJson[k] = serialize(v as never)
 
-		if (keyImpl.child) {
+		if (keyImpl.child === true) {
 			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) children.push(...listableNode)
 			else children.push(listableNode)
-		}
+		} else if (typeof keyImpl.child === "function")
+			children.push(...keyImpl.child(v as never))
 	})
 
 	if (impl.finalizeInnerJson)
@@ -245,7 +243,7 @@ export const createNode = (
 		metaJson = flatMorph(meta, (k, v) => [
 			k,
 			k === "examples" ? v : defaultValueSerializer(v)
-		]) as BaseMeta & dict
+		]) as never
 		json.meta = possiblyCollapse(metaJson, "description", true)
 	}
 
@@ -272,12 +270,14 @@ export const createNode = (
 		metaJson,
 		json,
 		hash,
-		collapsibleJson: collapsibleJson as JsonData,
+		collapsibleJson: collapsibleJson as Json,
 		children
 	}
 
-	for (const k in inner)
-		if (k !== "in" && k !== "out") attachments[k] = inner[k]
+	if (kind !== "intersection") {
+		for (const k in inner)
+			if (k !== "in" && k !== "out") attachments[k] = inner[k]
+	}
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 

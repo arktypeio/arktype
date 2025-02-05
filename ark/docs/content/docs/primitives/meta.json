@@ -1,0 +1,13 @@
+{
+	"title": "Primitives",
+	"defaultOpen": true,
+	"pages": [
+		"string",
+		"number",
+		"[bigint](/docs/primitives#bigint)",
+		"[symbol](/docs/primitives#symbol)",
+		"[boolean](/docs/primitives#boolean)",
+		"[null](/docs/primitives#null)",
+		"[undefined](/docs/primitives#undefined)"
+	]
+}

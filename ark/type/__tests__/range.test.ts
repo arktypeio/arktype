@@ -21,7 +21,7 @@ contextualize(() => {
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<moreThan<0>, {}>")
+			attest(t).type.toString.snap("Type<number, {}>")
 			attest(t.json).snap({
 				domain: "number",
 				min: { exclusive: true, rule: 0 }
@@ -31,7 +31,7 @@ contextualize(() => {
 		it("<", () => {
 			const t = type("number<10")
 			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<lessThan<10>, {}>")
+			attest(t).type.toString.snap("Type<number, {}>")
 			const expected = rootSchema({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
@@ -42,7 +42,7 @@ contextualize(() => {
 		it("<=", () => {
 			const t = type("number<=-49")
 			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<atMost<-49>, {}>")
+			attest(t).type.toString.snap("Type<number, {}>")
 			const expected = rootSchema({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
@@ -52,8 +52,8 @@ contextualize(() => {
 
 		it("==", () => {
 			const t = type("number==3211993")
-			attest<3211993>(t.infer)
-			attest(t).type.toString.snap("Type<3211993, {}>")
+			attest<number>(t.infer)
+			attest(t).type.toString.snap("Type<number, {}>")
 			const expected = rootSchema({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
@@ -69,7 +69,7 @@ contextualize(() => {
 
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
-			attest(t).type.toString.snap("Type<is<AtMost<5> & MoreThan<-5>>, {}>")
+			attest(t).type.toString.snap("Type<number, {}>")
 			attest<number>(t.infer)
 			const expected = rootSchema({
 				domain: "number",
@@ -81,9 +81,7 @@ contextualize(() => {
 
 		it("<=,<", () => {
 			const t = type("-3.23<=number<4.654")
-			attest(t).type.toString.snap(
-				"Type<is<LessThan<4.654> & AtLeast<-3.23>>, {}>"
-			)
+			attest(t).type.toString.snap("Type<number, {}>")
 			attest<number>(t.infer)
 			const expected = rootSchema({
 				domain: "number",
@@ -95,7 +93,7 @@ contextualize(() => {
 
 		it("whitespace following comparator", () => {
 			const t = type("number > 3")
-			attest(t).type.toString.snap("Type<moreThan<3>, {}>")
+			attest(t).type.toString.snap("Type<number, {}>")
 			attest<number>(t.infer)
 			const expected = rootSchema({
 				domain: "number",
@@ -107,14 +105,14 @@ contextualize(() => {
 		it("single Date", () => {
 			const t = type("Date<d'2023/1/12'")
 			attest<Date>(t.infer)
-			attest(t).type.toString.snap('Type<before<"2023/1/12">, {}>')
+			attest(t).type.toString.snap("Type<Date, {}>")
 			attest(t.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
 		})
 
 		it("Date equality", () => {
 			const t = type("Date==d'2020-1-1'")
 			attest<Date>(t.infer)
-			attest(t).type.toString.snap('Type<nominal<"2020-1-1">, {}>')
+			attest(t).type.toString.snap("Type<Date, {}>")
 			attest(t.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
 			attest(t.allows(new Date("2020/01/01"))).equals(true)
 			attest(t.allows(new Date("2020/01/02"))).equals(false)
@@ -123,9 +121,7 @@ contextualize(() => {
 		it("double Date", () => {
 			const t = type("d'2001/10/10'< Date < d'2005/10/10'")
 			attest<Date>(t.infer)
-			attest(t.t).type.toString.snap(
-				'is<Before<"2005/10/10"> & After<"2001/10/10">>'
-			)
+			attest(t.t).type.toString.snap("Date")
 			attest(t.json).snap({
 				proto: "Date",
 				before: "2005-10-10T03:59:59.999Z",
@@ -140,9 +136,7 @@ contextualize(() => {
 			const now = new Date()
 			const t = type(`d'2000'< Date <=d'${now.toISOString()}'`)
 			attest<Date>(t.infer)
-			attest(t).type.toString.snap(
-				'Type<is<AtOrBefore<string> & After<"2000">>, {}>'
-			)
+			attest(t).type.toString.snap("Type<Date, {}>")
 			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
 			attest(t.allows(now)).equals(true)
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
@@ -238,7 +232,7 @@ contextualize(() => {
 		})
 
 		it("number", () => {
-			attest<-3.14159>(type("number==-3.14159").infer)
+			attest<number>(type("number==-3.14159").infer)
 		})
 
 		it("string", () => {
@@ -268,6 +262,17 @@ contextualize(() => {
 			attest(() => type("object>10")).throwsAndHasTypeError(
 				writeUnboundableMessage("object")
 			)
+		})
+
+		it("morph", () => {
+			// @ts-expect-error
+			attest(() => type("string.trim > 2"))
+				.throws.snap(
+					"ParseError: MinLength operand must be a string or an array (was a morph)"
+				)
+				.type.errors.snap(
+					"Argument of type '\"string.trim > 2\"' is not assignable to parameter of type '\"To constrain the output of string.trim, pipe like myMorph.to('number > 0').\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+				)
 		})
 
 		it("same bound kind union", () => {

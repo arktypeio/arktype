@@ -2,7 +2,7 @@ import { genericNode, intrinsic } from "@ark/schema"
 import type * as util from "@ark/util"
 import { Hkt, type Key } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-import { arkModule } from "./utils.ts"
+import { Scope } from "../scope.ts"
 
 class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
@@ -13,7 +13,7 @@ const Merge = genericNode(
 	["props", intrinsic.object]
 )(args => args.base.merge(args.props), MergeHkt)
 
-export const arkBuiltins: arkBuiltins = arkModule({
+export const arkBuiltins: arkBuiltins = Scope.module({
 	Key: intrinsic.key,
 	Merge
 })

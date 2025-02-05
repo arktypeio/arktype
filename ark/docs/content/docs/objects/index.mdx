@@ -1,0 +1,942 @@
+---
+title: Objects
+---
+
+import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
+
+## properties
+
+Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
+
+### required [#properties-required]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	requiredKey: "string",
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: "unknown"
+	}
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	requiredKey: type.string,
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: type.unknown
+	}
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### optional [#properties-optional]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	"optionalKey?": "number[]",
+	[symbolicKey]: "string?"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: type.number.array().optional(),
+	[symbolicKey]: type.string.optional()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const symbolicKey = Symbol()
+
+const myObject = type({
+	optionalKey: [{ type: "'script'" }, "?"],
+	[symbolicKey]: [{ ark: "'type'" }, "?"]
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<Callout type="warn" title="Optional properties cannot be present with the value undefined">
+
+    In TypeScript, there is a setting called [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
+
+    ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. If you're interested in a builtin configuration option for this setting, we'd love feedback or contributions on [this issue](https://github.com/arktypeio/arktype/issues/1191).
+
+    <details>
+    	<summary>See an example</summary>
+
+    ```ts
+    const myObj = type({
+    	"key?": "number"
+    })
+
+    // valid data
+    const validResult = myObj({})
+
+    // Error: key must be a number (was undefined)
+    const errorResult = myObj({ key: undefined })
+    ```
+
+    </details>
+
+</Callout>
+
+### defaultable [#properties-defaultable]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	defaultableKey: "boolean = false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myObject = type({
+	defaultableKey: type.boolean.default(false)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myObject = type({
+	defaultableKey: ["boolean", "=", false]
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<Callout type="warn" title="Optional and default only work within objects and tuples!">
+    Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
+
+    This reflects the fact that in ArkType's type system, optionality and defaultability are only meaningful in reference to a property. Attempting to create an optional or defaultable value outside an object like `type("string?")` will result in a `ParseError`.
+
+    To create a `Type` accepting `string` or `undefined`, use a union like `type("string | undefined")`.
+
+    To have it transform `undefined` to an empty string, use an explicit morph like:
+
+    ```ts
+    const fallbackString = type("string | undefined").pipe(v => v ?? "")
+    ```
+
+</Callout>
+
+### index [#properties-index]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myObject = type({
+	// index signatures do not require a label
+	"[string]": "number.integer",
+	// arbitrary string or symbolic expressions are allowed
+	"[string | symbol]": "number"
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### undeclared [#properties-undeclared]
+
+TypeScript's structural type system explicitly allows assigning objects with additional keys so long as all declared constraints are satisfied. ArkType mirrors this behavior by default because generally...
+
+- Existing objects can be reused more often.
+- Validation is much more efficient if you don't need to check for undeclared keys.
+- Extra properties don't usually matter as long as those you've declared are satisfied.
+
+However, sometimes the way you're using the object would make undeclared properties problematic. Even though they can't be reflected by TypeScript ([_yet_- please +1 the issue!](https://github.com/microsoft/TypeScript/issues/12936#issuecomment-1854411301)), ArkType _does_ support rejection or deletion of undeclared keys. This behavior can be defined for individual objects using the syntax below or [via configuration](/docs/configuration#undeclared) if you want to change the default across all objects.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// fail if any key other than "onlyAllowedKey" is present
+const myClosedObject = type({
+	"+": "reject",
+	onlyAllowedKey: "string"
+})
+
+// delete all non-symbolic keys other than "onlyPreservedStringKey"
+const myStrippedObject = type({
+	"+": "delete",
+	"[symbol]": "unknown",
+	onlyPreservedStringKey: "string"
+})
+
+// allow and preserve undeclared keys (the default behavior)
+const myOpenObject = type({
+	// only specify "ignore" if you explicitly configured the default elsewhere
+	"+": "ignore",
+	nonexclusiveKey: "number"
+})
+```
+
+    </SyntaxTab>
+
+    	<SyntaxTab fluent>
+
+```ts
+// fail if any key other than "onlyAllowedKey" is present
+const myClosedObject = type({
+	onlyAllowedKey: "string"
+}).onUndeclaredKey("reject")
+
+// delete all non-symbolic keys other than "onlyPreservedStringKey"
+const myStrippedObject = type({
+	"[symbol]": "unknown",
+	onlyPreservedStringKey: "string"
+}).onUndeclaredKey("delete")
+
+// allow and preserve undeclared keys (the default behavior)
+const myOpenObject = type({
+	nonexclusiveKey: "number"
+	// only specify "ignore" if you explicitly configured the default elsewhere
+}).onUndeclaredKey("ignore")
+
+// there is also a method for altering nested objects recursively
+const myDeeplyStrippedObject = type({
+	preserved: "string",
+	nested: {
+		preserved: "string"
+	}
+}).onDeepUndeclaredKey("delete")
+```
+
+<Callout type="info" title="Prefer in-object syntax where possible">
+	Certain methods like `.onUndeclaredKey` or `.configure` require a full traversal and transformation of the node created by the initial `type` call.
+
+    <details>
+    	<summary>**Learn to recognize when chaining creates unnecessary overhead**</summary>
+
+Though they can be convenient if you need both variants of the type, most of the time you incur a significant performance cost instantiating your Type compared to the embedded syntax.
+
+Though how a Type is defined will never affect validation performance, depending on your sensitivity to initialization, you may want to avoid chained methods that transform rather than compose their base type. Methods like `.or` and `.pipe` that create new `Types` that directly reference the original incur no such overhead, so feel free to use whichever syntax is more convenient for those operations.
+
+    </details>
+
+</Callout>
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### spread [#properties-spread]
+
+The **spread operator** is great for merging sets of properties. When applied to two distinct (i.e. non-overlapping) sets of properties, it is equivalent to [intersection](/docs/expressions#intersection). However, if a key appears in both the base and merged objects, the base value will be discarded in favor of the merged rather than recursively intersected.
+
+Spreading bypasses a lot of the behavioral complexity and computational overhead of an intersection and should be the preferred method of combining property sets.
+
+A base object definition can be spread if `"..."` is the first key specified in an object literal. Subsequent properties will be merged into those from the base object, just like the `...` operator [in JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax).
+
+```ts
+const user = type({ isAdmin: "false", name: "string" })
+
+// hover to see the newly merged object
+const admin = type({
+	"...": user,
+	// in an intersection, non-overlapping values at isAdmin would result in a ParseError
+	isAdmin: "true",
+	permissions: "string[]"
+})
+```
+
+The spread operator is semantically equivalent to the generic `Merge` keyword, which can be instantiated via a dedicated method on `Type` in addition to the standard keyword syntax.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const types = type.module({
+	base: {
+		"foo?": "0",
+		"bar?": "0"
+	},
+	merged: {
+		bar: "1",
+		"baz?": "1"
+	},
+	result: "Merge<base, merged>"
+})
+
+// hover to see the inferred result
+type Result = typeof types.result.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const zildjian = Symbol()
+
+const base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// hover to see the inferred result
+const chainedResult = base.merge({
+	"[string]": "bigint",
+	"foo?": "1n"
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### keyof [#properties-keyof]
+
+Like in TypeScript, the `keyof` operator extracts the keys of an object as a union:
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const usedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const usedCarKey = usedCar.keyof()
+
+type UsedCarKey = typeof usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab string>
+
+```ts
+const types = type.module({
+	usedCar: {
+		originallyPurchased: "string.date",
+		remainingWheels: "number"
+	},
+	usedCarKey: "keyof usedCar"
+})
+
+type UsedCarKey = typeof types.usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const usedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const usedCarKey = type(["keyof", usedCar])
+
+type UsedCarKey = typeof usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const usedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const usedCarKey = type("keyof", usedCar)
+
+type UsedCarKey = typeof usedCarKey.infer
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Also like in TypeScript, if an object includes an index signature like `[string]` alongside named properties, the union from `keyof` will reduce to `string`:
+
+```ts
+const recordWithSpecialKeys = type({
+	"[string]": "unknown",
+	verySpecialKey: "0 < number <= 3.14159",
+	moderatelySpecialKey: "-9.51413 <= number < 0"
+})
+
+// in a union with the `string` index signature, string literals
+// "verySpecialKey" and "moderatelySpecialKey" are redundant and will be pruned
+const key = recordWithSpecialKeys.keyof()
+
+// key is identical to the base `string` Type
+console.log(key.equals("string"))
+```
+
+<Callout type="warn" title="ArkType's `keyof` will never include `number`">
+	Though TypeScript's `keyof` operator can yield a `number`, the concept of
+	numeric keys does not exist in JavaScript at runtime. This leads to confusing
+	and inconsistent behavior. In ArkType, `keyof` will always return a `string`
+	or `symbol` in accordance with the construction of a JavaScript object.
+
+    <details>
+    	<summary>Learn more about our motivation for diverging from TypeScript on this issue</summary>
+
+In JavaScript, you can use a number literal to define a key, but the constructed value has no way to represent a numeric key, so it is coerced to a string.
+
+```ts
+const numberLiteralObj = {
+	4: true,
+	5: true
+}
+
+const stringLiteralObj = {
+	"4": true,
+	"5": true
+}
+
+// numberLiteralObj and stringLiteralObj are indistinguishable at this point
+Object.keys(numberLiteralObj) // ["4", "5"]
+Object.keys(stringLiteralObj) // ["4", "5"]
+```
+
+For a set-based type system to be correct, any two types representing the same set of underlying values must share a single representation. TypeScript's decision to have distinct numeric and string representations for the same underlying key has led to some if its most confusing inference pitfalls:
+
+```ts
+type Thing1 = {
+	[x: string]: unknown
+}
+
+// Thing2 is apparently identical to Thing1
+type Thing2 = Record<string, unknown>
+
+// and yet...
+type Key1 = keyof Thing1
+//   ^?
+
+type Key2 = keyof Thing2
+//   ^?
+```
+
+This sort of inconsistency is inevitable for a type system that has to reconcile multiple representations
+for identical sets of underlying values. Therefore, numeric keys are one of a handful of cases where ArkType intentionally diverges from TypeScript. ArkType will never return a `number` from `keyof`. Keys will always be normalized to a `string` or `symbol`, the two distinct property types that can be uniquely attached to a JavaScript object.
+
+    </details>
+
+</Callout>
+
+### get [#properties-get]
+
+Like an index access expression in TypeScript (e.g. `User["name"]`), the `get` operator extracts the Type of a value based on a specified key definition from an object:
+
+```ts
+const snorfUsage = type.enumerated("eating plants", "looking adorable")
+
+const manatee = type({
+	isFriendly: "true",
+	snorf: {
+		uses: snorfUsage.array()
+	}
+})
+
+const trueType = manatee.get("isFriendly")
+
+// nested properties can be accessed directly by passing additional args
+const snorfUsageArray = manatee.get("snorf", "uses")
+```
+
+<Callout
+	type="warn"
+	title="Expressions like `get` and `omit` that extract a portion of an exising Type can be an antipattern!"
+>
+	Before using `get` to extract the type of a property you've defined, consider
+	whether you may be able to define the property value directly as a standalone
+	Type that can be easily referenced and composed as needed.
+
+    Usually, composing Types from the bottom up is clearer and more efficient than trying to rip the part you need out of an existing Type.
+
+</Callout>
+
+Though cases like this are quite straightforward, there are number of more nuanced behaviors to consider when accessing an arbitrary key that could be a union, literal, or index signature on an object Type that could also be a union including optional keys or index signatures.
+
+If you're interested in a deeper dive into this (or anything else in ArkType), [our unit tests](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/get.test.ts) are the closest thing we have to a comprehensive spec.
+
+Not your cup of tea? No worries- the inferred types and errors you'll see in editor will always be guiding you in the right direction 🧭
+
+<Callout
+	type="info"
+	title="Support for TypeScript's index access syntax is planned!"
+>
+	Leave a comment on [the
+	issue](https://github.com/arktypeio/arktype/issues/831) letting us know if
+	you're interested in using- or even helping implement- type-level parsing for
+	string-embedded index access 🤓
+</Callout>
+
+## arrays
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const arrays = type({
+	key: "string[]"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const arrays = type({
+	key: type.string.array()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const arrays = type({
+	key: [{ name: "string" }, "[]"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const arrays = type({
+	key: type({ name: "string" }, "[]")
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### lengths [#arrays-lengths]
+
+Constrain an array with an inclusive or exclusive min or max length.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const bounded = type({
+	nonEmptyStringArray: "string[] > 0",
+	atLeast3Integers: "number.integer[] >= 3",
+	lessThan10Emails: "string.email[] < 10",
+	atMost5Booleans: "boolean[] <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const bounded = type({
+	nonEmptyStringArray: type.string.array().moreThanLength(0),
+	atLeast3Integers: type.keywords.number.integer.array().atLeastLength(3),
+	lessThan10Emails: type.keywords.string.email.array().lessThanLength(10),
+	atMost5Booleans: type.boolean.array().atMostLength(5)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const range = type({
+	nonEmptyStringArrayAtMostLength10: "0 < string[] <= 10",
+	twoToFiveIntegers: "2 <= number.integer[] < 6"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const range = type({
+	nonEmptyStringArrayAtMostLength10: type.string
+		.array()
+		.moreThanLength(0)
+		.atMostLength(10),
+	twoToFiveIntegers: type.keywords.number.integer
+		.array()
+		.atLeastLength(2)
+		.lessThanLength(6)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## tuples
+
+Like objects, tuples are structures whose values are nested definitions. Like TypeScript, ArkType supports prefix, optional, variadic, and postfix elements, with the same restrictions about combining them.
+
+### prefix [#tuples-prefix]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myTuple = type([
+	"string",
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: ["number", "number"]
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myTuple = type([
+	type.string,
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: [type.number, type.number]
+	}
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### defaultable [#tuples-defaultable]
+
+Defaultable elements are optional elements that will be assigned their specified default if not present in the tuple's input.
+
+A tuple may include zero or more defaultable elements following its prefix elements and preceding its non-defaultable optional elements.
+
+Like optional elements, defaultable elements are mutually exclusive with postfix elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myTuple = type(["string", "boolean = false", "number = 0"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myTuple = type([
+	type.string,
+	type.boolean.default(false),
+	type.number.default(0)
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"=",
+		() => ({ name: "Anon Eemuss" })
+	]
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### optional [#tuples-optional]
+
+Optional elements are tuple elements that may or may not be present in the input that do not have a default value.
+
+A tuple may include zero or more optional elements following its prefix and defaultable elements and preceding either a variadic element or the end of the tuple.
+
+Like in TypeScript, optional elements are mutually exclusive with postfix elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const myTuple = type(["string", "bigint = 999n", "boolean?", "number?"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const myTuple = type([
+	type.string,
+	type.bigint.default(999n),
+	type.boolean.optional(),
+	type.number.optional()
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const myTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"?"
+	]
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### variadic [#tuples-variadic]
+
+Like in TypeScript, variadic elements allow zero or more consecutive values of a given type and may occur at most once in a tuple.
+
+They are specified with a `"..."` operator preceding an array element.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// allows a string followed by zero or more numbers
+const myTuple = type(["string", "...", "number[]"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allows a string followed by zero or more numbers
+const myTuple = type([type.string, "...", type.number.array()])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### postfix [#tuples-postfix]
+
+Postfix elements are required elements following a variadic element.
+
+They are mutually exclusive with optional elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// allows zero or more numbers followed by a boolean, then a string
+const myTuple = type(["...", "number[]", "boolean", "string"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allows zero or more numbers followed by a boolean, then a string
+const myTuple = type(["...", type.number.array(), type.boolean, type.string])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## dates
+
+### literals [#dates-literals]
+
+Date literals represent a Date instance with an exact value.
+
+They're primarily useful in ranges.
+
+```ts
+const literals = type({
+	singleQuoted: "d'01-01-1970'",
+	doubleQuoted: 'd"01-01-1970"'
+})
+```
+
+### ranges [#dates-ranges]
+
+Constrain a Date with an inclusive or exclusive min or max.
+
+Bounds can be expressed as either a [number](/docs/primitives#number-literals) representing its corresponding Unix epoch value or a [Date literal](/docs/objects#dates-literals).
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const bounded = type({
+	dateInThePast: `Date < ${Date.now()}`,
+	dateAfter2000: "Date > d'2000-01-01'",
+	dateAtOrAfter1970: "Date >= 0"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const bounded = type({
+	dateInThePast: type.Date.earlierThan(Date.now()),
+	dateAfter2000: type.Date.laterThan("2000-01-01"),
+	dateAtOrAfter1970: type.Date.atOrAfter(0)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const tenYearsAgo = new Date()
+	.setFullYear(new Date().getFullYear() - 10)
+	.valueOf()
+
+const bounded = type({
+	dateInTheLast10Years: `${tenYearsAgo} <= Date < ${Date.now()}`
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const tenYearsAgo = new Date()
+	.setFullYear(new Date().getFullYear() - 10)
+	.valueOf()
+
+const bounded = type({
+	dateInTheLast10Years: type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## instanceof
+
+Most builtin instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+class MyClass {}
+
+const instances = type.instanceOf(MyClass)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+class MyClass {}
+
+const instances = type({
+	key: ["instanceof", MyClass]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+class MyClass {}
+
+const instances = type({
+	key: type("instanceof", MyClass)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### keywords [#instanceof-keywords]
+
+A list of instanceof keywords can be found [here](/docs/keywords#instanceof) alongside the base and subtype keywords for [Array](/docs/keywords#array) and [FormData](/docs/keywords#formdata).

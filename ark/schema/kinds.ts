@@ -2,10 +2,11 @@ import {
 	deepClone,
 	envHasCsp,
 	flatMorph,
+	withAlphabetizedKeys,
 	type array,
 	type listable
 } from "@ark/util"
-import type { ResolvedArkConfig } from "./config.ts"
+import { mergeConfigs, type ResolvedConfig } from "./config.ts"
 import type { BaseNode } from "./node.ts"
 import { Predicate } from "./predicate.ts"
 import { Divisor } from "./refinements/divisor.ts"
@@ -80,17 +81,23 @@ export const nodeImplementationsByKind: Record<
 	structure: Structure.implementation
 } satisfies Record<NodeKind, unknown> as never
 
-$ark.defaultConfig = Object.assign(
-	flatMorph(nodeImplementationsByKind, (kind, implementation) => [
-		kind,
-		implementation.defaults
-	]),
-	{
-		jitless: envHasCsp(),
-		clone: deepClone,
-		onUndeclaredKey: "ignore"
-	} satisfies Omit<ResolvedArkConfig, NodeKind>
-) as never
+$ark.defaultConfig = withAlphabetizedKeys(
+	Object.assign(
+		flatMorph(nodeImplementationsByKind, (kind, implementation) => [
+			kind,
+			implementation.defaults
+		]),
+		{
+			jitless: envHasCsp(),
+			clone: deepClone,
+			onUndeclaredKey: "ignore",
+			numberAllowsNaN: false,
+			dateAllowsInvalid: false
+		} satisfies Omit<ResolvedConfig, NodeKind>
+	) as never
+)
+
+$ark.resolvedConfig = mergeConfigs($ark.defaultConfig, $ark.config)
 
 export const nodeClassesByKind: Record<
 	NodeKind,

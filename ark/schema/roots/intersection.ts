@@ -223,17 +223,41 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				pipe: false
 			}) as nodeOfKind<"intersection" | Intersection.BasisKind>,
 		defaults: {
-			description: node =>
-				node.children.length === 0 ?
-					"unknown"
-				:	(node.structure?.description ??
-					node.children.map(child => child.description).join(" and ")),
+			description: node => {
+				if (node.children.length === 0) return "unknown"
+				if (node.structure) return node.structure.description
+
+				const childDescriptions: string[] = []
+
+				if (
+					node.basis &&
+					!node.refinements.some(r => r.impl.obviatesBasisDescription)
+				)
+					childDescriptions.push(node.basis.description)
+
+				if (node.refinements.length) {
+					const sortedRefinementDescriptions = node.refinements
+						// override alphabetization to describe min before max
+						.toSorted((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
+						.map(r => r.description)
+					childDescriptions.push(...sortedRefinementDescriptions)
+				}
+
+				if (node.inner.predicate) {
+					childDescriptions.push(
+						...node.inner.predicate.map(p => p.description)
+					)
+				}
+
+				return childDescriptions.join(" and ")
+			},
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
 			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 		},
 		intersections: {
-			intersection: (l, r, ctx) => intersectIntersections(l, r, ctx),
+			intersection: (l, r, ctx) =>
+				intersectIntersections(l.inner, r.inner, ctx),
 			...defineRightwardIntersections("intersection", (l, r, ctx) => {
 				// if l is unknown, return r
 				if (l.children.length === 0) return r
@@ -263,20 +287,15 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 
 export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	basis: nodeOfKind<Intersection.BasisKind> | null =
-		this.domain ?? this.proto ?? null
+		this.inner.domain ?? this.inner.proto ?? null
 
 	refinements: array<nodeOfKind<RefinementKind>> = this.children.filter(node =>
 		node.isRefinement()
 	)
 
-	get expression(): string {
-		let expression =
-			this.structure?.expression ||
-			`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
-			"unknown"
-		if (expression === "Array == 0") expression = "[]"
-		return this.cacheGetter("expression", expression)
-	}
+	structure: Structure.Node | undefined = this.inner.structure
+
+	expression: string = describeIntersection(this)
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"
@@ -314,12 +333,12 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			this.structure.traverseApply(data as never, ctx)
 			if (ctx.currentErrorCount > errorCount) return
 		}
-		if (this.predicate) {
-			for (let i = 0; i < this.predicate.length - 1; i++) {
-				this.predicate[i].traverseApply(data as never, ctx)
+		if (this.inner.predicate) {
+			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
+				this.inner.predicate[i].traverseApply(data as never, ctx)
 				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 			}
-			this.predicate.at(-1)!.traverseApply(data as never, ctx)
+			this.inner.predicate.at(-1)!.traverseApply(data as never, ctx)
 		}
 	}
 
@@ -343,20 +362,20 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				js.returnIfFailFast()
 			}
 			js.check(this.refinements.at(-1)!)
-			if (this.structure || this.predicate) js.returnIfFail()
+			if (this.structure || this.inner.predicate) js.returnIfFail()
 		}
 		if (this.structure) {
 			js.check(this.structure)
-			if (this.predicate) js.returnIfFail()
+			if (this.inner.predicate) js.returnIfFail()
 		}
-		if (this.predicate) {
-			for (let i = 0; i < this.predicate.length - 1; i++) {
-				js.check(this.predicate[i])
+		if (this.inner.predicate) {
+			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
+				js.check(this.inner.predicate[i])
 				// since predicates can be chained, we have to fail immediately
 				// if one fails
 				js.returnIfFail()
 			}
-			js.check(this.predicate.at(-1)!)
+			js.check(this.inner.predicate.at(-1)!)
 		}
 	}
 }
@@ -366,17 +385,20 @@ export const Intersection = {
 	Node: IntersectionNode
 }
 
+const describeIntersection = (node: Intersection.Node) => {
+	let expression =
+		node.structure?.expression ||
+		`${node.basis ? node.basis.nestableExpression + " " : ""}${node.refinements.join(" & ")}` ||
+		"unknown"
+	if (expression === "Array == 0") expression = "[]"
+	return expression
+}
+
 const intersectIntersections = (
 	l: Intersection.Inner,
 	r: Intersection.Inner,
 	ctx: IntersectionContext
 ): BaseRoot | Disjoint => {
-	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (hasArkKind(l, "root") && l.hasKind("intersection"))
-		return intersectIntersections(l.inner, r, ctx)
-	if (hasArkKind(r, "root") && r.hasKind("intersection"))
-		return intersectIntersections(l, r.inner, ctx)
-
 	const baseInner: Intersection.Inner.mutable = {}
 
 	const lBasis = l.proto ?? l.domain

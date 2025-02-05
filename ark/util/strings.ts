@@ -55,6 +55,11 @@ export const deanchoredSource = (regex: RegExp | string): string => {
 	)
 }
 
+export const RegexPatterns = {
+	negativeLookahead: (pattern: string) => `(?!${pattern})` as const,
+	nonCapturingGroup: (pattern: string) => `(?:${pattern})` as const
+}
+
 export const escapeChar = "\\"
 
 export type EscapeChar = typeof escapeChar
@@ -85,3 +90,12 @@ export type isStringLiteral<t> =
 			:	false
 		:	false
 	:	false
+
+export const emojiToUnicode = (emoji: string): string =>
+	emoji
+		.split("")
+		.map(char => {
+			const codePoint = char.codePointAt(0)
+			return codePoint ? `\\u${codePoint.toString(16).padStart(4, "0")}` : ""
+		})
+		.join("")

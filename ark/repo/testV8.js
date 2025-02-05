@@ -6,8 +6,8 @@ console.log(
 )
 
 const t = type({
-	a: "string",
-	b: "number"
+	name: "string",
+	age: "number"
 })
 
 let hasFastProperties

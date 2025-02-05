@@ -7,18 +7,19 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	type Constructor,
 	type Dict,
 	type Fn,
-	type Json,
+	type Hkt,
+	type JsonStructure,
 	type anyOrNever,
 	type array,
 	type conform,
 	type flattenListable,
 	type listable,
-	type noSuggest
+	type noSuggest,
+	type satisfy
 } from "@ark/util"
-import { resolveConfig, type ArkConfig } from "./config.ts"
+import { mergeConfigs, type ArkConfig, type ResolvedConfig } from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
@@ -60,7 +61,11 @@ import type { UnionNode } from "./roots/union.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import {
+	Traversal,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
@@ -117,12 +122,23 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 
 const scopesById: Record<string, BaseScope | undefined> = {}
 
-export interface ArkScopeConfig extends ArkConfig {
+export type GlobalOnlyConfigOptionName = satisfy<
+	keyof ArkConfig,
+	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey"
+>
+
+export interface ScopeOnlyConfigOptions {
 	ambient?: boolean | string
 	prereducedAliases?: boolean
 }
 
-export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
+export interface ArkScopeConfig
+	extends Omit<ArkConfig, GlobalOnlyConfigOptionName>,
+		ScopeOnlyConfigOptions {}
+
+export interface ResolvedScopeConfig
+	extends ResolvedConfig,
+		ScopeOnlyConfigOptions {}
 
 $ark.ambient ??= {} as never
 
@@ -130,7 +146,7 @@ let rawUnknownUnion: UnionNode | undefined
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig
-	readonly resolvedConfig: ResolvedArkScopeConfig
+	readonly resolvedConfig: ResolvedScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
 
 	get [arkKind](): "scope" {
@@ -142,7 +158,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
-	readonly json: Json = {}
+
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
@@ -154,9 +170,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkScopeConfig
 	) {
-		this.config = config ?? {}
-		this.resolvedConfig = resolveConfig(config)
-
+		this.config = mergeConfigs($ark.config, config)
+		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
 		)
@@ -214,8 +229,24 @@ export abstract class BaseScope<$ extends {} = {}> {
 		scopesById[this.id] = this
 	}
 
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
 	get internal(): this {
 		return this
+	}
+
+	// json is populated when the scope is exported, so ensure it is populated
+	// before allowing external access
+	private _json: JsonStructure | undefined
+	get json(): JsonStructure {
+		if (!this._json) this.export()
+		return this._json!
 	}
 
 	defineSchema<def extends RootSchema>(def: def): def {
@@ -224,12 +255,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	generic: GenericRootParser = (...params) => {
 		const $: BaseScope = this as never
-		return (def: unknown, possibleHkt?: Constructor) =>
+		return (def: unknown, possibleHkt?: Hkt.constructor) =>
 			new GenericRoot(
 				params,
 				possibleHkt ? new LazyGenericBody(def as Fn) : def,
 				$,
-				$
+				$,
+				possibleHkt ?? null
 			) as never
 	}
 
@@ -293,8 +325,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 		}
 
+		if (isNode(schema) && schema.kind === kind) return schema
+
 		const impl = nodeImplementationsByKind[kind]
 		const normalizedSchema = impl.normalize?.(schema, this) ?? schema
+
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
@@ -315,16 +350,25 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		const bound: reference =
-			reference.$ === this ? reference
-			: isNode(reference) ?
-				new (reference.constructor as any)(reference.attachments, this)
-			:	new GenericRoot(
-					reference.params as never,
-					reference.bodyDef,
-					reference.$,
-					this as never
-				)
+		let bound: reference
+
+		if (isNode(reference)) {
+			bound =
+				reference.$ === this ?
+					reference
+				:	new (reference.constructor as any)(reference.attachments, this)
+		} else {
+			bound =
+				reference.$ === this ?
+					reference
+				:	(new GenericRoot(
+						reference.params as never,
+						reference.bodyDef,
+						reference.$,
+						this as never,
+						reference.hkt
+					) as never)
+		}
 
 		if (!this.resolved) {
 			// we're still parsing the scope itself, so defer compilation but
@@ -365,7 +409,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
-			if (typeof cached !== "string") return cached
+			if (typeof cached !== "string") return this.bindReference(cached)
 
 			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
@@ -423,6 +467,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			id,
 			phase: "unresolved" as const
 		}))
+	}
+
+	traversal(root: unknown): Traversal {
+		return new Traversal(root, this.resolvedConfig)
 	}
 
 	import(): SchemaModule<{
@@ -483,7 +531,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
-			Object.assign(this.json, resolutionsToJson(this._exportedResolutions))
+			this._json = resolutionsToJson(this._exportedResolutions)
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
@@ -525,9 +573,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = this.createParseContext(ctxOrNode)
 
-		return (nodesByRegisteredId[ctx.id] = this.bindReference(
-			parseNode(ctx)
-		)) as never
+		const node = parseNode(ctx)
+
+		const bound = this.bindReference(node)
+
+		return (nodesByRegisteredId[ctx.id] = bound) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -612,7 +662,7 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 	return resolution
 }
 
-const resolutionsToJson = (resolutions: InternalResolutions): Json =>
+const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>
 	flatMorph(resolutions, (k, v) => [
 		k,
 		hasArkKind(v, "root") || hasArkKind(v, "generic") ? v.json

@@ -8,7 +8,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, To, of } from "arktype/internal/attributes.ts"
+import type { Out, To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -56,14 +56,7 @@ contextualize(() => {
 			restringifyUser
 		])
 
-		attest(t.t).type.toString.snap(`(
-	In: string & {
-		" attributes": {
-			base: string
-			attributes: Nominal<"json">
-		}
-	}
-) => Out<string>`)
+		attest(t.t).type.toString.snap("(In: string) => Out<string>")
 
 		attest<string>(t.infer)
 		attest(t.json).snap({
@@ -375,14 +368,7 @@ contextualize(() => {
 		})
 		const types = $.export()
 
-		attest(types.c).type.toString.snap(`Type<
-	(In: { a: 1; b: 2 }) => Out<string>,
-	{
-		a: (In: { a: 1 }) => Out<string>
-		c: (In: { a: 1; b: 2 }) => Out<string>
-		b: { b: 2 }
-	}
->`)
+		attest(types.c.t).type.toString.snap("(In: { a: 1; b: 2 }) => Out<string>")
 		assertNodeKind(types.c.internal, "morph")
 		attest(types.c.json).snap({
 			in: {
@@ -613,7 +599,7 @@ contextualize(() => {
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
-		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		attest<{ a: (In: 1) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
 			types.a.internal.firstReferenceOfKindOrThrow("morph")
 
@@ -788,13 +774,13 @@ contextualize(() => {
 		})
 
 		attest(t).type.toString.snap(`Type<
-	| { l: 1; n: (In: numeric) => To<number> }
-	| { r: 1; n: (In: numeric) => To<number> },
+	| { l: 1; n: (In: string) => To<number> }
+	| { r: 1; n: (In: string) => To<number> },
 	{}
 >`)
 
 		attest(t.expression).snap(
-			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number>, r: 1 }"
+			"{ l: 1, n: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)?))$/) => Out<number> } | { n: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)?))$/) => Out<number>, r: 1 }"
 		)
 		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
@@ -820,7 +806,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 	it("multiple chained pipes", () => {
 		const t = type("string.trim").to("string.lower")
 
-		attest(t.t).type.toString.snap("(In: string) => To<lowercase>")
+		attest(t.t).type.toString.snap("(In: string) => To<string>")
 
 		attest(t("Success")).equals("success")
 		attest(t("success")).equals("success")
@@ -919,7 +905,13 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 			To: { a: "2" }
 		}).export()
 		const U = types.Morph.pipe(e => e, types.To)
-		attest(U({ a: 1 })).snap({ a: 2 })
+		const out = U({ a: 1 })
+		attest<
+			| ArkErrors
+			| {
+					a: 2
+			  }
+		>(out).snap({ a: 2 })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1185

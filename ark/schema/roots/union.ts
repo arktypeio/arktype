@@ -9,7 +9,7 @@ import {
 	printable,
 	throwParseError,
 	type JsTypeOf,
-	type Json,
+	type JsonStructure,
 	type Key,
 	type SerializedPrimitive,
 	type array,
@@ -286,12 +286,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			this.branches[i].traverseApply(data, ctx)
 			if (!ctx.hasError()) {
 				if (this.branches[i].includesMorph)
-					return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+					return ctx.queuedMorphs.push(...ctx.popBranch()!.queuedMorphs)
 				return ctx.popBranch()
 			}
-			errors.push(ctx.popBranch().error!)
+			errors.push(ctx.popBranch()!.error!)
 		}
-		ctx.error({ code: "union", errors })
+		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}
 
 	compile(js: NodeCompiler): void {
@@ -350,10 +350,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`${serializedTypeOfDescriptions}[${condition}]`
 			:	`${serializedPrintable}(${condition})`
 
-		js.line(`ctx.error({
+		// TODO: should have its own error code
+		js.line(`ctx.errorFromNodeContext({
+	code: "predicate",
 	expected: ${serializedExpected},
 	actual: ${serializedActual},
-	relativePath: [${serializedPathSegments}]
+	relativePath: [${serializedPathSegments}],
+	meta: ${this.compiledMeta}
 })`)
 	}
 
@@ -373,7 +376,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					)
 					.line("errors.push(ctx.popBranch().error)")
 			)
-			js.line(`ctx.error({ code: "union", errors })`)
+			js.line(
+				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
+			)
 		} else {
 			this.branches.forEach(branch =>
 				js.if(`${js.invoke(branch)}`, () => js.return(true))
@@ -519,7 +524,7 @@ export const Union = {
 	Node: UnionNode
 }
 
-const discriminantToJson = (discriminant: Discriminant): Json => ({
+const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 	kind: discriminant.kind,
 	path: discriminant.path.map(k =>
 		typeof k === "string" ? k : compileSerializedValue(k)

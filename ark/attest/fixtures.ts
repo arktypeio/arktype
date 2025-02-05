@@ -7,12 +7,9 @@ import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.ts"
 import { forTypeScriptVersions } from "./tsVersioning.ts"
 
 export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
-	if (options) {
-		const existing =
-			process.env.ATTEST_CONFIG ? JSON.parse(process.env.ATTEST_CONFIG) : {}
-		process.env.ATTEST_CONFIG = JSON.stringify(Object.assign(existing, options))
-	}
-	const config = getConfig()
+	const { ...config } = getConfig()
+	if (options) Object.assign(config, options)
+	process.env.ATTEST_CONFIG = JSON.stringify(config)
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureCacheDirs()
 	if (config.skipTypes) return teardown

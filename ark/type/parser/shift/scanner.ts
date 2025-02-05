@@ -44,13 +44,14 @@ export class ArkTypeScanner<
 	static lookaheadIsFinalizing = (
 		lookahead: string,
 		unscanned: string
-	): lookahead is ">" | "," | "=" =>
+	): lookahead is ">" | "," | "=" | "?" =>
 		lookahead === ">" ?
 			unscanned[0] === "=" ?
 				// >== would only occur in an expression like Array<number>==5
 				// otherwise, >= would only occur as part of a bound like number>=5
 				unscanned[1] === "="
-				// if > is the end of a generic instantiation, the next token will be an operator or the end of the string
+				// if > is the end of a generic instantiation, the next token will be
+				// an operator or the end of the string
 			:	unscanned.trimStart() === "" ||
 				isKeyOf(unscanned.trimStart()[0], ArkTypeScanner.terminatingChars)
 			// "=" is a finalizer on its own (representing a default value),

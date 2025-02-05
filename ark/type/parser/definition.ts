@@ -1,38 +1,76 @@
 import { hasArkKind, type BaseParseContext, type BaseRoot } from "@ark/schema"
 import {
+	domainOf,
+	hasDomain,
 	isThunk,
 	objectKindOf,
 	printable,
 	throwParseError,
-	type Dict,
-	type ErrorMessage,
-	type Fn,
-	type Primitive,
 	type anyOrNever,
 	type array,
 	type defined,
+	type Dict,
 	type equals,
+	type ErrorMessage,
+	type Fn,
 	type ifEmptyObjectLiteral,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
+	type Primitive,
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
 import type { type } from "../keywords/keywords.ts"
-import type { string } from "../keywords/string/string.ts"
-import type { validateString } from "./ast/validate.ts"
+import type { InnerParseResult } from "../scope.ts"
+import type {
+	shallowDefaultableMessage,
+	shallowOptionalMessage,
+	validateString
+} from "./ast/validate.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.ts"
-import type { BaseCompletions, inferString } from "./string.ts"
+import type { isDefaultable, OptionalPropertyDefinition } from "./property.ts"
 import {
-	parseTuple,
-	type TupleExpression,
-	type inferTuple,
-	type validateTuple
-} from "./tuple.ts"
+	parseString,
+	type BaseCompletions,
+	type inferString
+} from "./string.ts"
+import {
+	maybeParseTupleExpression,
+	type inferTupleExpression,
+	type maybeValidateTupleExpression,
+	type TupleExpression
+} from "./tupleExpressions.ts"
+import {
+	parseTupleLiteral,
+	type inferTupleLiteral,
+	type validateTupleLiteral
+} from "./tupleLiteral.ts"
+
+const parseCache: {
+	[cacheId: string]: { [def: string]: InnerParseResult } | undefined
+} = {}
+
+export const parseInnerDefinition = (
+	def: unknown,
+	ctx: BaseParseContext
+): InnerParseResult => {
+	if (typeof def === "string") {
+		if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
+			// we can only rely on the cache if there are no contextual
+			// resolutions like "this" or generic args
+			return parseString(def, ctx)
+		}
+		const scopeCache = (parseCache[ctx.$.id] ??= {})
+		return (scopeCache[def] ??= parseString(def, ctx))
+	}
+	return hasDomain(def, "object") ?
+			parseObject(def, ctx)
+		:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+}
 
 export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
@@ -73,14 +111,33 @@ export type inferDefinition<def, $, args> =
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
-	: def extends RegExp ? string.matching<string>
+	: def extends RegExp ? string
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
+// validates a shallow definition, ensuring it does not represent an optional or
+// defaultable before drilling down further. a definition is shallow if it is either...
+
+// 1. the root value passed to type()
+// 2. a tuple expression
 export type validateDefinition<def, $, args> =
 	null extends undefined ?
 		ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
-	: [def] extends [Terminal] ? def
+	: [def] extends [anyOrNever] ? def
+	: def extends OptionalPropertyDefinition ?
+		ErrorMessage<shallowOptionalMessage>
+	: isDefaultable<def, $, args> extends true ?
+		ErrorMessage<shallowDefaultableMessage>
+	:	validateInnerDefinition<def, $, args>
+
+// validates the definition without checking for optionals/defaults this should
+// be used when one of these is true...
+
+// 1. we are validating a shallow definition and have already ensured it does not
+//    represent an optional or defaultable
+// 2. we are validating the root of a property definition
+export type validateInnerDefinition<def, $, args> =
+	[def] extends [Terminal] ? def
 	: def extends string ? validateString<def, $, args>
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
@@ -92,10 +149,24 @@ export type validateDefinition<def, $, args> =
 	: RegExp extends def ? def
 	: validateObjectLiteral<def, $, args>
 
+export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
+	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
+
+export type validateTuple<def extends array, $, args> =
+	maybeValidateTupleExpression<def, $, args> extends infer result ?
+		result extends null ?
+			validateTupleLiteral<def, $, args>
+		:	result
+	:	never
+
+export type inferTuple<def extends array, $, args> =
+	def extends TupleExpression ? inferTupleExpression<def, $, args>
+	:	inferTupleLiteral<def, $, args>
+
 export type validateDeclared<declared, def, $, args> =
-	def extends validateDefinition<def, $, args> ?
+	def extends type.validate<def, $, args> ?
 		validateInference<def, declared, $, args>
-	:	validateDefinition<def, $, args>
+	:	type.validate<def, $, args>
 
 type validateInference<def, declared, $, args> =
 	def extends RegExp | type.cast<unknown> | ThunkCast | TupleExpression ?

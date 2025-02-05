@@ -3,17 +3,20 @@ import {
 	ReadonlyArray,
 	ReadonlyPath,
 	append,
+	conflatenateAll,
 	defineProperties,
 	stringifyPath,
 	type array,
+	type merge,
 	type propwiseXor,
 	type show
 } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.ts"
+import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
+import type { BaseMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
-import type { TraversalContext } from "./traversal.ts"
+import type { Traversal } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
@@ -24,26 +27,61 @@ export class ArkError<
 	readonly [arkKind] = "error"
 	path: ReadonlyPath
 	data: Prerequisite<code>
-	private nodeConfig: ResolvedArkConfig[code]
+	private nodeConfig: ResolvedConfig[code]
 	protected input: ArkErrorContextInput<code>
+	protected ctx: Traversal
 
-	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext) {
+	constructor(input: ArkErrorContextInput<code>, ctx: Traversal)
+	// TS gets confused by <code>, so internally we just use the base type for input
+	constructor(input: ArkErrorContextInput, ctx: Traversal) {
 		super()
-		this.input = input
+		this.input = input as never
+		this.ctx = ctx
 		defineProperties(this, input)
 		const data = ctx.data
 		if (input.code === "union") {
-			// flatten union errors to avoid repeating context like "foo must be foo must be"...
-			input.errors = input.errors.flatMap(e =>
-				e.hasCode("union") ? e.errors : e
-			)
+			input.errors = input.errors.flatMap(innerError => {
+				// flatten union errors to avoid repeating context like "foo must be foo must be"...
+				const flat =
+					innerError.hasCode("union") ? innerError.errors : [innerError]
+
+				if (!input.prefixPath && !input.relativePath) return flat
+
+				return flat.map(e =>
+					e.transform(
+						e =>
+							({
+								...e,
+								path: conflatenateAll(
+									input.prefixPath,
+									e.path,
+									input.relativePath
+								)
+							}) as never
+					)
+				)
+			})
 		}
 		this.nodeConfig = ctx.config[this.code] as never
-		this.path =
-			input.relativePath ? new ReadonlyPath(...ctx.path, ...input.relativePath)
-			: input.path ? new ReadonlyPath(...input.path)
-			: new ReadonlyPath(...ctx.path)
+		const basePath = [...(input.path ?? ctx.path)]
+		if (input.relativePath) basePath.push(...input.relativePath)
+		if (input.prefixPath) basePath.unshift(...input.prefixPath)
+		this.path = new ReadonlyPath(...basePath)
 		this.data = "data" in input ? input.data : data
+	}
+
+	transform(
+		f: (input: ArkErrorContextInput<code>) => ArkErrorContextInput
+	): ArkError {
+		const normalizedInput = {
+			...this.input,
+			data: this.data,
+			// ensure we don't continue adding relative path segments
+			path: this.path,
+			relativePath: [],
+			prefixPath: []
+		} as never
+		return new ArkError(f(normalizedInput), this.ctx) as never
 	}
 
 	hasCode<code extends ArkErrorCode>(code: code): this is ArkError<code> {
@@ -56,20 +94,34 @@ export class ArkError<
 
 	get expected(): string {
 		return (
-			this.input.expected ?? this.nodeConfig.expected?.(this.input as never)
+			this.input.expected ??
+			this.meta?.expected?.(this.input as never) ??
+			this.nodeConfig.expected?.(this.input as never)
 		)
 	}
 
 	get actual(): string {
-		return this.input.actual ?? this.nodeConfig.actual?.(this.data as never)
+		return (
+			this.input.actual ??
+			this.meta?.actual?.(this.data as never) ??
+			this.nodeConfig.actual?.(this.data as never)
+		)
 	}
 
 	get problem(): string {
-		return this.input.problem ?? this.nodeConfig.problem(this as never)
+		return (
+			this.input.problem ??
+			this.meta?.problem?.(this as never) ??
+			this.nodeConfig.problem(this as never)
+		)
 	}
 
 	get message(): string {
-		return this.input.message ?? this.nodeConfig.message(this as never)
+		return (
+			this.input.message ??
+			this.meta?.message?.(this as never) ??
+			this.nodeConfig.message(this as never)
+		)
 	}
 
 	toString(): string {
@@ -81,28 +133,77 @@ export class ArkError<
 	}
 }
 
+/**
+ * A ReadonlyArray of `ArkError`s returned by a Type on invalid input.
+ *
+ * Subsequent errors added at an existing path are merged into an
+ * ArkError intersection.
+ */
 export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
 {
-	protected ctx: TraversalContext
+	protected ctx: Traversal
 
-	constructor(ctx: TraversalContext) {
+	constructor(ctx: Traversal) {
 		super()
 		this.ctx = ctx
 	}
 
+	/**
+	 * Errors by a pathString representing their location.
+	 */
 	byPath: Record<string, ArkError> = Object.create(null)
+
+	/**
+	 * All pathStrings at which errors are present mapped to the errors occuring
+	 * at that path or any nested path within it.
+	 */
 	byAncestorPath: Record<string, ArkError[]> = Object.create(null)
 
 	count = 0
 	private mutable: ArkError[] = this as never
 
+	/**
+	 * Throw an AggregateError based on these errors.
+	 */
+	throw(): never {
+		throw new AggregateError(this, this.summary)
+	}
+
+	/**
+	 * Append an ArkError to this array, ignoring duplicates.
+	 */
 	add(error: ArkError): void {
 		if (this.includes(error)) return
 		this._add(error)
 	}
 
+	transform(f: (e: ArkError) => ArkError): ArkErrors {
+		const result = new ArkErrors(this.ctx)
+		this.forEach(e => result.add(f(e)))
+		return result
+	}
+
+	/**
+	 * Add all errors from an ArkErrors instance, ignoring duplicates and
+	 * prefixing their paths with that of the current Traversal.
+	 */
+	merge(errors: ArkErrors): void {
+		errors.forEach(e => {
+			if (this.includes(e)) return
+			this._add(
+				new ArkError(
+					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
+					this.ctx
+				)
+			)
+		})
+	}
+
+	/**
+	 * @internal
+	 */
 	affectsPath(path: ReadonlyPath): boolean {
 		if (this.length === 0) return false
 
@@ -114,6 +215,31 @@ export class ArkErrors
 			// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
 			path.stringify() in this.byAncestorPath
 		)
+	}
+
+	/**
+	 * A human-readable summary of all errors.
+	 */
+	get summary(): string {
+		return this.toString()
+	}
+
+	/**
+	 * Alias of `summary` for StandardSchema compatibility.
+	 */
+	get message(): string {
+		return this.toString()
+	}
+
+	/**
+	 * Alias of this ArkErrors instance for StandardSchema compatibility.
+	 */
+	get issues(): this {
+		return this
+	}
+
+	toString(): string {
+		return this.join("\n")
 	}
 
 	private _add(error: ArkError): void {
@@ -154,42 +280,6 @@ export class ArkErrors
 			)
 		})
 	}
-
-	merge(errors: ArkErrors): void {
-		errors.forEach(e => {
-			if (this.includes(e)) return
-			this._add(
-				new ArkError(
-					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
-					this.ctx
-				)
-			)
-		})
-	}
-
-	get summary(): string {
-		return this.toString()
-	}
-
-	get message(): string {
-		return this.toString()
-	}
-
-	get issues(): this {
-		return this
-	}
-
-	toString(): string {
-		return this.join("\n")
-	}
-
-	throw(): never {
-		throw new AggregateError(this, this.message)
-	}
-}
-
-export type ArkErrorsMergeOptions = {
-	relativePath?: array<PropertyKey>
 }
 
 export interface DerivableErrorContext<
@@ -209,7 +299,7 @@ export type DerivableErrorContextInput<
 > = Partial<DerivableErrorContext<code>> &
 	propwiseXor<
 		{ path?: array<PropertyKey> },
-		{ relativePath?: array<PropertyKey> }
+		{ relativePath?: array<PropertyKey>; prefixPath?: array<PropertyKey> }
 	>
 
 export type ArkErrorCode = {
@@ -221,7 +311,10 @@ type ArkErrorContextInputsByCode = {
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorContextInputsByCode[code]
+	merge<ArkErrorContextInputsByCode[code], { meta?: BaseMeta }>
+
+export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
+	ArkErrorContextInputsByCode[code] & { meta: BaseMeta }
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkError<code>,

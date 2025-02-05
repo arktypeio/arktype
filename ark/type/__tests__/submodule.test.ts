@@ -37,8 +37,8 @@ contextualize.each(
 
 			attest<number>(types.sub.alias.infer)
 			const expected = type("number").json
-			attest(types.sub.alias.json).is(expected)
-			attest(types.b.json).is(expected)
+			attest(types.sub.alias.json).equals(expected)
+			attest(types.b.json).equals(expected)
 		})
 
 		it("non-submodule dot access", $ => {
@@ -96,7 +96,7 @@ contextualize.each(
 		it("can reference subaliases in expression", () => {
 			const dateFrom = type("string.date.parse | Date")
 
-			attest(dateFrom.t).type.toString.snap("Date | ((In: date) => To<Date>)")
+			attest(dateFrom.t).type.toString.snap("Date | ((In: string) => To<Date>)")
 
 			attest(dateFrom("05-21-1993")).instanceOf(Date)
 			attest(dateFrom(new Date())).instanceOf(Date)
@@ -154,9 +154,9 @@ contextualize.each(
 )
 
 contextualize.each(
-	"subtypes",
+	"rooted submodules",
 	() => {
-		const foo = scope({ root: "'foo'", bar: "'bar'" }).export()
+		const foo = type.module({ root: "'foo'", bar: "'bar'" })
 
 		const $ = scope({
 			foo,
@@ -192,6 +192,96 @@ contextualize.each(
 			// `foo.root` should not be included since it is redundant with `foo`
 			// @ts-expect-error
 			attest(() => $.type("foo.")).completions({ "foo.": ["foo.bar"] })
+		})
+
+		it("docs example", () => {
+			const userModule = type.module({
+				root: {
+					name: "string"
+				},
+				// subaliases can extend a base type by referencing 'root'
+				// like any other alias
+				admin: {
+					"...": "root",
+					isAdmin: "true"
+				},
+				saiyan: {
+					"...": "root",
+					powerLevel: "number > 9000"
+				}
+			})
+
+			const rootScope = type.scope({
+				user: userModule,
+				// user can now be referenced directly in a definition
+				group: "user[]",
+				// or used as a prefix to access subaliases
+				elevatedUser: "user.admin | user.saiyan"
+			})
+
+			attest(rootScope).type.toString.snap(`Scope<{
+	group: { name: string }[]
+	user: Submodule<{
+		root: { name: string }
+		admin: { name: string; isAdmin: true }
+		saiyan: { name: string; powerLevel: number }
+	}>
+	elevatedUser:
+		| { name: string; isAdmin: true }
+		| { name: string; powerLevel: number }
+}>`)
+			attest(rootScope.json).snap({
+				"user.root": {
+					required: [{ key: "name", value: "string" }],
+					domain: "object"
+				},
+				"user.admin": {
+					required: [
+						{ key: "isAdmin", value: { unit: true } },
+						{ key: "name", value: "string" }
+					],
+					domain: "object"
+				},
+				"user.saiyan": {
+					required: [
+						{ key: "name", value: "string" },
+						{
+							key: "powerLevel",
+							value: { domain: "number", min: { exclusive: true, rule: 9000 } }
+						}
+					],
+					domain: "object"
+				},
+				group: {
+					sequence: {
+						required: [{ key: "name", value: "string" }],
+						domain: "object"
+					},
+					proto: "Array"
+				},
+				elevatedUser: [
+					{
+						required: [
+							{ key: "isAdmin", value: { unit: true } },
+							{ key: "name", value: "string" }
+						],
+						domain: "object"
+					},
+					{
+						required: [
+							{ key: "name", value: "string" },
+							{
+								key: "powerLevel",
+								value: {
+									domain: "number",
+									min: { exclusive: true, rule: 9000 }
+								}
+							}
+						],
+						domain: "object"
+					}
+				]
+			})
 		})
 	}
 )

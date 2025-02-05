@@ -14,7 +14,9 @@ contextualize(() => {
 		})
 		attest(parseNumber.in.json).snap({
 			domain: "string",
-			pattern: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
+			pattern: [
+				"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?)|\\.\\d*[1-9]?))$"
+			],
 			meta: "a well-formed numeric string"
 		})
 		attest(parseNumber.out.json).snap({})

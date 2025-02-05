@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark, configure, rootSchema, schemaScope } from "@ark/schema"
+import {
+	$ark,
+	configure,
+	rootSchema,
+	schemaScope,
+	type ArkErrors
+} from "@ark/schema"
 
 contextualize(() => {
 	it("shallow", () => {
@@ -59,8 +65,24 @@ contextualize(() => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber.traverse(5)?.toString()).snap(
-			"must be a multiple of 2 (was 5)"
+		attest(evenNumber.traverse(5)?.toString()).snap("must be even (was 5)")
+	})
+
+	it("can configure error writers at a node level", () => {
+		const customNumber = rootSchema({
+			meta: {
+				description: "custom description",
+				actual: data => `custom actual ${data}`,
+				problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+				message: ctx => `custom message ${ctx.problem}`
+			},
+			domain: "number"
+		})
+
+		const out = customNumber("foo") as ArkErrors
+
+		attest(out.summary).snap(
+			"custom message custom problem custom description custom actual foo"
 		)
 	})
 

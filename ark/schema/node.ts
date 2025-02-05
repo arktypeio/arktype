@@ -9,7 +9,7 @@ import {
 	throwError,
 	type Dict,
 	type GuardablePredicate,
-	type Json,
+	type JsonStructure,
 	type Key,
 	type array,
 	type conform,
@@ -52,7 +52,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
-	TraversalContext,
+	Traversal,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
@@ -64,7 +64,7 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
-	(data: d["prerequisite"], ctx?: TraversalContext) => unknown,
+	(data: d["prerequisite"], ctx?: Traversal) => unknown,
 	attachmentsOf<d>
 > {
 	attachments: UnknownAttachments
@@ -72,7 +72,7 @@ export abstract class BaseNode<
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
-			(data: any, pipedFromCtx?: TraversalContext) => {
+			(data: any, pipedFromCtx?: Traversal) => {
 				if (
 					!this.includesMorph &&
 					!this.allowsRequiresContext &&
@@ -82,10 +82,12 @@ export abstract class BaseNode<
 
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
-					return pipedFromCtx.data
+					return pipedFromCtx.hasError() ?
+							pipedFromCtx.errors
+						:	pipedFromCtx.data
 				}
 
-				const ctx = new TraversalContext(data, this.$.resolvedConfig)
+				const ctx = new Traversal(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
@@ -112,7 +114,8 @@ export abstract class BaseNode<
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||
-		(this.hasKind("structure") && this.undeclared === "delete") ||
+		(this.hasKind("sequence") && this.includesDefaultable()) ||
+		(this.hasKind("structure") && this.inner.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
 
 	readonly hasContextualPredicate: boolean =
@@ -127,6 +130,7 @@ export abstract class BaseNode<
 		(result, child) => Object.assign(result, child.referencesById),
 		{ [this.id]: this }
 	)
+	readonly compiledMeta: string = JSON.stringify(this.metaJson)
 
 	protected cacheGetter<name extends keyof this>(
 		name: name,
@@ -137,14 +141,10 @@ export abstract class BaseNode<
 	}
 
 	get description(): string {
-		const writer =
-			this.$?.resolvedConfig[this.kind].description ??
-			$ark.config[this.kind]?.description ??
-			$ark.defaultConfig[this.kind].description
-
 		return this.cacheGetter(
 			"description",
-			this.meta?.description ?? writer(this as never)
+			this.meta?.description ??
+				this.$.resolvedConfig[this.kind].description(this as never)
 		)
 	}
 
@@ -158,7 +158,7 @@ export abstract class BaseNode<
 		return this.cacheGetter(
 			"shallowReferences",
 			this.hasKind("structure") ?
-				[this as BaseNode, ...this.children]
+				[this as BaseNode, ...(this.children as never)]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
 					[this]
@@ -202,7 +202,7 @@ export abstract class BaseNode<
 		if (this.allowsRequiresContext) {
 			return this.traverseAllows(
 				data as never,
-				new TraversalContext(data, this.$.resolvedConfig)
+				new Traversal(data, this.$.resolvedConfig)
 			)
 		}
 		return (this.traverseAllows as any)(data)
@@ -244,7 +244,7 @@ export abstract class BaseNode<
 		return this.$.node(this.kind, ioInner)
 	}
 
-	toJSON(): Json {
+	toJSON(): JsonStructure {
 		return this.json
 	}
 

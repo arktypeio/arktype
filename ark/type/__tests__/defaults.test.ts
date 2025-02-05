@@ -1,59 +1,46 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
-	writeNonPrimitiveNonFunctionDefaultValueMessage,
-	writeUnassignableDefaultValueMessage
+	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
-import type {
-	InferredDefault,
-	Out,
-	string
-} from "arktype/internal/attributes.ts"
-import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
+import type { Default, Out, To } from "arktype/internal/attributes.ts"
+import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
+import { invalidDefaultableKeyKindMessage } from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {
-			const fn5 = () => 5 as const
+			const fnDefaultTo5 = () => 5 as const
 			const o = type({
 				a: "string",
 				foo: "number = 5",
 				bar: ["number", "=", 5],
-				baz: ["number", "=", fn5]
+				baz: ["number", "=", fnDefaultTo5]
 			})
-			const fn5reg = registeredReference(fn5)
 
-			// ensure type ast displays is exactly as expected
 			attest(o.t).type.toString.snap(`{
 	a: string
-	foo: defaultsTo<5>
-	bar: defaultsTo<5>
-	baz: defaultsTo<5>
+	foo: Default<number, 5>
+	bar: Default<number, 5>
+	baz: Default<number, 5>
 }`)
-			attest<{ a: string; foo?: number; bar?: number; baz?: number }>(o.inferIn)
+			attest<{
+				a: string
+				foo?: number
+				bar?: number
+				baz?: number
+			}>(o.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
 
 			attest(o.json).snap({
 				required: [{ key: "a", value: "string" }],
 				optional: [
-					{
-						default: fn5reg,
-						key: "baz",
-						value: { domain: "number", meta: { default: fn5reg } }
-					},
-					{
-						default: 5,
-						key: "bar",
-						value: { domain: "number", meta: { default: 5 } }
-					},
-					{
-						default: 5,
-						key: "foo",
-						value: { domain: "number", meta: { default: 5 } }
-					}
+					{ default: "$ark.fnDefaultTo5", key: "baz", value: "number" },
+					{ default: 5, key: "bar", value: "number" },
+					{ default: 5, key: "foo", value: "number" }
 				],
 				domain: "object"
 			})
@@ -71,57 +58,18 @@ contextualize(() => {
 			)
 		})
 
-		it("defined with wrong type", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", bar: ["number", "=", "5"] })
-			)
-				.throws(
-					writeUnassignableDefaultValueMessage(
-						"must be a number (was a string)"
-					)
-				)
-				.type.errors(
-					"Type 'string' is not assignable to type 'DefaultFor<number>'."
-				)
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", bar: ["number", "=", () => "5"] })
-			)
-				.throws(
-					writeUnassignableDefaultValueMessage(
-						"must be a number (was a string)"
-					)
-				)
-				.type.errors("Type 'string' is not assignable to type 'number'.")
-		})
-
 		it("unions are defaultable", () => {
-			const t = type("boolean = false")
-
-			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
-
-			attest(t.json).snap({
-				branches: [{ unit: false }, { unit: true }],
-				meta: { default: false }
-			})
-
 			const o = type({
-				boo: t
+				boo: "boolean = false"
 			})
-
-			attest(o).type.toString.snap(
-				"Type<{ boo: of<boolean, Default<false>> }, {}>"
-			)
+			// this should not distribute to Default<true, true> | Default<false, true>
+			attest(o).type.toString.snap("Type<{ boo: Default<boolean, false> }, {}>")
 			attest(o.json).snap({
 				optional: [
 					{
 						default: false,
 						key: "boo",
-						value: {
-							branches: [{ unit: false }, { unit: true }],
-							meta: { default: false }
-						}
+						value: [{ unit: false }, { unit: true }]
 					}
 				],
 				domain: "object"
@@ -141,7 +89,7 @@ contextualize(() => {
 
 			attest<{
 				foo: string
-				bar: InferredDefault<number, 5>
+				bar: Default<number, 5>
 			}>(types.stringDefault.t)
 
 			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
@@ -152,7 +100,7 @@ contextualize(() => {
 					{
 						default: 5,
 						key: "bar",
-						value: { domain: "number", meta: { default: 5 } }
+						value: "number"
 					}
 				],
 				domain: "object"
@@ -161,16 +109,36 @@ contextualize(() => {
 			attest(types.tupleDefault.json).equals(types.stringDefault.json)
 		})
 
+		it("no shallow default in tuple expression", () => {
+			attest(() =>
+				// @ts-expect-error
+				type(["string = 'foo'", "|", "number"])
+			).throwsAndHasTypeError(shallowDefaultableMessage)
+
+			attest(() =>
+				// @ts-expect-error
+				type(["string", "|", ["number", "=", 5]])
+			).throwsAndHasTypeError(shallowDefaultableMessage)
+		})
+
+		it("no shallow default in scope", () => {
+			// @ts-expect-error
+			attest(() => type.module({ foo: "string = ''" })).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
+
+			attest(() =>
+				// @ts-expect-error
+				type.module({ foo: ["string", "=", ""] })
+			).throwsAndHasTypeError(shallowDefaultableMessage)
+		})
+
 		it("chained", () => {
 			const defaultedString = type("string").default("")
-			attest(defaultedString.t).type.toString.snap('defaultsTo<"">')
-			attest(defaultedString.json).snap({
-				domain: "string",
-				meta: { default: "" }
-			})
+			attest(defaultedString).type.toString.snap('[Type<string, {}>, "=", ""]')
 
 			const o = type({ a: defaultedString })
-			attest(o.t).type.toString.snap('{ a: defaultsTo<""> }')
+			attest(o.t).type.toString.snap('{ a: Default<string, ""> }')
 			attest<{ a?: string }>(o.inferIn)
 			attest<{ a: string }>(o.infer)
 			attest(o.json).snap({
@@ -178,41 +146,50 @@ contextualize(() => {
 					{
 						default: "",
 						key: "a",
-						value: { domain: "string", meta: { default: "" } }
+						value: "string"
 					}
 				],
 				domain: "object"
 			})
 		})
 
-		it("invalid chained", () => {
-			// @ts-expect-error
-			attest(() => type("number").default(true))
-				.throws(
-					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+		it("unassignable default tuple", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", bar: ["number", "=", "5"] })
+			)
+				.throws.snap(
+					"ParseError: Default for bar must be a number (was a string)"
 				)
-				.type.errors.snap(
-					"Argument of type 'boolean' is not assignable to parameter of type 'DefaultFor<number>'."
+				.type.errors(
+					"Type 'string' is not assignable to type 'defaultFor<number>'."
 				)
 		})
 
-		it("spread", () => {
-			const t = type("number", "=", 5)
-
-			const expected = type(["number", "=", 5])
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+		it("unassignable default thunk tuple", () => {
+			attest(() =>
+				type({
+					foo: [
+						{ foo: "true" },
+						"=",
+						() => ({
+							// @ts-expect-error
+							foo: false
+						})
+					]
+				})
+			)
+				.throws.snap("ParseError: Default for foo.foo must be true (was false)")
+				.type.errors.snap("Type 'false' is not assignable to type 'true'.")
 		})
 
-		it("invalid spread", () => {
+		it("unassignable default string", () => {
 			// @ts-expect-error
-			attest(() => type("number", "=", true))
-				.throws(
-					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+			attest(() => type({ foo: "number = true" }))
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was boolean)"
 				)
-				.type.errors.snap(
-					"Argument of type 'boolean' is not assignable to parameter of type 'DefaultFor<number>'."
-				)
+				.type.errors("Default value true must be assignable to number ")
 		})
 
 		it("morphed", () => {
@@ -224,8 +201,9 @@ contextualize(() => {
 			})
 
 			attest<{
-				bool_value: (In: string.defaultsTo<"off">) => Out<boolean>
+				bool_value: (In: Default<string, "off">) => Out<boolean>
 			}>(processForm.t)
+
 			attest<{
 				// key should still be distilled as optional even inside a morph
 				bool_value?: string
@@ -233,26 +211,6 @@ contextualize(() => {
 			attest<{
 				bool_value: boolean
 			}>(processForm.infer)
-
-			const out = processForm({})
-
-			attest(out).snap({ bool_value: false })
-
-			attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
-
-			attest(processForm({ bool_value: true }).toString()).snap(
-				"bool_value must be a string (was boolean)"
-			)
-		})
-
-		it("morphed from defaulted", () => {
-			const processForm = type({
-				bool_value: type("string='off'").pipe(v => (v === "on" ? true : false))
-			})
-
-			attest<{
-				bool_value: (In: string.defaultsTo<"off">) => Out<boolean>
-			}>(processForm.t)
 
 			const out = processForm({})
 
@@ -275,24 +233,27 @@ contextualize(() => {
 
 			const toggleRef = registeredReference(toggle)
 
-			const defaultablePipedBoolean = type("boolean = false").pipe(toggle)
-
-			attest(defaultablePipedBoolean.t).type.toString.snap(
-				"(In: of<boolean, Default<false>>) => Out<boolean>"
-			)
-			attest(defaultablePipedBoolean.json).snap({
-				in: [{ unit: false }, { unit: true }],
-				morphs: [toggleRef],
-				meta: { default: false }
-			})
-
 			const t = type({
-				blep: defaultablePipedBoolean
+				blep: type("boolean").pipe(toggle).default(false)
 			})
 
 			attest(t.t).type.toString.snap(`{
-	blep: (In: of<boolean, Default<false>>) => Out<boolean>
+	blep: (In: Default<boolean, false>) => Out<boolean>
 }`)
+
+			attest(t.json).snap({
+				optional: [
+					{
+						default: false,
+						key: "blep",
+						value: {
+							in: [{ unit: false }, { unit: true }],
+							morphs: [toggleRef]
+						}
+					}
+				],
+				domain: "object"
+			})
 
 			const out = t({})
 
@@ -313,30 +274,27 @@ contextualize(() => {
 
 			const toggleRef = registeredReference(toggle)
 
-			const defaultablePipedBoolean = type("boolean = false")
-				.pipe(toggle)
-				.to("boolean")
-
-			attest(defaultablePipedBoolean.t).type.toString
-				.snap(`	| ((In: of<boolean, Default<false>>) => To<false>)
-	| ((In: of<boolean, Default<false>>) => To<true>)`)
-			attest(defaultablePipedBoolean.json).snap({
-				in: {
-					branches: [{ unit: false }, { unit: true }],
-					meta: { default: false }
-				},
-				morphs: [toggleRef, [{ unit: false }, { unit: true }]]
-			})
-
 			const t = type({
-				blep: defaultablePipedBoolean
+				blep: type("boolean").pipe(toggle).to("boolean").default(false)
 			})
 
 			attest(t.t).type.toString.snap(`{
-	blep:
-		| ((In: of<boolean, Default<false>>) => To<false>)
-		| ((In: of<boolean, Default<false>>) => To<true>)
+	blep: (In: Default<boolean, false>) => To<boolean>
 }`)
+
+			attest(t.json).snap({
+				optional: [
+					{
+						default: false,
+						key: "blep",
+						value: {
+							in: [{ unit: false }, { unit: true }],
+							morphs: [toggleRef, [{ unit: false }, { unit: true }]]
+						}
+					}
+				],
+				domain: "object"
+			})
 
 			const out = t({})
 
@@ -348,13 +306,13 @@ contextualize(() => {
 		})
 
 		it("primitive morphed to object not premorphed", () => {
-			const toNestedString = type("string")
-				.default("foo")
-				.pipe(s => ({ nest: s }))
-
-			const t = type({ foo: toNestedString })
+			const t = type({
+				foo: type("string")
+					.pipe(s => ({ nest: s }))
+					.default("foo")
+			})
 			attest<{
-				foo: (In: string.defaultsTo<"foo">) => Out<{
+				foo: (In: Default<string, "foo">) => Out<{
 					nest: string
 				}>
 			}>(t.t)
@@ -406,7 +364,7 @@ contextualize(() => {
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type
 			attest<{
-				key: InferredDefault<Date, Date.nominal<"1993-05-21">>
+				key: Default<Date, Date>
 			}>(t.t)
 		})
 
@@ -459,10 +417,10 @@ contextualize(() => {
 		it("incorrect default type", () => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
-				.throws(
-					writeUnassignableDefaultValueMessage("must be a number (was boolean)")
+				.throws.snap(
+					"ParseError: Default for bar must be a number (was boolean)"
 				)
-				.type.errors("true is not assignable to number")
+				.type.errors("Default value true must be assignable to number")
 		})
 
 		it("non-literal", () => {
@@ -481,14 +439,16 @@ contextualize(() => {
 			$.export()
 
 			attest($.json).snap({
-				specialNumber: { domain: "number" },
+				specialNumber: {
+					domain: "number"
+				},
 				obj: {
 					required: [{ key: "foo", value: "string" }],
 					optional: [
 						{
 							default: 5,
 							key: "bar",
-							value: { domain: "number", meta: { default: 5 } }
+							value: "number"
 						}
 					],
 					domain: "object"
@@ -497,26 +457,39 @@ contextualize(() => {
 		})
 
 		it("optional with default", () => {
-			const t = type({ foo: "string", "bar?": "number = 5" })
-			attest<{
-				foo: string
-				bar?: number
-			}>(t.inferIn)
-			attest<{
-				foo: string
-				bar?: number
-			}>(t.infer)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": "number = 5" })
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
 
-			const fromTuple = type({ foo: "string", "bar?": ["number", "=", 5] })
-			attest<typeof t.t>(fromTuple.t)
-			attest(fromTuple.json).equals(t.json)
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": ["number", "=", 5] })
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
+		})
+
+		it("index with default", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "[string]": "number = 5" })
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
+
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "[string]": ["number", "=", 5] })
+			).throwsAndHasTypeError(invalidDefaultableKeyKindMessage)
 		})
 
 		it("shallow default", () => {
-			const t = type("string='foo'")
-			const expected = type("string").default("foo")
-			attest<typeof expected.t>(t.t)
-			attest(t.json).equals(expected.json)
+			// @ts-expect-error
+			attest(() => type("string='foo'")).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
+
+			// @ts-expect-error
+			attest(() => type(["string", "=", "foo"])).throwsAndHasTypeError(
+				shallowDefaultableMessage
+			)
 		})
 
 		it("extracts output as required", () => {
@@ -526,7 +499,7 @@ contextualize(() => {
 
 			attest<{ foo?: string }>(t.in.infer)
 			attest<{ foo: string }>(t.out.infer)
-			attest(t.in.expression).snap('{ foo?: string = "foo" }')
+			attest(t.in.expression).snap('{ foo: string = "foo" }')
 			attest(t.out.expression).snap("{ foo: string }")
 		})
 	})
@@ -557,122 +530,160 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ foo: ["unknown", "=", { foo: "bar" }] })
 			})
-				.throws("is not primitive")
+				.throws(writeNonPrimitiveNonFunctionDefaultValueMessage("foo"))
 				.type.errors("'foo' does not exist in type '() => unknown'.")
+
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["unknown.any", "=", { foo: "bar" }] })
 			})
-				.throws("is not primitive")
+				.throws(writeNonPrimitiveNonFunctionDefaultValueMessage("foo"))
 				.type.errors("'foo' does not exist in type '() => any'.")
 		})
 
-		it("allows string sybtyping", () => {
+		it("allows string subtyping", () => {
 			type({
 				foo: [/^foo/ as type.cast<`foo${string}`>, "=", "foobar"],
 				bar: [/bar$/ as type.cast<`${string}bar`>, "=", () => "foobar" as const]
 			})
 		})
 
-		it("shows types plainly", () => {
-			attest(
-				// @ts-expect-error
-				() => type({ foo: ["number", "=", true] })
-			)
-				.throws()
-				.type.errors.snap(
-					"Type 'boolean' is not assignable to type 'DefaultFor<number>'."
+		describe("bad values", () => {
+			it("primitive", () => {
+				attest(
+					// @ts-expect-error
+					() => type({ foo: ["number", "=", true] })
 				)
-			attest(
-				// @ts-expect-error
-				() => type({ foo: ["number[]", "=", true] })
-			)
-				.throws()
-				.type.errors.snap(
-					"Type 'boolean' is not assignable to type '() => number[]'."
+					.throws.snap(
+						"ParseError: Default for foo must be a number (was boolean)"
+					)
+					.type.errors.snap(
+						"Type 'boolean' is not assignable to type 'defaultFor<number>'."
+					)
+			})
+
+			it("array", () => {
+				attest(
+					// @ts-expect-error
+					() => type({ foo: ["number[]", "=", true] })
 				)
-			attest(
-				// @ts-expect-error
-				() => type({ foo: [{ bar: "false" }, "=", true] })
-			)
-				.throws()
-				.type.errors.snap(
-					"Type 'boolean' is not assignable to type '() => { bar: false; }'."
+					.throws.snap(
+						"ParseError: Default for foo must be an array (was boolean)"
+					)
+					.type.errors.snap(
+						"Type 'boolean' is not assignable to type '() => number[]'."
+					)
+			})
+
+			it("object", () => {
+				attest(
+					// @ts-expect-error
+					() => type({ foo: [{ bar: "false" }, "=", true] })
 				)
-			attest(
-				// @ts-expect-error
-				() => type({ foo: [["number[]", "|", "string"], "=", true] })
-			)
-				.throws()
-				.type.errors.snap(
-					"Type 'boolean' is not assignable to type 'DefaultFor<string | number[]>'."
+					.throws.snap(
+						"ParseError: Default for foo must be an object (was boolean)"
+					)
+					.type.errors.snap(
+						"Type 'boolean' is not assignable to type '() => { bar: false; }'."
+					)
+			})
+
+			it("union", () => {
+				attest(
+					// @ts-expect-error
+					() => type({ foo: [["number[]", "|", "string"], "=", true] })
 				)
-			attest(
-				// @ts-expect-error
-				() => type(["number[]", "|", "string"], "=", true)
-			)
-				.throws()
-				.type.errors.snap(
-					"Argument of type 'boolean' is not assignable to parameter of type 'DefaultFor<string | number[]>'."
+					.throws.snap(
+						"ParseError: Default for foo must be a string or an array (was boolean)"
+					)
+					.type.errors.snap(
+						"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."
+					)
+			})
+
+			it("union with default", () => {
+				// should not cause "instantiation is excessively deep"
+				attest(
+					// @ts-expect-error
+					() => type("number[]", "|", "string").default(true)
 				)
-			// should not cause "instantiation is excessively deep"
-			attest(
-				// @ts-expect-error
-				() => type("number[]", "|", "string").default(true)
-			)
-				.throws()
-				.type.errors.snap(
-					"Argument of type 'boolean' is not assignable to parameter of type 'DefaultFor<string | number[]>'."
+					.throws.snap(
+						"ParseError: Default must be a string or an object (was boolean)"
+					)
+					.type.errors.snap(
+						"Argument of type 'boolean' is not assignable to parameter of type 'defaultFor<string | number[]>'."
+					)
+			})
+
+			it("union with default function", () => {
+				// should not cause "instantiation is excessively deep"
+				attest(
+					// @ts-expect-error
+					() => type("number[]", "|", "string").default(() => true)
 				)
-			// should not cause "instantiation is excessively deep"
-			attest(
-				// @ts-expect-error
-				() => type("number[]", "|", "string").default(() => true)
-			)
-				.throws()
-				.type.errors(
-					"Type 'boolean' is not assignable to type 'string | number[]'."
-				)
+					.throws.snap(
+						"ParseError: Default must be a string or an object (was boolean)"
+					)
+					.type.errors(
+						"Type 'boolean' is not assignable to type 'string | number[]'."
+					)
+			})
 		})
 
-		it("uses input type for morphs", () => {
-			// @ts-expect-error
-			attest(() => type({ foo: ["string.numeric.parse = true"] }))
-				.throws("must be a string (was boolean)")
-				.type.errors(
-					"Default value true is not assignable to string.numeric.parse"
-				)
-			// @ts-expect-error
-			attest(() => type({ foo: ["string.numeric.parse", "=", true] }))
-				.throws("must be a string (was boolean)")
-				.type.errors(
-					"Type 'boolean' is not assignable to type 'DefaultFor<string>'."
-				)
-			// @ts-expect-error
-			attest(() => type({ foo: ["string.numeric.parse", "=", () => true] }))
-				.throws("must be a string (was boolean)")
-				.type.errors("Type 'boolean' is not assignable to type 'string'.")
-			const numtos = type("number").pipe(s => `${s}`)
-			// @ts-expect-error
-			attest(() => type({ foo: [numtos, "=", true] }))
-				.throws("must be a number (was boolean)")
-				.type.errors(
-					"Type 'boolean' is not assignable to type 'DefaultFor<number>'."
-				)
-			// @ts-expect-error
-			attest(() => type({ foo: [numtos, "=", () => true] }))
-				.throws("must be a number (was boolean)")
-				.type.errors("Type 'boolean' is not assignable to type 'number'.")
+		describe("morph input errors", () => {
+			it("string", () => {
+				// @ts-expect-error
+				attest(() => type({ foo: ["string.numeric.parse = true"] }))
+					.throws("must be a string (was boolean)")
+					.type.errors(
+						"Default value true must be assignable to string.numeric.parse"
+					)
+			})
 
+			it("tuple", () => {
+				// @ts-expect-error
+				attest(() => type({ foo: ["string.numeric.parse", "=", true] }))
+					.throws("must be a string (was boolean)")
+					.type.errors(
+						"Type 'boolean' is not assignable to type 'defaultFor<string>'."
+					)
+			})
+
+			it("function", () => {
+				// @ts-expect-error
+				attest(() => type({ foo: ["string.numeric.parse", "=", () => true] }))
+					.throws("must be a string (was boolean)")
+					.type.errors("Type 'boolean' is not assignable to type 'string'.")
+			})
+
+			it("reference tuple", () => {
+				const numtos = type("number").pipe(s => `${s}`)
+				// @ts-expect-error
+				attest(() => type({ foo: [numtos, "=", true] }))
+					.throws("must be a number (was boolean)")
+					.type.errors(
+						"Type 'boolean' is not assignable to type 'defaultFor<number>'."
+					)
+			})
+
+			it("reference function", () => {
+				const numtos = type("number").pipe(s => `${s}`)
+				// @ts-expect-error
+				attest(() => type({ foo: [numtos, "=", () => true] }))
+					.throws("must be a number (was boolean)")
+					.type.errors("Type 'boolean' is not assignable to type 'number'.")
+			})
+		})
+
+		it("morphed inputs", () => {
+			const numtos = type("number").pipe(s => `${s}`)
 			const f = type({
 				foo1: "string.numeric.parse = '123'",
 				foo2: ["string.numeric.parse", "=", "123"],
 				foo3: ["string.numeric.parse", "=", () => "123"],
 				bar1: [numtos, "=", 123],
 				bar2: [numtos, "=", () => 123],
-				baz1: type(numtos, "=", 123),
-				baz2: type(numtos, "=", () => 123),
-				baz3: type(numtos).default(123)
+				baz1: type(numtos).default(123)
 			})
 			attest(f.assert({})).snap({
 				foo1: 123,
@@ -680,49 +691,30 @@ contextualize(() => {
 				foo3: 123,
 				bar1: "123",
 				bar2: "123",
-				baz1: "123",
-				baz2: "123",
-				baz3: "123"
+				baz1: "123"
 			})
 		})
 
-		it("boolean not distributed during inference", () => {
-			const t = type("boolean", "=", false)
+		it("pipes from undefined or not present", () => {
+			const defaultDate = new Date("2020-01-01")
 
-			attest(t.json).snap({
-				branches: [{ unit: false }, { unit: true }],
-				meta: { default: false }
+			const ParsedDate = type("string | undefined").pipe(
+				(input: string | undefined) => (input ? new Date(input) : defaultDate)
+			)
+
+			const searchSchema = type({
+				week: ParsedDate.default(defaultDate.toISOString())
 			})
 
-			attest(t.t).type.toString.snap("of<boolean, Default<false>>")
-		})
+			attest(searchSchema({ week: "2023-01-01" })).snap({
+				week: "2023-01-01T00:00:00.000Z"
+			})
 
-		it("union not distributed during inference with morph", () => {
-			const parseDateToFuture = (s: string) => {
-				const d = new Date(s)
-				d.setFullYear(d.getFullYear() + 100)
-				return d
-			}
+			attest(searchSchema({ week: undefined })).snap({
+				week: "2020-01-01T00:00:00.000Z"
+			})
 
-			const narrowFutureInput = () => true
-
-			const t = type("boolean | number", "=", false)
-				.or(["string", "=>", parseDateToFuture])
-				.satisfying(narrowFutureInput)
-
-			attest(t.json).snap([
-				{ domain: "number", predicate: ["$ark.narrowFutureInput"] },
-				{
-					in: { domain: "string", predicate: ["$ark.narrowFutureInput"] },
-					morphs: ["$ark.parseDateToFuture"]
-				},
-				{ unit: false },
-				{ unit: true }
-			])
-
-			attest(t.t).type.toString
-				.snap(`	| of<number | boolean, Default<false> & Anonymous>
-	| ((In: nominal<"?">) => Out<Date>)`)
+			attest(searchSchema({})).snap({ week: "2020-01-01T00:00:00.000Z" })
 		})
 	})
 
@@ -744,9 +736,7 @@ contextualize(() => {
 
 			const result = l.and(r)
 			attest(result.json).snap({
-				optional: [
-					{ default: 5, key: "bar", value: { unit: 5, meta: { default: 5 } } }
-				],
+				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
 				domain: "object"
 			})
 		})
@@ -773,19 +763,9 @@ contextualize(() => {
 
 	describe("functions", () => {
 		it("works in tuple", () => {
-			const t = type({ foo: ["string", "=", () => "bar"] })
-			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
-		})
+			const t = type({ foo: ["string", "=", () => "bar" as const] })
 
-		it("works in type tuple", () => {
-			const foo = type(["string", "=", () => "bar"])
-			const t = type({ foo })
-			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
-		})
-
-		it("works in type args", () => {
-			const foo = type("string", "=", () => "bar")
-			const t = type({ foo })
+			attest(t.t).type.toString.snap('{ foo: Default<string, "bar"> }')
 			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
 		})
 
@@ -793,25 +773,37 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["number", "=", () => "bar"] })
-			}).throws.snap(
-				"ParseError: Default value is not assignable: must be a number (was a string)"
-			)
+			})
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was a string)"
+				)
+				.type.errors("Type 'string' is not assignable to type 'number'.")
+
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: ["number[]", "=", () => "bar"] })
-			}).throws.snap(
-				"ParseError: Default value is not assignable: must be an array (was string)"
-			)
+			})
+				.throws.snap(
+					"ParseError: Default for foo must be an array (was string)"
+				)
+				.type.errors.snap("Type 'string' is not assignable to type 'number[]'.")
+
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: [{ a: "number" }, "=", () => ({ a: "bar" })] })
-			}).throws.snap(
-				"ParseError: Default value is not assignable: a must be a number (was a string)"
-			)
+			})
+				.throws.snap(
+					"ParseError: Default for foo.a must be a number (was a string)"
+				)
+				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
 		})
 
 		it("morphs the returned value", () => {
 			const t = type({ foo: ["string.numeric.parse", "=", () => "123"] })
+
+			attest<{
+				foo: (In: Default<string, string>) => To<number>
+			}>(t.t)
 			attest(t.assert({})).snap({ foo: 123 })
 		})
 
@@ -830,7 +822,7 @@ contextualize(() => {
 				// @ts-expect-error
 				type({ bar: ["number", "=", (a: number) => a] })
 			}).type.errors(
-				"Type '(a: number) => number' is not assignable to type 'DefaultFor<number>'"
+				"Type '(a: number) => number' is not assignable to type 'defaultFor<number>'"
 			)
 		})
 
@@ -844,12 +836,15 @@ contextualize(() => {
 		it("default function factory", () => {
 			let i = 0
 			const t = type({
-				// this requires explicit type argument
-				bar: type("Function").default<() => number>(() => {
+				bar: type("Function").default(() => {
 					const j = ++i
 					return () => j
 				})
 			})
+
+			attest<{
+				bar: Default<Function, () => number>
+			}>(t.t)
 			attest(t.assert({}).bar()).snap(3)
 			attest(t.assert({}).bar()).snap(4)
 		})
@@ -859,8 +854,8 @@ contextualize(() => {
 			const t = type({
 				foo: [["number", "|", "number[]"], "=", () => (i % 2 ? ++i : [++i])]
 			})
+			attest(t.assert({})).snap({ foo: 2 })
 			attest(t.assert({})).snap({ foo: [3] })
-			attest(t.assert({})).snap({ foo: 4 })
 		})
 
 		it("default array", () => {
@@ -875,15 +870,15 @@ contextualize(() => {
 			attest(v1).snap({ foo: [1], bar: ["1"] })
 			attest(v1.foo !== v2.foo)
 		})
+
 		it("default array is checked", () => {
 			attest(() => {
 				// @ts-expect-error
 				type({ bar: type("number[]").default(() => ["a"]) })
-			}).throws(
-				writeUnassignableDefaultValueMessage(
-					"value at [0] must be a number (was a string)"
-				)
+			}).throws.snap(
+				"ParseError: Default value at [0] must be a number (was a string)"
 			)
+
 			attest(() => {
 				type({
 					baz: type("number[]")
@@ -891,20 +886,21 @@ contextualize(() => {
 						// @ts-expect-error
 						.default(() => ["a"])
 				})
-			}).throws(
-				writeUnassignableDefaultValueMessage(
-					"value at [0] must be a number (was a string)"
-				)
+			}).throws.snap(
+				"ParseError: Default value at [0] must be a number (was a string)"
 			)
 		})
+
 		it("default object", () => {
 			const t = type({
 				foo: type({ "foo?": "string" }).default(() => ({})),
 				bar: type({ "foo?": "string" }).default(() => ({ foo: "foostr" })),
 				baz: type({ foo: "string = 'foostr'" }).default(() => ({}))
 			})
+
 			const v1 = t.assert({}),
 				v2 = t.assert({})
+
 			attest(v1).snap({
 				foo: {},
 				bar: { foo: "foostr" },
@@ -917,43 +913,14 @@ contextualize(() => {
 			attest(() => {
 				// @ts-expect-error
 				type({ foo: type({ foo: "string" }).default({}) })
-			}).throws(writeNonPrimitiveNonFunctionDefaultValueMessage(""))
+			}).throws(writeNonPrimitiveNonFunctionDefaultValueMessage(null))
+
 			attest(() => {
 				type({
 					// @ts-expect-error
 					bar: type({ foo: "number" }).default(() => ({ foo: "foostr" }))
 				})
-			}).throws(
-				writeUnassignableDefaultValueMessage(
-					"foo must be a number (was a string)"
-				)
-			)
-		})
-
-		it("default allows nested default keys", () => {
-			const a = type(["string.numeric.parse", "=", "1"])
-
-			attest(a).type.toString.snap(`Type<
-	(In: is<Nominal<"numeric"> & Default<"1">>) => To<number>,
-	{}
->`)
-
-			const defaulted = type({ a }).default(() => ({}))
-
-			attest(defaulted.expression).snap(
-				'{ a?: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> = "1" }'
-			)
-			attest(defaulted).type.toString.snap(`Type<
-	of<
-		{
-			a: (
-				In: is<Nominal<"numeric"> & Default<"1">>
-			) => To<number>
-		},
-		Default<{}>
-	>,
-	{}
->`)
+			}).throws.snap("ParseError: Default foo must be a number (was a string)")
 		})
 	})
 })

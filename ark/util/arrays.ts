@@ -144,7 +144,6 @@ export const liftArray = <t>(data: t): liftArray<t> =>
 /**
  * Splits an array into two arrays based on the result of a predicate
  *
- * @param arr - The input array to be split.
  * @param predicate - The guard function used to determine which items to include.
  * @returns A tuple containing two arrays:
  * 				- the first includes items for which `predicate` returns true
@@ -188,21 +187,16 @@ export const range = (length: number, offset = 0): number[] =>
 	[...new Array(length)].map((_, i) => i + offset)
 
 export type AppendOptions = {
+	/** If true, adds the element to the beginning of the array instead of the end */
 	prepend?: boolean
 }
 
 /**
  * Adds a value or array to an array, returning the concatenated result
- *
- * @param to The array to which `value` is to be added. If `to` is `undefined`, a new array
- * is created as `[value]` if value was not undefined, otherwise `[]`.
- * @param value The value to add to the array.
- * @param opts
- * 		prepend: If true, adds the element to the beginning of the array instead of the end
  */
 export const append = <
 	to extends unknown[] | undefined,
-	value extends listable<(to & {})[number]>
+	value extends appendableValue<to>
 >(
 	to: to,
 	value: value,
@@ -226,15 +220,20 @@ export const append = <
 	return to as never
 }
 
+// ensure a nested array element is not treated as a list to append
+export type appendableValue<to extends array | undefined> =
+	to extends array<infer element> ?
+		element extends array ?
+			array<element>
+		:	listable<element>
+	:	never
+
 /**
  * Concatenates an element or list with a readonly list
- *
- * @param {to} to - The base list.
- * @param {elementOrList} elementOrList - The element or list to concatenate.
  */
 export const conflatenate = <element>(
 	to: readonly element[] | undefined | null,
-	elementOrList: listable<element> | undefined | null
+	elementOrList: appendableValue<readonly element[]> | undefined | null
 ): readonly element[] => {
 	if (elementOrList === undefined || elementOrList === null)
 		return to ?? ([] as never)
@@ -246,14 +245,11 @@ export const conflatenate = <element>(
 
 /**
  * Concatenates a variadic list of elements or lists with a readonly list
- *
- * @param {to} to - The base list.
- * @param {elementsOrLists} elementsOrLists - The elements or lists to concatenate.
  */
 export const conflatenateAll = <element>(
 	...elementsOrLists: (listable<element> | undefined | null)[]
 ): readonly element[] =>
-	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
+	elementsOrLists.reduce<readonly element[]>(conflatenate as never, [])
 
 export interface ComparisonOptions<t = unknown> {
 	isEqual?: (l: t, r: t) => boolean
@@ -261,10 +257,6 @@ export interface ComparisonOptions<t = unknown> {
 
 /**
  * Appends a value or concatenates an array to an array if it is not already included, returning the array
- *
- * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
- * is created including only `value`.
- * @param value An array or value to append to the array. If `to` includes `value`, nothing is appended.
  */
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,

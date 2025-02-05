@@ -5,7 +5,7 @@ import {
 	throwParseError,
 	type array,
 	type Hkt,
-	type Json
+	type JsonStructure
 } from "@ark/util"
 import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
@@ -27,7 +27,7 @@ export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
 	$: BaseScope
-): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
+): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $, null)
 
 export type genericParamNames<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][0]
@@ -76,12 +76,15 @@ export class GenericRoot<
 	$: BaseScope
 	arg$: BaseScope
 	baseInstantiation: BaseRoot
+	hkt: Hkt.constructor | null
+	description: string
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
 		bodyDef: bodyDef,
 		$: BaseScope,
-		arg$: BaseScope
+		arg$: BaseScope,
+		hkt: Hkt.constructor | null
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
@@ -111,6 +114,11 @@ export class GenericRoot<
 		this.bodyDef = bodyDef
 		this.$ = $
 		this.arg$ = arg$
+		this.hkt = hkt
+		this.description =
+			hkt ?
+				(new hkt().description ?? `a generic type for ${hkt.constructor.name}`)
+			:	"a generic type"
 		this.baseInstantiation = this(...(this.constraints as never)) as never
 	}
 
@@ -126,7 +134,7 @@ export class GenericRoot<
 		return value
 	}
 
-	get json(): Json {
+	get json(): JsonStructure {
 		return this.cacheGetter("json", {
 			params: this.params.map(param =>
 				param[1].isUnknown() ? param[0] : [param[0], param[1].json]

@@ -1,4 +1,3 @@
-import { throwParseError } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
@@ -7,17 +6,17 @@ import type {
 	declareNode
 } from "./shared/declare.ts"
 import {
-	compileErrorContext,
+	compileObjectLiteral,
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
-import { writeUnsupportedJsonSchemaTypeMessage } from "./shared/jsonSchema.ts"
+import { JsonSchema } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
 } from "./shared/registry.ts"
 import type {
-	TraversalContext,
+	Traversal,
 	TraverseAllows,
 	TraverseApply
 } from "./shared/traversal.ts"
@@ -84,18 +83,19 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	impliedBasis = null
 
 	expression: string = this.serializedPredicate
-	traverseAllows: TraverseAllows = this.predicate
+	traverseAllows: TraverseAllows = this.predicate as never
 
 	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
-		description: this.description
+		description: this.description,
+		meta: this.meta
 	}
 
-	compiledErrorContext = compileErrorContext(this.errorContext)
+	compiledErrorContext = compileObjectLiteral(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.predicate(data, ctx) && !ctx.hasError())
-			ctx.error(this.errorContext)
+		if (!this.predicate(data, ctx.external) && !ctx.hasError())
+			ctx.errorFromNodeContext(this.errorContext)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -104,16 +104,12 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			return
 		}
 		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
-			js.line(`ctx.error(${this.compiledErrorContext})`)
+			js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
 		)
 	}
 
 	reduceJsonSchema(): never {
-		return throwParseError(
-			writeUnsupportedJsonSchemaTypeMessage({
-				description: `Predicate ${this.expression}`
-			})
-		)
+		return JsonSchema.throwUnjsonifiableError(`Predicate ${this.expression}`)
 	}
 }
 
@@ -122,12 +118,15 @@ export const Predicate = {
 	Node: PredicateNode
 }
 
-export type Predicate<data = any> = (
-	data: data,
-	ctx: TraversalContext
-) => boolean
+export type Predicate<data = any> = (data: data, ctx: Traversal) => boolean
 
-export type PredicateCast<input = never, narrowed extends input = input> = (
-	input: input,
-	ctx: TraversalContext
-) => input is narrowed
+export declare namespace Predicate {
+	export type Casted<input = never, narrowed extends input = input> = (
+		input: input,
+		ctx: Traversal
+	) => input is narrowed
+
+	export type Castable<input = never, narrowed extends input = input> =
+		| Predicate<input>
+		| Casted<input, narrowed>
+}

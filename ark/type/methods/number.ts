@@ -1,47 +1,21 @@
 import type {
 	Divisor,
 	ExclusiveNumericRangeSchema,
-	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
-import type { associateAttributesFromNumberSchema } from "../attributes.ts"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends number = number, $ = {}> extends BaseType<t, $> {
-	divisibleBy<const schema extends Divisor.Schema>(
-		schema: schema
-	): Type<associateAttributesFromNumberSchema<t, "divisor", schema>, $>
+	divisibleBy(schema: Divisor.Schema): this
 
-	atLeast<const schema extends InclusiveNumericRangeSchema>(
-		schema: schema
-	): Type<associateAttributesFromNumberSchema<t, "min", schema>, $>
+	atLeast(schema: InclusiveNumericRangeSchema): this
 
-	atMost<const schema extends InclusiveNumericRangeSchema>(
-		schema: schema
-	): Type<associateAttributesFromNumberSchema<t, "max", schema>, $>
+	atMost(schema: InclusiveNumericRangeSchema): this
 
-	moreThan<const schema extends ExclusiveNumericRangeSchema>(
-		schema: schema
-	): Type<
-		associateAttributesFromNumberSchema<
-			t,
-			"min",
-			exclusivizeRangeSchema<schema>
-		>,
-		$
-	>
+	moreThan(schema: ExclusiveNumericRangeSchema): this
 
-	lessThan<const schema extends ExclusiveNumericRangeSchema>(
-		schema: schema
-	): Type<
-		associateAttributesFromNumberSchema<
-			t,
-			"max",
-			exclusivizeRangeSchema<schema>
-		>,
-		$
-	>
+	lessThan(schema: ExclusiveNumericRangeSchema): this
 }
 
 export type { Type as NumberType }

@@ -1,0 +1,9 @@
+{
+	"title": "number",
+	"pages": [
+		"[keywords](/docs/primitives#number-keywords)",
+		"[literals](/docs/primitives#number-literals)",
+		"[ranges](/docs/primitives#number-ranges)",
+		"[divisors](/docs/primitives#number-divisors)"
+	]
+}

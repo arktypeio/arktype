@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
-import { type } from "arktype"
-import type { Out, string } from "arktype/internal/attributes.ts"
+import { type, type Type } from "arktype"
+import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("empty", () => {
@@ -34,20 +34,19 @@ contextualize(() => {
 
 	it("chained optional", () => {
 		const optionalString = type("string").optional()
-		attest<string.optional>(optionalString.t)
-		attest<string>(optionalString.infer)
+		attest<[Type<string>, "?"]>(optionalString)
 
 		const o = type({ a: optionalString })
 		// directly inferring the optional key causes recursive generics/intersections to fail,
 		// so instead we just distill it out like defaults
-		attest(o.t).type.toString.snap("{ a: optional }")
+		attest(o.t).type.toString.snap("{ a?: string }")
 		attest(o.infer).type.toString.snap("{ a?: string }")
 		attest(o.inferIn).type.toString.snap("{ a?: string }")
 		attest(o.json).snap({
 			optional: [
 				{
 					key: "a",
-					value: { domain: "string", meta: { optional: true } }
+					value: "string"
 				}
 			],
 			domain: "object"
@@ -60,7 +59,7 @@ contextualize(() => {
 		const t = type({ [s]: "string?" })
 
 		attest<{
-			[s]: string.optional
+			[s]?: string
 		}>(t.t)
 		attest<{ [s]?: string }>(t.infer)
 
@@ -68,7 +67,7 @@ contextualize(() => {
 			optional: [
 				{
 					key: ref,
-					value: { domain: "string", meta: { optional: true } }
+					value: "string"
 				}
 			],
 			domain: "object"
@@ -88,8 +87,7 @@ contextualize(() => {
 					key: ref,
 					value: {
 						required: [{ key: "foo", value: "string" }],
-						domain: "object",
-						meta: { optional: true }
+						domain: "object"
 					}
 				}
 			],
@@ -203,7 +201,7 @@ contextualize(() => {
 			optional: [
 				{
 					key: keyReference,
-					value: { domain: "number", meta: { optional: true } }
+					value: "number"
 				}
 			],
 			domain: "object"
@@ -218,7 +216,7 @@ contextualize(() => {
 		})
 
 		attest<{
-			bool_value: (In: string.optional) => Out<boolean>
+			bool_value?: (In: string) => Out<boolean>
 		}>(processForm.t)
 		attest<{
 			// key should still be distilled as optional even inside a morph

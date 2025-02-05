@@ -1,9 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
+import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
+	optionalOrDefaultableAfterVariadicMessage,
 	writeNonArraySpreadMessage
-} from "arktype/internal/parser/tuple.ts"
+} from "arktype/internal/parser/tupleLiteral.ts"
 
 contextualize(() => {
 	it("spreads simple arrays", () => {
@@ -76,13 +78,38 @@ contextualize(() => {
 
 	it("errors on multiple variadic", () => {
 		attest(() =>
-			type([
-				"...",
-				"string[]",
-				// @ts-expect-error
-				"...",
-				"number[]"
-			])
+			// @ts-expect-error
+			type(["...", "string[]", "...", "number[]"])
 		).throwsAndHasTypeError(multipleVariadicMesage)
+	})
+
+	it("error on optional post-variadic in spread", () => {
+		// no type error yet, ideally would have one if tuple
+		// parsing were more precise for nested spread tuples
+		attest(() => type(["...", "string[]", "...", ["string?"]])).throws(
+			optionalOrDefaultableAfterVariadicMessage
+		)
+	})
+
+	it("errors on postfix following optional", () => {
+		attest(() =>
+			// @ts-expect-error
+			type(["number?", "...", "boolean[]", "symbol"])
+		).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
+	})
+
+	it("errors on postfix following defaultable", () => {
+		attest(() =>
+			// @ts-expect-error
+			type(["number = 0", "...", "boolean[]", "symbol"])
+		).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
+	})
+
+	it("doesn't mistake a string literal containing '=' for defaultable", () => {
+		const t = type(["'='", "number"])
+
+		attest<["=", number]>(t.t)
+		attest(t.infer).type.toString.snap(`["=", number]`)
+		attest(t.expression).snap('["=", number]')
 	})
 })

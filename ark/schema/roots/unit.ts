@@ -2,7 +2,6 @@ import {
 	domainDescriptions,
 	domainOf,
 	printable,
-	throwParseError,
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
@@ -17,10 +16,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import {
-	writeUnsupportedJsonSchemaTypeMessage,
-	type JsonSchema
-} from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
@@ -128,6 +124,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	)
 	expression: string = printable(this.unit)
 	domain: Domain = domainOf(this.unit)
+
 	get shortDescription(): string {
 		return this.domain === "object" ?
 				domainDescriptions.object
@@ -137,9 +134,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	protected innerToJsonSchema(): JsonSchema {
 		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
 				{ const: this.unit }
-			:	throwParseError(
-					writeUnsupportedJsonSchemaTypeMessage(this.shortDescription)
-				)
+			:	JsonSchema.throwUnjsonifiableError(this.shortDescription)
 	}
 
 	traverseAllows: TraverseAllows =

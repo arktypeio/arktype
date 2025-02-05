@@ -1,7 +1,21 @@
-// @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import {
+	$ark,
+	configure,
+	rootSchema,
+	schemaScope,
+	type ArkConfig
+} from "@ark/schema"
 import { scope, type } from "arktype"
+
+const withConfig = (config: ArkConfig, fn: () => void) => {
+	const originalConfig = $ark.config
+	const originalResolvedConfig = $ark.resolvedConfig
+	configure(config)
+	fn()
+	$ark.config = originalConfig
+	$ark.resolvedConfig = originalResolvedConfig
+}
 
 contextualize(() => {
 	it("tuple expression", () => {
@@ -64,6 +78,32 @@ contextualize(() => {
 		attest<{ myKey: false }>(t.infer)
 		attest(t({ myKey: true }).toString()).snap(
 			"myKey must be untrue (was true)"
+		)
+	})
+
+	it("shallow node writer config", () => {
+		const customOne = type("1", "@", {
+			expected: ctx => `custom expected ${ctx.description}`,
+			actual: data => `custom actual ${data}`,
+			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+			message: ctx => `custom message ${ctx.problem}`
+		})
+		attest<1>(customOne.infer)
+		attest(customOne(2).toString()).snap(
+			"custom message custom problem custom expected 1 custom actual 2"
+		)
+	})
+
+	it("node writer config works on nested constraint", () => {
+		const customEven = type("number % 2", "@", {
+			expected: ctx => `custom expected ${ctx.description}`,
+			actual: data => `custom actual ${data}`,
+			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+			message: ctx => `custom message ${ctx.problem}`
+		})
+		attest<number>(customEven.infer)
+		attest(customEven(3).toString()).snap(
+			"custom message custom problem custom expected even custom actual 3"
 		)
 	})
 
@@ -131,5 +171,70 @@ contextualize(() => {
 			})
 		})
 		attest(types.inner.foo.precompilation).satisfies("string")
+	})
+
+	it("numberAllowsNaN", () => {
+		withConfig({ numberAllowsNaN: true }, () => {
+			const { nanable } = schemaScope({
+				nanable: "number"
+			}).export()
+
+			attest(nanable.allows(Number.NaN)).equals(true)
+
+			const { nonNanable } = type.module({
+				nonNanable: "number"
+			})
+
+			attest(nonNanable.allows(Number.NaN)).equals(false)
+		})
+	})
+
+	it("dateAllowsInvalid", () => {
+		withConfig({ dateAllowsInvalid: true }, () => {
+			const { invalidable } = schemaScope({
+				invalidable: Date
+			}).export()
+
+			attest(invalidable.allows(new Date("!"))).equals(true)
+
+			const { uninvalidable } = type.module({
+				uninvalidable: "number"
+			})
+
+			attest(uninvalidable.allows(new Date("!"))).equals(false)
+		})
+	})
+
+	it("docs actual example", () => {
+		// avoid logging "was xxx" for password
+		const password = type("string >= 8", "@", { actual: () => "" })
+
+		const user = type({
+			email: "string.email",
+			password
+		})
+
+		const out = user({
+			email: "david@arktype.io",
+			password: "ez123"
+		})
+
+		attest(out.toString()).snap("password must be at least length 8")
+	})
+
+	it("docs message example", () => {
+		const user = type({
+			password: "string >= 8"
+		}).configure({
+			message: ctx =>
+				`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
+		})
+		// ArkErrors: (root): a string isn't an object
+		const out1 = user("ez123")
+		attest(out1.toString()).snap("(root): a string isn't an object")
+		// but `.configure` only applies shallowly, so the nested error isn't changed!
+		// ArkErrors: password must be at least length 8 (was 5)
+		const out2 = user({ password: "ez123" })
+		attest(out2.toString()).snap("password must be at least length 8 (was 5)")
 	})
 })

@@ -1,0 +1,16 @@
+{
+	"title": "Expressions",
+	"pages": [
+		"[intersection](/docs/expressions#intersection)",
+		"[unions](/docs/expressions#unions)",
+		"[brand](/docs/expressions#brand)",
+		"[narrow](/docs/expressions#narrow)",
+		"[morph](/docs/expressions#morph)",
+		"[unit](/docs/expressions#unit)",
+		"[enumerated](/docs/expressions#enumerated)",
+		"[meta](/docs/expressions#meta)",
+		"[cast](/docs/expressions#cast)",
+		"[parenthetical](/docs/expressions#parenthetical)",
+		"[this](/docs/expressions#this)"
+	]
+}

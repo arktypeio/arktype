@@ -1,20 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	registeredReference,
-	writeUnboundableMessage,
-	type ArkErrors
-} from "@ark/schema"
+import { registeredReference, type ArkErrors } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
-import type {
-	Anonymous,
-	AtLeastLength,
-	AtMostLength,
-	Out,
-	To,
-	number,
-	of,
-	string
-} from "arktype/internal/attributes.ts"
+import type { Out, To } from "arktype/internal/attributes.ts"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -145,7 +132,7 @@ tags must be at least length 3 (was 2)`)
 
 		attest(out.toString()).snap(`email must be an email address (was "")
 extra must be a string or null (was missing)
-score must be at least 0 (was -1)
+score must be non-negative (was -1)
 tags must be at least length 3 (was 2)
 date must be a Date (was undefined)
 nospace must be matched by ^\\S*$ (was "One space")`)
@@ -349,9 +336,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest<
-			| ((In: string) => To<string.is<AtLeastLength<1> & AtMostLength<3>>>)
-			| null
-			| undefined,
+			((In: string) => To<string>) | null | undefined,
 			typeof CreatePatientInput.t.first_name
 		>()
 
@@ -464,9 +449,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest<
 			Module<{
 				svgMap: {
-					[x: string.matching<string>]: string
+					[x: string]: string
 				}
-				svgPath: string.matching<string>
+				svgPath: string
 			}>
 		>(test)
 		attest(test.svgMap({ "./f.svg": "123", bar: 5 })).unknown.snap({
@@ -587,7 +572,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(() => true)
 			.describe('This will "fail"')
 
-		attest<string.anonymous>(t.t)
+		attest<string>(t.t)
 
 		const serializedPredicate =
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
@@ -623,7 +608,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(s => parseInt(s))
 			.narrow(() => true)
 
-		attest<(In: string) => Out<number.anonymous>>(t.t)
+		attest<(In: string) => Out<number>>(t.t)
 
 		const u = t.pipe(
 			n => `${n}`,
@@ -703,7 +688,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Anonymous>>>(Amount.t)
+		attest<(In: string | number) => Out<bigint>>(Amount.t)
 		attest(Amount.json).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]
@@ -726,13 +711,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(t.expression).snap(
-			"{ first_name?: (In: string) => Out<string <= 3 & >= 1> }"
+			"{ first_name?: (In: string) => To<string <= 3 & >= 1> }"
 		)
-		attest(t.t).type.toString.snap(`{
-	first_name?: (
-		In: string
-	) => To<is<AtMostLength<3> & AtLeastLength<1>>>
-}`)
+		attest(t.t).type.toString.snap(
+			"{ first_name?: (In: string) => To<string> }"
+		)
 	})
 
 	it("cyclic narrow in scope", () => {
@@ -759,25 +742,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			root: "file|directory"
 		}).resolve("root")
 
-		attest(root.t).type.toString.snap(`	| {
-			type: "file"
-			name: is<LessThanLength<255> & MoreThanLength<0>>
-	  }
+		attest(root.t).type.toString.snap(`	| { type: "file"; name: string }
 	| {
 			type: "directory"
-			name: is<LessThanLength<255> & MoreThanLength<0>>
-			children: of<
-				(
-					| {
-							type: "file"
-							name: is<
-								LessThanLength<255> & MoreThanLength<0>
-							>
-					  }
-					| cyclic
-				)[],
-				Anonymous
-			>
+			name: string
+			children: ({ type: "file"; name: string } | cyclic)[]
 	  }`)
 	})
 
@@ -795,7 +764,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
 
 		attest(parseJsonToObj.expression).snap(
-			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
+			'(In: string) => To<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
 		)
 
 		const out = parseJsonToObj(
@@ -969,9 +938,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		// @ts-expect-error
 		attest(() => type("2 < Array.liftFrom<string> < 4"))
 			.throws.snap(
-				"ParseError: MaxLength operand must be a string or an array (was never)"
+				"ParseError: MaxLength operand must be a string or an array (was a morph)"
 			)
-			.type.errors(writeUnboundableMessage("string | string[]"))
+			.type.errors.snap(
+				"Argument of type '\"2 < Array.liftFrom<string> < 4\"' is not assignable to parameter of type '\"To constrain the output of ... < 4, pipe like myMorph.to('number > 0').\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+			)
 	})
 
 	// https://discord.com/channels/957797212103016458/1290304355643293747
@@ -1039,12 +1010,220 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			})
 
 		attest(t.expression).snap(
-			'{ storeA: { [string]: string }, ext?: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext?: string = ".txt" }'
+			'{ storeA: { [string]: string }, ext: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext: string = ".txt" }'
 		)
 	})
 
 	it("correct toString for array of union", () => {
 		const t = type("(string | number)[]")
 		attest(t.expression).snap("(number | string)[]")
+	})
+
+	it("union with length constraint", () => {
+		const feedbackSchema = type({
+			contact: "string.email | string == 0"
+		})
+
+		attest(feedbackSchema.expression).snap(
+			"{ contact: string == 0 | string /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
+		)
+		attest(feedbackSchema.t).type.toString.snap(`{ contact: string }`)
+	})
+
+	it("deleted undeclared keys allowed in input", () => {
+		const t = type({ foo: "string" }).onUndeclaredKey("delete")
+
+		attest(t.json).snap({
+			undeclared: "delete",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		attest(t.in.json).snap({
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		const extras = { foo: "hi", bar: 3 }
+
+		attest(t(extras)).equals({ foo: "hi" })
+		attest(t.allows(extras)).equals(true)
+		attest(t.in(extras)).equals(extras)
+	})
+
+	it("deleted undeclared keys rejected in output", () => {
+		const t = type({ foo: "string" }).onUndeclaredKey("delete")
+
+		attest(t.json).snap({
+			undeclared: "delete",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		attest(t.out.json).snap({
+			undeclared: "reject",
+			required: [{ key: "foo", value: "string" }],
+			domain: "object"
+		})
+
+		attest(t.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
+	})
+
+	it("includesMorph only when expected", () => {
+		const unmorphed = type({
+			"optional?": "string",
+			required: "string",
+			tuple: ["string", "number?"],
+			array: "string[]",
+			closed: {
+				"+": "reject",
+				a: "true"
+			}
+		})
+		attest(unmorphed.internal.includesMorph).equals(false)
+	})
+
+	it("morph includesMorph", () => {
+		const t = type({
+			prop: ["string", "=>", s => s.length]
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("default prop includesMorph", () => {
+		const t = type({
+			prop: "number = 5"
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("default tuple includesMorph", () => {
+		const t = type({
+			tuple: ["number = 5"]
+		})
+
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("onUndeclaredKey delete includesMorph", () => {
+		const t = type({
+			inner: {
+				"+": "delete",
+				foo: "string"
+			}
+		})
+		attest(t.internal.includesMorph).equals(true)
+	})
+
+	it("distill doesn't treat functions returning any/never as morphs", () => {
+		type T = {
+			any(): any
+			never(): never
+		}
+		const t = type("unknown").as<T>()
+
+		attest(t.infer).type.toString.equals("T")
+		attest(t.inferIn).type.toString.equals("T")
+	})
+
+	it("distills morphs returning any/never", () => {
+		const t = type({
+			any: ["unknown", "=>", (): any => {}],
+			never: ["unknown", "=>", () => [] as never]
+		})
+
+		attest(t.t).type.toString.snap(`{
+	any: (In: unknown) => Out<any>
+	never: (In: unknown) => Out<never>
+}`)
+		attest(t.infer).type.toString.snap("{ any: any; never: never }")
+		attest(t.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1263
+	it("fail on non-discriminable union of objects with onUndeclaredKey: delete", () => {
+		const point2d = type({
+			x: "number",
+			y: "number",
+			"+": "delete"
+		})
+
+		const point3d = type({
+			x: "number",
+			y: "number",
+			z: "number",
+			"+": "delete"
+		})
+
+		const t = point2d.or(point3d)
+
+		attest(t.expression).snap(
+			"{ x: number, y: number, + (undeclared): delete }"
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1266
+	it("onUndeclaredKey intersection cases", () => {
+		const types = type.module({
+			// Works: overlapping fields are named the same, have simple type
+			ModelA_V1: { times: "number", "+": "reject" },
+			ModelA_V2: {
+				times: "number",
+				version: "2",
+				"+": "reject"
+			},
+			ModelA: "ModelA_V2 | ModelA_V1",
+			// Works: non-overlapping list fields
+			ModelB_V1: { times: "number.integer[]", "+": "reject" },
+			ModelB_V2: {
+				frames: "number.integer[]",
+				version: "2",
+				"+": "reject"
+			},
+			ModelB: "ModelB_V2 | ModelB_V1",
+			// Does not work: overlapping array field
+			ModelC_V1: { times: "number[]", "+": "reject" },
+			ModelC_V2: {
+				times: "number[]",
+				version: "2",
+				"+": "reject"
+			},
+			ModelC: "ModelC_V2 | ModelC_V1",
+			// Works: overlapping map fields
+			ModelD_V1: { times: "Record<string, number>", "+": "reject" },
+			ModelD_V2: {
+				times: "Record<string, number>",
+				version: "2",
+				"+": "reject"
+			},
+			ModelD: "ModelD_V2 | ModelD_V1",
+			// Works: overlapping user-defined sub-model
+			Time: { value: "number" },
+			ModelE_V1: { time: "Time", "+": "reject" },
+			ModelE_V2: {
+				time: "Time",
+				version: "2",
+				"+": "reject"
+			},
+			ModelE: "ModelE_V2 | ModelE_V1",
+			Times: { values: "number[]" },
+			// Does not work: arrays within overlapping sub-model
+			ModelF_V1: { times: "Times", "+": "reject" },
+			ModelF_V2: {
+				times: "Times",
+				version: "2",
+				"+": "reject"
+			},
+			ModelF: "ModelF_V2 | ModelF_V1"
+		})
+
+		types.ModelA.assert({ times: 0.0, version: 2 })
+		types.ModelB.assert({ frames: [0], version: 2 })
+		types.ModelC.assert({ times: [0.0], version: 2 })
+		types.ModelD.assert({ times: { age: 7.3 }, version: 2 })
+		types.ModelE.assert({ time: { value: 0.0 }, version: 2 })
+		types.ModelF.assert({ times: { values: [0.0] }, version: 2 })
 	})
 })

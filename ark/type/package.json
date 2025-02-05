@@ -1,17 +1,17 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-rc.25",
+	"version": "2.0.4",
 	"license": "MIT",
-	"author": {
-		"name": "David Blass",
-		"email": "david@arktype.io",
-		"url": "https://arktype.io"
-	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git",
 		"directory": "ark/type"
+	},
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
 	},
 	"type": "module",
 	"main": "./out/index.js",
@@ -35,7 +35,8 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
+		"testIntegration": "ts ./__tests__/integration/importConfig.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",

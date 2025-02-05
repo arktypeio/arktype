@@ -12,17 +12,17 @@ export type SerializationOptions = {
 	onBigInt?: (value: bigint) => string
 }
 
-export type Json = JsonObject | JsonArray
+export type JsonStructure = JsonObject | JsonArray
 
 export interface JsonObject {
-	[k: string]: JsonData
+	[k: string]: Json
 }
 
-export type JsonArray = JsonData[]
+export type JsonArray = Json[]
 
 export type JsonPrimitive = string | boolean | number | null
 
-export type JsonData = Json | JsonPrimitive
+export type Json = JsonStructure | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,
@@ -118,6 +118,8 @@ const _serialize = (
 			return opts.onBigInt?.(data as bigint) ?? `${data}n`
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
+		case "string":
+			return (data as string).replaceAll("\\", "\\\\")
 		default:
 			return data
 	}
@@ -125,9 +127,6 @@ const _serialize = (
 
 /**
  * Converts a Date instance to a human-readable description relative to its precision
- *
- * @param {Date} date
- * @returns {string} - The generated description
  */
 export const describeCollapsibleDate = (date: Date): string => {
 	const year = date.getFullYear()

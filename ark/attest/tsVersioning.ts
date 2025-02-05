@@ -15,9 +15,7 @@ import ts from "typescript"
  *
  * Throws an error if any version fails when the associated function is executed.
  *
- * @param {TsVersionData[]} versions The set of versions for which to exceute the function
- * @param {function} fn - The function to execute for each TypeScript version.
- * Should spawn a new process so the new symlinked version can be loaded.
+ * fn should spawn a new process so the new symlinked version can be loaded.
  */
 export const forTypeScriptVersions = (
 	versions: TsVersionData[],

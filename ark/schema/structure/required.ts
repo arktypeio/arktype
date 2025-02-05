@@ -1,8 +1,7 @@
-import { unset } from "@ark/util"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import type { ArkErrorContextInput } from "../shared/errors.ts"
+import type { NodeErrorContextInput } from "../shared/errors.ts"
 import {
-	compileErrorContext,
+	compileObjectLiteral,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -23,7 +22,6 @@ export declare namespace Required {
 			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
-			reducibleTo: "optional"
 		}
 	>
 
@@ -43,15 +41,6 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			}
 		},
 		normalize: schema => schema,
-		reduce: (inner, $) => {
-			if (inner.value.defaultMeta !== unset) {
-				return $.node("optional", {
-					...inner,
-					default: inner.value.defaultMeta
-				})
-			}
-			if (inner.value.optionalMeta) return $.node("optional", inner)
-		},
 		defaults: {
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,
@@ -66,13 +55,14 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
-	errorContext: ArkErrorContextInput<"required"> = Object.freeze({
+	errorContext: NodeErrorContextInput<"required"> = Object.freeze({
 		code: "required",
 		missingValueDescription: this.value.shortDescription,
-		relativePath: [this.key]
+		relativePath: [this.key],
+		meta: this.meta
 	})
 
-	compiledErrorContext: string = compileErrorContext(this.errorContext)
+	compiledErrorContext: string = compileObjectLiteral(this.errorContext)
 }
 
 export const Required = {

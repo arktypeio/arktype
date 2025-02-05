@@ -5,8 +5,8 @@ import {
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { define, scope, type, type Module } from "arktype"
-import type { distill, string } from "arktype/internal/attributes.ts"
+import { scope, type, type Module, type Scope } from "arktype"
+import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -33,6 +33,70 @@ contextualize(() => {
 				readonly foo: "foo"
 			}
 		}>(aliases).snap({ foo: "string", bar: { foo: "foo" } })
+	})
+
+	it("docs example", () => {
+		const $ = type.scope({
+			// builtin keywords are still available in your scope
+			id: "string",
+			// but you can also reference your own aliases directly!
+			user: { id: "id", friends: "id[]" },
+			// your aliases will be autocompleted alongside builtin keywords
+			usersById: {
+				"[id]": "user | undefined"
+			}
+		})
+
+		$.export()
+
+		attest<
+			Scope<{
+				id: string
+				user: {
+					id: string
+					friends: string[]
+				}
+				usersById: {
+					[x: string]:
+						| {
+								id: string
+								friends: string[]
+						  }
+						| undefined
+				}
+			}>
+		>($)
+		attest($.json).snap({
+			id: { domain: "string" },
+			user: {
+				required: [
+					{ key: "friends", value: { sequence: "string", proto: "Array" } },
+					{ key: "id", value: "string" }
+				],
+				domain: "object"
+			},
+			usersById: {
+				index: [
+					{
+						signature: "string",
+						value: [
+							{
+								required: [
+									{
+										key: "friends",
+										value: { sequence: "string", proto: "Array" }
+									},
+									{ key: "id", value: "string" }
+								],
+								domain: "object"
+							},
+							{ unit: "undefined" }
+						]
+					}
+				],
+				domain: "object"
+			}
+		})
 	})
 
 	it("type definition inline", () => {
@@ -185,37 +249,6 @@ contextualize(() => {
 		attest(out).snap({ pear: { tasty: true } })
 	})
 
-	describe("define", () => {
-		it("ark", () => {
-			const def = define({
-				a: "string|number",
-				b: ["boolean"]
-			})
-			attest<{ a: "string|number"; b: readonly ["boolean"] }>(def)
-		})
-
-		it("ark error", () => {
-			// currently is a no-op, so only has type error
-			// @ts-expect-error
-			attest(() => define({ a: "boolean|foo" })).type.errors(
-				writeUnresolvableMessage("foo")
-			)
-		})
-
-		it("custom scope", () => {
-			const $ = scope({
-				a: "string[]"
-			})
-
-			const ok = $.define(["a[]|boolean"])
-			attest<readonly ["a[]|boolean"]>(ok)
-
-			// @ts-expect-error
-			attest(() => $.define({ not: "ok" })).type.errors(
-				writeUnresolvableMessage("ok")
-			)
-		})
-	})
 	describe("cyclic", () => {
 		it("base", () => {
 			const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()
@@ -275,10 +308,12 @@ contextualize(() => {
 				a: { b: "b&a" },
 				b: { a: "a&b" }
 			}).export()
-			attest(types).type.toString.snap(`Module<{
-	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
-	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
-}>`)
+			attest(types.a.t).type.toString.snap(
+				"{ b: { a: { b: cyclic; a: cyclic }; b: cyclic } }"
+			)
+			attest(types.b.t).type.toString.snap(
+				"{ a: { b: { a: cyclic; b: cyclic }; a: cyclic } }"
+			)
 		})
 
 		it("cyclic union", () => {
@@ -286,10 +321,12 @@ contextualize(() => {
 				a: { b: "b|false" },
 				b: { a: "a|true" }
 			}).export()
-			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | cyclic } }
-	b: { a: true | { b: false | cyclic } }
-}>`)
+			attest(types.a.t).type.toString.snap(
+				"{ b: false | { a: true | cyclic } }"
+			)
+			attest(types.b.t).type.toString.snap(
+				"{ a: true | { b: false | cyclic } }"
+			)
 		})
 
 		it("allows valid", () => {
@@ -462,9 +499,9 @@ b.c.c must be an object (was missing)`)
 		}).export()
 		attest<
 			Module<{
-				string: string.atLeastLength<1>
+				string: string
 				foo: {
-					bar: string.atLeastLength<1>
+					bar: string
 				}
 			}>
 		>(types)
