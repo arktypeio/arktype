@@ -1,6 +1,7 @@
 import {
 	intrinsic,
 	type ArkError,
+	type ArkErrors,
 	type BaseRoot,
 	type Morph,
 	type Union
@@ -330,7 +331,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		}
 
 		if (defaultCase === "never" || defaultCase === "assert")
-			schema.meta = { onFail: errors => errors.throw() }
+			schema.meta = { onFail: throwOnDefault }
 
 		const matcher = this.$.finalize(this.$.node("union", schema))
 
@@ -338,7 +339,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	}
 }
 
-export const throwOnDefaultMorph: Morph = (_, ctx) => ctx
+export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
 
 export const chainedAtMessage = `A key matcher must be specified before the first case i.e. match.at('foo') or match.in<object>().at('bar')`
 export type chainedAtMessage = typeof chainedAtMessage

@@ -2,7 +2,9 @@ import { attest, contextualize } from "@ark/attest"
 import { registeredReference, writeUnboundableMessage } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
-import { doubleAtMessage } from "arktype/internal/match.ts"
+import { doubleAtMessage, throwOnDefault } from "arktype/internal/match.ts"
+
+const throwDefaultRef = registeredReference(throwOnDefault)
 
 contextualize(() => {
 	it("single object", () => {
@@ -19,8 +21,9 @@ contextualize(() => {
 
 		const getBad = () => sizeOf(true)
 		attest<() => never>(getBad)
+		// ideally would also include number | bigint, discriminated out
 		attest(getBad).throws.snap(
-			"AggregateError: must be a string or an object, a number or a bigint (was boolean)"
+			"AggregateError: must be a string or an object (was boolean)"
 		)
 	})
 
@@ -77,9 +80,8 @@ contextualize(() => {
 
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
-		attest(getBad).throws.snap(
-			"AggregateError: must be a string, a number, false or true (was null)"
-		)
+		// this sucks and should be improved- result of discrimination
+		attest(getBad).throws.snap("AggregateError: must be boolean (was null)")
 	})
 
 	it("multiple case blocks", () => {
@@ -310,7 +312,8 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(() => m({}))
-				.throws.snap("AggregateError: n must be 0 or 1 (was missing)")
+				// (was missing) would be better here, undefined is a result of discrimination
+				.throws.snap("AggregateError: n must be 0 or 1 (was undefined)")
 				.type.errors.snap(
 					"Argument of type '{}' is not assignable to parameter of type '{ n: 0; } | { n: 1; }'."
 				)
@@ -385,7 +388,7 @@ contextualize(() => {
 					}
 				],
 				ordered: true,
-				meta: { onFail: "$ark.onFail8" }
+				meta: { onFail: throwDefaultRef }
 			})
 			attest(m).type.toString.snap(`Match<
 	{ foo: string } | { foo: number },
@@ -429,7 +432,7 @@ contextualize(() => {
 					}
 				],
 				ordered: true,
-				meta: { onFail: registeredReference(m.internal.meta.onFail!) }
+				meta: { onFail: throwDefaultRef }
 			})
 			attest(m).type.toString.snap(`Match<
 	{ id: 0 | 1 | 2 } | { id: 0 },
