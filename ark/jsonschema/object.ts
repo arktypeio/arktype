@@ -81,20 +81,13 @@ const parsePatternProperties = (
 
 	// NB: We don't validate compatability of schemas for overlapping patternProperties
 	// since getting the intersection of regexes is inherently non-trivial.
-	return (data: object, ctx: Traversal) => {
-		Object.entries(data).forEach(([dataKey, dataValue]) => {
-			patternProperties.forEach(([pattern, parsedJsonSchema]) => {
-				if (pattern.test(dataKey) && !parsedJsonSchema.allows(dataValue)) {
-					ctx.reject({
-						path: [dataKey],
-						expected: `${parsedJsonSchema.description}, as property ${dataKey} matches patternProperty ${pattern}`,
-						actual: printable(dataValue)
-					})
-				}
-			})
+	const indexSchemas = patternProperties.map(
+		([pattern, parsedPatternPropertySchema]) => ({
+			signature: { domain: "string" as const, pattern: [pattern] },
+			value: parsedPatternPropertySchema.internal
 		})
-		return ctx.hasError()
-	}
+	)
+	return indexSchemas
 }
 
 const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
@@ -240,14 +233,17 @@ export const validateJsonSchemaObject: Type<
 	arktypeObjectSchema.required = requiredKeys
 	arktypeObjectSchema.optional = optionalKeys
 
+	const patternProperties = parsePatternProperties(jsonSchema, ctx)
+	if (patternProperties) arktypeObjectSchema.index = patternProperties
+
 	const predicates = conflatenateAll<Predicate.Schema>(
 		...parseMinMaxProperties(jsonSchema, ctx),
 		parsePropertyNames(jsonSchema, ctx),
-		parsePatternProperties(jsonSchema, ctx),
 		parseAdditionalProperties(jsonSchema)
 	)
 
 	const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
+
 	if (predicates.length === 0) return typeWithoutPredicates as never
 
 	return rootSchema({ domain: "object", predicate: predicates }).narrow(
