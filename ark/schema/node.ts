@@ -75,7 +75,6 @@ export abstract class BaseNode<
 	attachments: UnknownAttachments
 	$: BaseScope
 	onFail: ArkErrors.Handler | null
-	includesContextualMorph: boolean
 	includesTransform: boolean
 
 	// if a predicate accepts exactly one arg, we can safely skip passing context
@@ -120,9 +119,6 @@ export abstract class BaseNode<
 		this.$ = $
 		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
 
-		this.includesContextualMorph =
-			this.hasKind("morph") && this.inner.morphs.some(fn => fn.length !== 1)
-
 		this.includesTransform =
 			this.hasKind("morph") ||
 			(this.hasKind("optional") && this.hasDefault()) ||
@@ -152,16 +148,15 @@ export abstract class BaseNode<
 
 		const isStructural = this.isStructural()
 
-		// overriden by structural kinds so that only the root at each path is added
 		this.flatRefs = []
 
 		for (let i = 0; i < this.children.length; i++) {
-			this.includesContextualMorph ||= this.children[i].includesContextualMorph
 			this.includesTransform ||= this.children[i].includesTransform
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
 			this.isCyclic ||= this.children[i].isCyclic
 
+			// overriden by structural kinds so that only the root at each path is added
 			if (!isStructural)
 				appendUniqueFlatRefs(this.flatRefs, this.children[i].flatRefs)
 

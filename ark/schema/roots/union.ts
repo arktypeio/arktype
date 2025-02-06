@@ -887,13 +887,20 @@ export const reduceBranches = ({
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (
 		(l.includesTransform || r.includesTransform) &&
-		(!arrayEquals(l.shallowMorphs, r.shallowMorphs, {
+		!arrayEquals(l.shallowMorphs, r.shallowMorphs, {
 			isEqual: (l, r) => l.hasEqualMorphs(r)
-		}) ||
-			!arrayEquals(l.flatMorphs, r.flatMorphs, {
-				isEqual: (l, r) =>
-					l.propString === r.propString && l.node.hasEqualMorphs(r.node)
-			}))
+		})
+	) {
+		throwParseError(
+			writeIndiscriminableMorphMessage(l.expression, r.expression)
+		)
+	}
+
+	if (
+		!arrayEquals(l.flatMorphs, r.flatMorphs, {
+			isEqual: (l, r) =>
+				l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+		})
 	) {
 		throwParseError(
 			writeIndiscriminableMorphMessage(l.expression, r.expression)
