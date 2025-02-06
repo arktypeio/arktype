@@ -637,13 +637,24 @@ const groups = type({
 `this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
 
 ```ts
-const fetchGift = async () => null
-// ---cut---
-const disappointingGift = type({ label: "string", "box?": "this" })
-const myGift = disappointingGift.assert(await fetchGift())
+const disappointingGift = type({
+	label: "string",
+	"box?": "this"
+})
 
-// hover me
-const chainable = myGift.box?.box?.label
+const out = disappointingGift({
+	label: "foo",
+	box: { label: "bar", box: {} }
+})
+
+if (out instanceof type.errors) {
+	// ArkErrors: box.box.label must be a string (was missing)
+	console.error(out.summary)
+} else {
+	// narrowed inference to arbitrary depth
+	console.log(out.box?.box?.label)
+	//                         ^?
+}
 ```
 
 Unlike its TypeScript counterpart, ArkType's `this` is not limited to interfaces. It can also be used from within a tuple expression.
