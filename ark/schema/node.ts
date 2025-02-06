@@ -75,6 +75,18 @@ export abstract class BaseNode<
 	attachments: UnknownAttachments
 	$: BaseScope
 	onFail: ArkErrors.Handler | null
+	includesTransform: boolean
+
+	// if a predicate accepts exactly one arg, we can safely skip passing context
+	// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
+	// that would break here, but it feels like a pathological case and is better to let people optimize
+	includesContextualPredicate: boolean
+	isCyclic: boolean
+	allowsRequiresContext: boolean
+	referencesById: Record<string, BaseNode>
+	shallowReferences: BaseNode[]
+	shallowMorphs: Morph.Node[]
+	flatRefs: FlatRef[]
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
@@ -84,7 +96,7 @@ export abstract class BaseNode<
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
 				if (
-					!this.includesMorph &&
+					!this.includesTransform &&
 					!this.allowsRequiresContext &&
 					this.allows(data)
 				)
@@ -106,6 +118,65 @@ export abstract class BaseNode<
 		this.attachments = attachments
 		this.$ = $
 		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
+		// readonly includesContextualMorph: boolean =
+		// 	(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
+		// 	this.children.some(child => child.hasContextualPredicate)
+
+		this.includesTransform =
+			this.kind === "morph" ||
+			(this.hasKind("optional") && this.hasDefault()) ||
+			(this.hasKind("sequence") && this.includesDefaultable()) ||
+			(this.hasKind("structure") && this.inner.undeclared === "delete")
+
+		// if a predicate accepts exactly one arg, we can safely skip passing context
+		// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
+		// that would break here, but it feels like a pathological case and is better to let people optimize
+		this.includesContextualPredicate =
+			this.hasKind("predicate") && this.inner.predicate.length !== 1
+
+		this.isCyclic = this.kind === "alias"
+		this.referencesById = { [this.id]: this }
+
+		this.shallowReferences =
+			this.hasKind("structure") ?
+				[this as BaseNode, ...(this.children as never)]
+			:	this.children.reduce<BaseNode[]>(
+					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
+					[this]
+				)
+
+		this.shallowMorphs = this.shallowReferences
+			.filter(n => n.hasKind("morph"))
+			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
+
+		const isStructural = this.isStructural()
+
+		// overriden by structural kinds so that only the root at each path is added
+		this.flatRefs = []
+
+		for (let i = 0; i < this.children.length; i++) {
+			this.includesTransform ||= this.children[i].includesTransform
+			this.includesContextualPredicate ||=
+				this.children[i].includesContextualPredicate
+			this.isCyclic ||= this.children[i].isCyclic
+
+			if (!isStructural)
+				appendUniqueFlatRefs(this.flatRefs, this.children[i].flatRefs)
+
+			Object.assign(this.referencesById, this.children[i].referencesById)
+		}
+
+		this.allowsRequiresContext =
+			this.includesContextualPredicate || this.isCyclic
+
+		this.flatRefs.sort((l, r) =>
+			l.path.length > r.path.length ? 1
+			: l.path.length < r.path.length ? -1
+			: l.propString > r.propString ? 1
+			: l.propString < r.propString ? -1
+			: l.node.expression < r.node.expression ? -1
+			: 1
+		)
 	}
 
 	withMeta(
@@ -122,27 +193,6 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly includesMorph: boolean =
-		this.kind === "morph" ||
-		(this.hasKind("optional") && this.hasDefault()) ||
-		(this.hasKind("sequence") && this.includesDefaultable()) ||
-		(this.hasKind("structure") && this.inner.undeclared === "delete") ||
-		this.children.some(child => child.includesMorph)
-
-	// if a predicate accepts exactly one arg, we can safely skip passing context
-	// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
-	// that would break here, but it feels like a pathological case and is better to let people optimize
-	readonly hasContextualPredicate: boolean =
-		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.children.some(child => child.hasContextualPredicate)
-	readonly isCyclic: boolean =
-		this.kind === "alias" || this.children.some(child => child.isCyclic)
-	readonly allowsRequiresContext: boolean =
-		this.hasContextualPredicate || this.isCyclic
-	readonly referencesById: Record<string, BaseNode> = this.children.reduce(
-		(result, child) => Object.assign(result, child.referencesById),
-		{ [this.id]: this }
-	)
 	readonly compiledMeta: string = JSON.stringify(this.metaJson)
 
 	protected cacheGetter<name extends keyof this>(
@@ -165,47 +215,6 @@ export abstract class BaseNode<
 	// resolving cyclic references, although it may be possible to ensure it is cached safely
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
-	}
-
-	get shallowReferences(): BaseNode[] {
-		return this.cacheGetter(
-			"shallowReferences",
-			this.hasKind("structure") ?
-				[this as BaseNode, ...(this.children as never)]
-			:	this.children.reduce<BaseNode[]>(
-					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
-					[this]
-				)
-		)
-	}
-
-	get shallowMorphs(): Morph.Node[] {
-		return this.cacheGetter(
-			"shallowMorphs",
-			this.shallowReferences
-				.filter(n => n.hasKind("morph"))
-				.sort((l, r) => (l.expression < r.expression ? -1 : 1))
-		)
-	}
-
-	// overriden by structural kinds so that only the root at each path is added
-	get flatRefs(): array<FlatRef> {
-		return this.cacheGetter(
-			"flatRefs",
-			this.children
-				.reduce<FlatRef[]>(
-					(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
-					[]
-				)
-				.sort((l, r) =>
-					l.path.length > r.path.length ? 1
-					: l.path.length < r.path.length ? -1
-					: l.propString > r.propString ? 1
-					: l.propString < r.propString ? -1
-					: l.node.expression < r.node.expression ? -1
-					: 1
-				)
-		)
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
@@ -244,7 +253,7 @@ export abstract class BaseNode<
 	// Should be refactored to use transform
 	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(ioKind: "in" | "out"): BaseNode {
-		if (!this.includesMorph) return this as never
+		if (!this.includesTransform) return this as never
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.innerEntries) {

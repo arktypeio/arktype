@@ -12,4 +12,4 @@ const both = l.and(r)
 console.log(both.description)
 
 // attempting to create an invalid Type yields a ParseError
-const whoops = both.moreThan(20)
+// const whoops = both.moreThan(20)

@@ -312,6 +312,42 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.postfix
 	)
 
+	// have to wait until prevariadic and variadicOrPostfix are set to calculate
+	flatRefs: FlatRef[] = this.addFlatRefs()
+
+	protected addFlatRefs(): FlatRef[] {
+		appendUniqueFlatRefs(
+			this.flatRefs,
+			this.prevariadic.flatMap((element, i) =>
+				append(
+					element.node.flatRefs.map(ref =>
+						flatRef([`${i}`, ...ref.path], ref.node)
+					),
+					flatRef([`${i}`], element.node)
+				)
+			)
+		)
+
+		appendUniqueFlatRefs(
+			this.flatRefs,
+			this.variadicOrPostfix.flatMap(element =>
+				// a postfix index can't be directly represented as a type
+				// key, so we just use the same matcher for variadic
+				append(
+					element.flatRefs.map(ref =>
+						flatRef(
+							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
+							ref.node
+						)
+					),
+					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
+				)
+			)
+		)
+
+		return this.flatRefs
+	}
+
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfixLength === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
 	minLength: number =
@@ -382,41 +418,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		for (; i < this.prefixLength + this.defaultablesLength; i++)
 			ctx.queueMorphs(this.defaultValueMorphs[i - this.prefixLength])
-	}
-
-	override get flatRefs(): FlatRef[] {
-		const refs: FlatRef[] = []
-
-		appendUniqueFlatRefs(
-			refs,
-			this.prevariadic.flatMap((element, i) =>
-				append(
-					element.node.flatRefs.map(ref =>
-						flatRef([`${i}`, ...ref.path], ref.node)
-					),
-					flatRef([`${i}`], element.node)
-				)
-			)
-		)
-
-		appendUniqueFlatRefs(
-			refs,
-			this.variadicOrPostfix.flatMap(element =>
-				// a postfix index can't be directly represented as a type
-				// key, so we just use the same matcher for variadic
-				append(
-					element.flatRefs.map(ref =>
-						flatRef(
-							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
-							ref.node
-						)
-					),
-					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
-				)
-			)
-		)
-
-		return refs
 	}
 
 	get element(): BaseRoot {

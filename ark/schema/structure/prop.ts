@@ -104,14 +104,10 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
-	override get flatRefs(): FlatRef[] {
-		return append(
-			this.value.flatRefs.map(ref =>
-				flatRef([this.key, ...ref.path], ref.node)
-			),
-			flatRef([this.key], this.value)
-		)
-	}
+	flatRefs: FlatRef[] = append(
+		this.value.flatRefs.map(ref => flatRef([this.key, ...ref.path], ref.node)),
+		flatRef([this.key], this.value)
+	)
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,

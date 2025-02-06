@@ -1080,7 +1080,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				a: "true"
 			}
 		})
-		attest(unmorphed.internal.includesMorph).equals(false)
+		attest(unmorphed.internal.includesTransform).equals(false)
 	})
 
 	it("morph includesMorph", () => {
@@ -1088,7 +1088,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			prop: ["string", "=>", s => s.length]
 		})
 
-		attest(t.internal.includesMorph).equals(true)
+		attest(t.internal.includesTransform).equals(true)
 	})
 
 	it("default prop includesMorph", () => {
@@ -1096,7 +1096,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			prop: "number = 5"
 		})
 
-		attest(t.internal.includesMorph).equals(true)
+		attest(t.internal.includesTransform).equals(true)
 	})
 
 	it("default tuple includesMorph", () => {
@@ -1104,7 +1104,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			tuple: ["number = 5"]
 		})
 
-		attest(t.internal.includesMorph).equals(true)
+		attest(t.internal.includesTransform).equals(true)
 	})
 
 	it("onUndeclaredKey delete includesMorph", () => {
@@ -1114,7 +1114,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				foo: "string"
 			}
 		})
-		attest(t.internal.includesMorph).equals(true)
+		attest(t.internal.includesTransform).equals(true)
 	})
 
 	it("distill doesn't treat functions returning any/never as morphs", () => {

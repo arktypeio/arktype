@@ -286,7 +286,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)
 			if (!ctx.hasError()) {
-				if (this.branches[i].includesMorph)
+				if (this.branches[i].includesTransform)
 					return ctx.queuedMorphs.push(...ctx.popBranch()!.queuedMorphs)
 				return ctx.popBranch()
 			}
@@ -370,7 +370,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					.line(js.invoke(branch))
 					.if("!ctx.hasError()", () =>
 						js.return(
-							branch.includesMorph ?
+							branch.includesTransform ?
 								"ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)"
 							:	"ctx.popBranch()"
 						)
@@ -886,7 +886,7 @@ export const reduceBranches = ({
 
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (
-		(l.includesMorph || r.includesMorph) &&
+		(l.includesTransform || r.includesTransform) &&
 		(!arrayEquals(l.shallowMorphs, r.shallowMorphs, {
 			isEqual: (l, r) => l.hasEqualMorphs(r)
 		}) ||

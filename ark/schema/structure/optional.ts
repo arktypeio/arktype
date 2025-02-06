@@ -99,7 +99,7 @@ export const computeDefaultValueMorphs = (
 	if (typeof defaultInput === "function") {
 		return [
 			// if the value has a morph, pipe context through it
-			value.includesMorph ?
+			value.includesTransform ?
 				(data, ctx) => {
 					traverseKey(key, () => value((data[key] = defaultInput()), ctx), ctx)
 					return data
@@ -114,7 +114,7 @@ export const computeDefaultValueMorphs = (
 	// non-functional defaults can be safely cached as long as the morph is
 	// guaranteed to be pure and the output is primitive
 	const precomputedMorphedDefault =
-		value.includesMorph ? value.assert(defaultInput) : defaultInput
+		value.includesTransform ? value.assert(defaultInput) : defaultInput
 
 	return [
 		hasDomain(precomputedMorphedDefault, "object") ?
