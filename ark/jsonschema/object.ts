@@ -115,7 +115,7 @@ const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
 				})
 			}
 		})
-		return ctx.hasError()
+		return !ctx.hasError()
 	}
 }
 
@@ -205,7 +205,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 				})
 			}
 		})
-		return ctx.hasError()
+		return !ctx.hasError()
 	}
 }
 
