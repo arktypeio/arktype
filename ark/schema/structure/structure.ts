@@ -633,9 +633,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					}
 
 					if (this.sequence?.defaultables) {
-						for (let i = 0; i < this.sequence.defaultables.length; i++) {
-							// ok
-						}
+						for (
+							let i = data.length - this.sequence.prefixLength;
+							i < this.sequence.defaultables.length;
+							i++
+						)
+							this.sequence.defaultValueMorphs[i](data, ctx)
 					}
 
 					if (this.undeclared === "delete") {

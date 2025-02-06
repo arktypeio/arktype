@@ -300,11 +300,17 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	defaultablesLength: number = this.defaultables?.length ?? 0
 	optionalsLength: number = this.optionals?.length ?? 0
 	postfixLength: number = this.postfix?.length ?? 0
+	defaultablesAndOptionals: BaseRoot[] = []
 	prevariadic: array<PrevariadicSequenceElement> = this.tuple.filter(
-		el =>
-			el.kind === "prefix" ||
-			el.kind === "defaultables" ||
-			el.kind === "optionals"
+		(el): el is PrevariadicSequenceElement => {
+			if (el.kind === "defaultables" || el.kind === "optionals") {
+				// populate defaultablesAndOptionals while filtering prevariadic
+				this.defaultablesAndOptionals.push(el.node)
+				return true
+			}
+
+			return el.kind === "prefix"
+		}
 	)
 
 	variadicOrPostfix: array<BaseRoot> = conflatenate(
@@ -376,11 +382,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
 
-	includesDefaultable(): boolean {
-		// this is called before initialization so must not reference node properties
-		return this.inner.defaultables !== undefined
-	}
-
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
 		const firstPostfixIndex = data.length - this.postfixLength
@@ -415,9 +416,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				ctx
 			)
 		}
-
-		for (; i < this.prefixLength + this.defaultablesLength; i++)
-			ctx.queueMorphs([this.defaultValueMorphs[i - this.prefixLength]])
 	}
 
 	get element(): BaseRoot {
@@ -430,18 +428,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			js.traverseKey(`${i}`, `data[${i}]`, node)
 		)
 
-		this.defaultables?.forEach((node, i) => {
+		this.defaultablesAndOptionals.forEach((node, i) => {
 			const dataIndex = `${i + this.prefixLength}`
-			js.if(`${dataIndex} >= ${js.data}.length`, () =>
-				js.traversalKind === "Allows" ?
-					js.return(true)
-				:	js.return(`ctx.queueMorphs(${this.defaultValueMorphsReference}[${i}])`)
-			)
-			js.traverseKey(dataIndex, `data[${dataIndex}]`, node[0])
-		})
-
-		this.optionals?.forEach((node, i) => {
-			const dataIndex = `${i + this.prefixLength + this.defaultablesLength}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
