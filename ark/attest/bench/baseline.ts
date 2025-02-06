@@ -66,7 +66,14 @@ export const compareToBaseline = (
 const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
 	const message = `'${ctx.qualifiedName}' exceeded baseline by ${formattedDelta} (threshold is ${ctx.cfg.benchPercentThreshold}%).`
 	console.error(`📈 ${message}`)
-	if (ctx.cfg.benchErrorOnThresholdExceeded) {
+	const benchErrorConfig = ctx.cfg.benchErrorOnThresholdExceeded
+	const isTypeBench = ctx.lastSnapFunctionName === "instantiations"
+	const shouldError =
+		benchErrorConfig === true ||
+		(isTypeBench ?
+			benchErrorConfig === "types"
+		:	benchErrorConfig === "runtime")
+	if (shouldError) {
 		const errorSummary = `❌ ${message}`
 		if (ctx.lastSnapFunctionName === "instantiations")
 			throwAssertionError({ stack: ctx.assertionStack, message: errorSummary })

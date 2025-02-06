@@ -100,7 +100,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).mean([875.73, "ns"])
+}).mean([0, "ns"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)

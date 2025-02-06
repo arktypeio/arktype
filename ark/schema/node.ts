@@ -75,6 +75,7 @@ export abstract class BaseNode<
 	attachments: UnknownAttachments
 	$: BaseScope
 	onFail: ArkErrors.Handler | null
+	includesContextualMorph: boolean
 	includesTransform: boolean
 
 	// if a predicate accepts exactly one arg, we can safely skip passing context
@@ -118,12 +119,12 @@ export abstract class BaseNode<
 		this.attachments = attachments
 		this.$ = $
 		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
-		// readonly includesContextualMorph: boolean =
-		// 	(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		// 	this.children.some(child => child.hasContextualPredicate)
+
+		this.includesContextualMorph =
+			this.hasKind("morph") && this.inner.morphs.some(fn => fn.length !== 1)
 
 		this.includesTransform =
-			this.kind === "morph" ||
+			this.hasKind("morph") ||
 			(this.hasKind("optional") && this.hasDefault()) ||
 			(this.hasKind("sequence") && this.includesDefaultable()) ||
 			(this.hasKind("structure") && this.inner.undeclared === "delete")
@@ -155,6 +156,7 @@ export abstract class BaseNode<
 		this.flatRefs = []
 
 		for (let i = 0; i < this.children.length; i++) {
+			this.includesContextualMorph ||= this.children[i].includesContextualMorph
 			this.includesTransform ||= this.children[i].includesTransform
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
