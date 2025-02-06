@@ -6,7 +6,8 @@
 	"scripts": {
 		"build": "NODE_OPTIONS=--no-warnings next build",
 		"dev": "NODE_OPTIONS=--no-warnings next dev --turbo",
-		"start": "next start",
+		"buildAndStart": "pnpm build && pnpm start",
+		"start": "pnpm serve out",
 		"clean": "rm -rf .next .source out",
 		"postinstall": "fumadocs-mdx",
 		"upDeps": "pnpm up --latest",
@@ -34,6 +35,7 @@
 		"linkinator": "6.1.2",
 		"lucide-react": "0.474.0",
 		"next": "15.1.6",
+		"serve": "14.2.4",
 		"postcss": "8.5.1",
 		"posthog-js": "1.212.1",
 		"prettier-plugin-tailwindcss": "0.6.11",

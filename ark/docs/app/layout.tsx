@@ -12,7 +12,25 @@ const raleway = Raleway({
 
 export default ({ children }: { children: ReactNode }) => (
 	<html lang="en" className={raleway.className} suppressHydrationWarning>
-		<link rel="icon" href="/image/favicon.svg" />
+		<head>
+			<meta
+				name="description"
+				content="Optimized runtime validation from familiar, type-safe syntax"
+			/>
+			<meta property="og:title" content="ArkType" />
+			<meta
+				property="og:description"
+				content="Optimized runtime validation from familiar, type-safe syntax"
+			/>
+			<meta property="og:image" content="/image/og.png" />
+			<meta property="og:url" content="https://arktype.io" />
+			<meta name="twitter:card" content="/image/og.png" />
+			<meta
+				name="keywords"
+				content="ArkType, TypeScript, JavaScript, runtime validation, schema, type-safe, validator, syntax"
+			/>
+			<link rel="icon" href="/image/favicon.svg" />
+		</head>
 		<body className="flex flex-col min-h-screen">
 			<RootProvider
 				search={{
