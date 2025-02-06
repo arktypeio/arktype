@@ -1,5 +1,4 @@
 import {
-	ArkErrors,
 	rootSchema,
 	type Intersection,
 	type Predicate,
@@ -244,15 +243,5 @@ export const validateJsonSchemaObject: Type<
 
 	const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
 	if (predicates.length === 0) return typeWithoutPredicates as never
-
-	return rootSchema({ domain: "object", predicate: predicates }).narrow(
-		(obj: object, innerCtx) => {
-			const validationResult = typeWithoutPredicates(obj)
-			if (validationResult instanceof ArkErrors) {
-				innerCtx.errors.merge(validationResult)
-				return false
-			}
-			return true
-		}
-	) as never
+	return rootSchema({ ...arktypeObjectSchema, predicate: predicates }) as never
 })
