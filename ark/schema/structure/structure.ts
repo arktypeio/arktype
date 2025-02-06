@@ -17,6 +17,7 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -596,10 +597,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (this.undeclared === "delete" && !ctx.hasError())
-			ctx.queueMorphs([this.deleteUndeclared])
+		if (this.structuralMorph && !ctx.hasError())
+			ctx.queueMorphs([this.structuralMorph])
 
 		return true
+	}
+
+	get defaultables(): Optional.Node.withDefault[] {
+		return this.cacheGetter(
+			"defaultables",
+			// important to only use base props (e.g. inner) here since it is referenced
+			// from its own super class constructor
+			this.inner.optional?.filter(o => o.hasDefault()) ?? []
+		)
 	}
 
 	declaresKey = (k: Key): boolean =>
@@ -610,14 +620,27 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	declaresKeyRef: RegisteredReference = registeredReference(this.declaresKey)
 
-	deleteUndeclared = (data: object): object => {
-		for (const k in data) if (!this.declaresKey(k)) delete (data as dict)[k]
-		return data
+	// important to only use base props (e.g. inner) at the top-level of
+	// the getter since it is referenced from its own super class constructor
+	get structuralMorph(): Morph | undefined {
+		if (!this.defaultables.length && this.undeclared !== "delete")
+			return this.cacheGetter("structuralMorph", undefined)
+
+		return this.cacheGetter("structuralMorph", (data, ctx): object => {
+			for (let i = 0; i < this.defaultables.length; i++) {
+				if (!(this.defaultables[i].key in data))
+					this.defaultables[i].defaultValueMorph(data, ctx)
+			}
+
+			if (this.undeclared === "delete")
+				for (const k in data) if (!this.declaresKey(k)) delete (data as dict)[k]
+
+			return data
+		})
 	}
 
-	deleteUndeclaredRef: RegisteredReference = registeredReference(
-		this.deleteUndeclared
-	)
+	structuralMorphRef: RegisteredReference | undefined =
+		this.structuralMorph && registeredReference(this.structuralMorph)
 
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
@@ -641,9 +664,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (js.traversalKind === "Allows") return js.return(true)
 
 		// always queue deleteUndeclared on valid traversal for "delete"
-		if (this.undeclared === "delete") {
+		if (this.structuralMorphRef) {
 			js.if("!ctx.hasError()", () =>
-				js.line(`ctx.queueMorphs([${this.deleteUndeclaredRef}])`)
+				js.line(`ctx.queueMorphs([${this.structuralMorphRef}])`)
 			)
 		}
 	}

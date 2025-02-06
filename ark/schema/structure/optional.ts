@@ -1,4 +1,10 @@
-import { hasDomain, isThunk, printable, throwParseError } from "@ark/util"
+import {
+	hasDomain,
+	isThunk,
+	printable,
+	throwParseError,
+	type requireKeys
+} from "@ark/util"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue } from "../shared/compile.ts"
@@ -30,6 +36,13 @@ export declare namespace Optional {
 	>
 
 	export type Node = OptionalNode
+
+	export namespace Node {
+		export type withDefault = requireKeys<
+			Node,
+			"default" | "defaultValueMorph" | "defaultValueMorphsRef"
+		>
+	}
 }
 
 const implementation: nodeImplementationOf<Optional.Declaration> =
@@ -78,12 +91,15 @@ export class OptionalNode extends BaseProp<"optional"> {
 			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorphs: Morph[] =
+	defaultValueMorph: Morph | undefined =
 		this.hasDefault() ?
-			computeDefaultValueMorphs(this.key, this.value, this.default)
-		:	[]
+			computeDefaultValueMorph(this.key, this.value, this.default)
+		:	undefined
 
-	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+	defaultValueMorphsRef: string | undefined =
+		this.defaultValueMorph ?
+			registeredReference(this.defaultValueMorph)
+		:	undefined
 }
 
 export const Optional = {
@@ -91,15 +107,14 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-export const computeDefaultValueMorphs = (
+export const computeDefaultValueMorph = (
 	key: PropertyKey,
 	value: BaseRoot,
 	defaultInput: unknown
-): Morph[] => {
+): Morph => {
 	if (typeof defaultInput === "function") {
-		return [
-			// if the value has a morph, pipe context through it
-			value.includesTransform ?
+		// if the value has a morph, pipe context through it
+		return value.includesTransform ?
 				(data, ctx) => {
 					traverseKey(key, () => value((data[key] = defaultInput()), ctx), ctx)
 					return data
@@ -108,7 +123,6 @@ export const computeDefaultValueMorphs = (
 					data[key] = defaultInput()
 					return data
 				}
-		]
 	}
 
 	// non-functional defaults can be safely cached as long as the morph is
@@ -116,8 +130,7 @@ export const computeDefaultValueMorphs = (
 	const precomputedMorphedDefault =
 		value.includesTransform ? value.assert(defaultInput) : defaultInput
 
-	return [
-		hasDomain(precomputedMorphedDefault, "object") ?
+	return hasDomain(precomputedMorphedDefault, "object") ?
 			// the type signature only allows this if the value was morphed
 			(data, ctx) => {
 				traverseKey(key, () => value((data[key] = defaultInput), ctx), ctx)
@@ -127,7 +140,6 @@ export const computeDefaultValueMorphs = (
 				data[key] = precomputedMorphedDefault
 				return data
 			}
-	]
 }
 
 export const assertDefaultValueAssignability = (

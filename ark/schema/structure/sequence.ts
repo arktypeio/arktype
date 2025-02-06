@@ -43,7 +43,7 @@ import {
 } from "../shared/traversal.ts"
 import {
 	assertDefaultValueAssignability,
-	computeDefaultValueMorphs
+	computeDefaultValueMorph
 } from "./optional.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
 
@@ -369,9 +369,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
-	defaultValueMorphs: Morph[][] =
+	defaultValueMorphs: Morph[] =
 		this.defaultables?.map(([node, defaultValue], i) =>
-			computeDefaultValueMorphs(this.prefixLength + i, node, defaultValue)
+			computeDefaultValueMorph(this.prefixLength + i, node, defaultValue)
 		) ?? []
 
 	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
@@ -417,7 +417,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		for (; i < this.prefixLength + this.defaultablesLength; i++)
-			ctx.queueMorphs(this.defaultValueMorphs[i - this.prefixLength])
+			ctx.queueMorphs([this.defaultValueMorphs[i - this.prefixLength]])
 	}
 
 	get element(): BaseRoot {

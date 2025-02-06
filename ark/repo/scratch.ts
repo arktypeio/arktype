@@ -1,6 +1,10 @@
 import { bench } from "@ark/attest"
 import { match, type } from "arktype"
 
+// bench("morph", () => {
+// 	type.keywords.string.numeric.parse("5")
+// }).mean()
+
 const t = type({
 	"+": "delete",
 	a: "string"
