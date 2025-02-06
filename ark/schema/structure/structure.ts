@@ -21,7 +21,11 @@ import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import type {
+	attachmentsOf,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
@@ -603,12 +607,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return true
 	}
 
-	get defaultables(): Optional.Node.withDefault[] {
+	get defaultable(): Optional.Node.withDefault[] {
 		return this.cacheGetter(
-			"defaultables",
-			// important to only use base props (e.g. inner) here since it is referenced
-			// from its own super class constructor
-			this.inner.optional?.filter(o => o.hasDefault()) ?? []
+			"defaultable",
+			this.optional?.filter(o => o.hasDefault()) ?? []
 		)
 	}
 
@@ -620,23 +622,31 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	declaresKeyRef: RegisteredReference = registeredReference(this.declaresKey)
 
-	// important to only use base props (e.g. inner) at the top-level of
-	// the getter since it is referenced from its own super class constructor
 	get structuralMorph(): Morph | undefined {
-		if (!this.defaultables.length && this.undeclared !== "delete")
-			return this.cacheGetter("structuralMorph", undefined)
+		return this.cacheGetter(
+			"structuralMorph",
+			hasStructuralMorph(this) ?
+				(data, ctx) => {
+					for (let i = 0; i < this.defaultable.length; i++) {
+						if (!(this.defaultable[i].key in data))
+							this.defaultable[i].defaultValueMorph(data, ctx)
+					}
 
-		return this.cacheGetter("structuralMorph", (data, ctx): object => {
-			for (let i = 0; i < this.defaultables.length; i++) {
-				if (!(this.defaultables[i].key in data))
-					this.defaultables[i].defaultValueMorph(data, ctx)
-			}
+					if (this.sequence?.defaultables) {
+						for (let i = 0; i < this.sequence.defaultables.length; i++) {
+							// ok
+						}
+					}
 
-			if (this.undeclared === "delete")
-				for (const k in data) if (!this.declaresKey(k)) delete (data as dict)[k]
+					if (this.undeclared === "delete") {
+						for (const k in data)
+							if (!this.declaresKey(k)) delete (data as dict)[k]
+					}
 
-			return data
-		})
+					return data
+				}
+			:	undefined
+		)
 	}
 
 	structuralMorphRef: RegisteredReference | undefined =
@@ -759,6 +769,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return schema
 	}
 }
+
+// important to only use attached props since this is referenced from
+// its own super class constructor (defaultable is declared the same way and safe)
+const hasStructuralMorph = (
+	self: attachmentsOf<Structure.Declaration> &
+		Pick<Structure.Node, "defaultable">
+) =>
+	self.defaultable.length ||
+	self.sequence?.defaultables ||
+	self.undeclared === "delete"
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 

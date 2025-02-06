@@ -1,32 +1,16 @@
 import { bench } from "@ark/attest"
 import { match, type } from "arktype"
 
-const disappointingGift = type({
-	label: "string",
-	"box?": "this"
-})
-
-const out = disappointingGift({
-	label: "foo",
-	box: { label: "bar", box: {} }
-})
-
-if (out instanceof type.errors) {
-	// ArkErrors: box.box.label must be a string (was missing)
-	console.error(out.summary)
-} else {
-	console.log(out.box?.box?.label)
-}
-
 // bench("morph", () => {
 // 	type.keywords.string.numeric.parse("5")
 // }).mean()
 
-// const t = type({
-// 	"+": "delete",
-// 	a: "string"
-// })
+const t = type({
+	"+": "delete",
+	a: "string"
+})
 
+console.log(t)
 // bench("good", () => {
 // 	t({ a: "foo" })
 // }).mean([253.32, "ns"])
