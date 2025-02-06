@@ -24,7 +24,11 @@ const parseMinMaxProperties = (
 				actual: `an object JSON Schema with ${jsonSchema.required!.length} required properties`
 			})
 		}
-		predicates.push((data: object, ctx) => {
+
+		const jsonSchemaObjectMaxPropertiesValidator = (
+			data: object,
+			ctx: Traversal
+		) => {
 			const keys = Object.keys(data)
 			return keys.length <= maxProperties ?
 					true
@@ -32,11 +36,16 @@ const parseMinMaxProperties = (
 						expected: `an object with at most ${maxProperties} propert${maxProperties === 1 ? "y" : "ies"}`,
 						actual: `an object with ${keys.length.toString()} propert${maxProperties === 1 ? "y" : "ies"}`
 					})
-		})
+		}
+		predicates.push(jsonSchemaObjectMaxPropertiesValidator)
 	}
 	if ("minProperties" in jsonSchema) {
 		const minProperties = jsonSchema.minProperties
-		predicates.push((data: object, ctx) => {
+
+		const jsonSchemaObjectMinPropertiesValidator = (
+			data: object,
+			ctx: Traversal
+		) => {
 			const keys = Object.keys(data)
 			return keys.length >= minProperties ?
 					true
@@ -44,7 +53,8 @@ const parseMinMaxProperties = (
 						expected: `an object with at least ${minProperties} propert${minProperties === 1 ? "y" : "ies"}`,
 						actual: `an object with ${keys.length.toString()} propert${minProperties === 1 ? "y" : "ies"}`
 					})
-		})
+		}
+		predicates.push(jsonSchemaObjectMinPropertiesValidator)
 	}
 	return predicates
 }
@@ -105,7 +115,10 @@ const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
 		})
 	}
 
-	return (data: object, ctx: Traversal) => {
+	const jsonSchemaObjectPropertyNamesValidator = (
+		data: object,
+		ctx: Traversal
+	) => {
 		Object.keys(data).forEach(key => {
 			if (!propertyNamesValidator.allows(key)) {
 				ctx.reject({
@@ -117,6 +130,7 @@ const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
 		})
 		return !ctx.hasError()
 	}
+	return jsonSchemaObjectPropertyNamesValidator
 }
 
 const parseRequiredAndOptionalKeys = (
@@ -183,7 +197,10 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 	if (additionalPropertiesSchema === true) return true
 	if (additionalPropertiesSchema === false) return false
 
-	return (data: object, ctx: Traversal) => {
+	const jsonSchemaObjectAdditionalPropertiesValidator = (
+		data: object,
+		ctx: Traversal
+	) => {
 		Object.keys(data).forEach(key => {
 			if (
 				properties.includes(key) ||
@@ -207,6 +224,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 		})
 		return !ctx.hasError()
 	}
+	return jsonSchemaObjectAdditionalPropertiesValidator
 }
 
 export const validateJsonSchemaObject: Type<

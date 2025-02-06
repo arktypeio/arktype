@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
 // TODO: Add compound tests for objects (e.g. 'maxProperties' AND 'minProperties')
+// TODO: Add tests for propertyNames
 
 contextualize(() => {
 	it("type object", () => {
@@ -14,7 +15,10 @@ contextualize(() => {
 			type: "object",
 			maxProperties: 1
 		})
-		attest(tMaxProperties.json).snap({ domain: "object" })
+		attest(tMaxProperties.json).snap({
+			domain: "object",
+			predicate: ["$ark.jsonSchemaObjectMaxPropertiesValidator"]
+		})
 		attest(tMaxProperties.allows({})).equals(true)
 		attest(tMaxProperties.allows({ foo: 1 })).equals(true)
 		attest(tMaxProperties.allows({ foo: 1, bar: 2 })).equals(false)
@@ -26,7 +30,10 @@ contextualize(() => {
 			type: "object",
 			minProperties: 2
 		})
-		attest(tMinProperties.json).snap({ domain: "object" })
+		attest(tMinProperties.json).snap({
+			domain: "object",
+			predicate: ["$ark.jsonSchemaObjectMinPropertiesValidator"]
+		})
 		attest(tMinProperties.allows({})).equals(false)
 		attest(tMinProperties.allows({ foo: 1 })).equals(false)
 		attest(tMinProperties.allows({ foo: 1, bar: 2 })).equals(true)
@@ -49,7 +56,7 @@ contextualize(() => {
 		})
 
 		attest(() => parseJsonSchema({ type: "object", required: ["foo"] })).throws(
-			"'required' array is present but 'properties' object is missing"
+			"AggregateError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
 		)
 		attest(() =>
 			parseJsonSchema({
@@ -58,7 +65,7 @@ contextualize(() => {
 				required: ["bar"]
 			})
 		).throws(
-			"Key 'bar' in 'required' array is not present in 'properties' object"
+			`AggregateError: required must be a key from the 'properties' object (one of ["foo"]) (was bar)`
 		)
 		attest(() =>
 			parseJsonSchema({
@@ -66,7 +73,9 @@ contextualize(() => {
 				properties: { foo: { type: "string" } },
 				required: ["foo", "foo"]
 			})
-		).throws("Duplicate keys in 'required' array")
+		).throws(
+			`AggregateError: required must be an array of unique strings (was an array with the following duplicates: [{"element":"foo","indices":[1]}])`
+		)
 	})
 
 	it("additionalProperties", () => {
@@ -74,9 +83,10 @@ contextualize(() => {
 			type: "object",
 			additionalProperties: { type: "number" }
 		})
+		console.log("hi", JSON.stringify(tAdditionalProperties.json))
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
-			additional: "number"
+			predicate: ["$ark.jsonSchemaObjectAdditionalPropertiesValidator"]
 		})
 		attest(tAdditionalProperties.allows({})).equals(true)
 		attest(tAdditionalProperties.allows({ foo: 1 })).equals(true)
@@ -93,11 +103,16 @@ contextualize(() => {
 		})
 		attest(tPatternProperties.json).snap({
 			domain: "object",
-			pattern: [{ key: "^[a-z]+$", value: "string" }]
+			index: [
+				{
+					signature: { domain: "string", pattern: ["^[a-z]+$"] },
+					value: "string"
+				}
+			]
 		})
 		attest(tPatternProperties.allows({})).equals(true)
 		attest(tPatternProperties.allows({ foo: "bar" })).equals(true)
 		attest(tPatternProperties.allows({ foo: 1 })).equals(false)
-		attest(tPatternProperties.allows({ "123": "bar" })).equals(false)
+		attest(tPatternProperties.allows({ "123": "bar" })).equals(true) // true since allows additional properties
 	})
 })

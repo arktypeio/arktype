@@ -90,7 +90,7 @@ contextualize(() => {
 		})
 
 		attest(() => parseJsonSchema({ type: "array", maxItems: -1 })).throws(
-			"maxItems must be an integer >= 0"
+			"maxItems must be non-negative"
 		)
 	})
 
@@ -105,7 +105,7 @@ contextualize(() => {
 		})
 
 		attest(() => parseJsonSchema({ type: "array", minItems: -1 })).throws(
-			"minItems must be an integer >= 0"
+			"minItems must be non-negative"
 		)
 	})
 
