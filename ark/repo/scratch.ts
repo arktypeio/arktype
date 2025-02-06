@@ -10,7 +10,8 @@ const t = type({
 	a: "string"
 })
 
-console.log(t.internal.firstReferenceOfKindOrThrow("structure").structuralMorph)
+console.log(t.expression)
+
 // bench("good", () => {
 // 	t({ a: "foo" })
 // }).mean([253.32, "ns"])
