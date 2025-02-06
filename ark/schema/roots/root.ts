@@ -71,11 +71,15 @@ export abstract class BaseRoot<
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
 	readonly flatMorphs: FlatRef<Morph.Node>[]
+	readonly shallowMorphs: Morph.Node[]
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(attachments, $)
 		// define as a getter to avoid it being enumerable/spreadable
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+		this.shallowMorphs = this.shallowReferences
+			.filter(n => n.hasKind("morph"))
+			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
 		this.flatMorphs = this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
 			(flatMorphs, ref) =>
 				appendUniqueFlatRefs(

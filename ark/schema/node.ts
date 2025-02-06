@@ -25,7 +25,6 @@ import type {
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
-import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
@@ -85,7 +84,6 @@ export abstract class BaseNode<
 	allowsRequiresContext: boolean
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
-	shallowMorphs: Morph.Node[]
 	flatRefs: FlatRef[]
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
@@ -139,10 +137,6 @@ export abstract class BaseNode<
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
 					[this]
 				)
-
-		this.shallowMorphs = this.shallowReferences
-			.filter(n => n.hasKind("morph"))
-			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
 
 		const isStructural = this.isStructural()
 
