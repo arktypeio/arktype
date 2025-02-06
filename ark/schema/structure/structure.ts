@@ -6,6 +6,7 @@ import {
 	spliterate,
 	throwParseError,
 	type array,
+	type dict,
 	type Key,
 	type listable
 } from "@ark/util"
@@ -50,7 +51,6 @@ import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
-import { arrayIndexMatcherReference } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
@@ -549,15 +549,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (!requireExhasutiveTraversal(this, traversalKind)) return true
+		if (!this.index && this.undeclared !== "reject") return true
 
 		const keys: Key[] = Object.keys(data)
 		keys.push(...Object.getOwnPropertySymbols(data))
 
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
-
-			let matched = false
 
 			if (this.index) {
 				for (const node of this.index) {
@@ -578,47 +576,50 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							if (ctx.failFast && ctx.currentErrorCount > errorCount)
 								return false
 						}
-
-						matched = true
 					}
 				}
 			}
 
-			if (this.undeclared) {
-				matched ||= k in this.propsByKey
-				matched ||=
-					this.sequence !== undefined &&
-					typeof k === "string" &&
-					$ark.intrinsic.nonNegativeIntegerString.allows(k)
-				if (!matched) {
-					if (traversalKind === "Allows") return false
-					if (this.undeclared === "reject") {
-						ctx.errorFromNodeContext({
-							// TODO: this should have its own error code
-							code: "predicate",
-							expected: "removed",
-							actual: "",
-							relativePath: [k],
-							meta: this.meta
-						})
-					} else {
-						ctx.queueMorphs([
-							data => {
-								delete data[k]
-								return data
-							}
-						])
-					}
+			if (this.undeclared === "reject" && !this.declaresKey(k)) {
+				if (traversalKind === "Allows") return false
 
-					if (ctx.failFast) return false
-				}
+				ctx.errorFromNodeContext({
+					// TODO: this should have its own error code
+					code: "predicate",
+					expected: "removed",
+					actual: "",
+					relativePath: [k],
+					meta: this.meta
+				})
+
+				if (ctx.failFast) return false
 			}
 		}
+
+		if (this.undeclared === "delete" && !ctx.hasError())
+			ctx.queueMorphs([this.deleteUndeclared])
 
 		return true
 	}
 
-	compile(js: NodeCompiler): void {
+	declaresKey = (k: Key): boolean =>
+		k in this.propsByKey ||
+		this.index?.some(n => n.signature.allows(k)) ||
+		(this.sequence !== undefined &&
+			$ark.intrinsic.nonNegativeIntegerString.allows(k))
+
+	declaresKeyRef: RegisteredReference = registeredReference(this.declaresKey)
+
+	deleteUndeclared = (data: object): object => {
+		for (const k in data) if (!this.declaresKey(k)) delete (data as dict)[k]
+		return data
+	}
+
+	deleteUndeclaredRef: RegisteredReference = registeredReference(
+		this.deleteUndeclared
+	)
+
+	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
 		this.props.forEach(prop => {
@@ -631,51 +632,40 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
 		}
 
-		if (requireExhasutiveTraversal(this, js.traversalKind)) {
+		if (this.index || this.undeclared === "reject") {
 			js.const("keys", "Object.keys(data)")
 			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
 		}
 
-		if (js.traversalKind === "Allows") js.return(true)
+		if (js.traversalKind === "Allows") return js.return(true)
+
+		// always queue deleteUndeclared on valid traversal for "delete"
+		if (this.undeclared === "delete") {
+			js.if("!ctx.hasError()", () =>
+				js.line(`ctx.queueMorphs([${this.deleteUndeclaredRef}])`)
+			)
+		}
 	}
 
 	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
 		js.const("k", "keys[i]")
 
-		if (this.undeclared) js.let("matched", false)
-
 		this.index?.forEach(node => {
-			js.if(
-				`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-				() => {
-					js.traverseKey("k", "data[k]", node.value)
-					if (this.undeclared) js.set("matched", true)
-					return js
-				}
+			js.if(`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`, () =>
+				js.traverseKey("k", "data[k]", node.value)
 			)
 		})
 
-		if (this.undeclared) {
-			if (this.props?.length !== 0)
-				js.line(`matched ||= k in ${this.propsByKeyReference}`)
-
-			if (this.sequence) {
-				js.line(
-					`matched ||= typeof k === "string" && ${arrayIndexMatcherReference}.test(k)`
-				)
-			}
-
-			js.if("!matched", () => {
+		if (this.undeclared === "reject") {
+			js.if(`!${this.declaresKeyRef}(k)`, () => {
 				if (js.traversalKind === "Allows") return js.return(false)
-				return this.undeclared === "reject" ?
-						js
-							.line(
-								// TODO: should have its own error code
-								`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
-							)
-							.if("ctx.failFast", () => js.return())
-					:	js.line(`ctx.queueMorphs([data => { delete data[k]; return data }])`)
+				return js
+					.line(
+						// TODO: should have its own error code
+						`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
+					)
+					.if("ctx.failFast", () => js.return())
 			})
 		}
 
@@ -763,19 +753,6 @@ export interface OptionalMappedPropInner extends Optional.Schema {
 export const Structure = {
 	implementation,
 	Node: StructureNode
-}
-
-const requireExhasutiveTraversal = (
-	node: Structure.Node,
-	traversalKind: TraversalKind
-) => {
-	if (node.index || node.undeclared === "reject") return true
-
-	// when applying key deletion, we must queue morphs for all undeclared keys
-	// when checking whether an input is allowed, they are irrelevant because it always will be
-	if (node.undeclared === "delete" && traversalKind === "Apply") return true
-
-	return false
 }
 
 const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {

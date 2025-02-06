@@ -1,15 +1,31 @@
-import { type } from "arktype"
+import { bench } from "@ark/attest"
+import { match, type } from "arktype"
 
-// human-readable descriptions by default
-const l = type("0 < number <= 100").divisibleBy(2)
-console.log(l.description)
+const t = type({
+	"+": "delete",
+	a: "string"
+})
 
-const r = type("number % 3").lessThan(10)
-console.log(r.description)
+bench("good", () => {
+	t({ a: "foo" })
+}).mean([253.32, "ns"])
 
-// intersections automatically reduced to their optimal representation
-const both = l.and(r)
-console.log(both.description)
+bench("delete one", () => {
+	t({ a: "foo", b: true })
+}).mean([2.59, "us"])
 
-// attempting to create an invalid Type yields a ParseError
-// const whoops = both.moreThan(20)
+bench("delete five", () => {
+	t({ a: "foo", b: true, c: true, d: true, e: true, f: true })
+}).mean([6.1, "us"])
+
+// const m = match
+// 	.case("31", n => `${n}` as const)
+// 	.case("32", n => `${n}` as const)
+// 	.case("33", n => `${n}` as const)
+// 	.default("assert")
+
+// bench("match", () => {
+// 	m(31)
+// 	m(32)
+// 	m(33)
+// }).mean()
