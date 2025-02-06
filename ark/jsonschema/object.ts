@@ -5,7 +5,7 @@ import {
 	type Predicate,
 	type Traversal
 } from "@ark/schema"
-import { conflatenateAll, getDuplicatesOf, printable } from "@ark/util"
+import { getDuplicatesOf, printable } from "@ark/util"
 import type { JsonSchema, Out, Type } from "arktype"
 
 import { parseJsonSchema } from "./json.ts"
@@ -181,7 +181,8 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 	const patternProperties = Object.keys(jsonSchema.patternProperties ?? {})
 
 	const additionalPropertiesSchema = jsonSchema.additionalProperties
-	if (additionalPropertiesSchema === true) return
+	if (additionalPropertiesSchema === true) return true
+	if (additionalPropertiesSchema === false) return false
 
 	return (data: object, ctx: Traversal) => {
 		Object.keys(data).forEach(key => {
@@ -191,15 +192,6 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 			)
 				// Not an additional property, so don't validate here
 				return
-
-			if (additionalPropertiesSchema === false) {
-				ctx.reject({
-					expected:
-						"an object with no additional keys, since provided additionalProperties JSON Schema doesn't allow it",
-					actual: `an additional key (${key})`
-				})
-				return
-			}
 
 			const additionalPropertyValidator = parseJsonSchema(
 				additionalPropertiesSchema
@@ -236,14 +228,21 @@ export const validateJsonSchemaObject: Type<
 	const patternProperties = parsePatternProperties(jsonSchema, ctx)
 	if (patternProperties) arktypeObjectSchema.index = patternProperties
 
-	const predicates = conflatenateAll<Predicate.Schema>(
+	const potentialPredicates: (Predicate.Schema | undefined)[] = [
 		...parseMinMaxProperties(jsonSchema, ctx),
-		parsePropertyNames(jsonSchema, ctx),
-		parseAdditionalProperties(jsonSchema)
+		parsePropertyNames(jsonSchema, ctx)
+	]
+
+	const additionalProperties = parseAdditionalProperties(jsonSchema)
+	if (typeof additionalProperties === "boolean")
+		arktypeObjectSchema.undeclared = additionalProperties ? "ignore" : "reject"
+	else potentialPredicates.push(additionalProperties)
+
+	const predicates = potentialPredicates.filter(
+		potentialPredicate => potentialPredicate !== undefined
 	)
 
 	const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
-
 	if (predicates.length === 0) return typeWithoutPredicates as never
 
 	return rootSchema({ domain: "object", predicate: predicates }).narrow(
