@@ -50,7 +50,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
-import { BaseRoot } from "./root.ts"
+import { BaseRoot, type MorphsByBranchIndex } from "./root.ts"
 import type { Unit } from "./unit.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
@@ -260,6 +260,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		n => n.nestableExpression,
 		expressBranches
 	)
+
+	shallowMorphs: MorphsByBranchIndex = flatMorph(this.branches, (i, branch) => [
+		`${i}` as {} as number,
+		branch.shallowMorphs
+	])
 
 	get shortDescription(): string {
 		return this.distribute(branch => branch.shortDescription, describeBranches)
@@ -887,9 +892,7 @@ export const reduceBranches = ({
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (
 		(l.includesTransform || r.includesTransform) &&
-		!arrayEquals(l.shallowMorphs, r.shallowMorphs, {
-			isEqual: (l, r) => l.hasEqualMorphs(r)
-		})
+		!arrayEquals(l.shallowMorphs, r.shallowMorphs)
 	) {
 		throwParseError(
 			writeIndiscriminableMorphMessage(l.expression, r.expression)

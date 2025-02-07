@@ -53,6 +53,7 @@ import type {
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
 import type { Domain } from "./domain.ts"
+import type { Morph } from "./morph.ts"
 import type { Proto } from "./proto.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
@@ -296,6 +297,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	structure: Structure.Node | undefined = this.inner.structure
 
 	expression: string = writeIntersectionExpression(this)
+
+	shallowMorphs: array<Morph> =
+		this.structure?.structuralMorph ? [this.structure?.structuralMorph] : []
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"

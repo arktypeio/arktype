@@ -1142,7 +1142,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
 	})
 
-	// https://github.com/arktypeio/arktype/issues/1263
+	// https://github.com/arktypeio/arktype/issues/1274
 	it("fail on non-discriminable union of objects with onUndeclaredKey: delete", () => {
 		const point2d = type({
 			x: "number",
@@ -1157,11 +1157,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			"+": "delete"
 		})
 
-		const t = point2d.or(point3d)
-
-		attest(t.expression).snap(
-			"{ x: number, y: number, + (undeclared): delete }"
-		)
+		attest(() => point2d.or(point3d)).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { x: number, y: number, z: number, + (undeclared): delete }
+Right: { x: number, y: number, + (undeclared): delete }`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1266
