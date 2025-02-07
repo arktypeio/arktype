@@ -1,7 +1,7 @@
-@import 'tailwindcss';
-@import 'fumadocs-ui/css/ocean.css';
-@import 'fumadocs-ui/css/preset.css';
- 
+@import "tailwindcss";
+@import "fumadocs-ui/css/ocean.css";
+@import "fumadocs-ui/css/preset.css";
+
 @source '../node_modules/fumadocs-ui/dist/**/*.js';
 
 @font-face {
@@ -12,23 +12,23 @@
 }
 
 @theme {
-  --color-background: var(--color-fd-background);
-  --color-foreground: var(--color-fd-foreground);
-  --color-muted: var(--color-fd-muted);
-  --color-muted-foreground: var(--color-fd-muted-foreground);
-  --color-popover: var(--color-fd-popover);
-  --color-popover-foreground: var(--color-fd-popover-foreground);
-  --color-card: var(--color-fd-card);
-  --color-card-foreground: var(--color-fd-card-foreground);
-  --color-border: var(--color-fd-border);
-  --color-primary: var(--color-fd-primary);
-  --color-primary-foreground: var(--color-fd-primary-foreground);
-  --color-secondary: var(--color-fd-secondary);
-  --color-secondary-foreground: var(--color-fd-secondary-foreground);
-  --color-accent: var(--color-fd-accent);
-  --color-accent-foreground: var(--color-fd-accent-foreground);
-  --color-ring: var(--color-fd-ring);
-  --color-highlight: #f5cf8f;
+	--color-background: var(--color-fd-background);
+	--color-foreground: var(--color-fd-foreground);
+	--color-muted: var(--color-fd-muted);
+	--color-muted-foreground: var(--color-fd-muted-foreground);
+	--color-popover: var(--color-fd-popover);
+	--color-popover-foreground: var(--color-fd-popover-foreground);
+	--color-card: var(--color-fd-card);
+	--color-card-foreground: var(--color-fd-card-foreground);
+	--color-border: var(--color-fd-border);
+	--color-primary: var(--color-fd-primary);
+	--color-primary-foreground: var(--color-fd-primary-foreground);
+	--color-secondary: var(--color-fd-secondary);
+	--color-secondary-foreground: var(--color-fd-secondary-foreground);
+	--color-accent: var(--color-fd-accent);
+	--color-accent-foreground: var(--color-fd-accent-foreground);
+	--color-ring: var(--color-fd-ring);
+	--color-highlight: #f5cf8f;
 }
 
 /** the * ensures this overrides the variable definitions from shiki*/

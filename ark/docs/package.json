@@ -15,6 +15,7 @@
 	"dependencies": {
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
+		"@fumadocs/mdx-remote": "^1.2.0",
 		"@icons-pack/react-simple-icons": "11.1.0",
 		"@shikijs/transformers": "2.3.2",
 		"arkdark": "workspace:*",
@@ -38,13 +39,13 @@
 		"twoslash": "0.2.12"
 	},
 	"devDependencies": {
-		"typescript": "catalog:",
-		"tailwindcss": "4.0.4",
+		"@fumadocs/cli": "0.0.7",
+		"@tailwindcss/postcss": "^4.0.4",
 		"@types/mdx": "2.0.13",
 		"@types/react": "19.0.8",
+		"@types/react-dom": "19.0.3",
 		"prettier-plugin-tailwindcss": "0.6.11",
-		"@tailwindcss/postcss": "^4.0.4",
-		"@fumadocs/cli": "0.0.7",
-		"@types/react-dom": "19.0.3"
+		"tailwindcss": "4.0.4",
+		"typescript": "catalog:"
 	}
 }
