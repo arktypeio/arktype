@@ -57,7 +57,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		// Parse and check the definition, returning either the original input for a
 		// valid definition or a string representing an error message.
 		def: type.validate<def, $>
-	): NoInfer<r>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * Create a {@link Generic} from a parameter string and body definition.

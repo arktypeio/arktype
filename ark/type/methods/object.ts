@@ -36,9 +36,9 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * Get the `Type` of a property of this `Type<object>`.
 	 * @example type({ foo: "string" }).get("foo") // Type<string>
 	 */
-	get<const k1 extends arkIndexableOf<t>, r = arkGet<t, k1>>(
+	get<const k1 extends arkIndexableOf<t>>(
 		k1: k1 | type.cast<k1>
-	): instantiateType<r, $>
+	): instantiateType<arkGet<t, k1>, $> extends infer r ? r : never
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>
@@ -49,13 +49,14 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	get<
 		const k1 extends arkIndexableOf<t>,
 		const k2 extends arkIndexableOf<arkGet<t, k1>>,
-		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>,
-		r = arkGet<arkGet<arkGet<t, k1>, k2>, k3>
+		const k3 extends arkIndexableOf<arkGet<arkGet<t, k1>, k2>>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): instantiateType<r, $>
+	): instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $> extends infer r ?
+		r
+	:	never
 
 	/**
 	 * Create a copy of this `Type` with only the specified properties.

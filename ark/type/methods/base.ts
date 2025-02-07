@@ -21,6 +21,7 @@ import type {
 	distill,
 	inferIntersection,
 	inferMorphOut,
+	inferPipe,
 	inferPipes,
 	InferredMorph,
 	Out,
@@ -311,7 +312,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 */
 	brand<const name extends string, r = type.brand<t, name>>(
 		name: name
-	): instantiateType<r, $>
+	): instantiateType<r extends infer _ ? _ : never, $>
 
 	/**
 	 * #### an array of this
@@ -375,7 +376,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 		: narrowed
 	>(
 		predicate: Predicate.Castable<this["inferIn"], narrowed>
-	): instantiateType<r, $>
+	): instantiateType<r extends infer _ ? _ : never, $>
 
 	/**
 	 * #### apply a predicate function to output
@@ -403,14 +404,31 @@ export interface Inferred<out t = unknown, $ = {}> {
 		:	narrowed
 	>(
 		predicate: Predicate.Castable<this["infer"], narrowed>
-	): instantiateType<r, $>
+	): instantiateType<r extends infer _ ? _ : never, $>
 
 	/**
-	 * Morph this `Type` through a chain of morphs.
-	 * @example const dedupe = type('string[]').pipe(a => Array.from(new Set(a)))
-	 * @example type({codes: 'string.numeric[]'}).pipe(obj => obj.codes).to('string.numeric.parse[]')
+	 * #### pipe output through arbitrary transformations or other Types
+	 *
+	 * @example
+	 * const user = type({ name: "string" })
+	 *
+	 * // parse a string and validate that the result as a user
+	 * const parseUser = type("string").pipe(s => JSON.parse(s), user)
 	 */
 	pipe: ChainedPipe<t, $>
+
+	/**
+	 * #### parse a definition as an output validator
+	 *
+	 * 🔗 `to({ name: "string" })` is equivalent to `.pipe(type({ name: "string" }))`
+	 *
+	 * @example
+	 * // parse a string and validate that the result as a user
+	 * const parseUser = type("string").pipe(s => JSON.parse(s)).to({ name: "string" })
+	 */
+	to<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
+	): inferPipe<t, r> extends infer _ ? Type<_, $> : never
 }
 
 /** @ts-ignore cast variance */
@@ -441,10 +459,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<
-		NoInfer<inferIntersection<t, r>> extends infer _ ? _ : never,
-		$
-	>
+	): instantiateType<inferIntersection<t, r> extends infer _ ? _ : never, $>
 
 	/**
 	 * #### union with the parsed Type
@@ -457,7 +472,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<NoInfer<t | r> extends infer _ ? _ : never, $>
+	): instantiateType<t | r extends infer _ ? _ : never, $>
 
 	// inferring r into an alias improves perf and avoids return type inference
 	// that can lead to incorrect results. See:
@@ -474,7 +489,9 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $> | Disjoint
+	):
+		| instantiateType<inferIntersection<t, r> extends infer _ ? _ : never, $>
+		| Disjoint
 
 	/**
 	 * #### check if the parsed Type's constraints are identical
@@ -506,7 +523,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	ifEquals<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<r, $> | undefined
+	): instantiateType<r extends infer _ ? _ : never, $> | undefined
 
 	/**
 	 * #### check if this is a subtype of the parsed Type
@@ -532,7 +549,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	ifExtends<const def, r = type.infer<def, $>>(
 		other: type.validate<def, $>
-	): instantiateType<r, $> | undefined
+	): instantiateType<r extends infer _ ? _ : never, $> | undefined
 
 	/**
 	 * #### check if a value could satisfy this and the parsed Type
@@ -558,7 +575,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	extract<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
-	): instantiateType<Extract<t, r>, $>
+	): instantiateType<t extends infer _ extends r ? _ : never, $>
 
 	/**
 	 * #### exclude branches {@link extend}ing the parsed Type
@@ -570,7 +587,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	exclude<const def, r = type.infer<def, $>>(
 		r: type.validate<def, $>
-	): instantiateType<Exclude<t, r>, $>
+	): instantiateType<t extends r ? never : t, $>
 
 	/**
 	 * @experimental
@@ -627,7 +644,7 @@ interface Type<out t = unknown, $ = {}>
 interface ChainedPipeSignature<t, $> {
 	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
 		a: a
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -635,7 +652,7 @@ interface ChainedPipeSignature<t, $> {
 	>(
 		a: a,
 		b: b
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -645,7 +662,7 @@ interface ChainedPipeSignature<t, $> {
 		a: a,
 		b: b,
 		c: c
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -657,7 +674,7 @@ interface ChainedPipeSignature<t, $> {
 		b: b,
 		c: c,
 		d: d
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -671,7 +688,7 @@ interface ChainedPipeSignature<t, $> {
 		c: c,
 		d: d,
 		e: e
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -687,7 +704,7 @@ interface ChainedPipeSignature<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
@@ -705,7 +722,7 @@ interface ChainedPipeSignature<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): NoInfer<r> extends infer result ? result : never
+	): r extends infer _ ? _ : never
 }
 
 export interface ChainedPipe<t, $> extends ChainedPipeSignature<t, $> {

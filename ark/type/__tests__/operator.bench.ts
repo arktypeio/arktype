@@ -1,5 +1,5 @@
 import { bench } from "@ark/attest"
-import { type } from "arktype"
+import { declare, type } from "arktype"
 
 bench.baseline(() => {
 	type("symbol")
@@ -105,3 +105,82 @@ bench("morph-chain", () => type("boolean").pipe(b => b)).types([
 	948,
 	"instantiations"
 ])
+
+bench("base object", () =>
+	type({
+		readonly: "'readonly'",
+		keyof: "'keyof'",
+		get: "'get'",
+		pick: "'pick'",
+		omit: "'omit'",
+		merge: "'merge'",
+		required: "'required'",
+		partial: "'partial'",
+		map: "'map'",
+		as: "'as'",
+		and: "'and'",
+		or: "'or'",
+		extract: "'extract'",
+		exclude: "'exclude'",
+		configure: "'configure'",
+		describe: "'describe'",
+		onUndeclaredKey: "'onUndeclaredKey'",
+		onDeepUndeclaredKey: "'onDeepUndeclaredKey'",
+		brand: "'brand'",
+		array: "'array'",
+		filter: "'filter'",
+		narrow: "'narrow'"
+	})
+).types([10872, "instantiations"])
+
+type Expected = {
+	readonly: "readonly"
+	keyof: "keyof"
+	get: "get"
+	pick: "pick"
+	omit: "omit"
+	merge: "merge"
+	required: "required"
+	partial: "partial"
+	map: "map"
+	as: "as"
+	and: "and"
+	or: "or"
+	extract: "extract"
+	exclude: "exclude"
+	configure: "configure"
+	describe: "describe"
+	onUndeclaredKey: "onUndeclaredKey"
+	onDeepUndeclaredKey: "onDeepUndeclaredKey"
+	brand: "brand"
+	array: "array"
+	filter: "filter"
+	narrow: "narrow"
+}
+
+bench("base object", () =>
+	declare<Expected>().type({
+		readonly: "'readonly'",
+		keyof: "'keyof'",
+		get: "'get'",
+		pick: "'pick'",
+		omit: "'omit'",
+		merge: "'merge'",
+		required: "'required'",
+		partial: "'partial'",
+		map: "'map'",
+		as: "'as'",
+		and: "'and'",
+		or: "'or'",
+		extract: "'extract'",
+		exclude: "'exclude'",
+		configure: "'configure'",
+		describe: "'describe'",
+		onUndeclaredKey: "'onUndeclaredKey'",
+		onDeepUndeclaredKey: "'onDeepUndeclaredKey'",
+		brand: "'brand'",
+		array: "'array'",
+		filter: "'filter'",
+		narrow: "'narrow'"
+	})
+).types([13034, "instantiations"])
