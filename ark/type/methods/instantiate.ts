@@ -8,8 +8,7 @@ import type { NumberType } from "./number.ts"
 import type { ObjectType } from "./object.ts"
 import type { StringType } from "./string.ts"
 
-export type instantiateType<t, $> =
-	NoInfer<_instantiateType<t, $>> extends infer r ? r : never
+export type instantiateType<t, $> = _instantiateType<t, $>
 
 export type _instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType

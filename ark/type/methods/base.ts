@@ -441,7 +441,10 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	and<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r>, $>
+	): instantiateType<
+		NoInfer<inferIntersection<t, r>> extends infer _ ? _ : never,
+		$
+	>
 
 	/**
 	 * #### union with the parsed Type
@@ -454,7 +457,7 @@ interface Type<out t = unknown, $ = {}>
 	 */
 	or<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>
-	): instantiateType<t | r, $>
+	): instantiateType<NoInfer<t | r> extends infer _ ? _ : never, $>
 
 	// inferring r into an alias improves perf and avoids return type inference
 	// that can lead to incorrect results. See:

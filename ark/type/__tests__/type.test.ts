@@ -61,8 +61,10 @@ contextualize(() => {
 	it("is treated as contravariant", () => {
 		type("1") satisfies Type<number>
 
-		// currently treated as bivariant here, should be error
-		type("1") satisfies Type<string>
+		// @ts-expect-error
+		attest(() => type("1") satisfies Type<string>).type.errors(
+			"missing the following properties from type 'Type<string, {}>'"
+		)
 
 		// errors correctly if t is declared as its own type param
 		const accept = <t extends string>(t: Type<t>) => t
