@@ -1,5 +1,6 @@
 import { bench } from "@ark/attest"
-import { match, type } from "arktype"
+import { $ark } from "@ark/schema"
+import { type } from "arktype"
 
 export const validData = Object.freeze({
 	number: 1,
@@ -40,20 +41,32 @@ export const t = type({
 
 const stringToLength = type.string.pipe(s => s.length)
 
-const { whoop } = type.module({
-	whoop: ["string", "=>", s => s.length]
-})
-
-console.log(whoop.precompilation)
 console.log(stringToLength.precompilation)
+
+$ark.superMorph = (s: string) => s.length
+
+console.log(stringToLength("foo"))
+
+const optimal = (input: unknown) => {
+	if (typeof input !== "string") throw new Error("ok")
+	return ($ark.superMorph as any)(input)
+}
+
+bench("shallow primitive allows", () => {
+	type.string.allows("foo")
+}).median([7.99, "ns"])
+
+bench("shallow primitive apply", () => {
+	type.string("foo")
+}).median([9.89, "ns"])
 
 bench("shallow primitive morph", () => {
 	stringToLength("foo")
-}).median([250.36, "ns"])
+}).median([12, "ns"])
 
-bench("shallow primitive morph", () => {
-	whoop("foo")
-}).median([302.29, "ns"])
+bench("optimal primitive morph", () => {
+	optimal("foo")
+}).median([9.06, "ns"])
 
 // const invokedCases3 = match
 // 	.case("31", n => `${n}` as const)

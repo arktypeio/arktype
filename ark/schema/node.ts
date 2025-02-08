@@ -83,7 +83,8 @@ export abstract class BaseNode<
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
-	applyRequiresContext: boolean
+	applyContextFreeMorphs: ((data: any) => unknown) | undefined | true
+
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
 	flatRefs: FlatRef[]
@@ -101,7 +102,11 @@ export abstract class BaseNode<
 				pipedFromCtx?: Traversal | undefined,
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
-				if (!this.applyRequiresContext && this.allows(data)) return data
+				if (this.applyContextFreeMorphs && this.allows(data)) {
+					return this.applyContextFreeMorphs === true ?
+							data
+						:	this.applyContextFreeMorphs(data)
+				}
 
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
@@ -189,8 +194,20 @@ export abstract class BaseNode<
 
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
-		this.applyRequiresContext =
-			this.includesTransform || this.allowsRequiresContext
+		this.applyContextFreeMorphs =
+			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
+				isArray(this.shallowMorphs) ?
+					// TODO: check for contextual
+					(
+						this.shallowMorphs.length === 1 &&
+						this.shallowMorphs[0].length === 1
+					) ?
+						(this.shallowMorphs[0] as never)
+					: this.shallowMorphs.length === 0 ? true
+					: undefined
+				:	undefined
+			:	undefined
+
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
