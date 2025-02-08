@@ -11,6 +11,7 @@ import { compileSerializedValue } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
+	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -40,7 +41,7 @@ export declare namespace Optional {
 	export namespace Node {
 		export type withDefault = requireKeys<
 			Node,
-			"default" | "defaultValueMorph" | "defaultValueMorphsRef"
+			"default" | "defaultValueMorph" | "defaultValueMorphRef"
 		>
 	}
 }
@@ -91,20 +92,29 @@ export class OptionalNode extends BaseProp<"optional"> {
 			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorph: Morph | undefined =
-		this.hasDefault() ?
-			computeDefaultValueMorph(this.key, this.value, this.default)
-		:	undefined
+	defaultValueMorph: Morph | undefined = getDefaultableMorph(this)
 
-	defaultValueMorphsRef: string | undefined =
-		this.defaultValueMorph ?
-			registeredReference(this.defaultValueMorph)
-		:	undefined
+	defaultValueMorphRef: string | undefined =
+		this.defaultValueMorph && registeredReference(this.defaultValueMorph)
 }
 
 export const Optional = {
 	implementation,
 	Node: OptionalNode
+}
+
+const defaultableMorphCache: Record<string, Morph | undefined> = {}
+
+const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
+	if (!node.hasDefault()) return
+
+	const cacheKey = `{${node.compiledKey}: ${node.value.id} = ${defaultValueSerializer(node.default)}}`
+
+	return (defaultableMorphCache[cacheKey] ??= computeDefaultValueMorph(
+		node.key,
+		node.value,
+		node.default
+	))
 }
 
 export const computeDefaultValueMorph = (

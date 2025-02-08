@@ -16,6 +16,7 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.ts"
+import { intrinsic } from "../intrinsic.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
@@ -623,33 +624,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	declaresKeyRef: RegisteredReference = registeredReference(this.declaresKey)
 
 	get structuralMorph(): Morph | undefined {
-		return this.cacheGetter(
-			"structuralMorph",
-			hasStructuralMorph(this) ?
-				(data, ctx) => {
-					for (let i = 0; i < this.defaultable.length; i++) {
-						if (!(this.defaultable[i].key in data))
-							this.defaultable[i].defaultValueMorph(data, ctx)
-					}
-
-					if (this.sequence?.defaultables) {
-						for (
-							let i = data.length - this.sequence.prefixLength;
-							i < this.sequence.defaultables.length;
-							i++
-						)
-							this.sequence.defaultValueMorphs[i](data, ctx)
-					}
-
-					if (this.undeclared === "delete") {
-						for (const k in data)
-							if (!this.declaresKey(k)) delete (data as dict)[k]
-					}
-
-					return data
-				}
-			:	undefined
-		)
+		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
 	}
 
 	structuralMorphRef: RegisteredReference | undefined =
@@ -773,15 +748,68 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
-// important to only use attached props since this is referenced from
-// its own super class constructor (defaultable is declared the same way and safe)
-const hasStructuralMorph = (
-	self: attachmentsOf<Structure.Declaration> &
-		Pick<Structure.Node, "defaultable">
-) =>
-	self.defaultable.length ||
-	self.sequence?.defaultables ||
-	self.undeclared === "delete"
+const defaultableMorphsCache: Record<string, Morph | undefined> = {}
+
+type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
+	Pick<Structure.Node, "defaultable" | "declaresKey">
+
+const getPossibleMorph = (
+	// important to only use attached props since this is referenced from
+	// its own super class constructor (defaultable + keyof are declared the same way and safe)
+	node: PartiallyInitializedStructure
+): Morph | undefined => {
+	let cacheKey = ""
+
+	for (let i = 0; i < node.defaultable.length; i++)
+		cacheKey += node.defaultable[i].defaultValueMorphRef
+
+	if (node.sequence?.defaultValueMorphsReference)
+		cacheKey += node.sequence?.defaultValueMorphsReference
+
+	if (node.undeclared === "delete") {
+		cacheKey += "delete !("
+		node.required?.forEach(n => (cacheKey += n.compiledKey + " | "))
+		node.optional?.forEach(n => (cacheKey += n.compiledKey + " | "))
+		node.index?.forEach(index => (cacheKey += index.signature.id + " | "))
+		if (node.sequence) {
+			if (node.sequence.maxLength === null)
+				// for an arbitrary length array, the breakdown of
+				// optional, required variadic etc. elements doesn't matter-
+				// no index will be deleted
+				cacheKey += intrinsic.nonNegativeIntegerString.id
+			// otherwise, add keys based on length
+			else {
+				cacheKey += node.sequence.tuple.forEach(
+					(_, i) => (cacheKey += i + " | ")
+				)
+			}
+		}
+		cacheKey += ")"
+	}
+
+	if (!cacheKey) return undefined
+
+	return (defaultableMorphsCache[cacheKey] ??= (data, ctx) => {
+		for (let i = 0; i < node.defaultable.length; i++) {
+			if (!(node.defaultable[i].key in data))
+				node.defaultable[i].defaultValueMorph(data, ctx)
+		}
+
+		if (node.sequence?.defaultables) {
+			for (
+				let i = data.length - node.sequence.prefixLength;
+				i < node.sequence.defaultables.length;
+				i++
+			)
+				node.sequence.defaultValueMorphs[i](data, ctx)
+		}
+
+		if (node.undeclared === "delete")
+			for (const k in data) if (!node.declaresKey(k)) delete (data as dict)[k]
+
+		return data
+	})
+}
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 

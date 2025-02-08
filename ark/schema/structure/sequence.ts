@@ -375,12 +375,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
-	defaultValueMorphs: Morph[] =
-		this.defaultables?.map(([node, defaultValue], i) =>
-			computeDefaultValueMorph(this.prefixLength + i, node, defaultValue)
-		) ?? []
+	defaultValueMorphs: Morph[] = getDefaultableMorphs(this)
 
-	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+	defaultValueMorphsReference =
+		this.defaultValueMorphs.length ?
+			registeredReference(this.defaultValueMorphs)
+		:	undefined
 
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
@@ -502,6 +502,27 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		return schema
 	}
+}
+
+const defaultableMorphsCache: Record<string, Morph[] | undefined> = {}
+
+const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
+	if (!node.defaultables) return []
+
+	const morphs: Morph[] = []
+	let cacheKey = "["
+
+	const lastDefaultableIndex = node.prefixLength + node.defaultablesLength - 1
+
+	for (let i = node.prefixLength; i <= lastDefaultableIndex; i++) {
+		const [elementNode, defaultValue] = node.defaultables[i - node.prefixLength]
+		morphs.push(computeDefaultValueMorph(i, elementNode, defaultValue))
+		cacheKey += `${i}: ${elementNode.id} = ${defaultValueSerializer(defaultValue)}, `
+	}
+
+	cacheKey += "]"
+
+	return (defaultableMorphsCache[cacheKey] ??= morphs)
 }
 
 export const Sequence = {
