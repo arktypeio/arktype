@@ -197,7 +197,6 @@ export abstract class BaseNode<
 		this.applyContextFreeMorphs =
 			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
 				isArray(this.shallowMorphs) ?
-					// TODO: check for contextual
 					(
 						this.shallowMorphs.length === 1 &&
 						this.shallowMorphs[0].length === 1
