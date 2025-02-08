@@ -7,7 +7,6 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
-import type { Discriminant } from "../roots/union.ts"
 import { registeredReference } from "./registry.ts"
 import type { TraversalKind } from "./traversal.ts"
 
@@ -156,8 +155,6 @@ export interface ReferenceOptions {
 }
 
 export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
-	path: string[] = []
-	discriminants: Discriminant[] = []
 	traversalKind: TraversalKind
 
 	constructor(traversalKind: TraversalKind) {

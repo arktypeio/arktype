@@ -263,7 +263,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	get shallowMorphs(): ShallowMorphs {
 		return flatMorph(this.branches, (i, branch) => [
-			`${i}` as {} as number,
+			`${i}`,
 			branch.shallowMorphs
 		]) as never
 	}
