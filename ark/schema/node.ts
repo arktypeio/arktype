@@ -36,7 +36,7 @@ import type {
 	MetaSchema,
 	attachmentsOf
 } from "./shared/declare.ts"
-import { ArkError, type ArkErrors } from "./shared/errors.ts"
+import type { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
