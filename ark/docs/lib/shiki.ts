@@ -6,7 +6,7 @@ import type { ShikiTransformer } from "shiki"
 
 /** for some reason a standard import with an attribute like:
  
-    import arkDarkTheme from "arkdark/arkdark.json" with { type: "json" }
+	import arkDarkTheme from "arkdark/arkdark.json" with { type: "json" }
     
 results in an error like:
 
@@ -145,6 +145,7 @@ const descendantIncludesText = (
 	)
 
 export const shikiConfig = {
+	experimentalJSEngine: true,
 	themes: {
 		dark: arkDarkTheme,
 		light: arkDarkTheme
