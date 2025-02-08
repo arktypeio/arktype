@@ -7,7 +7,7 @@ import type { ObjectType } from "./object.ts"
 import type { StringType } from "./string.ts"
 
 export type instantiateType<t, $> =
-	// otherwise, all branches have to conform to a single basis type those methods to be available
+	// all branches have to conform to a single basis type those methods to be available
 	[t] extends [anyOrNever] ? BaseType<t, $>
 	: [t] extends [object] ?
 		[t] extends [array] ? ArrayType<t, $>
