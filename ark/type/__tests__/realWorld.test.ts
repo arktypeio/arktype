@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, type ArkErrors } from "@ark/schema"
+import {
+	registeredReference,
+	type ArkErrors,
+	type StandardSchemaV1
+} from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 
@@ -1224,5 +1228,24 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		types.ModelD.assert({ times: { age: 7.3 }, version: 2 })
 		types.ModelE.assert({ time: { value: 0.0 }, version: 2 })
 		types.ModelF.assert({ times: { values: [0.0] }, version: 2 })
+	})
+
+	it("can nested type call from standard schema generic", () => {
+		function fn<
+			T extends {
+				schema: StandardSchemaV1
+			}
+		>(_: T) {
+			return {} as StandardSchemaV1.InferOutput<T["schema"]>
+		}
+
+		// was inferred as unknown before NoInfer was refactored to conditionals
+		const arkRes = fn({
+			schema: type({
+				name: "string"
+			})
+		})
+
+		attest<{ name: string }>(arkRes)
 	})
 })

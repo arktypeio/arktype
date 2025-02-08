@@ -84,6 +84,27 @@ console.log(`(was ${type.string})`)
 
 Hopefully if you interpolate a Type, you'll be less confused by the result from now on!
 
+### Improve how Type instances are inferred when wrapped in external generics
+
+Previously, we used `NoInfer` in some Type method returns. After migrating those to inlined conditionals, we get the same benefit and external inference for cases like this is more reliable:
+
+```ts
+function fn<
+	T extends {
+		schema: StandardSchemaV1
+	}
+>(_: T) {
+	return {} as StandardSchemaV1.InferOutput<T["schema"]>
+}
+
+// was inferred as unknown (now correctly { name: string })
+const arkRes = fn({
+	schema: type({
+		name: "string"
+	})
+})
+```
+
 ### Fix an issue causing some discriminated unions to incorrectly reject default cases
 
 ```ts
