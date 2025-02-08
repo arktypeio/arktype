@@ -19,12 +19,12 @@ export default ({ children }: { children: ReactNode }) => (
 		<head>
 			<meta
 				name="description"
-				content="Optimized runtime validation from familiar, type-safe syntax"
+				content="Optimized runtime validation for TypeScript syntax"
 			/>
-			<meta property="og:title" content="ArkType" />
+			<meta property="sog:title" content="ArkType" />
 			<meta
 				property="og:description"
-				content="Optimized runtime validation from familiar, type-safe syntax"
+				content="Optimized runtime validation for TypeScript syntax"
 			/>
 			<meta property="og:image" content="/image/og.png" />
 			<meta property="og:url" content="https://arktype.io" />
