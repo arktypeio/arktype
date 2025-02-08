@@ -531,7 +531,7 @@ interface Type<out t = unknown, $ = {}>
 	 * // Type<0.5> | undefined
 	 * const ez = n.ifEquals("0.5")
 	 */
-	ifEquals<const def, r = instantiateType<type.infer<def, $>, $>>(
+	ifEquals<const def, r = type.instantiate<def, $>>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ | undefined : never
 
@@ -557,7 +557,7 @@ interface Type<out t = unknown, $ = {}>
 	 * const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
 	 * const ez = n.ifExtends("boolean") // Type<true> | undefined
 	 */
-	ifExtends<const def, r = instantiateType<type.infer<def, $>, $>>(
+	ifExtends<const def, r = type.instantiate<def, $>>(
 		other: type.validate<def, $>
 	): r extends infer _ ? _ | undefined : never
 

@@ -4,6 +4,7 @@ import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { GenericParser } from "../generic.ts"
 import type { MatchParser } from "../match.ts"
 import type { BaseType } from "../methods/base.ts"
+import type { instantiateType } from "../methods/instantiate.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
 	inferDefinition,
@@ -138,6 +139,11 @@ export declare namespace type {
 		def,
 		$,
 		args
+	>
+
+	export type instantiate<def, $ = {}, args = bindThis<def>> = instantiateType<
+		inferDefinition<def, $, args>,
+		$
 	>
 
 	export type brand<t, id> =
