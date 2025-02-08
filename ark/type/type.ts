@@ -110,7 +110,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			: one extends "@" ? [TypeMetaInput]
 			: [type.validate<rest[0], $>]
 		:	[]
-	): r
+	): r extends infer _ ? _ : never
 
 	/**
 	 * An alias of the {@link ArkErrors} class, an instance of which is returned when a {@link Type}

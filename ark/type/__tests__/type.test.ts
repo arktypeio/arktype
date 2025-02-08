@@ -58,7 +58,7 @@ contextualize(() => {
 		)
 	})
 
-	it("is treated as contravariant", () => {
+	it("is treated as covariant", () => {
 		type("1") satisfies Type<number>
 
 		// @ts-expect-error
@@ -74,6 +74,27 @@ contextualize(() => {
 		// @ts-expect-error
 		attest(() => accept(t)).type.errors(
 			"Argument of type 'Type<1, {}>' is not assignable to parameter of type 'Type<string, {}>'"
+		)
+	})
+
+	// these assignability tests seem to contribute a ton of instantiations but
+	// maybe not much check time? needs more investigation
+
+	it("base signature obeys assignability rules", () => {
+		type("'foo'[]") satisfies Type<string[]>
+
+		// @ts-expect-error
+		attest(() => type("number[]") satisfies Type<string[]>).type.errors(
+			"Type 'number' is not assignable to type 'string'"
+		)
+	})
+
+	it("args signature obeys assignability rules", () => {
+		type("'foo'", "[]") satisfies Type<string[]>
+
+		// @ts-expect-error
+		attest(() => type("number", "[]") satisfies Type<string[]>).type.errors(
+			"Type 'number' is not assignable to type 'string'"
 		)
 	})
 

@@ -1,6 +1,4 @@
-import { bench } from "@ark/attest"
-import { match, type } from "arktype"
-import type { StandardSchemaV1 } from "../schema/shared/standardSchema.ts"
+import { type } from "arktype"
 
 // bench("morph", () => {
 // 	type.keywords.string.numeric.parse("5")
@@ -10,48 +8,6 @@ const t = type({
 	"+": "delete",
 	a: "string"
 })
-
-function fn<
-	T extends {
-		schema: StandardSchemaV1
-	}
->(t: T) {
-	return {} as StandardSchemaV1.InferOutput<T["schema"]>
-}
-
-const arkRes = fn({
-	schema: type({
-		name: "string"
-	})
-}) // arkRes is unknown
-
-const tt = type({
-	name: "string"
-})
-
-const arkRes2 = fn({
-	schema: t
-}) // arkRes2 is { name: string }
-
-console.log(t.expression)
-
-const types = type.module({
-	BaseAccount: {},
-	OrgAccount: {
-		"...": "BaseAccount",
-		kind: "'org'"
-	},
-	UserAccount: {
-		"...": "BaseAccount",
-		kind: "'user'",
-		organizations: "unknown[]"
-	},
-	Account: "UserAccount | OrgAccount"
-})
-
-const o: typeof types.Account.infer = {
-	kind: "org"
-}
 
 // bench("good", () => {
 // 	t({ a: "foo" })
