@@ -72,6 +72,7 @@ contextualize(() => {
 					:	never]: k
 			  }>
 			| "to"
+			| "get"
 			| "pipe"
 
 		const base = type({ base: "1" })
