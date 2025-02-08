@@ -100,7 +100,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).mean([875.73, "ns"])
+}).types([0, "instantiations"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -119,10 +119,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).mean([888.88, "ns"])
+}).types([0, "instantiations"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).mean([982.46, "ns"])
+}).types([0, "instantiations"])
