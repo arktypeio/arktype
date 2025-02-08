@@ -102,17 +102,17 @@ export abstract class BaseNode<
 				pipedFromCtx?: Traversal | undefined,
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
-				if (this.applyContextFreeMorphs && this.allows(data)) {
-					return this.applyContextFreeMorphs === true ?
-							data
-						:	this.applyContextFreeMorphs(data)
-				}
-
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
 					return pipedFromCtx.hasError() ?
 							pipedFromCtx.errors
 						:	pipedFromCtx.data
+				}
+
+				if (this.applyContextFreeMorphs && this.allows(data)) {
+					return this.applyContextFreeMorphs === true ?
+							data
+						:	this.applyContextFreeMorphs(data)
 				}
 
 				const ctx = new Traversal(data, this.$.resolvedConfig)
