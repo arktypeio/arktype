@@ -298,8 +298,11 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	expression: string = writeIntersectionExpression(this)
 
-	shallowMorphs: array<Morph> =
-		this.structure?.structuralMorph ? [this.structure?.structuralMorph] : []
+	get shallowMorphs(): array<Morph> {
+		return this.structure?.structuralMorph ?
+				[this.structure?.structuralMorph]
+			:	[]
+	}
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"

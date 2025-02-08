@@ -159,11 +159,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			this.lastMorphIfNode.out
 		:	undefined
 
-	shallowMorphs: array<Morph> =
+	get shallowMorphs(): array<Morph> {
 		// if the morph input is a union, it should not contain any other morphs
-		Array.isArray(this.inner.in?.shallowMorphs) ?
-			[...this.inner.in.shallowMorphs, ...this.morphs]
-		:	this.morphs;
+		return Array.isArray(this.inner.in?.shallowMorphs) ?
+				[...this.inner.in.shallowMorphs, ...this.morphs]
+			:	this.morphs
+	}
 
 	override get in(): BaseRoot {
 		return (

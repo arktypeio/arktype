@@ -101,7 +101,6 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.reference
 	readonly structure = undefined
-	readonly shallowMorphs = []
 
 	get resolution(): BaseRoot {
 		const result = this._resolve()

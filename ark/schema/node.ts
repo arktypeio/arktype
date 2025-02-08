@@ -36,7 +36,7 @@ import type {
 	MetaSchema,
 	attachmentsOf
 } from "./shared/declare.ts"
-import type { ArkErrors } from "./shared/errors.ts"
+import { ArkError, type ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -83,11 +83,16 @@ export abstract class BaseNode<
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
+	applyRequiresContext: boolean
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
 	flatRefs: FlatRef[]
 	flatMorphs: FlatRef<Morph.Node>[]
-	abstract shallowMorphs: ShallowMorphs
+	allows: (data: d["prerequisite"]) => boolean
+
+	get shallowMorphs(): ShallowMorphs {
+		return []
+	}
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
@@ -96,12 +101,7 @@ export abstract class BaseNode<
 				pipedFromCtx?: Traversal | undefined,
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
-				if (
-					!this.includesTransform &&
-					!this.allowsRequiresContext &&
-					this.allows(data)
-				)
-					return data
+				if (!this.applyRequiresContext && this.allows(data)) return data
 
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
@@ -178,9 +178,6 @@ export abstract class BaseNode<
 			Object.assign(this.referencesById, this.children[i].referencesById)
 		}
 
-		this.allowsRequiresContext =
-			this.includesContextualPredicate || this.isCyclic
-
 		this.flatRefs.sort((l, r) =>
 			l.path.length > r.path.length ? 1
 			: l.path.length < r.path.length ? -1
@@ -189,6 +186,19 @@ export abstract class BaseNode<
 			: l.node.expression < r.node.expression ? -1
 			: 1
 		)
+
+		this.allowsRequiresContext =
+			this.includesContextualPredicate || this.isCyclic
+		this.applyRequiresContext =
+			this.includesTransform || this.allowsRequiresContext
+		this.allows =
+			this.allowsRequiresContext ?
+				data =>
+					this.traverseAllows(
+						data as never,
+						new Traversal(data, this.$.resolvedConfig)
+					)
+			:	data => (this.traverseAllows as any)(data)
 	}
 
 	withMeta(
@@ -231,16 +241,6 @@ export abstract class BaseNode<
 
 	readonly precedence: number = precedenceOfKind(this.kind)
 	precompilation: string | undefined
-
-	allows = (data: d["prerequisite"]): boolean => {
-		if (this.allowsRequiresContext) {
-			return this.traverseAllows(
-				data as never,
-				new Traversal(data, this.$.resolvedConfig)
-			)
-		}
-		return (this.traverseAllows as any)(data)
-	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
 	// otherwise, would run into issues with this binding

@@ -19,7 +19,7 @@ import type {
 import { BaseNode } from "./node.ts"
 import type { NodeParseContext } from "./parse.ts"
 import type { Intersection } from "./roots/intersection.ts"
-import type { BaseRoot, ShallowMorphs } from "./roots/root.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
@@ -78,7 +78,6 @@ export abstract class BaseConstraint<
 
 	abstract readonly impliedBasis: BaseRoot | null
 	readonly impliedSiblings?: array<BaseConstraint>
-	readonly shallowMorphs: ShallowMorphs = []
 
 	intersect<r extends BaseConstraint>(
 		r: r

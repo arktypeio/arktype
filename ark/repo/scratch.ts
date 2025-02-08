@@ -1,8 +1,8 @@
-import { type } from "arktype"
+import { generic, type } from "arktype"
 
-// bench("morph", () => {
-// 	type.keywords.string.numeric.parse("5")
-// }).mean()
+const stringToLength = type.string.pipe(s => s.length)
+
+stringToLength("foo")
 
 const t = type({
 	"+": "delete",

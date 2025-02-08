@@ -50,7 +50,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
-import { BaseRoot, type MorphsByBranchIndex } from "./root.ts"
+import { BaseRoot, type ShallowMorphs } from "./root.ts"
 import type { Unit } from "./unit.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
@@ -261,10 +261,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		expressBranches
 	)
 
-	shallowMorphs: MorphsByBranchIndex = flatMorph(this.branches, (i, branch) => [
-		`${i}` as {} as number,
-		branch.shallowMorphs
-	])
+	get shallowMorphs(): ShallowMorphs {
+		return flatMorph(this.branches, (i, branch) => [
+			`${i}` as {} as number,
+			branch.shallowMorphs
+		]) as never
+	}
 
 	get shortDescription(): string {
 		return this.distribute(branch => branch.shortDescription, describeBranches)
@@ -890,10 +892,9 @@ export const reduceBranches = ({
 }
 
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
-	if (
-		(l.includesTransform || r.includesTransform) &&
-		!arrayEquals(l.shallowMorphs, r.shallowMorphs)
-	) {
+	if (!l.includesTransform && !r.includesTransform) return
+
+	if (!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[])) {
 		throwParseError(
 			writeIndiscriminableMorphMessage(l.expression, r.expression)
 		)

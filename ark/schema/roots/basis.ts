@@ -9,7 +9,6 @@ export abstract class InternalBasis<
 	abstract compiledCondition: string
 	abstract compiledNegation: string
 	declare structure: undefined
-	shallowMorphs = []
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))
