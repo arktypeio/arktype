@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
-import { AssertionError } from "node:assert"
+import * as assert from "node:assert/strict"
 
 contextualize(() => {
 	it("root discriminates", () => {
@@ -47,7 +47,7 @@ contextualize(() => {
 			attest((e as AggregateError).errors instanceof type.errors)
 			return
 		}
-		throw new AssertionError({ message: "Expected to throw" })
+		throw new assert.AssertionError({ message: "Expected to throw" })
 	})
 
 	it("assert", () => {

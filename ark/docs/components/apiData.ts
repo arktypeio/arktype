@@ -509,6 +509,38 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Type",
+            "name": "pipe",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "pipe output through arbitrary transformations or other Types"
+                }
+            ],
+            "notes": [],
+            "example": "const user = type({ name: \"string\" })\n\n// parse a string and validate that the result as a user\nconst parseUser = type(\"string\").pipe(s => JSON.parse(s), user)"
+        },
+        {
+            "group": "Type",
+            "name": "to",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "parse a definition as an output validator"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "🔗 `to({ name: \"string\" })` is equivalent to `.pipe(type({ name: \"string\" }))`"
+                    }
+                ]
+            ],
+            "example": "// parse a string and validate that the result as a user\nconst parseUser = type(\"string\").pipe(s => JSON.parse(s)).to({ name: \"string\" })"
+        },
+        {
+            "group": "Type",
             "name": "as",
             "summary": [
                 {
