@@ -11,7 +11,11 @@ const raleway = Raleway({
 })
 
 export default ({ children }: { children: ReactNode }) => (
-	<html lang="en" className={raleway.className} suppressHydrationWarning>
+	<html
+		lang="en"
+		className={`dark ${raleway.className}`}
+		suppressHydrationWarning
+	>
 		<head>
 			<meta
 				name="description"
@@ -39,8 +43,8 @@ export default ({ children }: { children: ReactNode }) => (
 					}
 				}}
 				theme={{
-					enableSystem: false,
-					defaultTheme: "dark"
+					enabled: false,
+					enableSystem: false
 				}}
 			>
 				<CSPostHogProvider>

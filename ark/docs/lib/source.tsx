@@ -1,16 +1,15 @@
 import type { autocomplete } from "@ark/util"
 import { loader } from "fumadocs-core/source"
-import { createMDXSource } from "fumadocs-mdx"
 import { icons } from "lucide-react"
 import { createElement } from "react"
-import { docs, meta } from "../.source"
+import { docs } from "../.source"
 import { Badge } from "../components/Badge.tsx"
 
 export type IconName = keyof typeof icons | "Advanced"
 
 export const source = loader({
 	baseUrl: "/docs",
-	source: createMDXSource(docs, meta),
+	source: docs.toFumadocsSource(),
 	icon: (name?: autocomplete<IconName>) => {
 		if (!name) return
 		if (name in icons) return createElement(icons[name as never])
