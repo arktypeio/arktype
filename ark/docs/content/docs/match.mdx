@@ -1,0 +1,96 @@
+---
+title: Match
+---
+
+<a id="intro" />
+
+The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type. It's similar to a type-safe `switch` statement.
+
+## Basic Usage
+
+To use the `match` function, you provide an object literal mapping type definitions to handler functions. The `match` function will then return a new function that accepts an input and returns the output of the corresponding handler function.
+
+```typescript
+import { match } from "arktype"
+
+const sizeOf = match({
+	string: v => v.length,
+	Array: v => v.length,
+	number: v => v,
+	bigint: v => v,
+	default: "assert"
+})
+
+sizeOf("abc") // 3
+sizeOf([1, 2, 3]) // 3
+sizeOf(5n) // 5n
+```
+
+In this example, `sizeOf` is a matcher that takes a string, array, number, or bigint as input. It returns the length of strings and arrays, and the value of numbers and bigints. The `default: "assert"` case ensures that an error is thrown if the input is not one of the specified types.
+
+## Chained API
+
+The `match` function also provides a chained API for more complex scenarios. This allows you to define cases in a more fluent and readable way.
+
+```typescript
+import { match } from "arktype"
+
+const matcher = match({ string: s => s, number: n => n })
+	.case("boolean", b => b)
+	.default("assert")
+
+matcher("abc") // "abc"
+matcher(4) // 4
+matcher(true) // true
+```
+
+This example demonstrates how to use the `case` method to add additional cases to the matcher. The `case` method takes a type definition and a handler function as arguments.
+
+## Matching on Object Properties with `at`
+
+The `at` method allows you to match on specific properties of an object. This is useful when you want to handle different types of objects based on the value of a particular property.
+
+```typescript
+import { match } from "arktype"
+
+const m = match.at("n").match({
+	"0": o => `${o.n} = 0` as const,
+	"1": o => `${o.n} = 1` as const,
+	default: "never"
+})
+
+m({ n: 0 }) // "0 = 0"
+m({ n: 1 }) // "1 = 1"
+```
+
+In this example, the matcher matches on the `n` property of the input object. If the `n` property is 0, the matcher returns the string "0 = 0". If the `n` property is 1, the matcher returns the string "1 = 1". Otherwise, the matcher returns `never`.
+
+## Allowing Ordered Overlapping
+
+The `match` function allows you to define cases that overlap, as long as they are defined in the correct order. This is useful when you want to handle specific cases before more general cases.
+
+```typescript
+import { match } from "arktype"
+
+const m = match({
+	"0 < number < 10": function _matchOverlapping1(n) {
+		return [0, n]
+	},
+	"number > 0": function _matchOverlapping2(n) {
+		return [1, n]
+	},
+	number: function _matchOverlapping3(n) {
+		return [2, n]
+	},
+	default: function _matchOverlapping4(v) {
+		return [3, v]
+	}
+})
+
+m(5) // [0, 5]
+m(11) // [1, 11]
+m(0) // [2, 0]
+m(undefined) // [3, undefined]
+```
+
+In this example, the matcher first checks if the input is a number between 0 and 10. If it is, the matcher returns `[0, n]`. Otherwise, the matcher checks if the input is a number greater than 0. If it is, the matcher returns `[1, n]`. Otherwise, the matcher checks if the input is a number. If it is, the matcher returns `[2, n]`. Otherwise, the matcher returns `[3, undefined]`.

@@ -426,6 +426,7 @@ export const writeJsonSyntaxErrorProblem = (error: unknown): string => {
 }
 
 const jsonRoot = rootSchema({
+	meta: jsonStringDescription,
 	domain: "string",
 	predicate: {
 		meta: jsonStringDescription,
@@ -467,6 +468,7 @@ export const json: stringJson.module = Scope.module(
 	{
 		root: jsonRoot,
 		parse: rootSchema({
+			meta: "safe JSON string parser",
 			in: "string",
 			morphs: parseJson,
 			declaredOut: intrinsic.jsonObject

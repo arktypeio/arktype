@@ -4,7 +4,20 @@ title: Primitives
 
 ## string
 
-A full list of string keywords can be found [here](/docs/keywords#string).
+### keywords
+
+The following keywords can be referenced in any definition, e.g.:
+
+```ts
+const email = type("string.email")
+
+const user = type({
+	data: "string.json.parse",
+	ids: "string.uuid.v4[]"
+})
+```
+
+<KeywordTables.string />
 
 ### literals [#string-literals]
 
@@ -93,7 +106,18 @@ const range = type({
 
 ## number
 
-A full list of number keywords can be found [here](/docs/keywords#number).
+### keywords
+
+The following keywords can be referenced in any definition, e.g.:
+
+```ts
+const user = type({
+	createdAt: "number.epoch",
+	age: "number.integer >= 0"
+})
+```
+
+<KeywordTables.number />
 
 ### literals [#number-literals]
 
