@@ -160,7 +160,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		:	undefined
 
 	get shallowMorphs(): array<Morph> {
-		// if the morph input is a union, it should not contain any other morphs
+		// if the morph input is a union, it should not contain any other shallow morphs
 		return Array.isArray(this.inner.in?.shallowMorphs) ?
 				[...this.inner.in.shallowMorphs, ...this.morphs]
 			:	this.morphs
