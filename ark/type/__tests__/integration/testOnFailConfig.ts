@@ -1,7 +1,7 @@
 import "./onFailConfig.ts"
 
 import { type } from "arktype"
-import { throws } from "node:assert/strict"
+import { throws } from "node:assert"
 import { cases } from "./util.ts"
 
 cases({

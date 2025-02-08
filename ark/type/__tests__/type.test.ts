@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
-import { AssertionError } from "node:assert/strict"
+import { AssertionError } from "node:assert"
 
 contextualize(() => {
 	it("root discriminates", () => {

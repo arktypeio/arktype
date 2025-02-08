@@ -1,7 +1,7 @@
 import { config } from "./simpleConfig.ts"
 
 import { type } from "arktype"
-import { deepStrictEqual, strictEqual } from "node:assert/strict"
+import { deepStrictEqual, strictEqual } from "node:assert"
 import { cases } from "./util.ts"
 
 cases({
