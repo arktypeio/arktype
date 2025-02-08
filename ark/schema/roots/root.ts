@@ -9,13 +9,7 @@ import {
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
-import {
-	BaseNode,
-	appendUniqueFlatRefs,
-	type FlatRef,
-	type GettableKeyOrNode,
-	type KeyOrKeyNode
-} from "../node.ts"
+import { BaseNode, type GettableKeyOrNode, type KeyOrKeyNode } from "../node.ts"
 import type { Predicate } from "../predicate.ts"
 import type { Divisor } from "../refinements/divisor.ts"
 import type { ExactLength } from "../refinements/exactLength.ts"
@@ -70,31 +64,11 @@ export abstract class BaseRoot<
 {
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
-	readonly flatMorphs: FlatRef<Morph.Node>[]
-	abstract shallowMorphs: ShallowMorphs
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(attachments, $)
 		// define as a getter to avoid it being enumerable/spreadable
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
-
-		this.flatMorphs = this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
-			(flatMorphs, ref) =>
-				appendUniqueFlatRefs(
-					flatMorphs,
-					ref.node.hasKind("union") ?
-						ref.node.branches
-							.filter(b => b.hasKind("morph"))
-							.map(branch => ({
-								path: ref.path,
-								propString: ref.propString,
-								node: branch
-							}))
-					: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
-					: []
-				),
-			[]
-		)
 	}
 
 	get internal(): this {

@@ -25,7 +25,8 @@ import type {
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
-import type { BaseRoot } from "./roots/root.ts"
+import type { Morph } from "./roots/morph.ts"
+import type { BaseRoot, ShallowMorphs } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -85,6 +86,8 @@ export abstract class BaseNode<
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
 	flatRefs: FlatRef[]
+	flatMorphs: FlatRef<Morph.Node>[]
+	abstract shallowMorphs: ShallowMorphs
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
@@ -141,6 +144,7 @@ export abstract class BaseNode<
 		const isStructural = this.isStructural()
 
 		this.flatRefs = []
+		this.flatMorphs = []
 
 		for (let i = 0; i < this.children.length; i++) {
 			this.includesTransform ||= this.children[i].includesTransform
@@ -148,9 +152,28 @@ export abstract class BaseNode<
 				this.children[i].includesContextualPredicate
 			this.isCyclic ||= this.children[i].isCyclic
 
-			// overriden by structural kinds so that only the root at each path is added
-			if (!isStructural)
-				appendUniqueFlatRefs(this.flatRefs, this.children[i].flatRefs)
+			if (!isStructural) {
+				const childFlatRefs = this.children[i].flatRefs
+				for (let j = 0; j < childFlatRefs.length; j++) {
+					const childRef = childFlatRefs[j]
+					if (
+						!this.flatRefs.some(existing =>
+							flatRefsAreEqual(existing, childRef)
+						)
+					) {
+						this.flatRefs.push(childRef)
+						for (const branch of childRef.node.branches) {
+							if (branch.hasKind("morph")) {
+								this.flatMorphs.push({
+									path: childRef.path,
+									propString: childRef.propString,
+									node: branch
+								})
+							}
+						}
+					}
+				}
+			}
 
 			Object.assign(this.referencesById, this.children[i].referencesById)
 		}

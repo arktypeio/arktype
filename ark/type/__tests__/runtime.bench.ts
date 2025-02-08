@@ -1,5 +1,11 @@
 import { bench } from "@ark/attest"
-import { match } from "arktype"
+import { match, type } from "arktype"
+
+const stringToLength = type.string.pipe(s => s.length)
+
+bench("shallow primitive morph", () => {
+	stringToLength("foo")
+}).median([250.36, "ns"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
@@ -11,7 +17,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).mean([885.33, "ns"])
+}).median([885.33, "ns"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -30,10 +36,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).mean([983.66, "ns"])
+}).median([983.66, "ns"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).mean([1.07, "us"])
+}).median([1.07, "us"])
