@@ -310,9 +310,9 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // Brand<string, "palindrome">
 	 * const out = palindrome.assert("racecar")
 	 */
-	brand<const name extends string, r = type.brand<t, name>>(
+	brand<const name extends string, r = instantiateType<type.brand<t, name>, $>>(
 		name: name
-	): instantiateType<r extends infer _ ? _ : never, $>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * #### an array of this
@@ -371,12 +371,15 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 */
 	filter<
 		narrowed extends this["inferIn"] = never,
-		r = [narrowed] extends [never] ? t
-		: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
-		: narrowed
+		r = instantiateType<
+			[narrowed] extends [never] ? t
+			: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
+			: narrowed,
+			$
+		>
 	>(
 		predicate: Predicate.Castable<this["inferIn"], narrowed>
-	): instantiateType<r extends infer _ ? _ : never, $>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * #### apply a predicate function to output
@@ -396,15 +399,18 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 */
 	narrow<
 		narrowed extends this["infer"] = never,
-		r = [narrowed] extends [never] ? t
-		: t extends InferredMorph<infer i, infer o> ?
-			o extends To ?
-				(In: i) => To<narrowed>
-			:	(In: i) => Out<narrowed>
-		:	narrowed
+		r = instantiateType<
+			[narrowed] extends [never] ? t
+			: t extends InferredMorph<infer i, infer o> ?
+				o extends To ?
+					(In: i) => To<narrowed>
+				:	(In: i) => Out<narrowed>
+			:	narrowed,
+			$
+		>
 	>(
 		predicate: Predicate.Castable<this["infer"], narrowed>
-	): instantiateType<r extends infer _ ? _ : never, $>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * #### pipe output through arbitrary transformations or other Types
@@ -426,9 +432,9 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // parse a string and validate that the result as a user
 	 * const parseUser = type("string").pipe(s => JSON.parse(s)).to({ name: "string" })
 	 */
-	to<const def, r = type.infer<def, $>>(
+	to<const def, r = instantiateType<inferPipe<t, type.infer<def, $>>, $>>(
 		def: type.validate<def, $>
-	): inferPipe<t, r> extends infer _ ? Type<_, $> : never
+	): r extends infer _ ? _ : never
 }
 
 /** @ts-ignore cast variance */
@@ -457,9 +463,12 @@ interface Type<out t = unknown, $ = {}>
 	 * // ParseError: Intersection at foo of number and string results in an unsatisfiable type
 	 * const bad = type({ foo: "number" }).and({ foo: "string" })
 	 */
-	and<const def, r = type.infer<def, $>>(
+	and<
+		const def,
+		r = instantiateType<inferIntersection<t, type.infer<def, $>>, $>
+	>(
 		def: type.validate<def, $>
-	): instantiateType<inferIntersection<t, r> extends infer _ ? _ : never, $>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * #### union with the parsed Type
@@ -470,9 +479,9 @@ interface Type<out t = unknown, $ = {}>
 	 * // Type<string | { box: string }>
 	 * const t = type("string").or({ box: "string" })
 	 */
-	or<const def, r = type.infer<def, $>>(
+	or<const def, r = instantiateType<t | type.infer<def, $>, $>>(
 		def: type.validate<def, $>
-	): instantiateType<t | r extends infer _ ? _ : never, $>
+	): r extends infer _ ? _ : never
 
 	// inferring r into an alias improves perf and avoids return type inference
 	// that can lead to incorrect results. See:
@@ -487,11 +496,12 @@ interface Type<out t = unknown, $ = {}>
 	 * // logs "Intersection of > 10 and < 5 results in an unsatisfiable type"
 	 * if (bad instanceof Disjoint) console.log(`${bad.summary}`)
 	 */
-	intersect<const def, r = type.infer<def, $>>(
+	intersect<
+		const def,
+		r = instantiateType<inferIntersection<t, type.infer<def, $>>, $>
+	>(
 		def: type.validate<def, $>
-	):
-		| instantiateType<inferIntersection<t, r> extends infer _ ? _ : never, $>
-		| Disjoint
+	): r extends infer _ ? _ | Disjoint : never
 
 	/**
 	 * #### check if the parsed Type's constraints are identical
@@ -521,9 +531,9 @@ interface Type<out t = unknown, $ = {}>
 	 * // Type<0.5> | undefined
 	 * const ez = n.ifEquals("0.5")
 	 */
-	ifEquals<const def, r = type.infer<def, $>>(
+	ifEquals<const def, r = instantiateType<type.infer<def, $>, $>>(
 		def: type.validate<def, $>
-	): instantiateType<r extends infer _ ? _ : never, $> | undefined
+	): r extends infer _ ? _ | undefined : never
 
 	/**
 	 * #### check if this is a subtype of the parsed Type
@@ -547,9 +557,9 @@ interface Type<out t = unknown, $ = {}>
 	 * const n = type(Math.random() > 0.5 ? "true" : "0") // Type<0 | true>
 	 * const ez = n.ifExtends("boolean") // Type<true> | undefined
 	 */
-	ifExtends<const def, r = type.infer<def, $>>(
+	ifExtends<const def, r = instantiateType<type.infer<def, $>, $>>(
 		other: type.validate<def, $>
-	): instantiateType<r extends infer _ ? _ : never, $> | undefined
+	): r extends infer _ ? _ | undefined : never
 
 	/**
 	 * #### check if a value could satisfy this and the parsed Type
@@ -573,9 +583,12 @@ interface Type<out t = unknown, $ = {}>
 	 * // Type<true | 0 | 2>
 	 * const t = type("boolean | 0 | 'one' | 2 | bigint").extract("number | 0n | true")
 	 */
-	extract<const def, r = type.infer<def, $>>(
+	extract<
+		const def,
+		r = instantiateType<t extends type.infer<def, $> ? t : never, $>
+	>(
 		r: type.validate<def, $>
-	): instantiateType<t extends infer _ extends r ? _ : never, $>
+	): r extends infer _ extends r ? _ : never
 
 	/**
 	 * #### exclude branches {@link extend}ing the parsed Type
@@ -585,9 +598,12 @@ interface Type<out t = unknown, $ = {}>
 	 * // Type<false | 'one' | bigint>
 	 * const t = type("boolean | 0 | 'one' | 2 | bigint").exclude("number | 0n | true")
 	 */
-	exclude<const def, r = type.infer<def, $>>(
+	exclude<
+		const def,
+		r = instantiateType<t extends type.infer<def, $> ? never : t, $>
+	>(
 		r: type.validate<def, $>
-	): instantiateType<t extends r ? never : t, $>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * @experimental
