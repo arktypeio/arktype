@@ -7,3 +7,11 @@ title: FAQ
 This can occur due to incompatibilities between your `tsconfig.json` and ours. It is totally harmless as long as your types are correct in source.
 
 We highly recommend enabling [`skipLibCheck`](https://www.typescriptlang.org/tsconfig/#skipLibCheck) in every TypeScript project to avoid false negatives like this and greatly improve editor performance.
+
+### Is there a way to create an async morph?
+
+Other than handling it as a promise on the output object, no.
+
+Something I've thought a bit about but it seems it would add a huge amount of complexity to the type system for somewhat marginal benefit? Would be interested in use cases where it feels really impactful though and somewhat open to reconsidering in the long term.
+
+If you have a compelling enough use case, let us know on [Discord](https://arktype.io/discord) or [GitHub](https://github.com/arktypeio/arktype)
