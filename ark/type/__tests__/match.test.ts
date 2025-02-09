@@ -618,4 +618,45 @@ contextualize(() => {
 	]
 >`)
 	})
+
+	it("allows number keys", () => {
+		const numeric = match({
+			0: function numericZeroCase(n) {
+				return `${n}` as const
+			},
+			1: function numericOneCase(n) {
+				return `${n}` as const
+			},
+			default: "assert"
+		})
+
+		attest(numeric).type.toString(
+			`Match<unknown, [(In: 0) => "0", (In: 1) => "1"]>`
+		)
+		attest(numeric.json).snap({
+			branches: [
+				{ in: { unit: 0 }, morphs: ["$ark.numericZeroCase"] },
+				{ in: { unit: 1 }, morphs: ["$ark.numericOneCase"] }
+			],
+			ordered: true,
+			meta: { onFail: "$ark.throwOnDefault" }
+		})
+	})
+
+	it("union inputs", () => {
+		const stringifyResponse = match({
+			"true | 1": n => `${n}`,
+			"false | 0": n => `${n}`,
+			default: "assert"
+		})
+
+		attest(stringifyResponse).type.toString(
+			"Match<unknown, [(In: true | 1) => string, (In: false | 0) => string]>"
+		)
+
+		attest(stringifyResponse(true)).snap(true)
+		attest(stringifyResponse(false)).snap(true)
+		attest(stringifyResponse(1)).snap(true)
+		attest(stringifyResponse(0)).snap(true)
+	})
 })

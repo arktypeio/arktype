@@ -9,6 +9,7 @@ import {
 	printable,
 	range,
 	throwParseError,
+	unset,
 	type JsTypeOf,
 	type JsonStructure,
 	type SerializedPrimitive,
@@ -16,6 +17,7 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
 import type { BaseScope } from "../scope.ts"
 import {
 	compileLiteralPropAccess,
@@ -46,7 +48,11 @@ import {
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import {
+	Traversal,
+	type TraverseAllows,
+	type TraverseApply
+} from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
@@ -261,6 +267,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		expressBranches
 	)
 
+	createBranchedOptimisticRootApply(): BaseNode["rootApply"] {
+		return (data, onFail) => {
+			const optimisticResult = this.traverseOptimistic(data)
+			if (optimisticResult !== unset) return optimisticResult
+
+			const ctx = new Traversal(data, this.$.resolvedConfig)
+			this.traverseApply(data, ctx)
+			return ctx.finalize(onFail)
+		}
+	}
+
 	get shallowMorphs(): array<Morph> {
 		return this.branches.flatMap(branch => branch.shallowMorphs)
 	}
@@ -299,6 +316,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}
 
+	traverseOptimistic = (data: unknown): unknown => {
+		for (let i = 0; i < this.branches.length; i++) {
+			const branch = this.branches[i]
+			if ((branch.traverseAllows as any)(data)) {
+				if (branch.contextFreeMorph) return branch.contextFreeMorph(data)
+				// if we're calling this function and the matching branch didn't have
+				// a context-free morph, it shouldn't have morphs at all
+				return data
+			}
+		}
+		return unset
+	}
+
 	compile(js: NodeCompiler): void {
 		if (
 			!this.discriminant ||
@@ -323,14 +353,21 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const k in cases) {
 				const v = cases[k]
 				const caseCondition = k === "default" ? k : `case ${k}`
-				js.line(`${caseCondition}: return ${v === true ? v : js.invoke(v)}`)
+				js.line(
+					`${caseCondition}: return ${
+						v === true ? v
+						: js.applyContextFreeMorphs && v.contextFreeMorph ?
+							`${registeredReference(v.contextFreeMorph)}(${js.data})`
+						:	js.invoke(v)
+					}`
+				)
 			}
 
 			return js
 		})
 
 		if (js.traversalKind === "Allows") {
-			js.return(false)
+			js.return(js.applyContextFreeMorphs ? `"${unset}"` : false)
 			return
 		}
 

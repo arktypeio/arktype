@@ -27,6 +27,7 @@ import type {
 import type { BaseParseOptions } from "./parse.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { UnionNode } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -83,7 +84,13 @@ export abstract class BaseNode<
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
-	rootApplyStrategy: "allows" | "contextual" | ((data: unknown) => unknown)
+	rootApplyStrategy:
+		| "allows"
+		| "contextual"
+		| "optimistic"
+		| "branchedOptimistic"
+	contextFreeMorph: ((data: unknown) => unknown) | undefined
+
 	protected rootApply: (
 		data: unknown,
 		onFail: ArkErrors.Handler | null
@@ -191,16 +198,18 @@ export abstract class BaseNode<
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
 		this.rootApplyStrategy =
-			(
-				!this.allowsRequiresContext &&
-				this.flatMorphs.length === 0 &&
-				this.shallowMorphs.length < 2
-			) ?
+			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
 				this.shallowMorphs.length === 0 ? "allows"
 				: this.shallowMorphs.every(morph => morph.length === 1) ?
-					(this.shallowMorphs[0] as never)
+					this.kind === "union" ?
+						"branchedOptimistic"
+					:	"optimistic"
 				:	"contextual"
 			:	"contextual"
+
+		if (this.rootApplyStrategy === "optimistic")
+			// TODO: multiple morphs?
+			this.contextFreeMorph = this.shallowMorphs[0] as never
 
 		this.rootApply =
 			this.rootApplyStrategy === "allows" ?
@@ -217,13 +226,15 @@ export abstract class BaseNode<
 					this.traverseApply(data, ctx)
 					return ctx.finalize(onFail)
 				}
-			:	(data, onFail) => {
-					if (this.allows(data)) return (this.rootApplyStrategy as any)(data)
+			: this.rootApplyStrategy === "optimistic" ?
+				(data, onFail) => {
+					if (this.allows(data)) return this.contextFreeMorph!(data)
 
 					const ctx = new Traversal(data, this.$.resolvedConfig)
 					this.traverseApply(data, ctx)
 					return ctx.finalize(onFail)
 				}
+			:	(this as {} as UnionNode).createBranchedOptimisticRootApply()
 
 		this.allows =
 			this.allowsRequiresContext ?

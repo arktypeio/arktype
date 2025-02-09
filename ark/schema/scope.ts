@@ -196,6 +196,11 @@ const bindPrecompilation = (
 		}
 		node.traverseApply =
 			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
+
+		if (compiledTraversals[`${node.id}Optimistic`]) {
+			;(node as UnionNode).traverseOptimistic =
+				compiledTraversals[`${node.id}Optimistic`].bind(compiledTraversals)
+		}
 		node.precompilation = precompilation
 	}
 }
@@ -205,6 +210,7 @@ const instantiatePrecompilation = (precompilation: string) =>
 		() => {
 			[k: `${string}Allows`]: TraverseAllows
 			[k: `${string}Apply`]: TraverseApply
+			[k: `${string}Optimistic`]: (data: unknown) => unknown
 		}
 	>()()
 
@@ -218,7 +224,18 @@ const writePrecompilation = (references: readonly BaseNode[]) =>
 		node.compile(applyCompiler)
 		const applyJs = applyCompiler.write(`${node.id}Apply`)
 
-		return `${js}${allowsJs},\n${applyJs},\n`
+		const result = `${js}${allowsJs},\n${applyJs},\n`
+
+		if (!node.hasKind("union")) return result
+
+		const optimisticCompiler = new NodeCompiler({
+			kind: "Allows",
+			applyContextFreeMorphs: true
+		}).indent()
+		node.compile(optimisticCompiler)
+		const optimisticJs = optimisticCompiler.write(`${node.id}Optimistic`)
+
+		return `${result}${optimisticJs},\n`
 	}, "{\n") + "}"
 
 export abstract class BaseScope<$ extends {} = {}> {

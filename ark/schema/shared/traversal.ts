@@ -307,7 +307,7 @@ export type TraversalKind = keyof TraversalMethodsByKind
 export type TraverseAllows<data = unknown> = (
 	data: data,
 	ctx: InternalTraversal
-) => boolean | number
+) => boolean
 
 export type TraverseApply<data = unknown> = (
 	data: data,
