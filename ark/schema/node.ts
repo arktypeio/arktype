@@ -84,6 +84,10 @@ export abstract class BaseNode<
 	isCyclic: boolean
 	allowsRequiresContext: boolean
 	rootApplyStrategy: "allows" | "contextual" | ((data: unknown) => unknown)
+	protected rootApply: (
+		data: unknown,
+		onFail: ArkErrors.Handler | null
+	) => unknown
 
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
@@ -109,14 +113,7 @@ export abstract class BaseNode<
 						:	pipedFromCtx.data
 				}
 
-				if (this.rootApplyStrategy === "allows" && this.allows(data))
-					return data
-				if (typeof this.rootApplyStrategy === "function" && this.allows(data))
-					return this.rootApplyStrategy(data)
-
-				const ctx = new Traversal(data, this.$.resolvedConfig)
-				this.traverseApply(data, ctx)
-				return ctx.finalize(onFail)
+				return this.rootApply(data, onFail)
 			},
 			{ attach: attachments as never }
 		)
@@ -204,6 +201,29 @@ export abstract class BaseNode<
 					(this.shallowMorphs[0] as never)
 				:	"contextual"
 			:	"contextual"
+
+		this.rootApply =
+			this.rootApplyStrategy === "allows" ?
+				(data, onFail) => {
+					if (this.allows(data)) return data
+
+					const ctx = new Traversal(data, this.$.resolvedConfig)
+					this.traverseApply(data, ctx)
+					return ctx.finalize(onFail)
+				}
+			: this.rootApplyStrategy === "contextual" ?
+				(data, onFail) => {
+					const ctx = new Traversal(data, this.$.resolvedConfig)
+					this.traverseApply(data, ctx)
+					return ctx.finalize(onFail)
+				}
+			:	(data, onFail) => {
+					if (this.allows(data)) return (this.rootApplyStrategy as any)(data)
+
+					const ctx = new Traversal(data, this.$.resolvedConfig)
+					this.traverseApply(data, ctx)
+					return ctx.finalize(onFail)
+				}
 
 		this.allows =
 			this.allowsRequiresContext ?
