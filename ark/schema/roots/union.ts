@@ -359,11 +359,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.line(
 					`${caseCondition}: return ${
 						v === true ?
-							js.applyContextFreeMorphs ?
+							js.optimistic ?
 								js.data
 							:	v
-						: js.applyContextFreeMorphs && v.contextFreeMorph ?
-							`${registeredReference(v.contextFreeMorph)}(${js.data})`
+						: js.optimistic ?
+							`${js.invoke(v)} ? ${v.contextFreeMorph ? `${registeredReference(v.contextFreeMorph)}(${js.data})` : js.data} : "${unset}"`
 						:	js.invoke(v)
 					}`
 				)
@@ -373,7 +373,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		})
 
 		if (js.traversalKind === "Allows") {
-			js.return(js.applyContextFreeMorphs ? `"${unset}"` : false)
+			js.return(js.optimistic ? `"${unset}"` : false)
 			return
 		}
 
@@ -429,7 +429,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			)
 		} else {
 			this.branches.forEach(branch =>
-				js.if(`${js.invoke(branch)}`, () => js.return(true))
+				js.if(`${js.invoke(branch)}`, () =>
+					js.return(
+						js.optimistic ?
+							branch.contextFreeMorph ?
+								`${registeredReference(branch.contextFreeMorph)}(${js.data})`
+							:	js.data
+						:	true
+					)
+				)
 			)
 			js.return(false)
 		}

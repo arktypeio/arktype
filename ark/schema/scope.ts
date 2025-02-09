@@ -230,7 +230,7 @@ const writePrecompilation = (references: readonly BaseNode[]) =>
 
 		const optimisticCompiler = new NodeCompiler({
 			kind: "Allows",
-			applyContextFreeMorphs: true
+			optimistic: true
 		}).indent()
 		node.compile(optimisticCompiler)
 		const optimisticJs = optimisticCompiler.write(`${node.id}Optimistic`)

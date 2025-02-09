@@ -157,18 +157,18 @@ export interface ReferenceOptions {
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
-		applyContextFreeMorphs?: true
+		optimistic?: true
 	}
 }
 
 export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	traversalKind: TraversalKind
-	applyContextFreeMorphs: true | undefined
+	optimistic: boolean
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
-		this.applyContextFreeMorphs = ctx.applyContextFreeMorphs
+		this.optimistic = ctx.optimistic === true
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
