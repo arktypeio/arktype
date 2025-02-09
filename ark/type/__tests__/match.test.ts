@@ -630,7 +630,7 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		attest(numeric).type.toString(
+		attest(numeric).type.toString.snap(
 			`Match<unknown, [(In: 0) => "0", (In: 1) => "1"]>`
 		)
 		attest(numeric.json).snap({
@@ -650,7 +650,7 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		attest(stringifyResponse).type.toString(
+		attest(stringifyResponse).type.toString.snap(
 			"Match<unknown, [(In: true | 1) => string, (In: false | 0) => string]>"
 		)
 
@@ -658,5 +658,35 @@ contextualize(() => {
 		attest(stringifyResponse(false)).snap("false")
 		attest(stringifyResponse(1)).snap("1")
 		attest(stringifyResponse(0)).snap("0")
+	})
+
+	it("discriminated", () => {
+		type Data =
+			| {
+					id: 1
+					oneValue: number
+			  }
+			| {
+					id: 2
+					twoValue: string
+			  }
+
+		const discriminateValue = match
+			.in<Data>()
+			.at("id")
+			.match({
+				1: o => `${o.oneValue}!`,
+				2: o => o.twoValue.length,
+				default: "assert"
+			})
+
+		attest(discriminateValue).type.toString.snap(
+			"Match<Data, [(In: Data) => string, (In: Data) => number]>"
+		)
+
+		const a = discriminateValue({ id: 1, oneValue: 1 })
+		attest(a).equals("1!")
+		const b = discriminateValue({ id: 2, twoValue: "two" })
+		attest(b).equals(3)
 	})
 })

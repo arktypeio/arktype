@@ -102,9 +102,7 @@ type casesToMorphTuple<cases, ctx extends MatchParserContext> = unionToTuple<
 		[def in Exclude<keyof cases, "default">]: cases[def] extends (
 			Morph<never, infer o>
 		) ?
-			def extends number ?
-				(In: def) => o
-			:	(In: inferCaseArg<def, ctx, "in">) => o
+			(In: inferCaseArg<def extends number ? `${number}` : def, ctx, "in">) => o
 		:	never
 	}>
 >
@@ -195,7 +193,7 @@ type validateCases<cases, ctx extends MatchParserContext> = {
 		| keyof cases
 		| BaseCompletions<ctx["$"], {}, "default">]?: def extends "default" ?
 		DefaultCase<ctx>
-	: def extends number ? (In: def) => unknown
+	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
 	:	type.validate<def, ctx["$"]>
@@ -203,7 +201,7 @@ type validateCases<cases, ctx extends MatchParserContext> = {
 
 type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default" ? DefaultCase<ctx>
-	: def extends number ? (In: def) => unknown
+	: def extends number ? (In: inferCaseArg<`${def}`, ctx, "out">) => unknown
 	: def extends type.validate<def, ctx["$"]> ?
 		(In: inferCaseArg<def, ctx, "out">) => unknown
 	:	ErrorType<type.validate<def, ctx["$"]>>

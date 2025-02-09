@@ -1,4 +1,4 @@
-import { generic, type } from "arktype"
+import { generic, match, type } from "arktype"
 
 const stringToLength = type.string.pipe(s => s.length)
 
@@ -32,3 +32,25 @@ const t = type({
 // 	m(32)
 // 	m(33)
 // }).mean()
+
+type Data =
+	| {
+			id: 1
+			oneValue: number
+	  }
+	| {
+			id: 2
+			twoValue: string
+	  }
+
+const discriminateValue = match
+	.in<Data>()
+	.at("id")
+	.match({
+		1: o => `${o.oneValue}!`,
+		2: o => o.twoValue.length,
+		default: "assert"
+	})
+
+const a = discriminateValue({ id: 1, oneValue: 1 }) //?
+const b = discriminateValue({ id: 2, twoValue: "two" }) //?
