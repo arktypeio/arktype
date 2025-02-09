@@ -26,7 +26,7 @@ import type {
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
 import type { Morph } from "./roots/morph.ts"
-import type { BaseRoot, ShallowMorphs } from "./roots/root.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -83,7 +83,7 @@ export abstract class BaseNode<
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
-	applyContextFreeMorphs: ((data: any) => unknown) | undefined | true
+	rootApplyStrategy: "allows" | "contextual" | ((data: unknown) => unknown)
 
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
@@ -91,7 +91,7 @@ export abstract class BaseNode<
 	flatMorphs: FlatRef<Morph.Node>[]
 	allows: (data: d["prerequisite"]) => boolean
 
-	get shallowMorphs(): ShallowMorphs {
+	get shallowMorphs(): array<Morph> {
 		return []
 	}
 
@@ -109,11 +109,10 @@ export abstract class BaseNode<
 						:	pipedFromCtx.data
 				}
 
-				if (this.applyContextFreeMorphs && this.allows(data)) {
-					return this.applyContextFreeMorphs === true ?
-							data
-						:	this.applyContextFreeMorphs(data)
-				}
+				if (this.rootApplyStrategy === "allows" && this.allows(data))
+					return data
+				if (typeof this.rootApplyStrategy === "function" && this.allows(data))
+					return this.rootApplyStrategy(data)
 
 				const ctx = new Traversal(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
@@ -194,18 +193,17 @@ export abstract class BaseNode<
 
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
-		this.applyContextFreeMorphs =
-			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
-				isArray(this.shallowMorphs) ?
-					(
-						this.shallowMorphs.length === 1 &&
-						this.shallowMorphs[0].length === 1
-					) ?
-						(this.shallowMorphs[0] as never)
-					: this.shallowMorphs.length === 0 ? true
-					: undefined
-				:	undefined
-			:	undefined
+		this.rootApplyStrategy =
+			(
+				!this.allowsRequiresContext &&
+				this.flatMorphs.length === 0 &&
+				this.shallowMorphs.length < 2
+			) ?
+				this.shallowMorphs.length === 0 ? "allows"
+				: this.shallowMorphs.every(morph => morph.length === 1) ?
+					(this.shallowMorphs[0] as never)
+				:	"contextual"
+			:	"contextual"
 
 		this.allows =
 			this.allowsRequiresContext ?

@@ -210,11 +210,11 @@ const instantiatePrecompilation = (precompilation: string) =>
 
 const writePrecompilation = (references: readonly BaseNode[]) =>
 	references.reduce((js, node) => {
-		const allowsCompiler = new NodeCompiler("Allows").indent()
+		const allowsCompiler = new NodeCompiler({ kind: "Allows" }).indent()
 		node.compile(allowsCompiler)
 		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
 
-		const applyCompiler = new NodeCompiler("Apply").indent()
+		const applyCompiler = new NodeCompiler({ kind: "Apply" }).indent()
 		node.compile(applyCompiler)
 		const applyJs = applyCompiler.write(`${node.id}Apply`)
 

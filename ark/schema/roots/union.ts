@@ -50,7 +50,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
-import { BaseRoot, type ShallowMorphs } from "./root.ts"
+import { BaseRoot } from "./root.ts"
 import type { Unit } from "./unit.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
@@ -261,11 +261,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		expressBranches
 	)
 
-	get shallowMorphs(): ShallowMorphs {
-		return flatMorph(this.branches, (i, branch) => [
-			`${i}`,
-			branch.shallowMorphs
-		]) as never
+	get shallowMorphs(): array<Morph> {
+		return this.branches.flatMap(branch => branch.shallowMorphs)
 	}
 
 	get shortDescription(): string {

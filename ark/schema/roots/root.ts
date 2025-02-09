@@ -547,10 +547,6 @@ export abstract class BaseRoot<
 	}
 }
 
-export type ShallowMorphs = MorphsByBranchIndex | array<Morph>
-
-export type MorphsByBranchIndex = { [branchIndex: number]: array<Morph> }
-
 export type UndeclaredKeyConfig = {
 	rule: UndeclaredKeyBehavior
 	deep?: boolean
