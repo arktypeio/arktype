@@ -7,6 +7,7 @@ import {
 	isEmptyObject,
 	stringifyPath,
 	throwError,
+	throwInternalError,
 	type Dict,
 	type GuardablePredicate,
 	type JsonStructure,
@@ -90,11 +91,7 @@ export abstract class BaseNode<
 		| "optimistic"
 		| "branchedOptimistic"
 	contextFreeMorph: ((data: unknown) => unknown) | undefined
-
-	protected rootApply: (
-		data: unknown,
-		onFail: ArkErrors.Handler | null
-	) => unknown
+	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
 
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
@@ -207,35 +204,7 @@ export abstract class BaseNode<
 				:	"contextual"
 			:	"contextual"
 
-		if (this.rootApplyStrategy === "optimistic")
-			// TODO: multiple morphs?
-			this.contextFreeMorph = this.shallowMorphs[0] as never
-
-		this.rootApply =
-			this.rootApplyStrategy === "allows" ?
-				(data, onFail) => {
-					if (this.allows(data)) return data
-
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
-			: this.rootApplyStrategy === "contextual" ?
-				(data, onFail) => {
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
-			: this.rootApplyStrategy === "optimistic" ?
-				(data, onFail) => {
-					if (this.allows(data)) return this.contextFreeMorph!(data)
-
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
-			:	(this as {} as UnionNode).createBranchedOptimisticRootApply()
-
+		this.rootApply = this.createRootApply()
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
@@ -244,6 +213,43 @@ export abstract class BaseNode<
 						new Traversal(data, this.$.resolvedConfig)
 					)
 			:	data => (this.traverseAllows as any)(data)
+	}
+
+	protected createRootApply(): this["rootApply"] {
+		switch (this.rootApplyStrategy) {
+			case "allows":
+				return (data, onFail) => {
+					if (this.allows(data)) return data
+
+					const ctx = new Traversal(data, this.$.resolvedConfig)
+					this.traverseApply(data, ctx)
+					return ctx.finalize(onFail)
+				}
+
+			case "contextual":
+				return (data, onFail) => {
+					const ctx = new Traversal(data, this.$.resolvedConfig)
+					this.traverseApply(data, ctx)
+					return ctx.finalize(onFail)
+				}
+
+			case "optimistic":
+				this.contextFreeMorph = this.shallowMorphs[0] as never
+				return (data, onFail) => {
+					if (this.allows(data)) return this.contextFreeMorph!(data)
+
+					const ctx = new Traversal(data, this.$.resolvedConfig)
+					this.traverseApply(data, ctx)
+					return ctx.finalize(onFail)
+				}
+			case "branchedOptimistic":
+				return (this as {} as UnionNode).createBranchedOptimisticRootApply()
+			default:
+				this.rootApplyStrategy satisfies never
+				return throwInternalError(
+					`Unexpected rootApplyStrategy ${this.rootApplyStrategy}`
+				)
+		}
 	}
 
 	withMeta(

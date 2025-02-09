@@ -654,9 +654,9 @@ contextualize(() => {
 			"Match<unknown, [(In: true | 1) => string, (In: false | 0) => string]>"
 		)
 
-		attest(stringifyResponse(true)).snap(true)
-		attest(stringifyResponse(false)).snap(true)
-		attest(stringifyResponse(1)).snap(true)
-		attest(stringifyResponse(0)).snap(true)
+		attest(stringifyResponse(true)).snap()
+		attest(stringifyResponse(false)).snap()
+		attest(stringifyResponse(1)).snap()
+		attest(stringifyResponse(0)).snap()
 	})
 })

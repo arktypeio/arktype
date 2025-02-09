@@ -279,7 +279,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	get shallowMorphs(): array<Morph> {
-		return this.branches.flatMap(branch => branch.shallowMorphs)
+		return this.branches.reduce(
+			(morphs, branch) => appendUnique(morphs, branch.shallowMorphs),
+			[] as Morph[]
+		)
 	}
 
 	get shortDescription(): string {
@@ -355,7 +358,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				const caseCondition = k === "default" ? k : `case ${k}`
 				js.line(
 					`${caseCondition}: return ${
-						v === true ? v
+						v === true ?
+							js.applyContextFreeMorphs ?
+								js.data
+							:	v
 						: js.applyContextFreeMorphs && v.contextFreeMorph ?
 							`${registeredReference(v.contextFreeMorph)}(${js.data})`
 						:	js.invoke(v)
