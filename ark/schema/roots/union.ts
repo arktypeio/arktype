@@ -352,6 +352,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		const caseKeys = Object.keys(cases)
 
+		const { optimistic } = js
+		// only the first layer can be optimistic
+		js.optimistic = false
+
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
@@ -359,10 +363,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.line(
 					`${caseCondition}: return ${
 						v === true ?
-							js.optimistic ?
-								js.data
+							optimistic ? js.data
 							:	v
-						: js.optimistic ?
+						: optimistic ?
 							`${js.invoke(v)} ? ${v.contextFreeMorph ? `${registeredReference(v.contextFreeMorph)}(${js.data})` : js.data} : "${unset}"`
 						:	js.invoke(v)
 					}`
@@ -373,7 +376,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		})
 
 		if (js.traversalKind === "Allows") {
-			js.return(js.optimistic ? `"${unset}"` : false)
+			js.return(optimistic ? `"${unset}"` : false)
 			return
 		}
 
@@ -428,10 +431,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
 			)
 		} else {
+			const { optimistic } = js
+			// only the first layer can be optimistic
+			js.optimistic = false
 			this.branches.forEach(branch =>
 				js.if(`${js.invoke(branch)}`, () =>
 					js.return(
-						js.optimistic ?
+						optimistic ?
 							branch.contextFreeMorph ?
 								`${registeredReference(branch.contextFreeMorph)}(${js.data})`
 							:	js.data
@@ -439,7 +445,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					)
 				)
 			)
-			js.return(false)
+			js.return(optimistic ? `"${unset}"` : false)
 		}
 	}
 

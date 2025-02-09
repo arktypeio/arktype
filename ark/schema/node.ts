@@ -198,9 +198,13 @@ export abstract class BaseNode<
 			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
 				this.shallowMorphs.length === 0 ? "allows"
 				: this.shallowMorphs.every(morph => morph.length === 1) ?
-					this.kind === "union" ?
-						"branchedOptimistic"
-					:	"optimistic"
+					this.hasKind("union") ?
+						// multiple morphs not yet supported for optimistic compilation
+						this.branches.some(branch => branch.shallowMorphs.length > 1) ?
+							"contextual"
+						:	"branchedOptimistic"
+					: this.shallowMorphs.length > 1 ? "contextual"
+					: "optimistic"
 				:	"contextual"
 			:	"contextual"
 
