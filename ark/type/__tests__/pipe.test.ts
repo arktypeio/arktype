@@ -947,4 +947,9 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 		attest<typeof expected>(t)
 		attest(t.json).equals(expected.json)
 	})
+
+	it("infers distributed pipes", () => {
+		const t = type("string.numeric.parse | number").to("number > 0")
+		attest(t.t).type.toString.snap("number | ((In: string) => To<number>")
+	})
 })
