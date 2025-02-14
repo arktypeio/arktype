@@ -630,9 +630,10 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		attest(numeric).type.toString.snap(
-			`Match<unknown, [(In: 0) => "0", (In: 1) => "1"]>`
-		)
+		attest(numeric).type.toString.snap(`Match<
+	unknown,
+	[(In: number) => "0", (In: number) => "1"]
+>`)
 		attest(numeric.json).snap({
 			branches: [
 				{ in: { unit: 0 }, morphs: ["$ark.numericZeroCase"] },
@@ -650,9 +651,10 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		attest(stringifyResponse).type.toString.snap(
-			"Match<unknown, [(In: true | 1) => string, (In: false | 0) => string]>"
-		)
+		attest(stringifyResponse).type.toString.snap(`Match<
+	unknown,
+	[(In: true | 1) => string, (In: false | 0) => string]
+>`)
 
 		attest(stringifyResponse(true)).snap("true")
 		attest(stringifyResponse(false)).snap("false")
@@ -680,13 +682,57 @@ contextualize(() => {
 				default: "assert"
 			})
 
-		attest(discriminateValue).type.toString.snap(
-			"Match<Data, [(In: Data) => string, (In: Data) => number]>"
-		)
+		attest(discriminateValue).type.toString.snap(`Match<
+	Data,
+	[(In: Data) => string, (In: Data) => number]
+>`)
 
 		const a = discriminateValue({ id: 1, oneValue: 1 })
 		attest(a).equals("1!")
 		const b = discriminateValue({ id: 2, twoValue: "two" })
 		attest(b).equals(3)
+		// @ts-expect-error
+		attest(() => discriminateValue({ oneValue: 3 }))
+			.throws.snap("AggregateError: id must be 1 or 2 (was undefined)")
+			.type.errors("Property 'id' is missing in type '{ oneValue: number; }'")
+	})
+
+	it("default ArkErrors", () => {
+		const m = match({
+			string: s => s.length,
+			number: n => n,
+			default: "reject"
+		})
+
+		attest(m).type.toString.snap(`Match<
+	unknown,
+	[
+		(In: number) => number,
+		(In: string) => number,
+		(In: unknown) => ArkErrors
+	]
+>`)
+
+		attest(m("foo")).equals(3)
+		attest(m(3)).equals(3)
+		// can access directly since it has no overlap with input
+		attest(m(null).summary).snap("must be a string or a number (was null)")
+	})
+
+	it("docs example 2", () => {
+		const sizeOf = match({
+			string: v => v.length,
+			number: v => v,
+			bigint: v => v
+			// match any object with a length property
+		})
+			.case({ length: "number" }, o => o.length)
+			.default("assert")
+
+		attest(sizeOf("abc")).equals(3)
+		attest(sizeOf({ name: "David", length: 5 })).equals(5)
+		attest(() => sizeOf(null)).throws.snap(
+			"AggregateError: must be a string, a number, a bigint or an object (was null)"
+		)
 	})
 })

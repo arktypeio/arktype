@@ -2,93 +2,94 @@
 title: Match
 ---
 
-The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type. It's similar to a type-safe `switch` statement.
+The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type, like a type-safe `switch` statement.
 
-## Basic Usage
+## Case Record API
 
-To use the `match` function, you provide an object literal mapping type definitions to handler functions. The `match` function will then return a new function that accepts an input and returns the output of the corresponding handler function.
+The simplest way to define a matcher is with ArkType definition strings as keys with corresponding handlers as values:
 
-```typescript
+```ts
 import { match } from "arktype"
 
 const sizeOf = match({
-	string: v => v.length,
-	Array: v => v.length,
+	"string | Array": v => v.length,
 	number: v => v,
 	bigint: v => v,
 	default: "assert"
 })
 
+// a match definition is complete once a `default` has been specified,
+// either as a case or via the .default() method
+
 sizeOf("abc") // 3
-sizeOf([1, 2, 3]) // 3
+sizeOf([1, 2, 3, 4]) // 4
 sizeOf(5n) // 5n
+// ArkErrors: must be an object, a string, a number or a bigint (was boolean)
+sizeOf(true)
 ```
 
-In this example, `sizeOf` is a matcher that takes a string, array, number, or bigint as input. It returns the length of strings and arrays, and the value of numbers and bigints. The `default: "assert"` case ensures that an error is thrown if the input is not one of the specified types.
+In this example, `sizeOf` is a matcher that takes a string, array, number, or bigint as input. It returns the length of strings and arrays, and the value of numbers and bigints.
 
-## Chained API
+`default` accepts one of 4 values:
 
-The `match` function also provides a chained API for more complex scenarios. This allows you to define cases in a more fluent and readable way.
+- `"assert"`: accept `unknown`, throw if none of the cases match
+- `"never"`: accept an input based on inferred cases, throw if none match
+- `"reject"`: accept `unknown`, return `ArkErrors` if none of the cases match
+- `(data: In) => unknown`: handle data not matching other cases directly
 
-```typescript
+Cases will be checked in the order they are specified, either as object literal keys or via chained methods.
+
+## Fluent API
+
+The `match` function also provides a fluent API. This can be convenient for non-string-embeddable definitions:
+
+```ts
 import { match } from "arktype"
 
-const matcher = match({ string: s => s, number: n => n })
-	.case("boolean", b => b)
-	.default("assert")
-
-matcher("abc") // "abc"
-matcher(4) // 4
-matcher(true) // true
-```
-
-This example demonstrates how to use the `case` method to add additional cases to the matcher. The `case` method takes a type definition and a handler function as arguments.
-
-## Matching on Object Properties with `at`
-
-The `at` method allows you to match on specific properties of an object. This is useful when you want to handle different types of objects based on the value of a particular property.
-
-```typescript
-import { match } from "arktype"
-
-const m = match.at("n").match({
-	"0": o => `${o.n} = 0` as const,
-	"1": o => `${o.n} = 1` as const,
-	default: "never"
+// the Case Record and Fluent APIs can be easily combined
+const sizeOf = match({
+	string: v => v.length,
+	number: v => v,
+	bigint: v => v
 })
+	// match any object with a numeric length property and extract it
+	.case({ length: "number" }, o => o.length)
+	// return 0 for all other data
+	.default(() => 0)
 
-m({ n: 0 }) // "0 = 0"
-m({ n: 1 }) // "1 = 1"
+sizeOf("abc") // 3
+sizeOf({ name: "David", length: 5 }) // 5
+sizeOf(null) // 0
 ```
 
-In this example, the matcher matches on the `n` property of the input object. If the `n` property is 0, the matcher returns the string "0 = 0". If the `n` property is 1, the matcher returns the string "1 = 1". Otherwise, the matcher returns `never`.
+## Narrowing input with `in`, property matching with `at`
 
-## Allowing Ordered Overlapping
-
-The `match` function allows you to define cases that overlap, as long as they are defined in the correct order. This is useful when you want to handle specific cases before more general cases.
-
-```typescript
+```ts
+// @errors: 2345
 import { match } from "arktype"
 
-const m = match({
-	"0 < number < 10": function _matchOverlapping1(n) {
-		return [0, n]
-	},
-	"number > 0": function _matchOverlapping2(n) {
-		return [1, n]
-	},
-	number: function _matchOverlapping3(n) {
-		return [2, n]
-	},
-	default: function _matchOverlapping4(v) {
-		return [3, v]
-	}
-})
+type Data =
+	| {
+			id: 1
+			oneValue: number
+	  }
+	| {
+			id: 2
+			twoValue: string
+	  }
 
-m(5) // [0, 5]
-m(11) // [1, 11]
-m(0) // [2, 0]
-m(undefined) // [3, undefined]
+const discriminateValue = match
+	// .in allows you to specify the input TypeScript allows for your matcher
+	.in<Data>()
+	// .at allows you to specify a key at which your input will be matched
+	.at("id")
+	.match({
+		1: o => `${o.oneValue}!`,
+		2: o => o.twoValue.length,
+		default: "assert"
+	})
+
+discriminateValue({ id: 1, oneValue: 1 }) // "1!"
+discriminateValue({ id: 2, twoValue: "two" }) // 3
+discriminateValue({ oneValue: 3 })
 ```
-
-In this example, the matcher first checks if the input is a number between 0 and 10. If it is, the matcher returns `[0, n]`. Otherwise, the matcher checks if the input is a number greater than 0. If it is, the matcher returns `[1, n]`. Otherwise, the matcher checks if the input is a number. If it is, the matcher returns `[2, n]`. Otherwise, the matcher returns `[3, undefined]`.
