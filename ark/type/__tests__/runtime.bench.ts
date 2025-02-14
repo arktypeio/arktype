@@ -88,3 +88,27 @@ bench("case(10, invoke last)", () => {
 	invokedCases10(8n)
 	invokedCases10(9n)
 }).median([198.78, "ns"])
+
+type Data =
+	| {
+			id: 1
+			oneValue: number
+	  }
+	| {
+			id: 2
+			twoValue: string
+	  }
+
+const discriminateValue = match
+	.in<Data>()
+	.at("id")
+	.match({
+		1: o => `${o.oneValue}!`,
+		2: o => o.twoValue.length,
+		default: "assert"
+	})
+
+bench("discriminate", () => {
+	discriminateValue({ id: 1, oneValue: 1 })
+	discriminateValue({ id: 2, twoValue: "two" })
+}).median([68.36, "ns"])
