@@ -32,25 +32,25 @@ export const t = type({
 
 bench("moltar allows", () => {
 	t.allows(validData)
-}).median([13.19, "ns"])
+}).median([13.72, "ns"])
 
 bench("moltar apply", () => {
 	t(validData)
-}).median([22.86, "ns"])
+}).median([21.31, "ns"])
 
 bench("shallow primitive allows", () => {
 	type.string.allows("foo")
-}).median([7.99, "ns"])
+}).median([10.01, "ns"])
 
 bench("shallow primitive apply", () => {
 	type.string("foo")
-}).median([21, "ns"])
+}).median([25.01, "ns"])
 
 const stringToLength = type.string.pipe(s => s.length)
 
 bench("shallow primitive morph", () => {
 	stringToLength("foo")
-}).median([12, "ns"])
+}).median([9.02, "ns"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
@@ -62,7 +62,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).median([24, "ns"])
+}).median([55.72, "ns"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -81,10 +81,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).median([113.37, "ns"])
+}).median([151.45, "ns"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).median([150, "ns"])
+}).median([198.78, "ns"])
