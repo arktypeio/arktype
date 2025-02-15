@@ -950,6 +950,6 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 
 	it("infers distributed pipes", () => {
 		const t = type("string.numeric.parse | number").to("number > 0")
-		attest(t.t).type.toString.snap("number | ((In: string) => To<number>")
+		attest(t.t).type.toString.snap("number | ((In: string) => To<number>)")
 	})
 })
