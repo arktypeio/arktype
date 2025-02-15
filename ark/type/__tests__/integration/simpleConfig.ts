@@ -1,6 +1,6 @@
-import { configure, type ArkConfig } from "arktype/config"
+import { configure } from "arktype/config"
 
-export const config = {
+export const config = configure({
 	numberAllowsNaN: true,
 	keywords: {
 		null: {
@@ -17,6 +17,4 @@ export const config = {
 		}
 	},
 	onUndeclaredKey: "delete"
-} as const satisfies ArkConfig
-
-configure(config)
+})
