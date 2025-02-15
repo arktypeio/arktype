@@ -66,13 +66,9 @@ contextualize(() => {
 			type: "array",
 			contains: { type: "number" }
 		})
-		const predicateRef =
-			tContains.internal.firstReferenceOfKindOrThrow(
-				"predicate"
-			).serializedPredicate
 		attest(tContains.json).snap({
 			proto: "Array",
-			predicate: [predicateRef]
+			predicate: ["$ark.jsonSchemaArrayContainsValidator"]
 		})
 		attest(tContains.allows([])).equals(false)
 		attest(tContains.allows([1, 2, 3])).equals(true)
@@ -114,13 +110,9 @@ contextualize(() => {
 			type: "array",
 			uniqueItems: true
 		})
-		const predicateRef =
-			tUniqueItems.internal.firstReferenceOfKindOrThrow(
-				"predicate"
-			).serializedPredicate
 		attest(tUniqueItems.json).snap({
 			proto: "Array",
-			predicate: [predicateRef]
+			predicate: ["$ark.jsonSchemaArrayUniqueItemsValidator"]
 		})
 		attest(tUniqueItems.allows([1, 2, 3])).equals(true)
 		attest(tUniqueItems.allows([1, 1, 2])).equals(false)

@@ -20,7 +20,10 @@ const deepNormalize = (data: unknown): unknown =>
 			)
 	:	data
 
-const arrayItemsAreUnique = (array: readonly unknown[], ctx: Traversal) => {
+const jsonSchemaArrayUniqueItemsValidator = (
+	array: readonly unknown[],
+	ctx: Traversal
+) => {
 	const seen: Record<string, true> = {}
 	const duplicates: unknown[] = []
 	for (const item of array) {
@@ -36,17 +39,20 @@ const arrayItemsAreUnique = (array: readonly unknown[], ctx: Traversal) => {
 			})
 }
 
-const arrayContainsItemMatchingSchema = (
-	array: readonly unknown[],
-	schema: Type,
-	ctx: Traversal
-) =>
-	array.some(item => schema.allows(item)) === true ?
-		true
-	:	ctx.reject({
-			expected: `an array containing at least one item matching 'contains' schema of ${schema.description}`,
-			actual: printable(array)
-		})
+const arrayContainsItemMatchingSchema = (schema: Type) => {
+	const jsonSchemaArrayContainsValidator = (
+		array: readonly unknown[],
+		ctx: Traversal
+	) =>
+		array.some(item => schema.allows(item)) === true ?
+			true
+		:	ctx.reject({
+				expected: `an array containing at least one item matching 'contains' schema of ${schema.description}`,
+				actual: printable(array)
+			})
+
+	return jsonSchemaArrayContainsValidator
+}
 
 export const validateJsonSchemaArray: Type<
 	(In: JsonSchema.Array) => Out<Type<unknown[], {}>>,
@@ -96,13 +102,11 @@ export const validateJsonSchemaArray: Type<
 
 	const predicates: Predicate.Schema[] = []
 	if ("uniqueItems" in jsonSchema && jsonSchema.uniqueItems === true)
-		predicates.push((arr: unknown[], ctx) => arrayItemsAreUnique(arr, ctx))
+		predicates.push(jsonSchemaArrayUniqueItemsValidator)
 
 	if ("contains" in jsonSchema) {
 		const parsedContainsJsonSchema = parseJsonSchema(jsonSchema.contains)
-		predicates.push((arr: unknown[], ctx) =>
-			arrayContainsItemMatchingSchema(arr, parsedContainsJsonSchema, ctx)
-		)
+		predicates.push(arrayContainsItemMatchingSchema(parsedContainsJsonSchema))
 	}
 
 	arktypeArraySchema.predicate = predicates
