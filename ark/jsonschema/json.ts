@@ -13,7 +13,7 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	(jsonSchema: JsonSchemaOrBoolean): type.Any => {
 		if (typeof jsonSchema === "boolean") {
 			if (jsonSchema) return JsonSchemaScope.Json
-			else return type("never") // No runtime value ever passes validation for JSON schema of 'false'
+			else return type.never // No runtime value ever passes validation for JSON schema of 'false'
 		}
 
 		if (Array.isArray(jsonSchema)) {

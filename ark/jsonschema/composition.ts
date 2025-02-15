@@ -14,7 +14,7 @@ const validateAnyOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]): Type =>
 
 const validateNotJsonSchema = (jsonSchema: JsonSchema) => {
 	const inner = parseJsonSchema(jsonSchema)
-	return type("unknown").narrow((data, ctx) =>
+	return type.unknown.narrow((data, ctx) =>
 		inner.allows(data) ?
 			ctx.reject({
 				expected: `a value that's not ${inner.description}`,
@@ -31,7 +31,7 @@ const validateOneOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]) => {
 	const oneOfValidatorsDescriptions = oneOfValidators.map(
 		validator => `○ ${validator.description}`
 	)
-	return type("unknown").narrow((data, ctx) => {
+	return type.unknown.narrow((data, ctx) => {
 		let matchedValidator: Type | undefined = undefined
 
 		for (const validator of oneOfValidators) {
