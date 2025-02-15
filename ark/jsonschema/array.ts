@@ -54,7 +54,7 @@ const arrayContainsItemMatchingSchema = (schema: Type) => {
 	return jsonSchemaArrayContainsValidator
 }
 
-export const validateJsonSchemaArray: Type<
+export const parseArrayJsonSchema: Type<
 	(In: JsonSchema.Array) => Out<Type<unknown[], {}>>,
 	any
 > = JsonSchemaScope.ArraySchema.pipe((jsonSchema, ctx) => {

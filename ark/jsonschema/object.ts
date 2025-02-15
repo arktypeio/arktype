@@ -227,7 +227,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 	return jsonSchemaObjectAdditionalPropertiesValidator
 }
 
-export const validateJsonSchemaObject: Type<
+export const parseObjectJsonSchema: Type<
 	(In: JsonSchema.Object) => Out<Type<object, any>>,
 	any
 > = JsonSchemaScope.ObjectSchema.pipe((jsonSchema, ctx): Type<object> => {

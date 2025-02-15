@@ -1,13 +1,13 @@
 import type { JsonSchemaOrBoolean } from "@ark/schema"
 import { printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema } from "arktype"
-import { parseJsonSchemaAnyKeywords } from "./any.ts"
-import { validateJsonSchemaArray } from "./array.ts"
-import { parseJsonSchemaCompositionKeywords } from "./composition.ts"
-import { validateJsonSchemaNumber } from "./number.ts"
-import { validateJsonSchemaObject } from "./object.ts"
+import { parseCommonJsonSchema } from "./any.ts"
+import { parseArrayJsonSchema } from "./array.ts"
+import { parseCompositionJsonSchema } from "./composition.ts"
+import { parseNumberJsonSchema } from "./number.ts"
+import { parseObjectJsonSchema } from "./object.ts"
 import { JsonSchemaScope } from "./scope.ts"
-import { validateJsonSchemaString } from "./string.ts"
+import { parseStringJsonSchema } from "./string.ts"
 
 export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	(jsonSchema: JsonSchemaOrBoolean): type.Any => {
@@ -18,17 +18,17 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 
 		if (Array.isArray(jsonSchema)) {
 			return (
-				parseJsonSchemaCompositionKeywords({ anyOf: jsonSchema }) ??
+				parseCompositionJsonSchema({ anyOf: jsonSchema }) ??
 				throwParseError(
 					"Failed to convert root array of JSON Schemas to an anyOf schema"
 				)
 			)
 		}
 
-		const constAndOrEnumValidator = parseJsonSchemaAnyKeywords(
+		const constAndOrEnumValidator = parseCommonJsonSchema(
 			jsonSchema as JsonSchema
 		)
-		const compositionValidator = parseJsonSchemaCompositionKeywords(
+		const compositionValidator = parseCompositionJsonSchema(
 			jsonSchema as JsonSchema
 		)
 
@@ -43,7 +43,7 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 
 			if (Array.isArray(jsonSchema.type)) {
 				typeValidator =
-					parseJsonSchemaCompositionKeywords({
+					parseCompositionJsonSchema({
 						anyOf: jsonSchema.type.map(t => ({ type: t }))
 					}) ??
 					throwParseError(
@@ -53,7 +53,7 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 				const jsonSchemaType = jsonSchema.type as JsonSchema.TypeName
 				switch (jsonSchemaType) {
 					case "array":
-						typeValidator = validateJsonSchemaArray.assert(jsonSchema)
+						typeValidator = parseArrayJsonSchema.assert(jsonSchema)
 						break
 					case "boolean":
 					case "null":
@@ -61,13 +61,13 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 						break
 					case "integer":
 					case "number":
-						typeValidator = validateJsonSchemaNumber.assert(jsonSchema)
+						typeValidator = parseNumberJsonSchema.assert(jsonSchema)
 						break
 					case "object":
-						typeValidator = validateJsonSchemaObject.assert(jsonSchema)
+						typeValidator = parseObjectJsonSchema.assert(jsonSchema)
 						break
 					case "string":
-						typeValidator = validateJsonSchemaString.assert(jsonSchema)
+						typeValidator = parseStringJsonSchema.assert(jsonSchema)
 						break
 					default:
 						throwParseError(

@@ -1,7 +1,7 @@
 import { throwParseError } from "@ark/util"
 import { type JsonSchema, type Type, type } from "arktype"
 
-export const parseJsonSchemaAnyKeywords = (
+export const parseCommonJsonSchema = (
 	jsonSchema: JsonSchema
 ): Type | undefined => {
 	if ("const" in jsonSchema) {

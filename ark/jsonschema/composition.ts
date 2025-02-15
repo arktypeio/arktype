@@ -2,17 +2,17 @@ import { printable } from "@ark/util"
 import { type, type JsonSchema, type Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
 
-const validateAllOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]): Type =>
+const parseAllOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.and(validator))
 
-const validateAnyOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]): Type =>
+const parseAnyOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
 
-const validateNotJsonSchema = (jsonSchema: JsonSchema) => {
+const parseNotJsonSchema = (jsonSchema: JsonSchema) => {
 	const inner = parseJsonSchema(jsonSchema)
 	return type.unknown.narrow((data, ctx) =>
 		inner.allows(data) ?
@@ -24,7 +24,7 @@ const validateNotJsonSchema = (jsonSchema: JsonSchema) => {
 	) as Type
 }
 
-const validateOneOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]) => {
+const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]) => {
 	const oneOfValidators = jsonSchemas.map(nestedSchema =>
 		parseJsonSchema(nestedSchema)
 	)
@@ -50,11 +50,11 @@ const validateOneOfJsonSchemas = (jsonSchemas: readonly JsonSchema[]) => {
 	})
 }
 
-export const parseJsonSchemaCompositionKeywords = (
+export const parseCompositionJsonSchema = (
 	jsonSchema: JsonSchema
 ): Type | undefined => {
-	if ("allOf" in jsonSchema) return validateAllOfJsonSchemas(jsonSchema.allOf)
-	if ("anyOf" in jsonSchema) return validateAnyOfJsonSchemas(jsonSchema.anyOf)
-	if ("not" in jsonSchema) return validateNotJsonSchema(jsonSchema.not)
-	if ("oneOf" in jsonSchema) return validateOneOfJsonSchemas(jsonSchema.oneOf)
+	if ("allOf" in jsonSchema) return parseAllOfJsonSchema(jsonSchema.allOf)
+	if ("anyOf" in jsonSchema) return parseAnyOfJsonSchema(jsonSchema.anyOf)
+	if ("not" in jsonSchema) return parseNotJsonSchema(jsonSchema.not)
+	if ("oneOf" in jsonSchema) return parseOneOfJsonSchema(jsonSchema.oneOf)
 }

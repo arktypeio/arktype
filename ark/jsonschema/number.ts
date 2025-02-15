@@ -3,7 +3,7 @@ import { throwParseError } from "@ark/util"
 import type { JsonSchema, Out, Type } from "arktype"
 import { JsonSchemaScope } from "./scope.ts"
 
-export const validateJsonSchemaNumber: Type<
+export const parseNumberJsonSchema: Type<
 	(In: JsonSchema.Numeric) => Out<Type<number, any>>,
 	any
 > = JsonSchemaScope.NumberSchema.pipe((jsonSchema): Type<number> => {
