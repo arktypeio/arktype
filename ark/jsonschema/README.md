@@ -1,8 +1,8 @@
-# @arktype/jsonschema
+# @ark/jsonschema
 
 ## What is it?
 
-@arktype/jsonschema is a package that allows converting from a JSON Schema schema, to an ArkType type. For example:
+@ark/jsonschema is a package that allows converting from a JSON Schema schema, to an ArkType type. For example:
 
 ```js
 import { parseJsonSchema } from "@ark/jsonschema"
