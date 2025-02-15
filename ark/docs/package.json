@@ -4,8 +4,8 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "NODE_OPTIONS=--no-warnings next build",
-		"dev": "NODE_OPTIONS=--no-warnings next dev --turbo",
+		"build": "next build",
+		"dev": "next dev --turbo",
 		"buildAndStart": "pnpm build && pnpm start",
 		"start": "pnpm serve out",
 		"clean": "rm -rf .next .source out",
