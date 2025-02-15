@@ -83,7 +83,6 @@ contextualize(() => {
 			type: "object",
 			additionalProperties: { type: "number" }
 		})
-		console.log("hi", JSON.stringify(tAdditionalProperties.json))
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
 			predicate: ["$ark.jsonSchemaObjectAdditionalPropertiesValidator"]
