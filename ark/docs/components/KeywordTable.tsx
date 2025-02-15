@@ -66,10 +66,14 @@ const KeywordTable = ({ rows }: KeywordTableProps) => (
 	</table>
 )
 
-export const KeywordTables = flatMorph(tableNames, (i, name) => [
+const KeywordTables = flatMorph(tableNames, (i, name) => [
 	name,
 	() => <KeywordTable rows={tableRowsByName[name]} />
 ])
+
+export const StringKeywordTable = KeywordTables.string
+
+export const NumberKeywordTable = KeywordTables.number
 
 export const AllKeywordTables = () =>
 	tableNames.map(name => (

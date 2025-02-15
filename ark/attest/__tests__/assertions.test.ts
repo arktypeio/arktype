@@ -168,7 +168,7 @@ describe("type assertions", () => {
 	it("does not boom on Type comparison", () => {
 		// @ts-expect-error
 		attest(() => attest(type.string).equals(type.number)).throws
-			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function was not between reference eqaul items
+			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference eqaul items
 Expected: number
 Actual: string`)
 	})
