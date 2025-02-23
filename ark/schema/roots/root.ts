@@ -273,10 +273,12 @@ export abstract class BaseRoot<
 
 	array(): BaseRoot {
 		return this.$.schema(
-			{
-				proto: Array,
-				sequence: this
-			},
+			this.isUnknown() ?
+				{ proto: Array }
+			:	{
+					proto: Array,
+					sequence: this
+				},
 			{ prereduced: true }
 		) as never
 	}
