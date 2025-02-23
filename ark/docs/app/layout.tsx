@@ -17,22 +17,35 @@ export default ({ children }: { children: ReactNode }) => (
 		suppressHydrationWarning
 	>
 		<head>
+			<title>
+				ArkType Docs: Optimized runtime validation for TypeScript syntax
+			</title>
+			<meta property="og:title" content="ArkType Docs" />
+			<meta name="twitter:title" content="ArkType Docs" />
+
 			<meta
 				name="description"
 				content="Optimized runtime validation for TypeScript syntax"
 			/>
-			<meta property="sog:title" content="ArkType" />
 			<meta
 				property="og:description"
 				content="Optimized runtime validation for TypeScript syntax"
 			/>
+			<meta
+				name="twitter:description"
+				content="Optimized runtime validation for TypeScript syntax"
+			/>
+
 			<meta property="og:image" content="/image/og.png" />
+			<meta name="twitter:image" content="/image/og.png" />
+
 			<meta property="og:url" content="https://arktype.io" />
-			<meta name="twitter:card" content="/image/og.png" />
+
 			<meta
 				name="keywords"
 				content="ArkType, TypeScript, JavaScript, runtime validation, schema, type-safe, validator, syntax"
 			/>
+
 			<link rel="icon" href="/image/favicon.svg" />
 		</head>
 		<body className="flex flex-col min-h-screen">
