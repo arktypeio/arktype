@@ -110,9 +110,6 @@ export declare namespace type {
 
 	export type errors = ArkErrors
 
-	/** @ts-ignore cast variance */
-	export interface Any<out t = any> extends BaseType<t, any> {}
-
 	export type infer<def, $ = {}, args = bindThis<def>> = inferDefinition<
 		def,
 		$,
@@ -152,6 +149,9 @@ export declare namespace type {
 				(In: i) => To<Brand<o["t"], id>>
 			:	(In: i) => Out<Brand<o["t"], id>>
 		:	Brand<t, id>
+
+	/** @ts-ignore cast variance */
+	export interface Any<out t = any> extends BaseType<t, any> {}
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>
