@@ -1,13 +1,13 @@
 {
 	"title": "Configuration",
 	"pages": [
-		"[keywords](/docs/configuration#keywords)",
 		"[errors](/docs/configuration#errors)",
+		"[keywords](/docs/configuration#keywords)",
 		"[clone](/docs/configuration#clone)",
 		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
 		"[jitless](/docs/configuration#jitless)",
-		"[onFail](/docs/configuration#onFail)",
-		"[prototypes](/docs/configuration#protoypes)",
-		"[metadata](/docs/configuration#metadata)"
+		"[onFail](/docs/configuration#onfail)",
+		"[metadata](/docs/configuration#metadata)",
+		"[prototypes](/docs/configuration#prototypes)"
 	]
 }
