@@ -42,6 +42,9 @@ export const Banner = ({
 			className={cn(
 				"sticky top-0 z-40 flex h-12 flex-row items-center justify-around bg-fd-secondary px-4 text-center text-sm font-medium",
 				"bg-fd-background",
+				// fix offset scrolling on Chromium-based browsers:
+				// https://github.com/arktypeio/arktype/issues/1290
+				"!overflow-hidden",
 				!open && "hidden",
 				props.className
 			)}
