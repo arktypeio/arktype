@@ -1248,4 +1248,15 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		attest<{ name: string }>(arkRes)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1317
+	it("discriminated tuple/array union", () => {
+		const tupleType = type(["number", "number"])
+		const tupleArrayType = tupleType.array()
+		const unionType = tupleType.or(tupleArrayType)
+
+		attest(tupleType.assert([1, 2])).equals([1, 2])
+		attest(tupleArrayType.assert([[1, 2]])).equals([[1, 2]])
+		attest(unionType.assert([[1, 2]])).equals([[1, 2]])
+	})
 })
