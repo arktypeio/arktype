@@ -7,7 +7,6 @@ import {
 	isEmptyObject,
 	stringifyPath,
 	throwError,
-	throwInternalError,
 	type Dict,
 	type GuardablePredicate,
 	type JsonStructure,
@@ -26,9 +25,7 @@ import type {
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
-import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { UnionNode } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -85,23 +82,9 @@ export abstract class BaseNode<
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
-	rootApplyStrategy:
-		| "allows"
-		| "contextual"
-		| "optimistic"
-		| "branchedOptimistic"
-	contextFreeMorph: ((data: unknown) => unknown) | undefined
-	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
-
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
 	flatRefs: FlatRef[]
-	flatMorphs: FlatRef<Morph.Node>[]
-	allows: (data: d["prerequisite"]) => boolean
-
-	get shallowMorphs(): array<Morph> {
-		return []
-	}
 
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
@@ -110,6 +93,13 @@ export abstract class BaseNode<
 				pipedFromCtx?: Traversal | undefined,
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
+				if (
+					!this.includesTransform &&
+					!this.allowsRequiresContext &&
+					this.allows(data)
+				)
+					return data
+
 				if (pipedFromCtx) {
 					this.traverseApply(data, pipedFromCtx)
 					return pipedFromCtx.hasError() ?
@@ -117,7 +107,9 @@ export abstract class BaseNode<
 						:	pipedFromCtx.data
 				}
 
-				return this.rootApply(data, onFail)
+				const ctx = new Traversal(data, this.$.resolvedConfig)
+				this.traverseApply(data, ctx)
+				return ctx.finalize(onFail)
 			},
 			{ attach: attachments as never }
 		)
@@ -149,7 +141,6 @@ export abstract class BaseNode<
 		const isStructural = this.isStructural()
 
 		this.flatRefs = []
-		this.flatMorphs = []
 
 		for (let i = 0; i < this.children.length; i++) {
 			this.includesTransform ||= this.children[i].includesTransform
@@ -157,31 +148,15 @@ export abstract class BaseNode<
 				this.children[i].includesContextualPredicate
 			this.isCyclic ||= this.children[i].isCyclic
 
-			if (!isStructural) {
-				const childFlatRefs = this.children[i].flatRefs
-				for (let j = 0; j < childFlatRefs.length; j++) {
-					const childRef = childFlatRefs[j]
-					if (
-						!this.flatRefs.some(existing =>
-							flatRefsAreEqual(existing, childRef)
-						)
-					) {
-						this.flatRefs.push(childRef)
-						for (const branch of childRef.node.branches) {
-							if (branch.hasKind("morph")) {
-								this.flatMorphs.push({
-									path: childRef.path,
-									propString: childRef.propString,
-									node: branch
-								})
-							}
-						}
-					}
-				}
-			}
+			// overriden by structural kinds so that only the root at each path is added
+			if (!isStructural)
+				appendUniqueFlatRefs(this.flatRefs, this.children[i].flatRefs)
 
 			Object.assign(this.referencesById, this.children[i].referencesById)
 		}
+
+		this.allowsRequiresContext =
+			this.includesContextualPredicate || this.isCyclic
 
 		this.flatRefs.sort((l, r) =>
 			l.path.length > r.path.length ? 1
@@ -191,69 +166,6 @@ export abstract class BaseNode<
 			: l.node.expression < r.node.expression ? -1
 			: 1
 		)
-
-		this.allowsRequiresContext =
-			this.includesContextualPredicate || this.isCyclic
-		this.rootApplyStrategy =
-			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
-				this.shallowMorphs.length === 0 ? "allows"
-				: this.shallowMorphs.every(morph => morph.length === 1) ?
-					this.hasKind("union") ?
-						// multiple morphs not yet supported for optimistic compilation
-						this.branches.some(branch => branch.shallowMorphs.length > 1) ?
-							"contextual"
-						:	"branchedOptimistic"
-					: this.shallowMorphs.length > 1 ? "contextual"
-					: "optimistic"
-				:	"contextual"
-			:	"contextual"
-
-		this.rootApply = this.createRootApply()
-		this.allows =
-			this.allowsRequiresContext ?
-				data =>
-					this.traverseAllows(
-						data as never,
-						new Traversal(data, this.$.resolvedConfig)
-					)
-			:	data => (this.traverseAllows as any)(data)
-	}
-
-	protected createRootApply(): this["rootApply"] {
-		switch (this.rootApplyStrategy) {
-			case "allows":
-				return (data, onFail) => {
-					if (this.allows(data)) return data
-
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
-
-			case "contextual":
-				return (data, onFail) => {
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
-
-			case "optimistic":
-				this.contextFreeMorph = this.shallowMorphs[0] as never
-				return (data, onFail) => {
-					if (this.allows(data)) return this.contextFreeMorph!(data)
-
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
-			case "branchedOptimistic":
-				return (this as {} as UnionNode).createBranchedOptimisticRootApply()
-			default:
-				this.rootApplyStrategy satisfies never
-				return throwInternalError(
-					`Unexpected rootApplyStrategy ${this.rootApplyStrategy}`
-				)
-		}
 	}
 
 	withMeta(
@@ -296,6 +208,16 @@ export abstract class BaseNode<
 
 	readonly precedence: number = precedenceOfKind(this.kind)
 	precompilation: string | undefined
+
+	allows = (data: d["prerequisite"]): boolean => {
+		if (this.allowsRequiresContext) {
+			return this.traverseAllows(
+				data as never,
+				new Traversal(data, this.$.resolvedConfig)
+			)
+		}
+		return (this.traverseAllows as any)(data)
+	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
 	// otherwise, would run into issues with this binding

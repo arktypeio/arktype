@@ -3,11 +3,31 @@
 	"version": "0.1.0",
 	"configurations": [
 		{
-			"name": "ArkDark Dev",
+			"name": "ArkDark Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
-			"args": ["--extensionDevelopmentPath=${workspaceRoot}/ark/extensions"]
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/ark/extensions/dark"
+			]
+		},
+		{
+			"name": "ArkLight Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/ark/extensions/light"
+			]
+		},
+		{
+			"name": "ArkType Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}/ark/extensions/type"
+			]
 		}
 	]
 }

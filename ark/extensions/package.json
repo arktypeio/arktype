@@ -1,16 +1,21 @@
 {
-	"name": "arkdark",
+	"name": "@ark/extensions",
 	"displayName": "ArkDark",
 	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
 	"version": "5.15.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
+	"private": true,
 	"scripts": {
 		"publishExtension": "pnpm packageExtension && pnpm publishVsce && pnpm publishOvsx",
 		"packageExtension": "vsce package --out arkdark.vsix",
 		"publishVsce": "vsce publish -i arkdark.vsix",
-		"publishOvsx": "ovsx publish -i arkdark.vsix"
+		"publishOvsx": "ovsx publish -i arkdark.vsix",
+		"publishAll": "pnpm -r publish",
+		"build": "pnpm -r build",
+		"package": "pnpm -r package",
+		"publish": "pnpm -r publish"
 	},
 	"devDependencies": {
 		"vsce": "2.15.0",
@@ -45,7 +50,7 @@
 				"path": "./arkdark.json"
 			},
 			{
-				"label": "ArkDark Italic",
+				"label": "ArkDark (italic)",
 				"uiTheme": "vs-dark",
 				"path": "./arkdarkItalic.json"
 			},
@@ -53,6 +58,11 @@
 				"label": "ArkLight",
 				"uiTheme": "vs",
 				"path": "./arklight.json"
+			},
+			{
+				"label": "ArkLight (italic)",
+				"uiTheme": "vs",
+				"path": "./arklightItalic.json"
 			}
 		],
 		"grammars": [
@@ -97,5 +107,10 @@
 				}
 			]
 		}
-	}
+	},
+	"workspaces": [
+		"core",
+		"themes",
+		"syntax"
+	]
 }

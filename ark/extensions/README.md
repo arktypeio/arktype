@@ -1,14 +1,13 @@
 <div align="center">
-  <img src="/ark/dark/icon.png" height="64px" />
+  <img src="https://arktype.io/image/logo.png" height="64px" />
   <h1>ArkDark</h1>
 </div>
+
 <div align="center">
 
 [ArkType](https://arktype.io) syntax highlighting and theme⛵
 
 </div>
-
-We're building a 1:1 validator for TypeScript! Check out our core project [on GitHub](https://github.com/arktypeio/arktype)!
 
 ## Features
 
@@ -51,10 +50,10 @@ To test the standalone rules for TS w/ ArkType highlighting, replace `grammars` 
 
 ```json
 	"grammars": {
-				"scopeName": "source.ts",
-				"language": "typescript",
-				"path": "tsWithArkType.tmLanguage.json"
-			}
+		"scopeName": "source.ts",
+		"language": "typescript",
+		"path": "tsWithArkType.tmLanguage.json"
+	}
 ```
 
 Be sure to switch back before publishing!
