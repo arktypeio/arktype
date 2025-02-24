@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { scope, type } from "arktype"
-import { hasArkKind } from "../schema/out/shared/utils"
+import { hasArkKind } from "../schema/out/shared/utils.js"
 
 type("(boolean | number | 'foo')[]")
 

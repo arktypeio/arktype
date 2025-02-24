@@ -48,6 +48,11 @@
 				"label": "ArkDark Italic",
 				"uiTheme": "vs-dark",
 				"path": "./arkdarkItalic.json"
+			},
+			{
+				"label": "ArkLight",
+				"uiTheme": "vs",
+				"path": "./arklight.json"
 			}
 		],
 		"grammars": [
