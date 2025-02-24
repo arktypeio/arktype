@@ -1,56 +1,43 @@
-import { generic, match, type } from "arktype"
+import { bench } from "@ark/attest"
+import { print, type Entry } from "@ark/util"
 
-const stringToLength = type.string.pipe(s => s.length)
+import { match } from "arktype"
+import { P, match as tsPattern } from "ts-pattern"
 
-stringToLength("foo")
-
-const t = type({
-	"+": "delete",
-	a: "string"
+const toJsonArkType = match({
+	"string | number | boolean | null": v => v,
+	bigint: b => `${b}n`,
+	object: o =>
+		Object.fromEntries(
+			Object.entries(o).map(([k, v]): Entry => [k, toJsonArkType(v)])
+		),
+	default: "assert"
 })
 
-// bench("good", () => {
-// 	t({ a: "foo" })
-// }).mean([253.32, "ns"])
+const toJsonTsPattern = (value: unknown) =>
+	tsPattern(value)
+		.with(P.union(P.string, P.number, P.boolean, null), v => v)
+		.with(P.bigint, v => `${v}n`)
+		.with({}, o =>
+			Object.fromEntries(
+				Object.entries(o).map(([k, v]): Entry => [k, toJsonTsPattern(v)])
+			)
+		)
+		.otherwise(() => {
+			throw new Error("value is not valid JSON")
+		})
 
-// bench("delete one", () => {
-// 	t({ a: "foo", b: true })
-// }).mean([2.59, "us"])
+// "foo" (9 nanoseconds)
+toJsonArkType("foo")
+// "foo" (765 nanoseconds)
+toJsonTsPattern("foo")
 
-// bench("delete five", () => {
-// 	t({ a: "foo", b: true, c: true, d: true, e: true, f: true })
-// }).mean([6.1, "us"])
+// "5n" (33 nanoseconds)
+toJsonArkType(5n)
+// "5n" (924 nanoseconds)
+toJsonTsPattern(5n)
 
-// const m = match
-// 	.case("31", n => `${n}` as const)
-// 	.case("32", n => `${n}` as const)
-// 	.case("33", n => `${n}` as const)
-// 	.default("assert")
-
-// bench("match", () => {
-// 	m(31)
-// 	m(32)
-// 	m(33)
-// }).mean()
-
-type Data =
-	| {
-			id: 1
-			oneValue: number
-	  }
-	| {
-			id: 2
-			twoValue: string
-	  }
-
-const discriminateValue = match
-	.in<Data>()
-	.at("id")
-	.match({
-		1: o => `${o.oneValue}!`,
-		2: o => o.twoValue.length,
-		default: "assert"
-	})
-
-const a = discriminateValue({ id: 1, oneValue: 1 }) //?
-const b = discriminateValue({ id: 2, twoValue: "two" }) //?
+// { nestedValue: "5n" } (317 nanoseconds)
+toJsonArkType({ nestedValue: 5n })
+// { nestedValue: "5n" } (2862 nanoseconds)
+toJsonTsPattern({ nestedValue: 5n })
