@@ -25,17 +25,6 @@
 
 The low-poly animal backgrounds from these images are not part of the theme but are images from [this theme](https://apps.microsoft.com/detail/9pbdb440swlc?hl=en-tc&gl=TC) rendered using the excellent [Background](https://github.com/KatsuteDev/Background) extension by [@Katsute](https://github.com/Katsute).
 
-## Contributing
-
-**Run > Debugger** (`F5` by default) will launch the extension in another window, allowing you to see the effects of your changes on whatever code you open in it.
-
-#### Update the ArkDark theme palette
-
-See [color-theme.json](/ark/dark/color-theme.json)
-
-> [!NOTE]  
-> Changes will be immediately reflected in the extension host window
-
 #### Update syntax highlighting rules
 
 See [injected.tmLanguage.json](/ark/dark/injected.tmLanguage.json)
@@ -60,7 +49,3 @@ Be sure to switch back before publishing!
 
 > [!IMPORTANT]  
 > You must reload the extension host window to see scope changes reflected
-
-## Attributions
-
-Base color-theme.json extended from VSCode's "Default Dark Modern" (https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json).
