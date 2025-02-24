@@ -20,7 +20,7 @@ export type Thunk<ret = unknown> = () => ret
 
 export type thunkable<t> = t | Thunk<t>
 
-export const tryCatch = <returns, onError = never>(
+export const tryCatch = <returns, onError = undefined>(
 	fn: () => returns,
 	onError?: (e: unknown) => onError
 ): returns | onError => {
