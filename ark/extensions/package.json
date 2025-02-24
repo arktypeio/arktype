@@ -13,7 +13,6 @@
 		"publishVsce": "vsce publish -i arkdark.vsix",
 		"publishOvsx": "ovsx publish -i arkdark.vsix",
 		"publishAll": "pnpm -r publish",
-		"build": "pnpm -r build",
 		"package": "pnpm -r package",
 		"publish": "pnpm -r publish"
 	},

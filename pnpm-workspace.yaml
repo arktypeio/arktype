@@ -1,5 +1,6 @@
 packages:
   - "ark/*"
+  - "ark/extensions/dark"
 
 catalog:
   typescript: 5.8.0-beta
