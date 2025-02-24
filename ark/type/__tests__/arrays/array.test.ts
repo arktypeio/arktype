@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 import {
@@ -58,11 +57,7 @@ contextualize(() => {
 		it("chained", () => {
 			const t = type({ a: "string" }).array()
 			attest<{ a: string }[]>(t.infer)
-
-			// @ts-expect-error
-			attest(() => type({ a: "hmm" }).array()).throwsAndHasTypeError(
-				writeUnresolvableMessage("hmm")
-			)
+			attest(t.expression).snap("{ a: string }[]")
 		})
 
 		it("incomplete token", () => {
