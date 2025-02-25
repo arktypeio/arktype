@@ -1,6 +1,4 @@
-import { bench } from "@ark/attest"
-import { print, type Entry } from "@ark/util"
-
+import { type Entry } from "@ark/util"
 import { match } from "arktype"
 import { P, match as tsPattern } from "ts-pattern"
 
