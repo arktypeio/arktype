@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://arktype.io/image/logo.png" height="64px" />
-  <h1>ArkLight</h1>
+  <h1>ArkThemes</h1>
 </div>
 
 <div align="center">

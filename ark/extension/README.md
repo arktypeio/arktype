@@ -14,11 +14,11 @@ We're building a 1:1 validator for TypeScript! Check out our core project [on Gi
 
 - syntax highlighting for strings that are part of an ArkType definition
 
-![syntax highlighting](/ark/dark/highlighting.png)
+![syntax highlighting](https://github.com/arktypeio/arktype/tree/main/ark/extension/highlighting.png)
 
 - inline type error summaries optimized for ArkType via [ErrorLens](https://github.com/usernamehw/vscode-error-lens)
 
-![errorLens](/ark/dark/errorLens.png)
+![errorLens](https://github.com/arktypeio/arktype/tree/main/ark/extension/errorLens.png)
 
 ## Contributing
 

@@ -1,15 +1,20 @@
 {
-	"name": "themes",
+	"name": "arkthemes",
 	"displayName": "ArkThemes",
 	"description": "A collection of themes with special highlighting for TypeScript generics ⛵",
 	"version": "6.0.0",
 	"publisher": "arktypeio",
+	"type": "module",
 	"license": "MIT",
 	"scripts": {
 		"publishExtension": "pnpm packageExtension && pnpm publishVsce && pnpm publishOvsx",
-		"packageExtension": "vsce package --out arkdark.vsix",
-		"publishVsce": "vsce publish -i arkdark.vsix",
-		"publishOvsx": "ovsx publish -i arkdark.vsix"
+		"packageExtension": "vsce package --out arkthemes.vsix",
+		"publishVsce": "vsce publish -i arkthemes.vsix",
+		"publishOvsx": "ovsx publish -i arkthemes.vsix"
+	},
+	"devDependencies": {
+		"vsce": "2.15.0",
+		"ovsx": "0.10.1"
 	},
 	"repository": {
 		"type": "git",
@@ -21,7 +26,13 @@
 	"categories": [
 		"Themes"
 	],
-	"icon": "./icon.png",
+	"icon": "icon.png",
+	"files": [
+		"*.json"
+	],
+	"exports": {
+		"./*.json": "./*.json"
+	},
 	"contributes": {
 		"themes": [
 			{
