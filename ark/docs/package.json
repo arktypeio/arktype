@@ -20,6 +20,7 @@
 		"@icons-pack/react-simple-icons": "11.1.0",
 		"@shikijs/transformers": "2.3.2",
 		"arkdark": "workspace:*",
+		"arkthemes": "workspace:*",
 		"arktype": "workspace:*",
 		"class-variance-authority": "0.7.1",
 		"framer-motion": "12.0.3",
