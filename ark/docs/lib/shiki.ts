@@ -18,7 +18,7 @@ like the one above if possible in the future without breaking the build.*/
 const require = createRequire(import.meta.url)
 
 const arkDarkTheme = require("arkthemes/arkdark.json")
-const arkTypePackageJson = require("arkthemes/package.json")
+const arkTypePackageJson = require("arkdark/package.json")
 const arkTypeTmJson = require("arkdark/tsWithArkType.tmLanguage.json")
 
 // Theme adjustments
