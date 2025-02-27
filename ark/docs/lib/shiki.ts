@@ -58,6 +58,7 @@ declare global {
 
 	type type<t = unknown, $ = {}> = a.Type<t, $>
 	const scope: typeof a.scope
+	const match: typeof a.match
 }`
 		},
 		filterNode: node => {

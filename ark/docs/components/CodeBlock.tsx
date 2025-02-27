@@ -31,23 +31,6 @@ const highlighter = await getSingletonHighlighter({
 	themes: [shikiConfig.themes.dark]
 })
 
-const components: HighlightOptions["components"] = {
-	// rounded none is for syntax tabs
-	pre: ({ className, children, ...props }) => (
-		<Pre className={cn(className, "!rounded-none")} {...props}>
-			{children}
-		</Pre>
-	)
-}
-
-// overriding these custom components allows hovers to render
-// correctly in code blocks outside markdown (e.g. on the home page)
-Object.assign(components, {
-	Popup,
-	PopupContent,
-	PopupTrigger
-})
-
 export const CodeBlock: React.FC<CodeBlockProps> = ({
 	lang = "ts",
 	children,
@@ -86,6 +69,24 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 		</FumaCodeBlock>
 	)
 }
+
+const components: HighlightOptions["components"] = {
+	// rounded none is for syntax tabs
+	pre: ({ className, children, ...props }) => (
+		<Pre className={cn(className, "!rounded-none")} {...props}>
+			{children}
+		</Pre>
+	),
+	CodeBlock
+}
+
+// overriding these custom components allows hovers to render
+// correctly in code blocks outside markdown (e.g. on the home page)
+Object.assign(components, {
+	Popup,
+	PopupContent,
+	PopupTrigger
+})
 
 const highlight = (lang: BuiltinLang, contents: string) => {
 	try {
