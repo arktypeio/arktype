@@ -31,8 +31,15 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 
 	if (seen) {
 		seen.set(input, cloned)
-		for (const k in propertyDescriptors)
-			propertyDescriptors[k].value = _clone(propertyDescriptors[k].value, seen)
+		for (const k in propertyDescriptors) {
+			// no need to clone getters, and in fact they would break here
+			if ("value" in propertyDescriptors[k]) {
+				propertyDescriptors[k].value = _clone(
+					propertyDescriptors[k].value,
+					seen
+				)
+			}
+		}
 	}
 
 	Object.defineProperties(cloned, propertyDescriptors)
