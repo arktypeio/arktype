@@ -2,7 +2,7 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
-## 0.42.0
+## 0.41.0
 
 ### Bail early for obviously incorrect `equals` comparisons
 
