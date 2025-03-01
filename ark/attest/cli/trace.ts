@@ -35,7 +35,7 @@ interface TraceEntry {
 interface CallRange {
 	id: string
 	typeId: string
-	typeName: string
+	functionName: string
 	callSite: string
 	startTime: number
 	endTime: number
@@ -53,8 +53,7 @@ interface CallSiteDetail {
 
 interface FunctionStats {
 	typeId: string
-	typeName: string
-	callSites: Set<string>
+	functionName: string
 	totalTime: number
 	selfTime: number
 	count: number
@@ -71,6 +70,14 @@ interface AnalysisContext {
 	rootCalls: CallRange[]
 	functionStats: Record<string, FunctionStats>
 	allFunctions: FunctionStats[]
+}
+
+interface UngroupedCallStats {
+	typeId: string
+	functionName: string
+	callSite: string
+	duration: number
+	selfTime: number
 }
 
 export const trace = async (args: string[]): Promise<void> => {
@@ -232,14 +239,13 @@ const processCallExpression = (
 	// Use the function name for both ID and display name
 	// This will ensure all calls to the same function are grouped together
 	const typeId = `function-${functionName}`
-	const typeName = functionName
 
 	const callSite = `${entry.args.path}:${pos}-${end}`
 
 	ctx.callRanges.push({
 		id: `${entry.ts}-${pos}-${end}`,
 		typeId,
-		typeName,
+		functionName,
 		callSite,
 		startTime: entry.ts,
 		endTime: entry.ts + (entry.dur || 0),
@@ -268,7 +274,7 @@ const processNonCallNode = (
 	ctx.callRanges.push({
 		id: `${entry.ts}-${pos}-${end}`,
 		typeId,
-		typeName,
+		functionName: typeName,
 		callSite,
 		startTime: entry.ts,
 		endTime: entry.ts + (entry.dur || 0),
@@ -341,8 +347,7 @@ const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	if (!ctx.functionStats[call.typeId]) {
 		ctx.functionStats[call.typeId] = {
 			typeId: call.typeId,
-			typeName: call.typeName,
-			callSites: new Set(),
+			functionName: call.functionName,
 			totalTime: 0,
 			selfTime: 0,
 			count: 0,
@@ -357,7 +362,6 @@ const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	addCallSiteToStats(call, stats)
 
 	// Update aggregate metrics
-	stats.callSites.add(call.callSite)
 	stats.totalTime += call.duration
 	stats.selfTime += call.selfTime
 	stats.count++
@@ -390,81 +394,193 @@ const sortAndRankFunctions = (ctx: AnalysisContext): void => {
 	)
 }
 
-const displaySummary = (ctx: AnalysisContext): void => {
-	const top20Functions = ctx.allFunctions.slice(0, 20)
+const analyzeTypeInstantiations = (traceDir: string): void => {
+	// Initialize the analysis context
+	const ctx = initializeAnalysisContext(traceDir)
 
-	console.log("\nTop Functions by Self Type-Checking Time:\n")
-	console.log(
-		"Rank | Type Name                                     | Self Time (ms) | Calls | Unique Sites | Top Usage (ms)"
+	// Filter entries with duration information
+	filterDurationEntries(ctx)
+
+	// Process each duration entry to extract call ranges
+	ctx.durationEntries.forEach(entry => processDurationEntry(entry, ctx))
+
+	// Build call tree from ranges
+	buildCallTree(ctx)
+
+	// Calculate self-time for each call
+	ctx.rootCalls.forEach(calculateSelfTimes)
+
+	// Collect statistics by view type
+	const ungroupedStats = collectUngroupedStats(ctx)
+	ctx.rootCalls.forEach(call => collectFunctionStats(call, ctx))
+
+	// Sort and rank functions
+	sortAndRankFunctions(ctx)
+
+	// Display summaries to console
+	console.log("\n📊 Performance Analysis - Top Individual Calls:\n")
+	displayIndividualSummary(ungroupedStats)
+
+	console.log("\n📊 Performance Analysis - Functions by Self Time:\n")
+	displayGroupedSummary(ctx.allFunctions)
+
+	// Write CSV reports
+	const rangesCsvPath = join(traceDir, "ranges.csv")
+	const namesCsvPath = join(traceDir, "names.csv")
+
+	// Export individual ranges to CSV
+	writeToCsv(
+		rangesCsvPath,
+		["Function Name", "Self (ms)", "Duration (ms)", "Location"],
+		ungroupedStats.map(stat => [
+			stat.functionName,
+			(stat.selfTime / 1000).toFixed(3),
+			(stat.duration / 1000).toFixed(3),
+			formatLocation(stat.callSite)
+		])
 	)
-	console.log(
-		"-----|-----------------------------------------------|----------------|-------|--------------|-------------------------------------------"
-	)
 
-	top20Functions.forEach((stats, index) => printFunctionSummary(stats, index))
-}
-
-const printFunctionSummary = (stats: FunctionStats, index: number): void => {
-	const typeNameFormatted = formatTypeName(stats.typeName, 45)
-	const selfTimeMs = (stats.selfTime / 1000).toFixed(2).padStart(14)
-	const calls = stats.count.toString().padStart(5)
-	const sites = stats.callSites.size.toString().padStart(12)
-
-	// Get details about top usage site
-	const topUsage = stats.detailedCallSites[0] || {
-		path: "unknown",
-		pos: 0,
-		end: 0,
-		selfTime: 0
-	}
-	const topUsageTime = (topUsage.selfTime / 1000).toFixed(2) + "ms"
-	const topUsageLocation = formatLocation(
-		`${topUsage.path}:${topUsage.pos}-${topUsage.end}`
-	)
-
-	console.log(
-		`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${calls} | ${sites} | ${topUsageLocation} (${topUsageTime})`
-	)
-}
-
-const writeDetailedReport = (ctx: AnalysisContext): void => {
-	const outputPath = join(ctx.traceDir, "analysis.txt")
-	let outputContent = createReportHeader()
-
-	// Add detailed information for each function
-	ctx.allFunctions.forEach((stats, index) => {
-		outputContent += createFunctionReport(stats, index)
-	})
-
-	// Write to file
-	writeFile(outputPath, outputContent)
-	console.log(
-		`\n✅ Analysis complete! A more detailed breakdown is available at ${outputPath}`
-	)
-}
-
-const createReportHeader = (): string =>
-	"TypeScript Type-Checking Performance Analysis\n" +
-	"===========================================\n\n" +
-	"Functions sorted by total self type-checking time\n\n"
-
-const createFunctionReport = (stats: FunctionStats, index: number): string => {
-	let report = `${index + 1}. ${stats.typeName}\n`
-	report += `   Self time: ${(stats.selfTime / 1000).toFixed(2)} ms\n`
-	report += `   Total time: ${(stats.totalTime / 1000).toFixed(2)} ms\n`
-	report += `   Call count: ${stats.count}\n`
-	report += `   Unique call sites: ${stats.callSites.size}\n`
-
-	if (stats.detailedCallSites.length > 0) {
-		report += `   Top call sites by self time:\n`
-		stats.detailedCallSites.forEach((site, i) => {
-			report += `     ${i + 1}. ${site.path}:${site.pos}-${site.end}\n`
-			report += `        Self time: ${(site.selfTime / 1000).toFixed(2)} ms\n`
+	// Export grouped functions to CSV
+	writeToCsv(
+		namesCsvPath,
+		[
+			"Function Name",
+			"Total Self (ms)",
+			"Avg Self (ms)",
+			"Call Count",
+			"Top Location",
+			"Top Self (ms)"
+		],
+		ctx.allFunctions.map(stats => {
+			const topUsage = stats.detailedCallSites[0] || {
+				path: "unknown",
+				pos: 0,
+				end: 0,
+				selfTime: 0
+			}
+			return [
+				stats.functionName,
+				(stats.selfTime / 1000).toFixed(3),
+				(stats.selfTime / stats.count / 1000).toFixed(3),
+				stats.count.toString(),
+				formatLocation(`${topUsage.path}:${topUsage.pos}-${topUsage.end}`),
+				(topUsage.selfTime / 1000).toFixed(3)
+			]
 		})
+	)
+
+	console.log(
+		`\n✅ Analysis complete! Results exported to:\n` +
+			`   - ${rangesCsvPath} (individual calls)\n` +
+			`   - ${namesCsvPath} (grouped by function name)`
+	)
+}
+
+/**
+ * Collect statistics for individual (ungrouped) calls
+ */
+const collectUngroupedStats = (ctx: AnalysisContext): UngroupedCallStats[] => {
+	const ungroupedStats: UngroupedCallStats[] = []
+
+	// Flatten the call tree into individual entries
+	const flattenCallTree = (call: CallRange): void => {
+		ungroupedStats.push({
+			typeId: call.typeId,
+			functionName: call.functionName,
+			callSite: call.callSite,
+			duration: call.duration,
+			selfTime: call.selfTime
+		})
+
+		call.children.forEach(flattenCallTree)
 	}
 
-	report += "\n"
-	return report
+	ctx.rootCalls.forEach(flattenCallTree)
+
+	// Sort by self time in descending order
+	return ungroupedStats.sort((a, b) => b.selfTime - a.selfTime)
+}
+
+/**
+ * Display a summary of individual calls
+ */
+const displayIndividualSummary = (stats: UngroupedCallStats[]): void => {
+	displayTableHeader(["Rank", "Function Name", "Self (ms)", "Location"])
+
+	const top20 = stats.slice(0, 20)
+
+	top20.forEach((stat, index) => {
+		const typeNameFormatted = formatTypeName(stat.functionName, 20)
+		const selfTimeMs = (stat.selfTime / 1000).toFixed(2).padStart(15)
+		const location = formatLocation(stat.callSite)
+
+		console.log(
+			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${location}`
+		)
+	})
+}
+
+/**
+ * Display a summary table header with aligned columns
+ */
+const displayTableHeader = (columns: string[]): void => {
+	// Create header row with standard column widths
+	const headerRow = [
+		columns[0].padEnd(4),
+		columns[1].padEnd(20),
+		columns[2].padEnd(15),
+		...columns.slice(3)
+	].join(" | ")
+
+	// Create separator line matching the header column widths
+	const separatorRow = [
+		"----",
+		"--------------------",
+		"---------------",
+		...columns.slice(3).map(col => "-".repeat(col.length))
+	].join("-|-")
+
+	console.log(headerRow)
+	console.log(separatorRow)
+}
+
+/**
+ * Display a combined summary of grouped functions showing both total and average times
+ */
+const displayGroupedSummary = (functions: FunctionStats[]): void => {
+	displayTableHeader([
+		"Rank",
+		"Function Name",
+		"Total Self (ms)",
+		"Avg Self (ms)",
+		"Calls",
+		"Top Usage"
+	])
+
+	functions.slice(0, 20).forEach((stats, index) => {
+		const typeNameFormatted = formatTypeName(stats.functionName, 20)
+		const totalTimeMs = (stats.selfTime / 1000).toFixed(2).padStart(15)
+		const avgTimeMs = (stats.selfTime / stats.count / 1000)
+			.toFixed(2)
+			.padStart(13)
+		const calls = stats.count.toString().padStart(5)
+
+		// Get details about top usage site
+		const topUsage = stats.detailedCallSites[0] || {
+			path: "unknown",
+			pos: 0,
+			end: 0,
+			selfTime: 0
+		}
+		const topUsageTime = (topUsage.selfTime / 1000).toFixed(2) + "ms"
+		const topUsageLocation = formatLocation(
+			`${topUsage.path}:${topUsage.pos}-${topUsage.end}`
+		)
+
+		console.log(
+			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${totalTimeMs} | ${avgTimeMs} | ${calls} | ${topUsageLocation} (${topUsageTime})`
+		)
+	})
 }
 
 /**
@@ -584,31 +700,30 @@ const findNodeByPreference = (nodes: ts.Node[]): ts.Node | undefined => {
 	return nodes[0]
 }
 
-const analyzeTypeInstantiations = (traceDir: string): void => {
-	// Initialize the analysis context
-	const ctx = initializeAnalysisContext(traceDir)
+/**
+ * Write data to a CSV file
+ */
+const writeToCsv = (
+	filePath: string,
+	headers: string[],
+	rows: string[][]
+): void => {
+	const content = [
+		headers.join(","),
+		...rows.map(row => row.map(escapeForCsv).join(","))
+	].join("\n")
 
-	// Filter entries with duration information
-	filterDurationEntries(ctx)
+	writeFile(filePath, content)
+}
 
-	// Process each duration entry to extract call ranges
-	ctx.durationEntries.forEach(entry => processDurationEntry(entry, ctx))
-
-	// Build call tree from ranges
-	buildCallTree(ctx)
-
-	// Calculate self-time for each call
-	ctx.rootCalls.forEach(calculateSelfTimes)
-
-	// Collect statistics about function types
-	ctx.rootCalls.forEach(call => collectFunctionStats(call, ctx))
-
-	// Sort and rank functions by self-time
-	sortAndRankFunctions(ctx)
-
-	// Display summary to console
-	displaySummary(ctx)
-
-	// Write detailed report to file
-	writeDetailedReport(ctx)
+/**
+ * Escape string for CSV format
+ */
+const escapeForCsv = (value: string): string => {
+	if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+		// If the value contains commas, double quotes, or newlines, wrap it in quotes
+		// and escape any double quotes by doubling them
+		return `"${value.replace(/"/g, '""')}"`
+	}
+	return value
 }
