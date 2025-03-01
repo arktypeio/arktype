@@ -73,6 +73,9 @@ export const numericStringMatcher: RegExp = createNumberMatcher({
 	allowDecimalOnly: true
 })
 
+export const isNumericString =
+	numericStringMatcher.test.bind(numericStringMatcher)
+
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
 
