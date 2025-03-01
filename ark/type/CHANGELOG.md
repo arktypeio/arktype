@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.2
+
+Allow non-zero-prefixed decimals in string.numeric ([#1333](https://github.com/arktypeio/arktype/pull/1333))
+
 ## 2.1.1
 
 Fix a crash on attempting to apply the default `clone` to an object with a getter or setter as one of its non-prototype properties.
