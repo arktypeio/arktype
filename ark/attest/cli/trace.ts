@@ -158,8 +158,8 @@ const processDurationEntry = (
 		const pos = entry.args.pos!
 		const end = entry.args.end!
 
-		// First try to process as a call expression
-		const callExpr = nearestBoundingCallExpression(sourceFile, pos)
+		// First try to find any call expression in the range
+		const callExpr = findCallExpressionInRange(sourceFile, pos, end)
 		if (callExpr) processCallExpression(callExpr, entry, pos, end, ctx)
 		else {
 			// Try to process as another type of node
@@ -170,6 +170,55 @@ const processDurationEntry = (
 	}
 }
 
+/**
+ * Find any call expression within the given range, with preference for method calls
+ */
+const findCallExpressionInRange = (
+	file: ts.SourceFile,
+	start: number,
+	end: number
+): ts.CallExpression | undefined => {
+	// First try the default nearest bounding call expression
+	const boundingCall = nearestBoundingCallExpression(file, start)
+	if (boundingCall) return boundingCall
+
+	// If that fails, search for any call expressions in the range
+	const allNodes = getDescendants(file)
+	const nodesInRange = allNodes.filter(
+		node => node.pos >= start && node.end <= end
+	)
+
+	// Find all call expressions in the range
+	const callExpressions = nodesInRange.filter(node =>
+		ts.isCallExpression(node)
+	) as ts.CallExpression[]
+
+	if (callExpressions.length === 0) return undefined
+
+	// Prioritize method calls (e.g. x.and(), x.or())
+	const methodCalls = callExpressions.filter(call =>
+		ts.isPropertyAccessExpression(call.expression)
+	)
+
+	// Return a method call if found, otherwise the first call expression
+	return methodCalls.length > 0 ? methodCalls[0] : callExpressions[0]
+}
+
+/**
+ * Extract function or method name from a call expression, normalizing the format
+ */
+const extractFunctionName = (callExpr: ts.CallExpression): string => {
+	// For method calls like x.and()
+	if (ts.isPropertyAccessExpression(callExpr.expression))
+		return callExpr.expression.name.getText()
+
+	// For direct function calls like type() or scope()
+	if (ts.isIdentifier(callExpr.expression)) return callExpr.expression.getText()
+
+	// For other expressions, try to get a reasonable name
+	return "anonymous"
+}
+
 const processCallExpression = (
 	callExpr: ts.CallExpression,
 	entry: TraceEntry,
@@ -177,12 +226,13 @@ const processCallExpression = (
 	end: number,
 	ctx: AnalysisContext
 ): void => {
-	const exprType = getStringifiableType(callExpr.expression)
-	const typeId = (exprType as any).id?.toString() || exprType.toString()
-	const typeName = extractReadableTypeName(exprType.toString())
+	// Simply use the function name for grouping
+	const functionName = extractFunctionName(callExpr)
 
-	// Skip test-related functions
-	if (typeName.includes("TestFunction") || typeName.includes("AttestFn")) return
+	// Use the function name for both ID and display name
+	// This will ensure all calls to the same function are grouped together
+	const typeId = `function-${functionName}`
+	const typeName = functionName
 
 	const callSite = `${entry.args.path}:${pos}-${end}`
 
@@ -421,36 +471,20 @@ const createFunctionReport = (stats: FunctionStats, index: number): string => {
  * Format a type name for display, ensuring the most identifiable parts are preserved
  */
 const formatTypeName = (typeName: string, maxLength: number): string => {
+	// Remove any () from the name
+	typeName = typeName.replace(/\(\)$/, "")
+
 	if (typeName.length <= maxLength) return typeName.padEnd(maxLength)
 
-	// Extract the most meaningful part of the type name
-	if (typeName.includes("function")) {
-		const match = typeName.match(/(\w+)(?=\s*\()/)
-		if (match)
-			return `${match[0]}(...) ${typeName.slice(-15)}`.padEnd(maxLength)
-	}
-
-	// For generic types, preserve the base name and first generic param
-	const genericMatch = typeName.match(/(\w+)<(.+?)(?:,|>)/)
-	if (genericMatch) {
-		const baseName = genericMatch[1]
-		const firstParam =
-			genericMatch[2].length > 10 ?
-				genericMatch[2].substring(0, 10) + "..."
-			:	genericMatch[2]
-
-		return `${baseName}<${firstParam}...>`.padEnd(maxLength)
-	}
-
-	// Default smart truncation: keep start and end
-	const charsToKeep = maxLength - 5 // Account for "..." and some balance
+	// Default truncation strategy
+	const charsToKeep = maxLength - 3 // Account for "..."
 	const firstPart = Math.ceil(charsToKeep * 0.7) // Keep more of the start
 	const lastPart = charsToKeep - firstPart
 
 	return (
 		typeName.substring(0, firstPart) +
 		"..." +
-		typeName.substring(typeName.length - lastPart)
+		(lastPart > 0 ? typeName.substring(typeName.length - lastPart) : "")
 	).padEnd(maxLength)
 }
 
@@ -480,32 +514,6 @@ const formatLocation = (location: string): string => {
 		// If any part fails, return the basic filename as fallback
 		return basename(filePath) + (positionRange ? `:${positionRange}` : "")
 	}
-}
-
-/**
- * Extract a more readable name from a potentially complex type signature
- */
-const extractReadableTypeName = (typeName: string): string => {
-	// For named types, extract the name
-	const namedTypeMatch = typeName.match(/^(\w+)(?:<|$)/)
-	if (namedTypeMatch) return typeName
-
-	// For function types, try to extract a meaningful description
-	if (typeName.startsWith("(") && typeName.includes("=>")) {
-		if (typeName.length > 60) {
-			const arrowPos = typeName.indexOf("=>")
-			if (arrowPos > -1) {
-				const returnPart = typeName.substring(arrowPos + 2).trim()
-				return `Function => ${returnPart.length > 20 ? returnPart.substring(0, 20) + "..." : returnPart}`
-			}
-		}
-	}
-
-	// For object types with properties
-	if (typeName.startsWith("{") && typeName.endsWith("}"))
-		return typeName.slice(0, 60)
-
-	return typeName
 }
 
 /**
