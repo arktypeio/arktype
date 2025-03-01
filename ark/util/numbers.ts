@@ -13,7 +13,7 @@ export type NonNegativeIntegerLiteral<n extends bigint = bigint> =
 	| `${Digit}`
 	| (`${Exclude<Digit, 0>}${string}` & `${n}`)
 
-/**
+/*
  * The goal of the number literal and bigint literal regular expressions is to:
  *
  *   1. Ensure definitions form a bijection with the values they represent.
@@ -35,16 +35,16 @@ type CreateNumberMatcherOptions = {
 const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
 	anchoredRegex(
 		RegexPatterns.negativeLookahead(anchoredNegativeZeroPattern) +
+		RegexPatterns.nonCapturingGroup(
+			"-?" +
 			RegexPatterns.nonCapturingGroup(
-				"-?" +
-					RegexPatterns.nonCapturingGroup(
 						RegexPatterns.nonCapturingGroup("0|" + positiveIntegerPattern) +
-							RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
-							"?"
-					) +
-					(opts.allowDecimalOnly ? "" : "|" + opts.decimalPattern) +
-					"?"
-			)
+				RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
+				"?"
+			) +
+			(opts.allowDecimalOnly ? "|" + opts.decimalPattern : "") +
+			"?"
+		)
 	)
 
 /**
