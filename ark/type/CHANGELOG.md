@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.1
+
+Fix a crash on attempting to apply the default `clone` to an object with a getter or setter as one of its non-prototype properties.
+
 ## 2.1.0
 
 ### `match`
