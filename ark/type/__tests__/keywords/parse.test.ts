@@ -5,6 +5,7 @@ contextualize(() => {
 	it("number", () => {
 		const parseNum = type("string.numeric.parse")
 		attest(parseNum("5")).equals(5)
+		attest(parseNum(".5")).equals(0.5)
 		attest(parseNum("5.5")).equals(5.5)
 		attest(parseNum("five").toString()).snap(
 			'must be a well-formed numeric string (was "five")'
