@@ -74,7 +74,7 @@ export const nearestCallExpressionChild = (
 	return result
 }
 
-const nearestBoundingCallExpression = (
+export const nearestBoundingCallExpression = (
 	node: ts.Node,
 	position: number
 ): ts.CallExpression | undefined =>

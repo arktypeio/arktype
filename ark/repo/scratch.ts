@@ -1,38 +1,27 @@
-// @ts-nocheck
+import { type } from "arktype"
 
-import { match } from "arktype"
-import { P, match as tsPatternMatch } from "ts-pattern"
-
-const toJsonArkType = match({
-	"string | number | boolean | null": v => v,
-	bigint: b => `${b}n`,
-	object: o => {
-		for (const k in o) {
-			o[k] = toJsonArkType(o[k])
-		}
-		return o
-	},
-	default: "assert"
+// Define environment variable requirements
+const environmentSchema = type({
+	DATA_PATH: "string = './data'"
 })
 
-toJsonArkType("foo") // 9 nanoseconds
-toJsonArkType(5n) // 33 nanoseconds
-toJsonArkType({ nestedValue: 5n }) // 44 nanoseconds
+const base = {
+	get foo() {
+		return "foo"
+	}
+}
 
-const toJsonTsPattern = (value: unknown) =>
-	tsPatternMatch(value)
-		.with(P.union(P.string, P.number, P.boolean, null), v => v)
-		.with(P.bigint, v => `${v}n`)
-		.with({}, o => {
-			for (const k in o) {
-				o[k] = toJsonTsPattern(o[k])
-			}
-			return o
-		})
-		.otherwise(() => {
-			throw new Error("value is not valid JSON")
-		})
+// Validate environment variables
+console.info("🔧 Parsing environment variables...")
+const result = environmentSchema(process.env)
 
-toJsonTsPattern("foo") // 765 nanoseconds
-toJsonTsPattern(5n) // 924 nanoseconds
-toJsonTsPattern({ nestedValue: 5n }) // 2080 nanoseconds
+// Exit if validation fails
+if (result instanceof type.errors) {
+	console.error(result.summary)
+	console.error("process exited with error code 1")
+	process.exit(1)
+}
+
+// Export validated environment
+const environment = result
+export { environment }

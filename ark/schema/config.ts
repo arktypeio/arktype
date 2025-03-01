@@ -85,10 +85,12 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	for (k in extensions) {
 		result[k] =
 			isNodeKind(k) ?
-				{
+				// not casting this makes TS compute a very inefficient
+				// type that is not needed
+				({
 					...base[k],
 					...extensions[k]
-				}
+				} as never)
 			:	extensions[k]
 	}
 	return result

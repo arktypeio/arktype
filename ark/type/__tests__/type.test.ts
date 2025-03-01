@@ -77,8 +77,8 @@ contextualize(() => {
 		)
 	})
 
-	// these assignability tests seem to contribute a ton of instantiations but
-	// maybe not much check time? needs more investigation
+	// the negative cases of these assignability tests
+	// contribute a ton of instantiations and check time
 
 	it("base signature obeys assignability rules", () => {
 		type("'foo'[]") satisfies Type<string[]>
@@ -87,6 +87,7 @@ contextualize(() => {
 		attest(() => type("number[]") satisfies Type<string[]>).type.errors(
 			"Type 'number' is not assignable to type 'string'"
 		)
+		attest.instantiations([525767, "instantiations"])
 	})
 
 	it("args signature obeys assignability rules", () => {
@@ -96,6 +97,7 @@ contextualize(() => {
 		attest(() => type("number", "[]") satisfies Type<string[]>).type.errors(
 			"Type 'number' is not assignable to type 'string'"
 		)
+		attest.instantiations([524145, "instantiations"])
 	})
 
 	it("type.Any allows arbitrary scope", () => {

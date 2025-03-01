@@ -9,12 +9,16 @@ bench.baseline(() => {
 	)
 })
 
+// checkDeferredNode: 9ms
 bench("arktype", () => {
-	const authenticatorTransportFutureSchema = type(
-		"('ble'|'internal'|'nfc'|'usb'|'cable'|'hybrid')[]"
-	)
+	const authenticatorTransportFutureSchema = type
+		.enumerated("ble", "internal", "nfc", "usb", "cable", "hybrid")
+		.array()
 
-	const authenticatorAttachmentSchema = type("'cross-platform'|'platform'")
+	const authenticatorAttachmentSchema = type.enumerated(
+		"cross-platform",
+		"platform"
+	)
 
 	const authenticationResponseJSONSchema = type({
 		id: "string",
@@ -55,13 +59,14 @@ bench("arktype", () => {
 		type: "'public-key'"
 	})
 
-	const out = verifyRegistrationResponseOptsSchema
+	const derived = verifyRegistrationResponseOptsSchema
 		.pick("id", "clientExtensionResults", "authenticatorAttachment")
 		.omit("clientExtensionResults")
-}).types([10451, "instantiations"])
+}).types([5769, "instantiations"])
 
+// checkDeferredNode: 19ms
 bench("arktype scope", () => {
-	return scope({
+	const types = scope({
 		authenticatorTransportFutureSchema:
 			"('ble'|'internal'|'nfc'|'usb'|'cable'|'hybrid')[]",
 		authenticatorAttachmentSchema: "'cross-platform'|'platform'",
@@ -103,8 +108,13 @@ bench("arktype scope", () => {
 			type: "'public-key'"
 		}
 	}).export()
-}).types([8513, "instantiations"])
 
+	const derived = types.verifyRegistrationResponseOptsSchema
+		.pick("id", "clientExtensionResults", "authenticatorAttachment")
+		.omit("clientExtensionResults")
+}).types([11380, "instantiations"])
+
+// checkDeferredNode: 82ms
 bench("zod", () => {
 	const authenticatorTransportFutureSchema = z.array(
 		z.union([
@@ -163,11 +173,11 @@ bench("zod", () => {
 		type: z.literal("public-key")
 	})
 
-	const ok = verifyRegistrationResponseOptsSchema
+	const derived = verifyRegistrationResponseOptsSchema
 		.pick({
 			id: true,
 			response: true,
 			clientExtensionResults: true
 		})
 		.omit({ clientExtensionResults: true })
-}).types([16666, "instantiations"])
+}).types([16922, "instantiations"])

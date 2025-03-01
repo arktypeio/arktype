@@ -81,7 +81,7 @@ export const attestInternal = (
 export const attest: AttestFn = Object.assign(attestInternal, {
 	instantiations: (args: Measure<"instantiations"> | undefined) => {
 		const attestConfig = getConfig()
-		if (attestConfig.skipInlineInstantiations) return
+		if (attestConfig.skipTypes || attestConfig.skipInlineInstantiations) return
 
 		const calledFrom = caller()
 		const ctx = getBenchCtx([calledFrom.file])
