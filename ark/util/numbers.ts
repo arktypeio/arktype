@@ -35,16 +35,16 @@ type CreateNumberMatcherOptions = {
 const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
 	anchoredRegex(
 		RegexPatterns.negativeLookahead(anchoredNegativeZeroPattern) +
-		RegexPatterns.nonCapturingGroup(
-			"-?" +
 			RegexPatterns.nonCapturingGroup(
+				"-?" +
+					RegexPatterns.nonCapturingGroup(
 						RegexPatterns.nonCapturingGroup("0|" + positiveIntegerPattern) +
-				RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
-				"?"
-			) +
-			(opts.allowDecimalOnly ? "|" + opts.decimalPattern : "") +
-			"?"
-		)
+							RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
+							"?"
+					) +
+					(opts.allowDecimalOnly ? "|" + opts.decimalPattern : "") +
+					"?"
+			)
 	)
 
 /**
