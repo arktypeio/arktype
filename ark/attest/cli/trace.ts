@@ -13,42 +13,6 @@ import {
 import { getConfig } from "../config.ts"
 import { baseDiagnosticTscCmd } from "./shared.ts"
 
-export const trace = async (args: string[]): Promise<void> => {
-	const packageDir = resolve(args[0] ?? process.cwd())
-	const config = getConfig()
-
-	if (!config.tsconfig) {
-		console.error(
-			`attest trace must be run from a directory with a tsconfig.json file`
-		)
-		process.exit(1)
-	}
-
-	const traceDir = resolve(config.cacheDir, "trace")
-	ensureDir(traceDir)
-
-	try {
-		console.log(`⏳ Gathering type trace data for ${packageDir}...`)
-		// These cache files have to be removed before any analysis is done otherwise
-		// the results will be meaningless.
-		// the .attest/trace directory will contain a trace.json file and a types.json file.
-		// the trace.json file can be viewed via a tool like https://ui.perfetto.dev/
-		// the types.json file can be used to associate IDs from the trace file with type aliases
-		execSync(
-			`${baseDiagnosticTscCmd} --project ${config.tsconfig} --generateTrace ${traceDir}`,
-			{
-				cwd: packageDir,
-				stdio: "inherit"
-			}
-		)
-	} catch (e) {
-		console.error(String(e))
-	} finally {
-		console.log(`⏳ Analyzing type trace data for ${packageDir}...`)
-		analyzeTypeInstantiations(traceDir)
-	}
-}
-
 interface TraceEntry {
 	pid: number
 	tid: number
@@ -80,6 +44,13 @@ interface CallRange {
 	selfTime: number
 }
 
+interface CallSiteDetail {
+	path: string
+	pos: number
+	end: number
+	selfTime: number
+}
+
 interface FunctionStats {
 	typeId: string
 	typeName: string
@@ -87,30 +58,84 @@ interface FunctionStats {
 	totalTime: number
 	selfTime: number
 	count: number
-	// Track the first location where this type is referenced
 	firstLocation?: string
-	// Track detailed call site information
-	detailedCallSites: Array<{
-		path: string
-		pos: number
-		end: number
-		selfTime: number
-	}>
+	detailedCallSites: CallSiteDetail[]
 }
 
-const analyzeTypeInstantiations = (traceDir: string): void => {
-	// Initialize TypeScript server
+interface AnalysisContext {
+	traceDir: string
+	tsServer: TsServer
+	traceEntries: TraceEntry[]
+	durationEntries: TraceEntry[]
+	callRanges: CallRange[]
+	rootCalls: CallRange[]
+	functionStats: Record<string, FunctionStats>
+	allFunctions: FunctionStats[]
+}
+
+export const trace = async (args: string[]): Promise<void> => {
+	const packageDir = resolve(args[0] ?? process.cwd())
+	const config = getConfig()
+
+	if (!config.tsconfig) {
+		console.error(
+			`attest trace must be run from a directory with a tsconfig.json file`
+		)
+		process.exit(1)
+	}
+
+	const traceDir = resolve(config.cacheDir, "trace")
+	ensureDir(traceDir)
+
+	try {
+		console.log(`⏳ Gathering type trace data for ${packageDir}...`)
+		generateTraceData(traceDir, config.tsconfig, packageDir)
+	} catch (e) {
+		console.error(String(e))
+	} finally {
+		console.log(`⏳ Analyzing type trace data for ${packageDir}...`)
+		analyzeTypeInstantiations(traceDir)
+	}
+}
+
+const generateTraceData = (
+	traceDir: string,
+	tsconfigPath: string,
+	packageDir: string
+): void => {
+	execSync(
+		`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
+		{
+			cwd: packageDir,
+			stdio: "inherit"
+		}
+	)
+}
+
+const initializeAnalysisContext = (traceDir: string): AnalysisContext => {
 	const tsServer = TsServer.instance
 
-	// Load data from trace file
+	// Load trace data
 	const tracePath = join(traceDir, "trace.json")
 	if (!existsSync(tracePath))
 		throw new Error(`Expected a trace file at ${tracePath}`)
 
 	const traceEntries: TraceEntry[] = readJson(tracePath) as never
 
-	// Focus on entries with duration
-	const durationEntries = traceEntries.filter(
+	return {
+		traceDir,
+		tsServer,
+		traceEntries,
+		durationEntries: [],
+		callRanges: [],
+		rootCalls: [],
+		functionStats: {},
+		allFunctions: []
+	}
+}
+
+const filterDurationEntries = (ctx: AnalysisContext): void => {
+	ctx.durationEntries = ctx.traceEntries.filter(
 		entry =>
 			entry.ph === "X" &&
 			entry.dur !== undefined &&
@@ -120,196 +145,204 @@ const analyzeTypeInstantiations = (traceDir: string): void => {
 	)
 
 	console.log(
-		`Found ${durationEntries.length} traces with duration information`
+		`Found ${ctx.durationEntries.length} traces with duration information`
 	)
+}
 
-	// Convert to call ranges with start and end times
-	const callRanges: CallRange[] = []
+const processDurationEntry = (
+	entry: TraceEntry,
+	ctx: AnalysisContext
+): void => {
+	try {
+		const sourceFile = ctx.tsServer.getSourceFileOrThrow(entry.args.path!)
+		const pos = entry.args.pos!
+		const end = entry.args.end!
 
-	// Process each entry and extract call information
-	durationEntries.forEach(entry => {
-		try {
-			// Get the source file
-			const sourceFile = tsServer.getSourceFileOrThrow(entry.args.path!)
-
-			// Find the nearest node at this position
-			const pos = entry.args.pos!
-			const end = entry.args.end!
-
-			// Try to find a call expression first
-			const callExpr = nearestBoundingCallExpression(sourceFile, pos)
-
-			if (callExpr) {
-				// It's a function call - process normally
-				const exprType = getStringifiableType(callExpr.expression)
-				const typeId = (exprType as any).id?.toString() || exprType.toString()
-
-				// Extract a more readable type name
-				let typeName = exprType.toString()
-				// Try to extract a more concise name from the type
-				typeName = extractReadableTypeName(typeName)
-
-				// Skip test functions and other non-performant types
-				if (typeName.includes("TestFunction") || typeName.includes("AttestFn"))
-					return
-
-				// Create call site identifier
-				const callSite = `${entry.args.path}:${pos}-${end}`
-
-				// Create call range with explicit start and end times
-				callRanges.push({
-					id: `${entry.ts}-${pos}-${end}`,
-					typeId,
-					typeName,
-					callSite,
-					startTime: entry.ts,
-					endTime: entry.ts + (entry.dur || 0),
-					duration: entry.dur || 0,
-					children: [],
-					selfTime: entry.dur || 0
-				})
-			} else {
-				// Try to find any other meaningful node
-				// These could be assignments, property accesses, etc.
-				const relevantNode = findMostSpecificNodeInRange(sourceFile, pos, end)
-
-				if (relevantNode) {
-					// Extract type information from the relevant node
-					const nodeType = getStringifiableType(relevantNode)
-					const nodeKind = ts.SyntaxKind[relevantNode.kind]
-					const typeName = `${nodeKind}: ${nodeType.toString().substring(0, 25)}`
-
-					// Create a synthetic ID based on the node kind and type
-					const typeId = `node-${relevantNode.kind}-${(nodeType as any).id || nodeType.toString().substring(0, 20)}`
-
-					// Create call site identifier
-					const callSite = `${entry.args.path}:${pos}-${end}`
-
-					// Create range with explicit start and end times
-					callRanges.push({
-						id: `${entry.ts}-${pos}-${end}`,
-						typeId,
-						typeName,
-						callSite,
-						startTime: entry.ts,
-						endTime: entry.ts + (entry.dur || 0),
-						duration: entry.dur || 0,
-						children: [],
-						selfTime: entry.dur || 0
-					})
-				}
-			}
-		} catch (e) {
-			if (!(e instanceof Error)) throw e
-			// Skip entries that can't be properly analyzed
-			if (e.message?.includes("Unable to find bounding call expression")) {
-				// Silent failure - not all ranges are call expressions
-				return
-			}
-			console.warn(
-				`Error processing entry at ${entry.args.path}:${entry.args.pos}: ${e.message}`
-			)
+		// First try to process as a call expression
+		const callExpr = nearestBoundingCallExpression(sourceFile, pos)
+		if (callExpr) processCallExpression(callExpr, entry, pos, end, ctx)
+		else {
+			// Try to process as another type of node
+			processNonCallNode(sourceFile, entry, pos, end, ctx)
 		}
+	} catch (e) {
+		handleProcessingError(e, entry)
+	}
+}
+
+const processCallExpression = (
+	callExpr: ts.CallExpression,
+	entry: TraceEntry,
+	pos: number,
+	end: number,
+	ctx: AnalysisContext
+): void => {
+	const exprType = getStringifiableType(callExpr.expression)
+	const typeId = (exprType as any).id?.toString() || exprType.toString()
+	const typeName = extractReadableTypeName(exprType.toString())
+
+	// Skip test-related functions
+	if (typeName.includes("TestFunction") || typeName.includes("AttestFn")) return
+
+	const callSite = `${entry.args.path}:${pos}-${end}`
+
+	ctx.callRanges.push({
+		id: `${entry.ts}-${pos}-${end}`,
+		typeId,
+		typeName,
+		callSite,
+		startTime: entry.ts,
+		endTime: entry.ts + (entry.dur || 0),
+		duration: entry.dur || 0,
+		children: [],
+		selfTime: entry.dur || 0
 	})
+}
 
-	// Sort by start time to establish nesting relationships
-	callRanges.sort((a, b) => a.startTime - b.startTime)
+const processNonCallNode = (
+	sourceFile: ts.SourceFile,
+	entry: TraceEntry,
+	pos: number,
+	end: number,
+	ctx: AnalysisContext
+): void => {
+	const relevantNode = findMostSpecificNodeInRange(sourceFile, pos, end)
+	if (!relevantNode) return
 
-	// Build the call tree to track nesting
-	const rootCalls: CallRange[] = []
+	const nodeType = getStringifiableType(relevantNode)
+	const nodeKind = ts.SyntaxKind[relevantNode.kind]
+	const typeName = `${nodeKind}: ${nodeType.toString().substring(0, 25)}`
+	const typeId = `node-${relevantNode.kind}-${(nodeType as any).id || nodeType.toString().substring(0, 20)}`
+	const callSite = `${entry.args.path}:${pos}-${end}`
+
+	ctx.callRanges.push({
+		id: `${entry.ts}-${pos}-${end}`,
+		typeId,
+		typeName,
+		callSite,
+		startTime: entry.ts,
+		endTime: entry.ts + (entry.dur || 0),
+		duration: entry.dur || 0,
+		children: [],
+		selfTime: entry.dur || 0
+	})
+}
+
+const handleProcessingError = (e: unknown, entry: TraceEntry): void => {
+	if (!(e instanceof Error)) throw e
+
+	// Silent failure for common case of not finding a call expression
+	if (e.message?.includes("Unable to find bounding call expression")) return
+
+	console.warn(
+		`Error processing entry at ${entry.args.path}:${entry.args.pos}: ${e.message}`
+	)
+}
+
+const buildCallTree = (ctx: AnalysisContext): void => {
+	// Sort by start time for nesting analysis
+	ctx.callRanges.sort((a, b) => a.startTime - b.startTime)
+
 	const activeCallStack: CallRange[] = []
 
-	callRanges.forEach(call => {
-		// Pop finished calls from the stack
-		while (
-			activeCallStack.length > 0 &&
-			activeCallStack[activeCallStack.length - 1].endTime < call.startTime
-		)
-			activeCallStack.pop()
-
-		if (activeCallStack.length === 0) {
-			// This is a root call
-			rootCalls.push(call)
-		} else {
-			// This call is nested inside the current active call
-			const parent = activeCallStack[activeCallStack.length - 1]
-			parent.children.push(call)
-		}
-
-		// Add current call to active stack
+	ctx.callRanges.forEach(call => {
+		popFinishedCalls(call, activeCallStack)
+		assignToParentOrRoot(call, activeCallStack, ctx)
 		activeCallStack.push(call)
 	})
+}
 
-	// Calculate self-time by subtracting child durations
-	const calculateSelfTime = (call: CallRange): number => {
-		let childrenTime = 0
-		for (const child of call.children) {
-			// Ensure children don't overlap in our calculation
-			childrenTime += calculateSelfTime(child)
+const popFinishedCalls = (
+	call: CallRange,
+	activeCallStack: CallRange[]
+): void => {
+	while (
+		activeCallStack.length > 0 &&
+		activeCallStack[activeCallStack.length - 1].endTime < call.startTime
+	)
+		activeCallStack.pop()
+}
+
+const assignToParentOrRoot = (
+	call: CallRange,
+	activeCallStack: CallRange[],
+	ctx: AnalysisContext
+): void => {
+	if (activeCallStack.length === 0) {
+		// This is a root call
+		ctx.rootCalls.push(call)
+	} else {
+		// This call is nested inside the current active call
+		const parent = activeCallStack[activeCallStack.length - 1]
+		parent.children.push(call)
+	}
+}
+
+const calculateSelfTimes = (call: CallRange): number => {
+	let childrenTime = 0
+	for (const child of call.children) childrenTime += calculateSelfTimes(child)
+
+	call.selfTime = call.duration - childrenTime
+	return call.duration
+}
+
+const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
+	// Initialize stats object if needed
+	if (!ctx.functionStats[call.typeId]) {
+		ctx.functionStats[call.typeId] = {
+			typeId: call.typeId,
+			typeName: call.typeName,
+			callSites: new Set(),
+			totalTime: 0,
+			selfTime: 0,
+			count: 0,
+			firstLocation: call.callSite,
+			detailedCallSites: []
 		}
-		call.selfTime = call.duration - childrenTime
-		return call.duration
 	}
 
-	// Calculate self-time for all root calls
-	rootCalls.forEach(calculateSelfTime)
+	const stats = ctx.functionStats[call.typeId]
 
-	// Collect stats by function type with detailed call site information
-	const functionStats: Record<string, FunctionStats> = {}
+	// Track detailed call site information
+	addCallSiteToStats(call, stats)
 
-	const collectStats = (call: CallRange) => {
-		// Add stats for this call
-		if (!functionStats[call.typeId]) {
-			functionStats[call.typeId] = {
-				typeId: call.typeId,
-				typeName: call.typeName,
-				callSites: new Set(),
-				totalTime: 0,
-				selfTime: 0,
-				count: 0,
-				firstLocation: call.callSite,
-				detailedCallSites: []
-			}
-		}
+	// Update aggregate metrics
+	stats.callSites.add(call.callSite)
+	stats.totalTime += call.duration
+	stats.selfTime += call.selfTime
+	stats.count++
 
-		const stats = functionStats[call.typeId]
+	// Process children
+	call.children.forEach(child => collectFunctionStats(child, ctx))
+}
 
-		// Track all call sites with their individual self-time
-		const [filePath, positionRange] = call.callSite.split(":")
-		const [posStr, endStr] = positionRange.split("-")
-		stats.detailedCallSites.push({
-			path: filePath,
-			pos: parseInt(posStr),
-			end: parseInt(endStr),
-			selfTime: call.selfTime
-		})
+const addCallSiteToStats = (call: CallRange, stats: FunctionStats): void => {
+	const [filePath, positionRange] = call.callSite.split(":")
+	const [posStr, endStr] = positionRange.split("-")
 
-		stats.callSites.add(call.callSite)
-		stats.totalTime += call.duration
-		stats.selfTime += call.selfTime
-		stats.count++
+	stats.detailedCallSites.push({
+		path: filePath,
+		pos: parseInt(posStr),
+		end: parseInt(endStr),
+		selfTime: call.selfTime
+	})
+}
 
-		// Process children
-		call.children.forEach(collectStats)
-	}
-
-	// Collect stats for all calls
-	rootCalls.forEach(collectStats)
-
-	// For each type, sort its call sites by self-time contribution
-	Object.values(functionStats).forEach(stats => {
+const sortAndRankFunctions = (ctx: AnalysisContext): void => {
+	// Sort each function's call sites by self-time
+	Object.values(ctx.functionStats).forEach(stats => {
 		stats.detailedCallSites.sort((a, b) => b.selfTime - a.selfTime)
 	})
 
 	// Sort functions by self-time
-	const allFunctions = Object.values(functionStats).sort(
+	ctx.allFunctions = Object.values(ctx.functionStats).sort(
 		(a, b) => b.selfTime - a.selfTime
 	)
+}
 
-	// Print summary of top 20 to console
-	const top20Functions = allFunctions.slice(0, 20)
+const displaySummary = (ctx: AnalysisContext): void => {
+	const top20Functions = ctx.allFunctions.slice(0, 20)
 
-	// Print with wider column for type name
 	console.log("\nTop Functions by Self Type-Checking Time:\n")
 	console.log(
 		"Rank | Type Name                                     | Self Time (ms) | Calls | Unique Sites | Top Usage (ms)"
@@ -318,53 +351,39 @@ const analyzeTypeInstantiations = (traceDir: string): void => {
 		"-----|-----------------------------------------------|----------------|-------|--------------|-------------------------------------------"
 	)
 
-	top20Functions.forEach((stats, index) => {
-		// Format the type name with smart truncation to keep the most identifiable part
-		const typeNameFormatted = formatTypeName(stats.typeName, 45)
+	top20Functions.forEach((stats, index) => printFunctionSummary(stats, index))
+}
 
-		const selfTimeMs = (stats.selfTime / 1000).toFixed(2).padStart(14)
-		const calls = stats.count.toString().padStart(5)
-		const sites = stats.callSites.size.toString().padStart(12)
+const printFunctionSummary = (stats: FunctionStats, index: number): void => {
+	const typeNameFormatted = formatTypeName(stats.typeName, 45)
+	const selfTimeMs = (stats.selfTime / 1000).toFixed(2).padStart(14)
+	const calls = stats.count.toString().padStart(5)
+	const sites = stats.callSites.size.toString().padStart(12)
 
-		// Get the top usage by self-time - stats.detailedCallSites is already sorted
-		const topUsage = stats.detailedCallSites[0]
+	// Get details about top usage site
+	const topUsage = stats.detailedCallSites[0] || {
+		path: "unknown",
+		pos: 0,
+		end: 0,
+		selfTime: 0
+	}
+	const topUsageTime = (topUsage.selfTime / 1000).toFixed(2) + "ms"
+	const topUsageLocation = formatLocation(
+		`${topUsage.path}:${topUsage.pos}-${topUsage.end}`
+	)
 
-		// Format top location with its self-time
-		const topUsageTime = (topUsage.selfTime / 1000).toFixed(2) + "ms"
-		const topUsageLocation = formatLocation(
-			`${topUsage.path}:${topUsage.pos}-${topUsage.end}`
-		)
+	console.log(
+		`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${calls} | ${sites} | ${topUsageLocation} (${topUsageTime})`
+	)
+}
 
-		console.log(
-			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${calls} | ${sites} | ${topUsageLocation} (${topUsageTime})`
-		)
-	})
+const writeDetailedReport = (ctx: AnalysisContext): void => {
+	const outputPath = join(ctx.traceDir, "analysis.txt")
+	let outputContent = createReportHeader()
 
-	// Write comprehensive data to file
-	const outputPath = join(traceDir, "analysis.txt")
-
-	// Create output content with detailed information
-	let outputContent = "TypeScript Type-Checking Performance Analysis\n"
-	outputContent += "===========================================\n\n"
-	outputContent += "Functions sorted by total self type-checking time\n\n"
-
-	allFunctions.forEach((stats, index) => {
-		outputContent += `${index + 1}. ${stats.typeName}\n`
-		outputContent += `   Self time: ${(stats.selfTime / 1000).toFixed(2)} ms\n`
-		outputContent += `   Total time: ${(stats.totalTime / 1000).toFixed(2)} ms\n`
-		outputContent += `   Call count: ${stats.count}\n`
-		outputContent += `   Unique call sites: ${stats.callSites.size}\n`
-
-		if (stats.detailedCallSites.length > 0) {
-			outputContent += `   Top call sites by self time:\n`
-
-			stats.detailedCallSites.forEach((site, i) => {
-				outputContent += `     ${i + 1}. ${site.path}:${site.pos}-${site.end}\n`
-				outputContent += `        Self time: ${(site.selfTime / 1000).toFixed(2)} ms\n`
-			})
-		}
-
-		outputContent += "\n"
+	// Add detailed information for each function
+	ctx.allFunctions.forEach((stats, index) => {
+		outputContent += createFunctionReport(stats, index)
 	})
 
 	// Write to file
@@ -374,6 +393,30 @@ const analyzeTypeInstantiations = (traceDir: string): void => {
 	)
 }
 
+const createReportHeader = (): string =>
+	"TypeScript Type-Checking Performance Analysis\n" +
+	"===========================================\n\n" +
+	"Functions sorted by total self type-checking time\n\n"
+
+const createFunctionReport = (stats: FunctionStats, index: number): string => {
+	let report = `${index + 1}. ${stats.typeName}\n`
+	report += `   Self time: ${(stats.selfTime / 1000).toFixed(2)} ms\n`
+	report += `   Total time: ${(stats.totalTime / 1000).toFixed(2)} ms\n`
+	report += `   Call count: ${stats.count}\n`
+	report += `   Unique call sites: ${stats.callSites.size}\n`
+
+	if (stats.detailedCallSites.length > 0) {
+		report += `   Top call sites by self time:\n`
+		stats.detailedCallSites.forEach((site, i) => {
+			report += `     ${i + 1}. ${site.path}:${site.pos}-${site.end}\n`
+			report += `        Self time: ${(site.selfTime / 1000).toFixed(2)} ms\n`
+		})
+	}
+
+	report += "\n"
+	return report
+}
+
 /**
  * Format a type name for display, ensuring the most identifiable parts are preserved
  */
@@ -381,8 +424,6 @@ const formatTypeName = (typeName: string, maxLength: number): string => {
 	if (typeName.length <= maxLength) return typeName.padEnd(maxLength)
 
 	// Extract the most meaningful part of the type name
-
-	// For functions, try to get the name part
 	if (typeName.includes("function")) {
 		const match = typeName.match(/(\w+)(?=\s*\()/)
 		if (match)
@@ -414,7 +455,7 @@ const formatTypeName = (typeName: string, maxLength: number): string => {
 }
 
 /**
- * Format a file location to be more readable - now with relative path and line:char
+ * Format a file location to be more readable with relative path and line:char
  */
 const formatLocation = (location: string): string => {
 	if (!location || location === "unknown") return "unknown"
@@ -425,15 +466,16 @@ const formatLocation = (location: string): string => {
 	try {
 		const relativePath = relative(process.cwd(), filePath)
 
-		// Get position value
-		const pos = parseInt(positionRange)
+		// Get position values
+		const [posStr] = positionRange.split("-")
+		const pos = parseInt(posStr)
 
 		// Get the source file to convert position to line:character
 		const sourceFile = TsServer.instance.getSourceFileOrThrow(filePath)
-		const startLineAndChar = sourceFile.getLineAndCharacterOfPosition(pos)
+		const lineAndChar = sourceFile.getLineAndCharacterOfPosition(pos)
 
-		// Format as relative-path:startLine:startChar
-		return `${relativePath}:${startLineAndChar.line + 1}:${startLineAndChar.character + 1}`
+		// Format as relative-path:line:char
+		return `${relativePath}:${lineAndChar.line + 1}:${lineAndChar.character + 1}`
 	} catch {
 		// If any part fails, return the basic filename as fallback
 		return basename(filePath) + (positionRange ? `:${positionRange}` : "")
@@ -446,14 +488,10 @@ const formatLocation = (location: string): string => {
 const extractReadableTypeName = (typeName: string): string => {
 	// For named types, extract the name
 	const namedTypeMatch = typeName.match(/^(\w+)(?:<|$)/)
-	if (namedTypeMatch) {
-		// If it has a clear name at the start, prioritize that
-		return typeName
-	}
+	if (namedTypeMatch) return typeName
 
 	// For function types, try to extract a meaningful description
 	if (typeName.startsWith("(") && typeName.includes("=>")) {
-		// Try to make function signatures more readable
 		if (typeName.length > 60) {
 			const arrowPos = typeName.indexOf("=>")
 			if (arrowPos > -1) {
@@ -463,9 +501,9 @@ const extractReadableTypeName = (typeName: string): string => {
 		}
 	}
 
-	// For object types with properties, try to make it clearer
+	// For object types with properties
 	if (typeName.startsWith("{") && typeName.endsWith("}"))
-		return typeName.length > 60 ? `Object{...}` : typeName
+		return typeName.slice(0, 60)
 
 	return typeName
 }
@@ -486,7 +524,7 @@ const findMostSpecificNodeInRange = (
 		node => node.pos >= start && node.end <= end
 	)
 
-	// Find most specific nodes (nodes that don't contain other nodes in our filtered list)
+	// Find most specific nodes (leaf nodes)
 	const leafNodes = nodesInRange.filter(
 		node =>
 			!nodesInRange.some(
@@ -495,21 +533,19 @@ const findMostSpecificNodeInRange = (
 			)
 	)
 
-	// Try to find meaningful nodes in this order:
-	// 1. Type references
-	// 2. Identifiers that are part of declarations
-	// 3. Property accesses
-	// 4. Assignments
-	// 5. Any expression
+	// Find nodes in order of preference
+	return findNodeByPreference(leafNodes)
+}
 
-	// Check for type references
-	const typeReference = leafNodes.find(
+const findNodeByPreference = (nodes: ts.Node[]): ts.Node | undefined => {
+	// 1. Type references
+	const typeReference = nodes.find(
 		node => ts.isTypeReferenceNode(node) || ts.isTypeQueryNode(node)
 	)
 	if (typeReference) return typeReference
 
-	// Check for declarations
-	const declaration = leafNodes.find(
+	// 2. Declarations
+	const declaration = nodes.find(
 		node =>
 			ts.isVariableDeclaration(node) ||
 			ts.isFunctionDeclaration(node) ||
@@ -518,26 +554,53 @@ const findMostSpecificNodeInRange = (
 	)
 	if (declaration) return declaration
 
-	// Check for property accesses
-	const propertyAccess = leafNodes.find(node =>
-		ts.isPropertyAccessExpression(node)
-	)
+	// 3. Property accesses
+	const propertyAccess = nodes.find(node => ts.isPropertyAccessExpression(node))
 	if (propertyAccess) return propertyAccess
 
-	// Check for assignments
-	const assignment = leafNodes.find(
+	// 4. Assignments
+	const assignment = nodes.find(
 		node =>
 			ts.isBinaryExpression(node) &&
 			node.operatorToken.kind === ts.SyntaxKind.EqualsToken
 	)
 	if (assignment) return assignment
 
-	// Check for expressions
-	const expression = leafNodes.find(
+	// 5. Expressions
+	const expression = nodes.find(
 		node => ts.isExpressionStatement(node) || ts.isExpression(node)
 	)
 	if (expression) return expression
 
-	// Return the first leaf node if none of the above matched
-	return leafNodes[0]
+	// Default: first node
+	return nodes[0]
+}
+
+const analyzeTypeInstantiations = (traceDir: string): void => {
+	// Initialize the analysis context
+	const ctx = initializeAnalysisContext(traceDir)
+
+	// Filter entries with duration information
+	filterDurationEntries(ctx)
+
+	// Process each duration entry to extract call ranges
+	ctx.durationEntries.forEach(entry => processDurationEntry(entry, ctx))
+
+	// Build call tree from ranges
+	buildCallTree(ctx)
+
+	// Calculate self-time for each call
+	ctx.rootCalls.forEach(calculateSelfTimes)
+
+	// Collect statistics about function types
+	ctx.rootCalls.forEach(call => collectFunctionStats(call, ctx))
+
+	// Sort and rank functions by self-time
+	sortAndRankFunctions(ctx)
+
+	// Display summary to console
+	displaySummary(ctx)
+
+	// Write detailed report to file
+	writeDetailedReport(ctx)
 }
