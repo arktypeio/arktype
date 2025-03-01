@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { fileName } from "@ark/fs"
 import { basename } from "path"
-import { analyze } from "./analyze.ts"
 import { precache } from "./precache.ts"
 import { stats } from "./stats.ts"
 import { trace } from "./trace.ts"
@@ -9,8 +8,7 @@ import { trace } from "./trace.ts"
 const subcommands = {
 	precache,
 	trace,
-	stats,
-	analyze
+	stats
 }
 
 type Subcommand = keyof typeof subcommands
