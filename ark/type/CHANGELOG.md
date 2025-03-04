@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.3
+
+Fix a jitless-mode bug causing default + `onUndeclaredKey` transformations to not apply (#1335)
+
 ## 2.1.2
 
 Allow non-zero-prefixed decimals in string.numeric ([#1333](https://github.com/arktypeio/arktype/pull/1333))
