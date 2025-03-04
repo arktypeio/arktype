@@ -58,6 +58,21 @@ contextualize(() => {
 			)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1335
+		it("jitless", () => {
+			const types = type.module(
+				{
+					foo: {
+						test: "string = 'test'"
+					}
+				},
+				{ jitless: true }
+			)
+
+			attest(types.foo({})).equals({ test: "test" })
+			attest(types.foo({ test: "provided" })).equals({ test: "provided" })
+		})
+
 		it("unions are defaultable", () => {
 			const o = type({
 				boo: "boolean = false"
