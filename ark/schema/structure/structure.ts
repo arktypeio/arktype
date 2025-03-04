@@ -555,50 +555,50 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (!this.index && this.undeclared !== "reject") return true
+		if (this.index || this.undeclared === "reject") {
+			const keys: Key[] = Object.keys(data)
+			keys.push(...Object.getOwnPropertySymbols(data))
 
-		const keys: Key[] = Object.keys(data)
-		keys.push(...Object.getOwnPropertySymbols(data))
+			for (let i = 0; i < keys.length; i++) {
+				const k = keys[i]
 
-		for (let i = 0; i < keys.length; i++) {
-			const k = keys[i]
-
-			if (this.index) {
-				for (const node of this.index) {
-					if (node.signature.traverseAllows(k, ctx)) {
-						if (traversalKind === "Allows") {
-							const result = traverseKey(
-								k,
-								() => node.value.traverseAllows(data[k as never], ctx),
-								ctx
-							)
-							if (!result) return false
-						} else {
-							traverseKey(
-								k,
-								() => node.value.traverseApply(data[k as never], ctx),
-								ctx
-							)
-							if (ctx.failFast && ctx.currentErrorCount > errorCount)
-								return false
+				if (this.index) {
+					for (const node of this.index) {
+						if (node.signature.traverseAllows(k, ctx)) {
+							if (traversalKind === "Allows") {
+								const result = traverseKey(
+									k,
+									() => node.value.traverseAllows(data[k as never], ctx),
+									ctx
+								)
+								if (!result) return false
+							} else {
+								traverseKey(
+									k,
+									() => node.value.traverseApply(data[k as never], ctx),
+									ctx
+								)
+								if (ctx.failFast && ctx.currentErrorCount > errorCount)
+									return false
+							}
 						}
 					}
 				}
-			}
 
-			if (this.undeclared === "reject" && !this.declaresKey(k)) {
-				if (traversalKind === "Allows") return false
+				if (this.undeclared === "reject" && !this.declaresKey(k)) {
+					if (traversalKind === "Allows") return false
 
-				ctx.errorFromNodeContext({
-					// TODO: this should have its own error code
-					code: "predicate",
-					expected: "removed",
-					actual: "",
-					relativePath: [k],
-					meta: this.meta
-				})
+					ctx.errorFromNodeContext({
+						// TODO: this should have its own error code
+						code: "predicate",
+						expected: "removed",
+						actual: "",
+						relativePath: [k],
+						meta: this.meta
+					})
 
-				if (ctx.failFast) return false
+					if (ctx.failFast) return false
+				}
 			}
 		}
 
