@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.4
+
+Static hermes compatibility (#1027)
+
 ## 2.1.3
 
 Fix a jitless-mode bug causing default + `onUndeclaredKey` transformations to not apply (#1335)
