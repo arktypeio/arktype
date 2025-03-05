@@ -1,12 +1,13 @@
 import { type } from "arktype"
 
-const types = type.module(
-	{
-		foo: {
-			test: "string = 'test'"
-		}
-	},
-	{ jitless: true }
-)
+const t = type({
+	/** FOO */
+	foo: "string",
+	/** BAR */
+	bar: "number?"
+})
 
-types.foo({}) //?
+const out = t.assert({ foo: "foo" })
+
+out.foo
+out.bar

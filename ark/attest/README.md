@@ -112,6 +112,18 @@ describe("attest features", () => {
 		attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
 	})
 
+	it("jsdoc snapshotting", () => {
+		// match or snapshot expected jsdoc associated with the value passed to attest
+		const t = type({
+			/** FOO */
+			foo: "string"
+		})
+
+		const out = t.assert({ foo: "foo" })
+
+		attest(out.foo).jsdoc.snap("FOO")
+	})
+
 	it("integrate runtime logic with type assertions", () => {
 		const arrayOf = type("<t>", "t[]")
 		const numericArray = arrayOf("number | bigint")
