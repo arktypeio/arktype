@@ -1,13 +1,7 @@
 import { type } from "arktype"
 
-const t = type({
-	/** FOO */
-	foo: "string",
-	/** BAR */
-	bar: "number?"
+export const urDOOMed = type({
+	grouping: "(0 | (1 | (2 | (3 | (4 | 5)[])[])[])[])[]",
+	nestedGenerics: "Exclude<0n | unknown[] | Record<string, unknown>, object>",
+	"escapes\\?": "'a | b' | 'c | d'"
 })
-
-const out = t.assert({ foo: "foo" })
-
-out.foo
-out.bar

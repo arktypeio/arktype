@@ -622,7 +622,7 @@ contextualize(() => {
 					}
 				}).export()
 			).type.errors.snap(
-				'Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... "\'.'
+				'Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... "\'.'
 			)
 		})
 	})

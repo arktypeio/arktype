@@ -64,7 +64,7 @@ export type validateAst<ast, $, args> =
 		}
 
 type writeUnexpectedExpressionMessage<expression extends string> =
-	`Unexpectedly failed to parse the expression resulting from ${expression}`
+	`Failed to parse the expression resulting from ${expression}`
 
 export const writePrefixedPrivateReferenceMessage = <name extends string>(
 	name: name
