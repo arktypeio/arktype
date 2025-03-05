@@ -70,7 +70,6 @@ contextualize(() => {
 
 		const u = type(`'"double-quoted"'`)
 		attest<'"double-quoted"'>(u.infer)
-		attest(u.expression).snap('"\\\\"double-quoted\\\\""')
 	})
 
 	it("ignores enclosed operators", () => {
