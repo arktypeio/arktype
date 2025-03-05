@@ -847,7 +847,7 @@ export const intersectBranches = (
 ): readonly Union.ChildNode[] | Disjoint => {
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
-	// inersections in the reduced result.
+	// intersections in the reduced result.
 	const batchesByR: (BaseRoot[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
 		let candidatesByR: { [rIndex: number]: BaseRoot } = {}
