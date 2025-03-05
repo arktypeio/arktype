@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "Optimized runtime validation for TypeScript syntax",
-	"version": "2.1.3",
+	"version": "2.1.4",
 	"license": "MIT",
 	"repository": {
 		"type": "git",

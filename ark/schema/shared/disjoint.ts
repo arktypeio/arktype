@@ -87,11 +87,17 @@ export class Disjoint extends Array<DisjointEntry> {
 	}
 
 	invert(): Disjoint {
-		return this.map(entry => ({
+		const result = this.map(entry => ({
 			...entry,
 			l: entry.r,
 			r: entry.l
-		})) as Disjoint
+		}))
+
+		// Workaround for Static Hermes, which doesn't preserve the Array subclass here
+		// https://github.com/arktypeio/arktype/issues/1027
+		if (!(result instanceof Disjoint)) return new Disjoint(...result)
+
+		return result
 	}
 
 	withPrefixKey(key: PropertyKey, kind: Prop.Kind): Disjoint {
