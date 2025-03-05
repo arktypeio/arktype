@@ -46,11 +46,15 @@ contextualize(() => {
 	})
 
 	it("double-quoted", () => {
-		attest<"goodbye">(type('"goodbye"').infer)
+		const t = type('"goodbye"')
+		attest<"goodbye">(t.infer)
+		attest(t.expression).snap('"goodbye"')
 	})
 
 	it("regex literal", () => {
-		attest<string>(type("/.*/").infer)
+		const t = type("/.*/")
+		attest<string>(t.infer)
+		attest(t.expression).snap("string /.*/")
 	})
 
 	it("invalid regex", () => {
@@ -60,21 +64,31 @@ contextualize(() => {
 	})
 
 	it("mixed quote types", () => {
-		attest<"'single-quoted'">(type(`"'single-quoted'"`).infer)
-		attest<'"double-quoted"'>(type(`'"double-quoted"'`).infer)
+		const t = type(`"'single-quoted'"`)
+		attest<"'single-quoted'">(t.infer)
+		attest(t.expression).snap("\"'single-quoted'\"")
+
+		const u = type(`'"double-quoted"'`)
+		attest<'"double-quoted"'>(u.infer)
+		attest(u.expression).snap('"\\\\"double-quoted\\\\""')
 	})
 
 	it("ignores enclosed operators", () => {
-		attest<"yes|no|maybe">(type("'yes|no|maybe'").infer)
+		const t = type("'yes|no|maybe'")
+		attest<"yes|no|maybe">(t.infer)
+		attest(t.expression).snap('"yes|no|maybe"')
 	})
 
 	it("mix of enclosed and unenclosed operators", () => {
-		attest<"yes|no" | "true|false">(type("'yes|no'|'true|false'").infer)
+		const t = type("'yes|no'|'true|false'")
+		attest<"yes|no" | "true|false">(t.infer)
+		attest(t.expression).snap('"true|false" | "yes|no"')
 	})
 
 	it("escaped enclosing", () => {
 		const t = type("'don\\'t'")
 		attest<"don't">(t.infer)
+		attest(t.expression).snap('"don\'t"')
 	})
 
 	it("string literal stress", () => {
