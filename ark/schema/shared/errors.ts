@@ -229,13 +229,6 @@ export class ArkErrors
 	}
 
 	/**
-	 * Alias of `summary` for StandardSchema compatibility.
-	 */
-	get message(): string {
-		return this.toString()
-	}
-
-	/**
 	 * Alias of this ArkErrors instance for StandardSchema compatibility.
 	 */
 	get issues(): this {

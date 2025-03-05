@@ -1278,4 +1278,20 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 			'{ escapes?: "a | b" | "c | d", grouping: (((((4 | 5)[] | 3)[] | 2)[] | 1)[] | 0)[], nestedGenerics: 0n }'
 		)
 	})
+
+	it("ArkErrors not assignable to ArkErrorInput", () => {
+		attest(() =>
+			type({
+				type: "string"
+			}).narrow((_, ctx) => {
+				const result = type.number("foo")
+				// @ts-expect-error
+				if (result instanceof type.errors) return ctx.reject(result)
+
+				return true
+			})
+		).type.errors(
+			"Argument of type 'ArkErrors' is not assignable to parameter of type 'ArkErrorInput'"
+		)
+	})
 })
