@@ -235,4 +235,26 @@ contextualize(() => {
 			"bool_value must be a string (was boolean)"
 		)
 	})
+
+	it("required key homomorphic", () => {
+		const t = type({
+			/** FOO */
+			foo: "string"
+		})
+
+		const out = t.assert({ foo: "foo" })
+
+		attest(out.foo).jsdoc.snap("FOO")
+	})
+
+	it("optional value homomorphic", () => {
+		const t = type({
+			/** BAR */
+			bar: "number?"
+		})
+
+		const out = t.assert({})
+
+		attest(out.bar).jsdoc.snap("BAR")
+	})
 })

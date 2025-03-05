@@ -180,4 +180,25 @@ Actual: string`)
 Expected: {"a":"five"}
 Actual: ArkErrors`)
 	})
+
+	it("jsdoc ", () => {
+		type O = {
+			/** FOO */
+			foo: string
+			bar: number
+		}
+
+		const o: O = {
+			foo: "foo",
+			bar: 5
+		}
+
+		attest(o.foo).jsdoc.equals("FOO")
+
+		assert.throws(
+			() => attest(o.bar).jsdoc.equals("BAR"),
+			assert.AssertionError,
+			"BAR"
+		)
+	})
 })

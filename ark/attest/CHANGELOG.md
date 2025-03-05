@@ -2,6 +2,22 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.44.0
+
+Support assertions for JSDoc contents associated with an `attest`ed value
+
+```ts
+const t = type({
+	/** FOO */
+	foo: "string"
+})
+
+const out = t.assert({ foo: "foo" })
+
+// match or snapshot expected jsdoc associated with the value passed to attest
+attest(out.foo).jsdoc.snap("FOO")
+```
+
 ## 0.41.0
 
 ### Bail early for obviously incorrect `equals` comparisons

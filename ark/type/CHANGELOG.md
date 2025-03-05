@@ -1,5 +1,31 @@
 # arktype
 
+## 2.1.5
+
+#### Fix JSDoc and go-to definition for unparsed keys
+
+Addresses #1294
+
+```ts
+const t = type({
+	/** FOO */
+	foo: "string",
+	/** BAR */
+	bar: "number?"
+})
+
+const out = t.assert({ foo: "foo" })
+
+// go-to definition will now navigate to the foo prop from the type call
+// hovering foo now displays "FOO"
+console.log(out.foo)
+
+// go-to definition will now navigate to the bar prop from the type call
+// hovering bar now displays "BAR"
+// (the ? must be in the value for this to work)
+console.log(out.bar)
+```
+
 ## 2.1.4
 
 Static hermes compatibility (#1027)
