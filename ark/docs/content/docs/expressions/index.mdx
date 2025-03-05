@@ -417,40 +417,6 @@ const parseEvenSugared = type("string.numeric.parse", "|>", "number % 2")
 
 </SyntaxTabs>
 
-### Morph
-
-Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
-
-<SyntaxTabs>
-    <SyntaxTab fluent>
-
-```ts
-// hover to see how morphs are represented at a type-level
-const trimStringStart = type("string").pipe(str => str.trimStart())
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab tuple>
-
-```ts
-// hover to see how morphs are represented at a type-level
-const trimStringStart = type(["string", "=>", str => str.trimStart()])
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab args>
-
-```ts
-// hover to see how morphs are represented at a type-level
-const trimStringStart = type("string", "=>", str => str.trimStart())
-```
-
-    </SyntaxTab>
-
-</SyntaxTabs>
-
 ### Unit
 
 While embedded [literal syntax](/docs/primitives#number-literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serialiazable value like a `symbol` from your type.
