@@ -107,23 +107,39 @@ type addDefaultToContext<
 	key: ctx["key"]
 }>
 
-type casesToMorphTuple<cases, ctx extends MatchParserContext> = unionToTuple<
+type CaseKeyKind = "def" | "string"
+
+type casesToMorphTuple<
+	cases,
+	ctx extends MatchParserContext,
+	kind extends CaseKeyKind
+> = unionToTuple<
 	propValueOf<{
 		[def in Exclude<keyof cases, "default">]: cases[def] extends (
 			Morph<never, infer o>
 		) ?
-			(In: inferCaseArg<def extends number ? `${number}` : def, ctx, "in">) => o
+			kind extends "def" ?
+				(
+					In: inferCaseArg<def extends number ? `${number}` : def, ctx, "in">
+				) => o
+			:	(In: maybeLiftToKey<def, ctx>) => o
 		:	never
 	}>
 >
 
-type addCasesToParser<cases, ctx extends MatchParserContext> =
+type addCasesToParser<
+	cases,
+	ctx extends MatchParserContext,
+	kind extends CaseKeyKind
+> =
 	cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
 		finalizeMatchParser<
-			addCasesToContext<ctx, casesToMorphTuple<cases, ctx>>,
+			addCasesToContext<ctx, casesToMorphTuple<cases, ctx, kind>>,
 			defaultDef
 		>
-	:	ChainableMatchParser<addCasesToContext<ctx, casesToMorphTuple<cases, ctx>>>
+	:	ChainableMatchParser<
+			addCasesToContext<ctx, casesToMorphTuple<cases, ctx, kind>>
+		>
 
 type inferCaseArg<
 	def,
@@ -168,7 +184,7 @@ interface StringsParser<ctx extends MatchParserContext> {
 	<const cases>(
 		def: cases extends validateStringCases<cases, ctx> ? cases
 		:	validateStringCases<cases, ctx>
-	): addCasesToParser<cases, ctx>
+	): addCasesToParser<cases, ctx, "string">
 }
 
 type validateStringCases<cases, ctx extends MatchParserContext> = {
@@ -200,7 +216,7 @@ interface AtParser<ctx extends MatchParserContext> {
 		key: validateKey<key, ctx>,
 		cases: cases extends validateCases<cases, ctxAtKey> ? cases
 		:	errorCases<cases, ctxAtKey>
-	): addCasesToParser<cases, ctxAtKey>
+	): addCasesToParser<cases, ctxAtKey, "def">
 }
 
 interface ChainableMatchParser<ctx extends MatchParserContext> {
@@ -250,7 +266,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
-) => addCasesToParser<cases, ctx>
+) => addCasesToParser<cases, ctx, "def">
 
 type finalizeMatchParser<
 	ctx extends MatchParserContext,
@@ -310,6 +326,8 @@ type InternalCaseParserFn = (
 	cases: InternalCases
 ) => InternalChainedMatchParser | Match
 
+type CaseEntry = [BaseRoot, Morph] | ["default", DefaultCase]
+
 export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	$: InternalScope;
 	in: BaseRoot | undefined
@@ -317,29 +335,13 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	protected branches: BaseRoot[] = []
 
 	constructor($: InternalScope, In?: BaseRoot) {
-		super(cases => {
-			const entries = Object.entries(cases)
-			for (let i = 0; i < entries.length; i++) {
-				const [k, v] = entries[i]
-				if (k === "default") {
-					if (i !== entries.length - 1) {
-						throwParseError(
-							`default may only be specified as the last key of a switch definition`
-						)
-					}
-					return this.default(v)
-				}
-				if (typeof v !== "function") {
-					return throwParseError(
-						`Value for case "${k}" must be a function (was ${domainOf(v)})`
-					)
-				}
-
-				this.case(k, v)
-			}
-
-			return this
-		})
+		super(cases =>
+			this.caseEntries(
+				Object.entries(cases).map(([k, v]) =>
+					k === "default" ? [k, v] : [this.$.parse(k), v as Morph]
+				)
+			)
+		)
 		this.$ = $
 		this.in = In
 	}
@@ -352,14 +354,56 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	}
 
 	case(def: unknown, resolver: Morph): InternalChainedMatchParser {
-		const wrappableDef = this.key ? { [this.key]: def } : def
-		const branch = this.$.parse(wrappableDef).pipe(resolver as never)
+		return this.caseEntry(this.$.parse(def), resolver)
+	}
+
+	protected caseEntry(
+		node: BaseRoot,
+		resolver: Morph
+	): InternalChainedMatchParser {
+		const wrappableNode = this.key ? this.$.parse({ [this.key]: node }) : node
+		const branch = wrappableNode.pipe(resolver as never)
 		this.branches.push(branch)
 		return this
 	}
 
 	match(cases: InternalCases): InternalChainedMatchParser | Match {
 		return this(cases)
+	}
+
+	strings(cases: InternalCases): InternalChainedMatchParser | Match {
+		return this.caseEntries(
+			Object.entries(cases).map(([k, v]) =>
+				k === "default" ?
+					[k, v]
+				:	[this.$.node("unit", { unit: k }), v as Morph]
+			)
+		)
+	}
+
+	protected caseEntries(
+		entries: CaseEntry[]
+	): InternalChainedMatchParser | Match {
+		for (let i = 0; i < entries.length; i++) {
+			const [k, v] = entries[i]
+			if (k === "default") {
+				if (i !== entries.length - 1) {
+					throwParseError(
+						`default may only be specified as the last key of a switch definition`
+					)
+				}
+				return this.default(v)
+			}
+			if (typeof v !== "function") {
+				return throwParseError(
+					`Value for case "${k}" must be a function (was ${domainOf(v)})`
+				)
+			}
+
+			this.caseEntry(k, v)
+		}
+
+		return this
 	}
 
 	default(defaultCase: DefaultCase): Match {

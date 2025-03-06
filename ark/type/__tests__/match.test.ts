@@ -215,7 +215,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => matcher(true))
-			.throws.snap("AggregateError: must be a string or a number (was boolean)")
+			.throws.snap("AggregateError: must be a number or a string (was boolean)")
 			.type.errors(
 				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
@@ -745,7 +745,13 @@ contextualize(() => {
 			default: o => `${o.foo}!` as const
 		})
 
-		attest(exclaimFoo).type.toString.snap()
+		attest(exclaimFoo).type.toString.snap(`Match<
+	{ foo: string },
+	[
+		(In: unknown) => ArkErrors,
+		(o: { foo: string }) => \`\${string}!\`
+	]
+>`)
 
 		const out = exclaimFoo({ foo: "foo" })
 
@@ -765,7 +771,10 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		attest(fooToLength).type.toString.snap()
+		attest(fooToLength).type.toString.snap(`Match<
+	{ foo: string },
+	[(In: { foo: string }) => number]
+>`)
 
 		const out = fooToLength({ foo: "foo" })
 
@@ -804,18 +813,25 @@ contextualize(() => {
 				default: "assert"
 			})
 
-		attest(discriminate).type.toString.snap()
+		attest(discriminate).type.toString.snap(`Match<
+	Discriminated,
+	[
+		(In: { kind: "b" }) => "b",
+		(In: { kind: "a" }) => "a",
+		(In: { kind: "c" }) => "c"
+	]
+>`)
 
 		const a = discriminate({ kind: "a", value: "a" })
 		const b = discriminate({ kind: "b", value: "b" })
 		const c = discriminate({ kind: "c", value: "c" })
 
-		attest<["a", "b", "c"]>([a, b, c]).snap()
+		attest<["a", "b", "c"]>([a, b, c]).snap(["a", "b", "c"])
 
 		// @ts-expect-error
 		attest(() => discriminate({ kind: "d", value: "d" }))
-			.throws.snap()
-			.type.errors()
+			.throws.snap('AggregateError: kind must be "a", "b" or "c" (was "d")')
+			.type.errors(`Type '"d"' is not assignable`)
 	})
 
 	it("invalid string key", () => {
