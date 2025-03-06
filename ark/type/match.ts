@@ -224,6 +224,7 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
 	at: AtParser<ctx>
+	/** @experimental */
 	strings: StringsParser<ctx>
 }
 
