@@ -39,42 +39,21 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 			:	compositionValidator
 
 		if ("type" in jsonSchema) {
-			let typeValidator: type.Any
+			const typeValidator: type.Any | undefined = type.match({
+				"unknown[]": jsonType => parseCompositionJsonSchema({
+					anyOf: jsonType.map(t => ({ type: t as never }))
+				}),
+				"'array'": () => parseArrayJsonSchema.assert(jsonSchema),
+				"'boolean'|'null'": (t) => type(t),
+				"'integer'|'number'": () => parseNumberJsonSchema.assert(jsonSchema),
+				"'object'": () => parseObjectJsonSchema.assert(jsonSchema),
+				"'string'": () => parseStringJsonSchema.assert(jsonSchema),
+				"default": () => undefined
+			})(jsonSchema.type);
 
-			if (Array.isArray(jsonSchema.type)) {
-				typeValidator =
-					parseCompositionJsonSchema({
-						anyOf: jsonSchema.type.map(t => ({ type: t }))
-					}) ??
-					throwParseError(
-						"Failed to convert array of JSON Schemas types to an anyOf schema"
-					)
-			} else {
-				const jsonSchemaType = jsonSchema.type as JsonSchema.TypeName
-				switch (jsonSchemaType) {
-					case "array":
-						typeValidator = parseArrayJsonSchema.assert(jsonSchema)
-						break
-					case "boolean":
-					case "null":
-						typeValidator = type(jsonSchemaType)
-						break
-					case "integer":
-					case "number":
-						typeValidator = parseNumberJsonSchema.assert(jsonSchema)
-						break
-					case "object":
-						typeValidator = parseObjectJsonSchema.assert(jsonSchema)
-						break
-					case "string":
-						typeValidator = parseStringJsonSchema.assert(jsonSchema)
-						break
-					default:
-						throwParseError(
-							`Provided 'type' value must be a supported JSON Schema type (was '${jsonSchemaType}')`
-						)
-				}
-			}
+			if (typeValidator === undefined) 
+				throwParseError(`Provided 'type' value must be a supported JSON Schema type (was '${jsonSchema.type}')`)
+
 			if (preTypeValidator === undefined) return typeValidator
 			return typeValidator.and(preTypeValidator)
 		}
