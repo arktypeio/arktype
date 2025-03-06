@@ -602,7 +602,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (this.structuralMorph && !ctx.hasError())
+		// added additional ctx check here to address
+		// https://github.com/arktypeio/arktype/issues/1346
+		if (this.structuralMorph && ctx && !ctx.hasError())
 			ctx.queueMorphs([this.structuralMorph])
 
 		return true
@@ -653,7 +655,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		// always queue deleteUndeclared on valid traversal for "delete"
 		if (this.structuralMorphRef) {
-			js.if("!ctx.hasError()", () =>
+			// added additional ctx check here to address
+			// https://github.com/arktypeio/arktype/issues/1346
+			js.if("ctx && !ctx.hasError()", () =>
 				js.line(`ctx.queueMorphs([${this.structuralMorphRef}])`)
 			)
 		}
