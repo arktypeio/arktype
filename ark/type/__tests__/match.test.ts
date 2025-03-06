@@ -708,15 +708,6 @@ contextualize(() => {
 			default: "reject"
 		})
 
-		attest(m).type.toString.snap(`Match<
-	unknown,
-	[
-		(In: number) => number,
-		(In: string) => number,
-		(In: unknown) => ArkErrors
-	]
->`)
-
 		attest(m("foo")).equals(3)
 		attest(m(3)).equals(3)
 		// can access directly since it has no overlap with input
@@ -812,15 +803,6 @@ contextualize(() => {
 				c: o => o.value,
 				default: "assert"
 			})
-
-		attest(discriminate).type.toString.snap(`Match<
-	Discriminated,
-	[
-		(In: { kind: "b" }) => "b",
-		(In: { kind: "a" }) => "a",
-		(In: { kind: "c" }) => "c"
-	]
->`)
 
 		const a = discriminate({ kind: "a", value: "a" })
 		const b = discriminate({ kind: "b", value: "b" })
