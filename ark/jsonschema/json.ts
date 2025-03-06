@@ -52,7 +52,7 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 			})(jsonSchema.type);
 
 			if (typeValidator === undefined) 
-				throwParseError(`Provided 'type' value must be a supported JSON Schema type (was '${jsonSchema.type}')`)
+				throwParseError(`Provided 'type' value must be a supported JSON Schema type (was '${printable(jsonSchema.type)}')`)
 
 			if (preTypeValidator === undefined) return typeValidator
 			return typeValidator.and(preTypeValidator)
