@@ -11,10 +11,7 @@ import {
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
 } from "./ts.ts"
-import type {
-	AssertionsByFile,
-	LinePositionRange
-} from "./writeAssertionCache.ts"
+import type { LinePositionRange } from "./writeAssertionCache.ts"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression
@@ -41,15 +38,16 @@ export const getCallLocationFromCallExpression = (
 	return location
 }
 
+/**
+ * Processes inline instantiations from an attest call
+ * Preserves any JSDoc comments that are associated with the original expression
+ */
 export const gatherInlineInstantiationData = (
 	file: ts.SourceFile,
-	fileAssertions: AssertionsByFile,
-	attestAliasInstantiationMethodCalls: string[]
+	assertionsByFile: Record<string, any[]>,
+	instantiationMethodCalls: string[]
 ): void => {
-	const expressions = getCallExpressionsByName(
-		file,
-		attestAliasInstantiationMethodCalls
-	)
+	const expressions = getCallExpressionsByName(file, instantiationMethodCalls)
 	if (!expressions.length) return
 
 	const enclosingFunctions = expressions.map(expression => {
@@ -81,8 +79,8 @@ ${enclosingFunction.ancestor.getText()}`
 			count: getInstantiationsContributedByNode(file, body)
 		}
 	})
-	const assertions = fileAssertions[getFileKey(file.fileName)] ?? []
-	fileAssertions[getFileKey(file.fileName)] = [
+	const assertions = assertionsByFile[getFileKey(file.fileName)] ?? []
+	assertionsByFile[getFileKey(file.fileName)] = [
 		...assertions,
 		...instantiationInfo
 	]

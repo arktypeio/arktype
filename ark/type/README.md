@@ -1,4 +1,5 @@
 <h1 align="center">ArkType</h1>
+<h3 align="center"><i>Optimized runtime validation for TypeScript syntax</i></h1>
 
 ArkType is a runtime validation library that parses optimized validators from familiar, type-safe syntax.
 
@@ -48,115 +49,144 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 ### ArkSponsors ⛵
 
 <table>
-	<tr>
-		<th>sam-goodwin</th>
-		<th>fubhy</th>
-	</tr>
-	<tr>
-		<td>
-			<a href="https://github.com/sam-goodwin"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/38672686"
-			/></a>
-		</td>
-		<td>
-			<a href="https://github.com/fubhy"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/1172528"
-			/></a>
-		</td>
+    <tr>
+        <th>sam-goodwin</th>
+        <th>inspatiallabs</th>
+    </tr>
+    <tr>
+        <td>
+            <a href="https://github.com/sam-goodwin"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/sam-goodwin"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/inspatiallabs"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/inspatiallabs"
+            /></a>
+        </td>
     </tr>
 </table>
 
 ### Sponsors 🥰
 
 <table>
-	<tr>
-		<th>tmm</th>
+    <tr>
+        <th>fubhy</th>
+        <th>tmm</th>
         <th>mishushakov</th>
         <th>mewhhaha</th>
-    	<th>codeandcats</th>
-		<th>drwpwrs</th>
-	</tr>
-	<tr>
-		<td>
-			<a href="https://github.com/tmm"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/6759464"
-			/></a>
-		</td>
-        <td>
-    		<a href="https://github.com/mishushakov"
-    			><img height="64px" src="https://avatars.githubusercontent.com/u/10400064"
-    		/></a>
-    	</td>
-        <td>
-    		<a href="https://github.com/mewhhaha"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/3399205"
-    		/></a>
-    	</td>
-    	<td>
-    		<a href="https://github.com/codeandcats"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/6035934"
-    		/></a>
-    	</td>
-		<td>
-			<a href="https://github.com/drwpwrs"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/49917220"
-			/></a>
-		</td>
-	</tr>
-	<tr>
-    	<th>Timeraa</th>
-		<th>Phalangers</th>
-		<th>WilliamConnatser</th>
-		<th>JameEnder</th>
-		<th>tylim88</th>
+        <th>codeandcats</th>
     </tr>
     <tr>
-    	<td>
-    		<a href="https://github.com/Timeraa"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/29104008"
-    		/></a>
-    	</td>
+        <td>
+            <a href="https://github.com/fubhy"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/fubhy"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/tmm"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/tmm"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/mishushakov"
+                ><img height="64px" src="https://avatars.githubusercontent.com/mishushakov"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/mewhhaha"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/mewhhaha"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/codeandcats"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/codeandcats"
+            /></a>
+        </td>
+    </tr>
+    <tr>
+        <th>drwpwrs</th>
+        <th>Timeraa</th>
+        <th>Phalangers</th>
+        <th>WilliamConnatser</th>
+        <th>JameEnder</th>
+    </tr>
+    <tr>
+        <td>
+            <a href="https://github.com/drwpwrs"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/drwpwrs"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/Timeraa"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/Timeraa"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/Phalangers"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/Phalangers"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/WilliamConnatser"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/WilliamConnatser"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/JameEnder"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/JameEnder"
+            /></a>
+        </td>
+    </tr>
+    <tr>
+        <th>tylim88</th>
+        <th>jahands</th>
+		<th></th>
+        <th></th>
+		<th></th>
+    </tr>
+    <tr>
+        <td>
+            <a href="https://github.com/tylim88"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/tylim88"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/jahands"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/jahands"
+            /></a>
+        </td>
 		<td>
-    		<a href="https://github.com/Phalangers"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/13227796"
-    		/></a>
-    	</td>
-		<td>
-    		<a href="https://github.com/WilliamConnatser"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/43946230"
-    		/></a>
-    	</td>
-		<td>
-    		<a href="https://github.com/JameEnder"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/47925045"
-    		/></a>
 		</td>
 		<td>
-    		<a href="https://github.com/tylim88"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/5227509"
-    		/></a>
+		</td>
+		<td>
 		</td>
     </tr>
 </table>

@@ -1,8 +1,8 @@
 {
 	"name": "arkdark",
-	"displayName": "ArkDark",
-	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
-	"version": "5.14.0",
+	"displayName": "ArkType",
+	"description": "Syntax highlighting and inline errors for ArkType⛵",
+	"version": "6.0.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
@@ -16,12 +16,6 @@
 		"vsce": "2.15.0",
 		"ovsx": "0.10.1"
 	},
-	"files": [
-		"*.json"
-	],
-	"exports": {
-		"./*.json": "./*.json"
-	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype"
@@ -29,27 +23,20 @@
 	"engines": {
 		"vscode": "^1.0.0"
 	},
-	"icon": "icon.png",
 	"categories": [
-		"Themes",
 		"Programming Languages"
 	],
+	"icon": "icon.png",
+	"files": [
+		"*.json"
+	],
+	"exports": {
+		"./*.json": "./*.json"
+	},
 	"extensionDependencies": [
 		"usernamehw.errorlens"
 	],
 	"contributes": {
-		"themes": [
-			{
-				"label": "ArkDark",
-				"uiTheme": "vs-dark",
-				"path": "./arkdark.json"
-			},
-			{
-				"label": "ArkDark Italic",
-				"uiTheme": "vs-dark",
-				"path": "./arkdarkItalic.json"
-			}
-		],
 		"grammars": [
 			{
 				"injectTo": [

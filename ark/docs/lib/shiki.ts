@@ -17,7 +17,7 @@ like the one above if possible in the future without breaking the build.*/
 
 const require = createRequire(import.meta.url)
 
-const arkDarkTheme = require("arkdark/arkdark.json")
+const arkDarkTheme = require("arkthemes/arkdark.json")
 const arkTypePackageJson = require("arkdark/package.json")
 const arkTypeTmJson = require("arkdark/tsWithArkType.tmLanguage.json")
 
@@ -58,6 +58,7 @@ declare global {
 
 	type type<t = unknown, $ = {}> = a.Type<t, $>
 	const scope: typeof a.scope
+	const match: typeof a.match
 }`
 		},
 		filterNode: node => {

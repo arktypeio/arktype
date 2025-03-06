@@ -3,11 +3,18 @@
 	"version": "0.1.0",
 	"configurations": [
 		{
-			"name": "ArkDark Dev",
+			"name": "Debug Extension",
 			"type": "extensionHost",
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
-			"args": ["--extensionDevelopmentPath=${workspaceRoot}/ark/dark"]
+			"args": ["--extensionDevelopmentPath=${workspaceRoot}/ark/extension"]
+		},
+		{
+			"name": "Debug Themes",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": ["--extensionDevelopmentPath=${workspaceRoot}/ark/themes"]
 		}
 	]
 }

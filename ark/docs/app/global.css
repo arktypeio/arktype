@@ -80,6 +80,13 @@ code {
 	font-family: "Cascadia Mono", monospace;
 }
 
+/* hack to avoid max-height on fuma codeblocks */
+@layer utilities {
+	.max-h-\[600px\] {
+		max-height: unset;
+	}
+}
+
 pre.shiki,
 .twoslash-popup-container {
 	border-radius: 1rem;

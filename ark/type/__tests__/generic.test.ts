@@ -98,8 +98,9 @@ contextualize(() => {
 			const boxOf = type("<t>", {
 				box: "t"
 			})
+
 			const t = boxOf({
-				a: "string|this"
+				a: "string | this"
 			})
 
 			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
@@ -621,7 +622,7 @@ contextualize(() => {
 					}
 				}).export()
 			).type.errors.snap(
-				'Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... "\'.'
+				'Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... "\'.'
 			)
 		})
 	})

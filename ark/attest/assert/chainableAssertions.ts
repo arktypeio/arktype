@@ -234,6 +234,16 @@ export class ChainableAssertions implements AssertionRecord {
 		return this.snap
 	}
 
+	get jsdoc(): any {
+		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
+
+		this.ctx.versionableActual = new TypeAssertionMapping(data => ({
+			actual: formatTypeString(data.jsdoc ?? "")
+		}))
+		this.ctx.allowRegex = true
+		return this.immediateOrChained()
+	}
+
 	get type(): any {
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
 
@@ -351,6 +361,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: CompletionsSnap
+	jsdoc: comparableValueAssertion<string, kind>
 	satisfies: <const def>(
 		def: type.validate<def> &
 			validateExpectedOverlaps<expected, type.infer.In<def>>

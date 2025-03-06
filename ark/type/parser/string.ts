@@ -114,4 +114,4 @@ export type extractFinalizedResult<s extends StaticState> =
 	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
 	: s["finalizer"] extends "?" ? [s["root"], "?"]
 	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
-	: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
+	: ErrorMessage<writeUnexpectedCharacterMessage<s["finalizer"] & string>>

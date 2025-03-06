@@ -780,7 +780,7 @@ contextualize(() => {
 >`)
 
 		attest(t.expression).snap(
-			"{ l: 1, n: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)?))$/) => Out<number> } | { n: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)?))$/) => Out<number>, r: 1 }"
+			"{ l: 1, n: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/) => Out<number> } | { n: (In: string /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/) => Out<number>, r: 1 }"
 		)
 		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
@@ -800,7 +800,7 @@ contextualize(() => {
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string ) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $jsonData[] | false | null | true } | $jsonData[]> | false | true }`)
+Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | false | null | true }> | false | true }`)
 	})
 
 	it("multiple chained pipes", () => {
@@ -928,5 +928,28 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | $j
 
 		attest(out.toString()).snap("key must be a string (was missing)")
 		attest(callCount).equals(0)
+	})
+
+	it("to tuple expression", () => {
+		const t = type(["string.json.parse", "|>", { name: "string" }])
+
+		const expected = type("string.json.parse").to({ name: "string" })
+
+		attest<typeof expected>(t)
+		attest(t.json).equals(expected.json)
+	})
+
+	it("to args expression", () => {
+		const t = type("string.json.parse", "|>", { name: "string" })
+
+		const expected = type("string.json.parse").to({ name: "string" })
+
+		attest<typeof expected>(t)
+		attest(t.json).equals(expected.json)
+	})
+
+	it("infers distributed pipes", () => {
+		const t = type("string.numeric.parse | number").to("number > 0")
+		attest(t.t).type.toString.snap("number | ((In: string) => To<number>)")
 	})
 })

@@ -1,4 +1,5 @@
 import { attest } from "@ark/attest"
+import { type } from "arktype"
 import * as assert from "node:assert/strict"
 
 const o = { ark: "type" }
@@ -161,6 +162,43 @@ describe("type assertions", () => {
 			() => attest<{ something: "specific" }>(nonexistent),
 			assert.AssertionError,
 			"specific"
+		)
+	})
+
+	it("does not boom on Type comparison", () => {
+		// @ts-expect-error
+		attest(() => attest(type.string).equals(type.number)).throws
+			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference eqaul items
+Expected: number
+Actual: string`)
+	})
+
+	it("doesn't boom on ArkErrors vs plain object", () => {
+		attest(() => attest(type({ a: "string" })({ a: 5 })).equals({ a: "five" }))
+			.throws
+			.snap(`AssertionError [ERR_ASSERTION]: Objects did not have the same constructor:
+Expected: {"a":"five"}
+Actual: ArkErrors`)
+	})
+
+	it("jsdoc ", () => {
+		type O = {
+			/** FOO */
+			foo: string
+			bar: number
+		}
+
+		const o: O = {
+			foo: "foo",
+			bar: 5
+		}
+
+		attest(o.foo).jsdoc.equals("FOO")
+
+		assert.throws(
+			() => attest(o.bar).jsdoc.equals("BAR"),
+			assert.AssertionError,
+			"BAR"
 		)
 	})
 })

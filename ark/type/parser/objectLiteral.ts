@@ -223,24 +223,31 @@ export type validateObjectLiteral<def, $, args> = {
 }
 
 type nonOptionalKeyFromEntry<k extends PropertyKey, v, $, args> =
-	preparseKey<k> extends (
-		infer parsedKey extends PreparsedEntryKey<"required" | "index">
-	) ?
-		parsedKey["kind"] extends "index" ?
+	// inferring into parsedKey with no extends check seems to
+	// help TS preserve homomorphic mapping for required keys
+	preparseKey<k> extends infer parsedKey ?
+		parsedKey extends PreparsedEntryKey<"required"> ?
+			[v] extends [OptionalPropertyDefinition] ?
+				[v] extends [anyOrNever] ?
+					parsedKey["normalized"]
+				:	never
+			:	parsedKey["normalized"]
+		: parsedKey extends PreparsedEntryKey<"index"> ?
 			inferDefinition<parsedKey["normalized"], $, args> & Key
-		: [v] extends [OptionalPropertyDefinition] ?
-			[v] extends [anyOrNever] ?
-				parsedKey["normalized"]
-			:	never
-		:	parsedKey["normalized"]
-	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
-		// "+" has no effect on inference
-		never
+		:	// optional keys are not included by defintion
+			// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
+			// "+" has no effect on inference
+			never
+	:	never
 
 type optionalKeyFromEntry<k extends PropertyKey, v> =
-	preparseKey<k> extends PreparsedEntryKey<"optional", infer name> ? name
-	: v extends OptionalPropertyDefinition ? k
-	: never
+	// inferring into parsedKey with no extends check seems to
+	// help TS preserve homomorphic mapping for value-optional keys
+	preparseKey<k> extends infer parsedKey ?
+		parsedKey extends PreparsedEntryKey<"optional"> ? parsedKey["normalized"]
+		: v extends OptionalPropertyDefinition ? k
+		: never
+	:	never
 
 export const writeInvalidUndeclaredBehaviorMessage = (
 	actual: unknown
