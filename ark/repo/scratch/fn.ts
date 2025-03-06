@@ -10,7 +10,7 @@ export type FunctionParser<$> = {
 	//     implementation: implementation
 	// ) => implementation
 
-	<arg0, ret = unknown>(
+	<const arg0, ret = unknown>(
 		arg0: type.validate<arg0, $>,
 		_?: ":",
 		ret?: type.validate<ret, $>
@@ -22,7 +22,7 @@ export type FunctionParser<$> = {
 		implementation: implementation
 	) => implementation
 
-	<arg0, arg1, ret = unknown>(
+	<const arg0, const arg1, ret = unknown>(
 		arg0: type.validate<arg0, $>,
 		arg1: type.validate<arg1, $>,
 		_?: ":",
@@ -36,7 +36,7 @@ export type FunctionParser<$> = {
 		implementation: implementation
 	) => implementation
 
-	<arg0, arg1, arg2, ret = unknown>(
+	<const arg0, const arg1, const arg2, ret = unknown>(
 		arg0: type.validate<arg0, $>,
 		arg1: type.validate<arg1, $>,
 		arg2: type.validate<arg2, $>,
