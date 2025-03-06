@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "next build",
+		"build": "next build && ts ./lib/updateOramaSearch.ts",
 		"dev": "next dev --turbo",
 		"buildAndStart": "pnpm build && pnpm start",
 		"start": "pnpm serve out",
@@ -15,9 +15,11 @@
 	},
 	"dependencies": {
 		"@ark/fs": "workspace:*",
+		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@fumadocs/mdx-remote": "1.2.0",
 		"@icons-pack/react-simple-icons": "11.1.0",
+		"@oramacloud/client": "2.1.4",
 		"@shikijs/transformers": "2.3.2",
 		"arkdark": "workspace:*",
 		"arkthemes": "workspace:*",
@@ -43,7 +45,6 @@
 	},
 	"devDependencies": {
 		"@fumadocs/cli": "0.0.7",
-		"@oramacloud/client": "^2.1.4",
 		"@tailwindcss/postcss": "4.0.4",
 		"@types/mdx": "2.0.13",
 		"@types/react": "19.0.8",

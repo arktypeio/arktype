@@ -2,6 +2,10 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.44.3
+
+Decouple attest trace/stats from pnpm
+
 ## 0.44.0
 
 Support assertions for JSDoc contents associated with an `attest`ed value
