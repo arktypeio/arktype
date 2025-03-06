@@ -40,19 +40,23 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 
 		if ("type" in jsonSchema) {
 			const typeValidator: type.Any | undefined = type.match({
-				"unknown[]": jsonType => parseCompositionJsonSchema({
-					anyOf: jsonType.map(t => ({ type: t as never }))
-				}),
+				"unknown[]": jsonType =>
+					parseCompositionJsonSchema({
+						anyOf: jsonType.map(t => ({ type: t as never }))
+					}),
 				"'array'": () => parseArrayJsonSchema.assert(jsonSchema),
-				"'boolean'|'null'": (t) => type(t),
+				"'boolean'|'null'": t => type(t),
 				"'integer'|'number'": () => parseNumberJsonSchema.assert(jsonSchema),
 				"'object'": () => parseObjectJsonSchema.assert(jsonSchema),
 				"'string'": () => parseStringJsonSchema.assert(jsonSchema),
-				"default": () => undefined
-			})(jsonSchema.type);
+				default: () => undefined
+			})(jsonSchema.type)
 
-			if (typeValidator === undefined) 
-				throwParseError(`Provided 'type' value must be a supported JSON Schema type (was '${printable(jsonSchema.type)}')`)
+			if (typeValidator === undefined) {
+				throwParseError(
+					`Provided 'type' value must be a supported JSON Schema type (was '${printable(jsonSchema.type)}')`
+				)
+			}
 
 			if (preTypeValidator === undefined) return typeValidator
 			return typeValidator.and(preTypeValidator)

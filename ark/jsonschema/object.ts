@@ -198,22 +198,22 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 	if (additionalPropertiesSchema === false) return false
 
 	const schemaDefinedKeys = rootSchema(
-		[...properties].map(key => ({unit: key}))
-		.concat(
-			[...patternProperties].map(
-				key => ({domain: "string", pattern: key })
-			) as never
-		)
-	);
+		[...properties]
+			.map(key => ({ unit: key }))
+			.concat(
+				[...patternProperties].map(key => ({
+					domain: "string",
+					pattern: key
+				})) as never
+			)
+	)
 
 	const jsonSchemaObjectAdditionalPropertiesValidator = (
 		data: object,
 		ctx: Traversal
 	) => {
 		Object.keys(data).forEach(key => {
-			if (
-				schemaDefinedKeys.allows(key)
-			)
+			if (schemaDefinedKeys.allows(key))
 				// Not an additional property, so don't validate here
 				return
 
