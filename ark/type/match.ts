@@ -29,16 +29,18 @@ type MatchParserContext<input = unknown> = {
 	cases: Morph[]
 	$: unknown
 	input: input
+	checked: boolean
 	key: PropertyKey | null
 }
 
 declare namespace ctx {
 	export type from<ctx extends MatchParserContext> = ctx
 
-	export type init<$, input = unknown> = from<{
+	export type init<$, input = unknown, checked extends boolean = false> = from<{
 		cases: []
 		$: $
 		input: input
+		checked: checked
 		key: null
 	}>
 
@@ -46,6 +48,7 @@ declare namespace ctx {
 		cases: ctx["cases"]
 		$: ctx["$"]
 		input: ctx["input"]
+		checked: ctx["checked"]
 		key: key
 	}>
 }
@@ -53,18 +56,18 @@ declare namespace ctx {
 export interface MatchParser<$> extends CaseMatchParser<ctx.init<$>> {
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, type.infer<def, $>>>
+	): ChainableMatchParser<ctx.init<$, type.infer<def, $>, true>>
 	in<const typedInput = never>(
 		...args: [typedInput] extends [never] ?
 			[
-				ErrorMessage<"from requires a definition or type argument (from('string') or from<string>())">
+				ErrorMessage<"in requires a definition or type argument (in('string') or in<string>())">
 			]
 		:	[]
 	): ChainableMatchParser<ctx.init<$, typedInput>>
-	// include this signature a second time so that e.g. `match.from({ foo: "strin" })` shows the right error
+	// include this signature a second time so that e.g. `match.in({ foo: "strin" })` shows the right error
 	in<const def>(
 		def: type.validate<def, $>
-	): ChainableMatchParser<ctx.init<$, type.infer<def, $>>>
+	): ChainableMatchParser<ctx.init<$, type.infer<def, $>, true>>
 
 	case: CaseParser<ctx.init<$>>
 
@@ -80,6 +83,7 @@ type addCasesToContext<
 			$: ctx["$"]
 			input: ctx["input"]
 			cases: [...ctx["cases"], ...cases]
+			checked: ctx["checked"]
 			key: ctx["key"]
 		}>
 	:	never
@@ -91,41 +95,64 @@ type addDefaultToContext<
 	$: ctx["$"]
 	input: defaultCase extends "never" ? Morph.In<ctx["cases"][number]>
 	:	ctx["input"]
-	cases: defaultCase extends Morph ? [...ctx["cases"], defaultCase]
-	: defaultCase extends "never" | "assert" ? ctx["cases"]
-	: [...ctx["cases"], (In: ctx["input"]) => ArkErrors]
+	cases: defaultCase extends "never" | "assert" ? ctx["cases"]
+	: defaultCase extends Morph ?
+		ctx["checked"] extends true ?
+			[(In: unknown) => ArkErrors, ...ctx["cases"], defaultCase]
+		:	[...ctx["cases"], defaultCase]
+	:	// we already are guaranteed ArkErrors as a possible output here
+		// so don't bother adding it as an input case
+		[...ctx["cases"], (In: ctx["input"]) => ArkErrors]
+	checked: ctx["checked"]
 	key: ctx["key"]
 }>
 
-type casesToMorphTuple<cases, ctx extends MatchParserContext> = unionToTuple<
+type CaseKeyKind = "def" | "string"
+
+type casesToMorphTuple<
+	cases,
+	ctx extends MatchParserContext,
+	kind extends CaseKeyKind
+> = unionToTuple<
 	propValueOf<{
 		[def in Exclude<keyof cases, "default">]: cases[def] extends (
 			Morph<never, infer o>
 		) ?
-			(In: inferCaseArg<def extends number ? `${number}` : def, ctx, "in">) => o
+			kind extends "def" ?
+				(
+					In: inferCaseArg<def extends number ? `${number}` : def, ctx, "in">
+				) => o
+			:	(In: maybeLiftToKey<def, ctx>) => o
 		:	never
 	}>
 >
 
-type addCasesToParser<cases, ctx extends MatchParserContext> =
+type addCasesToParser<
+	cases,
+	ctx extends MatchParserContext,
+	kind extends CaseKeyKind
+> =
 	cases extends { default: infer defaultDef extends DefaultCase<ctx> } ?
 		finalizeMatchParser<
-			addCasesToContext<ctx, casesToMorphTuple<cases, ctx>>,
+			addCasesToContext<ctx, casesToMorphTuple<cases, ctx, kind>>,
 			defaultDef
 		>
-	:	ChainableMatchParser<addCasesToContext<ctx, casesToMorphTuple<cases, ctx>>>
+	:	ChainableMatchParser<
+			addCasesToContext<ctx, casesToMorphTuple<cases, ctx, kind>>
+		>
 
 type inferCaseArg<
 	def,
 	ctx extends MatchParserContext,
 	endpoint extends "in" | "out"
 > = _finalizeCaseArg<
-	ctx["key"] extends PropertyKey ?
-		{ [k in ctx["key"]]: type.infer<def, ctx["$"]> }
-	:	type.infer<def, ctx["$"]>,
+	maybeLiftToKey<type.infer<def, ctx["$"]>, ctx>,
 	ctx,
 	endpoint
 >
+
+type maybeLiftToKey<t, ctx extends MatchParserContext> =
+	ctx["key"] extends PropertyKey ? { [k in ctx["key"]]: t } : t
 
 type _finalizeCaseArg<
 	t,
@@ -153,6 +180,29 @@ type validateKey<key extends Key, ctx extends MatchParserContext> =
 		:	conform<key, keyof ctx["input"]>
 	:	ErrorMessage<chainedAtMessage>
 
+interface StringsParser<ctx extends MatchParserContext> {
+	<const cases>(
+		def: cases extends validateStringCases<cases, ctx> ? cases
+		:	validateStringCases<cases, ctx>
+	): addCasesToParser<cases, ctx, "string">
+}
+
+type validateStringCases<cases, ctx extends MatchParserContext> = {
+	[k in keyof cases | stringValue<ctx> | "default"]?: k extends "default" ?
+		DefaultCase<ctx>
+	: k extends stringValue<ctx> ?
+		(In: _finalizeCaseArg<maybeLiftToKey<k, ctx>, ctx, "out">) => unknown
+	:	ErrorType<`${k & string} must be a possible string value`>
+}
+
+type stringValue<ctx extends MatchParserContext> =
+	ctx["key"] extends keyof ctx["input"] ?
+		ctx["input"][ctx["key"]] extends string ?
+			ctx["input"][ctx["key"]]
+		:	never
+	: ctx["input"] extends string ? ctx["input"]
+	: never
+
 interface AtParser<ctx extends MatchParserContext> {
 	<const key extends string>(
 		key: validateKey<key, ctx>
@@ -166,7 +216,7 @@ interface AtParser<ctx extends MatchParserContext> {
 		key: validateKey<key, ctx>,
 		cases: cases extends validateCases<cases, ctxAtKey> ? cases
 		:	errorCases<cases, ctxAtKey>
-	): addCasesToParser<cases, ctxAtKey>
+	): addCasesToParser<cases, ctxAtKey, "def">
 }
 
 interface ChainableMatchParser<ctx extends MatchParserContext> {
@@ -174,6 +224,8 @@ interface ChainableMatchParser<ctx extends MatchParserContext> {
 	match: CaseMatchParser<ctx>
 	default: DefaultMethod<ctx>
 	at: AtParser<ctx>
+	/** @experimental */
+	strings: StringsParser<ctx>
 }
 
 export type DefaultCaseKeyword = "never" | "assert" | "reject"
@@ -215,7 +267,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 
 export type CaseMatchParser<ctx extends MatchParserContext> = <const cases>(
 	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
-) => addCasesToParser<cases, ctx>
+) => addCasesToParser<cases, ctx, "def">
 
 type finalizeMatchParser<
 	ctx extends MatchParserContext,
@@ -253,8 +305,11 @@ export class InternalMatchParser extends Callable<InternalCaseParserFn> {
 		this.$ = $
 	}
 
-	in(): InternalChainedMatchParser {
-		return new InternalChainedMatchParser(this.$)
+	in(def?: unknown): InternalChainedMatchParser {
+		return new InternalChainedMatchParser(
+			this.$,
+			def === undefined ? undefined : this.$.parse(def)
+		)
 	}
 
 	at(key: Key, cases?: InternalCases): InternalChainedMatchParser | Match {
@@ -272,36 +327,24 @@ type InternalCaseParserFn = (
 	cases: InternalCases
 ) => InternalChainedMatchParser | Match
 
+type CaseEntry = [BaseRoot, Morph] | ["default", DefaultCase]
+
 export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
-	$: InternalScope
+	$: InternalScope;
+	in: BaseRoot | undefined
 	protected key: Key | undefined
 	protected branches: BaseRoot[] = []
 
-	constructor($: InternalScope) {
-		super(cases => {
-			const entries = Object.entries(cases)
-			for (let i = 0; i < entries.length; i++) {
-				const [k, v] = entries[i]
-				if (k === "default") {
-					if (i !== entries.length - 1) {
-						throwParseError(
-							`default may only be specified as the last key of a switch definition`
-						)
-					}
-					return this.default(v)
-				}
-				if (typeof v !== "function") {
-					return throwParseError(
-						`Value for case "${k}" must be a function (was ${domainOf(v)})`
-					)
-				}
-
-				this.case(k, v)
-			}
-
-			return this
-		})
+	constructor($: InternalScope, In?: BaseRoot) {
+		super(cases =>
+			this.caseEntries(
+				Object.entries(cases).map(([k, v]) =>
+					k === "default" ? [k, v] : [this.$.parse(k), v as Morph]
+				)
+			)
+		)
 		this.$ = $
+		this.in = In
 	}
 
 	at(key: Key, cases?: InternalCases): InternalChainedMatchParser | Match {
@@ -312,14 +355,56 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 	}
 
 	case(def: unknown, resolver: Morph): InternalChainedMatchParser {
-		const wrappableDef = this.key ? { [this.key]: def } : def
-		const branch = this.$.parse(wrappableDef).pipe(resolver as never)
+		return this.caseEntry(this.$.parse(def), resolver)
+	}
+
+	protected caseEntry(
+		node: BaseRoot,
+		resolver: Morph
+	): InternalChainedMatchParser {
+		const wrappableNode = this.key ? this.$.parse({ [this.key]: node }) : node
+		const branch = wrappableNode.pipe(resolver as never)
 		this.branches.push(branch)
 		return this
 	}
 
 	match(cases: InternalCases): InternalChainedMatchParser | Match {
 		return this(cases)
+	}
+
+	strings(cases: InternalCases): InternalChainedMatchParser | Match {
+		return this.caseEntries(
+			Object.entries(cases).map(([k, v]) =>
+				k === "default" ?
+					[k, v]
+				:	[this.$.node("unit", { unit: k }), v as Morph]
+			)
+		)
+	}
+
+	protected caseEntries(
+		entries: CaseEntry[]
+	): InternalChainedMatchParser | Match {
+		for (let i = 0; i < entries.length; i++) {
+			const [k, v] = entries[i]
+			if (k === "default") {
+				if (i !== entries.length - 1) {
+					throwParseError(
+						`default may only be specified as the last key of a switch definition`
+					)
+				}
+				return this.default(v)
+			}
+			if (typeof v !== "function") {
+				return throwParseError(
+					`Value for case "${k}" must be a function (was ${domainOf(v)})`
+				)
+			}
+
+			this.caseEntry(k, v)
+		}
+
+		return this
 	}
 
 	default(defaultCase: DefaultCase): Match {
@@ -334,9 +419,19 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (defaultCase === "never" || defaultCase === "assert")
 			schema.meta = { onFail: throwOnDefault }
 
-		const matcher = this.$.finalize(this.$.node("union", schema))
+		const cases = this.$.node("union", schema)
 
-		return matcher as never
+		if (!this.in) return this.$.finalize(cases) as never
+
+		let inputValidatedCases = this.in.pipe(cases)
+
+		if (defaultCase === "never" || defaultCase === "assert") {
+			inputValidatedCases = inputValidatedCases.withMeta({
+				onFail: throwOnDefault
+			})
+		}
+
+		return this.$.finalize(inputValidatedCases) as never
 	}
 }
 

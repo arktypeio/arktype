@@ -1259,4 +1259,39 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		attest(tupleArrayType.assert([[1, 2]])).equals([[1, 2]])
 		attest(unionType.assert([[1, 2]])).equals([[1, 2]])
 	})
+
+	it("doomed shirt example", () => {
+		const urDOOMed = type({
+			grouping: "(0 | (1 | (2 | (3 | (4 | 5)[])[])[])[])[]",
+			nestedGenerics:
+				"Exclude<0n | unknown[] | Record<string, unknown>, object>",
+			"escapes\\?": "'a | b' | 'c | d'"
+		})
+
+		attest<{
+			grouping: (0 | (1 | (2 | (3 | (4 | 5)[])[])[])[])[]
+			nestedGenerics: 0n
+			"escapes?": "a | b" | "c | d"
+		}>(urDOOMed.t)
+
+		attest(urDOOMed.expression).snap(
+			'{ escapes?: "a | b" | "c | d", grouping: (((((4 | 5)[] | 3)[] | 2)[] | 1)[] | 0)[], nestedGenerics: 0n }'
+		)
+	})
+
+	it("ArkErrors not assignable to ArkErrorInput", () => {
+		attest(() =>
+			type({
+				type: "string"
+			}).narrow((_, ctx) => {
+				const result = type.number("foo")
+				// @ts-expect-error
+				if (result instanceof type.errors) return ctx.reject(result)
+
+				return true
+			})
+		).type.errors(
+			"Argument of type 'ArkErrors' is not assignable to parameter of type 'ArkErrorInput'"
+		)
+	})
 })

@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, writeUnboundableMessage } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnboundableMessage,
+	type ArkErrors
+} from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 import { doubleAtMessage, throwOnDefault } from "arktype/internal/match.ts"
@@ -211,7 +215,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => matcher(true))
-			.throws.snap("AggregateError: must be a string or a number (was boolean)")
+			.throws.snap("AggregateError: must be a number or a string (was boolean)")
 			.type.errors(
 				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
@@ -704,15 +708,6 @@ contextualize(() => {
 			default: "reject"
 		})
 
-		attest(m).type.toString.snap(`Match<
-	unknown,
-	[
-		(In: number) => number,
-		(In: string) => number,
-		(In: unknown) => ArkErrors
-	]
->`)
-
 		attest(m("foo")).equals(3)
 		attest(m(3)).equals(3)
 		// can access directly since it has no overlap with input
@@ -733,6 +728,118 @@ contextualize(() => {
 		attest(sizeOf({ name: "David", length: 5 })).equals(5)
 		attest(() => sizeOf(null)).throws.snap(
 			"AggregateError: must be a string, a number, a bigint or an object (was null)"
+		)
+	})
+
+	it("validates in", () => {
+		const exclaimFoo = match.in({ foo: "string" }).at("foo", {
+			default: o => `${o.foo}!` as const
+		})
+
+		attest(exclaimFoo).type.toString.snap(`Match<
+	{ foo: string },
+	[
+		(In: unknown) => ArkErrors,
+		(o: { foo: string }) => \`\${string}!\`
+	]
+>`)
+
+		const out = exclaimFoo({ foo: "foo" })
+
+		// ensure ArkErrors is added as a possible outcome
+		// since input is validated without assertion
+		attest<ArkErrors | `${string}!`>(out).equals("foo!")
+
+		// @ts-expect-error
+		attest(exclaimFoo({ foo: 5 }).toString())
+			.snap("foo must be a string (was a number)")
+			.type.errors("Type 'number' is not assignable to type 'string'")
+	})
+
+	it("asserts in", () => {
+		const fooToLength = match.in({ foo: "string" }).at("foo", {
+			"string > 0": o => o.foo.length,
+			default: "assert"
+		})
+
+		attest(fooToLength).type.toString.snap(`Match<
+	{ foo: string },
+	[(In: { foo: string }) => number]
+>`)
+
+		const out = fooToLength({ foo: "foo" })
+
+		// ensure ArkErrors is not added to output
+		// since result is asserted
+		attest<number>(out).equals(3)
+
+		// @ts-expect-error
+		attest(() => fooToLength({ foo: 5 }))
+			.throws("foo must be a string (was a number)")
+			.type.errors("Type 'number' is not assignable to type 'string'")
+	})
+
+	type Discriminated =
+		| {
+				kind: "a"
+				value: "a"
+		  }
+		| {
+				kind: "b"
+				value: "b"
+		  }
+		| {
+				kind: "c"
+				value: "c"
+		  }
+
+	it("string literal matcher", () => {
+		const discriminate = match
+			.in<Discriminated>()
+			.at("kind")
+			.strings({
+				a: o => o.value,
+				b: o => o.value,
+				c: o => o.value,
+				default: "assert"
+			})
+
+		const a = discriminate({ kind: "a", value: "a" })
+		const b = discriminate({ kind: "b", value: "b" })
+		const c = discriminate({ kind: "c", value: "c" })
+
+		attest<["a", "b", "c"]>([a, b, c]).snap(["a", "b", "c"])
+
+		// @ts-expect-error
+		attest(() => discriminate({ kind: "d", value: "d" }))
+			.throws.snap('AggregateError: kind must be "a", "b" or "c" (was "d")')
+			.type.errors(`Type '"d"' is not assignable`)
+	})
+
+	it("invalid string key", () => {
+		attest(() =>
+			match
+				.in<Discriminated>()
+				.at("kind")
+				.strings({
+					// @ts-expect-error
+					d: o => o.value,
+					default: "assert"
+				})
+		).type.errors(`ErrorType<"d must be a possible string value", {}>`)
+	})
+
+	it("lone invalid string key", () => {
+		attest(() =>
+			match
+				.in<Discriminated>()
+				.at("kind")
+				.strings({
+					// @ts-expect-error
+					d: o => o.value
+				})
+		).type.errors(
+			`Object literal may only specify known properties, and 'd' does not exist`
 		)
 	})
 })

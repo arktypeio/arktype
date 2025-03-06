@@ -1,5 +1,15 @@
 # arktype
 
+## 2.1.7
+
+Address a rare crash on an invalid ctx reference in some jitless cases
+
+Closes #1346
+
+## 2.1.6
+
+Improve some type-level parse errors on expressions with invalid finalizers
+
 ## 2.1.5
 
 #### Fix JSDoc and go-to definition for unparsed keys
