@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { ArkErrors, TraversalError } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -142,15 +143,34 @@ contextualize(() => {
 	it("multi", () => {
 		const naturalNumber = type("number.integer>0")
 		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
-  • an integer
-  • positive`)
+  ◦ an integer
+  ◦ positive`)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
 		attest(naturalAtPath({ natural: -0.1 }).toString())
 			.snap(`natural (-0.1) must be...
-  • an integer
-  • positive`)
+  ◦ an integer
+  ◦ positive`)
+	})
+
+	it("multi indented", () => {
+		const naturalSchema = type({
+			natural: "number.integer>0",
+			name: "string"
+		})
+		const result = naturalSchema({
+			natural: -Math.PI,
+			name: ["negative", "PI"]
+		})
+		attest(result).instanceOf(ArkErrors)
+		const traversalError = (result as ArkErrors).toTraversalError()
+		attest(traversalError).instanceOf(TraversalError)
+		attest(traversalError.message).snap(`
+  • name must be a string (was an object)
+  • natural (-3.141592653589793) must be...
+    ◦ an integer
+    ◦ positive`)
 	})
 
 	it("homepage example", () => {

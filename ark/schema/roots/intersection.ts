@@ -253,7 +253,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				return childDescriptions.join(" and ")
 			},
 			expected: source =>
-				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
+				`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
 			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 		},
 		intersections: {

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { TraversalError } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import * as assert from "node:assert/strict"
@@ -43,8 +44,8 @@ contextualize(() => {
 			const result = t("invalid")
 			if (result instanceof type.errors) result.throw()
 		} catch (e) {
-			attest(e).instanceOf(AggregateError)
-			attest((e as AggregateError).errors instanceof type.errors)
+			attest(e).instanceOf(TraversalError)
+			attest((e as TraversalError).arkErrors instanceof type.errors)
 			return
 		}
 		throw new assert.AssertionError({ message: "Expected to throw" })
@@ -54,7 +55,7 @@ contextualize(() => {
 		const t = type({ a: "string" })
 		attest(t.assert({ a: "1" })).equals({ a: "1" })
 		attest(() => t.assert({ a: 1 })).throws.snap(
-			"AggregateError: a must be a string (was a number)"
+			"TraversalError: a must be a string (was a number)"
 		)
 	})
 
@@ -221,7 +222,7 @@ contextualize(() => {
 		attest<(data: unknown) => string>(assert)
 		attest(assert("foo")).equals("foo")
 		attest(() => assert(5)).throws.snap(
-			"AggregateError: must be a string (was a number)"
+			"TraversalError: must be a string (was a number)"
 		)
 	})
 

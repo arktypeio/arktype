@@ -169,10 +169,18 @@ export class ArkErrors
 	private mutable: ArkError[] = this as never
 
 	/**
-	 * Throw an AggregateError based on these errors.
+	 * Throw a TraversalError based on these errors.
 	 */
 	throw(): never {
-		throw new AggregateError(this, this.summary)
+		throw this.toTraversalError()
+	}
+
+	/**
+	 * Converts ArkErrors to TraversalError, a subclass of `Error` suitable for throwing with nice
+	 * formatting.
+	 */
+	toTraversalError(): TraversalError {
+		return new TraversalError(this)
 	}
 
 	/**
@@ -278,6 +286,24 @@ export class ArkErrors
 		})
 	}
 }
+
+export class TraversalError extends Error {
+	name = "TraversalError"
+	arkErrors!: ArkErrors
+
+	constructor(errors: ArkErrors) {
+		if (errors.length === 1) super(errors.summary)
+		else super("\n" + errors.map(error => `  • ${indent(error)}`).join("\n"))
+
+		Object.defineProperty(this, "arkErrors", {
+			value: errors,
+			enumerable: false
+		})
+	}
+}
+
+const indent = (error: ArkError): string =>
+	error.toString().split("\n").join("\n  ")
 
 export interface DerivableErrorContext<
 	code extends ArkErrorCode = ArkErrorCode
