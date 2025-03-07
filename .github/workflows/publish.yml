@@ -28,6 +28,7 @@ jobs:
         env:
           NEXT_PUBLIC_POSTHOG_KEY: phc_vKr7tmA1TyRlKm9zm5TWVmrTWAybJ2fCk66FtZG49Om
           NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
+          ORAMA_PRIVATE_API_KEY: ${{ secrets.ORAMA_PRIVATE_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -44,8 +45,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@
-        env:
-          ORAMA_PRIVATE_API_KEY: ${{ secrets.ORAMA_PRIVATE_API_KEY }}
 
   release:
     runs-on: ubuntu-latest
