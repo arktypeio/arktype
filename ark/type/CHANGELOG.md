@@ -1,5 +1,11 @@
 # arktype
 
+## 2.1.8
+
+- improve 3+ arg generic invocations
+- add `string.hex` (thanks @HoaX7 - #1351)
+- switch from AggregateError to TraversalError for better crash formatting (thanks @LukeAbby - #1349)
+
 ## 2.1.7
 
 Address a rare crash on an invalid ctx reference in some jitless cases
