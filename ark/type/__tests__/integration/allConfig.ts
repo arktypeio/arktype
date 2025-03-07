@@ -104,6 +104,9 @@ configure({
 		"string.alphanumeric": {
 			description: "configured"
 		},
+		"string.hex": {
+			description: "configured"
+		},
 		"string.base64.url": {
 			description: "configured"
 		},
