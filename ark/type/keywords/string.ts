@@ -72,10 +72,7 @@ export declare namespace stringInteger {
 
 const hex = Scope.module(
 	{
-		root: regexStringNode(
-			/^[0-9a-fA-F]+$/,
-			"hex"
-		)
+		root: regexStringNode(/^[0-9a-fA-F]+$/, "hex")
 	},
 	{
 		name: "string.hex"
