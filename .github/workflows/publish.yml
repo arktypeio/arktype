@@ -43,7 +43,9 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@
+        env:
+          ORAMA_PRIVATE_API_KEY: ${{ secrets.ORAMA_PRIVATE_API_KEY }}
 
   release:
     runs-on: ubuntu-latest
