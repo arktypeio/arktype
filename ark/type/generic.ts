@@ -57,7 +57,7 @@ export type GenericInstantiator<
 			// some of type's methods
 			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
 				a: type.validate<a, args$> & validateGenericArg<a, params[0], args$>
-			): r
+			): r extends infer _ ? _ : never
 		}
 	: params["length"] extends 2 ?
 		{
@@ -66,7 +66,7 @@ export type GenericInstantiator<
 					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
 					type.validate<b, args$> & validateGenericArg<b, params[1], args$>
 				]
-			): r
+			): r extends infer _ ? _ : never
 		}
 	: params["length"] extends 3 ?
 		{
@@ -77,16 +77,11 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c], $, args$>
 			>(
 				...args: [
-					type.validate<a, args$>,
-					type.validate<b, args$>,
-					type.validate<c, args$>
-				] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>,
-						validateGenericArg<c, params[2], args$>
-					]
-			): r
+					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
+					type.validate<b, args$> & validateGenericArg<b, params[1], args$>,
+					type.validate<c, args$> & validateGenericArg<c, params[2], args$>
+				]
+			): r extends infer _ ? _ : never
 		}
 	: params["length"] extends 4 ?
 		{
@@ -98,20 +93,14 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d], $, args$>
 			>(
 				...args: [
-					type.validate<a, args$>,
-					type.validate<b, args$>,
-					type.validate<c, args$>,
-					type.validate<d, args$>
-				] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>,
-						validateGenericArg<c, params[2], args$>,
-						validateGenericArg<d, params[3], args$>
-					]
-			): r
+					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
+					type.validate<b, args$> & validateGenericArg<b, params[1], args$>,
+					type.validate<c, args$> & validateGenericArg<c, params[2], args$>,
+					type.validate<d, args$> & validateGenericArg<d, params[3], args$>
+				]
+			): r extends infer _ ? _ : never
 		}
-	: params["length"] extends 4 ?
+	: params["length"] extends 5 ?
 		{
 			<
 				const a,
@@ -122,22 +111,15 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e], $, args$>
 			>(
 				...args: [
-					type.validate<a, args$>,
-					type.validate<b, args$>,
-					type.validate<c, args$>,
-					type.validate<d, args$>,
-					type.validate<e, args$>
-				] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>,
-						validateGenericArg<c, params[2], args$>,
-						validateGenericArg<d, params[3], args$>,
-						validateGenericArg<e, params[4], args$>
-					]
-			): r
+					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
+					type.validate<b, args$> & validateGenericArg<b, params[1], args$>,
+					type.validate<c, args$> & validateGenericArg<c, params[2], args$>,
+					type.validate<d, args$> & validateGenericArg<d, params[3], args$>,
+					type.validate<e, args$> & validateGenericArg<e, params[4], args$>
+				]
+			): r extends infer _ ? _ : never
 		}
-	: params["length"] extends 5 ?
+	: params["length"] extends 6 ?
 		{
 			<
 				const a,
@@ -149,57 +131,17 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e, f], $, args$>
 			>(
 				...args: [
-					type.validate<a, args$>,
-					type.validate<b, args$>,
-					type.validate<c, args$>,
-					type.validate<d, args$>,
-					type.validate<e, args$>,
-					type.validate<f, args$>
-				] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>,
-						validateGenericArg<c, params[2], args$>,
-						validateGenericArg<d, params[3], args$>,
-						validateGenericArg<e, params[4], args$>,
-						validateGenericArg<f, params[5], args$>
-					]
-			): r
-		}
-	: params["length"] extends 6 ?
-		{
-			<
-				const a,
-				const b,
-				const c,
-				const d,
-				const e,
-				const f,
-				const g,
-				r = instantiateGeneric<def, params, [a, b, c, d, e, f, g], $, args$>
-			>(
-				...args: [
-					type.validate<a, args$>,
-					type.validate<b, args$>,
-					type.validate<c, args$>,
-					type.validate<d, args$>,
-					type.validate<e, args$>,
-					type.validate<f, args$>,
-					type.validate<g, args$>
-				] &
-					[
-						validateGenericArg<a, params[0], args$>,
-						validateGenericArg<b, params[1], args$>,
-						validateGenericArg<c, params[2], args$>,
-						validateGenericArg<d, params[3], args$>,
-						validateGenericArg<e, params[4], args$>,
-						validateGenericArg<f, params[5], args$>,
-						validateGenericArg<g, params[6], args$>
-					]
-			): r
+					type.validate<a, args$> & validateGenericArg<a, params[0], args$>,
+					type.validate<b, args$> & validateGenericArg<b, params[1], args$>,
+					type.validate<c, args$> & validateGenericArg<c, params[2], args$>,
+					type.validate<d, args$> & validateGenericArg<d, params[3], args$>,
+					type.validate<e, args$> & validateGenericArg<e, params[4], args$>,
+					type.validate<f, args$> & validateGenericArg<f, params[5], args$>
+				]
+			): r extends infer _ ? _ : never
 		}
 	:	(
-			error: ErrorMessage<`You may not define more than 7 positional generic parameters`>
+			error: ErrorMessage<`You may not define more than 6 positional generic parameters`>
 		) => never
 
 type instantiateGeneric<
