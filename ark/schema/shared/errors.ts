@@ -289,7 +289,7 @@ export class ArkErrors
 
 export class TraversalError extends Error {
 	name = "TraversalError"
-	arkErrors!: ArkErrors
+	declare arkErrors: ArkErrors
 
 	constructor(errors: ArkErrors) {
 		if (errors.length === 1) super(errors.summary)
