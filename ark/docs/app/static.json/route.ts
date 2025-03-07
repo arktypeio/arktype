@@ -8,13 +8,15 @@ export const GET = () => {
 	const results: OramaDocument[] = []
 
 	for (const page of source.getPages()) {
-		results.push({
-			id: page.url,
-			structured: (page.data as any).structuredData,
-			url: page.url,
-			title: page.data.title,
-			description: page.data.description
-		} as never)
+		if ("structuredData" in page.data) {
+			results.push({
+				id: page.url,
+				structured: page.data.structuredData as never,
+				url: page.url,
+				title: page.data.title,
+				description: page.data.description ?? ""
+			})
+		}
 	}
 
 	return NextResponse.json(results)
