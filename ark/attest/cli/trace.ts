@@ -1,5 +1,5 @@
-import { ensureDir, readJson, writeFile } from "@ark/fs"
-import { execSync } from "child_process"
+import { ensureDir, getShellOutput, readJson, writeFile } from "@ark/fs"
+import type { ExecException } from "child_process"
 import { existsSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 import { resolve } from "path"
@@ -117,6 +117,16 @@ export const trace = async (args: string[]): Promise<void> => {
 
 	outputCapture.write(`⏳ Gathering type trace data for ${packageDir}...`)
 	tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
+
+	const traceFile = join(traceDir, "trace.json")
+
+	if (!existsSync(traceFile)) {
+		outputCapture.write(
+			`❌ No trace data found (expected a file at ${join(traceDir, "trace.json")})`
+		)
+		return
+	}
+
 	outputCapture.write(`⏳ Analyzing type trace data for ${packageDir}...`)
 	analyzeTypeInstantiations(traceDir)
 
@@ -138,20 +148,30 @@ const generateTraceData = (
 	tsconfigPath: string,
 	packageDir: string
 ): string => {
-	// Capture the output instead of just displaying it
-	const output = execSync(
-		`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
-		{
-			cwd: packageDir,
-			stdio: "pipe", // Capture output instead of inheriting
-			encoding: "utf-8" // Return as string
-		}
-	)
+	try {
+		// Capture the output instead of just displaying it
+		const output = getShellOutput(
+			`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
+			{ cwd: packageDir }
+		)
 
-	// Display the output to the console as before
-	process.stdout.write(output)
+		// Display the output to the console as before
+		process.stdout.write(output)
 
-	return output
+		return output
+	} catch (_: any) {
+		// even if tsc returns a non-zero exit code,
+		// we can still proceed as long as the trace.json
+		// file was generated
+		const e: ExecException = _
+		const output = e.stdout ?? ""
+		const errorOutput = e.stderr ?? ""
+
+		process.stdout.write(output)
+		process.stderr.write(errorOutput)
+
+		return `${output}\n${errorOutput}`
+	}
 }
 
 const initializeAnalysisContext = (traceDir: string): AnalysisContext => {

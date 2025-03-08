@@ -1,2 +1,2 @@
 export const baseDiagnosticTscCmd =
-	"npm exec -- tsc --noEmit --extendedDiagnostics --incremental false --tsBuildInfoFile null"
+	"npx --package=typescript --no-install tsc --noEmit --extendedDiagnostics --incremental false --tsBuildInfoFile null"
