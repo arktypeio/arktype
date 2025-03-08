@@ -1,6 +1,7 @@
 import {
 	Disjoint,
 	intersectNodesRoot,
+	pipeNodesRoot,
 	type BaseParseContext,
 	type BaseRoot,
 	type Morph,
@@ -33,6 +34,7 @@ import {
 	shallowOptionalMessage
 } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { BranchOperator } from "./reduce/shared.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { ArkTypeScanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
@@ -129,14 +131,17 @@ export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
 >
 
-const parseBranchTuple: IndexOneParser<"|" | "&"> = (def, ctx) => {
+const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
 	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
 	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
 	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
-	const result = intersectNodesRoot(l, r, ctx.$)
+	const result =
+		def[1] === "&" ?
+			intersectNodesRoot(l, r, ctx.$)
+		:	pipeNodesRoot(l, r, ctx.$)
 	if (result instanceof Disjoint) return result.throw()
 	return result
 }
@@ -159,15 +164,8 @@ export const parseMorphTuple: IndexOneParser<"=>"> = (def, ctx) => {
 	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).pipe(def[2] as Morph)
 }
 
-export const parseToTuple: IndexOneParser<"|>"> = (def, ctx) => {
-	const node = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
-	const outputValidator = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
-
-	return node.to(outputValidator)
-}
-
 export const writeMalformedFunctionalExpressionMessage = (
-	operator: ":" | "=>" | "|>",
+	operator: ":" | "=>",
 	value: unknown
 ): string =>
 	`${
@@ -227,7 +225,7 @@ const infixParsers = defineIndexOneParsers({
 	"&": parseBranchTuple,
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
-	"|>": parseToTuple,
+	"|>": parseBranchTuple,
 	"@": parseAttributeTuple,
 	// since object and tuple literals parse there via `parseProperty`,
 	// they must be shallow if parsed directly as a tuple expression

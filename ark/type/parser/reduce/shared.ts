@@ -42,6 +42,8 @@ export type InvertedComparators = {
 	"==": "=="
 }
 
+export type BranchOperator = "&" | "|" | "|>"
+
 export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
 
 export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(

@@ -9,50 +9,50 @@ bench.baseline(() => {
 	type("symbol").narrow(() => true)
 })
 
-bench("array-string", () => type("number[]")).types([917, "instantiations"])
+bench("array-string", () => type("number[]")).types([921, "instantiations"])
 
 bench("array-tuple", () => type(["number", "[]"])).types([
-	896,
+	900,
 	"instantiations"
 ])
 
 bench("array-chain", () => type("number").array()).types([
-	505,
+	509,
 	"instantiations"
 ])
 
 bench("union-string", () => type("number|string")).types([
-	1153,
+	1172,
 	"instantiations"
 ])
 
 bench("union-tuple", () => type(["number", "|", "string"])).types([
-	1100,
+	1108,
 	"instantiations"
 ])
 
 bench("union-chain", () => type("number").or("string")).types([
-	1397,
+	1405,
 	"instantiations"
 ])
 
 bench("union-10-ary", () => type("0|1|2|3|4|5|6|7|8|9")).types([
-	4240,
+	4339,
 	"instantiations"
 ])
 
 bench("intersection-string", () => type("number&0")).types([
-	1311,
+	1322,
 	"instantiations"
 ])
 
 bench("intersection-tuple", () => type(["number", "&", "0"])).types([
-	1261,
+	1269,
 	"instantiations"
 ])
 
 bench("intersection-chain", () => type("number").and("0")).types([
-	1643,
+	1651,
 	"instantiations"
 ])
 
@@ -60,51 +60,68 @@ bench("intersection-10-ary", () =>
 	type(
 		"unknown&unknown&unknown&unknown&unknown&unknown&unknown&unknown&unknown&unknown"
 	)
-).types([5030, "instantiations"])
+).types([5097, "instantiations"])
 
 bench("group-shallow", () => type("string|(number[])")).types([
-	1421,
+	1445,
 	"instantiations"
 ])
 
 bench("group-nested", () => type("string|(number|(boolean))[][]")).types([
-	2151,
+	2190,
 	"instantiations"
 ])
 
 bench("group-deep", () => type("(0|(1|(2|(3|(4|5)[])[])[])[])[]")).types([
-	6980,
+	7064,
 	"instantiations"
 ])
 
-bench("bound-single", () => type("string>5")).types([1362, "instantiations"])
+bench("bound-single", () => type("string>5")).types([1372, "instantiations"])
 
 bench("bound-double", () => type("-7<=string.integer<99")).types([
-	2079,
+	2097,
 	"instantiations"
 ])
 
-bench("divisor", () => type("number%5")).types([956, "instantiations"])
+bench("divisor", () => type("number%5")).types([963, "instantiations"])
 
 bench("filter-tuple", () => type(["boolean", ":", b => b])).types([
-	1346,
+	1350,
 	"instantiations"
 ])
 
 bench("filter-chain", () => type("boolean").narrow(b => b)).types([
-	738,
+	742,
 	"instantiations"
 ])
 
 bench("morph-tuple", () => type(["boolean", "=>", b => b])).types([
-	1416,
+	1420,
 	"instantiations"
 ])
 
 bench("morph-chain", () => type("boolean").pipe(b => b)).types([
-	848,
+	852,
 	"instantiations"
 ])
+
+bench("to-string", () => type("string.numeric.parse |> number.integer")).types([
+	2340,
+	"instantiations"
+])
+
+bench("to-chain", () =>
+	type("string.numeric.parse").to("number.integer")
+).types([2426, "instantiations"])
+
+bench("to-tuple", () =>
+	type(["string.numeric.parse", "|>", "number.integer"])
+).types([2151, "instantiations"])
+
+bench("to-args", () =>
+	type("string.numeric.parse", "|>", "number.integer")
+).types([4304, "instantiations"])
 
 bench("base object", () =>
 	type({
@@ -131,7 +148,7 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([10807, "instantiations"])
+).types([12890, "instantiations"])
 
 type Expected = {
 	readonly: "readonly"
@@ -183,4 +200,4 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([13020, "instantiations"])
+).types([13108, "instantiations"])
