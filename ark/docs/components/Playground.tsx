@@ -84,12 +84,17 @@ export const Playground = () => {
 				theme="arkdark"
 				options={{
 					minimap: { enabled: false },
-					scrollBeyondLastLine: false
+					scrollBeyondLastLine: false,
+					quickSuggestions: {
+						other: true,
+						comments: false,
+						strings: true
+					},
+					quickSuggestionsDelay: 0
 				}}
-				onMount={(editor, monaco) => {
-					// TODO: ?
-					monaco
+				onMount={editor => {
 					const editorElement = editor.getDomNode()
+
 					if (editorElement) {
 						editorElement.style.borderRadius = "16px"
 						editorElement.style.boxShadow =
