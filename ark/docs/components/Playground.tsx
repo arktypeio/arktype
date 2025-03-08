@@ -9,6 +9,7 @@ import { Registry } from "monaco-textmate"
 import { loadWASM } from "onigasm"
 import { useState } from "react"
 import type { CompletionInfo } from "typescript"
+import { arktypeRawDts } from "./apiData.ts"
 
 interface IVSCodeTheme {
 	colors: {
@@ -115,6 +116,26 @@ const getInitializedTypeScriptService = async (
 	}
 
 	try {
+		// Configure TypeScript compiler options for arktype package resolution
+		monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+			baseUrl: "/",
+			paths: {
+				arktype: ["./node_modules/arktype/dist/index.d.ts"]
+			}
+		})
+
+		// Add arktype type definitions from the imported raw DTS
+		try {
+			// Add the arktype package as a library
+			monaco.languages.typescript.typescriptDefaults.addExtraLib(
+				arktypeRawDts,
+				"file:///node_modules/arktype/dist/index.d.ts"
+			)
+			console.log("Added arktype type definitions")
+		} catch (error) {
+			console.error("Error loading arktype types:", error)
+		}
+
 		// Initialize TypeScript with a dummy model if needed
 		const dummyUri = monaco.Uri.parse("file:///dummy.ts")
 		if (!monaco.editor.getModel(dummyUri))

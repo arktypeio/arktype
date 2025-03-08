@@ -9,7 +9,7 @@ import {
 	shell,
 	writeJson
 } from "../fs/index.ts"
-import { buildApi } from "./jsDocGen.ts"
+import { docgen } from "./docgen.ts"
 
 const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
@@ -31,7 +31,7 @@ try {
 	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
-	if (packageName === "arktype") buildApi()
+	if (packageName === "arktype") docgen()
 } finally {
 	rmRf("tsconfig.build.json")
 }
