@@ -129,6 +129,10 @@ contextualize(() => {
 			attest(() => type(["string", "&"])).throwsAndHasTypeError(
 				writeMissingRightOperandMessage("&", "")
 			)
+			// @ts-expect-error
+			attest(() => type(["string", "|>"])).throwsAndHasTypeError(
+				writeMissingRightOperandMessage("|>", "")
+			)
 		})
 
 		it("nested parse error", () => {

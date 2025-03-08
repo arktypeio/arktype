@@ -11,6 +11,7 @@ import { parseOperator } from "../shift/operator/operator.ts"
 import type { ArkTypeScanner } from "../shift/scanner.ts"
 import { parseUntilFinalizer } from "../string.ts"
 import {
+	type BranchOperator,
 	type Comparator,
 	type MinComparator,
 	type OpenLeftBound,
@@ -28,8 +29,8 @@ type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound: OpenLeftBound | null
 	intersection: BaseRoot | null
-	pipe: BaseRoot | null
 	union: BaseRoot | null
+	pipe: BaseRoot | null
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
@@ -41,8 +42,8 @@ export class DynamicState {
 		prefixes: [],
 		leftBound: null,
 		intersection: null,
-		pipe: null,
-		union: null
+		union: null,
+		pipe: null
 	}
 	finalizer: ArkTypeScanner.FinalizingLookahead | undefined
 	groups: BranchState[] = []
@@ -108,15 +109,15 @@ export class DynamicState {
 	finalizeBranches(): void {
 		this.assertRangeUnset()
 
-		if (this.branches.union) {
-			this.pushRootToBranch("|")
-			this.root = this.branches.union
-			return
-		}
-
 		if (this.branches.pipe) {
 			this.pushRootToBranch("|>")
 			this.root = this.branches.pipe
+			return
+		}
+
+		if (this.branches.union) {
+			this.pushRootToBranch("|")
+			this.root = this.branches.union
 			return
 		}
 
@@ -152,7 +153,7 @@ export class DynamicState {
 		}
 	}
 
-	pushRootToBranch(token: "|" | "&" | "|>"): void {
+	pushRootToBranch(token: BranchOperator): void {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
@@ -163,15 +164,17 @@ export class DynamicState {
 
 		if (token === "&") return
 
-		this.branches.pipe =
-			this.branches.pipe?.rawPipeOnce(root) ?? this.branches.intersection
+		this.branches.union =
+			this.branches.union?.rawOr(this.branches.intersection) ??
+			this.branches.intersection
 		this.branches.intersection = null
 
-		if (token === "|>") return
+		if (token === "|") return
 
-		this.branches.union =
-			this.branches.union?.rawOr(this.branches.pipe) ?? this.branches.pipe
-		this.branches.pipe = null
+		this.branches.pipe =
+			this.branches.pipe?.rawPipeOnce(this.branches.union) ??
+			this.branches.union
+		this.branches.union = null
 	}
 
 	parseUntilFinalizer(): DynamicStateWithRoot {
@@ -217,8 +220,8 @@ export class DynamicState {
 			this.branches.leftBound?.comparator ??
 			this.branches.prefixes.at(-1) ??
 			(this.branches.intersection ? "&"
-			: this.branches.pipe ? "|>"
 			: this.branches.union ? "|"
+			: this.branches.pipe ? "|>"
 			: undefined)
 		)
 	}

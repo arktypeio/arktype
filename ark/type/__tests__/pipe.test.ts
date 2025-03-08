@@ -9,6 +9,7 @@ import {
 } from "@ark/schema"
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -45,7 +46,7 @@ contextualize(() => {
 	})
 
 	describe("to string syntax", () => {
-		it("trimNonEmpty", () => {
+		it("to validator", () => {
 			const trimToNonEmpty = type("string.trim |> string > 0")
 			const expected = type("string.trim").to("string > 0")
 
@@ -53,14 +54,39 @@ contextualize(() => {
 			attest(trimToNonEmpty.expression).equals(expected.expression)
 		})
 
-		it("precedence", () => {
+		it("to morph", () => {
+			const trimAndParseNumber = type("string.trim |> string.numeric.parse")
+			const expected = type("string.trim").to("string.numeric.parse")
+
+			attest<typeof expected>(trimAndParseNumber)
+			attest(trimAndParseNumber.expression).equals(expected.expression)
+		})
+
+		it("lower precedence than union", () => {
 			const t = type("string.numeric.parse |> number.integer | number.safe")
+			const expected = type("string.numeric.parse").to(
+				"number.integer | number.safe"
+			)
 
-			// How would you expect `t` to be parsed?
+			attest<typeof expected>(t)
+			attest(t.expression).equals(expected.expression)
+		})
 
-			const a = type("string.numeric.parse").to("number.integer | number.safe")
+		it("lower precedence than union reversed", () => {
+			const t = type("string.numeric.parse | number.integer |> number.safe")
+			const expected = type("string.numeric.parse | number.integer").to(
+				"number.safe"
+			)
 
-			const b = type("string.numeric.parse |> number.integer").or("number.safe")
+			attest<typeof expected>(t)
+			attest(t.expression).equals(expected.expression)
+		})
+
+		it("missing operand", () => {
+			// @ts-expect-error
+			attest(() => type("string |>")).throws(
+				writeMissingRightOperandMessage("|>")
+			)
 		})
 	})
 

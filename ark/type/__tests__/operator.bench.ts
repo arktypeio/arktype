@@ -106,6 +106,23 @@ bench("morph-chain", () => type("boolean").pipe(b => b)).types([
 	"instantiations"
 ])
 
+bench("to-string", () => type("string.numeric.parse |> number.integer")).types([
+	2340,
+	"instantiations"
+])
+
+bench("to-chain", () =>
+	type("string.numeric.parse").to("number.integer")
+).types([2426, "instantiations"])
+
+bench("to-tuple", () =>
+	type(["string.numeric.parse", "|>", "number.integer"])
+).types([2151, "instantiations"])
+
+bench("to-args", () =>
+	type("string.numeric.parse", "|>", "number.integer")
+).types([4304, "instantiations"])
+
 bench("base object", () =>
 	type({
 		readonly: "'readonly'",
