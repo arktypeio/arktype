@@ -1,4 +1,4 @@
-import type { ApiGroup, ParsedJsDocPart } from "../../repo/docgen.ts"
+import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
 import { CodeBlock } from "./CodeBlock.tsx"
 import { LocalFriendlyUrl } from "./LocalFriendlyUrl.tsx"

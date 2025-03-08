@@ -1,6 +1,6 @@
 import { copyFileSync } from "fs"
 import { join } from "path"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+
 import {
 	fromCwd,
 	fromHere,
@@ -9,7 +9,9 @@ import {
 	shell,
 	writeJson
 } from "../fs/index.ts"
-import { docgen } from "./docgen.ts"
+import { dtsGen } from "./dtsGen.ts"
+import { jsDocGen } from "./jsdocGen.ts"
+import { packagesByScope } from "./shared.ts"
 
 const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
@@ -31,7 +33,10 @@ try {
 	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
-	if (packageName === "arktype") docgen()
+	if (packageName === "arktype") {
+		jsDocGen()
+		dtsGen()
+	} else if (packageName in packagesByScope.type.json.dependencies!) dtsGen()
 } finally {
 	rmRf("tsconfig.build.json")
 }

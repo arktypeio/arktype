@@ -10,6 +10,9 @@ import { loadWASM } from "onigasm"
 import { useState } from "react"
 import type { CompletionInfo } from "typescript"
 import { arktypeRawDts } from "./apiData.ts"
+import { schemaDts } from "./dts/schema.ts"
+import { typeDts } from "./dts/type.ts"
+import { utilDts } from "./dts/util.ts"
 
 interface IVSCodeTheme {
 	colors: {
@@ -116,12 +119,17 @@ const getInitializedTypeScriptService = async (
 	}
 
 	try {
-		// Add the type definitions directly with the arktype module name
-		monaco.languages.typescript.typescriptDefaults.addExtraLib(
-			`declare module "arktype" {
-${arktypeRawDts}
-}`
-		)
+		monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+			strict: true,
+			extractOptionalPropertyTypes: true,
+			target: monaco.languages.typescript.ScriptTarget.ESNext,
+			moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+			allowNonTsExtensions: true
+		})
+
+		monaco.languages.typescript.typescriptDefaults.addExtraLib(utilDts)
+		monaco.languages.typescript.typescriptDefaults.addExtraLib(schemaDts)
+		monaco.languages.typescript.typescriptDefaults.addExtraLib(typeDts)
 
 		// Make sure our main model exists before proceeding
 		if (!monaco.editor.getModel(targetUri)) {
