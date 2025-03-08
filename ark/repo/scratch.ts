@@ -2,8 +2,10 @@ import { type } from "arktype"
 
 const user = type({
 	name: "string",
-	age: "number"
+	isAdmin: "boolean = false",
+	"age?": "number"
 })
 
-const keys = user.props.map(p => p.key)
-//    ^? ("name" | "age")[]
+const defaultableProps = user.props.filter(
+	p => p.kind === "optional" && "default" in p
+)
