@@ -379,14 +379,25 @@ If a morph returns an `ArkErrors` instance, validation will fail with that resul
 To make this easier, there's a special `to` operator that can pipe to a parsed definition without having to wrap it in `type` to make it a function:
 
 <SyntaxTabs>
+    <SyntaxTab string>
+
+```ts
+const parseEvenTo = type("string.numeric.parse |> number % 2")
+
+const even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(even)
+```
+
+    </SyntaxTab>
     <SyntaxTab fluent>
 
 ```ts
-const even = type("number % 2")
-const parseEven = type("string.numeric.parse").pipe(even)
+const parseEvenTo = type("string.numeric.parse").to("number % 2")
 
-// equivalent to parseEven
-const parseEvenSugared = type("string.numeric.parse").to("number % 2")
+const even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(even)
 ```
 
     </SyntaxTab>
@@ -394,11 +405,11 @@ const parseEvenSugared = type("string.numeric.parse").to("number % 2")
     <SyntaxTab tuple>
 
 ```ts
-const even = type("number % 2")
-const parseEven = type("string.numeric.parse").pipe(even)
+const parseEvenTo = type(["string.numeric.parse", "|>", "number % 2"])
 
-// equivalent to parseEven
-const parseEvenSugared = type(["string.numeric.parse", "|>", "number % 2"])
+const even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(even)
 ```
 
     </SyntaxTab>
@@ -406,11 +417,11 @@ const parseEvenSugared = type(["string.numeric.parse", "|>", "number % 2"])
     <SyntaxTab args>
 
 ```ts
-const even = type("number % 2")
-const parseEven = type("string.numeric.parse").pipe(even)
+const parseEvenTo = type("string.numeric.parse", "|>", "number % 2")
 
-// equivalent to parseEven
-const parseEvenSugared = type("string.numeric.parse", "|>", "number % 2")
+const even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(even)
 ```
 
     </SyntaxTab>
