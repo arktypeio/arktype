@@ -1,6 +1,5 @@
 "use client"
 
-import { fromHere } from "@ark/fs"
 import Editor, { useMonaco } from "@monaco-editor/react"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import arkdarkColors from "arkthemes/arkdark.json"
@@ -8,7 +7,7 @@ import type * as Monaco from "monaco-editor"
 import { wireTmGrammars } from "monaco-editor-textmate"
 import { Registry } from "monaco-textmate"
 import { loadWASM } from "onigasm"
-import React, { useState } from "react"
+import { useState } from "react"
 
 interface IVSCodeTheme {
 	colors: {
@@ -59,9 +58,6 @@ const translateVSCodeTheme = (
 const theme = translateVSCodeTheme(arkdarkColors)
 
 const setupMonaco = async (monaco: typeof Monaco) => {
-	// const onigasmWasmPath = new URL(
-	// 	fromHere("..", "node_modules", "onigasm", "lib", "onigasm.wasm")
-	// ).toString()
 	await loadWASM("/onigasm.wasm")
 	monaco.editor.defineTheme("arkdark", theme)
 	await wireTmGrammars(
