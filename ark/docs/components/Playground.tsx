@@ -116,46 +116,52 @@ const getInitializedTypeScriptService = async (
 	}
 
 	try {
-		// Configure TypeScript compiler options for arktype package resolution
-		monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-			baseUrl: "/",
-			paths: {
-				arktype: ["./node_modules/arktype/dist/index.d.ts"]
-			}
-		})
+		// Add the type definitions directly with the arktype module name
+		monaco.languages.typescript.typescriptDefaults.addExtraLib(
+			`declare module "arktype" {
+${arktypeRawDts}
+}`
+		)
 
-		// Add arktype type definitions from the imported raw DTS
-		try {
-			// Add the arktype package as a library
-			monaco.languages.typescript.typescriptDefaults.addExtraLib(
-				arktypeRawDts,
-				"file:///node_modules/arktype/dist/index.d.ts"
+		// Make sure our main model exists before proceeding
+		if (!monaco.editor.getModel(targetUri)) {
+			monaco.editor.createModel(
+				`import { type } from "arktype"
+
+const myType = type({
+	name: "string",
+	age: "number"
+})
+`,
+				"typescript",
+				targetUri
 			)
-			console.log("Added arktype type definitions")
-		} catch (error) {
-			console.error("Error loading arktype types:", error)
 		}
-
-		// Initialize TypeScript with a dummy model if needed
-		const dummyUri = monaco.Uri.parse("file:///dummy.ts")
-		if (!monaco.editor.getModel(dummyUri))
-			monaco.editor.createModel("// TS init", "typescript", dummyUri)
 
 		// Get the TypeScript worker and create a client
 		const worker = await monaco.languages.typescript.getTypeScriptWorker()
 		const client = await worker(targetUri)
 
-		// Verify it's working by making a simple call
-		if (targetUri.toString().endsWith("dummy.ts"))
+		// Verify the service is ready by making a simple call
+		try {
 			await client.getSyntacticDiagnostics(targetUri.toString())
-
-		return client
+			console.log("TypeScript service successfully initialized")
+			return client
+		} catch (verifyError) {
+			console.warn("TypeScript service not ready yet, retrying...", verifyError)
+			return new Promise(resolve =>
+				setTimeout(
+					() => resolve(getInitializedTypeScriptService(monaco, targetUri)),
+					300
+				)
+			)
+		}
 	} catch (error) {
 		console.error("TypeScript initialization failed, retrying...", error)
 		return new Promise(resolve =>
 			setTimeout(
 				() => resolve(getInitializedTypeScriptService(monaco, targetUri)),
-				200
+				500
 			)
 		)
 	}
@@ -261,12 +267,20 @@ const setupMonaco = async (monaco: typeof Monaco) => {
 export const Playground = () => {
 	const [loaded, setLoaded] = useState(false)
 	const monaco = useMonaco()
-	if (monaco && !loaded) setupMonaco(monaco).then(() => setLoaded(true))
+	const editorUri = "file:///main.ts" // Use consistent URI format
+
+	if (monaco && !loaded) {
+		// Add a small delay to ensure Monaco is fully loaded
+		setTimeout(() => {
+			setupMonaco(monaco).then(() => setLoaded(true))
+		}, 100)
+	}
+
 	return loaded ?
 			<Editor
 				height="30vh"
 				defaultLanguage="typescript"
-				defaultValue="const foo: 'fook' = "
+				path={editorUri} // Set explicit path for the model
 				theme="arkdark"
 				options={{
 					minimap: { enabled: false },
