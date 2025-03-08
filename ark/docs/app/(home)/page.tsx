@@ -10,12 +10,15 @@ import { CodeBlock } from "../../components/CodeBlock.tsx"
 import { Hero } from "../../components/Hero.tsx"
 import { TsIcon } from "../../components/icons/ts.tsx"
 import { LinkCard } from "../../components/LinkCard.tsx"
+import { Playground } from "../../components/Playground.tsx"
 import { RuntimeBenchmarksGraph } from "../../components/RuntimeBenchmarksGraph.tsx"
 
 export default () => (
 	<div className="flex-1 pt-40 container relative pb-20">
 		<Hero />
 		<h2 className="text-4xl text-highlight font-semibold mb-3">What awaits</h2>
+
+		<Playground />
 
 		<ArkCards>
 			<ArkCard title="Unparalleled DX" icon={<TsIcon height={20} />}>
