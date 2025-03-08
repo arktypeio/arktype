@@ -115,26 +115,22 @@ export const trace = async (args: string[]): Promise<void> => {
 	let tracingOutput = ""
 	outputCapture.clear()
 
-	try {
-		outputCapture.write(`⏳ Gathering type trace data for ${packageDir}...`)
-		tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
-	} catch (e) {
-		console.error(String(e))
-	} finally {
-		outputCapture.write(`⏳ Analyzing type trace data for ${packageDir}...`)
-		analyzeTypeInstantiations(traceDir)
+	outputCapture.write(`⏳ Gathering type trace data for ${packageDir}...`)
+	tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
+	outputCapture.write(`⏳ Analyzing type trace data for ${packageDir}...`)
+	analyzeTypeInstantiations(traceDir)
 
-		// Write summary file containing our messages followed by compiler output
-		// This ensures the initial message comes first in the file
-		const summaryPath = join(traceDir, "summary.txt")
-		const summaryContent =
-			outputCapture.getBuffer().split("\n")[0] +
-			"\n" +
-			tracingOutput +
-			"\n" +
-			outputCapture.getBuffer().split("\n").slice(1).join("\n")
-		writeFile(summaryPath, summaryContent)
-	}
+	// Write summary file containing our messages followed by compiler output
+	// This ensures the initial message comes first in the file
+	const summaryPath = join(traceDir, "summary.txt")
+	const summaryContent =
+		outputCapture.getBuffer().split("\n")[0] +
+		"\n" +
+		tracingOutput +
+		"\n" +
+		outputCapture.getBuffer().split("\n").slice(1).join("\n")
+
+	writeFile(summaryPath, summaryContent)
 }
 
 const generateTraceData = (
