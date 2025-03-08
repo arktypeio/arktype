@@ -8,7 +8,7 @@ import { wireTmGrammars } from "monaco-editor-textmate"
 import { Registry } from "monaco-textmate"
 import { loadWASM } from "onigasm"
 import { useState } from "react"
-import type { CompletionInfo, ScriptElementKind } from "typescript"
+import type { CompletionInfo } from "typescript"
 
 interface IVSCodeTheme {
 	colors: {
