@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "next build && ts ./lib/updateOramaSearch.ts",
+		"build": "next build",
 		"dev": "next dev --turbo",
 		"buildAndStart": "pnpm build && pnpm start",
 		"start": "pnpm serve out",

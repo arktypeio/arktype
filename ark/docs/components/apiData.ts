@@ -175,7 +175,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const criticalPayload = type({\n    superImportantValue: \"string\"\n})\n// throws TraversalError: superImportantValue must be a string (was missing)\nconst data = criticalPayload.assert({ irrelevantValue: \"whoops\" })\nconsole.log(data.superImportantValue) // valid output can be accessed directly"
+            "example": "const criticalPayload = type({\n    superImportantValue: \"string\"\n})\n// throws AggregateError: superImportantValue must be a string (was missing)\nconst data = criticalPayload.assert({ irrelevantValue: \"whoops\" })\nconsole.log(data.superImportantValue) // valid output can be accessed directly"
         },
         {
             "group": "Type",

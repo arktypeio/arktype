@@ -1,9 +1,6 @@
-"use client"
-
 import "app/global.css"
 import "fumadocs-twoslash/twoslash.css"
 import { RootProvider } from "fumadocs-ui/provider"
-import dynamic from "next/dynamic"
 import { Raleway } from "next/font/google"
 import type { ReactNode } from "react"
 import { ReleaseBanner } from "../components/ReleaseBanner.tsx"
@@ -12,8 +9,6 @@ import { CSPostHogProvider } from "./providers.tsx"
 const raleway = Raleway({
 	subsets: ["latin"]
 })
-
-const SearchDialog = dynamic(() => import("../components/search.tsx"))
 
 export default ({ children }: { children: ReactNode }) => (
 	<html
@@ -56,7 +51,9 @@ export default ({ children }: { children: ReactNode }) => (
 		<body className="flex flex-col min-h-screen">
 			<RootProvider
 				search={{
-					SearchDialog
+					options: {
+						type: "static"
+					}
 				}}
 				theme={{
 					enabled: false,
