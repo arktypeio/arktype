@@ -44,6 +44,26 @@ contextualize(() => {
 		attest(tOut.expression).equals(expected.expression)
 	})
 
+	describe("to string syntax", () => {
+		it("trimNonEmpty", () => {
+			const trimToNonEmpty = type("string.trim |> string > 0")
+			const expected = type("string.trim").to("string > 0")
+
+			attest<typeof expected>(trimToNonEmpty)
+			attest(trimToNonEmpty.expression).equals(expected.expression)
+		})
+
+		it("precedence", () => {
+			const t = type("string.numeric.parse |> number.integer | number.safe")
+
+			// How would you expect `t` to be parsed?
+
+			const a = type("string.numeric.parse").to("number.integer | number.safe")
+
+			const b = type("string.numeric.parse |> number.integer").or("number.safe")
+		})
+	})
+
 	it("to morph", () => {
 		const restringifyUser = (o: object) => JSON.stringify(o)
 

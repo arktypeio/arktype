@@ -28,6 +28,7 @@ type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound: OpenLeftBound | undefined
 	intersection: unknown
+	pipe: unknown
 	union: unknown
 }
 
@@ -65,6 +66,7 @@ export declare namespace state {
 		prefixes: []
 		leftBound: undefined
 		intersection: undefined
+		pipe: undefined
 		union: undefined
 	}>
 
@@ -100,6 +102,7 @@ export declare namespace state {
 			prefixes: [...s["branches"]["prefixes"], prefix]
 			leftBound: s["branches"]["leftBound"]
 			intersection: s["branches"]["intersection"]
+			pipe: s["branches"]["pipe"]
 			union: s["branches"]["union"]
 		}
 		groups: s["groups"]
@@ -110,7 +113,7 @@ export declare namespace state {
 
 	export type reduceBranch<
 		s extends StaticState,
-		token extends "|" | "&",
+		token extends "|" | "&" | "|>",
 		unscanned extends string
 	> =
 		s["branches"]["leftBound"] extends {} ?
@@ -121,6 +124,9 @@ export declare namespace state {
 					prefixes: []
 					leftBound: undefined
 					intersection: token extends "&" ? mergeToIntersection<s> : undefined
+					pipe: token extends "|>" ? mergeToPipe<s>
+					: token extends "&" ? s["branches"]["pipe"]
+					: undefined
 					union: token extends "|" ? mergeToUnion<s> : s["branches"]["union"]
 				}
 				groups: s["groups"]
@@ -154,6 +160,7 @@ export declare namespace state {
 							comparator: InvertedComparators[comparator]
 						}
 						intersection: s["branches"]["intersection"]
+						pipe: s["branches"]["pipe"]
 						union: s["branches"]["union"]
 					}
 					groups: s["groups"]
@@ -176,6 +183,7 @@ export declare namespace state {
 			prefixes: s["branches"]["prefixes"]
 			leftBound: undefined
 			intersection: s["branches"]["intersection"]
+			pipe: s["branches"]["pipe"]
 			union: s["branches"]["union"]
 		}
 		groups: s["groups"]
@@ -195,6 +203,7 @@ export declare namespace state {
 			prefixes: s["branches"]["prefixes"]
 			leftBound: undefined
 			intersection: s["branches"]["intersection"]
+			pipe: s["branches"]["pipe"]
 			union: s["branches"]["union"]
 		}
 		groups: s["groups"]
@@ -203,13 +212,17 @@ export declare namespace state {
 		unscanned: unscanned
 	}>
 
-	type mergeToUnion<s extends StaticState> =
-		s["branches"]["union"] extends undefined ? mergeToIntersection<s>
-		:	[s["branches"]["union"], "|", mergeToIntersection<s>]
-
 	type mergeToIntersection<s extends StaticState> =
 		s["branches"]["intersection"] extends undefined ? mergePrefixes<s>
 		:	[s["branches"]["intersection"], "&", mergePrefixes<s>]
+
+	type mergeToPipe<s extends StaticState> =
+		s["branches"]["pipe"] extends undefined ? mergeToIntersection<s>
+		:	[s["branches"]["pipe"], "|>", mergeToIntersection<s>]
+
+	type mergeToUnion<s extends StaticState> =
+		s["branches"]["union"] extends undefined ? mergeToPipe<s>
+		:	[s["branches"]["union"], "|", mergeToPipe<s>]
 
 	type mergePrefixes<
 		s extends StaticState,

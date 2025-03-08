@@ -48,7 +48,7 @@ export type validateAst<ast, $, args> =
 		// (was tested and had a significant impact on repo-wide perf)
 		validateAst<operand, $, args>
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
-		operator extends "&" | "|" ? validateInfix<ast, $, args>
+		operator extends "&" | "|" | "|>" ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: // shallowDefaultableMessage is handled in type.validate
