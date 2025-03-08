@@ -16,7 +16,7 @@ export const updateSearchIndexes = async () => {
 	const manager = new CloudManager({ api_key: apiKey })
 
 	await sync(manager, {
-		index: "ark-index",
+		index: "docs",
 		documents: records
 	})
 
