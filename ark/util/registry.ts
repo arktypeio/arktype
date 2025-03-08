@@ -8,7 +8,7 @@ import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.44.3"
+export const arkUtilVersion = "0.44.4"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
