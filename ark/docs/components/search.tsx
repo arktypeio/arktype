@@ -5,8 +5,8 @@ import type { SharedProps } from "fumadocs-ui/components/dialog/search"
 import SearchDialog from "fumadocs-ui/components/dialog/search-orama"
 
 const client = new OramaClient({
-	endpoint: "https://cloud.orama.run/v1/indexes/arktype-io-ytro75",
-	api_key: "0STK6mN1ITA4GbbgYkg2Du9bJzXfaBYU"
+	endpoint: "https://cloud.orama.run/v1/indexes/docs-e3a3uw",
+	api_key: "x4AtqNpQ64LuacCI6tpombaK3bm4vdKW"
 })
 
 export const OramaSearch = (props: SharedProps) => (
