@@ -9,6 +9,23 @@ import { parseObjectJsonSchema } from "./object.ts"
 import { JsonSchemaScope } from "./scope.ts"
 import { parseStringJsonSchema } from "./string.ts"
 
+const jsonSchemaTypeMatcher = type.match
+	.in<JsonSchema>()
+	.at("type")
+	.match({
+		"unknown[]": jsonSchema =>
+			parseCompositionJsonSchema({
+				anyOf: jsonSchema.type.map(t => ({ type: t as never }))
+			}),
+		"'array'": jsonSchema => parseArrayJsonSchema.assert(jsonSchema),
+		"'boolean'|'null'": jsonSchema => type(jsonSchema.type),
+		"'integer'|'number'": jsonSchema =>
+			parseNumberJsonSchema.assert(jsonSchema),
+		"'object'": jsonSchema => parseObjectJsonSchema.assert(jsonSchema),
+		"'string'": jsonSchema => parseStringJsonSchema.assert(jsonSchema),
+		default: () => undefined
+	})
+
 export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	(jsonSchema: JsonSchemaOrBoolean): type.Any => {
 		if (typeof jsonSchema === "boolean") {
@@ -32,25 +49,14 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 			jsonSchema as JsonSchema
 		)
 
-		const preTypeValidator: type.Any | undefined =
+		const preTypeValidator =
 			constAndOrEnumValidator ?
 				compositionValidator ? compositionValidator.and(constAndOrEnumValidator)
 				:	constAndOrEnumValidator
 			:	compositionValidator
 
 		if ("type" in jsonSchema) {
-			const typeValidator: type.Any | undefined = type.match({
-				"unknown[]": jsonType =>
-					parseCompositionJsonSchema({
-						anyOf: jsonType.map(t => ({ type: t as never }))
-					}),
-				"'array'": () => parseArrayJsonSchema.assert(jsonSchema),
-				"'boolean'|'null'": t => type(t),
-				"'integer'|'number'": () => parseNumberJsonSchema.assert(jsonSchema),
-				"'object'": () => parseObjectJsonSchema.assert(jsonSchema),
-				"'string'": () => parseStringJsonSchema.assert(jsonSchema),
-				default: () => undefined
-			})(jsonSchema.type)
+			const typeValidator = jsonSchemaTypeMatcher(jsonSchema)
 
 			if (typeValidator === undefined) {
 				throwParseError(
