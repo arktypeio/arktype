@@ -56,7 +56,7 @@ contextualize(() => {
 		})
 
 		attest(() => parseJsonSchema({ type: "object", required: ["foo"] })).throws(
-			"AggregateError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
+			"TraversalError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
 		)
 		attest(() =>
 			parseJsonSchema({
@@ -65,7 +65,7 @@ contextualize(() => {
 				required: ["bar"]
 			})
 		).throws(
-			`AggregateError: required must be a key from the 'properties' object (one of ["foo"]) (was bar)`
+			`TraversalError: required must be a key from the 'properties' object (one of ["foo"]) (was bar)`
 		)
 		attest(() =>
 			parseJsonSchema({
@@ -74,7 +74,7 @@ contextualize(() => {
 				required: ["foo", "foo"]
 			})
 		).throws(
-			`AggregateError: required must be an array of unique strings (was an array with the following duplicates: [{"element":"foo","indices":[1]}])`
+			`TraversalError: required must be an array of unique strings (was an array with the following duplicates: [{"element":"foo","indices":[1]}])`
 		)
 	})
 

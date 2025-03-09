@@ -1,8 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
-// TODO: Compound tests for number (e.g. 'minimum' AND 'maximum')
-
 contextualize(() => {
 	it("type number", () => {
 		const jsonSchema = { type: "number" } as const
@@ -17,7 +15,7 @@ contextualize(() => {
 		attest(t.json).snap({ domain: "number", divisor: 1 })
 	})
 
-	it("maximum & exclusiveMaximum", () => {
+	it("maximum", () => {
 		const tMax = parseJsonSchema({
 			type: "number",
 			maximum: 5
@@ -26,7 +24,9 @@ contextualize(() => {
 			domain: "number",
 			max: 5
 		})
+	})
 
+	it("exclusiveMaximum", () => {
 		const tExclMax = parseJsonSchema({
 			type: "number",
 			exclusiveMaximum: 5
@@ -35,7 +35,9 @@ contextualize(() => {
 			domain: "number",
 			max: { rule: 5, exclusive: true }
 		})
+	})
 
+	it("maximum & exclusiveMaximum", () => {
 		attest(() =>
 			parseJsonSchema({
 				type: "number",
@@ -50,7 +52,9 @@ contextualize(() => {
 	it("minimum & exclusiveMinimum", () => {
 		const tMin = parseJsonSchema({ type: "number", minimum: 5 })
 		attest(tMin.json).snap({ domain: "number", min: 5 })
+	})
 
+	it("exclusiveMinimum", () => {
 		const tExclMin = parseJsonSchema({
 			type: "number",
 			exclusiveMinimum: 5
@@ -59,7 +63,9 @@ contextualize(() => {
 			domain: "number",
 			min: { rule: 5, exclusive: true }
 		})
+	})
 
+	it("minimum & exclusiveMinimum", () => {
 		attest(() =>
 			parseJsonSchema({
 				type: "number",
@@ -82,8 +88,9 @@ contextualize(() => {
 		attest(tInt.json).snap({ domain: "number", divisor: 5 })
 
 		// JSON Schema allows decimal multipleOf, but ArkType doesn't.
-		attest(() => parseJsonSchema({ type: "number", multipleOf: 5.5 })).throws(
-			"AggregateError: multipleOf must be an integer"
+		const multipleOf = 5.5
+		attest(() => parseJsonSchema({ type: "number", multipleOf })).throws(
+			`TraversalError: multipleOf must be an integer (was ${multipleOf})`
 		)
 	})
 })

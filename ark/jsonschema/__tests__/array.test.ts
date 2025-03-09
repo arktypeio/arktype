@@ -10,7 +10,7 @@ contextualize(() => {
 		attest(t.json).snap({ proto: "Array" })
 	})
 
-	it("items & prefixItems", () => {
+	it("items", () => {
 		const tItems = parseJsonSchema({ type: "array", items: { type: "string" } })
 		attest(tItems.json).snap({ proto: "Array", sequence: "string" })
 		attest(tItems.allows(["foo"])).equals(true)
@@ -29,7 +29,9 @@ contextualize(() => {
 		attest(tItemsArr.allows(["foo", 1])).equals(true)
 		attest(tItemsArr.allows([1, "foo"])).equals(false)
 		attest(tItemsArr.allows(["foo", 1, true])).equals(false)
+	})
 
+	it("prefixItems", () => {
 		const tPrefixItems = parseJsonSchema({
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }]
@@ -38,6 +40,18 @@ contextualize(() => {
 			proto: "Array",
 			sequence: { prefix: ["string", "number"] },
 			exactLength: 2
+		})
+	})
+
+	it("items & prefixItems", () => {
+		const tItemsAndPrefixItems = parseJsonSchema({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			items: { type: "boolean" }
+		})
+		attest(tItemsAndPrefixItems.json).snap({
+			proto: "Array",
+			sequence: { prefix: ["string", "number"], variadic: "boolean" }
 		})
 	})
 

@@ -1,16 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
-// TODO: Add compound tests for strings (e.g. maxLength AND pattern)
-// TODO: Add explicit test for negative length constraint failing (since explicitly mentioned in spec)
-
 contextualize(() => {
 	it("type string", () => {
 		const t = parseJsonSchema({ type: "string" })
 		attest(t.json).snap({ domain: "string" })
 	})
 
-	it("maxLength", () => {
+	it("maxLength (positive)", () => {
 		const tMaxLength = parseJsonSchema({
 			type: "string",
 			maxLength: 5
@@ -21,7 +18,19 @@ contextualize(() => {
 		})
 	})
 
-	it("minLength", () => {
+	it("maxLength (negative)", () => {
+		const maxLength = -5
+		attest(() =>
+			parseJsonSchema({
+				type: "string",
+				maxLength
+			})
+		).throws(
+			`TraversalError: maxLength must be non-negative (was ${maxLength})`
+		)
+	})
+
+	it("minLength (positive)", () => {
 		const tMinLength = parseJsonSchema({
 			type: "string",
 			minLength: 5
@@ -30,6 +39,18 @@ contextualize(() => {
 			domain: "string",
 			minLength: 5
 		})
+	})
+
+	it("minLength (negative)", () => {
+		const minLength = -1
+		attest(() =>
+			parseJsonSchema({
+				type: "string",
+				minLength
+			})
+		).throws(
+			`TraversalError: minLength must be non-negative (was ${minLength})`
+		)
 	})
 
 	it("pattern", () => {
