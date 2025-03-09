@@ -12,6 +12,10 @@ import type { ConstraintKind } from "./implement.ts"
 
 export type JsonSchema = JsonSchema.Union | JsonSchema.Branch
 
+export type FinalJsonSchema = {
+	$schema: "https://json-schema.org/draft/2020-12/schema"
+} & JsonSchema
+
 export declare namespace JsonSchema {
 	export type TypeName =
 		| "string"
