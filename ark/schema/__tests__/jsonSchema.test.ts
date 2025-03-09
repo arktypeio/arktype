@@ -4,6 +4,7 @@ import { $ark, intrinsic, JsonSchema, rootSchema } from "@ark/schema"
 contextualize(() => {
 	it("base primitives", () => {
 		attest(intrinsic.jsonPrimitive.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			anyOf: [
 				{ type: "number" },
 				{ type: "string" },
@@ -22,6 +23,7 @@ contextualize(() => {
 			maxLength: 2
 		})
 		attest(node.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "string",
 			pattern: ".*",
 			maxLength: 2,
@@ -37,6 +39,7 @@ contextualize(() => {
 			max: 2
 		})
 		attest(node.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "integer",
 			multipleOf: 2,
 			maximum: 2,
@@ -51,6 +54,7 @@ contextualize(() => {
 			max: { rule: 2, exclusive: true }
 		})
 		attest(node.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "number",
 			exclusiveMaximum: 2,
 			exclusiveMinimum: 1
@@ -79,6 +83,7 @@ contextualize(() => {
 			}
 		})
 		attest(node.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			properties: {
 				bar: { type: "number" },
@@ -109,6 +114,7 @@ contextualize(() => {
 			}
 		})
 		attest(node.toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			patternProperties: { ".*": { type: "number" } }
 		})
@@ -123,6 +129,7 @@ contextualize(() => {
 		})
 		const jsonSchema = node.toJsonSchema()
 		attest(jsonSchema).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "array",
 			items: { type: "string" },
 			minItems: 1,
@@ -139,6 +146,7 @@ contextualize(() => {
 		})
 		const jsonSchema = node.toJsonSchema()
 		attest(jsonSchema).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }],
 			items: false
@@ -155,6 +163,7 @@ contextualize(() => {
 		})
 		const jsonSchema = node.toJsonSchema()
 		attest(jsonSchema).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "array",
 			minItems: 2,
 			prefixItems: [{ type: "string" }, { type: "number" }],
@@ -193,6 +202,7 @@ contextualize(() => {
 		const jsonSchema = node.toJsonSchema()
 
 		attest(jsonSchema).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			properties: {
 				bar: { type: "number", title: "bar", examples: [1337, 7331] },

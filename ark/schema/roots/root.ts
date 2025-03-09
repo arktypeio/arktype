@@ -37,7 +37,7 @@ import {
 	type kindRightOf
 } from "../shared/implement.ts"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
+import type { FinalJsonSchema, JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
@@ -119,8 +119,17 @@ export abstract class BaseRoot<
 
 	protected abstract innerToJsonSchema(): JsonSchema
 
-	toJsonSchema(): JsonSchema {
+	toJsonSchemaNoVersion(): JsonSchema {
 		const schema = this.innerToJsonSchema()
+		return Object.assign(schema, this.metaJson)
+	}
+
+	toJsonSchema(): FinalJsonSchema {
+		const schema = {
+			$schema: "https://json-schema.org/draft/2020-12/schema" as const,
+			...this.innerToJsonSchema()
+		}
+
 		return Object.assign(schema, this.metaJson)
 	}
 

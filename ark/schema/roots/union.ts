@@ -296,7 +296,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				// to the canonical JSON Schema representation { type: "boolean" }
 				group.equals($ark.intrinsic.boolean) ?
 					{ type: "boolean" }
-				:	group.toJsonSchema()
+				:	group.toJsonSchemaNoVersion()
 			)
 		}
 	}

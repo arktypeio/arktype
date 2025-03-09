@@ -713,15 +713,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					)
 				}
 
-				schema.properties![prop.key] = prop.value.toJsonSchema()
+				schema.properties![prop.key] = prop.value.toJsonSchemaNoVersion()
 			})
 			if (this.requiredKeys.length)
 				schema.required = this.requiredKeys as string[]
 		}
 
 		this.index?.forEach(index => {
-			if (index.signature.equals($ark.intrinsic.string))
-				return (schema.additionalProperties = index.value.toJsonSchema())
+			if (index.signature.equals($ark.intrinsic.string)) {
+				return (schema.additionalProperties =
+					index.value.toJsonSchemaNoVersion())
+			}
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
 				return JsonSchema.throwUnjsonifiableError(
@@ -741,7 +743,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.patternProperties ??= {}
 				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
-					index.value.toJsonSchema()
+					index.value.toJsonSchemaNoVersion()
 			})
 		})
 
