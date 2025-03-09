@@ -4,7 +4,7 @@ import {
 	type Predicate,
 	type Traversal
 } from "@ark/schema"
-import { printable } from "@ark/util"
+import { printable, throwParseError } from "@ark/util"
 import type { JsonSchema, Out, Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
@@ -57,19 +57,20 @@ const arrayContainsItemMatchingSchema = (schema: Type) => {
 export const parseArrayJsonSchema: Type<
 	(In: JsonSchema.Array) => Out<Type<unknown[], {}>>,
 	any
-> = JsonSchemaScope.ArraySchema.pipe((jsonSchema, ctx) => {
+> = JsonSchemaScope.ArraySchema.pipe(jsonSchema => {
 	const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
 		proto: "Array"
 	}
 
 	if ("prefixItems" in jsonSchema) {
 		if ("items" in jsonSchema) {
-			ctx.reject({
-				expected: "a valid array JSON Schema",
-				actual:
-					"an array JSON Schema with mutually exclusive keys 'prefixItems' and 'items' specified"
-			})
-		} else jsonSchema.items = jsonSchema.prefixItems
+			if ("additionalItems" in jsonSchema) {
+				throwParseError(
+					"Provided array JSON Schema cannot have 'additionalItems' and 'items' and 'prefixItems'"
+				)
+			} else jsonSchema.additionalItems = jsonSchema.items
+		}
+		jsonSchema.items = jsonSchema.prefixItems
 	}
 
 	if ("items" in jsonSchema) {
@@ -79,9 +80,7 @@ export const parseArrayJsonSchema: Type<
 			}
 
 			if ("additionalItems" in jsonSchema) {
-				if (jsonSchema.additionalItems === false)
-					arktypeArraySchema.exactLength = jsonSchema.items.length
-				else {
+				if (jsonSchema.additionalItems !== false) {
 					arktypeArraySchema.sequence = {
 						...arktypeArraySchema.sequence,
 						variadic: parseJsonSchema(jsonSchema.additionalItems).internal
@@ -89,9 +88,18 @@ export const parseArrayJsonSchema: Type<
 				}
 			}
 		} else {
+			if ("additionalItems" in jsonSchema) {
+				throwParseError(
+					"Provided array JSON Schema cannot have non-array 'items' and 'additionalItems"
+				)
+			}
 			arktypeArraySchema.sequence = {
 				variadic: parseJsonSchema(jsonSchema.items).internal
 			}
+		}
+	} else if ("additionalItems" in jsonSchema) {
+		arktypeArraySchema.sequence = {
+			variadic: parseJsonSchema(jsonSchema.additionalItems).internal
 		}
 	}
 

@@ -51,15 +51,34 @@ contextualize(() => {
 		})
 		attest(tItemsAndPrefixItems.json).snap({
 			proto: "Array",
-			sequence: { prefix: ["string", "number"], variadic: "boolean" }
+			minLength: 2,
+			sequence: {
+				prefix: ["string", "number"],
+				variadic: [{ unit: false }, { unit: true }]
+			}
 		})
+		attest(tItemsAndPrefixItems.allows(["foo", 3])).equals(true)
+		attest(tItemsAndPrefixItems.allows(["foo", 3, true])).equals(true)
+		attest(tItemsAndPrefixItems.allows(["foo", 3, true, false])).equals(true)
+		attest(tItemsAndPrefixItems.allows(["foo", 3, null])).equals(false)
 	})
 
 	it("additionalItems", () => {
+		const tAdditionalItems = parseJsonSchema({
+			type: "array",
+			additionalItems: { type: "string" }
+		})
+		attest(tAdditionalItems.json).snap({
+			proto: "Array",
+			sequence: "string"
+		})
+	})
+
+	it("additionalItems & items", () => {
 		const tItemsVariadic = parseJsonSchema({
 			type: "array",
-			items: [{ type: "string" }, { type: "number" }],
-			additionalItems: { type: "boolean" }
+			additionalItems: { type: "boolean" },
+			items: [{ type: "string" }, { type: "number" }]
 		})
 		attest(tItemsVariadic.json).snap({
 			minLength: 2,
@@ -73,6 +92,58 @@ contextualize(() => {
 		attest(tItemsVariadic.allows([1, "foo", true])).equals(false)
 		attest(tItemsVariadic.allows([false, "foo", 1])).equals(false)
 		attest(tItemsVariadic.allows(["foo", 1, true])).equals(true)
+
+		const tItemsFalseAdditional = parseJsonSchema({
+			type: "array",
+			additionalItems: false,
+			items: [{ type: "string" }]
+		})
+		attest(tItemsFalseAdditional.json).snap({
+			proto: "Array",
+			exactLength: 1,
+			sequence: { prefix: ["string"] }
+		})
+		attest(tItemsFalseAdditional.allows(["foo"])).equals(true)
+		attest(tItemsFalseAdditional.allows(["foo", "bar"])).equals(false)
+
+		attest(() =>
+			parseJsonSchema({
+				type: "array",
+				additionalItems: { type: "string" },
+				items: { type: "string" }
+			})
+		).throws(
+			"ParseError: Provided array JSON Schema cannot have non-array 'items' and 'additionalItems"
+		)
+	})
+
+	it("additionalItems & prefixItems", () => {
+		const tPrefixItemsAndAdditional = parseJsonSchema({
+			type: "array",
+			additionalItems: { type: "boolean" },
+			prefixItems: [{ type: "string" }, { type: "number" }]
+		})
+		attest(tPrefixItemsAndAdditional.json).snap({
+			minLength: 2,
+			proto: "Array",
+			sequence: {
+				prefix: ["string", "number"],
+				variadic: [{ unit: false }, { unit: true }]
+			}
+		})
+	})
+
+	it("additionalItems & items & prefixItems", () => {
+		attest(() =>
+			parseJsonSchema({
+				type: "array",
+				additionalItems: { type: "boolean" },
+				items: { type: "null" },
+				prefixItems: [{ type: "string" }, { type: "number" }]
+			})
+		).throws(
+			"ParseError: Provided array JSON Schema cannot have 'additionalItems' and 'items' and 'prefixItems'"
+		)
 	})
 
 	it("contains", () => {
