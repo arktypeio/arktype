@@ -1,5 +1,5 @@
-import { ensureDir, readJson, writeFile } from "@ark/fs"
-import { execSync } from "child_process"
+import { ensureDir, getShellOutput, readJson, writeFile } from "@ark/fs"
+import type { ExecException } from "child_process"
 import { existsSync } from "node:fs"
 import { basename, join, relative } from "node:path"
 import { resolve } from "path"
@@ -80,6 +80,24 @@ interface UngroupedCallStats {
 	selfTime: number
 }
 
+/**
+ * Helper to write output to both console and collect for file output
+ */
+const outputCapture = (() => {
+	let buffer: string[] = []
+
+	return {
+		write: (text: string) => {
+			console.log(text)
+			buffer.push(text)
+		},
+		getBuffer: () => buffer.join("\n"),
+		clear: () => {
+			buffer = []
+		}
+	}
+})()
+
 export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = resolve(args[0] ?? process.cwd())
 	const config = getConfig()
@@ -94,29 +112,66 @@ export const trace = async (args: string[]): Promise<void> => {
 	const traceDir = resolve(config.cacheDir, "trace")
 	ensureDir(traceDir)
 
-	try {
-		console.log(`⏳ Gathering type trace data for ${packageDir}...`)
-		generateTraceData(traceDir, config.tsconfig, packageDir)
-	} catch (e) {
-		console.error(String(e))
-	} finally {
-		console.log(`⏳ Analyzing type trace data for ${packageDir}...`)
-		analyzeTypeInstantiations(traceDir)
+	let tracingOutput = ""
+	outputCapture.clear()
+
+	outputCapture.write(`⏳ Gathering type trace data for ${packageDir}...`)
+	tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
+
+	const traceFile = join(traceDir, "trace.json")
+
+	if (!existsSync(traceFile)) {
+		outputCapture.write(
+			`❌ No trace data found (expected a file at ${join(traceDir, "trace.json")})`
+		)
+		return
 	}
+
+	outputCapture.write(`⏳ Analyzing type trace data for ${packageDir}...`)
+	analyzeTypeInstantiations(traceDir)
+
+	// Write summary file containing our messages followed by compiler output
+	// This ensures the initial message comes first in the file
+	const summaryPath = join(traceDir, "summary.txt")
+	const summaryContent =
+		outputCapture.getBuffer().split("\n")[0] +
+		"\n" +
+		tracingOutput +
+		"\n" +
+		outputCapture.getBuffer().split("\n").slice(1).join("\n")
+
+	writeFile(summaryPath, summaryContent)
 }
 
 const generateTraceData = (
 	traceDir: string,
 	tsconfigPath: string,
 	packageDir: string
-): void => {
-	execSync(
-		`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
-		{
-			cwd: packageDir,
-			stdio: "inherit"
-		}
-	)
+): string => {
+	try {
+		// Capture the output instead of just displaying it
+		const output = getShellOutput(
+			`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
+			{ cwd: packageDir }
+		)
+
+		// Display the output to the console as before
+		process.stdout.write(output)
+
+		return output
+	} catch (_: any) {
+		// even if tsc returns a non-zero exit code,
+		// we can still proceed as long as the trace.json
+		// file was generated
+		const e: ExecException = _
+		const output = e.stdout ?? ""
+		const errorOutput = e.stderr ?? ""
+
+		process.stdout.write(output)
+		process.stderr.write(errorOutput)
+
+		return `${output}\n${errorOutput}`
+	}
 }
 
 const initializeAnalysisContext = (traceDir: string): AnalysisContext => {
@@ -151,7 +206,7 @@ const filterDurationEntries = (ctx: AnalysisContext): void => {
 			entry.args.end
 	)
 
-	console.log(
+	outputCapture.write(
 		`Found ${ctx.durationEntries.length} traces with duration information`
 	)
 }
@@ -418,15 +473,16 @@ const analyzeTypeInstantiations = (traceDir: string): void => {
 	sortAndRankFunctions(ctx)
 
 	// Display summaries to console
-	console.log("\n📊 Performance Analysis - Top Individual Calls:\n")
+	outputCapture.write("\n📊 Performance Analysis - Top Individual Calls:\n")
 	displayIndividualSummary(ungroupedStats)
 
-	console.log("\n📊 Performance Analysis - Functions by Self Time:\n")
+	outputCapture.write("\n📊 Performance Analysis - Functions by Self Time:\n")
 	displayGroupedSummary(ctx.allFunctions)
 
 	// Write CSV reports
 	const rangesCsvPath = join(traceDir, "ranges.csv")
 	const namesCsvPath = join(traceDir, "names.csv")
+	const summaryPath = join(traceDir, "summary.txt")
 
 	// Export individual ranges to CSV
 	writeToCsv(
@@ -469,10 +525,11 @@ const analyzeTypeInstantiations = (traceDir: string): void => {
 		})
 	)
 
-	console.log(
+	outputCapture.write(
 		`\n✅ Analysis complete! Results exported to:\n` +
 			`   - ${rangesCsvPath} (individual calls)\n` +
-			`   - ${namesCsvPath} (grouped by function name)`
+			`   - ${namesCsvPath} (grouped by function name)\n` +
+			`   - ${summaryPath} (complete analysis report)`
 	)
 }
 
@@ -514,7 +571,7 @@ const displayIndividualSummary = (stats: UngroupedCallStats[]): void => {
 		const selfTimeMs = (stat.selfTime / 1000).toFixed(2).padStart(15)
 		const location = formatLocation(stat.callSite)
 
-		console.log(
+		outputCapture.write(
 			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${location}`
 		)
 	})
@@ -540,8 +597,8 @@ const displayTableHeader = (columns: string[]): void => {
 		...columns.slice(3).map(col => "-".repeat(col.length))
 	].join("-|-")
 
-	console.log(headerRow)
-	console.log(separatorRow)
+	outputCapture.write(headerRow)
+	outputCapture.write(separatorRow)
 }
 
 /**
@@ -577,7 +634,7 @@ const displayGroupedSummary = (functions: FunctionStats[]): void => {
 			`${topUsage.path}:${topUsage.pos}-${topUsage.end}`
 		)
 
-		console.log(
+		outputCapture.write(
 			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${totalTimeMs} | ${avgTimeMs} | ${calls} | ${topUsageLocation} (${topUsageTime})`
 		)
 	})

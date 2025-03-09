@@ -2,6 +2,7 @@ import type { arkKeyOf, array } from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
+	inferPipe,
 	LimitLiteral,
 	withDefault
 } from "../../attributes.ts"
@@ -44,6 +45,11 @@ export type inferExpression<ast, $, args> =
 			inferExpression<ast[0], $, args> | inferExpression<ast[2], $, args>
 		: ast[1] extends "&" ?
 			inferIntersection<
+				inferExpression<ast[0], $, args>,
+				inferExpression<ast[2], $, args>
+			>
+		: ast[1] extends "|>" ?
+			inferPipe<
 				inferExpression<ast[0], $, args>,
 				inferExpression<ast[2], $, args>
 			>

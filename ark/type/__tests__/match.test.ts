@@ -27,7 +27,7 @@ contextualize(() => {
 		attest<() => never>(getBad)
 		// ideally would also include number | bigint, discriminated out
 		attest(getBad).throws.snap(
-			"AggregateError: must be a string or an object (was boolean)"
+			"TraversalError: must be a string or an object (was boolean)"
 		)
 	})
 
@@ -85,7 +85,7 @@ contextualize(() => {
 		const getBad = () => matcher(null)
 		attest<() => never>(getBad)
 		// this sucks and should be improved- result of discrimination
-		attest(getBad).throws.snap("AggregateError: must be boolean (was null)")
+		attest(getBad).throws.snap("TraversalError: must be boolean (was null)")
 	})
 
 	it("multiple case blocks", () => {
@@ -193,7 +193,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => matcher(true))
-			.throws.snap("AggregateError: must be a string or a number (was boolean)")
+			.throws.snap("TraversalError: must be a string or a number (was boolean)")
 			.type.errors(
 				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
@@ -215,7 +215,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => matcher(true))
-			.throws.snap("AggregateError: must be a number or a string (was boolean)")
+			.throws.snap("TraversalError: must be a number or a string (was boolean)")
 			.type.errors(
 				"Argument of type 'boolean' is not assignable to parameter of type 'string | number'"
 			)
@@ -317,7 +317,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => m({}))
 				// (was missing) would be better here, undefined is a result of discrimination
-				.throws.snap("AggregateError: n must be 0 or 1 (was undefined)")
+				.throws.snap("TraversalError: n must be 0 or 1 (was undefined)")
 				.type.errors.snap(
 					"Argument of type '{}' is not assignable to parameter of type '{ n: 0; } | { n: 1; }'."
 				)
@@ -697,7 +697,7 @@ contextualize(() => {
 		attest(b).equals(3)
 		// @ts-expect-error
 		attest(() => discriminateValue({ oneValue: 3 }))
-			.throws.snap("AggregateError: id must be 1 or 2 (was undefined)")
+			.throws.snap("TraversalError: id must be 1 or 2 (was undefined)")
 			.type.errors("Property 'id' is missing in type '{ oneValue: number; }'")
 	})
 
@@ -727,7 +727,7 @@ contextualize(() => {
 		attest(sizeOf("abc")).equals(3)
 		attest(sizeOf({ name: "David", length: 5 })).equals(5)
 		attest(() => sizeOf(null)).throws.snap(
-			"AggregateError: must be a string, a number, a bigint or an object (was null)"
+			"TraversalError: must be a string, a number, a bigint or an object (was null)"
 		)
 	})
 
@@ -812,7 +812,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => discriminate({ kind: "d", value: "d" }))
-			.throws.snap('AggregateError: kind must be "a", "b" or "c" (was "d")')
+			.throws.snap('TraversalError: kind must be "a", "b" or "c" (was "d")')
 			.type.errors(`Type '"d"' is not assignable`)
 	})
 

@@ -176,11 +176,11 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * const criticalPayload = type({
 	 *     superImportantValue: "string"
 	 * })
-	 * // throws AggregateError: superImportantValue must be a string (was missing)
+	 * // throws TraversalError: superImportantValue must be a string (was missing)
 	 * const data = criticalPayload.assert({ irrelevantValue: "whoops" })
 	 * console.log(data.superImportantValue) // valid output can be accessed directly
 	 *
-	 * @throws {AggregateError}
+	 * @throws {TraversalError}
 	 */
 	assert(data: unknown): this["infer"]
 

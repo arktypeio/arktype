@@ -626,4 +626,73 @@ contextualize(() => {
 			)
 		})
 	})
+
+	it("assignability rules", () => {
+		// like Type methods, generic invocation needs to return:
+		//  	r extends infer _ ? _ : never
+		// or similar to avoid breaking assignability
+
+		it("unary", () => {
+			const unary = type("<t>", "t")
+
+			unary("0") satisfies type<0>
+			// @ts-expect-error
+			attest(() => unary("0") satisfies type<null>).type.errors(
+				"not assignable to type 'null'"
+			)
+		})
+
+		it("binary", () => {
+			const binary = type("<t, u>", "t | u")
+
+			binary("0", "1") satisfies type<0 | 1>
+			// @ts-expect-error
+			attest(() => binary("0", "1") satisfies type<string>).type.errors(
+				"not assignable to type 'string'"
+			)
+		})
+
+		it("ternary", () => {
+			const ternary = type("<t, u, v>", "t | u | v")
+
+			ternary("0", "1", "2") satisfies type<0 | 1 | 2>
+			// @ts-expect-error
+			attest(() => ternary("0", "1", "2") satisfies type<0>).type.errors(
+				"not assignable to type '0'"
+			)
+		})
+
+		it("quaternary", () => {
+			const quaternary = type("<t, u, v, w>", "t | u | v | w")
+
+			quaternary("0", "1", "2", "3") satisfies type<0 | 1 | 2 | 3>
+
+			attest(
+				// @ts-expect-error
+				() => quaternary("0", "1", "2", "3") satisfies type<string>
+			).type.errors("not assignable to type 'string'")
+		})
+
+		it("quinary", () => {
+			const quinary = type("<t, u, v, w, x>", "t | u | v | w | x")
+
+			quinary("0", "1", "2", "3", "4") satisfies type<0 | 1 | 2 | 3 | 4>
+
+			attest(
+				// @ts-expect-error
+				() => quinary("0", "1", "2", "3", "4") satisfies type<null>
+			).type.errors("not assignable to type 'null'")
+		})
+
+		it("senary", () => {
+			const senary = type("<t, u, v, w, x, y>", "t | u | v | w | x | y")
+
+			senary("0", "1", "2", "3", "4", "5") satisfies type<0 | 1 | 2 | 3 | 4 | 5>
+
+			attest(
+				// @ts-expect-error
+				() => senary("0", "1", "2", "3", "4", "5") satisfies type<boolean>
+			).type.errors("not assignable to type 'boolean'")
+		})
+	})
 })

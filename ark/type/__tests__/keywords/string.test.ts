@@ -20,6 +20,20 @@ contextualize(() => {
 		)
 	})
 
+	it("hex", () => {
+		const hex = type("string.hex")
+		attest(hex("1fA3").toString()).equals("1fA3")
+		attest(hex("0x1A3").toString()).equals(
+			'must be hex characters only (was "0x1A3")'
+		)
+		attest(hex("V29.yZA").toString()).equals(
+			'must be hex characters only (was "V29.yZA")'
+		)
+		attest(hex("fn5-").toString()).equals(
+			'must be hex characters only (was "fn5-")'
+		)
+	})
+
 	it("base64", () => {
 		const b64 = type("string.base64")
 		attest(b64("fn5+")).snap("fn5+")

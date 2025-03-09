@@ -334,7 +334,7 @@ export abstract class BaseRoot<
 
 	protected _pipe(...morphs: Morph[]): BaseRoot {
 		const result = morphs.reduce<BaseRoot>(
-			(acc, morph) => acc.pipeOnce(morph),
+			(acc, morph) => acc.rawPipeOnce(morph),
 			this
 		)
 		return this.$.finalize(result)
@@ -343,7 +343,7 @@ export abstract class BaseRoot<
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		const result = morphs.reduce<BaseRoot>(
 			(acc, morph) =>
-				acc.pipeOnce(
+				acc.rawPipeOnce(
 					hasArkKind(morph, "root") ? morph : (
 						(In, ctx) => {
 							try {
@@ -377,7 +377,7 @@ export abstract class BaseRoot<
 		return result as BaseRoot
 	}
 
-	private pipeOnce(morph: Morph): BaseRoot {
+	rawPipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "root")) return this.toNode(morph)
 
 		return this.distribute(
