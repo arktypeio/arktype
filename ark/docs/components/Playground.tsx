@@ -353,8 +353,143 @@ const setupTextmateGrammar = async (monaco: typeof Monaco) =>
 		new Map().set("typescript", "source.ts")
 	)
 
+const getDiagnostics = async (
+	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
+	model: Monaco.editor.ITextModel
+) => {
+	const uri = model.uri.toString()
+	// Get both syntactic and semantic diagnostics
+	const syntacticDiagnostics =
+		await tsLanguageService.getSyntacticDiagnostics(uri)
+	const semanticDiagnostics =
+		await tsLanguageService.getSemanticDiagnostics(uri)
+
+	// Combine both types of diagnostics
+	return [...syntacticDiagnostics, ...semanticDiagnostics]
+}
+
+const displayDiagnostics = (
+	editor: Monaco.editor.IStandaloneCodeEditor,
+	monaco: typeof Monaco,
+	diagnostics: any[]
+) => {
+	const model = editor.getModel()
+	if (!model) return
+
+	// Clear previous decorations
+	const oldDecorations = model
+		.getAllDecorations()
+		.filter(
+			d =>
+				d.options.className === "error-lens-line" ||
+				d.options.afterContentClassName === "error-lens-message" ||
+				d.options.className === "error-lens-inline-highlight"
+		)
+		.map(d => d.id)
+
+	if (oldDecorations.length > 0) editor.deltaDecorations(oldDecorations, [])
+
+	// Create new decorations for diagnostics
+	const decorations = diagnostics.flatMap(diag => {
+		const startPosition = model.getPositionAt(diag.start)
+		const endPosition = model.getPositionAt(diag.start + diag.length)
+		const lineNumber = startPosition.lineNumber
+
+		// Get the error message (handle nested error objects)
+		const messageText =
+			typeof diag.messageText === "object" ?
+				diag.messageText.messageText
+			:	diag.messageText
+
+		// Get the line content to determine the end column
+		const lineContent = model.getLineContent(lineNumber)
+		const endOfLine = lineContent.length + 1 // +1 because columns are 1-indexed
+
+		// Two decorations: one for the line background + message, one for the underline
+		return [
+			// Line background + error message at end of line
+			{
+				range: new monaco.Range(
+					lineNumber,
+					1, // Start of line
+					lineNumber,
+					endOfLine // End of line
+				),
+				options: {
+					isWholeLine: true,
+					className: "error-lens-line",
+					after: {
+						content: `    ${messageText}`,
+						afterContentClassName: "error-lens-message"
+					}
+				}
+			},
+			// Wavy underline at the exact error position
+			{
+				range: new monaco.Range(
+					startPosition.lineNumber,
+					startPosition.column,
+					endPosition.lineNumber,
+					endPosition.column
+				),
+				options: {
+					className: "error-lens-inline-highlight",
+					inlineClassName: "error-lens-inline"
+				}
+			}
+		]
+	})
+
+	editor.deltaDecorations([], decorations)
+}
+
+const setupErrorLens = (
+	monaco: typeof Monaco,
+	editor: Monaco.editor.IStandaloneCodeEditor,
+	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
+) => {
+	// Add CSS styles
+	const styleElement = document.createElement("style")
+	styleElement.textContent = `
+		.error-lens-line {
+			background-color: rgba(255, 0, 0, 0.1);
+		}
+		.error-lens-inline {
+			text-decoration: wavy underline rgba(255, 0, 0, 0.7);
+		}
+		.error-lens-inline-highlight {
+			/* Style for the container of the inline element */
+		}
+		.error-lens-message {
+			color: #ff6666;
+			margin-left: 10px;
+			font-style: italic;
+		}
+	`
+	document.head.appendChild(styleElement)
+
+	// Initial diagnostics check
+	getDiagnostics(tsLanguageService, editor.getModel()!).then(diagnostics => {
+		displayDiagnostics(editor, monaco, diagnostics)
+	})
+
+	// Update diagnostics whenever content changes
+	editor.onDidChangeModelContent(async () => {
+		// Small delay to allow TS service to process changes
+		setTimeout(async () => {
+			const diagnostics = await getDiagnostics(
+				tsLanguageService,
+				editor.getModel()!
+			)
+			displayDiagnostics(editor, monaco, diagnostics)
+		}, 300)
+	})
+}
+
 const applyEditorStyling = (
-	editor: Monaco.editor.IStandaloneCodeEditor
+	editor: Monaco.editor.IStandaloneCodeEditor,
+	monaco: typeof Monaco,
+	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
 ): void => {
 	const editorElement = editor.getDomNode()
 
@@ -371,9 +506,14 @@ const applyEditorStyling = (
 
 		if (guard) guard.style.borderRadius = "16px"
 	}
+
+	// Setup error lens functionality
+	setupErrorLens(monaco, editor, tsLanguageService)
 }
 
-const setupMonaco = async (monaco: typeof Monaco): Promise<void> => {
+const setupMonaco = async (
+	monaco: typeof Monaco
+): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
 	await loadWASM("/onigasm.wasm")
 
 	monaco.editor.defineTheme("arkdark", theme)
@@ -383,6 +523,8 @@ const setupMonaco = async (monaco: typeof Monaco): Promise<void> => {
 	setupCompletionProvider(monaco, tsLanguageService)
 
 	await setupTextmateGrammar(monaco)
+
+	return tsLanguageService
 }
 
 type LoadingState = "unloaded" | "loading" | "loaded"
@@ -390,18 +532,26 @@ type LoadingState = "unloaded" | "loading" | "loaded"
 export const Playground = () => {
 	const [loadingState, setLoaded] = useState<LoadingState>("unloaded")
 	const monaco = useMonaco()
+	const [tsLanguageService, setTsLanguageService] =
+		useState<Monaco.languages.typescript.TypeScriptWorker | null>(null)
 
 	useEffect(() => {
 		if (!monaco || loadingState === "loaded") return
 
 		if (loadingState === "unloaded") setLoaded("loading")
-		else setupMonaco(monaco).then(() => setLoaded("loaded"))
+		else {
+			setupMonaco(monaco).then(service => {
+				setTsLanguageService(service)
+				setLoaded("loaded")
+			})
+		}
 	}, [monaco, loadingState])
 
-	return loadingState === "loaded" ?
+	return loadingState === "loaded" && monaco && tsLanguageService ?
 			<Editor
 				height="30vh"
 				defaultLanguage="typescript"
+				defaultValue={defaultCode}
 				path={editorFileUri}
 				theme="arkdark"
 				options={{
@@ -410,7 +560,9 @@ export const Playground = () => {
 					quickSuggestions: { strings: "on" },
 					quickSuggestionsDelay: 0
 				}}
-				onMount={applyEditorStyling}
+				onMount={editor =>
+					applyEditorStyling(editor, monaco, tsLanguageService)
+				}
 			/>
 		:	"Loading..."
 }
