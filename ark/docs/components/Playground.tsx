@@ -385,15 +385,20 @@ const setupMonaco = async (monaco: typeof Monaco): Promise<void> => {
 	await setupTextmateGrammar(monaco)
 }
 
+type LoadingState = "unloaded" | "loading" | "loaded"
+
 export const Playground = () => {
-	const [loaded, setLoaded] = useState(false)
+	const [loadingState, setLoaded] = useState<LoadingState>("unloaded")
 	const monaco = useMonaco()
 
 	useEffect(() => {
-		if (monaco && !loaded) setupMonaco(monaco).then(() => setLoaded(true))
-	}, [monaco, loaded])
+		if (!monaco || loadingState === "loaded") return
 
-	return loaded ?
+		if (loadingState === "unloaded") setLoaded("loading")
+		else setupMonaco(monaco).then(() => setLoaded("loaded"))
+	}, [monaco, loadingState])
+
+	return loadingState === "loaded" ?
 			<Editor
 				height="30vh"
 				defaultLanguage="typescript"
