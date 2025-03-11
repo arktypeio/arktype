@@ -1,6 +1,7 @@
 "use client"
 
 import Editor, { useMonaco } from "@monaco-editor/react"
+import extensionPackage from "arkdark/package.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import arkdarkColors from "arkthemes/arkdark.json"
 import type * as Monaco from "monaco-editor"
@@ -353,18 +354,37 @@ const setupTextmateGrammar = async (monaco: typeof Monaco) =>
 		new Map().set("typescript", "source.ts")
 	)
 
+type ErrorLensReplacement = {
+	matcher: string
+	message: string
+}
+
+const errorLensReplaceConfig: ErrorLensReplacement[] =
+	extensionPackage.contributes.configurationDefaults["errorLens.replace"]
+
+// Apply errorLens.replace config to diagnostic message,
+// extracting arktype errors for inline display
+const applyErrorLensReplacements = (message: string): string => {
+	if (!errorLensReplaceConfig.length) return message
+
+	for (const { matcher, message: replacement } of errorLensReplaceConfig) {
+		const regex = new RegExp(matcher)
+		if (regex.test(message)) return message.replace(regex, replacement)
+	}
+
+	return message
+}
+
 const getDiagnostics = async (
 	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
 	model: Monaco.editor.ITextModel
 ) => {
 	const uri = model.uri.toString()
-	// Get both syntactic and semantic diagnostics
 	const syntacticDiagnostics =
 		await tsLanguageService.getSyntacticDiagnostics(uri)
 	const semanticDiagnostics =
 		await tsLanguageService.getSemanticDiagnostics(uri)
 
-	// Combine both types of diagnostics
 	return [...syntacticDiagnostics, ...semanticDiagnostics]
 }
 
@@ -376,71 +396,38 @@ const displayDiagnostics = (
 	const model = editor.getModel()
 	if (!model) return
 
-	// Clear previous decorations
-	const oldDecorations = model
-		.getAllDecorations()
-		.filter(
-			d =>
-				d.options.className === "error-lens-line" ||
-				d.options.afterContentClassName === "error-lens-message" ||
-				d.options.className === "error-lens-inline-highlight"
-		)
-		.map(d => d.id)
-
-	if (oldDecorations.length > 0) editor.deltaDecorations(oldDecorations, [])
-
 	// Create new decorations for diagnostics
 	const decorations = diagnostics.flatMap(diag => {
 		const startPosition = model.getPositionAt(diag.start)
-		const endPosition = model.getPositionAt(diag.start + diag.length)
 		const lineNumber = startPosition.lineNumber
 
 		// Get the error message (handle nested error objects)
-		const messageText =
+		let messageText =
 			typeof diag.messageText === "object" ?
 				diag.messageText.messageText
 			:	diag.messageText
 
-		// Get the line content to determine the end column
-		const lineContent = model.getLineContent(lineNumber)
-		const endOfLine = lineContent.length + 1 // +1 because columns are 1-indexed
+		messageText = applyErrorLensReplacements(messageText)
 
-		// Two decorations: one for the line background + message, one for the underline
+		const lineContent = model.getLineContent(lineNumber)
+		const endOfLine = lineContent.length + 1
+
 		return [
-			// Line background + error message at end of line
 			{
-				range: new monaco.Range(
-					lineNumber,
-					1, // Start of line
-					lineNumber,
-					endOfLine // End of line
-				),
+				range: new monaco.Range(lineNumber, 1, lineNumber, endOfLine),
 				options: {
 					isWholeLine: true,
-					className: "error-lens-line",
+					className: "error-bg",
 					after: {
 						content: `    ${messageText}`,
-						afterContentClassName: "error-lens-message"
+						afterContentClassName: "error-text"
 					}
-				}
-			},
-			// Wavy underline at the exact error position
-			{
-				range: new monaco.Range(
-					startPosition.lineNumber,
-					startPosition.column,
-					endPosition.lineNumber,
-					endPosition.column
-				),
-				options: {
-					className: "error-lens-inline-highlight",
-					inlineClassName: "error-lens-inline"
 				}
 			}
 		]
 	})
 
-	editor.deltaDecorations([], decorations)
+	editor.createDecorationsCollection(decorations)
 }
 
 const setupErrorLens = (
@@ -451,17 +438,11 @@ const setupErrorLens = (
 	// Add CSS styles
 	const styleElement = document.createElement("style")
 	styleElement.textContent = `
-		.error-lens-line {
-			background-color: rgba(255, 0, 0, 0.1);
+		.error-bg {
+			background-color: ${arkdarkColors.colors["errorLens.errorBackground"]};
 		}
-		.error-lens-inline {
-			text-decoration: wavy underline rgba(255, 0, 0, 0.7);
-		}
-		.error-lens-inline-highlight {
-			/* Style for the container of the inline element */
-		}
-		.error-lens-message {
-			color: #ff6666;
+		.error-text {
+			color:  ${arkdarkColors.colors["errorLens.errorForeground"]};
 			margin-left: 10px;
 			font-style: italic;
 		}
