@@ -359,17 +359,15 @@ const errorLensReplacements: ErrorLensReplacement[] =
 		src => ({ matcher: new RegExp(src.matcher, "iu"), message: src.message })
 	)
 
-// Apply errorLens.replace config to diagnostic message,
-// extracting arktype errors for inline display
-
-// based on the errorLens logic at:
+// apply errorLens.replace config to diagnostic message,
+// extracting arktype errors for inline display based on:
 // https://github.com/usernamehw/vscode-error-lens/blob/019d29b010f85ebb6e25c5f7f8ffda83479bfda0/src/utils/extUtils.ts#L184
 const applyErrorLensReplacements = (message: string): string => {
 	for (const transformation of errorLensReplacements) {
 		const matchResult = transformation.matcher.exec(message)
 		if (matchResult) {
 			message = transformation.message
-			// Replace groups like $0 and $1 with groups from the match
+			// replace groups like $0 and $1 with groups from the match
 			for (let groupIndex = 0; groupIndex < matchResult.length; groupIndex++) {
 				message = message.replace(
 					new RegExp(`\\$${groupIndex}`, "gu"),
@@ -397,69 +395,12 @@ const getDiagnostics = async (
 	return [...syntacticDiagnostics, ...semanticDiagnostics]
 }
 
-const displayDiagnostics = (
-	editor: Monaco.editor.IStandaloneCodeEditor,
-	monaco: typeof Monaco,
-	diagnostics: Monaco.languages.typescript.Diagnostic[]
-) => {
-	const model = editor.getModel()
-	if (!model) return
-
-	// Clear previous decorations
-	const oldDecorationIds = model
-		.getAllDecorations()
-		.filter(
-			d =>
-				d.options.className === "error-bg" ||
-				d.options.inlineClassName === "error-text"
-		)
-		.map(d => d.id)
-
-	// Create new decorations for diagnostics
-	const newDecorations: Monaco.editor.IModelDeltaDecoration[] =
-		diagnostics.flatMap(diag => {
-			if (!diag.start) return []
-			const startPosition = model.getPositionAt(diag.start)
-			const lineNumber = startPosition.lineNumber
-
-			// Get the error message (handle nested error objects)
-			let messageText =
-				typeof diag.messageText === "object" ?
-					diag.messageText.messageText
-				:	diag.messageText
-
-			messageText = applyErrorLensReplacements(messageText)
-
-			const lineContent = model.getLineContent(lineNumber)
-			const endOfLine = lineContent.length + 1
-
-			return [
-				{
-					range: new monaco.Range(lineNumber, 1, lineNumber, endOfLine),
-					options: {
-						isWholeLine: true,
-						className: "error-bg",
-						after: {
-							content: `    ${messageText}`,
-							inlineClassName: "error-text"
-						}
-					}
-				}
-			]
-		})
-
-	// deltaDecorations is deprecated but couldn't find another way to remove old
-	// decorators reliably. if you do, please replace it!
-	editor.deltaDecorations(oldDecorationIds, newDecorations)
-}
-
 const errorLensStyles = `
 	.error-bg {
 		background-color: ${arkdarkColors.colors["errorLens.errorBackground"]};
 	}
 	.error-text {
 		color:  ${arkdarkColors.colors["errorLens.errorForeground"]};
-		margin-left: 10px;
 		font-style: italic;
 	}
 `
@@ -473,16 +414,69 @@ const setupErrorLens = (
 	styleElement.textContent = errorLensStyles
 	document.head.appendChild(styleElement)
 
-	getDiagnostics(tsLanguageService, editor.getModel()!).then(diagnostics => {
-		displayDiagnostics(editor, monaco, diagnostics)
-	})
+	let decorationCollection: Monaco.editor.IEditorDecorationsCollection | null =
+		null
 
-	editor.onDidChangeModelContent(async () => {
+	const updateDiagnostics = async () => {
 		const diagnostics = await getDiagnostics(
 			tsLanguageService,
 			editor.getModel()!
 		)
-		displayDiagnostics(editor, monaco, diagnostics)
+
+		if (decorationCollection) decorationCollection.clear()
+
+		const model = editor.getModel()
+		if (!model) return
+
+		// group diagnostics by line to only show one error per line
+		const diagnosticsByLine = new Map<
+			number,
+			Monaco.languages.typescript.Diagnostic
+		>()
+
+		for (const diag of diagnostics) {
+			if (!diag.start) continue
+			const startPosition = model.getPositionAt(diag.start)
+			const lineNumber = startPosition.lineNumber
+
+			if (!diagnosticsByLine.has(lineNumber))
+				diagnosticsByLine.set(lineNumber, diag)
+		}
+
+		const decorations: Monaco.editor.IModelDeltaDecoration[] = Array.from(
+			diagnosticsByLine.entries()
+		).map(([lineNumber, diag]) => {
+			let messageText =
+				typeof diag.messageText === "object" ?
+					diag.messageText.messageText
+				:	diag.messageText
+
+			messageText = applyErrorLensReplacements(messageText)
+
+			const lineContent = model.getLineContent(lineNumber)
+			const endOfLine = lineContent.length + 1
+
+			return {
+				range: new monaco.Range(lineNumber, 1, lineNumber, endOfLine),
+				options: {
+					isWholeLine: true,
+					className: "error-bg",
+					after: {
+						content: `    ${messageText}`,
+						inlineClassName: "error-text"
+					}
+				}
+			}
+		})
+
+		decorationCollection = editor.createDecorationsCollection(decorations)
+	}
+
+	updateDiagnostics()
+
+	editor.onDidChangeModelContent(() => {
+		// small delay to allow TS service to process changes
+		setTimeout(updateDiagnostics, 300)
 	})
 }
 

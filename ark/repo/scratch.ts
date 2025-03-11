@@ -1,3 +1,4 @@
+import { initTRPC } from "@trpc/server"
 import { type } from "arktype"
 
 const user = type({
