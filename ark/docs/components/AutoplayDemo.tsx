@@ -19,6 +19,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 		width: "100%",
 		height: "30vh"
 	})
+	const [resetTrigger, setResetTrigger] = useState(0)
 	const videoRef = useRef<HTMLVideoElement>(null)
 
 	// Get video dimensions on load
@@ -55,22 +56,23 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 	}, [videoRef.current])
 
 	const togglePlayground = () => {
+		if (showPlayground) {
+			// When switching back to the video, trigger a reset on the playground
+			setResetTrigger(prev => prev + 1)
+		}
 		setShowPlayground(!showPlayground)
 	}
 
 	return (
 		<div style={{ position: "relative", width: "100%" }}>
-			{showPlayground ?
-				<div
-					style={{
-						height: dimensions.height,
-						width: dimensions.width,
-						margin: "0 auto" // Center the playground
-					}}
-				>
-					<Playground />
-				</div>
-			:	<video
+			{/* Always render both video and playground, controlling visibility with CSS */}
+			<div
+				style={{
+					display: !showPlayground ? "block" : "none",
+					width: "100%"
+				}}
+			>
+				<video
 					ref={videoRef}
 					autoPlay
 					loop
@@ -78,10 +80,21 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 					playsInline
 					muted
 					disablePictureInPicture={true}
-					style={{ width: "100%", display: "block", margin: "0 auto" }} // Ensure video is centered
+					style={{ width: "100%", display: "block", margin: "0 auto" }}
 					{...props}
 				/>
-			}
+			</div>
+
+			<div
+				style={{
+					display: showPlayground ? "block" : "none",
+					height: dimensions.height,
+					width: dimensions.width,
+					margin: "0 auto"
+				}}
+			>
+				<Playground visible={showPlayground} resetTrigger={resetTrigger} />
+			</div>
 
 			<button
 				onClick={togglePlayground}
@@ -100,7 +113,8 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 				}
 			</button>
 
-			<p>
+			{/* Added margin-top to ensure proper spacing below video/playground */}
+			<p className="caption">
 				Type-level feedback with each keystroke-{" "}
 				<b>no plugins or build steps required</b>.
 			</p>
@@ -114,88 +128,119 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 					align-items: center;
 					gap: 6px;
 					padding: 8px 12px;
-					background: rgba(0, 19, 35, 0.5); /* More transparent background */
-					background-image: linear-gradient(
-						135deg,
-						rgba(255, 255, 255, 0.25),
-						rgba(255, 255, 255, 0.05) 30%,
-						rgba(0, 19, 35, 0.6) 80%
-					); /* Enhanced diagonal glass gradient */
+					background: transparent;
 					color: #fff;
-					border: none;
+					border: 2px solid rgba(255, 255, 255, 0.6); /* Slightly reduced border brightness */
 					border-radius: 1rem;
 					font-size: 14px;
-					font-weight: 500;
+					font-weight: 600;
 					cursor: pointer;
-					backdrop-filter: blur(10px); /* Increased blur */
+					backdrop-filter: blur(5px);
 					box-shadow:
-						0 2px 10px rgba(0, 103, 179, 0.3),
-						0 0 0 1px rgba(255, 255, 255, 0.2); /* Glow + outline */
-					transition: all 0.2s ease;
+						0 0 7px rgba(255, 255, 255, 0.5),
+						/* Reduced by ~30% */ 0 0 14px rgba(149, 88, 248, 0.3),
+						/* Reduced by ~30% */ inset 0 0 6px rgba(255, 255, 255, 0.15); /* Reduced by ~30% */
+					text-shadow: 0 0 6px rgba(255, 255, 255, 0.6); /* Reduced by ~30% */
+					transition: all 0.15s ease; /* Faster hover response */
 					z-index: 10;
-					border: 1px solid rgba(255, 255, 255, 0.15);
-					animation: pulse 8s ease-in-out infinite; /* Just pulse by default */
+					animation: pulse 8s ease-in-out infinite;
 				}
 
-				/* Pulse glow animation */
+				/* Reduced intensity pulse animation */
 				@keyframes pulse {
 					0%,
 					100% {
 						box-shadow:
-							0 2px 10px rgba(0, 103, 179, 0.3),
-							0 0 0 1px rgba(255, 255, 255, 0.2);
+							0 0 7px rgba(255, 255, 255, 0.4),
+							0 0 10px rgba(149, 88, 248, 0.2),
+							inset 0 0 6px rgba(255, 255, 255, 0.15);
 					}
 					50% {
 						box-shadow:
-							0 2px 15px rgba(0, 103, 179, 0.5),
-							0 0 0 1px rgba(255, 255, 255, 0.3);
+							0 0 10px rgba(255, 255, 255, 0.6),
+							0 0 17px rgba(149, 88, 248, 0.35),
+							inset 0 0 8px rgba(255, 255, 255, 0.2);
 					}
 				}
 
-				/* Wiggle animation */
 				@keyframes wiggle {
+					/* 0-87.5% is idle time (3.5 seconds at 4s total) */
 					0%,
-					90%,
+					87.5%,
 					100% {
-						transform: translateX(0);
+						transform: rotate(0deg);
 					}
-					92%,
+					/* Rotation starts at 87.5% mark for a 0.5-second duration */
+					/* First wiggle right */
+					88.5% {
+						transform: rotate(3deg);
+					}
+					/* Back to center */
+					89.5% {
+						transform: rotate(-1deg);
+					}
+					/* Wiggle left */
+					90.5% {
+						transform: rotate(-3deg);
+					}
+					/* Back to center with smaller angle */
+					91.5% {
+						transform: rotate(2deg);
+					}
+					/* Smaller wiggle right */
+					92.5% {
+						transform: rotate(3deg);
+					}
+					/* Almost back to center */
+					93.5% {
+						transform: rotate(-2deg);
+					}
+					/* Final smaller wiggle left */
+					94.5% {
+						transform: rotate(-1deg);
+					}
+					/* Settle back to center with small overshoot */
 					96% {
-						transform: translateX(-2px);
+						transform: rotate(0.5deg);
 					}
-					94%,
+					/* Finally back to center */
 					98% {
-						transform: translateX(2px);
+						transform: rotate(0deg);
 					}
 				}
 
-				/* Apply wiggle ONLY when in video mode (not showing playground) */
+				/* Apply wiggle to video mode */
 				.video-mode {
 					animation:
 						pulse 8s ease-in-out infinite,
-						wiggle 15s ease-in-out infinite;
+						wiggle 4s ease-in-out infinite;
+					transform-origin: center center; /* Set rotation origin to center of button */
 				}
 
 				.toggle-playground-button:hover {
-					animation: none; /* Stop animations on hover */
-					background-image: linear-gradient(
-						135deg,
-						rgba(255, 255, 255, 0.35),
-						rgba(255, 255, 255, 0.1) 30%,
-						rgba(0, 19, 35, 0.7) 80%
-					);
+					animation: none;
+					background: rgba(255, 255, 255, 0.15);
+					border-color: rgba(255, 255, 255, 1);
 					box-shadow:
-						0 4px 15px rgba(0, 103, 179, 0.6),
-						0 0 0 1px rgba(255, 255, 255, 0.3);
-					transform: translateY(-1px);
-					border: 1px solid rgba(255, 255, 255, 0.25);
+						0 0 12px rgba(255, 255, 255, 0.7),
+						0 0 22px rgba(149, 88, 248, 0.45),
+						inset 0 0 8px rgba(255, 255, 255, 0.3);
+					transform: translateY(-1px) scale(1.02); /* Reduced movement */
 				}
 
 				.toggle-playground-button:active {
-					transform: translateY(0px);
+					transform: translateY(0) scale(0.98);
 					box-shadow:
-						0 1px 8px rgba(0, 103, 179, 0.4),
-						0 0 0 1px rgba(255, 255, 255, 0.2);
+						0 0 6px rgba(255, 255, 255, 0.5),
+						0 0 12px rgba(149, 88, 248, 0.3),
+						inset 0 0 5px rgba(255, 255, 255, 0.2);
+				}
+
+				.caption {
+					margin-top: 15px;
+					text-align: center;
+					position: relative;
+					z-index: 5;
 				}
 
 				@media (max-width: 768px) {

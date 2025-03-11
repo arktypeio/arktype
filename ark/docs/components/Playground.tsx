@@ -8,11 +8,44 @@ import type * as Monaco from "monaco-editor"
 import { wireTmGrammars } from "monaco-editor-textmate"
 import { Registry } from "monaco-textmate"
 import { loadWASM } from "onigasm"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { CompletionInfo, ScriptElementKind } from "typescript"
 import { schemaDts } from "./dts/schema.ts"
 import { typeDts } from "./dts/type.ts"
 import { utilDts } from "./dts/util.ts"
+
+// Module-level initialization flags and references
+let onigasmLoaded = false
+let monacoInitialized = false
+let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
+	null
+
+// Promise for onigasm initialization that can be awaited
+let onigasmPromise: Promise<void> | null = null
+
+// Safely load onigasm only once
+const initOnigasm = async () => {
+	if (onigasmPromise) return onigasmPromise
+
+	if (!onigasmLoaded) {
+		onigasmPromise = loadWASM("/onigasm.wasm")
+			.then(() => {
+				onigasmLoaded = true
+				console.log("Onigasm initialized successfully")
+			})
+			.catch(err => {
+				console.error("Failed to initialize onigasm:", err)
+				// Reset the promise so we can try again
+				onigasmPromise = null
+			})
+		return onigasmPromise
+	}
+
+	return Promise.resolve()
+}
+
+// Start loading onigasm early
+if (typeof window !== "undefined") initOnigasm().catch(console.error)
 
 interface VSCodeTheme {
 	colors: {
@@ -508,55 +541,122 @@ const applyEditorStyling = (
 const setupMonaco = async (
 	monaco: typeof Monaco
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
-	await loadWASM("/onigasm.wasm")
+	// Only initialize once
+	if (!monacoInitialized) {
+		// Ensure onigasm is loaded
+		await initOnigasm()
 
-	monaco.editor.defineTheme("arkdark", theme)
+		monaco.editor.defineTheme("arkdark", theme)
 
-	const tsLanguageService = await getInitializedTypeScriptService(monaco)
-	setupHoverProvider(monaco, tsLanguageService)
-	setupCompletionProvider(monaco, tsLanguageService)
+		// Initialize the language service only once
+		if (!tsLanguageServiceInstance) {
+			const tsLanguageService = await getInitializedTypeScriptService(monaco)
+			setupHoverProvider(monaco, tsLanguageService)
+			setupCompletionProvider(monaco, tsLanguageService)
+			await setupTextmateGrammar(monaco)
 
-	await setupTextmateGrammar(monaco)
+			tsLanguageServiceInstance = tsLanguageService
+			monacoInitialized = true
+		}
+	}
 
-	return tsLanguageService
+	return tsLanguageServiceInstance!
 }
 
 type LoadingState = "unloaded" | "loading" | "loaded"
 
-export const Playground = () => {
-	const [loadingState, setLoaded] = useState<LoadingState>("unloaded")
+export interface PlaygroundProps {
+	visible?: boolean
+	resetTrigger?: number
+}
+
+export const Playground = ({
+	visible = true,
+	resetTrigger = 0
+}: PlaygroundProps) => {
+	const [loadingState, setLoaded] = useState<LoadingState>(
+		onigasmLoaded && monacoInitialized ? "loaded" : "unloaded"
+	)
 	const monaco = useMonaco()
-	const [tsLanguageService, setTsLanguageService] =
-		useState<Monaco.languages.typescript.TypeScriptWorker | null>(null)
+	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
+
+	// Reset editor content when the resetTrigger changes
+	useEffect(() => {
+		if (editorRef.current && resetTrigger > 0)
+			editorRef.current.setValue(defaultCode)
+	}, [resetTrigger])
 
 	useEffect(() => {
-		if (!monaco || loadingState === "loaded") return
+		// If Monaco is already initialized, use the cached instance
+		if (monaco && monacoInitialized && tsLanguageServiceInstance) {
+			setLoaded("loaded")
+			return
+		}
 
-		if (loadingState === "unloaded") setLoaded("loading")
-		else {
-			setupMonaco(monaco).then(service => {
-				setTsLanguageService(service)
-				setLoaded("loaded")
-			})
+		// Otherwise initialize
+		if (monaco && loadingState !== "loaded") {
+			if (loadingState === "unloaded") setLoaded("loading")
+			else {
+				setupMonaco(monaco)
+					.then(() => {
+						setLoaded("loaded")
+					})
+					.catch(err => {
+						console.error("Failed to setup Monaco:", err)
+						setLoaded("unloaded")
+					})
+			}
 		}
 	}, [monaco, loadingState])
 
-	return loadingState === "loaded" && monaco && tsLanguageService ?
-			<Editor
-				height="30vh"
-				defaultLanguage="typescript"
-				defaultValue={defaultCode}
-				path={editorFileUri}
-				theme="arkdark"
-				options={{
-					minimap: { enabled: false },
-					scrollBeyondLastLine: false,
-					quickSuggestions: { strings: "on" },
-					quickSuggestionsDelay: 0
-				}}
-				onMount={editor =>
-					applyEditorStyling(editor, monaco, tsLanguageService)
-				}
-			/>
-		:	"Loading..."
+	return (
+		<div
+			style={{
+				display: visible ? "block" : "none",
+				height: "100%",
+				width: "100%"
+			}}
+		>
+			{loadingState === "loaded" && monaco ?
+				<Editor
+					height="100%"
+					width="100%"
+					defaultLanguage="typescript"
+					defaultValue={defaultCode}
+					path={editorFileUri}
+					theme="arkdark"
+					options={{
+						minimap: { enabled: false },
+						scrollBeyondLastLine: false,
+						quickSuggestions: { strings: "on" },
+						quickSuggestionsDelay: 0
+					}}
+					onMount={(editor, monaco) => {
+						editorRef.current = editor
+						if (tsLanguageServiceInstance)
+							applyEditorStyling(editor, monaco, tsLanguageServiceInstance)
+					}}
+				/>
+			:	<div className="loading-container">
+					<div className="loading-text">Loading playground...</div>
+					<style jsx>{`
+						.loading-container {
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							height: 100%;
+							width: 100%;
+							background-color: rgba(0, 19, 35, 0.5);
+							backdrop-filter: blur(8px);
+							border-radius: 16px;
+						}
+						.loading-text {
+							color: #fff;
+							font-family: "Cascadia Mono", monospace;
+						}
+					`}</style>
+				</div>
+			}
+		</div>
+	)
 }
