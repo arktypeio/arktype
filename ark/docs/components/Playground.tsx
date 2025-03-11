@@ -350,21 +350,35 @@ const setupTextmateGrammar = async (monaco: typeof Monaco) =>
 	)
 
 type ErrorLensReplacement = {
-	matcher: string
+	matcher: RegExp
 	message: string
 }
 
-const errorLensReplaceConfig: ErrorLensReplacement[] =
-	extensionPackage.contributes.configurationDefaults["errorLens.replace"]
+const errorLensReplacements: ErrorLensReplacement[] =
+	extensionPackage.contributes.configurationDefaults["errorLens.replace"].map(
+		src => ({ matcher: new RegExp(src.matcher, "iu"), message: src.message })
+	)
 
 // Apply errorLens.replace config to diagnostic message,
 // extracting arktype errors for inline display
-const applyErrorLensReplacements = (message: string): string => {
-	if (!errorLensReplaceConfig.length) return message
 
-	for (const { matcher, message: replacement } of errorLensReplaceConfig) {
-		const regex = new RegExp(matcher)
-		if (regex.test(message)) return message.replace(regex, replacement)
+// based on the errorLens logic at:
+// https://github.com/usernamehw/vscode-error-lens/blob/019d29b010f85ebb6e25c5f7f8ffda83479bfda0/src/utils/extUtils.ts#L184
+const applyErrorLensReplacements = (message: string): string => {
+	for (const transformation of errorLensReplacements) {
+		const matchResult = transformation.matcher.exec(message)
+		if (matchResult) {
+			message = transformation.message
+			// Replace groups like $0 and $1 with groups from the match
+			for (let groupIndex = 0; groupIndex < matchResult.length; groupIndex++) {
+				message = message.replace(
+					new RegExp(`\\$${groupIndex}`, "gu"),
+					matchResult[Number(groupIndex)]
+				)
+			}
+
+			return message
+		}
 	}
 
 	return message
@@ -391,8 +405,18 @@ const displayDiagnostics = (
 	const model = editor.getModel()
 	if (!model) return
 
+	// Clear previous decorations
+	const oldDecorationIds = model
+		.getAllDecorations()
+		.filter(
+			d =>
+				d.options.className === "error-bg" ||
+				d.options.inlineClassName === "error-text"
+		)
+		.map(d => d.id)
+
 	// Create new decorations for diagnostics
-	const decorations: Monaco.editor.IModelDeltaDecoration[] =
+	const newDecorations: Monaco.editor.IModelDeltaDecoration[] =
 		diagnostics.flatMap(diag => {
 			if (!diag.start) return []
 			const startPosition = model.getPositionAt(diag.start)
@@ -424,8 +448,21 @@ const displayDiagnostics = (
 			]
 		})
 
-	editor.createDecorationsCollection(decorations)
+	// deltaDecorations is deprecated but couldn't find another way to remove old
+	// decorators reliably. if you do, please replace it!
+	editor.deltaDecorations(oldDecorationIds, newDecorations)
 }
+
+const errorLensStyles = `
+	.error-bg {
+		background-color: ${arkdarkColors.colors["errorLens.errorBackground"]};
+	}
+	.error-text {
+		color:  ${arkdarkColors.colors["errorLens.errorForeground"]};
+		margin-left: 10px;
+		font-style: italic;
+	}
+`
 
 const setupErrorLens = (
 	monaco: typeof Monaco,
@@ -433,16 +470,7 @@ const setupErrorLens = (
 	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
 ) => {
 	const styleElement = document.createElement("style")
-	styleElement.textContent = `
-		.error-bg {
-			background-color: ${arkdarkColors.colors["errorLens.errorBackground"]};
-		}
-		.error-text {
-			color:  ${arkdarkColors.colors["errorLens.errorForeground"]};
-			margin-left: 10px;
-			font-style: italic;
-		}
-	`
+	styleElement.textContent = errorLensStyles
 	document.head.appendChild(styleElement)
 
 	getDiagnostics(tsLanguageService, editor.getModel()!).then(diagnostics => {
