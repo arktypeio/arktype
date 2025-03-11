@@ -323,22 +323,17 @@ const setupCompletionProvider = (
 	monaco.languages.registerCompletionItemProvider("typescript", {
 		triggerCharacters: [".", '"', "'", "`", "/", "@", "<", "#", " "],
 		provideCompletionItems: async (model, position) => {
-			try {
-				const positionHash = createPositionHash(model, position)
-				if (isDuplicateRequest(positionHash)) return { suggestions: [] }
+			const positionHash = createPositionHash(model, position)
+			if (isDuplicateRequest(positionHash)) return { suggestions: [] }
 
-				const completions = await getCompletions(
-					tsLanguageService,
-					model,
-					position
-				)
-				if (!completions) return { suggestions: [] }
+			const completions = await getCompletions(
+				tsLanguageService,
+				model,
+				position
+			)
+			if (!completions) return { suggestions: [] }
 
-				return formatCompletions(completions, model, position)
-			} catch (error) {
-				console.error("Error providing completions:", error)
-				return { suggestions: [] }
-			}
+			return formatCompletions(completions, model, position)
 		}
 	})
 
@@ -378,7 +373,7 @@ const applyErrorLensReplacements = (message: string): string => {
 const getDiagnostics = async (
 	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
 	model: Monaco.editor.ITextModel
-) => {
+): Promise<Monaco.languages.typescript.Diagnostic[]> => {
 	const uri = model.uri.toString()
 	const syntacticDiagnostics =
 		await tsLanguageService.getSyntacticDiagnostics(uri)
@@ -391,41 +386,43 @@ const getDiagnostics = async (
 const displayDiagnostics = (
 	editor: Monaco.editor.IStandaloneCodeEditor,
 	monaco: typeof Monaco,
-	diagnostics: any[]
+	diagnostics: Monaco.languages.typescript.Diagnostic[]
 ) => {
 	const model = editor.getModel()
 	if (!model) return
 
 	// Create new decorations for diagnostics
-	const decorations = diagnostics.flatMap(diag => {
-		const startPosition = model.getPositionAt(diag.start)
-		const lineNumber = startPosition.lineNumber
+	const decorations: Monaco.editor.IModelDeltaDecoration[] =
+		diagnostics.flatMap(diag => {
+			if (!diag.start) return []
+			const startPosition = model.getPositionAt(diag.start)
+			const lineNumber = startPosition.lineNumber
 
-		// Get the error message (handle nested error objects)
-		let messageText =
-			typeof diag.messageText === "object" ?
-				diag.messageText.messageText
-			:	diag.messageText
+			// Get the error message (handle nested error objects)
+			let messageText =
+				typeof diag.messageText === "object" ?
+					diag.messageText.messageText
+				:	diag.messageText
 
-		messageText = applyErrorLensReplacements(messageText)
+			messageText = applyErrorLensReplacements(messageText)
 
-		const lineContent = model.getLineContent(lineNumber)
-		const endOfLine = lineContent.length + 1
+			const lineContent = model.getLineContent(lineNumber)
+			const endOfLine = lineContent.length + 1
 
-		return [
-			{
-				range: new monaco.Range(lineNumber, 1, lineNumber, endOfLine),
-				options: {
-					isWholeLine: true,
-					className: "error-bg",
-					after: {
-						content: `    ${messageText}`,
-						afterContentClassName: "error-text"
+			return [
+				{
+					range: new monaco.Range(lineNumber, 1, lineNumber, endOfLine),
+					options: {
+						isWholeLine: true,
+						className: "error-bg",
+						after: {
+							content: `    ${messageText}`,
+							inlineClassName: "error-text"
+						}
 					}
 				}
-			}
-		]
-	})
+			]
+		})
 
 	editor.createDecorationsCollection(decorations)
 }
@@ -435,7 +432,6 @@ const setupErrorLens = (
 	editor: Monaco.editor.IStandaloneCodeEditor,
 	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
 ) => {
-	// Add CSS styles
 	const styleElement = document.createElement("style")
 	styleElement.textContent = `
 		.error-bg {
@@ -449,21 +445,16 @@ const setupErrorLens = (
 	`
 	document.head.appendChild(styleElement)
 
-	// Initial diagnostics check
 	getDiagnostics(tsLanguageService, editor.getModel()!).then(diagnostics => {
 		displayDiagnostics(editor, monaco, diagnostics)
 	})
 
-	// Update diagnostics whenever content changes
 	editor.onDidChangeModelContent(async () => {
-		// Small delay to allow TS service to process changes
-		setTimeout(async () => {
-			const diagnostics = await getDiagnostics(
-				tsLanguageService,
-				editor.getModel()!
-			)
-			displayDiagnostics(editor, monaco, diagnostics)
-		}, 300)
+		const diagnostics = await getDiagnostics(
+			tsLanguageService,
+			editor.getModel()!
+		)
+		displayDiagnostics(editor, monaco, diagnostics)
 	})
 }
 
