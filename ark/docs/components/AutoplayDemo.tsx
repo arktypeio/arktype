@@ -2,6 +2,7 @@
 
 import { CodeIcon, ExpandIcon, VideoIcon } from "lucide-react"
 import Link from "next/link"
+import posthog from "posthog-js"
 import { useEffect, useRef, useState } from "react"
 import { Playground } from "./Playground"
 
@@ -57,9 +58,11 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 	}, [videoRef.current])
 
 	const togglePlayground = () => {
-		if (showPlayground) {
-			// When switching back to the video, trigger a reset on the playground
-			setResetTrigger(prev => prev + 1)
+		if (showPlayground) setResetTrigger(prev => prev + 1)
+		else {
+			posthog.capture("Playground mode", {
+				location: window.location.href
+			})
 		}
 		setShowPlayground(!showPlayground)
 	}
