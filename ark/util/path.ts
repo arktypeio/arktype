@@ -62,7 +62,10 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 }
 
 export const stringifyPath: StringifyPathFn = (path, ...opts) =>
-	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
+	path.reduce<string>(
+		(s, k) => appendStringifiedKey(s, k, ...(opts as any)),
+		""
+	)
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
