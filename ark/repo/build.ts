@@ -1,6 +1,6 @@
 import { copyFileSync } from "fs"
 import { join } from "path"
-
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	fromCwd,
 	fromHere,
