@@ -72,6 +72,8 @@ export const jsDocGen = () => {
 		return [{ group: block.group }, block]
 	})
 
+	writeApiDataFile()
+
 	console.log(
 		`📚 Successfully updated ${updateCount} JSDoc comments on your build output.`
 	)

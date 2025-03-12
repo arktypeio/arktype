@@ -473,7 +473,7 @@ interface Type<out t = unknown, $ = {}>
 	/**
 	 * #### union with the parsed Type
 	 *
-	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ([docs](https://arktype.io/docs/expressions/union-morphs))
+	 * ⚠️ a union that could apply different morphs to the same data is a ParseError ({@link https://arktype.io/docs/expressions#union-morphs | docs})
 	 *
 	 * @example
 	 * // Type<string | { box: string }>

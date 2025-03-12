@@ -589,7 +589,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     },
                     {
                         "kind": "link",
-                        "url": "https://arktype.io/docs/expressions/union-morphs",
+                        "url": "https://arktype.io/docs/expressions#union-morphs",
                         "value": "docs"
                     },
                     {
