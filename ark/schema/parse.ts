@@ -22,7 +22,7 @@ import {
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
+import type { BaseMeta, TypeMeta } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
@@ -147,7 +147,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
 	const inner: dict = {}
 	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
-		meta?: MetaSchema
+		meta?: TypeMeta
 	}
 
 	const meta: BaseMeta & dict =

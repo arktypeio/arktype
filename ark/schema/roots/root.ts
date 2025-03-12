@@ -23,7 +23,7 @@ import type {
 	UnknownRangeSchema
 } from "../refinements/range.ts"
 import type { BaseScope } from "../scope.ts"
-import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
+import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
@@ -304,7 +304,7 @@ export abstract class BaseRoot<
 		return rNode.extends(this)
 	}
 
-	configure(meta: MetaSchema): this {
+	configure(meta: TypeMeta): this {
 		return this.configureShallowDescendants(meta)
 	}
 

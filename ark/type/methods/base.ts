@@ -5,6 +5,7 @@ import type {
 	Morph,
 	Predicate,
 	StandardSchemaV1,
+	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -27,7 +28,7 @@ import type {
 	Out,
 	To
 } from "../attributes.ts"
-import type { ArkAmbient, TypeMetaInput } from "../config.ts"
+import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
@@ -217,7 +218,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
 	 */
-	configure<meta extends TypeMetaInput>(meta: meta): this
+	configure(meta: TypeMeta): this
 
 	/**
 	 * #### add description to shallow references

@@ -1,18 +1,16 @@
-import type { arkKind } from "@ark/schema"
+import type { arkKind, TypeMeta } from "@ark/schema"
 import type { Ark } from "./keywords/keywords.ts"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { configureSchema, type ArkSchemaConfig } from "@ark/schema/config"
 import type { anyOrNever } from "@ark/util"
 
-export type TypeMeta = Omit<ArkEnv.meta, "onFail">
-
-export type TypeMetaInput = string | TypeMeta
+export type KeywordConfigValue = Exclude<TypeMeta, TypeMeta.Fn>
 
 export type KeywordConfig = {
 	[k in keyof Ark.flat as parseConfigurableFlatAlias<
 		k,
 		Ark.flat[k]
-	>]?: TypeMetaInput
+	>]?: KeywordConfigValue
 }
 
 type parseConfigurableFlatAlias<k extends string, v> =

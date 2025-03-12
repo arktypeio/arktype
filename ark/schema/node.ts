@@ -35,7 +35,7 @@ import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
-	MetaSchema,
+	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
 import type { ArkErrors } from "./shared/errors.ts"
@@ -563,7 +563,7 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(meta: MetaSchema): this {
+	configureShallowDescendants(meta: TypeMeta): this {
 		const newMeta = typeof meta === "string" ? { description: meta } : meta
 		return this.$.finalize(
 			this.transform(

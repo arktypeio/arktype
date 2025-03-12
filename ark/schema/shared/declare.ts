@@ -30,11 +30,17 @@ declare global {
 	}
 }
 
-export type MetaSchema = string | ArkEnv.meta
+export type TypeMeta = TypeMeta.Object | TypeMeta.Fn | string
+
+export declare namespace TypeMeta {
+	export type Object = Omit<ArkEnv.meta, "onFail">
+
+	export type Fn = (existing: Readonly<Object>) => Object
+}
 
 export interface BaseNormalizedSchema
-	extends withMetaPrefixedKeys<ArkEnv.meta> {
-	readonly meta?: MetaSchema
+	extends withMetaPrefixedKeys<TypeMeta.Object> {
+	readonly meta?: TypeMeta
 }
 
 interface DeclarationInput {
