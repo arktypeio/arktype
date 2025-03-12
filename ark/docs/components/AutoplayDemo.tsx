@@ -1,6 +1,7 @@
 "use client"
 
-import { CodeIcon, VideoIcon } from "lucide-react"
+import { CodeIcon, ExpandIcon, VideoIcon } from "lucide-react"
+import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { Playground } from "./Playground"
 
@@ -96,22 +97,36 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 				<Playground visible={showPlayground} resetTrigger={resetTrigger} />
 			</div>
 
-			<button
-				onClick={togglePlayground}
-				className={`toggle-playground-button ${showPlayground ? "" : "video-mode"}`}
-				aria-label={showPlayground ? "Switch to Demo" : "Switch to Playground"}
-			>
-				{showPlayground ?
-					<>
-						<VideoIcon size={16} />
-						<span>Demo Mode</span>
-					</>
-				:	<>
-						<CodeIcon size={16} />
-						<span>Playground Mode</span>
-					</>
-				}
-			</button>
+			<div className="button-group">
+				<button
+					onClick={togglePlayground}
+					className={`toggle-playground-button ${showPlayground ? "" : "video-mode"}`}
+					aria-label={
+						showPlayground ? "Switch to Demo" : "Switch to Playground"
+					}
+				>
+					{showPlayground ?
+						<>
+							<VideoIcon size={16} />
+							<span>Demo Mode</span>
+						</>
+					:	<>
+							<CodeIcon size={16} />
+							<span>Playground Mode</span>
+						</>
+					}
+				</button>
+
+				{showPlayground && (
+					<Link
+						href="/playground"
+						className="toggle-playground-button"
+						aria-label="Open Full Playground"
+					>
+						<ExpandIcon size={32} style={{ marginTop: "4px" }} />
+					</Link>
+				)}
+			</div>
 
 			{/* Added margin-top to ensure proper spacing below video/playground */}
 			<p className="caption">
@@ -120,10 +135,17 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 			</p>
 
 			<style jsx>{`
-				.toggle-playground-button {
+				.button-group {
 					position: absolute;
 					top: 10px;
-					right: 10px;
+					right: 20px;
+					display: flex;
+					gap: 8px;
+					z-index: 10;
+				}
+
+				/* Move existing .toggle-playground-button styles here but remove positioning */
+				.toggle-playground-button {
 					display: flex;
 					align-items: center;
 					gap: 6px;
@@ -142,7 +164,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 						/* Reduced by ~30% */ inset 0 0 6px rgba(255, 255, 255, 0.15); /* Reduced by ~30% */
 					text-shadow: 0 0 6px rgba(255, 255, 255, 0.6); /* Reduced by ~30% */
 					transition: all 0.15s ease; /* Faster hover response */
-					z-index: 10;
 					animation: pulse 8s ease-in-out infinite;
 				}
 
@@ -244,7 +265,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 				}
 
 				@media (max-width: 768px) {
-					.toggle-playground-button {
+					.button-group {
 						display: none;
 					}
 				}

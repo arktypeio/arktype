@@ -70,7 +70,7 @@ type DisplayPart = {
 type RequestMap = Map<string, number>
 
 const duplicateThresholdMs = 50
-const defaultCode = `import { type } from "arktype"
+const defaultPlaygroundCode = `import { type } from "arktype"
 
 const myType = type({
 	name: "string",
@@ -229,7 +229,7 @@ const getInitializedTypeScriptService = async (
 	configureTypeScript(monaco)
 
 	if (!monaco.editor.getModel(targetUri))
-		monaco.editor.createModel(defaultCode, "typescript", targetUri)
+		monaco.editor.createModel(defaultPlaygroundCode, "typescript", targetUri)
 
 	const worker = await monaco.languages.typescript.getTypeScriptWorker()
 	return await worker(targetUri)
@@ -526,6 +526,7 @@ const applyEditorStyling = (
 			"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)"
 		editorElement.style.transition = "all 0.3s cubic-bezier(.25,.8,.25,1)"
 		editorElement.style.backdropFilter = "blur(16px)"
+		editorElement.style.paddingTop = "16px"
 
 		const guard = editorElement.querySelector(
 			".overflow-guard"
@@ -568,11 +569,27 @@ type LoadingState = "unloaded" | "loading" | "loaded"
 export interface PlaygroundProps {
 	visible?: boolean
 	resetTrigger?: number
+	/** @default "typescript" */
+	lang?: string
+	style?: React.CSSProperties
+	className?: string
+	/** Initial code to display in the playground */
+	code?: string
+	/** Full height mode takes available vertical space */
+	fullHeight?: boolean
+	/** Custom height for the editor */
+	height?: string
 }
 
 export const Playground = ({
 	visible = true,
-	resetTrigger = 0
+	resetTrigger = 0,
+	lang = "typescript",
+	style = {},
+	className = "",
+	code = defaultPlaygroundCode,
+	fullHeight = false,
+	height = "100%"
 }: PlaygroundProps) => {
 	const [loadingState, setLoaded] = useState<LoadingState>(
 		onigasmLoaded && monacoInitialized ? "loaded" : "unloaded"
@@ -582,9 +599,8 @@ export const Playground = ({
 
 	// Reset editor content when the resetTrigger changes
 	useEffect(() => {
-		if (editorRef.current && resetTrigger > 0)
-			editorRef.current.setValue(defaultCode)
-	}, [resetTrigger])
+		if (editorRef.current && resetTrigger > 0) editorRef.current.setValue(code)
+	}, [resetTrigger, code])
 
 	useEffect(() => {
 		// If Monaco is already initialized, use the cached instance
@@ -609,20 +625,21 @@ export const Playground = ({
 		}
 	}, [monaco, loadingState])
 
+	const containerStyle = {
+		display: visible ? "block" : "none",
+		height: fullHeight ? "calc(100vh - 64px)" : height,
+		width: "100%",
+		...style
+	}
+
 	return (
-		<div
-			style={{
-				display: visible ? "block" : "none",
-				height: "100%",
-				width: "100%"
-			}}
-		>
+		<div className={className} style={containerStyle}>
 			{loadingState === "loaded" && monaco ?
 				<Editor
 					height="100%"
 					width="100%"
-					defaultLanguage="typescript"
-					defaultValue={defaultCode}
+					defaultLanguage={lang}
+					defaultValue={code}
 					path={editorFileUri}
 					theme="arkdark"
 					options={{

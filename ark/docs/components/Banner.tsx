@@ -40,6 +40,7 @@ export const Banner = ({
 			id={id}
 			{...props}
 			className={cn(
+				"release-banner",
 				"sticky top-0 z-40 flex h-12 flex-row items-center justify-around bg-fd-secondary px-4 text-center text-sm font-medium",
 				"bg-fd-background",
 				// fix offset scrolling on Chromium-based browsers:
