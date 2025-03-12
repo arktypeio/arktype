@@ -1,12 +1,20 @@
 import { type } from "arktype"
 
-const identical = type({
-	grouping: "(0 | (1 | (2 | (3 | (4 | 5)[])[])[])[])[]",
-	nestedGenerics:
-		"Extract<Record<string, unknown> | boolean | null | unknown[], object>"
+const user = type({
+	name: "string",
+	isAdmin: "boolean = false",
+	"age?": "number"
 })
 
-// fully reduced inference
-// and fully runtime introspectable
-console.log(identical.get("grouping").expression)
-console.log(identical.get("nestedGenerics").expression)
+const defaultableProps = user.props.filter(
+	p => p.kind === "optional" && "default" in p
+)
+
+const nanToNull = type("number.NaN").pipe(() => null, type.null)
+
+const nullNumber = type("number").or(nanToNull)
+
+const out = nullNumber(5) // 5
+const out2 = nullNumber(Number.NaN) // null
+
+console.log(nullNumber.out.distribute(branch => branch.expression)) // ["number", "null"]

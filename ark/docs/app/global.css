@@ -194,3 +194,16 @@ div.twoslash-popup-container {
 #nd-sidebar .lucide-chevron-down {
 	order: 2;
 }
+
+#nd-home-layout,
+#nd-nav {
+	margin-top: 0;
+	overflow: hidden;
+	transition: margin-top 0.3s ease;
+}
+
+/* if release banner is visible, add top offset to home navbar and layout equal to its height */
+:root:has(.release-banner:not([hidden]):not(.hidden)) #nd-home-layout,
+:root:has(.release-banner:not([hidden]):not(.hidden)) #nd-nav {
+	margin-top: 3rem;
+}

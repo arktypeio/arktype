@@ -585,7 +585,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	>
 	import(...names: string[]): SchemaModule {
 		return new RootModule(
-			flatMorph(this.export(...(names as never)) as any, (alias, value) => [
+			flatMorph(this.export(...(names as any)), (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never

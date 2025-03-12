@@ -119,7 +119,7 @@ export class GenericRoot<
 			hkt ?
 				(new hkt().description ?? `a generic type for ${hkt.constructor.name}`)
 			:	"a generic type"
-		this.baseInstantiation = this(...(this.constraints as never)) as never
+		this.baseInstantiation = this(...(this.constraints as any)) as never
 	}
 
 	defIsLazy(): this is GenericRoot<params, LazyGenericBody> {

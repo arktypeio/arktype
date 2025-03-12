@@ -7,13 +7,13 @@
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@sinclair/typebox": "0.34.16",
-		"@trpc/server": "10.45.2",
+		"@trpc/server": "next",
 		"arktype": "workspace:*",
 		"ts-morph": "25.0.0",
+		"ts-pattern": "5.6.2",
 		"type-fest": "4.33.0",
 		"typescript": "catalog:",
-		"zod": "3.24.1",
-		"ts-pattern": "5.6.2"
+		"zod": "3.24.1"
 	},
 	"scripts": {
 		"build": "echo No build required!"

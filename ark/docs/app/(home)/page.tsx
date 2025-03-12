@@ -15,7 +15,6 @@ import { RuntimeBenchmarksGraph } from "../../components/RuntimeBenchmarksGraph.
 export default () => (
 	<div className="flex-1 pt-40 container relative pb-20">
 		<Hero />
-		<h2 className="text-4xl text-highlight font-semibold mb-3">What awaits</h2>
 
 		<ArkCards>
 			<ArkCard title="Unparalleled DX" icon={<TsIcon height={20} />}>

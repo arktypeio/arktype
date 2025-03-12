@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="/ark/dark/icon.png" height="64px" />
+  <img src="https://arktype.io/image/logo.png" height="64px" />
   <h1>ArkType</h1>
 </div>
 <div align="center">
@@ -14,11 +14,11 @@ We're building a 1:1 validator for TypeScript! Check out our core project [on Gi
 
 - syntax highlighting for strings that are part of an ArkType definition
 
-![syntax highlighting](https://github.com/arktypeio/arktype/tree/main/ark/extension/highlighting.png)
+![syntax highlighting](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/extension/highlighting.png)
 
 - inline type error summaries optimized for ArkType via [ErrorLens](https://github.com/usernamehw/vscode-error-lens)
 
-![errorLens](https://github.com/arktypeio/arktype/tree/main/ark/extension/errorLens.png)
+![errorLens](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/extension/errorLens.png)
 
 ## Contributing
 
