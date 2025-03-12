@@ -1,6 +1,6 @@
 "use client"
 
-import { CodeIcon, ExpandIcon, VideoIcon } from "lucide-react"
+import { CodeIcon, ExpandIcon, Undo2Icon } from "lucide-react"
 import Link from "next/link"
 import posthog from "posthog-js"
 import { useEffect, useRef, useState } from "react"
@@ -110,7 +110,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 				>
 					{showPlayground ?
 						<>
-							<VideoIcon size={16} />
+							<Undo2Icon size={16} />
 							<span>Demo Mode</span>
 						</>
 					:	<>
