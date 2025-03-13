@@ -27,6 +27,19 @@ contextualize(() => {
 			max: { rule: 10 }
 		})
 
+		const out = t.select({
+			kind: "domain",
+			where: d => d.domain === "string"
+		})
+
+		const out3 = t.select({
+			where: n => n.hasKind("domain")
+		})
+
+		const out2 = t.select({
+			kind: "domain"
+		})
+
 		attest(t.traverse(numericCases.lessThanMin)?.toString()).snap(
 			"must be more than 5 (was 4)"
 		)

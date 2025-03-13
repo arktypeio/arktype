@@ -21,11 +21,13 @@ import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
 	NormalizedSchema,
+	childKindOf,
 	mutableInnerOfKind,
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
+import type { Predicate } from "./predicate.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
@@ -422,6 +424,19 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
+	select<const selector extends NodeSelector.Single>(
+		selector: selector
+	): selector extends GuardablePredicate<this, infer narrowed> ? narrowed
+	:	NodeSelector.inferSelectKind<d["kind"], selector>
+	select<const kindSelector>(
+		selector: NodeSelector.validate<d["kind"], kindSelector>
+	): kindSelector extends NodeSelector.PredicateInput<any, infer narrowed> ?
+		narrowed
+	:	NodeSelector.inferSelectKind<d["kind"], kindSelector>
+	select(selector: NodeSelector): unknown {
+		return {}
+	}
+
 	firstReference<narrowed>(
 		filter: GuardablePredicate<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
@@ -585,6 +600,66 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 	path: array<KeyOrKeyNode>
 	node: root
 	propString: string
+}
+
+export type NodeSelector = NodeSelector.Single | NodeSelector.Composite
+
+export declare namespace NodeSelector {
+	export type Single =
+		| NodeSelector.Boundary
+		| NodeSelector.Kind
+		| Predicate<BaseNode>
+
+	export type Boundary = "self" | "child" | "shallow" | "reference"
+
+	export type Kind = NodeKind
+
+	export type Method = "filter" | "find" | "assert"
+
+	export interface Composite {
+		method?: Method
+		boundary?: Boundary
+		kind?: Kind
+		where?: Predicate<BaseNode>
+	}
+
+	export type CompositeInput = Omit<Composite, "where">
+
+	export type validate<
+		selfKind extends NodeKind,
+		kindSelector extends Composite
+	> = {
+		[k in keyof kindSelector]: k extends "where" ?
+			Predicate<NodeSelector.inferSelectKind<selfKind, kindSelector>>
+		:	kindSelector[k]
+	}
+
+	type BoundaryInput<b extends Boundary> = b | { boundary: b }
+	type KindInput<k extends Kind> = k | { kind: k }
+	type PredicateInput<kindNode extends BaseNode, narrowed extends kindNode> =
+		| GuardablePredicate<kindNode, narrowed>
+		| { where: GuardablePredicate<kindNode, narrowed> }
+
+	export type inferSelectKind<
+		selfKind extends NodeKind,
+		selector extends NodeSelector
+	> = nodeOfKind<selectKind<selfKind, selector>>
+
+	type selectKind<selfKind extends NodeKind, selector extends NodeSelector> =
+		selector extends BoundaryInput<"self"> ? selfKind
+		: selector extends KindInput<infer kind> ? kind
+		: selector extends BoundaryInput<"child"> ? selfKind | childKindOf<selfKind>
+		: NodeKind
+
+	// type inferBoundary<self extends BaseNode, b extends Boundary> =
+	// 	b extends "self" ? self : BaseNode
+
+	// type applyKind<result extends BaseNode, k extends Kind> = BaseNode extends result ?  nodeOfKind<k>
+
+	type toMethodReturn<t, m extends Method> =
+		m extends "filter" ? t[]
+		: m extends "find" ? t | undefined
+		: t
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>

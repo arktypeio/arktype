@@ -5,7 +5,8 @@ import {
 	type BaseParseOptions,
 	type Morph,
 	type Predicate,
-	type RootSchema
+	type RootSchema,
+	type TypeMeta
 } from "@ark/schema"
 import {
 	Callable,
@@ -15,7 +16,6 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
-import type { TypeMetaInput } from "./config.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -107,7 +107,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "|>" ? [type.validate<rest[0], $>]
-			: one extends "@" ? [TypeMetaInput]
+			: one extends "@" ? [TypeMeta]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r extends infer _ ? _ : never
