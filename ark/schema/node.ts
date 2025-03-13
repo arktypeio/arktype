@@ -426,15 +426,12 @@ export abstract class BaseNode<
 
 	select<const selector extends NodeSelector.Single>(
 		selector: selector
-	): selector extends GuardablePredicate<this, infer narrowed> ? narrowed
-	:	NodeSelector.inferSelectKind<d["kind"], selector>
-	select<const kindSelector>(
-		selector: NodeSelector.validate<d["kind"], kindSelector>
-	): kindSelector extends NodeSelector.PredicateInput<any, infer narrowed> ?
-		narrowed
-	:	NodeSelector.inferSelectKind<d["kind"], kindSelector>
+	): NodeSelector.infer<d["kind"], selector>
+	select<const selector>(
+		selector: NodeSelector.validateComposite<d["kind"], selector>
+	): NodeSelector.infer<d["kind"], selector>
 	select(selector: NodeSelector): unknown {
-		return {}
+		return selector as never
 	}
 
 	firstReference<narrowed>(
@@ -625,14 +622,15 @@ export declare namespace NodeSelector {
 
 	export type CompositeInput = Omit<Composite, "where">
 
-	export type validate<
-		selfKind extends NodeKind,
-		kindSelector extends Composite
-	> = {
-		[k in keyof kindSelector]: k extends "where" ?
-			Predicate<NodeSelector.inferSelectKind<selfKind, kindSelector>>
-		:	kindSelector[k]
+	export type validateComposite<selfKind extends NodeKind, selector> = {
+		[k in keyof selector]: k extends "where" ?
+			Predicate<NodeSelector.inferSelectKind<selfKind, selector>>
+		:	selector[k]
 	}
+
+	export type infer<selfKind extends NodeKind, selector> =
+		selector extends NodeSelector.PredicateInput<any, infer narrowed> ? narrowed
+		:	NodeSelector.inferSelectKind<selfKind, selector>
 
 	type BoundaryInput<b extends Boundary> = b | { boundary: b }
 	type KindInput<k extends Kind> = k | { kind: k }
@@ -640,12 +638,14 @@ export declare namespace NodeSelector {
 		| GuardablePredicate<kindNode, narrowed>
 		| { where: GuardablePredicate<kindNode, narrowed> }
 
-	export type inferSelectKind<
-		selfKind extends NodeKind,
-		selector extends NodeSelector
-	> = nodeOfKind<selectKind<selfKind, selector>>
+	export type inferSelectKind<selfKind extends NodeKind, selector> =
+		selectKind<selfKind, selector> extends infer kind extends NodeKind ?
+			NodeKind extends kind ?
+				BaseNode
+			:	nodeOfKind<kind>
+		:	never
 
-	type selectKind<selfKind extends NodeKind, selector extends NodeSelector> =
+	type selectKind<selfKind extends NodeKind, selector> =
 		selector extends BoundaryInput<"self"> ? selfKind
 		: selector extends KindInput<infer kind> ? kind
 		: selector extends BoundaryInput<"child"> ? selfKind | childKindOf<selfKind>
