@@ -1,6 +1,6 @@
 {
 	"name": "arktype",
-	"description": "Optimized runtime validation for TypeScript syntax",
+	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"version": "2.1.9",
 	"license": "MIT",
 	"repository": {
