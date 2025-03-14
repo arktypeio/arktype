@@ -4,8 +4,6 @@ const user = type({
 	name: "string",
 	isAdmin: "boolean = false",
 	"age?": "number"
-}).configure({
-	description: "fo"
 })
 
 const defaultableProps = user.props.filter(
