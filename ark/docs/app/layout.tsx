@@ -46,6 +46,8 @@ export default ({ children }: { children: ReactNode }) => (
 				content="ArkType, TypeScript, JavaScript, runtime validation, schema, type-safe, validator, syntax"
 			/>
 
+			<meta name="twitter:card" content="summary_large_image" />
+
 			<link rel="icon" href="/image/favicon.svg" />
 		</head>
 		<body className="flex flex-col min-h-screen">
