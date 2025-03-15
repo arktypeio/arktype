@@ -313,7 +313,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>
 				child.isBasis() ?
-					child.toJsonSchema()
+					child.toJsonSchemaNoVersion()
 				:	child.reduceJsonSchema(schema as never),
 			{}
 		)

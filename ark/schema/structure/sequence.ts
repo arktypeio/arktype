@@ -472,7 +472,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
 		if (this.prefix)
-			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
+			schema.prefixItems = this.prefix.map(node => node.toJsonSchemaNoVersion())
 
 		if (this.optionals) {
 			return JsonSchema.throwUnjsonifiableError(
@@ -481,7 +481,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		if (this.variadic) {
-			schema.items = this.variadic?.toJsonSchema()
+			schema.items = this.variadic?.toJsonSchemaNoVersion()
 			// length constraints will be enforced by items: false
 			// for non-variadic arrays
 			if (this.minLength) schema.minItems = this.minLength
