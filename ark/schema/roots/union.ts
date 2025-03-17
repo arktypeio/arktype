@@ -290,14 +290,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
+		// special case to simplify { const: true } | { const: false }
+		// to the canonical JSON Schema representation { type: "boolean" }
+		if (
+			this.branchGroups.length === 1 &&
+			this.branchGroups[0].equals($ark.intrinsic.boolean)
+		)
+			return { type: "boolean" }
+
 		return {
-			anyOf: this.branchGroups.map(group =>
-				// special case to simplify { const: true } | { const: false }
-				// to the canonical JSON Schema representation { type: "boolean" }
-				group.equals($ark.intrinsic.boolean) ?
-					{ type: "boolean" }
-				:	group.toJsonSchema()
-			)
+			anyOf: this.branchGroups.map(group => group.toJsonSchema())
 		}
 	}
 
