@@ -14,6 +14,12 @@ contextualize(() => {
 		})
 	})
 
+	it("boolean", () => {
+		attest($ark.intrinsic.boolean.toJsonSchema()).snap({
+			type: "boolean"
+		})
+	})
+
 	it("string", () => {
 		const node = rootSchema({
 			domain: "string",
