@@ -30,17 +30,16 @@ declare global {
 	}
 }
 
-export type TypeMeta = TypeMeta.Object | TypeMeta.Fn | string
+export type TypeMeta = Omit<ArkEnv.meta, "onFail">
 
 export declare namespace TypeMeta {
-	export type Object = Omit<ArkEnv.meta, "onFail">
+	export type Input = TypeMeta | TypeMeta.Mapper | string
 
-	export type Fn = (existing: Readonly<Object>) => Object
+	export type Mapper = (existing: Readonly<Object>) => TypeMeta
 }
 
-export interface BaseNormalizedSchema
-	extends withMetaPrefixedKeys<TypeMeta.Object> {
-	readonly meta?: TypeMeta
+export interface BaseNormalizedSchema extends withMetaPrefixedKeys<TypeMeta> {
+	readonly meta?: TypeMeta | string
 }
 
 interface DeclarationInput {

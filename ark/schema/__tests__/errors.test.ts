@@ -1,10 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
+	type ArkErrors,
 	configureSchema,
 	rootSchema,
-	schemaScope,
-	type ArkErrors
+	schemaScope
 } from "@ark/schema"
 
 contextualize(() => {
@@ -146,7 +146,9 @@ contextualize(() => {
 			min: 2
 		})
 
-		attest(evenAtLeast2(1)).snap([
+		const out = evenAtLeast2(1) as ArkErrors
+
+		attest(out.toJSON()).snap([
 			{
 				data: 1,
 				path: [],

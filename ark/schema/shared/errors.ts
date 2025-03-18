@@ -6,6 +6,7 @@ import {
 	conflatenateAll,
 	defineProperties,
 	stringifyPath,
+	type JsonArray,
 	type JsonObject,
 	type array,
 	type merge,
@@ -252,6 +253,10 @@ export class ArkErrors
 	 */
 	get issues(): this {
 		return this
+	}
+
+	toJSON(): JsonArray {
+		return [...this.map(e => e.toJSON())]
 	}
 
 	toString(): string {

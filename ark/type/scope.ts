@@ -19,7 +19,6 @@ import {
 	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type ResolvedScopeConfig,
 	type RootKind,
 	type RootSchema,
 	type arkKind,
@@ -44,7 +43,6 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
-import type { TypeMetaInput } from "./config.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -192,13 +190,7 @@ export interface InternalScope {
 	constructor: typeof InternalScope
 }
 
-interface ResolvedTypeScopeConfig extends ResolvedScopeConfig {
-	keywords?: Record<string, TypeMetaInput>
-}
-
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	declare resolvedConfig: ResolvedTypeScopeConfig
-
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(

@@ -218,7 +218,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
 	 */
-	configure(meta: TypeMeta): this
+	configure(meta: TypeMeta.Input): this
 
 	/**
 	 * #### add description to shallow references

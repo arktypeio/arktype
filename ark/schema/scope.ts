@@ -154,7 +154,7 @@ const scopesByName: Record<string, BaseScope | undefined> = {}
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
-	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey"
+	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey" | "keywords"
 >
 
 export interface ScopeOnlyConfigOptions {
