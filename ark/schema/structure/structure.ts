@@ -836,12 +836,18 @@ const getPossibleMorph = (
 	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
 }
 
-const precompileMorphs = (js: NodeCompiler, node: Structure.Node) =>
-	js.block("(data) => ", js => {
+const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
+	const requiresContext =
+		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
+		node.sequence?.defaultValueMorphs.some(morph => morph.length === 2)
+
+	const args = `(data${requiresContext ? ", ctx" : ""})`
+
+	return js.block(`${args} => `, js => {
 		for (let i = 0; i < node.defaultable.length; i++) {
-			const { serializedKey } = node.defaultable[i]
+			const { serializedKey, defaultValueMorphRef } = node.defaultable[i]
 			js.if(`!(${serializedKey} in data)`, js =>
-				js.set(`data[${serializedKey}]`, 5)
+				js.line(`${defaultValueMorphRef}${args}`)
 			)
 		}
 
@@ -861,8 +867,9 @@ const precompileMorphs = (js: NodeCompiler, node: Structure.Node) =>
 			)
 		}
 
-		return js
+		return js.return("data")
 	})
+}
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 
