@@ -246,4 +246,25 @@ contextualize(() => {
 		)
 		attest(`${t}`).equals(`Type<${t.expression}>`)
 	})
+
+	it("valueOf", () => {
+		const fakeEnum = {
+			foo: 1,
+			bar: "bar",
+			mapped: "MAPPED"
+		} as const
+
+		// ts reverse assigns numeric values
+		// need to make sure we don't extract them at runtime
+		Object.assign(fakeEnum, {
+			1: "foo"
+		})
+
+		const t = type.valueOf(fakeEnum)
+
+		const expected = type.enumerated(1, "bar", "MAPPED")
+
+		attest<typeof expected>(t)
+		attest(t.expression).equals(expected.expression)
+	})
 })

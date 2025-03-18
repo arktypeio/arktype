@@ -30,6 +30,7 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
+	enumValues,
 	flatMorph,
 	isArray,
 	isThunk,
@@ -82,9 +83,9 @@ import {
 	type EnumeratedTypeParser,
 	type InstanceOfTypeParser,
 	type SchemaParser,
-	type TsEnumTypeParser,
 	type TypeParser,
-	type UnitTypeParser
+	type UnitTypeParser,
+	type ValueOfTypeParser
 } from "./type.ts"
 /** The convenience properties attached to `scope` */
 export type ScopeParserAttachments =
@@ -304,12 +305,8 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
 
-	tsEnum: TsEnumTypeParser<$> = tsEnum =>
-		this.units(
-			Object.values(tsEnum).filter(
-				v => typeof v === "number" || (typeof v === "string" && !(v in tsEnum))
-			)
-		) as never
+	valueOf: ValueOfTypeParser<$> = tsEnum =>
+		this.units(enumValues(tsEnum)) as never
 
 	enumerated: EnumeratedTypeParser<$> = (...values) =>
 		this.units(values) as never
@@ -393,6 +390,8 @@ export interface Scope<$ = {}> {
 
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>
+	valueOf: ValueOfTypeParser<$>
+	instanceOf: InstanceOfTypeParser<$>
 
 	type: TypeParser<$>
 

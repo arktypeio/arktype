@@ -155,6 +155,13 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 */
 	enumerated: EnumeratedTypeParser<$>
 	/**
+	 * Create a {@link Type} that is satisfied only by one of the Object.values() of the argument passed to this function.
+	 *
+	 * ⚠️ For TypeScript enum compatibility, values at numeric keys with corresponding numeric values will not be included.
+	 * @example const myEnum = type.valueOf(myTsEnum)
+	 */
+	valueOf: ValueOfTypeParser<$>
+	/**
 	 * Create a {@link Type} that is satisfied only by a value of a specific class.
 	 * @example const array = type.instanceOf(Array)
 	 */
@@ -182,7 +189,8 @@ export class InternalTypeParser extends Callable<
 				keywords: $.ambient as never,
 				unit: $.unit,
 				enumerated: $.enumerated,
-				instanceOf: $.instanceOf
+				instanceOf: $.instanceOf,
+				valueOf: $.valueOf
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
@@ -242,9 +250,9 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
-export type TsEnumTypeParser<$> = <const tsEnum extends object>(
-	tsEnum: tsEnum
-) => Type<tsEnum[keyof tsEnum], $>
+export type ValueOfTypeParser<$> = <const o extends object>(
+	o: o
+) => Type<o[keyof o], $>
 
 export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 
