@@ -9,7 +9,12 @@ import {
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
-import { BaseNode, type GettableKeyOrNode, type KeyOrKeyNode } from "../node.ts"
+import {
+	BaseNode,
+	type GettableKeyOrNode,
+	type KeyOrKeyNode,
+	type NodeSelector
+} from "../node.ts"
 import type { Predicate } from "../predicate.ts"
 import type { Divisor } from "../refinements/divisor.ts"
 import type { ExactLength } from "../refinements/exactLength.ts"
@@ -304,12 +309,12 @@ export abstract class BaseRoot<
 		return rNode.extends(this)
 	}
 
-	configure(meta: TypeMeta): this {
+	configure(meta: TypeMeta.MappableInput, selector?: NodeSelector): this {
 		return this.configureShallowDescendants(meta)
 	}
 
-	describe(description: string): this {
-		return this.configure({ description })
+	describe(description: string, selector?: NodeSelector): this {
+		return this.configure({ description }, selector)
 	}
 
 	// these should ideally be implemented in arktype since they use its syntax

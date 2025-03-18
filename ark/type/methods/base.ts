@@ -3,6 +3,7 @@ import type {
 	Disjoint,
 	JsonSchema,
 	Morph,
+	NodeSelector,
 	Predicate,
 	StandardSchemaV1,
 	TypeMeta,
@@ -218,7 +219,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
 	 */
-	configure(meta: TypeMeta.Input): this
+	configure: NodeSelector.SelectableFn<TypeMeta.MappableInput, this>
 
 	/**
 	 * #### add description to shallow references
@@ -232,7 +233,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // ArkErrors: must be a string like 'a...z' (was "albatross")
 	 * const badPattern = aToZ("albatross")
 	 */
-	describe(description: string): this
+	describe: NodeSelector.SelectableFn<string, this>
 
 	/**
 	 * #### apply undeclared key behavior

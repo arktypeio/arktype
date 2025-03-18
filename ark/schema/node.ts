@@ -570,7 +570,7 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(meta: TypeMeta): this {
+	configureShallowDescendants(meta: TypeMeta.MappableInput): this {
 		const newMeta = typeof meta === "string" ? { description: meta } : meta
 		return this.$.finalize(
 			this.transform(
@@ -626,6 +626,23 @@ const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
 	`${from} had no references matching ${printable(selector)}.`
 
 export declare namespace NodeSelector {
+	export type SelectableFn<input, returns, kind extends NodeKind = NodeKind> = {
+		// this overload must come first for object key completions to work
+		<
+			const selector extends NodeSelector.CompositeInput,
+			predicate extends GuardablePredicate<
+				NodeSelector.inferSelectKind<kind, selector>
+			>
+		>(
+			input: input,
+			selector?: NodeSelector.validateComposite<selector, predicate>
+		): returns
+		<const selector extends NodeSelector.Single>(
+			input: input,
+			selector?: selector
+		): returns
+	}
+
 	export type Single =
 		| NodeSelector.Boundary
 		| NodeSelector.Kind

@@ -118,7 +118,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly numberAllowsNaN?: boolean
 	readonly dateAllowsInvalid?: boolean
 	readonly onFail?: ArkErrors.Handler | null
-	readonly keywords?: Record<string, TypeMeta | string | undefined>
+	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<

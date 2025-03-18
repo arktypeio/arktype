@@ -98,99 +98,101 @@ contextualize(() => {
 		)
 	})
 
-	it("shallow completions", () => {
-		// @ts-expect-error
-		attest(() => t.select("")).completions({
-			"": [
-				"after",
-				"alias",
-				"before",
-				"child",
-				"divisor",
-				"domain",
-				"exactLength",
-				"index",
-				"intersection",
-				"max",
-				"maxLength",
-				"min",
-				"minLength",
-				"morph",
-				"optional",
-				"pattern",
-				"predicate",
-				"proto",
-				"references",
-				"required",
-				"self",
-				"sequence",
-				"shallow",
-				"structure",
-				"union",
-				"unit"
-			]
+	describe("completions", () => {
+		it("shallow completions", () => {
+			// @ts-expect-error
+			attest(() => t.select("")).completions({
+				"": [
+					"after",
+					"alias",
+					"before",
+					"child",
+					"divisor",
+					"domain",
+					"exactLength",
+					"index",
+					"intersection",
+					"max",
+					"maxLength",
+					"min",
+					"minLength",
+					"morph",
+					"optional",
+					"pattern",
+					"predicate",
+					"proto",
+					"references",
+					"required",
+					"self",
+					"sequence",
+					"shallow",
+					"structure",
+					"union",
+					"unit"
+				]
+			})
 		})
-	})
 
-	it("composite key completions", () => {
-		attest(() =>
-			t.select({
-				// @ts-expect-error
-				"": {} as any
-			})
-		).completions({ "": ["boundary", "kind", "method"] })
-	})
-
-	it("composite kind completions", () => {
-		attest(() =>
-			t.select({
-				// @ts-expect-error
-				kind: ""
-			})
-		).completions({
-			"": [
-				"after",
-				"alias",
-				"before",
-				"divisor",
-				"domain",
-				"exactLength",
-				"index",
-				"intersection",
-				"max",
-				"maxLength",
-				"min",
-				"minLength",
-				"morph",
-				"optional",
-				"pattern",
-				"predicate",
-				"proto",
-				"required",
-				"sequence",
-				"structure",
-				"union",
-				"unit"
-			]
+		it("composite key completions", () => {
+			attest(() =>
+				t.select({
+					// @ts-expect-error
+					"": {} as any
+				})
+			).completions({ "": ["boundary", "kind", "method"] })
 		})
-	})
 
-	it("composite boundary completions", () => {
-		attest(() =>
-			t.select({
-				// @ts-expect-error
-				boundary: ""
+		it("composite kind completions", () => {
+			attest(() =>
+				t.select({
+					// @ts-expect-error
+					kind: ""
+				})
+			).completions({
+				"": [
+					"after",
+					"alias",
+					"before",
+					"divisor",
+					"domain",
+					"exactLength",
+					"index",
+					"intersection",
+					"max",
+					"maxLength",
+					"min",
+					"minLength",
+					"morph",
+					"optional",
+					"pattern",
+					"predicate",
+					"proto",
+					"required",
+					"sequence",
+					"structure",
+					"union",
+					"unit"
+				]
 			})
-		).completions({ "": ["child", "references", "self", "shallow"] })
-	})
+		})
 
-	it("composite method completions", () => {
-		attest(() =>
-			t.select({
-				// @ts-expect-error
-				method: ""
-			})
-		).completions({ "": ["assertFilter", "assertFind", "filter", "find"] })
+		it("composite boundary completions", () => {
+			attest(() =>
+				t.select({
+					// @ts-expect-error
+					boundary: ""
+				})
+			).completions({ "": ["child", "references", "self", "shallow"] })
+		})
+
+		it("composite method completions", () => {
+			attest(() =>
+				t.select({
+					// @ts-expect-error
+					method: ""
+				})
+			).completions({ "": ["assertFilter", "assertFind", "filter", "find"] })
+		})
 	})
 
 	it("predicate narrows kind", () => {

@@ -33,9 +33,11 @@ declare global {
 export type TypeMeta = Omit<ArkEnv.meta, "onFail">
 
 export declare namespace TypeMeta {
-	export type Input = TypeMeta | TypeMeta.Mapper | string
+	export type Collapsible = TypeMeta | string
 
 	export type Mapper = (existing: Readonly<Object>) => TypeMeta
+
+	export type MappableInput = Collapsible | Mapper
 }
 
 export interface BaseNormalizedSchema extends withMetaPrefixedKeys<TypeMeta> {

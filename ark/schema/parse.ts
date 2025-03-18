@@ -147,7 +147,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
 	const inner: dict = {}
 	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
-		meta?: TypeMeta
+		meta?: TypeMeta.Collapsible
 	}
 
 	const meta: BaseMeta & dict =
