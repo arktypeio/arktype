@@ -425,11 +425,18 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
+	// import this overload comes first for object key completions
+	// to work properly
+	select<
+		const selector extends NodeSelector.CompositeInput,
+		predicate extends GuardablePredicate<
+			NodeSelector.inferSelectKind<d["kind"], selector>
+		>
+	>(
+		selector: NodeSelector.validateComposite<selector, predicate>
+	): NodeSelector.infer<d["kind"], selector>
 	select<const selector extends NodeSelector.Single>(
 		selector: selector
-	): NodeSelector.infer<d["kind"], selector>
-	select<const selector>(
-		selector: NodeSelector.validateComposite<d["kind"], selector>
 	): NodeSelector.infer<d["kind"], selector>
 	select(selector: NodeSelector): unknown {
 		const normalized: NodeSelector.Composite =
@@ -669,10 +676,9 @@ export declare namespace NodeSelector {
 
 	export type CompositeInput = Omit<Composite, "where">
 
-	export type validateComposite<selfKind extends NodeKind, selector> = {
-		[k in keyof selector]: k extends "where" ?
-			GuardablePredicate<NodeSelector.inferSelectKind<selfKind, selector>>
-		:	selector[k]
+	export type validateComposite<selector, predicate> = {
+		[k in keyof selector]: k extends "where" ? predicate
+		:	conform<selector[k], CompositeInput[k & keyof CompositeInput]>
 	}
 
 	export type infer<selfKind extends NodeKind, selector> = applyMethod<
