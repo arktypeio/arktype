@@ -541,7 +541,6 @@ export abstract class BaseNode<
 			return (transformedNode = transformedInner as never)
 
 		const transformedKeys = Object.keys(transformedInner)
-
 		const hasNoTypedKeys =
 			transformedKeys.length === 0 ||
 			(transformedKeys.length === 1 && transformedKeys[0] === "meta")

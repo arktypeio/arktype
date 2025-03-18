@@ -54,7 +54,7 @@ const tDelete = type({
 
 bench("moltar delete", () => {
 	tDelete(validData)
-}).median([79.64, "ns"])
+}).median([82.39, "ns"])
 
 // const tReject = type({
 // 	number: "number",

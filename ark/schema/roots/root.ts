@@ -309,11 +309,14 @@ export abstract class BaseRoot<
 		return rNode.extends(this)
 	}
 
-	configure(meta: TypeMeta.MappableInput, selector?: NodeSelector): this {
+	configure(
+		meta: TypeMeta.MappableInput,
+		selector: NodeSelector = "shallow"
+	): this {
 		return this.configureDescendants(meta, selector)
 	}
 
-	describe(description: string, selector?: NodeSelector): this {
+	describe(description: string, selector: NodeSelector = "shallow"): this {
 		return this.configure({ description }, selector)
 	}
 
