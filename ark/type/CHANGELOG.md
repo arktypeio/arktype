@@ -2,7 +2,21 @@
 
 ## 2.1.10
 
-`ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
+### Added a new `select` method for introspecting references of a node:
+
+NOTE: `@ark/schema`'s API is not semver stable, so this API may change slightly over time (though we will try to ensure it doesn't).
+
+```ts
+// extract deep references to exclusive `min` nodes
+const result = myType.select({
+	kind: "min",
+	where: node => node.exclusive
+})
+```
+
+These selectors can also be used to select references for configuration:
+
+### `ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
 
 ```ts
 const nEvenAtLeast2 = type({
