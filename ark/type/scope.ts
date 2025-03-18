@@ -82,6 +82,7 @@ import {
 	type EnumeratedTypeParser,
 	type InstanceOfTypeParser,
 	type SchemaParser,
+	type TsEnumTypeParser,
 	type TypeParser,
 	type UnitTypeParser
 } from "./type.ts"
@@ -302,6 +303,13 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
+
+	tsEnum: TsEnumTypeParser<$> = tsEnum =>
+		this.units(
+			Object.values(tsEnum).filter(
+				v => typeof v === "number" || (typeof v === "string" && !(v in tsEnum))
+			)
+		) as never
 
 	enumerated: EnumeratedTypeParser<$> = (...values) =>
 		this.units(values) as never

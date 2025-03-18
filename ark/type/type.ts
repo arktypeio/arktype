@@ -242,6 +242,10 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
+export type TsEnumTypeParser<$> = <const tsEnum extends object>(
+	tsEnum: tsEnum
+) => Type<tsEnum[keyof tsEnum], $>
+
 export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 
 export type SchemaParser<$> = (
