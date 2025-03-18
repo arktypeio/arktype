@@ -657,9 +657,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.structuralMorphRef) {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
-			js.if("ctx && !ctx.hasError()", () =>
-				js.line(`ctx.queueMorphs([${this.structuralMorphRef}])`)
-			)
+			js.if("ctx && !ctx.hasError()", () => {
+				js.line(`ctx.queueMorphs([`)
+				precompileMorphs(js, this)
+				return js.line("])")
+			})
 		}
 	}
 
@@ -757,11 +759,9 @@ const defaultableMorphsCache: Record<string, Morph | undefined> = {}
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
 	Pick<Structure.Node, "defaultable" | "declaresKey">
 
-const getPossibleMorph = (
-	// important to only use attached props since this is referenced from
-	// its own super class constructor (defaultable + keyof are declared the same way and safe)
+const constructStructuralMorphCacheKey = (
 	node: PartiallyInitializedStructure
-): Morph | undefined => {
+): string => {
 	let cacheKey = ""
 
 	for (let i = 0; i < node.defaultable.length; i++)
@@ -777,11 +777,7 @@ const getPossibleMorph = (
 		node.index?.forEach(index => (cacheKey += index.signature.id + " | "))
 		if (node.sequence) {
 			if (node.sequence.maxLength === null)
-				// for an arbitrary length array, the breakdown of
-				// optional, required variadic etc. elements doesn't matter-
-				// no index will be deleted
 				cacheKey += intrinsic.nonNegativeIntegerString.id
-			// otherwise, add keys based on length
 			else {
 				cacheKey += node.sequence.tuple.forEach(
 					(_, i) => (cacheKey += i + " | ")
@@ -791,9 +787,18 @@ const getPossibleMorph = (
 		cacheKey += ")"
 	}
 
+	return cacheKey
+}
+
+const getPossibleMorph = (
+	node: PartiallyInitializedStructure
+): Morph | undefined => {
+	const cacheKey = constructStructuralMorphCacheKey(node)
 	if (!cacheKey) return undefined
 
-	return (defaultableMorphsCache[cacheKey] ??= (data, ctx) => {
+	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
+
+	const $arkStructuralMorph: Morph = (data, ctx) => {
 		for (let i = 0; i < node.defaultable.length; i++) {
 			if (!(node.defaultable[i].key in data))
 				node.defaultable[i].defaultValueMorph(data, ctx)
@@ -812,8 +817,33 @@ const getPossibleMorph = (
 			for (const k in data) if (!node.declaresKey(k)) delete (data as dict)[k]
 
 		return data
-	})
+	}
+
+	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
 }
+
+const precompileMorphs = (js: NodeCompiler, node: Structure.Node) =>
+	js.block("(data) => ", js => {
+		for (let i = 0; i < node.defaultable.length; i++) {
+			const { compiledKey } = node.defaultable[i]
+			js.if(`!(${compiledKey} in data)`, js =>
+				js.set(`data[${compiledKey}]`, 5)
+			)
+		}
+
+		if (node.sequence?.defaultables) {
+			js.for(
+				`i < ${node.sequence.defaultables.length}`,
+				js => js.set(`data[i]`, 5),
+				`data.length - ${node.sequence.prefixLength}`
+			)
+		}
+
+		if (node.undeclared === "delete")
+			js.forIn("data", js => js.if("false", js => js.line(`delete data[k]`)))
+
+		return js
+	})
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 

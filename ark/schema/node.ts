@@ -201,7 +201,11 @@ export abstract class BaseNode<
 		this.rootApplyStrategy =
 			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
 				this.shallowMorphs.length === 0 ? "allows"
-				: this.shallowMorphs.every(morph => morph.length === 1) ?
+				: (
+					this.shallowMorphs.every(
+						morph => morph.length === 1 || morph.name === "$arkStructuralMorph"
+					)
+				) ?
 					this.hasKind("union") ?
 						// multiple morphs not yet supported for optimistic compilation
 						this.branches.some(branch => branch.shallowMorphs.length > 1) ?

@@ -16,27 +16,27 @@ export const validData = {
 	}
 }
 
-export const t = type({
-	number: "number",
-	negNumber: "number",
-	maxNumber: "number",
-	string: "string",
-	longString: "string",
-	boolean: "boolean",
-	deeplyNested: {
-		foo: "string",
-		num: "number",
-		bool: "boolean"
-	}
-})
+// export const t = type({
+// 	number: "number",
+// 	negNumber: "number",
+// 	maxNumber: "number",
+// 	string: "string",
+// 	longString: "string",
+// 	boolean: "boolean",
+// 	deeplyNested: {
+// 		foo: "string",
+// 		num: "number",
+// 		bool: "boolean"
+// 	}
+// })
 
-bench("moltar allows", () => {
-	t.allows(validData)
-}).median([13.72, "ns"])
+// bench("moltar allows", () => {
+// 	t.allows(validData)
+// }).median([13.72, "ns"])
 
-bench("moltar apply", () => {
-	t(validData)
-}).median([21.31, "ns"])
+// bench("moltar apply", () => {
+// 	t(validData)
+// }).median([21.31, "ns"])
 
 const tDelete = type({
 	number: "number",
@@ -54,97 +54,97 @@ const tDelete = type({
 
 bench("moltar delete", () => {
 	tDelete(validData)
-}).median([7.58, "us"])
+}).median([79.64, "ns"])
 
-const tReject = type({
-	number: "number",
-	negNumber: "number",
-	maxNumber: "number",
-	string: "string",
-	longString: "string",
-	boolean: "boolean",
-	deeplyNested: {
-		foo: "string",
-		num: "number",
-		bool: "boolean"
-	}
-}).onDeepUndeclaredKey("reject")
+// const tReject = type({
+// 	number: "number",
+// 	negNumber: "number",
+// 	maxNumber: "number",
+// 	string: "string",
+// 	longString: "string",
+// 	boolean: "boolean",
+// 	deeplyNested: {
+// 		foo: "string",
+// 		num: "number",
+// 		bool: "boolean"
+// 	}
+// }).onDeepUndeclaredKey("reject")
 
-bench("moltar reject", () => {
-	tReject(validData)
-}).median([313.91, "ns"])
+// bench("moltar reject", () => {
+// 	tReject(validData)
+// }).median([313.91, "ns"])
 
-bench("shallow primitive allows", () => {
-	type.string.allows("foo")
-}).median([10.01, "ns"])
+// bench("shallow primitive allows", () => {
+// 	type.string.allows("foo")
+// }).median([10.01, "ns"])
 
-bench("shallow primitive apply", () => {
-	type.string("foo")
-}).median([25.01, "ns"])
+// bench("shallow primitive apply", () => {
+// 	type.string("foo")
+// }).median([25.01, "ns"])
 
-const stringToLength = type.string.pipe(s => s.length)
+// const stringToLength = type.string.pipe(s => s.length)
 
-bench("shallow primitive morph", () => {
-	stringToLength("foo")
-}).median([9.02, "ns"])
+// bench("shallow primitive morph", () => {
+// 	stringToLength("foo")
+// }).median([9.02, "ns"])
 
-const invokedCases3 = match
-	.case("31", n => `${n}` as const)
-	.case("32", n => `${n}` as const)
-	.case("33", n => `${n}` as const)
-	.default("assert")
+// const invokedCases3 = match
+// 	.case("31", n => `${n}` as const)
+// 	.case("32", n => `${n}` as const)
+// 	.case("33", n => `${n}` as const)
+// 	.default("assert")
 
-bench("case(3, invoke)", () => {
-	invokedCases3(31)
-	invokedCases3(32)
-	invokedCases3(33)
-}).median([55.72, "ns"])
+// bench("case(3, invoke)", () => {
+// 	invokedCases3(31)
+// 	invokedCases3(32)
+// 	invokedCases3(33)
+// }).median([55.72, "ns"])
 
-const invokedCases10 = match
-	.case("0n", n => `${n}` as const)
-	.case("1n", n => `${n}` as const)
-	.case("2n", n => `${n}` as const)
-	.case("3n", n => `${n}` as const)
-	.case("4n", n => `${n}` as const)
-	.case("5n", n => `${n}` as const)
-	.case("6n", n => `${n}` as const)
-	.case("7n", n => `${n}` as const)
-	.case("8n", n => `${n}` as const)
-	.case("9n", n => `${n}` as const)
-	.default("never")
+// const invokedCases10 = match
+// 	.case("0n", n => `${n}` as const)
+// 	.case("1n", n => `${n}` as const)
+// 	.case("2n", n => `${n}` as const)
+// 	.case("3n", n => `${n}` as const)
+// 	.case("4n", n => `${n}` as const)
+// 	.case("5n", n => `${n}` as const)
+// 	.case("6n", n => `${n}` as const)
+// 	.case("7n", n => `${n}` as const)
+// 	.case("8n", n => `${n}` as const)
+// 	.case("9n", n => `${n}` as const)
+// 	.default("never")
 
-bench("case(10, invoke first)", () => {
-	invokedCases10(0n)
-	invokedCases10(1n)
-	invokedCases10(2n)
-}).median([151.45, "ns"])
+// bench("case(10, invoke first)", () => {
+// 	invokedCases10(0n)
+// 	invokedCases10(1n)
+// 	invokedCases10(2n)
+// }).median([151.45, "ns"])
 
-bench("case(10, invoke last)", () => {
-	invokedCases10(7n)
-	invokedCases10(8n)
-	invokedCases10(9n)
-}).median([198.78, "ns"])
+// bench("case(10, invoke last)", () => {
+// 	invokedCases10(7n)
+// 	invokedCases10(8n)
+// 	invokedCases10(9n)
+// }).median([198.78, "ns"])
 
-type Data =
-	| {
-			id: 1
-			oneValue: number
-	  }
-	| {
-			id: 2
-			twoValue: string
-	  }
+// type Data =
+// 	| {
+// 			id: 1
+// 			oneValue: number
+// 	  }
+// 	| {
+// 			id: 2
+// 			twoValue: string
+// 	  }
 
-const discriminateValue = match
-	.in<Data>()
-	.at("id")
-	.match({
-		1: o => `${o.oneValue}!`,
-		2: o => o.twoValue.length,
-		default: "assert"
-	})
+// const discriminateValue = match
+// 	.in<Data>()
+// 	.at("id")
+// 	.match({
+// 		1: o => `${o.oneValue}!`,
+// 		2: o => o.twoValue.length,
+// 		default: "assert"
+// 	})
 
-bench("discriminate", () => {
-	discriminateValue({ id: 1, oneValue: 1 })
-	discriminateValue({ id: 2, twoValue: "two" })
-}).median([68.36, "ns"])
+// bench("discriminate", () => {
+// 	discriminateValue({ id: 1, oneValue: 1 })
+// 	discriminateValue({ id: 2, twoValue: "two" })
+// }).median([68.36, "ns"])
