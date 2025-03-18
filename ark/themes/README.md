@@ -13,8 +13,8 @@ Created with love by the [ArkType](https://arktype.io) team 🥰
 
 ### Dark
 
-![theme](https://github.com/arktypeio/arktype/tree/main/ark/themes/dark.png)
+![theme](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/themes/dark.png)
 
 ### Light
 
-![theme](https://github.com/arktypeio/arktype/tree/main/ark/themes/light.png)
+![theme](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/themes/light.png)

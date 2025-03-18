@@ -131,10 +131,10 @@ export const compose: TraitComposition = ((...traits: TraitConstructor[]) => {
 }) as TraitComposition
 
 export const implement: TraitImplementation = (...args) => {
-	if (args.at(-1) instanceof Trait) return compose(...(args as never)) as never
+	if (args.at(-1) instanceof Trait) return compose(...(args as any)) as never
 
 	const implementation = args.at(-1)
-	const base = compose(...(args.slice(0, -1) as never))
+	const base = compose(...(args.slice(0, -1) as any))
 	// copy implementation last since it overrides traits
 	Object.defineProperties(
 		base.prototype,

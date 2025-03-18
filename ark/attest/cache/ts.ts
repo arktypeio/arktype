@@ -1,4 +1,4 @@
-import { fromCwd, type SourcePosition } from "@ark/fs"
+import { fromCwd, readFile, type SourcePosition } from "@ark/fs"
 import { printable, throwError, throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
@@ -28,9 +28,15 @@ export class TsServer {
 		// TS represents windows paths as `C:/Users/ssalb/...`
 		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
 
-		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path =>
-			path.startsWith(normalizedCwd)
-		)
+		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path => {
+			if (!path.startsWith(normalizedCwd)) return
+
+			// exclude empty files as they lead to a crash
+			// when createVirtualTypeScriptEnvironment is called
+			const contents = readFile(path).trim()
+
+			return contents !== ""
+		})
 
 		const system = tsvfs.createFSBackedSystem(
 			tsLibPaths.defaultMapFromNodeModules,

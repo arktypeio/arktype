@@ -1,6 +1,6 @@
 {
 	"name": "ark",
-	"description": "Optimized runtime validation for TypeScript syntax",
+	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"license": "MIT",
 	"funding": "https://github.com/sponsors/arktypeio",
 	"author": {
@@ -62,6 +62,7 @@
 		"@types/mocha": "10.0.10",
 		"@types/node": "22.12.0",
 		"c8": "10.1.3",
+		"dts-bundle-generator": "9.5.1",
 		"eslint": "9.19.0",
 		"eslint-plugin-import": "2.31.0",
 		"eslint-plugin-only-warn": "1.1.0",
@@ -69,6 +70,7 @@
 		"knip": "5.43.6",
 		"mocha": "11.1.0",
 		"prettier": "3.4.2",
+		"tsup": "8.4.0",
 		"tsx": "4.19.2",
 		"typescript": "catalog:",
 		"typescript-eslint": "8.22.0"
@@ -103,5 +105,10 @@
 		"experimentalTernaries": true,
 		"arrowParens": "avoid"
 	},
-	"packageManager": "pnpm@10.4.1"
+	"packageManager": "pnpm@10.6.2",
+	"pnpm": {
+		"overrides": {
+			"@ark/attest": "link:ark/attest"
+		}
+	}
 }

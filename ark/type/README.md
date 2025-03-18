@@ -1,5 +1,5 @@
 <h1 align="center">ArkType</h1>
-<h3 align="center"><i>Optimized runtime validation for TypeScript syntax</i></h1>
+<h3 align="center"><i>TypeScript's 1:1 validator, optimized from editor to runtime</i></h1>
 
 ArkType is a runtime validation library that parses optimized validators from familiar, type-safe syntax.
 

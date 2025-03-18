@@ -18,22 +18,23 @@ export default ({ children }: { children: ReactNode }) => (
 	>
 		<head>
 			<title>
-				ArkType Docs: Optimized runtime validation for TypeScript syntax
+				ArkType Docs: TypeScript's 1:1 validator, optimized from editor to
+				runtime
 			</title>
 			<meta property="og:title" content="ArkType Docs" />
 			<meta name="twitter:title" content="ArkType Docs" />
 
 			<meta
 				name="description"
-				content="Optimized runtime validation for TypeScript syntax"
+				content="TypeScript's 1:1 validator, optimized from editor to runtime"
 			/>
 			<meta
 				property="og:description"
-				content="Optimized runtime validation for TypeScript syntax"
+				content="TypeScript's 1:1 validator, optimized from editor to runtime"
 			/>
 			<meta
 				name="twitter:description"
-				content="Optimized runtime validation for TypeScript syntax"
+				content="TypeScript's 1:1 validator, optimized from editor to runtime"
 			/>
 
 			<meta property="og:image" content="/image/og.png" />
@@ -45,6 +46,8 @@ export default ({ children }: { children: ReactNode }) => (
 				name="keywords"
 				content="ArkType, TypeScript, JavaScript, runtime validation, schema, type-safe, validator, syntax"
 			/>
+
+			<meta name="twitter:card" content="summary_large_image" />
 
 			<link rel="icon" href="/image/favicon.svg" />
 		</head>

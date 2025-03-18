@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkType",
 	"description": "Syntax highlighting and inline errors for ArkType⛵",
-	"version": "6.0.0",
+	"version": "6.0.2",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
@@ -70,7 +70,7 @@
 					"message": "$1"
 				},
 				{
-					"matcher": "^(?:Type|Argument of type) '\"(.*)\"' is not assignable to (?:parameter of )?type '(\"\\1.*\")'\\.$",
+					"matcher": "^(?:Type|Argument of type) '\"(.*)\"' is not assignable to (?:parameter of )?type '(\"\\1.*\")'\\.",
 					"message": "$2"
 				},
 				{
