@@ -5,9 +5,11 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	printable,
 	stringifyPath,
 	throwError,
 	throwInternalError,
+	throwParseError,
 	type Dict,
 	type GuardablePredicate,
 	type JsonStructure,
@@ -44,6 +46,7 @@ import type { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
+	isNodeKind,
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
@@ -431,7 +434,39 @@ export abstract class BaseNode<
 		selector: NodeSelector.validateComposite<d["kind"], selector>
 	): NodeSelector.infer<d["kind"], selector>
 	select(selector: NodeSelector): unknown {
-		return selector as never
+		const normalized: NodeSelector.Composite =
+			typeof selector === "function" ? { where: selector }
+			: typeof selector === "string" ?
+				isNodeKind(selector) ? { kind: selector }
+				: selector in applySelectorBoundary ? { boundary: selector }
+				: throwParseError(
+						`String selector "${selector}" should be a NodeKind or NodeSelector.Boundary.`
+					)
+			:	selector
+
+		let nodes =
+			normalized.boundary ?
+				applySelectorBoundary[normalized.boundary](this)
+			:	[...this.references]
+
+		if (normalized.kind) nodes = nodes.filter(n => n.kind === normalized.kind)
+		if (normalized.where) nodes = nodes.filter(normalized.where)
+
+		if (normalized.method === undefined || normalized.method === "filter") {
+		}
+	}
+
+	private getNodesInBoundary(boundary: NodeSelector.Boundary): BaseNode[] {
+		switch (boundary) {
+			case "self":
+				return [this]
+			case "child":
+				return this.children
+			case "shallow":
+				return this.shallowReferences
+			default:
+				return throwError(`Invalid boundary ${boundary}`)
+		}
 	}
 
 	firstReference<narrowed>(
@@ -601,23 +636,60 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 
 export type NodeSelector = NodeSelector.Single | NodeSelector.Composite
 
+const applySelectorBoundary: Dict<
+	NodeSelector.Boundary,
+	(node: BaseNode) => BaseNode[]
+> = {
+	self: node => [node],
+	child: node => [...node.children],
+	shallow: node => [...node.references]
+}
+
+const NodeSelector = {
+	applyBoundary: {
+		self: node => [node],
+		child: node => [...node.children],
+		shallow: node => [...node.references]
+	} satisfies Dict<NodeSelector.Boundary, (node: BaseNode) => BaseNode[]>,
+	applyMethod: {
+		filter: nodes => nodes,
+		assertFilter: (nodes, from, selector) => {
+			if (nodes.length === 0)
+				throwError(writeSelectAssertionMessage(from, selector))
+			return nodes
+		},
+		find: nodes => nodes[0],
+		assertFind: (nodes, from, selector) => {
+			if (nodes.length === 0)
+				throwError(writeSelectAssertionMessage(from, selector))
+			return nodes[0]
+		}
+	} satisfies Dict<
+		NodeSelector.Method,
+		(nodes: BaseNode[], from: BaseNode, selector: NodeSelector) => unknown
+	>
+}
+
+const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
+	`${from} had no references matching ${printable(selector)}.`
+
 export declare namespace NodeSelector {
 	export type Single =
 		| NodeSelector.Boundary
 		| NodeSelector.Kind
 		| Predicate<BaseNode>
 
-	export type Boundary = "self" | "child" | "shallow" | "reference"
+	export type Boundary = "self" | "child" | "shallow"
 
 	export type Kind = NodeKind
 
-	export type Method = "filter" | "find" | "assert"
+	export type Method = "filter" | "assertFilter" | "find" | "assertFind"
 
 	export interface Composite {
 		method?: Method
 		boundary?: Boundary
 		kind?: Kind
-		where?: Predicate<BaseNode>
+		where?: GuardablePredicate<BaseNode>
 	}
 
 	export type CompositeInput = Omit<Composite, "where">
@@ -650,11 +722,6 @@ export declare namespace NodeSelector {
 		: selector extends KindInput<infer kind> ? kind
 		: selector extends BoundaryInput<"child"> ? selfKind | childKindOf<selfKind>
 		: NodeKind
-
-	// type inferBoundary<self extends BaseNode, b extends Boundary> =
-	// 	b extends "self" ? self : BaseNode
-
-	// type applyKind<result extends BaseNode, k extends Kind> = BaseNode extends result ?  nodeOfKind<k>
 
 	type toMethodReturn<t, m extends Method> =
 		m extends "filter" ? t[]
