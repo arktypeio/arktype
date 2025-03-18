@@ -5,11 +5,11 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	isKeyOf,
 	printable,
 	stringifyPath,
 	throwError,
 	throwInternalError,
-	throwParseError,
 	type Dict,
 	type GuardablePredicate,
 	type JsonStructure,
@@ -29,7 +29,6 @@ import type {
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
-import type { Predicate } from "./predicate.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
@@ -46,7 +45,6 @@ import type { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
-	isNodeKind,
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
@@ -437,36 +435,21 @@ export abstract class BaseNode<
 		const normalized: NodeSelector.Composite =
 			typeof selector === "function" ? { where: selector }
 			: typeof selector === "string" ?
-				isNodeKind(selector) ? { kind: selector }
-				: selector in applySelectorBoundary ? { boundary: selector }
-				: throwParseError(
-						`String selector "${selector}" should be a NodeKind or NodeSelector.Boundary.`
-					)
+				isKeyOf(selector, NodeSelector.applyBoundary) ? { boundary: selector }
+				:	{ kind: selector }
 			:	selector
 
 		let nodes =
-			normalized.boundary ?
-				applySelectorBoundary[normalized.boundary](this)
-			:	[...this.references]
+			NodeSelector.applyBoundary[normalized.boundary ?? "references"](this)
 
 		if (normalized.kind) nodes = nodes.filter(n => n.kind === normalized.kind)
 		if (normalized.where) nodes = nodes.filter(normalized.where)
 
-		if (normalized.method === undefined || normalized.method === "filter") {
-		}
-	}
-
-	private getNodesInBoundary(boundary: NodeSelector.Boundary): BaseNode[] {
-		switch (boundary) {
-			case "self":
-				return [this]
-			case "child":
-				return this.children
-			case "shallow":
-				return this.shallowReferences
-			default:
-				return throwError(`Invalid boundary ${boundary}`)
-		}
+		return NodeSelector.applyMethod[normalized.method ?? "filter"](
+			nodes,
+			this,
+			selector
+		)
 	}
 
 	firstReference<narrowed>(
@@ -636,20 +619,12 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 
 export type NodeSelector = NodeSelector.Single | NodeSelector.Composite
 
-const applySelectorBoundary: Dict<
-	NodeSelector.Boundary,
-	(node: BaseNode) => BaseNode[]
-> = {
-	self: node => [node],
-	child: node => [...node.children],
-	shallow: node => [...node.references]
-}
-
 const NodeSelector = {
 	applyBoundary: {
 		self: node => [node],
 		child: node => [...node.children],
-		shallow: node => [...node.references]
+		shallow: node => [...node.shallowReferences],
+		references: node => [...node.references]
 	} satisfies Dict<NodeSelector.Boundary, (node: BaseNode) => BaseNode[]>,
 	applyMethod: {
 		filter: nodes => nodes,
@@ -677,9 +652,9 @@ export declare namespace NodeSelector {
 	export type Single =
 		| NodeSelector.Boundary
 		| NodeSelector.Kind
-		| Predicate<BaseNode>
+		| GuardablePredicate<BaseNode>
 
-	export type Boundary = "self" | "child" | "shallow"
+	export type Boundary = "self" | "child" | "shallow" | "references"
 
 	export type Kind = NodeKind
 
@@ -696,13 +671,15 @@ export declare namespace NodeSelector {
 
 	export type validateComposite<selfKind extends NodeKind, selector> = {
 		[k in keyof selector]: k extends "where" ?
-			Predicate<NodeSelector.inferSelectKind<selfKind, selector>>
+			GuardablePredicate<NodeSelector.inferSelectKind<selfKind, selector>>
 		:	selector[k]
 	}
 
-	export type infer<selfKind extends NodeKind, selector> =
+	export type infer<selfKind extends NodeKind, selector> = applyMethod<
 		selector extends NodeSelector.PredicateInput<any, infer narrowed> ? narrowed
-		:	NodeSelector.inferSelectKind<selfKind, selector>
+		:	NodeSelector.inferSelectKind<selfKind, selector>,
+		selector
+	>
 
 	type BoundaryInput<b extends Boundary> = b | { boundary: b }
 	type KindInput<k extends Kind> = k | { kind: k }
@@ -723,10 +700,15 @@ export declare namespace NodeSelector {
 		: selector extends BoundaryInput<"child"> ? selfKind | childKindOf<selfKind>
 		: NodeKind
 
-	type toMethodReturn<t, m extends Method> =
-		m extends "filter" ? t[]
-		: m extends "find" ? t | undefined
-		: t
+	type applyMethod<t, selector> =
+		selector extends { method: infer method extends Method } ?
+			method extends "filter" ? t[]
+			: method extends "assertFilter" ? [t, ...t[]]
+			: method extends "find" ? t | undefined
+			: method extends "assertFind" ? t
+			: never
+		:	// default is "filter"
+			t[]
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
