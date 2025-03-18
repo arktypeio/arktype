@@ -59,34 +59,12 @@ const parseMinMaxProperties = (
 	return predicates
 }
 
-const parsePatternProperties = (
-	jsonSchema: JsonSchema.Object,
-	ctx: Traversal
-) => {
+const parsePatternProperties = (jsonSchema: JsonSchema.Object) => {
 	if (!("patternProperties" in jsonSchema)) return
 
 	const patternProperties = Object.entries(jsonSchema.patternProperties).map(
 		([key, value]) => [new RegExp(key), parseJsonSchema(value)] as const
 	)
-
-	// Ensure that the schema for any property is compatible with any corresponding patternProperties
-	patternProperties.forEach(([pattern, parsedPatternPropertySchema]) => {
-		Object.entries(jsonSchema.properties ?? {}).forEach(
-			([property, schemaForProperty]) => {
-				if (!pattern.test(property)) return
-
-				const parsedPropertySchema = parseJsonSchema(schemaForProperty)
-
-				if (!parsedPropertySchema.overlaps(parsedPatternPropertySchema)) {
-					ctx.reject({
-						path: [property],
-						expected: `a JSON Schema that overlaps with the schema for patternProperty ${pattern} (${parsedPatternPropertySchema.description})`,
-						actual: parsedPropertySchema.description
-					})
-				}
-			}
-		)
-	})
 
 	// NB: We don't validate compatability of schemas for overlapping patternProperties
 	// since getting the intersection of regexes is inherently non-trivial.
@@ -250,7 +228,7 @@ export const parseObjectJsonSchema: Type<
 	arktypeObjectSchema.required = requiredKeys
 	arktypeObjectSchema.optional = optionalKeys
 
-	const patternProperties = parsePatternProperties(jsonSchema, ctx)
+	const patternProperties = parsePatternProperties(jsonSchema)
 	if (patternProperties) arktypeObjectSchema.index = patternProperties
 
 	const potentialPredicates: (Predicate.Schema | undefined)[] = [
