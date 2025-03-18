@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
 // TODO: Add compound tests for arrays (e.g. maxItems AND minItems )
-// TODO: Add explicit test for negative length constraint failing (since explicitly mentioned in spec)
 
 contextualize(() => {
 	it("type array", () => {
@@ -160,7 +159,7 @@ contextualize(() => {
 		attest(tContains.allows(["foo", "bar", "baz"])).equals(false)
 	})
 
-	it("maxItems", () => {
+	it("maxItems (positive)", () => {
 		const tMaxItems = parseJsonSchema({
 			type: "array",
 			maxItems: 5
@@ -169,13 +168,15 @@ contextualize(() => {
 			proto: "Array",
 			maxLength: 5
 		})
+	})
 
+	it("maxItems (negative)", () => {
 		attest(() => parseJsonSchema({ type: "array", maxItems: -1 })).throws(
-			"maxItems must be non-negative"
+			"TraversalError: maxItems must be non-negative"
 		)
 	})
 
-	it("minItems", () => {
+	it("minItems (positive)", () => {
 		const tMinItems = parseJsonSchema({
 			type: "array",
 			minItems: 5
@@ -184,9 +185,11 @@ contextualize(() => {
 			proto: "Array",
 			minLength: 5
 		})
+	})
 
+	it("minItems (negative)", () => {
 		attest(() => parseJsonSchema({ type: "array", minItems: -1 })).throws(
-			"minItems must be non-negative"
+			"TraversalError: minItems must be non-negative"
 		)
 	})
 
