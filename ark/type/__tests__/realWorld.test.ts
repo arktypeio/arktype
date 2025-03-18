@@ -573,18 +573,22 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	it("narrowed quoted description", () => {
 		const t = type("string")
-			.narrow(() => true)
+			.narrow(function _narrowedQuoteDescription() {
+				return true
+			})
 			.describe('This will "fail"')
 
 		attest<string>(t.t)
 
-		const serializedPredicate =
-			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
-
 		attest(t.json).snap({
-			meta: 'This will "fail"',
-			domain: { meta: 'This will "fail"', domain: "string" },
-			predicate: [{ meta: 'This will "fail"', predicate: serializedPredicate }]
+			domain: { domain: "string", meta: 'This will "fail"' },
+			predicate: [
+				{
+					predicate: "$ark._narrowedQuoteDescription",
+					meta: 'This will "fail"'
+				}
+			],
+			meta: 'This will "fail"'
 		})
 	})
 

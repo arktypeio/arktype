@@ -114,23 +114,20 @@ contextualize(() => {
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
 			.pipe(s => s.length)
-			.narrow((n): n is 5 => n === 5)
-
-		const morphRef = t.internal.assertHasKind("morph").serializedMorphs[0]
-
-		const predicateRef =
-			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+			.narrow(function _narrowMorphOutput(n): n is 5 {
+				return n === 5
+			})
 
 		attest(t.json).snap({
 			in: "string",
-			morphs: [morphRef, { predicate: [predicateRef] }]
+			morphs: ["$ark.fn11", { predicate: ["$ark._narrowMorphOutput"] }]
 		})
 
 		attest<(In: string) => Out<5>>(t.t)
 
 		attest(t("12345")).snap(5)
 		attest(t("1234").toString()).snap(
-			"must be valid according to an anonymous predicate (was 4)"
+			"must be valid according to _narrowMorphOutput (was 4)"
 		)
 	})
 

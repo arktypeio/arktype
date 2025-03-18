@@ -459,36 +459,6 @@ export abstract class BaseNode<
 		)
 	}
 
-	firstReference<narrowed>(
-		filter: GuardablePredicate<BaseNode, conform<narrowed, BaseNode>>
-	): narrowed | undefined {
-		return this.references.find(n => n !== this && filter(n)) as never
-	}
-
-	firstReferenceOrThrow<narrowed extends BaseNode>(
-		filter: GuardablePredicate<BaseNode, narrowed>
-	): narrowed {
-		return (
-			this.firstReference(filter) ??
-			throwError(`${this.id} had no references matching predicate ${filter}`)
-		)
-	}
-
-	firstReferenceOfKind<kind extends NodeKind>(
-		kind: kind
-	): nodeOfKind<kind> | undefined {
-		return this.firstReference(node => node.hasKind(kind))
-	}
-
-	firstReferenceOfKindOrThrow<kind extends NodeKind>(
-		kind: kind
-	): nodeOfKind<kind> {
-		return (
-			this.firstReference(node => node.kind === kind) ??
-			throwError(`${this.id} had no ${kind} references`)
-		)
-	}
-
 	transform<mapper extends DeepNodeTransformation>(
 		mapper: mapper,
 		opts?: DeepNodeTransformOptions
