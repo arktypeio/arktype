@@ -17,7 +17,8 @@ import {
 	type array,
 	type conform,
 	type listable,
-	type mutable
+	type mutable,
+	type requireKeys
 } from "@ark/util"
 import type { BaseConstraint } from "./constraint.ts"
 import type {
@@ -439,13 +440,7 @@ export abstract class BaseNode<
 		selector: selector
 	): NodeSelector.infer<d["kind"], selector>
 	select(selector: NodeSelector): unknown {
-		const normalized: NodeSelector.Composite =
-			typeof selector === "function" ? { where: selector }
-			: typeof selector === "string" ?
-				isKeyOf(selector, NodeSelector.applyBoundary) ? { boundary: selector }
-				:	{ kind: selector }
-			:	selector
-
+		const normalized = NodeSelector.normalize(selector)
 		let nodes =
 			NodeSelector.applyBoundary[normalized.boundary ?? "references"](this)
 
@@ -465,15 +460,22 @@ export abstract class BaseNode<
 	):
 		| nodeOfKind<reducibleKindOf<this["kind"]>>
 		| Extract<ReturnType<mapper>, null> {
-		return this._transform(mapper, {
+		return this._transform(mapper, this._createTransformContext(opts)) as never
+	}
+
+	protected _createTransformContext(
+		opts: DeepNodeTransformOptions | undefined
+	): DeepNodeTransformContext {
+		return {
 			...opts,
+			root: this,
 			seen: {},
 			path: [],
 			parseOptions: {
 				prereduced: opts?.prereduced ?? false
 			},
 			undeclaredKeyHandling: undefined
-		}) as never
+		}
 	}
 
 	protected _transform(
@@ -570,15 +572,42 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(meta: TypeMeta.MappableInput): this {
-		const newMeta = typeof meta === "string" ? { description: meta } : meta
-		return this.$.finalize(
-			this.transform(
-				(kind, inner) => ({ ...inner, meta: { ...inner.meta, ...newMeta } }),
-				{
-					shouldTransform: node => node.kind !== "structure"
-				}
+	configureDescendants(
+		meta: TypeMeta.MappableInput,
+		selector: NodeSelector = "references"
+	): this {
+		const normalized = NodeSelector.normalize(selector)
+
+		const mapper = (
+			typeof meta === "string" ?
+				(kind, inner) => ({
+					...inner,
+					meta: { ...inner.meta, description: meta }
+				})
+			: typeof meta === "function" ?
+				(kind, inner) => ({ ...inner, meta: meta(inner.meta) })
+			:	(kind, inner) => ({
+					...inner,
+					meta: { ...inner.meta, ...meta }
+				})) satisfies DeepNodeTransformation
+
+		if (normalized.boundary === "self") {
+			return this.$.node(
+				this.kind,
+				mapper(this.kind, { ...this.inner, meta: this.meta })
 			) as never
+		}
+
+		const shouldTransform: ShouldTransformFn =
+			normalized.boundary === "child" ?
+				(node, ctx) => ctx.root.children.includes(node as never)
+			: normalized.boundary === "shallow" ? node => node.kind !== "structure"
+			: () => true
+
+		return this.$.finalize(
+			this.transform(mapper, {
+				shouldTransform
+			}) as never
 		)
 	}
 }
@@ -619,7 +648,15 @@ const NodeSelector = {
 	} satisfies Dict<
 		NodeSelector.Method,
 		(nodes: BaseNode[], from: BaseNode, selector: NodeSelector) => unknown
-	>
+	>,
+	normalize: (selector: NodeSelector): NodeSelector.Normalized =>
+		typeof selector === "function" ?
+			{ boundary: "references", method: "filter", where: selector }
+		: typeof selector === "string" ?
+			isKeyOf(selector, NodeSelector.applyBoundary) ?
+				{ method: "filter", boundary: selector }
+			:	{ boundary: "references", method: "filter", kind: selector }
+		:	{ boundary: "references", method: "filter", ...selector }
 }
 
 const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
@@ -660,6 +697,8 @@ export declare namespace NodeSelector {
 		kind?: Kind
 		where?: GuardablePredicate<BaseNode>
 	}
+
+	export type Normalized = requireKeys<Composite, "method" | "boundary">
 
 	export type CompositeInput = Omit<Composite, "where">
 
@@ -749,6 +788,7 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
+	root: BaseNode
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: BaseParseOptions

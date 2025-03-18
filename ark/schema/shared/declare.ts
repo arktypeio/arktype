@@ -35,7 +35,7 @@ export type TypeMeta = Omit<ArkEnv.meta, "onFail">
 export declare namespace TypeMeta {
 	export type Collapsible = TypeMeta | string
 
-	export type Mapper = (existing: Readonly<Object>) => TypeMeta
+	export type Mapper = (existing: Readonly<TypeMeta>) => TypeMeta
 
 	export type MappableInput = Collapsible | Mapper
 }

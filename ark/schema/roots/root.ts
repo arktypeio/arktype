@@ -310,7 +310,7 @@ export abstract class BaseRoot<
 	}
 
 	configure(meta: TypeMeta.MappableInput, selector?: NodeSelector): this {
-		return this.configureShallowDescendants(meta)
+		return this.configureDescendants(meta, selector)
 	}
 
 	describe(description: string, selector?: NodeSelector): this {

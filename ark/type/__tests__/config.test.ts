@@ -280,7 +280,23 @@ contextualize(() => {
 		it("self", () => {
 			const t = base.configure("root-only", "self")
 
-			attest(t.json).snap()
+			attest(t.json).snap({
+				required: [{ key: "foo", value: "string" }],
+				optional: [
+					{
+						key: "bar",
+						value: {
+							required: [
+								{ key: "nested", value: "string" },
+								{ key: "num", value: "number" }
+							],
+							domain: "object"
+						}
+					}
+				],
+				domain: "object",
+				meta: "root-only"
+			})
 		})
 
 		describe("completions", () => {
