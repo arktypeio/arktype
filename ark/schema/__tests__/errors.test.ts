@@ -139,24 +139,26 @@ contextualize(() => {
 		)
 	})
 
+	const nEvenAtLeast2 = rootSchema({
+		domain: "object",
+		required: {
+			key: "n",
+			value: { domain: "number", divisor: 2, min: 2 }
+		}
+	})
+
+	const errors = nEvenAtLeast2({ n: 1 }) as ArkErrors
+
 	it("serialization", () => {
-		const evenAtLeast2 = rootSchema({
-			domain: "number",
-			divisor: 2,
-			min: 2
-		})
-
-		const out = evenAtLeast2(1) as ArkErrors
-
-		attest(out.toJSON()).snap([
+		attest(errors.toJSON()).snap([
 			{
 				data: 1,
-				path: [],
+				path: ["n"],
 				code: "intersection",
 				errors: [
 					{
 						data: 1,
-						path: [],
+						path: ["n"],
 						code: "divisor",
 						description: "even",
 						meta: {},
@@ -164,11 +166,11 @@ contextualize(() => {
 						expected: "even",
 						actual: "1",
 						problem: "must be even (was 1)",
-						message: "must be even (was 1)"
+						message: "n must be even (was 1)"
 					},
 					{
 						data: 1,
-						path: [],
+						path: ["n"],
 						code: "min",
 						description: "at least 2",
 						meta: {},
@@ -176,14 +178,51 @@ contextualize(() => {
 						expected: "at least 2",
 						actual: "1",
 						problem: "must be at least 2 (was 1)",
-						message: "must be at least 2 (was 1)"
+						message: "n must be at least 2 (was 1)"
 					}
 				],
 				expected: "  ◦ even\n  ◦ at least 2",
 				actual: "1",
 				problem: "(1) must be...\n  ◦ even\n  ◦ at least 2",
-				message: "(1) must be...\n  ◦ even\n  ◦ at least 2"
+				message: "n (1) must be...\n  ◦ even\n  ◦ at least 2"
 			}
 		])
+	})
+
+	it("flatByPath", () => {
+		attest(errors.flatByPath).snap({
+			n: [
+				{
+					data: 1,
+					path: ["n"],
+					code: "divisor",
+					description: "even",
+					meta: {},
+					rule: 2,
+					expected: "even",
+					actual: "1",
+					problem: "must be even (was 1)",
+					message: "n must be even (was 1)"
+				},
+				{
+					data: 1,
+					path: ["n"],
+					code: "min",
+					description: "at least 2",
+					meta: {},
+					rule: 2,
+					expected: "at least 2",
+					actual: "1",
+					problem: "must be at least 2 (was 1)",
+					message: "n must be at least 2 (was 1)"
+				}
+			]
+		})
+	})
+
+	it("flatProblemsByPath", () => {
+		attest(errors.flatProblemsByPath).snap({
+			n: ["must be even (was 1)", "must be at least 2 (was 1)"]
+		})
 	})
 })

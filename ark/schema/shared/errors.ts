@@ -5,6 +5,7 @@ import {
 	append,
 	conflatenateAll,
 	defineProperties,
+	flatMorph,
 	stringifyPath,
 	type JsonArray,
 	type JsonObject,
@@ -124,6 +125,10 @@ export class ArkError<
 		return typeof config === "function" ? config(this as never) : config
 	}
 
+	get flat(): ArkError[] {
+		return this.hasCode("intersection") ? [...this.errors] : [this as never]
+	}
+
 	toJSON(): JsonObject {
 		return {
 			data: this.data,
@@ -170,6 +175,23 @@ export class ArkErrors
 	 * Errors by a pathString representing their location.
 	 */
 	byPath: Record<string, ArkError> = Object.create(null)
+
+	/**
+	 * {@link byPath} flattened so that each value is an array of ArkError instances at that path.
+	 *
+	 * ✅ Since "intersection" errors will be flattened to their constituent `.errors`,
+	 * they will never be directly present in this representation.
+	 */
+	get flatByPath(): Record<string, ArkError[]> {
+		return flatMorph(this.byPath, (k, v) => [k, v.flat])
+	}
+
+	/**
+	 * {@link byPath} flattened so that each value is an array of problem strings at that path.
+	 */
+	get flatProblemsByPath(): Record<string, string[]> {
+		return flatMorph(this.byPath, (k, v) => [k, v.flat.map(e => e.problem)])
+	}
 
 	/**
 	 * All pathStrings at which errors are present mapped to the errors occuring
