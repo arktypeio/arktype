@@ -623,7 +623,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		(this.sequence !== undefined &&
 			$ark.intrinsic.nonNegativeIntegerString.allows(k))
 
-	declaresKeyRef: RegisteredReference = registeredReference(this.declaresKey)
+	protected _compileDeclaresKey(js: NodeCompiler): string {
+		const parts: string[] = []
+		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
+
+		this.index?.forEach(index =>
+			parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
+		)
+
+		if (this.sequence)
+			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
+
+		return parts.join(" || ")
+	}
 
 	get structuralMorph(): Morph | undefined {
 		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
@@ -675,7 +687,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 
 		if (this.undeclared === "reject") {
-			js.if(`!${this.declaresKeyRef}(k)`, () => {
+			js.if(`!(${this._compileDeclaresKey(js)})`, () => {
 				if (js.traversalKind === "Allows") return js.return(false)
 				return js
 					.line(
