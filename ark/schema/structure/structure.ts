@@ -623,7 +623,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		(this.sequence !== undefined &&
 			$ark.intrinsic.nonNegativeIntegerString.allows(k))
 
-	protected _compileDeclaresKey(js: NodeCompiler): string {
+	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
 		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
 
@@ -634,7 +634,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence)
 			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
 
-		return parts.join(" || ")
+		// if parts is empty, this is a structure like { "+": "reject" }
+		// that declares no keys, so return false
+		return parts.join(" || ") || "false"
 	}
 
 	get structuralMorph(): Morph | undefined {
@@ -837,9 +839,9 @@ const getPossibleMorph = (
 const precompileMorphs = (js: NodeCompiler, node: Structure.Node) =>
 	js.block("(data) => ", js => {
 		for (let i = 0; i < node.defaultable.length; i++) {
-			const { compiledKey } = node.defaultable[i]
-			js.if(`!(${compiledKey} in data)`, js =>
-				js.set(`data[${compiledKey}]`, 5)
+			const { serializedKey } = node.defaultable[i]
+			js.if(`!(${serializedKey} in data)`, js =>
+				js.set(`data[${serializedKey}]`, 5)
 			)
 		}
 
@@ -851,8 +853,13 @@ const precompileMorphs = (js: NodeCompiler, node: Structure.Node) =>
 			)
 		}
 
-		if (node.undeclared === "delete")
-			js.forIn("data", js => js.if("false", js => js.line(`delete data[k]`)))
+		if (node.undeclared === "delete") {
+			js.forIn("data", js =>
+				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
+					js.line(`delete data[k]`)
+				)
+			)
+		}
 
 		return js
 	})
