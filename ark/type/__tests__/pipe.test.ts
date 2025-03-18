@@ -186,7 +186,10 @@ contextualize(() => {
 		const t = type("0 | 1 | 2").pipe(n => n + 1)
 		attest<(In: 0 | 1 | 2) => Out<number>>(t.t)
 
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		attest(
+			t.internal.select({ method: "assertFind", kind: "union" })
+				.discriminantJson
+		).snap({
 			kind: "unit",
 			path: [],
 			cases: { "0": true, "1": true, "2": true }

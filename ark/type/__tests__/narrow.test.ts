@@ -113,21 +113,26 @@ contextualize(() => {
 
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
-			.pipe(s => s.length)
-			.narrow(function _narrowMorphOutput(n): n is 5 {
+			.pipe(function _narrowMorphOutputMorph(s) {
+				return s.length
+			})
+			.narrow(function _narrowMorphOutputNarrow(n): n is 5 {
 				return n === 5
 			})
 
 		attest(t.json).snap({
 			in: "string",
-			morphs: ["$ark.fn11", { predicate: ["$ark._narrowMorphOutput"] }]
+			morphs: [
+				"$ark._narrowMorphOutputMorph",
+				{ predicate: ["$ark._narrowMorphOutputNarrow"] }
+			]
 		})
 
 		attest<(In: string) => Out<5>>(t.t)
 
 		attest(t("12345")).snap(5)
 		attest(t("1234").toString()).snap(
-			"must be valid according to _narrowMorphOutput (was 4)"
+			"must be valid according to _narrowMorphOutputNarrow (was 4)"
 		)
 	})
 
