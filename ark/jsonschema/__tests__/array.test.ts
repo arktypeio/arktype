@@ -1,8 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
-// TODO: Add compound tests for arrays (e.g. maxItems AND minItems )
-
 contextualize(() => {
 	it("type array", () => {
 		const t = parseJsonSchema({ type: "array" })

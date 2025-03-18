@@ -1,8 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
-// TODO: Add compound tests for objects (e.g. 'maxProperties' AND 'minProperties')
-
 contextualize(() => {
 	it("type object", () => {
 		const t = parseJsonSchema({ type: "object" })
