@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { parseJsonSchema } from "@ark/jsonschema"
 
 // TODO: Add compound tests for objects (e.g. 'maxProperties' AND 'minProperties')
-// TODO: Add tests for propertyNames
 
 contextualize(() => {
 	it("type object", () => {
@@ -113,5 +112,39 @@ contextualize(() => {
 		attest(tPatternProperties.allows({ foo: "bar" })).equals(true)
 		attest(tPatternProperties.allows({ foo: 1 })).equals(false)
 		attest(tPatternProperties.allows({ "123": "bar" })).equals(true) // true since allows additional properties
+	})
+
+	it("propertyNames", () => {
+		const tPropertyNames = parseJsonSchema({
+			type: "object",
+			propertyNames: { type: "string", minLength: 5 }
+		})
+		attest(tPropertyNames.json).snap({
+			domain: "object",
+			predicate: ["$ark.jsonSchemaObjectPropertyNamesValidator"]
+		})
+		attest(tPropertyNames.allows({})).equals(true)
+		attest(
+			tPropertyNames.allows({ foobar: "key that adheres to propertyNames" })
+		).equals(true)
+		attest(
+			tPropertyNames.allows({ foo: "key that DOESN'T adhere to propertyNames" })
+		).equals(false)
+
+		attest(() =>
+			// @ts-expect-error
+			parseJsonSchema({
+				type: "object",
+				propertyNames: { type: "number" }
+			})
+		)
+			.throws(
+				"TraversalError: propertyNames must be a schema for validating a string (was Type<number>)"
+			)
+			.type.errors.snap(
+				`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean'.` +
+					`The types of 'propertyNames.type' are incompatible between these types.` +
+					`Type '"number"' is not assignable to type '"string"'.`
+			)
 	})
 })
