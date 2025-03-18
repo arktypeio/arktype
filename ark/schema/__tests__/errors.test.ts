@@ -138,4 +138,50 @@ contextualize(() => {
 			"must be a symbol (was a string)"
 		)
 	})
+
+	it("serialization", () => {
+		const evenAtLeast2 = rootSchema({
+			domain: "number",
+			divisor: 2,
+			min: 2
+		})
+
+		attest(evenAtLeast2(1)).snap([
+			{
+				data: 1,
+				path: [],
+				code: "intersection",
+				errors: [
+					{
+						data: 1,
+						path: [],
+						code: "divisor",
+						description: "even",
+						meta: {},
+						rule: 2,
+						expected: "even",
+						actual: "1",
+						problem: "must be even (was 1)",
+						message: "must be even (was 1)"
+					},
+					{
+						data: 1,
+						path: [],
+						code: "min",
+						description: "at least 2",
+						meta: {},
+						rule: 2,
+						expected: "at least 2",
+						actual: "1",
+						problem: "must be at least 2 (was 1)",
+						message: "must be at least 2 (was 1)"
+					}
+				],
+				expected: "  ◦ even\n  ◦ at least 2",
+				actual: "1",
+				problem: "(1) must be...\n  ◦ even\n  ◦ at least 2",
+				message: "(1) must be...\n  ◦ even\n  ◦ at least 2"
+			}
+		])
+	})
 })
