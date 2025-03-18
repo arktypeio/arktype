@@ -247,8 +247,19 @@ export abstract class BaseNode<
 
 			case "optimistic":
 				this.contextFreeMorph = this.shallowMorphs[0] as never
+				const clone = this.$.resolvedConfig.clone
 				return (data, onFail) => {
-					if (this.allows(data)) return this.contextFreeMorph!(data)
+					if (this.allows(data)) {
+						return this.contextFreeMorph!(
+							(
+								clone &&
+									((typeof data === "object" && data !== null) ||
+										typeof data === "function")
+							) ?
+								clone(data)
+							:	data
+						)
+					}
 
 					const ctx = new Traversal(data, this.$.resolvedConfig)
 					this.traverseApply(data, ctx)

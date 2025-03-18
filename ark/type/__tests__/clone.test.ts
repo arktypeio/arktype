@@ -76,10 +76,9 @@ contextualize(() => {
 		attest(out).unknown.snap({ foo: "bar", customCloned: true })
 	})
 
-	// // process.env is an exotic object- ensure it is correctly cloned
-	// // https://discord.com/channels/957797212103016458/1116551844710330458
+	// process.env is an exotic object- ensure it is correctly cloned
+	// https://discord.com/channels/957797212103016458/1116551844710330458
 	it("can clone process.env", () => {
-		throw new Error("fix")
 		const env = type({
 			"+": "delete",
 			TZ: "'America/New_York'"

@@ -38,23 +38,26 @@ export const validData = {
 // 	t(validData)
 // }).median([21.31, "ns"])
 
-const tDelete = type({
-	number: "number",
-	negNumber: "number",
-	maxNumber: "number",
-	string: "string",
-	longString: "string",
-	boolean: "boolean",
-	deeplyNested: {
-		foo: "string",
-		num: "number",
-		bool: "boolean"
-	}
-}).onDeepUndeclaredKey("delete")
+const tDelete = type
+	.scope({}, { clone: false })
+	.type({
+		number: "number",
+		negNumber: "number",
+		maxNumber: "number",
+		string: "string",
+		longString: "string",
+		boolean: "boolean",
+		deeplyNested: {
+			foo: "string",
+			num: "number",
+			bool: "boolean"
+		}
+	})
+	.onDeepUndeclaredKey("delete")
 
 bench("moltar delete", () => {
 	tDelete(validData)
-}).median([82.39, "ns"])
+}).median()
 
 // const tReject = type({
 // 	number: "number",
