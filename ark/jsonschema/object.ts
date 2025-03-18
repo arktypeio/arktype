@@ -5,7 +5,7 @@ import {
 	type Traversal
 } from "@ark/schema"
 import { getDuplicatesOf, printable } from "@ark/util"
-import type { JsonSchema, Out, Type } from "arktype"
+import { type, type JsonSchema, type Out, type Type } from "arktype"
 
 import { parseJsonSchema } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
@@ -82,14 +82,11 @@ const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
 
 	const propertyNamesValidator = parseJsonSchema(jsonSchema.propertyNames)
 
-	if (
-		"domain" in propertyNamesValidator.json &&
-		propertyNamesValidator.json.domain !== "string"
-	) {
+	if (!propertyNamesValidator.extends(type.string)) {
 		ctx.reject({
 			path: ["propertyNames"],
 			expected: "a schema for validating a string",
-			actual: `a schema for validating a ${printable(propertyNamesValidator.json.domain)}`
+			actual: `${propertyNamesValidator.toString()}`
 		})
 	}
 
