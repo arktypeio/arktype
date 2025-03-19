@@ -303,7 +303,7 @@ contextualize(() => {
 			// based on completion tests at ark/schema/select.test.ts
 			it("shallow completions", () => {
 				// @ts-expect-error
-				attest(() => base.configure("", "")).completions({
+				attest(() => base.configure("foo", "")).completions({
 					"": [
 						"after",
 						"alias",
@@ -337,7 +337,7 @@ contextualize(() => {
 
 			it("composite key completions", () => {
 				attest(() =>
-					base.configure("", {
+					base.configure("foo", {
 						// @ts-expect-error
 						"": {} as any
 					})
@@ -346,7 +346,7 @@ contextualize(() => {
 
 			it("composite kind completions", () => {
 				attest(() =>
-					base.configure("", {
+					base.configure("foo", {
 						// @ts-expect-error
 						kind: ""
 					})
@@ -380,7 +380,7 @@ contextualize(() => {
 
 			it("composite boundary completions", () => {
 				attest(() =>
-					base.configure("", {
+					base.configure("foo", {
 						// @ts-expect-error
 						boundary: ""
 					})
@@ -389,7 +389,7 @@ contextualize(() => {
 
 			it("composite method completions", () => {
 				attest(() =>
-					base.configure("", {
+					base.configure("foo", {
 						// @ts-expect-error
 						method: ""
 					})

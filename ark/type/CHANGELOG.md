@@ -16,6 +16,17 @@ const result = myType.select({
 
 These selectors can also be used to select references for configuration:
 
+```ts
+// configure string node references
+const result = myType.configure(
+	{ description: "a referenced string" },
+	{
+		kind: "domain",
+		where: node => node.domain === "string"
+	}
+)
+```
+
 ### `ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
 
 ```ts

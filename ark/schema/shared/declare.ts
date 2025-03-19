@@ -41,7 +41,7 @@ export declare namespace TypeMeta {
 }
 
 export interface BaseNormalizedSchema extends withMetaPrefixedKeys<TypeMeta> {
-	readonly meta?: TypeMeta | string
+	readonly meta?: ArkEnv.meta | string
 }
 
 interface DeclarationInput {
