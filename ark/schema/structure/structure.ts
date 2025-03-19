@@ -623,7 +623,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		(this.sequence !== undefined &&
 			$ark.intrinsic.nonNegativeIntegerString.allows(k))
 
-	declaresKeyRef: RegisteredReference = registeredReference(this.declaresKey)
+	_compileDeclaresKey(js: NodeCompiler): string {
+		const parts: string[] = []
+		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
+
+		this.index?.forEach(index =>
+			parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
+		)
+
+		if (this.sequence)
+			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
+
+		// if parts is empty, this is a structure like { "+": "reject" }
+		// that declares no keys, so return false
+		return parts.join(" || ") || "false"
+	}
 
 	get structuralMorph(): Morph | undefined {
 		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
@@ -657,9 +671,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.structuralMorphRef) {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
-			js.if("ctx && !ctx.hasError()", () =>
-				js.line(`ctx.queueMorphs([${this.structuralMorphRef}])`)
-			)
+			js.if("ctx && !ctx.hasError()", () => {
+				js.line(`ctx.queueMorphs([`)
+				precompileMorphs(js, this)
+				return js.line("])")
+			})
 		}
 	}
 
@@ -673,7 +689,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 
 		if (this.undeclared === "reject") {
-			js.if(`!${this.declaresKeyRef}(k)`, () => {
+			js.if(`!(${this._compileDeclaresKey(js)})`, () => {
 				if (js.traversalKind === "Allows") return js.return(false)
 				return js
 					.line(
@@ -757,11 +773,9 @@ const defaultableMorphsCache: Record<string, Morph | undefined> = {}
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
 	Pick<Structure.Node, "defaultable" | "declaresKey">
 
-const getPossibleMorph = (
-	// important to only use attached props since this is referenced from
-	// its own super class constructor (defaultable + keyof are declared the same way and safe)
+const constructStructuralMorphCacheKey = (
 	node: PartiallyInitializedStructure
-): Morph | undefined => {
+): string => {
 	let cacheKey = ""
 
 	for (let i = 0; i < node.defaultable.length; i++)
@@ -777,11 +791,7 @@ const getPossibleMorph = (
 		node.index?.forEach(index => (cacheKey += index.signature.id + " | "))
 		if (node.sequence) {
 			if (node.sequence.maxLength === null)
-				// for an arbitrary length array, the breakdown of
-				// optional, required variadic etc. elements doesn't matter-
-				// no index will be deleted
 				cacheKey += intrinsic.nonNegativeIntegerString.id
-			// otherwise, add keys based on length
 			else {
 				cacheKey += node.sequence.tuple.forEach(
 					(_, i) => (cacheKey += i + " | ")
@@ -791,9 +801,18 @@ const getPossibleMorph = (
 		cacheKey += ")"
 	}
 
+	return cacheKey
+}
+
+const getPossibleMorph = (
+	node: PartiallyInitializedStructure
+): Morph | undefined => {
+	const cacheKey = constructStructuralMorphCacheKey(node)
 	if (!cacheKey) return undefined
 
-	return (defaultableMorphsCache[cacheKey] ??= (data, ctx) => {
+	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
+
+	const $arkStructuralMorph: Morph = (data, ctx) => {
 		for (let i = 0; i < node.defaultable.length; i++) {
 			if (!(node.defaultable[i].key in data))
 				node.defaultable[i].defaultValueMorph(data, ctx)
@@ -812,6 +831,43 @@ const getPossibleMorph = (
 			for (const k in data) if (!node.declaresKey(k)) delete (data as dict)[k]
 
 		return data
+	}
+
+	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
+}
+
+const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
+	const requiresContext =
+		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
+		node.sequence?.defaultValueMorphs.some(morph => morph.length === 2)
+
+	const args = `(data${requiresContext ? ", ctx" : ""})`
+
+	return js.block(`${args} => `, js => {
+		for (let i = 0; i < node.defaultable.length; i++) {
+			const { serializedKey, defaultValueMorphRef } = node.defaultable[i]
+			js.if(`!(${serializedKey} in data)`, js =>
+				js.line(`${defaultValueMorphRef}${args}`)
+			)
+		}
+
+		if (node.sequence?.defaultables) {
+			js.for(
+				`i < ${node.sequence.defaultables.length}`,
+				js => js.set(`data[i]`, 5),
+				`data.length - ${node.sequence.prefixLength}`
+			)
+		}
+
+		if (node.undeclared === "delete") {
+			js.forIn("data", js =>
+				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
+					js.line(`delete data[k]`)
+				)
+			)
+		}
+
+		return js.return("data")
 	})
 }
 

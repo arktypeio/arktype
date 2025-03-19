@@ -93,7 +93,8 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			onUndeclaredKey: "ignore",
 			numberAllowsNaN: false,
 			dateAllowsInvalid: false,
-			onFail: null
+			onFail: null,
+			keywords: {}
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )

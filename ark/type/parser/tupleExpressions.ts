@@ -6,6 +6,7 @@ import {
 	type BaseRoot,
 	type Morph,
 	type Predicate,
+	type TypeMeta,
 	type unwrapDefault
 } from "@ark/schema"
 import {
@@ -27,7 +28,6 @@ import type {
 	Out,
 	withDefault
 } from "../attributes.ts"
-import type { TypeMetaInput } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
 import {
 	shallowDefaultableMessage,
@@ -113,7 +113,7 @@ export type validateIndexOneExpression<
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "|>" ? validateDefinition<def[2], $, args>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
-			: def[1] extends "@" ? TypeMetaInput
+			: def[1] extends "@" ? TypeMeta.MappableInput
 			: validateDefinition<def[2], $, args>
 		]
 
@@ -197,8 +197,9 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 }
 
 const parseAttributeTuple: IndexOneParser<"@"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureShallowDescendants(
-		def[2] as never
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureDescendants(
+		def[2] as never,
+		"shallow"
 	)
 
 export type IndexOneExpression<token extends string = IndexOneOperator> =

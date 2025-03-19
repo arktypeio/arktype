@@ -1,5 +1,79 @@
 # arktype
 
+## 2.1.10
+
+### Added a new `select` method for introspecting references of a node:
+
+NOTE: `@ark/schema`'s API is not semver stable, so this API may change slightly over time (though we will try to ensure it doesn't).
+
+```ts
+// extract deep references to exclusive `min` nodes
+const result = myType.select({
+	kind: "min",
+	where: node => node.exclusive
+})
+```
+
+These selectors can also be used to select references for configuration:
+
+```ts
+// configure string node references
+const result = myType.configure(
+	{ description: "a referenced string" },
+	{
+		kind: "domain",
+		where: node => node.domain === "string"
+	}
+)
+```
+
+### `ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
+
+```ts
+const nEvenAtLeast2 = type({
+	n: "number % 2 > 2"
+})
+
+const out = nEvenAtLeast2({ n: 1 })
+
+if (out instanceof type.errors) {
+	console.log(out.flatByPath)
+	const output = {
+		n: [
+			{
+				data: 1,
+				path: ["n"],
+				code: "divisor",
+				description: "even",
+				meta: {},
+				rule: 2,
+				expected: "even",
+				actual: "1",
+				problem: "must be even (was 1)",
+				message: "n must be even (was 1)"
+			},
+			{
+				data: 1,
+				path: ["n"],
+				code: "min",
+				description: "at least 2",
+				meta: {},
+				rule: 2,
+				expected: "at least 2",
+				actual: "1",
+				problem: "must be at least 2 (was 1)",
+				message: "n must be at least 2 (was 1)"
+			}
+		]
+	}
+
+	console.log(out.flatProblemsByPath)
+	const output2 = {
+		n: ["must be even (was 1)", "must be at least 2 (was 1)"]
+	}
+}
+```
+
 ## 2.1.9
 
 The `|>` operator pipes output to another Type parsed from a definition.

@@ -5,7 +5,10 @@ import {
 	append,
 	conflatenateAll,
 	defineProperties,
+	flatMorph,
 	stringifyPath,
+	type JsonArray,
+	type JsonObject,
 	type array,
 	type merge,
 	type propwiseXor,
@@ -33,7 +36,10 @@ export class ArkError<
 
 	constructor(input: ArkErrorContextInput<code>, ctx: Traversal)
 	// TS gets confused by <code>, so internally we just use the base type for input
-	constructor(input: ArkErrorContextInput, ctx: Traversal) {
+	constructor(
+		{ prefixPath, relativePath, ...input }: ArkErrorContextInput,
+		ctx: Traversal
+	) {
 		super()
 		this.input = input as never
 		this.ctx = ctx
@@ -45,18 +51,14 @@ export class ArkError<
 				const flat =
 					innerError.hasCode("union") ? innerError.errors : [innerError]
 
-				if (!input.prefixPath && !input.relativePath) return flat
+				if (!prefixPath && !relativePath) return flat
 
 				return flat.map(e =>
 					e.transform(
 						e =>
 							({
 								...e,
-								path: conflatenateAll(
-									input.prefixPath,
-									e.path,
-									input.relativePath
-								)
+								path: conflatenateAll(prefixPath, e.path, relativePath)
 							}) as never
 					)
 				)
@@ -64,8 +66,8 @@ export class ArkError<
 		}
 		this.nodeConfig = ctx.config[this.code] as never
 		const basePath = [...(input.path ?? ctx.path)]
-		if (input.relativePath) basePath.push(...input.relativePath)
-		if (input.prefixPath) basePath.unshift(...input.prefixPath)
+		if (relativePath) basePath.push(...relativePath)
+		if (prefixPath) basePath.unshift(...prefixPath)
 		this.path = new ReadonlyPath(...basePath)
 		this.data = "data" in input ? input.data : data
 	}
@@ -73,15 +75,14 @@ export class ArkError<
 	transform(
 		f: (input: ArkErrorContextInput<code>) => ArkErrorContextInput
 	): ArkError {
-		const normalizedInput = {
-			...this.input,
-			data: this.data,
-			// ensure we don't continue adding relative path segments
-			path: this.path,
-			relativePath: [],
-			prefixPath: []
-		} as never
-		return new ArkError(f(normalizedInput), this.ctx) as never
+		return new ArkError(
+			f({
+				data: this.data,
+				path: this.path,
+				...this.input
+			}),
+			this.ctx
+		) as never
 	}
 
 	hasCode<code extends ArkErrorCode>(code: code): this is ArkError<code> {
@@ -124,6 +125,22 @@ export class ArkError<
 		return typeof config === "function" ? config(this as never) : config
 	}
 
+	get flat(): ArkError[] {
+		return this.hasCode("intersection") ? [...this.errors] : [this as never]
+	}
+
+	toJSON(): JsonObject {
+		return {
+			data: this.data,
+			path: this.path,
+			...this.input,
+			expected: this.expected,
+			actual: this.actual,
+			problem: this.problem,
+			message: this.message
+		} as never
+	}
+
 	toString(): string {
 		return this.message
 	}
@@ -158,6 +175,23 @@ export class ArkErrors
 	 * Errors by a pathString representing their location.
 	 */
 	byPath: Record<string, ArkError> = Object.create(null)
+
+	/**
+	 * {@link byPath} flattened so that each value is an array of ArkError instances at that path.
+	 *
+	 * ✅ Since "intersection" errors will be flattened to their constituent `.errors`,
+	 * they will never be directly present in this representation.
+	 */
+	get flatByPath(): Record<string, ArkError[]> {
+		return flatMorph(this.byPath, (k, v) => [k, v.flat])
+	}
+
+	/**
+	 * {@link byPath} flattened so that each value is an array of problem strings at that path.
+	 */
+	get flatProblemsByPath(): Record<string, string[]> {
+		return flatMorph(this.byPath, (k, v) => [k, v.flat.map(e => e.problem)])
+	}
 
 	/**
 	 * All pathStrings at which errors are present mapped to the errors occuring
@@ -241,6 +275,10 @@ export class ArkErrors
 	 */
 	get issues(): this {
 		return this
+	}
+
+	toJSON(): JsonArray {
+		return [...this.map(e => e.toJSON())]
 	}
 
 	toString(): string {

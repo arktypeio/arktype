@@ -267,4 +267,134 @@ contextualize(() => {
 		const out2 = user({ password: "ez123" })
 		attest(out2.toString()).snap("password must be at least length 8 (was 5)")
 	})
+
+	describe("select", () => {
+		const base = type({
+			foo: "string",
+			"bar?": {
+				nested: "string",
+				num: "number"
+			}
+		})
+
+		it("self", () => {
+			const t = base.configure("root-only", "self")
+
+			attest(t.json).snap({
+				required: [{ key: "foo", value: "string" }],
+				optional: [
+					{
+						key: "bar",
+						value: {
+							required: [
+								{ key: "nested", value: "string" },
+								{ key: "num", value: "number" }
+							],
+							domain: "object"
+						}
+					}
+				],
+				domain: "object",
+				meta: "root-only"
+			})
+		})
+
+		describe("completions", () => {
+			// based on completion tests at ark/schema/select.test.ts
+			it("shallow completions", () => {
+				// @ts-expect-error
+				attest(() => base.configure("foo", "")).completions({
+					"": [
+						"after",
+						"alias",
+						"before",
+						"child",
+						"divisor",
+						"domain",
+						"exactLength",
+						"index",
+						"intersection",
+						"max",
+						"maxLength",
+						"min",
+						"minLength",
+						"morph",
+						"optional",
+						"pattern",
+						"predicate",
+						"proto",
+						"references",
+						"required",
+						"self",
+						"sequence",
+						"shallow",
+						"structure",
+						"union",
+						"unit"
+					]
+				})
+			})
+
+			it("composite key completions", () => {
+				attest(() =>
+					base.configure("foo", {
+						// @ts-expect-error
+						"": {} as any
+					})
+				).completions({ "": ["boundary", "kind", "method"] })
+			})
+
+			it("composite kind completions", () => {
+				attest(() =>
+					base.configure("foo", {
+						// @ts-expect-error
+						kind: ""
+					})
+				).completions({
+					"": [
+						"after",
+						"alias",
+						"before",
+						"divisor",
+						"domain",
+						"exactLength",
+						"index",
+						"intersection",
+						"max",
+						"maxLength",
+						"min",
+						"minLength",
+						"morph",
+						"optional",
+						"pattern",
+						"predicate",
+						"proto",
+						"required",
+						"sequence",
+						"structure",
+						"union",
+						"unit"
+					]
+				})
+			})
+
+			it("composite boundary completions", () => {
+				attest(() =>
+					base.configure("foo", {
+						// @ts-expect-error
+						boundary: ""
+					})
+				).completions({ "": ["child", "references", "self", "shallow"] })
+			})
+
+			it("composite method completions", () => {
+				attest(() =>
+					base.configure("foo", {
+						// @ts-expect-error
+						method: ""
+					})
+				).completions({ "": ["assertFilter", "assertFind", "filter", "find"] })
+			})
+		})
+	})
 })

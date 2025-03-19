@@ -187,7 +187,8 @@ contextualize(() => {
 		attest<(In: 0 | 1 | 2) => Out<number>>(t.t)
 
 		attest(
-			t.internal.firstReferenceOfKindOrThrow("union").discriminantJson
+			t.internal.select({ method: "assertFind", kind: "union" })
+				.discriminantJson
 		).snap({
 			kind: "unit",
 			path: [],
@@ -430,16 +431,21 @@ contextualize(() => {
 
 	it("union", () => {
 		const types = scope({
-			a: ["number", "=>", data => `${data}`],
+			a: [
+				"number",
+				"=>",
+				function _stringifyNumberUnionPipe(data) {
+					return `${data}`
+				}
+			],
 			b: "boolean",
 			aOrB: "a|b",
 			bOrA: "b|a"
 		}).export()
 		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
-		const serializedMorphs =
-			types.aOrB.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
 		attest(types.aOrB.json).snap([
-			{ in: "number", morphs: serializedMorphs },
+			{ in: "number", morphs: ["$ark._stringifyNumberUnionPipe"] },
 			{ unit: false },
 			{ unit: true }
 		])
@@ -455,7 +461,15 @@ contextualize(() => {
 
 	it("deep union", () => {
 		const types = scope({
-			a: { a: ["number>0", "=>", data => `${data}`] },
+			a: {
+				a: [
+					"number>0",
+					"=>",
+					function _stringifyNumberUnionPipeDeep(data) {
+						return `${data}`
+					}
+				]
+			},
 			b: { a: "Function" },
 			c: "a|b"
 		}).export()
@@ -468,25 +482,19 @@ contextualize(() => {
 			  }
 		>(types.c.t)
 
-		const serializedMorphs =
-			types.a.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
-
 		attest(types.c.json).snap([
-			{ domain: "object", required: [{ key: "a", value: "Function" }] },
+			{ required: [{ key: "a", value: "Function" }], domain: "object" },
 			{
-				domain: "object",
 				required: [
 					{
 						key: "a",
 						value: {
-							in: {
-								domain: "number",
-								min: { exclusive: true, rule: 0 }
-							},
-							morphs: serializedMorphs
+							in: { domain: "number", min: { exclusive: true, rule: 0 } },
+							morphs: ["$ark._stringifyNumberUnionPipeDeep"]
 						}
 					}
-				]
+				],
+				domain: "object"
 			}
 		])
 	})
@@ -533,46 +541,50 @@ contextualize(() => {
 	})
 
 	it("directly nested", () => {
-		const a = type("string", "=>", s => s.length)
+		const a = type("string", "=>", function _directlyNestedStringToLength(s) {
+			return s.length
+		})
 		const t = type(
 			{
 				// doesn't work with a nested tuple expression here due to a TS limitation
 				a
 			},
 			"=>",
-			({ a }) => a === 0
+			function _directlyNestedRoot({ a }) {
+				return a === 0
+			}
 		)
 		attest<(In: { a: string }) => Out<boolean>>(t.t)
 		assertNodeKind(t.internal, "morph")
-		const nestedMorph = t.internal.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
 			in: {
-				domain: "object",
 				required: [
 					{
 						key: "a",
 						value: {
 							in: "string",
-							morphs: nestedMorph.serializedMorphs
+							morphs: ["$ark._directlyNestedStringToLength"]
 						}
 					}
-				]
+				],
+				domain: "object"
 			},
-			morphs: t.internal.serializedMorphs
+			morphs: ["$ark._directlyNestedRoot"]
 		})
 	})
 
 	it("discriminable tuple union", () => {
 		const $ = scope({
-			a: () => $.type(["string"]).pipe(s => [...s, "!"]),
+			a: () =>
+				$.type(["string"]).pipe(function _discriminableTupleUnionPipe(s) {
+					return [...s, "!"]
+				}),
 			b: ["number"],
 			c: () => $.type("a|b")
 		})
 		const types = $.export()
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
-		const expectedSerializedMorphs =
-			types.a.internal.assertHasKind("morph").serializedMorphs
 
 		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
@@ -589,7 +601,7 @@ contextualize(() => {
 						proto: "Array",
 						exactLength: 1
 					},
-					morphs: expectedSerializedMorphs
+					morphs: ["$ark._discriminableTupleUnionPipe"]
 				}
 			}
 		})
@@ -641,17 +653,29 @@ contextualize(() => {
 
 	it("deep intersection", () => {
 		const types = scope({
-			a: { a: ["number>0", "=>", data => data + 1] },
+			a: {
+				a: [
+					"number>0",
+					"=>",
+					function _deepIntersectionPipePlusOne(data) {
+						return data + 1
+					}
+				]
+			},
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
 		attest<{ a: (In: 1) => Out<number> }>(types.c.t)
-		const { serializedMorphs } =
-			types.a.internal.firstReferenceOfKindOrThrow("morph")
 
 		attest(types.c.json).snap({
 			required: [
-				{ key: "a", value: { in: { unit: 1 }, morphs: serializedMorphs } }
+				{
+					key: "a",
+					value: {
+						in: { unit: 1 },
+						morphs: ["$ark._deepIntersectionPipePlusOne"]
+					}
+				}
 			],
 			domain: "object"
 		})

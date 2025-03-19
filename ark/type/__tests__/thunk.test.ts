@@ -108,9 +108,11 @@ contextualize(() => {
 					id: "id"
 				})
 					.or("id")
-					.pipe(user =>
-						typeof user === "string" ? { id: user, name: "Anonymous" } : user
-					)
+					.pipe(function _docsExampleThunkMorph(user) {
+						return typeof user === "string" ?
+								{ id: user, name: "Anonymous" }
+							:	user
+					})
 					.array()
 					.atLeastLength(2)
 		})
@@ -134,11 +136,6 @@ contextualize(() => {
 
 		const types = $.export()
 
-		const flattenUserMorphs =
-			types.expandUserGroup.internal.firstReferenceOfKindOrThrow(
-				"morph"
-			).serializedMorphs
-
 		attest($.json).snap({
 			id: { domain: "string" },
 			expandUserGroup: {
@@ -153,7 +150,7 @@ contextualize(() => {
 							domain: "object"
 						}
 					],
-					morphs: flattenUserMorphs
+					morphs: ["$ark._docsExampleThunkMorph"]
 				},
 				proto: "Array",
 				minLength: 2

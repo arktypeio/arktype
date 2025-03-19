@@ -19,7 +19,6 @@ import {
 	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type ResolvedScopeConfig,
 	type RootKind,
 	type RootSchema,
 	type arkKind,
@@ -30,6 +29,7 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
+	enumValues,
 	flatMorph,
 	isArray,
 	isThunk,
@@ -43,7 +43,6 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
-import type { TypeMetaInput } from "./config.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -83,7 +82,8 @@ import {
 	type InstanceOfTypeParser,
 	type SchemaParser,
 	type TypeParser,
-	type UnitTypeParser
+	type UnitTypeParser,
+	type ValueOfTypeParser
 } from "./type.ts"
 /** The convenience properties attached to `scope` */
 export type ScopeParserAttachments =
@@ -190,13 +190,7 @@ export interface InternalScope {
 	constructor: typeof InternalScope
 }
 
-interface ResolvedTypeScopeConfig extends ResolvedScopeConfig {
-	keywords?: Record<string, TypeMetaInput>
-}
-
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	declare resolvedConfig: ResolvedTypeScopeConfig
-
 	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(
@@ -303,6 +297,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
 
+	valueOf: ValueOfTypeParser<$> = tsEnum =>
+		this.units(enumValues(tsEnum)) as never
+
 	enumerated: EnumeratedTypeParser<$> = (...values) =>
 		this.units(values) as never
 
@@ -385,6 +382,8 @@ export interface Scope<$ = {}> {
 
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>
+	valueOf: ValueOfTypeParser<$>
+	instanceOf: InstanceOfTypeParser<$>
 
 	type: TypeParser<$>
 

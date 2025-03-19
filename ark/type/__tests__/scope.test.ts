@@ -378,8 +378,10 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
-			const expectedCyclicJson =
-				types.arf.internal.firstReferenceOfKindOrThrow("alias").json
+			const expectedCyclicJson = types.arf.internal.select({
+				kind: "alias",
+				method: "assertFind"
+			}).json
 
 			attest(types.arf.json).snap({
 				domain: "object",

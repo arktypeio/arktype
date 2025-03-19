@@ -362,3 +362,12 @@ export type keyWithValue<t, constraint> =
 			:	never
 		:	never
 	:	never
+
+export const enumValues = <tsEnum extends object>(
+	tsEnum: tsEnum
+): tsEnum[keyof tsEnum][] =>
+	Object.values(tsEnum).filter(v => {
+		if (typeof v === "number") return true
+
+		return typeof tsEnum[v as never] !== "number"
+	}) as never

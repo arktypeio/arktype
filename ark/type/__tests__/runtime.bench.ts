@@ -1,7 +1,7 @@
 import { bench } from "@ark/attest"
 import { match, type } from "arktype"
 
-export const validData = Object.freeze({
+export const validData = {
 	number: 1,
 	negNumber: -1,
 	maxNumber: Number.MAX_VALUE,
@@ -14,7 +14,25 @@ export const validData = Object.freeze({
 		num: 1,
 		bool: false
 	}
-})
+}
+
+const tReject = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: {
+		foo: "string",
+		num: "number",
+		bool: "boolean"
+	}
+}).onDeepUndeclaredKey("reject")
+
+bench("moltar reject", () => {
+	tReject(validData)
+}).median([5.97, "us"])
 
 export const t = type({
 	number: "number",
@@ -37,6 +55,41 @@ bench("moltar allows", () => {
 bench("moltar apply", () => {
 	t(validData)
 }).median([21.31, "ns"])
+
+const tDelete = type
+	.scope({}, { clone: false })
+	.type({
+		number: "number",
+		negNumber: "number",
+		maxNumber: "number",
+		string: "string",
+		longString: "string",
+		boolean: "boolean",
+		deeplyNested: {
+			foo: "string",
+			num: "number",
+			bool: "boolean"
+		}
+	})
+	.onDeepUndeclaredKey("delete")
+
+bench("moltar delete", () => {
+	tDelete(validData)
+}).median([3.54, "us"])
+
+const tShallowDelete = type.scope({}, { clone: false }).type({
+	"+": "delete",
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean"
+})
+
+bench("shallow delete", () => {
+	tShallowDelete(validData)
+}).median([370, "ns"])
 
 bench("shallow primitive allows", () => {
 	type.string.allows("foo")
