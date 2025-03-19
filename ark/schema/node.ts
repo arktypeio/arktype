@@ -30,6 +30,7 @@ import type {
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
+import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
@@ -100,7 +101,7 @@ export abstract class BaseNode<
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
 	flatRefs: FlatRef[]
-	flatMorphs: FlatRef<Morph.Node>[]
+	flatMorphs: FlatRef<Morph.Node | Intersection.Node>[]
 	allows: (data: d["prerequisite"]) => boolean
 
 	get shallowMorphs(): array<Morph> {
@@ -172,7 +173,11 @@ export abstract class BaseNode<
 					) {
 						this.flatRefs.push(childRef)
 						for (const branch of childRef.node.branches) {
-							if (branch.hasKind("morph")) {
+							if (
+								branch.hasKind("morph") ||
+								(branch.hasKind("intersection") &&
+									branch.structure?.structuralMorph !== undefined)
+							) {
 								this.flatMorphs.push({
 									path: childRef.path,
 									propString: childRef.propString,
