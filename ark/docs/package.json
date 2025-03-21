@@ -38,7 +38,7 @@
 		"hast-util-to-jsx-runtime": "2.3.6",
 		"linkinator": "6.1.2",
 		"lucide-react": "0.479.0",
-		"next": "15.2.1",
+		"next": "15.2.3",
 		"postcss": "8.5.3",
 		"posthog-js": "1.229.5",
 		"react": "19.0.0",
