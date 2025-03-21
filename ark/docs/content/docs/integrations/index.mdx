@@ -68,3 +68,17 @@ app.post("/author", arktypeValidator("json", user), c => {
 ```
 
 [`hono-openapi`](https://github.com/rhinobase/hono-openapi) also offers experimental support for OpenAPI docgen.
+
+### oRPC
+
+[oRPC](https://orpc.unnoq.com/) has built-in support for Standard Schema, so ArkType works seamlessly right out of the box:
+
+```ts
+// @noErrors
+os.input(
+	type({
+		name: "string",
+		"age?": "number"
+	})
+)
+```
