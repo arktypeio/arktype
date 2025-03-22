@@ -17,6 +17,7 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
@@ -119,6 +120,30 @@ const createStructuralWriter =
 
 const structuralDescription = createStructuralWriter("description")
 const structuralExpression = createStructuralWriter("expression")
+
+const intersectPropsAndIndex = <
+	l extends nodeOfKind<"required"> | nodeOfKind<"optional">
+>(
+	l: l,
+	r: nodeOfKind<"index">,
+	$: BaseScope
+): l | Disjoint | null => {
+	const kind = l.required ? "required" : "optional"
+
+	if (!r.signature.allows(l.key)) return null
+
+	const value = intersectNodesRoot(l.value, r.value, $)
+	if (value instanceof Disjoint) {
+		if (kind === "optional") {
+			return $.node("optional", {
+				key: l.key,
+				value: $ark.intrinsic.never.internal
+			}) as l
+		} else return value.withPrefixKey(l.key, l.kind)
+	}
+
+	return null
+}
 
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
@@ -298,6 +323,40 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				if (disjointResult.length) return disjointResult
 
 				return childIntersectionResult
+			}
+		},
+		reduce: (inner, $) => {
+			if (inner.index) {
+				let hasUpdated = false
+
+				const requiredProps = inner.required ?? []
+				const optionalProps = inner.optional ?? []
+				const newOptionalProps: OptionalNode[] = [...optionalProps]
+
+				if (requiredProps.length === 0 && optionalProps.length === 0) return
+
+				for (const index of inner.index) {
+					for (const requiredProp of requiredProps) {
+						const intersection = intersectPropsAndIndex(requiredProp, index, $)
+						if (intersection instanceof Disjoint) return intersection
+					}
+
+					for (const [indx, optionalProp] of optionalProps.entries()) {
+						const intersection = intersectPropsAndIndex(optionalProp, index, $)
+						if (intersection instanceof Disjoint) return intersection
+						if (intersection === null) continue
+						newOptionalProps[indx] = intersection
+						hasUpdated = true
+					}
+				}
+
+				if (hasUpdated) {
+					return $.node(
+						"structure",
+						{ ...inner, optional: newOptionalProps },
+						{ prereduced: true }
+					)
+				}
 			}
 		}
 	})
