@@ -148,7 +148,7 @@ Resolution: ${printable(resolution)}`)
 		)
 	}
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return domainDescriptions.object
 	}
 

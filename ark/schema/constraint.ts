@@ -278,9 +278,9 @@ export const writeInvalidOperandMessage = <
 	actual: actual
 ): string => {
 	const actualDescription =
-		actual.hasKind("morph") ? actual.shortDescription
+		actual.hasKind("morph") ? "a morph"
 		: actual.isUnknown() ? "unknown"
-		: actual.exclude(expected).shortDescription
+		: actual.exclude(expected).defaultShortDescription
 
 	return `${capitalize(kind)} operand must be ${
 		expected.description
