@@ -415,6 +415,24 @@ const validResult = myObj({})
 const secondResult = myObj({ key: undefined })
 ```
 
+<Callout type="warn" title="exactOptionalPropertyTypes does not yet affect default values!">
+
+```ts
+const myObj = type({
+	key: "number = 5"
+})
+
+// { key: 5 }
+const omittedResult = myObj({})
+
+// { key: undefined }
+const undefinedResult = myObj({ key: undefined })
+```
+
+Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
+
+</Callout>
+
 ### jitless
 
 By default, when a `Type` is instantiated, ArkType will precompile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
