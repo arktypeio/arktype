@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { TraversalError } from "@ark/schema"
+import { TraversalError, type UnitNode } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import * as assert from "node:assert/strict"
@@ -57,6 +57,13 @@ contextualize(() => {
 		attest(() => t.assert({ a: 1 })).throws.snap(
 			"TraversalError: a must be a string (was a number)"
 		)
+	})
+
+	it("select", () => {
+		const units = type("'red' | 'blue'").select("unit")
+
+		attest<UnitNode[]>(units)
+		attest(units).snap([{ unit: "blue" }, { unit: "red" }])
 	})
 
 	it("is treated as covariant", () => {

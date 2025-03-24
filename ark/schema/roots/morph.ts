@@ -198,8 +198,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	expression = `(In: ${this.in.expression}) => ${this.lastMorphIfNode ? "To" : "Out"}<${this.out.expression}>`
 
-	get shortDescription(): string {
-		return "a morph"
+	get defaultShortDescription(): string {
+		return this.in.meta.description ?? this.in.defaultShortDescription
 	}
 
 	protected innerToJsonSchema(): JsonSchema {

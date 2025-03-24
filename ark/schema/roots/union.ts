@@ -285,8 +285,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	get shortDescription(): string {
-		return this.distribute(branch => branch.shortDescription, describeBranches)
+	get defaultShortDescription(): string {
+		return this.distribute(
+			branch => branch.defaultShortDescription,
+			describeBranches
+		)
 	}
 
 	protected innerToJsonSchema(): JsonSchema {

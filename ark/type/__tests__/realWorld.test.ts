@@ -1298,4 +1298,27 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 			"Argument of type 'ArkErrors' is not assignable to parameter of type 'ArkErrorInput'"
 		)
 	})
+
+	it("described input of morph", () => {
+		class ValidatedUserID {
+			static fromString(value: string): ValidatedUserID {
+				return new ValidatedUserID(value)
+			}
+			private constructor(readonly data: string) {}
+		}
+
+		const UserID = type("string")
+			.describe("a userID")
+			.pipe.try(ValidatedUserID.fromString)
+
+		const User = type({
+			id: UserID
+		})
+
+		const out = User({
+			iD: "typo, oops"
+		})
+
+		attest(out.toString()).snap("id must be a userID (was missing)")
+	})
 })

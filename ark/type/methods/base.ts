@@ -1,4 +1,5 @@
 import type {
+	BaseNode,
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
@@ -437,6 +438,17 @@ export interface Inferred<out t = unknown, $ = {}> {
 	to<const def, r = instantiateType<inferPipe<t, type.infer<def, $>>, $>>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ : never
+
+	/**
+	 * #### query internal node references
+	 *
+	 * @experimental filters and returns the Type's internal representation from `@ark/schema`
+	 *
+	 * @example
+	 * // ["blue", "red"]
+	 * const values = type("'red' | 'blue'").select("unit").map(u => u.unit)
+	 */
+	select: BaseNode["select"]
 }
 
 /** @ts-ignore cast variance */

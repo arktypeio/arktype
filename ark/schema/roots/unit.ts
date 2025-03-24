@@ -125,7 +125,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	expression: string = printable(this.unit)
 	domain: Domain = domainOf(this.unit)
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description
@@ -134,7 +134,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	protected innerToJsonSchema(): JsonSchema {
 		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
 				{ const: this.unit }
-			:	JsonSchema.throwUnjsonifiableError(this.shortDescription)
+			:	JsonSchema.throwUnjsonifiableError(this.defaultShortDescription)
 	}
 
 	traverseAllows: TraverseAllows =

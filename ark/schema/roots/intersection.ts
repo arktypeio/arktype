@@ -304,8 +304,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			:	[]
 	}
 
-	get shortDescription(): string {
-		return this.basis?.shortDescription ?? "present"
+	get defaultShortDescription(): string {
+		return this.basis?.defaultShortDescription ?? "present"
 	}
 
 	protected innerToJsonSchema(): JsonSchema {

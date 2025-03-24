@@ -120,7 +120,11 @@ export abstract class BaseRoot<
 		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
-	abstract get shortDescription(): string
+	abstract get defaultShortDescription(): string
+
+	get shortDescription(): string {
+		return this.meta.description ?? this.defaultShortDescription
+	}
 
 	protected abstract innerToJsonSchema(): JsonSchema
 

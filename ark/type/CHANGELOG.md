@@ -1,5 +1,10 @@
 # arktype
 
+## 2.1.11
+
+- Expose `select` method directly on `Type` (previously was only available on `.internal`)
+- Improve missing property error messages
+
 ## 2.1.10
 
 ### Added a new `select` method for introspecting references of a node:
