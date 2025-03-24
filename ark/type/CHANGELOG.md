@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.12
+
+- Add a global `exactOptionalPropertyTypes` config for runtime behavior
+
 ## 2.1.11
 
 - Expose `select` method directly on `Type` (previously was only available on `.internal`)
