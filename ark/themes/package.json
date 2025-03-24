@@ -2,7 +2,7 @@
 	"name": "arkthemes",
 	"displayName": "ArkThemes",
 	"description": "A collection of themes with special highlighting for TypeScript generics ⛵",
-	"version": "6.0.2",
+	"version": "6.1.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
