@@ -442,7 +442,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	/**
 	 * #### query internal node references
 	 *
-	 * @experimental returns an {@link internal} representation from `@ark/schema`
+	 * @experimental filters and returns the Type's internal representation from `@ark/schema`
 	 *
 	 * @example
 	 * // ["blue", "red"]

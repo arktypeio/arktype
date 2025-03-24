@@ -124,6 +124,7 @@ export type ParsedJsDocBlock = {
 	summary: ParsedJsDocPart[]
 	notes: ParsedJsDocPart[][]
 	example?: string
+	experimental?: ParsedJsDocPart[]
 }
 
 const createProject = () => {
@@ -146,21 +147,54 @@ const assertBuildDirExists = (path: string) => {
 	}
 }
 
-const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
+const extractNameAndGroup = (
+	doc: JSDoc
+): { name: string; group: ApiGroup } | undefined => {
 	const name = doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText()
-
-	if (!name) return
+	if (!name) return undefined
 
 	const filePath = doc.getSourceFile().getFilePath()
 	let group: ApiGroup
 	if (filePath.includes("methods")) group = "Type"
 	else if (filePath.endsWith("traversal.d.ts")) group = "Traversal"
-	else return
+	else return undefined
 
-	if (!doc.getInnerText().trim().startsWith("#")) return
+	return { name, group }
+}
+
+const organizeDocParts = (
+	allParts: ParsedJsDocPart[]
+): {
+	summary: ParsedJsDocPart[]
+	notes: ParsedJsDocPart[][]
+} => {
+	const summary: ParsedJsDocPart[] = []
+	const notes: ParsedJsDocPart[][] = []
+
+	if (allParts[0]?.kind === "text") {
+		allParts[0].value = allParts[0].value.replace(/^#+\s*/, "")
+		if (allParts[0].value === "") allParts.shift()
+	}
+
+	allParts.forEach(part => {
+		if (part.kind === "noteStart") notes.push(part.value ? [part] : [])
+		else if (part.value === "") return
+		else if (notes.length) notes.at(-1)!.push(part)
+		else summary.push(part)
+	})
+
+	return { summary, notes }
+}
+
+const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
+	const nameAndGroup = extractNameAndGroup(doc)
+	if (!nameAndGroup) return undefined
+
+	const { name, group } = nameAndGroup
+
+	if (!doc.getInnerText().trim().startsWith("#")) return undefined
 
 	const tags = doc.getTags()
-
 	const rootComment = doc.getComment()
 
 	if (!rootComment)
@@ -169,33 +203,23 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	const allParts: ParsedJsDocPart[] =
 		typeof rootComment === "string" ?
 			parseJsDocText(rootComment)
-			// remove any undefined parts before parsing
-		:	rootComment.filter(part => !!part).flatMap(parseJsDocPart)
+		:	rootComment.filter(_ => !!_).flatMap(parseJsDocPart)
 
-	const summaryParts: ParsedJsDocPart[] = []
-	const notePartGroups: ParsedJsDocPart[][] = []
-
-	if (allParts[0].kind === "text") {
-		allParts[0].value = allParts[0].value.replace(/^#+\s*/, "")
-		if (allParts[0].value === "") allParts.shift()
-	}
-
-	allParts.forEach(part => {
-		if (part.kind === "noteStart") notePartGroups.push(part.value ? [part] : [])
-		else if (part.value === "") return
-		else if (notePartGroups.length) notePartGroups.at(-1)!.push(part)
-		else summaryParts.push(part)
-	})
+	const { summary, notes } = organizeDocParts(allParts)
 
 	const result: ParsedJsDocBlock = {
 		group,
 		name,
-		summary: summaryParts,
-		notes: notePartGroups
+		summary,
+		notes
 	}
 
 	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
 	if (example) result.example = example
+
+	const experimentalTag = tags.find(t => t.getTagName() === "experimental")
+	if (experimentalTag)
+		result.experimental = parseJsDocText(experimentalTag.getCommentText())
 
 	return result
 }
@@ -213,7 +237,8 @@ const parseJsDocPart = (part: RawJsDocPart): ParsedJsDocPart[] => {
 	}
 }
 
-const parseJsDocText = (text: string): ParsedJsDocPart[] => {
+const parseJsDocText = (text: string | undefined): ParsedJsDocPart[] => {
+	if (!text) return []
 	const sections = text.split(noteDelimiterRegex)
 	return sections.map((sectionText, i) => ({
 		kind: i === 0 ? "text" : "noteStart",

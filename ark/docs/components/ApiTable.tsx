@@ -41,10 +41,17 @@ interface ApiTableRowProps {
 	name: string
 	summary: ParsedJsDocPart[]
 	example?: string
+	experimental?: ParsedJsDocPart[]
 	notes: ParsedJsDocPart[][]
 }
 
-const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
+const ApiTableRow = ({
+	name,
+	summary,
+	example,
+	experimental,
+	notes
+}: ApiTableRowProps) => (
 	<tr key={name}>
 		<td
 			style={{
@@ -62,6 +69,7 @@ const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
 			{notes.map((note, i) => (
 				<div key={i}>{JsDocParts(note)} </div>
 			))}
+			{experimental ? JsDocParts(experimental) : null}
 			<ApiExample>{example}</ApiExample>
 		</td>
 	</tr>
