@@ -6,9 +6,6 @@
 
 By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).
 
-<details>
-	<summary>See an example</summary>
-
 ```ts
 const myObj = type({
 	"key?": "number"
@@ -20,8 +17,6 @@ const validResult = myObj({})
 // Error: key must be a number (was undefined)
 const errorResult = myObj({ key: undefined })
 ```
-
-</details>
 
 This approach allows the most granular control over optionality, as `| undefined` can be added to properties that should accept it.
 
@@ -50,7 +45,7 @@ const validResult = myObj({})
 const secondResult = myObj({ key: undefined })
 ```
 
-<Callout type="warn" title="exactOptionalPropertyTypes does not yet affect default values!">
+**WARNING: exactOptionalPropertyTypes does not yet affect default values!**
 
 ```ts
 const myObj = type({
@@ -65,8 +60,6 @@ const undefinedResult = myObj({ key: undefined })
 ```
 
 Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
-
-</Callout>
 
 ## 2.1.11
 
