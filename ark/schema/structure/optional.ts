@@ -5,6 +5,7 @@ import {
 	throwParseError,
 	type requireKeys
 } from "@ark/util"
+import { intrinsic } from "../intrinsic.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue } from "../shared/compile.ts"
@@ -62,6 +63,17 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			}
 		},
 		normalize: schema => schema,
+		reduce: (inner, $) => {
+			if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
+				if (!inner.value.allows(undefined)) {
+					return $.node(
+						"optional",
+						{ ...inner, value: inner.value.or(intrinsic.undefined) },
+						{ prereduced: true }
+					)
+				}
+			}
+		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		},

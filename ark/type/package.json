@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.1.11",
+	"version": "2.1.12",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -36,10 +36,11 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
-		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts"
+		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
+		"testEoptConfig": "ts ./__tests__/integration/testEoptConfig.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",

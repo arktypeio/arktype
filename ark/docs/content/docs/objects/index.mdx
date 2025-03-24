@@ -91,7 +91,7 @@ const myObject = type({
 
     In TypeScript, there is a setting called [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
 
-    ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. If you're interested in a builtin configuration option for this setting, we'd love feedback or contributions on [this issue](https://github.com/arktypeio/arktype/issues/1191).
+    ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. Though not recommended as a long-term solution, you may also [globally configure `exactOptionalPropertyTypes`](/docs/configuration#exactoptionalpropertytypes) to `false`.
 
     <details>
     	<summary>See an example</summary>
