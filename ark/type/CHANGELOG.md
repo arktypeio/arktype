@@ -2,7 +2,71 @@
 
 ## 2.1.12
 
-- Add a global `exactOptionalPropertyTypes` config for runtime behavior
+### `exactOptionalPropertyTypes`
+
+By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const myObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = myObj({})
+
+// Error: key must be a number (was undefined)
+const errorResult = myObj({ key: undefined })
+```
+
+</details>
+
+This approach allows the most granular control over optionality, as `| undefined` can be added to properties that should accept it.
+
+However, if you have not enabled TypeScript's `exactOptionalPropertyTypes` setting, you may globally configure ArkType's `exactOptionalPropertyTypes` to `false` to match TypeScript's behavior. If you do this, we'd recommend making a plan to enable `exactOptionalPropertyTypes` in the future.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+// since the default in ArkType is `true`, this will only have an effect if set to `false`
+configure({ exactOptionalPropertyTypes: false })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const myObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = myObj({})
+
+// now also valid data (would be an error by default)
+const secondResult = myObj({ key: undefined })
+```
+
+<Callout type="warn" title="exactOptionalPropertyTypes does not yet affect default values!">
+
+```ts
+const myObj = type({
+	key: "number = 5"
+})
+
+// { key: 5 }
+const omittedResult = myObj({})
+
+// { key: undefined }
+const undefinedResult = myObj({ key: undefined })
+```
+
+Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
+
+</Callout>
 
 ## 2.1.11
 
