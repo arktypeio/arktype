@@ -1,4 +1,6 @@
+import { bench } from "@ark/attest"
 import { type } from "arktype"
+import type { UnionTypeParser } from "arktype/internal/type.ts"
 
 const types = [
 	"Normal",
@@ -24,3 +26,9 @@ const types = [
 const pokemon = type({
 	type: type.enumerated(...types)
 })
+
+declare const union: UnionTypeParser<{}>
+
+bench("ok", () => {
+	union({ foo: "string" }, { bar: "null" })
+}).types()

@@ -250,6 +250,542 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
+export type UnionTypeParser<$> = {
+	<const a, const b, r = Type<type.infer<a> | type.infer<b>, $>>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		r = Type<type.infer<a> | type.infer<b> | type.infer<c>, $>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		r = Type<type.infer<a> | type.infer<b> | type.infer<c> | type.infer<d>, $>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>
+			| type.infer<l>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>
+			| type.infer<l>
+			| type.infer<m>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>
+			| type.infer<l>
+			| type.infer<m>
+			| type.infer<n>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: type.validate<n, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		const o,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>
+			| type.infer<l>
+			| type.infer<m>
+			| type.infer<n>
+			| type.infer<o>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: type.validate<n, $>,
+		o: type.validate<o, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		const o,
+		const p,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>
+			| type.infer<l>
+			| type.infer<m>
+			| type.infer<n>
+			| type.infer<o>
+			| type.infer<p>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: type.validate<n, $>,
+		o: type.validate<o, $>,
+		p: type.validate<p, $>
+	): r extends infer _ ? _ : never
+	<
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		const o,
+		const p,
+		const q,
+		r = Type<
+			| type.infer<a>
+			| type.infer<b>
+			| type.infer<c>
+			| type.infer<d>
+			| type.infer<e>
+			| type.infer<f>
+			| type.infer<g>
+			| type.infer<h>
+			| type.infer<i>
+			| type.infer<j>
+			| type.infer<k>
+			| type.infer<l>
+			| type.infer<m>
+			| type.infer<n>
+			| type.infer<o>
+			| type.infer<p>
+			| type.infer<q>,
+			$
+		>
+	>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: type.validate<n, $>,
+		o: type.validate<o, $>,
+		p: type.validate<p, $>,
+		q: type.validate<q, $>
+	): r extends infer _ ? _ : never
+}
+
 export type ValueOfTypeParser<$> = <const o extends object>(
 	o: o
 ) => Type<o[keyof o], $>
