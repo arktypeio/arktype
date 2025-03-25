@@ -1,5 +1,26 @@
 import { type } from "arktype"
 
-const values = type("'red' | 'blue'")
-	.select("unit")
-	.map(u => u.unit) //?
+const types = [
+	"Normal",
+	"Fire",
+	"Water",
+	"Electric",
+	"Grass",
+	"Ice",
+	"Fighting",
+	"Poison",
+	"Ground",
+	"Flying",
+	"Psychic",
+	"Bug",
+	"Rock",
+	"Ghost",
+	"Dragon",
+	"Dark",
+	"Steel",
+	"Fairy"
+] as const
+
+const pokemon = type({
+	type: type.enumerated(...types)
+})
