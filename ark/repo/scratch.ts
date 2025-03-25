@@ -1,5 +1,5 @@
 import { type } from "arktype"
-import type { UnionTypeParser } from "arktype/internal/type.ts"
+import type { NaryUnionParser } from "arktype/internal/type.ts"
 
 const types = [
 	"Normal",
@@ -26,6 +26,4 @@ const pokemon = type({
 	type: type.enumerated(...types)
 })
 
-declare const union: UnionTypeParser<{}>
-
-const t = type(() => true)
+const t = type.or("string", "number")

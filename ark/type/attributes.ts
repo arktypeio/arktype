@@ -211,14 +211,14 @@ type _inferNaryIntersection<remaining extends readonly unknown[], result> =
 		_inferNaryIntersection<tail, inferIntersection<result, head>>
 	:	remaining
 
-export type inferNaryMerge<types extends readonly object[]> = _inferNaryMerge<
+export type inferNaryMerge<types extends readonly unknown[]> = _inferNaryMerge<
 	types,
 	{}
 >
 
-type _inferNaryMerge<remaining extends readonly object[], result> =
+type _inferNaryMerge<remaining extends readonly unknown[], result> =
 	remaining extends (
-		readonly [infer head, ...infer tail extends readonly object[]]
+		readonly [infer head, ...infer tail extends readonly unknown[]]
 	) ?
 		_inferNaryMerge<tail, merge<result, head>>
 	:	remaining
