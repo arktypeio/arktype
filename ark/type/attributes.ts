@@ -209,7 +209,7 @@ export type inferNaryIntersection<types extends readonly unknown[]> =
 type _inferNaryIntersection<remaining extends readonly unknown[], result> =
 	remaining extends readonly [infer head, ...infer tail] ?
 		_inferNaryIntersection<tail, inferIntersection<result, head>>
-	:	remaining
+	:	result
 
 export type inferNaryMerge<types extends readonly unknown[]> = _inferNaryMerge<
 	types,
@@ -221,7 +221,7 @@ type _inferNaryMerge<remaining extends readonly unknown[], result> =
 		readonly [infer head, ...infer tail extends readonly unknown[]]
 	) ?
 		_inferNaryMerge<tail, merge<result, head>>
-	:	remaining
+	:	result
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
