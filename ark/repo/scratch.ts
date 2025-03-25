@@ -1,4 +1,3 @@
-import { bench } from "@ark/attest"
 import { type } from "arktype"
 import type { UnionTypeParser } from "arktype/internal/type.ts"
 
@@ -28,7 +27,3 @@ const pokemon = type({
 })
 
 declare const union: UnionTypeParser<{}>
-
-bench("ok", () => {
-	union({ foo: "string" }, { bar: "null" })
-}).types()
