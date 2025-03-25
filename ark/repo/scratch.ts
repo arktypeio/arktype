@@ -27,3 +27,5 @@ const pokemon = type({
 })
 
 const t = type.or("string", "number")
+
+console.log(t.expression)

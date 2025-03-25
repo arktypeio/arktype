@@ -1,5 +1,5 @@
 import type { Morph } from "@ark/schema"
-import type { ErrorType, merge } from "@ark/util"
+import type { ErrorType, merge, repeat } from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
@@ -551,6 +551,12 @@ export type NaryUnionParser<$> = {
 		o: type.validate<o, $>,
 		p: type.validate<p, $>,
 		q: type.validate<q, $>
+	): r extends infer _ ? _ : never
+	<
+		const defs extends readonly unknown[],
+		r = Type<type.infer<defs[number]>, $>
+	>(
+		...defs: { [i in keyof defs]: type.validate<defs[i]> }
 	): r extends infer _ ? _ : never
 }
 

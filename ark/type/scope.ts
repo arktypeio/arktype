@@ -61,6 +61,7 @@ import type {
 	exportScope,
 	instantiateExport
 } from "./module.ts"
+import type { NaryUnionParser } from "./nary.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	shallowDefaultableMessage,
@@ -305,6 +306,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	instanceOf: InstanceOfTypeParser<$> = ctor =>
 		this.node("proto", { proto: ctor }, { prereduced: true }) as never
+
+	or: NaryUnionParser<$> = (...defs: unknown[]) =>
+		this.schema(defs.map(def => this.parse(def))) as never
 
 	match: InternalMatchParser = new InternalMatchParser(this as never)
 

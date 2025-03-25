@@ -214,7 +214,8 @@ export class InternalTypeParser extends Callable<
 				unit: $.unit,
 				enumerated: $.enumerated,
 				instanceOf: $.instanceOf,
-				valueOf: $.valueOf
+				valueOf: $.valueOf,
+				or: $.or
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
