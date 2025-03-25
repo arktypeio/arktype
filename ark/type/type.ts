@@ -15,7 +15,7 @@ import {
 	type array,
 	type conform
 } from "@ark/util"
-import type { distill } from "./attributes.ts"
+import type { distill, inferIntersection } from "./attributes.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -250,7 +250,31 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
+export type ValueOfTypeParser<$> = <const o extends object>(
+	o: o
+) => Type<o[keyof o], $>
+
+export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
+
+export type SchemaParser<$> = (
+	schema: RootSchema,
+	opts?: BaseParseOptions
+) => Type<unknown, $>
+
+export type Type<t = unknown, $ = {}> = instantiateType<t, $>
+
+export type TypeConstructor<t = unknown, $ = {}> = new (
+	def: unknown,
+	$: Scope<$>
+) => Type<t, $>
+
+export const Type: TypeConstructor = BaseRoot as never
+
 export type UnionTypeParser<$> = {
+	(): Type<never, $>
+	<const a, r = Type<type.infer<a>, $>>(
+		a: type.validate<a, $>
+	): r extends infer _ ? _ : never
 	<const a, const b, r = Type<type.infer<a> | type.infer<b>, $>>(
 		a: type.validate<a, $>,
 		b: type.validate<b, $>
@@ -786,22 +810,26 @@ export type UnionTypeParser<$> = {
 	): r extends infer _ ? _ : never
 }
 
-export type ValueOfTypeParser<$> = <const o extends object>(
-	o: o
-) => Type<o[keyof o], $>
-
-export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
-
-export type SchemaParser<$> = (
-	schema: RootSchema,
-	opts?: BaseParseOptions
-) => Type<unknown, $>
-
-export type Type<t = unknown, $ = {}> = instantiateType<t, $>
-
-export type TypeConstructor<t = unknown, $ = {}> = new (
-	def: unknown,
-	$: Scope<$>
-) => Type<t, $>
-
-export const Type: TypeConstructor = BaseRoot as never
+// export type IntersectionTypeParser<$> = {
+// 	(): Type<never, $>
+// 	<const a, r = Type<type.infer<a>, $>>(
+// 		a: type.validate<a, $>
+// 	): r extends infer _ ? _ : never
+// 	<
+// 		const a,
+// 		const b,
+// 		r = Type<inferIntersection<type.infer<a>, type.infer<b>>, $>
+// 	>(
+// 		a: type.validate<a, $>,
+// 		b: type.validate<b, $>
+// 	): r extends infer _ ? _ : never
+// 	<
+// 		const a,
+// 		const b,
+// 		const c,
+// 		r = Type<inferIntersection<type.infer<a>, type.infer<b>>, $>
+// 	>(
+// 		a: type.validate<a, $>,
+// 		b: type.validate<b, $>
+// 	): r extends infer _ ? _ : never
+// }

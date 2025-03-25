@@ -23,9 +23,10 @@ import type {
 	defaultFor,
 	distill,
 	inferIntersection,
+	inferMorph,
 	inferMorphOut,
+	inferNaryPipe,
 	inferPipe,
-	inferPipes,
 	InferredMorph,
 	Out,
 	To
@@ -672,13 +673,13 @@ interface Type<out t = unknown, $ = {}>
 }
 
 interface ChainedPipeSignature<t, $> {
-	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
+	<a extends Morph<distill.Out<t>>, r = instantiateType<inferMorph<t, a>, $>>(
 		a: a
 	): r extends infer _ ? _ : never
 	<
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
-		r = instantiateType<inferPipes<t, [a, b]>, $>
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b]>, $>
 	>(
 		a: a,
 		b: b
@@ -687,7 +688,7 @@ interface ChainedPipeSignature<t, $> {
 		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
-		r = instantiateType<inferPipes<t, [a, b, c]>, $>
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c]>, $>
 	>(
 		a: a,
 		b: b,
@@ -698,7 +699,7 @@ interface ChainedPipeSignature<t, $> {
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d]>, $>
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c, d]>, $>
 	>(
 		a: a,
 		b: b,
@@ -711,7 +712,7 @@ interface ChainedPipeSignature<t, $> {
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e]>, $>
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c, d, e]>, $>
 	>(
 		a: a,
 		b: b,
@@ -726,7 +727,7 @@ interface ChainedPipeSignature<t, $> {
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>,
 		f extends Morph<inferMorphOut<e>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e, f]>, $>
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c, d, e, f]>, $>
 	>(
 		a: a,
 		b: b,
@@ -743,7 +744,7 @@ interface ChainedPipeSignature<t, $> {
 		e extends Morph<inferMorphOut<d>>,
 		f extends Morph<inferMorphOut<e>>,
 		g extends Morph<inferMorphOut<f>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c, d, e, f, g]>, $>
 	>(
 		a: a,
 		b: b,
@@ -752,6 +753,322 @@ interface ChainedPipeSignature<t, $> {
 		e: e,
 		f: f,
 		g: g
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		r = instantiateType<inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j, k]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		l extends Morph<inferMorphOut<k>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j, k, l]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k,
+		l: l
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		l extends Morph<inferMorphOut<k>>,
+		m extends Morph<inferMorphOut<l>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j, k, l, m]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k,
+		l: l,
+		m: m
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		l extends Morph<inferMorphOut<k>>,
+		m extends Morph<inferMorphOut<l>>,
+		n extends Morph<inferMorphOut<m>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j, k, l, m, n]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k,
+		l: l,
+		m: m,
+		n: n
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		l extends Morph<inferMorphOut<k>>,
+		m extends Morph<inferMorphOut<l>>,
+		n extends Morph<inferMorphOut<m>>,
+		o extends Morph<inferMorphOut<n>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k,
+		l: l,
+		m: m,
+		n: n,
+		o: o
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		l extends Morph<inferMorphOut<k>>,
+		m extends Morph<inferMorphOut<l>>,
+		n extends Morph<inferMorphOut<m>>,
+		o extends Morph<inferMorphOut<n>>,
+		p extends Morph<inferMorphOut<o>>,
+		r = instantiateType<
+			inferNaryPipe<[Type<t>, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p]>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k,
+		l: l,
+		m: m,
+		n: n,
+		o: o,
+		p: p
+	): r extends infer _ ? _ : never
+	<
+		a extends Morph<distill.Out<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		h extends Morph<inferMorphOut<g>>,
+		i extends Morph<inferMorphOut<h>>,
+		j extends Morph<inferMorphOut<i>>,
+		k extends Morph<inferMorphOut<j>>,
+		l extends Morph<inferMorphOut<k>>,
+		m extends Morph<inferMorphOut<l>>,
+		n extends Morph<inferMorphOut<m>>,
+		o extends Morph<inferMorphOut<n>>,
+		p extends Morph<inferMorphOut<o>>,
+		q extends Morph<inferMorphOut<p>>,
+		r = instantiateType<
+			inferNaryPipe<
+				[Type<t>, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q]
+			>,
+			$
+		>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g,
+		h: h,
+		i: i,
+		j: j,
+		k: k,
+		l: l,
+		m: m,
+		n: n,
+		o: o,
+		p: p,
+		q: q
 	): r extends infer _ ? _ : never
 }
 

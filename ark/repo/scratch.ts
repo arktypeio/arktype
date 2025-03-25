@@ -27,3 +27,5 @@ const pokemon = type({
 })
 
 declare const union: UnionTypeParser<{}>
+
+const t = type(() => true)
