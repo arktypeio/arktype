@@ -1,5 +1,4 @@
 import { type } from "arktype"
-import type { NaryUnionParser } from "arktype/internal/type.ts"
 
 const types = [
 	"Normal",

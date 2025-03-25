@@ -15,6 +15,7 @@ import {
 	type GenericParamAst,
 	type GenericParamDef,
 	type GenericRoot,
+	type Morph,
 	type NodeKind,
 	type NodeSchema,
 	type PreparsedNodeResolution,
@@ -61,7 +62,12 @@ import type {
 	exportScope,
 	instantiateExport
 } from "./module.ts"
-import type { NaryUnionParser } from "./nary.ts"
+import type {
+	NaryIntersectionParser,
+	NaryMergeParser,
+	NaryPipeParser,
+	NaryUnionParser
+} from "./nary.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	shallowDefaultableMessage,
@@ -309,6 +315,21 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	or: NaryUnionParser<$> = (...defs: unknown[]) =>
 		this.schema(defs.map(def => this.parse(def))) as never
+
+	and: NaryIntersectionParser<$> = (...defs: unknown[]) =>
+		defs.reduce<BaseRoot>(
+			(node, def) => node.and(this.parse(def)),
+			this.intrinsic.unknown
+		) as never
+
+	merge: NaryMergeParser<$> = (...defs: unknown[]) =>
+		defs.reduce<BaseRoot>(
+			(node, def) => node.merge(this.parse(def)),
+			this.intrinsic.object
+		) as never
+
+	pipe: NaryPipeParser<$> = (...morphs: Morph[]) =>
+		this.intrinsic.unknown.pipe(...morphs) as never
 
 	match: InternalMatchParser = new InternalMatchParser(this as never)
 

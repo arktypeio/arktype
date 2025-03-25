@@ -257,6 +257,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 	readonly nodesByHash: Record<string, BaseNode> = {}
+	readonly intrinsic: typeof $ark.intrinsic
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -327,6 +328,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 			{},
 			{ prereduced: true }
 		)
+
+		this.intrinsic =
+			$ark.intrinsic ?
+				flatMorph($ark.intrinsic, (k, v) => [k, this.finalize(v as never)])
+				// intrinsic won't be available during bootstrapping,  so we lie
+				// about the type here as an extrnal convenience
+			:	({} as never)
 	}
 
 	protected cacheGetter<name extends keyof this>(

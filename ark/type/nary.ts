@@ -1,5 +1,5 @@
 import type { Morph } from "@ark/schema"
-import type { ErrorType, merge, repeat } from "@ark/util"
+import type { ErrorType, merge } from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
@@ -1162,7 +1162,17 @@ export type NaryIntersectionParser<$> = {
 		p: type.validate<p, $>,
 		q: type.validate<q, $>
 	): r extends infer _ ? _ : never
+	<
+		const defs extends readonly unknown[],
+		r = Type<
+			inferNaryIntersection<{ [i in keyof defs]: type.infer<defs[i]> }>,
+			$
+		>
+	>(
+		...defs: { [i in keyof defs]: type.validate<defs[i]> }
+	): r extends infer _ ? _ : never
 }
+
 export type NaryMergeParser<$> = {
 	(): Type<object, $>
 	<const a, inferredA = type.infer<a, $>, r = Type<a, $>>(
@@ -2222,6 +2232,19 @@ export type NaryMergeParser<$> = {
 			(inferredQ extends object ? unknown
 			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredQ]>)
 	): r extends infer _ ? _ : never
+	<
+		const defs extends readonly unknown[],
+		r = Type<inferNaryMerge<{ [i in keyof defs]: type.infer<defs[i]> }>, $>
+	>(
+		...defs: {
+			[i in keyof defs]: type.validate<defs[i]> &
+				(type.infer<defs[i], $> extends object ? unknown
+				:	ErrorType<
+						NonObjectMergeErrorMessage,
+						[actual: type.infer<defs[i], $>]
+					>)
+		}
+	): r extends infer _ ? _ : never
 }
 
 export type NaryPipeParser<$, initial = unknown> = {
@@ -2635,5 +2658,8 @@ export type NaryPipeParser<$, initial = unknown> = {
 		o: o,
 		p: p,
 		q: q
+	): r extends infer _ ? _ : never
+	<const morphs extends readonly Morph[], r = Type<inferNaryPipe<morphs>, $>>(
+		...defs: morphs
 	): r extends infer _ ? _ : never
 }
