@@ -102,7 +102,7 @@ bench("morph-tuple", () => type(["boolean", "=>", b => b])).types([
 ])
 
 bench("morph-chain", () => type("boolean").pipe(b => b)).types([
-	852,
+	848,
 	"instantiations"
 ])
 
@@ -129,7 +129,7 @@ bench("morph-chain-all", () => {
 		s => `${s}r` as const
 	)
 	return out
-}).types([2340, "instantiations"])
+}).types([0, "instantiations"])
 
 bench("to-string", () => type("string.numeric.parse |> number.integer")).types([
 	2340,
@@ -146,7 +146,7 @@ bench("to-tuple", () =>
 
 bench("to-args", () =>
 	type("string.numeric.parse", "|>", "number.integer")
-).types([4304, "instantiations"])
+).types([4268, "instantiations"])
 
 bench("base object", () =>
 	type({
@@ -173,7 +173,7 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([12890, "instantiations"])
+).types([12818, "instantiations"])
 
 type Expected = {
 	readonly: "readonly"
@@ -225,4 +225,4 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([13108, "instantiations"])
+).types([13036, "instantiations"])
