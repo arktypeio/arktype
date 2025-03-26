@@ -61,8 +61,8 @@ export declare namespace Constraint {
 }
 
 export abstract class BaseConstraint<
-	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
-	 * @ts-ignore allow instantiation assignment to the base type */
+	// uses -ignore rather than -expect-error because this is not an error in .d.ts
+	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
 	declare readonly [arkKind]: "constraint"

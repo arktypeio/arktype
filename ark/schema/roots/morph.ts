@@ -225,7 +225,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
-	hasEqualMorphs(r: MorphNode): boolean {
+	override hasEqualMorphs(r: MorphNode): boolean {
 		return arrayEquals(this.morphs, r.morphs, {
 			isEqual: (lMorph, rMorph) =>
 				lMorph === rMorph ||

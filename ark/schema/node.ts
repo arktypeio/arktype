@@ -68,8 +68,8 @@ import { isNode, type arkKind } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
-	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
-	 * @ts-ignore allow instantiation assignment to the base type */
+	// uses -ignore rather than -expect-error because this is not an error in .d.ts
+	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
 	(

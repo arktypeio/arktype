@@ -1,4 +1,5 @@
 import {
+	arrayEquals,
 	includes,
 	inferred,
 	omit,
@@ -490,6 +491,29 @@ export abstract class BaseRoot<
 				)
 			)
 		)
+	}
+
+	hasEqualMorphs(r: BaseRoot): boolean {
+		if (!this.includesTransform && !r.includesTransform) return true
+
+		if (!arrayEquals(this.shallowMorphs as Morph[], r.shallowMorphs as Morph[]))
+			return false
+
+		if (
+			!arrayEquals(this.flatMorphs, r.flatMorphs, {
+				isEqual: (l, r) =>
+					l.propString === r.propString &&
+					(l.node.hasKind("morph") && r.node.hasKind("morph") ?
+						l.node.hasEqualMorphs(r.node)
+					: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
+						l.node.structure?.structuralMorphRef ===
+						r.node.structure?.structuralMorphRef
+					:	false)
+			})
+		)
+			return false
+
+		return true
 	}
 
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {
