@@ -17,7 +17,7 @@ const parseNotJsonSchema = (jsonSchema: JsonSchema) => {
 	return type.unknown.narrow((data, ctx) =>
 		inner.allows(data) ?
 			ctx.reject({
-				expected: `a value that's not ${inner.description}`,
+				expected: `not ${inner.description}`,
 				actual: printable(data)
 			})
 		:	true
