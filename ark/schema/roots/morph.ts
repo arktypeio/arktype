@@ -1,4 +1,5 @@
 import {
+	arrayEquals,
 	liftArray,
 	throwParseError,
 	type array,
@@ -221,6 +222,17 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (this.introspectableIn) this.introspectableIn.traverseApply(data, ctx)
 		ctx.queueMorphs(this.morphs)
+	}
+
+	/** Check if the morphs of r are equal to those of this node */
+	override hasEqualMorphs(r: MorphNode): boolean {
+		return arrayEquals(this.morphs, r.morphs, {
+			isEqual: (lMorph, rMorph) =>
+				lMorph === rMorph ||
+				(hasArkKind(lMorph, "root") &&
+					hasArkKind(rMorph, "root") &&
+					lMorph.equals(rMorph))
+		})
 	}
 }
 
