@@ -119,7 +119,8 @@ contextualize(() => {
 		})
 		attest(tPropertyNames.json).snap({
 			domain: "object",
-			predicate: ["$ark.jsonSchemaObjectPropertyNamesValidator"]
+			index: [{ signature: { domain: "string", minLength: 5 }, value: {} }],
+			undeclared: "reject"
 		})
 		attest(tPropertyNames.allows({})).equals(true)
 		attest(
@@ -135,14 +136,107 @@ contextualize(() => {
 				type: "object",
 				propertyNames: { type: "number" }
 			})
+		).type.errors.snap(
+			`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean'.` +
+				`The types of 'propertyNames.type' are incompatible between these types.` +
+				`Type '"number"' is not assignable to type '"string"'.`
 		)
-			.throws(
-				"TraversalError: propertyNames must be a schema for validating a string (was Type<number>)"
-			)
-			.type.errors.snap(
-				`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean'.` +
-					`The types of 'propertyNames.type' are incompatible between these types.` +
-					`Type '"number"' is not assignable to type '"string"'.`
-			)
+	})
+
+	it("propertyNames & additionalProperties", () => {
+		const tPropertyNamesAndAdditionalProperties = parseJsonSchema({
+			type: "object",
+			propertyNames: { type: "string", minLength: 3 },
+			additionalProperties: true
+		})
+		attest(tPropertyNamesAndAdditionalProperties.json).snap({
+			domain: "object",
+			index: [
+				{
+					signature: { domain: "string", minLength: 3 },
+					value: {}
+				}
+			],
+			undeclared: "reject"
+		})
+	})
+
+	it("propertyNames & patternProperties", () => {
+		const tPropertyNamesAndPatternPropertiesValid = parseJsonSchema({
+			type: "object",
+			patternProperties: { foo: { type: "string" } },
+			propertyNames: { type: "string" }
+		})
+		attest(tPropertyNamesAndPatternPropertiesValid.json).snap({
+			domain: "object",
+			index: [
+				{ signature: "string", value: {} },
+				{ signature: { domain: "string", pattern: ["foo"] }, value: "string" }
+			],
+			undeclared: "reject"
+		})
+
+		attest(() => {
+			parseJsonSchema({
+				type: "object",
+				propertyNames: { type: "string", minLength: 3 },
+				patternProperties: { "^abcd": { type: "number" } }
+			})
+		}).throws(
+			"Can only specify both 'patternProperties' and 'propertyNames' when the specified 'propertyNames' schema allows all strings"
+		)
+	})
+
+	it("propertyNames & properties", () => {
+		const tPropertyNamesAndProperties = parseJsonSchema({
+			type: "object",
+			propertyNames: { type: "string", minLength: 3 },
+			properties: {
+				a: { type: "boolean" },
+				abc: { type: "number" }
+			}
+		})
+
+		attest(tPropertyNamesAndProperties.json).snap({
+			domain: "object",
+			index: [{ signature: { domain: "string", minLength: 3 }, value: {} }],
+			optional: [
+				{
+					key: "a",
+					value: []
+				},
+				{
+					key: "abc",
+					value: "number"
+				}
+			],
+			undeclared: "reject"
+		})
+	})
+
+	it("propertyNames & properties & required", () => {
+		const tPropertyNamesAndRequiredValid = parseJsonSchema({
+			type: "object",
+			propertyNames: { type: "string", minLength: 3 },
+			properties: { abc: { type: "number" } },
+			required: ["abc"]
+		})
+		attest(tPropertyNamesAndRequiredValid.json).snap({
+			domain: "object",
+			index: [{ signature: { domain: "string", minLength: 3 }, value: {} }],
+			required: [{ key: "abc", value: "number" }],
+			undeclared: "reject"
+		})
+
+		attest(() =>
+			parseJsonSchema({
+				type: "object",
+				propertyNames: { type: "string", minLength: 3 },
+				properties: { a: { type: "boolean" } },
+				required: ["a"]
+			})
+		).throws(
+			"Required key a doesn't conform to propertyNames schema of string >= 3"
+		)
 	})
 })
