@@ -47,7 +47,6 @@ contextualize(() => {
 			)
 
 			attest<
-				| 0
 				| 1
 				| 2
 				| 3
@@ -105,7 +104,7 @@ contextualize(() => {
 
 		it("binary", () => {
 			const t = type.and({ a: "string" }, { b: "number" })
-			attest<{ a: string } & { b: number }>(t.t)
+			attest<{ a: string; b: number }>(t.t)
 			attest(t.expression).snap("{ a: string, b: number }")
 		})
 
@@ -281,8 +280,9 @@ contextualize(() => {
 
 		it("completions", () => {
 			// @ts-expect-error
-			attest(() => type.merge("boo", { foo: "big" })).completions({
-				boo: ["object"]
+			attest(() => type.merge({ boo: "boo" }, { foo: "big" })).completions({
+				big: ["bigint"],
+				boo: ["boolean"]
 			})
 		})
 

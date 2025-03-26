@@ -1175,7 +1175,7 @@ export type NaryIntersectionParser<$> = {
 
 export type NaryMergeParser<$> = {
 	(): Type<object, $>
-	<const a, inferredA = type.infer<a, $>, r = Type<a, $>>(
+	<const a, inferredA = type.infer<a, $>, r = Type<inferredA, $>>(
 		a: type.validate<a, $> &
 			// if you can figure out a way to avoid inlining this without
 			// breaking autocomplete and error display, do it!
