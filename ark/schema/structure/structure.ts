@@ -327,13 +327,13 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		},
 		reduce: (inner, $) => {
 			if (inner.index) {
-				let hasUpdated = false
+				if (!(inner.required || inner.optional)) return
+
+				let updated = false
 
 				const requiredProps = inner.required ?? []
 				const optionalProps = inner.optional ?? []
 				const newOptionalProps: OptionalNode[] = [...optionalProps]
-
-				if (requiredProps.length === 0 && optionalProps.length === 0) return
 
 				for (const index of inner.index) {
 					for (const requiredProp of requiredProps) {
@@ -346,11 +346,11 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						if (intersection instanceof Disjoint) return intersection
 						if (intersection === null) continue
 						newOptionalProps[indx] = intersection
-						hasUpdated = true
+						updated = true
 					}
 				}
 
-				if (hasUpdated) {
+				if (updated) {
 					return $.node(
 						"structure",
 						{ ...inner, optional: newOptionalProps },
