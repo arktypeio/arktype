@@ -47,7 +47,7 @@ const arrayContainsItemMatchingSchema = (schema: Type) => {
 		array.some(item => schema.allows(item)) === true ?
 			true
 		:	ctx.reject({
-				expected: `an array containing at least one item matching 'contains' schema of ${schema.description}`,
+				expected: `at least one item satisfying 'contains' schema of ${schema.description}`,
 				actual: printable(array)
 			})
 
