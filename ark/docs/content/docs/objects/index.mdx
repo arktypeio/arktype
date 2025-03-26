@@ -339,8 +339,8 @@ const base = type({
 	[zildjian]: "true"
 })
 
-// accepts ...definitions
-const chainedResult = type.merge(
+// accepts ...objectDefinitions
+const functionResult = type.merge(
 	base,
 	{
 		"[string]": "bigint",

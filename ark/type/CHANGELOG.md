@@ -1,5 +1,56 @@
 # arktype
 
+## 2.1.13
+
+### Add standalone functions for n-ary operators
+
+```ts
+//  accept ...definitions
+const union = type.or(type.string, "number", { key: "unknown" })
+
+const base = type({
+	foo: "string"
+})
+
+// accepts ...definitions
+const intersection = type.and(
+	base,
+	{
+		bar: "number"
+	},
+	{
+		baz: "string"
+	}
+)
+
+const zildjian = Symbol()
+
+const base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// accepts ...objectDefinitions
+const merged = type.merge(
+	base,
+	{
+		"[string]": "bigint",
+		"foo?": "1n"
+	},
+	{
+		includeThisPropAlso: "true"
+	}
+)
+
+// accepts ...morphsOrTypes
+const trimStartToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
+```
+
 ## 2.1.12
 
 ### `exactOptionalPropertyTypes`
