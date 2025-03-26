@@ -28,6 +28,12 @@ import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
+import type {
+	NaryIntersectionParser,
+	NaryMergeParser,
+	NaryPipeParser,
+	NaryUnionParser
+} from "./nary.ts"
 import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
@@ -166,6 +172,31 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * @example const array = type.instanceOf(Array)
 	 */
 	instanceOf: InstanceOfTypeParser<$>
+	/**
+	 * Create a {@link Type} from a union of definitions
+	 * @example const t = type.or("string", "number")
+	 */
+	or: NaryUnionParser<$>
+	/**
+	 * Create a {@link Type} from an intersection of definitions
+	 * @example const t = type.and({ a: "1" }, { b: "2" })
+	 */
+	and: NaryIntersectionParser<$>
+	/**
+	 * Create a {@link Type} by merging object definitions, with later
+	 * definitions having precedence for overlapping keys
+	 * @example
+	 * // Type<{ a: "3", b: "2", c: "4" }>
+	 * const t = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
+	 */
+	merge: NaryMergeParser<$>
+	/**
+	 * Create a {@link Type} from a set of morphs (including Types)
+	 * @example
+	 * // Type<(In: string) => To<object>>
+	 * const t = type.pipe(type.string, s => JSON.parse(s), type.object)
+	 */
+	pipe: NaryPipeParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -190,7 +221,11 @@ export class InternalTypeParser extends Callable<
 				unit: $.unit,
 				enumerated: $.enumerated,
 				instanceOf: $.instanceOf,
-				valueOf: $.valueOf
+				valueOf: $.valueOf,
+				or: $.or,
+				and: $.and,
+				merge: $.merge,
+				pipe: $.pipe
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!

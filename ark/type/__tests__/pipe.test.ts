@@ -229,10 +229,20 @@ contextualize(() => {
 			s => `${s}e` as const,
 			s => `${s}f` as const,
 			s => `${s}g` as const,
-			s => `${s}h` as const
+			s => `${s}h` as const,
+			s => `${s}i` as const,
+			s => `${s}j` as const,
+			s => `${s}k` as const,
+			s => `${s}l` as const,
+			s => `${s}m` as const,
+			s => `${s}n` as const,
+			s => `${s}o` as const,
+			s => `${s}p` as const,
+			s => `${s}q` as const,
+			s => `${s}r` as const
 		)
-		attest<"abcdefgh">(pipeAlphabet.infer)
-		attest(pipeAlphabet("a")).equals("abcdefgh")
+		attest<"abcdefghijklmnopqr">(pipeAlphabet.infer)
+		attest(pipeAlphabet("a")).equals("abcdefghijklmnopqr")
 	})
 
 	it("uses pipe for consecutive types", () => {

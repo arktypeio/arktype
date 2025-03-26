@@ -97,8 +97,10 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 		r = Type<merge<t, inferredDef>, $>
 	>(
 		def: type.validate<def, $> &
+			// if you can figure out a way to avoid inlining this without
+			// breaking autocomplete and validation, do it!
 			(inferredDef extends object ? unknown
-			:	ErrorType<"Merged type must be an object", [actual: inferredDef]>)
+			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredDef]>)
 	): r extends infer _ ? _ : never
 
 	/**
@@ -216,6 +218,8 @@ type fromTypeProps<t, props extends array<MappedTypeProp>> = show<
 		>
 	}
 >
+
+export type NonObjectMergeErrorMessage = "Merged type must be an object"
 
 type applyHomomorphicOptionality<t, prop extends MappedTypeProp> =
 	prop["kind"] extends string ? prop

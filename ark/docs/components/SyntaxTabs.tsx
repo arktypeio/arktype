@@ -6,7 +6,8 @@ export const syntaxKinds = [
 	"string",
 	"fluent",
 	"tuple",
-	"args"
+	"args",
+	"function"
 	// don't infer as readonly since Fumadocs (incorrectly) doesn't support that
 ] as const satisfies string[]
 
@@ -16,7 +17,7 @@ export const SyntaxTabs: React.FC<omit<TabsProps, "items">> = ({
 	children,
 	...rest
 }) => {
-	const usedKinds = Children.toArray(children).flatMap(child => {
+	const usedKinds = Children.toArray(children as never).flatMap(child => {
 		if (!isValidElement(child)) return []
 		if (!child.props) return []
 

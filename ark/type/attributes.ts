@@ -8,6 +8,7 @@ import {
 	type Hkt,
 	type intersectArrays,
 	type isSafelyMappable,
+	type merge,
 	type Primitive,
 	type show
 } from "@ark/util"
@@ -190,15 +191,37 @@ export type inferPredicate<t, predicate> =
 		narrowed
 	:	t
 
-export type inferPipes<t, pipes extends Morph[]> =
-	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
-		inferPipes<
-			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
-			: inferMorphOut<head> extends infer out ? (In: distill.In<t>) => Out<out>
-			: never,
-			tail
-		>
-	:	t
+export type inferNaryPipe<morphs extends readonly Morph[]> = _inferNaryPipe<
+	morphs,
+	unknown
+>
+
+type _inferNaryPipe<remaining extends readonly unknown[], result> =
+	remaining extends (
+		readonly [infer head extends Morph, ...infer tail extends Morph[]]
+	) ?
+		_inferNaryPipe<tail, inferMorph<result, head>>
+	:	result
+
+export type inferNaryIntersection<types extends readonly unknown[]> =
+	_inferNaryIntersection<types, unknown>
+
+type _inferNaryIntersection<remaining extends readonly unknown[], result> =
+	remaining extends readonly [infer head, ...infer tail] ?
+		_inferNaryIntersection<tail, inferIntersection<result, head>>
+	:	result
+
+export type inferNaryMerge<types extends readonly unknown[]> = _inferNaryMerge<
+	types,
+	{}
+>
+
+type _inferNaryMerge<remaining extends readonly unknown[], result> =
+	remaining extends (
+		readonly [infer head, ...infer tail extends readonly unknown[]]
+	) ?
+		_inferNaryMerge<tail, merge<result, head>>
+	:	result
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
@@ -273,6 +296,11 @@ export type termOrType<t> = t | Type<t, any>
 export type inferIntersection<l, r> = normalizeMorphDistribution<
 	_inferIntersection<l, r, false>
 >
+
+export type inferMorph<t, morph extends Morph> =
+	morph extends type.cast<infer tMorph> ? inferPipe<t, tMorph>
+	: inferMorphOut<morph> extends infer out ? (In: distill.In<t>) => Out<out>
+	: never
 
 export type inferPipe<l, r> = normalizeMorphDistribution<
 	_inferIntersection<l, r, true>

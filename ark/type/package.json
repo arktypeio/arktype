@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.1.12",
+	"version": "2.1.13",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
