@@ -1,5 +1,4 @@
 import {
-	node,
 	rootSchema,
 	type Index,
 	type Intersection,
@@ -208,25 +207,14 @@ export const parseObjectJsonSchema: Type<
 		arktypeObjectSchema.optional = optionalKeys
 		arktypeObjectSchema.index = patternPropertiesIndexes
 	} else {
-		const propertyNamesIndex = {
-			signature: parsedPropertyNamesSchema,
-			value: type.unknown.internal
+		if (
+			!parsedPropertyNamesSchema.equals(type.string) &&
+			patternPropertiesIndexes.length > 0
+		) {
+			throwParseError(
+				"Can only specify both 'patternProperties' and 'propertyNames' when the specified 'propertyNames' schema allows all strings"
+			)
 		}
-
-		// Ensure all 'patternProperties' adhere to the 'propertyNames' schema
-		patternPropertiesIndexes.forEach(patternPropertyIndex => {
-			const patternPropertyAsIndexNode = node("index", patternPropertyIndex)
-			const propertyNamesAsIndexNode = node("index", propertyNamesIndex)
-			if (
-				!patternPropertyAsIndexNode.signature.extends(
-					propertyNamesAsIndexNode.signature
-				)
-			) {
-				throwParseError(
-					`Pattern property ${patternPropertyAsIndexNode.signature.expression} doesn't conform to propertyNames schema of ${propertyNamesAsIndexNode.signature.expression}`
-				)
-			}
-		})
 
 		// Ensure all required keys adhere to the 'propertyNames' schema
 		requiredKeys.forEach(requiredKey => {
