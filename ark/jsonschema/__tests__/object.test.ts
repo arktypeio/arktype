@@ -164,14 +164,14 @@ contextualize(() => {
 	it("propertyNames & patternProperties", () => {
 		const tPropertyNamesAndPatternPropertiesValid = parseJsonSchema({
 			type: "object",
-			patternProperties: { foo: { type: "string" } },
-			propertyNames: { type: "string" }
+			patternProperties: { foo: { type: "number" } },
+			propertyNames: { type: "string", pattern: "foo" }
 		})
 		attest(tPropertyNamesAndPatternPropertiesValid.json).snap({
 			domain: "object",
 			index: [
-				{ signature: "string", value: {} },
-				{ signature: { domain: "string", pattern: ["foo"] }, value: "string" }
+				{ signature: { domain: "string", pattern: ["foo"] }, value: "number" },
+				{ signature: { domain: "string", pattern: ["foo"] }, value: {} }
 			],
 			undeclared: "reject"
 		})
@@ -183,7 +183,7 @@ contextualize(() => {
 				patternProperties: { "^abcd": { type: "number" } }
 			})
 		}).throws(
-			"Can only specify both 'patternProperties' and 'propertyNames' when the specified 'propertyNames' schema allows all strings"
+			"ParseError: Pattern property string /^abcd/ doesn't conform to propertyNames schema of string >= 3"
 		)
 	})
 
