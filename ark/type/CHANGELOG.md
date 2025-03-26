@@ -1,5 +1,17 @@
 # arktype
 
+## 2.1.14
+
+### improve .expression for regex constraints
+
+```ts
+const t = type(/^a.*z$/)
+
+// old: string /^a.*z$/
+// new: /^a.*z$/
+console.log(t.expression)
+```
+
 ## 2.1.13
 
 ### Add standalone functions for n-ary operators
