@@ -313,6 +313,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		$: BaseScope
 	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
+	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
 
 export interface UnknownNodeImplementation
