@@ -32,101 +32,103 @@ const pokedex: Pokemon[] = [
 	{
 		name: "Eevee",
 		type: "Normal",
-		strong: []
+		counters: []
 	},
 	{
 		name: "Charizard",
 		type: "Fire",
-		strong: ["Grass", "Ice", "Bug", "Steel"]
-	},
-	{
-		name: "Blastoise",
-		type: "Water",
-		strong: ["Fire", "Ground", "Rock"]
+		counters: ["Grass", "Ice", "Bug", "Steel"]
 	},
 	{
 		name: "Pikachu",
 		type: "Electric",
-		strong: ["Water", "Flying"]
+		counters: ["Water", "Flying"]
 	},
 	{
 		name: "Venusaur",
 		type: "Grass",
-		strong: ["Water", "Ground", "Rock"]
+		counters: ["Water", "Ground", "Rock"]
 	},
 	{
 		name: "Glaceon",
 		type: "Ice",
-		strong: ["Grass", "Ground", "Flying", "Dragon"]
+		counters: ["Grass", "Ground", "Flying", "Dragon"]
 	},
 	{
 		name: "Machamp",
 		type: "Fighting",
-		strong: ["Normal", "Ice", "Rock", "Dark", "Steel"]
+		counters: ["Normal", "Ice", "Rock", "Dark", "Steel"]
 	},
 	{
 		name: "Muk",
 		type: "Poison",
-		strong: ["Grass", "Fairy"]
+		counters: ["Grass", "Fairy"]
 	},
 	{
 		name: "Dugtrio",
 		type: "Ground",
-		strong: ["Fire", "Electric", "Poison", "Rock", "Steel"]
+		counters: ["Fire", "Electric", "Poison", "Rock", "Steel"]
 	},
 	{
 		name: "Pidgeot",
 		type: "Flying",
-		strong: ["Grass", "Fighting", "Bug"]
+		counters: ["Grass", "Fighting", "Bug"]
 	},
 	{
 		name: "Alakazam",
 		type: "Psychic",
-		strong: ["Fighting", "Poison"]
+		counters: ["Fighting", "Poison"]
 	},
 	{
 		name: "Scizor",
 		type: "Bug",
-		strong: ["Grass", "Psychic", "Dark"]
+		counters: ["Grass", "Psychic", "Dark"]
 	},
 	{
 		name: "Golem",
 		type: "Rock",
-		strong: ["Fire", "Ice", "Flying", "Bug"]
+		counters: ["Fire", "Ice", "Flying", "Bug"]
 	},
 	{
 		name: "Gengar",
 		type: "Ghost",
-		strong: ["Psychic", "Ghost"]
+		counters: ["Psychic", "Ghost"]
 	},
 	{
 		name: "Dragonite",
 		type: "Dragon",
-		strong: ["Dragon"]
+		counters: ["Dragon"]
 	},
 	{
 		name: "Tyranitar",
 		type: "Dark",
-		strong: ["Psychic", "Ghost"]
+		counters: ["Psychic", "Ghost"]
 	},
 	{
 		name: "Steelix",
 		type: "Steel",
-		strong: ["Ice", "Rock", "Fairy"]
+		counters: ["Ice", "Rock", "Fairy"]
+	},
+	{
+		name: "Blastoise",
+		type: "Water",
+		counters: ["Fire", "Ground", "Rock"]
 	},
 	{
 		name: "Gardevoir",
 		type: "Fairy",
-		strong: ["Fighting", "Dragon", "Dark"]
+		counters: ["Fighting", "Dragon", "Dark"]
 	}
 ]
+
+const PokeType = type.enumerated(...types)
 
 const ArkPokemon = type.or(
 	...types.map(t =>
 		type({
 			name: "string",
-			strong: type.enumerated(...types).array(),
-			type: `"${t}"`
+			counters: PokeType.array(),
+			type: type.unit(t)
 		})
 	)
 )
@@ -135,7 +137,7 @@ const PokemonTypeBox = Type.Union(
 	types.map(t =>
 		Type.Object({
 			name: Type.String(),
-			strong: Type.Array(Type.Union(types.map(t => Type.Literal(t)))),
+			counters: Type.Array(Type.Union(types.map(t => Type.Literal(t)))),
 			type: Type.Literal(t)
 		})
 	)
@@ -149,7 +151,7 @@ const ZodPokemon = z.union(
 	types.map(t =>
 		z.object({
 			name: z.string(),
-			strong: z.array(z.enum(types)),
+			counters: z.array(z.enum(types)),
 			type: z.literal(t)
 		})
 	) as never
