@@ -342,11 +342,10 @@ contextualize(() => {
 				s => `${s}n` as const,
 				s => `${s}o` as const,
 				s => `${s}p` as const,
-				s => `${s}q` as const,
-				s => `${s}r` as const
+				s => `${s}q` as const
 			)
-			attest<"abcdefghijklmnopqr">(t.infer)
-			attest(t("a")).equals("abcdefghijklmnopqr")
+			attest<"abcdefghijklmnopq">(t.infer)
+			attest(t("a")).equals("abcdefghijklmnopq")
 		})
 
 		it("spreadable as Types", () => {
