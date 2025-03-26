@@ -255,21 +255,33 @@ contextualize(() => {
 	})
 
 	it("valueOf", () => {
-		const fakeEnum = {
-			foo: 1,
-			bar: "bar",
-			mapped: "MAPPED"
+		//    🪦R.I.P. TS enums🪦
+		//         2012-2025
+		// Killed by --erasableSyntaxOnly
+
+		// enum TsEnum {
+		// 	numeric = 1,
+		// 	symmetrical = "symmetrical",
+		// 	asymmetrical = "lacirtemmysa"
+		// }
+
+		const EquivalentObject = {
+			numeric: 1,
+			symmetrical: "symmetrical",
+			asymmetrical: "lacirtemmysa"
 		} as const
 
-		// ts reverse assigns numeric values
+		// TS reverse assigns numeric values
 		// need to make sure we don't extract them at runtime
-		Object.assign(fakeEnum, {
-			1: "foo"
+
+		// Object.assign avoids TS inferring this key (it wouldn't for an enum)
+		Object.assign(EquivalentObject, {
+			"1": "numeric"
 		})
 
-		const t = type.valueOf(fakeEnum)
+		const t = type.valueOf(EquivalentObject)
 
-		const expected = type.enumerated(1, "bar", "MAPPED")
+		const expected = type.enumerated(1, "symmetrical", "lacirtemmysa")
 
 		attest<typeof expected>(t)
 		attest(t.expression).equals(expected.expression)

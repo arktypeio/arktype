@@ -511,7 +511,7 @@ const exactValue = type("===", mySymbol)
 
 ### Enumerated
 
-`type.enumerated` defines a type based on a list of allowed values. It is semantically equivalent to `type.unit` if provided a single value.
+`type.enumerated` defines a Type based on a list of allowed values. It is semantically equivalent to `type.unit` if provided a single value.
 
 <SyntaxTabs>
 
@@ -546,6 +546,49 @@ const exactValueFromSet = type("===", 1337, true, mySymbol)
     </SyntaxTab>
 
 </SyntaxTabs>
+
+### valueOf
+
+`type.valueOf` defines a Type from a TypeScript `enum` or enum-like object.
+
+<Callout
+	type="warn"
+	title="`enum` should be avoided in modern TypeScript"
+>
+
+Over time, TS has shifted away from features that affect the `.js` it ultimately outputs, including `enum`.
+
+With the introduction of the [`--erasableSyntaxOnly` option](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly) to facilitate type-stripping, `enum` is no longer considered a best practice.
+
+`type.valueOf` exists primarily to facilitate integration with legacy code that relies on `enum`, but if you have the option, prefer transparently defining value sets via `["tupleLiterals"] as const`, `{ objectLiterals: true } as const`, or directly via [`type.enumerated`](/docs/expressions#enumerated).
+
+</Callout>
+
+```ts
+enum TsEnum {
+	numeric = 1
+}
+
+const EnumType = type.valueOf(TsEnum) // Type<1>
+```
+
+It is _almost_ semantically identical to `type.enumerated(...Object.values(o))`. The only exception occurs when an object has an entry with a numeric value and entry with that value as a key mapping back to the original:
+
+```ts
+// this is the structure TsEnum compiles to in JS
+const equivalentObject = {
+	numeric: 1,
+	"1": "numeric"
+} as const
+
+// only allows the number 1 even though it is inferred
+// to also allow the string "numeric"
+const EquivalentObject = type.valueOf(equivalentObject)
+```
+
+Notice `EquivalentObject` doesn't include `"numeric"` because it inverts a numeric value entry.
+
+We recommend `type.enumerated` as the more transparent option for converting value references to a Type. However, if the described inverted entry pairs can't exist on your object, you can safely use `type.valueOf`.
 
 ### Meta
 
