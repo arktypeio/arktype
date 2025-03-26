@@ -1,10 +1,12 @@
 import {
+	node,
 	rootSchema,
+	type Index,
 	type Intersection,
 	type Predicate,
 	type Traversal
 } from "@ark/schema"
-import { getDuplicatesOf, printable } from "@ark/util"
+import { getDuplicatesOf, printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema, type Out, type Type } from "arktype"
 
 import { parseJsonSchema } from "./json.ts"
@@ -77,35 +79,10 @@ const parsePatternProperties = (jsonSchema: JsonSchema.Object) => {
 	return indexSchemas
 }
 
-const parsePropertyNames = (jsonSchema: JsonSchema.Object, ctx: Traversal) => {
+const parsePropertyNames = (jsonSchema: JsonSchema.Object) => {
 	if (!("propertyNames" in jsonSchema)) return
-
 	const propertyNamesValidator = parseJsonSchema(jsonSchema.propertyNames)
-
-	if (!propertyNamesValidator.extends(type.string)) {
-		ctx.reject({
-			path: ["propertyNames"],
-			expected: "a schema for validating a string",
-			actual: `${propertyNamesValidator.toString()}`
-		})
-	}
-
-	const jsonSchemaObjectPropertyNamesValidator = (
-		data: object,
-		ctx: Traversal
-	) => {
-		Object.keys(data).forEach(key => {
-			if (!propertyNamesValidator.allows(key)) {
-				ctx.reject({
-					path: [key],
-					expected: `a key adhering to the propertyNames schema of ${propertyNamesValidator.description}`,
-					actual: key
-				})
-			}
-		})
-		return !ctx.hasError()
-	}
-	return jsonSchemaObjectPropertyNamesValidator
+	return propertyNamesValidator.internal
 }
 
 const parseRequiredAndOptionalKeys = (
@@ -222,21 +199,71 @@ export const parseObjectJsonSchema: Type<
 		jsonSchema,
 		ctx
 	)
-	arktypeObjectSchema.required = requiredKeys
-	arktypeObjectSchema.optional = optionalKeys
+	const patternPropertiesIndexes: Index.Schema[] =
+		parsePatternProperties(jsonSchema) ?? []
 
-	const patternProperties = parsePatternProperties(jsonSchema)
-	if (patternProperties) arktypeObjectSchema.index = patternProperties
+	const parsedPropertyNamesSchema = parsePropertyNames(jsonSchema)
+	if (parsedPropertyNamesSchema === undefined) {
+		arktypeObjectSchema.required = requiredKeys
+		arktypeObjectSchema.optional = optionalKeys
+		arktypeObjectSchema.index = patternPropertiesIndexes
+	} else {
+		const propertyNamesIndex = {
+			signature: parsedPropertyNamesSchema,
+			value: type.unknown.internal
+		}
 
-	const potentialPredicates: (Predicate.Schema | undefined)[] = [
-		...parseMinMaxProperties(jsonSchema, ctx),
-		parsePropertyNames(jsonSchema, ctx)
-	]
+		// Ensure all 'patternProperties' adhere to the 'propertyNames' schema
+		patternPropertiesIndexes.forEach(patternPropertyIndex => {
+			const patternPropertyAsIndexNode = node("index", patternPropertyIndex)
+			const propertyNamesAsIndexNode = node("index", propertyNamesIndex)
+			if (
+				!patternPropertyAsIndexNode.signature.extends(
+					propertyNamesAsIndexNode.signature
+				)
+			) {
+				throwParseError(
+					`Pattern property ${patternPropertyAsIndexNode.signature.expression} doesn't conform to propertyNames schema of ${propertyNamesAsIndexNode.signature.expression}`
+				)
+			}
+		})
+
+		// Ensure all required keys adhere to the 'propertyNames' schema
+		requiredKeys.forEach(requiredKey => {
+			if (!parsedPropertyNamesSchema.allows(requiredKey.key)) {
+				throwParseError(
+					`Required key ${requiredKey.key} doesn't conform to propertyNames schema of ${parsedPropertyNamesSchema.expression}`
+				)
+			}
+		})
+		arktypeObjectSchema.required = requiredKeys
+
+		// Update the value of optional keys that doen't adhere to the 'propertyNames' to be 'never'
+		arktypeObjectSchema.optional = optionalKeys.map(optionalKey =>
+			parsedPropertyNamesSchema.allows(optionalKey.key) ? optionalKey : (
+				{ ...optionalKey, value: type.never.internal }
+			)
+		)
+
+		// Set the 'propertyNames' constraints
+		arktypeObjectSchema.index = [
+			...patternPropertiesIndexes,
+			{
+				signature: parsedPropertyNamesSchema,
+				value: type.unknown.internal
+			}
+		]
+		arktypeObjectSchema.undeclared = "reject"
+	}
+
+	const potentialPredicates: (Predicate.Schema | undefined)[] =
+		parseMinMaxProperties(jsonSchema, ctx)
 
 	const additionalProperties = parseAdditionalProperties(jsonSchema)
-	if (typeof additionalProperties === "boolean")
-		arktypeObjectSchema.undeclared = additionalProperties ? "ignore" : "reject"
-	else potentialPredicates.push(additionalProperties)
+	if (typeof additionalProperties === "boolean") {
+		arktypeObjectSchema.undeclared ??=
+			additionalProperties ? "ignore" : "reject"
+	} else potentialPredicates.push(additionalProperties)
 
 	const predicates = potentialPredicates.filter(
 		potentialPredicate => potentialPredicate !== undefined
