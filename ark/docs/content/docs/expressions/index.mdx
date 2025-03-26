@@ -33,6 +33,27 @@ const foobarObject = fooObject.and({
 
     </SyntaxTab>
 
+    <SyntaxTab function>
+
+```ts
+const fooObject = type({
+	foo: "string"
+})
+
+// accepts ...definitions
+const foobarObject = type.and(
+	fooObject,
+	{
+		bar: "number"
+	},
+	{
+		baz: "string"
+	}
+)
+```
+
+    </SyntaxTab>
+
     <SyntaxTab tuple>
 
 ```ts
@@ -90,6 +111,15 @@ const unions = type({
 const unions = type({
 	key: type.string.or(type.number)
 })
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab function>
+
+```ts
+// accepts ...definitions
+const union = type.or(type.string, "number", { key: "unknown" })
 ```
 
     </SyntaxTab>
@@ -348,6 +378,19 @@ Morphs allow you to transform your data after it is validated. You can read more
 ```ts
 // hover to see how morphs are represented at a type-level
 const trimStringStart = type("string").pipe(str => str.trimStart())
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab function>
+
+```ts
+// accepts ...morphsOrTypes
+const trimStartToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
 ```
 
     </SyntaxTab>

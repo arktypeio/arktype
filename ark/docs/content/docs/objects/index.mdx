@@ -328,6 +328,32 @@ const chainedResult = base.merge({
 
     </SyntaxTab>
 
+    <SyntaxTab function>
+
+```ts
+const zildjian = Symbol()
+
+const base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// accepts ...definitions
+const chainedResult = type.merge(
+	base,
+	{
+		"[string]": "bigint",
+		"foo?": "1n"
+	},
+	{
+		includeThisPropAlso: "true"
+	}
+)
+```
+
+    </SyntaxTab>
+
 </SyntaxTabs>
 
 ### keyof [#properties-keyof]
