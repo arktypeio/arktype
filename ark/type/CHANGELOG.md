@@ -1,5 +1,49 @@
 # arktype
 
+## 2.1.14
+
+### `.configure({}, selector)` fixes
+
+```ts
+const User = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
+})
+
+// prior to 2.1.14, the selector was not applied
+// when configuring references
+const ConfiguredUser = User.configure(
+	{ description: "A STRING" },
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
+)
+
+// old: A STRING
+// new: A STRING
+ConfiguredUser.get("name").description
+
+// old: A STRING
+// new: "android" | "ios"
+ConfiguredUser.get("platform").description
+
+// old: A STRING or undefined
+// new: a number, A STRING or undefined
+ConfiguredUser.get("version").description
+```
+
+With the much more powerful `.configure` + selector API now available, the internal `.withMeta` method was removed as it can be trivially achieved via a self-selector:
+
+```ts
+// < 2.1.14
+myType.withMeta("some shallow description")
+
+// >= 2.1.14
+myType.configure("some shallow description", "self")
+```
+
 ## 2.1.13
 
 ### Add standalone functions for n-ary operators
