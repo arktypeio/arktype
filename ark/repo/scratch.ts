@@ -1,24 +1,43 @@
+import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-const User = type({
-	name: "string",
-	platform: "'android' | 'ios'",
-	"version?": "number | string"
-})
+export type merge<base, props> = Omit<base, keyof props & keyof base> & props
 
-const selected = User.select({
-	kind: "domain",
-	where: d => d.domain === "string"
-})
+declare const merge: <l, r>(l: l, r: r) => merge<l, r>
 
-const ConfiguredUser = User.configure(
-	{ description: "A STRING" },
-	{
-		kind: "domain",
-		where: d => d.domain === "string"
-	}
-)
+bench("with caching", () => {
+	const a = merge({ a: 1 }, { b: 2 })
+	const b = merge(a, { c: 3 })
+	const c = merge(b, { d: 4 })
+	const d = merge(c, { e: 5 })
+	const e = merge(d, { f: 6 })
+	const f = merge(e, { g: 7 })
+	const g = merge(f, { h: 8 })
+	const h = merge(g, { i: 9 })
+	const i = merge(h, { j: 10 })
+	const j = merge(i, { k: 11 })
+	const k = merge(j, { l: 12 })
+	const l = merge(k, { m: 13 })
+	const m = merge(l, { n: 14 })
+	const n = merge(m, { o: 15 })
+	const o = merge(n, { p: 16 })
+}).types([733, "instantiations"])
 
-ConfiguredUser.get("name").description // A STRING
-ConfiguredUser.get("platform").description // "android" | "ios"
-ConfiguredUser.get("version").description // a number, A STRING or undefined
+bench("actual", () => {
+	const a = merge({ a: 1 }, { b: 2 })
+	const b = merge(a, { c: 3 })
+	const c = merge(b, { d: 4 })
+	const d = merge(c, { e: 5 })
+	const e = merge(d, { f: 6 })
+	const f = merge(e, { g: 7 })
+	const g = merge(f, { h: 8 })
+	const h = merge(g, { i: 9 })
+	const i = merge(h, { j: 10 })
+	const j = merge(i, { k: 11 })
+	const k = merge(j, { l: 12 })
+	const l = merge(k, { m: 13 })
+	const m = merge(l, { n: 14 })
+	const n = merge(m, { o: 15 })
+	// Error: Type instantiation is excessively deep and possibly infinite
+	const o = merge(n, { p: 16 })
+}).types([24349567, "instantiations"])

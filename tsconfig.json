@@ -2,7 +2,7 @@
 	"extends": "./ark/util/tsconfig.base.json",
 	"compilerOptions": {
 		"allowImportingTsExtensions": true,
-		"rewriteRelativeImportExtensions": true,
+		// "rewriteRelativeImportExtensions": true,
 		"customConditions": ["ark-ts"],
 		"types": ["mocha", "node"]
 		//  disabling until compatible with tsgo:
