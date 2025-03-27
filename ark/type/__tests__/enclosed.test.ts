@@ -54,7 +54,7 @@ contextualize(() => {
 	it("regex literal", () => {
 		const t = type("/.*/")
 		attest<string>(t.infer)
-		attest(t.expression).snap("string /.*/")
+		attest(t.expression).snap("/.*/")
 	})
 
 	it("invalid regex", () => {

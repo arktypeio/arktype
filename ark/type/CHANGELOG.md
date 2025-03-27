@@ -1,6 +1,6 @@
 # arktype
 
-## 2.1.14
+## 2.1.15
 
 ### `.configure({}, selector)` fixes
 
@@ -37,11 +37,23 @@ ConfiguredUser.get("version").description
 With the much more powerful `.configure` + selector API now available, the internal `.withMeta` method was removed as it can be trivially achieved via a self-selector:
 
 ```ts
-// < 2.1.14
+// < 2.1.15
 myType.withMeta("some shallow description")
 
-// >= 2.1.14
+// >= 2.1.15
 myType.configure("some shallow description", "self")
+```
+
+## 2.1.14
+
+### improve .expression for regex constraints
+
+```ts
+const t = type(/^a.*z$/)
+
+// old: string /^a.*z$/
+// new: /^a.*z$/
+console.log(t.expression)
 ```
 
 ## 2.1.13
@@ -598,3 +610,7 @@ const out = U.assert({ a: 1 })
 ## 2.0.0
 
 - Initial stable release 🎉
+
+```
+
+```

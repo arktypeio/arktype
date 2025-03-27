@@ -249,7 +249,7 @@ contextualize(() => {
 			]
 		})
 		attest(t.expression).snap(
-			"{ [string]: number, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: string /^a.*z$/) => Out<string /^[a-z]*$/>[]], b?: 2 }"
+			"{ [string]: number, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: /^a.*z$/) => Out</^[a-z]*$/>[]], b?: 2 }"
 		)
 		attest(`${t}`).equals(`Type<${t.expression}>`)
 	})

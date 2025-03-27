@@ -87,4 +87,10 @@ contextualize(() => {
 				.type.errors("Property 'matching' does not exist")
 		})
 	})
+
+	it("expression doesn't include string", () => {
+		const t = type(/^a.*z$/)
+
+		attest(t.expression).snap("/^a.*z$/")
+	})
 })
