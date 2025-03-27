@@ -426,9 +426,12 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		let inputValidatedCases = this.in.pipe(cases)
 
 		if (defaultCase === "never" || defaultCase === "assert") {
-			inputValidatedCases = inputValidatedCases.withMeta({
-				onFail: throwOnDefault
-			})
+			inputValidatedCases = inputValidatedCases.configureReferences(
+				{
+					onFail: throwOnDefault
+				},
+				"self"
+			)
 		}
 
 		return this.$.finalize(inputValidatedCases) as never

@@ -156,7 +156,7 @@ const pipeMorphed = (
 				if (!meta) return onlyBranch
 				return ctx.$.node("morph", {
 					...onlyBranch.inner,
-					in: onlyBranch.in.withMeta(meta)
+					in: onlyBranch.in.configure(meta, "self")
 				})
 			}
 

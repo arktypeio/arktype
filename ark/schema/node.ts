@@ -281,15 +281,6 @@ export abstract class BaseNode<
 		}
 	}
 
-	withMeta(
-		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
-	): this {
-		return this.$.node(this.kind, {
-			...this.inner,
-			meta: typeof meta === "function" ? meta({ ...this.meta }) : meta
-		}) as never
-	}
-
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract expression: string
@@ -601,7 +592,7 @@ export abstract class BaseNode<
 	}
 
 	configureReferences(
-		meta: TypeMeta.MappableInput,
+		meta: TypeMeta.MappableInput.Internal,
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
