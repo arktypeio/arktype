@@ -6,6 +6,8 @@ const User = type({
 	"version?": "number | string"
 })
 
+User.internal.withMeta
+
 const selected = User.select({
 	kind: "domain",
 	where: d => d.domain === "string"

@@ -493,7 +493,6 @@ export abstract class BaseNode<
 	): DeepNodeTransformContext {
 		return {
 			root: this,
-			current: this,
 			selected: undefined,
 			seen: {},
 			path: [],
@@ -606,9 +605,6 @@ export abstract class BaseNode<
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
-		const rawSelected = this._select(normalized)
-
-		const selected = rawSelected && liftArray(rawSelected)
 
 		const mapper = (
 			typeof meta === "string" ?
@@ -629,6 +625,9 @@ export abstract class BaseNode<
 				mapper(this.kind, { ...this.inner, meta: this.meta })
 			) as never
 		}
+
+		const rawSelected = this._select(normalized)
+		const selected = rawSelected && liftArray(rawSelected)
 
 		const shouldTransform: ShouldTransformFn =
 			normalized.boundary === "child" ?
@@ -825,7 +824,6 @@ export type ShouldTransformFn = (
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	root: BaseNode
-	current: BaseNode
 	selected: readonly BaseNode[] | undefined
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
