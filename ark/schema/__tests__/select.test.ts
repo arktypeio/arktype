@@ -195,6 +195,14 @@ contextualize(() => {
 		})
 	})
 
+	it("non-narrowing where", () => {
+		const result = t.select({
+			kind: "domain",
+			where: d => d.domain === "string"
+		})
+		attest<DomainNode[]>(result).snap([{ domain: "string" }])
+	})
+
 	it("predicate narrows kind", () => {
 		type StringDomain = DomainNode & { domain: string }
 		const result = t.select({

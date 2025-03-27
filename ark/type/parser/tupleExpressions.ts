@@ -197,7 +197,7 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 }
 
 const parseAttributeTuple: IndexOneParser<"@"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureDescendants(
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureReferences(
 		def[2] as never,
 		"shallow"
 	)
