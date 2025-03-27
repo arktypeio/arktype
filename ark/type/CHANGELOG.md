@@ -11,7 +11,7 @@ const User = type({
 	"version?": "number | string"
 })
 
-// prior to 2.1.14, the selector was not applied
+// prior to 2.1.15, the selector was not applied
 // when configuring references
 const ConfiguredUser = User.configure(
 	{ description: "A STRING" },

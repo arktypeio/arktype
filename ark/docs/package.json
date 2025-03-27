@@ -26,7 +26,7 @@
 		"arkthemes": "workspace:*",
 		"arktype": "workspace:*",
 		"class-variance-authority": "0.7.1",
-		"framer-motion": "12.6.0",
+		"framer-motion": "12.6.2",
 		"fumadocs-core": "15.1.2",
 		"fumadocs-mdx": "11.5.7",
 		"fumadocs-twoslash": "3.1.0",
@@ -40,7 +40,7 @@
 		"next": "15.2.4",
 		"onigasm": "2.2.5",
 		"postcss": "8.5.3",
-		"posthog-js": "1.232.7",
+		"posthog-js": "1.233.1",
 		"react": "19.0.0",
 		"react-dom": "19.0.0",
 		"serve": "14.2.4",
@@ -50,12 +50,12 @@
 	},
 	"devDependencies": {
 		"@fumadocs/cli": "0.0.8",
-		"@tailwindcss/postcss": "4.0.16",
+		"@tailwindcss/postcss": "4.0.17",
 		"@types/mdx": "2.0.13",
 		"@types/react": "19.0.12",
 		"@types/react-dom": "19.0.4",
 		"prettier-plugin-tailwindcss": "0.6.11",
-		"tailwindcss": "4.0.16",
+		"tailwindcss": "4.0.17",
 		"typescript": "catalog:"
 	}
 }
