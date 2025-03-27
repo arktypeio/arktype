@@ -80,7 +80,7 @@ contextualize(() => {
 		attest(() =>
 			t.select({ method: "assertFind", kind: "pattern" })
 		).throws.snap(
-			'Error: Type<{ foo: string }> had no references matching {"method":"assertFind","kind":"pattern"}.'
+			'Error: Type<{ foo: string }> had no references matching {"boundary":"references","method":"assertFind","kind":"pattern"}.'
 		)
 	})
 
@@ -94,7 +94,7 @@ contextualize(() => {
 		attest(() =>
 			t.select({ method: "assertFilter", kind: "pattern" })
 		).throws.snap(
-			'Error: Type<{ foo: string }> had no references matching {"method":"assertFilter","kind":"pattern"}.'
+			'Error: Type<{ foo: string }> had no references matching {"boundary":"references","method":"assertFilter","kind":"pattern"}.'
 		)
 	})
 
@@ -193,6 +193,14 @@ contextualize(() => {
 				})
 			).completions({ "": ["assertFilter", "assertFind", "filter", "find"] })
 		})
+	})
+
+	it("non-narrowing where", () => {
+		const result = t.select({
+			kind: "domain",
+			where: d => d.domain === "string"
+		})
+		attest<DomainNode[]>(result).snap([{ domain: "string" }])
 	})
 
 	it("predicate narrows kind", () => {

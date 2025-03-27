@@ -6,6 +6,7 @@ import {
 	isArray,
 	isEmptyObject,
 	isKeyOf,
+	liftArray,
 	printable,
 	stringifyPath,
 	throwError,
@@ -280,15 +281,6 @@ export abstract class BaseNode<
 		}
 	}
 
-	withMeta(
-		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
-	): this {
-		return this.$.node(this.kind, {
-			...this.inner,
-			meta: typeof meta === "function" ? meta({ ...this.meta }) : meta
-		}) as never
-	}
-
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract expression: string
@@ -459,15 +451,19 @@ export abstract class BaseNode<
 	select<const selector extends NodeSelector.Single>(
 		selector: selector
 	): NodeSelector.infer<d["kind"], selector>
-	select(selector: NodeSelector): unknown {
+	select(selector: NodeSelector): NodeSelector.BaseResult {
 		const normalized = NodeSelector.normalize(selector)
+		return this._select(normalized)
+	}
+
+	private _select(selector: NodeSelector.Normalized): NodeSelector.BaseResult {
 		let nodes =
-			NodeSelector.applyBoundary[normalized.boundary ?? "references"](this)
+			NodeSelector.applyBoundary[selector.boundary ?? "references"](this)
 
-		if (normalized.kind) nodes = nodes.filter(n => n.kind === normalized.kind)
-		if (normalized.where) nodes = nodes.filter(normalized.where)
+		if (selector.kind) nodes = nodes.filter(n => n.kind === selector.kind)
+		if (selector.where) nodes = nodes.filter(selector.where)
 
-		return NodeSelector.applyMethod[normalized.method ?? "filter"](
+		return NodeSelector.applyMethod[selector.method ?? "filter"](
 			nodes,
 			this,
 			selector
@@ -487,14 +483,15 @@ export abstract class BaseNode<
 		opts: DeepNodeTransformOptions | undefined
 	): DeepNodeTransformContext {
 		return {
-			...opts,
 			root: this,
+			selected: undefined,
 			seen: {},
 			path: [],
 			parseOptions: {
 				prereduced: opts?.prereduced ?? false
 			},
-			undeclaredKeyHandling: undefined
+			undeclaredKeyHandling: undefined,
+			...opts
 		}
 	}
 
@@ -549,7 +546,10 @@ export abstract class BaseNode<
 			meta: this.meta
 		})
 
-		const transformedInner = mapper(this.kind, innerWithMeta, ctx)
+		const transformedInner =
+			ctx.selected && !ctx.selected.includes(this) ?
+				innerWithMeta
+			:	mapper(this.kind, innerWithMeta, ctx)
 
 		if (transformedInner === null) return null
 
@@ -591,8 +591,8 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureDescendants(
-		meta: TypeMeta.MappableInput,
+	configureReferences(
+		meta: TypeMeta.MappableInput.Internal,
 		selector: NodeSelector = "references"
 	): this {
 		const normalized = NodeSelector.normalize(selector)
@@ -617,6 +617,9 @@ export abstract class BaseNode<
 			) as never
 		}
 
+		const rawSelected = this._select(normalized)
+		const selected = rawSelected && liftArray(rawSelected)
+
 		const shouldTransform: ShouldTransformFn =
 			normalized.boundary === "child" ?
 				(node, ctx) => ctx.root.children.includes(node as never)
@@ -625,7 +628,8 @@ export abstract class BaseNode<
 
 		return this.$.finalize(
 			this.transform(mapper, {
-				shouldTransform
+				shouldTransform,
+				selected
 			}) as never
 		)
 	}
@@ -721,22 +725,24 @@ export declare namespace NodeSelector {
 
 	export type CompositeInput = Omit<Composite, "where">
 
+	export type BaseResult = BaseNode | BaseNode[] | undefined
+
 	export type validateComposite<selector, predicate> = {
 		[k in keyof selector]: k extends "where" ? predicate
 		:	conform<selector[k], CompositeInput[k & keyof CompositeInput]>
 	}
 
 	export type infer<selfKind extends NodeKind, selector> = applyMethod<
-		selector extends NodeSelector.PredicateInput<any, infer narrowed> ? narrowed
+		selector extends NodeSelector.WhereCastInput<any, infer narrowed> ? narrowed
 		:	NodeSelector.inferSelectKind<selfKind, selector>,
 		selector
 	>
 
 	type BoundaryInput<b extends Boundary> = b | { boundary: b }
 	type KindInput<k extends Kind> = k | { kind: k }
-	type PredicateInput<kindNode extends BaseNode, narrowed extends kindNode> =
-		| GuardablePredicate<kindNode, narrowed>
-		| { where: GuardablePredicate<kindNode, narrowed> }
+	type WhereCastInput<kindNode extends BaseNode, narrowed extends kindNode> =
+		| ((In: kindNode) => In is narrowed)
+		| { where: (In: kindNode) => In is narrowed }
 
 	export type inferSelectKind<selfKind extends NodeKind, selector> =
 		selectKind<selfKind, selector> extends infer kind extends NodeKind ?
@@ -799,6 +805,7 @@ export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
 	bindScope?: BaseScope
 	prereduced?: boolean
+	selected?: readonly BaseNode[] | undefined
 }
 
 export type ShouldTransformFn = (
@@ -808,6 +815,7 @@ export type ShouldTransformFn = (
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	root: BaseNode
+	selected: readonly BaseNode[] | undefined
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: BaseParseOptions

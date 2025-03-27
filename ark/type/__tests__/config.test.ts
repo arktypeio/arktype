@@ -278,7 +278,7 @@ contextualize(() => {
 		})
 
 		it("self", () => {
-			const t = base.configure("root-only", "self")
+			const t = base.configure({ description: "root-only" }, "self")
 
 			attest(t.json).snap({
 				required: [{ key: "foo", value: "string" }],
