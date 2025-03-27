@@ -2,11 +2,10 @@
 	"extends": "./ark/util/tsconfig.base.json",
 	"compilerOptions": {
 		"allowImportingTsExtensions": true,
-		// "rewriteRelativeImportExtensions": true,
+		"rewriteRelativeImportExtensions": true,
 		"customConditions": ["ark-ts"],
 		"types": ["mocha", "node"]
-		//  disabling until compatible with tsgo:
-		// https://github.com/microsoft/typescript-go/issues/491
+		// disabling until compatible with tsgo
 		// "erasableSyntaxOnly": true
 		// "noErrorTruncation": true
 	},
