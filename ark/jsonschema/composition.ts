@@ -12,7 +12,7 @@ const parseAnyOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
 
-const parseNotJsonSchema = (jsonSchema: JsonSchema) => {
+const parseNotJsonSchema = (jsonSchema: JsonSchema): Type => {
 	const inner = parseJsonSchema(jsonSchema)
 	return type.unknown.narrow((data, ctx) =>
 		inner.allows(data) ?
@@ -21,10 +21,10 @@ const parseNotJsonSchema = (jsonSchema: JsonSchema) => {
 				actual: printable(data)
 			})
 		:	true
-	) as Type
+	)
 }
 
-const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]) => {
+const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type => {
 	const oneOfValidators = jsonSchemas.map(nestedSchema =>
 		parseJsonSchema(nestedSchema)
 	)
