@@ -104,5 +104,5 @@ const $: JsonSchemaScope = scope(
 		}
 	},
 	{ jitless: true } // workaround for https://github.com/arktypeio/arktype/issues/1188
-) as unknown as JsonSchemaScope
+) as never
 export const JsonSchemaScope = $.export()
