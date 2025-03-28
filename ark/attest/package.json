@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.44.8",
+	"version": "0.45.5",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -38,11 +38,11 @@
 	"dependencies": {
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@prettier/sync": "0.5.2",
+		"@prettier/sync": "0.5.5",
 		"@typescript/analyze-trace": "0.10.1",
-		"@typescript/vfs": "1.6.0",
+		"@typescript/vfs": "1.6.1",
 		"arktype": "workspace:*",
-		"prettier": "3.4.2"
+		"prettier": "3.5.3"
 	},
 	"devDependencies": {
 		"typescript": "catalog:"

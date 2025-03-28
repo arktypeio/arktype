@@ -57,6 +57,8 @@ export declare namespace Morph {
 
 	export type Out<morph extends Morph> =
 		morph extends Morph<never, infer o> ? o : never
+
+	export type ContextFree<i = any, o = unknown> = (In: i) => o
 }
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: Traversal) => o
@@ -196,8 +198,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	expression = `(In: ${this.in.expression}) => ${this.lastMorphIfNode ? "To" : "Out"}<${this.out.expression}>`
 
-	get shortDescription(): string {
-		return "a morph"
+	get defaultShortDescription(): string {
+		return this.in.meta.description ?? this.in.defaultShortDescription
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
@@ -223,7 +225,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
-	hasEqualMorphs(r: MorphNode): boolean {
+	override hasEqualMorphs(r: MorphNode): boolean {
 		return arrayEquals(this.morphs, r.morphs, {
 			isEqual: (lMorph, rMorph) =>
 				lMorph === rMorph ||

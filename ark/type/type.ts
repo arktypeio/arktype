@@ -5,7 +5,8 @@ import {
 	type BaseParseOptions,
 	type Morph,
 	type Predicate,
-	type RootSchema
+	type RootSchema,
+	type TypeMeta
 } from "@ark/schema"
 import {
 	Callable,
@@ -15,7 +16,6 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
-import type { TypeMetaInput } from "./config.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -28,6 +28,12 @@ import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
+import type {
+	NaryIntersectionParser,
+	NaryMergeParser,
+	NaryPipeParser,
+	NaryUnionParser
+} from "./nary.ts"
 import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
@@ -107,7 +113,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "|>" ? [type.validate<rest[0], $>]
-			: one extends "@" ? [TypeMetaInput]
+			: one extends "@" ? [TypeMeta.MappableInput]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r extends infer _ ? _ : never
@@ -155,10 +161,42 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 */
 	enumerated: EnumeratedTypeParser<$>
 	/**
+	 * Create a {@link Type} that is satisfied only by one of the Object.values() of the argument passed to this function.
+	 *
+	 * ⚠️ For TypeScript enum compatibility, values at numeric keys with corresponding numeric values will not be included.
+	 * @example const myEnum = type.valueOf(myTsEnum)
+	 */
+	valueOf: ValueOfTypeParser<$>
+	/**
 	 * Create a {@link Type} that is satisfied only by a value of a specific class.
 	 * @example const array = type.instanceOf(Array)
 	 */
 	instanceOf: InstanceOfTypeParser<$>
+	/**
+	 * Create a {@link Type} from a union of definitions
+	 * @example const t = type.or("string", "number")
+	 */
+	or: NaryUnionParser<$>
+	/**
+	 * Create a {@link Type} from an intersection of definitions
+	 * @example const t = type.and({ a: "1" }, { b: "2" })
+	 */
+	and: NaryIntersectionParser<$>
+	/**
+	 * Create a {@link Type} by merging object definitions, with later
+	 * definitions having precedence for overlapping keys
+	 * @example
+	 * // Type<{ a: "3", b: "2", c: "4" }>
+	 * const t = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
+	 */
+	merge: NaryMergeParser<$>
+	/**
+	 * Create a {@link Type} from a set of morphs (including Types)
+	 * @example
+	 * // Type<(In: string) => To<object>>
+	 * const t = type.pipe(type.string, s => JSON.parse(s), type.object)
+	 */
+	pipe: NaryPipeParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -182,7 +220,12 @@ export class InternalTypeParser extends Callable<
 				keywords: $.ambient as never,
 				unit: $.unit,
 				enumerated: $.enumerated,
-				instanceOf: $.instanceOf
+				instanceOf: $.instanceOf,
+				valueOf: $.valueOf,
+				or: $.or,
+				and: $.and,
+				merge: $.merge,
+				pipe: $.pipe
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
@@ -241,6 +284,10 @@ export type InstanceOfTypeParser<$> = <const t extends object>(
 export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
+
+export type ValueOfTypeParser<$> = <const o extends object>(
+	o: o
+) => Type<o[keyof o], $>
 
 export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 

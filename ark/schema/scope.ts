@@ -154,7 +154,7 @@ const scopesByName: Record<string, BaseScope | undefined> = {}
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
-	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey"
+	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey" | "keywords"
 >
 
 export interface ScopeOnlyConfigOptions {
@@ -174,14 +174,18 @@ $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
 
+const rootScopeFnName = "function $"
+
 const precompile = (references: readonly BaseNode[]): void =>
-	bindPrecompilation(references, writePrecompilation(references))
+	bindPrecompilation(references, precompileReferences(references))
 
 const bindPrecompilation = (
 	references: readonly BaseNode[],
-	precompilation: string
+	precompiler: CompiledFunction<() => PrecompiledReferences>
 ): void => {
-	const compiledTraversals = instantiatePrecompilation(precompilation)
+	const precompilation = precompiler.write(rootScopeFnName)
+	const compiledTraversals = precompiler.compile()()
+
 	for (const node of references) {
 		if (node.precompilation) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
@@ -205,38 +209,37 @@ const bindPrecompilation = (
 	}
 }
 
-const instantiatePrecompilation = (precompilation: string) =>
-	new CompiledFunction().return(precompilation).compile<
-		() => {
-			[k: `${string}Allows`]: TraverseAllows
-			[k: `${string}Apply`]: TraverseApply
-			[k: `${string}Optimistic`]: (data: unknown) => unknown
-		}
-	>()()
+export type PrecompiledReferences = {
+	[k: `${string}Allows`]: TraverseAllows
+	[k: `${string}Apply`]: TraverseApply
+	[k: `${string}Optimistic`]: (data: unknown) => unknown
+}
 
-const writePrecompilation = (references: readonly BaseNode[]) =>
-	references.reduce((js, node) => {
-		const allowsCompiler = new NodeCompiler({ kind: "Allows" }).indent()
-		node.compile(allowsCompiler)
-		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
+const precompileReferences = (references: readonly BaseNode[]) =>
+	new CompiledFunction<() => PrecompiledReferences>().return(
+		references.reduce((js, node) => {
+			const allowsCompiler = new NodeCompiler({ kind: "Allows" }).indent()
+			node.compile(allowsCompiler)
+			const allowsJs = allowsCompiler.write(`${node.id}Allows`)
 
-		const applyCompiler = new NodeCompiler({ kind: "Apply" }).indent()
-		node.compile(applyCompiler)
-		const applyJs = applyCompiler.write(`${node.id}Apply`)
+			const applyCompiler = new NodeCompiler({ kind: "Apply" }).indent()
+			node.compile(applyCompiler)
+			const applyJs = applyCompiler.write(`${node.id}Apply`)
 
-		const result = `${js}${allowsJs},\n${applyJs},\n`
+			const result = `${js}${allowsJs},\n${applyJs},\n`
 
-		if (!node.hasKind("union")) return result
+			if (!node.hasKind("union")) return result
 
-		const optimisticCompiler = new NodeCompiler({
-			kind: "Allows",
-			optimistic: true
-		}).indent()
-		node.compile(optimisticCompiler)
-		const optimisticJs = optimisticCompiler.write(`${node.id}Optimistic`)
+			const optimisticCompiler = new NodeCompiler({
+				kind: "Allows",
+				optimistic: true
+			}).indent()
+			node.compile(optimisticCompiler)
+			const optimisticJs = optimisticCompiler.write(`${node.id}Optimistic`)
 
-		return `${result}${optimisticJs},\n`
-	}, "{\n") + "}"
+			return `${result}${optimisticJs},\n`
+		}, "{\n") + "}"
+	)
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkSchemaScopeConfig
@@ -257,6 +260,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 	readonly nodesByHash: Record<string, BaseNode> = {}
+	readonly intrinsic: Omit<typeof $ark.intrinsic, `json${string}`>
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -327,6 +331,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 			{},
 			{ prereduced: true }
 		)
+
+		this.intrinsic =
+			$ark.intrinsic ?
+				flatMorph($ark.intrinsic, (k, v) =>
+					// don't include cyclic aliases from JSON scope
+					k.startsWith("json") ? [] : [k, this.bindReference(v as never)]
+				)
+				// intrinsic won't be available during bootstrapping,  so we lie
+				// about the type here as an extrnal convenience
+			:	({} as never)
 	}
 
 	protected cacheGetter<name extends keyof this>(
@@ -624,8 +638,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) {
-				this.precompilation = writePrecompilation(this.references)
-				bindPrecompilation(this.references, this.precompilation)
+				const precompiler = precompileReferences(this.references)
+				this.precompilation = precompiler.write(rootScopeFnName)
+				bindPrecompilation(this.references, precompiler)
 			}
 			this.resolved = true
 		}

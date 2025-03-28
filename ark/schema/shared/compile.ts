@@ -3,7 +3,8 @@ import {
 	DynamicFunction,
 	hasDomain,
 	isDotAccessible,
-	serializePrimitive
+	serializePrimitive,
+	type Fn
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
@@ -13,7 +14,8 @@ import type { TraversalKind } from "./traversal.ts"
 export type CoercibleValue = string | number | boolean | null | undefined
 
 export class CompiledFunction<
-	args extends readonly string[]
+	compiledSignature = (...args: unknown[]) => unknown,
+	args extends readonly string[] = readonly string[]
 > extends CastableBase<{
 	[k in args[number]]: k
 }> {
@@ -113,14 +115,8 @@ export class CompiledFunction<
 ${this.body}}`
 	}
 
-	compile<
-		f extends (
-			...args: {
-				[i in keyof args]: never
-			}
-		) => unknown
-	>(): f {
-		return new DynamicFunction(...this.argNames, this.body)
+	compile(): compiledSignature {
+		return new DynamicFunction(...this.argNames, this.body) as never
 	}
 }
 
@@ -161,7 +157,7 @@ export declare namespace NodeCompiler {
 	}
 }
 
-export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
+export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	optimistic: boolean
 

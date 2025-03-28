@@ -1,20 +1,24 @@
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
-	isAdmin: "boolean = false",
-	"age?": "number"
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
 })
 
-const defaultableProps = user.props.filter(
-	p => p.kind === "optional" && "default" in p
+const selected = User.select({
+	kind: "domain",
+	where: d => d.domain === "string"
+})
+
+const ConfiguredUser = User.configure(
+	{ description: "A STRING" },
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
 )
 
-const nanToNull = type("number.NaN").pipe(() => null, type.null)
-
-const nullNumber = type("number").or(nanToNull)
-
-const out = nullNumber(5) // 5
-const out2 = nullNumber(Number.NaN) // null
-
-console.log(nullNumber.out.distribute(branch => branch.expression)) // ["number", "null"]
+ConfiguredUser.get("name").description // A STRING
+ConfiguredUser.get("platform").description // "android" | "ios"
+ConfiguredUser.get("version").description // a number, A STRING or undefined

@@ -57,7 +57,7 @@ export class RequiredNode extends BaseProp<"required"> {
 
 	errorContext: NodeErrorContextInput<"required"> = Object.freeze({
 		code: "required",
-		missingValueDescription: this.value.shortDescription,
+		missingValueDescription: this.value.defaultShortDescription,
 		relativePath: [this.key],
 		meta: this.meta
 	})

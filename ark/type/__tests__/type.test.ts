@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { TraversalError } from "@ark/schema"
+import { TraversalError, type UnitNode } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import * as assert from "node:assert/strict"
@@ -57,6 +57,13 @@ contextualize(() => {
 		attest(() => t.assert({ a: 1 })).throws.snap(
 			"TraversalError: a must be a string (was a number)"
 		)
+	})
+
+	it("select", () => {
+		const units = type("'red' | 'blue'").select("unit")
+
+		attest<UnitNode[]>(units)
+		attest(units).snap([{ unit: "blue" }, { unit: "red" }])
 	})
 
 	it("is treated as covariant", () => {
@@ -242,8 +249,41 @@ contextualize(() => {
 			]
 		})
 		attest(t.expression).snap(
-			"{ [string]: number, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: string /^a.*z$/) => Out<string /^[a-z]*$/>[]], b?: 2 }"
+			"{ [string]: number, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: /^a.*z$/) => Out</^[a-z]*$/>[]], b?: 2 }"
 		)
 		attest(`${t}`).equals(`Type<${t.expression}>`)
+	})
+
+	it("valueOf", () => {
+		//    🪦R.I.P. TS enums🪦
+		//         2012-2025
+		// Killed by --erasableSyntaxOnly
+
+		// enum TsEnum {
+		// 	numeric = 1,
+		// 	symmetrical = "symmetrical",
+		// 	asymmetrical = "lacirtemmysa"
+		// }
+
+		const EquivalentObject = {
+			numeric: 1,
+			symmetrical: "symmetrical",
+			asymmetrical: "lacirtemmysa"
+		} as const
+
+		// TS reverse assigns numeric values
+		// need to make sure we don't extract them at runtime
+
+		// Object.assign avoids TS inferring this key (it wouldn't for an enum)
+		Object.assign(EquivalentObject, {
+			"1": "numeric"
+		})
+
+		const t = type.valueOf(EquivalentObject)
+
+		const expected = type.enumerated(1, "symmetrical", "lacirtemmysa")
+
+		attest<typeof expected>(t)
+		attest(t.expression).equals(expected.expression)
 	})
 })

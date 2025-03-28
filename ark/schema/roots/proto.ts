@@ -171,7 +171,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 	readonly domain = "object"
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return this.description
 	}
 }

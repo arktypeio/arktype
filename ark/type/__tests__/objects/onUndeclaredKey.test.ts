@@ -73,6 +73,10 @@ contextualize(() => {
 				}
 			}).onDeepUndeclaredKey("delete")
 
+			attest(t.expression).snap(
+				"{ a: string, nested: { a: string, + (undeclared): delete }, + (undeclared): delete }"
+			)
+
 			attest(
 				t({
 					...getExtraneousB(),

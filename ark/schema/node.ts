@@ -5,6 +5,9 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	isKeyOf,
+	liftArray,
+	printable,
 	stringifyPath,
 	throwError,
 	throwInternalError,
@@ -15,17 +18,20 @@ import {
 	type array,
 	type conform,
 	type listable,
-	type mutable
+	type mutable,
+	type requireKeys
 } from "@ark/util"
 import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
 	NormalizedSchema,
+	childKindOf,
 	mutableInnerOfKind,
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
+import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
@@ -35,7 +41,7 @@ import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseMeta,
 	BaseNodeDeclaration,
-	MetaSchema,
+	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
 import type { ArkErrors } from "./shared/errors.ts"
@@ -63,8 +69,8 @@ import { isNode, type arkKind } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
-	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
-	 * @ts-ignore allow instantiation assignment to the base type */
+	// uses -ignore rather than -expect-error because this is not an error in .d.ts
+	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
 	(
@@ -96,7 +102,7 @@ export abstract class BaseNode<
 	referencesById: Record<string, BaseNode>
 	shallowReferences: BaseNode[]
 	flatRefs: FlatRef[]
-	flatMorphs: FlatRef<Morph.Node>[]
+	flatMorphs: FlatRef<Morph.Node | Intersection.Node>[]
 	allows: (data: d["prerequisite"]) => boolean
 
 	get shallowMorphs(): array<Morph> {
@@ -168,7 +174,11 @@ export abstract class BaseNode<
 					) {
 						this.flatRefs.push(childRef)
 						for (const branch of childRef.node.branches) {
-							if (branch.hasKind("morph")) {
+							if (
+								branch.hasKind("morph") ||
+								(branch.hasKind("intersection") &&
+									branch.structure?.structuralMorph !== undefined)
+							) {
 								this.flatMorphs.push({
 									path: childRef.path,
 									propString: childRef.propString,
@@ -197,7 +207,11 @@ export abstract class BaseNode<
 		this.rootApplyStrategy =
 			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
 				this.shallowMorphs.length === 0 ? "allows"
-				: this.shallowMorphs.every(morph => morph.length === 1) ?
+				: (
+					this.shallowMorphs.every(
+						morph => morph.length === 1 || morph.name === "$arkStructuralMorph"
+					)
+				) ?
 					this.hasKind("union") ?
 						// multiple morphs not yet supported for optimistic compilation
 						this.branches.some(branch => branch.shallowMorphs.length > 1) ?
@@ -239,8 +253,19 @@ export abstract class BaseNode<
 
 			case "optimistic":
 				this.contextFreeMorph = this.shallowMorphs[0] as never
+				const clone = this.$.resolvedConfig.clone
 				return (data, onFail) => {
-					if (this.allows(data)) return this.contextFreeMorph!(data)
+					if (this.allows(data)) {
+						return this.contextFreeMorph!(
+							(
+								clone &&
+									((typeof data === "object" && data !== null) ||
+										typeof data === "function")
+							) ?
+								clone(data)
+							:	data
+						)
+					}
 
 					const ctx = new Traversal(data, this.$.resolvedConfig)
 					this.traverseApply(data, ctx)
@@ -254,15 +279,6 @@ export abstract class BaseNode<
 					`Unexpected rootApplyStrategy ${this.rootApplyStrategy}`
 				)
 		}
-	}
-
-	withMeta(
-		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
-	): this {
-		return this.$.node(this.kind, {
-			...this.inner,
-			meta: typeof meta === "function" ? meta({ ...this.meta }) : meta
-		}) as never
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -422,33 +438,35 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
-	firstReference<narrowed>(
-		filter: GuardablePredicate<BaseNode, conform<narrowed, BaseNode>>
-	): narrowed | undefined {
-		return this.references.find(n => n !== this && filter(n)) as never
+	// import this overload comes first for object key completions
+	// to work properly
+	select<
+		const selector extends NodeSelector.CompositeInput,
+		predicate extends GuardablePredicate<
+			NodeSelector.inferSelectKind<d["kind"], selector>
+		>
+	>(
+		selector: NodeSelector.validateComposite<selector, predicate>
+	): NodeSelector.infer<d["kind"], selector>
+	select<const selector extends NodeSelector.Single>(
+		selector: selector
+	): NodeSelector.infer<d["kind"], selector>
+	select(selector: NodeSelector): NodeSelector.BaseResult {
+		const normalized = NodeSelector.normalize(selector)
+		return this._select(normalized)
 	}
 
-	firstReferenceOrThrow<narrowed extends BaseNode>(
-		filter: GuardablePredicate<BaseNode, narrowed>
-	): narrowed {
-		return (
-			this.firstReference(filter) ??
-			throwError(`${this.id} had no references matching predicate ${filter}`)
-		)
-	}
+	private _select(selector: NodeSelector.Normalized): NodeSelector.BaseResult {
+		let nodes =
+			NodeSelector.applyBoundary[selector.boundary ?? "references"](this)
 
-	firstReferenceOfKind<kind extends NodeKind>(
-		kind: kind
-	): nodeOfKind<kind> | undefined {
-		return this.firstReference(node => node.hasKind(kind))
-	}
+		if (selector.kind) nodes = nodes.filter(n => n.kind === selector.kind)
+		if (selector.where) nodes = nodes.filter(selector.where)
 
-	firstReferenceOfKindOrThrow<kind extends NodeKind>(
-		kind: kind
-	): nodeOfKind<kind> {
-		return (
-			this.firstReference(node => node.kind === kind) ??
-			throwError(`${this.id} had no ${kind} references`)
+		return NodeSelector.applyMethod[selector.method ?? "filter"](
+			nodes,
+			this,
+			selector
 		)
 	}
 
@@ -458,15 +476,23 @@ export abstract class BaseNode<
 	):
 		| nodeOfKind<reducibleKindOf<this["kind"]>>
 		| Extract<ReturnType<mapper>, null> {
-		return this._transform(mapper, {
-			...opts,
+		return this._transform(mapper, this._createTransformContext(opts)) as never
+	}
+
+	protected _createTransformContext(
+		opts: DeepNodeTransformOptions | undefined
+	): DeepNodeTransformContext {
+		return {
+			root: this,
+			selected: undefined,
 			seen: {},
 			path: [],
 			parseOptions: {
 				prereduced: opts?.prereduced ?? false
 			},
-			undeclaredKeyHandling: undefined
-		}) as never
+			undeclaredKeyHandling: undefined,
+			...opts
+		}
 	}
 
 	protected _transform(
@@ -520,7 +546,10 @@ export abstract class BaseNode<
 			meta: this.meta
 		})
 
-		const transformedInner = mapper(this.kind, innerWithMeta, ctx)
+		const transformedInner =
+			ctx.selected && !ctx.selected.includes(this) ?
+				innerWithMeta
+			:	mapper(this.kind, innerWithMeta, ctx)
 
 		if (transformedInner === null) return null
 
@@ -528,7 +557,6 @@ export abstract class BaseNode<
 			return (transformedNode = transformedInner as never)
 
 		const transformedKeys = Object.keys(transformedInner)
-
 		const hasNoTypedKeys =
 			transformedKeys.length === 0 ||
 			(transformedKeys.length === 1 && transformedKeys[0] === "meta")
@@ -563,15 +591,46 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(meta: MetaSchema): this {
-		const newMeta = typeof meta === "string" ? { description: meta } : meta
-		return this.$.finalize(
-			this.transform(
-				(kind, inner) => ({ ...inner, meta: { ...inner.meta, ...newMeta } }),
-				{
-					shouldTransform: node => node.kind !== "structure"
-				}
+	configureReferences(
+		meta: TypeMeta.MappableInput.Internal,
+		selector: NodeSelector = "references"
+	): this {
+		const normalized = NodeSelector.normalize(selector)
+
+		const mapper = (
+			typeof meta === "string" ?
+				(kind, inner) => ({
+					...inner,
+					meta: { ...inner.meta, description: meta }
+				})
+			: typeof meta === "function" ?
+				(kind, inner) => ({ ...inner, meta: meta(inner.meta) })
+			:	(kind, inner) => ({
+					...inner,
+					meta: { ...inner.meta, ...meta }
+				})) satisfies DeepNodeTransformation
+
+		if (normalized.boundary === "self") {
+			return this.$.node(
+				this.kind,
+				mapper(this.kind, { ...this.inner, meta: this.meta })
 			) as never
+		}
+
+		const rawSelected = this._select(normalized)
+		const selected = rawSelected && liftArray(rawSelected)
+
+		const shouldTransform: ShouldTransformFn =
+			normalized.boundary === "child" ?
+				(node, ctx) => ctx.root.children.includes(node as never)
+			: normalized.boundary === "shallow" ? node => node.kind !== "structure"
+			: () => true
+
+		return this.$.finalize(
+			this.transform(mapper, {
+				shouldTransform,
+				selected
+			}) as never
 		)
 	}
 }
@@ -585,6 +644,128 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 	path: array<KeyOrKeyNode>
 	node: root
 	propString: string
+}
+
+export type NodeSelector = NodeSelector.Single | NodeSelector.Composite
+
+const NodeSelector = {
+	applyBoundary: {
+		self: node => [node],
+		child: node => [...node.children],
+		shallow: node => [...node.shallowReferences],
+		references: node => [...node.references]
+	} satisfies Dict<NodeSelector.Boundary, (node: BaseNode) => BaseNode[]>,
+	applyMethod: {
+		filter: nodes => nodes,
+		assertFilter: (nodes, from, selector) => {
+			if (nodes.length === 0)
+				throwError(writeSelectAssertionMessage(from, selector))
+			return nodes
+		},
+		find: nodes => nodes[0],
+		assertFind: (nodes, from, selector) => {
+			if (nodes.length === 0)
+				throwError(writeSelectAssertionMessage(from, selector))
+			return nodes[0]
+		}
+	} satisfies Dict<
+		NodeSelector.Method,
+		(nodes: BaseNode[], from: BaseNode, selector: NodeSelector) => unknown
+	>,
+	normalize: (selector: NodeSelector): NodeSelector.Normalized =>
+		typeof selector === "function" ?
+			{ boundary: "references", method: "filter", where: selector }
+		: typeof selector === "string" ?
+			isKeyOf(selector, NodeSelector.applyBoundary) ?
+				{ method: "filter", boundary: selector }
+			:	{ boundary: "references", method: "filter", kind: selector }
+		:	{ boundary: "references", method: "filter", ...selector }
+}
+
+const writeSelectAssertionMessage = (from: BaseNode, selector: NodeSelector) =>
+	`${from} had no references matching ${printable(selector)}.`
+
+export declare namespace NodeSelector {
+	export type SelectableFn<input, returns, kind extends NodeKind = NodeKind> = {
+		// this overload must come first for object key completions to work
+		<
+			const selector extends NodeSelector.CompositeInput,
+			predicate extends GuardablePredicate<
+				NodeSelector.inferSelectKind<kind, selector>
+			>
+		>(
+			input: input,
+			selector?: NodeSelector.validateComposite<selector, predicate>
+		): returns
+		<const selector extends NodeSelector.Single>(
+			input: input,
+			selector?: selector
+		): returns
+	}
+
+	export type Single =
+		| NodeSelector.Boundary
+		| NodeSelector.Kind
+		| GuardablePredicate<BaseNode>
+
+	export type Boundary = "self" | "child" | "shallow" | "references"
+
+	export type Kind = NodeKind
+
+	export type Method = "filter" | "assertFilter" | "find" | "assertFind"
+
+	export interface Composite {
+		method?: Method
+		boundary?: Boundary
+		kind?: Kind
+		where?: GuardablePredicate<BaseNode>
+	}
+
+	export type Normalized = requireKeys<Composite, "method" | "boundary">
+
+	export type CompositeInput = Omit<Composite, "where">
+
+	export type BaseResult = BaseNode | BaseNode[] | undefined
+
+	export type validateComposite<selector, predicate> = {
+		[k in keyof selector]: k extends "where" ? predicate
+		:	conform<selector[k], CompositeInput[k & keyof CompositeInput]>
+	}
+
+	export type infer<selfKind extends NodeKind, selector> = applyMethod<
+		selector extends NodeSelector.WhereCastInput<any, infer narrowed> ? narrowed
+		:	NodeSelector.inferSelectKind<selfKind, selector>,
+		selector
+	>
+
+	type BoundaryInput<b extends Boundary> = b | { boundary: b }
+	type KindInput<k extends Kind> = k | { kind: k }
+	type WhereCastInput<kindNode extends BaseNode, narrowed extends kindNode> =
+		| ((In: kindNode) => In is narrowed)
+		| { where: (In: kindNode) => In is narrowed }
+
+	export type inferSelectKind<selfKind extends NodeKind, selector> =
+		selectKind<selfKind, selector> extends infer kind extends NodeKind ?
+			NodeKind extends kind ?
+				BaseNode
+			:	nodeOfKind<kind>
+		:	never
+
+	type selectKind<selfKind extends NodeKind, selector> =
+		selector extends BoundaryInput<"self"> ? selfKind
+		: selector extends KindInput<infer kind> ? kind
+		: selector extends BoundaryInput<"child"> ? selfKind | childKindOf<selfKind>
+		: NodeKind
+
+	type applyMethod<t, selector> =
+		selector extends { method: infer method extends Method } ?
+			method extends "filter" ? t[]
+			: method extends "assertFilter" ? [t, ...t[]]
+			: method extends "find" ? t | undefined
+			: method extends "assertFind" ? t
+			: never
+		:	// default is "filter"
+			t[]
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
@@ -624,6 +805,7 @@ export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
 	bindScope?: BaseScope
 	prereduced?: boolean
+	selected?: readonly BaseNode[] | undefined
 }
 
 export type ShouldTransformFn = (
@@ -632,6 +814,8 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
+	root: BaseNode
+	selected: readonly BaseNode[] | undefined
 	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: BaseParseOptions

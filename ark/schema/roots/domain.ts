@@ -120,7 +120,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		return this.numberAllowsNaN ? `(${this.expression})` : this.expression
 	}
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return domainDescriptions[this.domain]
 	}
 

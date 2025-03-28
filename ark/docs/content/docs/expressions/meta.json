@@ -8,6 +8,7 @@
 		"[morph](/docs/expressions#morph)",
 		"[unit](/docs/expressions#unit)",
 		"[enumerated](/docs/expressions#enumerated)",
+		"[valueOf](/docs/expressions#valueOf)",
 		"[meta](/docs/expressions#meta)",
 		"[cast](/docs/expressions#cast)",
 		"[parenthetical](/docs/expressions#parenthetical)",

@@ -281,9 +281,12 @@ const epochRoot = stringInteger.root.internal
 		}
 		return true
 	})
-	.withMeta({
-		description: "an integer string representing a safe Unix timestamp"
-	})
+	.configure(
+		{
+			description: "an integer string representing a safe Unix timestamp"
+		},
+		"self"
+	)
 	.assertHasKind("intersection")
 
 const epoch = Scope.module(

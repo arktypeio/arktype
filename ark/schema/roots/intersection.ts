@@ -304,8 +304,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			:	[]
 	}
 
-	get shortDescription(): string {
-		return this.basis?.shortDescription ?? "present"
+	get defaultShortDescription(): string {
+		return this.basis?.defaultShortDescription ?? "present"
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
@@ -395,7 +395,7 @@ export const Intersection = {
 const writeIntersectionExpression = (node: Intersection.Node) => {
 	let expression =
 		node.structure?.expression ||
-		`${node.basis ? node.basis.nestableExpression + " " : ""}${node.refinements.map(n => n.expression).join(" & ")}` ||
+		`${node.basis && !node.refinements.some(n => n.impl.obviatesBasisExpression) ? node.basis.nestableExpression + " " : ""}${node.refinements.map(n => n.expression).join(" & ")}` ||
 		"unknown"
 	if (expression === "Array == 0") expression = "[]"
 	return expression

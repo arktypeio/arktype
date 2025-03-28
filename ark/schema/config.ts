@@ -1,6 +1,7 @@
 import type { ArkRegistry, requireKeys, show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
+import type { TypeMeta } from "./shared/declare.ts"
 import type {
 	ActualConfig,
 	ArkErrorCode,
@@ -83,15 +84,25 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	const result: any = { ...base }
 	let k: keyof ArkSchemaConfig
 	for (k in extensions) {
-		result[k] =
-			isNodeKind(k) ?
-				// not casting this makes TS compute a very inefficient
-				// type that is not needed
-				({
-					...base[k],
-					...extensions[k]
-				} as never)
-			:	extensions[k]
+		const keywords = { ...base.keywords }
+		if (k === "keywords") {
+			for (const flatAlias in extensions[k]) {
+				const v = extensions.keywords![flatAlias]
+				if (v === undefined) continue
+				keywords[flatAlias] = typeof v === "string" ? { description: v } : v
+			}
+			result.keywords = keywords
+		} else {
+			result[k] =
+				isNodeKind(k) ?
+					// not casting this makes TS compute a very inefficient
+					// type that is not needed
+					({
+						...base[k],
+						...extensions[k]
+					} as never)
+				:	extensions[k]
+		}
 	}
 	return result
 }
@@ -106,13 +117,16 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
 	readonly numberAllowsNaN?: boolean
 	readonly dateAllowsInvalid?: boolean
+	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
+	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<
 	{
 		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
 		: k extends "clone" ? CloneImplementation | false
+		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: config[k]
 	} & Omit<config, keyof ArkSchemaConfig>
 >

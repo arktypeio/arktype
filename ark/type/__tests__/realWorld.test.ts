@@ -573,18 +573,22 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	it("narrowed quoted description", () => {
 		const t = type("string")
-			.narrow(() => true)
+			.narrow(function _narrowedQuoteDescription() {
+				return true
+			})
 			.describe('This will "fail"')
 
 		attest<string>(t.t)
 
-		const serializedPredicate =
-			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
-
 		attest(t.json).snap({
-			meta: 'This will "fail"',
-			domain: { meta: 'This will "fail"', domain: "string" },
-			predicate: [{ meta: 'This will "fail"', predicate: serializedPredicate }]
+			domain: { domain: "string", meta: 'This will "fail"' },
+			predicate: [
+				{
+					predicate: "$ark._narrowedQuoteDescription",
+					meta: 'This will "fail"'
+				}
+			],
+			meta: 'This will "fail"'
 		})
 	})
 
@@ -1029,7 +1033,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(feedbackSchema.expression).snap(
-			"{ contact: string == 0 | string /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
+			"{ contact: string == 0 | /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
 		)
 		attest(feedbackSchema.t).type.toString.snap(`{ contact: string }`)
 	})
@@ -1293,5 +1297,28 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		).type.errors(
 			"Argument of type 'ArkErrors' is not assignable to parameter of type 'ArkErrorInput'"
 		)
+	})
+
+	it("described input of morph", () => {
+		class ValidatedUserID {
+			static fromString(value: string): ValidatedUserID {
+				return new ValidatedUserID(value)
+			}
+			private constructor(readonly data: string) {}
+		}
+
+		const UserID = type("string")
+			.describe("a userID")
+			.pipe.try(ValidatedUserID.fromString)
+
+		const User = type({
+			id: UserID
+		})
+
+		const out = User({
+			iD: "typo, oops"
+		})
+
+		attest(out.toString()).snap("id must be a userID (was missing)")
 	})
 })

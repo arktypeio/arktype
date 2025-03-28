@@ -1,5 +1,252 @@
 # arktype
 
+## 2.1.15
+
+### `.configure({}, selector)` fixes
+
+```ts
+const User = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
+})
+
+// prior to 2.1.15, the selector was not applied
+// when configuring references
+const ConfiguredUser = User.configure(
+	{ description: "A STRING" },
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
+)
+
+// old: A STRING
+// new: A STRING
+ConfiguredUser.get("name").description
+
+// old: A STRING
+// new: "android" | "ios"
+ConfiguredUser.get("platform").description
+
+// old: A STRING or undefined
+// new: a number, A STRING or undefined
+ConfiguredUser.get("version").description
+```
+
+With the much more powerful `.configure` + selector API now available, the internal `.withMeta` method was removed as it can be trivially achieved via a self-selector:
+
+```ts
+// < 2.1.15
+myType.withMeta("some shallow description")
+
+// >= 2.1.15
+myType.configure("some shallow description", "self")
+```
+
+## 2.1.14
+
+### improve .expression for regex constraints
+
+```ts
+const t = type(/^a.*z$/)
+
+// old: string /^a.*z$/
+// new: /^a.*z$/
+console.log(t.expression)
+```
+
+## 2.1.13
+
+### Add standalone functions for n-ary operators
+
+```ts
+//  accept ...definitions
+const union = type.or(type.string, "number", { key: "unknown" })
+
+const base = type({
+	foo: "string"
+})
+
+// accepts ...definitions
+const intersection = type.and(
+	base,
+	{
+		bar: "number"
+	},
+	{
+		baz: "string"
+	}
+)
+
+const zildjian = Symbol()
+
+const base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// accepts ...objectDefinitions
+const merged = type.merge(
+	base,
+	{
+		"[string]": "bigint",
+		"foo?": "1n"
+	},
+	{
+		includeThisPropAlso: "true"
+	}
+)
+
+// accepts ...morphsOrTypes
+const trimStartToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
+```
+
+## 2.1.12
+
+### `exactOptionalPropertyTypes`
+
+By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).
+
+```ts
+const myObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = myObj({})
+
+// Error: key must be a number (was undefined)
+const errorResult = myObj({ key: undefined })
+```
+
+This approach allows the most granular control over optionality, as `| undefined` can be added to properties that should accept it.
+
+However, if you have not enabled TypeScript's `exactOptionalPropertyTypes` setting, you may globally configure ArkType's `exactOptionalPropertyTypes` to `false` to match TypeScript's behavior. If you do this, we'd recommend making a plan to enable `exactOptionalPropertyTypes` in the future.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+// since the default in ArkType is `true`, this will only have an effect if set to `false`
+configure({ exactOptionalPropertyTypes: false })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const myObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = myObj({})
+
+// now also valid data (would be an error by default)
+const secondResult = myObj({ key: undefined })
+```
+
+**WARNING: exactOptionalPropertyTypes does not yet affect default values!**
+
+```ts
+const myObj = type({
+	key: "number = 5"
+})
+
+// { key: 5 }
+const omittedResult = myObj({})
+
+// { key: undefined }
+const undefinedResult = myObj({ key: undefined })
+```
+
+Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
+
+## 2.1.11
+
+- Expose `select` method directly on `Type` (previously was only available on `.internal`)
+- Improve missing property error messages
+
+## 2.1.10
+
+### Added a new `select` method for introspecting references of a node:
+
+NOTE: `@ark/schema`'s API is not semver stable, so this API may change slightly over time (though we will try to ensure it doesn't).
+
+```ts
+// extract deep references to exclusive `min` nodes
+const result = myType.select({
+	kind: "min",
+	where: node => node.exclusive
+})
+```
+
+These selectors can also be used to select references for configuration:
+
+```ts
+// configure string node references
+const result = myType.configure(
+	{ description: "a referenced string" },
+	{
+		kind: "domain",
+		where: node => node.domain === "string"
+	}
+)
+```
+
+### `ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
+
+```ts
+const nEvenAtLeast2 = type({
+	n: "number % 2 > 2"
+})
+
+const out = nEvenAtLeast2({ n: 1 })
+
+if (out instanceof type.errors) {
+	console.log(out.flatByPath)
+	const output = {
+		n: [
+			{
+				data: 1,
+				path: ["n"],
+				code: "divisor",
+				description: "even",
+				meta: {},
+				rule: 2,
+				expected: "even",
+				actual: "1",
+				problem: "must be even (was 1)",
+				message: "n must be even (was 1)"
+			},
+			{
+				data: 1,
+				path: ["n"],
+				code: "min",
+				description: "at least 2",
+				meta: {},
+				rule: 2,
+				expected: "at least 2",
+				actual: "1",
+				problem: "must be at least 2 (was 1)",
+				message: "n must be at least 2 (was 1)"
+			}
+		]
+	}
+
+	console.log(out.flatProblemsByPath)
+	const output2 = {
+		n: ["must be even (was 1)", "must be at least 2 (was 1)"]
+	}
+}
+```
+
 ## 2.1.9
 
 The `|>` operator pipes output to another Type parsed from a definition.
@@ -363,3 +610,7 @@ const out = U.assert({ a: 1 })
 ## 2.0.0
 
 - Initial stable release 🎉
+
+```
+
+```

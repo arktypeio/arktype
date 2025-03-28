@@ -285,8 +285,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	get shortDescription(): string {
-		return this.distribute(branch => branch.shortDescription, describeBranches)
+	get defaultShortDescription(): string {
+		return this.distribute(
+			branch => branch.defaultShortDescription,
+			describeBranches
+		)
 	}
 
 	protected innerToJsonSchema(): JsonSchema {
@@ -959,7 +962,13 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (
 		!arrayEquals(l.flatMorphs, r.flatMorphs, {
 			isEqual: (l, r) =>
-				l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+				l.propString === r.propString &&
+				(l.node.hasKind("morph") && r.node.hasKind("morph") ?
+					l.node.hasEqualMorphs(r.node)
+				: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
+					l.node.structure?.structuralMorphRef ===
+					r.node.structure?.structuralMorphRef
+				:	false)
 		})
 	) {
 		throwParseError(

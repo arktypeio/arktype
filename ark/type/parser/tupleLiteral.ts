@@ -5,9 +5,7 @@ import {
 	type BaseParseContext,
 	type BaseRoot,
 	type mutableInnerOfKind,
-	type nodeOfKind,
-	type Sequence,
-	type Union
+	type Sequence
 } from "@ark/schema"
 import {
 	append,
@@ -172,9 +170,9 @@ const appendVariadicElement = (
 
 const appendSpreadBranch = (
 	base: mutableInnerOfKind<"sequence">,
-	branch: nodeOfKind<Union.ChildKind>
+	branch: BaseRoot
 ): mutableInnerOfKind<"sequence"> => {
-	const spread = branch.firstReferenceOfKind("sequence")
+	const spread = branch.select({ method: "find", kind: "sequence" })
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
 		return appendVariadicElement(base, $ark.intrinsic.unknown)

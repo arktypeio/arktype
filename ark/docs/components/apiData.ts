@@ -541,6 +541,24 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Type",
+            "name": "select",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "query internal node references"
+                }
+            ],
+            "notes": [],
+            "example": "// [\"blue\", \"red\"]\nconst values = type(\"'red' | 'blue'\").select(\"unit\").map(u => u.unit)",
+            "experimental": [
+                {
+                    "kind": "text",
+                    "value": "filters and returns the Type's internal representation from `@ark/schema`"
+                }
+            ]
+        },
+        {
+            "group": "Type",
             "name": "as",
             "summary": [
                 {

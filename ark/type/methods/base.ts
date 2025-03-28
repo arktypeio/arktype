@@ -1,10 +1,12 @@
 import type {
+	BaseNode,
 	BaseRoot,
 	Disjoint,
 	JsonSchema,
-	Morph,
+	NodeSelector,
 	Predicate,
 	StandardSchemaV1,
+	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type {
@@ -20,15 +22,14 @@ import type {
 	defaultFor,
 	distill,
 	inferIntersection,
-	inferMorphOut,
 	inferPipe,
-	inferPipes,
 	InferredMorph,
 	Out,
 	To
 } from "../attributes.ts"
-import type { ArkAmbient, TypeMetaInput } from "../config.ts"
+import type { ArkAmbient } from "../config.ts"
 import type { type } from "../keywords/keywords.ts"
+import type { NaryPipeParser } from "../nary.ts"
 import type { Scope } from "../scope.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -217,7 +218,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // error message at root is affected, leading to a misleading description
 	 * const nonObject = notOddBox(null) // must be not odd (was null)
 	 */
-	configure<meta extends TypeMetaInput>(meta: meta): this
+	configure: NodeSelector.SelectableFn<TypeMeta.MappableInput, this>
 
 	/**
 	 * #### add description to shallow references
@@ -231,7 +232,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // ArkErrors: must be a string like 'a...z' (was "albatross")
 	 * const badPattern = aToZ("albatross")
 	 */
-	describe(description: string): this
+	describe: NodeSelector.SelectableFn<string, this>
 
 	/**
 	 * #### apply undeclared key behavior
@@ -421,7 +422,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // parse a string and validate that the result as a user
 	 * const parseUser = type("string").pipe(s => JSON.parse(s), user)
 	 */
-	pipe: ChainedPipe<t, $>
+	pipe: ChainedPipeParser<$, t>
 
 	/**
 	 * #### parse a definition as an output validator
@@ -435,6 +436,17 @@ export interface Inferred<out t = unknown, $ = {}> {
 	to<const def, r = instantiateType<inferPipe<t, type.infer<def, $>>, $>>(
 		def: type.validate<def, $>
 	): r extends infer _ ? _ : never
+
+	/**
+	 * #### query internal node references
+	 *
+	 * @experimental filters and returns the Type's internal representation from `@ark/schema`
+	 *
+	 * @example
+	 * // ["blue", "red"]
+	 * const values = type("'red' | 'blue'").select("unit").map(u => u.unit)
+	 */
+	select: BaseNode["select"]
 }
 
 /** @ts-ignore cast variance */
@@ -657,92 +669,8 @@ interface Type<out t = unknown, $ = {}>
 	Symbol: never
 }
 
-interface ChainedPipeSignature<t, $> {
-	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
-		a: a
-	): r extends infer _ ? _ : never
-	<
-		a extends Morph<distill.Out<t>>,
-		b extends Morph<inferMorphOut<a>>,
-		r = instantiateType<inferPipes<t, [a, b]>, $>
-	>(
-		a: a,
-		b: b
-	): r extends infer _ ? _ : never
-	<
-		a extends Morph<distill.Out<t>>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		r = instantiateType<inferPipes<t, [a, b, c]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c
-	): r extends infer _ ? _ : never
-	<
-		a extends Morph<distill.Out<t>>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d
-	): r extends infer _ ? _ : never
-	<
-		a extends Morph<distill.Out<t>>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e
-	): r extends infer _ ? _ : never
-	<
-		a extends Morph<distill.Out<t>>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>,
-		f extends Morph<inferMorphOut<e>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e, f]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e,
-		f: f
-	): r extends infer _ ? _ : never
-	<
-		a extends Morph<distill.Out<t>>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>,
-		f extends Morph<inferMorphOut<e>>,
-		g extends Morph<inferMorphOut<f>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e, f, g]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e,
-		f: f,
-		g: g
-	): r extends infer _ ? _ : never
-}
-
-export interface ChainedPipe<t, $> extends ChainedPipeSignature<t, $> {
-	try: ChainedPipeSignature<t, $>
+export interface ChainedPipeParser<$, t> extends NaryPipeParser<$, t> {
+	try: NaryPipeParser<$, t>
 }
 
 type validateChainedAsArgs<t> =

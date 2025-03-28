@@ -1,9 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import type {
-	merge,
-	mergeExact,
-	unionToPropwiseXor,
-	withJsDoc
+import {
+	enumValues,
+	type merge,
+	type mergeExact,
+	type unionToPropwiseXor,
+	type withJsDoc
 } from "@ark/util"
 
 contextualize(() => {
@@ -150,5 +151,25 @@ contextualize(() => {
 			  },
 			t
 		>()
+	})
+
+	it("enumValues", () => {
+		const fakeEnum = {
+			foo: 1,
+			bar: "bar",
+			mapped: "MAPPED"
+		} as const
+
+		// ts reverse assigns numeric values
+		// need to make sure we don't extract them at runtime
+		Object.assign(fakeEnum, {
+			1: "foo"
+		})
+
+		attest<(1 | "bar" | "MAPPED")[]>(enumValues(fakeEnum)).snap([
+			1,
+			"bar",
+			"MAPPED"
+		])
 	})
 })
