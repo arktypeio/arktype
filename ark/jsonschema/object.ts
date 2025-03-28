@@ -214,17 +214,13 @@ export const parseObjectJsonSchema: Type<
 		}
 
 		// Ensure all 'patternProperties' adhere to the 'propertyNames' schema
-		const propertyNamesAsIndexNode = node("index", propertyNamesIndex)
+		const propertyNamesNode = node("index", propertyNamesIndex)
 		patternPropertiesIndexes.forEach(patternPropertyIndex => {
-			const patternPropertyAsIndexNode = node("index", patternPropertyIndex)
+			const patternPropertyNode = node("index", patternPropertyIndex)
 
-			if (
-				!patternPropertyAsIndexNode.signature.extends(
-					propertyNamesAsIndexNode.signature
-				)
-			) {
+			if (!patternPropertyNode.signature.extends(propertyNamesNode.signature)) {
 				throwParseError(
-					`Pattern property ${patternPropertyAsIndexNode.signature.expression} doesn't conform to propertyNames schema of ${propertyNamesAsIndexNode.signature.expression}`
+					`Pattern property ${patternPropertyNode.signature.expression} doesn't conform to propertyNames schema of ${propertyNamesNode.signature.expression}`
 				)
 			}
 		})
