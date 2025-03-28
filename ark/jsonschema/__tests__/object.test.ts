@@ -4,7 +4,8 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type object", () => {
 		const t = parseJsonSchema({ type: "object" })
-		attest(t.json).snap({ domain: "object" })
+		attest(t.expression).snap("{}")
+		attest(t.allows({ foo: 3 }))
 	})
 
 	it("maxProperties", () => {
@@ -46,11 +47,7 @@ contextualize(() => {
 			},
 			required: ["foo"]
 		})
-		attest(tRequired.json).snap({
-			domain: "object",
-			required: [{ key: "foo", value: "string" }],
-			optional: [{ key: "bar", value: "number" }]
-		})
+		attest(tRequired.expression).snap("{ foo: string, bar?: number }")
 
 		attest(() => parseJsonSchema({ type: "object", required: ["foo"] })).throws(
 			"TraversalError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
@@ -83,6 +80,7 @@ contextualize(() => {
 		})
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
+			optional: [{ key: "bar", value: "string" }],
 			predicate: ["$ark.jsonSchemaObjectAdditionalPropertiesValidator"]
 		})
 		attest(tAdditionalProperties.allows({})).equals(true)
@@ -98,15 +96,7 @@ contextualize(() => {
 				"^[a-z]+$": { type: "string" }
 			}
 		})
-		attest(tPatternProperties.json).snap({
-			domain: "object",
-			index: [
-				{
-					signature: { domain: "string", pattern: ["^[a-z]+$"] },
-					value: "string"
-				}
-			]
-		})
+		attest(tPatternProperties.expression).snap("{ [/^[a-z]+$/]: string }")
 		attest(tPatternProperties.allows({})).equals(true)
 		attest(tPatternProperties.allows({ foo: "bar" })).equals(true)
 		attest(tPatternProperties.allows({ foo: 1 })).equals(false)
@@ -118,11 +108,9 @@ contextualize(() => {
 			type: "object",
 			propertyNames: { type: "string", minLength: 5 }
 		})
-		attest(tPropertyNames.json).snap({
-			domain: "object",
-			index: [{ signature: { domain: "string", minLength: 5 }, value: {} }],
-			undeclared: "reject"
-		})
+		attest(tPropertyNames.expression).snap(
+			"{ [string >= 5]: unknown, + (undeclared): reject }"
+		)
 
 		attest(() =>
 			// @ts-expect-error
@@ -143,16 +131,9 @@ contextualize(() => {
 			propertyNames: { type: "string", minLength: 3 },
 			additionalProperties: true
 		})
-		attest(tPropertyNamesAndAdditionalProperties.json).snap({
-			domain: "object",
-			index: [
-				{
-					signature: { domain: "string", minLength: 3 },
-					value: {}
-				}
-			],
-			undeclared: "reject"
-		})
+		attest(tPropertyNamesAndAdditionalProperties.expression).snap(
+			"{ [string >= 3]: unknown, + (undeclared): reject }"
+		)
 	})
 
 	it("propertyNames & patternProperties", () => {
@@ -161,14 +142,9 @@ contextualize(() => {
 			patternProperties: { foo: { type: "number" } },
 			propertyNames: { type: "string", pattern: "foo" }
 		})
-		attest(tPropertyNamesAndPatternPropertiesValid.json).snap({
-			domain: "object",
-			index: [
-				{ signature: { domain: "string", pattern: ["foo"] }, value: "number" },
-				{ signature: { domain: "string", pattern: ["foo"] }, value: {} }
-			],
-			undeclared: "reject"
-		})
+		attest(tPropertyNamesAndPatternPropertiesValid.expression).snap(
+			"{ [/foo/]: number, [/foo/]: unknown, + (undeclared): reject }"
+		)
 
 		attest(() => {
 			parseJsonSchema({
@@ -177,7 +153,7 @@ contextualize(() => {
 				patternProperties: { "^abcd": { type: "number" } }
 			})
 		}).throws(
-			"ParseError: Pattern property string /^abcd/ doesn't conform to propertyNames schema of string >= 3"
+			"ParseError: Pattern property /^abcd/ doesn't conform to propertyNames schema of string >= 3"
 		)
 	})
 
@@ -191,21 +167,9 @@ contextualize(() => {
 			}
 		})
 
-		attest(tPropertyNamesAndProperties.json).snap({
-			domain: "object",
-			index: [{ signature: { domain: "string", minLength: 3 }, value: {} }],
-			optional: [
-				{
-					key: "a",
-					value: []
-				},
-				{
-					key: "abc",
-					value: "number"
-				}
-			],
-			undeclared: "reject"
-		})
+		attest(tPropertyNamesAndProperties.expression).snap(
+			"{ [string >= 3]: unknown, a?: never, abc?: number, + (undeclared): reject }"
+		)
 	})
 
 	it("propertyNames & properties & required", () => {
@@ -215,12 +179,9 @@ contextualize(() => {
 			properties: { abc: { type: "number" } },
 			required: ["abc"]
 		})
-		attest(tPropertyNamesAndRequiredValid.json).snap({
-			domain: "object",
-			index: [{ signature: { domain: "string", minLength: 3 }, value: {} }],
-			required: [{ key: "abc", value: "number" }],
-			undeclared: "reject"
-		})
+		attest(tPropertyNamesAndRequiredValid.expression).snap(
+			"{ [string >= 3]: unknown, abc: number, + (undeclared): reject }"
+		)
 
 		attest(() =>
 			parseJsonSchema({

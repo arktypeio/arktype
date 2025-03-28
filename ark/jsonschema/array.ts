@@ -124,7 +124,7 @@ export const parseArrayJsonSchema: Type<
 		predicates.push(arrayContainsItemMatchingSchema(parsedContainsJsonSchema))
 	}
 
-	arktypeArraySchema.predicate = predicates
+	if (predicates.length > 0) arktypeArraySchema.predicate = predicates
 
 	return rootSchema(arktypeArraySchema) as never
 })

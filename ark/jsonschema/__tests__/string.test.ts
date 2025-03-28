@@ -4,7 +4,7 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type string", () => {
 		const t = parseJsonSchema({ type: "string" })
-		attest(t.json).snap({ domain: "string" })
+		attest(t.expression).snap("string")
 	})
 
 	it("maxLength (positive)", () => {
@@ -12,10 +12,7 @@ contextualize(() => {
 			type: "string",
 			maxLength: 5
 		})
-		attest(tMaxLength.json).snap({
-			domain: "string",
-			maxLength: 5
-		})
+		attest(tMaxLength.expression).snap("string <= 5")
 	})
 
 	it("maxLength (negative)", () => {
@@ -35,10 +32,7 @@ contextualize(() => {
 			type: "string",
 			minLength: 5
 		})
-		attest(tMinLength.json).snap({
-			domain: "string",
-			minLength: 5
-		})
+		attest(tMinLength.expression).snap("string >= 5")
 	})
 
 	it("minLength (negative)", () => {
@@ -58,10 +52,7 @@ contextualize(() => {
 			type: "string",
 			pattern: "es"
 		})
-		attest(tPatternString.json).snap({
-			domain: "string",
-			pattern: ["es"]
-		})
+		attest(tPatternString.expression).snap("/es/")
 		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
 		attest(tPatternString.allows("expression")).equals(true)
@@ -70,10 +61,7 @@ contextualize(() => {
 			type: "string",
 			pattern: /es/
 		})
-		attest(tPatternRegExp.json).snap({
-			domain: "string",
-			pattern: ["es"] // strips the outer slashes
-		})
+		attest(tPatternRegExp.expression).snap("/es/")
 		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
 		attest(tPatternRegExp.allows("expression")).equals(true)

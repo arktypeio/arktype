@@ -4,22 +4,18 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type array", () => {
 		const t = parseJsonSchema({ type: "array" })
-		attest(t.json).snap({ proto: "Array" })
+		attest(t.expression).snap("Array")
 	})
 
 	it("items", () => {
 		const tItems = parseJsonSchema({ type: "array", items: { type: "string" } })
-		attest(tItems.json).snap({ proto: "Array", sequence: "string" })
+		attest(tItems.expression).snap("string[]")
 
 		const tItemsArr = parseJsonSchema({
 			type: "array",
 			items: [{ type: "string" }, { type: "number" }]
 		})
-		attest(tItemsArr.json).snap({
-			proto: "Array",
-			sequence: { prefix: ["string", "number"] },
-			exactLength: 2
-		})
+		attest(tItemsArr.expression).snap("[string, number]")
 	})
 
 	it("prefixItems", () => {
@@ -27,11 +23,7 @@ contextualize(() => {
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }]
 		})
-		attest(tPrefixItems.json).snap({
-			proto: "Array",
-			sequence: { prefix: ["string", "number"] },
-			exactLength: 2
-		})
+		attest(tPrefixItems.expression).snap("[string, number, ...unknown[]]")
 	})
 
 	it("items & prefixItems", () => {
@@ -40,14 +32,9 @@ contextualize(() => {
 			prefixItems: [{ type: "string" }, { type: "number" }],
 			items: { type: "boolean" }
 		})
-		attest(tItemsAndPrefixItems.json).snap({
-			proto: "Array",
-			minLength: 2,
-			sequence: {
-				prefix: ["string", "number"],
-				variadic: [{ unit: false }, { unit: true }]
-			}
-		})
+		attest(tItemsAndPrefixItems.expression).snap(
+			"[string, number, ...boolean[]]"
+		)
 	})
 
 	it("additionalItems", () => {
@@ -55,10 +42,7 @@ contextualize(() => {
 			type: "array",
 			additionalItems: { type: "string" }
 		})
-		attest(tAdditionalItems.json).snap({
-			proto: "Array",
-			sequence: "string"
-		})
+		attest(tAdditionalItems.expression).snap("string[]")
 	})
 
 	it("additionalItems & items", () => {
@@ -67,25 +51,14 @@ contextualize(() => {
 			additionalItems: { type: "boolean" },
 			items: [{ type: "string" }, { type: "number" }]
 		})
-		attest(tItemsVariadic.json).snap({
-			minLength: 2,
-			proto: "Array",
-			sequence: {
-				prefix: ["string", "number"],
-				variadic: [{ unit: false }, { unit: true }]
-			}
-		})
+		attest(tItemsVariadic.expression).snap("[string, number, ...boolean[]]")
 
 		const tItemsFalseAdditional = parseJsonSchema({
 			type: "array",
 			additionalItems: false,
 			items: [{ type: "string" }]
 		})
-		attest(tItemsFalseAdditional.json).snap({
-			proto: "Array",
-			exactLength: 1,
-			sequence: { prefix: ["string"] }
-		})
+		attest(tItemsFalseAdditional.expression).snap("[string]")
 
 		attest(() =>
 			parseJsonSchema({
@@ -104,14 +77,9 @@ contextualize(() => {
 			additionalItems: { type: "boolean" },
 			prefixItems: [{ type: "string" }, { type: "number" }]
 		})
-		attest(tPrefixItemsAndAdditional.json).snap({
-			minLength: 2,
-			proto: "Array",
-			sequence: {
-				prefix: ["string", "number"],
-				variadic: [{ unit: false }, { unit: true }]
-			}
-		})
+		attest(tPrefixItemsAndAdditional.expression).snap(
+			"[string, number, ...boolean[]]"
+		)
 	})
 
 	it("additionalItems & items & prefixItems", () => {
@@ -146,10 +114,7 @@ contextualize(() => {
 			type: "array",
 			maxItems: 5
 		})
-		attest(tMaxItems.json).snap({
-			proto: "Array",
-			maxLength: 5
-		})
+		attest(tMaxItems.expression).snap("Array <= 5")
 	})
 
 	it("maxItems (negative)", () => {
@@ -163,10 +128,7 @@ contextualize(() => {
 			type: "array",
 			minItems: 5
 		})
-		attest(tMinItems.json).snap({
-			proto: "Array",
-			minLength: 5
-		})
+		attest(tMinItems.expression).snap("Array >= 5")
 	})
 
 	it("minItems (negative)", () => {

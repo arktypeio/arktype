@@ -4,15 +4,14 @@ import { parseJsonSchema } from "@ark/jsonschema"
 contextualize(() => {
 	it("type number", () => {
 		const jsonSchema = { type: "number" } as const
-		const expectedArkTypeSchema = { domain: "number" } as const
 
 		const parsedNumberValidator = parseJsonSchema(jsonSchema)
-		attest(parsedNumberValidator.json).snap(expectedArkTypeSchema)
+		attest(parsedNumberValidator.expression).snap("number")
 	})
 
 	it("type integer", () => {
 		const t = parseJsonSchema({ type: "integer" })
-		attest(t.json).snap({ domain: "number", divisor: 1 })
+		attest(t.expression).snap("number % 1")
 	})
 
 	it("maximum", () => {
@@ -20,10 +19,7 @@ contextualize(() => {
 			type: "number",
 			maximum: 5
 		})
-		attest(tMax.json).snap({
-			domain: "number",
-			max: 5
-		})
+		attest(tMax.expression).snap("number <= 5")
 	})
 
 	it("exclusiveMaximum", () => {
@@ -31,10 +27,7 @@ contextualize(() => {
 			type: "number",
 			exclusiveMaximum: 5
 		})
-		attest(tExclMax.json).snap({
-			domain: "number",
-			max: { rule: 5, exclusive: true }
-		})
+		attest(tExclMax.expression).snap("number < 5")
 	})
 
 	it("maximum & exclusiveMaximum", () => {
@@ -49,9 +42,9 @@ contextualize(() => {
 		)
 	})
 
-	it("minimum & exclusiveMinimum", () => {
+	it("minimum", () => {
 		const tMin = parseJsonSchema({ type: "number", minimum: 5 })
-		attest(tMin.json).snap({ domain: "number", min: 5 })
+		attest(tMin.expression).snap("number >= 5")
 	})
 
 	it("exclusiveMinimum", () => {
@@ -59,10 +52,7 @@ contextualize(() => {
 			type: "number",
 			exclusiveMinimum: 5
 		})
-		attest(tExclMin.json).snap({
-			domain: "number",
-			min: { rule: 5, exclusive: true }
-		})
+		attest(tExclMin.expression).snap("number > 5")
 	})
 
 	it("minimum & exclusiveMinimum", () => {
@@ -79,13 +69,13 @@ contextualize(() => {
 
 	it("multipleOf", () => {
 		const t = parseJsonSchema({ type: "number", multipleOf: 5 })
-		attest(t.json).snap({ domain: "number", divisor: 5 })
+		attest(t.expression).snap("number % 5")
 
 		const tInt = parseJsonSchema({
 			type: "integer",
 			multipleOf: 5
 		})
-		attest(tInt.json).snap({ domain: "number", divisor: 5 })
+		attest(tInt.expression).snap("number % 5")
 
 		// JSON Schema allows decimal multipleOf, but ArkType doesn't.
 		const multipleOf = 5.5
