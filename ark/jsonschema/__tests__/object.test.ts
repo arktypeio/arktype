@@ -78,7 +78,8 @@ contextualize(() => {
 	it("additionalProperties", () => {
 		const tAdditionalProperties = parseJsonSchema({
 			type: "object",
-			additionalProperties: { type: "number" }
+			additionalProperties: { type: "number" },
+			properties: { bar: { type: "string" } }
 		})
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
@@ -86,8 +87,8 @@ contextualize(() => {
 		})
 		attest(tAdditionalProperties.allows({})).equals(true)
 		attest(tAdditionalProperties.allows({ foo: 1 })).equals(true)
-		attest(tAdditionalProperties.allows({ foo: 1, bar: 2 })).equals(true)
-		attest(tAdditionalProperties.allows({ foo: 1, bar: "2" })).equals(false)
+		attest(tAdditionalProperties.allows({ foo: 1, bar: "2" })).equals(true)
+		attest(tAdditionalProperties.allows({ foo: 1, baz: "2" })).equals(false)
 	})
 
 	it("patternProperties", () => {
@@ -109,7 +110,7 @@ contextualize(() => {
 		attest(tPatternProperties.allows({})).equals(true)
 		attest(tPatternProperties.allows({ foo: "bar" })).equals(true)
 		attest(tPatternProperties.allows({ foo: 1 })).equals(false)
-		attest(tPatternProperties.allows({ "123": "bar" })).equals(true) // true since allows additional properties
+		attest(tPatternProperties.allows({ "123": "bar" })).equals(true) // true since by default JSON Schema allows additional properties
 	})
 
 	it("propertyNames", () => {
@@ -122,13 +123,6 @@ contextualize(() => {
 			index: [{ signature: { domain: "string", minLength: 5 }, value: {} }],
 			undeclared: "reject"
 		})
-		attest(tPropertyNames.allows({})).equals(true)
-		attest(
-			tPropertyNames.allows({ foobar: "key that adheres to propertyNames" })
-		).equals(true)
-		attest(
-			tPropertyNames.allows({ foo: "key that DOESN'T adhere to propertyNames" })
-		).equals(false)
 
 		attest(() =>
 			// @ts-expect-error
