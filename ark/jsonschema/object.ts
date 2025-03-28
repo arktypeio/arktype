@@ -214,9 +214,10 @@ export const parseObjectJsonSchema: Type<
 		}
 
 		// Ensure all 'patternProperties' adhere to the 'propertyNames' schema
+		const propertyNamesAsIndexNode = node("index", propertyNamesIndex)
 		patternPropertiesIndexes.forEach(patternPropertyIndex => {
 			const patternPropertyAsIndexNode = node("index", patternPropertyIndex)
-			const propertyNamesAsIndexNode = node("index", propertyNamesIndex)
+
 			if (
 				!patternPropertyAsIndexNode.signature.extends(
 					propertyNamesAsIndexNode.signature
