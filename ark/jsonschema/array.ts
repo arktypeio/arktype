@@ -5,7 +5,7 @@ import {
 	type Traversal
 } from "@ark/schema"
 import { printable, throwParseError } from "@ark/util"
-import type { JsonSchema, Out, Type } from "arktype"
+import { type, type JsonSchema, type Out, type Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
 
@@ -62,6 +62,7 @@ export const parseArrayJsonSchema: Type<
 		proto: "Array"
 	}
 
+	let itemsIsPrefixItems = false
 	if ("prefixItems" in jsonSchema) {
 		if ("items" in jsonSchema) {
 			if ("additionalItems" in jsonSchema) {
@@ -71,6 +72,7 @@ export const parseArrayJsonSchema: Type<
 			} else jsonSchema.additionalItems = jsonSchema.items
 		}
 		jsonSchema.items = jsonSchema.prefixItems
+		itemsIsPrefixItems = true
 	}
 
 	if ("items" in jsonSchema) {
@@ -85,6 +87,11 @@ export const parseArrayJsonSchema: Type<
 						...arktypeArraySchema.sequence,
 						variadic: parseJsonSchema(jsonSchema.additionalItems).internal
 					}
+				}
+			} else if (itemsIsPrefixItems) {
+				arktypeArraySchema.sequence = {
+					...arktypeArraySchema.sequence,
+					variadic: type.unknown.internal
 				}
 			}
 		} else {
