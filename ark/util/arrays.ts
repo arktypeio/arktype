@@ -40,7 +40,10 @@ type DuplicateData<val = unknown> = { element: val; indices: number[] }
 				// This is the second occurence of an item equal to `element`,
 				// so store it as a duplicate.
 				found = true
-				duplicates.push({ element, indices: [firstSeenIndx, indx] })
+				duplicates.push({
+					element: existingElement,
+					indices: [firstSeenIndx, indx]
+				})
 			}
 		}
 		if (!found) {
