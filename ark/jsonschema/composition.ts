@@ -1,3 +1,4 @@
+import type { Traversal } from "@ark/schema"
 import { printable } from "@ark/util"
 import { type, type JsonSchema, type Type } from "arktype"
 import { parseJsonSchema } from "./json.ts"
@@ -14,14 +15,15 @@ const parseAnyOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
 
 const parseNotJsonSchema = (jsonSchema: JsonSchema): Type => {
 	const inner = parseJsonSchema(jsonSchema)
-	return type.unknown.narrow((data, ctx) =>
+
+	const jsonSchemaNotValidator = (data: unknown, ctx: Traversal) =>
 		inner.allows(data) ?
 			ctx.reject({
-				expected: `not ${inner.description}`,
+				expected: `not: ${inner.description}`,
 				actual: printable(data)
 			})
 		:	true
-	)
+	return type.unknown.narrow(jsonSchemaNotValidator)
 }
 
 const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type => {
@@ -31,7 +33,7 @@ const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type => {
 	const oneOfValidatorsDescriptions = oneOfValidators.map(
 		validator => `○ ${validator.description}`
 	)
-	return type.unknown.narrow((data, ctx) => {
+	const jsonSchemaOneOfValidator = (data: unknown, ctx: Traversal) => {
 		let matchedValidator: Type | undefined = undefined
 
 		for (const validator of oneOfValidators) {
@@ -42,12 +44,13 @@ const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type => {
 				}
 				return ctx.reject({
 					expected: `exactly one of:\n${oneOfValidatorsDescriptions.join("\n")}`,
-					actual: printable(data)
+					actual: `a value that matches against at least ${matchedValidator} and ${validator}`
 				})
 			}
 		}
 		return matchedValidator !== undefined
-	})
+	}
+	return type.unknown.narrow(jsonSchemaOneOfValidator)
 }
 
 export const parseCompositionJsonSchema = (
