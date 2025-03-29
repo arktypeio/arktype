@@ -8,6 +8,8 @@ type DuplicateData<val = unknown> = { element: val; indices: number[] }
 /**
  * Extracts duplicated elements and their indices from an array, returning them.
  *
+ * Note that given `a === b && b === c`, then `c === a` must be `true` for this to give accurate results.
+ *
  * @param arr The array to extract duplicate elements from.
  */ export const getDuplicatesOf = <const arr extends array>(
 	arr: arr,
@@ -15,19 +17,39 @@ type DuplicateData<val = unknown> = { element: val; indices: number[] }
 ): DuplicateData<arr[number]>[] => {
 	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
 
-	const seenElements: Set<arr[number]> = new Set()
+	const elementFirstSeenIndx: Map<arr[number], number> = new Map()
 	const duplicates: DuplicateData<arr[number]>[] = []
 
-	arr.forEach((element, indx) => {
-		if (seenElements.has(element)) {
-			const duplicatesEntryIndx = duplicates.findIndex((l, r) =>
-				isEqual(l.element, r)
-			)
-			if (duplicatesEntryIndx === -1)
-				duplicates.push({ element, indices: [indx] })
-			else duplicates[duplicatesEntryIndx].indices.push(indx)
-		} else seenElements.add(element)
-	})
+	for (const [indx, element] of arr.entries()) {
+		const duplicatesIndx = duplicates.findIndex(duplicate =>
+			isEqual(duplicate.element, element)
+		)
+		if (duplicatesIndx !== -1) {
+			// This is at least the third occurence of an item equal to `element`,
+			// so add this index to the list of indices where the element is duplicated.
+			duplicates[duplicatesIndx].indices.push(indx)
+			continue
+		}
+
+		// At this point, we know this is either the first
+		// or second occurence of an item equal to `element`...
+
+		let found = false
+		for (const [existingElement, firstSeenIndx] of elementFirstSeenIndx) {
+			if (isEqual(element, existingElement)) {
+				// This is the second occurence of an item equal to `element`,
+				// so store it as a duplicate.
+				found = true
+				duplicates.push({ element, indices: [firstSeenIndx, indx] })
+			}
+		}
+		if (!found) {
+			// We haven't seen this element before,
+			// so just store the index it was first seen
+			elementFirstSeenIndx.set(element, indx)
+		}
+	}
+
 	return duplicates
 }
 

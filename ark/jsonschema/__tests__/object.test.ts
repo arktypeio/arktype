@@ -68,7 +68,7 @@ contextualize(() => {
 				required: ["foo", "foo"]
 			})
 		).throws(
-			`TraversalError: required must be an array of unique strings (was an array with the following duplicates: [{"element":"foo","indices":[1]}])`
+			`TraversalError: required must be an array of unique strings (was an array with the following duplicates: [{"element":"foo","indices":[0,1]}])`
 		)
 	})
 
