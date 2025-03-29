@@ -1,4 +1,5 @@
 import {
+	describeBranches,
 	node,
 	rootSchema,
 	type Index,
@@ -107,7 +108,7 @@ const parseRequiredAndOptionalKeys = (
 				else {
 					ctx.reject({
 						path: ["required"],
-						expected: `a key from the 'properties' object (one of ${printable(Object.keys(jsonSchema.properties))})`,
+						expected: `a key from the 'properties' object, i.e. ${describeBranches(Object.keys(jsonSchema.properties))}`,
 						actual: key
 					})
 				}

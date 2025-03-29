@@ -1,4 +1,5 @@
 import {
+	describeBranches,
 	rootSchema,
 	type Intersection,
 	type Predicate,
@@ -34,8 +35,11 @@ const jsonSchemaArrayUniqueItemsValidator = (
 	return duplicates.length === 0 ?
 			true
 		:	ctx.reject({
-				expected: "unique array items",
-				actual: `duplicated at elements ${printable(duplicates)}`
+				expected: "an array of unique items",
+				actual: `an array with ${duplicates.length} duplicates: ${describeBranches(
+					duplicates.map(duplicate => printable(duplicate)),
+					{ finalDelimiter: ", and " }
+				)}`
 			})
 }
 

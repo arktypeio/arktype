@@ -1,4 +1,4 @@
-import type { JsonSchemaOrBoolean } from "@ark/schema"
+import { describeBranches, type JsonSchemaOrBoolean } from "@ark/schema"
 import { printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema } from "arktype"
 import { parseArrayJsonSchema } from "./array.ts"
@@ -68,8 +68,17 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 			return typeValidator.and(preTypeValidator)
 		}
 		if (preTypeValidator === undefined) {
+			const atLeastOneOf = [
+				"'type'",
+				"'enum'",
+				"'const'",
+				"'allOf'",
+				"'anyOf'",
+				"'oneOf'",
+				"'not'"
+			]
 			throwParseError(
-				`Provided JSON Schema must have one of 'type', 'enum', 'const', 'allOf', 'anyOf' but was ${printable(jsonSchema)}.`
+				`Provided JSON Schema must have at least one of the keys ${describeBranches(atLeastOneOf, { finalDelimiter: " and " })} (was ${printable(jsonSchema)})`
 			)
 		}
 		return preTypeValidator

@@ -161,5 +161,11 @@ contextualize(() => {
 				{ foo: { bar: [{ qux: "quux" }, "baz"] } }
 			])
 		).equals(true)
+
+		attest(() =>
+			tUniqueItems.assert([1, 1, 2, 3, 3, { foo: "string" }, { foo: "string" }])
+		).throws(
+			'TraversalError: must be an array of unique items (was an array with 3 duplicates: 1, 3, and {"foo":"string"})'
+		)
 	})
 })

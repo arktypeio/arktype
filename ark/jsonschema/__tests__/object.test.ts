@@ -59,7 +59,7 @@ contextualize(() => {
 				required: ["bar"]
 			})
 		).throws(
-			`TraversalError: required must be a key from the 'properties' object (one of ["foo"]) (was bar)`
+			`TraversalError: required must be a key from the 'properties' object, i.e. foo (was bar)`
 		)
 		attest(() =>
 			parseJsonSchema({
