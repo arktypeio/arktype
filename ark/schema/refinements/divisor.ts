@@ -51,7 +51,7 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 			rule: {
 				parse: divisor =>
 					Number.isInteger(divisor) ? divisor : (
-						throwParseError(`divisor must be an integer (was ${divisor})`)
+						throwParseError(writeNonIntegerDivisorMessage(divisor))
 					)
 			}
 		},
@@ -106,6 +106,14 @@ export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
 	"divisor",
 	actual
 >
+
+export const writeNonIntegerDivisorMessage = <divisor extends number>(
+	divisor: divisor
+): writeNonIntegerDivisorMessage<divisor> =>
+	`divisor must be an integer (was ${divisor})`
+
+export type writeNonIntegerDivisorMessage<divisor extends number> =
+	`divisor must be an integer (was ${divisor})`
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {
