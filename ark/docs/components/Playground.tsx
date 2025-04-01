@@ -1,9 +1,11 @@
 "use client"
 
+import { ParseError } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
 import extensionPackage from "arkdark/package.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import arkdarkColors from "arkthemes/arkdark.json"
+import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { wireTmGrammars } from "monaco-editor-textmate"
 import { Registry } from "monaco-textmate"
@@ -14,16 +16,13 @@ import { schemaDts } from "./dts/schema.ts"
 import { typeDts } from "./dts/type.ts"
 import { utilDts } from "./dts/util.ts"
 
-// Module-level initialization flags and references
 let onigasmLoaded = false
 let monacoInitialized = false
 let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
 	null
 
-// Promise for onigasm initialization that can be awaited
 let onigasmPromise: Promise<void> | null = null
 
-// Safely load onigasm only once
 const initOnigasm = async () => {
 	if (onigasmPromise) return onigasmPromise
 
@@ -44,7 +43,6 @@ const initOnigasm = async () => {
 	return Promise.resolve()
 }
 
-// Start loading onigasm early
 if (typeof window !== "undefined") initOnigasm().catch(console.error)
 
 interface VSCodeTheme {
@@ -72,7 +70,7 @@ type RequestMap = Map<string, number>
 const duplicateThresholdMs = 50
 const defaultPlaygroundCode = `import { type } from "arktype"
 
-const MyType = type({
+export const MyType = type({
 	name: "string",
 	age: "number"
 })
@@ -594,8 +592,57 @@ export const Playground = ({
 	const [loadingState, setLoaded] = useState<LoadingState>(
 		onigasmLoaded && monacoInitialized ? "loaded" : "unloaded"
 	)
+	const [validationResult, setValidationResult] =
+		useState<ValidationOutputProps>({})
+
 	const monaco = useMonaco()
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
+
+	useEffect(() => {
+		if (editorRef.current && resetTrigger > 0) {
+			editorRef.current.setValue(code)
+			validateCode(code)
+		}
+	}, [resetTrigger, code])
+
+	const validateCode = async (code: string) => {
+		try {
+			// Create a blob URL for proper module resolution
+			const blob = new Blob([code], { type: "text/javascript" })
+			const url = URL.createObjectURL(blob)
+
+			// Import as module with proper URL
+			const module = await import(url)
+
+			// Clean up the blob URL
+			URL.revokeObjectURL(url)
+
+			// Extract exports
+			const { MyType, out } = module as {
+				MyType?: type
+				out?: unknown
+			}
+
+			setValidationResult({
+				definition:
+					MyType ? JSON.stringify(MyType.expression, null, 2) : undefined,
+				result: out ?? (MyType ? MyType({}) : undefined)
+			})
+		} catch (e) {
+			setValidationResult({
+				result: `❌ RuntimeError: ${e instanceof Error ? e.message : String(e)}`
+			})
+		}
+	}
+
+	useEffect(() => {
+		if (editorRef.current) {
+			const disposable = editorRef.current.onDidChangeModelContent(() => {
+				validateCode(editorRef.current?.getValue() ?? "")
+			})
+			return () => disposable.dispose()
+		}
+	}, [editorRef.current])
 
 	// Reset editor content when the resetTrigger changes
 	useEffect(() => {
@@ -626,7 +673,9 @@ export const Playground = ({
 	}, [monaco, loadingState])
 
 	const containerStyle = {
-		display: visible ? "block" : "none",
+		display: visible ? "grid" : "none",
+		gridTemplateColumns: "1fr 1fr",
+		gap: "1rem",
 		height: fullHeight ? "calc(100vh - 64px)" : height,
 		width: "100%",
 		...style
@@ -635,45 +684,100 @@ export const Playground = ({
 	return (
 		<div className={className} style={containerStyle}>
 			{loadingState === "loaded" && monaco ?
-				<Editor
-					height="100%"
-					width="100%"
-					defaultLanguage={lang}
-					defaultValue={code}
-					path={editorFileUri}
-					theme="arkdark"
-					options={{
-						minimap: { enabled: false },
-						scrollBeyondLastLine: false,
-						quickSuggestions: { strings: "on" },
-						quickSuggestionsDelay: 0
-					}}
-					onMount={(editor, monaco) => {
-						editorRef.current = editor
-						if (tsLanguageServiceInstance)
-							applyEditorStyling(editor, monaco, tsLanguageServiceInstance)
-					}}
-				/>
+				<>
+					<Editor
+						height="100%"
+						width="100%"
+						defaultLanguage={lang}
+						defaultValue={code}
+						path={editorFileUri}
+						theme="arkdark"
+						options={{
+							minimap: { enabled: false },
+							scrollBeyondLastLine: false,
+							quickSuggestions: { strings: "on" },
+							quickSuggestionsDelay: 0
+						}}
+						onMount={(editor, monaco) => {
+							editorRef.current = editor
+							if (tsLanguageServiceInstance)
+								applyEditorStyling(editor, monaco, tsLanguageServiceInstance)
+							validateCode(editor.getValue())
+						}}
+					/>
+					<ValidationOutput {...validationResult} />
+				</>
 			:	<div className="loading-container">
 					<div className="loading-text">Loading playground...</div>
-					<style jsx>{`
-						.loading-container {
-							display: flex;
-							align-items: center;
-							justify-content: center;
-							height: 100%;
-							width: 100%;
-							background-color: rgba(0, 19, 35, 0.5);
-							backdrop-filter: blur(8px);
-							border-radius: 16px;
-						}
-						.loading-text {
-							color: #fff;
-							font-family: "Cascadia Mono", monospace;
-						}
-					`}</style>
 				</div>
 			}
 		</div>
 	)
 }
+
+interface ValidationOutputProps {
+	definition?: string | undefined
+	result?: type.errors | ParseError | unknown
+}
+
+const ValidationOutput = ({
+	definition,
+	result: result
+}: ValidationOutputProps) => (
+	<div className="validation-output">
+		<div className="section">
+			<div className="card">
+				<h3>Definition</h3>
+				<pre>
+					<code>{definition ?? "// No type defined yet"}</code>
+				</pre>
+			</div>
+		</div>
+		<div className="section">
+			<div className="card">
+				<h3>Output</h3>
+				<pre>
+					<code>
+						{result === undefined ?
+							null
+						: result instanceof type.errors ?
+							`❌ problems:\n\n${result.summary}`
+						: result instanceof ParseError ?
+							`❌ParseError:\n\n${result}`
+						:	`✅ data:\n\n${JSON.stringify(result, null, 2)}`}
+					</code>
+				</pre>
+			</div>
+		</div>
+		<style jsx>{`
+			.validation-output {
+				display: flex;
+				flex-direction: column;
+				gap: 1rem;
+				height: 100%;
+			}
+			.section {
+				flex: 1;
+				min-height: 0;
+			}
+			.card {
+				height: 100%;
+				padding: 1rem;
+				background-color: rgb(18, 18, 18);
+				border-radius: 1rem;
+				overflow: auto;
+			}
+			pre {
+				margin: 0;
+				white-space: pre-wrap;
+			}
+			code {
+				font-family: "Cascadia Code", monospace;
+			}
+			h3 {
+				margin: 0 0 0.5rem 0;
+				color: #fffff0;
+			}
+		`}</style>
+	</div>
+)
