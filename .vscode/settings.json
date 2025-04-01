@@ -44,7 +44,7 @@
 		"**/out": true,
 		"**/.next": true,
 		"**/.source": true,
-		"**/components/dts": true,
+		"**/components/bundles": true,
 		"**/apiData.ts": true
 	},
 	"editor.quickSuggestions": {

@@ -12,9 +12,9 @@ import { Registry } from "monaco-textmate"
 import { loadWASM } from "onigasm"
 import { useEffect, useRef, useState } from "react"
 import type { CompletionInfo, ScriptElementKind } from "typescript"
-import { schemaDts } from "./dts/schema.ts"
-import { typeDts } from "./dts/type.ts"
-import { utilDts } from "./dts/util.ts"
+import { schemaDts } from "./bundles/schema.ts"
+import { typeDts, typeJs } from "./bundles/type.ts"
+import { utilDts } from "./bundles/util.ts"
 
 let onigasmLoaded = false
 let monacoInitialized = false
@@ -605,23 +605,39 @@ export const Playground = ({
 		}
 	}, [resetTrigger, code])
 
-	const validateCode = async (code: string) => {
+	const validateCode = (code: string) => {
 		try {
-			// Create a blob URL for proper module resolution
-			const blob = new Blob([code], { type: "text/javascript" })
-			const url = URL.createObjectURL(blob)
+			// Create a wrapped evaluation context
+			const wrappedCode = `
+      (function() {
+        // Execute the bundled code in a separate scope
+        ${typeJs}
+        
+        // Make arktype available from the executed bundle
+        const arktype = typeof ArkType !== 'undefined' ? ArkType : 
+                       typeof arktype !== 'undefined' ? arktype : 
+                       typeof type !== 'undefined' ? type : 
+                       undefined;
+        
+        if (!arktype) throw new Error('Could not find arktype export in bundle');
+        
+        // User's code with arktype import transformed
+        ${code.replace(
+					/import\s+(.*?)\s+from\s+['"]arktype['"]/g,
+					"const $1 = arktype"
+				)}
+        
+        // Return the exports we care about
+        return {
+          MyType: typeof MyType !== 'undefined' ? MyType : undefined,
+          out: typeof out !== 'undefined' ? out : undefined
+        };
+      })()
+    `
 
-			// Import as module with proper URL
-			const module = await import(/* webpackIgnore: true */ url)
-
-			// Clean up the blob URL
-			URL.revokeObjectURL(url)
-
-			// Extract exports
-			const { MyType, out } = module as {
-				MyType?: type
-				out?: unknown
-			}
+			// Evaluate synchronously
+			const result = new Function(wrappedCode)()
+			const { MyType, out } = result
 
 			setValidationResult({
 				definition:
