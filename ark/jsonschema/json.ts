@@ -3,7 +3,10 @@ import { printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema } from "arktype"
 import { parseArrayJsonSchema } from "./array.ts"
 import { parseCommonJsonSchema } from "./common.ts"
-import { parseCompositionJsonSchema } from "./composition.ts"
+import {
+	parseAnyOfJsonSchema,
+	parseCompositionJsonSchema
+} from "./composition.ts"
 import {
 	writeJsonSchemaInsufficientKeysMessage,
 	writeJsonSchemaUnsupportedTypeMessage
@@ -37,14 +40,7 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 			else return type.never // No runtime value ever passes validation for JSON schema of 'false'
 		}
 
-		if (Array.isArray(jsonSchema)) {
-			return (
-				parseCompositionJsonSchema({ anyOf: jsonSchema }) ??
-				throwParseError(
-					"Failed to convert root array of JSON Schemas to an anyOf schema"
-				)
-			)
-		}
+		if (Array.isArray(jsonSchema)) return parseAnyOfJsonSchema(jsonSchema)
 
 		const constAndOrEnumValidator = parseCommonJsonSchema(
 			jsonSchema as JsonSchema

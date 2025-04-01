@@ -8,7 +8,9 @@ const parseAllOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.and(validator))
 
-const parseAnyOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
+export const parseAnyOfJsonSchema = (
+	jsonSchemas: readonly JsonSchema[]
+): Type =>
 	jsonSchemas
 		.map(jsonSchema => parseJsonSchema(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
