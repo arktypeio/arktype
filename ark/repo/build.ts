@@ -9,7 +9,7 @@ import {
 	shell,
 	writeJson
 } from "../fs/index.ts"
-import { dtsGen } from "./dtsGen.ts"
+import { bundle } from "./bundle.ts"
 import { jsDocGen } from "./jsdocGen.ts"
 import { packagesByScope } from "./shared.ts"
 
@@ -35,8 +35,9 @@ try {
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
 	if (packageName === "arktype") {
 		jsDocGen()
-		dtsGen()
-	} else if (packageName in packagesByScope.type.json.dependencies!) dtsGen()
+		bundle({ js: true, dts: true })
+	} else if (packageName in packagesByScope.type.json.dependencies!)
+		bundle({ js: false, dts: true })
 } finally {
 	rmRf("tsconfig.build.json")
 }

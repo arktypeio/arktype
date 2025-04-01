@@ -612,7 +612,7 @@ export const Playground = ({
 			const url = URL.createObjectURL(blob)
 
 			// Import as module with proper URL
-			const module = await import(url)
+			const module = await import(/* webpackIgnore: true */ url)
 
 			// Clean up the blob URL
 			URL.revokeObjectURL(url)
