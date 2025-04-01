@@ -819,10 +819,10 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 const expressBranches = (expressions: string[]) =>
 	describeBranches(expressions, describeExpressionOptions)
 
-const describeBranches = (
+export const describeBranches = (
 	descriptions: string[],
 	opts?: DescribeBranchesOptions
-) => {
+): string => {
 	const delimiter = opts?.delimiter ?? ", "
 	const finalDelimiter = opts?.finalDelimiter ?? " or "
 
