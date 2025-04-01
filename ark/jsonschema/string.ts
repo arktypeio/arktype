@@ -14,13 +14,8 @@ export const parseStringJsonSchema: Type<
 		arktypeStringSchema.maxLength = jsonSchema.maxLength
 	if ("minLength" in jsonSchema)
 		arktypeStringSchema.minLength = jsonSchema.minLength
-	if ("pattern" in jsonSchema) {
-		if (jsonSchema.pattern instanceof RegExp) {
-			arktypeStringSchema.pattern = [
-				// Strip leading and trailing slashes from RegExp
-				jsonSchema.pattern.toString().slice(1, -1)
-			]
-		} else arktypeStringSchema.pattern = [jsonSchema.pattern]
-	}
+	if ("pattern" in jsonSchema)
+		arktypeStringSchema.pattern = [jsonSchema.pattern]
+
 	return rootSchema(arktypeStringSchema) as never
 })
