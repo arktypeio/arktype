@@ -1,4 +1,6 @@
 import { basename, join } from "node:path"
+import { build } from "tsup"
+
 import {
 	bootstrapFs,
 	packagesByScope,
@@ -6,36 +8,32 @@ import {
 	type PackageScope
 } from "./shared.ts"
 
-const { readFile, shell, rmSync, writeFile } = bootstrapFs
+const { readFile, rmSync, writeFile } = bootstrapFs
 
 type BundleOptions = {
 	js: boolean
 	dts: boolean
 }
 
-export const bundle = (options: BundleOptions) => {
+export const bundle = async (options: BundleOptions) => {
 	const pkgScope = basename(process.cwd()) as PackageScope
 	const pkg = packagesByScope[pkgScope]
 
 	console.log(`📦 Generating bundle for ${pkg.name}...`)
 
-	// Build tsup command based on options
-	const tsupArgs = [
-		"pnpm tsup index.ts",
-		"--format esm",
-		options.js ? "--target esnext" : "",
-		options.dts ? "--dts --dts-resolve" : "--dts-only=false",
-		"--no-splitting",
-		`--out-dir ${join(pkg.path, "dist")}`
-	]
-		.filter(Boolean)
-		.join(" ")
+	await build({
+		entry: ["index.ts"],
+		format: "esm",
+		target: options.js ? "esnext" : [],
+		noExternal: ["@ark/schema", "@ark/util"],
+		dts: {
+			only: !options.js
+		},
+		outDir: "."
+	})
 
-	shell(tsupArgs)
-
-	// Handle JS output if requested
 	if (options.js) {
-		const jsPath = join(pkg.path, "dist", "index.js")
+		const jsPath = join(pkg.path, "index.js")
 		const jsContent = readFile(jsPath)
 		rmSync(jsPath)
 
@@ -48,9 +46,8 @@ export const bundle = (options: BundleOptions) => {
 		)
 	}
 
-	// Handle DTS output if requested
 	if (options.dts) {
-		const dtsPath = join(pkg.path, "dist", "index.d.ts")
+		const dtsPath = join(pkg.path, "index.d.ts")
 		const dtsContent = readFile(dtsPath)
 		rmSync(dtsPath)
 
