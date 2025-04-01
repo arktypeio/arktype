@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { parseJsonSchema } from "@ark/jsonschema"
+import {
+	parseJsonSchema,
+	writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage,
+	writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage
+} from "@ark/jsonschema"
 
 contextualize(() => {
 	it("type number", () => {
@@ -37,9 +41,7 @@ contextualize(() => {
 				maximum: 5,
 				exclusiveMaximum: 5
 			})
-		).throws(
-			"ParseError: Provided number JSON Schema cannot have 'maximum' and 'exclusiveMaximum"
-		)
+		).throws(writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage())
 	})
 
 	it("minimum", () => {
@@ -62,9 +64,7 @@ contextualize(() => {
 				minimum: 5,
 				exclusiveMinimum: 5
 			})
-		).throws(
-			"ParseError: Provided number JSON Schema cannot have 'minimum' and 'exclusiveMinimum"
-		)
+		).throws(writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage())
 	})
 
 	it("multipleOf", () => {

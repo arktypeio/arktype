@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { parseJsonSchema } from "@ark/jsonschema"
+import {
+	parseJsonSchema,
+	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
+	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
+} from "@ark/jsonschema"
 
 contextualize(() => {
 	it("type array", () => {
@@ -66,9 +70,7 @@ contextualize(() => {
 				additionalItems: { type: "string" },
 				items: { type: "string" }
 			})
-		).throws(
-			"ParseError: Provided array JSON Schema cannot have non-array 'items' and 'additionalItems"
-		)
+		).throws(writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage())
 	})
 
 	it("additionalItems & prefixItems", () => {
@@ -90,9 +92,7 @@ contextualize(() => {
 				items: { type: "null" },
 				prefixItems: [{ type: "string" }, { type: "number" }]
 			})
-		).throws(
-			"ParseError: Provided array JSON Schema cannot have 'additionalItems' and 'items' and 'prefixItems'"
-		)
+		).throws(writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage())
 	})
 
 	it("contains", () => {

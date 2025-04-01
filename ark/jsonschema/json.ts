@@ -4,6 +4,10 @@ import { type, type JsonSchema } from "arktype"
 import { parseArrayJsonSchema } from "./array.ts"
 import { parseCommonJsonSchema } from "./common.ts"
 import { parseCompositionJsonSchema } from "./composition.ts"
+import {
+	writeJsonSchemaInsufficientKeysMessage,
+	writeJsonSchemaUnsupportedTypeMessage
+} from "./errors.ts"
 import { parseNumberJsonSchema } from "./number.ts"
 import { parseObjectJsonSchema } from "./object.ts"
 import { JsonSchemaScope } from "./scope.ts"
@@ -60,7 +64,7 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 
 			if (typeValidator === undefined) {
 				throwParseError(
-					`Provided 'type' value must be a supported JSON Schema type (was '${printable(jsonSchema.type)}')`
+					writeJsonSchemaUnsupportedTypeMessage(printable(jsonSchema.type))
 				)
 			}
 
@@ -78,7 +82,10 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 				"'not'"
 			]
 			throwParseError(
-				`Provided JSON Schema must have at least one of the keys ${describeBranches(atLeastOneOf, { finalDelimiter: " and " })} (was ${printable(jsonSchema)})`
+				writeJsonSchemaInsufficientKeysMessage(
+					describeBranches(atLeastOneOf, { finalDelimiter: " and " }),
+					printable(jsonSchema)
+				)
 			)
 		}
 		return preTypeValidator

@@ -1,6 +1,10 @@
 import { rootSchema, type Intersection } from "@ark/schema"
 import { throwParseError } from "@ark/util"
 import type { JsonSchema, Out, Type } from "arktype"
+import {
+	writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage,
+	writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage
+} from "./errors.ts"
 import { JsonSchemaScope } from "./scope.ts"
 
 export const parseNumberJsonSchema: Type<
@@ -12,11 +16,9 @@ export const parseNumberJsonSchema: Type<
 	}
 
 	if ("maximum" in jsonSchema) {
-		if ("exclusiveMaximum" in jsonSchema) {
-			throwParseError(
-				"Provided number JSON Schema cannot have 'maximum' and 'exclusiveMaximum"
-			)
-		}
+		if ("exclusiveMaximum" in jsonSchema)
+			throwParseError(writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage())
+
 		arktypeNumberSchema.max = jsonSchema.maximum
 	} else if ("exclusiveMaximum" in jsonSchema) {
 		arktypeNumberSchema.max = {
@@ -26,11 +28,9 @@ export const parseNumberJsonSchema: Type<
 	}
 
 	if ("minimum" in jsonSchema) {
-		if ("exclusiveMinimum" in jsonSchema) {
-			throwParseError(
-				"Provided number JSON Schema cannot have 'minimum' and 'exclusiveMinimum"
-			)
-		}
+		if ("exclusiveMinimum" in jsonSchema)
+			throwParseError(writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage())
+
 		arktypeNumberSchema.min = jsonSchema.minimum
 	} else if ("exclusiveMinimum" in jsonSchema) {
 		arktypeNumberSchema.min = {

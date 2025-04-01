@@ -10,6 +10,10 @@ import {
 import { getDuplicatesOf, printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema, type Out, type Type } from "arktype"
 
+import {
+	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
+	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
+} from "./errors.ts"
 import { parseJsonSchema } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
 
@@ -221,7 +225,10 @@ export const parseObjectJsonSchema: Type<
 
 			if (!patternPropertyNode.signature.extends(propertyNamesNode.signature)) {
 				throwParseError(
-					`Pattern property ${patternPropertyNode.signature.expression} doesn't conform to propertyNames schema of ${propertyNamesNode.signature.expression}`
+					writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage(
+						patternPropertyNode.signature.expression,
+						parsedPropertyNamesSchema.expression
+					)
 				)
 			}
 		})
@@ -230,7 +237,10 @@ export const parseObjectJsonSchema: Type<
 		requiredKeys.forEach(requiredKey => {
 			if (!parsedPropertyNamesSchema.allows(requiredKey.key)) {
 				throwParseError(
-					`Required key ${requiredKey.key} doesn't conform to propertyNames schema of ${parsedPropertyNamesSchema.expression}`
+					writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage(
+						requiredKey.key,
+						parsedPropertyNamesSchema.expression
+					)
 				)
 			}
 		})

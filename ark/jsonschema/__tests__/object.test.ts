@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { parseJsonSchema } from "@ark/jsonschema"
+import {
+	parseJsonSchema,
+	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
+	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
+} from "@ark/jsonschema"
 
 contextualize(() => {
 	it("type object", () => {
@@ -153,7 +157,10 @@ contextualize(() => {
 				patternProperties: { "^abcd": { type: "number" } }
 			})
 		}).throws(
-			"ParseError: Pattern property /^abcd/ doesn't conform to propertyNames schema of string >= 3"
+			writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage(
+				"/^abcd/",
+				"string >= 3"
+			)
 		)
 	})
 
@@ -191,7 +198,10 @@ contextualize(() => {
 				required: ["a"]
 			})
 		).throws(
-			"Required key a doesn't conform to propertyNames schema of string >= 3"
+			writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage(
+				"a",
+				"string >= 3"
+			)
 		)
 	})
 })

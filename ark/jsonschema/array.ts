@@ -7,6 +7,10 @@ import {
 } from "@ark/schema"
 import { printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema, type Out, type Type } from "arktype"
+import {
+	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
+	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
+} from "./errors.ts"
 import { parseJsonSchema } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
 
@@ -71,7 +75,7 @@ export const parseArrayJsonSchema: Type<
 		if ("items" in jsonSchema) {
 			if ("additionalItems" in jsonSchema) {
 				throwParseError(
-					"Provided array JSON Schema cannot have 'additionalItems' and 'items' and 'prefixItems'"
+					writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage()
 				)
 			} else jsonSchema.additionalItems = jsonSchema.items
 		}
@@ -101,7 +105,7 @@ export const parseArrayJsonSchema: Type<
 		} else {
 			if ("additionalItems" in jsonSchema) {
 				throwParseError(
-					"Provided array JSON Schema cannot have non-array 'items' and 'additionalItems"
+					writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage()
 				)
 			}
 			arktypeArraySchema.sequence = {
