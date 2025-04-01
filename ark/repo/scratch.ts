@@ -22,3 +22,5 @@ const ConfiguredUser = User.configure(
 ConfiguredUser.get("name").description // A STRING
 ConfiguredUser.get("platform").description // "android" | "ios"
 ConfiguredUser.get("version").description // a number, A STRING or undefined
+
+JSON.stringify({ foo: "$ark.type" })

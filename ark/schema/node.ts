@@ -286,7 +286,10 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly compiledMeta: string = JSON.stringify(this.metaJson)
+	readonly compiledMeta: string = JSON.stringify(this.metaJson).replaceAll(
+		/"(\$ark\.[^"]+)"/g,
+		"$1"
+	)
 
 	protected cacheGetter<name extends keyof this>(
 		name: name,
