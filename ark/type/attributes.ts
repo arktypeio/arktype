@@ -177,7 +177,7 @@ type distillArrayFromPostfix<
 	:	[...{ [i in keyof t]: _distill<t[i], endpoint, seen> }, ...postfix]
 
 type BuiltinTerminalObjectKind = Exclude<
-	keyof arkPrototypes.instances,
+	arkPrototypes.NonDegenerateName,
 	"Array" | "Function"
 >
 
