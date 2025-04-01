@@ -1,3 +1,4 @@
+import { throwParseError } from "@ark/util"
 import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
@@ -47,7 +48,12 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 		kind: "divisor",
 		collapsibleKey: "rule",
 		keys: {
-			rule: {}
+			rule: {
+				parse: divisor =>
+					Number.isInteger(divisor) ? divisor : (
+						throwParseError(`divisor must be an integer (was ${divisor})`)
+					)
+			}
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,

@@ -80,8 +80,7 @@ const $: JsonSchemaScope = scope(
 			"exclusiveMinimum?": "number",
 			"maximum?": "number",
 			"minimum?": "number",
-			// NB: JSON Schema allows decimal multipleOf, but ArkType only supports integer.
-			"multipleOf?": "number.integer",
+			"multipleOf?": "number",
 			type: "'number'|'integer'"
 		},
 		ObjectSchema: {

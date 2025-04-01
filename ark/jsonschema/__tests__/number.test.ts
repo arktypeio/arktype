@@ -76,11 +76,5 @@ contextualize(() => {
 			multipleOf: 5
 		})
 		attest(tInt.expression).snap("number % 5")
-
-		// JSON Schema allows decimal multipleOf, but ArkType doesn't.
-		const multipleOf = 5.5
-		attest(() => parseJsonSchema({ type: "number", multipleOf })).throws(
-			`TraversalError: multipleOf must be an integer (was ${multipleOf})`
-		)
 	})
 })
