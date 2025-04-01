@@ -15,3 +15,34 @@ Other than handling it as a promise on the output object, no.
 As it stands, it doesn't seem worth the significant complexity it would add to morphs in the type system.
 
 If you have a compelling use case, let us know on [this GitHub issue](https://github.com/arktypeio/arktype/issues/462).
+
+### What's up with your type/Type casing?
+
+You might have noticed in our documentation we use PascalCase for some Types and camelCase for others:
+
+```ts
+const User = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
+})
+
+const parseJson = type("string.json.parse").to({
+	name: "string",
+	version: "string.semver"
+})
+```
+
+This distinction actually evolved from the rules we use for casing our internal TypeScript types:
+
+- Use `PascalCase` for...
+
+  - Entities/non-generic types (e.g. `User`, `SomeData`)
+  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
+
+- Use `camelCase` for...
+
+  - Generic types with verb names like `inferDomain<t>`. Types named this way should generally have at least one required parameter.
+  - Parameter names, e.g. `t` in `Array<t>`
+
+If you don't like this, feel free to use whatever casing rules best suit your repo- it will not affect your Types or scope aliases in any way.
