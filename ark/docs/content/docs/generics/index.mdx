@@ -4,41 +4,13 @@ title: Generics
 
 ### Keywords
 
-Record is now available as a builtin keyword.
+This table includes all generic keywords available in default `type` API.
 
-```ts
-import { type } from "arktype"
-
-const StringRecord = type("Record<string, string>")
-```
-
-In addition to `Record`, the following generics from TS are now available in ArkType:
-
-- **Pick**
-- **Omit**
-- **Extract**
-- **Exclude**
-
-These can be instantiated in one of three ways:
-
-```ts
-import { type, type Type } from "arktype"
-
-const createBox = <T extends string>(of: type.Any<T>) =>
-	type({
-		box: of
-	})
-
-const boxType = createBox(type("string"))
-
-// @ts-expect-error
-const badBox = createBox(type("number"))
-
-console.log(boxType({ box: 5 }).toString())
-console.log(boxType({ box: "foo" }))
-```
+<GenericKeywordTable />
 
 ### Syntax
+
+Generics can be declared and instantiated in one of three ways.
 
 #### Definition
 
@@ -130,4 +102,35 @@ Recursive and cyclic generics are also currently unavailable and will be added s
 
 For more usage examples, check out the unit tests for generics [here](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/generic.test.ts).
 
-This feature was built to be very robust and flexible. We're excited to see what you do with it!
+### External
+
+The most basic pattern for wrapping a Type looks something like this:
+
+```ts
+const createBox = <t extends string>(of: type.Any<t>) =>
+	type({
+		box: of
+	})
+
+// @ts-expect-error
+createBox(type("number"))
+
+// Type<{ box: string }>
+const BoxType = createBox(type("string"))
+```
+
+For a deeper integration, you may wish to parse a definition directly:
+
+```ts
+const createBox = <const def>(
+	of: type.validate<def>
+): type.instantiate<{ of: def }> =>
+	type.raw({
+		box: of
+	}) as never
+
+// Type<{ box: string }>
+const BoxType = createBox("string")
+```
+
+The sky's the limit when it comes to this sort of integration, but be warned- TypeScript generics are notoriously finicky and [you may find APIs like these difficult to write if you're not used to it](/docs/faq#why-isnt-my-wrapper-generic-working).

@@ -46,3 +46,62 @@ This distinction actually evolved from the rules we use for casing our internal 
   - Parameter names, e.g. `t` in `Array<t>`
 
 If you don't like this, feel free to use whatever casing rules best suit your repo- it will not affect your Types or scope aliases in any way.
+
+### Why isn't my wrapper generic working?
+
+TypeScript generic inference is notoriously finicky. General patterns for wrapping Types and definitions are outlined [in the Generics docs](/docs/generics#external).
+
+<Callout
+	type="info"
+	title="If you want to write type-level logic, you need to cast."
+>
+
+When implementing a function with a generic return type, you will almost always need to cast in your implementation, either explicitly via `as` or by using an overload.
+
+Think of it as trading internal safety for external precision. As long as the function you're writing will be called many times externally, the overhead is justified. If not, it may not need to be generic at all- a broad return type like `string` as opposed to `${prefix}.${key}` may be sufficient.
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+// via explicit cast
+const createBox = <const def>(
+	of: type.validate<def>
+): type.instantiate<{ of: def }> =>
+	type.raw({
+		box: of
+		// when implementing generics, never is your go-to
+		// for allowing an arbitrary assignment with less risk than `any`
+	}) as never
+
+// via overloads
+// only the external signatures are considered on invocation
+function createBox2<const def>(
+	of: type.validate<def>
+): type.instantiate<{ of: def }>
+// the signature associated with the implementation is much looser and should
+// be thought of as equivalent to casting in terms of type safety
+function createBox2(of: unknown) {
+	return type.raw({
+		box: of
+	})
+}
+```
+
+Notice in both cases, we've explicitly annotated the return type we want and used some method of casting internally to allow our implementation. This is a very common for implementing generic functions and, more generally, associating an implementation with typings TS can't infer on its own.
+
+</details>
+
+</Callout>
+
+For anything more complex, you'll have to rely on your understanding of type manipulation to achieve the desired outcome. Tracing your way through ArkType's internal types may uncover helpful patterns, and you may even find friendly folks [in our Discord](https://artype.io/discord) who may be willing to lend a hand.
+
+Generally speaking however, **we cannot guarantee your generics will behave the way you expect**.
+
+Writing a good generic function can require understanding many complex details and edge cases- the kind of stuff our core API abstracts away.
+
+Unfortunately, when it comes to how ArkType integrates with external generics, that is not possible.
+
+Getting the results you want will take patience, but the DX ceiling for this kind of API is crazy high.
+
+If we haven't scared you off by now, we're hyped to see what you build with it 🧗

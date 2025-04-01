@@ -43,7 +43,9 @@
 	"search.exclude": {
 		"**/out": true,
 		"**/.next": true,
-		"**/.source": true
+		"**/.source": true,
+		"**/components/dts": true,
+		"**/apiData.ts": true
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"

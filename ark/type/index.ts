@@ -19,6 +19,11 @@ export {
 	type,
 	type Ark
 } from "./keywords/keywords.ts"
+export type { BaseType } from "./methods/base.ts"
 export { Module, type BoundModule, type Submodule } from "./module.ts"
-export { scope, type Scope } from "./scope.ts"
+export type {
+	inferDefinition,
+	validateDefinition
+} from "./parser/definition.ts"
+export { scope, type bindThis, type Scope } from "./scope.ts"
 export { Type } from "./type.ts"
