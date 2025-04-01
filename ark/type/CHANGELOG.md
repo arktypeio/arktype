@@ -1,5 +1,32 @@
 # arktype
 
+## 2.1.16
+
+##### Fixed [an issue](https://github.com/arktypeio/arktype/issues/1400) causing non-serializable error config to lead to incorrect error messages in some JIT-mode cases:
+
+```ts
+const MyUnion = type('"abc" | "cde"').configure({
+	message: () => "fail"
+})
+
+// old: "$ark.message"
+// new: "fail"
+MyUnion.assert("efg")
+```
+
+##### Added a workaround for environments where global prototypes like `FormData` have degenerate resolutions like `{}` (currently the case in `@types/bun`, see https://github.com/oven-sh/bun/issues/18689)
+
+```ts
+const T = type("string.numeric.parse")
+
+// previously, if a global prototype like FormData resolved to {}, it prevented
+// ArkType from extracting the input/output of morphs, leading to inference like the following:
+
+// old (with @bun/types): (In: string) => To<number>
+// new (with @bun/types): number
+type Parsed = typeof T.inferOut
+```
+
 ## 2.1.15
 
 ### `.configure({}, selector)` fixes

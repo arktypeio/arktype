@@ -45,7 +45,6 @@
 		"checkEslint": "eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
-		"latest": "pnpm -r up --latest",
 		"ci:publish": "ts ./ark/repo/publish.ts",
 		"publishExtension": "cd ark/dark && pnpm publishExtension",
 		"upDeps": "pnpm up -r --latest"

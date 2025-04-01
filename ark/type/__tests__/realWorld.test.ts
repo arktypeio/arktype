@@ -1321,4 +1321,15 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		attest(out.toString()).snap("id must be a userID (was missing)")
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1400
+	it("configured union message", () => {
+		const schema = type('"abc" | "cde"').configure({
+			message: () => "hello world"
+		})
+
+		const res = schema("efg")
+
+		attest(res.toString()).snap("hello world")
+	})
 })
