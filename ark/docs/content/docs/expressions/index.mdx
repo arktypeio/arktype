@@ -10,7 +10,7 @@ Like its TypeScript counterpart, an intersection combines two existing `Type`s t
 	<SyntaxTab string>
 
 ```ts
-const myObject = type({
+const MyObj = type({
 	// an email address with the domain arktype.io
 	intersected: "string.email & /@arktype\\.io$/"
 })
@@ -21,12 +21,12 @@ const myObject = type({
     <SyntaxTab fluent>
 
 ```ts
-const fooObject = type({
+const FooObject = type({
 	foo: "string"
 })
 
 // an object requiring both foo and bar
-const foobarObject = fooObject.and({
+const FoobarObject = FooObject.and({
 	bar: "number"
 })
 ```
@@ -36,13 +36,13 @@ const foobarObject = fooObject.and({
     <SyntaxTab function>
 
 ```ts
-const fooObject = type({
+const FooObject = type({
 	foo: "string"
 })
 
 // accepts ...definitions
-const foobarObject = type.and(
-	fooObject,
+const FoobarObject = type.and(
+	FooObject,
 	{
 		bar: "number"
 	},
@@ -58,7 +58,7 @@ const foobarObject = type.and(
 
 ```ts
 // an object requiring both foo and bar
-const foobarObject = type([
+const FoobarObject = type([
 	{
 		foo: "string"
 	},
@@ -75,7 +75,7 @@ const foobarObject = type([
 
 ```ts
 // an object requiring both foo and bar
-const foobarObject = type(
+const FoobarObject = type(
 	{
 		foo: "string"
 	},
@@ -98,7 +98,7 @@ All unions are automatically discriminated to optimize check time and error mess
 	<SyntaxTab string>
 
 ```ts
-const unions = type({
+const Unions = type({
 	key: "string | number"
 })
 ```
@@ -108,7 +108,7 @@ const unions = type({
     <SyntaxTab fluent>
 
 ```ts
-const unions = type({
+const Unions = type({
 	key: type.string.or(type.number)
 })
 ```
@@ -119,7 +119,7 @@ const unions = type({
 
 ```ts
 // accepts ...definitions
-const union = type.or(type.string, "number", { key: "unknown" })
+const Union = type.or(type.string, "number", { key: "unknown" })
 ```
 
     </SyntaxTab>
@@ -127,7 +127,7 @@ const union = type.or(type.string, "number", { key: "unknown" })
     <SyntaxTab tuple>
 
 ```ts
-const unions = type({
+const Unions = type({
 	key: ["string", "|", { name: "string" }]
 })
 ```
@@ -137,7 +137,7 @@ const unions = type({
     <SyntaxTab args>
 
 ```ts
-const unions = type({
+const Unions = type({
 	key: type("string", "|", { name: "string" })
 })
 ```
@@ -154,18 +154,18 @@ const unions = type({
 >
 ```ts
 // operands overlap, but neither transforms data
-const okay = type("number > 0").or("number < 10")
+const Okay = type("number > 0").or("number < 10")
 // operand transforms data, but there's no overlap between the inputs
-const alsoOkay = type("string.numeric.parse").or({ box: "string" })
+const AlsoOkay = type("string.numeric.parse").or({ box: "string" })
 // operands overlap and transform data, but in the same way
-const stillOkay = type("string > 5", "=>", Number.parseFloat).or([
+const StillOkay = type("string > 5", "=>", Number.parseFloat).or([
 	"0 < string < 10",
 	"=>",
 	Number.parseFloat
 ])
 // ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
-const bad = type({ box: "string.numeric.parse" }).or({ box: "string" })
-const sameError = type({ a: "string.numeric.parse" }).or({ b: "string.numeric.parse" })
+const Bad = type({ box: "string.numeric.parse" }).or({ box: "string" })
+const SameError = type({ a: "string.numeric.parse" }).or({ b: "string.numeric.parse" })
 ```
 
 <details>
@@ -197,7 +197,7 @@ Add a type-only symbol to an existing type so that the only values that satisfy 
 
 ```ts
 // @noErrors
-const even = type("(number % 2)#even")
+const Even = type("(number % 2)#even")
 type Even = typeof even.infer
 
 const good: Even = even.assert(2)
@@ -235,7 +235,7 @@ Narrow expressions allow you to add custom validation logic and error messages. 
     <SyntaxTab fluent>
 
 ```ts
-const form = type({
+const Form = type({
 	password: "string",
 	confirmPassword: "string"
 }).narrow((data, ctx) => {
@@ -251,7 +251,7 @@ const form = type({
 })
 
 // ArkErrors: confirmPassword must be identical to password
-const out = form({
+const out = Form({
 	password: "arktype",
 	confirmPassword: "artkype"
 })
@@ -262,7 +262,7 @@ const out = form({
     <SyntaxTab tuple>
 
 ```ts
-const form = type([
+const Form = type([
 	{
 		password: "string",
 		confirmPassword: "string"
@@ -282,7 +282,7 @@ const form = type([
 ])
 
 // ArkErrors: confirmPassword must be identical to password
-const out = form({
+const out = Form({
 	password: "arktype",
 	confirmPassword: "artkype"
 })
@@ -293,7 +293,7 @@ const out = form({
     <SyntaxTab args>
 
 ```ts
-const form = type(
+const Form = type(
 	{
 		password: "string",
 		confirmPassword: "string"
@@ -313,7 +313,7 @@ const form = type(
 )
 
 // ArkErrors: confirmPassword must be identical to password
-const out = form({
+const out = Form({
 	password: "arktype",
 	confirmPassword: "artkype"
 })
@@ -330,7 +330,7 @@ If the return type of a narrow is a type predicate, that will be reflected in th
 
 ```ts
 // hover to see how the predicate is propagated to the outer `Type`
-const arkString = type("string").narrow(
+const ArkString = type("string").narrow(
 	(data, ctx): data is `ark${string}` =>
 		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
 )
@@ -342,7 +342,7 @@ const arkString = type("string").narrow(
 
 ```ts
 // hover to see how the predicate is propagated to the outer `Type`
-const arkString = type([
+const ArkString = type([
 	"string",
 	":",
 	(data, ctx): data is `ark${string}` =>
@@ -356,7 +356,7 @@ const arkString = type([
 
 ```ts
 // hover to see how the predicate is propagated to the outer `Type`
-const arkString = type(
+const ArkString = type(
 	"string",
 	":",
 	(data, ctx): data is `ark${string}` =>
@@ -427,9 +427,9 @@ To make this easier, there's a special `to` operator that can pipe to a parsed d
 ```ts
 const parseEvenTo = type("string.numeric.parse |> number % 2")
 
-const even = type("number % 2")
+const Even = type("number % 2")
 // equivalent to parseEvenTo
-const parseEvenPipe = type("string.numeric.parse").pipe(even)
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
 ```
 
     </SyntaxTab>
@@ -438,9 +438,9 @@ const parseEvenPipe = type("string.numeric.parse").pipe(even)
 ```ts
 const parseEvenTo = type("string.numeric.parse").to("number % 2")
 
-const even = type("number % 2")
+const Even = type("number % 2")
 // equivalent to parseEvenTo
-const parseEvenPipe = type("string.numeric.parse").pipe(even)
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
 ```
 
     </SyntaxTab>
@@ -450,9 +450,9 @@ const parseEvenPipe = type("string.numeric.parse").pipe(even)
 ```ts
 const parseEvenTo = type(["string.numeric.parse", "|>", "number % 2"])
 
-const even = type("number % 2")
+const Even = type("number % 2")
 // equivalent to parseEvenTo
-const parseEvenPipe = type("string.numeric.parse").pipe(even)
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
 ```
 
     </SyntaxTab>
@@ -462,9 +462,9 @@ const parseEvenPipe = type("string.numeric.parse").pipe(even)
 ```ts
 const parseEvenTo = type("string.numeric.parse", "|>", "number % 2")
 
-const even = type("number % 2")
+const Even = type("number % 2")
 // equivalent to parseEvenTo
-const parseEvenPipe = type("string.numeric.parse").pipe(even)
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
 ```
 
     </SyntaxTab>
@@ -482,7 +482,7 @@ While embedded [literal syntax](/docs/primitives#number-literals) is usually ide
 ```ts
 const mySymbol = Symbol()
 
-const exactValue = type.unit(mySymbol)
+const ExactValue = type.unit(mySymbol)
 ```
 
     </SyntaxTab>
@@ -492,7 +492,7 @@ const exactValue = type.unit(mySymbol)
 ```ts
 const mySymbol = Symbol()
 
-const exactValue = type(["===", mySymbol])
+const ExactValue = type(["===", mySymbol])
 ```
 
     </SyntaxTab>
@@ -502,7 +502,7 @@ const exactValue = type(["===", mySymbol])
 ```ts
 const mySymbol = Symbol()
 
-const exactValue = type("===", mySymbol)
+const ExactValue = type("===", mySymbol)
 ```
 
     </SyntaxTab>
@@ -520,7 +520,7 @@ const exactValue = type("===", mySymbol)
 ```ts
 const mySymbol = Symbol()
 
-const exactValueFromSet = type.enumerated(1337, true, mySymbol)
+const ExactValueFromSet = type.enumerated(1337, true, mySymbol)
 ```
 
     </SyntaxTab>
@@ -530,7 +530,7 @@ const exactValueFromSet = type.enumerated(1337, true, mySymbol)
 ```ts
 const mySymbol = Symbol()
 
-const exactValueFromSet = type(["===", 1337, true, mySymbol])
+const ExactValueFromSet = type(["===", 1337, true, mySymbol])
 ```
 
     </SyntaxTab>
@@ -540,7 +540,7 @@ const exactValueFromSet = type(["===", 1337, true, mySymbol])
 ```ts
 const mySymbol = Symbol()
 
-const exactValueFromSet = type("===", 1337, true, mySymbol)
+const ExactValueFromSet = type("===", 1337, true, mySymbol)
 ```
 
     </SyntaxTab>
@@ -603,12 +603,12 @@ Other properties are introspectable, but aren't used by default internally.
 
 ```ts
 // this validator's error message will now start with "must be a special string"
-const specialString = type("string").configure({
+const SpecialString = type("string").configure({
 	description: "a special string"
 })
 
 // sugar for adding description metadata
-const specialNumber = type("number").describe("a special number")
+const SpecialNumber = type("number").describe("a special number")
 ```
 
     </SyntaxTab>
@@ -617,7 +617,7 @@ const specialNumber = type("number").describe("a special number")
 
 ```ts
 // this validator's error message will now start with "must be a special string"
-const specialString = type([
+const SpecialString = type([
 	"string",
 	"@",
 	{
@@ -626,7 +626,7 @@ const specialString = type([
 ])
 
 // sugar for adding description metadata
-const specialNumber = type(["number", "@", "a special number"])
+const SpecialNumber = type(["number", "@", "a special number"])
 ```
 
     </SyntaxTab>
@@ -635,12 +635,12 @@ const specialNumber = type(["number", "@", "a special number"])
 
 ```ts
 // this validator's error message will now start with "must be a special string"
-const specialString = type("string", "@", {
+const SpecialString = type("string", "@", {
 	description: "a special string"
 })
 
 // sugar for adding description metadata
-const specialNumber = type("number", "@", "a special number")
+const SpecialNumber = type("number", "@", "a special number")
 ```
 
     </SyntaxTab>
@@ -659,7 +659,7 @@ Sometimes, you may want to directly specify how a `Type` should be inferred with
 // allow any string, but suggest "foo" and "bar"
 type AutocompletedString = "foo" | "bar" | (string & {})
 
-const myObject = type({
+const MyObj = type({
 	autocompletedString: "string" as type.cast<AutocompletedString>
 })
 ```
@@ -672,7 +672,7 @@ const myObject = type({
 // allow any string, but suggest "foo" and "bar"
 type AutocompletedString = "foo" | "bar" | (string & {})
 
-const myObject = type({
+const MyObj = type({
 	autocompletedString: type.string.as<AutocompletedString>()
 })
 ```
@@ -687,7 +687,7 @@ By default, ArkType's operators follow the same precedence as TypeScript's. Also
 
 ```ts
 // hover to see the distinction!
-const groups = type({
+const Groups = type({
 	stringOrArrayOfNumbers: "string | number[]",
 	arrayOfStringsOrNumbers: "(string | number)[]"
 })
@@ -698,12 +698,12 @@ const groups = type({
 `this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
 
 ```ts
-const disappointingGift = type({
+const DisappointingGift = type({
 	label: "string",
 	"box?": "this"
 })
 
-const out = disappointingGift({
+const out = DisappointingGift({
 	label: "foo",
 	box: { label: "bar", box: {} }
 })
@@ -718,21 +718,14 @@ if (out instanceof type.errors) {
 }
 ```
 
-Unlike its TypeScript counterpart, ArkType's `this` is not limited to interfaces. It can also be used from within a tuple expression.
-
-```ts
-// boxes now expects an array of our gift object
-const disappointingGifts = type({ label: "string", boxes: "this" }, "[]")
-```
-
 Referencing `this` from within a scope will result in a ParseError. For similar behavior within a scoped definition, just reference the alias by name:
 
 ```ts
 const types = scope({
-	disappointingGift: {
+	DisappointingGift: {
 		label: "string",
 		// Resolves correctly to the root of the current type
-		"box?": "disappointingGift"
+		"box?": "DisappointingGift"
 	}
 }).export()
 ```

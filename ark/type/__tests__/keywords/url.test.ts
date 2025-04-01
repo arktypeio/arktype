@@ -3,12 +3,12 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("root", () => {
-		const url = type("string.url")
+		const Url = type("string.url")
 
-		attest(url).type.toString.snap("Type<string, {}>")
+		attest(Url).type.toString.snap("Type<string, {}>")
 
-		attest(url("https://arktype.io")).snap("https://arktype.io")
-		attest(url("arktype").toString()).snap(
+		attest(Url("https://arktype.io")).snap("https://arktype.io")
+		attest(Url("arktype").toString()).snap(
 			'must be a URL string (was "arktype")'
 		)
 	})

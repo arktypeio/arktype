@@ -464,29 +464,29 @@ contextualize(() => {
 	})
 
 	it("initial case", () => {
-		const initial = match.case("string", Number.parseInt).default("assert")
+		const Initial = match.case("string", Number.parseInt).default("assert")
 
-		const expected = match({
+		const Expected = match({
 			string: Number.parseInt,
 			default: "assert"
 		})
 
 		// ensure structure is identical
-		attest(initial.internal.json).equals(expected.internal.json)
+		attest(Initial.internal.json).equals(Expected.internal.json)
 		// ensure we are able to cache ordered unions like from matchers
-		attest(initial.internal.id).equals(expected.internal.id)
+		attest(Initial.internal.id).equals(Expected.internal.id)
 		// ensure ids are doing what they're suppoed to
 
 		// for some reason TS can't handle initial/expected comparison so we have to cast
-		attest(initial === (expected as {})).equals(true)
+		attest(Initial === (Expected as {})).equals(true)
 
 		// like the uncasted version of the above equality check,
 		// uncommenting this also causes an infinite depth issue
-		// attest<typeof expected>(initial)
+		// attest<typeof Expected>(initial)
 
 		const expectedTypeSnapshot = "Match<unknown, [(In: string) => number]>"
-		attest(initial).type.toString(expectedTypeSnapshot)
-		attest(initial).type.toString(expectedTypeSnapshot)
+		attest(Initial).type.toString(expectedTypeSnapshot)
+		attest(Initial).type.toString(expectedTypeSnapshot)
 	})
 
 	it("reference in object", () => {
@@ -495,16 +495,16 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		const t = type({
+		const T = type({
 			foo: m
 		})
 
 		attest<{
 			foo: (In: string) => Out<number>
-		}>(t.t)
-		attest(t.expression).snap("{ foo: (In: string) => Out<unknown> }")
-		attest(t({ foo: "foo" })).equals({ foo: 3 })
-		attest(t({ foo: 5 }).toString()).snap("foo must be a string (was a number)")
+		}>(T.t)
+		attest(T.expression).snap("{ foo: (In: string) => Out<unknown> }")
+		attest(T({ foo: "foo" })).equals({ foo: 3 })
+		attest(T({ foo: 5 }).toString()).snap("foo must be a string (was a number)")
 	})
 
 	it("morph key", () => {

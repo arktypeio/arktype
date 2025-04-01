@@ -10,36 +10,36 @@ import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/o
 
 contextualize(() => {
 	it("string index", () => {
-		const o = type({ "[string]": "string" })
-		attest<{ [x: string]: string }>(o.infer)
-		attest(o.json).snap({
+		const O = type({ "[string]": "string" })
+		attest<{ [x: string]: string }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			index: [{ signature: "string", value: "string" }]
 		})
 
-		attest(o({})).equals({})
-		attest(o({ a: "a", b: "b" })).equals({ a: "a", b: "b" })
+		attest(O({})).equals({})
+		attest(O({ a: "a", b: "b" })).equals({ a: "a", b: "b" })
 
 		const validWithSymbol = { a: "a", [Symbol()]: null }
 		attest(validWithSymbol).equals(validWithSymbol)
 
-		attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
-		attest(o({ a: true, b: false }).toString())
+		attest(O({ a: 1 }).toString()).snap("a must be a string (was a number)")
+		attest(O({ a: true, b: false }).toString())
 			.snap(`a must be a string (was boolean)
 b must be a string (was boolean)`)
 	})
 
 	it("symbol index", () => {
-		const o = type({ "[symbol]": "1" })
-		attest<{ [x: symbol]: 1 }>(o.infer)
-		attest(o.json).snap({
+		const O = type({ "[symbol]": "1" })
+		attest<{ [x: symbol]: 1 }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			index: [{ signature: "symbol", value: { unit: 1 } }]
 		})
 
-		attest(o({})).equals({})
+		attest(O({})).equals({})
 
-		attest(o({ a: 999 })).unknown.snap({ a: 999 })
+		attest(O({ a: 999 })).unknown.snap({ a: 999 })
 
 		const zildjian = Symbol()
 		const zildjianName = printable(zildjian)
@@ -49,44 +49,44 @@ b must be a string (was boolean)`)
 		const prince = Symbol()
 		const princeName = printable(prince)
 
-		attest(o({ [zildjian]: 1, [prince]: 1 })).equals({
+		attest(O({ [zildjian]: 1, [prince]: 1 })).equals({
 			[zildjian]: 1,
 			[prince]: 1
 		})
 
 		attest({ a: 0, [zildjian]: 1 }).equals({ a: 0, [zildjian]: 1 })
 
-		attest(o({ [zildjian]: 0 }).toString()).equals(
+		attest(O({ [zildjian]: 0 }).toString()).equals(
 			`value at [${zildjianName}] must be 1 (was 0)`
 		)
-		attest(o({ [prince]: null, [zildjian]: undefined }).toString())
+		attest(O({ [prince]: null, [zildjian]: undefined }).toString())
 			.snap(`value at [${princeName}] must be 1 (was null)
 value at [${zildjianName}] must be 1 (was undefined)`)
 	})
 
 	it("enumerable indexed union", () => {
-		const o = type({ "['foo' | 'bar']": "string" })
-		const expected = type({ foo: "string", bar: "string" })
-		attest<typeof expected>(o)
-		attest(o.json).equals(expected.json)
+		const O = type({ "['foo' | 'bar']": "string" })
+		const Expected = type({ foo: "string", bar: "string" })
+		attest<typeof Expected>(O)
+		attest(O.json).equals(Expected.json)
 	})
 
 	it("non-enumerable indexed union", () => {
-		const o = type({ "[string | symbol]": "string" })
-		attest<{ [x: string]: string; [x: symbol]: string }>(o.infer)
-		attest(o.json).snap({
+		const O = type({ "[string | symbol]": "string" })
+		attest<{ [x: string]: string; [x: symbol]: string }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			index: [{ signature: ["string", "symbol"], value: "string" }]
 		})
 	})
 
 	it("multiple indexed", () => {
-		const o = type({
+		const O = type({
 			"[string]": "string",
 			"[symbol]": "number"
 		})
-		attest<{ [x: string]: string; [x: symbol]: number }>(o.infer)
-		attest(o.json).snap({
+		attest<{ [x: string]: string; [x: symbol]: number }>(O.infer)
+		attest(O.json).snap({
 			index: [
 				{ value: "string", signature: "string" },
 				{ value: "number", signature: "symbol" }
@@ -94,8 +94,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			domain: "object"
 		})
 
-		attest(o({})).equals({})
-		attest(o({ foo: "f" })).equals({ foo: "f" })
+		attest(O({})).equals({})
+		attest(O({ foo: "f" })).equals({ foo: "f" })
 
 		const sym = Symbol()
 
@@ -106,10 +106,10 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			[sym]: 8675309
 		}
 
-		attest(o(validWithStringsAndSymbols)).equals(validWithStringsAndSymbols)
+		attest(O(validWithStringsAndSymbols)).equals(validWithStringsAndSymbols)
 
 		attest(
-			o({
+			O({
 				str: 100,
 				[sym]: "💯"
 			}).toString()
@@ -118,23 +118,23 @@ value at [${symName}] must be a number (was a string)`)
 	})
 
 	it("all key kinds", () => {
-		const o = type({
+		const O = type({
 			"[string]": "string",
 			required: "'foo'",
 			"optional?": "'bar'"
 		})
-		attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(o.infer)
-		attest(o.json).snap({
+		attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			required: [{ key: "required", value: { unit: "foo" } }],
 			optional: [{ key: "optional", value: { unit: "bar" } }],
 			index: [{ signature: "string", value: "string" }]
 		})
 
-		const valid: typeof o.infer = { required: "foo", other: "bar" }
-		attest(o(valid)).equals(valid)
+		const valid: typeof O.infer = { required: "foo", other: "bar" }
+		attest(O(valid)).equals(valid)
 		attest(
-			o({
+			O({
 				optional: "wrongString",
 				other: 0n
 			}).toString()
@@ -154,22 +154,22 @@ other must be a string (was a bigint)`)
 		attest<Key>(types.key.infer)
 		attest<Record<Key, string>>(types.obj.infer)
 
-		const expected = type({ "[symbol]": "string" }).and({
+		const Expected = type({ "[symbol]": "string" }).and({
 			foo: "string",
 			bar: "string",
 			baz: "string"
 		})
 
-		attest(types.obj.json).snap(expected.json)
+		attest(types.obj.json).snap(Expected.json)
 	})
 
 	it("intersection with named", () => {
-		const t = type({ "[string]": "4" }).and({ "a?": "1" })
+		const T = type({ "[string]": "4" }).and({ "a?": "1" })
 		attest<{
 			[k: string]: 4
 			a?: never
-		}>(t.infer)
-		attest(t.json).snap({
+		}>(T.infer)
+		attest(T.json).snap({
 			optional: [{ key: "a", value: { unit: 1 } }],
 			index: [{ value: { unit: 4 }, signature: "string" }],
 			domain: "object"
@@ -177,12 +177,12 @@ other must be a string (was a bigint)`)
 	})
 
 	it("intersction with right required", () => {
-		const t = type({ "a?": "true" }).and({ a: "boolean" })
-		attest<{ a: true }>(t.infer)
-		const expected = type({
+		const T = type({ "a?": "true" }).and({ a: "boolean" })
+		attest<{ a: true }>(T.infer)
+		const Expected = type({
 			a: "true"
 		})
-		attest(t.json).equals(expected.json)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("syntax error in index definition", () => {
@@ -236,9 +236,9 @@ other must be a string (was a bigint)`)
 	})
 
 	it("escaped index", () => {
-		const o = type({ "\\[string]": "string" })
-		attest<{ "[string]": string }>(o.infer)
-		attest(o.json).snap({
+		const O = type({ "\\[string]": "string" })
+		attest<{ "[string]": string }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			required: [{ key: "[string]", value: "string" }]
 		})
@@ -246,17 +246,17 @@ other must be a string (was a bigint)`)
 
 	// https://github.com/arktypeio/arktype/issues/1040
 	it("can constrain optional keys", () => {
-		const repro = type({
+		const Repro = type({
 			normal: "string>0",
 			"optional?": "string>0"
 		})
 
 		type Expected = { normal: string; optional?: string }
 
-		attest<Expected, typeof repro.infer>()
-		attest<Expected, typeof repro.inferIn>()
+		attest<Expected, typeof Repro.infer>()
+		attest<Expected, typeof Repro.inferIn>()
 
-		attest(repro.expression).snap(
+		attest(Repro.expression).snap(
 			"{ normal: string >= 1, optional?: string >= 1 }"
 		)
 	})

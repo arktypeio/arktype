@@ -3,17 +3,17 @@ import { rootSchema } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes refinement order", () => {
-		const l = rootSchema({
+		const L = rootSchema({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = rootSchema({
+		const R = rootSchema({
 			domain: "number",
 			min: 5,
 			divisor: 3
 		})
-		attest(l.json).equals(r.json)
+		attest(L.json).equals(R.json)
 	})
 
 	it("multiple constraints", () => {

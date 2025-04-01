@@ -4,13 +4,13 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("formData", () => {
-		const user = type({
+		const User = type({
 			email: "string.email",
 			file: "File",
 			tags: "Array.liftFrom<string>"
 		})
 
-		const parseUserForm = type("FormData.parse").pipe(user)
+		const parseUserForm = type("FormData.parse").pipe(User)
 
 		attest(parseUserForm).type.toString.snap(`Type<
 	(

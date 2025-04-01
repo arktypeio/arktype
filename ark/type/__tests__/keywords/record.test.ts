@@ -8,20 +8,20 @@ import { keywords, type } from "arktype"
 
 contextualize(() => {
 	it("parsed", () => {
-		const expected = type({ "[string]": "number" })
+		const Expected = type({ "[string]": "number" })
 
-		const expression = type("Record<string, number>")
-		attest(expression.json).equals(expected.json)
-		attest<typeof expected.t>(expression.t)
+		const Expression = type("Record<string, number>")
+		attest(Expression.json).equals(Expected.json)
+		attest<typeof Expected.t>(Expression.t)
 	})
 
 	it("invoked", () => {
-		const expected = type({ "[string]": "number" })
+		const Expected = type({ "[string]": "number" })
 
-		const t = keywords.Record("string", "number")
+		const T = keywords.Record("string", "number")
 
-		attest(t.json).equals(expected.json)
-		attest<typeof expected.t>(t.t)
+		attest(T.json).equals(Expected.json)
+		attest<typeof Expected.t>(T.t)
 	})
 
 	it("invoked validation error", () => {

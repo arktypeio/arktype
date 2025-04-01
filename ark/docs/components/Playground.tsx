@@ -72,7 +72,7 @@ type RequestMap = Map<string, number>
 const duplicateThresholdMs = 50
 const defaultPlaygroundCode = `import { type } from "arktype"
 
-const myType = type({
+const MyType = type({
 	name: "string",
 	age: "number"
 })

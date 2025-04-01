@@ -8,17 +8,17 @@ import { writeExpressionExpectedMessage } from "arktype/internal/parser/shift/op
 
 contextualize(() => {
 	it("entire expression", () => {
-		const t = type("(string)")
-		const expected = type("string")
-		attest<typeof expected>(t)
-		attest(t.json).equals(expected.json)
+		const T = type("(string)")
+		const Expected = type("string")
+		attest<typeof Expected>(T)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("overrides default precedence", () => {
-		const t = type("(boolean|number)[]")
-		const expected = type("boolean|number").array()
-		attest<typeof expected>(t)
-		attest(t.json).equals(expected.json)
+		const T = type("(boolean|number)[]")
+		const Expected = type("boolean|number").array()
+		attest<typeof Expected>(T)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("nested", () => {

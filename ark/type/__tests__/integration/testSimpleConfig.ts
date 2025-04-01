@@ -9,8 +9,8 @@ cases({
 		strictEqual(type("number").allows(Number.NaN), true)
 	},
 	onUndeclaredKey: () => {
-		const o = type({ a: "number" })
-		const out = o.assert({ a: 1, b: 2 })
+		const O = type({ a: "number" })
+		const out = O.assert({ a: 1, b: 2 })
 		deepStrictEqual(out, { a: 1 })
 	},
 	shallowLeafKeyword: () => {

@@ -92,14 +92,14 @@ contextualize(() => {
 
 	it("nested bound traversal", () => {
 		// https://github.com/arktypeio/arktype/issues/898
-		const user = type({
+		const User = type({
 			name: "string",
 			email: "string.email",
 			tags: "(string>=2)[]>=3",
 			score: "number.integer>=0"
 		})
 
-		const out = user({
+		const out = User({
 			name: "Ok",
 			email: "",
 			tags: ["AB", "B"],
@@ -113,7 +113,7 @@ tags must be at least length 3 (was 2)`)
 	it("multiple refinement errors", () => {
 		const nospacePattern = /^\S*$/
 
-		const schema = type({
+		const Schema = type({
 			name: "string",
 			email: "string.email",
 			tags: "(string>=2)[]>=3",
@@ -132,7 +132,7 @@ tags must be at least length 3 (was 2)`)
 			nospace: "One space"
 		}
 
-		const out = schema(data)
+		const out = Schema(data)
 
 		attest(out.toString()).snap(`email must be an email address (was "")
 extra must be a string or null (was missing)
@@ -264,15 +264,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	// https://github.com/arktypeio/arktype/issues/947
 	it("chained inline type expression inference", () => {
-		const a = type({
+		const A = type({
 			action: "'a' | 'b'"
 		}).or({
 			action: "'c'"
 		})
 
-		const referenced = type({
+		const Referenced = type({
 			someField: "string"
-		}).and(a)
+		}).and(A)
 
 		attest<
 			| {
@@ -283,9 +283,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 					someField: string
 					action: "c"
 			  }
-		>(referenced.infer)
+		>(Referenced.infer)
 
-		const inlined = type({
+		const Inlined = type({
 			someField: "string"
 		}).and(
 			type({
@@ -295,7 +295,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			})
 		)
 
-		attest<typeof referenced>(inlined)
+		attest<typeof Referenced>(Inlined)
 	})
 
 	// https://discord.com/channels/957797212103016458/1242116299547476100
@@ -537,10 +537,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			TypeWithKeywords: "ArraySchema"
 		}).export()
 
-		const t = types.Schema.pipe(o => JSON.stringify(o))
+		const T = types.Schema.pipe(o => JSON.stringify(o))
 
-		attest(t({ items: {} })).snap('{"items":{}}')
-		attest(t({ items: null }).toString()).snap(
+		attest(T({ items: {} })).snap('{"items":{}}')
+		attest(T({ items: null }).toString()).snap(
 			"items must be an object (was null)"
 		)
 	})
@@ -572,15 +572,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	it("narrowed quoted description", () => {
-		const t = type("string")
+		const T = type("string")
 			.narrow(function _narrowedQuoteDescription() {
 				return true
 			})
 			.describe('This will "fail"')
 
-		attest<string>(t.t)
+		attest<string>(T.t)
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			domain: { domain: "string", meta: 'This will "fail"' },
 			predicate: [
 				{
@@ -612,13 +612,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	it("narrowed morph", () => {
-		const t = type("string")
+		const T = type("string")
 			.pipe(s => parseInt(s))
 			.narrow(() => true)
 
-		attest<(In: string) => Out<number>>(t.t)
+		attest<(In: string) => Out<number>>(T.t)
 
-		const u = t.pipe(
+		const u = T.pipe(
 			n => `${n}`,
 			s => `${s}++` as const
 		)
@@ -657,12 +657,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	// https://discord.com/channels/957797212103016458/957804102685982740/1254900389346807849
 	it("narrows nested morphs", () => {
 		const parseBigint = type("string").pipe(s => BigInt(s))
-		const fee = type({ amount: parseBigint }).narrow(
+		const Fee = type({ amount: parseBigint }).narrow(
 			fee => typeof fee.amount === "bigint"
 		)
 
 		const Claim = type({
-			fee
+			fee: Fee
 		})
 
 		const out = Claim.assert({ fee: { amount: "5" } })
@@ -672,17 +672,17 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	// https://github.com/arktypeio/arktype/issues/1037
 	it("can morph an optional key", () => {
-		const t = type({
+		const T = type({
 			"optionalKey?": ["string", "=>", x => x.toLowerCase()]
 		})
 
 		attest<{
 			optionalKey?: (In: string) => Out<string>
-		}>(t.t)
+		}>(T.t)
 
-		attest(t({})).equals({})
+		attest(T({})).equals({})
 
-		attest(t({ optionalKey: "FOO" })).snap({ optionalKey: "foo" })
+		attest(T({ optionalKey: "FOO" })).snap({ optionalKey: "foo" })
 	})
 
 	// https://discord.com/channels/957797212103016458/1261621890775126160/1261621890775126160
@@ -714,14 +714,14 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			type("1<=string<=3")
 		)
 
-		const t = type({
+		const T = type({
 			"first_name?": validatedTrimString.and("unknown")
 		})
 
-		attest(t.expression).snap(
+		attest(T.expression).snap(
 			"{ first_name?: (In: string) => To<string <= 3 & >= 1> }"
 		)
-		attest(t.t).type.toString.snap(
+		attest(T.t).type.toString.snap(
 			"{ first_name?: (In: string) => To<string> }"
 		)
 	})
@@ -760,7 +760,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
 	it("pipe to discriminated morph union", () => {
-		const objSchema = type({
+		const ObjSchema = type({
 			action: "'order.completed'"
 		}).or({
 			action: `'scheduled'`,
@@ -769,7 +769,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			appointmentTypeID: "string.integer.parse"
 		})
 
-		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
+		const parseJsonToObj = type("string.json.parse").pipe(ObjSchema)
 
 		attest(parseJsonToObj.expression).snap(
 			'(In: string) => To<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
@@ -807,7 +807,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
 	it("pipe to discriminated morph inner union", () => {
-		const objSchema = type({
+		const ObjSchema = type({
 			action: "'order.completed'"
 		}).or({
 			action: "'scheduled' | 'rescheduled' | 'canceled' | 'changed'",
@@ -816,7 +816,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			appointmentTypeID: "string.integer.parse"
 		})
 
-		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
+		const parseJsonToObj = type("string.json.parse").pipe(ObjSchema)
 
 		const out = parseJsonToObj(
 			JSON.stringify({
@@ -837,48 +837,48 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	// https://discord.com/channels/957797212103016458/957804102685982740/1276840721370054688
 	it("directly nested piped type instantiation", () => {
-		const t = type({
+		const T = type({
 			"test?": type("string").pipe(x => x === "true")
 		})
 
 		attest<{
 			test?: (In: string) => Out<boolean>
-		}>(t.t)
+		}>(T.t)
 	})
 
 	it("discriminated union error", () => {
-		const c = type({ city: "string", "+": "reject" }).pipe(o => ({
+		const C = type({ city: "string", "+": "reject" }).pipe(o => ({
 			...o,
 			type: "city"
 		}))
-		const n = type({ name: "string", "+": "reject" }).pipe(o => ({
+		const N = type({ name: "string", "+": "reject" }).pipe(o => ({
 			...o,
 			type: "name"
 		}))
 
-		const cn = c.or(n)
+		const T = C.or(N)
 
-		const out = cn({ city: "foo", name: "foo" })
+		const out = T({ city: "foo", name: "foo" })
 		attest(out.toString()).snap("name must be removed or city must be removed")
 	})
 
 	it("array intersection with object literal", () => {
-		const t = type({ name: "string" }).and("string[]")
-		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
-		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+		const T = type({ name: "string" }).and("string[]")
+		attest(T).type.toString.snap("Type<{ name: string } & string[], {}>")
+		attest(T.infer).type.toString.snap("{ name: string } & string[]")
 
-		attest(t.expression).snap("{ name: string } & string[]")
+		attest(T.expression).snap("{ name: string } & string[]")
 	})
 
 	it("tuple or morph inference", () => {
-		const t = type(["string", "string"]).or(["null", "=>", () => undefined])
+		const T = type(["string", "string"]).or(["null", "=>", () => undefined])
 
-		attest(t.expression).snap("[string, string] | (In: null) => Out<unknown>")
-		attest(t.t).type.toString.snap(
+		attest(T.expression).snap("[string, string] | (In: null) => Out<unknown>")
+		attest(T.t).type.toString.snap(
 			"[string, string] | ((In: null) => Out<undefined>)"
 		)
-		attest(t.inferIn).type.toString("[string, string] | null")
-		attest(t.infer).type.toString("[string, string] | undefined")
+		attest(T.inferIn).type.toString("[string, string] | null")
+		attest(T.infer).type.toString("[string, string] | undefined")
 	})
 
 	it("scoped discrimnated union", () => {
@@ -955,18 +955,18 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	// https://discord.com/channels/957797212103016458/1290304355643293747
 	it("can extract proto Node at property", () => {
-		const d = type("Date")
+		const D = type("Date")
 
-		const o = type({
-			last_updated: d
+		const O = type({
+			last_updated: D
 		})
 
-		const t = o.get("last_updated")
+		const T = O.get("last_updated")
 
-		attest<Date>(t.t)
-		attest(d.expression).snap("Date")
-		attest(t.expression).equals(d.expression)
-		attest(t.extends(d)).equals(true)
+		attest<Date>(T.t)
+		attest(D.expression).snap("Date")
+		attest(T.expression).equals(D.expression)
+		attest(T.extends(D)).equals(true)
 	})
 
 	it("piped through Type", () => {
@@ -990,7 +990,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	it("intersecting unknown with piped type preserves identity", () => {
-		const base = type({
+		const Base = type({
 			foo: type("string").pipe(() => 123)
 		})
 			.pipe(c => c)
@@ -998,14 +998,14 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				foo: "123"
 			})
 
-		const identity = base.and("unknown")
+		const Identity = Base.and("unknown")
 
-		attest(base.json).equals(identity.json)
-		attest(base.internal.id).equals(identity.internal.id)
+		attest(Base.json).equals(Identity.json)
+		attest(Base.internal.id).equals(Identity.internal.id)
 	})
 
 	it("index signature union intersection with default", () => {
-		const t = type({
+		const T = type({
 			storeA: "Record<string, string>"
 		})
 			.or({
@@ -1017,68 +1017,68 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				ext: ["string", "=", ".txt"]
 			})
 
-		attest(t.expression).snap(
+		attest(T.expression).snap(
 			'{ storeA: { [string]: string }, ext: string = ".txt" } | { storeB: { foo: { [string]: string } }, ext: string = ".txt" }'
 		)
 	})
 
 	it("correct toString for array of union", () => {
-		const t = type("(string | number)[]")
-		attest(t.expression).snap("(number | string)[]")
+		const T = type("(string | number)[]")
+		attest(T.expression).snap("(number | string)[]")
 	})
 
 	it("union with length constraint", () => {
-		const feedbackSchema = type({
+		const Feedback = type({
 			contact: "string.email | string == 0"
 		})
 
-		attest(feedbackSchema.expression).snap(
+		attest(Feedback.expression).snap(
 			"{ contact: string == 0 | /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
 		)
-		attest(feedbackSchema.t).type.toString.snap(`{ contact: string }`)
+		attest(Feedback.t).type.toString.snap(`{ contact: string }`)
 	})
 
 	it("deleted undeclared keys allowed in input", () => {
-		const t = type({ foo: "string" }).onUndeclaredKey("delete")
+		const T = type({ foo: "string" }).onUndeclaredKey("delete")
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			undeclared: "delete",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
 
-		attest(t.in.json).snap({
+		attest(T.in.json).snap({
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
 
 		const extras = { foo: "hi", bar: 3 }
 
-		attest(t(extras)).equals({ foo: "hi" })
-		attest(t.allows(extras)).equals(true)
-		attest(t.in(extras)).equals(extras)
+		attest(T(extras)).equals({ foo: "hi" })
+		attest(T.allows(extras)).equals(true)
+		attest(T.in(extras)).equals(extras)
 	})
 
 	it("deleted undeclared keys rejected in output", () => {
-		const t = type({ foo: "string" }).onUndeclaredKey("delete")
+		const T = type({ foo: "string" }).onUndeclaredKey("delete")
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			undeclared: "delete",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
 
-		attest(t.out.json).snap({
+		attest(T.out.json).snap({
 			undeclared: "reject",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
 
-		attest(t.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
+		attest(T.out({ foo: "hi", bar: 3 }).toString()).snap("bar must be removed")
 	})
 
 	it("includesMorph only when expected", () => {
-		const unmorphed = type({
+		const Unmorphed = type({
 			"optional?": "string",
 			required: "string",
 			tuple: ["string", "number?"],
@@ -1088,41 +1088,41 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				a: "true"
 			}
 		})
-		attest(unmorphed.internal.includesTransform).equals(false)
+		attest(Unmorphed.internal.includesTransform).equals(false)
 	})
 
 	it("morph includesMorph", () => {
-		const t = type({
+		const T = type({
 			prop: ["string", "=>", s => s.length]
 		})
 
-		attest(t.internal.includesTransform).equals(true)
+		attest(T.internal.includesTransform).equals(true)
 	})
 
 	it("default prop includesMorph", () => {
-		const t = type({
+		const T = type({
 			prop: "number = 5"
 		})
 
-		attest(t.internal.includesTransform).equals(true)
+		attest(T.internal.includesTransform).equals(true)
 	})
 
 	it("default tuple includesMorph", () => {
-		const t = type({
+		const T = type({
 			tuple: ["number = 5"]
 		})
 
-		attest(t.internal.includesTransform).equals(true)
+		attest(T.internal.includesTransform).equals(true)
 	})
 
 	it("onUndeclaredKey delete includesMorph", () => {
-		const t = type({
+		const T = type({
 			inner: {
 				"+": "delete",
 				foo: "string"
 			}
 		})
-		attest(t.internal.includesTransform).equals(true)
+		attest(T.internal.includesTransform).equals(true)
 	})
 
 	it("distill doesn't treat functions returning any/never as morphs", () => {
@@ -1130,42 +1130,42 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			any(): any
 			never(): never
 		}
-		const t = type("unknown").as<T>()
+		const T = type("unknown").as<T>()
 
-		attest(t.infer).type.toString.equals("T")
-		attest(t.inferIn).type.toString.equals("T")
+		attest(T.infer).type.toString.equals("T")
+		attest(T.inferIn).type.toString.equals("T")
 	})
 
 	it("distills morphs returning any/never", () => {
-		const t = type({
+		const T = type({
 			any: ["unknown", "=>", (): any => {}],
 			never: ["unknown", "=>", () => [] as never]
 		})
 
-		attest(t.t).type.toString.snap(`{
+		attest(T.t).type.toString.snap(`{
 	any: (In: unknown) => Out<any>
 	never: (In: unknown) => Out<never>
 }`)
-		attest(t.infer).type.toString.snap("{ any: any; never: never }")
-		attest(t.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
+		attest(T.infer).type.toString.snap("{ any: any; never: never }")
+		attest(T.inferIn).type.toString.snap("{ any: unknown; never: unknown }")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1274
 	it("fail on non-discriminable union of objects with onUndeclaredKey: delete", () => {
-		const point2d = type({
+		const Point2d = type({
 			x: "number",
 			y: "number",
 			"+": "delete"
 		})
 
-		const point3d = type({
+		const Point3d = type({
 			x: "number",
 			y: "number",
 			z: "number",
 			"+": "delete"
 		})
 
-		attest(() => point2d.or(point3d)).throws
+		attest(() => Point2d.or(Point3d)).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { x: number, y: number, z: number, + (undeclared): delete }
 Right: { x: number, y: number, + (undeclared): delete }`)
@@ -1255,13 +1255,13 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 	// https://github.com/arktypeio/arktype/issues/1317
 	it("discriminated tuple/array union", () => {
-		const tupleType = type(["number", "number"])
-		const tupleArrayType = tupleType.array()
-		const unionType = tupleType.or(tupleArrayType)
+		const TupleType = type(["number", "number"])
+		const TupleArrayType = TupleType.array()
+		const UnionType = TupleType.or(TupleArrayType)
 
-		attest(tupleType.assert([1, 2])).equals([1, 2])
-		attest(tupleArrayType.assert([[1, 2]])).equals([[1, 2]])
-		attest(unionType.assert([[1, 2]])).equals([[1, 2]])
+		attest(TupleType.assert([1, 2])).equals([1, 2])
+		attest(TupleArrayType.assert([[1, 2]])).equals([[1, 2]])
+		attest(UnionType.assert([[1, 2]])).equals([[1, 2]])
 	})
 
 	it("doomed shirt example", () => {
@@ -1324,11 +1324,11 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 	// https://github.com/arktypeio/arktype/issues/1400
 	it("configured union message", () => {
-		const schema = type('"abc" | "cde"').configure({
+		const Schema = type('"abc" | "cde"').configure({
 			message: () => "hello world"
 		})
 
-		const res = schema("efg")
+		const res = Schema("efg")
 
 		attest(res.toString()).snap("hello world")
 	})

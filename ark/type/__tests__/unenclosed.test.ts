@@ -24,9 +24,9 @@ contextualize(() => {
 
 	describe("number", () => {
 		it("positive whole", () => {
-			const four = type("4")
-			attest<4>(four.infer)
-			// attest(four.node).snap({ number: { value: 4 } })
+			const Four = type("4")
+			attest<4>(Four.infer)
+			attest(Four.json).snap({ unit: 4 })
 		})
 
 		it("positive decimal", () => {
@@ -91,22 +91,22 @@ contextualize(() => {
 
 	describe("bigint", () => {
 		it("positive", () => {
-			const t = type("12345678910987654321n")
+			const T = type("12345678910987654321n")
 			// Is prime :D
-			attest<12345678910987654321n>(t.infer)
-			attest(t.json).snap({ unit: "12345678910987654321n" })
+			attest<12345678910987654321n>(T.infer)
+			attest(T.json).snap({ unit: "12345678910987654321n" })
 		})
 
 		it("negative", () => {
-			const t = type("-9801n")
-			attest<-9801n>(t.infer)
-			attest(t.json).snap({ unit: "-9801n" })
+			const T = type("-9801n")
+			attest<-9801n>(T.infer)
+			attest(T.json).snap({ unit: "-9801n" })
 		})
 
 		it("zero", () => {
-			const t = type("0n")
-			attest<0n>(t.infer)
-			attest(t.json).snap({ unit: "0n" })
+			const T = type("0n")
+			attest<0n>(T.infer)
+			attest(T.json).snap({ unit: "0n" })
 		})
 
 		it("decimal", () => {

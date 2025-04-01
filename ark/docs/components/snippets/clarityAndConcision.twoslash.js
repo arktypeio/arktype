@@ -4,7 +4,7 @@ import { type } from "arktype"
 // without creating a type error while still displaying the error in twoslash
 // ---cut---
 // hover me
-const user = type({
+const User = type({
 	name: "string",
 	platform: "'android' | 'ios'",
 	"versions?": "number | string)[]"

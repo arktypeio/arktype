@@ -10,16 +10,44 @@ Standard Schema allows you and your dependencies to integrate library-agnostic v
 
 ### tRPC
 
-ArkType can easily be used with tRPC via the `assert` prop:
+ArkType can easily be used with tRPC:
 
 ```ts
 // @noErrors
+// trpc >= 11 accepts a Type directly
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	})
+)
+
+// tRPC < 11 accepts the `.assert` prop
 t.procedure.input(
 	type({
 		name: "string",
 		"age?": "number"
 	}).assert
 )
+```
+
+### drizzle
+
+Drizzle maintains an official [`drizzle-arktype` package](https://orm.drizzle.team/docs/arktype) that can be used to create Types for your Drizzle schemas.
+
+```ts
+// @noErrors
+import { pgTable, text, integer } from "drizzle-orm/pg-core"
+import { createSelectSchema } from "drizzle-arktype"
+
+const users = pgTable("users", {
+	id: integer().generatedAlwaysAsIdentity().primaryKey(),
+	name: text().notNull(),
+	age: integer().notNull()
+})
+
+// Type<{ id: number; name: string; age: number }>
+const User = createSelectSchema(users)
 ```
 
 ### react-hook-form
@@ -32,7 +60,7 @@ import { useForm } from "react-hook-form"
 import { arktypeResolver } from "@hookform/resolvers/arktype"
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	firstName: "string",
 	age: "number.integer > 0"
 })
@@ -53,7 +81,7 @@ Hono has builtin support for ArkType via [`@hono/arktype-validator`](https://git
 
 ```ts
 // @noErrors
-const user = type({
+const User = type({
 	name: "string",
 	age: "number"
 })

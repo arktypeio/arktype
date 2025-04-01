@@ -11,12 +11,12 @@ Decouple attest trace/stats from pnpm
 Support assertions for JSDoc contents associated with an `attest`ed value
 
 ```ts
-const t = type({
+const T = type({
 	/** FOO */
 	foo: "string"
 })
 
-const out = t.assert({ foo: "foo" })
+const out = T.assert({ foo: "foo" })
 
 // match or snapshot expected jsdoc associated with the value passed to attest
 attest(out.foo).jsdoc.snap("FOO")

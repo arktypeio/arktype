@@ -2,7 +2,7 @@ import { DynamicBase } from "@ark/util"
 import { type } from "arktype"
 
 const Class = <const def>(def: type.validate<def>) => {
-	const validator = type(def as never)
+	const Validator = type(def as never)
 
 	return class TypeConstructor<t = type.infer<def>> extends DynamicBase<
 		t & object
@@ -10,7 +10,7 @@ const Class = <const def>(def: type.validate<def>) => {
 		static infer: type.infer<def>
 
 		constructor(input: unknown) {
-			const out = validator(input)
+			const out = Validator(input)
 			if (out instanceof type.errors) {
 				return out.throw()
 			}

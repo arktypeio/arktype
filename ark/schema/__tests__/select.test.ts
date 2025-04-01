@@ -9,7 +9,7 @@ import {
 } from "@ark/schema"
 
 contextualize(() => {
-	const t = rootSchema({
+	const T = rootSchema({
 		domain: "object",
 		required: [{ key: "foo", value: "string" }]
 	}).assertHasKind("intersection")
@@ -20,14 +20,14 @@ contextualize(() => {
 	})
 
 	it("self", () => {
-		const selfResult = t.select("self")
+		const selfResult = T.select("self")
 		attest<Intersection.Node[]>(selfResult).snap([
 			{ required: [{ key: "foo", value: "string" }], domain: "object" }
 		])
 	})
 
 	it("children", () => {
-		const children = t.select("child")
+		const children = T.select("child")
 		attest<nodeOfKind<"intersection" | Intersection.ChildKind>[]>(
 			children
 		).snap([
@@ -37,7 +37,7 @@ contextualize(() => {
 	})
 
 	it("shallow", () => {
-		const shallow = t.select("shallow")
+		const shallow = T.select("shallow")
 		attest<BaseNode[]>(shallow).snap([
 			{ required: [{ key: "foo", value: "string" }], domain: "object" },
 			{ domain: "object" },
@@ -47,7 +47,7 @@ contextualize(() => {
 	})
 
 	it("references", () => {
-		const refs = t.select("references")
+		const refs = T.select("references")
 		attest<BaseNode[]>(refs).snap([
 			{ required: [{ key: "foo", value: "string" }], domain: "object" },
 			{ domain: "object" },
@@ -58,7 +58,7 @@ contextualize(() => {
 	})
 
 	it("predicate", () => {
-		const domains = t.select(n => n.hasKind("domain"))
+		const domains = T.select(n => n.hasKind("domain"))
 		attest<DomainNode[]>(domains).snap([
 			{ domain: "object" },
 			{ domain: "string" }
@@ -66,33 +66,33 @@ contextualize(() => {
 	})
 
 	it("find", () => {
-		const domain = t.select({ method: "find", kind: "domain" })
+		const domain = T.select({ method: "find", kind: "domain" })
 		attest<DomainNode | undefined>(domain).snap({ domain: "object" })
 
-		const pattern = t.select({ method: "find", kind: "pattern" })
+		const pattern = T.select({ method: "find", kind: "pattern" })
 		attest<PatternNode | undefined>(pattern).snap(undefined)
 	})
 
 	it("assertFind", () => {
-		const domain = t.select({ method: "assertFind", kind: "domain" })
+		const domain = T.select({ method: "assertFind", kind: "domain" })
 		attest<DomainNode>(domain).snap({ domain: "object" })
 
 		attest(() =>
-			t.select({ method: "assertFind", kind: "pattern" })
+			T.select({ method: "assertFind", kind: "pattern" })
 		).throws.snap(
 			'Error: Type<{ foo: string }> had no references matching {"boundary":"references","method":"assertFind","kind":"pattern"}.'
 		)
 	})
 
 	it("assertFilter", () => {
-		const domains = t.select({ method: "assertFilter", kind: "domain" })
+		const domains = T.select({ method: "assertFilter", kind: "domain" })
 		attest<[DomainNode, ...DomainNode[]]>(domains).snap([
 			{ domain: "object" },
 			{ domain: "string" }
 		])
 
 		attest(() =>
-			t.select({ method: "assertFilter", kind: "pattern" })
+			T.select({ method: "assertFilter", kind: "pattern" })
 		).throws.snap(
 			'Error: Type<{ foo: string }> had no references matching {"boundary":"references","method":"assertFilter","kind":"pattern"}.'
 		)
@@ -101,7 +101,7 @@ contextualize(() => {
 	describe("completions", () => {
 		it("shallow completions", () => {
 			// @ts-expect-error
-			attest(() => t.select("")).completions({
+			attest(() => T.select("")).completions({
 				"": [
 					"after",
 					"alias",
@@ -135,7 +135,7 @@ contextualize(() => {
 
 		it("composite key completions", () => {
 			attest(() =>
-				t.select({
+				T.select({
 					// @ts-expect-error
 					"": {} as any
 				})
@@ -144,7 +144,7 @@ contextualize(() => {
 
 		it("composite kind completions", () => {
 			attest(() =>
-				t.select({
+				T.select({
 					// @ts-expect-error
 					kind: ""
 				})
@@ -178,7 +178,7 @@ contextualize(() => {
 
 		it("composite boundary completions", () => {
 			attest(() =>
-				t.select({
+				T.select({
 					// @ts-expect-error
 					boundary: ""
 				})
@@ -187,7 +187,7 @@ contextualize(() => {
 
 		it("composite method completions", () => {
 			attest(() =>
-				t.select({
+				T.select({
 					// @ts-expect-error
 					method: ""
 				})
@@ -196,7 +196,7 @@ contextualize(() => {
 	})
 
 	it("non-narrowing where", () => {
-		const result = t.select({
+		const result = T.select({
 			kind: "domain",
 			where: d => d.domain === "string"
 		})
@@ -205,7 +205,7 @@ contextualize(() => {
 
 	it("predicate narrows kind", () => {
 		type StringDomain = DomainNode & { domain: string }
-		const result = t.select({
+		const result = T.select({
 			kind: "domain",
 			where: (d): d is StringDomain => d.domain === "string"
 		})

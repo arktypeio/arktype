@@ -47,7 +47,7 @@ type.number.allows(Number.NaN) // true
 
 ```ts
 const myScope = scope(
-	{ user: { age: "number < 100" } },
+	{ User: { age: "number < 100" } },
 	{
 		max: {
 			actual: () => "unacceptably large"
@@ -56,7 +56,7 @@ const myScope = scope(
 )
 const types = myScope.export()
 // ArkErrors: age must be less than 100 (was unacceptably large)
-types.user({ name: "Alice", age: 101 })
+types.User({ name: "Alice", age: 101 })
 const parsedAfter = myScope.type({
 	age: "number <= 100"
 })
@@ -73,13 +73,13 @@ parsedAfter({ age: 101 })
 
 ```ts
 // avoid logging "was xxx" for password
-const password = type("string >= 8").configure({ actual: () => "" })
-const user = type({
+const Password = type("string >= 8").configure({ actual: () => "" })
+const User = type({
 	email: "string.email",
-	password
+	password: Password
 })
 // ArkErrors: password must be at least length 8
-const out = user({
+const out = User({
 	email: "david@arktype.io",
 	password: "ez123"
 })
@@ -129,9 +129,9 @@ To allow custom errors to be integrated seemlessly with builtin logic for compos
 </td>
 <td>
 ```ts
-const password = type.string.atLeastLength(8).describe("a valid password")
+const Password = type.string.atLeastLength(8).describe("a valid password")
 // ArkErrors: must be a valid password
-const out = password("ez123")
+const out = Password("ez123")
 ```
 </td>
 </tr>
@@ -145,14 +145,14 @@ const out = password("ez123")
 </td>
     <td>
 ```ts
-const password = type.string.atLeastLength(8).configure({
+const Password = type.string.atLeastLength(8).configure({
 	expected: ctx =>
 		ctx.code === "minLength" ? `${ctx.rule} characters or better` : "way better"
 })
 // ArkErrors: must be 8 characters or better (was 5)
-const out1 = password("ez123").toString()
+const out1 = Password("ez123").toString()
 // ArkErrors: must be way better (was a number)
-const out2 = password(12345678).toString()
+const out2 = Password(12345678).toString()
 ```
 </td>
 </tr>
@@ -166,9 +166,9 @@ const out2 = password(12345678).toString()
 </td>
     <td>
 ```ts
-const password = type("string >= 8").configure({ actual: () => "" })
-// ArkErrors: password must be at least length 8
-const out = password("ez123")
+const Password = type("string >= 8").configure({ actual: () => "" })
+// ArkErrors: must be at least length 8
+const out = Password("ez123")
 ```
 </td>
 </tr>
@@ -182,13 +182,13 @@ const out = password("ez123")
 </td>
 <td>
 ```ts
-const password = type("string >= 8").configure({
+const Password = type("string >= 8").configure({
 	problem: ctx => `${ctx.actual} isn't ${ctx.expected}`
 })
 // ArkErrors: 5 isn't at least length 8
-const out1 = password("ez123")
+const out1 = Password("ez123")
 // ArkErrors: a number isn't a string
-const out2 = password(12345678)
+const out2 = Password(12345678)
 ```
 </td>
 </tr>
@@ -202,17 +202,17 @@ const out2 = password(12345678)
 </td>
 <td>
 ```ts
-const user = type({
+const User = type({
 	password: "string >= 8"
 }).configure({
 	message: ctx =>
 		`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
 })
 // ArkErrors: (root): a string isn't an object
-const out1 = user("ez123")
+const out1 = User("ez123")
 // `.configure` only applies shallowly, so the nested error isn't changed!
 // ArkErrors: password must be at least length 8 (was 5)
-const out2 = user({ password: "ez123" })
+const out2 = User({ password: "ez123" })
 ```
 </td>
 </tr>
@@ -270,12 +270,12 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	email: "string.email"
 })
 
-const out = user({
+const out = User({
 	// ArkErrors: name must be shorthand description (was a number)
 	name: 5,
 	// ArkErrors: email must be an email address (was definitely fake)
@@ -303,7 +303,7 @@ import "./config.ts"
 import { type } from "arktype"
 
 // will now create a new object using structuredClone
-const userForm = type({
+const UserForm = type({
 	age: "string.numeric.parse"
 })
 ```
@@ -321,7 +321,7 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-const userForm = type({
+const UserForm = type({
 	age: "string.numeric.parse"
 })
 
@@ -329,7 +329,7 @@ const formData = {
 	age: "42"
 }
 
-const out = userForm(formData)
+const out = UserForm(formData)
 
 // the original object's age key is now a number
 console.log(formData.age)
@@ -356,12 +356,12 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-const userForm = type({
+const UserForm = type({
 	name: "string"
 })
 
 // out is now { name: "Alice" }
-const out = userForm({
+const out = UserForm({
 	name: "Alice",
 	age: "42"
 })
@@ -375,15 +375,15 @@ By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPr
 	<summary>See an example</summary>
 
 ```ts
-const myObj = type({
+const MyObj = type({
 	"key?": "number"
 })
 
 // valid data
-const validResult = myObj({})
+const validResult = MyObj({})
 
 // Error: key must be a number (was undefined)
-const errorResult = myObj({ key: undefined })
+const errorResult = MyObj({ key: undefined })
 ```
 
 </details>
@@ -404,29 +404,29 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-const myObj = type({
+const MyObj = type({
 	"key?": "number"
 })
 
 // valid data
-const validResult = myObj({})
+const validResult = MyObj({})
 
 // now also valid data (would be an error by default)
-const secondResult = myObj({ key: undefined })
+const secondResult = MyObj({ key: undefined })
 ```
 
 <Callout type="warn" title="exactOptionalPropertyTypes does not yet affect default values!">
 
 ```ts
-const myObj = type({
+const MyObj = type({
 	key: "number = 5"
 })
 
 // { key: 5 }
-const omittedResult = myObj({})
+const omittedResult = MyObj({})
 
 // { key: undefined }
-const undefinedResult = myObj({ key: undefined })
+const undefinedResult = MyObj({ key: undefined })
 ```
 
 Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
@@ -451,7 +451,7 @@ import "./config.ts"
 import { type } from "arktype"
 
 // will not be precompiled
-const myObject = type({
+const MyObject = type({
 	foo: "string"
 })
 ```
@@ -509,7 +509,7 @@ declare global {
 }
 
 // now types you define can specify and access your metadata
-const mrPingsSecretIngredientSoup = type({
+const MrPingsSecretIngredientSoup = type({
 	broth: "'miso' | 'vegetable'",
 	ingredients: "string[]"
 }).configure({ secretIngredient: "nothing!" })
@@ -532,6 +532,6 @@ declare global {
 
 class MySpecialClass {}
 
-const t = type.instanceOf(MySpecialClass)
+const T = type.instanceOf(MySpecialClass)
 //    ^? Type<MySpecialClass>
 ```

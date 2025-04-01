@@ -45,11 +45,11 @@ contextualize(() => {
 	// @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 
 	it("type and value assertions", () => {
-		const even = type("number%2")
+		const Even = type("number%2")
 		// snapshot types and values seamlessly
-		attest(even.infer).type.toString.snap("number")
+		attest(Even.infer).type.toString.snap("number")
 		// including object literals- no more long inline strings!
-		attest(even.json).snap({ domain: "number", divisor: 2 })
+		attest(Even.json).snap({ domain: "number", divisor: 2 })
 	})
 
 	it("error assertions", () => {
@@ -79,12 +79,12 @@ contextualize(() => {
 
 	it("integrate runtime logic with type assertions", () => {
 		const arrayOf = type("<t>", "t[]")
-		const numericArray = arrayOf("number | bigint")
+		const NumericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
 		if (getPrimaryTsVersionUnderTest().startsWith("5")) {
 			// this assertion will only occur when testing TypeScript 5+!
-			attest<(number | bigint)[]>(numericArray.infer)
+			attest<(number | bigint)[]>(NumericArray.infer)
 		}
 	})
 })

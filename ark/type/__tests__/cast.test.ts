@@ -5,8 +5,8 @@ import { type, type Type } from "arktype"
 contextualize(() => {
 	describe("type.cast", () => {
 		it("primitive", () => {
-			const foo = type("string" as type.cast<"foo">).t
-			attest<"foo">(foo)
+			const Foo = type("string" as type.cast<"foo">).t
+			attest<"foo">(Foo)
 		})
 
 		it("object", () => {
@@ -24,42 +24,42 @@ contextualize(() => {
 
 		it("infer function", () => {
 			type F = () => boolean
-			const constructable = type({} as type.cast<F>)
-			attest<F>(constructable.t)
-			attest<F>(constructable.infer)
-			attest<F>(constructable.in.infer)
+			const Constructable = type({} as type.cast<F>)
+			attest<F>(Constructable.t)
+			attest<F>(Constructable.infer)
+			attest<F>(Constructable.in.infer)
 		})
 
 		it("infer constructable", () => {
-			const constructable = type({} as type.cast<Constructor>)
-			attest<Constructor>(constructable.t)
-			attest<Constructor>(constructable.infer)
-			attest<Constructor>(constructable.in.infer)
+			const Constructable = type({} as type.cast<Constructor>)
+			attest<Constructor>(Constructable.t)
+			attest<Constructor>(Constructable.infer)
+			attest<Constructor>(Constructable.in.infer)
 		})
 
 		it("undefined", () => {
-			const foo = type("string" as type.cast<"foo">).t
-			attest<"foo">(foo)
+			const Foo = type("string" as type.cast<"foo">).t
+			attest<"foo">(Foo)
 		})
 	})
 
 	describe("as", () => {
 		it("valid cast", () => {
-			const from = type("/^foo.*$/")
-			const t = from.as<`foo${string}`>()
+			const From = type("/^foo.*$/")
+			const T = From.as<`foo${string}`>()
 
-			attest<`foo${string}`>(t.t)
-			attest(t === from).equals(true)
+			attest<`foo${string}`>(T.t)
+			attest(T === From).equals(true)
 		})
 
 		it("cast to any", () => {
-			const t = type("unknown").as<any>()
-			attest<any>(t.t)
+			const T = type("unknown").as<any>()
+			attest<any>(T.t)
 		})
 
 		it("cast to never", () => {
-			const t = type("unknown").as<never>()
-			attest<never>(t.t)
+			const T = type("unknown").as<never>()
+			attest<never>(T.t)
 		})
 
 		it("missing type param", () => {
@@ -79,24 +79,24 @@ contextualize(() => {
 
 	describe("readonly ", () => {
 		it("object", () => {
-			const from = type({ foo: "string", bar: "number" })
-			const t = from.readonly()
+			const From = type({ foo: "string", bar: "number" })
+			const T = From.readonly()
 
 			attest<
 				Type<{
 					readonly foo: string
 					readonly bar: number
 				}>
-			>(t)
-			attest(t === from).equals(true)
+			>(T)
+			attest(T === From).equals(true)
 		})
 
 		it("array", () => {
-			const from = type("string").array()
-			const t = from.readonly()
+			const From = type("string").array()
+			const T = From.readonly()
 
-			attest<Type<readonly string[]>>(t)
-			attest(t === from).equals(true)
+			attest<Type<readonly string[]>>(T)
+			attest(T === From).equals(true)
 		})
 	})
 })

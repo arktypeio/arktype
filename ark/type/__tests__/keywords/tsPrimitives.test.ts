@@ -12,50 +12,50 @@ contextualize(() => {
 		 * 		- Frequent user of ArkType Discord
 		 * 		- Universally renowned two-finger speed typist
 		 */
-		const string = type("string")
-		attest<string>(string.infer)
-		attest(string("string")).snap("string")
+		const String = type("string")
+		attest<string>(String.infer)
+		attest(String("string")).snap("string")
 	})
 
 	it("any", () => {
-		const any = type("unknown.any")
+		const Any = type("unknown.any")
 		// equivalent to unknown at runtime
-		attest(any.json).equals(type.unknown.json)
+		attest(Any.json).equals(type.unknown.json)
 		// inferred as any
-		attest<any>(any.infer)
+		attest<any>(Any.infer)
 	})
 
 	it("any in expression", () => {
-		const t = type("string", "&", "unknown.any")
-		attest<any>(t.infer)
-		attest(t.json).equals(intrinsic.string.json)
+		const T = type("string", "&", "unknown.any")
+		attest<any>(T.infer)
+		attest(T.json).equals(intrinsic.string.json)
 	})
 
 	it("boolean", () => {
-		const boolean = type("boolean")
-		attest<boolean>(boolean.infer)
-		const expected = rootSchema([{ unit: false }, { unit: true }])
+		const Boolean = type("boolean")
+		attest<boolean>(Boolean.infer)
+		const Expected = rootSchema([{ unit: false }, { unit: true }])
 		// should be simplified to simple checks for true and false literals
-		attest(boolean.json).equals(expected.json)
+		attest(Boolean.json).equals(Expected.json)
 	})
 
 	it("never", () => {
-		const never = type("never")
-		attest<never>(never.infer)
-		const expected = rootSchema([])
+		const Never = type("never")
+		attest<never>(Never.infer)
+		const Expected = rootSchema([])
 		// should be equivalent to a zero-branch union
-		attest(never.json).equals(expected.json)
+		attest(Never.json).equals(Expected.json)
 	})
 
 	it("never in union", () => {
-		const t = type("string|never")
-		attest<string>(t.infer)
-		attest(t.json).equals(intrinsic.string.json)
+		const T = type("string|never")
+		attest<string>(T.infer)
+		attest(T.json).equals(intrinsic.string.json)
 	})
 
 	it("unknown", () => {
-		const expected = rootSchema({})
+		const Expected = rootSchema({})
 		// should be equivalent to an unconstrained predicate
-		attest(type("unknown").json).equals(expected.json)
+		attest(type("unknown").json).equals(Expected.json)
 	})
 })

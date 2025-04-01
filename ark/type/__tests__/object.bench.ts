@@ -38,9 +38,9 @@ bench("inline definition", () =>
 ).types([910, "instantiations"])
 
 bench("referenced type", () => {
-	const a = type("string")
+	const A = type("string")
 	return type({
-		a
+		A
 	})
 }).types([1118, "instantiations"])
 

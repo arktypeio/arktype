@@ -13,13 +13,13 @@ import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/o
 
 contextualize(() => {
 	it("base", () => {
-		const t = type("number").pipe(data => `${data}`)
-		attest<Type<(In: number) => Out<string>>>(t)
-		attest<string>(t.infer)
-		attest<number>(t.in.infer)
-		const out = t(5)
+		const T = type("number").pipe(data => `${data}`)
+		attest<Type<(In: number) => Out<string>>>(T)
+		attest<string>(T.infer)
+		attest<number>(T.in.infer)
+		const out = T(5)
 		attest<string | type.errors>(out).equals("5")
-		const result = t("foo")
+		const result = T("foo")
 		attest(result.toString()).snap("must be a number (was a string)")
 	})
 
@@ -30,56 +30,56 @@ contextualize(() => {
 	})
 
 	it("to", () => {
-		const t = type("string.json.parse").to({
+		const T = type("string.json.parse").to({
 			name: "string",
 			age: "number"
 		})
 
-		const tOut = t.out
-		const expected = type({
+		const tOut = T.out
+		const Expected = type({
 			name: "string",
 			age: "number"
 		})
 
-		attest<typeof expected.t>(tOut.t)
-		attest(tOut.expression).equals(expected.expression)
+		attest<typeof Expected.t>(tOut.t)
+		attest(tOut.expression).equals(Expected.expression)
 	})
 
 	describe("to string syntax", () => {
 		it("to validator", () => {
 			const trimToNonEmpty = type("string.trim |> string > 0")
-			const expected = type("string.trim").to("string > 0")
+			const Expected = type("string.trim").to("string > 0")
 
-			attest<typeof expected>(trimToNonEmpty)
-			attest(trimToNonEmpty.expression).equals(expected.expression)
+			attest<typeof Expected>(trimToNonEmpty)
+			attest(trimToNonEmpty.expression).equals(Expected.expression)
 		})
 
 		it("to morph", () => {
 			const trimAndParseNumber = type("string.trim |> string.numeric.parse")
-			const expected = type("string.trim").to("string.numeric.parse")
+			const Expected = type("string.trim").to("string.numeric.parse")
 
-			attest<typeof expected>(trimAndParseNumber)
-			attest(trimAndParseNumber.expression).equals(expected.expression)
+			attest<typeof Expected>(trimAndParseNumber)
+			attest(trimAndParseNumber.expression).equals(Expected.expression)
 		})
 
 		it("lower precedence than union", () => {
-			const t = type("string.numeric.parse |> number.integer | number.safe")
-			const expected = type("string.numeric.parse").to(
+			const T = type("string.numeric.parse |> number.integer | number.safe")
+			const Expected = type("string.numeric.parse").to(
 				"number.integer | number.safe"
 			)
 
-			attest<typeof expected>(t)
-			attest(t.expression).equals(expected.expression)
+			attest<typeof Expected>(T)
+			attest(T.expression).equals(Expected.expression)
 		})
 
 		it("lower precedence than union reversed", () => {
-			const t = type("string.numeric.parse | number.integer |> number.safe")
-			const expected = type("string.numeric.parse | number.integer").to(
+			const T = type("string.numeric.parse | number.integer |> number.safe")
+			const Expected = type("string.numeric.parse | number.integer").to(
 				"number.safe"
 			)
 
-			attest<typeof expected>(t)
-			attest(t.expression).equals(expected.expression)
+			attest<typeof Expected>(T)
+			attest(T.expression).equals(Expected.expression)
 		})
 
 		it("missing operand", () => {
@@ -93,7 +93,7 @@ contextualize(() => {
 	it("to morph", () => {
 		const restringifyUser = (o: object) => JSON.stringify(o)
 
-		const t = type("string.json.parse").to([
+		const T = type("string.json.parse").to([
 			{
 				name: "string",
 				age: "number"
@@ -102,10 +102,10 @@ contextualize(() => {
 			restringifyUser
 		])
 
-		attest(t.t).type.toString.snap("(In: string) => Out<string>")
+		attest(T.t).type.toString.snap("(In: string) => Out<string>")
 
-		attest<string>(t.infer)
-		attest(t.json).snap({
+		attest<string>(T.infer)
+		attest(T.json).snap({
 			in: "string",
 			morphs: [
 				"$ark.parseJson",
@@ -125,14 +125,14 @@ contextualize(() => {
 
 	describe("try", () => {
 		it("can catch thrown errors", () => {
-			const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
+			const ParseJson = type("string").pipe.try((s): object => JSON.parse(s))
 
-			const out = parseJson("[]")
+			const out = ParseJson("[]")
 
 			attest<ArkErrors | object>(out)
 			attest(out).equals([])
 
-			const badOut = parseJson("{ unquoted: true }")
+			const badOut = ParseJson("{ unquoted: true }")
 
 			attest(badOut.toString()).satisfies(
 				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
@@ -140,16 +140,16 @@ contextualize(() => {
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(
+			const T = type("string").pipe.try(
 				s => JSON.parse(s),
 				keywords.Array.readonly
 			)
 
-			const tOut = t.out
-			const expectedOut = keywords.Array.readonly
+			const tOut = T.out
+			const ExpectedOut = keywords.Array.readonly
 
-			attest<typeof expectedOut.t>(tOut.t)
-			attest(tOut.expression).equals(expectedOut.expression)
+			attest<typeof ExpectedOut.t>(tOut.t)
+			attest(tOut.expression).equals(ExpectedOut.expression)
 		})
 	})
 
@@ -167,27 +167,27 @@ contextualize(() => {
 	})
 
 	it("within type", () => {
-		const t = type(["boolean", "=>", data => !data])
-		attest<Type<(In: boolean) => Out<boolean>>>(t)
+		const T = type(["boolean", "=>", data => !data])
+		attest<Type<(In: boolean) => Out<boolean>>>(T)
 
-		const serializedMorphs = t.internal.assertHasKind("morph").serializedMorphs
+		const serializedMorphs = T.internal.assertHasKind("morph").serializedMorphs
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			in: [{ unit: false }, { unit: true }],
 			morphs: serializedMorphs
 		})
 
-		const out = t(true)
+		const out = T(true)
 		attest<boolean | type.errors>(out).equals(false)
-		attest(t(1).toString()).snap("must be boolean (was 1)")
+		attest(T(1).toString()).snap("must be boolean (was 1)")
 	})
 
 	it("unit branches", () => {
-		const t = type("0 | 1 | 2").pipe(n => n + 1)
-		attest<(In: 0 | 1 | 2) => Out<number>>(t.t)
+		const T = type("0 | 1 | 2").pipe(n => n + 1)
+		attest<(In: 0 | 1 | 2) => Out<number>>(T.t)
 
 		attest(
-			t.internal.select({ method: "assertFind", kind: "union" })
+			T.internal.select({ method: "assertFind", kind: "union" })
 				.discriminantJson
 		).snap({
 			kind: "unit",
@@ -195,28 +195,28 @@ contextualize(() => {
 			cases: { "0": true, "1": true, "2": true }
 		})
 
-		attest(t(0)).equals(1)
-		attest(t(3).toString()).snap("must be 0, 1 or 2 (was 3)")
+		attest(T(0)).equals(1)
+		attest(T(3).toString()).snap("must be 0, 1 or 2 (was 3)")
 	})
 
 	it("type instance reference", () => {
-		const user = type({
+		const User = type({
 			name: "string",
 			age: "number"
 		})
-		const parsedUser = type("string").pipe(s => JSON.parse(s), user)
+		const parseUser = type("string").pipe(s => JSON.parse(s), User)
 
 		attest<
 			(In: string) => To<{
 				name: string
 				age: number
 			}>
-		>(parsedUser.t)
+		>(parseUser.t)
 
 		const validUser = { name: "David", age: 30 }
-		attest(parsedUser(JSON.stringify(validUser))).equals(validUser)
+		attest(parseUser(JSON.stringify(validUser))).equals(validUser)
 		const missingKey = { name: "David" }
-		attest(parsedUser(JSON.stringify(missingKey)).toString()).snap(
+		attest(parseUser(JSON.stringify(missingKey)).toString()).snap(
 			"age must be a number (was missing)"
 		)
 	})
@@ -246,14 +246,14 @@ contextualize(() => {
 	})
 
 	it("uses pipe for consecutive types", () => {
-		const bar = type({ bar: "number" })
-		const t = type({ foo: "string" }).pipe(bar)
+		const Bar = type({ bar: "number" })
+		const T = type({ foo: "string" }).pipe(Bar)
 		attest<{
 			foo: string
 			bar: number
-		}>(t.t)
-		const expected = type({ foo: "string", bar: "number" })
-		attest(t.json).equals(expected.json)
+		}>(T.t)
+		const Expected = type({ foo: "string", bar: "number" })
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("disjoint", () => {
@@ -263,19 +263,19 @@ contextualize(() => {
 	})
 
 	it("extract in/out at path", () => {
-		const t = type({
+		const T = type({
 			foo: type("number").pipe(n => `${n}`, type.string)
 		})
 
-		attest<{ foo: number }>(t.in.t)
-		attest(t.in.expression).snap("{ foo: number }")
+		attest<{ foo: number }>(T.in.t)
+		attest(T.in.expression).snap("{ foo: number }")
 
-		attest<{ foo: string }>(t.out.t)
-		attest(t.out.expression).snap("{ foo: string }")
+		attest<{ foo: string }>(T.out.t)
+		attest(T.out.expression).snap("{ foo: string }")
 	})
 
 	it("uses pipe for many consecutive types", () => {
-		const t = type({ a: "1" }).pipe(
+		const T = type({ a: "1" }).pipe(
 			type({ b: "1" }),
 			type({ c: "1" }),
 			type({ d: "1" })
@@ -287,9 +287,9 @@ contextualize(() => {
 				c: 1
 				d: 1
 			}>
-		>(t)
-		const expected = type({ a: "1", b: "1", c: "1", d: "1" })
-		attest(t.json).equals(expected.json)
+		>(T)
+		const Expected = type({ a: "1", b: "1", c: "1", d: "1" })
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("two morphs", () => {
@@ -307,16 +307,16 @@ contextualize(() => {
 	})
 
 	it("any as out", () => {
-		const t = type("string", "=>", s => s as any)
-		attest<string>(t.in.infer)
+		const T = type("string", "=>", s => s as any)
+		attest<string>(T.in.infer)
 		// https://github.com/arktypeio/arktype/issues/1023
-		// attest<any>(t.infer)
+		// attest<any>(T.infer)
 	})
 
 	it("never as out", () => {
-		const t = type("string", "=>", s => s as never)
-		attest<string>(t.in.infer)
-		attest<never>(t.infer)
+		const T = type("string", "=>", s => s as never)
+		attest<string>(T.in.infer)
+		attest<never>(T.infer)
 	})
 
 	it("return error", () => {
@@ -329,32 +329,32 @@ contextualize(() => {
 	})
 
 	it("at path", () => {
-		const t = type({ a: ["string", "=>", data => data.length] })
-		attest<{ a: (In: string) => Out<number> }>(t.t)
+		const T = type({ a: ["string", "=>", data => data.length] })
+		attest<{ a: (In: string) => Out<number> }>(T.t)
 
 		const input = { a: "four" }
 
-		const out = t(input)
+		const out = T(input)
 
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
 	})
 
 	it("doesn't pipe on error", () => {
-		const a = type({ a: "number" }).pipe(o => o.a + 1)
+		const A = type({ a: "number" }).pipe(o => o.a + 1)
 
-		const aMorphs = a.internal.assertHasKind("morph").serializedMorphs
+		const aMorphs = A.internal.assertHasKind("morph").serializedMorphs
 
-		const b = type({ a: "string" }, "=>", o => o.a + "!")
+		const B = type({ a: "string" }, "=>", o => o.a + "!")
 
-		const bMorphs = b.internal.assertHasKind("morph").serializedMorphs
+		const bMorphs = B.internal.assertHasKind("morph").serializedMorphs
 
-		const t = b.or(a)
+		const T = B.or(A)
 
 		attest<
 			| ((In: { a: string }) => Out<string>)
 			| ((In: { a: number }) => Out<number>)
-		>(t.t)
-		attest(t.json).snap([
+		>(T.t)
+		attest(T.json).snap([
 			{
 				in: { required: [{ key: "a", value: "number" }], domain: "object" },
 				morphs: aMorphs
@@ -365,7 +365,7 @@ contextualize(() => {
 			}
 		])
 
-		attest(t({ a: 2 })).snap(3)
+		attest(T({ a: 2 })).snap(3)
 	})
 
 	it("in array", () => {
@@ -379,19 +379,19 @@ contextualize(() => {
 	})
 
 	it("object to string", () => {
-		const t = type([{ a: "string" }, "=>", data => JSON.stringify(data)])
-		const out = t({ a: "foo" })
+		const T = type([{ a: "string" }, "=>", data => JSON.stringify(data)])
+		const out = T({ a: "foo" })
 		attest<string | type.errors>(out).snap('{"a":"foo"}')
 	})
 
 	it(".out inferred based on validatedOut", () => {
-		const unvalidated = type("string").pipe(s => s.length)
+		const Unvalidated = type("string").pipe(s => s.length)
 
-		attest<number>(unvalidated.infer)
+		attest<number>(Unvalidated.infer)
 		// .out won't be known at runtime
-		attest<Type<unknown>>(unvalidated.out)
+		attest<Type<unknown>>(Unvalidated.out)
 
-		const validated = unvalidated.pipe(type("number"))
+		const validated = Unvalidated.pipe(type("number"))
 		// now that the output is a validated, type, out can be used standalone
 		attest<Type<number>>(validated.out)
 	})
@@ -464,9 +464,9 @@ contextualize(() => {
 	})
 
 	it("union with output", () => {
-		const t = type("number|string.numeric.parse")
-		attest<number>(t.infer)
-		attest<string | number>(t.inferIn)
+		const T = type("number|string.numeric.parse")
+		attest<number>(T.infer)
+		attest<string | number>(T.inferIn)
 	})
 
 	it("deep union", () => {
@@ -551,26 +551,26 @@ contextualize(() => {
 	})
 
 	it("directly nested", () => {
-		const a = type("string", "=>", function _directlyNestedStringToLength(s) {
+		const A = type("string", "=>", function _directlyNestedStringToLength(s) {
 			return s.length
 		})
-		const t = type(
+		const T = type(
 			{
 				// doesn't work with a nested tuple expression here due to a TS limitation
-				a
+				A
 			},
 			"=>",
-			function _directlyNestedRoot({ a }) {
-				return a === 0
+			function _directlyNestedRoot({ A }) {
+				return A === 0
 			}
 		)
-		attest<(In: { a: string }) => Out<boolean>>(t.t)
-		assertNodeKind(t.internal, "morph")
-		attest(t.json).snap({
+		attest<(In: { A: string }) => Out<boolean>>(T.t)
+		assertNodeKind(T.internal, "morph")
+		attest(T.json).snap({
 			in: {
 				required: [
 					{
-						key: "a",
+						key: "A",
 						value: {
 							in: "string",
 							morphs: ["$ark._directlyNestedStringToLength"]
@@ -618,7 +618,7 @@ contextualize(() => {
 	})
 
 	it("ArkTypeError not included in return", () => {
-		const parsedInt = type([
+		const ParsedInt = type([
 			"string",
 			"=>",
 			(s, ctx) => {
@@ -628,9 +628,9 @@ contextualize(() => {
 				return result
 			}
 		])
-		attest<(In: string) => Out<number>>(parsedInt.t)
-		attest(parsedInt("5")).snap(5)
-		attest(parsedInt("five").toString()).snap(
+		attest<(In: string) => Out<number>>(ParsedInt.t)
+		attest(ParsedInt("5")).snap(5)
+		attest(ParsedInt("five").toString()).snap(
 			'must be an integer string (was "five")'
 		)
 	})
@@ -741,7 +741,7 @@ contextualize(() => {
 		})
 
 		// this is fine as a | b can be discriminated via foo
-		const t = $.type("a|b")
+		const T = $.type("a|b")
 		attest<
 			| {
 					foo: (In: string) => Out<string>
@@ -749,7 +749,7 @@ contextualize(() => {
 			| {
 					foo: symbol
 			  }
-		>(t.t)
+		>(T.t)
 
 		attest(() => $.type("a|c")).throws(
 			writeIndiscriminableMorphMessage(
@@ -813,7 +813,7 @@ contextualize(() => {
 	})
 
 	it("allows undiscriminated union if morphs are equal", () => {
-		const t = type({ foo: "1" })
+		const T = type({ foo: "1" })
 			.or({ bar: "1" })
 			.pipe(o => Object.values(o))
 
@@ -827,42 +827,42 @@ contextualize(() => {
 							bar: 1
 					  }
 			) => Out<1[]>
-		>(t.t)
+		>(T.t)
 
-		const serializedMorphs = t.internal.assertHasKind("morph").serializedMorphs
+		const serializedMorphs = T.internal.assertHasKind("morph").serializedMorphs
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			in: [
 				{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
 				{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
 			],
 			morphs: serializedMorphs
 		})
-		attest(t({ foo: 1 })).snap([1])
-		attest(t({ bar: 1 })).snap([1])
-		attest(t({ baz: 2 }).toString()).snap(
+		attest(T({ foo: 1 })).snap([1])
+		attest(T({ bar: 1 })).snap([1])
+		attest(T({ baz: 2 }).toString()).snap(
 			"bar must be 1 (was missing) or foo must be 1 (was missing)"
 		)
 	})
 	it("allows undiscriminated union if morphs at path are equal", () => {
-		const t = type({ l: "1", n: "string.numeric.parse" }, "|", {
+		const T = type({ l: "1", n: "string.numeric.parse" }, "|", {
 			r: "1",
 			n: "string.numeric.parse"
 		})
 
-		attest(t).type.toString.snap(`Type<
+		attest(T).type.toString.snap(`Type<
 	| { l: 1; n: (In: string) => To<number> }
 	| { r: 1; n: (In: string) => To<number> },
 	{}
 >`)
 
-		attest(t.expression).snap(
+		attest(T.expression).snap(
 			"{ l: 1, n: (In: /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/) => Out<number> } | { n: (In: /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/) => Out<number>, r: 1 }"
 		)
-		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
-		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
-		attest(t({ l: 1, r: 1, n: "234" })).snap({ l: 1, r: 1, n: 234 })
-		attest(t({ n: "234" }).toString()).snap(
+		attest(T({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
+		attest(T({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
+		attest(T({ l: 1, r: 1, n: "234" })).snap({ l: 1, r: 1, n: 234 })
+		attest(T({ n: "234" }).toString()).snap(
 			"l must be 1 (was missing) or r must be 1 (was missing)"
 		)
 	})
@@ -881,28 +881,28 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 	})
 
 	it("multiple chained pipes", () => {
-		const t = type("string.trim").to("string.lower")
+		const T = type("string.trim").to("string.lower")
 
-		attest(t.t).type.toString.snap("(In: string) => To<string>")
+		attest(T.t).type.toString.snap("(In: string) => To<string>")
 
-		attest(t("Success")).equals("success")
-		attest(t("success")).equals("success")
-		attest(t("SUCCESS  ")).equals("success")
-		attest(t("success  ")).equals("success")
+		attest(T("Success")).equals("success")
+		attest(T("success")).equals("success")
+		attest(T("SUCCESS  ")).equals("success")
+		attest(T("success  ")).equals("success")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1144
 	it("multiple chained pipes with literal output", () => {
-		const base = type("string.trim").to("string.lower")
+		const Base = type("string.trim").to("string.lower")
 
-		const t = base.to("'success'")
+		const T = Base.to("'success'")
 
-		attest<(In: string) => To<"success">>(t.t)
+		attest<(In: string) => To<"success">>(T.t)
 
-		attest(t("Success")).equals("success")
-		attest(t("success")).equals("success")
-		attest(t("SUCCESS  ")).equals("success")
-		attest(t("success  ")).equals("success")
+		attest(T("Success")).equals("success")
+		attest(T("success")).equals("success")
+		attest(T("SUCCESS  ")).equals("success")
+		attest(T("success  ")).equals("success")
 	})
 
 	const appendLengthMorph = (s: string) => `${s}${s.length}`
@@ -994,39 +994,39 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 	// https://github.com/arktypeio/arktype/issues/1185
 	it("pipe doesn't run on rejected descendant prop", () => {
 		let callCount = 0
-		const t = type({
+		const T = type({
 			key: "string"
 		}).pipe(v => {
 			callCount++
 			return v
 		})
 
-		const out = t({})
+		const out = T({})
 
 		attest(out.toString()).snap("key must be a string (was missing)")
 		attest(callCount).equals(0)
 	})
 
 	it("to tuple expression", () => {
-		const t = type(["string.json.parse", "|>", { name: "string" }])
+		const T = type(["string.json.parse", "|>", { name: "string" }])
 
-		const expected = type("string.json.parse").to({ name: "string" })
+		const Expected = type("string.json.parse").to({ name: "string" })
 
-		attest<typeof expected>(t)
-		attest(t.json).equals(expected.json)
+		attest<typeof Expected>(T)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("to args expression", () => {
-		const t = type("string.json.parse", "|>", { name: "string" })
+		const T = type("string.json.parse", "|>", { name: "string" })
 
-		const expected = type("string.json.parse").to({ name: "string" })
+		const Expected = type("string.json.parse").to({ name: "string" })
 
-		attest<typeof expected>(t)
-		attest(t.json).equals(expected.json)
+		attest<typeof Expected>(T)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("infers distributed pipes", () => {
-		const t = type("string.numeric.parse | number").to("number > 0")
-		attest(t.t).type.toString.snap("number | ((In: string) => To<number>)")
+		const T = type("string.numeric.parse | number").to("number > 0")
+		attest(T.t).type.toString.snap("number | ((In: string) => To<number>)")
 	})
 })

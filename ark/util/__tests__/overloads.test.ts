@@ -14,13 +14,13 @@ const pipe = <fn extends (...args: any[]) => unknown, args extends array>(
 
 contextualize(() => {
 	it("parameters", () => {
-		const t = {} as Parameters<overloadOf<fn>>
-		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
+		const T = {} as Parameters<overloadOf<fn>>
+		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(T)
 	})
 
 	it("returns", () => {
-		const t = {} as ReturnType<overloadOf<fn>>
-		attest<void | 1 | 2>(t)
+		const T = {} as ReturnType<overloadOf<fn>>
+		attest<void | 1 | 2>(T)
 	})
 
 	it("overload return", () => {

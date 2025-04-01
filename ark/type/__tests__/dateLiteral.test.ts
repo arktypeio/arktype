@@ -4,11 +4,11 @@ import { writeInvalidDateMessage } from "arktype/internal/parser/shift/operand/d
 
 contextualize(() => {
 	it("base", () => {
-		const t = type("d'2000/05/05'")
-		attest<Date>(t.infer)
-		attest(t.allows(new Date("2000/05/05"))).equals(true)
-		attest(t.allows(new Date("2000/06/05"))).equals(false)
-		attest(t.allows(new Date("2000-05-05T09:00:00.000Z"))).equals(false)
+		const T = type("d'2000/05/05'")
+		attest<Date>(T.infer)
+		attest(T.allows(new Date("2000/05/05"))).equals(true)
+		attest(T.allows(new Date("2000/06/05"))).equals(false)
+		attest(T.allows(new Date("2000-05-05T09:00:00.000Z"))).equals(false)
 	})
 
 	it("with punctuation", () => {
@@ -19,15 +19,15 @@ contextualize(() => {
 	})
 
 	it("allows spaces", () => {
-		const t = type("d' 2021  /  05  /  01  '")
-		attest(t.allows(new Date("2021/05/01"))).equals(true)
+		const T = type("d' 2021  /  05  /  01  '")
+		attest(T.allows(new Date("2021/05/01"))).equals(true)
 	})
 
 	it("epoch", () => {
 		const now = new Date()
-		const t = type(`d'${now.valueOf()}'`)
-		attest(t.allows(now)).equals(true)
-		attest(t.allows(new Date(now.valueOf() + 1))).equals(false)
+		const T = type(`d'${now.valueOf()}'`)
+		attest(T.allows(now)).equals(true)
+		attest(T.allows(new Date(now.valueOf() + 1))).equals(false)
 	})
 
 	it("invalid date", () => {
@@ -35,7 +35,7 @@ contextualize(() => {
 	})
 
 	it("morphable", () => {
-		const t = type(["Date", "=>", d => d.toISOString()])
-		attest(t.from(new Date(2000, 1))).snap("2000-02-01T05:00:00.000Z")
+		const T = type(["Date", "=>", d => d.toISOString()])
+		attest(T.from(new Date(2000, 1))).snap("2000-02-01T05:00:00.000Z")
 	})
 })

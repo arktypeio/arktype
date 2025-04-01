@@ -9,7 +9,7 @@ Record is now available as a builtin keyword.
 ```ts
 import { type } from "arktype"
 
-const stringRecord = type("Record<string, string>")
+const StringRecord = type("Record<string, string>")
 ```
 
 In addition to `Record`, the following generics from TS are now available in ArkType:
@@ -85,7 +85,7 @@ const out = types.bitBox({ box: 0 })
 ```ts
 import { type } from "arktype"
 
-const one = type("Extract<0 | 1, 1>")
+const One = type("Extract<0 | 1, 1>")
 ```
 
 ##### Chained
@@ -93,14 +93,14 @@ const one = type("Extract<0 | 1, 1>")
 ```ts
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	"age?": "number",
 	isAdmin: "boolean"
 })
 
 // hover me!
-const basicUser = user.pick("name", "age")
+const basicUser = User.pick("name", "age")
 ```
 
 #### Invoked

@@ -76,7 +76,7 @@ Here are some simple examples of type assertions and snapshotting:
 // @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {
 	it("type and value assertions", () => {
-		const even = type("number%2")
+		const Even = type("number%2")
 		// asserts even.infer is exactly number
 		attest<number>(even.infer)
 		// make assertions about types and values seamlessly
@@ -114,18 +114,18 @@ describe("attest features", () => {
 
 	it("jsdoc snapshotting", () => {
 		// match or snapshot expected jsdoc associated with the value passed to attest
-		const t = type({
+		const T = type({
 			/** FOO */
 			foo: "string"
 		})
 
-		const out = t.assert({ foo: "foo" })
+		const out = T.assert({ foo: "foo" })
 
 		attest(out.foo).jsdoc.snap("FOO")
 	})
 
 	it("integrate runtime logic with type assertions", () => {
-		const arrayOf = type("<t>", "t[]")
+		const ArrayOf = type("<t>", "t[]")
 		const numericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
@@ -136,7 +136,7 @@ describe("attest features", () => {
 	})
 
 	it("integrated type performance benchmarking", () => {
-		const user = type({
+		const User = type({
 			kind: "'admin'",
 			"powers?": "string[]"
 		})
