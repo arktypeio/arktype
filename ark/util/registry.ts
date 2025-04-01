@@ -1,6 +1,6 @@
 import { domainOf } from "./domain.ts"
 import { throwInternalError } from "./errors.ts"
-import { tryCatch } from "./functions.ts"
+import { fileName } from "./fileName.ts"
 import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 
 // Eventually we can just import from package.json in the source itself
@@ -12,10 +12,7 @@ export const arkUtilVersion = "0.45.6"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: tryCatch(
-		() => import.meta.filename ?? undefined,
-		() => globalThis.__filename ?? "unknown"
-	),
+	filename: fileName(),
 	FileConstructor
 }
 

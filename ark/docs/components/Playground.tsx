@@ -610,22 +610,9 @@ export const Playground = ({
 			// Create a wrapped evaluation context
 			const wrappedCode = `
       (function() {
-        // Execute the bundled code in a separate scope
         ${typeJs}
         
-        // Make arktype available from the executed bundle
-        const arktype = typeof ArkType !== 'undefined' ? ArkType : 
-                       typeof arktype !== 'undefined' ? arktype : 
-                       typeof type !== 'undefined' ? type : 
-                       undefined;
-        
-        if (!arktype) throw new Error('Could not find arktype export in bundle');
-        
-        // User's code with arktype import transformed
-        ${code.replace(
-					/import\s+(.*?)\s+from\s+['"]arktype['"]/g,
-					"const $1 = arktype"
-				)}
+        ${code.replace(/import\s+(.*?)\s+from\s+['"]arktype['"]/g, "").replace(/export const/g, "const")}
         
         // Return the exports we care about
         return {

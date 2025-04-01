@@ -23,7 +23,7 @@ export const bundle = async (options: BundleOptions) => {
 
 	await build({
 		entry: ["index.ts"],
-		format: "cjs",
+		format: "esm",
 		target: options.js ? "esnext" : [],
 		noExternal: ["@ark/schema", "@ark/util"],
 		dts: {

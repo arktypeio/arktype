@@ -1,3 +1,4 @@
+import { writeFile } from "@ark/fs"
 import { type } from "arktype"
 
 const User = type({
@@ -22,3 +23,7 @@ const ConfiguredUser = User.configure(
 ConfiguredUser.get("name").description // A STRING
 ConfiguredUser.get("platform").description // "android" | "ios"
 ConfiguredUser.get("version").description // a number, A STRING or undefined
+
+import { typeJs } from "../docs/components/bundles/type.ts"
+
+writeFile("./ark/docs/components/bundles/foo.js", typeJs)
