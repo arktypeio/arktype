@@ -52,6 +52,17 @@ export declare namespace arkPrototypes {
 
 	export interface instances extends ecmascript, platform {}
 
-	export type instanceOf<name extends keyof instances = keyof instances> =
+	// avoid bad prototypes polluting inference:
+	// https://github.com/arktypeio/arktype/issues/1399
+	export type NonDegenerateName =
+		keyof instances extends infer k ?
+			k extends keyof instances ?
+				{} extends instances[k] ?
+					never
+				:	k
+			:	never
+		:	never
+
+	export type instanceOf<name extends NonDegenerateName = NonDegenerateName> =
 		instances[name]
 }
