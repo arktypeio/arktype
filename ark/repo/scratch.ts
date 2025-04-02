@@ -26,4 +26,11 @@ ConfiguredUser.get("version").description // a number, A STRING or undefined
 
 import { typeJs } from "../docs/components/bundles/type.ts"
 
-writeFile("./ark/docs/components/bundles/foo.js", typeJs)
+new Function(`${typeJs.slice(0, typeJs.lastIndexOf("export {"))}
+const MyType = type({
+	name: "string",
+	age: "number"
+})
+
+console.log(MyType.expression)
+`)()

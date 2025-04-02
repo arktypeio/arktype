@@ -23,6 +23,10 @@ let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | nu
 
 let onigasmPromise: Promise<void> | null = null
 
+// remove the package's exports since they will fail in with new Function()
+// instead, they'll be defined directly in the scope being executed
+const ambientArktypeJs = typeJs.slice(0, typeJs.lastIndexOf("export {"))
+
 const initOnigasm = async () => {
 	if (onigasmPromise) return onigasmPromise
 
@@ -73,6 +77,10 @@ const defaultPlaygroundCode = `import { type } from "arktype"
 export const MyType = type({
 	name: "string",
 	age: "number"
+})
+
+export const out = MyType({
+	foo: ""
 })
 `
 const editorFileUri = "file:///main.ts"
@@ -606,30 +614,29 @@ export const Playground = ({
 	}, [resetTrigger, code])
 
 	const validateCode = (code: string) => {
+		const isolatedUserCode = code
+			.replaceAll(/^\s*import .*\n/g, "")
+			.replaceAll(/^\s*export\s+const/gm, "const")
 		try {
-			// Create a wrapped evaluation context
-			const wrappedCode = `
-      (function() {
-        ${typeJs}
+			const wrappedCode = `${ambientArktypeJs}
         
-        ${code.replace(/import\s+(.*?)\s+from\s+['"]arktype['"]/g, "").replace(/export const/g, "const")}
-        
-        // Return the exports we care about
-        return {
-          MyType: typeof MyType !== 'undefined' ? MyType : undefined,
-          out: typeof out !== 'undefined' ? out : undefined
-        };
-      })()
-    `
+		// remove imports/exports since they fail in a new Function() context
+		// (all arktype exports are already available in the module)
+        ${isolatedUserCode}
 
-			// Evaluate synchronously
+		// return the values we want to introspect for our demo
+        return {
+          MyType,
+          out
+        }`
+
 			const result = new Function(wrappedCode)()
+
 			const { MyType, out } = result
 
 			setValidationResult({
-				definition:
-					MyType ? JSON.stringify(MyType.expression, null, 2) : undefined,
-				result: out ?? (MyType ? MyType({}) : undefined)
+				definition: MyType?.expression,
+				result: out
 			})
 		} catch (e) {
 			setValidationResult({
