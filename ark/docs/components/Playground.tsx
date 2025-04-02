@@ -654,19 +654,16 @@ export const Playground = ({
 		}
 	}, [editorRef.current])
 
-	// Reset editor content when the resetTrigger changes
 	useEffect(() => {
 		if (editorRef.current && resetTrigger > 0) editorRef.current.setValue(code)
 	}, [resetTrigger, code])
 
 	useEffect(() => {
-		// If Monaco is already initialized, use the cached instance
 		if (monaco && monacoInitialized && tsLanguageServiceInstance) {
 			setLoaded("loaded")
 			return
 		}
 
-		// Otherwise initialize
 		if (monaco && loadingState !== "loaded") {
 			if (loadingState === "unloaded") setLoaded("loading")
 			else {
