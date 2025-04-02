@@ -10,7 +10,10 @@ import type * as Monaco from "monaco-editor"
 import { wireTmGrammars } from "monaco-editor-textmate"
 import { Registry } from "monaco-textmate"
 import { loadWASM } from "onigasm"
-import { useEffect, useRef, useState } from "react"
+import prettierPluginEstree from "prettier/plugins/estree"
+import prettierPluginTypeScript from "prettier/plugins/typescript"
+import prettier from "prettier/standalone"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { CompletionInfo, ScriptElementKind } from "typescript"
 import { schemaDts } from "./bundles/schema.ts"
 import { typeDts, typeJs } from "./bundles/type.ts"
@@ -26,6 +29,7 @@ let onigasmPromise: Promise<void> | null = null
 // remove the package's exports since they will fail in with new Function()
 // instead, they'll be defined directly in the scope being executed
 const ambientArktypeJs = typeJs.slice(0, typeJs.lastIndexOf("export {"))
+const validationDelayMs = 500
 
 const initOnigasm = async () => {
 	if (onigasmPromise) return onigasmPromise
@@ -613,25 +617,17 @@ export const Playground = ({
 		}
 	}, [resetTrigger, code])
 
-	const validateCode = (code: string) => {
+	const validateImmediately = (code: string) => {
 		const isolatedUserCode = code
 			.replaceAll(/^\s*import .*\n/g, "")
 			.replaceAll(/^\s*export\s+const/gm, "const")
+
 		try {
 			const wrappedCode = `${ambientArktypeJs}
-        
-		// remove imports/exports since they fail in a new Function() context
-		// (all arktype exports are already available in the module)
         ${isolatedUserCode}
-
-		// return the values we want to introspect for our demo
-        return {
-          MyType,
-          out
-        }`
+        return { MyType, out }`
 
 			const result = new Function(wrappedCode)()
-
 			const { MyType, out } = result
 
 			setValidationResult({
@@ -644,6 +640,31 @@ export const Playground = ({
 			})
 		}
 	}
+
+	const validateCode = useMemo(() => {
+		let timeoutId: NodeJS.Timeout | null = null
+		let lastValidationTime = 0
+
+		return (code: string) => {
+			const now = Date.now()
+			const timeSinceLastValidation = now - lastValidationTime
+
+			if (timeoutId) {
+				clearTimeout(timeoutId)
+				timeoutId = null
+			}
+
+			if (timeSinceLastValidation > validationDelayMs * 2) {
+				lastValidationTime = now
+				validateImmediately(code)
+			} else {
+				timeoutId = setTimeout(() => {
+					lastValidationTime = Date.now()
+					validateImmediately(code)
+				}, validationDelayMs)
+			}
+		}
+	}, [])
 
 	useEffect(() => {
 		if (editorRef.current) {
@@ -678,6 +699,147 @@ export const Playground = ({
 			}
 		}
 	}, [monaco, loadingState])
+
+	useEffect(() => {
+		if (editorRef.current) {
+			const handleKeyDown = async (e: KeyboardEvent) => {
+				if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+					e.preventDefault()
+
+					if (!editorRef.current) return
+
+					try {
+						const editor = editorRef.current
+						// Store current state before formatting
+						const selections = editor.getSelections()
+						const scrollPosition = {
+							scrollLeft: editor.getScrollLeft(),
+							scrollTop: editor.getScrollTop()
+						}
+
+						const currentCode = editor.getValue()
+						const formattedCode = await prettier.format(currentCode, {
+							parser: "typescript",
+							plugins: [prettierPluginEstree, prettierPluginTypeScript],
+							semi: false,
+							trailingComma: "none",
+							experimentalTernaries: true
+						})
+
+						// Calculate relative positions before changing content
+						const relativePositions = selections?.map(selection => {
+							const model = editor.getModel()
+							if (!model) return null
+
+							const startOffset = model.getOffsetAt(
+								selection.getStartPosition()
+							)
+							const endOffset = model.getOffsetAt(selection.getEndPosition())
+							return {
+								start: startOffset / currentCode.length,
+								end: endOffset / currentCode.length,
+								direction: selection.getDirection()
+							}
+						})
+
+						// Apply formatted code
+						editor.setValue(formattedCode)
+
+						// Restore positions based on relative offsets
+						if (selections && relativePositions) {
+							const model = editor.getModel()
+							if (model) {
+								const newSelections = relativePositions
+									.map(pos => {
+										if (!pos) return null
+										const startOffset = Math.floor(
+											pos.start * formattedCode.length
+										)
+										const endOffset = Math.floor(pos.end * formattedCode.length)
+
+										// Find nearest token boundaries
+										const startPos = findNearestTokenBoundary(
+											model,
+											model.getPositionAt(startOffset)
+										)
+										const endPos = findNearestTokenBoundary(
+											model,
+											model.getPositionAt(endOffset)
+										)
+
+										return {
+											selectionStartLineNumber: startPos.lineNumber,
+											selectionStartColumn: startPos.column,
+											positionLineNumber: endPos.lineNumber,
+											positionColumn: endPos.column,
+											direction: pos.direction
+										}
+									})
+									.filter(Boolean) as {} as Monaco.Selection[]
+
+								if (newSelections.length) editor.setSelections(newSelections)
+							}
+						}
+
+						// Restore scroll position proportionally
+						const lineCountBefore = currentCode.split("\n").length
+						const lineCountAfter = formattedCode.split("\n").length
+						const scrollRatio = scrollPosition.scrollTop / lineCountBefore
+						editor.setScrollPosition({
+							scrollLeft: scrollPosition.scrollLeft,
+							scrollTop: scrollRatio * lineCountAfter
+						})
+
+						validateImmediately(formattedCode)
+					} catch {
+						// could have invalid syntax etc., fail silently
+					}
+				}
+			}
+
+			// Helper to find nearest token boundary
+			const findNearestTokenBoundary = (
+				model: Monaco.editor.ITextModel,
+				position: Monaco.Position
+			): Monaco.Position => {
+				const lineContent = model.getLineContent(position.lineNumber)
+
+				// If at line end, stay there
+				if (position.column > lineContent.length) return position
+
+				// Find nearest whitespace or token boundary
+				let column = position.column
+				const char = lineContent[column - 1]
+
+				// If we're in whitespace, find next token
+				if (/\s/.test(char)) {
+					while (
+						column <= lineContent.length &&
+						/\s/.test(lineContent[column - 1])
+					)
+						column++
+
+					if (column > lineContent.length) {
+						return new monaco!.Position(
+							position.lineNumber,
+							lineContent.length + 1
+						)
+					}
+					return new monaco!.Position(position.lineNumber, column)
+				}
+
+				// If we're in a token, find token end
+				const token = model.getWordAtPosition(position)
+				if (token)
+					return new monaco!.Position(position.lineNumber, token.endColumn)
+
+				return position
+			}
+
+			window.addEventListener("keydown", handleKeyDown)
+			return () => window.removeEventListener("keydown", handleKeyDown)
+		}
+	}, [editorRef.current])
 
 	const containerStyle = {
 		display: visible ? "grid" : "none",

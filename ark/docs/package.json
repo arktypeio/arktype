@@ -41,6 +41,7 @@
 		"onigasm": "2.2.5",
 		"postcss": "8.5.3",
 		"posthog-js": "1.234.5",
+		"prettier": "3.5.3",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
 		"serve": "14.2.4",
