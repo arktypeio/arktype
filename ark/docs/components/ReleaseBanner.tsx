@@ -1,7 +1,7 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from "next/link.js"
+import { usePathname } from "next/navigation.js"
 import { Banner } from "./Banner.tsx"
 
 const text = "📈 Announcing ArkType 2.1 📈"

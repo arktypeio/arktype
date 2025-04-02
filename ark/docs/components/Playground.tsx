@@ -3,9 +3,9 @@
 import { hasArkKind } from "@ark/schema"
 import { ParseError } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
-import extensionPackage from "arkdark/package.json"
-import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
-import arkdarkColors from "arkthemes/arkdark.json"
+import extensionPackage from "arkdark/package.json" with { type: "json" }
+import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json" with { type: "json" }
+import arkdarkColors from "arkthemes/arkdark.json" with { type: "json" }
 import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { wireTmGrammars } from "monaco-editor-textmate"

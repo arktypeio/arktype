@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from "lucide-react"
-import Link from "next/link"
+import Link from "next/link.js"
 import { MainAutoplayDemo } from "./AutoplayDemo.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
 
