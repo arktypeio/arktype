@@ -41,9 +41,6 @@
 	--ark-error: #9558f8;
 	--ark-success: #40decca0;
 	--ark-runtime-error: #f85858;
-	--ark-editor-bg: #080d17;
-	--ark-success-bg: #081617cc;
-	--ark-failure-bg: #170808cc;
 
 	/** @shikijs/twoslash/style-rich.css overrides */
 	--twoslash-border-color: #ba7e4127;

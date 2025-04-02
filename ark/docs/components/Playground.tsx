@@ -14,7 +14,7 @@ import { loadWASM } from "onigasm"
 import prettierPluginEstree from "prettier/plugins/estree"
 import prettierPluginTypeScript from "prettier/plugins/typescript"
 import prettier from "prettier/standalone"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import type { CompletionInfo, ScriptElementKind } from "typescript"
 import { schemaDts } from "./bundles/schema.ts"
 import { typeDts, typeJs } from "./bundles/type.ts"
@@ -36,23 +36,25 @@ const initOnigasm = async () => {
 	if (onigasmPromise) return onigasmPromise
 
 	if (!onigasmLoaded) {
-		onigasmPromise = loadWASM("/onigasm.wasm")
-			.then(() => {
-				onigasmLoaded = true
-				console.log("Onigasm initialized successfully")
-			})
-			.catch(err => {
-				console.error("Failed to initialize onigasm:", err)
-				// Reset the promise so we can try again
-				onigasmPromise = null
-			})
+		try {
+			onigasmPromise = loadWASM("/onigasm.wasm")
+			onigasmLoaded = true
+		} catch (e) {
+			if (String(e).includes("subsequent calls are not allowed")) {
+				// this often happens during dev, ignore it
+				return Promise.resolve()
+			}
+			console.error(e)
+			onigasmPromise = null
+		}
+
 		return onigasmPromise
 	}
 
 	return Promise.resolve()
 }
 
-if (typeof window !== "undefined") initOnigasm().catch(console.error)
+if (typeof window !== "undefined") initOnigasm()
 
 interface VSCodeTheme {
 	colors: {
@@ -525,6 +527,15 @@ const setupErrorLens = (
 	})
 }
 
+const editorStyles: CSSProperties = {
+	borderRadius: "16px",
+	boxShadow:
+		"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)",
+	transition: "all 0.3s cubic-bezier(.25,.8,.25,1)",
+	backdropFilter: "blur(16px)",
+	paddingTop: "16px"
+}
+
 const applyEditorStyling = (
 	editor: Monaco.editor.IStandaloneCodeEditor,
 	monaco: typeof Monaco,
@@ -533,12 +544,7 @@ const applyEditorStyling = (
 	const editorElement = editor.getDomNode()
 
 	if (editorElement) {
-		editorElement.style.borderRadius = "16px"
-		editorElement.style.boxShadow =
-			"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)"
-		editorElement.style.transition = "all 0.3s cubic-bezier(.25,.8,.25,1)"
-		editorElement.style.backdropFilter = "blur(16px)"
-		editorElement.style.paddingTop = "16px"
+		Object.assign(editorElement.style, editorStyles)
 
 		const guard = editorElement.querySelector(
 			".overflow-guard"
@@ -554,14 +560,10 @@ const applyEditorStyling = (
 const setupMonaco = async (
 	monaco: typeof Monaco
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
-	// Only initialize once
 	if (!monacoInitialized) {
-		// Ensure onigasm is loaded
 		await initOnigasm()
-
 		monaco.editor.defineTheme("arkdark", theme)
 
-		// Initialize the language service only once
 		if (!tsLanguageServiceInstance) {
 			const tsLanguageService = await getInitializedTypeScriptService(monaco)
 			setupHoverProvider(monaco, tsLanguageService)
@@ -587,9 +589,7 @@ export interface PlaygroundProps {
 	className?: string
 	/** Initial code to display in the playground */
 	code?: string
-	/** Full height mode takes available vertical space */
 	fullHeight?: boolean
-	/** Custom height for the editor */
 	height?: string
 }
 
@@ -891,13 +891,16 @@ interface ValidationOutputProps {
 	result?: type.errors | ParseError | unknown
 }
 
+const successBg = "#081617cc"
+const failureBg = "#170808cc"
+
 const ValidationOutput = ({ definition, result }: ValidationOutputProps) => {
 	console.log(result)
 	return (
 		<div className="flex flex-col gap-4 h-full">
 			<div className="flex-1 min-h-0">
 				<div
-					style={{ backgroundColor: "#08161791" }}
+					style={{ ...editorStyles, backgroundColor: "#08161791" }}
 					className="editor-bg h-full p-4 rounded-2xl overflow-auto"
 				>
 					<h3 className="text-fd-foreground font-semibold mb-2">Definition</h3>
@@ -909,10 +912,9 @@ const ValidationOutput = ({ definition, result }: ValidationOutputProps) => {
 			<div className="flex-1 min-h-0">
 				<div
 					style={{
+						...editorStyles,
 						backgroundColor:
-							hasArkKind(result, "errors") ?
-								"var(--ark-failure-bg)"
-							:	"var(--ark-success-bg)"
+							hasArkKind(result, "errors") ? failureBg : successBg
 					}}
 					className="h-full p-4 rounded-2xl overflow-auto"
 				>
