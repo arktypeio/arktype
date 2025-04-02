@@ -84,7 +84,8 @@ export const MyType = type({
 })
 
 export const out = MyType({
-	foo: ""
+	name: "Anders Hejlsberg",
+	age: null
 })
 `
 const editorFileUri = "file:///main.ts"
