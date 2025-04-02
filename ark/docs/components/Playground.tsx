@@ -1,5 +1,6 @@
 "use client"
 
+import { hasArkKind } from "@ark/schema"
 import { ParseError } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
 import extensionPackage from "arkdark/package.json"
@@ -890,64 +891,45 @@ interface ValidationOutputProps {
 	result?: type.errors | ParseError | unknown
 }
 
-const ValidationOutput = ({
-	definition,
-	result: result
-}: ValidationOutputProps) => (
-	<div className="validation-output">
-		<div className="section">
-			<div className="card">
-				<h3>Definition</h3>
-				<pre>
-					<code>{definition ?? "// No type defined yet"}</code>
-				</pre>
+const ValidationOutput = ({ definition, result }: ValidationOutputProps) => {
+	console.log(result)
+	return (
+		<div className="flex flex-col gap-4 h-full">
+			<div className="flex-1 min-h-0">
+				<div
+					style={{ backgroundColor: "#08161791" }}
+					className="editor-bg h-full p-4 rounded-2xl overflow-auto"
+				>
+					<h3 className="text-fd-foreground font-semibold mb-2">Definition</h3>
+					<pre className="m-0 whitespace-pre-wrap">
+						<code>{definition ?? "// No type defined yet"}</code>
+					</pre>
+				</div>
+			</div>
+			<div className="flex-1 min-h-0">
+				<div
+					style={{
+						backgroundColor:
+							hasArkKind(result, "errors") ?
+								"var(--ark-failure-bg)"
+							:	"var(--ark-success-bg)"
+					}}
+					className="h-full p-4 rounded-2xl overflow-auto"
+				>
+					<h3 className="text-fd-foreground font-semibold mb-2">Output</h3>
+					<pre className="m-0 whitespace-pre-wrap">
+						<code>
+							{result === undefined ?
+								null
+							: result instanceof type.errors ?
+								`❌ problems:\n\n${result.summary}`
+							: result instanceof ParseError ?
+								`❌ParseError:\n\n${result}`
+							:	`✅ data:\n\n${JSON.stringify(result, null, 2)}`}
+						</code>
+					</pre>
+				</div>
 			</div>
 		</div>
-		<div className="section">
-			<div className="card">
-				<h3>Output</h3>
-				<pre>
-					<code>
-						{result === undefined ?
-							null
-						: result instanceof type.errors ?
-							`❌ problems:\n\n${result.summary}`
-						: result instanceof ParseError ?
-							`❌ParseError:\n\n${result}`
-						:	`✅ data:\n\n${JSON.stringify(result, null, 2)}`}
-					</code>
-				</pre>
-			</div>
-		</div>
-		<style jsx>{`
-			.validation-output {
-				display: flex;
-				flex-direction: column;
-				gap: 1rem;
-				height: 100%;
-			}
-			.section {
-				flex: 1;
-				min-height: 0;
-			}
-			.card {
-				height: 100%;
-				padding: 1rem;
-				background-color: rgb(18, 18, 18);
-				border-radius: 1rem;
-				overflow: auto;
-			}
-			pre {
-				margin: 0;
-				white-space: pre-wrap;
-			}
-			code {
-				font-family: "Cascadia Code", monospace;
-			}
-			h3 {
-				margin: 0 0 0.5rem 0;
-				color: #fffff0;
-			}
-		`}</style>
-	</div>
-)
+	)
+}

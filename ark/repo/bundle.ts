@@ -26,6 +26,7 @@ export const bundle = async (options: BundleOptions) => {
 		format: "esm",
 		target: options.js ? "esnext" : [],
 		noExternal: ["@ark/schema", "@ark/util"],
+		keepNames: true,
 		dts: {
 			only: !options.js
 		},

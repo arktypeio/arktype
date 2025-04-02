@@ -14,7 +14,7 @@ import type { BaseNode } from "../node.ts"
 import type { BaseParseContext } from "../parse.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import type { ArkError } from "./errors.ts"
+import type { ArkError, ArkErrors } from "./errors.ts"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
@@ -52,6 +52,7 @@ export interface ArkKinds {
 	generic: GenericRoot
 	module: InternalModule
 	error: ArkError
+	errors: ArkErrors
 	context: BaseParseContext
 }
 

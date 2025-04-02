@@ -164,6 +164,8 @@ export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
 {
+	readonly [arkKind] = "errors"
+
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {

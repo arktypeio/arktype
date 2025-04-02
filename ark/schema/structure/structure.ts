@@ -647,8 +647,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (this.undeclared === "reject" && !this.declaresKey(k)) {
 					if (traversalKind === "Allows") return false
 
+					// this should have its own error code:
+					// https://github.com/arktypeio/arktype/issues/1403
 					ctx.errorFromNodeContext({
-						// TODO: this should have its own error code
 						code: "predicate",
 						expected: "removed",
 						actual: "",
