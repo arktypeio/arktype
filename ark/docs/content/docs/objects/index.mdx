@@ -45,6 +45,18 @@ const MyObj = type({
 
 ### optional [#properties-optional]
 
+Optionality can either be expressed on the key or the corresponding value.
+
+We recommend using the key syntax by default because...
+
+- it mirrors TypeScript
+- it better reflects a _key presence_ constraint that has no effect on allowed values
+
+However, there are a few reasons you might want to use a value-embedded syntax:
+
+1. The key is a symbol (makes key-embedded syntax impossible)
+2. You want editor features like JSDoc and Go-to-definition
+
 <SyntaxTabs>
 	<SyntaxTab string>
 

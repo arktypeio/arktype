@@ -1,4 +1,3 @@
-import { writeFile } from "@ark/fs"
 import { type } from "arktype"
 
 const User = type({

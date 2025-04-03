@@ -779,6 +779,22 @@ contextualize(() => {
 			.type.errors("Type 'number' is not assignable to type 'string'")
 	})
 
+	it("string matcher no in", () => {
+		const discriminate = match.at("kind").strings({
+			a: o => o.kind,
+			b: o => o.kind,
+			c: o => o.kind,
+			default: "assert"
+		})
+		attest(discriminate).type.toString.snap()
+
+		const a = discriminate({ kind: "a", value: "a" })
+		const b = discriminate({ kind: "b", value: "b" })
+		const c = discriminate({ kind: "c", value: "c" })
+
+		attest<["a", "b", "c"]>([a, b, c]).snap(["a", "b", "c"])
+	})
+
 	type Discriminated =
 		| {
 				kind: "a"
@@ -841,5 +857,32 @@ contextualize(() => {
 		).type.errors(
 			`Object literal may only specify known properties, and 'd' does not exist`
 		)
+	})
+
+	it("string cases no default", () => {
+		const check = match
+			.at("foo")
+			.strings({
+				value: o => o.foo
+			})
+			.default("assert")
+
+		const out = check({ foo: "value" })
+
+		attest<"value">(out).equals("value")
+	})
+
+	it("string cases no default from in", () => {
+		const check = match
+			.in({ foo: "string" })
+			.at("foo")
+			.strings({
+				value: o => o.foo
+			})
+			.default("assert")
+
+		const out = check({ foo: "value" })
+
+		attest<"value">(out).equals("value")
 	})
 })
