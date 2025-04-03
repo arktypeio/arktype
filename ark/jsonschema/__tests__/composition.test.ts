@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { parseJsonSchema } from "@ark/jsonschema"
+import { parseJsonSchema } from "@ark/json-schema"
 
 contextualize(() => {
 	it("allOf", () => {

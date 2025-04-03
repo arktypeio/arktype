@@ -3,7 +3,7 @@ import {
 	parseJsonSchema,
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
-} from "@ark/jsonschema"
+} from "@ark/json-schema"
 
 contextualize(() => {
 	it("type object", () => {

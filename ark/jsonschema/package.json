@@ -1,13 +1,20 @@
 {
-	"name": "@ark/jsonschema",
+	"name": "@ark/json-schema",
 	"version": "0.0.1",
 	"private": true,
 	"license": "MIT",
-	"author": {
-		"name": "TizzySaurus",
-		"email": "tizzysaurus@gmail.com",
-		"url": "https://github.com/tizzysaurus"
-	},
+	"authors": [
+		{
+			"name": "TizzySaurus",
+			"email": "tizzysaurus@gmail.com",
+			"url": "https://github.com/tizzysaurus"
+		},
+		{
+			"name": "David Blass",
+			"email": "david@arktype.io",
+			"url": "https://arktype.io"
+		}
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git"
@@ -30,7 +37,6 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"bench": "ts ./__tests__/comparison.bench.ts",
 		"test": "ts ../repo/testPackage.ts",
 		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},

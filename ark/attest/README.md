@@ -20,6 +20,9 @@ _Note: This package is still in alpha! Your feedback will help us iterate toward
 
 To use attest's type assertions, you'll need to call our setup/cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
 
+> [!IMPORTANT]
+> If you run your tests in watch mode or otherwise iteratively during dev, you will want to enable [`--skipTypes` mode](#skiptypes).
+
 ### Vitest
 
 `vitest.config.ts`
@@ -197,7 +200,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 
 `skipTypes` is extremely useful for iterating quickly during development without having to typecheck your project to test runtime logic.
 
-When this setting is enabled, setup will skip typechecking and all assertions requiring type information will be skipped.
+When this setting is enabled, setup will skip type checking and all assertions requiring type information will be skipped.
 
 You likely want two scripts, one for running tests with types and one for tests without:
 

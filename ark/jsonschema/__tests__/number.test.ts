@@ -3,7 +3,7 @@ import {
 	parseJsonSchema,
 	writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage,
 	writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage
-} from "@ark/jsonschema"
+} from "@ark/json-schema"
 
 contextualize(() => {
 	it("type number", () => {
