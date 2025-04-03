@@ -1,22 +1,21 @@
 "use client"
 
-import { hasArkKind } from "@ark/schema"
-import { ParseError } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
-import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
 import prettierPluginEstree from "prettier/plugins/estree"
 import prettierPluginTypeScript from "prettier/plugins/typescript"
 import prettier from "prettier/standalone"
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { typeJs } from "../bundles/type.ts"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
 import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
-import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
+import { TypeExplorer } from "./TypeExplorer.tsx"
+import { defaultPlaygroundCode, editorFileUri, editorStyles } from "./utils.ts"
+import { ValidationResult } from "./ValidationResult.tsx"
 
 let onigasmLoaded = false
 let monacoInitialized = false
@@ -53,15 +52,6 @@ const initOnigasm = async () => {
 }
 
 if (globalThis.window !== undefined) initOnigasm()
-
-const editorStyles: CSSProperties = {
-	borderRadius: "16px",
-	boxShadow:
-		"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)",
-	transition: "all 0.3s cubic-bezier(.25,.8,.25,1)",
-	backdropFilter: "blur(16px)",
-	paddingTop: "16px"
-}
 
 const setupDynamicStyles = (
 	editor: Monaco.editor.IStandaloneCodeEditor,
@@ -119,6 +109,8 @@ export interface PlaygroundProps {
 	height?: string
 }
 
+interface ExecutionResult extends ValidationResult.Props, TypeExplorer.Props {}
+
 export const Playground = ({
 	visible = true,
 	resetTrigger = 0,
@@ -132,8 +124,10 @@ export const Playground = ({
 	const [loadingState, setLoaded] = useState<LoadingState>(
 		onigasmLoaded && monacoInitialized ? "loaded" : "unloaded"
 	)
-	const [validationResult, setValidationResult] =
-		useState<ValidationOutputProps>({})
+	const [validationResult, setValidationResult] = useState<ExecutionResult>({
+		result: undefined,
+		definition: undefined
+	})
 
 	const monaco = useMonaco()
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
@@ -159,12 +153,13 @@ export const Playground = ({
 			const { MyType, out } = result
 
 			setValidationResult({
-				definition: MyType?.expression,
-				result: out
+				result: out,
+				definition: MyType?.expression
 			})
 		} catch (e) {
 			setValidationResult({
-				result: `❌ RuntimeError: ${e instanceof Error ? e.message : String(e)}`
+				result: `❌ RuntimeError: ${e instanceof Error ? e.message : String(e)}`,
+				definition: undefined
 			})
 		}
 	}
@@ -402,62 +397,15 @@ export const Playground = ({
 							validateCode(editor.getValue())
 						}}
 					/>
-					<ValidationOutput {...validationResult} />
+					<div className="flex flex-col gap-4 h-full">
+						<TypeExplorer {...validationResult} />
+						<ValidationResult {...validationResult} />
+					</div>
 				</>
 			:	<div className="loading-container">
 					<div className="loading-text">Loading playground...</div>
 				</div>
 			}
-		</div>
-	)
-}
-
-interface ValidationOutputProps {
-	definition?: string | undefined
-	result?: type.errors | ParseError | unknown
-}
-
-const successBg = "#081617cc"
-const failureBg = "#170808cc"
-
-const ValidationOutput = ({ definition, result }: ValidationOutputProps) => {
-	console.log(result)
-	return (
-		<div className="flex flex-col gap-4 h-full">
-			<div className="flex-1 min-h-0">
-				<div
-					style={{ ...editorStyles, backgroundColor: "#08161791" }}
-					className="editor-bg h-full p-4 rounded-2xl overflow-auto"
-				>
-					<h3 className="text-fd-foreground font-semibold mb-2">Definition</h3>
-					<pre className="m-0 whitespace-pre-wrap">
-						<code>{definition ?? "// No type defined yet"}</code>
-					</pre>
-				</div>
-			</div>
-			<div className="flex-1 min-h-0">
-				<div
-					style={{
-						...editorStyles,
-						backgroundColor:
-							hasArkKind(result, "errors") ? failureBg : successBg
-					}}
-					className="h-full p-4 rounded-2xl overflow-auto"
-				>
-					<h3 className="text-fd-foreground font-semibold mb-2">Output</h3>
-					<pre className="m-0 whitespace-pre-wrap">
-						<code>
-							{result === undefined ?
-								null
-							: result instanceof type.errors ?
-								`❌ problems:\n\n${result.summary}`
-							: result instanceof ParseError ?
-								`❌ParseError:\n\n${result}`
-							:	`✅ data:\n\n${JSON.stringify(result, null, 2)}`}
-						</code>
-					</pre>
-				</div>
-			</div>
 		</div>
 	)
 }
