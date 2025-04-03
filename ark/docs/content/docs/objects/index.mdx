@@ -45,18 +45,6 @@ const MyObj = type({
 
 ### optional [#properties-optional]
 
-Optionality can either be expressed on the key or the corresponding value.
-
-We recommend using the key syntax by default because...
-
-- it mirrors TypeScript
-- it better reflects a _key presence_ constraint that has no effect on allowed values
-
-However, there are a few reasons you might want to use a value-embedded syntax:
-
-1. The key is a symbol (makes key-embedded syntax impossible)
-2. You want editor features like JSDoc and Go-to-definition
-
 <SyntaxTabs>
 	<SyntaxTab string>
 
@@ -98,6 +86,23 @@ const MyObj = type({
     </SyntaxTab>
 
 </SyntaxTabs>
+
+<Callout type="info" title="Should I use key or value syntax for optionality?">
+
+    Optionality can either be expressed on the key or the corresponding value.
+
+    We recommend using the key syntax by default because...
+
+    - it mirrors TypeScript
+    - it better reflects a _key presence_ constraint that has no effect on allowed values
+
+    However, there are a few reasons you might want to use a value-embedded syntax:
+
+    1. The key is a symbol (makes key-embedded syntax impossible)
+    2. You want editor features like JSDoc and go-to-definition for the key (can't work if the key name changes)
+    3. You really hate having to quote key names
+
+</Callout>
 
 <Callout type="warn" title="Optional properties cannot be present with the value undefined">
 

@@ -9,7 +9,6 @@ import {
 	Callable,
 	domainOf,
 	throwParseError,
-	type autocomplete,
 	type conform,
 	type ErrorMessage,
 	type ErrorType,
