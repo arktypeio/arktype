@@ -1,6 +1,6 @@
 import { domainOf } from "./domain.ts"
 import { throwInternalError } from "./errors.ts"
-import { fileName } from "./fileName.ts"
+import { isomorphic } from "./isomorphic.ts"
 import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 
 // Eventually we can just import from package.json in the source itself
@@ -12,7 +12,7 @@ export const arkUtilVersion = "0.45.6"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: fileName(),
+	filename: isomorphic.fileName(),
 	FileConstructor
 }
 

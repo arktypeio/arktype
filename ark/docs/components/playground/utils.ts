@@ -1,5 +1,4 @@
 import type * as Monaco from "monaco-editor"
-import type { CSSProperties } from "react"
 
 export const defaultPlaygroundCode = `import { type } from "arktype"
 
@@ -18,15 +17,6 @@ export const editorFileUri = "file:///main.ts"
 
 export const successBg = "#081617cc"
 export const failureBg = "#170808cc"
-
-export const editorStyles: CSSProperties = {
-	borderRadius: "16px",
-	boxShadow:
-		"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)",
-	transition: "all 0.3s cubic-bezier(.25,.8,.25,1)",
-	backdropFilter: "blur(16px)",
-	paddingTop: "16px"
-}
 
 type RequestMap = Map<string, number>
 

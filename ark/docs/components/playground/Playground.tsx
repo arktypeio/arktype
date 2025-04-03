@@ -14,53 +14,29 @@ import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
 import { TypeExplorer } from "./TypeExplorer.tsx"
-import { defaultPlaygroundCode, editorFileUri, editorStyles } from "./utils.ts"
+import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
 import { ValidationResult } from "./ValidationResult.tsx"
 
-let onigasmLoaded = false
 let monacoInitialized = false
 let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
 	null
-
-let onigasmPromise: Promise<void> | null = null
 
 // remove the package's exports since they will fail in with new Function()
 // instead, they'll be defined directly in the scope being executed
 const ambientArktypeJs = typeJs.slice(0, typeJs.lastIndexOf("export {"))
 const validationDelayMs = 500
 
-const initOnigasm = async () => {
-	if (onigasmPromise) return onigasmPromise
-
-	if (!onigasmLoaded) {
-		onigasmPromise = loadWASM("/onigasm.wasm")
-		onigasmLoaded = true
-
-		return onigasmPromise
-	}
-
-	return Promise.resolve()
-}
-
-if (globalThis.window !== undefined) initOnigasm()
+// start loading onigasm in the background even if the Playground is not displayed
+const onigasmLoaded = loadWASM("/onigasm.wasm").catch(e => {
+	// this often occurs during dev server reloading and can be ignored
+	if (!String(e).includes("subsequent calls are not allowed")) throw e
+})
 
 const setupDynamicStyles = (
 	editor: Monaco.editor.IStandaloneCodeEditor,
 	monaco: typeof Monaco,
 	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
 ): void => {
-	const editorElement = editor.getDomNode()
-
-	if (editorElement) {
-		Object.assign(editorElement.style, editorStyles)
-
-		const guard = editorElement.querySelector(
-			".overflow-guard"
-		) as HTMLElement | null
-
-		if (guard) guard.style.borderRadius = "16px"
-	}
-
 	setupErrorLens(monaco, editor, tsLanguageService)
 }
 
@@ -68,13 +44,7 @@ const setupMonaco = async (
 	monaco: typeof Monaco
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
 	if (!monacoInitialized) {
-		try {
-			await initOnigasm()
-		} catch (e) {
-			// this often happens during dev, ignore it
-			if (!String(e).includes("subsequent calls are not allowed"))
-				console.error(e)
-		}
+		await onigasmLoaded
 
 		monaco.editor.defineTheme("arkdark", theme)
 
@@ -120,7 +90,7 @@ export const Playground = ({
 	height = "100%"
 }: PlaygroundProps) => {
 	const [loadingState, setLoaded] = useState<LoadingState>(
-		onigasmLoaded && monacoInitialized ? "loaded" : "unloaded"
+		monacoInitialized ? "loaded" : "unloaded"
 	)
 	const [validationResult, setValidationResult] = useState<ExecutionResult>({
 		result: undefined,
@@ -186,15 +156,6 @@ export const Playground = ({
 			}
 		}
 	}, [])
-
-	useEffect(() => {
-		if (editorRef.current) {
-			const disposable = editorRef.current.onDidChangeModelContent(() => {
-				validateCode(editorRef.current?.getValue() ?? "")
-			})
-			return () => disposable.dispose()
-		}
-	}, [editorRef.current])
 
 	useEffect(() => {
 		if (editorRef.current && resetTrigger > 0) editorRef.current.setValue(code)
@@ -394,14 +355,16 @@ export const Playground = ({
 								setupDynamicStyles(editor, monaco, tsLanguageServiceInstance)
 							validateCode(editor.getValue())
 						}}
+						onChange={code => code && validateCode(code)}
 					/>
 					<div className="flex flex-col gap-4 h-full">
 						<TypeExplorer {...validationResult} />
 						<ValidationResult {...validationResult} />
 					</div>
 				</>
-			:	<div className="loading-container">
-					<div className="loading-text">Loading playground...</div>
+			:	<div className="flex items-center justify-center h-full gap-4">
+					<div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+					<p className="ml-4 text-lg text-gray-600">Loading playground...</p>
 				</div>
 			}
 		</div>
