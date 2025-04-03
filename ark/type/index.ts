@@ -1,6 +1,8 @@
 export {
 	ArkError,
 	ArkErrors,
+	Traversal,
+	TraversalError,
 	type ArkSchemaConfig,
 	type ArkSchemaScopeConfig,
 	type JsonSchema
