@@ -27,10 +27,12 @@ const ambientArktypeJs = typeJs.slice(0, typeJs.lastIndexOf("export {"))
 const validationDelayMs = 500
 
 // start loading onigasm in the background even if the Playground is not displayed
-const onigasmLoaded = loadWASM("/onigasm.wasm").catch(e => {
-	// this often occurs during dev server reloading and can be ignored
-	if (!String(e).includes("subsequent calls are not allowed")) throw e
-})
+const onigasmLoaded =
+	globalThis.window &&
+	loadWASM("/onigasm.wasm").catch(e => {
+		// this often occurs during dev server reloading and can be ignored
+		if (!String(e).includes("subsequent calls are not allowed")) throw e
+	})
 
 const setupDynamicStyles = (
 	editor: Monaco.editor.IStandaloneCodeEditor,
