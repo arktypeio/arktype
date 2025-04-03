@@ -2,6 +2,75 @@ import type * as Monaco from "monaco-editor"
 import type { CompletionInfo, ScriptElementKind } from "typescript"
 import { createPositionHash, isDuplicateRequest } from "./utils.ts"
 
+export const getCompletions = async (
+	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
+	model: Monaco.editor.ITextModel,
+	position: Monaco.Position
+) => {
+	const uri = model.uri.toString()
+	const offset = model.getOffsetAt(position)
+	return await tsLanguageService.getCompletionsAtPosition(uri, offset)
+}
+
+export const setupCompletionProvider = (
+	monaco: typeof Monaco,
+	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
+) =>
+	monaco.languages.registerCompletionItemProvider("typescript", {
+		triggerCharacters: [".", '"', "'", "`", "/", "@", "<", "#", " "],
+		provideCompletionItems: async (model, position) => {
+			const positionHash = createPositionHash(model, position)
+			if (isDuplicateRequest(positionHash)) return { suggestions: [] }
+
+			const completions = await getCompletions(
+				tsLanguageService,
+				model,
+				position
+			)
+			if (!completions) return { suggestions: [] }
+
+			return formatCompletions(completions, model, position)
+		}
+	})
+
+const formatCompletions = (
+	completions: CompletionInfo,
+	model: Monaco.editor.ITextModel,
+	position: Monaco.Position
+) => {
+	const suggestions = completions.entries.map(entry => {
+		const start =
+			entry.replacementSpan ?
+				model.getPositionAt(entry.replacementSpan.start)
+			:	position
+
+		const end =
+			entry.replacementSpan ?
+				model.getPositionAt(
+					entry.replacementSpan.start + entry.replacementSpan.length
+				)
+			:	position
+
+		const range = {
+			startLineNumber: start.lineNumber,
+			startColumn: start.column,
+			endLineNumber: end.lineNumber,
+			endColumn: end.column
+		}
+
+		return {
+			label: entry.name,
+			kind: tsToMonacoCompletionKinds[entry.kind],
+			insertText: entry.name,
+			range,
+			sortText: entry.sortText,
+			detail: entry.kind
+		}
+	})
+
+	return { suggestions }
+}
+
 // Mirror Monaco.languages.CompletionItemKind
 // since importing Monaco directly at runtime causes issues
 const MonacoCompletionKind = {
@@ -92,72 +161,3 @@ const tsToMonacoCompletionKinds: Record<
 	accessor: MonacoCompletionKind.Keyword,
 	"external module name": MonacoCompletionKind.Module
 }
-
-const getCompletions = async (
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker,
-	model: Monaco.editor.ITextModel,
-	position: Monaco.Position
-) => {
-	const uri = model.uri.toString()
-	const offset = model.getOffsetAt(position)
-	return await tsLanguageService.getCompletionsAtPosition(uri, offset)
-}
-
-const formatCompletions = (
-	completions: CompletionInfo,
-	model: Monaco.editor.ITextModel,
-	position: Monaco.Position
-) => {
-	const suggestions = completions.entries.map(entry => {
-		const start =
-			entry.replacementSpan ?
-				model.getPositionAt(entry.replacementSpan.start)
-			:	position
-
-		const end =
-			entry.replacementSpan ?
-				model.getPositionAt(
-					entry.replacementSpan.start + entry.replacementSpan.length
-				)
-			:	position
-
-		const range = {
-			startLineNumber: start.lineNumber,
-			startColumn: start.column,
-			endLineNumber: end.lineNumber,
-			endColumn: end.column
-		}
-
-		return {
-			label: entry.name,
-			kind: tsToMonacoCompletionKinds[entry.kind],
-			insertText: entry.name,
-			range,
-			sortText: entry.sortText,
-			detail: entry.kind
-		}
-	})
-
-	return { suggestions }
-}
-
-export const setupCompletionsProvider = (
-	monaco: typeof Monaco,
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
-) =>
-	monaco.languages.registerCompletionItemProvider("typescript", {
-		triggerCharacters: [".", '"', "'", "`", "/", "@", "<", "#", " "],
-		provideCompletionItems: async (model, position) => {
-			const positionHash = createPositionHash(model, position)
-			if (isDuplicateRequest(positionHash)) return { suggestions: [] }
-
-			const completions = await getCompletions(
-				tsLanguageService,
-				model,
-				position
-			)
-			if (!completions) return { suggestions: [] }
-
-			return formatCompletions(completions, model, position)
-		}
-	})

@@ -1,26 +1,11 @@
 import type * as Monaco from "monaco-editor"
 import { createPositionHash, isDuplicateRequest } from "./utils.ts"
 
-export const getHoverRange = (
-	model: Monaco.editor.ITextModel,
-	textSpan: { start: number; length: number }
-): Monaco.IRange => {
-	const start = model.getPositionAt(textSpan.start)
-	const end = model.getPositionAt(textSpan.start + textSpan.length)
-
-	return {
-		startLineNumber: start.lineNumber,
-		startColumn: start.column,
-		endLineNumber: end.lineNumber,
-		endColumn: end.column
-	}
-}
-
-export type DisplayPart = {
+type DisplayPart = {
 	text: string
 }
 
-export const formatHoverInfo = (
+const formatHoverInfo = (
 	hoverInfo: any,
 	model: Monaco.editor.ITextModel
 ): Monaco.languages.ProviderResult<Monaco.languages.Hover> => {
@@ -46,6 +31,21 @@ export const formatHoverInfo = (
 	return {
 		contents,
 		range: getHoverRange(model, hoverInfo.textSpan)
+	}
+}
+
+const getHoverRange = (
+	model: Monaco.editor.ITextModel,
+	textSpan: { start: number; length: number }
+): Monaco.IRange => {
+	const start = model.getPositionAt(textSpan.start)
+	const end = model.getPositionAt(textSpan.start + textSpan.length)
+
+	return {
+		startLineNumber: start.lineNumber,
+		startColumn: start.column,
+		endLineNumber: end.lineNumber,
+		endColumn: end.column
 	}
 }
 

@@ -4,7 +4,7 @@ import { CodeIcon, ExpandIcon, Undo2Icon } from "lucide-react"
 import Link from "next/link.js"
 import { posthog } from "posthog-js"
 import { useEffect, useRef, useState } from "react"
-import { Playground } from "./Playground.tsx"
+import { Playground } from "./playground/Playground.tsx"
 
 export type AutoplayDemoProps = React.DetailedHTMLProps<
 	React.VideoHTMLAttributes<HTMLVideoElement>,

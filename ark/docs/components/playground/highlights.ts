@@ -1,14 +1,17 @@
+import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json" with { type: "json" }
 import arkdarkColors from "arkthemes/arkdark.json" with { type: "json" }
 import type * as Monaco from "monaco-editor"
+import { wireTmGrammars } from "monaco-editor-textmate"
+import { Registry } from "monaco-textmate"
 
-export interface VSCodeTheme {
+interface VSCodeTheme {
 	colors: {
 		[name: string]: string
 	}
 	tokenColors: TokenColor[]
 }
 
-export interface TokenColor {
+interface TokenColor {
 	scope: string | string[]
 	settings: {
 		foreground?: string
@@ -17,7 +20,7 @@ export interface TokenColor {
 	}
 }
 
-export const vsCodeThemeToMonaco = (
+const vsCodeThemeToMonaco = (
 	theme: VSCodeTheme
 ): Monaco.editor.IStandaloneThemeData => ({
 	base: "vs-dark",
@@ -31,3 +34,15 @@ export const vsCodeThemeToMonaco = (
 })
 
 export const theme = vsCodeThemeToMonaco(arkdarkColors)
+
+export const setupTextmateGrammar = async (monaco: typeof Monaco) =>
+	await wireTmGrammars(
+		monaco,
+		new Registry({
+			getGrammarDefinition: async () => ({
+				format: "json",
+				content: arktypeTextmate
+			})
+		}),
+		new Map().set("typescript", "source.ts")
+	)
