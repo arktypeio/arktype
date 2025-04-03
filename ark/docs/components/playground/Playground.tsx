@@ -33,17 +33,8 @@ const initOnigasm = async () => {
 	if (onigasmPromise) return onigasmPromise
 
 	if (!onigasmLoaded) {
-		try {
-			onigasmPromise = loadWASM("/onigasm.wasm")
-			onigasmLoaded = true
-		} catch (e) {
-			if (String(e).includes("subsequent calls are not allowed")) {
-				// this often happens during dev, ignore it
-				return Promise.resolve()
-			}
-			console.error(e)
-			onigasmPromise = null
-		}
+		onigasmPromise = loadWASM("/onigasm.wasm")
+		onigasmLoaded = true
 
 		return onigasmPromise
 	}
@@ -77,7 +68,14 @@ const setupMonaco = async (
 	monaco: typeof Monaco
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
 	if (!monacoInitialized) {
-		await initOnigasm()
+		try {
+			await initOnigasm()
+		} catch (e) {
+			// this often happens during dev, ignore it
+			if (!String(e).includes("subsequent calls are not allowed"))
+				console.error(e)
+		}
+
 		monaco.editor.defineTheme("arkdark", theme)
 
 		if (!tsLanguageServiceInstance) {
