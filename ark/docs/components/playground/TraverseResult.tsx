@@ -28,13 +28,12 @@ export const TraverseResult = ({ traversed }: TraverseResult.Props) => {
 				<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
 					{resultKind === "failure" ? "ArkErrors" : "Out"}
 				</h3>
-				{resultKind === "none" ?
-					<>
-						(<code>out</code> variable was never set)
-					</>
-				:	<pre className="m-0 whitespace-pre-wrap">
+				{
+					<pre className="m-0 whitespace-pre-wrap">
 						<code>
-							{resultKind === "failure" ?
+							{resultKind === "none" ?
+								"(variable was never set)"
+							: resultKind === "failure" ?
 								(traversed as type.errors).summary
 							:	printable(traversed, 4)}
 						</code>

@@ -2,6 +2,7 @@
 
 import { unset } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
+import { type } from "arktype"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
 import React, {
@@ -70,7 +71,7 @@ export const Playground = ({
 		monacoInitialized ? "loaded" : "unloaded"
 	)
 	const [validationResult, setValidationResult] = useState<ExecutionResult>({
-		parsed: unset,
+		parsed: type.unknown,
 		traversed: unset
 	})
 

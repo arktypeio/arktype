@@ -2,6 +2,8 @@ import type * as Monaco from "monaco-editor"
 
 export const playgroundTypeVariableName = "Thing"
 
+export const playgroundOutVariableName = "out"
+
 export const defaultPlaygroundCode = `import { type } from "arktype"
 
 const ${playgroundTypeVariableName} = type({
@@ -9,7 +11,7 @@ const ${playgroundTypeVariableName} = type({
     age: "number"
 })
 
-const out = ${playgroundTypeVariableName}({
+const ${playgroundOutVariableName} = ${playgroundTypeVariableName}({
     name: "Anders Hejlsberg",
     age: null
 })

@@ -2,7 +2,10 @@ import { unset } from "@ark/util"
 import * as arktypeExports from "arktype"
 import type { ParseResult } from "./ParseResult.tsx"
 import type { TraverseResult } from "./TraverseResult.tsx"
-import { playgroundTypeVariableName } from "./utils.ts"
+import {
+	playgroundOutVariableName,
+	playgroundTypeVariableName
+} from "./utils.ts"
 
 export interface ExecutionResult {
 	parsed: ParseResult
@@ -18,10 +21,13 @@ export const executeCode = (code: string): ExecutionResult => {
 
 	try {
 		const wrappedCode = `${isolatedUserCode}
-        return { ${playgroundTypeVariableName}, out }`
+        return { ${playgroundTypeVariableName}, ${playgroundOutVariableName} }`
 
 		const result = new Function(wrappedCode)()
-		const { [playgroundTypeVariableName]: parsed, out: traversed } = result
+		const {
+			[playgroundTypeVariableName]: parsed,
+			[playgroundOutVariableName]: traversed
+		} = result
 
 		return {
 			parsed,
@@ -30,14 +36,7 @@ export const executeCode = (code: string): ExecutionResult => {
 	} catch (e) {
 		return {
 			parsed:
-				e instanceof Error ?
-					(
-						e instanceof ReferenceError &&
-						e.message === `${playgroundTypeVariableName} is not defined`
-					) ?
-						unset
-					:	e
-				:	unset,
+				e instanceof Error ? e : new ReferenceError(playgroundTypeVariableName),
 			traversed: unset
 		}
 	}
