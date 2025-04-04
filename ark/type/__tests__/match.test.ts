@@ -854,9 +854,7 @@ contextualize(() => {
 					// @ts-expect-error
 					d: o => o.value
 				})
-		).type.errors(
-			`Object literal may only specify known properties, and 'd' does not exist`
-		)
+		).type.errors("d must be a possible string value")
 	})
 
 	it("string cases no default", () => {

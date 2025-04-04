@@ -238,8 +238,7 @@ const PlaygroundEditor = React.memo(
 						quickSuggestions: { strings: "on" },
 						quickSuggestionsDelay: 0,
 						smoothScrolling: true,
-						automaticLayout: true,
-						fontSize: 32
+						automaticLayout: true
 					}}
 					onMount={handleMount}
 					onChange={handleChange}
