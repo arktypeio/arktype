@@ -216,10 +216,14 @@ div.twoslash-popup-container {
 		0 15px 30px 0 rgba(0, 0, 0, 0.22);
 	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 	backdrop-filter: blur(16px);
-	padding-top: 16px;
 }
 
 /* Add border radius to Monaco editor's overflow guard */
 .monaco-editor .overflow-guard {
 	border-radius: 16px;
+}
+
+.overflow-guard,
+.margin {
+	padding-top: 16px;
 }

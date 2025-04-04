@@ -68,28 +68,22 @@ type LoadingState = "unloaded" | "loading" | "loaded"
 
 export interface PlaygroundProps {
 	visible?: boolean
-	resetTrigger?: number
 	/** @default "typescript" */
 	lang?: string
 	style?: React.CSSProperties
 	className?: string
 	/** Initial code to display in the playground */
 	code?: string
-	fullHeight?: boolean
-	height?: string
 }
 
 interface ExecutionResult extends ValidationResult.Props, TypeExplorer.Props {}
 
 export const Playground = ({
 	visible = true,
-	resetTrigger = 0,
 	lang = "typescript",
 	style = {},
 	className = "",
-	code = defaultPlaygroundCode,
-	fullHeight = false,
-	height = "100%"
+	code = defaultPlaygroundCode
 }: PlaygroundProps) => {
 	const [loadingState, setLoaded] = useState<LoadingState>(
 		monacoInitialized ? "loaded" : "unloaded"
@@ -103,11 +97,11 @@ export const Playground = ({
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
 
 	useEffect(() => {
-		if (editorRef.current && resetTrigger > 0) {
+		if (editorRef.current) {
 			editorRef.current.setValue(code)
 			validateCode(code)
 		}
-	}, [resetTrigger, code])
+	}, [code])
 
 	const validateImmediately = (code: string) => {
 		const isolatedUserCode = code
@@ -158,10 +152,6 @@ export const Playground = ({
 			}
 		}
 	}, [])
-
-	useEffect(() => {
-		if (editorRef.current && resetTrigger > 0) editorRef.current.setValue(code)
-	}, [resetTrigger, code])
 
 	useEffect(() => {
 		if (monaco && monacoInitialized && tsLanguageServiceInstance) {
@@ -325,21 +315,20 @@ export const Playground = ({
 		}
 	}, [editorRef.current])
 
-	const containerStyle = {
-		display: visible ? "grid" : "none",
-		gridTemplateColumns: "1fr 1fr",
-		gap: "1rem",
-		height: fullHeight ? "calc(100vh - 64px)" : height,
-		width: "100%",
-		...style
-	}
-
 	return (
-		<div className={className} style={containerStyle}>
+		<div
+			className={className}
+			style={{
+				display: visible ? "grid" : "none",
+				gridTemplateColumns: "1fr 1fr",
+				gap: "1rem",
+				height: "calc(100vh - 64px)",
+				...style
+			}}
+		>
 			{loadingState === "loaded" && monaco ?
 				<>
 					<Editor
-						height="100%"
 						width="100%"
 						defaultLanguage={lang}
 						defaultValue={code}
@@ -349,7 +338,8 @@ export const Playground = ({
 							minimap: { enabled: false },
 							scrollBeyondLastLine: false,
 							quickSuggestions: { strings: "on" },
-							quickSuggestionsDelay: 0
+							quickSuggestionsDelay: 0,
+							smoothScrolling: true
 						}}
 						onMount={(editor, monaco) => {
 							editorRef.current = editor
