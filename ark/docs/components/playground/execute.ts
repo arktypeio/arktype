@@ -1,5 +1,5 @@
 import { unset } from "@ark/util"
-import { typeJs } from "../bundles/type.ts"
+import * as arktypeExports from "arktype"
 import type { ParseResult } from "./ParseResult.tsx"
 import type { TraverseResult } from "./TraverseResult.tsx"
 
@@ -7,7 +7,7 @@ export interface ExecutionResult
 	extends ParseResult.Props,
 		TraverseResult.Props {}
 
-const ambientArktypeJs = typeJs.slice(0, typeJs.lastIndexOf("export {"))
+if (!("type" in globalThis)) Object.assign(globalThis, arktypeExports)
 
 export const executeCode = (code: string): ExecutionResult => {
 	const isolatedUserCode = code
@@ -15,8 +15,7 @@ export const executeCode = (code: string): ExecutionResult => {
 		.replaceAll(/^\s*export\s+const/gm, "const")
 
 	try {
-		const wrappedCode = `${ambientArktypeJs}
-        ${isolatedUserCode}
+		const wrappedCode = `${isolatedUserCode}
         return { MyType, out }`
 
 		const result = new Function(wrappedCode)()

@@ -197,7 +197,6 @@ div.twoslash-popup-container {
 
 #nd-home-layout,
 #nd-nav {
-	margin-top: 0;
 	overflow: hidden;
 	transition: margin-top 0.3s ease;
 }
@@ -205,7 +204,7 @@ div.twoslash-popup-container {
 /* if release banner is visible, add top offset to home navbar and layout equal to its height */
 :root:has(.release-banner:not([hidden]):not(.hidden)) #nd-home-layout,
 :root:has(.release-banner:not([hidden]):not(.hidden)) #nd-nav {
-	margin-top: 3rem;
+	margin-top: 3.5rem;
 }
 
 .glass-container,
@@ -217,7 +216,7 @@ div.twoslash-popup-container {
 	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 	backdrop-filter: blur(16px);
 	/* without this Monaco ends up adding a 1px outline at the top of the editor for some reason */
-	outline-width: 0px;
+	outline-width: 0px !important;
 }
 
 /* Add border radius to Monaco editor's overflow guard */

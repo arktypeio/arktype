@@ -1,7 +1,7 @@
 import type * as Monaco from "monaco-editor"
-import { schemaDts } from "../bundles/schema.ts"
-import { typeDts } from "../bundles/type.ts"
-import { utilDts } from "../bundles/util.ts"
+import { schemaDts } from "../dts/schema.ts"
+import { typeDts } from "../dts/type.ts"
+import { utilDts } from "../dts/util.ts"
 import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
 
 const configureTypeScript = (monaco: typeof Monaco): void => {

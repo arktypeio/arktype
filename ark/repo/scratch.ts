@@ -23,7 +23,7 @@ ConfiguredUser.get("name").description // A STRING
 ConfiguredUser.get("platform").description // "android" | "ios"
 ConfiguredUser.get("version").description // a number, A STRING or undefined
 
-import { typeJs } from "../docs/components/bundles/type.ts"
+import { typeJs } from "../docs/components/dts/type.ts"
 
 new Function(`${typeJs.slice(0, typeJs.lastIndexOf("export {"))}
 const MyType = type({

@@ -168,8 +168,8 @@ export const Playground = ({
 type PlaygroundEditorProps = {
 	defaultValue: string
 	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
-	validateIncremental: (code: string) => void // Debounced
-	validateNow: (code: string) => void // Immediate
+	validateIncremental: (code: string) => void
+	validateNow: (code: string) => void
 }
 
 const PlaygroundEditor = ({
