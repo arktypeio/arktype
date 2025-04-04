@@ -15,14 +15,21 @@ export default function PlaygroundPage() {
 			{...baseOptions}
 			style={{
 				paddingLeft: "1rem",
-				paddingRight: "1rem"
+				paddingRight: "1rem",
+				display: "flex",
+				flexDirection: "column",
+				height: "100vh" // Make the layout take the full viewport height
 			}}
 			nav={{
 				...baseOptions.nav,
 				children: <FloatYourBoat kind="header" />
 			}}
 		>
-			<Playground initialValue={defaultPlaygroundCode} withResults={true} />
+			<div className="flex-1 flex flex-col items-center justify-center py-8">
+				<div className="w-[80vw] h-[80vh]">
+					<Playground initialValue={defaultPlaygroundCode} withResults={true} />
+				</div>
+			</div>
 		</HomeLayout>
 	)
 }

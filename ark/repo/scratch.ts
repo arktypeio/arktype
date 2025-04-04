@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { type, type ArkErrors } from "arktype"
 
 const User = type({
 	name: "string",

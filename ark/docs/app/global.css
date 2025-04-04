@@ -216,6 +216,8 @@ div.twoslash-popup-container {
 		0 15px 30px 0 rgba(0, 0, 0, 0.22);
 	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 	backdrop-filter: blur(16px);
+	/* without this Monaco ends up adding a 1px outline at the top of the editor for some reason */
+	outline-width: 0px;
 }
 
 /* Add border radius to Monaco editor's overflow guard */

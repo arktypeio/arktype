@@ -3,19 +3,144 @@
 import Editor, { useMonaco } from "@monaco-editor/react"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
-import prettierPluginEstree from "prettier/plugins/estree"
-import prettierPluginTypeScript from "prettier/plugins/typescript"
-import prettier from "prettier/standalone"
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react"
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
+import { useDebouncedCallback } from "use-debounce"
 import { typeJs } from "../bundles/type.ts"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
+import { formatEditor } from "./format.ts"
 import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
 import { TypeExplorer } from "./TypeExplorer.tsx"
 import { editorFileUri } from "./utils.ts"
 import { ValidationResult } from "./ValidationResult.tsx"
+
+export const Playground = ({
+	initialValue,
+	style,
+	className,
+	withResults
+}: PlaygroundProps) => {
+	const [loadingState, setLoaded] = useState<LoadingState>(
+		monacoInitialized ? "loaded" : "unloaded"
+	)
+	const [validationResult, setValidationResult] = useState<ExecutionResult>({
+		result: undefined,
+		definition: undefined
+	})
+
+	const monaco = useMonaco()
+	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
+
+	// ts + monaco initialization
+	useEffect(() => {
+		if (monaco && monacoInitialized && tsLanguageServiceInstance) {
+			setLoaded("loaded")
+			return
+		}
+
+		if (monaco && loadingState !== "loaded") {
+			if (loadingState === "unloaded") setLoaded("loading")
+			else {
+				setupMonaco(monaco)
+					.then(() => {
+						setLoaded("loaded")
+					})
+					.catch(err => {
+						console.error("Failed to setup Monaco:", err)
+						setLoaded("unloaded")
+					})
+			}
+		}
+	}, [monaco, loadingState])
+
+	// Define the core validation logic. useCallback ensures it has a stable reference
+	// unless its dependencies change (none in this case, but good practice).
+	const validateNow = useCallback((code: string) => {
+		const isolatedUserCode = code
+			.replaceAll(/^\s*import .*\n/g, "")
+			.replaceAll(/^\s*export\s+const/gm, "const")
+
+		try {
+			const wrappedCode = `${ambientArktypeJs}
+        ${isolatedUserCode}
+        return { MyType, out }`
+
+			const result = new Function(wrappedCode)()
+			const { MyType, out } = result
+
+			setValidationResult({
+				result: out,
+				definition: MyType?.expression
+			})
+		} catch (e) {
+			setValidationResult({
+				result: `❌ RuntimeError: ${e instanceof Error ? e.message : String(e)}`,
+				definition: undefined
+			})
+		}
+	}, [])
+
+	const debouncedValidateCode = useDebouncedCallback(
+		validateNow,
+		validationDelayMs
+	)
+
+	// on-load validation
+	useEffect(() => {
+		if (editorRef.current) {
+			const currentEditorValue = editorRef.current.getValue()
+			if (initialValue !== currentEditorValue) {
+				editorRef.current.setValue(initialValue)
+				validateNow(initialValue)
+			}
+		}
+	}, [initialValue, validateNow])
+
+	// on-save (ctrl+s) formatting + validation
+	useEffect(() => {
+		const editor = editorRef.current
+		if (!editor) return
+
+		const handleKeyDown = async (e: KeyboardEvent) => {
+			if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+				e.preventDefault()
+				const formattedCode = await formatEditor(editor)
+				validateNow(formattedCode ?? editor.getValue())
+			}
+		}
+
+		window.addEventListener("keydown", handleKeyDown)
+		return () => window.removeEventListener("keydown", handleKeyDown)
+	}, [editorRef.current, validateNow])
+
+	return (
+		<div
+			className={className}
+			style={{
+				display: "grid",
+				gridTemplateColumns: withResults ? "1fr minmax(0, 450px)" : "1fr",
+				gap: "1rem",
+				height: "100%",
+				outline: "none",
+				...style
+			}}
+		>
+			{loadingState === "loaded" && monaco ?
+				<>
+					<PlaygroundEditor
+						defaultValue={initialValue}
+						validateIncremental={debouncedValidateCode}
+						validateNow={validateNow}
+						editorRef={editorRef}
+					/>
+					{withResults && <PlaygroundResults {...validationResult} />}
+				</>
+			:	<PlaygroundLoader />}
+		</div>
+	)
+}
 
 let monacoInitialized = false
 let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
@@ -75,277 +200,18 @@ export interface PlaygroundProps {
 
 interface ExecutionResult extends ValidationResult.Props, TypeExplorer.Props {}
 
-export const Playground = ({
-	initialValue,
-	style,
-	className,
-	withResults
-}: PlaygroundProps) => {
-	const [loadingState, setLoaded] = useState<LoadingState>(
-		monacoInitialized ? "loaded" : "unloaded"
-	)
-	const [validationResult, setValidationResult] = useState<ExecutionResult>({
-		result: undefined,
-		definition: undefined
-	})
-
-	const monaco = useMonaco()
-	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
-
-	useEffect(() => {
-		if (editorRef.current) {
-			editorRef.current.setValue(initialValue)
-			validateCode(initialValue)
-		}
-	}, [initialValue])
-
-	const validateImmediately = (code: string) => {
-		const isolatedUserCode = code
-			.replaceAll(/^\s*import .*\n/g, "")
-			.replaceAll(/^\s*export\s+const/gm, "const")
-
-		try {
-			const wrappedCode = `${ambientArktypeJs}
-        ${isolatedUserCode}
-        return { MyType, out }`
-
-			const result = new Function(wrappedCode)()
-			const { MyType, out } = result
-
-			setValidationResult({
-				result: out,
-				definition: MyType?.expression
-			})
-		} catch (e) {
-			setValidationResult({
-				result: `❌ RuntimeError: ${e instanceof Error ? e.message : String(e)}`,
-				definition: undefined
-			})
-		}
-	}
-
-	const validateCode = useMemo(() => {
-		let timeoutId: NodeJS.Timeout | null = null
-		let lastValidationTime = 0
-
-		return (code: string) => {
-			const now = Date.now()
-			const timeSinceLastValidation = now - lastValidationTime
-
-			if (timeoutId) {
-				clearTimeout(timeoutId)
-				timeoutId = null
-			}
-
-			if (timeSinceLastValidation > validationDelayMs * 2) {
-				lastValidationTime = now
-				validateImmediately(code)
-			} else {
-				timeoutId = setTimeout(() => {
-					lastValidationTime = Date.now()
-					validateImmediately(code)
-				}, validationDelayMs)
-			}
-		}
-	}, [])
-
-	useEffect(() => {
-		if (monaco && monacoInitialized && tsLanguageServiceInstance) {
-			setLoaded("loaded")
-			return
-		}
-
-		if (monaco && loadingState !== "loaded") {
-			if (loadingState === "unloaded") setLoaded("loading")
-			else {
-				setupMonaco(monaco)
-					.then(() => {
-						setLoaded("loaded")
-					})
-					.catch(err => {
-						console.error("Failed to setup Monaco:", err)
-						setLoaded("unloaded")
-					})
-			}
-		}
-	}, [monaco, loadingState])
-
-	useEffect(() => {
-		if (editorRef.current) {
-			const handleKeyDown = async (e: KeyboardEvent) => {
-				if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-					e.preventDefault()
-
-					if (!editorRef.current) return
-
-					try {
-						const editor = editorRef.current
-						// Store current state before formatting
-						const selections = editor.getSelections()
-						const scrollPosition = {
-							scrollLeft: editor.getScrollLeft(),
-							scrollTop: editor.getScrollTop()
-						}
-
-						const currentCode = editor.getValue()
-						const formattedCode = await prettier.format(currentCode, {
-							parser: "typescript",
-							plugins: [prettierPluginEstree, prettierPluginTypeScript],
-							semi: false,
-							trailingComma: "none",
-							experimentalTernaries: true
-						})
-
-						// Calculate relative positions before changing content
-						const relativePositions = selections?.map(selection => {
-							const model = editor.getModel()
-							if (!model) return null
-
-							const startOffset = model.getOffsetAt(
-								selection.getStartPosition()
-							)
-							const endOffset = model.getOffsetAt(selection.getEndPosition())
-							return {
-								start: startOffset / currentCode.length,
-								end: endOffset / currentCode.length,
-								direction: selection.getDirection()
-							}
-						})
-
-						// Apply formatted code
-						editor.setValue(formattedCode)
-
-						// Restore positions based on relative offsets
-						if (selections && relativePositions) {
-							const model = editor.getModel()
-							if (model) {
-								const newSelections = relativePositions
-									.map(pos => {
-										if (!pos) return null
-										const startOffset = Math.floor(
-											pos.start * formattedCode.length
-										)
-										const endOffset = Math.floor(pos.end * formattedCode.length)
-
-										// Find nearest token boundaries
-										const startPos = findNearestTokenBoundary(
-											model,
-											model.getPositionAt(startOffset)
-										)
-										const endPos = findNearestTokenBoundary(
-											model,
-											model.getPositionAt(endOffset)
-										)
-
-										return {
-											selectionStartLineNumber: startPos.lineNumber,
-											selectionStartColumn: startPos.column,
-											positionLineNumber: endPos.lineNumber,
-											positionColumn: endPos.column,
-											direction: pos.direction
-										}
-									})
-									.filter(Boolean) as {} as Monaco.Selection[]
-
-								if (newSelections.length) editor.setSelections(newSelections)
-							}
-						}
-
-						// Restore scroll position proportionally
-						const lineCountBefore = currentCode.split("\n").length
-						const lineCountAfter = formattedCode.split("\n").length
-						const scrollRatio = scrollPosition.scrollTop / lineCountBefore
-						editor.setScrollPosition({
-							scrollLeft: scrollPosition.scrollLeft,
-							scrollTop: scrollRatio * lineCountAfter
-						})
-
-						validateImmediately(formattedCode)
-					} catch {
-						// could have invalid syntax etc., fail silently
-					}
-				}
-			}
-
-			// Helper to find nearest token boundary
-			const findNearestTokenBoundary = (
-				model: Monaco.editor.ITextModel,
-				position: Monaco.Position
-			): Monaco.Position => {
-				const lineContent = model.getLineContent(position.lineNumber)
-
-				// If at line end, stay there
-				if (position.column > lineContent.length) return position
-
-				// Find nearest whitespace or token boundary
-				let column = position.column
-				const char = lineContent[column - 1]
-
-				// If we're in whitespace, find next token
-				if (/\s/.test(char)) {
-					while (
-						column <= lineContent.length &&
-						/\s/.test(lineContent[column - 1])
-					)
-						column++
-
-					if (column > lineContent.length) {
-						return new monaco!.Position(
-							position.lineNumber,
-							lineContent.length + 1
-						)
-					}
-					return new monaco!.Position(position.lineNumber, column)
-				}
-
-				// If we're in a token, find token end
-				const token = model.getWordAtPosition(position)
-				if (token)
-					return new monaco!.Position(position.lineNumber, token.endColumn)
-
-				return position
-			}
-
-			window.addEventListener("keydown", handleKeyDown)
-			return () => window.removeEventListener("keydown", handleKeyDown)
-		}
-	}, [editorRef.current])
-
-	return (
-		<div
-			className={className}
-			style={{
-				display: "grid",
-				gridTemplateColumns: "1fr 1fr",
-				gap: "1rem",
-				height: "calc(100vh - 64px)",
-				...style
-			}}
-		>
-			{loadingState === "loaded" && monaco ?
-				<>
-					<PlaygroundEditor
-						defaultValue={initialValue}
-						validateCode={validateCode}
-						editorRef={editorRef}
-					/>
-					{withResults && <PlaygroundResults {...validationResult} />}
-				</>
-			:	<PlaygroundLoader />}
-		</div>
-	)
-}
-
 type PlaygroundEditorProps = {
 	defaultValue: string
 	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
-	validateCode: (code: string) => void
+	validateIncremental: (code: string) => void
+	validateNow: (code: string) => void
 }
 
 const PlaygroundEditor = ({
 	defaultValue,
 	editorRef,
-	validateCode
+	validateIncremental,
+	validateNow
 }: PlaygroundEditorProps) => (
 	<Editor
 		width="100%"
@@ -364,9 +230,9 @@ const PlaygroundEditor = ({
 			editorRef.current = editor
 			if (tsLanguageServiceInstance)
 				setupDynamicStyles(editor, monaco, tsLanguageServiceInstance)
-			validateCode(editor.getValue())
+			validateNow(editor.getValue())
 		}}
-		onChange={code => code && validateCode(code)}
+		onChange={code => code && validateIncremental(code)}
 	/>
 )
 
