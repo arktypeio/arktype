@@ -6,7 +6,7 @@ import { loadWASM } from "onigasm"
 import prettierPluginEstree from "prettier/plugins/estree"
 import prettierPluginTypeScript from "prettier/plugins/typescript"
 import prettier from "prettier/standalone"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { typeJs } from "../bundles/type.ts"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
@@ -14,7 +14,7 @@ import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
 import { TypeExplorer } from "./TypeExplorer.tsx"
-import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
+import { editorFileUri } from "./utils.ts"
 import { ValidationResult } from "./ValidationResult.tsx"
 
 let monacoInitialized = false
@@ -67,23 +67,19 @@ const setupMonaco = async (
 type LoadingState = "unloaded" | "loading" | "loaded"
 
 export interface PlaygroundProps {
-	visible?: boolean
-	/** @default "typescript" */
-	lang?: string
+	initialValue: string
 	style?: React.CSSProperties
 	className?: string
-	/** Initial code to display in the playground */
-	code?: string
+	withResults?: boolean
 }
 
 interface ExecutionResult extends ValidationResult.Props, TypeExplorer.Props {}
 
 export const Playground = ({
-	visible = true,
-	lang = "typescript",
-	style = {},
-	className = "",
-	code = defaultPlaygroundCode
+	initialValue,
+	style,
+	className,
+	withResults
 }: PlaygroundProps) => {
 	const [loadingState, setLoaded] = useState<LoadingState>(
 		monacoInitialized ? "loaded" : "unloaded"
@@ -98,10 +94,10 @@ export const Playground = ({
 
 	useEffect(() => {
 		if (editorRef.current) {
-			editorRef.current.setValue(code)
-			validateCode(code)
+			editorRef.current.setValue(initialValue)
+			validateCode(initialValue)
 		}
-	}, [code])
+	}, [initialValue])
 
 	const validateImmediately = (code: string) => {
 		const isolatedUserCode = code
@@ -319,7 +315,7 @@ export const Playground = ({
 		<div
 			className={className}
 			style={{
-				display: visible ? "grid" : "none",
+				display: "grid",
 				gridTemplateColumns: "1fr 1fr",
 				gap: "1rem",
 				height: "calc(100vh - 64px)",
@@ -328,37 +324,62 @@ export const Playground = ({
 		>
 			{loadingState === "loaded" && monaco ?
 				<>
-					<Editor
-						width="100%"
-						defaultLanguage={lang}
-						defaultValue={code}
-						path={editorFileUri}
-						theme="arkdark"
-						options={{
-							minimap: { enabled: false },
-							scrollBeyondLastLine: false,
-							quickSuggestions: { strings: "on" },
-							quickSuggestionsDelay: 0,
-							smoothScrolling: true
-						}}
-						onMount={(editor, monaco) => {
-							editorRef.current = editor
-							if (tsLanguageServiceInstance)
-								setupDynamicStyles(editor, monaco, tsLanguageServiceInstance)
-							validateCode(editor.getValue())
-						}}
-						onChange={code => code && validateCode(code)}
+					<PlaygroundEditor
+						defaultValue={initialValue}
+						validateCode={validateCode}
+						editorRef={editorRef}
 					/>
-					<div className="flex flex-col gap-4 h-full">
-						<TypeExplorer {...validationResult} />
-						<ValidationResult {...validationResult} />
-					</div>
+					{withResults && <PlaygroundResults {...validationResult} />}
 				</>
-			:	<div className="flex items-center justify-center h-full gap-4">
-					<div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-					<p className="ml-4 text-lg text-gray-600">Loading playground...</p>
-				</div>
-			}
+			:	<PlaygroundLoader />}
 		</div>
 	)
 }
+
+type PlaygroundEditorProps = {
+	defaultValue: string
+	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
+	validateCode: (code: string) => void
+}
+
+const PlaygroundEditor = ({
+	defaultValue,
+	editorRef,
+	validateCode
+}: PlaygroundEditorProps) => (
+	<Editor
+		width="100%"
+		defaultLanguage="typescript"
+		defaultValue={defaultValue}
+		path={editorFileUri}
+		theme="arkdark"
+		options={{
+			minimap: { enabled: false },
+			scrollBeyondLastLine: false,
+			quickSuggestions: { strings: "on" },
+			quickSuggestionsDelay: 0,
+			smoothScrolling: true
+		}}
+		onMount={(editor, monaco) => {
+			editorRef.current = editor
+			if (tsLanguageServiceInstance)
+				setupDynamicStyles(editor, monaco, tsLanguageServiceInstance)
+			validateCode(editor.getValue())
+		}}
+		onChange={code => code && validateCode(code)}
+	/>
+)
+
+const PlaygroundResults = (result: ExecutionResult) => (
+	<div className="flex flex-col gap-4 h-full">
+		<TypeExplorer {...result} />
+		<ValidationResult {...result} />
+	</div>
+)
+
+const PlaygroundLoader = () => (
+	<div className="flex items-center justify-center h-full gap-4">
+		<div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+		<p className="ml-4 text-lg text-gray-600">Loading playground...</p>
+	</div>
+)

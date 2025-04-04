@@ -1,9 +1,8 @@
-"use client"
-
 import { HomeLayout } from "fumadocs-ui/layouts/home"
 import type { ReactNode } from "react"
 import { FloatYourBoat } from "../../components/FloatYourBoat.tsx"
 import { Playground } from "../../components/playground/Playground.tsx"
+import { defaultPlaygroundCode } from "../../components/playground/utils.ts"
 import { baseOptions } from "../layout.config.tsx"
 
 export type LayoutProps = {
@@ -23,7 +22,7 @@ export default function PlaygroundPage() {
 				children: <FloatYourBoat kind="header" />
 			}}
 		>
-			<Playground />
+			<Playground initialValue={defaultPlaygroundCode} withResults={true} />
 		</HomeLayout>
 	)
 }
