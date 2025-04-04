@@ -49,3 +49,9 @@ const stringSchema: StringSchema = {
 	minLength: "3" // errors stating that 'minLength' must be a number
 }
 ```
+
+## Limitations
+
+- No `dependencies` support
+- No `if`/`else`/`then` support
+- `multipleOf` only supports integers

@@ -17,7 +17,8 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/arktypeio/arktype.git"
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/json-schema"
 	},
 	"type": "module",
 	"main": "./out/index.js",
