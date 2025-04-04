@@ -1,4 +1,4 @@
-import { type, type ArkErrors } from "arktype"
+import { type } from "arktype"
 
 const User = type({
 	name: "string",
@@ -22,14 +22,3 @@ const ConfiguredUser = User.configure(
 ConfiguredUser.get("name").description // A STRING
 ConfiguredUser.get("platform").description // "android" | "ios"
 ConfiguredUser.get("version").description // a number, A STRING or undefined
-
-import { typeJs } from "../docs/components/dts/type.ts"
-
-new Function(`${typeJs.slice(0, typeJs.lastIndexOf("export {"))}
-const MyType = type({
-	name: "string",
-	age: "number"
-})
-
-console.log(MyType.expression)
-`)()
