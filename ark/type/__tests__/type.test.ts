@@ -236,7 +236,7 @@ contextualize(() => {
 	it("toString()", () => {
 		// represent a variety of structures to ensure it is correctly composed
 		const T = type({
-			"[string]": "number",
+			"[string]": "number | unknown[]",
 			a: "1",
 			"b?": "2",
 			c: ["0 < string < 5", "boolean?", "...", "number[]"],
@@ -249,7 +249,7 @@ contextualize(() => {
 			]
 		})
 		attest(T.expression).snap(
-			"{ [string]: number, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: /^a.*z$/) => Out</^[a-z]*$/>[]], b?: 2 }"
+			"{ [string]: number | Array, a: 1, c: [string <= 4 & >= 1, boolean?, ...number[]], d: [(In: string) => Out<unknown>, number % 2 & < 100 & > 0, ...bigint[], (In: /^a.*z$/) => Out</^[a-z]*$/>[]], b?: 2 }"
 		)
 		attest(`${T}`).equals(`Type<${T.expression}>`)
 	})
