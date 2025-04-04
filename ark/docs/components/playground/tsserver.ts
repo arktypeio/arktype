@@ -2,7 +2,6 @@ import type * as Monaco from "monaco-editor"
 import { schemaDts } from "../dts/schema.ts"
 import { typeDts } from "../dts/type.ts"
 import { utilDts } from "../dts/util.ts"
-import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
 
 const configureTypeScript = (monaco: typeof Monaco): void => {
 	const tsDefaultModeConfig = (
@@ -26,12 +25,14 @@ const configureTypeScript = (monaco: typeof Monaco): void => {
 
 export const getInitializedTypeScriptService = async (
 	monaco: typeof Monaco,
-	targetUri = monaco.Uri.parse(editorFileUri)
+	editorFileUri: string,
+	contents: string
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
+	const targetUri = monaco.Uri.parse(editorFileUri)
 	configureTypeScript(monaco)
 
 	if (!monaco.editor.getModel(targetUri))
-		monaco.editor.createModel(defaultPlaygroundCode, "typescript", targetUri)
+		monaco.editor.createModel(contents, "typescript", targetUri)
 
 	const worker = await monaco.languages.typescript.getTypeScriptWorker()
 	return await worker(targetUri)

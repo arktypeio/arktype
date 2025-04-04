@@ -16,7 +16,7 @@ export const RestoreDefault = ({
 		return (
 			<button
 				className={cn(
-					"absolute top-4 right-4 p-2 rounded-lg",
+					"absolute top-4 right-16 p-2 rounded-lg cursor-pointer",
 					"bg-blue-900/50 hover:bg-blue-900 transition-colors",
 					"text-white/70 hover:text-white",
 					"backdrop-blur-sm",
@@ -33,7 +33,7 @@ export const RestoreDefault = ({
 	return (
 		<button
 			className={cn(
-				"mt-4 px-4 py-2 bg-blue-900 text-white rounded",
+				"mt-4 px-4 py-2 bg-blue-900 text-white rounded cursor-pointer",
 				"hover:bg-blue-950 transition-colors",
 				"flex items-center gap-2",
 				className

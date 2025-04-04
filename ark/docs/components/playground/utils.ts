@@ -7,13 +7,13 @@ export const playgroundOutVariableName = "out"
 export const defaultPlaygroundCode = `import { type } from "arktype"
 
 const ${playgroundTypeVariableName} = type({
-    name: "string",
-    age: "number"
+	name: "string",
+	"versions?": "(number | string)[]"
 })
 
 const ${playgroundOutVariableName} = ${playgroundTypeVariableName}({
-    name: "Anders Hejlsberg",
-    age: null
+    name: "TypeScript",
+    versions: ["5.8.2", 6, 7n]
 })
 `
 
@@ -47,3 +47,26 @@ export const isDuplicateRequest = (positionHash: string): boolean => {
 	recentRequests.set(positionHash, now)
 	return false
 }
+
+export const encodePlaygroundCode = (code: string): string =>
+	encodeURIComponent(code)
+
+export const decodePlaygroundCode = (encoded: string): string => {
+	try {
+		return decodeURIComponent(encoded)
+	} catch (e) {
+		console.error("Failed to decode playground code:", e)
+		return defaultPlaygroundCode
+	}
+}
+
+export const updatePlaygroundUrl = (code: string): string => {
+	if (typeof window === "undefined") return ""
+	const url = new URL(window.location.href)
+	url.searchParams.set("code", encodePlaygroundCode(code))
+	window.history.replaceState({}, "", url.toString())
+	return url.toString()
+}
+
+export const copyToClipboard = async (text: string): Promise<unknown> =>
+	navigator.clipboard.writeText(text)

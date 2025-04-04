@@ -18,28 +18,26 @@ export const TraverseResult = ({ traversed }: TraverseResult.Props) => {
 		: "success"
 
 	return (
-		<div className="flex-1 min-h-0">
-			<div
-				style={{
-					backgroundColor: backgroundsByResultKind[resultKind]
-				}}
-				className="glass-container h-full p-4 rounded-2xl overflow-auto"
-			>
-				<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
-					{resultKind === "failure" ? "ArkErrors" : "Out"}
-				</h3>
-				{
-					<pre className="m-0 whitespace-pre-wrap">
-						<code>
-							{resultKind === "none" ?
-								"(variable was never set)"
-							: resultKind === "failure" ?
-								(traversed as type.errors).summary
-							:	printable(traversed, 4)}
-						</code>
-					</pre>
-				}
-			</div>
+		<div
+			style={{
+				backgroundColor: backgroundsByResultKind[resultKind]
+			}}
+			className="glass-container h-full p-4 rounded-2xl overflow-auto"
+		>
+			<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
+				{resultKind === "failure" ? "ArkErrors" : "Out"}
+			</h3>
+			{
+				<pre className="m-0 whitespace-pre-wrap">
+					<code>
+						{resultKind === "none" ?
+							"(variable was never set)"
+						: resultKind === "failure" ?
+							(traversed as type.errors).summary
+						:	printable(traversed, 4)}
+					</code>
+				</pre>
+			}
 		</div>
 	)
 }

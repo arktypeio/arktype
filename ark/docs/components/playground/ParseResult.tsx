@@ -1,15 +1,14 @@
 import { tryCatch } from "@ark/util"
-import { Type, type type } from "arktype"
-import { Tab, Tabs } from "fumadocs-ui/components/tabs"
+import type { Type, type } from "arktype"
+import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock"
+import React from "react"
+import { Tab, Tabs } from "./PlaygroundTabs.tsx"
 import { RestoreDefault } from "./RestoreDefault.tsx"
 import {
 	backgroundsByResultKind,
 	playgroundOutVariableName,
-	playgroundTypeVariableName,
-	type ResultKind
+	playgroundTypeVariableName
 } from "./utils.ts"
-
-import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock"
 
 export type ParseResult = type | Error
 
@@ -21,8 +20,6 @@ export declare namespace ParseResult {
 }
 
 export const ParseResult = ({ parsed, restoreDefault }: ParseResult.Props) => {
-	const resultKind: ResultKind = parsed instanceof Type ? "success" : "failure"
-
 	const title = parsed instanceof Error ? parsed.name : "Type"
 
 	const contents =
@@ -31,18 +28,19 @@ export const ParseResult = ({ parsed, restoreDefault }: ParseResult.Props) => {
 		:	createTypeResult(parsed)
 
 	return (
-		<div className="flex-1 min-h-0">
-			<div
-				style={{
-					backgroundColor: backgroundsByResultKind[resultKind]
-				}}
-				className="glass-container editor-bg h-full p-4 rounded-2xl overflow-auto"
-			>
-				<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
-					{title}
-				</h3>
-				{contents}
-			</div>
+		<div
+			style={{
+				backgroundColor:
+					parsed instanceof Error ?
+						backgroundsByResultKind.failure
+					:	backgroundsByResultKind.none
+			}}
+			className="glass-container editor-bg h-full p-4 rounded-2xl overflow-auto"
+		>
+			<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
+				{title}
+			</h3>
+			{contents}
 		</div>
 	)
 }
@@ -77,15 +75,21 @@ const createTypeResult = (t: Type) => (
 			".json",
 			".precompilation"
 		]}
+		style={{
+			maxHeight: "400px",
+			overflow: "scroll"
+		}}
 	>
 		<Tab value=".expression">
 			<TabDescription>
-				A syntax string similar to native TypeScript
+				Syntactic string similar to native TypeScript
 			</TabDescription>
 			<DynamicCodeBlock lang="ts" code={t.expression} />
 		</Tab>
 		<Tab value=".description">
-			<TabDescription>A human-readable English description</TabDescription>
+			<TabDescription>
+				Human-readable descriptions used for error messages
+			</TabDescription>
 			<DynamicCodeBlock lang="ts" code={t.description} />
 		</Tab>
 		<Tab value=".toJsonSchema()">
@@ -100,7 +104,7 @@ const createTypeResult = (t: Type) => (
 		</Tab>
 		<Tab value=".json">
 			<TabDescription>
-				A serialized representation of the Type's internal structure
+				Serialized representation of the Type's internal structure
 			</TabDescription>
 			<DynamicCodeBlock lang="json" code={JSON.stringify(t.json, null, 4)} />
 		</Tab>

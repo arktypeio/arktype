@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.17
+
+Unsatisfiable types for index signature intersections will now result in a `ParseError` thanks to the work of @TizzySaurus on the upcoming `@ark/json-schema` package 🎉
+
 ## 2.1.16
 
 ##### Fixed [an issue](https://github.com/arktypeio/arktype/issues/1400) causing non-serializable error config to lead to incorrect error messages in some JIT-mode cases:

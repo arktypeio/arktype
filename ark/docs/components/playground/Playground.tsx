@@ -20,9 +20,14 @@ import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { ParseResult } from "./ParseResult.tsx"
 import { RestoreDefault } from "./RestoreDefault.tsx"
+import { ShareLink } from "./ShareLink.tsx"
 import { TraverseResult } from "./TraverseResult.tsx"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
-import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
+import {
+	defaultPlaygroundCode,
+	editorFileUri,
+	updatePlaygroundUrl
+} from "./utils.ts"
 
 let monacoInitialized = false
 let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
@@ -35,13 +40,18 @@ const onigasmLoaded =
 	})
 
 const setupMonaco = async (
-	monaco: typeof Monaco
+	monaco: typeof Monaco,
+	initialValue: string
 ): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
 	if (!monacoInitialized) {
 		await onigasmLoaded
 		monaco.editor.defineTheme("arkdark", theme)
 		if (!tsLanguageServiceInstance) {
-			const ts = await getInitializedTypeScriptService(monaco)
+			const ts = await getInitializedTypeScriptService(
+				monaco,
+				editorFileUri,
+				initialValue
+			)
 			setupHoverProvider(monaco, ts)
 			setupCompletionProvider(monaco, ts)
 			await setupTextmateGrammar(monaco)
@@ -77,6 +87,7 @@ export const Playground = ({
 
 	const monaco = useMonaco()
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
+	const [currentCode, setCurrentCode] = useState<string>(initialValue)
 
 	// ts + monaco initialization
 	useEffect(() => {
@@ -87,7 +98,7 @@ export const Playground = ({
 		if (monaco && loadingState !== "loaded") {
 			if (loadingState === "unloaded") setLoaded("loading")
 			else {
-				setupMonaco(monaco)
+				setupMonaco(monaco, initialValue)
 					.then(() => setLoaded("loaded"))
 					.catch(err => {
 						console.error("Failed to setup Monaco:", err)
@@ -95,26 +106,39 @@ export const Playground = ({
 					})
 			}
 		}
-	}, [monaco, loadingState])
+	}, [monaco, loadingState, initialValue])
 
 	const validateNow = useCallback((code: string) => {
 		const result = executeCode(code)
 		setValidationResult(result)
+		setCurrentCode(code)
 	}, [])
 
-	// on-update validation
+	const shareCode = useCallback(() => {
+		if (editorRef.current) {
+			const code = editorRef.current.getValue()
+			const url = updatePlaygroundUrl(code)
+			return url
+		}
+		return ""
+	}, [editorRef])
+
+	// handle external changes to initialValue (e.g., URL change)
 	useEffect(() => {
 		if (editorRef.current) {
 			const currentEditorValue = editorRef.current.getValue()
-			if (initialValue !== currentEditorValue) {
+			if (initialValue !== currentEditorValue)
 				editorRef.current.setValue(initialValue)
-				validateNow(initialValue)
-			}
 		}
-	}, [editorRef.current])
+		setCurrentCode(initialValue)
+		validateNow(initialValue)
+	}, [initialValue, validateNow])
 
-	const restoreDefault = () =>
+	const restoreDefault = () => {
 		editorRef.current?.setValue(defaultPlaygroundCode)
+		updatePlaygroundUrl(defaultPlaygroundCode)
+		validateNow(defaultPlaygroundCode)
+	}
 
 	return (
 		<div
@@ -123,18 +147,20 @@ export const Playground = ({
 				display: "grid",
 				gridTemplateColumns: withResults ? "minmax(400px, 1fr) 600px" : "1fr",
 				gap: "1rem",
-				height: "100%",
 				width: "100%",
+				height: "100%",
+				alignItems: "stretch",
 				...style
 			}}
 		>
 			{loadingState === "loaded" && monaco ?
 				<>
 					<PlaygroundEditor
-						defaultValue={initialValue}
+						defaultValue={currentCode} // Use state derived from initialValue
 						validateNow={validateNow}
 						editorRef={editorRef}
 						restoreDefault={restoreDefault}
+						shareCode={shareCode}
 					/>
 					{withResults && (
 						<PlaygroundResults
@@ -153,6 +179,7 @@ type PlaygroundEditorProps = {
 	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
 	validateNow: (code: string) => void
 	restoreDefault: () => void
+	shareCode: () => string
 }
 
 const PlaygroundEditor = React.memo(
@@ -160,7 +187,8 @@ const PlaygroundEditor = React.memo(
 		defaultValue,
 		editorRef,
 		validateNow,
-		restoreDefault
+		restoreDefault,
+		shareCode
 	}: PlaygroundEditorProps) => {
 		const handleChange = useCallback(
 			(code: string | undefined) => {
@@ -178,26 +206,26 @@ const PlaygroundEditor = React.memo(
 				if (tsLanguageServiceInstance)
 					setupErrorLens(monacoInstance, editor, tsLanguageServiceInstance)
 
-				// on-load validation
-				validateNow(editor.getValue())
-
-				// on-save (ctrl+s) formatting + validation
+				// on-save (ctrl+s) formatting + validation, update URL
 				editor.onKeyDown(e => {
 					const monaco = (window as any).monaco
 					if (!monaco) return
 					if (e.keyCode === monaco.KeyCode.KeyS && (e.ctrlKey || e.metaKey)) {
 						e.preventDefault()
 						formatEditor(editor).then(formattedCode => {
-							validateNow(formattedCode ?? editor.getValue())
+							const codeToSave = formattedCode ?? editor.getValue()
+							if (formattedCode) editor.setValue(formattedCode)
+							validateNow(codeToSave)
+							shareCode()
 						})
 					}
 				})
 			},
-			[editorRef]
+			[editorRef, shareCode, validateNow]
 		)
 
 		return (
-			<div className="relative h-full">
+			<div className="relative">
 				<Editor
 					width="100%"
 					defaultLanguage="typescript"
@@ -210,16 +238,16 @@ const PlaygroundEditor = React.memo(
 						quickSuggestions: { strings: "on" },
 						quickSuggestionsDelay: 0,
 						smoothScrolling: true,
-						automaticLayout: true
+						automaticLayout: true,
+						fontSize: 32
 					}}
 					onMount={handleMount}
 					onChange={handleChange}
 				/>
-				<RestoreDefault
-					variant="icon"
-					onClick={restoreDefault}
-					className="cursor-pointer"
-				/>
+				<div className="absolute top-2 right-2 flex gap-2">
+					<ShareLink onShare={shareCode} />
+					<RestoreDefault variant="icon" onClick={restoreDefault} />
+				</div>
 			</div>
 		)
 	}
@@ -229,16 +257,20 @@ interface PlaygroundResultsProps extends ExecutionResult {
 	restoreDefault: () => void
 }
 
-const PlaygroundResults = (result: PlaygroundResultsProps) => (
-	<div className="flex flex-col gap-4 h-full">
-		<ParseResult {...result} />
-		<TraverseResult {...result} />
-	</div>
-)
-
 const PlaygroundLoader = () => (
 	<div className="flex items-center justify-center h-full gap-4">
 		<div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
 		<p className="ml-4 text-lg text-gray-600">Loading playground...</p>
+	</div>
+)
+
+const PlaygroundResults = (result: PlaygroundResultsProps) => (
+	<div className="flex flex-col h-full gap-4">
+		<div className="flex-[2] min-h-0">
+			<ParseResult {...result} />
+		</div>
+		<div className="flex-[1] min-h-0">
+			<TraverseResult {...result} />
+		</div>
 	</div>
 )
