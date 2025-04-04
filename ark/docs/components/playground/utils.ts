@@ -2,12 +2,12 @@ import type * as Monaco from "monaco-editor"
 
 export const defaultPlaygroundCode = `import { type } from "arktype"
 
-export const MyType = type({
+const MyType = type({
     name: "string",
     age: "number"
 })
 
-export const out = MyType({
+const out = MyType({
     name: "Anders Hejlsberg",
     age: null
 })
@@ -15,8 +15,13 @@ export const out = MyType({
 
 export const editorFileUri = "file:///main.ts"
 
-export const successBg = "#081617cc"
-export const failureBg = "#170808cc"
+export type ResultKind = "failure" | "success" | "none"
+
+export const backgroundsByResultKind: Record<ResultKind, string> = {
+	failure: "#17080888",
+	success: "#08161788",
+	none: "#080d17cc"
+}
 
 type RequestMap = Map<string, number>
 
