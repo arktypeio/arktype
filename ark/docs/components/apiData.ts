@@ -127,7 +127,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const n = type(\"0 < number <= 100\")\nconsole.log(n.description) // positive and at most 100"
+            "example": "const N = type(\"0 < number <= 100\")\nconsole.log(N.description) // positive and at most 100"
         },
         {
             "group": "Type",
@@ -147,7 +147,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const loc = type({ coords: [\"number\", \"number\"] })\nconsole.log(loc.expression) // { coords: [number, number] }"
+            "example": "const Loc = type({ coords: [\"number\", \"number\"] })\nconsole.log(Loc.expression) // { coords: [number, number] }"
         },
         {
             "group": "Type",
@@ -175,7 +175,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const criticalPayload = type({\n    superImportantValue: \"string\"\n})\n// throws TraversalError: superImportantValue must be a string (was missing)\nconst data = criticalPayload.assert({ irrelevantValue: \"whoops\" })\nconsole.log(data.superImportantValue) // valid output can be accessed directly"
+            "example": "const CriticalPayload = type({\n    superImportantValue: \"string\"\n})\n// throws TraversalError: superImportantValue must be a string (was missing)\nconst data = CriticalPayload.assert({ irrelevantValue: \"whoops\" })\nconsole.log(data.superImportantValue) // valid output can be accessed directly"
         },
         {
             "group": "Type",
@@ -195,7 +195,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const numeric = type(\"number | bigint\")\n// [0, 2n]\nconst numerics = [0, \"one\", 2n].filter(numeric.allows)"
+            "example": "const Numeric = type(\"number | bigint\")\n// [0, 2n]\nconst numerics = [0, \"one\", 2n].filter(Numeric.allows)"
         },
         {
             "group": "Type",
@@ -215,7 +215,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const notOdd = type(\"number % 2\").configure({ description: \"not odd\" })\n// all constraints at the root are affected\nconst odd = notOdd(3) // must be not odd (was 3)\nconst nonNumber = notOdd(\"two\") // must be not odd (was \"two\")\n\nconst notOddBox = type({\n   // we should have referenced notOdd or added meta here\n   notOdd: \"number % 2\",\n// but instead chained from the root object\n}).configure({ description: \"not odd\" })\n// error message at path notOdd is not affected\nconst oddProp = notOddBox({ notOdd: 3 }) // notOdd must be even (was 3)\n// error message at root is affected, leading to a misleading description\nconst nonObject = notOddBox(null) // must be not odd (was null)"
+            "example": "const NotOdd = type(\"number % 2\").configure({ description: \"not odd\" })\n// all constraints at the root are affected\nconst odd = NotOdd(3) // must be not odd (was 3)\nconst nonNumber = NotOdd(\"two\") // must be not odd (was \"two\")\n\nconst NotOddBox = type({\n   // we should have referenced notOdd or added meta here\n   notOdd: \"number % 2\",\n// but instead chained from the root object\n}).configure({ description: \"not odd\" })\n// error message at path notOdd is not affected\nconst oddProp = NotOddBox({ notOdd: 3 }) // notOdd must be even (was 3)\n// error message at root is affected, leading to a misleading description\nconst nonObject = NotOddBox(null) // must be not odd (was null)"
         },
         {
             "group": "Type",
@@ -249,7 +249,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const aToZ = type(/^a.*z$/).describe(\"a string like 'a...z'\")\nconst good = aToZ(\"alcatraz\") // \"alcatraz\"\n// ArkErrors: must be a string like 'a...z' (was \"albatross\")\nconst badPattern = aToZ(\"albatross\")"
+            "example": "const AToZ = type(/^a.*z$/).describe(\"a string like 'a...z'\")\nconst good = AToZ(\"alcatraz\") // \"alcatraz\"\n// ArkErrors: must be a string like 'a...z' (was \"albatross\")\nconst badPattern = AToZ(\"albatross\")"
         },
         {
             "group": "Type",
@@ -331,7 +331,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "const t = type({ foo: \"string\" });\n// TypeScript: foo must be a string (was 5)\nconst data = t.from({ foo: 5 });"
+            "example": "const T = type({ foo: \"string\" });\n// TypeScript: foo must be a string (was 5)\nconst data = T.from({ foo: 5 });"
         },
         {
             "group": "Type",
@@ -351,7 +351,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const palindrome = type(\"string\")\n    .narrow(s => s === [...s].reverse().join(\"\"))\n    .brand(\"palindrome\")\n// Brand<string, \"palindrome\">\nconst out = palindrome.assert(\"racecar\")"
+            "example": "const Palindrome = type(\"string\")\n    .narrow(s => s === [...s].reverse().join(\"\"))\n    .brand(\"palindrome\")\n// Brand<string, \"palindrome\">\nconst out = Palindrome.assert(\"racecar\")"
         },
         {
             "group": "Type",
@@ -363,7 +363,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "// Type<{ rebmun: number }[]>\nconst t = type({ rebmun: \"number\" }).array();"
+            "example": "// Type<{ rebmun: number }[]>\nconst T = type({ rebmun: \"number\" }).array();"
         },
         {
             "group": "Type",
@@ -383,7 +383,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const prop = type({ foo: \"number\" })\n// Type<{ bar?: { foo: number } }>\nconst obj = type({ bar: prop.optional() })"
+            "example": "const Prop = type({ foo: \"number\" })\n// Type<{ bar?: { foo: number } }>\nconst Obj = type({ bar: Prop.optional() })"
         },
         {
             "group": "Type",
@@ -415,7 +415,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "// Type<{ count: Default<number, 0> }>\nconst state = type({ count: type.number.default(0) })\nconst prop = type({ nested: \"boolean\" })\nconst forObj = type({\n    key: nested.default(() => ({ nested: false }))\n})"
+            "example": "// Type<{ count: Default<number, 0> }>\nconst State = type({ count: type.number.default(0) })\nconst Prop = type({ nested: \"boolean\" })\nconst ForObj = type({\n    key: Prop.default(() => ({ nested: false }))\n})"
         },
         {
             "group": "Type",
@@ -464,7 +464,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const stringifyUser = type({ name: \"string\" }).pipe(user => JSON.stringify(user))\nconst stringifySafe = stringifyUser.filter(user => user.name !== \"Bobby Tables\")\n// Type<(In: `${string}Z`) => To<Date>>\nconst withPredicate = type(\"string.date.parse\").filter((s): s is `${string}Z` =>\n    s.endsWith(\"Z\")\n)"
+            "example": "const stringifyUser = type({ name: \"string\" }).pipe(user => JSON.stringify(user))\nconst stringifySafe = stringifyUser.filter(user => user.name !== \"Bobby Tables\")\n// Type<(In: `${string}Z`) => To<Date>>\nconst WithPredicate = type(\"string.date.parse\").filter((s): s is `${string}Z` =>\n    s.endsWith(\"Z\")\n)"
         },
         {
             "group": "Type",
@@ -505,7 +505,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const palindrome = type(\"string\").narrow(s => s === [...s].reverse().join(\"\"))\n\nconst palindromicEmail = type(\"string.date.parse\").narrow((date, ctx) =>\n\t\tdate.getFullYear() === 2025 || ctx.mustBe(\"the current year\")\n)\n// Type<`${string}.tsx`>\nconst withPredicate = type(\"string\").narrow((s): s is `${string}.tsx` => /\\.tsx?$/.test(s))"
+            "example": "const Palindrome = type(\"string\").narrow(s => s === [...s].reverse().join(\"\"))\n\nconst PalindromicEmail = type(\"string.date.parse\").narrow((date, ctx) =>\n\t\tdate.getFullYear() === 2025 || ctx.mustBe(\"the current year\")\n)\n// Type<`${string}.tsx`>\nconst WithPredicate = type(\"string\").narrow((s): s is `${string}.tsx` => /\\.tsx?$/.test(s))"
         },
         {
             "group": "Type",
@@ -517,7 +517,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "const user = type({ name: \"string\" })\n\n// parse a string and validate that the result as a user\nconst parseUser = type(\"string\").pipe(s => JSON.parse(s), user)"
+            "example": "const User = type({ name: \"string\" })\n\n// parse a string and validate that the result as a user\nconst parseUser = type(\"string\").pipe(s => JSON.parse(s), user)"
         },
         {
             "group": "Type",
@@ -575,7 +575,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "// Type<`LEEEEEEEE${string}ROY`>\nconst leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()"
+            "example": "// Type<`LEEEEEEEE${string}ROY`>\nconst Leeroy = type(/^LE{8,}ROY$/).as<`LEEEEEEEE${string}ROY`>()"
         },
         {
             "group": "Type",
@@ -587,7 +587,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "// Type<{ foo: number; bar: string }>\nconst t = type({ foo: \"number\" }).and({ bar: \"string\" })\n// ParseError: Intersection at foo of number and string results in an unsatisfiable type\nconst bad = type({ foo: \"number\" }).and({ foo: \"string\" })"
+            "example": "// Type<{ foo: number; bar: string }>\nconst T = type({ foo: \"number\" }).and({ bar: \"string\" })\n// ParseError: Intersection at foo of number and string results in an unsatisfiable type\nconst Bad = type({ foo: \"number\" }).and({ foo: \"string\" })"
         },
         {
             "group": "Type",
@@ -616,7 +616,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "// Type<string | { box: string }>\nconst t = type(\"string\").or({ box: \"string\" })"
+            "example": "// Type<string | { box: string }>\nconst T = type(\"string\").or({ box: \"string\" })"
         },
         {
             "group": "Type",
@@ -636,7 +636,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "// Type<{ foo: number; bar: string }>\nconst t = type({ foo: \"number\" }).intersect({ bar: \"string\" })\nconst bad = type(\"number > 10\").intersect(\"number < 5\")\n// logs \"Intersection of > 10 and < 5 results in an unsatisfiable type\"\nif (bad instanceof Disjoint) console.log(`${bad.summary}`)"
+            "example": "// Type<{ foo: number; bar: string }>\nconst T = type({ foo: \"number\" }).intersect({ bar: \"string\" })\nconst Bad = type(\"number > 10\").intersect(\"number < 5\")\n// logs \"Intersection of > 10 and < 5 results in an unsatisfiable type\"\nif (Bad instanceof Disjoint) console.log(`${bad.summary}`)"
         },
         {
             "group": "Type",
@@ -670,7 +670,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const divisibleBy6 = type.number.divisibleBy(6).moreThan(0)\n// false (left side must also be positive)\ndivisibleBy6.equals(\"number % 6\")\n// false (right side has an additional <100 constraint)\nconsole.log(divisibleBy6.equals(\"0 < (number % 6) < 100\"))\nconst thirdTry = type(\"(number % 2) > 0\").divisibleBy(3)\n// true (types are normalized and reduced)\nconsole.log(divisibleBy6.equals(thirdTry))"
+            "example": "const DivisibleBy6 = type.number.divisibleBy(6).moreThan(0)\n// false (left side must also be positive)\nDivisibleBy6.equals(\"number % 6\")\n// false (right side has an additional <100 constraint)\nconsole.log(DivisibleBy6.equals(\"0 < (number % 6) < 100\"))\nconst ThirdTry = type(\"(number % 2) > 0\").divisibleBy(3)\n// true (types are normalized and reduced)\nconsole.log(DivisibleBy6.equals(ThirdTry))"
         },
         {
             "group": "Type",
@@ -706,7 +706,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const n = type.raw(`${Math.random()}`)\n// Type<0.5> | undefined\nconst ez = n.ifEquals(\"0.5\")"
+            "example": "const N = type.raw(`${Math.random()}`)\n// Type<0.5> | undefined\nconst Ez = N.ifEquals(\"0.5\")"
         },
         {
             "group": "Type",
@@ -790,7 +790,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "const n = type(Math.random() > 0.5 ? \"true\" : \"0\") // Type<0 | true>\nconst ez = n.ifExtends(\"boolean\") // Type<true> | undefined"
+            "example": "const N = type(Math.random() > 0.5 ? \"true\" : \"0\") // Type<0 | true>\nconst Ez = N.ifExtends(\"boolean\") // Type<true> | undefined"
         },
         {
             "group": "Type",
@@ -818,7 +818,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ],
-            "example": "type.string.overlaps(\"string | number\") // true (e.g. \"foo\")\ntype(\"string | number\").overlaps(\"1\") // true (1)\ntype(\"number > 0\").overlaps(\"number < 0\") // false (no values exist)\n\nconst noAt = type(\"string\").narrow(s => !s.includes(\"@\"))\nnoAt.overlaps(\"string.email\") // true (no values exist, but not provable)"
+            "example": "type.string.overlaps(\"string | number\") // true (e.g. \"foo\")\ntype(\"string | number\").overlaps(\"1\") // true (1)\ntype(\"number > 0\").overlaps(\"number < 0\") // false (no values exist)\n\nconst NoAt = type(\"string\").narrow(s => !s.includes(\"@\"))\nNoAt.overlaps(\"string.email\") // true (no values exist, but not provable)"
         },
         {
             "group": "Type",
@@ -838,7 +838,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "// Type<true | 0 | 2>\nconst t = type(\"boolean | 0 | 'one' | 2 | bigint\").extract(\"number | 0n | true\")"
+            "example": "// Type<true | 0 | 2>\nconst T = type(\"boolean | 0 | 'one' | 2 | bigint\").extract(\"number | 0n | true\")"
         },
         {
             "group": "Type",
@@ -858,7 +858,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 }
             ],
             "notes": [],
-            "example": "// Type<false | 'one' | bigint>\nconst t = type(\"boolean | 0 | 'one' | 2 | bigint\").exclude(\"number | 0n | true\")"
+            "example": "// Type<false | 'one' | bigint>\nconst T = type(\"boolean | 0 | 'one' | 2 | bigint\").exclude(\"number | 0n | true\")"
         }
     ],
     "Traversal": [

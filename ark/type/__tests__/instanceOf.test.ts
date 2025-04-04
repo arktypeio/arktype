@@ -6,34 +6,34 @@ import { writeInvalidConstructorMessage } from "arktype/internal/parser/tupleExp
 contextualize(() => {
 	describe("tuple expression", () => {
 		it("base", () => {
-			const t = type(["instanceof", Error])
-			attest<Error>(t.infer)
-			const expected = rootSchema(Error)
-			attest(t.json).equals(expected.json)
+			const T = type(["instanceof", Error])
+			attest<Error>(T.infer)
+			const Expected = rootSchema(Error)
+			attest(T.json).equals(Expected.json)
 			const e = new Error()
-			attest(t(e)).equals(e)
-			attest(t(e)).equals(e)
-			attest(t({}).toString()).snap("must be an Error (was object)")
-			attest(t(undefined).toString()).snap("must be an Error (was undefined)")
+			attest(T(e)).equals(e)
+			attest(T(e)).equals(e)
+			attest(T({}).toString()).snap("must be an Error (was object)")
+			attest(T(undefined).toString()).snap("must be an Error (was undefined)")
 		})
 
 		it("fluent", () => {
-			const t = type.instanceOf(Error)
+			const T = type.instanceOf(Error)
 
-			const expected = type(["instanceof", Error])
+			const Expected = type(["instanceof", Error])
 
-			attest<typeof expected.t>(t.t)
-			attest(t.expression).equals(expected.expression)
+			attest<typeof Expected.t>(T.t)
+			attest(T.expression).equals(Expected.expression)
 		})
 
 		it("inherited", () => {
-			const t = type(["instanceof", TypeError])
+			const T = type(["instanceof", TypeError])
 			const e = new TypeError()
 			// for some reason the return of TypeError's constructor is actually
 			// inferred as Error? Disabling this check for now, seems like an anomaly.
-			// attest<TypeError>(t.infer)
-			attest(t(e)).equals(e)
-			attest(t(new Error()).toString()).snap(
+			// attest<TypeError>(T.infer)
+			attest(T(e)).equals(e)
+			attest(T(new Error()).toString()).snap(
 				"must be an instance of TypeError (was Error)"
 			)
 		})
@@ -44,14 +44,14 @@ contextualize(() => {
 			class Sub extends Base {
 				foo = ""
 			}
-			const t = type(["instanceof", Base])
-			attest<Base>(t.infer)
+			const T = type(["instanceof", Base])
+			attest<Base>(T.infer)
 			const sub = new Sub()
-			attest(t(sub)).equals(sub)
+			attest(T(sub)).equals(sub)
 		})
 		it("multiple branches", () => {
-			const t = type(["instanceof", Date, Array])
-			attest<Date | unknown[]>(t.infer)
+			const T = type(["instanceof", Date, Array])
+			attest<Date | unknown[]>(T.infer)
 		})
 		it("non-constructor", () => {
 			// @ts-expect-error
@@ -65,35 +65,35 @@ contextualize(() => {
 			class ArkClass {
 				isArk = true
 			}
-			const ark = type(["instanceof", ArkClass])
-			attest<ArkClass>(ark.t)
+			const Ark = type(["instanceof", ArkClass])
+			attest<ArkClass>(Ark.t)
 			// not expanded since there are no morphs
-			attest(ark.infer).type.toString("ArkClass")
-			attest(ark.in.infer).type.toString("ArkClass")
+			attest(Ark.infer).type.toString("ArkClass")
+			attest(Ark.in.infer).type.toString("ArkClass")
 			const a = new ArkClass()
-			attest(ark(a)).equals(a)
-			attest(ark({}).toString()).snap(
+			attest(Ark(a)).equals(a)
+			attest(Ark({}).toString()).snap(
 				"must be an instance of ArkClass (was object)"
 			)
 		})
 		it("bidirectional checks doesn't break pipe inference", () => {
-			const tt = type({
+			const T = type({
 				f: ["string", "=>", () => [] as unknown]
 			})
 			// Should be inferred as {f: unknown}
-			attest<{ f: unknown }>(tt.infer)
+			attest<{ f: unknown }>(T.infer)
 		})
 
 		it("class with private properties", () => {
 			class ArkClass {
 				private isArk = true
 			}
-			const ark = type(["instanceof", ArkClass])
+			const Ark = type(["instanceof", ArkClass])
 
-			attest<ArkClass>(ark.t)
+			attest<ArkClass>(Ark.t)
 			// not expanded since there are no morphs
-			attest(ark.infer).type.toString("ArkClass")
-			attest(ark.in.infer).type.toString("ArkClass")
+			attest(Ark.infer).type.toString("ArkClass")
+			attest(Ark.in.infer).type.toString("ArkClass")
 		})
 
 		it("parse error on non-function", () => {
@@ -108,14 +108,14 @@ contextualize(() => {
 
 	describe("root expression", () => {
 		it("class", () => {
-			const t = type("instanceof", Error)
-			attest<Error>(t.infer)
-			attest(t.json).equals(type(["instanceof", Error]).json)
+			const T = type("instanceof", Error)
+			attest<Error>(T.infer)
+			attest(T.json).equals(type(["instanceof", Error]).json)
 		})
 		it("instance branches", () => {
-			const t = type("instanceof", Date, Map)
-			attest<Date | Map<unknown, unknown>>(t.infer)
-			attest(t.json).equals(type("Date | Map").json)
+			const T = type("instanceof", Date, Map)
+			attest<Date | Map<unknown, unknown>>(T.infer)
+			attest(T.json).equals(type("Date | Map").json)
 		})
 		it("non-constructor", () => {
 			// @ts-expect-error just an assignability failure so we can't validate an error message

@@ -35,12 +35,12 @@ contextualize(() => {
 	})
 
 	it("array", () => {
-		const t = rootSchema({
+		const T = rootSchema({
 			proto: Array,
 			sequence: "number"
 		})
-		attest(t.traverse([5])).snap([5])
-		attest(t.traverse([5, "five"])?.toString()).snap(
+		attest(T.traverse([5])).snap([5])
+		attest(T.traverse([5, "five"])?.toString()).snap(
 			"value at [1] must be a number (was a string)"
 		)
 	})

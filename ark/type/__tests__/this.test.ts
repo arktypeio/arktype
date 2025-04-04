@@ -4,7 +4,7 @@ import { scope, type } from "arktype"
 
 contextualize(() => {
 	it("resolves from type", () => {
-		const disappointingGift = type({
+		const DisappointingGift = type({
 			label: "string",
 			"box?": "this"
 		})
@@ -13,15 +13,15 @@ contextualize(() => {
 			label: string
 			box?: ExpectedDisappointingGift
 		}
-		attest<ExpectedDisappointingGift>(disappointingGift.infer)
+		attest<ExpectedDisappointingGift>(DisappointingGift.infer)
 
-		attest(disappointingGift({ label: "foo" })).snap({ label: "foo" })
-		attest(disappointingGift({ label: "foo", box: { label: "bar" } })).snap({
+		attest(DisappointingGift({ label: "foo" })).snap({ label: "foo" })
+		attest(DisappointingGift({ label: "foo", box: { label: "bar" } })).snap({
 			label: "foo",
 			box: { label: "bar" }
 		})
 		attest(
-			disappointingGift({
+			DisappointingGift({
 				label: "foo",
 				box: { label: "bar", box: {} }
 			}).toString()
@@ -29,29 +29,29 @@ contextualize(() => {
 	})
 
 	it("at nested path", () => {
-		const t = type({ foo: { bar: "this" } })
+		const T = type({ foo: { bar: "this" } })
 
-		attest(t).type.toString.snap("Type<{ foo: { bar: cyclic } }, {}>")
+		attest(T).type.toString.snap("Type<{ foo: { bar: cyclic } }, {}>")
 
-		const validData = { foo: { bar: {} } } as typeof t.infer
+		const validData = { foo: { bar: {} } } as typeof T.infer
 		validData.foo.bar = validData
 
-		attest(t(validData)).equals(validData)
+		attest(T(validData)).equals(validData)
 
 		const invalidData = { foo: { bar: {} as any } }
 		invalidData.foo.bar = invalidData.foo
-		attest(t(invalidData).toString()).snap(
+		attest(T(invalidData).toString()).snap(
 			"foo.bar.foo must be an object (was missing)"
 		)
 	})
 
 	it("this preserved when referencing at path", () => {
-		const initial = type({
+		const Initial = type({
 			initial: "this"
 		})
 
-		const reference = type({
-			reference: initial
+		const Reference = type({
+			reference: Initial
 		})
 		type Initial = {
 			initial: Initial
@@ -60,16 +60,16 @@ contextualize(() => {
 			reference: Initial
 		}
 
-		attest<Expected>(reference.infer)
+		attest<Expected>(Reference.infer)
 
-		const initialData = {} as typeof initial.infer
+		const initialData = {} as typeof Initial.infer
 		initialData.initial = initialData
 
 		const referenceData = { reference: initialData }
 
-		attest(initial(initialData)).equals(initialData)
-		attest(reference(referenceData)).equals(referenceData)
-		attest(reference({ reference: {} }).toString()).snap(
+		attest(Initial(initialData)).equals(initialData)
+		attest(Reference(referenceData)).equals(referenceData)
+		attest(Reference({ reference: {} }).toString()).snap(
 			"reference.initial must be an object (was missing)"
 		)
 	})
@@ -87,25 +87,25 @@ contextualize(() => {
 	})
 
 	it("tuple expression", () => {
-		const t = type([{ a: "string" }, "|", { b: "this" }])
-		attest(t.infer).type.toString.snap(
+		const T = type([{ a: "string" }, "|", { b: "this" }])
+		attest(T.infer).type.toString.snap(
 			"{ a: string } | { b: { a: string } | cyclic }"
 		)
-		attest(t({ a: "foo" })).snap({ a: "foo" })
-		attest(t({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
-		attest(t({ b: { b: {} } }).toString()).snap(
+		attest(T({ a: "foo" })).snap({ a: "foo" })
+		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
+		attest(T({ b: { b: {} } }).toString()).snap(
 			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
 		)
 	})
 
 	it("root expression", () => {
-		const t = type({ a: "string" }, "|", { b: "this" })
-		attest(t.infer).type.toString.snap(
+		const T = type({ a: "string" }, "|", { b: "this" })
+		attest(T.infer).type.toString.snap(
 			"{ a: string } | { b: { a: string } | cyclic }"
 		)
-		attest(t({ a: "foo" })).snap({ a: "foo" })
-		attest(t({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
-		attest(t({ b: { b: {} } }).toString()).snap(
+		attest(T({ a: "foo" })).snap({ a: "foo" })
+		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
+		attest(T({ b: { b: {} } }).toString()).snap(
 			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
 		)
 	})

@@ -3,7 +3,7 @@ import { type } from "arktype"
 // ---cut---
 // all unions are optimally discriminated
 // even if multiple/nested paths are needed
-const account = type({
+const Account = type({
 	kind: "'admin'",
 	"powers?": "string[]"
 }).or({

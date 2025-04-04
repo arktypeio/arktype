@@ -1,10 +1,11 @@
 "use client"
 
 import { CodeIcon, ExpandIcon, Undo2Icon } from "lucide-react"
-import Link from "next/link"
-import posthog from "posthog-js"
+import Link from "next/link.js"
+import { posthog } from "posthog-js"
 import { useEffect, useRef, useState } from "react"
-import { Playground } from "./Playground"
+import { Playground } from "./playground/Playground.tsx"
+import { defaultPlaygroundCode } from "./playground/utils.ts"
 
 export type AutoplayDemoProps = React.DetailedHTMLProps<
 	React.VideoHTMLAttributes<HTMLVideoElement>,
@@ -21,10 +22,8 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 		width: "100%",
 		height: "30vh"
 	})
-	const [resetTrigger, setResetTrigger] = useState(0)
 	const videoRef = useRef<HTMLVideoElement>(null)
 
-	// Get video dimensions on load
 	useEffect(() => {
 		const updateDimensions = () => {
 			if (videoRef.current) {
@@ -36,10 +35,8 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 			}
 		}
 
-		// Initial check
 		if (videoRef.current && videoRef.current.readyState >= 1) updateDimensions()
 
-		// Set up event listeners
 		const video = videoRef.current
 		if (video) {
 			video.addEventListener("loadedmetadata", updateDimensions)
@@ -47,7 +44,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 			window.addEventListener("resize", updateDimensions)
 		}
 
-		// Clean up
 		return () => {
 			if (video) {
 				video.removeEventListener("loadedmetadata", updateDimensions)
@@ -58,8 +54,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 	}, [videoRef.current])
 
 	const togglePlayground = () => {
-		if (showPlayground) setResetTrigger(prev => prev + 1)
-		else {
+		if (!showPlayground) {
 			posthog.capture("Playground mode", {
 				location: window.location.href
 			})
@@ -69,7 +64,6 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 
 	return (
 		<div style={{ position: "relative", width: "100%" }}>
-			{/* Always render both video and playground, controlling visibility with CSS */}
 			<div
 				style={{
 					display: !showPlayground ? "block" : "none",
@@ -97,7 +91,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 					margin: "0 auto"
 				}}
 			>
-				<Playground visible={showPlayground} resetTrigger={resetTrigger} />
+				<Playground initialValue={defaultPlaygroundCode} />
 			</div>
 
 			<div className="button-group">

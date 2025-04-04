@@ -5,7 +5,7 @@ console.log(
 	"⏱️  Checking for V8 fast properties (https://v8.dev/blog/fast-properties) on Type...\n"
 )
 
-const t = type({
+const T = type({
 	name: "string",
 	age: "number"
 })
@@ -13,7 +13,7 @@ const t = type({
 let hasFastProperties
 
 try {
-	hasFastProperties = eval("%HasFastProperties(t)")
+	hasFastProperties = eval("%HasFastProperties(T)")
 } catch {
 	throw new Error(`This test must be run in a V8-based runtime with the --allow-natives-syntax flag, e.g.:
 node --allow-natives-syntax ${fromHere()}`)

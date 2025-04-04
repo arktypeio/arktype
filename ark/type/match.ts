@@ -160,7 +160,7 @@ type _finalizeCaseArg<
 	endpoint extends "in" | "out"
 > =
 	[distill<t, "in">, distill<t, endpoint>] extends [infer i, infer result] ?
-		i extends ctx["input"] ? result
+		[i] extends [ctx["input"]] ? result
 		: Extract<ctx["input"], i> extends never ? result
 		: Extract<ctx["input"], result>
 	:	never
@@ -187,21 +187,29 @@ interface StringsParser<ctx extends MatchParserContext> {
 	): addCasesToParser<cases, ctx, "string">
 }
 
-type validateStringCases<cases, ctx extends MatchParserContext> = {
-	[k in keyof cases | stringValue<ctx> | "default"]?: k extends "default" ?
-		DefaultCase<ctx>
-	: k extends stringValue<ctx> ?
-		(In: _finalizeCaseArg<maybeLiftToKey<k, ctx>, ctx, "out">) => unknown
-	:	ErrorType<`${k & string} must be a possible string value`>
-}
+type validateStringCases<cases, ctx extends MatchParserContext> =
+	unknown extends ctx["input"] ?
+		{
+			[k in keyof cases]?: k extends "default" ? DefaultCase<ctx>
+			:	(In: _finalizeCaseArg<maybeLiftToKey<k, ctx>, ctx, "out">) => unknown
+			// always autocomplete the "default" key
+		} & { default?: DefaultCase<ctx> }
+	:	{
+			[k in keyof cases]?: k extends "default" ? DefaultCase<ctx>
+			: k extends stringValue<ctx> ?
+				(In: _finalizeCaseArg<maybeLiftToKey<k, ctx>, ctx, "out">) => unknown
+			:	ErrorType<`${k & string} must be a possible string value`>
+		} & { [k in stringValue<ctx>]?: unknown } & {
+			default?: DefaultCase<ctx>
+		}
 
 type stringValue<ctx extends MatchParserContext> =
-	ctx["key"] extends keyof ctx["input"] ?
-		ctx["input"][ctx["key"]] extends string ?
-			ctx["input"][ctx["key"]]
+	ctx["input"] extends string ? ctx["input"]
+	: ctx["key"] extends keyof ctx["input"] ?
+		ctx["input"][ctx["key"]] extends infer s extends string ?
+			s
 		:	never
-	: ctx["input"] extends string ? ctx["input"]
-	: never
+	:	never
 
 interface AtParser<ctx extends MatchParserContext> {
 	<const key extends string>(

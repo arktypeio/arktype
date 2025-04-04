@@ -8,50 +8,50 @@ contextualize(() => {
 	it("implicit problem", () => {
 		const isOdd = (n: number) => n % 2 === 1
 		const isOddRef = registeredReference(isOdd)
-		const odd = type(["number", ":", isOdd])
-		attest<number>(odd.infer)
-		attest(odd.json).equals({ domain: "number", predicate: [isOddRef] })
-		attest(odd(1)).equals(1)
-		attest(odd(2).toString()).snap("must be valid according to isOdd (was 2)")
+		const Odd = type(["number", ":", isOdd])
+		attest<number>(Odd.infer)
+		attest(Odd.json).equals({ domain: "number", predicate: [isOddRef] })
+		attest(Odd(1)).equals(1)
+		attest(Odd(2).toString()).snap("must be valid according to isOdd (was 2)")
 	})
 
 	it("implicit problem anonymous", () => {
-		const even = type("number", ":", n => n % 2 === 0)
-		attest(even(1).toString()).snap(
+		const Even = type("number", ":", n => n % 2 === 0)
+		attest(Even(1).toString()).snap(
 			"must be valid according to an anonymous predicate (was 1)"
 		)
 	})
 
 	it("explicit problem", () => {
-		const divisibleBy3 = type([
+		const DivisibleBy3 = type([
 			"number",
 			":",
 			(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
 		])
-		attest(divisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
+		attest(DivisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
 	})
 
 	it("chained narrows", () => {
-		const a = type("number").narrow(
+		const A = type("number").narrow(
 			(n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2")
 		)
 
-		const b = a.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+		const b = A.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
 
-		const divisibleBy30 = b.narrow(
+		const DivisibleBy30 = b.narrow(
 			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
 		)
 
-		attest<number>(divisibleBy30.t)
+		attest<number>(DivisibleBy30.t)
 
-		attest(divisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
-		attest(divisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
-		attest(divisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
-		attest(divisibleBy30(30)).equals(30)
+		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
+		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
+		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+		attest(DivisibleBy30(30)).equals(30)
 	})
 
 	it("problem at path", () => {
-		const abEqual = type([
+		const AbEqual = type([
 			{
 				a: "number",
 				b: "number"
@@ -66,20 +66,20 @@ contextualize(() => {
 			}
 		])
 
-		attest<{ a: number; b: number }>(abEqual.t)
+		attest<{ a: number; b: number }>(AbEqual.t)
 		attest<{
 			a: number
 			b: number
-		}>(abEqual.infer)
-		attest(abEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
-		attest(abEqual({ a: 1, b: 2 }).toString()).snap(
+		}>(AbEqual.infer)
+		attest(AbEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
+		attest(AbEqual({ a: 1, b: 2 }).toString()).snap(
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
 		)
 	})
 
 	it("functional predicate", () => {
-		const one = type(["number", ":", (n): n is 1 => n === 1])
-		attest<1>(one.infer)
+		const One = type(["number", ":", (n): n is 1 => n === 1])
+		attest<1>(One.infer)
 	})
 
 	it("functional parameter inference", () => {
@@ -98,21 +98,21 @@ contextualize(() => {
 	})
 
 	it("narrow problem", () => {
-		const palindrome = type([
+		const Palindrome = type([
 			"string",
 			":",
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
-		attest<string>(palindrome.t)
-		attest(palindrome("dad")).snap("dad")
-		attest(palindrome("david").toString()).snap(
+		attest<string>(Palindrome.t)
+		attest(Palindrome("dad")).snap("dad")
+		attest(Palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'
 		)
 	})
 
 	it("narrows the output type of a morph", () => {
-		const t = type("string")
+		const T = type("string")
 			.pipe(function _narrowMorphOutputMorph(s) {
 				return s.length
 			})
@@ -120,7 +120,7 @@ contextualize(() => {
 				return n === 5
 			})
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			in: "string",
 			morphs: [
 				"$ark._narrowMorphOutputMorph",
@@ -128,27 +128,27 @@ contextualize(() => {
 			]
 		})
 
-		attest<(In: string) => Out<5>>(t.t)
+		attest<(In: string) => Out<5>>(T.t)
 
-		attest(t("12345")).snap(5)
-		attest(t("1234").toString()).snap(
+		attest(T("12345")).snap(5)
+		attest(T("1234").toString()).snap(
 			"must be valid according to _narrowMorphOutputNarrow (was 4)"
 		)
 	})
 
 	it("expression", () => {
-		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
-		attest<`f${string}`>(t.infer)
+		const T = type("string", ":", (s): s is `f${string}` => s[0] === "f")
+		attest<`f${string}`>(T.infer)
 	})
 
 	it("narrows the output type of an morph within a single type", () => {
-		const t = type("string")
+		const T = type("string")
 			.pipe(s => `${s}!`)
 			.narrow((s): s is "foo!" => s === "foo!")
 
-		attest(t.t).type.toString.snap('(In: string) => Out<"foo!">')
-		attest<string>(t.inferIn)
-		attest<"foo!">(t.infer)
+		attest(T.t).type.toString.snap('(In: string) => Out<"foo!">')
+		attest<string>(T.inferIn)
+		attest<"foo!">(T.infer)
 	})
 
 	it("narrow then pipe", () => {
@@ -172,64 +172,64 @@ contextualize(() => {
 	})
 
 	it("can distill constrained builtins", () => {
-		const number = type("number")
+		const N = type("number")
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<number>(number.inferIn)
-		attest<number>(number.in.infer)
+		attest<number>(N.inferIn)
+		attest<number>(N.in.infer)
 
-		const string = type("string")
+		const S = type("string")
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<string>(string.inferIn)
-		attest<string>(string.in.infer)
+		attest<string>(S.inferIn)
+		attest<string>(S.in.infer)
 
-		const bigint = type("bigint")
+		const B = type("bigint")
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<bigint>(bigint.inferIn)
-		attest<bigint>(bigint.in.infer)
+		attest<bigint>(B.inferIn)
+		attest<bigint>(B.in.infer)
 
-		const symbol = type("symbol")
+		const Sym = type("symbol")
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<symbol>(symbol.inferIn)
-		attest<symbol>(symbol.in.infer)
+		attest<symbol>(Sym.inferIn)
+		attest<symbol>(Sym.in.infer)
 
-		const date = type("Date")
+		const D = type("Date")
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<Date>(date.inferIn)
+		attest<Date>(D.inferIn)
 	})
 
 	it("can distill constrained objects", () => {
-		const object = type({ foo: "number" })
+		const Obj = type({ foo: "number" })
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<{ foo: number }>(object.inferIn)
-		attest<{ foo: number }>(object.in.infer)
+		attest<{ foo: number }>(Obj.inferIn)
+		attest<{ foo: number }>(Obj.in.infer)
 
-		const nested = type({ foo: ["number.integer", "=>", n => n++] })
-		attest(nested.t).type.toString.snap("{ foo: (In: number) => Out<number> }")
-		attest<{ foo: number }>(nested.inferIn)
-		attest<{ foo: number }>(nested.in.infer)
+		const Nested = type({ foo: ["number.integer", "=>", n => n++] })
+		attest(Nested.t).type.toString.snap("{ foo: (In: number) => Out<number> }")
+		attest<{ foo: number }>(Nested.inferIn)
+		attest<{ foo: number }>(Nested.in.infer)
 
-		const map = type.keywords.Map.narrow(() => true).pipe(m => m)
-		attest(map.t).type.toString.snap(`(
+		const Map = type.keywords.Map.narrow(() => true).pipe(m => m)
+		attest(Map.t).type.toString.snap(`(
 	In: Map<unknown, unknown>
 ) => Out<Map<unknown, unknown>>`)
-		attest(map.infer).type.toString.snap("Map<unknown, unknown>")
-		attest(map.inferIn).type.toString("Map<unknown, unknown>")
+		attest(Map.infer).type.toString.snap("Map<unknown, unknown>")
+		attest(Map.inferIn).type.toString("Map<unknown, unknown>")
 	})
 
 	it("can distill constrained arrays", () => {
-		const array = type("string[]")
+		const Arr = type("string[]")
 			.narrow(() => true)
 			.pipe(() => true)
-		attest<string[]>(array.inferIn)
-		attest<string[]>(array.in.infer)
+		attest<string[]>(Arr.inferIn)
+		attest<string[]>(Arr.in.infer)
 
-		const objArray = type({ foo: "string.date.parse" })
+		const ObjArr = type({ foo: "string.date.parse" })
 			.array()
 			.narrow(() => true)
 			.pipe(d => d)
@@ -237,28 +237,28 @@ contextualize(() => {
 			{
 				foo: string
 			}[]
-		>(objArray.inferIn)
+		>(ObjArr.inferIn)
 		attest<
 			{
 				foo: string
 			}[]
-		>(objArray.in.infer)
+		>(ObjArr.in.infer)
 	})
 
 	it("can distill units", () => {
-		const t = type("5").narrow(() => true)
-		attest<5>(t.t)
-		attest<5>(t.infer)
-		attest<5>(t.inferIn)
+		const T = type("5").narrow(() => true)
+		attest<5>(T.t)
+		attest<5>(T.infer)
+		attest<5>(T.inferIn)
 
 		// this predicate is evaluated and pruned
-		attest(t.expression).equals("5")
+		attest(T.expression).equals("5")
 	})
 
 	it("unknown is narrowable", () => {
 		const unknownPredicate854 = () => true
-		const t = type("unknown").narrow(unknownPredicate854)
-		attest(t.t).type.toString.snap("unknown")
-		attest(t.json).snap({ predicate: ["$ark.unknownPredicate854"] })
+		const T = type("unknown").narrow(unknownPredicate854)
+		attest(T.t).type.toString.snap("unknown")
+		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
 })

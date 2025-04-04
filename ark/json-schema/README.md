@@ -5,7 +5,7 @@
 @ark/jsonschema is a package that allows converting from a JSON Schema schema, to an ArkType type. For example:
 
 ```js
-import { parseJsonSchema } from "@ark/jsonschema"
+import { parseJsonSchema } from "@ark/json-schema"
 
 const t = parseJsonSchema({ type: "string", minLength: 5, maxLength: 10 })
 ```
@@ -43,9 +43,15 @@ const integerSchema: JsonSchema.Numeric = {
 Note that for string schemas exclusively, you must import the schema type from `@ark/jsonschema` instead of `arktype`. This is because `@ark/jsonschema` doesn't yet support the `format` keyword whilst `arktype` does.
 
 ```ts
-import type { StringSchema } from "@ark/jsonschema"
+import type { StringSchema } from "@ark/json-schema"
 const stringSchema: StringSchema = {
 	type: "string",
 	minLength: "3" // errors stating that 'minLength' must be a number
 }
 ```
+
+## Limitations
+
+- No `dependencies` support
+- No `if`/`else`/`then` support
+- `multipleOf` only supports integers

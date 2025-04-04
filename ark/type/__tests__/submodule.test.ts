@@ -36,9 +36,9 @@ contextualize.each(
 			>(types)
 
 			attest<number>(types.sub.alias.infer)
-			const expected = type("number").json
-			attest(types.sub.alias.json).equals(expected)
-			attest(types.b.json).equals(expected)
+			const Expected = type("number").json
+			attest(types.sub.alias.json).equals(Expected)
+			attest(types.b.json).equals(Expected)
 		})
 
 		it("non-submodule dot access", $ => {
@@ -337,9 +337,9 @@ contextualize.each(
 		})
 
 		it("reference", $ => {
-			const t = $.type(["outer.inner.alias"])
-			attest<Type<[1], Expected$>>(t)
-			attest(t.expression).snap("[1]")
+			const T = $.type(["outer.inner.alias"])
+			attest<Type<[1], Expected$>>(T)
+			attest(T.expression).snap("[1]")
 		})
 
 		it("non-submodule dot access", () => {
@@ -405,9 +405,9 @@ contextualize.each(
 				}).export()
 			})
 
-			const t = $.type("0 | a.b.c.d.e.f.g.alias")
-			attest<Type<0 | 1, DeepExpected$>>(t)
-			attest(t.expression).snap("0 | 1")
+			const T = $.type("0 | a.b.c.d.e.f.g.alias")
+			attest<Type<0 | 1, DeepExpected$>>(T)
+			attest(T.expression).snap("0 | 1")
 			attest(() =>
 				$.type({
 					// @ts-expect-error

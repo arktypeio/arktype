@@ -20,7 +20,7 @@ contextualize(() => {
 	})
 
 	it("chained", () => {
-		const t = type({
+		const T = type({
 			"[string]": "number",
 			foo: "1",
 			"bar?": "1"
@@ -31,8 +31,8 @@ contextualize(() => {
 			[x: string]: number | undefined
 			foo?: 1
 			bar?: 1
-		}>(t.t)
+		}>(T.t)
 
-		attest(t.expression).snap("{ [string]: number, bar?: 1, foo?: 1 }")
+		attest(T.expression).snap("{ [string]: number, bar?: 1, foo?: 1 }")
 	})
 })

@@ -57,7 +57,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	/**
 	 * Create a {@link Type} from your definition.
 	 *
-	 * @example const person = type({ name: "string" })
+	 * @example const Person = type({ name: "string" })
 	 */
 	<const def, r = type.instantiate<def, $>>(
 		// Parse and check the definition, returning either the original input for a
@@ -75,7 +75,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * parameter names specified in the previous argument in addition to aliases
 	 * from its {@link Scope}.
 	 *
-	 * @example const boxOf = type("<t extends string | number>", { contents: "t" })
+	 * @example const BoxOf = type("<t extends string | number>", { contents: "t" })
 	 */
 	<
 		const params extends ParameterString,
@@ -156,8 +156,8 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	/**
 	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to one of the arguments passed to this function.
 	 * @example const enum = type.enumerated('foo', 'bar', obj) // obj is a by-reference object
-	 * @example const tupleForm = type(['===', 'foo', 'bar', obj])
-	 * @example const argsForm = type('===', 'foo', 'bar', obj)
+	 * @example const TupleForm = type(['===', 'foo', 'bar', obj])
+	 * @example const ArgsForm = type('===', 'foo', 'bar', obj)
 	 */
 	enumerated: EnumeratedTypeParser<$>
 	/**
@@ -174,12 +174,12 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	instanceOf: InstanceOfTypeParser<$>
 	/**
 	 * Create a {@link Type} from a union of definitions
-	 * @example const t = type.or("string", "number")
+	 * @example const T = type.or("string", "number")
 	 */
 	or: NaryUnionParser<$>
 	/**
 	 * Create a {@link Type} from an intersection of definitions
-	 * @example const t = type.and({ a: "1" }, { b: "2" })
+	 * @example const T = type.and({ a: "1" }, { b: "2" })
 	 */
 	and: NaryIntersectionParser<$>
 	/**
@@ -187,14 +187,14 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * definitions having precedence for overlapping keys
 	 * @example
 	 * // Type<{ a: "3", b: "2", c: "4" }>
-	 * const t = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
+	 * const T = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
 	 */
 	merge: NaryMergeParser<$>
 	/**
 	 * Create a {@link Type} from a set of morphs (including Types)
 	 * @example
 	 * // Type<(In: string) => To<object>>
-	 * const t = type.pipe(type.string, s => JSON.parse(s), type.object)
+	 * const T = type.pipe(type.string, s => JSON.parse(s), type.object)
 	 */
 	pipe: NaryPipeParser<$>
 }

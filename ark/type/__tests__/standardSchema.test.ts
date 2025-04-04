@@ -5,8 +5,8 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("validation conforms to spec", () => {
-		const t = type({ foo: "string" })
-		const standard: StandardSchemaV1<{ foo: string }> = t
+		const T = type({ foo: "string" })
+		const standard: StandardSchemaV1<{ foo: string }> = T
 		const standardOut = standard["~standard"].validate({
 			foo: "bar"
 		})

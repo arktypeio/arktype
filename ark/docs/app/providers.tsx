@@ -4,7 +4,7 @@ import posthog from "posthog-js"
 import { PostHogProvider } from "posthog-js/react"
 
 if (
-	typeof window !== "undefined" &&
+	globalThis.window !== undefined &&
 	process.env.NEXT_PUBLIC_POSTHOG_KEY &&
 	process.env.NEXT_PUBLIC_POSTHOG_HOST
 ) {

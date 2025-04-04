@@ -10,47 +10,47 @@ import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/o
 
 contextualize(() => {
 	it("two types", () => {
-		const t = type("boolean&true")
-		attest<true>(t.infer)
-		attest(t.json).is(type("true").json)
+		const T = type("boolean&true")
+		attest<true>(T.infer)
+		attest(T.json).is(type("true").json)
 	})
 
 	it("intersection parsed before union", () => {
 		// Should be parsed as:
 		// 1. "0" | ("1"&"string") | "2"
 		// 2. "0" | "1" | "2"
-		const t = type("'0'|'1'&string|'2'")
-		attest<"0" | "1" | "2">(t.infer)
-		attest(t.json).equals(type("===", "0", "1", "2").json)
+		const T = type("'0'|'1'&string|'2'")
+		attest<"0" | "1" | "2">(T.infer)
+		attest(T.json).equals(type("===", "0", "1", "2").json)
 	})
 
 	it("tuple expression", () => {
-		const t = type([{ a: "string" }, "&", { b: "number" }])
-		attest<{ a: string; b: number }>(t.infer)
-		attest(t.json).equals(type({ a: "string", b: "number" }).json)
+		const T = type([{ a: "string" }, "&", { b: "number" }])
+		attest<{ a: string; b: number }>(T.infer)
+		attest(T.json).equals(type({ a: "string", b: "number" }).json)
 	})
 
 	it("several types", () => {
-		const t = type("unknown&boolean&false")
-		attest<false>(t.infer)
-		attest(t.json).equals(type("false").json)
+		const T = type("unknown&boolean&false")
+		attest<false>(T.infer)
+		attest(T.json).equals(type("false").json)
 	})
 
 	it("method", () => {
-		const t = type({ a: "string" }).and({ b: "boolean" })
-		attest<{ a: string; b: boolean }>(t.infer)
-		attest(t.json).equals(type({ a: "string", b: "boolean" }).json)
+		const T = type({ a: "string" }).and({ b: "boolean" })
+		attest<{ a: string; b: boolean }>(T.infer)
+		attest(T.json).equals(type({ a: "string", b: "boolean" }).json)
 	})
 
 	it("chained deep intersections", () => {
-		const b = type({ b: "boolean" }, "=>", o => [o.b])
-		const t = type({
+		const B = type({ b: "boolean" }, "=>", o => [o.b])
+		const T = type({
 			a: ["string", "=>", s => s.length]
 		})
 			.and({
 				// unable to inline this due to:
 				// https://github.com/arktypeio/arktype/issues/806
-				b
+				b: B
 			})
 			.and({
 				b: { b: "true" },
@@ -62,9 +62,9 @@ contextualize(() => {
 				b: true
 			}
 			c: "hello"
-		}>(t.in.infer)
+		}>(T.in.infer)
 
-		attest<{ a: number; b: boolean[]; c: "hello" }>(t.infer)
+		attest<{ a: number; b: boolean[]; c: "hello" }>(T.infer)
 	})
 
 	it("bad reference", () => {

@@ -38,101 +38,101 @@ contextualize(() => {
 
 	it("tuple expression at path", () => {
 		const description = "the number of dimensions in the monster group"
-		const t = type({
+		const T = type({
 			monster: ["196883", "@", description]
 		})
-		attest<{ monster: 196883 }>(t.infer)
-		attest(t.description).snap(
+		attest<{ monster: 196883 }>(T.infer)
+		attest(T.description).snap(
 			"{ monster: the number of dimensions in the monster group }"
 		)
-		attest(t({ monster: 196882 }).toString()).snap(
+		attest(T({ monster: 196882 }).toString()).snap(
 			"monster must be the number of dimensions in the monster group (was 196882)"
 		)
 	})
 
 	it("anonymous type config", () => {
-		const t = type(type("true", "@", { description: "unfalse" }))
-		attest<true>(t.infer)
-		attest(t(false).toString()).snap("must be unfalse (was false)")
+		const T = type(type("true", "@", { description: "unfalse" }))
+		attest<true>(T.infer)
+		attest(T(false).toString()).snap("must be unfalse (was false)")
 	})
 
 	it("anonymous type config at path", () => {
-		const unfalse = type("true", "@", { description: "unfalse" })
-		const t = type({ myKey: unfalse })
-		attest(t({ myKey: "500" }).toString()).snap(
+		const Unfalse = type("true", "@", { description: "unfalse" })
+		const T = type({ myKey: Unfalse })
+		attest(T({ myKey: "500" }).toString()).snap(
 			`myKey must be unfalse (was "500")`
 		)
 	})
 
 	it("anonymous type thunk", () => {
-		const t = type(() => type("false", "@", { description: "untrue" }))
-		attest<false>(t.infer)
-		attest(t.description).snap("untrue")
+		const T = type(() => type("false", "@", { description: "untrue" }))
+		attest<false>(T.infer)
+		attest(T.description).snap("untrue")
 	})
 
 	it("anonymous type thunk at path", () => {
-		const t = type({
+		const T = type({
 			myKey: () => type("false", "@", { description: "untrue" })
 		})
-		attest<{ myKey: false }>(t.infer)
-		attest(t({ myKey: true }).toString()).snap(
+		attest<{ myKey: false }>(T.infer)
+		attest(T({ myKey: true }).toString()).snap(
 			"myKey must be untrue (was true)"
 		)
 	})
 
 	it("shallow node writer config", () => {
-		const customOne = type("1", "@", {
+		const CustomOne = type("1", "@", {
 			expected: ctx => `custom expected ${ctx.description}`,
 			actual: data => `custom actual ${data}`,
 			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
 			message: ctx => `custom message ${ctx.problem}`
 		})
-		attest<1>(customOne.infer)
-		attest(customOne(2).toString()).snap(
+		attest<1>(CustomOne.infer)
+		attest(CustomOne(2).toString()).snap(
 			"custom message custom problem custom expected 1 custom actual 2"
 		)
 	})
 
 	it("string node configs", () => {
-		const customTwo = type("2", "@", {
+		const CustomTwo = type("2", "@", {
 			expected: "2",
 			actual: "something else",
 			problem: "was terrible",
 			message: "root was terrible"
 		})
-		attest<2>(customTwo.infer)
-		attest(customTwo(1).toString()).snap("root was terrible")
+		attest<2>(CustomTwo.infer)
+		attest(CustomTwo(1).toString()).snap("root was terrible")
 	})
 
 	it("node writer config works on nested constraint", () => {
-		const customEven = type("number % 2", "@", {
+		const CustomEven = type("number % 2", "@", {
 			expected: ctx => `custom expected ${ctx.description}`,
 			actual: data => `custom actual ${data}`,
 			problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
 			message: ctx => `custom message ${ctx.problem}`
 		})
-		attest<number>(customEven.infer)
-		attest(customEven(3).toString()).snap(
+		attest<number>(CustomEven.infer)
+		attest(CustomEven(3).toString()).snap(
 			"custom message custom problem custom expected even custom actual 3"
 		)
 	})
 
 	it("applies config to shallow descendants", () => {
-		const user = type({
+		const User = type({
 			name: "string",
 			age: "number"
 		}).describe("a valid user")
 
 		// should give the original error at a path
 		attest(
-			user({
+			User({
 				name: "david",
 				age: true
 			}).toString()
 		).snap("age must be a number (was boolean)")
 
 		// should give the shallow custom error
-		attest(user(null).toString()).snap("must be a valid user (was null)")
+		attest(User(null).toString()).snap("must be a valid user (was null)")
 	})
 
 	it("jitless", () => {
@@ -147,16 +147,16 @@ contextualize(() => {
 	})
 
 	it("jit by default", () => {
-		const t = type("/^foo.*$/")
-		attest(t.precompilation).satisfies("string")
+		const T = type("/^foo.*$/")
+		attest(T.precompilation).satisfies("string")
 	})
 
 	it("builtin keywords jit by default", () => {
-		const t = type("string")
-		attest(t.precompilation).satisfies("string")
+		const T = type("string")
+		attest(T.precompilation).satisfies("string")
 
-		const sub = type("string.normalize.NFC.preformatted")
-		attest(sub.precompilation).satisfies("string")
+		const Sub = type("string.normalize.NFC.preformatted")
+		attest(Sub.precompilation).satisfies("string")
 	})
 
 	it("jit by default in scope", () => {
@@ -237,14 +237,14 @@ contextualize(() => {
 
 	it("docs actual example", () => {
 		// avoid logging "was xxx" for password
-		const password = type("string >= 8", "@", { actual: () => "" })
+		const Password = type("string >= 8", "@", { actual: () => "" })
 
-		const user = type({
+		const User = type({
 			email: "string.email",
-			password
+			password: Password
 		})
 
-		const out = user({
+		const out = User({
 			email: "david@arktype.io",
 			password: "ez123"
 		})
@@ -253,23 +253,23 @@ contextualize(() => {
 	})
 
 	it("docs message example", () => {
-		const user = type({
+		const User = type({
 			password: "string >= 8"
 		}).configure({
 			message: ctx =>
 				`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
 		})
 		// ArkErrors: (root): a string isn't an object
-		const out1 = user("ez123")
+		const out1 = User("ez123")
 		attest(out1.toString()).snap("(root): a string isn't an object")
 		// but `.configure` only applies shallowly, so the nested error isn't changed!
 		// ArkErrors: password must be at least length 8 (was 5)
-		const out2 = user({ password: "ez123" })
+		const out2 = User({ password: "ez123" })
 		attest(out2.toString()).snap("password must be at least length 8 (was 5)")
 	})
 
 	describe("select", () => {
-		const base = type({
+		const Base = type({
 			foo: "string",
 			"bar?": {
 				nested: "string",
@@ -278,9 +278,9 @@ contextualize(() => {
 		})
 
 		it("self", () => {
-			const t = base.configure({ description: "root-only" }, "self")
+			const T = Base.configure({ description: "root-only" }, "self")
 
-			attest(t.json).snap({
+			attest(T.json).snap({
 				required: [{ key: "foo", value: "string" }],
 				optional: [
 					{
@@ -303,7 +303,7 @@ contextualize(() => {
 			// based on completion tests at ark/schema/select.test.ts
 			it("shallow completions", () => {
 				// @ts-expect-error
-				attest(() => base.configure("foo", "")).completions({
+				attest(() => Base.configure("foo", "")).completions({
 					"": [
 						"after",
 						"alias",
@@ -337,7 +337,7 @@ contextualize(() => {
 
 			it("composite key completions", () => {
 				attest(() =>
-					base.configure("foo", {
+					Base.configure("foo", {
 						// @ts-expect-error
 						"": {} as any
 					})
@@ -346,7 +346,7 @@ contextualize(() => {
 
 			it("composite kind completions", () => {
 				attest(() =>
-					base.configure("foo", {
+					Base.configure("foo", {
 						// @ts-expect-error
 						kind: ""
 					})
@@ -380,7 +380,7 @@ contextualize(() => {
 
 			it("composite boundary completions", () => {
 				attest(() =>
-					base.configure("foo", {
+					Base.configure("foo", {
 						// @ts-expect-error
 						boundary: ""
 					})
@@ -389,7 +389,7 @@ contextualize(() => {
 
 			it("composite method completions", () => {
 				attest(() =>
-					base.configure("foo", {
+					Base.configure("foo", {
 						// @ts-expect-error
 						method: ""
 					})

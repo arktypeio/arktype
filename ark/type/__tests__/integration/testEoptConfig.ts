@@ -6,17 +6,17 @@ import { cases } from "./util.ts"
 
 cases({
 	fromDef: () => {
-		const o = type({
+		const O = type({
 			"name?": "string"
 		})
 
-		equal(o.expression, "{ name?: string | undefined }")
+		equal(O.expression, "{ name?: string | undefined }")
 	},
 	fromRef: () => {
-		const o = type({
+		const O = type({
 			"name?": type.string
 		})
 
-		equal(o.expression, "{ name?: string | undefined }")
+		equal(O.expression, "{ name?: string | undefined }")
 	}
 })

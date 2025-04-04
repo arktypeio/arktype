@@ -13,12 +13,12 @@ contextualize(() => {
 	it("base definition", () => {
 		const types = scope({ actual: { name: "string" } }).export()
 
-		const expected = type({
+		const Expected = type({
 			name: "string"
 		})
 
-		attest<typeof expected.t>(types.actual.t)
-		attest(types.actual.expression).equals(expected.expression)
+		attest<typeof Expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(Expected.expression)
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
@@ -103,10 +103,10 @@ contextualize(() => {
 		const $ = scope({ actual: type({ name: "string" }) })
 		const types = $.export()
 
-		const expected = type({ name: "string" })
+		const Expected = type({ name: "string" })
 
-		attest<typeof expected.t>(types.actual.t)
-		attest(types.actual.expression).equals(expected.expression)
+		attest<typeof Expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(Expected.expression)
 		attest(types.actual.$.json).equals($.json)
 
 		attest(() =>
@@ -122,27 +122,27 @@ contextualize(() => {
 			actual: "l & r"
 		}).export()
 
-		const expected = type("string.email <= 10 & string > 5")
+		const Expected = type("string.email <= 10 & string > 5")
 
-		attest<typeof expected.t>(types.actual.t)
-		attest(types.actual.expression).equals(expected.expression)
+		attest<typeof Expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(Expected.expression)
 	})
 
 	it("object tuple", () => {
 		const types = scope({ ref: "string", actual: [{ c: "ref" }] }).export()
-		const expected = type([{ c: "string" }])
+		const Expected = type([{ c: "string" }])
 
-		attest<typeof expected.t>(types.actual.t)
-		attest(types.actual.expression).equals(expected.expression)
+		attest<typeof Expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(Expected.expression)
 	})
 
 	it("doesn't try to validate any in scope", () => {
 		const $ = scope({ a: {} as any })
 		attest<any>($.resolve("a").infer)
 
-		const t = $.type(["number", "a"])
+		const T = $.type(["number", "a"])
 
-		attest<[number, any]>(t.infer)
+		attest<[number, any]>(T.infer)
 	})
 
 	it("infers input and output", () => {
@@ -180,10 +180,10 @@ contextualize(() => {
 		attest<number>(types.n.t)
 		attest(types.n.expression).equals("number")
 
-		const expected = type("number").lessThan(10)
+		const Expected = type("number").lessThan(10)
 
-		attest<typeof expected.t>(types.lessThan10.t)
-		attest(types.lessThan10.expression).equals(expected.expression)
+		attest<typeof Expected.t>(types.lessThan10.t)
+		attest(types.lessThan10.expression).equals(Expected.expression)
 	})
 
 	it("errors on helper parse error", () => {

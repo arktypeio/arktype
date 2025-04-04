@@ -1,6 +1,6 @@
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	device: {
 		platform: "'android' | 'ios'",
@@ -9,13 +9,13 @@ const user = type({
 })
 
 // ---cut---
-user.extends("object") // true
-user.extends("string") // false
+User.extends("object") // true
+User.extends("string") // false
 // true (string is narrower than unknown)
-user.extends({
+User.extends({
 	name: "unknown"
 })
 // false (string is wider than "Alan")
-user.extends({
+User.extends({
 	name: "'Alan'"
 })

@@ -15,9 +15,9 @@ contextualize(() => {
 	})
 
 	it("lower.preformatted", () => {
-		const lower = type("string.lower.preformatted")
-		attest(lower("var")).snap("var")
-		attest(lower("newVar").toString()).snap(
+		const Lower = type("string.lower.preformatted")
+		attest(Lower("var")).snap("var")
+		attest(Lower("newVar").toString()).snap(
 			'must be only lowercase letters (was "newVar")'
 		)
 	})
@@ -29,12 +29,12 @@ contextualize(() => {
 	})
 
 	it("upper.preformatted", () => {
-		const upper = type("string.upper.preformatted")
-		attest(upper("VAR")).snap("VAR")
-		attest(upper("CONST_VAR").toString()).snap(
+		const Upper = type("string.upper.preformatted")
+		attest(Upper("VAR")).snap("VAR")
+		attest(Upper("CONST_VAR").toString()).snap(
 			'must be only uppercase letters (was "CONST_VAR")'
 		)
-		attest(upper("myVar").toString()).snap(
+		attest(Upper("myVar").toString()).snap(
 			'must be only uppercase letters (was "myVar")'
 		)
 	})
@@ -46,9 +46,9 @@ contextualize(() => {
 	})
 
 	it("capitalize.preformatted", () => {
-		const capitalized = type("string.capitalize.preformatted")
-		attest(capitalized("Foo")).equals("Foo")
-		attest(capitalized("bar").toString()).snap(
+		const Capitalized = type("string.capitalize.preformatted")
+		attest(Capitalized("Foo")).equals("Foo")
+		attest(Capitalized("bar").toString()).snap(
 			'must be capitalized (was "bar")'
 		)
 	})

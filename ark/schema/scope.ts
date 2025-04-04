@@ -183,7 +183,7 @@ const bindPrecompilation = (
 	references: readonly BaseNode[],
 	precompiler: CompiledFunction<() => PrecompiledReferences>
 ): void => {
-	const precompilation = precompiler.write(rootScopeFnName)
+	const precompilation = precompiler.write(rootScopeFnName, 4)
 	const compiledTraversals = precompiler.compile()()
 
 	for (const node of references) {
@@ -639,7 +639,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) {
 				const precompiler = precompileReferences(this.references)
-				this.precompilation = precompiler.write(rootScopeFnName)
+				this.precompilation = precompiler.write(rootScopeFnName, 4)
 				bindPrecompilation(this.references, precompiler)
 			}
 			this.resolved = true

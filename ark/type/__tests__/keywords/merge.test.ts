@@ -27,7 +27,7 @@ contextualize(() => {
 
 	it("invoked", () => {
 		const s = Symbol()
-		const t = keywords.Merge(
+		const T = keywords.Merge(
 			{
 				"[string]": "number | bigint",
 				foo: "0",
@@ -39,18 +39,18 @@ contextualize(() => {
 			}
 		)
 
-		const expected = type({
+		const Expected = type({
 			"[string]": "bigint",
 			"foo?": "1n",
 			[s]: "true"
 		})
 
-		attest<typeof expected.t>(t.t)
-		attest(t.expression).equals(expected.expression)
+		attest<typeof Expected.t>(T.t)
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("chained", () => {
-		const t = type({
+		const T = type({
 			"[string]": "number",
 			"bar?": "0",
 			foo: "0"
@@ -59,15 +59,15 @@ contextualize(() => {
 			baz: "1"
 		})
 
-		const expected = type({
+		const Expected = type({
 			"[string]": "number",
 			"bar?": "0",
 			"foo?": "1",
 			baz: "1"
 		})
 
-		attest<typeof expected.t>(t.t)
-		attest(t.expression).equals(expected.expression)
+		attest<typeof Expected.t>(T.t)
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("non-object operand", () => {

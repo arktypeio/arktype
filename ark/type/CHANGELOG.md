@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.17
+
+Unsatisfiable types for index signature intersections will now result in a `ParseError` thanks to the work of @TizzySaurus on the upcoming `@ark/json-schema` package 🎉
+
 ## 2.1.16
 
 ##### Fixed [an issue](https://github.com/arktypeio/arktype/issues/1400) causing non-serializable error config to lead to incorrect error messages in some JIT-mode cases:
@@ -76,11 +80,11 @@ myType.configure("some shallow description", "self")
 ### improve .expression for regex constraints
 
 ```ts
-const t = type(/^a.*z$/)
+const T = type(/^a.*z$/)
 
 // old: string /^a.*z$/
 // new: /^a.*z$/
-console.log(t.expression)
+console.log(T.expression)
 ```
 
 ## 2.1.13
@@ -91,7 +95,7 @@ console.log(t.expression)
 //  accept ...definitions
 const union = type.or(type.string, "number", { key: "unknown" })
 
-const base = type({
+const Base = type({
 	foo: "string"
 })
 
@@ -108,7 +112,7 @@ const intersection = type.and(
 
 const zildjian = Symbol()
 
-const base = type({
+const Base = type({
 	"[string]": "number",
 	foo: "0",
 	[zildjian]: "true"
@@ -141,7 +145,7 @@ const trimStartToNonEmpty = type.pipe(
 By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).
 
 ```ts
-const myObj = type({
+const MyObj = type({
 	"key?": "number"
 })
 
@@ -168,7 +172,7 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-const myObj = type({
+const MyObj = type({
 	"key?": "number"
 })
 
@@ -182,7 +186,7 @@ const secondResult = myObj({ key: undefined })
 **WARNING: exactOptionalPropertyTypes does not yet affect default values!**
 
 ```ts
-const myObj = type({
+const MyObj = type({
 	key: "number = 5"
 })
 
@@ -230,7 +234,7 @@ const result = myType.configure(
 ### `ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
 
 ```ts
-const nEvenAtLeast2 = type({
+const NEvenAtLeast2 = type({
 	n: "number % 2 > 2"
 })
 
@@ -281,9 +285,9 @@ The `|>` operator pipes output to another Type parsed from a definition.
 It is now string-embeddable:
 
 ```ts
-const trimToNonEmpty = type("string.trim |> string > 0")
+const TrimToNonEmpty = type("string.trim |> string > 0")
 
-const equivalent = type("string.trim").to("string > 0")
+const Equivalent = type("string.trim").to("string > 0")
 ```
 
 ## 2.1.8
@@ -309,14 +313,14 @@ Improve some type-level parse errors on expressions with invalid finalizers
 Addresses #1294
 
 ```ts
-const t = type({
+const T = type({
 	/** FOO */
 	foo: "string",
 	/** BAR */
 	bar: "number?"
 })
 
-const out = t.assert({ foo: "foo" })
+const out = T.assert({ foo: "foo" })
 
 // go-to definition will now navigate to the foo prop from the type call
 // hovering foo now displays "FOO"
@@ -458,7 +462,7 @@ configure({
 import "./config.ts"
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	email: "string.email"
 })
@@ -482,19 +486,19 @@ To make this easier, there's a special `to` operator that can pipe to a parsed d
 This was added before 2.0, but now it comes with a corresponding operator (`|>`) so that it can be expressed via a tuple or args like most other expressions:
 
 ```ts
-const fluentStillWorks = type("string.numeric.parse").to("number % 2")
+const FluentStillWorks = type("string.numeric.parse").to("number % 2")
 
-const nowSoDoesTuple = type({
+const NowSoDoesTuple = type({
 	someKey: ["string.numeric.parse", "|>", "number % 2"]
 })
 
-const andSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
+const AndSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
 ```
 
 ### Error configurations now accept a string directly
 
 ```ts
-const customOne = type("1", "@", {
+const CustomOne = type("1", "@", {
 	// previously only a function returning a string was allowed here
 	message: "Yikes."
 })
@@ -543,7 +547,7 @@ const arkRes = fn({
 ### Fix an issue causing some discriminated unions to incorrectly reject default cases
 
 ```ts
-const discriminated = type({
+const Discriminated = type({
 	id: "0",
 	k1: "number"
 })

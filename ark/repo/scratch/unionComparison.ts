@@ -10,7 +10,7 @@ const zodUser = z.discriminatedUnion("kind", [
 	z.object({ kind: z.literal("pleb") })
 ])
 
-export const arkUser = type({
+export const ArkUser = type({
 	kind: "'admin'",
 	"powers?": "string[]"
 })

@@ -14,7 +14,7 @@ Objects definitions can include any combination of required, optional, defaultab
 ```ts
 const symbolicKey = Symbol()
 
-const myObject = type({
+const MyObj = type({
 	requiredKey: "string",
 	// Nested definitions don't require additional `type` calls!
 	[symbolicKey]: {
@@ -30,7 +30,7 @@ const myObject = type({
 ```ts
 const symbolicKey = Symbol()
 
-const myObject = type({
+const MyObj = type({
 	requiredKey: type.string,
 	// Nested definitions don't require additional `type` calls!
 	[symbolicKey]: {
@@ -51,7 +51,7 @@ const myObject = type({
 ```ts
 const symbolicKey = Symbol()
 
-const myObject = type({
+const MyObj = type({
 	"optionalKey?": "number[]",
 	[symbolicKey]: "string?"
 })
@@ -64,7 +64,7 @@ const myObject = type({
 ```ts
 const symbolicKey = Symbol()
 
-const myObject = type({
+const MyObj = type({
 	optionalKey: type.number.array().optional(),
 	[symbolicKey]: type.string.optional()
 })
@@ -77,7 +77,7 @@ const myObject = type({
 ```ts
 const symbolicKey = Symbol()
 
-const myObject = type({
+const MyObj = type({
 	optionalKey: [{ type: "'script'" }, "?"],
 	[symbolicKey]: [{ ark: "'type'" }, "?"]
 })
@@ -86,6 +86,23 @@ const myObject = type({
     </SyntaxTab>
 
 </SyntaxTabs>
+
+<Callout type="info" title="Should I use key or value syntax for optionality?">
+
+    Optionality can either be expressed on the key or the corresponding value.
+
+    We recommend using the key syntax by default because...
+
+    - it mirrors TypeScript
+    - it better reflects a _key presence_ constraint that has no effect on allowed values
+
+    However, there are a few reasons you might want to use a value-embedded syntax:
+
+    1. The key is a symbol (makes key-embedded syntax impossible)
+    2. You want editor features like JSDoc and go-to-definition for the key (can't work if the key name changes)
+    3. You really hate having to quote key names
+
+</Callout>
 
 <Callout type="warn" title="Optional properties cannot be present with the value undefined">
 
@@ -97,15 +114,15 @@ const myObject = type({
     	<summary>See an example</summary>
 
     ```ts
-    const myObj = type({
+    const MyObj = type({
     	"key?": "number"
     })
 
     // valid data
-    const validResult = myObj({})
+    const validResult = MyObj({})
 
     // Error: key must be a number (was undefined)
-    const errorResult = myObj({ key: undefined })
+    const errorResult = MyObj({ key: undefined })
     ```
 
     </details>
@@ -118,7 +135,7 @@ const myObject = type({
 	<SyntaxTab string>
 
 ```ts
-const myObject = type({
+const MyObj = type({
 	defaultableKey: "boolean = false"
 })
 ```
@@ -128,7 +145,7 @@ const myObject = type({
     <SyntaxTab fluent>
 
 ```ts
-const myObject = type({
+const MyObj = type({
 	defaultableKey: type.boolean.default(false)
 })
 ```
@@ -138,7 +155,7 @@ const myObject = type({
     <SyntaxTab tuple>
 
 ```ts
-const myObject = type({
+const MyObj = type({
 	defaultableKey: ["boolean", "=", false]
 })
 ```
@@ -157,7 +174,7 @@ const myObject = type({
     To have it transform `undefined` to an empty string, use an explicit morph like:
 
     ```ts
-    const fallbackString = type("string | undefined").pipe(v => v ?? "")
+    const FallbackString = type("string | undefined").pipe(v => v ?? "")
     ```
 
 </Callout>
@@ -168,7 +185,7 @@ const myObject = type({
 	<SyntaxTab string>
 
 ```ts
-const myObject = type({
+const MyObj = type({
 	// index signatures do not require a label
 	"[string]": "number.integer",
 	// arbitrary string or symbolic expressions are allowed
@@ -195,20 +212,20 @@ However, sometimes the way you're using the object would make undeclared propert
 
 ```ts
 // fail if any key other than "onlyAllowedKey" is present
-const myClosedObject = type({
+const MyClosedObject = type({
 	"+": "reject",
 	onlyAllowedKey: "string"
 })
 
 // delete all non-symbolic keys other than "onlyPreservedStringKey"
-const myStrippedObject = type({
+const MyStrippedObject = type({
 	"+": "delete",
 	"[symbol]": "unknown",
 	onlyPreservedStringKey: "string"
 })
 
 // allow and preserve undeclared keys (the default behavior)
-const myOpenObject = type({
+const MyOpenObject = type({
 	// only specify "ignore" if you explicitly configured the default elsewhere
 	"+": "ignore",
 	nonexclusiveKey: "number"
@@ -221,24 +238,24 @@ const myOpenObject = type({
 
 ```ts
 // fail if any key other than "onlyAllowedKey" is present
-const myClosedObject = type({
+const MyClosedObject = type({
 	onlyAllowedKey: "string"
 }).onUndeclaredKey("reject")
 
 // delete all non-symbolic keys other than "onlyPreservedStringKey"
-const myStrippedObject = type({
+const MyStrippedObject = type({
 	"[symbol]": "unknown",
 	onlyPreservedStringKey: "string"
 }).onUndeclaredKey("delete")
 
 // allow and preserve undeclared keys (the default behavior)
-const myOpenObject = type({
+const MyOpenObject = type({
 	nonexclusiveKey: "number"
 	// only specify "ignore" if you explicitly configured the default elsewhere
 }).onUndeclaredKey("ignore")
 
 // there is also a method for altering nested objects recursively
-const myDeeplyStrippedObject = type({
+const MyDeeplyStrippedObject = type({
 	preserved: "string",
 	nested: {
 		preserved: "string"
@@ -273,11 +290,11 @@ Spreading bypasses a lot of the behavioral complexity and computational overhead
 A base object definition can be spread if `"..."` is the first key specified in an object literal. Subsequent properties will be merged into those from the base object, just like the `...` operator [in JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax).
 
 ```ts
-const user = type({ isAdmin: "false", name: "string" })
+const User = type({ isAdmin: "false", name: "string" })
 
 // hover to see the newly merged object
-const admin = type({
-	"...": user,
+const Admin = type({
+	"...": User,
 	// in an intersection, non-overlapping values at isAdmin would result in a ParseError
 	isAdmin: "true",
 	permissions: "string[]"
@@ -313,14 +330,14 @@ type Result = typeof types.result.infer
 ```ts
 const zildjian = Symbol()
 
-const base = type({
+const Base = type({
 	"[string]": "number",
 	foo: "0",
 	[zildjian]: "true"
 })
 
 // hover to see the inferred result
-const chainedResult = base.merge({
+const chainedResult = Base.merge({
 	"[string]": "bigint",
 	"foo?": "1n"
 })
@@ -333,7 +350,7 @@ const chainedResult = base.merge({
 ```ts
 const zildjian = Symbol()
 
-const base = type({
+const Base = type({
 	"[string]": "number",
 	foo: "0",
 	[zildjian]: "true"
@@ -341,7 +358,7 @@ const base = type({
 
 // accepts ...objectDefinitions
 const functionResult = type.merge(
-	base,
+	Base,
 	{
 		"[string]": "bigint",
 		"foo?": "1n"
@@ -364,14 +381,14 @@ Like in TypeScript, the `keyof` operator extracts the keys of an object as a uni
     <SyntaxTab fluent>
 
 ```ts
-const usedCar = type({
+const UsedCar = type({
 	originallyPurchased: "string.date",
 	remainingWheels: "number"
 })
 
-const usedCarKey = usedCar.keyof()
+const UsedCarKey = UsedCar.keyof()
 
-type UsedCarKey = typeof usedCarKey.infer
+type UsedCarKey = typeof UsedCarKey.infer
 ```
 
     </SyntaxTab>
@@ -380,14 +397,14 @@ type UsedCarKey = typeof usedCarKey.infer
 
 ```ts
 const types = type.module({
-	usedCar: {
+	UsedCar: {
 		originallyPurchased: "string.date",
 		remainingWheels: "number"
 	},
-	usedCarKey: "keyof usedCar"
+	UsedCarKey: "keyof UsedCar"
 })
 
-type UsedCarKey = typeof types.usedCarKey.infer
+type UsedCarKey = typeof types.UsedCarKey.infer
 ```
 
     </SyntaxTab>
@@ -395,14 +412,14 @@ type UsedCarKey = typeof types.usedCarKey.infer
     <SyntaxTab tuple>
 
 ```ts
-const usedCar = type({
+const UsedCar = type({
 	originallyPurchased: "string.date",
 	remainingWheels: "number"
 })
 
-const usedCarKey = type(["keyof", usedCar])
+const UsedCarKey = type(["keyof", UsedCar])
 
-type UsedCarKey = typeof usedCarKey.infer
+type UsedCarKey = typeof UsedCarKey.infer
 ```
 
     </SyntaxTab>
@@ -410,14 +427,14 @@ type UsedCarKey = typeof usedCarKey.infer
     <SyntaxTab args>
 
 ```ts
-const usedCar = type({
+const UsedCar = type({
 	originallyPurchased: "string.date",
 	remainingWheels: "number"
 })
 
-const usedCarKey = type("keyof", usedCar)
+const UsedCarKey = type("keyof", UsedCar)
 
-type UsedCarKey = typeof usedCarKey.infer
+type UsedCarKey = typeof UsedCarKey.infer
 ```
 
     </SyntaxTab>
@@ -427,7 +444,7 @@ type UsedCarKey = typeof usedCarKey.infer
 Also like in TypeScript, if an object includes an index signature like `[string]` alongside named properties, the union from `keyof` will reduce to `string`:
 
 ```ts
-const recordWithSpecialKeys = type({
+const RecordWithSpecialKeys = type({
 	"[string]": "unknown",
 	verySpecialKey: "0 < number <= 3.14159",
 	moderatelySpecialKey: "-9.51413 <= number < 0"
@@ -435,10 +452,10 @@ const recordWithSpecialKeys = type({
 
 // in a union with the `string` index signature, string literals
 // "verySpecialKey" and "moderatelySpecialKey" are redundant and will be pruned
-const key = recordWithSpecialKeys.keyof()
+const Key = RecordWithSpecialKeys.keyof()
 
 // key is identical to the base `string` Type
-console.log(key.equals("string"))
+console.log(Key.equals("string"))
 ```
 
 <Callout type="warn" title="ArkType's `keyof` will never include `number`">
@@ -500,17 +517,17 @@ Like an index access expression in TypeScript (e.g. `User["name"]`), the `get` o
 ```ts
 const snorfUsage = type.enumerated("eating plants", "looking adorable")
 
-const manatee = type({
+const Manatee = type({
 	isFriendly: "true",
 	snorf: {
 		uses: snorfUsage.array()
 	}
 })
 
-const trueType = manatee.get("isFriendly")
+const True = Manatee.get("isFriendly")
 
 // nested properties can be accessed directly by passing additional args
-const snorfUsageArray = manatee.get("snorf", "uses")
+const SnorfUses = Manatee.get("snorf", "uses")
 ```
 
 <Callout
@@ -547,7 +564,7 @@ Not your cup of tea? No worries- the inferred types and errors you'll see in edi
 	<SyntaxTab string>
 
 ```ts
-const arrays = type({
+const Arrays = type({
 	key: "string[]"
 })
 ```
@@ -557,7 +574,7 @@ const arrays = type({
     <SyntaxTab fluent>
 
 ```ts
-const arrays = type({
+const Arrays = type({
 	key: type.string.array()
 })
 ```
@@ -567,7 +584,7 @@ const arrays = type({
     <SyntaxTab tuple>
 
 ```ts
-const arrays = type({
+const Arrays = type({
 	key: [{ name: "string" }, "[]"]
 })
 ```
@@ -577,7 +594,7 @@ const arrays = type({
     <SyntaxTab args>
 
 ```ts
-const arrays = type({
+const Arrays = type({
 	key: type({ name: "string" }, "[]")
 })
 ```
@@ -594,7 +611,7 @@ Constrain an array with an inclusive or exclusive min or max length.
 	<SyntaxTab string>
 
 ```ts
-const bounded = type({
+const Bounded = type({
 	nonEmptyStringArray: "string[] > 0",
 	atLeast3Integers: "number.integer[] >= 3",
 	lessThan10Emails: "string.email[] < 10",
@@ -607,7 +624,7 @@ const bounded = type({
     <SyntaxTab fluent>
 
 ```ts
-const bounded = type({
+const Bounded = type({
 	nonEmptyStringArray: type.string.array().moreThanLength(0),
 	atLeast3Integers: type.keywords.number.integer.array().atLeastLength(3),
 	lessThan10Emails: type.keywords.string.email.array().lessThanLength(10),
@@ -625,7 +642,7 @@ Range expressions allow you to specify both a min and max length and use the sam
 	<SyntaxTab string>
 
 ```ts
-const range = type({
+const Range = type({
 	nonEmptyStringArrayAtMostLength10: "0 < string[] <= 10",
 	twoToFiveIntegers: "2 <= number.integer[] < 6"
 })
@@ -636,7 +653,7 @@ const range = type({
     <SyntaxTab fluent>
 
 ```ts
-const range = type({
+const Range = type({
 	nonEmptyStringArrayAtMostLength10: type.string
 		.array()
 		.moreThanLength(0)
@@ -662,7 +679,7 @@ Like objects, tuples are structures whose values are nested definitions. Like Ty
 	<SyntaxTab string>
 
 ```ts
-const myTuple = type([
+const MyTuple = type([
 	"string",
 	// Object definitions can be nested in tuples- and vice versa!
 	{
@@ -676,7 +693,7 @@ const myTuple = type([
     <SyntaxTab fluent>
 
 ```ts
-const myTuple = type([
+const MyTuple = type([
 	type.string,
 	// Object definitions can be nested in tuples- and vice versa!
 	{
@@ -701,7 +718,7 @@ Like optional elements, defaultable elements are mutually exclusive with postfix
 	<SyntaxTab string>
 
 ```ts
-const myTuple = type(["string", "boolean = false", "number = 0"])
+const MyTuple = type(["string", "boolean = false", "number = 0"])
 ```
 
     </SyntaxTab>
@@ -709,7 +726,7 @@ const myTuple = type(["string", "boolean = false", "number = 0"])
     <SyntaxTab fluent>
 
 ```ts
-const myTuple = type([
+const MyTuple = type([
 	type.string,
 	type.boolean.default(false),
 	type.number.default(0)
@@ -721,7 +738,7 @@ const myTuple = type([
     <SyntaxTab tuple>
 
 ```ts
-const myTuple = type([
+const MyTuple = type([
 	"string",
 	[
 		{
@@ -749,7 +766,7 @@ Like in TypeScript, optional elements are mutually exclusive with postfix elemen
 	<SyntaxTab string>
 
 ```ts
-const myTuple = type(["string", "bigint = 999n", "boolean?", "number?"])
+const MyTuple = type(["string", "bigint = 999n", "boolean?", "number?"])
 ```
 
     </SyntaxTab>
@@ -757,7 +774,7 @@ const myTuple = type(["string", "bigint = 999n", "boolean?", "number?"])
     <SyntaxTab fluent>
 
 ```ts
-const myTuple = type([
+const MyTuple = type([
 	type.string,
 	type.bigint.default(999n),
 	type.boolean.optional(),
@@ -770,7 +787,7 @@ const myTuple = type([
     <SyntaxTab tuple>
 
 ```ts
-const myTuple = type([
+const MyTuple = type([
 	"string",
 	[
 		{
@@ -796,7 +813,7 @@ They are specified with a `"..."` operator preceding an array element.
 
 ```ts
 // allows a string followed by zero or more numbers
-const myTuple = type(["string", "...", "number[]"])
+const MyTuple = type(["string", "...", "number[]"])
 ```
 
     </SyntaxTab>
@@ -805,7 +822,7 @@ const myTuple = type(["string", "...", "number[]"])
 
 ```ts
 // allows a string followed by zero or more numbers
-const myTuple = type([type.string, "...", type.number.array()])
+const MyTuple = type([type.string, "...", type.number.array()])
 ```
 
     </SyntaxTab>
@@ -823,7 +840,7 @@ They are mutually exclusive with optional elements.
 
 ```ts
 // allows zero or more numbers followed by a boolean, then a string
-const myTuple = type(["...", "number[]", "boolean", "string"])
+const MyTuple = type(["...", "number[]", "boolean", "string"])
 ```
 
     </SyntaxTab>
@@ -832,7 +849,7 @@ const myTuple = type(["...", "number[]", "boolean", "string"])
 
 ```ts
 // allows zero or more numbers followed by a boolean, then a string
-const myTuple = type(["...", type.number.array(), type.boolean, type.string])
+const MyTuple = type(["...", type.number.array(), type.boolean, type.string])
 ```
 
     </SyntaxTab>
@@ -848,7 +865,7 @@ Date literals represent a Date instance with an exact value.
 They're primarily useful in ranges.
 
 ```ts
-const literals = type({
+const Literals = type({
 	singleQuoted: "d'01-01-1970'",
 	doubleQuoted: 'd"01-01-1970"'
 })
@@ -864,7 +881,7 @@ Bounds can be expressed as either a [number](/docs/primitives#number-literals) r
 	<SyntaxTab string>
 
 ```ts
-const bounded = type({
+const Bounded = type({
 	dateInThePast: `Date < ${Date.now()}`,
 	dateAfter2000: "Date > d'2000-01-01'",
 	dateAtOrAfter1970: "Date >= 0"
@@ -876,7 +893,7 @@ const bounded = type({
     <SyntaxTab fluent>
 
 ```ts
-const bounded = type({
+const Bounded = type({
 	dateInThePast: type.Date.earlierThan(Date.now()),
 	dateAfter2000: type.Date.laterThan("2000-01-01"),
 	dateAtOrAfter1970: type.Date.atOrAfter(0)
@@ -897,7 +914,7 @@ const tenYearsAgo = new Date()
 	.setFullYear(new Date().getFullYear() - 10)
 	.valueOf()
 
-const bounded = type({
+const Bounded = type({
 	dateInTheLast10Years: `${tenYearsAgo} <= Date < ${Date.now()}`
 })
 ```
@@ -911,7 +928,7 @@ const tenYearsAgo = new Date()
 	.setFullYear(new Date().getFullYear() - 10)
 	.valueOf()
 
-const bounded = type({
+const Bounded = type({
 	dateInTheLast10Years: type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
 })
 ```
@@ -940,7 +957,7 @@ const instances = type.instanceOf(MyClass)
 ```ts
 class MyClass {}
 
-const instances = type({
+const Instances = type({
 	key: ["instanceof", MyClass]
 })
 ```
@@ -952,7 +969,7 @@ const instances = type({
 ```ts
 class MyClass {}
 
-const instances = type({
+const Instances = type({
 	key: type("instanceof", MyClass)
 })
 ```

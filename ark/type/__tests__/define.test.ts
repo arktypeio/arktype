@@ -12,11 +12,11 @@ contextualize(() => {
 	})
 
 	it("type attached", () => {
-		const t = type.define({
+		const T = type.define({
 			foo: "string"
 		})
 
-		attest<{ readonly foo: "string" }>(t).equals({ foo: "string" })
+		attest<{ readonly foo: "string" }>(T).equals({ foo: "string" })
 
 		// @ts-expect-error
 		attest(() => type.define({ foo: "str" })).completions({ str: ["string"] })

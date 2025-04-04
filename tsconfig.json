@@ -5,9 +5,9 @@
 		"rewriteRelativeImportExtensions": true,
 		"customConditions": ["ark-ts"],
 		"types": ["mocha", "node"]
+		// "noErrorTruncation": true
 		// disabling until compatible with tsgo
 		// "erasableSyntaxOnly": true
-		// "noErrorTruncation": true
 	},
 	"exclude": ["**/out", "**/node_modules", "./ark/docs", "**/*.scratch.ts"]
 }

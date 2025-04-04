@@ -9,14 +9,14 @@ If you already know TypeScript, congratulations- you just learned most of ArkTyp
 ```ts
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
 })
 
 // extract the type if needed
-type User = typeof user.infer
+type User = typeof User.infer
 ```
 
 If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to from your editor, all within TypeScript's type system.
@@ -31,7 +31,7 @@ If you make a mistake, don't worry- every definition gets the autocomplete and v
 Suppose we want to move `platform` and `version` from our original type to a new `device` property.
 
 ```ts
-const user = type({
+const User = type({
 	name: "string",
 	// nested definitions don't need to be wrapped
 	device: {
@@ -41,17 +41,17 @@ const user = type({
 })
 ```
 
-To decouple `device` from `user`, just move it to its own type and reference it.
+To decouple `device` from `User`, just move it to its own type and reference it.
 
 ```ts
-const device = type({
+const Device = type({
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
 })
 
-const user = type({
+const User = type({
 	name: "string",
-	device: device
+	device: Device
 })
 ```
 
@@ -60,7 +60,7 @@ const user = type({
 At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
 
 ```ts
-const user = type({
+const User = type({
 	name: "string",
 	device: {
 		platform: "'android' | 'ios'",
@@ -77,7 +77,7 @@ device.versions[2] must be a number or a string (was bigint)*/
 const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 // ---cut---
-const out = user({
+const out = User({
 	name: "Alan Turing",
 	device: {
 		platform: "enigma",

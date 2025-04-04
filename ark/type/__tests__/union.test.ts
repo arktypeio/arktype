@@ -10,42 +10,42 @@ import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/o
 
 contextualize(() => {
 	it("binary", () => {
-		const binary = type("number|string")
-		attest<number | string>(binary.infer)
-		attest(binary.json).snap(["number", "string"])
+		const Binary = type("number|string")
+		attest<number | string>(Binary.infer)
+		attest(Binary.json).snap(["number", "string"])
 	})
 
 	it("nary", () => {
-		const nary = type("false|null|undefined|0|''")
-		attest<false | "" | 0 | null | undefined>(nary.infer)
-		const expected = type("===", false, null, undefined, 0, "")
-		attest(nary.json).equals(expected.json)
+		const Nary = type("false|null|undefined|0|''")
+		attest<false | "" | 0 | null | undefined>(Nary.infer)
+		const Expected = type("===", false, null, undefined, 0, "")
+		attest(Nary.json).equals(Expected.json)
 	})
 
 	it("subtype pruning", () => {
-		const t = type({ a: "string" }, "|", { a: "'foo'" })
-		const expected = type({ a: "string" })
-		attest<typeof expected>(t)
-		attest(t.json).equals(expected.json)
+		const T = type({ a: "string" }, "|", { a: "'foo'" })
+		const Expected = type({ a: "string" })
+		attest<typeof Expected>(T)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("multiple subtypes pruned", () => {
-		const t = type("'foo'|'bar'|string|'baz'|/.*/")
-		const expected = type("string")
-		attest<string>(t.infer)
-		attest(t.json).equals(expected.json)
+		const T = type("'foo'|'bar'|string|'baz'|/.*/")
+		const Expected = type("string")
+		attest<string>(T.infer)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("boolean is a union of true | false", () => {
-		const t = type("true|false")
-		attest(t.infer).type.toString("boolean")
-		attest(t.json).equals(type("boolean").json)
+		const T = type("true|false")
+		attest(T.infer).type.toString("boolean")
+		attest(T.json).equals(type("boolean").json)
 	})
 
 	it("nested tuple union", () => {
-		const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
-		attest<string | number | bigint | boolean>(t.infer)
-		attest(t.json).equals(type("string|bigint|number|boolean").json)
+		const T = type(["string|bigint", "|", ["number", "|", "boolean"]])
+		attest<string | number | bigint | boolean>(T.infer)
+		attest(T.json).equals(type("string|bigint|number|boolean").json)
 	})
 
 	it("length stress", () => {
@@ -54,7 +54,7 @@ contextualize(() => {
 		// wanted to make those changes explicit if something reduces it it's
 		// also still very responsive up until it hits the limit, so it is
 		// likely a safeguard rather than a limitation of the parser
-		const t = type(
+		const T = type(
 			"0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45"
 		)
 		// prettier-ignore
@@ -105,9 +105,9 @@ contextualize(() => {
 				| 43
 				| 44
 				| 45
-			>(t.infer)
+			>(T.infer)
 
-		attest(t.json).snap([
+		attest(T.json).snap([
 			{ unit: 0 },
 			{ unit: 10 },
 			{ unit: 11 },
@@ -176,19 +176,19 @@ contextualize(() => {
 		]).json
 
 	it("tuple", () => {
-		const t = type([{ a: "string" }, "|", { b: "number" }])
-		attest<{ a: string } | { b: number }>(t.infer)
-		attest(t.json).equals(expected())
+		const T = type([{ a: "string" }, "|", { b: "number" }])
+		attest<{ a: string } | { b: number }>(T.infer)
+		attest(T.json).equals(expected())
 	})
 
 	it("root", () => {
-		const t = type({ a: "string" }, "|", { b: "number" })
-		attest<{ a: string } | { b: number }>(t.infer)
-		attest(t.json).equals(expected())
+		const T = type({ a: "string" }, "|", { b: "number" })
+		attest<{ a: string } | { b: number }>(T.infer)
+		attest(T.json).equals(expected())
 	})
 
 	it("chained", () => {
-		const t = type({ a: "string" }).or({ b: "number" })
+		const T = type({ a: "string" }).or({ b: "number" })
 		attest<
 			| {
 					a: string
@@ -196,8 +196,8 @@ contextualize(() => {
 			| {
 					b: number
 			  }
-		>(t.infer)
-		attest(t.json).equals(expected())
+		>(T.infer)
+		attest(T.json).equals(expected())
 	})
 
 	it("root autocompletion", () => {
@@ -263,8 +263,8 @@ contextualize(() => {
 	})
 
 	it("chained description", () => {
-		const t = type("number|string").describe("My custom type")
-		attest(t.json).snap({
+		const T = type("number|string").describe("My custom type")
+		attest(T.json).snap({
 			branches: [
 				{ meta: "My custom type", domain: "number" },
 				{ meta: "My custom type", domain: "string" }

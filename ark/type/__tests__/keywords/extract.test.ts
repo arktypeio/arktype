@@ -14,12 +14,12 @@ contextualize(() => {
 	})
 
 	it("chained", () => {
-		const extracted = type("true | 0 | 'foo'").extract("boolean | number")
+		const Extracted = type("true | 0 | 'foo'").extract("boolean | number")
 
-		const expected = type("true | 0")
+		const Expected = type("true | 0")
 
-		attest<typeof expected.t>(extracted.t)
+		attest<typeof Expected.t>(Extracted.t)
 
-		attest(extracted.expression).equals(expected.expression)
+		attest(Extracted.expression).equals(Expected.expression)
 	})
 })

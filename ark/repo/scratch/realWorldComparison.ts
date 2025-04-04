@@ -20,7 +20,7 @@ bench("arktype", () => {
 		"platform"
 	)
 
-	const authenticationResponseJSONSchema = type({
+	const AuthenticationResponseJSONSchema = type({
 		id: "string",
 		rawId: "string",
 		response: {
@@ -40,7 +40,7 @@ bench("arktype", () => {
 		type: "'public-key'"
 	})
 
-	const verifyRegistrationResponseOptsSchema = type({
+	const VerifyRegistrationResponseOptsSchema = type({
 		id: "string",
 		rawId: "string",
 		response: {
@@ -59,9 +59,11 @@ bench("arktype", () => {
 		type: "'public-key'"
 	})
 
-	const derived = verifyRegistrationResponseOptsSchema
-		.pick("id", "clientExtensionResults", "authenticatorAttachment")
-		.omit("clientExtensionResults")
+	const derived = VerifyRegistrationResponseOptsSchema.pick(
+		"id",
+		"clientExtensionResults",
+		"authenticatorAttachment"
+	).omit("clientExtensionResults")
 }).types([5769, "instantiations"])
 
 // checkDeferredNode: 19ms

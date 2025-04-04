@@ -47,14 +47,14 @@ contextualize(() => {
 
 	it("any", () => {
 		// doesn't error, so this test is just to ensure it doesn't infinitely recurse
-		const t = type({ bad: {} as any })
-		attest<{ bad: any }>(t.infer)
+		const T = type({ bad: {} as any })
+		attest<{ bad: any }>(T.infer)
 	})
 
 	it("never", () => {
 		// can't error
-		const t = type({ bad: {} as never })
-		attest<{ bad: never }>(t.infer)
+		const T = type({ bad: {} as never })
+		attest<{ bad: never }>(T.infer)
 	})
 
 	it("unknown", () => {

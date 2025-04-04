@@ -172,12 +172,12 @@ configure({
 import "./config.ts"
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	email: "string.email"
 })
 
-const out = user({
+const out = User({
 	// ArkErrors: name must be shorthand description (was a number)
 	name: 5,
 	// ArkErrors: email must be an email address (was definitely fake)
@@ -196,25 +196,25 @@ To make this easier, there's a special `to` operator that can pipe to a parsed d
 This was added before 2.0, but now it comes with a corresponding operator (`|>`) so that it can be expressed via a tuple or args like most other expressions:
 
 ```ts
-const fluentStillWorks = type("string.numeric.parse").to("number % 2")
+const FluentStillWorks = type("string.numeric.parse").to("number % 2")
 
-const nowSoDoesTuple = type({
+const NowSoDoesTuple = type({
 	someKey: ["string.numeric.parse", "|>", "number % 2"]
 })
 
-const andSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
+const AndSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
 ```
 
 ### Error configurations now accept a string directly
 
 ```ts
-const customOne = type("1", "@", {
+const CustomOne = type("1", "@", {
 	// previously only a function returning a string was allowed here
 	message: "Yikes."
 })
 
 // ArkErrors: Yikes.
-customOne(2)
+CustomOne(2)
 ```
 
 Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#errors), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
@@ -258,7 +258,7 @@ const arkRes = fn({
 ### Fix an issue causing some discriminated unions to incorrectly reject default cases
 
 ```ts
-const discriminated = type({
+const Discriminated = type({
 	id: "0",
 	k1: "number"
 })
@@ -270,5 +270,5 @@ const discriminated = type({
 // previously, this was rejected as requiring a "k1" key
 // will now hit the case discriminated for id: 1,
 // but still correctly be allowed via the { name: string } branch
-discriminated({ name: "foo", id: 1 })
+Discriminated({ name: "foo", id: 1 })
 ```

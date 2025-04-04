@@ -3,32 +3,32 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("preserves the original references if no morphs are present", () => {
-		const t = type({
+		const T = type({
 			foo: "string"
 		})
 
 		const original = { foo: "bar" }
 
-		const out = t(original)
+		const out = T(original)
 		attest(out).is(original)
 	})
 
 	it("clones by default before morphing", () => {
-		const t = type({
+		const T = type({
 			foo: "string.trim"
 		})
 
 		const original = { foo: "  bar  " }
 
-		const out = t(original)
+		const out = T(original)
 
 		attest(out).snap({ foo: "bar" })
 		attest(original).snap({ foo: "  bar  " })
 	})
 
 	it("default clone implementation preserves prototypes", () => {
-		const t = type(["Date", "=>", d => d.toISOString()])
-		attest(t.from(new Date(2000, 1))).equals("2000-02-01T05:00:00.000Z")
+		const T = type(["Date", "=>", d => d.toISOString()])
+		attest(T.from(new Date(2000, 1))).equals("2000-02-01T05:00:00.000Z")
 	})
 
 	it("can be configured to mutate", () => {
@@ -79,14 +79,14 @@ contextualize(() => {
 	// process.env is an exotic object- ensure it is correctly cloned
 	// https://discord.com/channels/957797212103016458/1116551844710330458
 	it("can clone process.env", () => {
-		const env = type({
+		const Env = type({
 			"+": "delete",
 			TZ: "'America/New_York'"
 		})
 
 		const originalEnv = { ...process.env }
 
-		const vars = env(process.env)
+		const vars = Env(process.env)
 
 		attest(vars).snap({ TZ: "America/New_York" })
 		// if process.env is not spread here, the assertion fails apparently

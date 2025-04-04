@@ -3,23 +3,23 @@ import { rootSchema } from "@ark/schema"
 
 contextualize(() => {
 	it("single constraint", () => {
-		const t = rootSchema({ domain: "string", pattern: ".*" })
-		attest(t.json).snap({ domain: "string", pattern: [".*"] })
+		const T = rootSchema({ domain: "string", pattern: ".*" })
+		attest(T.json).snap({ domain: "string", pattern: [".*"] })
 	})
 
 	it("multiple constraints", () => {
-		const l = rootSchema({
+		const L = rootSchema({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = rootSchema({
+		const R = rootSchema({
 			domain: "number",
 			divisor: 5
 		})
-		const result = l.and(r)
+		const T = L.and(R)
 
-		attest(result.json).snap({
+		attest(T.json).snap({
 			domain: "number",
 			divisor: 15,
 			min: 5

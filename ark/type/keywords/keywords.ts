@@ -110,6 +110,17 @@ export declare namespace type {
 
 	export type errors = ArkErrors
 
+	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
+		def,
+		$,
+		args
+	>
+
+	export type instantiate<def, $ = {}, args = bindThis<def>> = instantiateType<
+		inferDefinition<def, $, args>,
+		$
+	>
+
 	export type infer<def, $ = {}, args = bindThis<def>> = inferDefinition<
 		def,
 		$,
@@ -132,17 +143,6 @@ export declare namespace type {
 		}
 	}
 
-	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
-		def,
-		$,
-		args
-	>
-
-	export type instantiate<def, $ = {}, args = bindThis<def>> = instantiateType<
-		inferDefinition<def, $, args>,
-		$
-	>
-
 	export type brand<t, id> =
 		t extends InferredMorph<infer i, infer o> ?
 			o["introspectable"] extends true ?
@@ -151,7 +151,7 @@ export declare namespace type {
 		:	Brand<t, id>
 
 	/** @ts-ignore cast variance */
-	export interface Any<out t = any> extends BaseType<t, any> {}
+	export interface Any<out t = any, $ = any> extends BaseType<t, $> {}
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>

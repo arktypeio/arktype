@@ -6,6 +6,9 @@ import { Scope } from "../scope.ts"
 
 class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
+
+	description =
+		'merge an object\'s properties onto another like `Merge(User, { isAdmin: "true" })`'
 }
 
 const Merge = genericNode(

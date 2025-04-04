@@ -20,6 +20,23 @@ const tableRowsByName = flatMorph(tableNames, (i, name) => [
 	[] as JSX.Element[]
 ])
 
+const formatDescription = (description: string): JSX.Element => {
+	if (!description.includes("`")) return <>{description}</>
+
+	const segments = description.split(/(`[^`]+`)/)
+	return (
+		<>
+			{segments.map((segment, i) => {
+				if (segment.startsWith("`") && segment.endsWith("`")) {
+					const code = segment.substring(1, segment.length - 1)
+					return <code key={i}>{code}</code>
+				}
+				return <span key={i}>{segment}</span>
+			})}
+		</>
+	)
+}
+
 entriesOf(ark.internal.resolutions)
 	.map(
 		([alias, v]) =>
@@ -45,7 +62,7 @@ entriesOf(ark.internal.resolutions)
 			tableRowsByName[name],
 			<tr key={alias}>
 				<td>{alias}</td>
-				<td>{v.description}</td>
+				<td>{formatDescription(v.description)}</td>
 			</tr>
 		)
 	})
@@ -74,6 +91,8 @@ const KeywordTables = flatMorph(tableNames, (i, name) => [
 export const StringKeywordTable = KeywordTables.string
 
 export const NumberKeywordTable = KeywordTables.number
+
+export const GenericKeywordTable = KeywordTables.generic
 
 export const AllKeywordTables = () =>
 	tableNames.map(name => (
