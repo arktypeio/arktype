@@ -4,7 +4,14 @@ import { unset } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
+// Import React explicitly for React.memo
+import React, {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	type RefObject
+} from "react"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
 import { executeCode, type ExecutionResult } from "./execute.ts"
@@ -25,14 +32,6 @@ const onigasmLoaded =
 	loadWASM("/onigasm.wasm").catch(e => {
 		if (!String(e).includes("subsequent calls are not allowed")) throw e
 	})
-
-const setupDynamicStyles = (
-	editor: Monaco.editor.IStandaloneCodeEditor,
-	monaco: typeof Monaco,
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
-): void => {
-	setupErrorLens(monaco, editor, tsLanguageService)
-}
 
 const setupMonaco = async (
 	monaco: typeof Monaco
@@ -102,7 +101,7 @@ export const Playground = ({
 		setValidationResult(result)
 	}, [])
 
-	// on-load validation
+	// on-update validation
 	useEffect(() => {
 		if (editorRef.current) {
 			const currentEditorValue = editorRef.current.getValue()
@@ -111,24 +110,7 @@ export const Playground = ({
 				validateNow(initialValue)
 			}
 		}
-	}, [initialValue, validateNow])
-
-	// on-save (ctrl+s) formatting + validation
-	useEffect(() => {
-		const editor = editorRef.current
-		if (!editor) return
-
-		const handleKeyDown = async (e: KeyboardEvent) => {
-			if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-				e.preventDefault()
-				const formattedCode = await formatEditor(editor)
-				validateNow(formattedCode ?? editor.getValue())
-			}
-		}
-
-		window.addEventListener("keydown", handleKeyDown)
-		return () => window.removeEventListener("keydown", handleKeyDown)
-	}, [editorRef.current, validateNow])
+	}, [editorRef.current])
 
 	return (
 		<div
@@ -146,7 +128,6 @@ export const Playground = ({
 				<>
 					<PlaygroundEditor
 						defaultValue={initialValue}
-						validateIncremental={validateNow}
 						validateNow={validateNow}
 						editorRef={editorRef}
 					/>
@@ -160,37 +141,65 @@ export const Playground = ({
 type PlaygroundEditorProps = {
 	defaultValue: string
 	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
-	validateIncremental: (code: string) => void
 	validateNow: (code: string) => void
 }
 
-const PlaygroundEditor = ({
-	defaultValue,
-	editorRef,
-	validateIncremental,
-	validateNow
-}: PlaygroundEditorProps) => (
-	<Editor
-		width="100%"
-		defaultLanguage="typescript"
-		defaultValue={defaultValue}
-		path={editorFileUri}
-		theme="arkdark"
-		options={{
-			minimap: { enabled: false },
-			scrollBeyondLastLine: false,
-			quickSuggestions: { strings: "on" },
-			quickSuggestionsDelay: 0,
-			smoothScrolling: true
-		}}
-		onMount={(editor, monaco) => {
-			editorRef.current = editor
-			if (tsLanguageServiceInstance)
-				setupDynamicStyles(editor, monaco, tsLanguageServiceInstance)
-			validateNow(editor.getValue())
-		}}
-		onChange={code => code && validateIncremental(code)}
-	/>
+const PlaygroundEditor = React.memo(
+	({ defaultValue, editorRef, validateNow }: PlaygroundEditorProps) => {
+		const handleChange = useCallback(
+			(code: string | undefined) => {
+				if (code !== undefined) validateNow(code)
+			},
+			[validateNow]
+		)
+
+		const handleMount = useCallback(
+			(
+				editor: Monaco.editor.IStandaloneCodeEditor,
+				monacoInstance: typeof Monaco
+			) => {
+				editorRef.current = editor
+				if (tsLanguageServiceInstance)
+					setupErrorLens(monacoInstance, editor, tsLanguageServiceInstance)
+
+				// on-load validation
+				validateNow(editor.getValue())
+
+				// on-save (ctrl+s) formatting + validation
+				editor.onKeyDown(e => {
+					const monaco = (window as any).monaco
+					if (!monaco) return
+					if (e.keyCode === monaco.KeyCode.KeyS && (e.ctrlKey || e.metaKey)) {
+						e.preventDefault()
+						formatEditor(editor).then(formattedCode => {
+							validateNow(formattedCode ?? editor.getValue())
+						})
+					}
+				})
+			},
+			[editorRef, validateNow]
+		)
+
+		return (
+			<Editor
+				width="100%"
+				defaultLanguage="typescript"
+				defaultValue={defaultValue}
+				path={editorFileUri}
+				theme="arkdark"
+				options={{
+					minimap: { enabled: false },
+					scrollBeyondLastLine: false,
+					quickSuggestions: { strings: "on" },
+					quickSuggestionsDelay: 0,
+					smoothScrolling: true,
+					automaticLayout: true
+				}}
+				onMount={handleMount}
+				onChange={handleChange}
+			/>
+		)
+	}
 )
 
 const PlaygroundResults = (result: ExecutionResult) => (

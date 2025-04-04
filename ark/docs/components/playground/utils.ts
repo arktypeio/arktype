@@ -20,7 +20,7 @@ export type ResultKind = "failure" | "success" | "none"
 export const backgroundsByResultKind: Record<ResultKind, string> = {
 	failure: "#17080888",
 	success: "#08161788",
-	none: "#080d17cc"
+	none: "#080d17"
 }
 
 type RequestMap = Map<string, number>

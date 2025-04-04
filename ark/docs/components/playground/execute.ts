@@ -27,7 +27,7 @@ export const executeCode = (code: string): ExecutionResult => {
 		}
 	} catch (e) {
 		return {
-			parsed: String(e),
+			parsed: e instanceof Error ? e : unset,
 			traversed: unset
 		}
 	}
