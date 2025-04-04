@@ -35,7 +35,7 @@ export const ParseResult = ({ parsed, restoreDefault }: ParseResult.Props) => {
 						backgroundsByResultKind.failure
 					:	backgroundsByResultKind.none
 			}}
-			className="glass-container editor-bg h-full p-4 rounded-2xl overflow-auto"
+			className="glass-container editor-bg h-full p-4 rounded-2xl"
 		>
 			<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
 				{title}
@@ -77,7 +77,7 @@ const createTypeResult = (t: Type) => (
 		]}
 		style={{
 			maxHeight: "400px",
-			overflow: "scroll"
+			overflow: "auto"
 		}}
 	>
 		<Tab value=".expression">
