@@ -228,3 +228,8 @@ div.twoslash-popup-container {
 .margin {
 	padding-top: 16px;
 }
+
+/* Hide the theme toggle button */
+button[data-theme-toggle] {
+	display: none;
+}

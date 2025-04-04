@@ -1,22 +1,31 @@
 import { unset } from "@ark/util"
-import type { type } from "arktype"
-import { backgroundsByResultKind, type ResultKind } from "./utils.ts"
+import { Type, type type } from "arktype"
+import { RestoreDefault } from "./RestoreDefault.tsx"
+import {
+	backgroundsByResultKind,
+	playgroundTypeVariableName,
+	type ResultKind
+} from "./utils.ts"
 
 export type ParseResult = type | Error | unset
 
 export declare namespace ParseResult {
 	export type Props = {
 		parsed: ParseResult
+		restoreDefault: () => void
 	}
 }
 
-export const ParseResult = ({ parsed }: ParseResult.Props) => {
+export const ParseResult = ({ parsed, restoreDefault }: ParseResult.Props) => {
 	const resultKind: ResultKind =
-		parsed instanceof Error ? "failure"
-		: parsed === unset ? "none"
-		: "success"
+		parsed instanceof Type ? "success"
+			// unset is considered a failure in this case
+		: "failure"
 
-	const title = parsed instanceof Error ? parsed.name : "Type"
+	const title =
+		parsed instanceof Type ? "Type"
+		: parsed instanceof Error ? parsed.name
+		: "ReferenceError"
 
 	return (
 		<div className="flex-1 min-h-0">
@@ -31,7 +40,9 @@ export const ParseResult = ({ parsed }: ParseResult.Props) => {
 				</h3>
 				{parsed === unset ?
 					<>
-						(<code>MyType</code> variable was never set)
+						Define a <code>Type</code> called{" "}
+						<code>"{playgroundTypeVariableName}"</code> to enable introspection:
+						<RestoreDefault onClick={restoreDefault} />
 					</>
 				:	<pre className="m-0 whitespace-pre-wrap">
 						<code>

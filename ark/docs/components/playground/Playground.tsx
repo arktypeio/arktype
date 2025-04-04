@@ -4,7 +4,6 @@ import { unset } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
-// Import React explicitly for React.memo
 import React, {
 	useCallback,
 	useEffect,
@@ -19,9 +18,10 @@ import { formatEditor } from "./format.ts"
 import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
 import { ParseResult } from "./ParseResult.tsx"
+import { RestoreDefault } from "./RestoreDefault.tsx"
 import { TraverseResult } from "./TraverseResult.tsx"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
-import { editorFileUri } from "./utils.ts"
+import { defaultPlaygroundCode, editorFileUri } from "./utils.ts"
 
 let monacoInitialized = false
 let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
@@ -112,6 +112,9 @@ export const Playground = ({
 		}
 	}, [editorRef.current])
 
+	const restoreDefault = () =>
+		editorRef.current?.setValue(defaultPlaygroundCode)
+
 	return (
 		<div
 			className={className}
@@ -130,8 +133,14 @@ export const Playground = ({
 						defaultValue={initialValue}
 						validateNow={validateNow}
 						editorRef={editorRef}
+						restoreDefault={restoreDefault}
 					/>
-					{withResults && <PlaygroundResults {...validationResult} />}
+					{withResults && (
+						<PlaygroundResults
+							{...validationResult}
+							restoreDefault={restoreDefault}
+						/>
+					)}
 				</>
 			:	<PlaygroundLoader />}
 		</div>
@@ -142,10 +151,16 @@ type PlaygroundEditorProps = {
 	defaultValue: string
 	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
 	validateNow: (code: string) => void
+	restoreDefault: () => void
 }
 
 const PlaygroundEditor = React.memo(
-	({ defaultValue, editorRef, validateNow }: PlaygroundEditorProps) => {
+	({
+		defaultValue,
+		editorRef,
+		validateNow,
+		restoreDefault
+	}: PlaygroundEditorProps) => {
 		const handleChange = useCallback(
 			(code: string | undefined) => {
 				if (code !== undefined) validateNow(code)
@@ -177,32 +192,43 @@ const PlaygroundEditor = React.memo(
 					}
 				})
 			},
-			[editorRef, validateNow]
+			[editorRef]
 		)
 
 		return (
-			<Editor
-				width="100%"
-				defaultLanguage="typescript"
-				defaultValue={defaultValue}
-				path={editorFileUri}
-				theme="arkdark"
-				options={{
-					minimap: { enabled: false },
-					scrollBeyondLastLine: false,
-					quickSuggestions: { strings: "on" },
-					quickSuggestionsDelay: 0,
-					smoothScrolling: true,
-					automaticLayout: true
-				}}
-				onMount={handleMount}
-				onChange={handleChange}
-			/>
+			<div className="relative h-full">
+				<Editor
+					width="100%"
+					defaultLanguage="typescript"
+					defaultValue={defaultValue}
+					path={editorFileUri}
+					theme="arkdark"
+					options={{
+						minimap: { enabled: false },
+						scrollBeyondLastLine: false,
+						quickSuggestions: { strings: "on" },
+						quickSuggestionsDelay: 0,
+						smoothScrolling: true,
+						automaticLayout: true
+					}}
+					onMount={handleMount}
+					onChange={handleChange}
+				/>
+				<RestoreDefault
+					variant="icon"
+					onClick={restoreDefault}
+					className="cursor-pointer"
+				/>
+			</div>
 		)
 	}
 )
 
-const PlaygroundResults = (result: ExecutionResult) => (
+interface PlaygroundResultsProps extends ExecutionResult {
+	restoreDefault: () => void
+}
+
+const PlaygroundResults = (result: PlaygroundResultsProps) => (
 	<div className="flex flex-col gap-4 h-full">
 		<ParseResult {...result} />
 		<TraverseResult {...result} />
