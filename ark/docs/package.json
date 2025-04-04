@@ -41,15 +41,14 @@
 		"next": "15.2.4",
 		"onigasm": "2.2.5",
 		"postcss": "8.5.3",
-		"posthog-js": "1.234.7",
+		"posthog-js": "1.234.8",
 		"prettier": "3.5.3",
 		"react": "19.1.0",
 		"react-dom": "19.1.0",
 		"serve": "14.2.4",
 		"shiki": "3.2.1",
 		"ts-morph": "25.0.1",
-		"twoslash": "0.3.1",
-		"use-debounce": "10.0.4"
+		"twoslash": "0.3.1"
 	},
 	"devDependencies": {
 		"@fumadocs/cli": "0.1.0",

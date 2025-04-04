@@ -5,7 +5,6 @@ import Editor, { useMonaco } from "@monaco-editor/react"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
-import { useDebouncedCallback } from "use-debounce"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
 import { executeCode, type ExecutionResult } from "./execute.ts"
@@ -20,8 +19,6 @@ import { editorFileUri } from "./utils.ts"
 let monacoInitialized = false
 let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
 	null
-
-const validationDelayMs = 500
 
 const onigasmLoaded =
 	globalThis.window &&
@@ -105,11 +102,6 @@ export const Playground = ({
 		setValidationResult(result)
 	}, [])
 
-	const validateIncremental = useDebouncedCallback(
-		validateNow,
-		validationDelayMs
-	)
-
 	// on-load validation
 	useEffect(() => {
 		if (editorRef.current) {
@@ -154,7 +146,7 @@ export const Playground = ({
 				<>
 					<PlaygroundEditor
 						defaultValue={initialValue}
-						validateIncremental={validateIncremental}
+						validateIncremental={validateNow}
 						validateNow={validateNow}
 						editorRef={editorRef}
 					/>

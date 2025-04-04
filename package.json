@@ -115,9 +115,9 @@
 			"@ark/attest": "link:ark/attest"
 		},
 		"peerDependencyRules": {
-			"ignoreMissing": [
-				"eslint-plugin-prefer-arrow-functions"
-			]
+			"allowedVersions": {
+				"typescript": "*"
+			}
 		}
 	}
 }

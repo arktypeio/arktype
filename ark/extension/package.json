@@ -13,7 +13,7 @@
 		"publishOvsx": "ovsx publish -i arkdark.vsix"
 	},
 	"devDependencies": {
-		"vsce": "2.15.0",
+		"@vscode/vsce": "3.3.2",
 		"ovsx": "0.10.1"
 	},
 	"repository": {
