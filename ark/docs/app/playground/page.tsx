@@ -26,7 +26,7 @@ export default function PlaygroundPage() {
 			}}
 		>
 			<div className="flex-1 flex flex-col items-center justify-center py-8">
-				<div className="w-[80vw] h-[80vh]">
+				<div className="w-[90vw] h-[80vh]">
 					<Playground initialValue={defaultPlaygroundCode} withResults={true} />
 				</div>
 			</div>

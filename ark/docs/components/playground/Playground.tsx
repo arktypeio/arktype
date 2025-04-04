@@ -143,10 +143,10 @@ export const Playground = ({
 			className={className}
 			style={{
 				display: "grid",
-				gridTemplateColumns: withResults ? "1fr minmax(0, 450px)" : "1fr",
+				gridTemplateColumns: withResults ? "minmax(400px, 1fr) 600px" : "1fr",
 				gap: "1rem",
 				height: "100%",
-				outline: "none",
+				width: "100%",
 				...style
 			}}
 		>
