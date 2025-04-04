@@ -1,10 +1,14 @@
-export declare namespace TypeExplorer {
+import type { type } from "arktype"
+
+export type ParseResult = type | string
+
+export declare namespace ParseResult {
 	export type Props = {
-		definition: string | undefined
+		parsed: ParseResult
 	}
 }
 
-export const TypeExplorer = ({ definition }: TypeExplorer.Props) => (
+export const ParseResult = ({ parsed }: ParseResult.Props) => (
 	<div className="flex-1 min-h-0">
 		<div
 			style={{ backgroundColor: "#08161791" }}
@@ -12,7 +16,7 @@ export const TypeExplorer = ({ definition }: TypeExplorer.Props) => (
 		>
 			<h3 className="text-fd-foreground font-semibold mb-2">Definition</h3>
 			<pre className="m-0 whitespace-pre-wrap">
-				<code>{definition ?? "// No type defined yet"}</code>
+				<code>{typeof parsed === "string" ? parsed : parsed.expression}</code>
 			</pre>
 		</div>
 	</div>

@@ -1,20 +1,68 @@
 "use client"
 
+import { unset } from "@ark/util"
 import Editor, { useMonaco } from "@monaco-editor/react"
 import type * as Monaco from "monaco-editor"
 import { loadWASM } from "onigasm"
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import { useDebouncedCallback } from "use-debounce"
-import { typeJs } from "../bundles/type.ts"
 import { setupCompletionProvider } from "./completions.ts"
 import { setupErrorLens } from "./errorLens.ts"
+import { executeCode, type ExecutionResult } from "./execute.ts"
 import { formatEditor } from "./format.ts"
 import { setupTextmateGrammar, theme } from "./highlights.ts"
 import { setupHoverProvider } from "./hovers.ts"
+import { ParseResult } from "./ParseResult.tsx"
+import { TraverseResult } from "./TraverseResult.tsx"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
-import { TypeExplorer } from "./TypeExplorer.tsx"
 import { editorFileUri } from "./utils.ts"
-import { ValidationResult } from "./ValidationResult.tsx"
+
+let monacoInitialized = false
+let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
+	null
+
+const validationDelayMs = 500
+
+const onigasmLoaded =
+	globalThis.window &&
+	loadWASM("/onigasm.wasm").catch(e => {
+		if (!String(e).includes("subsequent calls are not allowed")) throw e
+	})
+
+const setupDynamicStyles = (
+	editor: Monaco.editor.IStandaloneCodeEditor,
+	monaco: typeof Monaco,
+	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
+): void => {
+	setupErrorLens(monaco, editor, tsLanguageService)
+}
+
+const setupMonaco = async (
+	monaco: typeof Monaco
+): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
+	if (!monacoInitialized) {
+		await onigasmLoaded
+		monaco.editor.defineTheme("arkdark", theme)
+		if (!tsLanguageServiceInstance) {
+			const ts = await getInitializedTypeScriptService(monaco)
+			setupHoverProvider(monaco, ts)
+			setupCompletionProvider(monaco, ts)
+			await setupTextmateGrammar(monaco)
+			tsLanguageServiceInstance = ts
+			monacoInitialized = true
+		}
+	}
+	return tsLanguageServiceInstance!
+}
+
+type LoadingState = "unloaded" | "loading" | "loaded"
+
+export interface PlaygroundProps {
+	initialValue: string
+	style?: React.CSSProperties
+	className?: string
+	withResults?: boolean
+}
 
 export const Playground = ({
 	initialValue,
@@ -26,8 +74,8 @@ export const Playground = ({
 		monacoInitialized ? "loaded" : "unloaded"
 	)
 	const [validationResult, setValidationResult] = useState<ExecutionResult>({
-		result: undefined,
-		definition: undefined
+		parsed: unset,
+		traversed: unset
 	})
 
 	const monaco = useMonaco()
@@ -39,14 +87,11 @@ export const Playground = ({
 			setLoaded("loaded")
 			return
 		}
-
 		if (monaco && loadingState !== "loaded") {
 			if (loadingState === "unloaded") setLoaded("loading")
 			else {
 				setupMonaco(monaco)
-					.then(() => {
-						setLoaded("loaded")
-					})
+					.then(() => setLoaded("loaded"))
 					.catch(err => {
 						console.error("Failed to setup Monaco:", err)
 						setLoaded("unloaded")
@@ -55,34 +100,12 @@ export const Playground = ({
 		}
 	}, [monaco, loadingState])
 
-	// Define the core validation logic. useCallback ensures it has a stable reference
-	// unless its dependencies change (none in this case, but good practice).
 	const validateNow = useCallback((code: string) => {
-		const isolatedUserCode = code
-			.replaceAll(/^\s*import .*\n/g, "")
-			.replaceAll(/^\s*export\s+const/gm, "const")
-
-		try {
-			const wrappedCode = `${ambientArktypeJs}
-        ${isolatedUserCode}
-        return { MyType, out }`
-
-			const result = new Function(wrappedCode)()
-			const { MyType, out } = result
-
-			setValidationResult({
-				result: out,
-				definition: MyType?.expression
-			})
-		} catch (e) {
-			setValidationResult({
-				result: `❌ RuntimeError: ${e instanceof Error ? e.message : String(e)}`,
-				definition: undefined
-			})
-		}
+		const result = executeCode(code)
+		setValidationResult(result)
 	}, [])
 
-	const debouncedValidateCode = useDebouncedCallback(
+	const validateIncremental = useDebouncedCallback(
 		validateNow,
 		validationDelayMs
 	)
@@ -131,7 +154,7 @@ export const Playground = ({
 				<>
 					<PlaygroundEditor
 						defaultValue={initialValue}
-						validateIncremental={debouncedValidateCode}
+						validateIncremental={validateIncremental}
 						validateNow={validateNow}
 						editorRef={editorRef}
 					/>
@@ -142,69 +165,11 @@ export const Playground = ({
 	)
 }
 
-let monacoInitialized = false
-let tsLanguageServiceInstance: Monaco.languages.typescript.TypeScriptWorker | null =
-	null
-
-// remove the package's exports since they will fail in with new Function()
-// instead, they'll be defined directly in the scope being executed
-const ambientArktypeJs = typeJs.slice(0, typeJs.lastIndexOf("export {"))
-const validationDelayMs = 500
-
-// start loading onigasm in the background even if the Playground is not displayed
-const onigasmLoaded =
-	globalThis.window &&
-	loadWASM("/onigasm.wasm").catch(e => {
-		// this often occurs during dev server reloading and can be ignored
-		if (!String(e).includes("subsequent calls are not allowed")) throw e
-	})
-
-const setupDynamicStyles = (
-	editor: Monaco.editor.IStandaloneCodeEditor,
-	monaco: typeof Monaco,
-	tsLanguageService: Monaco.languages.typescript.TypeScriptWorker
-): void => {
-	setupErrorLens(monaco, editor, tsLanguageService)
-}
-
-const setupMonaco = async (
-	monaco: typeof Monaco
-): Promise<Monaco.languages.typescript.TypeScriptWorker> => {
-	if (!monacoInitialized) {
-		await onigasmLoaded
-
-		monaco.editor.defineTheme("arkdark", theme)
-
-		if (!tsLanguageServiceInstance) {
-			const tsLanguageService = await getInitializedTypeScriptService(monaco)
-			setupHoverProvider(monaco, tsLanguageService)
-			setupCompletionProvider(monaco, tsLanguageService)
-			await setupTextmateGrammar(monaco)
-
-			tsLanguageServiceInstance = tsLanguageService
-			monacoInitialized = true
-		}
-	}
-
-	return tsLanguageServiceInstance!
-}
-
-type LoadingState = "unloaded" | "loading" | "loaded"
-
-export interface PlaygroundProps {
-	initialValue: string
-	style?: React.CSSProperties
-	className?: string
-	withResults?: boolean
-}
-
-interface ExecutionResult extends ValidationResult.Props, TypeExplorer.Props {}
-
 type PlaygroundEditorProps = {
 	defaultValue: string
 	editorRef: RefObject<Monaco.editor.IStandaloneCodeEditor | null>
-	validateIncremental: (code: string) => void
-	validateNow: (code: string) => void
+	validateIncremental: (code: string) => void // Debounced
+	validateNow: (code: string) => void // Immediate
 }
 
 const PlaygroundEditor = ({
@@ -238,8 +203,8 @@ const PlaygroundEditor = ({
 
 const PlaygroundResults = (result: ExecutionResult) => (
 	<div className="flex flex-col gap-4 h-full">
-		<TypeExplorer {...result} />
-		<ValidationResult {...result} />
+		<ParseResult {...result} />
+		<TraverseResult {...result} />
 	</div>
 )
 

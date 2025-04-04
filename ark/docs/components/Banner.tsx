@@ -23,7 +23,7 @@ export const Banner = ({
 	 */
 	changeLayout?: boolean
 }): React.ReactElement => {
-	const [open, setOpen] = useState(true)
+	const [open, setOpen] = useState(false)
 	const globalKey = id ? `nd-banner-${id}` : undefined
 
 	useEffect(() => {
