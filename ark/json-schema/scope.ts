@@ -4,11 +4,13 @@ import { type JsonSchema, scope, type Scope } from "arktype"
 type AnyKeywords = Partial<JsonSchema.Const & JsonSchema.Enum>
 
 type TypeWithNoKeywords = { type: "boolean" | "null" }
+
 type TypeWithKeywords =
 	| JsonSchema.Array
 	| JsonSchema.Numeric
 	| JsonSchema.Object
 	| StringSchema
+
 // NB: For sake of simplicitly, at runtime it's assumed that
 // whatever we're parsing is valid JSON since it will be 99% of the time.
 // This decision may be changed later, e.g. when a built-in JSON type exists in AT.
@@ -20,7 +22,8 @@ type NumberSchema = JsonSchema.Numeric
 
 type ObjectSchema = JsonSchema.Object
 
-// NB: @ark/jsonschema doesn't support the "format" keyword, and the "pattern" could be string|RegExp rather than only string, so we need a separate type
+// NB: @ark/json-schema doesn't support the "format" keyword, and the "pattern"
+// could be string|RegExp rather than only string, so we need a separate type
 export type StringSchema = Omit<JsonSchema.String, "format" | "pattern"> & {
 	pattern?: string | RegExp
 }
@@ -104,4 +107,5 @@ const $: JsonSchemaScope = scope(
 	},
 	{ jitless: true } // workaround for https://github.com/arktypeio/arktype/issues/1188
 ) as never
+
 export const JsonSchemaScope = $.export()

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	parseJsonSchema,
+	jsonSchemaToType,
 	writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage,
 	writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage
 } from "@ark/json-schema"
@@ -9,17 +9,17 @@ contextualize(() => {
 	it("type number", () => {
 		const jsonSchema = { type: "number" } as const
 
-		const parsedNumberValidator = parseJsonSchema(jsonSchema)
+		const parsedNumberValidator = jsonSchemaToType(jsonSchema)
 		attest(parsedNumberValidator.expression).snap("number")
 	})
 
 	it("type integer", () => {
-		const t = parseJsonSchema({ type: "integer" })
+		const t = jsonSchemaToType({ type: "integer" })
 		attest(t.expression).snap("number % 1")
 	})
 
 	it("maximum", () => {
-		const tMax = parseJsonSchema({
+		const tMax = jsonSchemaToType({
 			type: "number",
 			maximum: 5
 		})
@@ -27,7 +27,7 @@ contextualize(() => {
 	})
 
 	it("exclusiveMaximum", () => {
-		const tExclMax = parseJsonSchema({
+		const tExclMax = jsonSchemaToType({
 			type: "number",
 			exclusiveMaximum: 5
 		})
@@ -36,7 +36,7 @@ contextualize(() => {
 
 	it("maximum & exclusiveMaximum", () => {
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "number",
 				maximum: 5,
 				exclusiveMaximum: 5
@@ -45,12 +45,12 @@ contextualize(() => {
 	})
 
 	it("minimum", () => {
-		const tMin = parseJsonSchema({ type: "number", minimum: 5 })
+		const tMin = jsonSchemaToType({ type: "number", minimum: 5 })
 		attest(tMin.expression).snap("number >= 5")
 	})
 
 	it("exclusiveMinimum", () => {
-		const tExclMin = parseJsonSchema({
+		const tExclMin = jsonSchemaToType({
 			type: "number",
 			exclusiveMinimum: 5
 		})
@@ -59,7 +59,7 @@ contextualize(() => {
 
 	it("minimum & exclusiveMinimum", () => {
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "number",
 				minimum: 5,
 				exclusiveMinimum: 5
@@ -68,10 +68,10 @@ contextualize(() => {
 	})
 
 	it("multipleOf", () => {
-		const t = parseJsonSchema({ type: "number", multipleOf: 5 })
+		const t = jsonSchemaToType({ type: "number", multipleOf: 5 })
 		attest(t.expression).snap("number % 5")
 
-		const tInt = parseJsonSchema({
+		const tInt = jsonSchemaToType({
 			type: "integer",
 			multipleOf: 5
 		})

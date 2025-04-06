@@ -44,5 +44,8 @@
 		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

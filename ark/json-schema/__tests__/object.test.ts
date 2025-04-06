@@ -1,19 +1,19 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	parseJsonSchema,
+	jsonSchemaToType,
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "@ark/json-schema"
 
 contextualize(() => {
 	it("type object", () => {
-		const t = parseJsonSchema({ type: "object" })
+		const t = jsonSchemaToType({ type: "object" })
 		attest(t.expression).snap("{}")
 		attest(t.allows({ foo: 3 }))
 	})
 
 	it("maxProperties", () => {
-		const tMaxProperties = parseJsonSchema({
+		const tMaxProperties = jsonSchemaToType({
 			type: "object",
 			maxProperties: 1
 		})
@@ -28,7 +28,7 @@ contextualize(() => {
 	})
 
 	it("minProperties", () => {
-		const tMinProperties = parseJsonSchema({
+		const tMinProperties = jsonSchemaToType({
 			type: "object",
 			minProperties: 2
 		})
@@ -43,7 +43,7 @@ contextualize(() => {
 	})
 
 	it("properties & required", () => {
-		const tRequired = parseJsonSchema({
+		const tRequired = jsonSchemaToType({
 			type: "object",
 			properties: {
 				foo: { type: "string" },
@@ -53,11 +53,13 @@ contextualize(() => {
 		})
 		attest(tRequired.expression).snap("{ foo: string, bar?: number }")
 
-		attest(() => parseJsonSchema({ type: "object", required: ["foo"] })).throws(
+		attest(() =>
+			jsonSchemaToType({ type: "object", required: ["foo"] })
+		).throws(
 			"TraversalError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
 		)
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["bar"]
@@ -66,7 +68,7 @@ contextualize(() => {
 			`TraversalError: required must be a key from the 'properties' object, i.e. foo (was bar)`
 		)
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["foo", "foo"]
@@ -77,7 +79,7 @@ contextualize(() => {
 	})
 
 	it("additionalProperties", () => {
-		const tAdditionalProperties = parseJsonSchema({
+		const tAdditionalProperties = jsonSchemaToType({
 			type: "object",
 			additionalProperties: { type: "number" },
 			properties: { bar: { type: "string" } }
@@ -94,7 +96,7 @@ contextualize(() => {
 	})
 
 	it("patternProperties", () => {
-		const tPatternProperties = parseJsonSchema({
+		const tPatternProperties = jsonSchemaToType({
 			type: "object",
 			patternProperties: {
 				"^[a-z]+$": { type: "string" }
@@ -108,7 +110,7 @@ contextualize(() => {
 	})
 
 	it("propertyNames", () => {
-		const tPropertyNames = parseJsonSchema({
+		const tPropertyNames = jsonSchemaToType({
 			type: "object",
 			propertyNames: { type: "string", minLength: 5 }
 		})
@@ -118,7 +120,7 @@ contextualize(() => {
 
 		attest(() =>
 			// @ts-expect-error
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "object",
 				propertyNames: { type: "number" }
 			})
@@ -130,7 +132,7 @@ contextualize(() => {
 	})
 
 	it("propertyNames & additionalProperties", () => {
-		const tPropertyNamesAndAdditionalProperties = parseJsonSchema({
+		const tPropertyNamesAndAdditionalProperties = jsonSchemaToType({
 			type: "object",
 			propertyNames: { type: "string", minLength: 3 },
 			additionalProperties: true
@@ -141,7 +143,7 @@ contextualize(() => {
 	})
 
 	it("propertyNames & patternProperties", () => {
-		const tPropertyNamesAndPatternPropertiesValid = parseJsonSchema({
+		const tPropertyNamesAndPatternPropertiesValid = jsonSchemaToType({
 			type: "object",
 			patternProperties: { foo: { type: "number" } },
 			propertyNames: { type: "string", pattern: "foo" }
@@ -151,7 +153,7 @@ contextualize(() => {
 		)
 
 		attest(() => {
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "object",
 				propertyNames: { type: "string", minLength: 3 },
 				patternProperties: { "^abcd": { type: "number" } }
@@ -165,7 +167,7 @@ contextualize(() => {
 	})
 
 	it("propertyNames & properties", () => {
-		const tPropertyNamesAndProperties = parseJsonSchema({
+		const tPropertyNamesAndProperties = jsonSchemaToType({
 			type: "object",
 			propertyNames: { type: "string", minLength: 3 },
 			properties: {
@@ -180,7 +182,7 @@ contextualize(() => {
 	})
 
 	it("propertyNames & properties & required", () => {
-		const tPropertyNamesAndRequiredValid = parseJsonSchema({
+		const tPropertyNamesAndRequiredValid = jsonSchemaToType({
 			type: "object",
 			propertyNames: { type: "string", minLength: 3 },
 			properties: { abc: { type: "number" } },
@@ -191,7 +193,7 @@ contextualize(() => {
 		)
 
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "object",
 				propertyNames: { type: "string", minLength: 3 },
 				properties: { a: { type: "boolean" } },

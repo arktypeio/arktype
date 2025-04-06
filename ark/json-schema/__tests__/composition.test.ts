@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { parseJsonSchema } from "@ark/json-schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
 	it("allOf", () => {
-		const tAllOf = parseJsonSchema({
+		const tAllOf = jsonSchemaToType({
 			allOf: [
 				{ type: "string", minLength: 1 },
 				{ type: "string", maxLength: 10 }
@@ -13,7 +13,7 @@ contextualize(() => {
 	})
 
 	it("anyOf", () => {
-		const tAnyOf = parseJsonSchema({
+		const tAnyOf = jsonSchemaToType({
 			anyOf: [
 				{ type: "string", minLength: 1 },
 				{ type: "string", maxLength: 10 }
@@ -23,7 +23,7 @@ contextualize(() => {
 	})
 
 	it("not", () => {
-		const tNot = parseJsonSchema({ not: { type: "string", maxLength: 3 } })
+		const tNot = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
 		attest(tNot.json).snap({
 			predicate: ["$ark.jsonSchemaNotValidator"]
 		})
@@ -36,7 +36,7 @@ contextualize(() => {
 	})
 
 	it("oneOf", () => {
-		const tOneOf = parseJsonSchema({
+		const tOneOf = jsonSchemaToType({
 			oneOf: [{ type: "string", minLength: 10 }, { const: "foo" }]
 		})
 		attest(tOneOf.json).snap({

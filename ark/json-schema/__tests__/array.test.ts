@@ -1,21 +1,24 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	parseJsonSchema,
+	jsonSchemaToType,
 	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
 	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
 } from "@ark/json-schema"
 
 contextualize(() => {
 	it("type array", () => {
-		const t = parseJsonSchema({ type: "array" })
+		const t = jsonSchemaToType({ type: "array" })
 		attest(t.expression).snap("Array")
 	})
 
 	it("items", () => {
-		const tItems = parseJsonSchema({ type: "array", items: { type: "string" } })
+		const tItems = jsonSchemaToType({
+			type: "array",
+			items: { type: "string" }
+		})
 		attest(tItems.expression).snap("string[]")
 
-		const tItemsArr = parseJsonSchema({
+		const tItemsArr = jsonSchemaToType({
 			type: "array",
 			items: [{ type: "string" }, { type: "number" }]
 		})
@@ -23,7 +26,7 @@ contextualize(() => {
 	})
 
 	it("prefixItems", () => {
-		const tPrefixItems = parseJsonSchema({
+		const tPrefixItems = jsonSchemaToType({
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }]
 		})
@@ -31,7 +34,7 @@ contextualize(() => {
 	})
 
 	it("items & prefixItems", () => {
-		const tItemsAndPrefixItems = parseJsonSchema({
+		const tItemsAndPrefixItems = jsonSchemaToType({
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }],
 			items: { type: "boolean" }
@@ -42,7 +45,7 @@ contextualize(() => {
 	})
 
 	it("additionalItems", () => {
-		const tAdditionalItems = parseJsonSchema({
+		const tAdditionalItems = jsonSchemaToType({
 			type: "array",
 			additionalItems: { type: "string" }
 		})
@@ -50,14 +53,14 @@ contextualize(() => {
 	})
 
 	it("additionalItems & items", () => {
-		const tItemsVariadic = parseJsonSchema({
+		const tItemsVariadic = jsonSchemaToType({
 			type: "array",
 			additionalItems: { type: "boolean" },
 			items: [{ type: "string" }, { type: "number" }]
 		})
 		attest(tItemsVariadic.expression).snap("[string, number, ...boolean[]]")
 
-		const tItemsFalseAdditional = parseJsonSchema({
+		const tItemsFalseAdditional = jsonSchemaToType({
 			type: "array",
 			additionalItems: false,
 			items: [{ type: "string" }]
@@ -65,7 +68,7 @@ contextualize(() => {
 		attest(tItemsFalseAdditional.expression).snap("[string]")
 
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "array",
 				additionalItems: { type: "string" },
 				items: { type: "string" }
@@ -74,7 +77,7 @@ contextualize(() => {
 	})
 
 	it("additionalItems & prefixItems", () => {
-		const tPrefixItemsAndAdditional = parseJsonSchema({
+		const tPrefixItemsAndAdditional = jsonSchemaToType({
 			type: "array",
 			additionalItems: { type: "boolean" },
 			prefixItems: [{ type: "string" }, { type: "number" }]
@@ -86,7 +89,7 @@ contextualize(() => {
 
 	it("additionalItems & items & prefixItems", () => {
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "array",
 				additionalItems: { type: "boolean" },
 				items: { type: "null" },
@@ -96,7 +99,7 @@ contextualize(() => {
 	})
 
 	it("contains", () => {
-		const tContains = parseJsonSchema({
+		const tContains = jsonSchemaToType({
 			type: "array",
 			contains: { type: "number" }
 		})
@@ -110,7 +113,7 @@ contextualize(() => {
 	})
 
 	it("maxItems (positive)", () => {
-		const tMaxItems = parseJsonSchema({
+		const tMaxItems = jsonSchemaToType({
 			type: "array",
 			maxItems: 5
 		})
@@ -118,13 +121,13 @@ contextualize(() => {
 	})
 
 	it("maxItems (negative)", () => {
-		attest(() => parseJsonSchema({ type: "array", maxItems: -1 })).throws(
+		attest(() => jsonSchemaToType({ type: "array", maxItems: -1 })).throws(
 			"TraversalError: maxItems must be non-negative"
 		)
 	})
 
 	it("minItems (positive)", () => {
-		const tMinItems = parseJsonSchema({
+		const tMinItems = jsonSchemaToType({
 			type: "array",
 			minItems: 5
 		})
@@ -132,13 +135,13 @@ contextualize(() => {
 	})
 
 	it("minItems (negative)", () => {
-		attest(() => parseJsonSchema({ type: "array", minItems: -1 })).throws(
+		attest(() => jsonSchemaToType({ type: "array", minItems: -1 })).throws(
 			"TraversalError: minItems must be non-negative"
 		)
 	})
 
 	it("uniqueItems", () => {
-		const tUniqueItems = parseJsonSchema({
+		const tUniqueItems = jsonSchemaToType({
 			type: "array",
 			uniqueItems: true
 		})

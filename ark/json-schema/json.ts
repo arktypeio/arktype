@@ -88,5 +88,5 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	}
 )
 
-export const parseJsonSchema = (jsonSchema: JsonSchemaOrBoolean): type.Any =>
+export const jsonSchemaToType = (jsonSchema: JsonSchemaOrBoolean): type.Any =>
 	innerParseJsonSchema.assert(jsonSchema) as never

@@ -1,13 +1,13 @@
-# @ark/jsonschema
+# @ark/json-schema
 
 ## What is it?
 
-@ark/jsonschema is a package that allows converting from a JSON Schema schema, to an ArkType type. For example:
+`@ark/json-schema` is a package that allows converting from a JSON Schema schema to an ArkType Type. For example:
 
 ```js
-import { parseJsonSchema } from "@ark/json-schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 
-const t = parseJsonSchema({ type: "string", minLength: 5, maxLength: 10 })
+const t = jsonSchemaToType({ type: "string", minLength: 5, maxLength: 10 })
 ```
 
 is equivalent to:
@@ -20,16 +20,20 @@ const t = type("5<=string<=10")
 
 This enables easy adoption of ArkType for people who currently have JSON Schema based runtime validation in their codebase.
 
-Where possible, the library also has TypeScript type inference so that the runtime validation remains typesafe. Extending on the above example, this means that the return type of the below `parseString` function would be correctly inferred as `string`:
+If you want to convert your existing ArkType `Type`s to JSON Schema, you don't need this library.
+
+Instead, use the builtin `toJsonSchema()` method that exists on every `Type`, e.g.:
 
 ```ts
-const assertIsString = (data: unknown)
-    return t.assert(data)
+import { type } from "arktype"
+
+// { type: "string", minLength: 5, maxLength: 10 }
+const schema = type("5<=string<=10").toJsonSchema()
 ```
 
 ## Extra Type Safety
 
-If you wish to ensure that your JSON Schema schemas are valid, you can do this too! Simply import the relevant `Schema` type from `@ark/jsonschema` like so:
+If you wish to ensure that your JSON Schema schemas are valid, you can do this too! Simply import the relevant `Schema` type from `@ark/json-schema` like so:
 
 ```ts
 import type { JsonSchema } from "arktype"
@@ -40,7 +44,7 @@ const integerSchema: JsonSchema.Numeric = {
 }
 ```
 
-Note that for string schemas exclusively, you must import the schema type from `@ark/jsonschema` instead of `arktype`. This is because `@ark/jsonschema` doesn't yet support the `format` keyword whilst `arktype` does.
+Note that for string schemas exclusively, you must import the schema type from `@ark/json-schema` instead of `arktype`. This is because `@ark/json-schema` doesn't yet support the `format` keyword whilst `arktype` does.
 
 ```ts
 import type { StringSchema } from "@ark/json-schema"
