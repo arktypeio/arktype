@@ -658,7 +658,3 @@ const out = U.assert({ a: 1 })
 ## 2.0.0
 
 - Initial stable release 🎉
-
-```
-
-```
