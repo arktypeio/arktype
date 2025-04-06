@@ -12,42 +12,19 @@ export const formatEditor = async (
 	try {
 		const currentCode = editor.getValue()
 		const cursorPosition = editor.getPosition()
-		const scrollPosition = {
-			scrollLeft: editor.getScrollLeft(),
-			scrollTop: editor.getScrollTop()
-		}
+		const cursorOffset = model.getOffsetAt(cursorPosition!)!
 
-		const currentOffset = cursorPosition ? model.getOffsetAt(cursorPosition) : 0
-		const lineCountBefore = model.getLineCount()
-
-		const formattedCode = await prettier.format(currentCode, {
+		const result = await prettier.formatWithCursor(currentCode, {
 			parser: "typescript",
+			cursorOffset,
 			plugins: [prettierPluginEstree, prettierPluginTypeScript],
 			semi: false,
 			useTabs: true,
 			trailingComma: "none",
 			experimentalTernaries: true
 		})
-
-		if (formattedCode === currentCode) return
-
-		editor.setValue(formattedCode)
-
-		const newOffset = Math.round(
-			currentOffset * (formattedCode.length / currentCode.length)
-		)
-		const newPosition = model.getPositionAt(newOffset)
-
-		editor.setPosition(newPosition)
-
-		const lineCountAfter = model.getLineCount()
-		const scrollRatio = scrollPosition.scrollTop / lineCountBefore
-		editor.setScrollPosition({
-			scrollLeft: scrollPosition.scrollLeft,
-			scrollTop: Math.round(scrollRatio * lineCountAfter)
-		})
-
-		return formattedCode
+		model.setValue(result.formatted)
+		editor.setPosition(model.getPositionAt(result.cursorOffset))
 	} catch {
 		// could have invalid syntax etc., fail silently
 	}
