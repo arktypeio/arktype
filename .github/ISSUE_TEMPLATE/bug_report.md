@@ -29,11 +29,14 @@ assignees: "ssalbdivad"
 ### 🧑‍💻 Repro
 
 <!--
+1. Update the playground link below with the simplest code you can that reproduces the issue.
+2. Click the link icon in the top right corner of the playground editor to copy the URL for your repro.
+3. Replace the URL below with your repro link.
 
-Please do your best to write the simplest code you can that reproduces the issue!
-
-If it requires other dependencies besides arktype, it's probably either not a minimal repro or not an arktype bug.
+If your repro requires dependencies besides arktype, it's probably either not a minimal repro or not an arktype bug. You can still describe it here, but is likely to be closed.
 -->
+
+Playground Link: https://arktype.io/playground
 
 ```ts
 // Paste reproduction code here
