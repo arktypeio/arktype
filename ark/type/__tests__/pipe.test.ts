@@ -1029,4 +1029,17 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 		const T = type("string.numeric.parse | number").to("number > 0")
 		attest(T.t).type.toString.snap("number | ((In: string) => To<number>)")
 	})
+
+	it("extracted from cyclic type", () => {
+		const T = type({
+			morphed: "string.numeric.parse",
+			"nested?": "this"
+		})
+
+		const t = T.assert({ morphed: "5" })
+
+		attest(t).equals({ morphed: 5 })
+		attest<number>(t.morphed)
+		attest<number | undefined>(t.nested?.morphed)
+	})
 })

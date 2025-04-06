@@ -947,6 +947,8 @@ contextualize(() => {
 
 		const t = T.assert({})
 
+		attest(t).equals({ defaulted: 0 })
+
 		attest<number>(t.defaulted)
 		attest<number | undefined>(t.nested?.defaulted)
 	})
