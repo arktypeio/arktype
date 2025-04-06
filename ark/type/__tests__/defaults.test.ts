@@ -938,4 +938,16 @@ contextualize(() => {
 			}).throws.snap("ParseError: Default foo must be a number (was a string)")
 		})
 	})
+
+	it("extracted from cyclic type", () => {
+		const T = type({
+			defaulted: "number = 0",
+			"nested?": "this"
+		})
+
+		const t = T.assert({})
+
+		attest<number>(t.defaulted)
+		attest<number | undefined>(t.nested?.defaulted)
+	})
 })
