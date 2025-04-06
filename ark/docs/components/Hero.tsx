@@ -29,7 +29,7 @@ export const Hero = () => (
 					<Link
 						tabIndex={1}
 						href="/playground"
-						className="border-2 focus-within:outline-2 outline-white hover:bg-primary/10 p-5 rounded-full flex gap-2 text-sm items-center"
+						className="hidden md:flex border-2 focus-within:outline-2 outline-white hover:bg-primary/10 p-5 rounded-full gap-2 text-sm items-center"
 					>
 						Playground
 						<PlayIcon />
