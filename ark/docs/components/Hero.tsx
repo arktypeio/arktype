@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from "lucide-react"
+import { ArrowRightIcon, PlayIcon } from "lucide-react"
 import Link from "next/link.js"
 import { MainAutoplayDemo } from "./AutoplayDemo.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
@@ -25,9 +25,17 @@ export const Hero = () => (
 				</p>
 
 				{/* This wrapper grows to fill remaining vertical space, placing the link in the centered area */}
-				<div className="flex-1 flex items-center justify-center md:justify-start mt-6">
+				<div className="flex-1 flex items-center justify-center md:justify-start mt-6 gap-4">
 					<Link
 						tabIndex={1}
+						href="/playground"
+						className="border-2 focus-within:outline-2 outline-white hover:bg-primary/10 p-5 rounded-full flex gap-2 text-sm items-center"
+					>
+						Playground
+						<PlayIcon />
+					</Link>
+					<Link
+						tabIndex={2}
 						href="/docs/intro/setup"
 						className="bg-highlight text-black focus-within:outline-2 outline-white hover:bg-highlight/80 p-5 rounded-full flex gap-2 text-sm items-center"
 					>
