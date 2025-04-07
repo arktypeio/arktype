@@ -1,21 +1,17 @@
 import { HomeLayout } from "fumadocs-ui/layouts/home"
-import type { Metadata } from "next"
 import type { ReactNode } from "react"
 import { FloatYourBoat } from "../../components/FloatYourBoat.tsx"
 import { Playground } from "../../components/playground/Playground.tsx"
 import { baseOptions } from "../layout.config.tsx"
+import { defineMetadata } from "../metadata.ts"
+
+export const metadata = defineMetadata({
+	title: "ArkType Playground",
+	ogImage: "ogPlayground.png"
+})
 
 export type LayoutProps = {
 	children: ReactNode
-}
-
-export const metadata: Metadata = {
-	title:
-		"ArkType Playground: TypeScript's 1:1 validator, optimized from editor to runtime",
-	openGraph: {
-		title: "ArkType Playground",
-		images: "https://arktype.io/image/ogPlayground.png"
-	}
 }
 
 export default function PlaygroundPage() {
