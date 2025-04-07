@@ -90,5 +90,6 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	}
 )
 
-export const jsonSchemaToType = (jsonSchema: JsonSchemaOrBoolean): type.Any =>
-	innerParseJsonSchema.assert(jsonSchema) as never
+export const jsonSchemaToType = (
+	jsonSchema: JsonSchemaOrBoolean
+): type<unknown> => innerParseJsonSchema.assert(jsonSchema) as never

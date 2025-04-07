@@ -7,7 +7,7 @@
 ```js
 import { jsonSchemaToType } from "@ark/json-schema"
 
-const t = jsonSchemaToType({ type: "string", minLength: 5, maxLength: 10 })
+const T = jsonSchemaToType({ type: "string", minLength: 5, maxLength: 10 })
 ```
 
 is equivalent to:
@@ -15,7 +15,7 @@ is equivalent to:
 ```js
 import { type } from "arktype"
 
-const t = type("5<=string<=10")
+const T = type("5<=string<=10")
 ```
 
 This enables easy adoption of ArkType for people who currently have JSON Schema based runtime validation in their codebase.
