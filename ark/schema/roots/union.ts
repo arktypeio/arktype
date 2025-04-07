@@ -4,6 +4,7 @@ import {
 	domainDescriptions,
 	flatMorph,
 	groupBy,
+	hasKey,
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
@@ -301,8 +302,25 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 			return { type: "boolean" }
 
+		const jsonSchemaBranches = this.branchGroups.map(group =>
+			group.toJsonSchemaRecurse(opts)
+		)
+
+		if (
+			jsonSchemaBranches.every(
+				(branch): branch is JsonSchema.Const =>
+					// iff all branches are pure unit values with no metadata,
+					// we can simplify the representation to an enum
+					Object.keys(branch).length === 1 && hasKey(branch, "const")
+			)
+		) {
+			return {
+				enum: jsonSchemaBranches.map(branch => branch.const)
+			}
+		}
+
 		return {
-			anyOf: this.branchGroups.map(group => group.toJsonSchemaRecurse(opts))
+			anyOf: jsonSchemaBranches
 		}
 	}
 

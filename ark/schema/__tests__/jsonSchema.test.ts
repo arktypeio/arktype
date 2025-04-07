@@ -4,6 +4,7 @@ import {
 	intrinsic,
 	JsonSchema,
 	rootSchema,
+	rootSchemaScope,
 	type BaseRoot
 } from "@ark/schema"
 
@@ -241,5 +242,23 @@ contextualize(() => {
 		attest(() => toJsonSchema($ark.intrinsic.jsonObject)).throws(
 			JsonSchema.writeUnjsonifiableMessage("jsonObject", "cyclic")
 		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1328
+	it("unions of literal values as enums", () => {
+		const Bit = rootSchemaScope.units([0, 1])
+
+		attest(toJsonSchema(Bit)).snap({ enum: [0, 1] })
+	})
+
+	it("unions of literal values with metadata not enums", () => {
+		const Bit = rootSchema([
+			{ unit: 0 },
+			{ unit: 1, "meta.description": "one" }
+		])
+
+		attest(toJsonSchema(Bit)).snap({
+			anyOf: [{ const: 0 }, { const: 1, description: "one" }]
+		})
 	})
 })
