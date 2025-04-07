@@ -156,11 +156,12 @@ export const Playground = ({
 			{loadingState === "loaded" && monaco ?
 				<>
 					<PlaygroundEditor
-						defaultValue={currentCode} // Use state derived from initialValue
+						defaultValue={currentCode}
 						validateNow={validateNow}
 						editorRef={editorRef}
 						restoreDefault={restoreDefault}
 						shareCode={shareCode}
+						withResults={withResults}
 					/>
 					{withResults && (
 						<PlaygroundResults
@@ -180,6 +181,7 @@ type PlaygroundEditorProps = {
 	validateNow: (code: string) => void
 	restoreDefault: () => void
 	shareCode: () => string
+	withResults: boolean | undefined
 }
 
 const PlaygroundEditor = React.memo(
@@ -188,7 +190,8 @@ const PlaygroundEditor = React.memo(
 		editorRef,
 		validateNow,
 		restoreDefault,
-		shareCode
+		shareCode,
+		withResults
 	}: PlaygroundEditorProps) => {
 		const handleChange = useCallback(
 			(code: string | undefined) => {
@@ -243,10 +246,15 @@ const PlaygroundEditor = React.memo(
 					onMount={handleMount}
 					onChange={handleChange}
 				/>
-				<div className="absolute top-2 right-2 flex gap-2">
-					<ShareLink onShare={shareCode} />
-					<RestoreDefault variant="icon" onClick={restoreDefault} />
-				</div>
+				{
+					// only include these buttons in expanded mode
+					withResults ?
+						<div className="absolute top-2 right-2 flex gap-2">
+							<ShareLink onShare={shareCode} />
+							<RestoreDefault variant="icon" onClick={restoreDefault} />
+						</div>
+					:	null
+				}
 			</div>
 		)
 	}

@@ -229,11 +229,6 @@ div.twoslash-popup-container {
 	padding-top: 16px;
 }
 
-/* Hide the theme toggle button */
-button[data-theme-toggle] {
-	display: none;
-}
-
 /* Chrome/Safari/Edge scrollbar styling */
 ::-webkit-scrollbar {
 	width: 8px;
@@ -258,4 +253,44 @@ button[data-theme-toggle] {
 * {
 	scrollbar-width: thin;
 	scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.wiggle-animation {
+	animation: wiggle 4s ease-in-out infinite;
+	transform-origin: center center;
+}
+
+@keyframes wiggle {
+	0%,
+	87.5%,
+	100% {
+		transform: rotate(0deg);
+	}
+	88.5% {
+		transform: rotate(1.5deg);
+	}
+	89.5% {
+		transform: rotate(-0.5deg);
+	}
+	90.5% {
+		transform: rotate(-1.5deg);
+	}
+	91.5% {
+		transform: rotate(1deg);
+	}
+	92.5% {
+		transform: rotate(1.5deg);
+	}
+	93.5% {
+		transform: rotate(-1deg);
+	}
+	94.5% {
+		transform: rotate(-0.5deg);
+	}
+	96% {
+		transform: rotate(0.25deg);
+	}
+	98% {
+		transform: rotate(0deg);
+	}
 }

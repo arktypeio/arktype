@@ -1,6 +1,6 @@
 import { ArrowRightIcon, PlayIcon } from "lucide-react"
-import Link from "next/link.js"
 import { MainAutoplayDemo } from "./AutoplayDemo.tsx"
+import { Button } from "./Button.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
 
 export const Hero = () => (
@@ -23,25 +23,20 @@ export const Hero = () => (
 				<p className="text-fd-muted-foreground text-3xl leading-relaxed">
 					TypeScript's 1:1 validator, optimized from editor to runtime
 				</p>
-
-				{/* This wrapper grows to fill remaining vertical space, placing the link in the centered area */}
-				<div className="flex-1 flex items-center justify-center md:justify-start mt-6 gap-4">
-					<Link
-						tabIndex={1}
+				<div className="w-full flex-1 flex items-start justify-start mt-6 gap-x-4">
+					<Button
+						variant="outline"
 						href="/playground"
-						className="hidden md:flex border-2 focus-within:outline-2 outline-white hover:bg-primary/10 p-5 rounded-full gap-2 text-sm items-center"
+						size="lg"
+						className="hidden md:flex"
 					>
 						Playground
 						<PlayIcon />
-					</Link>
-					<Link
-						tabIndex={2}
-						href="/docs/intro/setup"
-						className="bg-highlight text-black focus-within:outline-2 outline-white hover:bg-highlight/80 p-5 rounded-full flex gap-2 text-sm items-center"
-					>
+					</Button>
+					<Button variant="filled" href="/docs/intro/setup" size="lg">
 						Get Started
 						<ArrowRightIcon />
-					</Link>
+					</Button>
 				</div>
 			</div>
 

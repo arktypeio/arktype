@@ -11,7 +11,9 @@ export const baseOptions: BaseLayoutProps = {
 	nav: {
 		title: <ArkTypeLogo />
 	},
-	disableThemeSwitch: true,
+	themeSwitch: {
+		enabled: false
+	},
 	githubUrl: "https://github.com/arktypeio/arktype",
 	links: [
 		{

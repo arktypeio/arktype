@@ -1,7 +1,7 @@
 import {
+	FunnelIcon,
 	LightbulbIcon,
 	MessageCircleWarning,
-	MessageSquareTextIcon,
 	RocketIcon,
 	SearchIcon
 } from "lucide-react"
@@ -26,7 +26,7 @@ export default () => (
 				Deeply customizable messages with great defaults
 				<CodeBlock fromFile="betterErrors" />
 			</ArkCard>
-			<ArkCard title="Clarity and Concision" icon={<MessageSquareTextIcon />}>
+			<ArkCard title="Clarity and Concision" icon={<FunnelIcon />}>
 				Definitions are half as long, type errors are twice as readable, and
 				hovers tell you just what really matters
 				<CodeBlock fromFile="clarityAndConcision" />

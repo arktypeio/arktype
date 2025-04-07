@@ -20,6 +20,7 @@ export default ({ children }: { children: ReactNode }) => (
 			<title>
 				ArkType: TypeScript's 1:1 validator, optimized from editor to runtime
 			</title>
+			<meta property="og:type" content="website" />
 			<meta property="og:title" content="ArkType" />
 			<meta
 				name="description"
@@ -29,13 +30,15 @@ export default ({ children }: { children: ReactNode }) => (
 				property="og:description"
 				content="TypeScript's 1:1 validator, optimized from editor to runtime"
 			/>
-			<meta property="og:image" content="https://arktype.io/image/og.png" />
-			<meta property="og:url" content="https://arktype.io" />
+			<meta property="og:image" content="/image/og.png" />
+			<meta property="og:image:width" content="1200" />
+			<meta property="og:image:height" content="600" />
+			<meta property="og:url" content="https://arktype.io/" />
+			<meta name="twitter:card" content="summary_large_image" />
 			<meta
 				name="keywords"
 				content="ArkType, TypeScript, JavaScript, runtime validation, schema, type-safe, validator, syntax"
 			/>
-			<meta name="twitter:card" content="summary_large_image" />
 			<link rel="icon" href="/image/favicon.svg" />
 		</head>
 		<body className="flex flex-col min-h-screen">
