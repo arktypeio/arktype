@@ -786,7 +786,14 @@ contextualize(() => {
 			c: o => o.kind,
 			default: "assert"
 		})
-		attest(discriminate).type.toString.snap()
+		attest(discriminate).type.toString.snap(`Match<
+	unknown,
+	[
+		(In: { kind: "a" }) => "a",
+		(In: { kind: "b" }) => "b",
+		(In: { kind: "c" }) => "c"
+	]
+>`)
 
 		const a = discriminate({ kind: "a", value: "a" })
 		const b = discriminate({ kind: "b", value: "b" })

@@ -1,6 +1,4 @@
-import { jsonSchemaToType } from "@ark/json-schema"
+import { type } from "arktype"
 
-const S = jsonSchemaToType({ type: "string", minLength: 5, maxLength: 10 })
-
-S.assert("arktype") //?
-S.assert("zod") //?
+// // dev
+// type()
