@@ -85,9 +85,6 @@ export abstract class BaseNode<
 	onFail: ArkErrors.Handler | null
 	includesTransform: boolean
 
-	// if a predicate accepts exactly one arg, we can safely skip passing context
-	// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
-	// that would break here, but it feels like a pathological case and is better to let people optimize
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
