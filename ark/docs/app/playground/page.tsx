@@ -1,29 +1,24 @@
-"use client"
-
 import { HomeLayout } from "fumadocs-ui/layouts/home"
+import type { Metadata } from "next"
 import type { ReactNode } from "react"
 import { FloatYourBoat } from "../../components/FloatYourBoat.tsx"
 import { Playground } from "../../components/playground/Playground.tsx"
-import {
-	decodePlaygroundCode,
-	defaultPlaygroundCode
-} from "../../components/playground/utils.ts"
 import { baseOptions } from "../layout.config.tsx"
 
 export type LayoutProps = {
 	children: ReactNode
 }
 
-export default function PlaygroundPage() {
-	let initialValue = defaultPlaygroundCode
-
-	if (globalThis.window?.location.search) {
-		// decode initial contents from URL
-		const params = new URLSearchParams(window.location.search)
-		const encodedCode = params.get("code")
-		if (encodedCode) initialValue = decodePlaygroundCode(encodedCode)
+export const metadata: Metadata = {
+	title:
+		"ArkType Playground: TypeScript's 1:1 validator, optimized from editor to runtime",
+	openGraph: {
+		title: "ArkType Playground",
+		images: "https://arktype.io/image/ogPlayground.png"
 	}
+}
 
+export default function PlaygroundPage() {
 	return (
 		<HomeLayout
 			{...baseOptions}
@@ -41,7 +36,7 @@ export default function PlaygroundPage() {
 		>
 			<div className="flex-1 flex flex-col items-center justify-center py-8">
 				<div className="w-[90vw] h-[80vh]">
-					<Playground initialValue={initialValue} withResults={true} />
+					<Playground withResults={true} />
 				</div>
 			</div>
 		</HomeLayout>

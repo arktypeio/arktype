@@ -46,10 +46,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 				"active:scale-[0.98] active:brightness-95 active:translate-y-0"
 			),
 			filled: cn(
-				"bg-[#1ba673] text-white border-2 border-transparent",
-				"shadow-[0_4px_10px_rgba(0,0,0,0.2),_0_0_10px_#1ba673]",
-				"hover:bg-[#23c386] hover:shadow-[0_4px_15px_rgba(0,0,0,0.15),_0_0_15px_#23c386] hover:-translate-y-[1px]",
-				"active:scale-[0.98] active:bg-[#178f63] active:translate-y-0"
+				"bg-[#f5cf8f] text-black border-2 border-transparent",
+				"shadow-[0_4px_10px_rgba(0,0,0,0.2),_0_0_10px_#f5cf8f]",
+				"hover:bg-[#f7e1b1] hover:shadow-[0_4px_15px_rgba(0,0,0,0.15),_0_0_15px_#f7e1b1] hover:-translate-y-[1px]",
+				"active:scale-[0.98] active:bg-[#f5cf8f] active:translate-y-0"
 			)
 		}
 

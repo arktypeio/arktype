@@ -1,6 +1,7 @@
 import "app/global.css"
 import "fumadocs-twoslash/twoslash.css"
 import { RootProvider } from "fumadocs-ui/provider"
+import type { Metadata } from "next"
 import { Raleway } from "next/font/google"
 import type { ReactNode } from "react"
 import { ReleaseBanner } from "../components/ReleaseBanner.tsx"
@@ -10,54 +11,68 @@ const raleway = Raleway({
 	subsets: ["latin"]
 })
 
-export default ({ children }: { children: ReactNode }) => (
-	<html
-		lang="en"
-		className={`dark ${raleway.className}`}
-		suppressHydrationWarning
-	>
-		<head>
-			<title>
-				ArkType: TypeScript's 1:1 validator, optimized from editor to runtime
-			</title>
-			<meta property="og:type" content="website" />
-			<meta property="og:title" content="ArkType" />
-			<meta
-				name="description"
-				content="TypeScript's 1:1 validator, optimized from editor to runtime"
-			/>
-			<meta
-				property="og:description"
-				content="TypeScript's 1:1 validator, optimized from editor to runtime"
-			/>
-			<meta property="og:image" content="https://arktype.io/image/og.png" />
-			<meta property="og:image:width" content="1200" />
-			<meta property="og:image:height" content="600" />
-			<meta property="og:url" content="https://arktype.io/" />
-			<meta name="twitter:card" content="summary_large_image" />
-			<meta
-				name="keywords"
-				content="ArkType, TypeScript, JavaScript, runtime validation, schema, type-safe, validator, syntax"
-			/>
-			<link rel="icon" href="/image/favicon.svg" />
-		</head>
-		<body className="flex flex-col min-h-screen">
-			<RootProvider
-				search={{
-					options: {
-						type: "static"
-					}
-				}}
-				theme={{
-					enabled: false,
-					enableSystem: false
-				}}
-			>
-				<CSPostHogProvider>
-					<ReleaseBanner />
-					{children}
-				</CSPostHogProvider>
-			</RootProvider>
-		</body>
-	</html>
-)
+export const metadata: Metadata = {
+	title:
+		"ArkType: TypeScript's 1:1 validator, optimized from editor to runtime",
+	description: "TypeScript's 1:1 validator, optimized from editor to runtime",
+	keywords: [
+		"ArkType",
+		"TypeScript",
+		"JavaScript",
+		"runtime validation",
+		"schema",
+		"type-safe",
+		"validator",
+		"syntax"
+	],
+	openGraph: {
+		title: "ArkType",
+		description: "TypeScript's 1:1 validator, optimized from editor to runtime",
+		url: "https://arktype.io/",
+		siteName: "ArkType",
+		images: [
+			{
+				url: "https://arktype.io/image/og.png",
+				width: 1200,
+				height: 600,
+				alt: "ArkType Logo"
+			}
+		],
+		type: "website"
+	},
+	twitter: {
+		card: "summary_large_image"
+	},
+	icons: {
+		icon: "/image/favicon.svg"
+	}
+}
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+	return (
+		<html
+			lang="en"
+			className={`dark ${raleway.className}`}
+			suppressHydrationWarning
+		>
+			<body className="flex flex-col min-h-screen">
+				<RootProvider
+					search={{
+						options: {
+							type: "static"
+						}
+					}}
+					theme={{
+						enabled: false,
+						enableSystem: false
+					}}
+				>
+					<CSPostHogProvider>
+						<ReleaseBanner />
+						{children}
+					</CSPostHogProvider>
+				</RootProvider>
+			</body>
+		</html>
+	)
+}

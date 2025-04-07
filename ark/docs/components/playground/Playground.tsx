@@ -24,6 +24,7 @@ import { ShareLink } from "./ShareLink.tsx"
 import { TraverseResult } from "./TraverseResult.tsx"
 import { getInitializedTypeScriptService } from "./tsserver.ts"
 import {
+	decodePlaygroundCode,
 	defaultPlaygroundCode,
 	editorFileUri,
 	updatePlaygroundUrl
@@ -65,7 +66,7 @@ const setupMonaco = async (
 type LoadingState = "unloaded" | "loading" | "loaded"
 
 export interface PlaygroundProps {
-	initialValue: string
+	initialValue?: string
 	style?: React.CSSProperties
 	className?: string
 	withResults?: boolean
@@ -77,6 +78,18 @@ export const Playground = ({
 	className,
 	withResults
 }: PlaygroundProps) => {
+	let value: string
+
+	if (initialValue) value = initialValue
+	else if (globalThis.window?.location.search) {
+		// decode initial contents from URL
+		const params = new URLSearchParams(window.location.search)
+		const encodedCode = params.get("code")
+		if (encodedCode) value = decodePlaygroundCode(encodedCode)
+	}
+
+	value ??= defaultPlaygroundCode
+
 	const [loadingState, setLoaded] = useState<LoadingState>(
 		monacoInitialized ? "loaded" : "unloaded"
 	)
@@ -87,7 +100,7 @@ export const Playground = ({
 
 	const monaco = useMonaco()
 	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
-	const [currentCode, setCurrentCode] = useState<string>(initialValue)
+	const [currentCode, setCurrentCode] = useState<string>(value)
 
 	// ts + monaco initialization
 	useEffect(() => {
@@ -98,7 +111,7 @@ export const Playground = ({
 		if (monaco && loadingState !== "loaded") {
 			if (loadingState === "unloaded") setLoaded("loading")
 			else {
-				setupMonaco(monaco, initialValue)
+				setupMonaco(monaco, value)
 					.then(() => setLoaded("loaded"))
 					.catch(err => {
 						console.error("Failed to setup Monaco:", err)
@@ -127,11 +140,10 @@ export const Playground = ({
 	useEffect(() => {
 		if (editorRef.current) {
 			const currentEditorValue = editorRef.current.getValue()
-			if (initialValue !== currentEditorValue)
-				editorRef.current.setValue(initialValue)
+			if (value !== currentEditorValue) editorRef.current.setValue(value)
 		}
-		setCurrentCode(initialValue)
-		validateNow(initialValue)
+		setCurrentCode(value)
+		validateNow(value)
 	}, [initialValue, validateNow])
 
 	const restoreDefault = () => {

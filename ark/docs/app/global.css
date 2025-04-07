@@ -87,6 +87,10 @@ code {
 	}
 }
 
+.fd-codeblock {
+	border-radius: 1.5rem !important;
+}
+
 pre.shiki,
 .twoslash-popup-container {
 	border-radius: 1rem;
