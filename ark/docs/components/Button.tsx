@@ -33,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 		}
 
 		const baseClasses = cn(
-			"rounded-[1.5rem] flex items-center gap-[6px] font-semibold transition-all duration-150 ease-linear cursor-pointer",
+			"rounded-[1.5rem] flex items-center gap-[6px] transition-all duration-150 ease-linear cursor-pointer",
 			"focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
 		)
 

@@ -20,7 +20,7 @@ export const Hero = () => (
 
 			<div className="relative w-full flex flex-col md:items-start text-center md:text-left">
 				<h1 className="mb-4 text-3xl md:text-8xl">ArkType</h1>
-				<p className="text-fd-muted-foreground text-3xl leading-relaxed">
+				<p className="text-fd-muted-foreground text-3xl leading-relaxed hero-tagline">
 					TypeScript's 1:1 validator, optimized from editor to runtime
 				</p>
 				<div className="w-full flex-1 flex items-start justify-start mt-6 gap-x-4">
