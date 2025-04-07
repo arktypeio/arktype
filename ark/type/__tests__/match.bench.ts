@@ -16,7 +16,7 @@ bench("case(3, define)", () =>
 		.case("-2", n => `${n}` as const)
 		.case("-3", n => `${n}` as const)
 		.default("assert")
-).types([1758, "instantiations"])
+).types([2612, "instantiations"])
 
 bench("case(10, define)", () =>
 	match
@@ -31,7 +31,7 @@ bench("case(10, define)", () =>
 		.case("8", n => `${n}` as const)
 		.case("9", n => `${n}` as const)
 		.default("assert")
-).types([6300, "instantiations"])
+).types([9573, "instantiations"])
 
 bench("match.in<t> cases define and invoke", () => {
 	const matcher = match
@@ -45,7 +45,7 @@ bench("match.in<t> cases define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([1881, "instantiations"])
+}).types([3014, "instantiations"])
 
 bench("record(3, define)", () =>
 	match({
@@ -54,7 +54,7 @@ bench("record(3, define)", () =>
 		"22": n => `${n}` as const,
 		default: "assert"
 	})
-).types([1572, "instantiations"])
+).types([2270, "instantiations"])
 
 bench("record(10, define)", () =>
 	match({
@@ -70,7 +70,7 @@ bench("record(10, define)", () =>
 		"-9n": n => `${n}` as const,
 		default: "assert"
 	})
-).types([5537, "instantiations"])
+).types([7826, "instantiations"])
 
 bench("record.in<t> define and invoke", () => {
 	const matcher = match.in<string | number | boolean>().match({
@@ -84,7 +84,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([2275, "instantiations"])
+}).types([3500, "instantiations"])
 
 // For some reason, these calls don't register instantiations
 // will have to look into that later, although generally
