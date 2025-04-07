@@ -131,7 +131,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			:	this.description
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema {
 		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
 				{ const: this.unit }
 			:	JsonSchema.throwUnjsonifiableError(this.defaultShortDescription)

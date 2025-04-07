@@ -125,7 +125,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	}
 
 	protected innerToJsonSchema(
-		opts: JsonSchema.ToContext
+		ctx: JsonSchema.ToContext
 	): JsonSchema.Constrainable {
 		if (this.domain === "bigint" || this.domain === "symbol")
 			return JsonSchema.throwUnjsonifiableError(this.domain)

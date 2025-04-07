@@ -765,18 +765,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Structure,
-		opts: JsonSchema.ToContext
+		ctx: JsonSchema.ToContext
 	): JsonSchema.Structure {
 		switch (schema.type) {
 			case "object":
-				return this.reduceObjectJsonSchema(schema, opts)
+				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
 				if (this.props.length || this.index) {
 					return JsonSchema.throwUnjsonifiableError(
 						`Additional properties on array ${this.expression}`
 					)
 				}
-				return this.sequence?.reduceJsonSchema(schema, opts) ?? schema
+				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 			default:
 				return JsonSchema.throwInternalOperandError("structure", schema)
 		}
@@ -784,7 +784,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	reduceObjectJsonSchema(
 		schema: JsonSchema.Object,
-		opts: JsonSchema.ToContext
+		ctx: JsonSchema.ToContext
 	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}
@@ -795,7 +795,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					)
 				}
 
-				schema.properties![prop.key] = prop.value.toJsonSchemaRecurse(opts)
+				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
+
+				if (prop.hasDefault()) {
+					const defaultValue =
+						typeof prop.default === "function" ? prop.default() : prop.default
+					// could do JSONifiable validation here
+					valueSchema.default = defaultValue
+				}
+
+				schema.properties![prop.key] = valueSchema
 			})
 			if (this.requiredKeys.length)
 				schema.required = this.requiredKeys as string[]
@@ -804,7 +813,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.index?.forEach(index => {
 			if (index.signature.equals($ark.intrinsic.string)) {
 				return (schema.additionalProperties =
-					index.value.toJsonSchemaRecurse(opts))
+					index.value.toJsonSchemaRecurse(ctx))
 			}
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
@@ -825,7 +834,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.patternProperties ??= {}
 				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
-					index.value.toJsonSchemaRecurse(opts)
+					index.value.toJsonSchemaRecurse(ctx)
 			})
 		})
 

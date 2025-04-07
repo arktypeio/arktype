@@ -261,4 +261,63 @@ contextualize(() => {
 			anyOf: [{ const: 0 }, { const: 1, description: "one" }]
 		})
 	})
+
+	it("includes default for primitive prop", () => {
+		const T = rootSchema({
+			domain: "object",
+			optional: [{ key: "foo", value: "number", default: 0 }]
+		})
+		attest(toJsonSchema(T)).snap({
+			type: "object",
+			properties: { foo: { type: "number", default: 0 } }
+		})
+	})
+
+	it("includes default for object prop", () => {
+		const T = rootSchema({
+			domain: "object",
+			optional: [{ key: "foo", value: "Array", default: () => [] }]
+		})
+		attest(toJsonSchema(T)).snap({
+			type: "object",
+			properties: { foo: { type: "array", default: [] } }
+		})
+	})
+
+	it("it includes primitive default for tuple", () => {
+		const T = rootSchema({
+			proto: "Array",
+			sequence: {
+				prefix: ["number"],
+				defaultables: [["string", ""]],
+				optionals: ["string"]
+			}
+		})
+
+		attest(toJsonSchema(T)).snap({
+			type: "array",
+			minItems: 1,
+			prefixItems: [
+				{ type: "number" },
+				{ type: "string", default: "" },
+				{ type: "string" }
+			],
+			items: false
+		})
+	})
+
+	it("it includes object default for tuple", () => {
+		const T = rootSchema({
+			proto: "Array",
+			sequence: {
+				defaultables: [["Array", () => []]]
+			}
+		})
+
+		attest(toJsonSchema(T)).snap({
+			type: "array",
+			prefixItems: [{ type: "array", default: [] }],
+			items: false
+		})
+	})
 })

@@ -137,12 +137,12 @@ export abstract class BaseRoot<
 		return schema
 	}
 
-	toJsonSchemaRecurse(opts: JsonSchema.ToContext): JsonSchema {
-		const schema = this.innerToJsonSchema(opts)
+	toJsonSchemaRecurse(ctx: JsonSchema.ToContext): JsonSchema {
+		const schema = this.innerToJsonSchema(ctx)
 		return Object.assign(schema, this.metaJson)
 	}
 
-	protected abstract innerToJsonSchema(opts: JsonSchema.ToContext): JsonSchema
+	protected abstract innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)

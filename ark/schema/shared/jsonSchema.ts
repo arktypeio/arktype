@@ -42,8 +42,14 @@ export declare namespace JsonSchema {
 	 *  a subset of JSON Schema's annotations, see:
 	 *  https://json-schema.org/understanding-json-schema/reference/annotations
 	 **/
-	export type Meta<t = unknown> = {
+	export interface Meta<t = unknown> extends UniversalMeta<t> {
 		$schema?: string
+	}
+
+	/**
+	 * doesn't include root-only keys like $schema
+	 */
+	export interface UniversalMeta<t = unknown> {
 		title?: string
 		description?: string
 		deprecated?: true
@@ -73,7 +79,7 @@ export declare namespace JsonSchema {
 		allOf: readonly JsonSchema[]
 	}
 
-	export interface Not {
+	export interface Not extends Meta {
 		not: JsonSchema
 	}
 

@@ -472,31 +472,33 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
-		opts: JsonSchema.ToContext
+		ctx: JsonSchema.ToContext
 	): JsonSchema.Array {
-		if (this.prefix) {
-			schema.prefixItems = this.prefix.map(node =>
-				node.toJsonSchemaRecurse(opts)
-			)
+		if (this.prevariadic) {
+			schema.prefixItems = this.prevariadic.map(el => {
+				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
+				if (el.kind === "defaultables") {
+					const defaultValue =
+						typeof el.default === "function" ? el.default() : el.default
+					valueSchema.default = defaultValue
+				}
+				return valueSchema
+			})
 		}
 
-		if (this.optionals) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
-			)
-		}
+		// by default JSON schema prefixElements are optional
+		// add minLength here if there are any required prefix elements
+		if (this.minLength) schema.minItems = this.minLength
 
 		if (this.variadic) {
-			schema.items = this.variadic?.toJsonSchemaRecurse(opts)
-			// length constraints will be enforced by items: false
+			schema.items = this.variadic?.toJsonSchemaRecurse(ctx)
+			// maxLength constraint will be enforced by items: false
 			// for non-variadic arrays
-			if (this.minLength) schema.minItems = this.minLength
 			if (this.maxLength) schema.maxItems = this.maxLength
 		} else {
 			schema.items = false
-			// delete min/maxLength constraints that will have been added by the
+			// delete maxItems constraint that will have been added by the
 			// base intersection node to enforce fixed length
-			delete schema.minItems
 			delete schema.maxItems
 		}
 

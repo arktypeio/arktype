@@ -1,4 +1,5 @@
 import {
+	domainDescriptions,
 	entriesOf,
 	flatMorph,
 	hasDomain,
@@ -90,7 +91,13 @@ export const schemaKindOf = <kind extends RootKind = RootKind>(
 
 const discriminateRootKind = (schema: unknown): RootKind => {
 	if (hasArkKind(schema, "root")) return schema.kind
-	if (typeof schema === "string") return schema[0] === "$" ? "alias" : "domain"
+	if (typeof schema === "string") {
+		return (
+			schema[0] === "$" ? "alias"
+			: schema in domainDescriptions ? "domain"
+			: "proto"
+		)
+	}
 	if (typeof schema === "function") return "proto"
 
 	// throw at end of function

@@ -202,7 +202,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return this.in.meta.description ?? this.in.defaultShortDescription
 	}
 
-	protected innerToJsonSchema(opts: JsonSchema.ToContext): JsonSchema {
+	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema {
 		return JsonSchema.throwUnjsonifiableError(this.expression, "morph")
 	}
 
