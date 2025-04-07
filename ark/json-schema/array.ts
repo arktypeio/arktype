@@ -11,7 +11,7 @@ import {
 	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
 	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
 } from "./errors.ts"
-import { parseJsonSchema } from "./json.ts"
+import { jsonSchemaToType } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
 
 const deepNormalize = (data: unknown): unknown =>
@@ -86,14 +86,14 @@ export const parseArrayJsonSchema: Type<
 	if ("items" in jsonSchema) {
 		if (Array.isArray(jsonSchema.items)) {
 			arktypeArraySchema.sequence = {
-				prefix: jsonSchema.items.map(item => parseJsonSchema(item).internal)
+				prefix: jsonSchema.items.map(item => jsonSchemaToType(item).internal)
 			}
 
 			if ("additionalItems" in jsonSchema) {
 				if (jsonSchema.additionalItems !== false) {
 					arktypeArraySchema.sequence = {
 						...arktypeArraySchema.sequence,
-						variadic: parseJsonSchema(jsonSchema.additionalItems).internal
+						variadic: jsonSchemaToType(jsonSchema.additionalItems).internal
 					}
 				}
 			} else if (itemsIsPrefixItems) {
@@ -109,12 +109,12 @@ export const parseArrayJsonSchema: Type<
 				)
 			}
 			arktypeArraySchema.sequence = {
-				variadic: parseJsonSchema(jsonSchema.items).internal
+				variadic: jsonSchemaToType(jsonSchema.items).internal
 			}
 		}
 	} else if ("additionalItems" in jsonSchema) {
 		arktypeArraySchema.sequence = {
-			variadic: parseJsonSchema(jsonSchema.additionalItems).internal
+			variadic: jsonSchemaToType(jsonSchema.additionalItems).internal
 		}
 	}
 
@@ -128,7 +128,7 @@ export const parseArrayJsonSchema: Type<
 		predicates.push(jsonSchemaArrayUniqueItemsValidator)
 
 	if ("contains" in jsonSchema) {
-		const parsedContainsJsonSchema = parseJsonSchema(jsonSchema.contains)
+		const parsedContainsJsonSchema = jsonSchemaToType(jsonSchema.contains)
 		predicates.push(arrayContainsItemMatchingSchema(parsedContainsJsonSchema))
 	}
 

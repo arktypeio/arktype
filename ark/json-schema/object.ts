@@ -14,7 +14,7 @@ import {
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "./errors.ts"
-import { parseJsonSchema } from "./json.ts"
+import { jsonSchemaToType } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
 
 const parseMinMaxProperties = (
@@ -70,7 +70,7 @@ const parsePatternProperties = (jsonSchema: JsonSchema.Object) => {
 	if (!("patternProperties" in jsonSchema)) return
 
 	const patternProperties = Object.entries(jsonSchema.patternProperties).map(
-		([key, value]) => [new RegExp(key), parseJsonSchema(value)] as const
+		([key, value]) => [new RegExp(key), jsonSchemaToType(value)] as const
 	)
 
 	// NB: We don't validate compatability of schemas for overlapping patternProperties
@@ -86,7 +86,7 @@ const parsePatternProperties = (jsonSchema: JsonSchema.Object) => {
 
 const parsePropertyNames = (jsonSchema: JsonSchema.Object) => {
 	if (!("propertyNames" in jsonSchema)) return
-	const propertyNamesValidator = parseJsonSchema(jsonSchema.propertyNames)
+	const propertyNamesValidator = jsonSchemaToType(jsonSchema.propertyNames)
 	return propertyNamesValidator.internal
 }
 
@@ -134,11 +134,11 @@ const parseRequiredAndOptionalKeys = (
 	return {
 		optionalKeys: optionalKeys.map(key => ({
 			key,
-			value: parseJsonSchema(jsonSchema.properties![key]).internal
+			value: jsonSchemaToType(jsonSchema.properties![key]).internal
 		})),
 		requiredKeys: requiredKeys.map(key => ({
 			key,
-			value: parseJsonSchema(jsonSchema.properties![key]).internal
+			value: jsonSchemaToType(jsonSchema.properties![key]).internal
 		}))
 	}
 }
@@ -174,7 +174,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 				// Not an additional property, so don't validate here
 				return
 
-			const additionalPropertyValidator = parseJsonSchema(
+			const additionalPropertyValidator = jsonSchemaToType(
 				additionalPropertiesSchema
 			)
 

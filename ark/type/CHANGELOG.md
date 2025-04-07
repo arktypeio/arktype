@@ -1,12 +1,29 @@
 # arktype
 
+## 2.1.18
+
+Fix [an issue](https://github.com/arktypeio/arktype/issues/1407) causing metatypes like `Default` and `Out` to not be extracted from some recursive definitions:
+
+```ts
+const T = type({
+	defaulted: "number = 0",
+	"nested?": "this"
+})
+
+const t = T.assert({})
+
+// old: Default<number, 0> | undefined
+// new: number | undefined
+t.nested?.defaulted
+```
+
 ## 2.1.17
 
 Unsatisfiable types for index signature intersections will now result in a `ParseError` thanks to the work of @TizzySaurus on the upcoming `@ark/json-schema` package 🎉
 
 ## 2.1.16
 
-##### Fixed [an issue](https://github.com/arktypeio/arktype/issues/1400) causing non-serializable error config to lead to incorrect error messages in some JIT-mode cases:
+##### Fix [an issue](https://github.com/arktypeio/arktype/issues/1400) causing non-serializable error config to lead to incorrect error messages in some JIT-mode cases:
 
 ```ts
 const MyUnion = type('"abc" | "cde"').configure({
@@ -641,7 +658,3 @@ const out = U.assert({ a: 1 })
 ## 2.0.0
 
 - Initial stable release 🎉
-
-```
-
-```

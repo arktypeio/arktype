@@ -146,7 +146,7 @@ bench("to-tuple", () =>
 
 bench("to-args", () =>
 	type("string.numeric.parse", "|>", "number.integer")
-).types([4268, "instantiations"])
+).types([4261, "instantiations"])
 
 bench("base object", () =>
 	type({

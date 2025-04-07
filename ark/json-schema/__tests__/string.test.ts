@@ -1,14 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
-import { parseJsonSchema } from "@ark/json-schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
 	it("type string", () => {
-		const t = parseJsonSchema({ type: "string" })
+		const t = jsonSchemaToType({ type: "string" })
 		attest(t.expression).snap("string")
 	})
 
 	it("maxLength (positive)", () => {
-		const tMaxLength = parseJsonSchema({
+		const tMaxLength = jsonSchemaToType({
 			type: "string",
 			maxLength: 5
 		})
@@ -18,7 +18,7 @@ contextualize(() => {
 	it("maxLength (negative)", () => {
 		const maxLength = -5
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "string",
 				maxLength
 			})
@@ -28,7 +28,7 @@ contextualize(() => {
 	})
 
 	it("minLength (positive)", () => {
-		const tMinLength = parseJsonSchema({
+		const tMinLength = jsonSchemaToType({
 			type: "string",
 			minLength: 5
 		})
@@ -38,7 +38,7 @@ contextualize(() => {
 	it("minLength (negative)", () => {
 		const minLength = -1
 		attest(() =>
-			parseJsonSchema({
+			jsonSchemaToType({
 				type: "string",
 				minLength
 			})
@@ -48,7 +48,7 @@ contextualize(() => {
 	})
 
 	it("pattern", () => {
-		const tPatternString = parseJsonSchema({
+		const tPatternString = jsonSchemaToType({
 			type: "string",
 			pattern: "es"
 		})
@@ -57,7 +57,7 @@ contextualize(() => {
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
 		attest(tPatternString.allows("expression")).equals(true)
 
-		const tPatternRegExp = parseJsonSchema({
+		const tPatternRegExp = jsonSchemaToType({
 			type: "string",
 			pattern: /es/
 		})

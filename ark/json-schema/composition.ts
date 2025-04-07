@@ -1,22 +1,22 @@
 import type { Traversal } from "@ark/schema"
 import { printable } from "@ark/util"
 import { type, type JsonSchema, type Type } from "arktype"
-import { parseJsonSchema } from "./json.ts"
+import { jsonSchemaToType } from "./json.ts"
 
 const parseAllOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type =>
 	jsonSchemas
-		.map(jsonSchema => parseJsonSchema(jsonSchema))
+		.map(jsonSchema => jsonSchemaToType(jsonSchema))
 		.reduce((acc, validator) => acc.and(validator))
 
 export const parseAnyOfJsonSchema = (
 	jsonSchemas: readonly JsonSchema[]
 ): Type =>
 	jsonSchemas
-		.map(jsonSchema => parseJsonSchema(jsonSchema))
+		.map(jsonSchema => jsonSchemaToType(jsonSchema))
 		.reduce((acc, validator) => acc.or(validator))
 
 const parseNotJsonSchema = (jsonSchema: JsonSchema): Type => {
-	const inner = parseJsonSchema(jsonSchema)
+	const inner = jsonSchemaToType(jsonSchema)
 
 	const jsonSchemaNotValidator = (data: unknown, ctx: Traversal) =>
 		inner.allows(data) ?
@@ -30,7 +30,7 @@ const parseNotJsonSchema = (jsonSchema: JsonSchema): Type => {
 
 const parseOneOfJsonSchema = (jsonSchemas: readonly JsonSchema[]): Type => {
 	const oneOfValidators = jsonSchemas.map(nestedSchema =>
-		parseJsonSchema(nestedSchema)
+		jsonSchemaToType(nestedSchema)
 	)
 	const oneOfValidatorsDescriptions = oneOfValidators.map(
 		validator => `○ ${validator.description}`
