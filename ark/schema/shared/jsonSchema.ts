@@ -16,6 +16,19 @@ export type ListableJsonSchema = listable<JsonSchema>
 export type JsonSchemaOrBoolean = listable<JsonSchema.Branch>
 
 export declare namespace JsonSchema {
+	export interface ToOptions {
+		/** value to assign to the generated $schema key
+		 *
+		 *  - set to `null` to omit the `$schema` key
+		 *  - does not affect the contents of the generated schema
+		 *
+		 * @default "https://json-schema.org/draft/2020-12/schema"
+		 */
+		dialect?: string | null
+	}
+
+	export type ToContext = Required<ToOptions>
+
 	export type TypeName =
 		| "string"
 		| "integer"
@@ -30,6 +43,7 @@ export declare namespace JsonSchema {
 	 *  https://json-schema.org/understanding-json-schema/reference/annotations
 	 **/
 	export type Meta<t = unknown> = {
+		$schema?: string
 		title?: string
 		description?: string
 		deprecated?: true

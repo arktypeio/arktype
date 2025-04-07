@@ -292,7 +292,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(opts: JsonSchema.ToContext): JsonSchema {
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
 		if (
@@ -302,7 +302,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return { type: "boolean" }
 
 		return {
-			anyOf: this.branchGroups.map(group => group.toJsonSchema())
+			anyOf: this.branchGroups.map(group => group.toJsonSchemaRecurse(opts))
 		}
 	}
 

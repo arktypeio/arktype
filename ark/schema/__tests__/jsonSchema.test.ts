@@ -1,9 +1,26 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark, intrinsic, JsonSchema, rootSchema } from "@ark/schema"
+import {
+	$ark,
+	intrinsic,
+	JsonSchema,
+	rootSchema,
+	type BaseRoot
+} from "@ark/schema"
+
+const toJsonSchema = (node: BaseRoot) => node.toJsonSchema({ dialect: null })
 
 contextualize(() => {
+	it("generates dialect by default", () => {
+		const node = rootSchema("string")
+
+		attest(node.toJsonSchema()).snap({
+			type: "string",
+			$schema: "https://json-schema.org/draft/2020-12/schema"
+		})
+	})
+
 	it("base primitives", () => {
-		attest(intrinsic.jsonPrimitive.toJsonSchema()).snap({
+		attest(toJsonSchema(intrinsic.jsonPrimitive)).snap({
 			anyOf: [
 				{ type: "number" },
 				{ type: "string" },
@@ -15,7 +32,7 @@ contextualize(() => {
 	})
 
 	it("boolean", () => {
-		attest($ark.intrinsic.boolean.toJsonSchema()).snap({
+		attest(toJsonSchema($ark.intrinsic.boolean)).snap({
 			type: "boolean"
 		})
 	})
@@ -27,7 +44,7 @@ contextualize(() => {
 			minLength: 1,
 			maxLength: 2
 		})
-		attest(node.toJsonSchema()).snap({
+		attest(toJsonSchema(node)).snap({
 			type: "string",
 			pattern: ".*",
 			maxLength: 2,
@@ -42,7 +59,7 @@ contextualize(() => {
 			min: 1,
 			max: 2
 		})
-		attest(node.toJsonSchema()).snap({
+		attest(toJsonSchema(node)).snap({
 			type: "integer",
 			multipleOf: 2,
 			maximum: 2,
@@ -56,7 +73,7 @@ contextualize(() => {
 			min: { rule: 1, exclusive: true },
 			max: { rule: 2, exclusive: true }
 		})
-		attest(node.toJsonSchema()).snap({
+		attest(toJsonSchema(node)).snap({
 			type: "number",
 			exclusiveMaximum: 2,
 			exclusiveMinimum: 1
@@ -84,7 +101,7 @@ contextualize(() => {
 				value: $ark.intrinsic.jsonPrimitive
 			}
 		})
-		attest(node.toJsonSchema()).snap({
+		attest(toJsonSchema(node)).snap({
 			type: "object",
 			properties: {
 				bar: { type: "number" },
@@ -114,7 +131,7 @@ contextualize(() => {
 				value: "number"
 			}
 		})
-		attest(node.toJsonSchema()).snap({
+		attest(toJsonSchema(node)).snap({
 			type: "object",
 			patternProperties: { ".*": { type: "number" } }
 		})
@@ -127,7 +144,7 @@ contextualize(() => {
 			minLength: 1,
 			maxLength: 5
 		})
-		const jsonSchema = node.toJsonSchema()
+		const jsonSchema = toJsonSchema(node)
 		attest(jsonSchema).snap({
 			type: "array",
 			items: { type: "string" },
@@ -143,7 +160,7 @@ contextualize(() => {
 				prefix: [{ domain: "string" }, { domain: "number" }]
 			}
 		})
-		const jsonSchema = node.toJsonSchema()
+		const jsonSchema = toJsonSchema(node)
 		attest(jsonSchema).snap({
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }],
@@ -159,7 +176,7 @@ contextualize(() => {
 				variadic: { unit: 1 }
 			}
 		})
-		const jsonSchema = node.toJsonSchema()
+		const jsonSchema = toJsonSchema(node)
 		attest(jsonSchema).snap({
 			type: "array",
 			minItems: 2,
@@ -196,7 +213,7 @@ contextualize(() => {
 			}
 		})
 
-		const jsonSchema = node.toJsonSchema()
+		const jsonSchema = toJsonSchema(node)
 
 		attest(jsonSchema).snap({
 			type: "object",
@@ -215,13 +232,13 @@ contextualize(() => {
 			morphs: [(s: string) => Number.parseInt(s)]
 		})
 
-		attest(() => morph.toJsonSchema()).throws(
+		attest(() => toJsonSchema(morph)).throws(
 			JsonSchema.writeUnjsonifiableMessage(morph.expression, "morph")
 		)
 	})
 
 	it("errors on cyclic", () => {
-		attest(() => $ark.intrinsic.jsonObject.toJsonSchema()).throws(
+		attest(() => toJsonSchema($ark.intrinsic.jsonObject)).throws(
 			JsonSchema.writeUnjsonifiableMessage("jsonObject", "cyclic")
 		)
 	})

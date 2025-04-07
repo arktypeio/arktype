@@ -470,9 +470,15 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
 
-	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
-		if (this.prefix)
-			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
+	reduceJsonSchema(
+		schema: JsonSchema.Array,
+		opts: JsonSchema.ToContext
+	): JsonSchema.Array {
+		if (this.prefix) {
+			schema.prefixItems = this.prefix.map(node =>
+				node.toJsonSchemaRecurse(opts)
+			)
+		}
 
 		if (this.optionals) {
 			return JsonSchema.throwUnjsonifiableError(
@@ -481,7 +487,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		if (this.variadic) {
-			schema.items = this.variadic?.toJsonSchema()
+			schema.items = this.variadic?.toJsonSchemaRecurse(opts)
 			// length constraints will be enforced by items: false
 			// for non-variadic arrays
 			if (this.minLength) schema.minItems = this.minLength

@@ -127,12 +127,22 @@ export abstract class BaseRoot<
 		return this.meta.description ?? this.defaultShortDescription
 	}
 
-	protected abstract innerToJsonSchema(): JsonSchema
+	toJsonSchema(opts: JsonSchema.ToOptions = {}): JsonSchema {
+		const ctx: JsonSchema.ToContext = {
+			dialect: "https://json-schema.org/draft/2020-12/schema",
+			...opts
+		}
+		const schema: any = this.toJsonSchemaRecurse(ctx)
+		if (typeof ctx.dialect === "string") schema.$schema = ctx.dialect
+		return schema
+	}
 
-	toJsonSchema(): JsonSchema {
-		const schema = this.innerToJsonSchema()
+	toJsonSchemaRecurse(opts: JsonSchema.ToContext): JsonSchema {
+		const schema = this.innerToJsonSchema(opts)
 		return Object.assign(schema, this.metaJson)
 	}
+
+	protected abstract innerToJsonSchema(opts: JsonSchema.ToContext): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
