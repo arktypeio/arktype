@@ -27,7 +27,7 @@ contextualize(() => {
 				{ type: "string" },
 				// boolean is special-cased to merge during conversion
 				{ type: "boolean" },
-				{ const: null }
+				{ type: "null" }
 			]
 		})
 	})
@@ -115,7 +115,7 @@ contextualize(() => {
 					{ type: "number" },
 					{ type: "string" },
 					{ type: "boolean" },
-					{ const: null }
+					{ type: "null" }
 				]
 			}
 		})
@@ -164,6 +164,7 @@ contextualize(() => {
 		const jsonSchema = toJsonSchema(node)
 		attest(jsonSchema).snap({
 			type: "array",
+			minItems: 2,
 			prefixItems: [{ type: "string" }, { type: "number" }],
 			items: false
 		})

@@ -474,7 +474,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		schema: JsonSchema.Array,
 		ctx: JsonSchema.ToContext
 	): JsonSchema.Array {
-		if (this.prevariadic) {
+		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
 				if (el.kind === "defaultables") {
