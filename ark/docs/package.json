@@ -9,7 +9,6 @@
 		"buildAndStart": "pnpm build && pnpm start",
 		"start": "pnpm serve out",
 		"clean": "rm -rf .next .source out",
-		"postinstall": "fumadocs-mdx",
 		"upDeps": "pnpm up --latest",
 		"checkLinks": "linkinator https://arktype.io -r"
 	},

@@ -763,23 +763,29 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js
 	}
 
-	reduceJsonSchema(schema: JsonSchema.Structure): JsonSchema.Structure {
+	reduceJsonSchema(
+		schema: JsonSchema.Structure,
+		ctx: JsonSchema.ToContext
+	): JsonSchema.Structure {
 		switch (schema.type) {
 			case "object":
-				return this.reduceObjectJsonSchema(schema)
+				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
 				if (this.props.length || this.index) {
 					return JsonSchema.throwUnjsonifiableError(
 						`Additional properties on array ${this.expression}`
 					)
 				}
-				return this.sequence?.reduceJsonSchema(schema) ?? schema
+				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 			default:
 				return JsonSchema.throwInternalOperandError("structure", schema)
 		}
 	}
 
-	reduceObjectJsonSchema(schema: JsonSchema.Object): JsonSchema.Object {
+	reduceObjectJsonSchema(
+		schema: JsonSchema.Object,
+		ctx: JsonSchema.ToContext
+	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}
 			this.props.forEach(prop => {
@@ -789,15 +795,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					)
 				}
 
-				schema.properties![prop.key] = prop.value.toJsonSchema()
+				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
+
+				if (prop.hasDefault()) {
+					const defaultValue =
+						typeof prop.default === "function" ? prop.default() : prop.default
+					// could do JSONifiable validation here
+					valueSchema.default = defaultValue
+				}
+
+				schema.properties![prop.key] = valueSchema
 			})
 			if (this.requiredKeys.length)
 				schema.required = this.requiredKeys as string[]
 		}
 
 		this.index?.forEach(index => {
-			if (index.signature.equals($ark.intrinsic.string))
-				return (schema.additionalProperties = index.value.toJsonSchema())
+			if (index.signature.equals($ark.intrinsic.string)) {
+				return (schema.additionalProperties =
+					index.value.toJsonSchemaRecurse(ctx))
+			}
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
 				return JsonSchema.throwUnjsonifiableError(
@@ -817,7 +834,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.patternProperties ??= {}
 				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
-					index.value.toJsonSchema()
+					index.value.toJsonSchemaRecurse(ctx)
 			})
 		})
 

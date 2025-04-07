@@ -152,7 +152,7 @@ Resolution: ${printable(resolution)}`)
 		return domainDescriptions.object
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): JsonSchema {
 		return JsonSchema.throwUnjsonifiableError(this.expression, "cyclic")
 	}
 

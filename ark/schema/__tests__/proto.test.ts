@@ -10,4 +10,18 @@ contextualize(() => {
 		attest(reparsed.json).equals(d.json)
 		attest(reparsed.id).equals(d.id)
 	})
+
+	it("can parse proto from string", () => {
+		const T = rootSchema({
+			domain: "object",
+			required: [{ key: "foo", value: "Array" }]
+		})
+
+		attest(T).snap({
+			required: [{ key: "foo", value: "Array" }],
+			domain: "object"
+		})
+
+		attest(T.get("foo")).snap({ proto: "Array" })
+	})
 })

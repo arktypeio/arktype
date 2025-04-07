@@ -17,7 +17,7 @@ import { JsonSchemaScope } from "./scope.ts"
 import { parseStringJsonSchema } from "./string.ts"
 
 const jsonSchemaTypeMatcher = type.match
-	.in<JsonSchema>()
+	.in<Extract<JsonSchema, { type: unknown }>>()
 	.at("type")
 	.match({
 		"unknown[]": jsonSchema =>
@@ -56,7 +56,9 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 			:	compositionValidator
 
 		if ("type" in jsonSchema) {
-			const typeValidator = jsonSchemaTypeMatcher(jsonSchema)
+			const typeValidator = jsonSchemaTypeMatcher(jsonSchema as never) as
+				| type.Any
+				| undefined
 
 			if (typeValidator === undefined) {
 				throwParseError(
@@ -88,5 +90,6 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	}
 )
 
-export const jsonSchemaToType = (jsonSchema: JsonSchemaOrBoolean): type.Any =>
-	innerParseJsonSchema.assert(jsonSchema) as never
+export const jsonSchemaToType = (
+	jsonSchema: JsonSchemaOrBoolean
+): type<unknown> => innerParseJsonSchema.assert(jsonSchema) as never

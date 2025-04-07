@@ -151,7 +151,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledCondition = `data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 	compiledNegation = `!(${this.compiledCondition})`
 
-	protected innerToJsonSchema(): JsonSchema.Array {
+	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): JsonSchema.Array {
 		switch (this.builtinName) {
 			case "Array":
 				return {

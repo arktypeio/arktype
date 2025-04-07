@@ -59,7 +59,12 @@ export class TsServer {
 	getSourceFileOrThrow(path: string): ts.SourceFile {
 		const tsPath = path.replaceAll(/\\/g, "/")
 		const file = this.virtualEnv.getSourceFile(tsPath)
-		if (!file) throwInternalError(`Could not find TS path ${path}`)
+		if (!file) {
+			throwInternalError(
+				`TypeScript was unable to resolve expected file at ${path}.\n
+Make sure it is included in your tsconfig.json.`
+			)
+		}
 
 		return file
 	}

@@ -1,5 +1,21 @@
 # arktype
 
+## 2.1.19
+
+##### [Multiple](https://github.com/arktypeio/arktype/issues/1328) [improvements](https://github.com/arktypeio/arktype/issues/1279) to `toJsonSchema()` output, aligning it more closely with Open API standards.
+
+##### Faster completion triggers for shallow string definitions
+
+```ts
+// old: ~1s delay after typing this before completions
+// new: completions are almost instant
+type("")
+```
+
+This isn't actually an overall perf improvement, but just a language server optimization to trigger autocomplete sooner.
+
+Counterintuitively, in previous 2.x versions, strings that are part of an object definition trigger completions much faster than shallow strings.
+
 ## 2.1.18
 
 Fix [an issue](https://github.com/arktypeio/arktype/issues/1407) causing metatypes like `Default` and `Out` to not be extracted from some recursive definitions:
