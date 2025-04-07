@@ -30,7 +30,7 @@ export default ({ children }: { children: ReactNode }) => (
 				property="og:description"
 				content="TypeScript's 1:1 validator, optimized from editor to runtime"
 			/>
-			<meta property="og:image" content="/image/og.png" />
+			<meta property="og:image" content="https://arktype.io/image/og.png" />
 			<meta property="og:image:width" content="1200" />
 			<meta property="og:image:height" content="600" />
 			<meta property="og:url" content="https://arktype.io/" />
