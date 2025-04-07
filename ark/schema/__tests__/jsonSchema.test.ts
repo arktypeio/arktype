@@ -320,4 +320,10 @@ contextualize(() => {
 			items: false
 		})
 	})
+
+	it("null generated as type instead of const", () => {
+		const T = rootSchema({ unit: null })
+
+		attest(toJsonSchema(T)).snap({ type: "null" })
+	})
 })

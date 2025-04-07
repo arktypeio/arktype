@@ -132,9 +132,12 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema {
-		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
-				{ const: this.unit }
-			:	JsonSchema.throwUnjsonifiableError(this.defaultShortDescription)
+		return (
+			// this is the more standard JSON schema representation, especially for Open API
+			this.unit === null ? { type: "null" }
+			: $ark.intrinsic.jsonPrimitive.allows(this.unit) ? { const: this.unit }
+			: JsonSchema.throwUnjsonifiableError(this.defaultShortDescription)
+		)
 	}
 
 	traverseAllows: TraverseAllows =
