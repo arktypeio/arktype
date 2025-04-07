@@ -9,6 +9,10 @@ import {
 	type JsonObject,
 	type listable
 } from "@ark/util"
+import type { PredicateNode } from "../predicate.ts"
+import type { PatternNode } from "../refinements/pattern.ts"
+import type { AliasNode } from "../roots/alias.ts"
+import type { DomainNode } from "../roots/domain.ts"
 import type { ConstraintKind } from "./implement.ts"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
@@ -150,6 +154,14 @@ export declare namespace JsonSchema {
 	export type UnjsonifiableError = InstanceType<
 		typeof JsonSchema.UnjsonifiableError
 	>
+
+	export type UnjsonifiableCodes = {
+		predicate: PredicateNode
+		patternIntersection: PatternNode[]
+		cyclic: AliasNode
+		bigint: DomainNode
+		symbol: DomainNode
+	}
 }
 
 const unjsonifiableExplanations = {
