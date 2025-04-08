@@ -1,10 +1,19 @@
 import { type } from "arktype"
 
-const foo: string = 5
+const User = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
+})
 
-// // dev
-// type()
+const ConfiguredUser = User.configure(
+	{ description: "A STRING" },
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
+)
 
-const z = {}
-
-export type Zfsadfafdfas = {}
+ConfiguredUser.get("name").description // A STRING
+ConfiguredUser.get("platform").description // "android" | "ios"
+ConfiguredUser.get("version").description // a number, A STRING or undefined
