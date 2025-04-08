@@ -5,10 +5,13 @@ import type {
 	Pattern
 } from "@ark/schema"
 import type { BaseType } from "./base.ts"
+import type { parseRegexp } from "../parser/shift/operand/regexp.js"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
-	matching(schema: Pattern.Schema): this
+	matching<const P extends Pattern.Schema>(
+		schema: P
+	): P extends string ? Type<parseRegexp<P, true>, $> : this
 
 	atLeastLength(schema: InclusiveNumericRangeSchema): this
 

@@ -64,9 +64,10 @@ contextualize(() => {
 		attest<0>(a.t)
 		attest(a.expression).snap("undefined | 0")
 
-		attest(() => t.get("bar")).throws(
-			writeInvalidKeysMessage(t.expression, ["bar"])
-		)
+		attest(() =>
+			// @ts-expect-error
+			t.get("bar")
+		).throws(writeInvalidKeysMessage(t.expression, ["bar"]))
 	})
 
 	it("named and multiple indices", () => {
@@ -80,20 +81,15 @@ contextualize(() => {
 
 		const a = t.get("foo")
 
-		attest<{ a: 1 } | { b: 1 }>(a.infer)
+		attest<{ a: 1 }>(a.infer)
 		attest(a.expression).snap("{ a: 1 } | undefined")
 
 		const b = t.get("oof")
-		attest<{ a: 1 } | { b: 1 }>(b.infer)
+		attest<{ b: 1 }>(b.infer)
 		attest(b.expression).snap("{ b: 1 } | undefined")
 
-		const c = t.get("fof" as string)
-		attest<
-			| {
-					a: 1
-			  }
-			| { b: 1 }
-		>(c.infer)
+		const c = t.get("fof")
+		attest<{ a: 1 } & { b: 1 }>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
 		const d = t.get("foof")
@@ -101,9 +97,11 @@ contextualize(() => {
 		attest<{ c: 1 }>(d.infer)
 		attest(d.expression).snap("{ a: 1, b: 1, c: 1 }")
 
-		attest(() => t.get("goog").expression).throws(
-			writeInvalidKeysMessage(t.expression, ["goog"])
-		)
+		attest(
+			() =>
+				// @ts-expect-error
+				t.get("goog").expression
+		).throws(writeInvalidKeysMessage(t.expression, ["goog"]))
 	})
 
 	it("optional key adds undefined", () => {

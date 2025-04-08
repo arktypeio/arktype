@@ -4,6 +4,7 @@ import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import type { ArkTypeScanner } from "../scanner.ts"
 import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
+import type { left, parseRegexp, parseRegexpError, right } from "./regexp.js"
 
 export type StringLiteral<Text extends string = string> =
 	| DoubleQuotedStringLiteral<Text>
@@ -61,12 +62,25 @@ export type parseEnclosed<
 	> extends ArkTypeScanner.shiftResult<infer scanned, infer nextUnscanned> ?
 		nextUnscanned extends "" ?
 			state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+		: enclosingStart extends "/" ?
+			parseRegexp<scanned, true> extends left<infer message> ?
+				state.error<message>
+			: parseRegexp<scanned, true> extends right<infer type> ?
+				state.setRoot<
+					s,
+					InferredAst<
+						type,
+						`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+					>,
+					nextUnscanned extends ArkTypeScanner.shift<string, infer unscanned> ?
+						unscanned
+					:	""
+				>
+			:	never
 		:	state.setRoot<
 				s,
 				InferredAst<
-					enclosingStart extends EnclosingQuote ? scanned
-					: enclosingStart extends "/" ? string
-					: Date,
+					enclosingStart extends EnclosingQuote ? scanned : Date,
 					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 				>,
 				nextUnscanned extends ArkTypeScanner.shift<string, infer unscanned> ?
