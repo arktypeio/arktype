@@ -5,7 +5,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
@@ -77,7 +77,7 @@ export class AfterNode extends BaseRange<After.Declaration> {
 	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
 
 	reduceJsonSchema(): JsonSchema.Constrainable {
-		return JsonSchema.throwUnjsonifiableError("Date instance")
+		return new Unjsonifiable("")
 	}
 }
 

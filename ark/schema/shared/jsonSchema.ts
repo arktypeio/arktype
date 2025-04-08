@@ -204,13 +204,13 @@ export declare namespace Unjsonifiable {
 
 	export type Value = object | symbol | bigint | undefined
 
-	export type PatternContext = {
+	export type PatternIntersectionContext = {
 		pattern: minLengthArray<string, 2>
 		schema: JsonSchema.String
 	}
 
 	export type UnitContext = {
-		unit: object | symbol | bigint | undefined
+		unit: Unjsonifiable.Value
 	}
 
 	export type DomainContext = {
@@ -250,7 +250,7 @@ export declare namespace Unjsonifiable {
 	}
 
 	export interface ContextByCode {
-		pattern: PatternContext
+		patternIntersection: PatternIntersectionContext
 		unit: UnitContext
 		domain: DomainContext
 		proto: ProtoContext
@@ -262,19 +262,23 @@ export declare namespace Unjsonifiable {
 		predicate: PredicateContext
 	}
 
-	export interface HandlerByCode {
-		pattern: (ctx: PatternContext) => JsonSchema.String
-		unit: (ctx: UnitContext) => JsonSchema
-		domain: (ctx: DomainContext) => JsonSchema
-		proto: (ctx: ProtoContext) => JsonSchema
-		symbolKey: (ctx: SymbolKeyContext) => string | null
-		index: (ctx: IndexContext) => JsonSchema
-		arrayObject: (ctx: ArrayObjectContext) => JsonSchema
-		arrayPostfix: (ctx: ArrayPostfixContext) => Postfixable
-		morph: (ctx: MorphContext) => JsonSchema
-		predicate: (ctx: PredicateContext) => JsonSchema.Constrainable
-	}
-
+	export type HandlerByCode = satisfy<
+		{ [code in Code]: (ctx: ContextByCode[code]) => unknown },
+		{
+			patternIntersection: (
+				ctx: PatternIntersectionContext
+			) => JsonSchema.String
+			unit: (ctx: UnitContext) => JsonSchema
+			domain: (ctx: DomainContext) => JsonSchema
+			proto: (ctx: ProtoContext) => JsonSchema
+			symbolKey: (ctx: SymbolKeyContext) => string | null
+			index: (ctx: IndexContext) => JsonSchema
+			arrayObject: (ctx: ArrayObjectContext) => JsonSchema
+			arrayPostfix: (ctx: ArrayPostfixContext) => Postfixable
+			morph: (ctx: MorphContext) => JsonSchema
+			predicate: (ctx: PredicateContext) => JsonSchema.Constrainable
+		}
+	>
 	export type Postfixable = requireKeys<JsonSchema.Array, "items">
 
 	export type Code = keyof ContextByCode

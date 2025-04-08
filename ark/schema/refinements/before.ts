@@ -6,7 +6,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import { Unjsonifiable } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
@@ -83,8 +83,8 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
-	reduceJsonSchema(): JsonSchema.Constrainable {
-		return JsonSchema.throwUnjsonifiableError("Date instance")
+	reduceJsonSchema(): Unjsonifiable {
+		return new Unjsonifiable("proto", { proto: Date })
 	}
 }
 
