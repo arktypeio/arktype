@@ -27,9 +27,6 @@
 		"Themes"
 	],
 	"icon": "icon.png",
-	"files": [
-		"*.json"
-	],
 	"exports": {
 		"./*.json": "./*.json"
 	},

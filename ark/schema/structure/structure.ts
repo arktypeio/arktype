@@ -776,9 +776,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				const arraySchema =
 					this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 				if (this.props.length || this.index) {
-					return new Unjsonifiable("arrayObject", {
-						object: this.reduceObjectJsonSchema({ type: "object" }, ctx),
-						array: arraySchema
+					return ctx.fallback.arrayObject({
+						base: arraySchema,
+						object: this.reduceObjectJsonSchema({ type: "object" }, ctx)
 					})
 				}
 
@@ -796,8 +796,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.props.length) {
 			schema.properties = {}
 			this.props.forEach(prop => {
-				if (typeof prop.key === "symbol")
-					return new Unjsonifiable("unit", prop.key)
+				if (typeof prop.key === "symbol") {
+					return ctx.fallback.symbolKey({
+						base: schema,
+						key: prop.key,
+						value: prop.value,
+						optional: prop.optional
+					})
+				}
 
 				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
 
@@ -826,8 +832,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 
 			index.signature.branches.forEach(keyBranch => {
-				if (keyBranch.hasKind("morph"))
-					return new Unjsonifiable("morph", keyBranch)
+				let keySchema: JsonSchema.String = { type: "string" }
+				if (keyBranch.hasKind("morph")) {
+					keySchema = ctx.fallback.morph({
+						base: schema,
+						in: keyBranch.in.toJsonSchemaRecurse(ctx),
+						out: keyBranch.out.toJsonSchemaRecurse(ctx)
+					}) as never
+				}
 				if (!keyBranch.hasKind("intersection")) {
 					return throwInternalError(
 						`Unexpected index branch kind ${keyBranch.kind}.`
@@ -835,12 +847,22 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 				const { pattern } = keyBranch.inner
 
-				if (pattern && pattern.length > 1)
-					return new Unjsonifiable("patternIntersection", pattern)
+				if (pattern) {
+					const keySchemaWithPattern = Object.assign(keySchema, {
+						pattern: pattern[0].rule
+					})
 
-				schema.patternProperties ??= {}
-				schema.patternProperties[pattern[0].rule] =
-					index.value.toJsonSchemaRecurse(ctx)
+					for (let i = 1; i < pattern.length; i++) {
+						keySchema = ctx.fallback.patternIntersection({
+							base: keySchemaWithPattern,
+							pattern: pattern[i].rule
+						})
+					}
+
+					schema.patternProperties ??= {}
+					schema.patternProperties[keySchemaWithPattern.pattern] =
+						index.value.toJsonSchemaRecurse(ctx)
+				}
 			})
 		})
 

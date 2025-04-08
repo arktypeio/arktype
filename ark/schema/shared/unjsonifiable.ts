@@ -110,8 +110,7 @@ export declare namespace Unjsonifiable {
 		value: JsonSchema
 	}
 
-	export interface ArrayObjectContext extends BaseContext {
-		array: JsonSchema.Array
+	export interface ArrayObjectContext extends BaseContext<JsonSchema.Array> {
 		object: JsonSchema.Object
 	}
 
@@ -148,10 +147,12 @@ export declare namespace Unjsonifiable {
 			unit: (ctx: UnitContext) => JsonSchema
 			domain: (ctx: DomainContext) => JsonSchema
 			proto: (ctx: ProtoContext) => JsonSchema
-			patternIntersection: (ctx: PatternIntersectionContext) => string
-			symbolKey: (ctx: SymbolKeyContext) => string | null
+			patternIntersection: (
+				ctx: PatternIntersectionContext
+			) => JsonSchema.String
+			symbolKey: (ctx: SymbolKeyContext) => JsonSchema.Object
 			index: (ctx: IndexContext) => JsonSchema
-			arrayObject: (ctx: ArrayObjectContext) => JsonSchema
+			arrayObject: (ctx: ArrayObjectContext) => JsonSchema.Structure
 			arrayPostfix: (ctx: ArrayPostfixContext) => PostfixableSchema
 			morph: (ctx: MorphContext) => JsonSchema
 			predicate: (ctx: PredicateContext) => JsonSchema.Constrainable
