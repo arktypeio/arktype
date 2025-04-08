@@ -5,6 +5,7 @@ import {
 	type autocomplete,
 	type Constructor,
 	type Domain,
+	type Json,
 	type requireKeys,
 	type satisfy
 } from "@ark/util"
@@ -59,48 +60,72 @@ export declare namespace Unjsonifiable {
 
 	export type Value = object | symbol | bigint | undefined
 
-	export type PatternIntersectionContext = {
-		left: string
-		right: string
+	export interface BaseContext<base extends JsonSchema = JsonSchema> {
+		base: base
 	}
 
-	export type UnitContext = {
+	export interface PatternIntersectionContext
+		extends BaseContext<StringSchemaWithPattern> {
+		pattern: string
+	}
+
+	export interface UnitContext extends BaseContext {
 		unit: Unjsonifiable.Value
 	}
 
-	export type DomainContext = {
+	export interface DomainContext extends BaseContext {
 		domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
 	}
-	export type ProtoContext = {
+
+	export interface ProtoContext extends BaseContext {
 		proto: Constructor
 	}
 
-	export type SymbolKeyContext = {
-		key: symbol
+	export type SymbolKeyContext =
+		| IndexSymbolKeyContext
+		| RequiredSymbolKeyContext
+		| OptionalSymbolKeyContext
+
+	interface IndexSymbolKeyContext extends BaseContext<JsonSchema.Object> {
+		key: null
+		value: JsonSchema
+		optional: false
 	}
 
-	export type IndexContext = {
+	interface RequiredSymbolKeyContext extends BaseContext<JsonSchema.Object> {
+		key: symbol
+		value: JsonSchema
+		optional: false
+	}
+
+	interface OptionalSymbolKeyContext extends BaseContext<JsonSchema.Object> {
+		key: symbol
+		value: JsonSchema
+		optional: true
+		default?: Json
+	}
+
+	export interface IndexContext extends BaseContext {
 		signature: JsonSchema.String
 		value: JsonSchema
 	}
 
-	export type ArrayObjectContext = {
+	export interface ArrayObjectContext extends BaseContext {
 		array: JsonSchema.Array
 		object: JsonSchema.Object
 	}
 
-	export type ArrayPostfixContext = {
-		base: Postfixable
+	export interface ArrayPostfixContext extends BaseContext<PostfixableSchema> {
 		elements: readonly JsonSchema[]
 	}
 
-	export type MorphContext = {
+	export interface MorphContext extends BaseContext {
 		in: JsonSchema
 		out: JsonSchema
 	}
 
-	export type PredicateContext = {
-		base: JsonSchema.Constrainable
+	export interface PredicateContext
+		extends BaseContext<JsonSchema.Constrainable> {
 		predicate: Predicate
 	}
 
@@ -120,21 +145,24 @@ export declare namespace Unjsonifiable {
 	export type HandlerByCode = satisfy<
 		{ [code in Code]: (ctx: ContextByCode[code]) => unknown },
 		{
-			patternIntersection: (
-				ctx: PatternIntersectionContext
-			) => JsonSchema.String
 			unit: (ctx: UnitContext) => JsonSchema
 			domain: (ctx: DomainContext) => JsonSchema
 			proto: (ctx: ProtoContext) => JsonSchema
+			patternIntersection: (ctx: PatternIntersectionContext) => string
 			symbolKey: (ctx: SymbolKeyContext) => string | null
 			index: (ctx: IndexContext) => JsonSchema
 			arrayObject: (ctx: ArrayObjectContext) => JsonSchema
-			arrayPostfix: (ctx: ArrayPostfixContext) => Postfixable
+			arrayPostfix: (ctx: ArrayPostfixContext) => PostfixableSchema
 			morph: (ctx: MorphContext) => JsonSchema
 			predicate: (ctx: PredicateContext) => JsonSchema.Constrainable
 		}
 	>
-	export type Postfixable = requireKeys<JsonSchema.Array, "items">
+	export type PostfixableSchema = requireKeys<JsonSchema.Array, "items">
+
+	export type StringSchemaWithPattern = requireKeys<
+		JsonSchema.String,
+		"pattern"
+	>
 
 	export type Code = keyof ContextByCode
 }

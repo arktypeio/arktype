@@ -41,7 +41,6 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import {
 	assertDefaultValueAssignability,
 	computeDefaultValueMorph
@@ -474,7 +473,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
 		ctx: JsonSchema.ToContext
-	): JsonSchema.GenerateResult<JsonSchema.Array> {
+	): JsonSchema.Array {
 		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
@@ -504,7 +503,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			// postfix can only be present if variadic is present so nesting this is fine
 			if (this.postfix) {
 				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
-				return new Unjsonifiable("arrayPostfix", {
+				return ctx.fallback.arrayPostfix({
 					base: variadicSchema,
 					elements
 				})

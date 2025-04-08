@@ -16,6 +16,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
+import type { Unjsonifiable } from "./shared/unjsonifiable.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
@@ -120,6 +121,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
+	readonly toJsonSchema?: Unjsonifiable.HandlerByCode
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<

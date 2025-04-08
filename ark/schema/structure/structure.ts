@@ -773,10 +773,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			case "object":
 				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
-				if (this.props.length || this.index)
-					return new Unjsonifiable("arrayObject", this)
+				const arraySchema =
+					this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
+				if (this.props.length || this.index) {
+					return new Unjsonifiable("arrayObject", {
+						object: this.reduceObjectJsonSchema({ type: "object" }, ctx),
+						array: arraySchema
+					})
+				}
 
-				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
+				return arraySchema
+
 			default:
 				return Unjsonifiable.throwInternalOperandError("structure", schema)
 		}
