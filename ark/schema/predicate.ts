@@ -10,7 +10,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
-import { JsonSchema } from "./shared/jsonSchema.ts"
+import { type JsonSchema, Unjsonifiable } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
@@ -108,8 +108,8 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		)
 	}
 
-	reduceJsonSchema(): never {
-		return JsonSchema.throwUnjsonifiableError(`Predicate ${this.expression}`)
+	reduceJsonSchema(base: JsonSchema.Constrainable): Unjsonifiable {
+		return new Unjsonifiable("predicate", { base, predicate: this.predicate })
 	}
 }
 

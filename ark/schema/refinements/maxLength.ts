@@ -94,7 +94,7 @@ export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 				schema.maxItems = this.rule
 				return schema
 			default:
-				return JsonSchema.throwInternalOperandError("maxLength", schema)
+				return Unjsonifiable.throwInternalOperandError("maxLength", schema)
 		}
 	}
 }

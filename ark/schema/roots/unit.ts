@@ -16,7 +16,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
@@ -136,7 +136,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			// this is the more standard JSON schema representation, especially for Open API
 			this.unit === null ? { type: "null" }
 			: $ark.intrinsic.jsonPrimitive.allows(this.unit) ? { const: this.unit }
-			: new JsonSchema.Unjsonifiable("unit", this)
+			: new Unjsonifiable("unit", this)
 		)
 	}
 

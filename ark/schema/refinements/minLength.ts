@@ -93,7 +93,7 @@ export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 				schema.minItems = this.rule
 				return schema
 			default:
-				return JsonSchema.throwInternalOperandError("minLength", schema)
+				return Unjsonifiable.throwInternalOperandError("minLength", schema)
 		}
 	}
 }

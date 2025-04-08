@@ -116,7 +116,10 @@ export type listable<t> = t | readonly t[]
 
 export type flattenListable<t> = t extends array<infer element> ? element : t
 
-export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+export type minLengthArray<t, minLength extends number> = readonly [
+	...repeat<[t], minLength>,
+	...t[]
+]
 
 export type repeat<t extends array, count extends number> = _repeat<
 	t,

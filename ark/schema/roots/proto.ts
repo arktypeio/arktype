@@ -160,7 +160,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 					type: "array"
 				}
 			default:
-				return new JsonSchema.Unjsonifiable("proto", this)
+				return new Unjsonifiable("proto", this)
 		}
 	}
 

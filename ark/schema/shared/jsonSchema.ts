@@ -1,7 +1,6 @@
 import {
 	isKeyOf,
 	printable,
-	throwError,
 	throwInternalError,
 	type array,
 	type autocomplete,
@@ -9,19 +8,12 @@ import {
 	type JsonArray,
 	type JsonObject,
 	type listable,
+	type minLengthArray,
 	type requireKeys,
 	type satisfy
 } from "@ark/util"
 import type { Predicate } from "../predicate.ts"
-import type { Pattern } from "../refinements/pattern.ts"
 import type { Domain } from "../roots/domain.ts"
-import type { Morph } from "../roots/morph.ts"
-import type { Proto } from "../roots/proto.ts"
-import type { Unit } from "../roots/unit.ts"
-import type { Index } from "../structure/index.ts"
-import type { Prop } from "../structure/prop.ts"
-import type { Sequence } from "../structure/sequence.ts"
-import type { StructureNode } from "../structure/structure.ts"
 import type { ConstraintKind } from "./implement.ts"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
@@ -158,41 +150,134 @@ export declare namespace JsonSchema {
 
 	export type Structure = Object | Array
 
-	export type UnjsonifiableError = InstanceType<typeof JsonSchema.Unjsonifiable>
-
-	export type UnjsonifiableContextByCode = {
-		// good-ish
-		pattern: (
-			pattern: readonly [string, string, ...string[]],
-			schema: JsonSchema.String
-		) => JsonSchema.String
-		unit: (unit: object | symbol | bigint | undefined) => JsonSchema
-		domain: (
-			domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
-		) => JsonSchema
-		proto: (proto: Constructor) => JsonSchema
-
-		// not done
-		symbolKey: Prop.Node
-		index: Index.Node
-		arrayObject: (node: StructureNode) => {}
-		arrayPostfix: (node: Sequence.Node, schema: Postfixable) => Postfixable
-
-		morph: (node: Morph.Node) => JsonSchema
-		predicate: (node: Predicate.Node, schema: Constrainable) => Constrainable
-	}
-
-	export type Postfixable = requireKeys<Array, "items">
-
-	export type UnjsonifiableCode = keyof UnjsonifiableContextByCode
-
 	export type ToContext = Required<ToOptions>
-
-	export type Unjsonifiable = InstanceType<typeof JsonSchema.Unjsonifiable>
 
 	export type ToResult<valid extends JsonSchema = JsonSchema> =
 		| valid
 		| Unjsonifiable
+}
+
+export class Unjsonifiable<
+	code extends Unjsonifiable.Code = Unjsonifiable.Code
+> {
+	code: code
+	ctx: Unjsonifiable.ContextByCode[code]
+
+	constructor(code: code, ctx: typeof this.ctx) {
+		this.code = code
+		this.ctx = ctx
+	}
+
+	throw(): never {
+		throw new Unjsonifiable.Error("")
+	}
+
+	static Error = class extends Error {}
+	static throwInternalOperandError = (
+		kind: ConstraintKind,
+		schema: JsonSchema
+	): never =>
+		throwInternalError(
+			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
+		)
+
+	static writeMessage = (
+		description: string,
+		explanation?: UnjsonifiableExplanation
+	): string => {
+		let message = `${description} is not convertible to JSON Schema`
+
+		if (explanation) {
+			const normalizedExplanation =
+				isKeyOf(explanation, unjsonifiableExplanations) ?
+					unjsonifiableExplanations[explanation]
+				:	explanation
+			message += ` because ${normalizedExplanation}`
+		}
+
+		return message
+	}
+}
+
+export declare namespace Unjsonifiable {
+	export type Error = InstanceType<typeof Unjsonifiable>
+
+	export type Value = object | symbol | bigint | undefined
+
+	export type PatternContext = {
+		pattern: minLengthArray<string, 2>
+		schema: JsonSchema.String
+	}
+
+	export type UnitContext = {
+		unit: object | symbol | bigint | undefined
+	}
+
+	export type DomainContext = {
+		domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
+	}
+	export type ProtoContext = {
+		proto: Constructor
+	}
+
+	export type SymbolKeyContext = {
+		key: symbol
+	}
+
+	export type IndexContext = {
+		signature: JsonSchema.String
+		value: JsonSchema
+	}
+
+	export type ArrayObjectContext = {
+		array: JsonSchema.Array
+		object: JsonSchema.Object
+	}
+
+	export type ArrayPostfixContext = {
+		base: Postfixable
+		elements: minLengthArray<JsonSchema, 1>
+	}
+
+	export type MorphContext = {
+		in: JsonSchema
+		out: JsonSchema
+	}
+
+	export type PredicateContext = {
+		base: JsonSchema.Constrainable
+		predicate: Predicate
+	}
+
+	export interface ContextByCode {
+		pattern: PatternContext
+		unit: UnitContext
+		domain: DomainContext
+		proto: ProtoContext
+		symbolKey: SymbolKeyContext
+		index: IndexContext
+		arrayObject: ArrayObjectContext
+		arrayPostfix: ArrayPostfixContext
+		morph: MorphContext
+		predicate: PredicateContext
+	}
+
+	export interface HandlerByCode {
+		pattern: (ctx: PatternContext) => JsonSchema.String
+		unit: (ctx: UnitContext) => JsonSchema
+		domain: (ctx: DomainContext) => JsonSchema
+		proto: (ctx: ProtoContext) => JsonSchema
+		symbolKey: (ctx: SymbolKeyContext) => string | null
+		index: (ctx: IndexContext) => JsonSchema
+		arrayObject: (ctx: ArrayObjectContext) => JsonSchema
+		arrayPostfix: (ctx: ArrayPostfixContext) => Postfixable
+		morph: (ctx: MorphContext) => JsonSchema
+		predicate: (ctx: PredicateContext) => JsonSchema.Constrainable
+	}
+
+	export type Postfixable = requireKeys<JsonSchema.Array, "items">
+
+	export type Code = keyof ContextByCode
 }
 
 const unjsonifiableExplanations = {
@@ -203,47 +288,3 @@ const unjsonifiableExplanations = {
 }
 
 type UnjsonifiableExplanation = autocomplete<"morph" | "cyclic">
-
-const writeUnjsonifiableMessage = (
-	description: string,
-	explanation?: UnjsonifiableExplanation
-): string => {
-	let message = `${description} is not convertible to JSON Schema`
-
-	if (explanation) {
-		const normalizedExplanation =
-			isKeyOf(explanation, unjsonifiableExplanations) ?
-				unjsonifiableExplanations[explanation]
-			:	explanation
-		message += ` because ${normalizedExplanation}`
-	}
-
-	return message
-}
-
-export const JsonSchema = {
-	writeUnjsonifiableMessage,
-	Unjsonifiable: class Unjsonifiable<
-		code extends JsonSchema.UnjsonifiableCode = JsonSchema.UnjsonifiableCode
-	> {
-		code: code
-		ctx: JsonSchema.UnjsonifiableContextByCode[code]
-
-		constructor(code: code, ctx: typeof this.ctx) {
-			this.code = code
-			this.ctx = ctx
-		}
-
-		throw(): never {
-			throw new JsonSchema.UnjsonifiableError("")
-		}
-	},
-	UnjsonifiableError: class UnjsonifiableError extends Error {},
-	throwInternalOperandError: (
-		kind: ConstraintKind,
-		schema: JsonSchema
-	): never =>
-		throwInternalError(
-			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
-		)
-}

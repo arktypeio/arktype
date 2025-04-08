@@ -99,7 +99,7 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 				schema.maxItems = this.rule
 				return schema
 			default:
-				return JsonSchema.throwInternalOperandError("exactLength", schema)
+				return Unjsonifiable.throwInternalOperandError("exactLength", schema)
 		}
 	}
 }

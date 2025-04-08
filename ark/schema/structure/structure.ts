@@ -36,7 +36,7 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { intersectNodesRoot } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
@@ -773,11 +773,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
 				if (this.props.length || this.index)
-					return new JsonSchema.Unjsonifiable("arrayProps", this)
+					return new Unjsonifiable("arrayProps", this)
 
 				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 			default:
-				return JsonSchema.throwInternalOperandError("structure", schema)
+				return Unjsonifiable.throwInternalOperandError("structure", schema)
 		}
 	}
 
@@ -789,7 +789,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			schema.properties = {}
 			this.props.forEach(prop => {
 				if (typeof prop.key === "symbol")
-					return new JsonSchema.Unjsonifiable("unit", prop.key)
+					return new Unjsonifiable("unit", prop.key)
 
 				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
 
@@ -814,12 +814,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
 				// 				`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
-				new JsonSchema.Unjsonifiable("domain", index.signature)
+				new Unjsonifiable("domain", index.signature)
 			}
 
 			index.signature.branches.forEach(keyBranch => {
 				if (keyBranch.hasKind("morph"))
-					return new JsonSchema.Unjsonifiable("morph", keyBranch)
+					return new Unjsonifiable("morph", keyBranch)
 				if (!keyBranch.hasKind("intersection")) {
 					return throwInternalError(
 						`Unexpected index branch kind ${keyBranch.kind}.`
@@ -828,7 +828,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				const { pattern } = keyBranch.inner
 
 				if (pattern && pattern.length > 1)
-					return new JsonSchema.Unjsonifiable("patternIntersection", pattern)
+					return new Unjsonifiable("patternIntersection", pattern)
 
 				schema.patternProperties ??= {}
 				schema.patternProperties[pattern[0].rule] =

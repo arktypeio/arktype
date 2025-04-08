@@ -34,7 +34,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import {
 	traverseKey,
@@ -504,7 +504,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		if (this.postfix) {
 			// 	`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-			return new JsonSchema.Unjsonifiable("arrayPostfix", this)
+			return new Unjsonifiable("arrayPostfix", this)
 		}
 
 		return schema
