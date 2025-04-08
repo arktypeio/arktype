@@ -9,7 +9,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 
 export declare namespace Pattern {
@@ -82,11 +82,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 
 	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
-		if (schema.pattern) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Intersection of patterns ${schema.pattern} & ${this.rule}`
-			)
-		}
+		// patternIntersection Unjsonifiable handled in IntersectionNode
 		schema.pattern = this.rule
 		return schema
 	}

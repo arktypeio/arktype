@@ -14,7 +14,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
@@ -153,7 +153,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): JsonSchema {
-		return JsonSchema.throwUnjsonifiableError(this.expression, "cyclic")
+		return throwInternalError("unimplemented")
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

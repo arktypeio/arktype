@@ -43,7 +43,7 @@ import {
 	type kindRightOf
 } from "../shared/implement.ts"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
@@ -138,11 +138,16 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchemaRecurse(ctx: JsonSchema.ToContext): JsonSchema {
-		const schema = this.innerToJsonSchema(ctx)
-		return Object.assign(schema, this.metaJson)
+		const result = this.innerToJsonSchema(ctx)
+
+		if (result instanceof JsonSchema.Unjsonifiable) throw result
+
+		return Object.assign(result, this.metaJson)
 	}
 
-	protected abstract innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema
+	protected abstract innerToJsonSchema(
+		ctx: JsonSchema.ToContext
+	): JsonSchema | JsonSchema.UnjsonifiableError
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)

@@ -4,6 +4,7 @@ import {
 	flatMorph,
 	printable,
 	spliterate,
+	throwInternalError,
 	throwParseError,
 	type array,
 	type dict,
@@ -766,16 +767,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	reduceJsonSchema(
 		schema: JsonSchema.Structure,
 		ctx: JsonSchema.ToContext
-	): JsonSchema.Structure {
+	): JsonSchema.ToResult<JsonSchema.Structure> {
 		switch (schema.type) {
 			case "object":
 				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
-				if (this.props.length || this.index) {
-					return JsonSchema.throwUnjsonifiableError(
-						`Additional properties on array ${this.expression}`
-					)
-				}
+				if (this.props.length || this.index)
+					return new JsonSchema.Unjsonifiable("arrayProps", this)
+
 				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 			default:
 				return JsonSchema.throwInternalOperandError("structure", schema)
@@ -789,11 +788,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.props.length) {
 			schema.properties = {}
 			this.props.forEach(prop => {
-				if (typeof prop.key === "symbol") {
-					return JsonSchema.throwUnjsonifiableError(
-						`Symbolic key ${prop.serializedKey}`
-					)
-				}
+				if (typeof prop.key === "symbol")
+					return new JsonSchema.Unjsonifiable("unit", prop.key)
 
 				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
 
@@ -817,23 +813,25 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
-				return JsonSchema.throwUnjsonifiableError(
-					`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
-				)
+				// 				`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
+				new JsonSchema.Unjsonifiable("domain", index.signature)
 			}
 
 			index.signature.branches.forEach(keyBranch => {
-				if (
-					!keyBranch.hasKind("intersection") ||
-					keyBranch.inner.pattern?.length !== 1
-				) {
-					return JsonSchema.throwUnjsonifiableError(
-						`Index signature ${keyBranch}`
+				if (keyBranch.hasKind("morph"))
+					return new JsonSchema.Unjsonifiable("morph", keyBranch)
+				if (!keyBranch.hasKind("intersection")) {
+					return throwInternalError(
+						`Unexpected index branch kind ${keyBranch.kind}.`
 					)
 				}
+				const { pattern } = keyBranch.inner
+
+				if (pattern && pattern.length > 1)
+					return new JsonSchema.Unjsonifiable("patternIntersection", pattern)
 
 				schema.patternProperties ??= {}
-				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
+				schema.patternProperties[pattern[0].rule] =
 					index.value.toJsonSchemaRecurse(ctx)
 			})
 		})

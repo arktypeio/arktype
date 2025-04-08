@@ -473,7 +473,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
 		ctx: JsonSchema.ToContext
-	): JsonSchema.Array {
+	): JsonSchema.ToResult<JsonSchema.Array> {
 		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
@@ -503,9 +503,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		if (this.postfix) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-			)
+			// 	`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
+			return new JsonSchema.Unjsonifiable("arrayPostfix", this)
 		}
 
 		return schema
