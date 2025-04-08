@@ -11,7 +11,7 @@ import {
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
+import type { Unjsonifiable } from "../shared/unjsonifiable.ts"
 
 export declare namespace Pattern {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
@@ -82,15 +82,18 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 
-	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
-		if (schema.pattern) {
-			return new Unjsonifiable("patternIntersection", {
-				left: schema.pattern,
-				right: this.rule
+	reduceJsonSchema(
+		base: JsonSchema.String,
+		ctx: JsonSchema.GenerateContext
+	): JsonSchema.String {
+		if (base.pattern) {
+			return ctx.fallback.patternIntersection({
+				base: base as Unjsonifiable.StringSchemaWithPattern,
+				pattern: this.rule
 			})
 		}
-		schema.pattern = this.rule
-		return schema
+		base.pattern = this.rule
+		return base
 	}
 }
 

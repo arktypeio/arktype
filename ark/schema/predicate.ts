@@ -20,7 +20,6 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "./shared/traversal.ts"
-import { Unjsonifiable } from "./shared/unjsonifiable.ts"
 
 export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =
@@ -109,8 +108,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		)
 	}
 
-	reduceJsonSchema(base: JsonSchema.Constrainable): Unjsonifiable {
-		return new Unjsonifiable("predicate", { base, predicate: this.predicate })
+	reduceJsonSchema(
+		base: JsonSchema.Constrainable,
+		ctx: JsonSchema.GenerateContext
+	): JsonSchema {
+		return ctx.fallback.predicate({ base, predicate: this.predicate })
 	}
 }
 

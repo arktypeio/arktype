@@ -46,7 +46,6 @@ import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -129,7 +128,7 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchema(opts: JsonSchema.GenerateOptions = {}): JsonSchema {
-		const ctx: JsonSchema.ToContext = {
+		const ctx: JsonSchema.GenerateContext = {
 			dialect: "https://json-schema.org/draft/2020-12/schema",
 			...opts
 		}
@@ -138,17 +137,15 @@ export abstract class BaseRoot<
 		return schema
 	}
 
-	toJsonSchemaRecurse(ctx: JsonSchema.ToContext): JsonSchema {
+	toJsonSchemaRecurse(ctx: JsonSchema.GenerateContext): JsonSchema {
 		const result = this.innerToJsonSchema(ctx)
-
-		if (result instanceof Unjsonifiable) throw result
 
 		return Object.assign(result, this.metaJson)
 	}
 
 	protected abstract innerToJsonSchema(
-		ctx: JsonSchema.ToContext
-	): JsonSchema | Unjsonifiable.Error
+		ctx: JsonSchema.GenerateContext
+	): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)

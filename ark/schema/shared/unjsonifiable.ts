@@ -13,31 +13,16 @@ import type { Predicate } from "../predicate.ts"
 import type { ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 
-export class Unjsonifiable<
-	code extends Unjsonifiable.Code = Unjsonifiable.Code
-> {
-	code: code
-	ctx: Unjsonifiable.ContextByCode[code]
-
-	constructor(code: code, ctx: typeof this.ctx) {
-		this.code = code
-		this.ctx = ctx
-	}
-
-	throw(): never {
-		throw new Unjsonifiable.Error("")
-	}
-
-	static Error = class extends Error {}
-	static throwInternalOperandError = (
+export const Unjsonifiable = {
+	Error: class extends Error {},
+	throwInternalOperandError: (
 		kind: ConstraintKind,
 		schema: JsonSchema
 	): never =>
 		throwInternalError(
 			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
-		)
-
-	static writeMessage = (
+		),
+	writeMessage: (
 		description: string,
 		explanation?: UnjsonifiableExplanation
 	): string => {
@@ -56,8 +41,6 @@ export class Unjsonifiable<
 }
 
 export declare namespace Unjsonifiable {
-	export type Error = InstanceType<typeof Unjsonifiable>
-
 	export type Value = object | symbol | bigint | undefined
 
 	export interface BaseContext<base extends JsonSchema = JsonSchema> {
@@ -119,7 +102,6 @@ export declare namespace Unjsonifiable {
 	}
 
 	export interface MorphContext extends BaseContext {
-		in: JsonSchema
 		out: JsonSchema
 	}
 

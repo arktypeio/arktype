@@ -152,8 +152,8 @@ Resolution: ${printable(resolution)}`)
 		return domainDescriptions.object
 	}
 
-	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): JsonSchema {
-		return throwInternalError("unimplemented")
+	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
+		return ctx && throwInternalError("unimplemented")
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

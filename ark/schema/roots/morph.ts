@@ -23,7 +23,6 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
@@ -203,8 +202,11 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return this.in.meta.description ?? this.in.defaultShortDescription
 	}
 
-	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): Unjsonifiable {
-		return new Unjsonifiable("morph", this)
+	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
+		return ctx.fallback.morph({
+			base: this.in,
+			out: this.out
+		})
 	}
 
 	compile(js: NodeCompiler): void {

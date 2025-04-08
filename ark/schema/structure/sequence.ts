@@ -472,7 +472,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
-		ctx: JsonSchema.ToContext
+		ctx: JsonSchema.GenerateContext
 	): JsonSchema.Array {
 		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {

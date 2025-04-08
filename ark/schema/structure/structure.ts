@@ -767,8 +767,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Structure,
-		ctx: JsonSchema.ToContext
-	): JsonSchema.GenerateResult<JsonSchema.Structure> {
+		ctx: JsonSchema.GenerateContext
+	): JsonSchema.Structure {
 		switch (schema.type) {
 			case "object":
 				return this.reduceObjectJsonSchema(schema, ctx)
@@ -791,7 +791,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	reduceObjectJsonSchema(
 		schema: JsonSchema.Object,
-		ctx: JsonSchema.ToContext
+		ctx: JsonSchema.GenerateContext
 	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}
@@ -821,22 +821,29 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		this.index?.forEach(index => {
-			if (index.signature.equals($ark.intrinsic.string)) {
-				return (schema.additionalProperties =
-					index.value.toJsonSchemaRecurse(ctx))
-			}
+			const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
 
-			if (!index.signature.extends($ark.intrinsic.string)) {
-				// 				`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
-				new Unjsonifiable("domain", index.signature)
+			if (index.signature.equals($ark.intrinsic.string)) {
+				schema.additionalProperties = valueJsonSchema
+				return
 			}
 
 			index.signature.branches.forEach(keyBranch => {
+				if (!keyBranch.extends($ark.intrinsic.string)) {
+					schema = ctx.fallback.symbolKey({
+						base: schema,
+						key: null,
+						value: valueJsonSchema,
+						optional: false
+					})
+
+					return
+				}
+
 				let keySchema: JsonSchema.String = { type: "string" }
 				if (keyBranch.hasKind("morph")) {
 					keySchema = ctx.fallback.morph({
-						base: schema,
-						in: keyBranch.in.toJsonSchemaRecurse(ctx),
+						base: keyBranch.in.toJsonSchemaRecurse(ctx),
 						out: keyBranch.out.toJsonSchemaRecurse(ctx)
 					}) as never
 				}
@@ -861,7 +868,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 					schema.patternProperties ??= {}
 					schema.patternProperties[keySchemaWithPattern.pattern] =
-						index.value.toJsonSchemaRecurse(ctx)
+						valueJsonSchema
 				}
 			})
 		})

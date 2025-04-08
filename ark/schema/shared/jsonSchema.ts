@@ -124,12 +124,6 @@ export declare namespace JsonSchema {
 
 	export type Structure = Object | Array
 
-	export type ToContext = Required<GenerateOptions>
-
-	export type GenerateResult<valid extends JsonSchema = JsonSchema> =
-		| valid
-		| Unjsonifiable
-
 	export interface GenerateOptions {
 		/** value to assign to the generated $schema key
 		 *
@@ -140,5 +134,9 @@ export declare namespace JsonSchema {
 		 */
 		dialect?: string | null
 		fallback?: Unjsonifiable.HandlerByCode
+	}
+
+	export interface GenerateContext extends Required<GenerateOptions> {
+		fallback: Required<Unjsonifiable.HandlerByCode>
 	}
 }

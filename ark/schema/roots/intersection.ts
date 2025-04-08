@@ -308,9 +308,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return this.basis?.defaultShortDescription ?? "present"
 	}
 
-	protected innerToJsonSchema(
-		ctx: JsonSchema.ToContext
-	): JsonSchema.GenerateResult {
+	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
 		return this.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>

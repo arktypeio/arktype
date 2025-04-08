@@ -293,7 +293,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema {
+	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
 		if (
