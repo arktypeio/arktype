@@ -21,9 +21,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
+import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
 import type { Domain } from "./domain.ts"
@@ -153,7 +154,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 	protected innerToJsonSchema(
 		_ctx: JsonSchema.ToContext
-	): JsonSchema.ToResult<JsonSchema.Array> {
+	): JsonSchema.GenerateResult<JsonSchema.Array> {
 		switch (this.builtinName) {
 			case "Array":
 				return {

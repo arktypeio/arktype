@@ -2,11 +2,12 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	intrinsic,
-	JsonSchema,
 	rootSchema,
 	rootSchemaScope,
+	Unjsonifiable,
 	type BaseRoot
 } from "@ark/schema"
+import { throwInternalError } from "@ark/util"
 
 const toJsonSchema = (node: BaseRoot) => node.toJsonSchema({ dialect: null })
 
@@ -235,13 +236,13 @@ contextualize(() => {
 		})
 
 		attest(() => toJsonSchema(morph)).throws(
-			JsonSchema.writeUnjsonifiableMessage(morph.expression, "morph")
+			Unjsonifiable.writeMessage(morph.expression, "morph")
 		)
 	})
 
 	it("errors on cyclic", () => {
 		attest(() => toJsonSchema($ark.intrinsic.jsonObject)).throws(
-			JsonSchema.writeUnjsonifiableMessage("jsonObject", "cyclic")
+			Unjsonifiable.writeMessage("jsonObject", "cyclic")
 		)
 	})
 
@@ -326,5 +327,9 @@ contextualize(() => {
 		const T = rootSchema({ unit: null })
 
 		attest(toJsonSchema(T)).snap({ type: "null" })
+	})
+
+	it("constrained date", () => {
+		throwInternalError("unimplemented")
 	})
 })

@@ -10,7 +10,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
-import { type JsonSchema, Unjsonifiable } from "./shared/jsonSchema.ts"
+import type { JsonSchema } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
@@ -20,6 +20,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "./shared/traversal.ts"
+import { Unjsonifiable } from "./shared/unjsonifiable.ts"
 
 export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =

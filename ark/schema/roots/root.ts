@@ -43,9 +43,10 @@ import {
 	type kindRightOf
 } from "../shared/implement.ts"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
-import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
+import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -127,7 +128,7 @@ export abstract class BaseRoot<
 		return this.meta.description ?? this.defaultShortDescription
 	}
 
-	toJsonSchema(opts: JsonSchema.ToOptions = {}): JsonSchema {
+	toJsonSchema(opts: JsonSchema.GenerateOptions = {}): JsonSchema {
 		const ctx: JsonSchema.ToContext = {
 			dialect: "https://json-schema.org/draft/2020-12/schema",
 			...opts

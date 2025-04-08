@@ -95,7 +95,7 @@ export abstract class InternalPrimitiveConstraint<
 
 	abstract reduceJsonSchema(
 		base: JsonSchema.Constrainable
-	): JsonSchema.ToResult<JsonSchema.Constrainable>
+	): JsonSchema.GenerateResult<JsonSchema.Constrainable>
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))

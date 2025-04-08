@@ -16,13 +16,14 @@ import {
 	type RootKind
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import type {
 	Traversal,
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.ts"
+import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"

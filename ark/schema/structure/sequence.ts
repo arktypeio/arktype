@@ -34,13 +34,14 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
+import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import {
 	assertDefaultValueAssignability,
 	computeDefaultValueMorph
@@ -473,7 +474,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
 		ctx: JsonSchema.ToContext
-	): JsonSchema.ToResult<JsonSchema.Array> {
+	): JsonSchema.GenerateResult<JsonSchema.Array> {
 		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)

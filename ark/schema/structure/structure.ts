@@ -36,7 +36,7 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { intersectNodesRoot } from "../shared/intersections.ts"
-import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
@@ -49,6 +49,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
+import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import {
 	hasArkKind,
 	isNode,
@@ -767,13 +768,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	reduceJsonSchema(
 		schema: JsonSchema.Structure,
 		ctx: JsonSchema.ToContext
-	): JsonSchema.ToResult<JsonSchema.Structure> {
+	): JsonSchema.GenerateResult<JsonSchema.Structure> {
 		switch (schema.type) {
 			case "object":
 				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
 				if (this.props.length || this.index)
-					return new Unjsonifiable("arrayProps", this)
+					return new Unjsonifiable("arrayObject", this)
 
 				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 			default:

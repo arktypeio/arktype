@@ -40,8 +40,9 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { Unjsonifiable, type JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import {
 	hasArkKind,
 	isNode,
@@ -308,7 +309,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return this.basis?.defaultShortDescription ?? "present"
 	}
 
-	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema.ToResult {
+	protected innerToJsonSchema(
+		ctx: JsonSchema.ToContext
+	): JsonSchema.GenerateResult {
 		if (this.inner.pattern && this.inner.pattern.length > 1) {
 			// best handle this here rather than in PatternNode so if more the
 			// intersection includes more than two patterns, we can handle them together
