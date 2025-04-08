@@ -5,7 +5,6 @@ import {
 	type autocomplete,
 	type Constructor,
 	type Domain,
-	type minLengthArray,
 	type requireKeys,
 	type satisfy
 } from "@ark/util"
@@ -61,8 +60,8 @@ export declare namespace Unjsonifiable {
 	export type Value = object | symbol | bigint | undefined
 
 	export type PatternIntersectionContext = {
-		pattern: minLengthArray<string, 2>
-		schema: JsonSchema.String
+		left: string
+		right: string
 	}
 
 	export type UnitContext = {
@@ -92,7 +91,7 @@ export declare namespace Unjsonifiable {
 
 	export type ArrayPostfixContext = {
 		base: Postfixable
-		elements: minLengthArray<JsonSchema, 1>
+		elements: readonly JsonSchema[]
 	}
 
 	export type MorphContext = {

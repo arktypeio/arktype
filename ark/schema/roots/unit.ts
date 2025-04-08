@@ -140,7 +140,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			// this is the more standard JSON schema representation, especially for Open API
 			this.unit === null ? { type: "null" }
 			: $ark.intrinsic.jsonPrimitive.allows(this.unit) ? { const: this.unit }
-			: new Unjsonifiable("unit", this)
+			: new Unjsonifiable("unit", { unit: this.unit })
 		)
 	}
 

@@ -492,20 +492,28 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		if (this.minLength) schema.minItems = this.minLength
 
 		if (this.variadic) {
-			schema.items = this.variadic?.toJsonSchemaRecurse(ctx)
+			// alias schema for narrowing (Object.assign mutates anyways)
+			const variadicSchema = Object.assign(schema, {
+				items: this.variadic.toJsonSchemaRecurse(ctx)
+			})
+
 			// maxLength constraint will be enforced by items: false
 			// for non-variadic arrays
-			if (this.maxLength) schema.maxItems = this.maxLength
+			if (this.maxLength) variadicSchema.maxItems = this.maxLength
+
+			// postfix can only be present if variadic is present so nesting this is fine
+			if (this.postfix) {
+				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
+				return new Unjsonifiable("arrayPostfix", {
+					base: variadicSchema,
+					elements
+				})
+			}
 		} else {
 			schema.items = false
 			// delete maxItems constraint that will have been added by the
 			// base intersection node to enforce fixed length
 			delete schema.maxItems
-		}
-
-		if (this.postfix) {
-			// 	`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-			return new Unjsonifiable("arrayPostfix", this)
 		}
 
 		return schema

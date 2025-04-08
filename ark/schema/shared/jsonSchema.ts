@@ -80,7 +80,7 @@ export declare namespace JsonSchema {
 		type: "string"
 		minLength?: number
 		maxLength?: number
-		pattern?: string | RegExp
+		pattern?: string
 		format?: string
 	}
 

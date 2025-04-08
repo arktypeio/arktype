@@ -42,7 +42,6 @@ import {
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
 import {
 	hasArkKind,
 	isNode,
@@ -312,13 +311,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	protected innerToJsonSchema(
 		ctx: JsonSchema.ToContext
 	): JsonSchema.GenerateResult {
-		if (this.inner.pattern && this.inner.pattern.length > 1) {
-			// best handle this here rather than in PatternNode so if more the
-			// intersection includes more than two patterns, we can handle them together
-			return new Unjsonifiable("pattern", this.inner.pattern)
-		}
-
-		return this.children.reduce(
+		return this.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>
 				child.isBasis() ?
