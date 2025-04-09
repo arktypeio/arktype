@@ -96,7 +96,10 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			dateAllowsInvalid: false,
 			onFail: null,
 			keywords: {},
-			toJsonSchema: {}
+			toJsonSchema: {
+				dialect: "https://json-schema.org/draft/2020-12/schema",
+				fallback: {}
+			}
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )

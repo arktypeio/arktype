@@ -133,10 +133,10 @@ export declare namespace JsonSchema {
 		 * @default "https://json-schema.org/draft/2020-12/schema"
 		 */
 		dialect?: string | null
-		fallback?: Unjsonifiable.HandlerByCode
+		fallback?: Partial<Unjsonifiable.HandlerByCode>
 	}
 
 	export interface GenerateContext extends Required<GenerateOptions> {
-		fallback: Required<Unjsonifiable.HandlerByCode>
+		fallback: Unjsonifiable.HandlerByCode
 	}
 }

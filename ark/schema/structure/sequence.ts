@@ -478,9 +478,15 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			schema.prefixItems = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
 				if (el.kind === "defaultables") {
-					const defaultValue =
+					const value =
 						typeof el.default === "function" ? el.default() : el.default
-					valueSchema.default = defaultValue
+					valueSchema.default =
+						$ark.intrinsic.jsonData.allows(value) ?
+							value
+						:	ctx.fallback.default({
+								base: valueSchema,
+								value
+							})
 				}
 				return valueSchema
 			})
@@ -503,7 +509,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			// postfix can only be present if variadic is present so nesting this is fine
 			if (this.postfix) {
 				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
-				return ctx.fallback.arrayPostfix({
+				schema = ctx.fallback.arrayPostfix({
 					base: variadicSchema,
 					elements
 				})

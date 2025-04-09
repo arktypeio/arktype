@@ -796,22 +796,27 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.props.length) {
 			schema.properties = {}
 			this.props.forEach(prop => {
+				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
+
 				if (typeof prop.key === "symbol") {
 					return ctx.fallback.symbolKey({
 						base: schema,
 						key: prop.key,
-						value: prop.value,
+						value: valueSchema,
 						optional: prop.optional
 					})
 				}
 
-				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
-
 				if (prop.hasDefault()) {
-					const defaultValue =
+					const value =
 						typeof prop.default === "function" ? prop.default() : prop.default
-					// could do JSONifiable validation here
-					valueSchema.default = defaultValue
+					valueSchema.default =
+						$ark.intrinsic.jsonData.allows(value) ?
+							value
+						:	ctx.fallback.default({
+								base: valueSchema,
+								value
+							})
 				}
 
 				schema.properties![prop.key] = valueSchema

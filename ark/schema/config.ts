@@ -77,6 +77,8 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	return result
 }
 
+const isMergedConfigKey = (k: string) => isNodeKind(k) || k === "toJsonSchema"
+
 export const mergeConfigs = <base extends ArkSchemaConfig>(
 	base: base,
 	extensions: ArkSchemaConfig | undefined
@@ -93,17 +95,15 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 				keywords[flatAlias] = typeof v === "string" ? { description: v } : v
 			}
 			result.keywords = keywords
-		} else {
+		} else if (isMergedConfigKey(k)) {
 			result[k] =
-				isNodeKind(k) ?
-					// not casting this makes TS compute a very inefficient
-					// type that is not needed
-					({
-						...base[k],
-						...extensions[k]
-					} as never)
-				:	extensions[k]
-		}
+				// not casting this makes TS compute a very inefficient
+				// type that is not needed
+				{
+					...base[k],
+					...extensions[k]
+				} as never
+		} else result[k] = extensions[k]
 	}
 	return result
 }
@@ -129,6 +129,7 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
 		: k extends "clone" ? CloneImplementation | false
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
+		: k extends "toJsonSchema" ? JsonSchema.GenerateContext
 		: config[k]
 	} & Omit<config, keyof ArkSchemaConfig>
 >
