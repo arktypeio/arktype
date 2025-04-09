@@ -50,7 +50,7 @@
 		"upDeps": "pnpm up -r --latest"
 	},
 	"devDependencies": {
-		"@ark/attest": "link:ark/attest",
+		"@ark/attest": "workspace:*",
 		"@ark/attest-ts-min": "catalog:",
 		"@ark/attest-ts-next": "catalog:",
 		"@ark/fs": "workspace:*",
@@ -119,5 +119,9 @@
 				"typescript": "*"
 			}
 		}
+	},
+	"dependencies": {
+		"@prisma/client": "^6.6.0",
+		"eslint-plugin-unicorn": "^58.0.0"
 	}
 }

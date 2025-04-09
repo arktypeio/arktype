@@ -6,6 +6,7 @@ import tseslint from "typescript-eslint"
 import eslint from "@eslint/js"
 // @ts-ignore
 import importPlugin from "eslint-plugin-import"
+import eslintPluginUnicorn from "eslint-plugin-unicorn"
 
 /** These actually don't have types as of now */
 import onlyWarn from "eslint-plugin-only-warn"
@@ -32,6 +33,7 @@ export default tseslint.config(
 		plugins: {
 			"@typescript-eslint": tseslint.plugin,
 			import: importPlugin,
+			unicorn: eslintPluginUnicorn,
 			// @ts-ignore
 			"only-warn": onlyWarn,
 			"prefer-arrow-functions": preferArrowFunctions
@@ -53,6 +55,7 @@ export default tseslint.config(
 				}
 			],
 			"arrow-body-style": ["warn", "as-needed"],
+			"unicorn/no-array-for-each": "warn",
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
 				{
