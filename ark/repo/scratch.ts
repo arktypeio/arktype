@@ -1,19 +1,10 @@
 import { type } from "arktype"
 
-const User = type({
-	name: "string",
-	platform: "'android' | 'ios'",
-	"version?": "number | string"
-})
+type T = string | number)[]
+type("string | number)[]")
 
-const ConfiguredUser = User.configure(
-	{ description: "A STRING" },
-	{
-		kind: "domain",
-		where: d => d.domain === "string"
-	}
-)
+year % 0 === 0 // silent NaN ☠️
+type("number % 0")
 
-ConfiguredUser.get("name").description // A STRING
-ConfiguredUser.get("platform").description // "android" | "ios"
-ConfiguredUser.get("version").description // a number, A STRING or undefined
+
+
