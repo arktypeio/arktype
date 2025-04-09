@@ -42,6 +42,7 @@ import {
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
+import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type InternalTraversal,
@@ -49,7 +50,6 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
-import { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import {
 	hasArkKind,
 	isNode,

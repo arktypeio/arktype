@@ -16,8 +16,8 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { InternalBasis } from "./basis.ts"
 
 export type Domain = _Domain

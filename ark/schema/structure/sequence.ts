@@ -36,12 +36,12 @@ import {
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
-import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import {
 	assertDefaultValueAssignability,
 	computeDefaultValueMorph

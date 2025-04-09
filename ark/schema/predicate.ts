@@ -15,12 +15,12 @@ import {
 	type RegisteredReference,
 	registeredReference
 } from "./shared/registry.ts"
+import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type {
 	Traversal,
 	TraverseAllows,
 	TraverseApply
 } from "./shared/traversal.ts"
-import type { ToJsonSchema } from "./shared/unjsonifiable.ts"
 
 export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =

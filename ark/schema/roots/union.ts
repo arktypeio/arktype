@@ -49,12 +49,12 @@ import {
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	Traversal,
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
-import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"

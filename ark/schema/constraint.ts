@@ -41,8 +41,8 @@ import {
 } from "./shared/intersections.ts"
 import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
+import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
-import type { ToJsonSchema } from "./shared/unjsonifiable.ts"
 import { arkKind } from "./shared/utils.ts"
 import type { Structure } from "./structure/structure.ts"
 

@@ -16,7 +16,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import type { ToJsonSchema } from "./shared/unjsonifiable.ts"
+import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {

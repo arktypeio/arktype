@@ -12,8 +12,8 @@ import {
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { createLengthRuleParser, type LengthBoundableData } from "./range.ts"
 
 export declare namespace ExactLength {

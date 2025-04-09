@@ -34,7 +34,7 @@ import type {
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import { ToJsonSchema } from "./shared/unjsonifiable.ts"
+import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
 import { Index } from "./structure/index.ts"
 import { Optional } from "./structure/optional.ts"
@@ -100,7 +100,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			toJsonSchema: {
 				dialect: "https://json-schema.org/draft/2020-12/schema",
 				fallback: {
-					arrayObject: ctx => ToJsonSchema.throw()
+					arrayObject: ctx => ToJsonSchema.throw(``)
 				}
 			}
 		} satisfies Omit<ResolvedConfig, NodeKind>
