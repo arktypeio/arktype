@@ -2,6 +2,10 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.45.10
+
+Fix an issue causing some bench files to not be parsed correctly, leading to errors and 0 instantiation counts.
+
 ## 0.44.3
 
 Decouple attest trace/stats from pnpm
