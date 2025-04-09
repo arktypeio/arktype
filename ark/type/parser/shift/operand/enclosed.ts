@@ -4,7 +4,7 @@ import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import type { ArkTypeScanner } from "../scanner.ts"
 import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
-import type { left, parseRegexp, parseRegexpError, right } from "./regexp.js"
+import type { parseRegexp, left, right } from "./regexp.js"
 
 export type StringLiteral<Text extends string = string> =
 	| DoubleQuotedStringLiteral<Text>
