@@ -13,8 +13,11 @@ import type { Predicate } from "../predicate.ts"
 import type { ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 
-export const Unjsonifiable = {
+export const ToJsonSchema = {
 	Error: class extends Error {},
+	throw: (message: string): never => {
+		throw new ToJsonSchema.Error(message)
+	},
 	throwInternalOperandError: (
 		kind: ConstraintKind,
 		schema: JsonSchema
@@ -40,8 +43,10 @@ export const Unjsonifiable = {
 	}
 }
 
-export declare namespace Unjsonifiable {
-	export type Value = object | symbol | bigint | undefined
+export declare namespace ToJsonSchema {
+	export type Unjsonifiable = object | symbol | bigint | undefined
+
+	export type Error = InstanceType<typeof ToJsonSchema.Error>
 
 	export interface BaseContext<base extends JsonSchema = JsonSchema> {
 		base: base
@@ -57,7 +62,7 @@ export declare namespace Unjsonifiable {
 	}
 
 	export interface DefaultContext extends BaseContext<JsonSchema> {
-		value: Value
+		value: Unjsonifiable
 	}
 
 	export interface DomainContext extends BaseContext {
@@ -111,7 +116,7 @@ export declare namespace Unjsonifiable {
 	}
 
 	export interface UnitContext extends BaseContext {
-		unit: Unjsonifiable.Value
+		unit: Unjsonifiable
 	}
 
 	export interface ContextByCode {
@@ -127,6 +132,8 @@ export declare namespace Unjsonifiable {
 		symbolKey: SymbolKeyContext
 		unit: UnitContext
 	}
+
+	export type Code = keyof ContextByCode
 
 	export type HandlerByCode = satisfy<
 		{ [code in Code]: (ctx: ContextByCode[code]) => unknown },
@@ -154,7 +161,21 @@ export declare namespace Unjsonifiable {
 		"pattern"
 	>
 
-	export type Code = keyof ContextByCode
+	export interface Options {
+		/** value to assign to the generated $schema key
+		 *
+		 *  - set to `null` to omit the `$schema` key
+		 *  - does not affect the contents of the generated schema
+		 *
+		 * @default "https://json-schema.org/draft/2020-12/schema"
+		 */
+		dialect?: string | null
+		fallback?: Partial<HandlerByCode>
+	}
+
+	export interface Context extends Required<Options> {
+		fallback: HandlerByCode
+	}
 }
 
 const unjsonifiableExplanations = {

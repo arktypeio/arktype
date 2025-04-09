@@ -17,6 +17,7 @@ import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
@@ -152,7 +153,7 @@ Resolution: ${printable(resolution)}`)
 		return domainDescriptions.object
 	}
 
-	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		return ctx && throwInternalError("unimplemented")
 	}
 

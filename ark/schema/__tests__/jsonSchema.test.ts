@@ -4,7 +4,7 @@ import {
 	intrinsic,
 	rootSchema,
 	rootSchemaScope,
-	Unjsonifiable,
+	ToJsonSchema,
 	type BaseRoot
 } from "@ark/schema"
 import { throwInternalError } from "@ark/util"
@@ -236,13 +236,13 @@ contextualize(() => {
 		})
 
 		attest(() => toJsonSchema(morph)).throws(
-			Unjsonifiable.writeMessage(morph.expression, "morph")
+			ToJsonSchema.writeMessage(morph.expression, "morph")
 		)
 	})
 
 	it("errors on cyclic", () => {
 		attest(() => toJsonSchema($ark.intrinsic.jsonObject)).throws(
-			Unjsonifiable.writeMessage("jsonObject", "cyclic")
+			ToJsonSchema.writeMessage("jsonObject", "cyclic")
 		)
 	})
 

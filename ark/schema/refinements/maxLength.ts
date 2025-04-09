@@ -8,7 +8,7 @@ import {
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
+import { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import {
 	BaseRange,
 	createLengthRuleParser,
@@ -95,7 +95,7 @@ export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 				schema.maxItems = this.rule
 				return schema
 			default:
-				return Unjsonifiable.throwInternalOperandError("maxLength", schema)
+				return ToJsonSchema.throwInternalOperandError("maxLength", schema)
 		}
 	}
 }

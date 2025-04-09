@@ -24,6 +24,7 @@ import {
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
+import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
 import type { Domain } from "./domain.ts"
@@ -151,7 +152,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledCondition = `data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 	compiledNegation = `!(${this.compiledCondition})`
 
-	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		switch (this.builtinName) {
 			case "Array":
 				return {

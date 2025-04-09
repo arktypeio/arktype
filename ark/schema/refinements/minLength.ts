@@ -8,7 +8,7 @@ import {
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
+import { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import {
 	BaseRange,
 	createLengthRuleParser,
@@ -94,7 +94,7 @@ export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 				schema.minItems = this.rule
 				return schema
 			default:
-				return Unjsonifiable.throwInternalOperandError("minLength", schema)
+				return ToJsonSchema.throwInternalOperandError("minLength", schema)
 		}
 	}
 }

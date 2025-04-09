@@ -54,6 +54,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
+import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
@@ -291,7 +292,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	protected innerToJsonSchema(ctx: JsonSchema.GenerateContext): JsonSchema {
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
 		if (

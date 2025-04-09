@@ -135,7 +135,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	/**
 	 * #### generate a JSON Schema
 	 *
-	 * @throws {JsonSchema.UnjsonifiableError} if this cannot be converted to JSON Schema
+	 * @throws {ToJsonSchema.Error} if this cannot be converted to JSON Schema
 	 */
 	toJsonSchema(): JsonSchema
 

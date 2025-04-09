@@ -49,7 +49,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
+import { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import {
 	hasArkKind,
 	isNode,
@@ -773,7 +773,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Structure,
-		ctx: JsonSchema.GenerateContext
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Structure {
 		switch (schema.type) {
 			case "object":
@@ -791,13 +791,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return arraySchema
 
 			default:
-				return Unjsonifiable.throwInternalOperandError("structure", schema)
+				return ToJsonSchema.throwInternalOperandError("structure", schema)
 		}
 	}
 
 	reduceObjectJsonSchema(
 		schema: JsonSchema.Object,
-		ctx: JsonSchema.GenerateContext
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}

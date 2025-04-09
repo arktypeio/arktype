@@ -1,5 +1,4 @@
 import type { array, JsonArray, JsonObject, listable } from "@ark/util"
-import type { Unjsonifiable } from "./unjsonifiable.ts"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
 export type ListableJsonSchema = listable<JsonSchema>
@@ -123,20 +122,4 @@ export declare namespace JsonSchema {
 	export type LengthBoundable = String | Array
 
 	export type Structure = Object | Array
-
-	export interface GenerateOptions {
-		/** value to assign to the generated $schema key
-		 *
-		 *  - set to `null` to omit the `$schema` key
-		 *  - does not affect the contents of the generated schema
-		 *
-		 * @default "https://json-schema.org/draft/2020-12/schema"
-		 */
-		dialect?: string | null
-		fallback?: Partial<Unjsonifiable.HandlerByCode>
-	}
-
-	export interface GenerateContext extends Required<GenerateOptions> {
-		fallback: Unjsonifiable.HandlerByCode
-	}
 }

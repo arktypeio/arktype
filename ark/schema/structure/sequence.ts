@@ -41,6 +41,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
+import type { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import {
 	assertDefaultValueAssignability,
 	computeDefaultValueMorph
@@ -475,7 +476,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
-		ctx: JsonSchema.GenerateContext
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Array {
 		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {

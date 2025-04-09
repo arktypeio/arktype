@@ -13,7 +13,7 @@ import {
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import { Unjsonifiable } from "../shared/unjsonifiable.ts"
+import { ToJsonSchema } from "../shared/unjsonifiable.ts"
 import { createLengthRuleParser, type LengthBoundableData } from "./range.ts"
 
 export declare namespace ExactLength {
@@ -100,7 +100,7 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 				schema.maxItems = this.rule
 				return schema
 			default:
-				return Unjsonifiable.throwInternalOperandError("exactLength", schema)
+				return ToJsonSchema.throwInternalOperandError("exactLength", schema)
 		}
 	}
 }

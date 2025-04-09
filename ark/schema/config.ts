@@ -15,8 +15,8 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
-import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
+import type { ToJsonSchema } from "./shared/unjsonifiable.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
@@ -121,7 +121,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
-	readonly toJsonSchema?: JsonSchema.GenerateOptions
+	readonly toJsonSchema?: ToJsonSchema.Options
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<
@@ -129,7 +129,7 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
 		: k extends "clone" ? CloneImplementation | false
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
-		: k extends "toJsonSchema" ? JsonSchema.GenerateContext
+		: k extends "toJsonSchema" ? ToJsonSchema.Context
 		: config[k]
 	} & Omit<config, keyof ArkSchemaConfig>
 >

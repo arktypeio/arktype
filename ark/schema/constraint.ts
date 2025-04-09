@@ -42,6 +42,7 @@ import {
 import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import type { ToJsonSchema } from "./shared/unjsonifiable.ts"
 import { arkKind } from "./shared/utils.ts"
 import type { Structure } from "./structure/structure.ts"
 
@@ -95,7 +96,7 @@ export abstract class InternalPrimitiveConstraint<
 
 	abstract reduceJsonSchema(
 		base: JsonSchema.Constrainable,
-		ctx: JsonSchema.GenerateContext
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
