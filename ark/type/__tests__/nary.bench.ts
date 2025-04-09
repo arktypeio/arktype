@@ -160,7 +160,7 @@ bench("merge-chained(10)", () => {
 
 bench("pipe(2)", () => {
 	type.pipe(type.unit("a"), s => `${s}b` as const)
-}).types([3551, "instantiations"])
+}).types([3114, "instantiations"])
 
 bench("pipe-chained(2)", () => {
 	type.unit("a").pipe(s => `${s}b` as const)
@@ -174,7 +174,7 @@ bench("pipe(5)", () => {
 		s => `${s}d` as const,
 		s => `${s}e` as const
 	)
-}).types([4430, "instantiations"])
+}).types([3993, "instantiations"])
 
 bench("pipe-chained(5)", () => {
 	type
@@ -183,7 +183,7 @@ bench("pipe-chained(5)", () => {
 		.pipe(s => `${s}c` as const)
 		.pipe(s => `${s}d` as const)
 		.pipe(s => `${s}e` as const)
-}).types([1731, "instantiations"])
+}).types([1714, "instantiations"])
 
 bench("pipe(10)", () => {
 	type.pipe(
@@ -198,7 +198,7 @@ bench("pipe(10)", () => {
 		s => `${s}i` as const,
 		s => `${s}j` as const
 	)
-}).types([6385, "instantiations"])
+}).types([5948, "instantiations"])
 
 bench("pipe-chained(10)", () => {
 	type
@@ -212,4 +212,4 @@ bench("pipe-chained(10)", () => {
 		.pipe(s => `${s}h` as const)
 		.pipe(s => `${s}i` as const)
 		.pipe(s => `${s}j` as const)
-}).types([4836, "instantiations"])
+}).types([4789, "instantiations"])

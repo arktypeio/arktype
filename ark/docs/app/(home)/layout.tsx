@@ -15,7 +15,6 @@ export default ({ children }: LayoutProps): React.ReactElement => (
 			children: <FloatYourBoat kind="header" />
 		}}
 	>
-		<title>ArkType</title>
 		{children}
 	</HomeLayout>
 )

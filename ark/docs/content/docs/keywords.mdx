@@ -9,7 +9,7 @@ title: Keywords
 <SyntaxTabs>
 	<SyntaxTab string>
 ```ts
-const keywords = type({
+const Keywords = type({
 	string: "string",
 	date: "Date"
 })
@@ -19,7 +19,7 @@ const keywords = type({
     <SyntaxTab fluent>
 
 ```ts
-const keywords = type({
+const Keywords = type({
 	string: type.string,
 	date: type.Date
 })
@@ -43,7 +43,7 @@ Subtype keywords refine or transform their root type.
 <SyntaxTabs>
 	<SyntaxTab string>
 ```ts
-const keywords = type({
+const Keywords = type({
 	dateFormattedString: "string.date",
 	transformStringToDate: "string.date.parse",
 	isoFormattedString: "string.date.iso",
@@ -58,7 +58,7 @@ You can easily explore available subtypes via autocomplete by with a partial def
     <SyntaxTab fluent>
 
 ```ts
-const keywords = type({
+const Keywords = type({
 	dateFormattedString: type.keywords.string.date.root,
 	isoFormattedString: type.keywords.string.date.iso.root,
 	transformStringToDate: type.keywords.string.date.parse,

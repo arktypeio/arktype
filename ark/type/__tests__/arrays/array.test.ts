@@ -9,55 +9,55 @@ import {
 contextualize(() => {
 	describe("non-tuple", () => {
 		it("allows and apply", () => {
-			const t = type("string[]")
-			attest<string[]>(t.infer)
-			attest(t.allows([])).equals(true)
-			attest(t([])).snap([])
-			attest(t.allows(["foo", "bar"])).equals(true)
-			attest(t(["foo", "bar"])).snap(["foo", "bar"])
-			attest(t.allows(["foo", "bar", 5])).equals(false)
-			attest(t(["foo", "bar", 5]).toString()).snap(
+			const T = type("string[]")
+			attest<string[]>(T.infer)
+			attest(T.allows([])).equals(true)
+			attest(T([])).snap([])
+			attest(T.allows(["foo", "bar"])).equals(true)
+			attest(T(["foo", "bar"])).snap(["foo", "bar"])
+			attest(T.allows(["foo", "bar", 5])).equals(false)
+			attest(T(["foo", "bar", 5]).toString()).snap(
 				"value at [2] must be a string (was a number)"
 			)
-			attest(t.allows([5, "foo", "bar"])).equals(false)
-			attest(t([5, "foo", "bar"]).toString()).snap(
+			attest(T.allows([5, "foo", "bar"])).equals(false)
+			attest(T([5, "foo", "bar"]).toString()).snap(
 				"value at [0] must be a string (was a number)"
 			)
 		})
 
 		it("nested", () => {
-			const t = type("string[][]")
-			attest<string[][]>(t.infer)
-			attest(t.allows([])).equals(true)
-			attest(t([])).snap([])
-			attest(t.allows([["foo"]])).equals(true)
-			attest(t([["foo"]])).snap([["foo"]])
-			attest(t.allows(["foo"])).equals(false)
-			attest(t(["foo"]).toString()).snap(
+			const T = type("string[][]")
+			attest<string[][]>(T.infer)
+			attest(T.allows([])).equals(true)
+			attest(T([])).snap([])
+			attest(T.allows([["foo"]])).equals(true)
+			attest(T([["foo"]])).snap([["foo"]])
+			attest(T.allows(["foo"])).equals(false)
+			attest(T(["foo"]).toString()).snap(
 				"value at [0] must be an array (was string)"
 			)
-			attest(t.allows([["foo", 5]])).equals(false)
-			attest(t([["foo", 5]]).toString()).snap(
+			attest(T.allows([["foo", 5]])).equals(false)
+			attest(T([["foo", 5]]).toString()).snap(
 				"value at [0][1] must be a string (was a number)"
 			)
 		})
 
 		it("tuple expression", () => {
-			const t = type(["string", "[]"])
-			attest<string[]>(t.infer)
-			attest(t.json).equals(type("string[]").json)
+			const T = type(["string", "[]"])
+			attest<string[]>(T.infer)
+			attest(T.json).equals(type("string[]").json)
 		})
 
 		it("root expression", () => {
-			const t = type("string", "[]")
-			attest<string[]>(t.infer)
-			attest(t.json).equals(type("string[]").json)
+			const T = type("string", "[]")
+			attest<string[]>(T.infer)
+			attest(T.json).equals(type("string[]").json)
 		})
 
 		it("chained", () => {
-			const t = type({ a: "string" }).array()
-			attest<{ a: string }[]>(t.infer)
-			attest(t.expression).snap("{ a: string }[]")
+			const T = type({ a: "string" }).array()
+			attest<{ a: string }[]>(T.infer)
+			attest(T.expression).snap("{ a: string }[]")
 		})
 
 		it("incomplete token", () => {
@@ -70,43 +70,43 @@ contextualize(() => {
 
 	describe("non-variadic tuple", () => {
 		it("empty", () => {
-			const t = type([])
-			attest<[]>(t.infer)
-			attest(t.expression).snap("[]")
-			attest(t.json).snap({ proto: "Array", exactLength: 0 })
-			attest(t([])).equals([])
-			attest(t([1]).toString()).snap("must be exactly length 0 (was 1)")
+			const T = type([])
+			attest<[]>(T.infer)
+			attest(T.expression).snap("[]")
+			attest(T.json).snap({ proto: "Array", exactLength: 0 })
+			attest(T([])).equals([])
+			attest(T([1]).toString()).snap("must be exactly length 0 (was 1)")
 		})
 
 		it("shallow", () => {
-			const t = type(["string", "number"])
-			attest<[string, number]>(t.infer)
-			attest(t.allows(["", 0])).equals(true)
-			attest(t(["", 0])).snap(["", 0])
-			attest(t.allows([true, 0])).equals(false)
-			attest(t([true, 0]).toString()).snap(
+			const T = type(["string", "number"])
+			attest<[string, number]>(T.infer)
+			attest(T.allows(["", 0])).equals(true)
+			attest(T(["", 0])).snap(["", 0])
+			attest(T.allows([true, 0])).equals(false)
+			attest(T([true, 0]).toString()).snap(
 				"value at [0] must be a string (was boolean)"
 			)
-			attest(t.allows([0, false])).equals(false)
-			attest(t([0, false]).toString())
+			attest(T.allows([0, false])).equals(false)
+			attest(T([0, false]).toString())
 				.snap(`value at [0] must be a string (was a number)
 value at [1] must be a number (was boolean)`)
 			// too short
-			attest(t.allows([""])).equals(false)
-			attest(t([""]).toString()).snap("must be exactly length 2 (was 1)")
+			attest(T.allows([""])).equals(false)
+			attest(T([""]).toString()).snap("must be exactly length 2 (was 1)")
 			// too long
-			attest(t.allows(["", 0, 1])).equals(false)
-			attest(t(["", 0, 1]).toString()).snap("must be exactly length 2 (was 3)")
+			attest(T.allows(["", 0, 1])).equals(false)
+			attest(T(["", 0, 1]).toString()).snap("must be exactly length 2 (was 3)")
 			// non-array
 			attest(
-				t.allows({
+				T.allows({
 					length: 2,
 					0: "",
 					1: 0
 				})
 			).equals(false)
 			attest(
-				t({
+				T({
 					length: 2,
 					0: "",
 					1: 0
@@ -115,7 +115,7 @@ value at [1] must be a number (was boolean)`)
 		})
 
 		it("nested", () => {
-			const t = type([["string", "number"], [{ a: "bigint", b: ["null"] }]])
+			const T = type([["string", "number"], [{ a: "bigint", b: ["null"] }]])
 			attest<
 				[
 					[string, number],
@@ -126,40 +126,40 @@ value at [1] must be a number (was boolean)`)
 						}
 					]
 				]
-			>(t.infer)
-			const valid: typeof t.infer = [["", 0], [{ a: 0n, b: [null] }]]
-			attest(t.allows(valid)).equals(true)
-			attest(t(valid)).equals(valid)
+			>(T.infer)
+			const valid: typeof T.infer = [["", 0], [{ a: 0n, b: [null] }]]
+			attest(T.allows(valid)).equals(true)
+			attest(T(valid)).equals(valid)
 			const invalid = [["", 0], [{ a: 0n, b: [undefined] }]]
-			attest(t.allows(invalid)).equals(false)
-			attest(t(invalid).toString()).snap(
+			attest(T.allows(invalid)).equals(false)
+			attest(T(invalid).toString()).snap(
 				"value at [1][0].b[0] must be null (was undefined)"
 			)
 		})
 
 		it("optional tuple", () => {
-			const t = type([["string", "?"]])
-			attest<[string?]>(t.infer)
-			attest(t([])).equals([])
-			attest(t(["foo"])).equals(["foo"])
-			attest(t([5]).toString()).snap(
+			const T = type([["string", "?"]])
+			attest<[string?]>(T.infer)
+			attest(T([])).equals([])
+			attest(T(["foo"])).equals(["foo"])
+			attest(T([5]).toString()).snap(
 				"value at [0] must be a string (was a number)"
 			)
-			attest(t(["foo", "bar"]).toString()).snap(
+			attest(T(["foo", "bar"]).toString()).snap(
 				"must be at most length 1 (was 2)"
 			)
 		})
 
 		it("optional string-embedded tuple", () => {
-			const t = type(["string?"])
+			const T = type(["string?"])
 
-			const expected = type([["string", "?"]])
-			attest<typeof expected>(t)
-			attest(t.expression).equals(expected.expression)
+			const Expected = type([["string", "?"]])
+			attest<typeof Expected>(T)
+			attest(T.expression).equals(Expected.expression)
 		})
 
 		it("optional object tuple", () => {
-			const t = type([[{ foo: "string" }, "?"], "string?"])
+			const T = type([[{ foo: "string" }, "?"], "string?"])
 			attest<
 				[
 					{
@@ -167,12 +167,12 @@ value at [1] must be a number (was boolean)`)
 					}?,
 					string?
 				]
-			>(t.t)
-			attest(t.expression).snap("[{ foo: string }?, string?]")
+			>(T.t)
+			attest(T.expression).snap("[{ foo: string }?, string?]")
 		})
 
 		it("optional nested object tuple", () => {
-			const t = type([[[{ foo: "string" }, "?"]], ["string", "?"]])
+			const T = type([[[{ foo: "string" }, "?"]], ["string", "?"]])
 			attest<
 				[
 					[
@@ -182,40 +182,40 @@ value at [1] must be a number (was boolean)`)
 					],
 					string?
 				]
-			>(t.t)
-			attest(t.expression).snap("[[{ foo: string }?], string?]")
+			>(T.t)
+			attest(T.expression).snap("[[{ foo: string }?], string?]")
 		})
 	})
 
 	describe("variadic tuple", () => {
 		it("spreads simple arrays", () => {
-			const wellRested = type(["string", "...", "number[]"])
-			attest<[string, ...number[]]>(wellRested.infer)
-			attest(wellRested(["foo"])).equals(["foo"])
-			attest(wellRested(["foo", 1, 2])).equals(["foo", 1, 2])
+			const WellRested = type(["string", "...", "number[]"])
+			attest<[string, ...number[]]>(WellRested.infer)
+			attest(WellRested(["foo"])).equals(["foo"])
+			attest(WellRested(["foo", 1, 2])).equals(["foo", 1, 2])
 		})
 
 		it("spreads array expressions", () => {
-			const greatSpread = type(["0", "...", "(Date|RegExp)[]"])
-			attest<[0, ...(RegExp | Date)[]]>(greatSpread.infer)
+			const GreatSpread = type(["0", "...", "(Date|RegExp)[]"])
+			attest<[0, ...(RegExp | Date)[]]>(GreatSpread.infer)
 		})
 
 		it("distributes spread unions", () => {
-			const t = type(["1", "...", "(Date[] | RegExp[])"])
-			attest<[1, ...(Date[] | RegExp[])]>(t.infer)
-			const expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
-			attest(t.json).equals(expected.json)
+			const T = type(["1", "...", "(Date[] | RegExp[])"])
+			attest<[1, ...(Date[] | RegExp[])]>(T.infer)
+			const Expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("distributes spread union tuples", () => {
 			const counting = ["2", "3", "4"] as const
 			const fibbing = ["1", "2", "3", "5", "8"] as const
-			const countOrFib = type(counting, "|", fibbing)
-			attest<[2, 3, 4] | [1, 2, 3, 5, 8]>(countOrFib.infer)
-			const t = type(["1", "...", countOrFib])
-			attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(t.infer)
-			const expected = type(["1", ...counting]).or(["1", ...fibbing])
-			attest(t.json).equals(expected.json)
+			const CountOrFib = type(counting, "|", fibbing)
+			attest<[2, 3, 4] | [1, 2, 3, 5, 8]>(CountOrFib.infer)
+			const T = type(["1", "...", CountOrFib])
+			attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(T.infer)
+			const Expected = type(["1", ...counting]).or(["1", ...fibbing])
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("allows array keyword", () => {
@@ -234,7 +234,7 @@ value at [1] must be a number (was boolean)`)
 		})
 
 		it("allows multiple fixed spreads", () => {
-			const t = type([
+			const T = type([
 				"string",
 				"...",
 				"number[]",
@@ -243,7 +243,7 @@ value at [1] must be a number (was boolean)`)
 				"...",
 				["symbol"]
 			])
-			const expected = type([
+			const Expected = type([
 				"string",
 				"...",
 				"number[]",
@@ -251,9 +251,9 @@ value at [1] must be a number (was boolean)`)
 				"bigint",
 				"symbol"
 			])
-			attest<[string, ...number[], boolean, bigint, symbol]>(t.infer)
-			attest<typeof expected.infer>(t.infer)
-			attest(t.json).equals(expected.json)
+			attest<[string, ...number[], boolean, bigint, symbol]>(T.infer)
+			attest<typeof Expected.infer>(T.infer)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("errors on multiple variadic", () => {
@@ -270,14 +270,14 @@ value at [1] must be a number (was boolean)`)
 	})
 
 	it("reduces minLength", () => {
-		const t = type(["number", "number", "...", "number[]", "number"])
-		const expected = type("number[]>=3")
-		attest(t.json).equals(expected.json)
+		const T = type(["number", "number", "...", "number[]", "number"])
+		const Expected = type("number[]>=3")
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("multiple errors", () => {
-		const stringArray = type("string[]")
-		attest(stringArray([1, 2]).toString())
+		const StringArray = type("string[]")
+		attest(StringArray([1, 2]).toString())
 			.snap(`value at [0] must be a string (was a number)
 value at [1] must be a string (was a number)`)
 	})

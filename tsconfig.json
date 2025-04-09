@@ -5,10 +5,9 @@
 		"rewriteRelativeImportExtensions": true,
 		"customConditions": ["ark-ts"],
 		"types": ["mocha", "node"]
-		//  disabling until compatible with tsgo:
-		// https://github.com/microsoft/typescript-go/issues/491
-		// "erasableSyntaxOnly": true
 		// "noErrorTruncation": true
+		// disabling until compatible with tsgo
+		// "erasableSyntaxOnly": true
 	},
 	"exclude": ["**/out", "**/node_modules", "./ark/docs", "**/*.scratch.ts"]
 }

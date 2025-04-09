@@ -2,7 +2,8 @@ import type { autocomplete } from "@ark/util"
 import { loader } from "fumadocs-core/source"
 import { icons } from "lucide-react"
 import { createElement } from "react"
-import { docs } from "../.source"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { docs } from "../.source/index.ts"
 import { Badge } from "../components/Badge.tsx"
 
 export type IconName = keyof typeof icons | "Advanced"

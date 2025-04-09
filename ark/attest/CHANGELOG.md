@@ -2,6 +2,10 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.45.10
+
+Fix an issue causing some bench files to not be parsed correctly, leading to errors and 0 instantiation counts.
+
 ## 0.44.3
 
 Decouple attest trace/stats from pnpm
@@ -11,12 +15,12 @@ Decouple attest trace/stats from pnpm
 Support assertions for JSDoc contents associated with an `attest`ed value
 
 ```ts
-const t = type({
+const T = type({
 	/** FOO */
 	foo: "string"
 })
 
-const out = t.assert({ foo: "foo" })
+const out = T.assert({ foo: "foo" })
 
 // match or snapshot expected jsdoc associated with the value passed to attest
 attest(out.foo).jsdoc.snap("FOO")

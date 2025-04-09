@@ -16,16 +16,16 @@ contextualize(() => {
 
 	describe("json", () => {
 		it("root", () => {
-			const json = type("object.json")
+			const Json = type("object.json")
 
-			attest<Json>(json.t)
-			attest<Json>(json.infer)
-			attest<Json>(json.inferIn)
+			attest<Json>(Json.t)
+			attest<Json>(Json.infer)
+			attest<Json>(Json.inferIn)
 
-			attest(json({})).equals({})
-			attest(json([])).equals([])
-			attest(json(5)?.toString()).snap("must be an object (was a number)")
-			attest(json({ foo: [5n] })?.toString()).snap(
+			attest(Json({})).equals({})
+			attest(Json([])).equals([])
+			attest(Json(5)?.toString()).snap("must be an object (was a number)")
+			attest(Json({ foo: [5n] })?.toString()).snap(
 				'foo["0"] must be an object (was a bigint)'
 			)
 		})
@@ -65,12 +65,12 @@ contextualize(() => {
 		})
 
 		it("invoked", () => {
-			const t = keywords.Array.liftFrom({ data: "number" })
+			const T = keywords.Array.liftFrom({ data: "number" })
 
-			attest(t.t).type.toString.snap(`(
+			attest(T.t).type.toString.snap(`(
 	In: { data: number } | { data: number }[]
 ) => To<{ data: number }[]>`)
-			attest(t.expression).snap(
+			attest(T.expression).snap(
 				"(In: { data: number } | { data: number }[]) => Out<{ data: number }[]>"
 			)
 		})

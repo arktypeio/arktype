@@ -35,7 +35,7 @@ export type normalizeLimit<limit> =
 export type distill<
 	t,
 	endpoint extends distill.Endpoint
-> = finalizeDistillation<t, _distill<t, endpoint, never>>
+> = finalizeDistillation<t, _distill<t, endpoint>>
 
 export declare namespace distill {
 	export type Endpoint = "in" | "out" | "out.introspectable"
@@ -52,10 +52,10 @@ export declare namespace distill {
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
-type _distill<t, endpoint extends distill.Endpoint, seen> =
+type _distill<t, endpoint extends distill.Endpoint> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
-	: [t] extends [anyOrNever | seen] ? t
+	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
 	: t extends Brand<infer base> ?
 		endpoint extends "in" ?
@@ -67,32 +67,31 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	: t extends Function ?
 		// don't treat functions like () => never as morphs
 		t extends (...args: never) => anyOrNever ? t
-		: t extends InferredMorph<infer i, infer o> ?
-			distillIo<i, o, endpoint, seen>
-		:	t
-	: t extends Default<infer constraint> ? _distill<constraint, endpoint, seen>
-	: t extends array ? distillArray<t, endpoint, seen | t>
-	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint, seen | t>
+		: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint>
+		: t
+	: t extends Default<infer constraint> ? _distill<constraint, endpoint>
+	: t extends array ? distillArray<t, endpoint>
+	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint>
 	: t
 
-type distillMappable<o, endpoint extends distill.Endpoint, seen> =
+type distillMappable<o, endpoint extends distill.Endpoint> =
 	endpoint extends "in" ?
 		show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
 				[k in keyof o as k extends inferredDefaultKeyOf<o> ? never
-				:	k]: _distill<o[k], endpoint, seen>
+				:	k]: _distill<o[k], endpoint>
 			} & {
-				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], endpoint, seen>
+				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], endpoint>
 			}
 		>
-	:	{ [k in keyof o]: _distill<o[k], endpoint, seen> }
+	:	{ [k in keyof o]: _distill<o[k], endpoint> }
 
-type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
-	endpoint extends "out" ? _distill<o["t"], endpoint, seen>
-	: endpoint extends "in" ? _distill<i, endpoint, seen>
+type distillIo<i, o extends Out, endpoint extends distill.Endpoint> =
+	endpoint extends "out" ? _distill<o["t"], endpoint>
+	: endpoint extends "in" ? _distill<i, endpoint>
 	: // out.introspectable only respects To (schema-validated output)
-	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint, seen>
+	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint>
 	: unknown
 
 type unwrapInput<t> =
@@ -113,16 +112,14 @@ type inferredDefaultKeyOf<o> =
 		:	never
 	:	never
 
-type distillArray<t extends array, endpoint extends distill.Endpoint, seen> =
+type distillArray<t extends array, endpoint extends distill.Endpoint> =
 	// fast path for non-tuple arrays with no extra props
 	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ?
-		alignReadonly<_distill<t[number], endpoint, seen>[], t>
+	t[number][] extends t ? alignReadonly<_distill<t[number], endpoint>[], t>
 	:	distillNonArraykeys<
 			t,
-			alignReadonly<distillArrayFromPrefix<[...t], endpoint, seen, []>, t>,
-			endpoint,
-			seen
+			alignReadonly<distillArrayFromPrefix<[...t], endpoint, []>, t>,
+			endpoint
 		>
 
 type alignReadonly<result extends unknown[], original extends array> =
@@ -132,8 +129,7 @@ type alignReadonly<result extends unknown[], original extends array> =
 type distillNonArraykeys<
 	originalArray extends array,
 	distilledArray,
-	endpoint extends distill.Endpoint,
-	seen
+	endpoint extends distill.Endpoint
 > =
 	keyof originalArray extends keyof distilledArray ? distilledArray
 	:	distilledArray &
@@ -142,42 +138,37 @@ type distillNonArraykeys<
 					[k in keyof originalArray as k extends keyof distilledArray ? never
 					:	k]: originalArray[k]
 				},
-				endpoint,
-				seen
+				endpoint
 			>
 
 type distillArrayFromPrefix<
 	t extends array,
 	endpoint extends distill.Endpoint,
-	seen,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
 		distillArrayFromPrefix<
 			tail,
 			endpoint,
-			seen,
-			[...prefix, _distill<head, endpoint, seen>]
+			[...prefix, _distill<head, endpoint>]
 		>
-	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, seen, []>]
+	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, []>]
 
 type distillArrayFromPostfix<
 	t extends array,
 	endpoint extends distill.Endpoint,
-	seen,
 	postfix extends array
 > =
 	t extends readonly [...infer init, infer last] ?
 		distillArrayFromPostfix<
 			init,
 			endpoint,
-			seen,
-			[_distill<last, endpoint, seen>, ...postfix]
+			[_distill<last, endpoint>, ...postfix]
 		>
-	:	[...{ [i in keyof t]: _distill<t[i], endpoint, seen> }, ...postfix]
+	:	[...{ [i in keyof t]: _distill<t[i], endpoint> }, ...postfix]
 
 type BuiltinTerminalObjectKind = Exclude<
-	keyof arkPrototypes.instances,
+	arkPrototypes.NonDegenerateName,
 	"Array" | "Function"
 >
 

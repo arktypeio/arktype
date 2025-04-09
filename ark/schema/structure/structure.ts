@@ -17,6 +17,7 @@ import {
 	intersectConstraints
 } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
@@ -119,6 +120,30 @@ const createStructuralWriter =
 
 const structuralDescription = createStructuralWriter("description")
 const structuralExpression = createStructuralWriter("expression")
+
+const intersectPropsAndIndex = <
+	l extends nodeOfKind<"required"> | nodeOfKind<"optional">
+>(
+	l: l,
+	r: nodeOfKind<"index">,
+	$: BaseScope
+): l | Disjoint | null => {
+	const kind = l.required ? "required" : "optional"
+
+	if (!r.signature.allows(l.key)) return null
+
+	const value = intersectNodesRoot(l.value, r.value, $)
+	if (value instanceof Disjoint) {
+		if (kind === "optional") {
+			return $.node("optional", {
+				key: l.key,
+				value: $ark.intrinsic.never.internal
+			}) as l
+		} else return value.withPrefixKey(l.key, l.kind)
+	}
+
+	return null
+}
 
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
@@ -298,6 +323,40 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				if (disjointResult.length) return disjointResult
 
 				return childIntersectionResult
+			}
+		},
+		reduce: (inner, $) => {
+			if (inner.index) {
+				if (!(inner.required || inner.optional)) return
+
+				let updated = false
+
+				const requiredProps = inner.required ?? []
+				const optionalProps = inner.optional ?? []
+				const newOptionalProps: OptionalNode[] = [...optionalProps]
+
+				for (const index of inner.index) {
+					for (const requiredProp of requiredProps) {
+						const intersection = intersectPropsAndIndex(requiredProp, index, $)
+						if (intersection instanceof Disjoint) return intersection
+					}
+
+					for (const [indx, optionalProp] of optionalProps.entries()) {
+						const intersection = intersectPropsAndIndex(optionalProp, index, $)
+						if (intersection instanceof Disjoint) return intersection
+						if (intersection === null) continue
+						newOptionalProps[indx] = intersection
+						updated = true
+					}
+				}
+
+				if (updated) {
+					return $.node(
+						"structure",
+						{ ...inner, optional: newOptionalProps },
+						{ prereduced: true }
+					)
+				}
 			}
 		}
 	})
@@ -588,8 +647,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (this.undeclared === "reject" && !this.declaresKey(k)) {
 					if (traversalKind === "Allows") return false
 
+					// this should have its own error code:
+					// https://github.com/arktypeio/arktype/issues/1403
 					ctx.errorFromNodeContext({
-						// TODO: this should have its own error code
 						code: "predicate",
 						expected: "removed",
 						actual: "",
@@ -703,23 +763,29 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js
 	}
 
-	reduceJsonSchema(schema: JsonSchema.Structure): JsonSchema.Structure {
+	reduceJsonSchema(
+		schema: JsonSchema.Structure,
+		ctx: JsonSchema.ToContext
+	): JsonSchema.Structure {
 		switch (schema.type) {
 			case "object":
-				return this.reduceObjectJsonSchema(schema)
+				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
 				if (this.props.length || this.index) {
 					return JsonSchema.throwUnjsonifiableError(
 						`Additional properties on array ${this.expression}`
 					)
 				}
-				return this.sequence?.reduceJsonSchema(schema) ?? schema
+				return this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 			default:
 				return JsonSchema.throwInternalOperandError("structure", schema)
 		}
 	}
 
-	reduceObjectJsonSchema(schema: JsonSchema.Object): JsonSchema.Object {
+	reduceObjectJsonSchema(
+		schema: JsonSchema.Object,
+		ctx: JsonSchema.ToContext
+	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}
 			this.props.forEach(prop => {
@@ -729,15 +795,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					)
 				}
 
-				schema.properties![prop.key] = prop.value.toJsonSchema()
+				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
+
+				if (prop.hasDefault()) {
+					const defaultValue =
+						typeof prop.default === "function" ? prop.default() : prop.default
+					// could do JSONifiable validation here
+					valueSchema.default = defaultValue
+				}
+
+				schema.properties![prop.key] = valueSchema
 			})
 			if (this.requiredKeys.length)
 				schema.required = this.requiredKeys as string[]
 		}
 
 		this.index?.forEach(index => {
-			if (index.signature.equals($ark.intrinsic.string))
-				return (schema.additionalProperties = index.value.toJsonSchema())
+			if (index.signature.equals($ark.intrinsic.string)) {
+				return (schema.additionalProperties =
+					index.value.toJsonSchemaRecurse(ctx))
+			}
 
 			if (!index.signature.extends($ark.intrinsic.string)) {
 				return JsonSchema.throwUnjsonifiableError(
@@ -757,7 +834,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.patternProperties ??= {}
 				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
-					index.value.toJsonSchema()
+					index.value.toJsonSchemaRecurse(ctx)
 			})
 		})
 

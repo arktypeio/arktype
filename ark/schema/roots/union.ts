@@ -4,6 +4,7 @@ import {
 	domainDescriptions,
 	flatMorph,
 	groupBy,
+	hasKey,
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
@@ -292,7 +293,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema {
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
 		if (
@@ -301,8 +302,25 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 			return { type: "boolean" }
 
+		const jsonSchemaBranches = this.branchGroups.map(group =>
+			group.toJsonSchemaRecurse(ctx)
+		)
+
+		if (
+			jsonSchemaBranches.every(
+				(branch): branch is JsonSchema.Const =>
+					// iff all branches are pure unit values with no metadata,
+					// we can simplify the representation to an enum
+					Object.keys(branch).length === 1 && hasKey(branch, "const")
+			)
+		) {
+			return {
+				enum: jsonSchemaBranches.map(branch => branch.const)
+			}
+		}
+
 		return {
-			anyOf: this.branchGroups.map(group => group.toJsonSchema())
+			anyOf: jsonSchemaBranches
 		}
 	}
 
@@ -819,10 +837,10 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 const expressBranches = (expressions: string[]) =>
 	describeBranches(expressions, describeExpressionOptions)
 
-const describeBranches = (
+export const describeBranches = (
 	descriptions: string[],
 	opts?: DescribeBranchesOptions
-) => {
+): string => {
 	const delimiter = opts?.delimiter ?? ", "
 	const finalDelimiter = opts?.finalDelimiter ?? " or "
 

@@ -6,51 +6,51 @@ contextualize(() => {
 	describe("intersections", () => {
 		it("class & literal", () => {
 			const a = [0]
-			const literal = type("===", a)
-			const cls = type("instanceof", Array)
-			const lr = literal.and(cls)
+			const Literal = type("===", a)
+			const Cls = type("instanceof", Array)
+			const lr = Literal.and(Cls)
 			attest<number[]>(lr.infer)
-			attest(lr.json).equals(literal.json)
-			const rl = cls.and(literal)
+			attest(lr.json).equals(Literal.json)
+			const rl = Cls.and(Literal)
 			attest<number[]>(rl.infer)
-			attest(rl.json).equals(literal.json)
+			attest(rl.json).equals(Literal.json)
 		})
 
 		it("unsatisfiable class & literal", () => {
 			const a = [0]
-			const literal = type("===", a)
-			const cls = type("instanceof", Date)
-			attest(() => literal.and(cls)).throws(
+			const Literal = type("===", a)
+			const Cls = type("instanceof", Date)
+			attest(() => Literal.and(Cls)).throws(
 				writeUnsatisfiableExpressionError("")
 			)
-			attest(() => cls.and(literal)).throws(
+			attest(() => Cls.and(Literal)).throws(
 				writeUnsatisfiableExpressionError("")
 			)
 		})
 
 		it("domain & literal", () => {
-			const literal = type("'foo'")
-			const domain = type("string")
-			attest(literal.and(domain).json).equals(literal.json)
-			attest(domain.and(literal).json).equals(literal.json)
+			const Literal = type("'foo'")
+			const Domain = type("string")
+			attest(Literal.and(Domain).json).equals(Literal.json)
+			attest(Domain.and(Literal).json).equals(Literal.json)
 		})
 
 		it("unsatisfiable domain & literal", () => {
-			const literal = type("'foo'")
-			const domain = type("number")
-			attest(() => literal.and(domain)).throws(
+			const Literal = type("'foo'")
+			const Domain = type("number")
+			attest(() => Literal.and(Domain)).throws(
 				writeUnsatisfiableExpressionError("")
 			)
-			attest(() => domain.and(literal)).throws(
+			attest(() => Domain.and(Literal)).throws(
 				writeUnsatisfiableExpressionError("")
 			)
 		})
 
 		it("domain & class", () => {
-			const domain = type("object")
-			const cls = type("instanceof", Date)
-			attest(domain.and(cls).json).equals(cls.json)
-			attest(cls.and(domain).json).equals(cls.json)
+			const Domain = type("object")
+			const Cls = type("instanceof", Date)
+			attest(Domain.and(Cls).json).equals(Cls.json)
+			attest(Cls.and(Domain).json).equals(Cls.json)
 		})
 	})
 })

@@ -3,12 +3,12 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("string.date", () => {
-		const dateString = type("string.date")
-		attest(dateString("2023-01-01")).equals("2023-01-01")
-		attest(dateString("foo").toString()).snap(
+		const DateString = type("string.date")
+		attest(DateString("2023-01-01")).equals("2023-01-01")
+		attest(DateString("foo").toString()).snap(
 			'must be a parsable date (was "foo")'
 		)
-		attest(dateString(new Date()).toString()).snap(
+		attest(DateString(new Date()).toString()).snap(
 			"must be a string (was an object)"
 		)
 	})
@@ -25,10 +25,10 @@ contextualize(() => {
 	})
 
 	it("string.date.iso", () => {
-		const isoDate = type("string.date.iso")
+		const IsoDate = type("string.date.iso")
 		const d = new Date().toISOString()
-		attest(isoDate(d)).equals(d)
-		attest(isoDate("05-21-1993").toString()).snap(
+		attest(IsoDate(d)).equals(d)
+		attest(IsoDate("05-21-1993").toString()).snap(
 			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "05-21-1993")'
 		)
 	})

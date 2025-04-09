@@ -1,7 +1,7 @@
 import { cn } from "fumadocs-ui/components/api"
 import { Card } from "fumadocs-ui/components/card"
 import { ArrowRight } from "lucide-react"
-import Link from "next/link"
+import Link from "next/link.js"
 
 export const LinkCard: React.FC<{
 	href: string

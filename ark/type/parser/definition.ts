@@ -139,14 +139,13 @@ export type validateDefinition<def, $, args> =
 export type validateInnerDefinition<def, $, args> =
 	[def] extends [Terminal] ? def
 	: def extends string ? validateString<def, $, args>
-	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
 		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
 	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
 		BaseCompletions<$, args> | {}
-	: RegExp extends def ? def
+	: def extends readonly unknown[] ? validateTuple<def, $, args>
 	: validateObjectLiteral<def, $, args>
 
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
@@ -206,7 +205,7 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = type.cast<unknown> | Fn
+type Terminal = type.cast<unknown> | Fn | RegExp
 
 export type ThunkCast<t = unknown> = () => type.cast<t>
 

@@ -1,9 +1,13 @@
-"use client"
+import { useCallback } from "react"
+import { defineMetadata } from "../metadata.ts"
 
-import { useEffect } from "react"
+export const metadata = defineMetadata({
+	title: "ArkType Discord",
+	ogImage: "ogDiscord.png"
+})
 
 export default () => {
-	useEffect(() => {
+	useCallback(() => {
 		window.location.href = "https://discord.com/invite/xEzdc3fJQC"
 	}, [])
 

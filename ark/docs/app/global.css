@@ -87,6 +87,10 @@ code {
 	}
 }
 
+.fd-codeblock {
+	border-radius: 1.5rem !important;
+}
+
 pre.shiki,
 .twoslash-popup-container {
 	border-radius: 1rem;
@@ -197,7 +201,6 @@ div.twoslash-popup-container {
 
 #nd-home-layout,
 #nd-nav {
-	margin-top: 0;
 	overflow: hidden;
 	transition: margin-top 0.3s ease;
 }
@@ -205,5 +208,107 @@ div.twoslash-popup-container {
 /* if release banner is visible, add top offset to home navbar and layout equal to its height */
 :root:has(.release-banner:not([hidden]):not(.hidden)) #nd-home-layout,
 :root:has(.release-banner:not([hidden]):not(.hidden)) #nd-nav {
-	margin-top: 3rem;
+	margin-top: 3.5rem;
+}
+
+.glass-container,
+.monaco-editor {
+	border-radius: 16px;
+	box-shadow:
+		0 10px 15px 0 rgba(0, 0, 0, 0.3),
+		0 15px 30px 0 rgba(0, 0, 0, 0.22);
+	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+	backdrop-filter: blur(16px);
+	/* without this Monaco ends up adding a 1px outline at the top of the editor for some reason */
+	outline-width: 0px !important;
+}
+
+/* Add border radius to Monaco editor's overflow guard */
+.monaco-editor .overflow-guard {
+	border-radius: 16px;
+}
+
+.overflow-guard,
+.margin {
+	padding-top: 16px;
+}
+
+/* Chrome/Safari/Edge scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+	background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* Firefox scrollbar styling */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.wiggle-animation {
+	animation: wiggle 4s ease-in-out infinite;
+	transform-origin: center center;
+}
+
+@keyframes wiggle {
+	0%,
+	87.5%,
+	100% {
+		transform: rotate(0deg);
+	}
+	88.5% {
+		transform: rotate(1.5deg);
+	}
+	89.5% {
+		transform: rotate(-0.5deg);
+	}
+	90.5% {
+		transform: rotate(-1.5deg);
+	}
+	91.5% {
+		transform: rotate(1deg);
+	}
+	92.5% {
+		transform: rotate(1.5deg);
+	}
+	93.5% {
+		transform: rotate(-1deg);
+	}
+	94.5% {
+		transform: rotate(-0.5deg);
+	}
+	96% {
+		transform: rotate(0.25deg);
+	}
+	98% {
+		transform: rotate(0deg);
+	}
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.hero-tagline {
+	font-family: var(--font-raleway);
+}
+
+body {
+	font-family: var(--font-atkinson);
 }

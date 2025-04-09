@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { groupBy, spliterate } from "@ark/util"
+import { getDuplicatesOf, groupBy, spliterate } from "@ark/util"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
 type Gala = { group: "apple"; kind: "Gala" }
@@ -25,6 +25,17 @@ const bengal: Bengal = { group: "lychee", kind: "Bengal" }
 const fruits: Fruit[] = [pinkLady, visionPro, bengal]
 
 contextualize(() => {
+	it("getDuplicatesOf", () => {
+		const duplicates = getDuplicatesOf(["foo", 55, 31, "bar", {}, [], true], {
+			isEqual: (l, r) => typeof l === typeof r
+		})
+		attest(duplicates).equals([
+			{ element: 55, indices: [1, 2] },
+			{ element: "foo", indices: [0, 3] },
+			{ element: {}, indices: [4, 5] }
+		])
+	})
+
 	it("groupBy", () => {
 		const grouped = groupBy(fruits, "group")
 		attest<{

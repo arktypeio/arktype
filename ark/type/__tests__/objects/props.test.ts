@@ -15,7 +15,7 @@ const snapshottableProps = (props: array<BaseTypeProp>) =>
 
 contextualize(() => {
 	it("strings", () => {
-		const t = type({
+		const T = type({
 			foo: "1",
 			bar: "2",
 			"baz?": "3"
@@ -27,9 +27,9 @@ contextualize(() => {
 				| BaseTypeProp<"required", "bar", 2, {}>
 				| BaseTypeProp<"optional", "baz", 3, {}>
 			>
-		>(t.props)
+		>(T.props)
 
-		attest(snapshottableProps(t.props)).snap([
+		attest(snapshottableProps(T.props)).snap([
 			{ kind: "required", key: "bar", value: "2" },
 			{ kind: "required", key: "foo", value: "1" },
 			{ kind: "optional", key: "baz", value: "3" }
@@ -42,7 +42,7 @@ contextualize(() => {
 		const sReference = register(s)
 		const s2 = Symbol()
 		const s2Reference = register(s2)
-		const t = type({
+		const T = type({
 			[s]: "1",
 			[s2]: ["2", "?"],
 			foo: "3",
@@ -54,9 +54,9 @@ contextualize(() => {
 			foo: 3
 			[s2]?: 2
 			foo2?: 4
-		}>(t.infer)
+		}>(T.infer)
 
-		attest(snapshottableProps(t.props)).snap([
+		attest(snapshottableProps(T.props)).snap([
 			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
 			{ kind: "required", key: "foo", value: "3" },
 			{ kind: "optional", key: `Symbol(${s2Reference})`, value: "2" },
@@ -65,7 +65,7 @@ contextualize(() => {
 	})
 
 	it("union", () => {
-		const t = type({ foo: "string" }).or({ bar: "number" })
-		attest(() => t.props).throws(writeLiteralUnionEntriesMessage(t.expression))
+		const T = type({ foo: "string" }).or({ bar: "number" })
+		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))
 	})
 })

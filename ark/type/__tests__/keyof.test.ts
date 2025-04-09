@@ -14,24 +14,24 @@ contextualize(() => {
 	})
 
 	it("root expression", () => {
-		const t = type("keyof", { foo: "string" })
-		attest<"foo">(t.t)
-		const expected = type("===", "foo")
-		attest(t.expression).equals(expected.expression)
+		const T = type("keyof", { foo: "string" })
+		attest<"foo">(T.t)
+		const Expected = type("===", "foo")
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("object literal", () => {
-		const t = type({ a: "123", b: "123" }).keyof()
-		attest<"a" | "b">(t.infer)
-		attest(t.json).equals(type("'a'|'b'").json)
+		const T = type({ a: "123", b: "123" }).keyof()
+		attest<"a" | "b">(T.infer)
+		attest(T.json).equals(type("'a'|'b'").json)
 	})
 
 	it("overlapping union", () => {
-		const t = type({ a: "number", b: "boolean" })
+		const T = type({ a: "number", b: "boolean" })
 			.or({ b: "number", c: "string" })
 			.keyof()
-		attest<"b">(t.infer)
-		attest(t.json).equals(type("'b'").json)
+		attest<"b">(T.infer)
+		attest(T.json).equals(type("'b'").json)
 	})
 
 	it("non-overlapping union", () => {
@@ -41,9 +41,9 @@ contextualize(() => {
 	})
 
 	it("tuple expression", () => {
-		const t = type(["keyof", { a: "string" }])
-		attest<"a">(t.infer)
-		attest(t.json).equals(type("'a'").json)
+		const T = type(["keyof", { a: "string" }])
+		attest<"a">(T.infer)
+		attest(T.json).equals(type("'a'").json)
 	})
 
 	it("keyof non-object in union", () => {
@@ -98,21 +98,21 @@ contextualize.each(
 		})
 
 		it("groupable", $ => {
-			const t = $.type("(keyof ab & string)[]")
-			attest<("a" | "b")[]>(t.t)
-			attest(t.json).equals(type("===", "a", "b").array().json)
+			const T = $.type("(keyof ab & string)[]")
+			attest<("a" | "b")[]>(T.t)
+			attest(T.json).equals(type("===", "a", "b").array().json)
 		})
 
 		it("intersection precedence", $ => {
-			const t = $.type("keyof bc & string")
-			attest<"b" | "c">(t.t)
-			attest(t.json).equals(type("===", "b", "c").json)
+			const T = $.type("keyof bc & string")
+			attest<"b" | "c">(T.t)
+			attest(T.json).equals(type("===", "b", "c").json)
 		})
 
 		it("union precedence", $ => {
-			const t = $.type("keyof ab | bc")
-			attest<"a" | "b" | { b: 1; c?: 1 }>(t.t)
-			attest(t.expression).snap('{ b: 1, c?: 1 } | "a" | "b"')
+			const T = $.type("keyof ab | bc")
+			attest<"a" | "b" | { b: 1; c?: 1 }>(T.t)
+			attest(T.expression).snap('{ b: 1, c?: 1 } | "a" | "b"')
 		})
 	}
 )

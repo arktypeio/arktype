@@ -5,19 +5,19 @@ import type { Default } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("identity", () => {
-		const original = type({
+		const Original = type({
 			"foo?": "string",
 			bar: "number",
 			baz: "boolean"
 		})
-		const t = original.map(entry => entry)
+		const T = Original.map(entry => entry)
 
-		attest<typeof original>(t)
-		attest(t.expression).equals(original.expression)
+		attest<typeof Original>(T)
+		attest(T.expression).equals(Original.expression)
 	})
 
 	it("change values", () => {
-		const original = type({
+		const Original = type({
 			"foo?": "string",
 			bar: "number",
 			baz: {
@@ -25,7 +25,7 @@ contextualize(() => {
 			}
 		})
 
-		const t = original.map(prop => {
+		const T = Original.map(prop => {
 			if (prop.key === "foo") {
 				return {
 					key: prop.key,
@@ -49,7 +49,7 @@ contextualize(() => {
 			return prop
 		})
 
-		const expected = type({
+		const Expected = type({
 			"foo?": "string[] >= 1",
 			bar: "number | null",
 			baz: {
@@ -58,8 +58,8 @@ contextualize(() => {
 			}
 		})
 
-		attest<typeof expected>(t)
-		attest(t.expression).equals(expected.expression)
+		attest<typeof Expected>(T)
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("infer method output", () => {
@@ -75,73 +75,73 @@ contextualize(() => {
 			| "get"
 			| "pipe"
 
-		const base = type({ base: "1" })
+		const Base = type({ base: "1" })
 
-		type Base = typeof base.infer
+		type Base = typeof Base.infer
 
 		type Original = { [k in ExpectedKey]: Base }
 
-		const original = declare<Original>().type({
-			and: base,
-			array: base,
-			as: base,
-			brand: base,
-			configure: base,
-			describe: base,
-			exclude: base,
-			extract: base,
-			filter: base,
-			get: base,
-			keyof: base,
-			map: base,
-			merge: base,
-			narrow: base,
-			omit: base,
-			onDeepUndeclaredKey: base,
-			onUndeclaredKey: base,
-			or: base,
-			partial: base,
-			pick: base,
-			pipe: base,
-			readonly: base,
-			required: base,
-			to: base
+		const Original = declare<Original>().type({
+			and: Base,
+			array: Base,
+			as: Base,
+			brand: Base,
+			configure: Base,
+			describe: Base,
+			exclude: Base,
+			extract: Base,
+			filter: Base,
+			get: Base,
+			keyof: Base,
+			map: Base,
+			merge: Base,
+			narrow: Base,
+			omit: Base,
+			onDeepUndeclaredKey: Base,
+			onUndeclaredKey: Base,
+			or: Base,
+			partial: Base,
+			pick: Base,
+			pipe: Base,
+			readonly: Base,
+			required: Base,
+			to: Base
 		})
 
-		const brand = base.brand("brand")
+		const brand = Base.brand("brand")
 
 		const filterFn = (v: Base): v is Base & { filter: 1 } => true
 		const narrowFn = (v: Base): v is Base & { narrow: 1 } => true
 		const pipeFn = () => ({ pipe: 1 })
 
-		const expected = type({
+		const Expected = type({
 			and: { base: "1", and: "1" },
-			array: base.array(),
-			as: base.as<{ as: 1 }>(),
+			array: Base.array(),
+			as: Base.as<{ as: 1 }>(),
 			brand,
-			configure: base.configure({ description: "" }),
-			describe: base.describe(""),
+			configure: Base.configure({ description: "" }),
+			describe: Base.describe(""),
 			exclude: { exclude: "1" },
 			extract: { extract: "1" },
-			filter: [base, ":", filterFn],
+			filter: [Base, ":", filterFn],
 			get: "1",
 			keyof: "'base'",
 			map: { base: "2" },
 			merge: { base: "1", merge: "1" },
-			narrow: [base, ":", narrowFn],
+			narrow: [Base, ":", narrowFn],
 			omit: {},
 			onDeepUndeclaredKey: { "+": "reject", base: "1" },
 			onUndeclaredKey: { "+": "reject", base: "1" },
-			or: [base, "|", { or: "1" }],
+			or: [Base, "|", { or: "1" }],
 			partial: { "base?": "1" },
 			pick: { pick: "1" },
-			pipe: [base, "=>", pipeFn],
-			readonly: base.readonly(),
+			pipe: [Base, "=>", pipeFn],
+			readonly: Base.readonly(),
 			required: { base: "1", required: "1" },
 			to: { base: "1", to: "1" }
 		})
 
-		const mapped = original.map(prop => {
+		const mapped = Original.map(prop => {
 			switch (prop.key) {
 				case "and":
 					return {
@@ -176,7 +176,7 @@ contextualize(() => {
 				case "exclude":
 					return {
 						key: prop.key,
-						value: prop.value.or({ exclude: "1" }).exclude(base)
+						value: prop.value.or({ exclude: "1" }).exclude(Base)
 					}
 				case "extract":
 					return {
@@ -274,12 +274,12 @@ contextualize(() => {
 			}
 		})
 
-		attest<typeof expected.t>(mapped.t)
-		attest(mapped.json).equals(expected.json)
+		attest<typeof Expected.t>(mapped.t)
+		attest(mapped.json).equals(Expected.json)
 	})
 
 	it("filter and split values", () => {
-		const original = type({
+		const Original = type({
 			"foo?": "string",
 			bar: "number",
 			baz: {
@@ -287,9 +287,9 @@ contextualize(() => {
 			}
 		})
 
-		const getInner = (data: typeof original.infer.baz) => data.inner
+		const getInner = (data: typeof Original.infer.baz) => data.inner
 
-		const t = original.map(prop => {
+		const T = Original.map(prop => {
 			if (prop.key === "bar") return []
 
 			if (prop.key === "baz") {
@@ -304,26 +304,26 @@ contextualize(() => {
 			return prop
 		})
 
-		const expected = type({
+		const Expected = type({
 			"foo?": "string",
 			baz: {
 				inner: "string"
 			},
-			fromBaz: original.get("baz").pipe(getInner)
+			fromBaz: Original.get("baz").pipe(getInner)
 		})
 
-		attest<typeof expected>(t)
-		attest(t.expression).equals(expected.expression)
+		attest<typeof Expected>(T)
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("change optionality", () => {
-		const original = type({
+		const Original = type({
 			"foo?": "string",
 			bar: "number",
 			baz: "boolean"
 		})
 
-		const t = original.map(prop => {
+		const T = Original.map(prop => {
 			if (prop.key === "foo")
 				return { kind: "required", key: "foo", value: prop.value } as const
 			if (prop.key === "bar")
@@ -332,18 +332,18 @@ contextualize(() => {
 			return prop
 		})
 
-		const expected = type({
+		const Expected = type({
 			foo: "string",
 			"bar?": "number",
 			baz: "boolean"
 		})
 
-		attest<typeof expected>(t)
-		attest(t.expression).equals(expected.expression)
+		attest<typeof Expected>(T)
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("modify default", () => {
-		const original = type({
+		const Original = type({
 			foo: "string = 'foo'",
 			"bar?": "number"
 		})
@@ -351,10 +351,10 @@ contextualize(() => {
 		attest<{
 			foo: Default<string, "foo">
 			bar?: number
-		}>(original.t)
-		attest(original.expression).snap('{ foo: string = "foo", bar?: number }')
+		}>(Original.t)
+		attest(Original.expression).snap('{ foo: string = "foo", bar?: number }')
 
-		const t = original.map(prop => {
+		const T = Original.map(prop => {
 			if (prop.key === "foo") {
 				return {
 					...prop,
@@ -367,7 +367,7 @@ contextualize(() => {
 		attest<{
 			bar?: number
 			foo: Default<string, "foot">
-		}>(t.t)
-		attest(t.expression).snap('{ foo: string = "foot", bar?: number }')
+		}>(T.t)
+		attest(T.expression).snap('{ foo: string = "foot", bar?: number }')
 	})
 })

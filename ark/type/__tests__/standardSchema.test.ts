@@ -1,12 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
+import type { StandardSchemaV1 } from "@ark/schema"
 import type { promisable } from "@ark/util"
-import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { type } from "arktype"
 
 contextualize(() => {
 	it("validation conforms to spec", () => {
-		const t = type({ foo: "string" })
-		const standard: StandardSchemaV1<{ foo: string }> = t
+		const T = type({ foo: "string" })
+		const standard: StandardSchemaV1<{ foo: string }> = T
 		const standardOut = standard["~standard"].validate({
 			foo: "bar"
 		})

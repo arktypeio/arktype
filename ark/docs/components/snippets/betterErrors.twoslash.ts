@@ -1,6 +1,6 @@
 import { type, type ArkErrors } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
@@ -15,7 +15,7 @@ versions[2] must be a number or a string (was bigint)*/
 const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
 
 // ---cut---
-const out = user({
+const out = User({
 	name: "Alan Turing",
 	platform: "enigma",
 	versions: [0, "1", 0n]

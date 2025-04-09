@@ -286,7 +286,7 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly compiledMeta: string = JSON.stringify(this.metaJson)
+	readonly compiledMeta: string = compileMeta(this.metaJson)
 
 	protected cacheGetter<name extends keyof this>(
 		name: name,
@@ -772,6 +772,11 @@ export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 	stringifyPath(path, {
 		stringifyNonKey: node => node.expression
 	})
+
+const referenceMatcher = /"(\$ark\.[^"]+)"/g
+
+const compileMeta = (metaJson: unknown) =>
+	JSON.stringify(metaJson).replaceAll(referenceMatcher, "$1")
 
 export const flatRef = <node extends BaseRoot>(
 	path: array<KeyOrKeyNode>,

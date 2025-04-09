@@ -1,5 +1,69 @@
 # arktype
 
+## 2.1.19
+
+##### [Multiple](https://github.com/arktypeio/arktype/issues/1328) [improvements](https://github.com/arktypeio/arktype/issues/1279) to `toJsonSchema()` output, aligning it more closely with Open API standards.
+
+##### Faster completion triggers for shallow string definitions
+
+```ts
+// old: ~1s delay after typing this before completions
+// new: completions are almost instant
+type("")
+```
+
+This isn't actually an overall perf improvement, but just a language server optimization to trigger autocomplete sooner.
+
+Counterintuitively, in previous 2.x versions, strings that are part of an object definition trigger completions much faster than shallow strings.
+
+## 2.1.18
+
+Fix [an issue](https://github.com/arktypeio/arktype/issues/1407) causing metatypes like `Default` and `Out` to not be extracted from some recursive definitions:
+
+```ts
+const T = type({
+	defaulted: "number = 0",
+	"nested?": "this"
+})
+
+const t = T.assert({})
+
+// old: Default<number, 0> | undefined
+// new: number | undefined
+t.nested?.defaulted
+```
+
+## 2.1.17
+
+Unsatisfiable types for index signature intersections will now result in a `ParseError` thanks to the work of @TizzySaurus on the upcoming `@ark/json-schema` package 🎉
+
+## 2.1.16
+
+##### Fix [an issue](https://github.com/arktypeio/arktype/issues/1400) causing non-serializable error config to lead to incorrect error messages in some JIT-mode cases:
+
+```ts
+const MyUnion = type('"abc" | "cde"').configure({
+	message: () => "fail"
+})
+
+// old: "$ark.message"
+// new: "fail"
+MyUnion.assert("efg")
+```
+
+##### Added a workaround for environments where global prototypes like `FormData` have degenerate resolutions like `{}` (currently the case in `@types/bun`, see https://github.com/oven-sh/bun/issues/18689)
+
+```ts
+const T = type("string.numeric.parse")
+
+// previously, if a global prototype like FormData resolved to {}, it prevented
+// ArkType from extracting the input/output of morphs, leading to inference like the following:
+
+// old (with @bun/types): (In: string) => To<number>
+// new (with @bun/types): number
+type Parsed = typeof T.inferOut
+```
+
 ## 2.1.15
 
 ### `.configure({}, selector)` fixes
@@ -49,11 +113,11 @@ myType.configure("some shallow description", "self")
 ### improve .expression for regex constraints
 
 ```ts
-const t = type(/^a.*z$/)
+const T = type(/^a.*z$/)
 
 // old: string /^a.*z$/
 // new: /^a.*z$/
-console.log(t.expression)
+console.log(T.expression)
 ```
 
 ## 2.1.13
@@ -64,7 +128,7 @@ console.log(t.expression)
 //  accept ...definitions
 const union = type.or(type.string, "number", { key: "unknown" })
 
-const base = type({
+const Base = type({
 	foo: "string"
 })
 
@@ -81,7 +145,7 @@ const intersection = type.and(
 
 const zildjian = Symbol()
 
-const base = type({
+const Base = type({
 	"[string]": "number",
 	foo: "0",
 	[zildjian]: "true"
@@ -114,7 +178,7 @@ const trimStartToNonEmpty = type.pipe(
 By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).
 
 ```ts
-const myObj = type({
+const MyObj = type({
 	"key?": "number"
 })
 
@@ -141,7 +205,7 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-const myObj = type({
+const MyObj = type({
 	"key?": "number"
 })
 
@@ -155,7 +219,7 @@ const secondResult = myObj({ key: undefined })
 **WARNING: exactOptionalPropertyTypes does not yet affect default values!**
 
 ```ts
-const myObj = type({
+const MyObj = type({
 	key: "number = 5"
 })
 
@@ -203,7 +267,7 @@ const result = myType.configure(
 ### `ArkErrors` are now JSON stringifiable and have two new props: `flatByPath` and `flatProblemsByPath`.
 
 ```ts
-const nEvenAtLeast2 = type({
+const NEvenAtLeast2 = type({
 	n: "number % 2 > 2"
 })
 
@@ -254,9 +318,9 @@ The `|>` operator pipes output to another Type parsed from a definition.
 It is now string-embeddable:
 
 ```ts
-const trimToNonEmpty = type("string.trim |> string > 0")
+const TrimToNonEmpty = type("string.trim |> string > 0")
 
-const equivalent = type("string.trim").to("string > 0")
+const Equivalent = type("string.trim").to("string > 0")
 ```
 
 ## 2.1.8
@@ -282,14 +346,14 @@ Improve some type-level parse errors on expressions with invalid finalizers
 Addresses #1294
 
 ```ts
-const t = type({
+const T = type({
 	/** FOO */
 	foo: "string",
 	/** BAR */
 	bar: "number?"
 })
 
-const out = t.assert({ foo: "foo" })
+const out = T.assert({ foo: "foo" })
 
 // go-to definition will now navigate to the foo prop from the type call
 // hovering foo now displays "FOO"
@@ -431,7 +495,7 @@ configure({
 import "./config.ts"
 import { type } from "arktype"
 
-const user = type({
+const User = type({
 	name: "string",
 	email: "string.email"
 })
@@ -455,19 +519,19 @@ To make this easier, there's a special `to` operator that can pipe to a parsed d
 This was added before 2.0, but now it comes with a corresponding operator (`|>`) so that it can be expressed via a tuple or args like most other expressions:
 
 ```ts
-const fluentStillWorks = type("string.numeric.parse").to("number % 2")
+const FluentStillWorks = type("string.numeric.parse").to("number % 2")
 
-const nowSoDoesTuple = type({
+const NowSoDoesTuple = type({
 	someKey: ["string.numeric.parse", "|>", "number % 2"]
 })
 
-const andSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
+const AndSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
 ```
 
 ### Error configurations now accept a string directly
 
 ```ts
-const customOne = type("1", "@", {
+const CustomOne = type("1", "@", {
 	// previously only a function returning a string was allowed here
 	message: "Yikes."
 })
@@ -516,7 +580,7 @@ const arkRes = fn({
 ### Fix an issue causing some discriminated unions to incorrectly reject default cases
 
 ```ts
-const discriminated = type({
+const Discriminated = type({
 	id: "0",
 	k1: "number"
 })
@@ -610,7 +674,3 @@ const out = U.assert({ a: 1 })
 ## 2.0.0
 
 - Initial stable release 🎉
-
-```
-
-```

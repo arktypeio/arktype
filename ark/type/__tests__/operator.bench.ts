@@ -106,10 +106,10 @@ bench("morph-chain", () => type("boolean").pipe(b => b)).types([
 	"instantiations"
 ])
 
-const a = type("'a'")
+const A = type("'a'")
 
 bench("morph-chain-all", () => {
-	const out = a.pipe(
+	const out = A.pipe(
 		s => `${s}b` as const,
 		s => `${s}c` as const,
 		s => `${s}d` as const,
@@ -146,7 +146,7 @@ bench("to-tuple", () =>
 
 bench("to-args", () =>
 	type("string.numeric.parse", "|>", "number.integer")
-).types([4268, "instantiations"])
+).types([4261, "instantiations"])
 
 bench("base object", () =>
 	type({

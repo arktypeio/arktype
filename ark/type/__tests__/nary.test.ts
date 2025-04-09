@@ -6,27 +6,27 @@ import type { Out } from "arktype/internal/attributes.ts"
 contextualize(() => {
 	describe("union", () => {
 		it("nullary", () => {
-			const t = type.or()
-			attest<never>(t.t)
+			const T = type.or()
+			attest<never>(T.t)
 
-			attest(t.expression).snap("never")
-			attest(t.$.internal.name).snap("ark")
+			attest(T.expression).snap("never")
+			attest(T.$.internal.name).snap("ark")
 		})
 
 		it("unary", () => {
-			const t = type.or("string")
-			attest<string>(t.t)
-			attest(t.expression).snap("string")
+			const T = type.or("string")
+			attest<string>(T.t)
+			attest(T.expression).snap("string")
 		})
 
 		it("binary", () => {
-			const t = type.or("string", "number")
-			attest<string | number>(t.t)
-			attest(t.expression).snap("number | string")
+			const T = type.or("string", "number")
+			attest<string | number>(T.t)
+			attest(T.expression).snap("number | string")
 		})
 
 		it("nary", () => {
-			const t = type.or(
+			const T = type.or(
 				"1",
 				"2",
 				"3",
@@ -64,8 +64,8 @@ contextualize(() => {
 				| 15
 				| 16
 				| 17
-			>(t.t)
-			attest(t.expression).snap(
+			>(T.t)
+			attest(T.expression).snap(
 				"10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9"
 			)
 		})
@@ -81,35 +81,35 @@ contextualize(() => {
 		it("spreadable", () => {
 			const types: type[] = []
 
-			const t = type.or(...types)
+			const T = type.or(...types)
 
-			attest<unknown>(t.t)
-			attest(t.expression).snap("never")
+			attest<unknown>(T.t)
+			attest(T.expression).snap("never")
 		})
 	})
 
 	describe("intersection", () => {
 		it("nullary", () => {
-			const t = type.and()
-			attest<unknown>(t.t)
-			attest(t.expression).snap("unknown")
-			attest(t.$.internal.name).snap("ark")
+			const T = type.and()
+			attest<unknown>(T.t)
+			attest(T.expression).snap("unknown")
+			attest(T.$.internal.name).snap("ark")
 		})
 
 		it("unary", () => {
-			const t = type.and("string")
-			attest<string>(t.t)
-			attest(t.expression).snap("string")
+			const T = type.and("string")
+			attest<string>(T.t)
+			attest(T.expression).snap("string")
 		})
 
 		it("binary", () => {
-			const t = type.and({ a: "string" }, { b: "number" })
-			attest<{ a: string; b: number }>(t.t)
-			attest(t.expression).snap("{ a: string, b: number }")
+			const T = type.and({ a: "string" }, { b: "number" })
+			attest<{ a: string; b: number }>(T.t)
+			attest(T.expression).snap("{ a: string, b: number }")
 		})
 
 		it("5-ary", () => {
-			const t = type.and(
+			const T = type.and(
 				{ a1: "1" },
 				{ a2: "2" },
 				{ a3: "3" },
@@ -123,15 +123,15 @@ contextualize(() => {
 				a3: 3
 				a4: 4
 				a5: 5
-			}>(t.t)
-			attest(t.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }")
+			}>(T.t)
+			attest(T.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }")
 		})
 
 		// type-perf currently blows up here, investigation:
 		// https://github.com/arktypeio/arktype/issues/1394
 
 		// it("nary", () => {
-		// 	const t = type.and(
+		// 	const T = type.and(
 		// 		{ a1: "1" },
 		// 		{ a2: "2" },
 		// 		{ a3: "3" },
@@ -169,8 +169,8 @@ contextualize(() => {
 		// 	a7: 7
 		// 	a8: 8
 		// 	a9: 9
-		// }>(t.t)
-		// 	attest(t.expression).snap(
+		// }>(T.t)
+		// 	attest(T.expression).snap(
 		// 		"{ a1: 1, a10: 10, a11: 11, a12: 12, a13: 13, a14: 14, a15: 15, a16: 16, a17: 17, a2: 2, a3: 3, a4: 4, a5: 5, a6: 6, a7: 7, a8: 8, a9: 9 }"
 		// 	)
 		// })
@@ -186,35 +186,35 @@ contextualize(() => {
 		it("spreadable", () => {
 			const types: type[] = []
 
-			const t = type.and(...types)
+			const T = type.and(...types)
 
-			attest<unknown>(t.t)
-			attest(t.expression).snap("unknown")
+			attest<unknown>(T.t)
+			attest(T.expression).snap("unknown")
 		})
 	})
 
 	describe("merge", () => {
 		it("nullary", () => {
-			const t = type.merge()
-			attest<object>(t.t)
-			attest(t.expression).snap("object")
-			attest(t.$.internal.name).snap("ark")
+			const T = type.merge()
+			attest<object>(T.t)
+			attest(T.expression).snap("object")
+			attest(T.$.internal.name).snap("ark")
 		})
 
 		it("unary", () => {
-			const t = type.merge({ a: "string" })
-			attest<{ a: string }>(t.t)
-			attest(t.expression).snap("{ a: string }")
+			const T = type.merge({ a: "string" })
+			attest<{ a: string }>(T.t)
+			attest(T.expression).snap("{ a: string }")
 		})
 
 		it("binary", () => {
-			const t = type.merge({ a: "string" }, { b: "number" })
-			attest<{ a: string; b: number }>(t.t)
-			attest(t.expression).snap("{ a: string, b: number }")
+			const T = type.merge({ a: "string" }, { b: "number" })
+			attest<{ a: string; b: number }>(T.t)
+			attest(T.expression).snap("{ a: string, b: number }")
 		})
 
 		it("5-ary", () => {
-			const t = type.merge(
+			const T = type.merge(
 				{ a1: "1" },
 				{ a2: "2" },
 				{ a3: "3" },
@@ -228,15 +228,15 @@ contextualize(() => {
 				a3: 3
 				a4: 4
 				a5: 5
-			}>(t.t)
-			attest(t.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }")
+			}>(T.t)
+			attest(T.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }")
 		})
 
 		// type-perf currently blows up here, investigation:
 		// https://github.com/arktypeio/arktype/issues/1394
 
 		// it("nary", () => {
-		// 	const t = type.merge(
+		// 	const T = type.merge(
 		// 		{ a1: "1" },
 		// 		{ a2: "2" },
 		// 		{ a3: "3" },
@@ -274,8 +274,8 @@ contextualize(() => {
 		// 		a15: 15
 		// 		a16: 16
 		// 		a17: 17
-		// 	}>(t.t)
-		// 	attest(t.expression).snap()
+		// 	}>(T.t)
+		// 	attest(T.expression).snap()
 		// })
 
 		it("completions", () => {
@@ -289,43 +289,43 @@ contextualize(() => {
 		it("spreadable", () => {
 			const types: type<object>[] = []
 
-			const t = type.merge(...types)
+			const T = type.merge(...types)
 
-			attest<{}>(t.t)
-			attest(t.expression).snap("object")
+			attest<{}>(T.t)
+			attest(T.expression).snap("object")
 		})
 	})
 
 	describe("pipe", () => {
 		it("nullary", () => {
-			const t = type.pipe()
-			attest<unknown>(t.t)
-			attest(t.expression).snap("unknown")
-			attest(t.$.internal.name).snap("ark")
+			const T = type.pipe()
+			attest<unknown>(T.t)
+			attest(T.expression).snap("unknown")
+			attest(T.$.internal.name).snap("ark")
 		})
 
 		it("unary Type", () => {
-			const t = type.pipe(type.string)
-			attest<string>(t.t)
-			attest(t.expression).snap("string")
+			const T = type.pipe(type.string)
+			attest<string>(T.t)
+			attest(T.expression).snap("string")
 		})
 
 		it("unary morph", () => {
-			const t = type.pipe((u: unknown) => JSON.stringify(u))
-			attest<(In: unknown) => Out<string>>(t.t)
-			attest(t.expression).snap("(In: unknown) => Out<unknown>")
+			const T = type.pipe((u: unknown) => JSON.stringify(u))
+			attest<(In: unknown) => Out<string>>(T.t)
+			attest(T.expression).snap("(In: unknown) => Out<unknown>")
 		})
 
 		it("binary", () => {
-			const t = type.pipe(type.string, function _upper(s: string) {
+			const T = type.pipe(type.string, function _upper(s: string) {
 				return s.toUpperCase()
 			})
-			attest<(In: string) => Out<string>>(t.t)
-			attest(t.expression).snap("(In: string) => Out<unknown>")
+			attest<(In: string) => Out<string>>(T.t)
+			attest(T.expression).snap("(In: string) => Out<unknown>")
 		})
 
 		it("nary", () => {
-			const t = type.pipe(
+			const T = type.pipe(
 				type.unit("a"),
 				s => `${s}b` as const,
 				s => `${s}c` as const,
@@ -344,34 +344,34 @@ contextualize(() => {
 				s => `${s}p` as const,
 				s => `${s}q` as const
 			)
-			attest<"abcdefghijklmnopq">(t.infer)
-			attest(t("a")).equals("abcdefghijklmnopq")
+			attest<"abcdefghijklmnopq">(T.infer)
+			attest(T("a")).equals("abcdefghijklmnopq")
 		})
 
 		it("spreadable as Types", () => {
 			const types: type[] = []
 
-			const t = type.pipe(...types)
+			const T = type.pipe(...types)
 
-			attest<unknown>(t.t)
-			attest(t.expression).snap("unknown")
+			attest<unknown>(T.t)
+			attest(T.expression).snap("unknown")
 		})
 
 		it("spreadable as Morphs", () => {
 			const morphs: Morph[] = []
 
-			const t = type.pipe(...morphs)
+			const T = type.pipe(...morphs)
 
-			attest<unknown>(t.t)
-			attest(t.expression).snap("unknown")
+			attest<unknown>(T.t)
+			attest(T.expression).snap("unknown")
 		})
 	})
 
 	it("handles base scopes correctly", () => {
 		// previously errored here because after the first intersection, this was a SchemaScope
-		const t = type.and({ a1: "1" }).and({ a2: "2" })
+		const T = type.and({ a1: "1" }).and({ a2: "2" })
 
-		attest(t.expression).snap("{ a1: 1, a2: 2 }")
-		attest(t.$.internal.name).snap("ark")
+		attest(T.expression).snap("{ a1: 1, a2: 2 }")
+		attest(T.$.internal.name).snap("ark")
 	})
 })

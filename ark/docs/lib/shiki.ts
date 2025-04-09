@@ -54,6 +54,26 @@ declare global {
 		}
 
 		export type errors = a.ArkErrors
+
+		export type validate<def, $ = {}, args = a.bindThis<def>> = a.validateDefinition<
+			def,
+			$,
+			args
+		>
+	
+		export type instantiate<def, $ = {}, args = a.bindThis<def>> = type<
+			a.inferDefinition<def, $, args>,
+			$
+		>
+	
+		export type infer<def, $ = {}, args = a.bindThis<def>> = a.inferDefinition<
+			def,
+			$,
+			args
+		>
+
+		/** @ts-ignore cast variance */
+		export interface Any<out t = any, $ = any> extends a.BaseType<t, $> {}
 	}
 
 	type type<t = unknown, $ = {}> = a.Type<t, $>

@@ -110,9 +110,15 @@ export class CompiledFunction<
 		return this.line(`return ${expression}`)
 	}
 
-	write(name = "anonymous"): string {
-		return `${name}(${this.argNames.join(", ")}) {
-${this.body}}`
+	write(name = "anonymous", indent: number = 0): string {
+		return `${name}(${this.argNames.join(", ")}) { ${
+			indent ?
+				this.body
+					.split("\n")
+					.map(l => " ".repeat(indent) + `${l}`)
+					.join("\n")
+			:	this.body
+		} }`
 	}
 
 	compile(): compiledSignature {

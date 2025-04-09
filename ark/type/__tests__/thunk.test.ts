@@ -7,8 +7,8 @@ import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definitio
 
 contextualize(() => {
 	it("in type", () => {
-		const t = type(() => type("boolean"))
-		attest<boolean>(t.infer)
+		const T = type(() => type("boolean"))
+		attest<boolean>(T.infer)
 		attest(() => {
 			// @ts-expect-error
 			type(() => type("moolean"))
@@ -73,15 +73,15 @@ contextualize(() => {
 	})
 
 	it("shallow in type", () => {
-		const t = type(() => type("string"))
-		attest(t.json).equals(type("string").json)
-		attest<string>(t.infer)
+		const T = type(() => type("string"))
+		attest(T.json).equals(type("string").json)
+		attest<string>(T.infer)
 	})
 
 	it("deep in type", () => {
-		const t = type({ a: () => type("string") })
-		attest(t.json).equals(type({ a: "string" }).json)
-		attest<{ a: string }>(t.infer)
+		const T = type({ a: () => type("string") })
+		attest(T.json).equals(type({ a: "string" }).json)
+		attest<{ a: string }>(T.infer)
 	})
 
 	it("non-type thunk in scope", () => {
@@ -172,15 +172,13 @@ contextualize(() => {
 
 	it("docs inelegant", () => {
 		// you *can* use them anywhere, but *should* you? (no)
-		const myInelegantType = type(() =>
+		const Inelegant = type(() =>
 			type({ inelegantKey: () => type("'inelegant value'") })
 		)
 
-		attest(myInelegantType.t).type.toString.snap(
+		attest(Inelegant.t).type.toString.snap(
 			'{ inelegantKey: "inelegant value" }'
 		)
-		attest(myInelegantType.expression).snap(
-			'{ inelegantKey: "inelegant value" }'
-		)
+		attest(Inelegant.expression).snap('{ inelegantKey: "inelegant value" }')
 	})
 })

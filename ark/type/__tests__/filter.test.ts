@@ -7,22 +7,22 @@ contextualize(() => {
 
 	it("applies to input", () => {
 		const stringIsLong = (s: string) => s.length > 5
-		const parseLongNumber = type("string")
+		const ParseLongNumber = type("string")
 			.pipe(parseNumber)
 			.filter(stringIsLong)
 
-		attest<(In: string) => Out<number>>(parseLongNumber.t)
+		attest<(In: string) => Out<number>>(ParseLongNumber.t)
 
-		attest(parseLongNumber.json).snap({
+		attest(ParseLongNumber.json).snap({
 			in: { domain: "string", predicate: ["$ark.stringIsLong"] },
 			morphs: ["$ark.parseNumber"]
 		})
 
-		attest(parseLongNumber("123456")).snap(123456)
-		attest(parseLongNumber("123").toString()).snap(
+		attest(ParseLongNumber("123456")).snap(123456)
+		attest(ParseLongNumber("123").toString()).snap(
 			'must be valid according to stringIsLong (was "123")'
 		)
-		attest(parseLongNumber(123456).toString()).snap(
+		attest(ParseLongNumber(123456).toString()).snap(
 			"must be a string (was a number)"
 		)
 	})
@@ -30,22 +30,22 @@ contextualize(() => {
 	it("predicate inferred on input", () => {
 		const stringIsIntegerLike = (s: string): s is `${bigint}` =>
 			/^-?\d+$/.test(s)
-		const parseIntegerLike = type("string")
+		const ParseIntegerLike = type("string")
 			.pipe(parseNumber)
 			.filter(stringIsIntegerLike)
 
-		attest<(In: `${bigint}`) => Out<number>>(parseIntegerLike.t)
+		attest<(In: `${bigint}`) => Out<number>>(ParseIntegerLike.t)
 
-		attest(parseIntegerLike.json).snap({
+		attest(ParseIntegerLike.json).snap({
 			in: { domain: "string", predicate: ["$ark.stringIsIntegerLike"] },
 			morphs: ["$ark.parseNumber"]
 		})
 
-		attest(parseIntegerLike("123456")).snap(123456)
-		attest(parseIntegerLike("3.14159").toString()).snap(
+		attest(ParseIntegerLike("123456")).snap(123456)
+		attest(ParseIntegerLike("3.14159").toString()).snap(
 			'must be valid according to stringIsIntegerLike (was "3.14159")'
 		)
-		attest(parseIntegerLike(123456).toString()).snap(
+		attest(ParseIntegerLike(123456).toString()).snap(
 			"must be a string (was a number)"
 		)
 	})

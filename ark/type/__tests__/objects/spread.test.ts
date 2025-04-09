@@ -20,11 +20,11 @@ contextualize(() => {
 	})
 
 	it("from another `type` call", () => {
-		const user = type({ isAdmin: "false", name: "string" })
-		const admin = type({ "...": user, isAdmin: "true" })
+		const User = type({ isAdmin: "false", name: "string" })
+		const Admin = type({ "...": User, isAdmin: "true" })
 
-		attest<{ isAdmin: true; name: string }>(admin.infer)
-		attest(admin.json).snap({
+		attest<{ isAdmin: true; name: string }>(Admin.infer)
+		attest(Admin.json).snap({
 			domain: "object",
 			required: [
 				{ key: "isAdmin", value: { unit: true } },
@@ -35,7 +35,7 @@ contextualize(() => {
 
 	it("from an object literal", () => {
 		// no idea why you'd want to do this
-		const t = type({
+		const T = type({
 			"...": {
 				inherited: "boolean",
 				overridden: "string"
@@ -46,9 +46,9 @@ contextualize(() => {
 		attest<{
 			inherited: boolean
 			overridden: number
-		}>(t.infer)
+		}>(T.infer)
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			domain: "object",
 			required: [
 				{
@@ -61,13 +61,13 @@ contextualize(() => {
 	})
 
 	it("escaped key", () => {
-		const t = type({
+		const T = type({
 			"\\...": "string"
 		})
 
-		attest<{ "...": string }>(t.infer)
+		attest<{ "...": string }>(T.infer)
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			domain: "object",
 			required: [{ key: "...", value: "string" }]
 		})
@@ -82,13 +82,13 @@ contextualize(() => {
 
 	// this is a regression test to ensure nodes are handled even if they aren't just an object
 	it("with complex type", () => {
-		const adminUser = type({
+		const AdminUser = type({
 			"...": [{ name: "string" }, "&", { isAdmin: "false" }],
 			isAdmin: "true"
 		})
 
-		attest<{ isAdmin: true; name: string }>(adminUser.infer)
-		attest(adminUser.json).snap({
+		attest<{ isAdmin: true; name: string }>(AdminUser.infer)
+		attest(AdminUser.json).snap({
 			domain: "object",
 			required: [
 				{ key: "isAdmin", value: { unit: true } },
@@ -98,27 +98,27 @@ contextualize(() => {
 	})
 
 	it("object keyword treated as empty", () => {
-		const t = type({
+		const T = type({
 			"...": "object",
 			foo: "string"
 		})
 
 		attest<{
 			foo: string
-		}>(t.t)
-		attest(t.expression).snap("{ foo: string }")
+		}>(T.t)
+		attest(T.expression).snap("{ foo: string }")
 	})
 
 	it("narrowed object keyword treated as empty", () => {
-		const t = type({
+		const T = type({
 			"...": type.object.narrow(() => true),
 			foo: "string"
 		})
 
 		attest<{
 			foo: string
-		}>(t.t)
-		attest(t.expression).snap("{ foo: string }")
+		}>(T.t)
+		attest(T.expression).snap("{ foo: string }")
 	})
 
 	it("errors on proto node", () => {

@@ -5,13 +5,13 @@ import { hasArkKind } from "../schema/out/shared/utils"
 type("(boolean | number | 'foo')[]")
 
 // = should be highlighted as normal
-const t = type("(boolean | number | 'foo')[]")
+const T = type("(boolean | number | 'foo')[]")
 
 type({
 	foo: "string.normalize.NFC.preformatted"
 })
 
-const creditCard = type(
+const CreditCard = type(
 	"/^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35d{3})d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/"
 )
 
@@ -36,7 +36,7 @@ const a = "string"
 const b = "boolean"
 const c = "number"
 
-const t = type(a).and(b).and(c)
+const T = type(a).and(b).and(c)
 const z = {
 	a: true
 }
@@ -49,14 +49,14 @@ factor("foo|bar")
 or("foo|bar")
 
 // THIS SHOULD NOT BE HIGHLIGHTED
-// 	const t = type({
+// 	const T = type({
 // 		[optional(s)]: "number"
 // 	})
 
 const lOrR = types.l.or(types.r)
 
 // THIS SHOULD NOT BE HIGHLIGHTED
-// attest(t.internal.indexableExpressions).snap()
+// attest(T.internal.indexableExpressions).snap()
 
 // THIS SHOULD NOT BE HIGHLIGHTED AS A TYPE
 hasArkKind("foo[]")
@@ -73,7 +73,7 @@ const aTypes = {
 for (const [name, schema] of Object.entries(aTypes)) {
 }
 
-const ff = type("string").or("foobar|baz")
+const Ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
 attest<Type<{ a: string }, Ark>>(types.notASpace)
@@ -123,7 +123,7 @@ type({
 	const outer = (...args: any[]) => obj
 
 	outer("ark", () => {
-		const arkType = type({
+		const ArkType = type({
 			number: "number",
 			negNumber: "number",
 			maxNumber: "number",
@@ -137,7 +137,7 @@ type({
 			}
 		})
 	}).type()
-	const t = type(`${2}<Date<${4}`)
+	const T = type(`${2}<Date<${4}`)
 
 	const $ = scope({ a: "string" })
 	const importer = $.scope({ b: "a" })
@@ -158,7 +158,7 @@ class F {
 }
 
 // This is used to generate highlighting.png
-const highlighted = type({
+const Highlighted = type({
 	literals: "'foo' | 'bar' | true",
 	expressions: "boolean[] | 5 < number <= 10 | number % 2",
 	pattern: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/",

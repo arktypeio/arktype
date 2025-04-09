@@ -164,6 +164,8 @@ export class ArkErrors
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
 {
+	readonly [arkKind] = "errors"
+
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {
@@ -288,16 +290,26 @@ export class ArkErrors
 	private _add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
-			const errorIntersection = new ArkError(
-				{
-					code: "intersection",
-					errors:
-						existing.hasCode("intersection") ?
-							[...existing.errors, error]
-						:	[existing, error]
-				},
-				this.ctx
-			)
+			// If the existing error is an error for a value constrained to "never",
+			// then we don't want to intersect the error messages.
+			if (existing.hasCode("union") && existing.errors.length === 0) return
+
+			// If the new error is an error for a value constrained to "never",
+			// then we want to override any existing errors.
+			const errorIntersection =
+				error.hasCode("union") && error.errors.length === 0 ?
+					error
+				:	new ArkError(
+						{
+							code: "intersection",
+							errors:
+								existing.hasCode("intersection") ?
+									[...existing.errors, error]
+								:	[existing, error]
+						},
+						this.ctx
+					)
+
 			const existingIndex = this.indexOf(existing)
 			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
 				errorIntersection

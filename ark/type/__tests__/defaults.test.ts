@@ -14,14 +14,14 @@ contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {
 			const fnDefaultTo5 = () => 5 as const
-			const o = type({
+			const O = type({
 				a: "string",
 				foo: "number = 5",
 				bar: ["number", "=", 5],
 				baz: ["number", "=", fnDefaultTo5]
 			})
 
-			attest(o.t).type.toString.snap(`{
+			attest(O.t).type.toString.snap(`{
 	a: string
 	foo: Default<number, 5>
 	bar: Default<number, 5>
@@ -32,10 +32,10 @@ contextualize(() => {
 				foo?: number
 				bar?: number
 				baz?: number
-			}>(o.inferIn)
-			attest<{ a: string; foo: number; bar: number; baz: number }>(o.infer)
+			}>(O.inferIn)
+			attest<{ a: string; foo: number; bar: number; baz: number }>(O.infer)
 
-			attest(o.json).snap({
+			attest(O.json).snap({
 				required: [{ key: "a", value: "string" }],
 				optional: [
 					{ default: "$ark.fnDefaultTo5", key: "baz", value: "number" },
@@ -45,15 +45,15 @@ contextualize(() => {
 				domain: "object"
 			})
 
-			attest(o({ a: "", foo: 4, bar: 4, baz: 4 })).equals({
+			attest(O({ a: "", foo: 4, bar: 4, baz: 4 })).equals({
 				a: "",
 				foo: 4,
 				bar: 4,
 				baz: 4
 			})
-			attest(o({ a: "" })).equals({ a: "", foo: 5, bar: 5, baz: 5 })
-			attest(o({ bar: 4 }).toString()).snap("a must be a string (was missing)")
-			attest(o({ a: "", bar: "" }).toString()).snap(
+			attest(O({ a: "" })).equals({ a: "", foo: 5, bar: 5, baz: 5 })
+			attest(O({ bar: 4 }).toString()).snap("a must be a string (was missing)")
+			attest(O({ a: "", bar: "" }).toString()).snap(
 				"bar must be a number (was a string)"
 			)
 		})
@@ -74,12 +74,12 @@ contextualize(() => {
 		})
 
 		it("unions are defaultable", () => {
-			const o = type({
+			const O = type({
 				boo: "boolean = false"
 			})
 			// this should not distribute to Default<true, true> | Default<false, true>
-			attest(o).type.toString.snap("Type<{ boo: Default<boolean, false> }, {}>")
-			attest(o.json).snap({
+			attest(O).type.toString.snap("Type<{ boo: Default<boolean, false> }, {}>")
+			attest(O.json).snap({
 				optional: [
 					{
 						default: false,
@@ -90,9 +90,9 @@ contextualize(() => {
 				domain: "object"
 			})
 
-			attest(o({})).snap({ boo: false })
-			attest(o({ boo: true })).snap({ boo: true })
-			attest(o({ boo: 5 }).toString()).snap("boo must be boolean (was 5)")
+			attest(O({})).snap({ boo: false })
+			attest(O({ boo: true })).snap({ boo: true })
+			attest(O({ boo: 5 }).toString()).snap("boo must be boolean (was 5)")
 		})
 
 		it("validated default in scope", () => {
@@ -149,14 +149,14 @@ contextualize(() => {
 		})
 
 		it("chained", () => {
-			const defaultedString = type("string").default("")
-			attest(defaultedString).type.toString.snap('[Type<string, {}>, "=", ""]')
+			const DefaultedString = type("string").default("")
+			attest(DefaultedString).type.toString.snap('[Type<string, {}>, "=", ""]')
 
-			const o = type({ a: defaultedString })
-			attest(o.t).type.toString.snap('{ a: Default<string, ""> }')
-			attest<{ a?: string }>(o.inferIn)
-			attest<{ a: string }>(o.infer)
-			attest(o.json).snap({
+			const O = type({ a: DefaultedString })
+			attest(O.t).type.toString.snap('{ a: Default<string, ""> }')
+			attest<{ a?: string }>(O.inferIn)
+			attest<{ a: string }>(O.infer)
+			attest(O.json).snap({
 				optional: [
 					{
 						default: "",
@@ -209,7 +209,7 @@ contextualize(() => {
 
 		it("morphed", () => {
 			// https://discord.com/channels/957797212103016458/1280932672029593811/1283368602355109920
-			const processForm = type({
+			const ProcessForm = type({
 				bool_value: type("string")
 					.pipe(v => (v === "on" ? true : false))
 					.default("off")
@@ -217,23 +217,23 @@ contextualize(() => {
 
 			attest<{
 				bool_value: (In: Default<string, "off">) => Out<boolean>
-			}>(processForm.t)
+			}>(ProcessForm.t)
 
 			attest<{
 				// key should still be distilled as optional even inside a morph
 				bool_value?: string
-			}>(processForm.inferIn)
+			}>(ProcessForm.inferIn)
 			attest<{
 				bool_value: boolean
-			}>(processForm.infer)
+			}>(ProcessForm.infer)
 
-			const out = processForm({})
+			const out = ProcessForm({})
 
 			attest(out).snap({ bool_value: false })
 
-			attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
+			attest(ProcessForm({ bool_value: "on" })).snap({ bool_value: true })
 
-			attest(processForm({ bool_value: true }).toString()).snap(
+			attest(ProcessForm({ bool_value: true }).toString()).snap(
 				"bool_value must be a string (was boolean)"
 			)
 		})
@@ -248,15 +248,15 @@ contextualize(() => {
 
 			const toggleRef = registeredReference(toggle)
 
-			const t = type({
+			const T = type({
 				blep: type("boolean").pipe(toggle).default(false)
 			})
 
-			attest(t.t).type.toString.snap(`{
+			attest(T.t).type.toString.snap(`{
 	blep: (In: Default<boolean, false>) => Out<boolean>
 }`)
 
-			attest(t.json).snap({
+			attest(T.json).snap({
 				optional: [
 					{
 						default: false,
@@ -270,12 +270,12 @@ contextualize(() => {
 				domain: "object"
 			})
 
-			const out = t({})
+			const out = T({})
 
 			attest(out).snap({ blep: true })
 			attest(callCount).equals(1)
 
-			t({})
+			T({})
 			attest(callCount).equals(1)
 		})
 
@@ -289,15 +289,15 @@ contextualize(() => {
 
 			const toggleRef = registeredReference(toggle)
 
-			const t = type({
+			const T = type({
 				blep: type("boolean").pipe(toggle).to("boolean").default(false)
 			})
 
-			attest(t.t).type.toString.snap(`{
+			attest(T.t).type.toString.snap(`{
 	blep: (In: Default<boolean, false>) => To<boolean>
 }`)
 
-			attest(t.json).snap({
+			attest(T.json).snap({
 				optional: [
 					{
 						default: false,
@@ -311,17 +311,17 @@ contextualize(() => {
 				domain: "object"
 			})
 
-			const out = t({})
+			const out = T({})
 
 			attest(out).snap({ blep: true })
 			attest(callCount).equals(1)
 
-			t({})
+			T({})
 			attest(callCount).equals(1)
 		})
 
 		it("primitive morphed to object not premorphed", () => {
-			const t = type({
+			const T = type({
 				foo: type("string")
 					.pipe(s => ({ nest: s }))
 					.default("foo")
@@ -330,9 +330,9 @@ contextualize(() => {
 				foo: (In: Default<string, "foo">) => Out<{
 					nest: string
 				}>
-			}>(t.t)
+			}>(T.t)
 
-			const out = t.assert({})
+			const out = T.assert({})
 
 			attest(out).snap({ foo: { nest: "foo" } })
 
@@ -340,39 +340,39 @@ contextualize(() => {
 
 			out.foo.nest = "baz"
 
-			attest(t({})).equals(originalOut)
+			attest(T({})).equals(originalOut)
 		})
 	})
 
 	describe("string parsing", () => {
 		it("number", () => {
-			const t = type({ key: "number = 42" })
-			const expected = type({ key: ["number", "=", 42] })
+			const T = type({ key: "number = 42" })
+			const Expected = type({ key: ["number", "=", 42] })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("bigint", () => {
-			const t = type({ key: "bigint = 100n" })
-			const expected = type({ key: ["bigint", "=", 100n] })
+			const T = type({ key: "bigint = 100n" })
+			const Expected = type({ key: ["bigint", "=", 100n] })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("string", () => {
-			const t = type({ key: 'string = "default value"' })
-			const expected = type({ key: ["string", "=", "default value"] })
+			const T = type({ key: 'string = "default value"' })
+			const Expected = type({ key: ["string", "=", "default value"] })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("Date", () => {
-			const t = type({ key: 'Date = d"1993-05-21"' })
+			const T = type({ key: 'Date = d"1993-05-21"' })
 
-			const out = t.assert({})
+			const out = T.assert({})
 
 			attest(out.key.toISOString()).snap("1993-05-21T00:00:00.000Z")
 
@@ -380,53 +380,53 @@ contextualize(() => {
 			// have a narrowed literal type
 			attest<{
 				key: Default<Date, Date>
-			}>(t.t)
+			}>(T.t)
 		})
 
 		it("Date is immutable", () => {
-			const t = type({ date: 'Date = d"1993-05-21"' })
-			const v1 = t.assert({})
+			const T = type({ date: 'Date = d"1993-05-21"' })
+			const v1 = T.assert({})
 			const time = v1.date.getTime()
 			v1.date.setMilliseconds(123)
-			const v2 = t.assert({})
+			const v2 = T.assert({})
 			attest(v2.date.getTime()).equals(time)
 		})
 
 		it("true", () => {
-			const t = type({ key: "boolean = true" })
-			const expected = type({ key: ["boolean", "=", true] })
+			const T = type({ key: "boolean = true" })
+			const Expected = type({ key: ["boolean", "=", true] })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("false", () => {
-			const t = type({ key: "boolean = false" })
-			const expected = type({ key: ["boolean", "=", false] })
+			const T = type({ key: "boolean = false" })
+			const Expected = type({ key: ["boolean", "=", false] })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("null", () => {
 			// ideally we could infer a better type here,
 			// but attaching attributes to null or undefined
 			// is not possible with the current design
-			const t = type({ key: "object | null = null" })
-			const expected = type({ key: ["object | null", "=", null] })
+			const T = type({ key: "object | null = null" })
+			const Expected = type({ key: ["object | null", "=", null] })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("undefined", () => {
-			const t = type({ key: "unknown = undefined" })
-			const expected = type({ key: ["unknown", "=", undefined] })
+			const T = type({ key: "unknown = undefined" })
+			const Expected = type({ key: ["unknown", "=", undefined] })
 
-			attest(t({})).snap({ key: undefined })
+			attest(T({})).snap({ key: undefined })
 
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("incorrect default type", () => {
@@ -508,21 +508,21 @@ contextualize(() => {
 		})
 
 		it("extracts output as required", () => {
-			const t = type({
+			const T = type({
 				foo: "string = 'foo'"
 			})
 
-			attest<{ foo?: string }>(t.in.infer)
-			attest<{ foo: string }>(t.out.infer)
-			attest(t.in.expression).snap('{ foo: string = "foo" }')
-			attest(t.out.expression).snap("{ foo: string }")
+			attest<{ foo?: string }>(T.in.infer)
+			attest<{ foo: string }>(T.out.infer)
+			attest(T.in.expression).snap('{ foo: string = "foo" }')
+			attest(T.out.expression).snap("{ foo: string }")
 		})
 	})
 
 	describe("works properly with types", () => {
 		it("allows primitives and factories for anys", () => {
 			const fn = () => {}
-			const t = type({
+			const T = type({
 				foo1: ["unknown", "=", true],
 				bar1: ["unknown", "=", () => [true]],
 				baz1: ["unknown", "=", () => fn],
@@ -530,7 +530,7 @@ contextualize(() => {
 				bar2: ["unknown.any", "=", () => [true]],
 				baz2: ["unknown.any", "=", () => fn]
 			})
-			const out = t.assert({})
+			const out = T.assert({})
 			attest(out).snap({
 				foo1: true,
 				bar1: [true],
@@ -672,9 +672,9 @@ contextualize(() => {
 			})
 
 			it("reference tuple", () => {
-				const numtos = type("number").pipe(s => `${s}`)
+				const Numtos = type("number").pipe(s => `${s}`)
 				// @ts-expect-error
-				attest(() => type({ foo: [numtos, "=", true] }))
+				attest(() => type({ foo: [Numtos, "=", true] }))
 					.throws("must be a number (was boolean)")
 					.type.errors(
 						"Type 'boolean' is not assignable to type 'defaultFor<number>'."
@@ -682,25 +682,25 @@ contextualize(() => {
 			})
 
 			it("reference function", () => {
-				const numtos = type("number").pipe(s => `${s}`)
+				const Numtos = type("number").pipe(s => `${s}`)
 				// @ts-expect-error
-				attest(() => type({ foo: [numtos, "=", () => true] }))
+				attest(() => type({ foo: [Numtos, "=", () => true] }))
 					.throws("must be a number (was boolean)")
 					.type.errors("Type 'boolean' is not assignable to type 'number'.")
 			})
 		})
 
 		it("morphed inputs", () => {
-			const numtos = type("number").pipe(s => `${s}`)
-			const f = type({
+			const Numtos = type("number").pipe(s => `${s}`)
+			const F = type({
 				foo1: "string.numeric.parse = '123'",
 				foo2: ["string.numeric.parse", "=", "123"],
 				foo3: ["string.numeric.parse", "=", () => "123"],
-				bar1: [numtos, "=", 123],
-				bar2: [numtos, "=", () => 123],
-				baz1: type(numtos).default(123)
+				bar1: [Numtos, "=", 123],
+				bar2: [Numtos, "=", () => 123],
+				baz1: type(Numtos).default(123)
 			})
-			attest(f.assert({})).snap({
+			attest(F.assert({})).snap({
 				foo1: 123,
 				foo2: 123,
 				foo3: 123,
@@ -717,60 +717,60 @@ contextualize(() => {
 				(input: string | undefined) => (input ? new Date(input) : defaultDate)
 			)
 
-			const searchSchema = type({
+			const SearchSchema = type({
 				week: ParsedDate.default(defaultDate.toISOString())
 			})
 
-			attest(searchSchema({ week: "2023-01-01" })).snap({
+			attest(SearchSchema({ week: "2023-01-01" })).snap({
 				week: "2023-01-01T00:00:00.000Z"
 			})
 
-			attest(searchSchema({ week: undefined })).snap({
+			attest(SearchSchema({ week: undefined })).snap({
 				week: "2020-01-01T00:00:00.000Z"
 			})
 
-			attest(searchSchema({})).snap({ week: "2020-01-01T00:00:00.000Z" })
+			attest(SearchSchema({})).snap({ week: "2020-01-01T00:00:00.000Z" })
 		})
 	})
 
 	describe("intersection", () => {
 		it("two optionals, one default", () => {
-			const l = type({ bar: ["number", "=", 5] })
-			const r = type({ "bar?": "5" })
+			const L = type({ bar: ["number", "=", 5] })
+			const R = type({ "bar?": "5" })
 
-			const result = l.and(r)
-			attest(result.json).snap({
+			const T = L.and(R)
+			attest(T.json).snap({
 				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
 				domain: "object"
 			})
 		})
 
 		it("same default", () => {
-			const l = type({ bar: ["number", "=", 5] })
-			const r = type({ bar: ["5", "=", 5] })
+			const L = type({ bar: ["number", "=", 5] })
+			const R = type({ bar: ["5", "=", 5] })
 
-			const result = l.and(r)
-			attest(result.json).snap({
+			const T = L.and(R)
+			attest(T.json).snap({
 				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
 				domain: "object"
 			})
 		})
 
 		it("removed when intersected with required", () => {
-			const l = type({ bar: ["number", "=", 5] })
-			const r = type({ bar: "number" })
+			const L = type({ bar: ["number", "=", 5] })
+			const R = type({ bar: "number" })
 
-			const result = l.and(r)
-			attest(result.json).snap({
+			const T = L.and(R)
+			attest(T.json).snap({
 				required: [{ key: "bar", value: "number" }],
 				domain: "object"
 			})
 		})
 
 		it("errors on multiple defaults", () => {
-			const l = type({ bar: ["number", "=", 5] })
-			const r = type({ bar: ["number", "=", 6] })
-			attest(() => l.and(r)).throws.snap(
+			const L = type({ bar: ["number", "=", 5] })
+			const R = type({ bar: ["number", "=", 6] })
+			attest(() => L.and(R)).throws.snap(
 				"ParseError: Invalid intersection of default values 5 & 6"
 			)
 		})
@@ -778,10 +778,10 @@ contextualize(() => {
 
 	describe("functions", () => {
 		it("works in tuple", () => {
-			const t = type({ foo: ["string", "=", () => "bar" as const] })
+			const T = type({ foo: ["string", "=", () => "bar" as const] })
 
-			attest(t.t).type.toString.snap('{ foo: Default<string, "bar"> }')
-			attest(t.assert({ foo: "bar" })).snap({ foo: "bar" })
+			attest(T.t).type.toString.snap('{ foo: Default<string, "bar"> }')
+			attest(T.assert({ foo: "bar" })).snap({ foo: "bar" })
 		})
 
 		it("checks the returned value", () => {
@@ -814,12 +814,12 @@ contextualize(() => {
 		})
 
 		it("morphs the returned value", () => {
-			const t = type({ foo: ["string.numeric.parse", "=", () => "123"] })
+			const T = type({ foo: ["string.numeric.parse", "=", () => "123"] })
 
 			attest<{
 				foo: (In: Default<string, string>) => To<number>
-			}>(t.t)
-			attest(t.assert({})).snap({ foo: 123 })
+			}>(T.t)
+			attest(T.assert({})).snap({ foo: 123 })
 		})
 
 		it("only allows argless functions for factories", () => {
@@ -843,14 +843,14 @@ contextualize(() => {
 
 		it("default factory may return different values", () => {
 			let i = 0
-			const t = type({ bar: type("number[]").default(() => [++i]) })
-			attest(t.assert({}).bar).snap([3])
-			attest(t.assert({}).bar).snap([4])
+			const T = type({ bar: type("number[]").default(() => [++i]) })
+			attest(T.assert({}).bar).snap([3])
+			attest(T.assert({}).bar).snap([4])
 		})
 
 		it("default function factory", () => {
 			let i = 0
-			const t = type({
+			const T = type({
 				bar: type("Function").default(() => {
 					const j = ++i
 					return () => j
@@ -859,29 +859,29 @@ contextualize(() => {
 
 			attest<{
 				bar: Default<Function, () => number>
-			}>(t.t)
-			attest(t.assert({}).bar()).snap(3)
-			attest(t.assert({}).bar()).snap(4)
+			}>(T.t)
+			attest(T.assert({}).bar()).snap(3)
+			attest(T.assert({}).bar()).snap(4)
 		})
 
 		it("allows union factory", () => {
 			let i = 0
-			const t = type({
+			const T = type({
 				foo: [["number", "|", "number[]"], "=", () => (i % 2 ? ++i : [++i])]
 			})
-			attest(t.assert({})).snap({ foo: 2 })
-			attest(t.assert({})).snap({ foo: [3] })
+			attest(T.assert({})).snap({ foo: 2 })
+			attest(T.assert({})).snap({ foo: [3] })
 		})
 
 		it("default array", () => {
-			const t = type({
+			const T = type({
 				foo: type("number[]").default(() => [1]),
 				bar: type("number[]")
 					.pipe(v => v.map(e => e.toString()))
 					.default(() => [1])
 			})
-			const v1 = t.assert({})
-			const v2 = t.assert({})
+			const v1 = T.assert({})
+			const v2 = T.assert({})
 			attest(v1).snap({ foo: [1], bar: ["1"] })
 			attest(v1.foo !== v2.foo)
 		})
@@ -907,14 +907,14 @@ contextualize(() => {
 		})
 
 		it("default object", () => {
-			const t = type({
+			const T = type({
 				foo: type({ "foo?": "string" }).default(() => ({})),
 				bar: type({ "foo?": "string" }).default(() => ({ foo: "foostr" })),
 				baz: type({ foo: "string = 'foostr'" }).default(() => ({}))
 			})
 
-			const v1 = t.assert({}),
-				v2 = t.assert({})
+			const v1 = T.assert({}),
+				v2 = T.assert({})
 
 			attest(v1).snap({
 				foo: {},
@@ -937,5 +937,19 @@ contextualize(() => {
 				})
 			}).throws.snap("ParseError: Default foo must be a number (was a string)")
 		})
+	})
+
+	it("extracted from cyclic type", () => {
+		const T = type({
+			defaulted: "number = 0",
+			"nested?": "this"
+		})
+
+		const t = T.assert({})
+
+		attest(t).equals({ defaulted: 0 })
+
+		attest<number>(t.defaulted)
+		attest<number | undefined>(t.nested?.defaulted)
 	})
 })

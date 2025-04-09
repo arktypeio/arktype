@@ -464,29 +464,29 @@ contextualize(() => {
 	})
 
 	it("initial case", () => {
-		const initial = match.case("string", Number.parseInt).default("assert")
+		const Initial = match.case("string", Number.parseInt).default("assert")
 
-		const expected = match({
+		const Expected = match({
 			string: Number.parseInt,
 			default: "assert"
 		})
 
 		// ensure structure is identical
-		attest(initial.internal.json).equals(expected.internal.json)
+		attest(Initial.internal.json).equals(Expected.internal.json)
 		// ensure we are able to cache ordered unions like from matchers
-		attest(initial.internal.id).equals(expected.internal.id)
+		attest(Initial.internal.id).equals(Expected.internal.id)
 		// ensure ids are doing what they're suppoed to
 
 		// for some reason TS can't handle initial/expected comparison so we have to cast
-		attest(initial === (expected as {})).equals(true)
+		attest(Initial === (Expected as {})).equals(true)
 
 		// like the uncasted version of the above equality check,
 		// uncommenting this also causes an infinite depth issue
-		// attest<typeof expected>(initial)
+		// attest<typeof Expected>(initial)
 
 		const expectedTypeSnapshot = "Match<unknown, [(In: string) => number]>"
-		attest(initial).type.toString(expectedTypeSnapshot)
-		attest(initial).type.toString(expectedTypeSnapshot)
+		attest(Initial).type.toString(expectedTypeSnapshot)
+		attest(Initial).type.toString(expectedTypeSnapshot)
 	})
 
 	it("reference in object", () => {
@@ -495,16 +495,16 @@ contextualize(() => {
 			default: "assert"
 		})
 
-		const t = type({
+		const T = type({
 			foo: m
 		})
 
 		attest<{
 			foo: (In: string) => Out<number>
-		}>(t.t)
-		attest(t.expression).snap("{ foo: (In: string) => Out<unknown> }")
-		attest(t({ foo: "foo" })).equals({ foo: 3 })
-		attest(t({ foo: 5 }).toString()).snap("foo must be a string (was a number)")
+		}>(T.t)
+		attest(T.expression).snap("{ foo: (In: string) => Out<unknown> }")
+		attest(T({ foo: "foo" })).equals({ foo: 3 })
+		attest(T({ foo: 5 }).toString()).snap("foo must be a string (was a number)")
 	})
 
 	it("morph key", () => {
@@ -779,6 +779,29 @@ contextualize(() => {
 			.type.errors("Type 'number' is not assignable to type 'string'")
 	})
 
+	it("string matcher no in", () => {
+		const discriminate = match.at("kind").strings({
+			a: o => o.kind,
+			b: o => o.kind,
+			c: o => o.kind,
+			default: "assert"
+		})
+		attest(discriminate).type.toString.snap(`Match<
+	unknown,
+	[
+		(In: { kind: "a" }) => "a",
+		(In: { kind: "b" }) => "b",
+		(In: { kind: "c" }) => "c"
+	]
+>`)
+
+		const a = discriminate({ kind: "a", value: "a" })
+		const b = discriminate({ kind: "b", value: "b" })
+		const c = discriminate({ kind: "c", value: "c" })
+
+		attest<["a", "b", "c"]>([a, b, c]).snap(["a", "b", "c"])
+	})
+
 	type Discriminated =
 		| {
 				kind: "a"
@@ -838,8 +861,33 @@ contextualize(() => {
 					// @ts-expect-error
 					d: o => o.value
 				})
-		).type.errors(
-			`Object literal may only specify known properties, and 'd' does not exist`
-		)
+		).type.errors("d must be a possible string value")
+	})
+
+	it("string cases no default", () => {
+		const check = match
+			.at("foo")
+			.strings({
+				value: o => o.foo
+			})
+			.default("assert")
+
+		const out = check({ foo: "value" })
+
+		attest<"value">(out).equals("value")
+	})
+
+	it("string cases no default from in", () => {
+		const check = match
+			.in({ foo: "string" })
+			.at("foo")
+			.strings({
+				value: o => o.foo
+			})
+			.default("assert")
+
+		const out = check({ foo: "value" })
+
+		attest<"value">(out).equals("value")
 	})
 })

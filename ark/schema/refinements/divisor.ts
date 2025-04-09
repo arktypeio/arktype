@@ -1,3 +1,4 @@
+import { throwParseError } from "@ark/util"
 import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
@@ -47,7 +48,12 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 		kind: "divisor",
 		collapsibleKey: "rule",
 		keys: {
-			rule: {}
+			rule: {
+				parse: divisor =>
+					Number.isInteger(divisor) ? divisor : (
+						throwParseError(writeNonIntegerDivisorMessage(divisor))
+					)
+			}
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
@@ -100,6 +106,14 @@ export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
 	"divisor",
 	actual
 >
+
+export const writeNonIntegerDivisorMessage = <divisor extends number>(
+	divisor: divisor
+): writeNonIntegerDivisorMessage<divisor> =>
+	`divisor must be an integer (was ${divisor})`
+
+export type writeNonIntegerDivisorMessage<divisor extends number> =
+	`divisor must be an integer (was ${divisor})`
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

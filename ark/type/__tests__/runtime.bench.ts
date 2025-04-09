@@ -16,7 +16,7 @@ export const validData = {
 	}
 }
 
-const tReject = type({
+const TReject = type({
 	number: "number",
 	negNumber: "number",
 	maxNumber: "number",
@@ -31,10 +31,10 @@ const tReject = type({
 }).onDeepUndeclaredKey("reject")
 
 bench("moltar reject", () => {
-	tReject(validData)
+	TReject(validData)
 }).median([5.97, "us"])
 
-export const t = type({
+export const T = type({
 	number: "number",
 	negNumber: "number",
 	maxNumber: "number",
@@ -49,11 +49,11 @@ export const t = type({
 })
 
 bench("moltar allows", () => {
-	t.allows(validData)
+	T.allows(validData)
 }).median([13.72, "ns"])
 
 bench("moltar apply", () => {
-	t(validData)
+	T(validData)
 }).median([21.31, "ns"])
 
 const tDelete = type

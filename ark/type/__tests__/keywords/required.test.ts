@@ -20,7 +20,7 @@ contextualize(() => {
 	})
 
 	it("chained", () => {
-		const t = type({
+		const T = type({
 			"[string]": "number",
 			foo: "1",
 			"bar?": "1"
@@ -30,22 +30,22 @@ contextualize(() => {
 			[x: string]: number
 			foo: 1
 			bar: 1
-		}>(t.t)
+		}>(T.t)
 
-		attest(t.expression).snap("{ [string]: number, bar: 1, foo: 1 }")
+		attest(T.expression).snap("{ [string]: number, bar: 1, foo: 1 }")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1156
 	it("with default", () => {
-		const t = type({ foo: "string = 'bar'" }).required()
+		const T = type({ foo: "string = 'bar'" }).required()
 
-		const expected = type({
+		const Expected = type({
 			foo: "string"
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1160
-		// attest<typeof expected.t, typeof t.t>();
+		// attest<typeof Expected.t, typeof T.t>();
 
-		attest(t.expression).equals(expected.expression)
+		attest(T.expression).equals(Expected.expression)
 	})
 })
