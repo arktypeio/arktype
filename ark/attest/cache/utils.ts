@@ -206,11 +206,21 @@ const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
 
 	let baselineSourceFileText = originalFile.getFullText()
 
-	calls.forEach(call => {
+	// for each test function like `it` or `bench`, walk up the AST to find the complete expression
+	for (const call of calls) {
+		let currentNode: ts.Node = call
+
+		// ensure we capture the entire chain like bench(...).types(...)
+		while (currentNode.parent && !ts.isExpressionStatement(currentNode))
+			currentNode = currentNode.parent
+
+		const fullExpressionText = currentNode.getFullText()
+
 		baselineSourceFileText = baselineSourceFileText.replace(
-			call.getFullText(),
+			fullExpressionText,
 			""
 		)
-	})
+	}
+
 	return baselineSourceFileText
 }
