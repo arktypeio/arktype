@@ -297,13 +297,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (
 				!hasArkKind(v, "module") &&
 				!hasArkKind(v, "generic") &&
-				// TODO: proto thunk defs?
 				!isThunk(v)
 			) {
 				const preparsed = this.preparseOwnDefinitionFormat(v, { alias: name })
-				if (hasArkKind(preparsed, "root"))
-					this.resolutions[name] = this.bindReference(preparsed)
-				else this.resolutions[name] = this.createParseContext(preparsed).id
+				this.resolutions[name] =
+					hasArkKind(preparsed, "root") ?
+						this.bindReference(preparsed)
+					:	this.createParseContext(preparsed).id
 			}
 		}) as never
 
@@ -561,9 +561,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = this.bindReference(def))
 
 		if (hasArkKind(def, "module")) {
-			if (def.root)
-				return (this.resolutions[name] = this.bindReference(def.root))
-			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
+			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
+			return (this.resolutions[name] = this.bindReference(def.root))
 		}
 
 		return (this.resolutions[name] = this.parse(def, {
