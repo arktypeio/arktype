@@ -178,10 +178,13 @@ const appendSpreadBranch = (
 		return appendVariadicElement(base, $ark.intrinsic.unknown)
 	}
 
-	spread.prefix?.forEach(node => appendRequiredElement(base, node))
-	spread.optionals?.forEach(node => appendOptionalElement(base, node))
+	if (spread.prefix)
+		for (const node of spread.prefix) appendRequiredElement(base, node)
+	if (spread.optionals)
+		for (const node of spread.optionals) appendOptionalElement(base, node)
 	if (spread.variadic) appendVariadicElement(base, spread.variadic)
-	spread.postfix?.forEach(node => appendRequiredElement(base, node))
+	if (spread.postfix)
+		for (const node of spread.postfix) appendRequiredElement(base, node)
 
 	return base
 }

@@ -169,10 +169,10 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 		data: object,
 		ctx: Traversal
 	) => {
-		Object.keys(data).forEach(key => {
+		for (const key of Object.keys(data)) {
 			if (schemaDefinedKeys.allows(key))
-				// Not an additional property, so don't validate here
-				return
+				// not an additional property, so don't validate here
+				continue
 
 			const additionalPropertyValidator = jsonSchemaToType(
 				additionalPropertiesSchema
@@ -186,7 +186,7 @@ const parseAdditionalProperties = (jsonSchema: JsonSchema.Object) => {
 					actual: printable(value)
 				})
 			}
-		})
+		}
 		return !ctx.hasError()
 	}
 	return jsonSchemaObjectAdditionalPropertiesValidator
@@ -220,7 +220,7 @@ export const parseObjectJsonSchema: Type<
 
 		// Ensure all 'patternProperties' adhere to the 'propertyNames' schema
 		const propertyNamesNode = node("index", propertyNamesIndex)
-		patternPropertiesIndexes.forEach(patternPropertyIndex => {
+		for (const patternPropertyIndex of patternPropertiesIndexes) {
 			const patternPropertyNode = node("index", patternPropertyIndex)
 
 			if (!patternPropertyNode.signature.extends(propertyNamesNode.signature)) {
@@ -231,10 +231,10 @@ export const parseObjectJsonSchema: Type<
 					)
 				)
 			}
-		})
+		}
 
 		// Ensure all required keys adhere to the 'propertyNames' schema
-		requiredKeys.forEach(requiredKey => {
+		for (const requiredKey of requiredKeys) {
 			if (!parsedPropertyNamesSchema.allows(requiredKey.key)) {
 				throwParseError(
 					writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage(
@@ -243,7 +243,7 @@ export const parseObjectJsonSchema: Type<
 					)
 				)
 			}
-		})
+		}
 		arktypeObjectSchema.required = requiredKeys
 
 		// Update the value of optional keys that doen't adhere to the 'propertyNames' to be 'never'

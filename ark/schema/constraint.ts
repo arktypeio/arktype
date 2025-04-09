@@ -204,8 +204,10 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	}
 	if (!matched) s.l.push(head)
 
-	if (s.kind === "intersection")
-		head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
+	if (s.kind === "intersection") {
+		if (head.impliedSiblings)
+			for (const node of head.impliedSiblings) appendUnique(s.r, node)
+	}
 	return intersectConstraints(s)
 }
 

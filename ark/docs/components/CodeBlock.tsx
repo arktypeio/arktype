@@ -50,9 +50,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 		)
 	}
 
-	decorators?.forEach(d => {
-		if (!src.includes(d)) src = `// ${d}\n${src}`
-	})
+	if (decorators)
+		for (const d of decorators) if (!src.includes(d)) src = `// ${d}\n${src}`
 
 	const highlighted = highlight(lang, src)
 

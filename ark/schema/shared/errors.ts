@@ -229,7 +229,7 @@ export class ArkErrors
 
 	transform(f: (e: ArkError) => ArkError): ArkErrors {
 		const result = new ArkErrors(this.ctx)
-		this.forEach(e => result.add(f(e)))
+		for (const e of this) result.add(f(e))
 		return result
 	}
 
@@ -238,15 +238,15 @@ export class ArkErrors
 	 * prefixing their paths with that of the current Traversal.
 	 */
 	merge(errors: ArkErrors): void {
-		errors.forEach(e => {
-			if (this.includes(e)) return
+		for (const e of errors) {
+			if (this.includes(e)) continue
 			this._add(
 				new ArkError(
 					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
 					this.ctx
 				)
 			)
-		})
+		}
 	}
 
 	/**
@@ -328,12 +328,12 @@ export class ArkErrors
 	}
 
 	private addAncestorPaths(error: ArkError): void {
-		error.path.stringifyAncestors().forEach(propString => {
+		for (const propString of error.path.stringifyAncestors()) {
 			this.byAncestorPath[propString] = append(
 				this.byAncestorPath[propString],
 				error
 			)
-		})
+		}
 	}
 }
 

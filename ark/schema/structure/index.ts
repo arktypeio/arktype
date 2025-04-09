@@ -140,8 +140,8 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 			return true
 		})
 
-	traverseApply: TraverseApply<object> = (data, ctx) =>
-		stringAndSymbolicEntriesOf(data).forEach(entry => {
+	traverseApply: TraverseApply<object> = (data, ctx) => {
+		for (const entry of stringAndSymbolicEntriesOf(data)) {
 			if (this.signature.traverseAllows(entry[0], ctx)) {
 				traverseKey(
 					entry[0],
@@ -149,7 +149,8 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 					ctx
 				)
 			}
-		})
+		}
+	}
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,

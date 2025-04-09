@@ -7,8 +7,8 @@ import {
 	statSync,
 	symlinkSync,
 	unlinkSync
-} from "fs"
-import { join } from "path"
+} from "node:fs"
+import { join } from "node:path"
 import ts from "typescript"
 
 /**

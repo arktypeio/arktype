@@ -35,10 +35,9 @@ const jsonSchemaTypeMatcher = type.match
 
 export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	(jsonSchema: JsonSchemaOrBoolean): type.Any => {
-		if (typeof jsonSchema === "boolean") {
-			if (jsonSchema) return JsonSchemaScope.Json
-			else return type.never // No runtime value ever passes validation for JSON schema of 'false'
-		}
+		if (typeof jsonSchema === "boolean")
+			// no runtime value ever passes validation for JSON schema of 'false'
+			return jsonSchema ? JsonSchemaScope.Json : type.never
 
 		if (Array.isArray(jsonSchema)) return parseAnyOfJsonSchema(jsonSchema)
 

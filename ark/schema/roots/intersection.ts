@@ -351,7 +351,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			this.children.forEach(child => js.check(child))
+			for (const child of this.children) js.check(child)
 			js.return(true)
 			return
 		}

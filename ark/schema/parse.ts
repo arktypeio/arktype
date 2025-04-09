@@ -239,7 +239,7 @@ export const createNode = ({
 	const children: BaseNode[] = []
 	let innerJson: dict = {}
 
-	innerEntries.forEach(([k, v]) => {
+	for (const [k, v] of innerEntries) {
 		const keyImpl = impl.keys[k]
 		const serialize =
 			keyImpl.serialize ??
@@ -253,7 +253,7 @@ export const createNode = ({
 			else children.push(listableNode)
 		} else if (typeof keyImpl.child === "function")
 			children.push(...keyImpl.child(v as never))
-	})
+	}
 
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never

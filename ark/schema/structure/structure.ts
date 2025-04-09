@@ -108,7 +108,7 @@ const createStructuralWriter =
 	(childStringProp: "expression" | "description") => (node: StructureNode) => {
 		if (node.props.length || node.index) {
 			const parts = node.index?.map(index => index[childStringProp]) ?? []
-			node.props.forEach(prop => parts.push(prop[childStringProp]))
+			for (const prop of node.props) parts.push(prop[childStringProp])
 
 			if (node.undeclared) parts.push(`+ (undeclared): ${node.undeclared}`)
 
@@ -136,12 +136,12 @@ const intersectPropsAndIndex = <
 
 	const value = intersectNodesRoot(l.value, r.value, $)
 	if (value instanceof Disjoint) {
-		if (kind === "optional") {
-			return $.node("optional", {
-				key: l.key,
-				value: $ark.intrinsic.never.internal
-			}) as l
-		} else return value.withPrefixKey(l.key, l.kind)
+		return kind === "optional" ?
+				($.node("optional", {
+					key: l.key,
+					value: $ark.intrinsic.never.internal
+				}) as l)
+			:	value.withPrefixKey(l.key, l.kind)
 	}
 
 	return null
@@ -183,13 +183,12 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						return
 					}
 
-					nodes!.forEach(
-						node =>
-							(inner[node.outProp.kind] = append(
-								inner[node.outProp.kind],
-								node.outProp.out as Prop.Node
-							) as never)
-					)
+					for (const node of nodes!) {
+						inner[node.outProp.kind] = append(
+							inner[node.outProp.kind],
+							node.outProp.out as Prop.Node
+						) as never
+					}
 				}
 			},
 			index: {
@@ -223,7 +222,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				const disjointResult = new Disjoint()
 				if (l.undeclared) {
 					const lKey = l.keyof()
-					r.requiredKeys.forEach(k => {
+					for (const k of r.requiredKeys) {
 						if (!lKey.allows(k)) {
 							disjointResult.add(
 								"presence",
@@ -234,7 +233,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 								}
 							)
 						}
-					})
+					}
 
 					if (rInner.optional)
 						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
@@ -262,7 +261,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				}
 				if (r.undeclared) {
 					const rKey = r.keyof()
-					l.requiredKeys.forEach(k => {
+					for (const k of l.requiredKeys) {
 						if (!rKey.allows(k)) {
 							disjointResult.add(
 								"presence",
@@ -273,7 +272,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 								}
 							)
 						}
-					})
+					}
 
 					if (lInner.optional)
 						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
@@ -395,9 +394,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
 		let branches = this.$.units(this.literalKeys).branches
-		this.index?.forEach(({ signature }) => {
-			branches = branches.concat(signature.branches)
-		})
+		if (this.index) {
+			for (const { signature } of this.index)
+				branches = branches.concat(signature.branches)
+		}
 		return (this._keyof = this.$.node("union", branches))
 	}
 
@@ -466,10 +466,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			required = this.propsByKey[key]!.required
 		}
 
-		this.index?.forEach(n => {
-			if (typeOrTermExtends(key, n.signature))
-				value = value?.and(n.value) ?? n.value
-		})
+		if (this.index) {
+			for (const n of this.index) {
+				if (typeOrTermExtends(key, n.signature))
+					value = value?.and(n.value) ?? n.value
+			}
+		}
 
 		if (
 			this.sequence &&
@@ -689,9 +691,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const parts: string[] = []
 		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
 
-		this.index?.forEach(index =>
-			parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
-		)
+		if (this.index) {
+			for (const index of this.index)
+				parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
+		}
 
 		if (this.sequence)
 			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
@@ -711,10 +714,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
-		this.props.forEach(prop => {
+		for (const prop of this.props) {
 			js.check(prop)
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
-		})
+		}
 
 		if (this.sequence) {
 			js.check(this.sequence)
@@ -744,11 +747,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
 		js.const("k", "keys[i]")
 
-		this.index?.forEach(node => {
-			js.if(`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`, () =>
-				js.traverseKey("k", "data[k]", node.value)
-			)
-		})
+		if (this.index) {
+			for (const node of this.index) {
+				js.if(
+					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
+					() => js.traverseKey("k", "data[k]", node.value)
+				)
+			}
+		}
 
 		if (this.undeclared === "reject") {
 			js.if(`!(${this._compileDeclaresKey(js)})`, () => {
@@ -795,16 +801,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}
-			this.props.forEach(prop => {
+			for (const prop of this.props) {
 				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
 
 				if (typeof prop.key === "symbol") {
-					return ctx.fallback.symbolKey({
+					ctx.fallback.symbolKey({
 						base: schema,
 						key: prop.key,
 						value: valueSchema,
 						optional: prop.optional
 					})
+					continue
 				}
 
 				if (prop.hasDefault()) {
@@ -820,63 +827,66 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 
 				schema.properties![prop.key] = valueSchema
-			})
+			}
 			if (this.requiredKeys.length)
 				schema.required = this.requiredKeys as string[]
 		}
 
-		this.index?.forEach(index => {
-			const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
+		if (this.index) {
+			for (const index of this.index) {
+				const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
 
-			if (index.signature.equals($ark.intrinsic.string)) {
-				schema.additionalProperties = valueJsonSchema
-				return
-			}
-
-			index.signature.branches.forEach(keyBranch => {
-				if (!keyBranch.extends($ark.intrinsic.string)) {
-					schema = ctx.fallback.symbolKey({
-						base: schema,
-						key: null,
-						value: valueJsonSchema,
-						optional: false
-					})
-
-					return
+				if (index.signature.equals($ark.intrinsic.string)) {
+					schema.additionalProperties = valueJsonSchema
+					continue
 				}
 
-				let keySchema: JsonSchema.String = { type: "string" }
-				if (keyBranch.hasKind("morph")) {
-					keySchema = ctx.fallback.morph({
-						base: keyBranch.in.toJsonSchemaRecurse(ctx),
-						out: keyBranch.out.toJsonSchemaRecurse(ctx)
-					}) as never
-				}
-				if (!keyBranch.hasKind("intersection")) {
-					return throwInternalError(
-						`Unexpected index branch kind ${keyBranch.kind}.`
-					)
-				}
-				const { pattern } = keyBranch.inner
-
-				if (pattern) {
-					const keySchemaWithPattern = Object.assign(keySchema, {
-						pattern: pattern[0].rule
-					})
-
-					for (let i = 1; i < pattern.length; i++) {
-						keySchema = ctx.fallback.patternIntersection({
-							base: keySchemaWithPattern,
-							pattern: pattern[i].rule
+				for (const keyBranch of index.signature.branches) {
+					if (!keyBranch.extends($ark.intrinsic.string)) {
+						schema = ctx.fallback.symbolKey({
+							base: schema,
+							key: null,
+							value: valueJsonSchema,
+							optional: false
 						})
+
+						continue
 					}
 
-					schema.patternProperties ??= {}
-					schema.patternProperties[keySchemaWithPattern.pattern] =
-						valueJsonSchema
+					let keySchema: JsonSchema.String = { type: "string" }
+					if (keyBranch.hasKind("morph")) {
+						keySchema = ctx.fallback.morph({
+							base: keyBranch.in.toJsonSchemaRecurse(ctx),
+							out: keyBranch.out.toJsonSchemaRecurse(ctx)
+						}) as never
+					}
+					if (!keyBranch.hasKind("intersection")) {
+						throwInternalError(
+							`Unexpected index branch kind ${keyBranch.kind}.`
+						)
+						continue
+					}
+					const { pattern } = keyBranch.inner
+
+					if (pattern) {
+						const keySchemaWithPattern = Object.assign(keySchema, {
+							pattern: pattern[0].rule
+						})
+
+						for (let i = 1; i < pattern.length; i++) {
+							keySchema = ctx.fallback.patternIntersection({
+								base: keySchemaWithPattern,
+								pattern: pattern[i].rule
+							})
+						}
+
+						schema.patternProperties ??= {}
+						schema.patternProperties[keySchemaWithPattern.pattern] =
+							valueJsonSchema
+					}
 				}
-			})
-		})
+			}
+		}
 
 		if (this.undeclared && !schema.additionalProperties)
 			schema.additionalProperties = false
@@ -903,16 +913,18 @@ const constructStructuralMorphCacheKey = (
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
-		node.required?.forEach(n => (cacheKey += n.compiledKey + " | "))
-		node.optional?.forEach(n => (cacheKey += n.compiledKey + " | "))
-		node.index?.forEach(index => (cacheKey += index.signature.id + " | "))
+		if (node.required)
+			for (const n of node.required) cacheKey += n.compiledKey + " | "
+		if (node.optional)
+			for (const n of node.optional) cacheKey += n.compiledKey + " | "
+		if (node.index)
+			for (const index of node.index) cacheKey += index.signature.id + " | "
 		if (node.sequence) {
 			if (node.sequence.maxLength === null)
 				cacheKey += intrinsic.nonNegativeIntegerString.id
 			else {
-				cacheKey += node.sequence.tuple.forEach(
-					(_, i) => (cacheKey += i + " | ")
-				)
+				for (let i = 0; i < node.sequence.tuple.length; i++)
+					cacheKey += i + " | "
 			}
 		}
 		cacheKey += ")"
@@ -1041,13 +1053,13 @@ export const normalizeIndex = (
 
 	const normalized: NormalizedIndex = {}
 
-	enumerableBranches.forEach(n => {
+	for (const n of enumerableBranches) {
 		// since required can be reduced to optional if it has a default or
 		// optional meta on its value, we have to assign it depending on the
 		// compiled kind
 		const prop = $.node("required", { key: n.unit as Key, value })
 		normalized[prop.kind] = append(normalized[prop.kind], prop as never)
-	})
+	}
 
 	if (nonEnumerableBranches.length) {
 		normalized.index = $.node("index", {

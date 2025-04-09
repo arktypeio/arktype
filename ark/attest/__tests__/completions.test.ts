@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { hasDomain, type domainDescriptions } from "@ark/util"
-import assert from "assert"
+import assert from "node:assert"
 
 type Obj = {
 	prop1: string

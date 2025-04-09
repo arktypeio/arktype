@@ -51,7 +51,7 @@ export const register = (value: object | symbol): string => {
 }
 
 export const isDotAccessible = (keyName: string): boolean =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
+	/^[$A-Z_a-z][\w$]*$/.test(keyName)
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {

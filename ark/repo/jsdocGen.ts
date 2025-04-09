@@ -1,5 +1,5 @@
-import { existsSync } from "fs"
-import { join } from "path"
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import {
 	Project,
 	SyntaxKind,
@@ -58,7 +58,7 @@ export const jsDocGen = () => {
 		`✍️ Generating JSDoc for ${sourceFiles.length} files in ${typeBuildDir} and ${schemaBuildDir}...`
 	)
 
-	project.getSourceFiles().forEach(docgenForFile)
+	for (const file of project.getSourceFiles()) docgenForFile(file)
 
 	project.saveSync()
 
@@ -176,12 +176,12 @@ const organizeDocParts = (
 		if (allParts[0].value === "") allParts.shift()
 	}
 
-	allParts.forEach(part => {
+	for (const part of allParts) {
 		if (part.kind === "noteStart") notes.push(part.value ? [part] : [])
-		else if (part.value === "") return
+		else if (part.value === "") continue
 		else if (notes.length) notes.at(-1)!.push(part)
 		else summary.push(part)
-	})
+	}
 
 	return { summary, notes }
 }
@@ -246,8 +246,7 @@ const parseJsDocText = (text: string | undefined): ParsedJsDocPart[] => {
 	}))
 }
 
-const describedLinkRegex =
-	/\{@link\s+(https?:\/\/[^\s|}]+)(?:\s*\|\s*([^}]*))?\}/
+const describedLinkRegex = /{@link\s+(https?:\/\/[^\s|}]+)(?:\s*\|\s*([^}]*))?}/
 
 const parseJsDocLink = (part: RawJsDocPart): ParsedJsDocPart => {
 	const linkText = part.getText()
@@ -317,7 +316,7 @@ const docgenForFile = (sourceFile: SourceFile) => {
 		}
 	})
 
-	matchContexts.forEach(ctx => {
+	for (const ctx of matchContexts) {
 		const inheritedDocs = findInheritedDocs(sourceFile, ctx)
 
 		let updatedContents = ctx.matchedJsDoc.getInnerText()
@@ -331,7 +330,7 @@ const docgenForFile = (sourceFile: SourceFile) => {
 		)
 
 		ctx.updateJsDoc(updatedContents)
-	})
+	}
 }
 
 const findInheritedDocs = (

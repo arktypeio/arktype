@@ -424,17 +424,18 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		this.prefix?.forEach((node, i) =>
-			js.traverseKey(`${i}`, `data[${i}]`, node)
-		)
+		if (this.prefix) {
+			for (const [i, node] of this.prefix.entries())
+				js.traverseKey(`${i}`, `data[${i}]`, node)
+		}
 
-		this.defaultablesAndOptionals.forEach((node, i) => {
+		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
 			const dataIndex = `${i + this.prefixLength}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
 			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
-		})
+		}
 
 		if (this.variadic) {
 			if (this.postfix) {
@@ -448,10 +449,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				() => js.traverseKey("i", "data[i]", this.variadic!),
 				this.prevariadic.length
 			)
-			this.postfix?.forEach((node, i) => {
-				const keyExpression = `firstPostfixIndex + ${i}`
-				js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
-			})
+			if (this.postfix) {
+				for (const [i, node] of this.postfix.entries()) {
+					const keyExpression = `firstPostfixIndex + ${i}`
+					js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+				}
+			}
 		}
 
 		if (js.traversalKind === "Allows") js.return(true)
@@ -553,13 +556,18 @@ export const Sequence = {
 
 const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
-	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
-	inner.defaultables?.forEach(([node, defaultValue]) =>
-		tuple.push({ kind: "defaultables", node, default: defaultValue })
-	)
-	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
+	if (inner.prefix)
+		for (const node of inner.prefix) tuple.push({ kind: "prefix", node })
+	if (inner.defaultables) {
+		for (const [node, defaultValue] of inner.defaultables)
+			tuple.push({ kind: "defaultables", node, default: defaultValue })
+	}
+
+	if (inner.optionals)
+		for (const node of inner.optionals) tuple.push({ kind: "optionals", node })
 	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
-	inner.postfix?.forEach(node => tuple.push({ kind: "postfix", node }))
+	if (inner.postfix)
+		for (const node of inner.postfix) tuple.push({ kind: "postfix", node })
 	return tuple
 }
 

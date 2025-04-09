@@ -102,10 +102,10 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		if (this.cache.stringifyAncestors) return this.cache.stringifyAncestors
 		let propString = ""
 		const result: string[] = [propString]
-		this.forEach(path => {
+		for (const path of this) {
 			propString = appendStringifiedKey(propString, path)
 			result.push(propString)
-		})
+		}
 		return (this.cache.stringifyAncestors = result)
 	}
 }

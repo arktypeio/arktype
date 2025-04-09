@@ -445,7 +445,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	it("regex index signature", () => {
 		const test = scope({
-			svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
+			svgPath: /^\.\/([\da-f])+(-([\da-f])+)*\.svg$/,
 			svgMap: {
 				"[svgPath]": "string.digits"
 			}
@@ -1033,7 +1033,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(Feedback.expression).snap(
-			"{ contact: string == 0 | /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$/ }"
+			"{ contact: string == 0 | /^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$/ }"
 		)
 		attest(Feedback.t).type.toString.snap(`{ contact: string }`)
 	})

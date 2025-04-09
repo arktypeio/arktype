@@ -37,35 +37,34 @@ const formatDescription = (description: string): JSX.Element => {
 	)
 }
 
-entriesOf(ark.internal.resolutions)
+for (const [alias, v] of entriesOf(ark.internal.resolutions)
 	.map(
 		([alias, v]) =>
 			[alias.endsWith(".root") ? alias.slice(0, -5) : alias, v] as const
 	)
-	.sort((l, r) => (l[0] < r[0] ? -1 : 1))
-	.forEach(([alias, v]) => {
-		// should not occur, only for temporary resolutions of cyclic definition
-		if (typeof v === "string") return
+	.sort((l, r) => (l[0] < r[0] ? -1 : 1))) {
+	// should not occur, only for temporary resolutions of cyclic definition
+	if (typeof v === "string") continue
 
-		const name =
-			alias.startsWith("string") ? "string"
-			: alias.startsWith("number") ? "number"
-			: alias.startsWith("FormData") ? "FormData"
-			: alias.startsWith("Array") ? "array"
-			: alias.startsWith("object") ? "object"
-			: alias.startsWith("TypedArray") ? "TypedArray"
-			: v instanceof Generic ? "generic"
-			: alias in arkPrototypes ? "instanceof"
-			: "other"
+	const name =
+		alias.startsWith("string") ? "string"
+		: alias.startsWith("number") ? "number"
+		: alias.startsWith("FormData") ? "FormData"
+		: alias.startsWith("Array") ? "array"
+		: alias.startsWith("object") ? "object"
+		: alias.startsWith("TypedArray") ? "TypedArray"
+		: v instanceof Generic ? "generic"
+		: alias in arkPrototypes ? "instanceof"
+		: "other"
 
-		tableRowsByName[name] = append(
-			tableRowsByName[name],
-			<tr key={alias}>
-				<td>{alias}</td>
-				<td>{formatDescription(v.description)}</td>
-			</tr>
-		)
-	})
+	tableRowsByName[name] = append(
+		tableRowsByName[name],
+		<tr key={alias}>
+			<td>{alias}</td>
+			<td>{formatDescription(v.description)}</td>
+		</tr>
+	)
+}
 
 type KeywordTableProps = {
 	rows: JSX.Element[]

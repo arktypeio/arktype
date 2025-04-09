@@ -295,9 +295,8 @@ export const appendUnique = <to extends unknown[]>(
 		return Array.isArray(value) ? (value as never) : ([value] as never)
 
 	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
-	liftArray(value).forEach(v => {
+	for (const v of liftArray(value))
 		if (!to.some(existing => isEqual(existing as never, v as never))) to.push(v)
-	})
 
 	return to
 }

@@ -109,12 +109,12 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const branches: Union.ChildNode[] = []
-					schema.forEach(branchSchema => {
+					for (const branchSchema of schema) {
 						const branchNodes =
 							hasArkKind(branchSchema, "root") ?
 								branchSchema.branches
 							:	ctx.$.parseSchema(branchSchema).branches
-						branchNodes.forEach(node => {
+						for (const node of branchNodes) {
 							if (node.hasKind("morph")) {
 								const matchingMorphIndex = branches.findIndex(
 									matching =>
@@ -131,8 +131,8 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 									})
 								}
 							} else branches.push(node)
-						})
-					})
+						}
+					}
 
 					if (!ctx.def.ordered)
 						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
@@ -168,11 +168,9 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 				const pathDescriptions = Object.entries(byPath).map(
 					([path, errors]) => {
 						const branchesAtPath: string[] = []
-						errors.forEach(errorAtPath =>
-							// avoid duplicate messages when multiple branches
-							// are invalid due to the same error
+						for (const errorAtPath of errors)
 							appendUnique(branchesAtPath, errorAtPath.expected)
-						)
+
 						const expected = describeBranches(branchesAtPath)
 						// if there are multiple actual descriptions that differ,
 						// just fall back to printable, which is the most specific
@@ -241,16 +239,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	get branchGroups(): BaseRoot[] {
 		const branchGroups: BaseRoot[] = []
 		let firstBooleanIndex = -1
-		this.branches.forEach(branch => {
+		for (const branch of this.branches) {
 			if (branch.hasKind("unit") && branch.domain === "boolean") {
 				if (firstBooleanIndex === -1) {
 					firstBooleanIndex = branchGroups.length
 					branchGroups.push(branch)
 				} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
-				return
+				continue
 			}
 			branchGroups.push(branch)
-		})
+		}
 
 		return branchGroups as never
 	}
@@ -437,9 +435,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	private compileIndiscriminable(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
 			js.const("errors", "[]")
-			this.branches.forEach(branch =>
-				js
-					.line("ctx.pushBranch()")
+			for (const branch of this.branches) {
+				js.line("ctx.pushBranch()")
 					.line(js.invoke(branch))
 					.if("!ctx.hasError()", () =>
 						js.return(
@@ -449,7 +446,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						)
 					)
 					.line("errors.push(ctx.popBranch().error)")
-			)
+			}
+
 			js.line(
 				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
 			)
@@ -457,7 +455,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const { optimistic } = js
 			// only the first layer can be optimistic
 			js.optimistic = false
-			this.branches.forEach(branch =>
+			for (const branch of this.branches) {
 				js.if(`${js.invoke(branch)}`, () =>
 					js.return(
 						optimistic ?
@@ -467,7 +465,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						:	true
 					)
 				)
-			)
+			}
+
 			js.return(optimistic ? `"${unset}"` : false)
 		}
 	}

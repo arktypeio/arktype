@@ -137,7 +137,7 @@ declare global {
 								groupIndex < matchResult.length;
 								groupIndex++
 							) {
-								node.text = node.text.replace(
+								node.text = node.text.replaceAll(
 									new RegExp(`\\$${groupIndex}`, "gu"),
 									matchResult[Number(groupIndex)]
 								)
