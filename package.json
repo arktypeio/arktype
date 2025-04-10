@@ -67,6 +67,7 @@
 		"eslint-plugin-import": "2.30.0",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.6.2",
+		"eslint-plugin-unicorn": "58.0.0",
 		"knip": "5.46.5",
 		"mocha": "11.1.0",
 		"prettier": "3.5.3",
@@ -119,9 +120,5 @@
 				"typescript": "*"
 			}
 		}
-	},
-	"dependencies": {
-		"@prisma/client": "^6.6.0",
-		"eslint-plugin-unicorn": "^58.0.0"
 	}
 }
