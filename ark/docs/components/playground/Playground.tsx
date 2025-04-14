@@ -240,7 +240,8 @@ const PlaygroundEditor = React.memo(
 		)
 
 		return (
-			<div className="relative">
+			// add z-index to ensure hovers are displayed above navbar
+			<div className="relative z-50">
 				<Editor
 					width="100%"
 					defaultLanguage="typescript"
@@ -253,7 +254,13 @@ const PlaygroundEditor = React.memo(
 						quickSuggestions: { strings: "on" },
 						quickSuggestionsDelay: 0,
 						smoothScrolling: true,
-						automaticLayout: true
+						automaticLayout: true,
+						cursorBlinking: "smooth",
+						cursorSmoothCaretAnimation: "on",
+						fontFamily: "'Cascadia Code',Consolas,'Courier New',monospace",
+						padding: {
+							top: 16
+						}
 					}}
 					onMount={handleMount}
 					onChange={handleChange}
