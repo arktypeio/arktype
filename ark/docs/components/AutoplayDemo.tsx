@@ -83,7 +83,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 			>
 				<Playground initialValue={defaultPlaygroundCode} />
 			</div>
-			<div className="absolute top-2.5 right-5 flex gap-2 z-10">
+			<div className="absolute top-2.5 right-5 flex gap-2 z-60">
 				<Button
 					variant="outline"
 					wiggle={!showPlayground}
