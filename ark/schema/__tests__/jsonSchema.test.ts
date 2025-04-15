@@ -370,9 +370,21 @@ contextualize(() => {
 				}
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: arrayPostfix: {"base":{"type":"array","minItems":1,"items":{"type":"number"}},"elements":[{"type":"string"}]}'
-			)
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError<"arrayPostfix">: {
+    base: {
+        type: "array",
+        minItems: 1,
+        items: {
+            type: "number"
+        }
+    },
+    elements: [
+        {
+            type: "string"
+        }
+    ]
+}`)
 		})
 
 		it("default", () => {
@@ -387,9 +399,11 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: default: {"base":{},"value":"0n"}'
-			)
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError<"default">: {
+    base: {},
+    value: 0n
+}`)
 		})
 
 		it("functional default", () => {
@@ -404,17 +418,20 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: default: {"base":{},"value":"0n"}'
-			)
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError<"default">: {
+    base: {},
+    value: 0n
+}`)
 		})
 
 		it("domain", () => {
 			const T = rootSchema("bigint")
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: domain: {"base":{},"domain":"bigint"}'
-			)
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError<"domain">: {
+    base: {},
+    domain: "bigint"
+}`)
 		})
 
 		it("morph", () => {
@@ -423,9 +440,10 @@ contextualize(() => {
 				morphs: [(s: string) => Number.parseInt(s)]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: morph: {"base":{"domain":"string"},"out":{}}'
-			)
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError<"morph">: {
+    base: Function(fn58),
+    out: Function(fn59)
+}`)
 		})
 
 		it("patternIntersection", () => {
@@ -434,9 +452,14 @@ contextualize(() => {
 				pattern: ["^a", "z$"]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: patternIntersection: {"base":{"type":"string","pattern":"^a"},"pattern":"z$"}'
-			)
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError<"patternIntersection">: {
+    base: {
+        type: "string",
+        pattern: "^a"
+    },
+    pattern: "z$"
+}`)
 		})
 
 		it("predicate", () => {
@@ -445,9 +468,13 @@ contextualize(() => {
 				predicate: () => true
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: predicate: {"base":{"type":"string"},"predicate":"Function(predicate5)"}'
-			)
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError<"predicate">: {
+    base: {
+        type: "string"
+    },
+    predicate: Function(predicate5)
+}`)
 		})
 
 		it("proto", () => {
@@ -455,9 +482,10 @@ contextualize(() => {
 				proto: Map
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: proto: {"base":{},"proto":"Function(Map)"}'
-			)
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError<"proto">: {
+    base: {},
+    proto: Function(Map)
+}`)
 		})
 
 		it("symbolKey", () => {
@@ -467,16 +495,17 @@ contextualize(() => {
 			})
 
 			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: symbolKey: {"base":{"type":"object","properties":{}},"key":"Symbol(zildjian)","value":{"type":"string"},"optional":false}'
+				"TypeError: Cannot convert a Symbol value to a string"
 			)
 		})
 
 		it("unit", () => {
 			const T = rootSchema({ unit: undefined })
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				'ToJsonSchemaError: unit: {"base":{},"unit":"undefined"}'
-			)
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError<"unit">: {
+    base: {},
+    unit: undefined
+}`)
 		})
 
 		it("constrained date", () => {

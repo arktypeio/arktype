@@ -91,6 +91,7 @@ const stringifyUnquoted = (
 	const nextIndent = currentIndent + " ".repeat(indent)
 
 	if (Array.isArray(value)) {
+		if (value.length === 0) return "[]"
 		const items = value
 			.map(item => stringifyUnquoted(item, indent, nextIndent))
 			.join(",\n" + nextIndent)
@@ -108,6 +109,8 @@ const stringifyUnquoted = (
 			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent)
 			return `${nextIndent}${stringifiedKey}: ${stringifiedValue}`
 		})
+
+		if (keyValues.length === 0) return "{}"
 
 		return indent ?
 				`{\n${keyValues.join(",\n")}\n${currentIndent}}`
