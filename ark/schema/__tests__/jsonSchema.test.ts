@@ -537,6 +537,28 @@ contextualize(() => {
 
 		it("date supercedes proto", () => {
 			const T = rootSchema({
+				proto: "Date"
+			})
+
+			const schema = T.toJsonSchema({
+				fallback: {
+					proto: () => ({ type: "object" }),
+					date: () => ({
+						type: "string",
+						format: "date-time"
+					})
+				}
+			})
+
+			attest(schema).snap({
+				type: "string",
+				format: "date-time",
+				$schema: "https://json-schema.org/draft/2020-12/schema"
+			})
+		})
+
+		it("date range with fallback", () => {
+			const T = rootSchema({
 				proto: "Date",
 				before: new Date("06-01-2000")
 			})
