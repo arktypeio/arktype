@@ -160,11 +160,15 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 				}
 			case "Date":
 				return (
-					ctx.fallback.date?.({ base: {} }) ??
-					ctx.fallback.proto({ base: {}, proto: this.proto })
+					ctx.fallback.date?.({ code: "date", base: {} }) ??
+					ctx.fallback.proto({ code: "proto", base: {}, proto: this.proto })
 				)
 			default:
-				return ctx.fallback.proto({ base: {}, proto: this.proto })
+				return ctx.fallback.proto({
+					code: "proto",
+					base: {},
+					proto: this.proto
+				})
 		}
 	}
 

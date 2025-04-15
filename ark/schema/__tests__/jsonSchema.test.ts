@@ -534,6 +534,49 @@ contextualize(() => {
     before: June 1, 2000
 }`)
 		})
+	})
+
+	describe("fallbacks", () => {
+		it("morph falls back to in", () => {
+			const T = rootSchema({
+				in: "string",
+				morphs: [(s: string) => Number.parseInt(s)]
+			})
+
+			const schema = T.toJsonSchema({
+				fallback: {
+					morph: ctx => ({ ...ctx.base, _testOut: ctx.out })
+				}
+			})
+
+			attest(schema).unknown.snap({
+				type: "string",
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				_testOut: null
+			})
+		})
+
+		it("introspectable out", () => {
+			const T = rootSchema({
+				in: "string",
+				morphs: [(s: string) => Number.parseInt(s), rootSchema("number")]
+			})
+
+			const schema = T.toJsonSchema({
+				fallback: {
+					morph: ctx => ({ ...ctx.out, _testIn: ctx.base }) as never
+				}
+			})
+
+			attest(schema).unknown.snap({
+				type: "number",
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				_testIn: {
+					type: "string",
+					$schema: "https://json-schema.org/draft/2020-12/schema"
+				}
+			})
+		})
 
 		it("date supercedes proto", () => {
 			const T = rootSchema({

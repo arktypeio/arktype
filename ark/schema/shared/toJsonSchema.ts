@@ -50,41 +50,47 @@ export declare namespace ToJsonSchema {
 
 	export type Error = InstanceType<typeof ToJsonSchema.Error>
 
-	export interface BaseContext<base extends JsonSchema = JsonSchema> {
+	export interface BaseContext<
+		code extends Code,
+		base extends JsonSchema = JsonSchema
+	> {
+		code: code
 		base: base
 	}
 
-	export interface ArrayObjectContext extends BaseContext<JsonSchema.Array> {
+	export interface ArrayObjectContext
+		extends BaseContext<"arrayObject", JsonSchema.Array> {
 		object: JsonSchema.Object
 	}
 
 	export interface ArrayPostfixContext
-		extends BaseContext<VariadicArraySchema> {
+		extends BaseContext<"arrayPostfix", VariadicArraySchema> {
 		elements: readonly JsonSchema[]
 	}
 
-	export interface DefaultContext extends BaseContext<JsonSchema> {
+	export interface DefaultContext extends BaseContext<"default", JsonSchema> {
 		value: Unjsonifiable
 	}
 
-	export interface DomainContext extends BaseContext {
+	export interface DomainContext extends BaseContext<"domain", JsonSchema> {
 		domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
 	}
 
-	export interface MorphContext extends BaseContext {
-		out: JsonSchema
+	export interface MorphContext extends BaseContext<"morph", JsonSchema> {
+		out: JsonSchema | null
 	}
 
 	export interface PatternIntersectionContext
-		extends BaseContext<StringSchemaWithPattern> {
+		extends BaseContext<"patternIntersection", StringSchemaWithPattern> {
 		pattern: string
 	}
 
-	export interface PredicateContext extends BaseContext<JsonSchema> {
+	export interface PredicateContext
+		extends BaseContext<"predicate", JsonSchema> {
 		predicate: Predicate
 	}
 
-	export interface ProtoContext extends BaseContext {
+	export interface ProtoContext extends BaseContext<"proto", JsonSchema> {
 		proto: Constructor
 	}
 
@@ -93,30 +99,33 @@ export declare namespace ToJsonSchema {
 		| RequiredSymbolKeyContext
 		| OptionalSymbolKeyContext
 
-	interface IndexSymbolKeyContext extends BaseContext<JsonSchema.Object> {
+	interface IndexSymbolKeyContext
+		extends BaseContext<"symbolKey", JsonSchema.Object> {
 		key: null
 		value: JsonSchema
 		optional: false
 	}
 
-	interface RequiredSymbolKeyContext extends BaseContext<JsonSchema.Object> {
+	interface RequiredSymbolKeyContext
+		extends BaseContext<"symbolKey", JsonSchema.Object> {
 		key: symbol
 		value: JsonSchema
 		optional: false
 	}
 
-	interface OptionalSymbolKeyContext extends BaseContext<JsonSchema.Object> {
+	interface OptionalSymbolKeyContext
+		extends BaseContext<"symbolKey", JsonSchema.Object> {
 		key: symbol
 		value: JsonSchema
 		optional: true
 		default?: Json
 	}
 
-	export interface UnitContext extends BaseContext {
+	export interface UnitContext extends BaseContext<"unit", JsonSchema> {
 		unit: Unjsonifiable
 	}
 
-	export interface DateContext extends BaseContext {
+	export interface DateContext extends BaseContext<"date", JsonSchema> {
 		before?: Date
 		after?: Date
 	}
@@ -136,6 +145,8 @@ export declare namespace ToJsonSchema {
 	}
 
 	export type Code = keyof ContextByCode
+
+	export type FallbackContext = ContextByCode[Code]
 
 	export type HandlerByCode = satisfy<
 		{ [code in Code]: (ctx: ContextByCode[code]) => unknown },
@@ -162,6 +173,12 @@ export declare namespace ToJsonSchema {
 		JsonSchema.String,
 		"pattern"
 	>
+
+	export type UniversalFallback = (ctx: FallbackContext) => JsonSchema
+
+	export interface FallbackOption extends Partial<HandlerByCode> {
+		"*"?: UniversalFallback
+	}
 
 	export interface Options {
 		/** value to assign to the generated $schema key

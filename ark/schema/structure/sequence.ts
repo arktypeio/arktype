@@ -488,6 +488,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 						$ark.intrinsic.jsonData.allows(value) ?
 							value
 						:	ctx.fallback.default({
+								code: "default",
 								base: valueSchema,
 								value
 							})
@@ -514,6 +515,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			if (this.postfix) {
 				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
 				schema = ctx.fallback.arrayPostfix({
+					code: "arrayPostfix",
 					base: variadicSchema,
 					elements
 				})

@@ -113,7 +113,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		base: JsonSchema.Constrainable,
 		ctx: ToJsonSchema.Context
 	): JsonSchema {
-		return ctx.fallback.predicate({ base, predicate: this.predicate })
+		return ctx.fallback.predicate({
+			code: "predicate",
+			base,
+			predicate: this.predicate
+		})
 	}
 }
 

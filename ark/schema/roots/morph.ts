@@ -205,8 +205,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		return ctx.fallback.morph({
-			base: this.in,
-			out: this.out
+			code: "morph",
+			base: this.in.toJsonSchema(),
+			out: this.introspectableOut?.toJsonSchema() ?? null
 		})
 	}
 

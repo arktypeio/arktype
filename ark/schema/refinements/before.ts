@@ -85,7 +85,7 @@ export class BeforeNode extends BaseRange<Before.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
 	reduceJsonSchema(base: JsonSchema, ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.date({ base, before: this.rule })
+		return ctx.fallback.date({ code: "date", base, before: this.rule })
 	}
 }
 

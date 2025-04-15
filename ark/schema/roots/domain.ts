@@ -130,6 +130,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	): JsonSchema.Constrainable {
 		if (this.domain === "bigint" || this.domain === "symbol") {
 			return ctx.fallback.domain({
+				code: "domain",
 				base: {},
 				domain: this.domain
 			})

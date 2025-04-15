@@ -78,7 +78,7 @@ export class AfterNode extends BaseRange<After.Declaration> {
 	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
 
 	reduceJsonSchema(base: JsonSchema, ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.date({ base, after: this.rule })
+		return ctx.fallback.date({ code: "date", base, after: this.rule })
 	}
 }
 

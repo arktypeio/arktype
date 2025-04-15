@@ -783,6 +783,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 				if (this.props.length || this.index) {
 					return ctx.fallback.arrayObject({
+						code: "arrayObject",
 						base: arraySchema,
 						object: this.reduceObjectJsonSchema({ type: "object" }, ctx)
 					})
@@ -806,6 +807,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				if (typeof prop.key === "symbol") {
 					ctx.fallback.symbolKey({
+						code: "symbolKey",
 						base: schema,
 						key: prop.key,
 						value: valueSchema,
@@ -821,6 +823,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						$ark.intrinsic.jsonData.allows(value) ?
 							value
 						:	ctx.fallback.default({
+								code: "default",
 								base: valueSchema,
 								value
 							})
@@ -844,6 +847,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				for (const keyBranch of index.signature.branches) {
 					if (!keyBranch.extends($ark.intrinsic.string)) {
 						schema = ctx.fallback.symbolKey({
+							code: "symbolKey",
 							base: schema,
 							key: null,
 							value: valueJsonSchema,
@@ -856,6 +860,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					let keySchema: JsonSchema.String = { type: "string" }
 					if (keyBranch.hasKind("morph")) {
 						keySchema = ctx.fallback.morph({
+							code: "morph",
 							base: keyBranch.in.toJsonSchemaRecurse(ctx),
 							out: keyBranch.out.toJsonSchemaRecurse(ctx)
 						}) as never
@@ -875,6 +880,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 						for (let i = 1; i < pattern.length; i++) {
 							keySchema = ctx.fallback.patternIntersection({
+								code: "patternIntersection",
 								base: keySchemaWithPattern,
 								pattern: pattern[i].rule
 							})

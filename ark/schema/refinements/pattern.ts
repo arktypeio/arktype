@@ -88,6 +88,7 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	): JsonSchema.String {
 		if (base.pattern) {
 			return ctx.fallback.patternIntersection({
+				code: "patternIntersection",
 				base: base as ToJsonSchema.StringSchemaWithPattern,
 				pattern: this.rule
 			})
