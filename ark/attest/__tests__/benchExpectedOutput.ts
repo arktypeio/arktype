@@ -30,7 +30,7 @@ type makeComplexType<S extends string> =
 	:	S
 
 bench("bench type", () => ({}) as makeComplexType<"defenestration">).types([
-	176,
+	177,
 	"instantiations"
 ])
 
@@ -45,6 +45,6 @@ bench(
 	fakeCallOptions
 )
 	.mean([2, "ms"])
-	.types([344, "instantiations"])
+	.types([345, "instantiations"])
 
 bench("empty", () => {}).types([0, "instantiations"])
