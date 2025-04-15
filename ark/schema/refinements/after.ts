@@ -1,4 +1,4 @@
-import { describeCollapsibleDate, throwInternalError } from "@ark/util"
+import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
@@ -7,6 +7,7 @@ import {
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
@@ -76,8 +77,8 @@ export class AfterNode extends BaseRange<After.Declaration> {
 
 	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
 
-	reduceJsonSchema(): JsonSchema.Constrainable {
-		return throwInternalError("not implemented")
+	reduceJsonSchema(base: JsonSchema, ctx: ToJsonSchema.Context): JsonSchema {
+		return ctx.fallback.date({ base, after: this.rule })
 	}
 }
 

@@ -4,10 +4,8 @@ import {
 	intrinsic,
 	rootSchema,
 	rootSchemaScope,
-	ToJsonSchema,
 	type BaseRoot
 } from "@ark/schema"
-import { throwInternalError } from "@ark/util"
 
 const toJsonSchema = (node: BaseRoot) => node.toJsonSchema({ dialect: null })
 
@@ -229,20 +227,9 @@ contextualize(() => {
 		})
 	})
 
-	it("errors on morph", () => {
-		const morph = rootSchema({
-			in: "string",
-			morphs: [(s: string) => Number.parseInt(s)]
-		})
-
-		attest(() => toJsonSchema(morph)).throws(
-			ToJsonSchema.writeMessage(morph.expression, "morph")
-		)
-	})
-
-	it("errors on cyclic", () => {
+	it("cyclic", () => {
 		attest(() => toJsonSchema($ark.intrinsic.jsonObject)).throws(
-			ToJsonSchema.writeMessage("jsonObject", "cyclic")
+			"not implemented"
 		)
 	})
 
@@ -508,8 +495,69 @@ contextualize(() => {
 }`)
 		})
 
-		it("constrained date", () => {
-			throwInternalError("unimplemented")
+		it("after", () => {
+			const T = rootSchema({
+				proto: "Date",
+				after: new Date("01-01-2000")
+			})
+
+			attest(() =>
+				T.toJsonSchema({
+					fallback: {
+						proto: () => ({ type: "object" })
+					}
+				})
+			).throws.snap(`ToJsonSchemaError<"date">: {
+    base: {
+        type: "object"
+    },
+    after: 2000
+}`)
+		})
+
+		it("before", () => {
+			const T = rootSchema({
+				proto: "Date",
+				before: new Date("06-01-2000")
+			})
+
+			attest(() =>
+				T.toJsonSchema({
+					fallback: {
+						proto: () => ({ type: "object" })
+					}
+				})
+			).throws.snap(`ToJsonSchemaError<"date">: {
+    base: {
+        type: "object"
+    },
+    before: June 1, 2000
+}`)
+		})
+
+		it("date supercedes proto", () => {
+			const T = rootSchema({
+				proto: "Date",
+				before: new Date("06-01-2000")
+			})
+
+			const schema = T.toJsonSchema({
+				fallback: {
+					proto: () => ({ type: "object" }),
+					date: ctx => ({
+						type: "string",
+						format: "date-time",
+						description: `before ${ctx.before?.toISOString()}`
+					})
+				}
+			})
+
+			attest(schema).snap({
+				type: "string",
+				format: "date-time",
+				description: "before 2000-06-01T04:00:00.000Z",
+				$schema: "https://json-schema.org/draft/2020-12/schema"
+			})
 		})
 	})
 })

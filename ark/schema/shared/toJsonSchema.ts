@@ -1,8 +1,6 @@
 import {
-	isKeyOf,
 	printable,
 	throwInternalError,
-	type autocomplete,
 	type Constructor,
 	type Domain,
 	type Json,
@@ -44,23 +42,7 @@ export const ToJsonSchema = {
 	): never =>
 		throwInternalError(
 			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
-		),
-	writeMessage: (
-		description: string,
-		explanation?: UnjsonifiableExplanation
-	): string => {
-		let message = `${description} is not convertible to JSON Schema`
-
-		if (explanation) {
-			const normalizedExplanation =
-				isKeyOf(explanation, unjsonifiableExplanations) ?
-					unjsonifiableExplanations[explanation]
-				:	explanation
-			message += ` because ${normalizedExplanation}`
-		}
-
-		return message
-	}
+		)
 }
 
 export declare namespace ToJsonSchema {
@@ -134,6 +116,11 @@ export declare namespace ToJsonSchema {
 		unit: Unjsonifiable
 	}
 
+	export interface DateContext extends BaseContext {
+		before?: Date
+		after?: Date
+	}
+
 	export interface ContextByCode {
 		arrayObject: ArrayObjectContext
 		arrayPostfix: ArrayPostfixContext
@@ -145,6 +132,7 @@ export declare namespace ToJsonSchema {
 		proto: ProtoContext
 		symbolKey: SymbolKeyContext
 		unit: UnitContext
+		date: DateContext
 	}
 
 	export type Code = keyof ContextByCode
@@ -164,6 +152,7 @@ export declare namespace ToJsonSchema {
 			proto: (ctx: ProtoContext) => JsonSchema
 			symbolKey: (ctx: SymbolKeyContext) => JsonSchema.Object
 			unit: (ctx: UnitContext) => JsonSchema
+			date: (ctx: DateContext) => JsonSchema
 		}
 	>
 
@@ -190,12 +179,3 @@ export declare namespace ToJsonSchema {
 		fallback: HandlerByCode
 	}
 }
-
-const unjsonifiableExplanations = {
-	morph:
-		"it represents a transformation, while JSON Schema only allows validation. Consider creating a Schema from one of its endpoints using `.in` or `.out`.",
-	cyclic:
-		"cyclic types are not yet convertible to JSON Schema. If this feature is important to you, please add your feedback at https://github.com/arktypeio/arktype/issues/1087"
-}
-
-type UnjsonifiableExplanation = autocomplete<"morph" | "cyclic">

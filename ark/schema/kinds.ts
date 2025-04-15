@@ -110,7 +110,8 @@ $ark.defaultConfig = withAlphabetizedKeys(
 					predicate: ctx => ToJsonSchema.throw("predicate", ctx),
 					proto: ctx => ToJsonSchema.throw("proto", ctx),
 					symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
-					unit: ctx => ToJsonSchema.throw("unit", ctx)
+					unit: ctx => ToJsonSchema.throw("unit", ctx),
+					date: ctx => ToJsonSchema.throw("date", ctx)
 				}
 			}
 		} satisfies Omit<ResolvedConfig, NodeKind>
