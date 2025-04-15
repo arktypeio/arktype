@@ -13,7 +13,7 @@ export const throwError: (
 }
 
 export class ParseError extends Error {
-	name = "ParseError"
+	readonly name = "ParseError"
 }
 
 export const throwParseError: (message: string) => never = message =>

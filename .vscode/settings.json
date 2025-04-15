@@ -45,16 +45,10 @@
 		"**/out": true,
 		"**/.next": true,
 		"**/.source": true,
-		"**/components/bundles": true,
+		"**/components/dts": true,
 		"**/apiData.ts": true
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"
-	},
-	"github.copilot.enable": {
-		"*": false,
-		"plaintext": false,
-		"markdown": false,
-		"scminput": false
 	}
 }

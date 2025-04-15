@@ -338,7 +338,7 @@ export class ArkErrors
 }
 
 export class TraversalError extends Error {
-	name = "TraversalError"
+	readonly name = "TraversalError"
 	declare arkErrors: ArkErrors
 
 	constructor(errors: ArkErrors) {
