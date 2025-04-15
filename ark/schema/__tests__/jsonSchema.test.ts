@@ -329,10 +329,6 @@ contextualize(() => {
 		attest(toJsonSchema(T)).snap({ type: "null" })
 	})
 
-	it("constrained date", () => {
-		throwInternalError("unimplemented")
-	})
-
 	describe("unjsonifiable", () => {
 		it("arrayObject", () => {
 			const T = rootSchema({
@@ -444,6 +440,10 @@ contextualize(() => {
 			const T = rootSchema({ unit: undefined })
 
 			attest(() => T.toJsonSchema()).throws.snap("Error: unit: bad")
+		})
+
+		it("constrained date", () => {
+			throwInternalError("unimplemented")
 		})
 	})
 })
