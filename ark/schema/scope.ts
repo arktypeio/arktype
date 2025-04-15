@@ -269,6 +269,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		config?: ArkSchemaScopeConfig
 	) {
 		this.config = mergeConfigs($ark.config, config)
+
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
 
 		this.name =

@@ -8,6 +8,7 @@ import {
 	type Fn,
 	type array
 } from "@ark/util"
+import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
@@ -129,14 +130,10 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
-		const ctx: ToJsonSchema.Context = {
-			...this.$.resolvedConfig.toJsonSchema,
-			...opts,
-			fallback: {
-				...this.$.resolvedConfig.toJsonSchema.fallback,
-				...opts.fallback
-			}
-		}
+		const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
+			this.$.resolvedConfig.toJsonSchema,
+			opts
+		)
 		const schema: any = this.toJsonSchemaRecurse(ctx)
 		if (typeof ctx.dialect === "string") schema.$schema = ctx.dialect
 		return schema

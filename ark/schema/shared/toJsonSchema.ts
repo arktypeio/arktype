@@ -14,6 +14,7 @@ import type { JsonSchema } from "./jsonSchema.ts"
 class ToJsonSchemaError<
 	code extends ToJsonSchema.Code = ToJsonSchema.Code
 > extends Error {
+	readonly name = "ToJsonSchemaError"
 	readonly code: code
 	readonly context: ToJsonSchema.ContextByCode[code]
 
@@ -21,7 +22,6 @@ class ToJsonSchemaError<
 		super(printable(context, { quoteKeys: false, indent: 4 }))
 		this.code = code
 		this.context = context
-		this.name = `ToJsonSchemaError<"${this.code}">`
 	}
 
 	hasCode<code extends ToJsonSchema.Code>(
@@ -176,9 +176,11 @@ export declare namespace ToJsonSchema {
 
 	export type UniversalFallback = (ctx: FallbackContext) => JsonSchema
 
-	export interface FallbackOption extends Partial<HandlerByCode> {
+	export interface FallbackObject extends Partial<HandlerByCode> {
 		"*"?: UniversalFallback
 	}
+
+	export type FallbackOption = UniversalFallback | FallbackObject
 
 	export interface Options {
 		/** value to assign to the generated $schema key
@@ -189,7 +191,7 @@ export declare namespace ToJsonSchema {
 		 * @default "https://json-schema.org/draft/2020-12/schema"
 		 */
 		dialect?: string | null
-		fallback?: Partial<HandlerByCode>
+		fallback?: FallbackOption
 	}
 
 	export interface Context extends Required<Options> {
