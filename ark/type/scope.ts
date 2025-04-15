@@ -92,6 +92,7 @@ import {
 	type UnitTypeParser,
 	type ValueOfTypeParser
 } from "./type.ts"
+
 /** The convenience properties attached to `scope` */
 export type ScopeParserAttachments =
 	// map over to remove call signatures
