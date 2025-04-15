@@ -13,10 +13,25 @@ import type { Predicate } from "../predicate.ts"
 import type { ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 
+class ToJsonSchemaError<
+	code extends ToJsonSchema.Code = ToJsonSchema.Code
+> extends Error {
+	context: ToJsonSchema.ContextByCode[code]
+
+	constructor(
+		code: code,
+		context: ToJsonSchema.ContextByCode[code],
+		message: string = "bad"
+	) {
+		super(`${code}: ${message}`)
+		this.context = context
+	}
+}
+
 export const ToJsonSchema = {
-	Error: class extends Error {},
-	throw: (message: string): never => {
-		throw new ToJsonSchema.Error(message)
+	Error: ToJsonSchemaError,
+	throw: (...args: ConstructorParameters<typeof ToJsonSchemaError>): never => {
+		throw new ToJsonSchema.Error(...args)
 	},
 	throwInternalOperandError: (
 		kind: ConstraintKind,
@@ -69,11 +84,6 @@ export declare namespace ToJsonSchema {
 		domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
 	}
 
-	export interface IndexContext extends BaseContext<JsonSchema.Object> {
-		signature: JsonSchema.String
-		value: JsonSchema
-	}
-
 	export interface MorphContext extends BaseContext {
 		out: JsonSchema
 	}
@@ -124,7 +134,6 @@ export declare namespace ToJsonSchema {
 		arrayPostfix: ArrayPostfixContext
 		default: DefaultContext
 		domain: DomainContext
-		index: IndexContext
 		morph: MorphContext
 		patternIntersection: PatternIntersectionContext
 		predicate: PredicateContext
@@ -142,7 +151,6 @@ export declare namespace ToJsonSchema {
 			arrayPostfix: (ctx: ArrayPostfixContext) => VariadicArraySchema
 			default: (ctx: DefaultContext) => JsonSchema
 			domain: (ctx: DomainContext) => JsonSchema
-			index: (ctx: IndexContext) => JsonSchema
 			morph: (ctx: MorphContext) => JsonSchema
 			patternIntersection: (
 				ctx: PatternIntersectionContext

@@ -130,7 +130,12 @@ export abstract class BaseRoot<
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
 		const ctx: ToJsonSchema.Context = {
-			...opts
+			...this.$.resolvedConfig.toJsonSchema,
+			...opts,
+			fallback: {
+				...this.$.resolvedConfig.toJsonSchema.fallback,
+				...opts.fallback
+			}
 		}
 		const schema: any = this.toJsonSchemaRecurse(ctx)
 		if (typeof ctx.dialect === "string") schema.$schema = ctx.dialect

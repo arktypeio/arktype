@@ -861,11 +861,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						}) as never
 					}
 					if (!keyBranch.hasKind("intersection")) {
-						throwInternalError(
+						return throwInternalError(
 							`Unexpected index branch kind ${keyBranch.kind}.`
 						)
-						continue
 					}
+
 					const { pattern } = keyBranch.inner
 
 					if (pattern) {

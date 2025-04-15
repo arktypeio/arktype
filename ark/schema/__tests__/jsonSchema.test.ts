@@ -332,4 +332,84 @@ contextualize(() => {
 	it("constrained date", () => {
 		throwInternalError("unimplemented")
 	})
+
+	describe("unjsonifiable", () => {
+		// 		arrayObject: ctx => ToJsonSchema.throw("arrayObject", ctx),
+		// arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
+		// default: ctx => ToJsonSchema.throw("default", ctx),
+		// domain: ctx => ToJsonSchema.throw("domain", ctx),
+		// morph: ctx => ToJsonSchema.throw("morph", ctx),
+		// patternIntersection: ctx =>
+		// 	ToJsonSchema.throw("patternIntersection", ctx),
+		// predicate: ctx => ToJsonSchema.throw("predicate", ctx),
+		// proto: ctx => ToJsonSchema.throw("proto", ctx),
+		// symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
+		// unit: ctx => ToJsonSchema.throw("unit", ctx)
+
+		it("arrayObject", () => {
+			const T = rootSchema({
+				proto: "Array",
+				sequence: {
+					variadic: "number"
+				},
+				required: [{ key: "extra", value: "string" }]
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap()
+		})
+
+		it("arrayPostfix", () => {
+			const T = rootSchema({
+				proto: "Array",
+				sequence: {
+					variadic: "number",
+					postfix: ["string"]
+				}
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap()
+		})
+
+		it("default", () => {
+			const T = rootSchema({
+				domain: "object",
+				optional: [
+					{
+						key: "foo",
+						value: "bigint",
+						default: 0n
+					}
+				]
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap()
+		})
+
+		it("functional default", () => {
+			const T = rootSchema({
+				domain: "object",
+				optional: [
+					{
+						key: "foo",
+						value: "bigint",
+						default: () => 0n
+					}
+				]
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap()
+		})
+
+		it("domain", () => {
+			const T = rootSchema("bigint")
+
+			attest(() => T.toJsonSchema()).throws.snap()
+		})
+
+		it("index", () => {
+			const T = rootSchema({})
+
+			attest(() => T.toJsonSchema()).throws.snap()
+		})
+	})
 })
