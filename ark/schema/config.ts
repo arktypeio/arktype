@@ -16,7 +16,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
+import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
@@ -111,21 +111,16 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	return result
 }
 
-export function mergeToJsonSchemaConfigs<
-	base extends ToJsonSchema.Options | undefined
->(
+type MergeToJsonSchemaConfigs = <base extends ToJsonSchema.Options | undefined>(
 	baseConfig: base,
 	mergedConfig: ToJsonSchema.Options | undefined
-): base extends ToJsonSchema.Context ? ToJsonSchema.Context
+) => base extends ToJsonSchema.Context ? ToJsonSchema.Context
 :	ToJsonSchema.Options
-// use named function to allow overloads (for some reason referencing the rule
-// results in the ignore comment being deleted on save)
 
-// eslint-disable-next-line
-export function mergeToJsonSchemaConfigs(
+export const mergeToJsonSchemaConfigs: MergeToJsonSchemaConfigs = ((
 	baseConfig: ToJsonSchema.Options | undefined,
 	mergedConfig: ToJsonSchema.Options | undefined
-) {
+) => {
 	if (!baseConfig) return mergedConfig ?? {}
 	if (!mergedConfig) return baseConfig
 
@@ -135,10 +130,32 @@ export function mergeToJsonSchemaConfigs(
 	for (k in mergedConfig) {
 		if (k === "fallback") {
 			result.fallback = mergeFallbacks(
-				normalizeFallback(baseConfig.fallback),
-				normalizeFallback(mergedConfig.fallback)
+				baseConfig.fallback,
+				mergedConfig.fallback
 			)
 		} else result[k] = mergedConfig[k] as never
+	}
+
+	return result
+}) as MergeToJsonSchemaConfigs
+
+const mergeFallbacks = (
+	base: ToJsonSchema.FallbackOption | undefined,
+	merged: ToJsonSchema.FallbackOption | undefined
+): ToJsonSchema.FallbackObject => {
+	base = normalizeFallback(base)
+	merged = normalizeFallback(merged)
+
+	const result: ToJsonSchema.HandlerByCode = {} as never
+
+	let code: ToJsonSchema.Code
+	for (code in ToJsonSchema.defaultConfig.fallback) {
+		result[code] =
+			merged[code] ??
+			merged.universal ??
+			base[code] ??
+			base.universal ??
+			(ToJsonSchema.defaultConfig.fallback[code] as any)
 	}
 
 	return result
@@ -146,26 +163,8 @@ export function mergeToJsonSchemaConfigs(
 
 const normalizeFallback = (
 	fallback?: ToJsonSchema.FallbackOption | ToJsonSchema.UniversalFallback
-): Record<string, any> =>
-	typeof fallback === "function" ? { "*": fallback } : (fallback ?? {})
-
-const mergeFallbacks = (
-	base: Record<string, any>,
-	merged: Record<string, any>
-): Record<string, any> => {
-	const result: Record<string, any> = {}
-
-	const universalFallback = merged["*"] || base["*"]
-	if (universalFallback) result["*"] = universalFallback
-
-	let code: string
-	for (code in base) if (code !== "*") result[code] = merged[code] ?? base[code]
-
-	for (code in merged)
-		if (code !== "*" && !(code in base)) result[code] = merged[code]
-
-	return result
-}
+): ToJsonSchema.FallbackObject =>
+	typeof fallback === "function" ? { universal: fallback } : (fallback ?? {})
 
 export type CloneImplementation = <original extends object>(
 	original: original

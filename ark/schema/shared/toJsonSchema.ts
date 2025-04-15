@@ -31,6 +31,23 @@ class ToJsonSchemaError<
 	}
 }
 
+const defaultConfig: ToJsonSchema.Context = {
+	dialect: "https://json-schema.org/draft/2020-12/schema",
+	fallback: {
+		arrayObject: ctx => ToJsonSchema.throw("arrayObject", ctx),
+		arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
+		default: ctx => ToJsonSchema.throw("default", ctx),
+		domain: ctx => ToJsonSchema.throw("domain", ctx),
+		morph: ctx => ToJsonSchema.throw("morph", ctx),
+		patternIntersection: ctx => ToJsonSchema.throw("patternIntersection", ctx),
+		predicate: ctx => ToJsonSchema.throw("predicate", ctx),
+		proto: ctx => ToJsonSchema.throw("proto", ctx),
+		symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
+		unit: ctx => ToJsonSchema.throw("unit", ctx),
+		date: ctx => ToJsonSchema.throw("date", ctx)
+	}
+}
+
 export const ToJsonSchema = {
 	Error: ToJsonSchemaError,
 	throw: (...args: ConstructorParameters<typeof ToJsonSchemaError>): never => {
@@ -42,7 +59,8 @@ export const ToJsonSchema = {
 	): never =>
 		throwInternalError(
 			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
-		)
+		),
+	defaultConfig
 }
 
 export declare namespace ToJsonSchema {
@@ -177,7 +195,7 @@ export declare namespace ToJsonSchema {
 	export type UniversalFallback = (ctx: FallbackContext) => JsonSchema
 
 	export interface FallbackObject extends Partial<HandlerByCode> {
-		"*"?: UniversalFallback
+		universal?: UniversalFallback
 	}
 
 	export type FallbackOption = UniversalFallback | FallbackObject
