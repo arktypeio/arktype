@@ -1,8 +1,8 @@
 import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
-import type { dict } from "./records.ts"
-import { register } from "./registry.ts"
+import { stringAndSymbolicEntriesOf, type dict } from "./records.ts"
+import { isDotAccessible, register } from "./registry.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -52,26 +52,74 @@ export type snapshot<t, depth extends 1[] = []> =
 
 type snapshotPrimitive<t> = t extends symbol ? `Symbol(${string})` : t
 
-export const print = (data: unknown, indent?: number): void =>
-	console.log(printable(data, indent))
+export type PrintableOptions = {
+	indent?: number
+	quoteKeys?: boolean
+}
 
-export const printable = (data: unknown, indent?: number): string => {
+export const print = (data: unknown, opts?: PrintableOptions): void =>
+	console.log(printable(data, opts))
+
+export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":
 			const o = data as dict
 			const ctorName = o.constructor.name
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
-					JSON.stringify(_serialize(o, printableOpts, []), null, indent)
-				: o instanceof Date ? describeCollapsibleDate(o)
-				: typeof o.expression === "string" ? o.expression
-				: ctorName
+					opts?.quoteKeys === false ?
+						stringifyUnquoted(o, opts?.indent ?? 0, "")
+					:	JSON.stringify(_serialize(o, printableOpts, []), null, opts?.indent)
+				:	stringifyUnquoted(o, opts?.indent ?? 0, "")
 			)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		default:
 			return serializePrimitive(data as SerializablePrimitive)
 	}
+}
+
+const stringifyUnquoted = (
+	value: unknown,
+	indent: number,
+	currentIndent: string
+): string => {
+	if (typeof value === "function") return printableOpts.onFunction(value)
+	if (typeof value !== "object" || value === null)
+		return serializePrimitive(value as never)
+
+	const nextIndent = currentIndent + " ".repeat(indent)
+
+	if (Array.isArray(value)) {
+		const items = value
+			.map(item => stringifyUnquoted(item, indent, nextIndent))
+			.join(",\n" + nextIndent)
+		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
+	}
+
+	const ctorName = value.constructor.name
+
+	if (ctorName === "Object") {
+		const keyValues = stringAndSymbolicEntriesOf(value).map(([key, val]) => {
+			const stringifiedKey =
+				typeof key === "symbol" ? printableOpts.onSymbol(key)
+				: isDotAccessible(key) ? key
+				: JSON.stringify(key)
+			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent)
+			return `${nextIndent}${stringifiedKey}: ${stringifiedValue}`
+		})
+
+		return indent ?
+				`{\n${keyValues.join(",\n")}\n${currentIndent}}`
+			:	`{${keyValues.join(", ")}}`
+	}
+
+	if (value instanceof Date) return describeCollapsibleDate(value)
+
+	if ("expression" in value && typeof value.expression === "string")
+		return value.expression
+
+	return ctorName
 }
 
 const printableOpts = {

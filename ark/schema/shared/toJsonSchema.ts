@@ -16,18 +16,14 @@ import type { JsonSchema } from "./jsonSchema.ts"
 class ToJsonSchemaError<
 	code extends ToJsonSchema.Code = ToJsonSchema.Code
 > extends Error {
-	readonly name = "ToJsonSchemaError"
 	readonly code: code
 	readonly context: ToJsonSchema.ContextByCode[code]
 
-	constructor(
-		code: code,
-		context: ToJsonSchema.ContextByCode[code],
-		message: string = "bad"
-	) {
-		super(`${code}: ${message}`)
+	constructor(code: code, context: ToJsonSchema.ContextByCode[code]) {
+		super(printable(context, { quoteKeys: false, indent: 4 }))
 		this.code = code
 		this.context = context
+		this.name = `ToJsonSchemaError<"${this.code}">`
 	}
 
 	hasCode<code extends ToJsonSchema.Code>(

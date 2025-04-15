@@ -339,7 +339,26 @@ contextualize(() => {
 				required: [{ key: "extra", value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: arrayObject: bad")
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError<"arrayObject">: {
+    base: {
+        type: "array",
+        items: {
+            type: "number"
+        }
+    },
+    object: {
+        type: "object",
+        properties: {
+            extra: {
+                type: "string"
+            }
+        },
+        required: [
+            "extra"
+        ]
+    }
+}`)
 		})
 
 		it("arrayPostfix", () => {
@@ -351,7 +370,9 @@ contextualize(() => {
 				}
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: arrayPostfix: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: arrayPostfix: {"base":{"type":"array","minItems":1,"items":{"type":"number"}},"elements":[{"type":"string"}]}'
+			)
 		})
 
 		it("default", () => {
@@ -366,7 +387,9 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: default: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: default: {"base":{},"value":"0n"}'
+			)
 		})
 
 		it("functional default", () => {
@@ -381,13 +404,17 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: default: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: default: {"base":{},"value":"0n"}'
+			)
 		})
 
 		it("domain", () => {
 			const T = rootSchema("bigint")
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: domain: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: domain: {"base":{},"domain":"bigint"}'
+			)
 		})
 
 		it("morph", () => {
@@ -396,7 +423,9 @@ contextualize(() => {
 				morphs: [(s: string) => Number.parseInt(s)]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: morph: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: morph: {"base":{"domain":"string"},"out":{}}'
+			)
 		})
 
 		it("patternIntersection", () => {
@@ -406,7 +435,7 @@ contextualize(() => {
 			})
 
 			attest(() => T.toJsonSchema()).throws.snap(
-				"Error: patternIntersection: bad"
+				'ToJsonSchemaError: patternIntersection: {"base":{"type":"string","pattern":"^a"},"pattern":"z$"}'
 			)
 		})
 
@@ -416,7 +445,9 @@ contextualize(() => {
 				predicate: () => true
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: predicate: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: predicate: {"base":{"type":"string"},"predicate":"Function(predicate5)"}'
+			)
 		})
 
 		it("proto", () => {
@@ -424,7 +455,9 @@ contextualize(() => {
 				proto: Map
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: proto: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: proto: {"base":{},"proto":"Function(Map)"}'
+			)
 		})
 
 		it("symbolKey", () => {
@@ -433,13 +466,17 @@ contextualize(() => {
 				required: [{ key: Symbol("zildjian"), value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: symbolKey: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: symbolKey: {"base":{"type":"object","properties":{}},"key":"Symbol(zildjian)","value":{"type":"string"},"optional":false}'
+			)
 		})
 
 		it("unit", () => {
 			const T = rootSchema({ unit: undefined })
 
-			attest(() => T.toJsonSchema()).throws.snap("Error: unit: bad")
+			attest(() => T.toJsonSchema()).throws.snap(
+				'ToJsonSchemaError: unit: {"base":{},"unit":"undefined"}'
+			)
 		})
 
 		it("constrained date", () => {
