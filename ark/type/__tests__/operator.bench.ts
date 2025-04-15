@@ -129,7 +129,7 @@ bench("morph-chain-all", () => {
 		s => `${s}r` as const
 	)
 	return out
-}).types([0, "instantiations"])
+}).types([7903, "instantiations"])
 
 bench("to-string", () => type("string.numeric.parse |> number.integer")).types([
 	2340,

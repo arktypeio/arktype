@@ -100,7 +100,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).types([0, "instantiations"])
+}).types([566, "instantiations"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -119,10 +119,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).types([0, "instantiations"])
+}).types([1201, "instantiations"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).types([0, "instantiations"])
+}).types([1201, "instantiations"])
