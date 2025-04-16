@@ -132,14 +132,6 @@ export const isKeyOf = <k extends string | number | symbol, o extends object>(
 /** Coalesce keys that exist on one or more branches of a union */
 export type unionKeyOf<t> = t extends unknown ? keyof t : never
 
-/** Coalesce keys that exist and are optional on one or more branches of a union */
-export type optionalUnionKeyOf<t> = t extends unknown ? optionalKeyOf<t> : never
-
-export type requiredUnionKeyOf<t> = Exclude<
-	unionKeyOf<t>,
-	optionalUnionKeyOf<t>
->
-
 export type extractKeyed<o extends object, k extends unionKeyOf<o>> = Extract<
 	o,
 	{ [_ in k]?: unknown }

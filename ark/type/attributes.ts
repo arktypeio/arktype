@@ -9,10 +9,11 @@ import {
 	type intersectArrays,
 	type isSafelyMappable,
 	type merge,
-	type optionalUnionKeyOf,
+	type optionalKeyOf,
 	type Primitive,
-	type requiredUnionKeyOf,
-	type show
+	type show,
+	type unionKeyOf,
+	type unionToTuple
 } from "@ark/util"
 import type { arkPrototypes } from "./keywords/constructors.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -197,7 +198,9 @@ type _inferNaryPipe<remaining extends readonly unknown[], result> =
 	:	result
 
 export type inferNaryIntersection<types extends readonly unknown[]> =
-	_inferNaryIntersection<types, unknown>
+	number extends types["length"] ?
+		_inferNaryIntersection<unionToTuple<types[number]>, unknown>
+	:	_inferNaryIntersection<types, unknown>
 
 type _inferNaryIntersection<remaining extends readonly unknown[], result> =
 	remaining extends readonly [infer head, ...infer tail] ?
@@ -208,9 +211,18 @@ export type inferNaryMerge<types extends readonly unknown[]> =
 	number extends types["length"] ? _inferUnorderedMerge<types>
 	:	_inferNaryMerge<types, {}>
 
-type _inferUnorderedMerge<types extends readonly unknown[]> = show<
+type _inferUnorderedMerge<
+	types extends readonly unknown[],
+	optionalKey extends PropertyKey = optionalAtLeastOnceUnionKeyOf<
+		types[number]
+	>,
+	requiredKey extends PropertyKey = Exclude<
+		unionKeyOf<types[number]>,
+		optionalKey
+	>
+> = show<
 	{
-		[k in requiredUnionKeyOf<types[number]>]: types[number] extends infer v ?
+		[k in requiredKey]: types[number] extends infer v ?
 			v extends unknown ?
 				k extends keyof v ?
 					v[k]
@@ -218,7 +230,7 @@ type _inferUnorderedMerge<types extends readonly unknown[]> = show<
 			:	never
 		:	never
 	} & {
-		[k in optionalUnionKeyOf<types[number]>]?: types[number] extends infer v ?
+		[k in optionalKey]?: types[number] extends infer v ?
 			v extends unknown ?
 				k extends keyof v ?
 					v[k]
@@ -227,6 +239,10 @@ type _inferUnorderedMerge<types extends readonly unknown[]> = show<
 		:	never
 	}
 >
+
+/** Coalesce keys that exist and are optional on one or more branches of a union */
+type optionalAtLeastOnceUnionKeyOf<t> =
+	t extends unknown ? optionalKeyOf<t> : never
 
 type _inferNaryMerge<remaining extends readonly unknown[], result> =
 	remaining extends (
