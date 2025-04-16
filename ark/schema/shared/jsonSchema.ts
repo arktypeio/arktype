@@ -20,6 +20,7 @@ export declare namespace JsonSchema {
 	 **/
 	export interface Meta<t = unknown> extends UniversalMeta<t> {
 		$schema?: string
+		$defs?: Record<string, JsonSchema>
 	}
 
 	/**
@@ -44,8 +45,19 @@ export declare namespace JsonSchema {
 		| Numeric
 		| Object
 		| Array
+		| Ref
 
 	export type Branch = boolean | JsonSchema
+
+	export type RefString = `#/$defs/${string}`
+
+	// extending Meta and including "type" as an optional prop are important for
+	// interacting with JsonSchema as a union, although generally $ref should be
+	// the only key.
+	export interface Ref extends Meta {
+		$ref: RefString
+		type?: never
+	}
 
 	export interface Constrainable extends Meta {
 		type?: listable<TypeName>
