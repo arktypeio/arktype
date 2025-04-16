@@ -138,9 +138,11 @@ export abstract class BaseRoot<
 
 		ctx.useRefs ||= this.isCyclic
 
-		const schema: any = this.toJsonSchemaRecurse(ctx)
+		// ensure $schema is the first key if present
+		const schema: JsonSchema =
+			typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
 
-		if (typeof ctx.dialect === "string") schema.$schema = ctx.dialect
+		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
 
 		if (ctx.useRefs) {
 			schema.$defs = flatMorph(this.references, (i, ref) =>

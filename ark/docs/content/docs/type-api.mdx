@@ -16,16 +16,19 @@ const User = type({
 })
 
 const schema = User.toJsonSchema()
-// {
-//   type: "object",
-//   properties: {
-//     name: { type: "string" },
-//     email: { type: "string", format: "email" },
-//     age: { type: "number", minimum: 18 }
-//   },
-//   required: ["name", "email", "age"],
-//   $schema: "https://json-schema.org/draft/2020-12/schema"
-// }
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"email": { "type": "string", "format": "email" },
+		"age": { "type": "number", "minimum": 18 }
+	},
+	"required": ["name", "email", "age"]
+}
 ```
 
 Options can be passed to change the behavior including how incompatibilities are handled. See [the associated config docs](/docs/configuration#toJsonSchema) for more details.
