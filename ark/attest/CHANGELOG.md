@@ -2,7 +2,7 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
-## 0.45.10
+## 0.46.0
 
 Fix an issue causing some bench files to not be parsed correctly, leading to errors and 0 instantiation counts.
 
