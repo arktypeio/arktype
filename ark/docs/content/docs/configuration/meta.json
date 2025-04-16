@@ -1,6 +1,7 @@
 {
 	"title": "Configuration",
 	"pages": [
+		"[levels](/docs/configuration#levels)",
 		"[errors](/docs/configuration#errors)",
 		"[keywords](/docs/configuration#keywords)",
 		"[clone](/docs/configuration#clone)",
@@ -8,6 +9,7 @@
 		"[jitless](/docs/configuration#jitless)",
 		"[onFail](/docs/configuration#onfail)",
 		"[metadata](/docs/configuration#metadata)",
+		"[toJsonSchema](/docs/configuration#tojsonschema)",
 		"[prototypes](/docs/configuration#prototypes)"
 	]
 }

@@ -6,6 +6,8 @@ A great out-of-the-box experience is a core goal of ArkType, including safe defa
 
 However, it's equally important that when you need different behavior, you can easily configure it with the right granularity.
 
+### Levels
+
 <table>
   <thead>
     <tr>
@@ -517,35 +519,79 @@ const MrPingsSecretIngredientSoup = type({
 
 ### toJsonSchema
 
-Some ArkType features don't have direct JSON Schema equivalents. For these cases, you can provide fallback handlers:
+Some ArkType features don't have JSON Schema equivalents. By default, `toJsonSchema()` will throw in these cases.
+
+This behavior can be configured granularly to match your needs.
 
 ```ts
-const NumericString = type("string.numeric.parse")
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
 
-// This would normally throw an error because morphs aren't directly representable
-const schema = NumericString.toJsonSchema({
+const schema = T.toJsonSchema({
 	fallback: {
-		morph: ctx => ({
+		// ✅ the "default" key is a fallback for any non-explicitly handled code
+		// ✅ ctx includes "base" (represents the schema being generated) and other code-specific props
+		// ✅ returning `ctx.base` will effectively ignore the incompatible constraint
+		default: ctx => ctx.base,
+		// handle specific incompatibilities granularly
+		date: ctx => ({
 			...ctx.base,
-			description: "Converts string to number"
+			type: "string",
+			format: "date-time",
+			description: ctx.after ? `after ${ctx.after}` : "anytime"
 		})
 	}
 })
+
+const result = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "object",
+	properties: {
+		// Date instance is now a date-time string as specified by the `date` handler
+		birthday: { type: "string", format: "date-time", description: "anytime" }
+	},
+	required: ["birthday"]
+	// symbolic index signature ignored as specified by the `default` handler
+}
 ```
 
-Available fallback handlers include:
+a `default` handler can also be specified at the root of a `fallback` config:
 
-- `arrayObject`: For arrays with object properties
-- `arrayPostfix`: For arrays with postfix elements
-- `defaultValue`: For default values that aren't JSON-serializable
-- `domain`: For domains like `bigint` that don't map to JSON
-- `morph`: For type transformations
-- `patternIntersection`: For multiple regex pattern constraints
-- `predicate`: For custom validation functions
-- `proto`: For custom prototype constraints
-- `symbolKey`: For object properties with Symbol keys
-- `unit`: For unjsonifiable unit values
-- `date`: For date constraints
+```ts
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
+
+//--- cut ---
+
+const schema = T.toJsonSchema({
+	// "just make it work"
+	fallback: ctx => ctx.base
+})
+```
+
+These options can also be set at a [global or scope-level](/docs/configuration#levels).
+
+### Fallback Codes
+
+This is the full list of configurable reasons `toJsonSchema()` can fail.
+
+| Code                  | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `arrayObject`         | arrays with object properties                               |
+| `arrayPostfix`        | arrays with postfix elements                                |
+| `defaultValue`        | non-serializable default value                              |
+| `domain`              | non-serializable type keyword (always `bigint` or `symbol`) |
+| `morph`               | transformation                                              |
+| `patternIntersection` | multiple regex constraints                                  |
+| `predicate`           | custom narrow function                                      |
+| `proto`               | non-serializable `instanceof`                               |
+| `symbolKey`           | symbolic key on an object                                   |
+| `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
+| `date`                | a Date instance (supercedes `proto` for Dates )             |
 
 ### prototypes
 
