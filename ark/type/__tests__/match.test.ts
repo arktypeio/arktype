@@ -789,8 +789,8 @@ contextualize(() => {
 		attest(discriminate).type.toString.snap(`Match<
 	unknown,
 	[
-		(In: { kind: "b" }) => "b",
 		(In: { kind: "a" }) => "a",
+		(In: { kind: "b" }) => "b",
 		(In: { kind: "c" }) => "c"
 	]
 >`)
