@@ -6,6 +6,7 @@ import type {
 	NodeSelector,
 	Predicate,
 	StandardSchemaV1,
+	ToJsonSchema,
 	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
@@ -137,7 +138,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 *
 	 * @throws {ToJsonSchema.Error} if this cannot be converted to JSON Schema
 	 */
-	toJsonSchema(): JsonSchema
+	toJsonSchema(options?: ToJsonSchema.Options): JsonSchema
 
 	/**
 	 * #### metadata like custom descriptions and error messages

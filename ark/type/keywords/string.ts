@@ -4,6 +4,7 @@ import {
 	node,
 	rootSchema,
 	type Intersection,
+	type JsonSchema,
 	type Morph,
 	type mutableNormalizedRootOfKind,
 	type Traversal
@@ -24,7 +25,7 @@ import { number } from "./number.ts"
 export const regexStringNode = (
 	regex: RegExp,
 	description: string,
-	jsonSchemaFormat?: string
+	jsonSchemaFormat?: JsonSchema.Format
 ): Intersection.Node => {
 	const schema: mutableNormalizedRootOfKind<"intersection"> = {
 		domain: "string",
@@ -277,7 +278,7 @@ const parsableDate = rootSchema({
 
 const epochRoot = stringInteger.root.internal
 	.narrow((s, ctx) => {
-		// we know this is safe since it has already
+		// this is safe since it has already
 		// been validated as an integer string
 		const n = Number.parseInt(s)
 		const out = number.epoch(n)
@@ -381,13 +382,17 @@ export declare namespace stringDate {
 }
 
 const email = regexStringNode(
+	// considered https://colinhacks.com/essays/reasonable-email-regex but it includes a lookahead
+	// which breaks some integrations e.g. fast-check
+
+	// regex based on:
 	// https://www.regular-expressions.info/email.html
 	/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
-	"an email address"
+	"an email address",
+	"email"
 )
 
-// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
-// Adjusted to incorporate unmerged fix in https://github.com/validatorjs/validator.js/pull/2083
+// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
 const ipv4Address = `(${ipv4Segment}[.]){3}${ipv4Segment}`
 const ipv4Matcher = new RegExp(`^${ipv4Address}$`)
@@ -409,8 +414,8 @@ const ipv6Matcher = new RegExp(
 export const ip: ip.module = Scope.module(
 	{
 		root: ["v4 | v6", "@", "an IP address"],
-		v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
-		v6: regexStringNode(ipv6Matcher, "an IPv6 address")
+		v4: regexStringNode(ipv4Matcher, "an IPv4 address", "ipv4"),
+		v6: regexStringNode(ipv6Matcher, "an IPv6 address", "ipv6")
 	},
 	{
 		name: "string.ip"
@@ -666,7 +671,7 @@ const numericRoot = regexStringNode(
 	"a well-formed numeric string"
 )
 
-export const numeric: stringNumeric.module = Scope.module(
+export const stringNumeric: stringNumeric.module = Scope.module(
 	{
 		root: numericRoot,
 		parse: rootSchema({
@@ -691,7 +696,27 @@ export declare namespace stringNumeric {
 	}
 }
 
-// https://semver.org/
+const regexPatternDescription = "a regex pattern"
+const regex = rootSchema({
+	domain: "string",
+	predicate: {
+		meta: regexPatternDescription,
+		predicate: (s: string, ctx) => {
+			try {
+				new RegExp(s)
+				return true
+			} catch (e) {
+				return ctx.reject({
+					code: "predicate",
+					expected: regexPatternDescription,
+					problem: String(e)
+				})
+			}
+		}
+	},
+	meta: { format: "regex" }
+})
+
 const semverMatcher =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+([\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
 
@@ -760,7 +785,7 @@ declare namespace upper {
 
 const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)
-	// Can be removed once Node 18 is EOL
+	// TODO[2025-04-30] remove once Node 18 is EOL and we can rely on URL.canParse
 	try {
 		new URL(s)
 		return true
@@ -774,7 +799,10 @@ const urlRoot = rootSchema({
 	predicate: {
 		meta: "a URL string",
 		predicate: isParsableUrl
-	}
+	},
+	// URL.canParse allows a subset of the RFC-3986 URI spec
+	// since there is no other serializable validation, best include a format
+	meta: { format: "uri" }
 })
 
 export const url: url.module = Scope.module(
@@ -809,12 +837,16 @@ export declare namespace url {
 	}
 }
 
-// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
+// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const uuid = Scope.module(
 	{
 		// the meta tuple expression ensures the error message does not delegate
 		// to the individual branches, which are too detailed
-		root: ["versioned | nil | max", "@", "a UUID"],
+		root: [
+			"versioned | nil | max",
+			"@",
+			{ description: "a UUID", format: "uuid" }
+		],
 		"#nil": "'00000000-0000-0000-0000-000000000000'",
 		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
 		"#versioned":
@@ -899,7 +931,8 @@ export const string = Scope.module(
 		json,
 		lower,
 		normalize,
-		numeric,
+		numeric: stringNumeric,
+		regex,
 		semver,
 		trim,
 		upper,
@@ -933,6 +966,7 @@ export declare namespace string {
 		lower: lower.submodule
 		normalize: normalize.submodule
 		numeric: stringNumeric.submodule
+		regex: string
 		semver: string
 		trim: trim.submodule
 		upper: upper.submodule

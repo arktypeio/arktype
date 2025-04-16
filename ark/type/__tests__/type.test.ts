@@ -286,4 +286,28 @@ contextualize(() => {
 		attest<typeof Expected>(T)
 		attest(T.expression).equals(Expected.expression)
 	})
+
+	it("toJsonSchema", () => {
+		const User = type({
+			name: "string",
+			email: "string.email",
+			age: "number >= 18"
+		})
+		const schema = User.toJsonSchema()
+
+		attest(schema).snap({
+			type: "object",
+			properties: {
+				age: { type: "number", minimum: 18 },
+				email: {
+					type: "string",
+					pattern: "^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$",
+					format: "email"
+				},
+				name: { type: "string" }
+			},
+			required: ["age", "email", "name"],
+			$schema: "https://json-schema.org/draft/2020-12/schema"
+		})
+	})
 })

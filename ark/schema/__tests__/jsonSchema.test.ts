@@ -477,7 +477,9 @@ contextualize(() => {
 		it("predicate", () => {
 			const T = rootSchema({
 				domain: "string",
-				predicate: () => true
+				predicate: function _toJsonSchemaPredicate() {
+					return true
+				}
 			})
 
 			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
@@ -485,7 +487,7 @@ contextualize(() => {
     base: {
         type: "string"
     },
-    predicate: Function(predicate5)
+    predicate: Function(_toJsonSchemaPredicate)
 }`)
 		})
 

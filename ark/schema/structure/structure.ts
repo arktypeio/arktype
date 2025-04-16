@@ -761,7 +761,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (js.traversalKind === "Allows") return js.return(false)
 				return js
 					.line(
-						// TODO: should have its own error code
 						`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
 					)
 					.if("ctx.failFast", () => js.return())

@@ -59,7 +59,10 @@ export default tseslint.config(
 			],
 			"arrow-body-style": ["warn", "as-needed"],
 			"unicorn/better-regex": "warn",
-			"unicorn/expiring-todo-comments": "warn",
+			"unicorn/expiring-todo-comments": [
+				"warn",
+				{ allowWarningComments: false }
+			],
 			"unicorn/no-array-for-each": "warn",
 			"unicorn/no-typeof-undefined": "warn",
 			"unicorn/prefer-node-protocol": "warn",

@@ -423,7 +423,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`${serializedTypeOfDescriptions}[${condition}]`
 			:	`${serializedPrintable}(${condition})`
 
-		// TODO: should have its own error code
 		js.line(`ctx.errorFromNodeContext({
 	code: "predicate",
 	expected: ${serializedExpected},

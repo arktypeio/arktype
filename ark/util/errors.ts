@@ -48,7 +48,7 @@ export interface ErrorType<
 	message extends string = string,
 	ctx extends {} = {}
 > {
-	[brand]: "ErrorObject"
+	[brand]: "ErrorType"
 	message: message
 	ctx: ctx
 }
