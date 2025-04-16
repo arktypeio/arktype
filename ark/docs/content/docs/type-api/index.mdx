@@ -1,0 +1,36 @@
+---
+title: Type API
+---
+
+<ApiTable group="Type" />
+
+### toJsonSchema
+
+Each `Type` instance exposes a `toJsonSchema()` method that can be used to generate a corresponding JSON Schema.
+
+```ts
+const User = type({
+	name: "string",
+	email: "string.email",
+	"age?": "number >= 18"
+})
+
+const schema = User.toJsonSchema()
+
+const equivalent = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		email: {
+			type: "string",
+			format: "email",
+			pattern: "^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$"
+		},
+		age: { type: "number", minimum: 18 }
+	},
+	required: ["name", "email"]
+}
+```
+
+Options can be passed to change the behavior including how incompatibilities are handled. See [the associated config docs](/docs/configuration#toJsonSchema) for more details.

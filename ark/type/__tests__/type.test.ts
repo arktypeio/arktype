@@ -287,12 +287,13 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
-	it("toJsonSchema", () => {
+	it("toJsonSchema docs", () => {
 		const User = type({
 			name: "string",
 			email: "string.email",
-			age: "number >= 18"
+			"age?": "number >= 18"
 		})
+
 		const schema = User.toJsonSchema()
 
 		attest(schema).snap({
