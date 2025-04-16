@@ -524,7 +524,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			"box.box.box must be an object (was a string)"
+			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
 		)
 	})
 

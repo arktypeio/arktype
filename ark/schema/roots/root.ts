@@ -144,7 +144,7 @@ export abstract class BaseRoot<
 
 		if (ctx.useRefs) {
 			schema.$defs = flatMorph(this.references, (i, ref) =>
-				ref.isRoot() && !ref.isBasis() ?
+				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
 					[ref.id, ref.toResolvedJsonSchema(ctx)]
 				:	[]
 			)
@@ -154,9 +154,18 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
-		if (ctx.useRefs && !this.isBasis()) return { $ref: `#/$defs/${this.id}` }
+		if (ctx.useRefs && !this.alwaysExpandJsonSchema)
+			return { $ref: `#/$defs/${this.id}` }
 
 		return this.toResolvedJsonSchema(ctx)
+	}
+
+	get alwaysExpandJsonSchema(): boolean {
+		return (
+			this.isBasis() ||
+			this.kind === "alias" ||
+			(this.hasKind("union") && this.isBoolean)
+		)
 	}
 
 	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {

@@ -154,7 +154,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return { $ref: `#/$defs/${this.id}` }
+		return this.resolution.toJsonSchemaRecurse(ctx)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

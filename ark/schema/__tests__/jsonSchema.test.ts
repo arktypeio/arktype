@@ -239,16 +239,12 @@ contextualize(() => {
 				},
 				jsonData1: {
 					anyOf: [
-						{ $ref: "#/$defs/alias1" },
+						{ $ref: "#/$defs/intersection11" },
 						{ type: "number" },
 						{ type: "string" },
-						{ $ref: "#/$defs/boolean1" },
+						{ type: "boolean" },
 						{ type: "null" }
 					]
-				},
-				alias1: { $ref: "#/$defs/alias1" },
-				union7: {
-					anyOf: [{ $ref: "#/$defs/alias1" }, { $ref: "#/$defs/boolean1" }]
 				}
 			}
 		})

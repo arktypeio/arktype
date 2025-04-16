@@ -6,9 +6,6 @@
 	"dependencies": {
 		"@ark/attest": "link:../attest",
 		"@ark/fs": "workspace:*",
-		"@sinclair/typebox": "0.34.33",
-		"@trpc/server": "^11.0.2",
-		"ajv": "8.17.1",
 		"arktype": "workspace:*",
 		"ts-morph": "25.0.1",
 		"ts-pattern": "5.7.0",
