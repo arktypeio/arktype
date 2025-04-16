@@ -161,6 +161,9 @@ configure({
 		"string.numeric.parse": {
 			description: "configured"
 		},
+		"string.regex": {
+			description: "configured"
+		},
 		"string.semver": {
 			description: "configured"
 		},
