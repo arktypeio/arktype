@@ -152,9 +152,9 @@ const mergeFallbacks = (
 	for (code in ToJsonSchema.defaultConfig.fallback) {
 		result[code] =
 			merged[code] ??
-			merged.universal ??
+			merged.default ??
 			base[code] ??
-			base.universal ??
+			base.default ??
 			(ToJsonSchema.defaultConfig.fallback[code] as any)
 	}
 
@@ -164,7 +164,7 @@ const mergeFallbacks = (
 const normalizeFallback = (
 	fallback?: ToJsonSchema.FallbackOption | ToJsonSchema.UniversalFallback
 ): ToJsonSchema.FallbackObject =>
-	typeof fallback === "function" ? { universal: fallback } : (fallback ?? {})
+	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
 export type CloneImplementation = <original extends object>(
 	original: original

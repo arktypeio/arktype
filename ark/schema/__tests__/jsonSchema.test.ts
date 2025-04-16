@@ -642,8 +642,8 @@ contextualize(() => {
 					T: rootSchema({
 						domain: "object",
 						required: [
-							{ key: zildjian, value: "bigint" },
-							{ key: "valid", value: "string" }
+							{ key: zildjian, value: "string" },
+							{ key: "valid", value: "bigint" }
 						]
 					})
 				},
@@ -658,26 +658,31 @@ contextualize(() => {
 
 			attest(schema).snap({
 				type: "object",
-				properties: { valid: { type: "string" } },
+				properties: { valid: {} },
 				required: ["valid"]
 			})
 		})
 
-		it("scope config", () => {
-			const zildjian = Symbol()
+		it("default fallback precedence", () => {
 			const { T } = schemaScope(
 				{
 					T: rootSchema({
 						domain: "object",
 						required: [
-							{ key: zildjian, value: "bigint" },
-							{ key: "valid", value: "string" }
+							{ key: "valid", value: "bigint" },
+							{
+								key: "patterns",
+								value: { domain: "string", pattern: ["^a", "z$"] }
+							}
 						]
 					})
 				},
 				{
 					toJsonSchema: {
-						fallback: ctx => ctx.base
+						fallback: {
+							default: ctx => ({ ...ctx.base, description: "defaulted" }),
+							domain: ctx => ({ ...ctx.base, description: "domain" })
+						}
 					}
 				}
 			).export()
@@ -686,8 +691,11 @@ contextualize(() => {
 
 			attest(schema).snap({
 				type: "object",
-				properties: { valid: { type: "string" } },
-				required: ["valid"]
+				properties: {
+					patterns: { type: "string", pattern: "^a", description: "defaulted" },
+					valid: { description: "domain" }
+				},
+				required: ["patterns", "valid"]
 			})
 		})
 	})

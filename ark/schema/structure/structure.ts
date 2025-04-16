@@ -822,8 +822,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					valueSchema.default =
 						$ark.intrinsic.jsonData.allows(value) ?
 							value
-						:	ctx.fallback.default({
-								code: "default",
+						:	ctx.fallback.defaultValue({
+								code: "defaultValue",
 								base: valueSchema,
 								value
 							})

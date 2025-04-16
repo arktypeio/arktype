@@ -37,7 +37,7 @@ const defaultConfig: ToJsonSchema.Context = {
 	fallback: {
 		arrayObject: ctx => ToJsonSchema.throw("arrayObject", ctx),
 		arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
-		default: ctx => ToJsonSchema.throw("default", ctx),
+		defaultValue: ctx => ToJsonSchema.throw("defaultValue", ctx),
 		domain: ctx => ToJsonSchema.throw("domain", ctx),
 		morph: ctx => ToJsonSchema.throw("morph", ctx),
 		patternIntersection: ctx => ToJsonSchema.throw("patternIntersection", ctx),
@@ -87,7 +87,8 @@ export declare namespace ToJsonSchema {
 		elements: readonly JsonSchema[]
 	}
 
-	export interface DefaultContext extends BaseContext<"default", JsonSchema> {
+	export interface DefaultValueContext
+		extends BaseContext<"defaultValue", JsonSchema> {
 		value: Unjsonifiable
 	}
 
@@ -152,7 +153,7 @@ export declare namespace ToJsonSchema {
 	export interface ContextByCode {
 		arrayObject: ArrayObjectContext
 		arrayPostfix: ArrayPostfixContext
-		default: DefaultContext
+		defaultValue: DefaultValueContext
 		domain: DomainContext
 		morph: MorphContext
 		patternIntersection: PatternIntersectionContext
@@ -172,7 +173,7 @@ export declare namespace ToJsonSchema {
 		{
 			arrayObject: (ctx: ArrayObjectContext) => JsonSchema.Structure
 			arrayPostfix: (ctx: ArrayPostfixContext) => VariadicArraySchema
-			default: (ctx: DefaultContext) => JsonSchema
+			defaultValue: (ctx: DefaultValueContext) => JsonSchema
 			domain: (ctx: DomainContext) => JsonSchema
 			morph: (ctx: MorphContext) => JsonSchema
 			patternIntersection: (
@@ -196,7 +197,7 @@ export declare namespace ToJsonSchema {
 	export type UniversalFallback = (ctx: FallbackContext) => JsonSchema
 
 	export interface FallbackObject extends Partial<HandlerByCode> {
-		universal?: UniversalFallback
+		default?: UniversalFallback
 	}
 
 	export type FallbackOption = UniversalFallback | FallbackObject
