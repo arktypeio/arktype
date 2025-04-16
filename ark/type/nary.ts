@@ -16,10 +16,10 @@ import type { Type } from "./type.ts"
 
 export type NaryUnionParser<$> = {
 	(): Type<never, $>
-	<const a, r = Type<type.infer<a>, $>>(
+	<const a, r = Type<type.infer<a, $>, $>>(
 		a: type.validate<a, $>
 	): r extends infer _ ? _ : never
-	<const a, const b, r = Type<type.infer<a> | type.infer<b>, $>>(
+	<const a, const b, r = Type<type.infer<a, $> | type.infer<b, $>, $>>(
 		a: type.validate<a, $>,
 		b: type.validate<b, $>
 	): r extends infer _ ? _ : never
@@ -27,7 +27,7 @@ export type NaryUnionParser<$> = {
 		const a,
 		const b,
 		const c,
-		r = Type<type.infer<a> | type.infer<b> | type.infer<c>, $>
+		r = Type<type.infer<a, $> | type.infer<b, $> | type.infer<c, $>, $>
 	>(
 		a: type.validate<a, $>,
 		b: type.validate<b, $>,
@@ -38,7 +38,10 @@ export type NaryUnionParser<$> = {
 		const b,
 		const c,
 		const d,
-		r = Type<type.infer<a> | type.infer<b> | type.infer<c> | type.infer<d>, $>
+		r = Type<
+			type.infer<a, $> | type.infer<b, $> | type.infer<c, $> | type.infer<d, $>,
+			$
+		>
 	>(
 		a: type.validate<a, $>,
 		b: type.validate<b, $>,
@@ -52,11 +55,11 @@ export type NaryUnionParser<$> = {
 		const d,
 		const e,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>,
 			$
 		>
 	>(
@@ -74,12 +77,12 @@ export type NaryUnionParser<$> = {
 		const e,
 		const f,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>,
 			$
 		>
 	>(
@@ -99,13 +102,13 @@ export type NaryUnionParser<$> = {
 		const f,
 		const g,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>,
 			$
 		>
 	>(
@@ -127,14 +130,14 @@ export type NaryUnionParser<$> = {
 		const g,
 		const h,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>,
 			$
 		>
 	>(
@@ -158,15 +161,15 @@ export type NaryUnionParser<$> = {
 		const h,
 		const i,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>,
 			$
 		>
 	>(
@@ -192,17 +195,16 @@ export type NaryUnionParser<$> = {
 		const i,
 		const j,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>,
-			$
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
 		>
 	>(
 		a: type.validate<a, $>,
@@ -229,18 +231,17 @@ export type NaryUnionParser<$> = {
 		const j,
 		const k,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>,
-			$
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
 		>
 	>(
 		a: type.validate<a, $>,
@@ -269,18 +270,18 @@ export type NaryUnionParser<$> = {
 		const k,
 		const l,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>
-			| type.infer<l>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
+			| type.infer<l, $>,
 			$
 		>
 	>(
@@ -312,19 +313,19 @@ export type NaryUnionParser<$> = {
 		const l,
 		const m,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>
-			| type.infer<l>
-			| type.infer<m>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
+			| type.infer<l, $>
+			| type.infer<m, $>,
 			$
 		>
 	>(
@@ -358,20 +359,20 @@ export type NaryUnionParser<$> = {
 		const m,
 		const n,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>
-			| type.infer<l>
-			| type.infer<m>
-			| type.infer<n>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
+			| type.infer<l, $>
+			| type.infer<m, $>
+			| type.infer<n, $>,
 			$
 		>
 	>(
@@ -407,21 +408,21 @@ export type NaryUnionParser<$> = {
 		const n,
 		const o,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>
-			| type.infer<l>
-			| type.infer<m>
-			| type.infer<n>
-			| type.infer<o>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
+			| type.infer<l, $>
+			| type.infer<m, $>
+			| type.infer<n, $>
+			| type.infer<o, $>,
 			$
 		>
 	>(
@@ -459,22 +460,22 @@ export type NaryUnionParser<$> = {
 		const o,
 		const p,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>
-			| type.infer<l>
-			| type.infer<m>
-			| type.infer<n>
-			| type.infer<o>
-			| type.infer<p>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
+			| type.infer<l, $>
+			| type.infer<m, $>
+			| type.infer<n, $>
+			| type.infer<o, $>
+			| type.infer<p, $>,
 			$
 		>
 	>(
@@ -514,23 +515,23 @@ export type NaryUnionParser<$> = {
 		const p,
 		const q,
 		r = Type<
-			| type.infer<a>
-			| type.infer<b>
-			| type.infer<c>
-			| type.infer<d>
-			| type.infer<e>
-			| type.infer<f>
-			| type.infer<g>
-			| type.infer<h>
-			| type.infer<i>
-			| type.infer<j>
-			| type.infer<k>
-			| type.infer<l>
-			| type.infer<m>
-			| type.infer<n>
-			| type.infer<o>
-			| type.infer<p>
-			| type.infer<q>,
+			| type.infer<a, $>
+			| type.infer<b, $>
+			| type.infer<c, $>
+			| type.infer<d, $>
+			| type.infer<e, $>
+			| type.infer<f, $>
+			| type.infer<g, $>
+			| type.infer<h, $>
+			| type.infer<i, $>
+			| type.infer<j, $>
+			| type.infer<k, $>
+			| type.infer<l, $>
+			| type.infer<m, $>
+			| type.infer<n, $>
+			| type.infer<o, $>
+			| type.infer<p, $>
+			| type.infer<q, $>,
 			$
 		>
 	>(
@@ -562,13 +563,13 @@ export type NaryUnionParser<$> = {
 
 export type NaryIntersectionParser<$> = {
 	(): Type<unknown, $>
-	<const a, r = Type<type.infer<a>, $>>(
+	<const a, r = Type<type.infer<a, $>, $>>(
 		a: type.validate<a, $>
 	): r extends infer _ ? _ : never
 	<
 		const a,
 		const b,
-		r = Type<inferIntersection<type.infer<a>, type.infer<b>>, $>
+		r = Type<inferIntersection<type.infer<a, $>, type.infer<b, $>>, $>
 	>(
 		a: type.validate<a, $>,
 		b: type.validate<b, $>
@@ -578,7 +579,9 @@ export type NaryIntersectionParser<$> = {
 		const b,
 		const c,
 		r = Type<
-			inferNaryIntersection<[type.infer<a>, type.infer<b>, type.infer<c>]>,
+			inferNaryIntersection<
+				[type.infer<a, $>, type.infer<b, $>, type.infer<c, $>]
+			>,
 			$
 		>
 	>(
@@ -593,7 +596,7 @@ export type NaryIntersectionParser<$> = {
 		const d,
 		r = Type<
 			inferNaryIntersection<
-				[type.infer<a>, type.infer<b>, type.infer<c>, type.infer<d>]
+				[type.infer<a, $>, type.infer<b, $>, type.infer<c, $>, type.infer<d, $>]
 			>,
 			$
 		>
@@ -612,11 +615,11 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>
 				]
 			>,
 			$
@@ -638,12 +641,12 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>
 				]
 			>,
 			$
@@ -667,13 +670,13 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>
 				]
 			>,
 			$
@@ -699,14 +702,14 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>
 				]
 			>,
 			$
@@ -734,15 +737,15 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>
 				]
 			>,
 			$
@@ -772,16 +775,16 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>
 				]
 			>,
 			$
@@ -813,17 +816,17 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>
 				]
 			>,
 			$
@@ -857,18 +860,18 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>,
+					type.infer<l, $>
 				]
 			>,
 			$
@@ -904,19 +907,19 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>,
+					type.infer<l, $>,
+					type.infer<m, $>
 				]
 			>,
 			$
@@ -954,20 +957,20 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>,
+					type.infer<l, $>,
+					type.infer<m, $>,
+					type.infer<n, $>
 				]
 			>,
 			$
@@ -1007,20 +1010,20 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>,
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>,
+					type.infer<l, $>,
+					type.infer<m, $>,
+					type.infer<n, $>,
 					type.infer<o>
 				]
 			>,
@@ -1063,22 +1066,22 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>,
-					type.infer<o>,
-					type.infer<p>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>,
+					type.infer<l, $>,
+					type.infer<m, $>,
+					type.infer<n, $>,
+					type.infer<o, $>,
+					type.infer<p, $>
 				]
 			>,
 			$
@@ -1122,23 +1125,23 @@ export type NaryIntersectionParser<$> = {
 		r = Type<
 			inferNaryIntersection<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>,
-					type.infer<o>,
-					type.infer<p>,
-					type.infer<q>
+					type.infer<a, $>,
+					type.infer<b, $>,
+					type.infer<c, $>,
+					type.infer<d, $>,
+					type.infer<e, $>,
+					type.infer<f, $>,
+					type.infer<g, $>,
+					type.infer<h, $>,
+					type.infer<i, $>,
+					type.infer<j, $>,
+					type.infer<k, $>,
+					type.infer<l, $>,
+					type.infer<m, $>,
+					type.infer<n, $>,
+					type.infer<o, $>,
+					type.infer<p, $>,
+					type.infer<q, $>
 				]
 			>,
 			$
@@ -1165,11 +1168,11 @@ export type NaryIntersectionParser<$> = {
 	<
 		const defs extends readonly unknown[],
 		r = Type<
-			inferNaryIntersection<{ [i in keyof defs]: type.infer<defs[i]> }>,
+			inferNaryIntersection<{ [i in keyof defs]: type.infer<defs[i], $> }>,
 			$
 		>
 	>(
-		...defs: { [i in keyof defs]: type.validate<defs[i]> }
+		...defs: { [i in keyof defs]: type.validate<defs[i], $> }
 	): r extends infer _ ? _ : never
 }
 
@@ -1203,7 +1206,7 @@ export type NaryMergeParser<$> = {
 		inferredA = type.infer<a, $>,
 		inferredB = type.infer<b, $>,
 		inferredC = type.infer<c, $>,
-		r = Type<inferNaryMerge<[type.infer<a>, type.infer<b>, type.infer<c>]>, $>
+		r = Type<inferNaryMerge<[inferredA, inferredB, inferredC]>, $>
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
@@ -1224,12 +1227,7 @@ export type NaryMergeParser<$> = {
 		inferredB = type.infer<b, $>,
 		inferredC = type.infer<c, $>,
 		inferredD = type.infer<d, $>,
-		r = Type<
-			inferNaryMerge<
-				[type.infer<a>, type.infer<b>, type.infer<c>, type.infer<d>]
-			>,
-			$
-		>
+		r = Type<inferNaryMerge<[inferredA, inferredB, inferredC, inferredD]>, $>
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
@@ -1256,15 +1254,7 @@ export type NaryMergeParser<$> = {
 		inferredD = type.infer<d, $>,
 		inferredE = type.infer<e, $>,
 		r = Type<
-			inferNaryMerge<
-				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>
-				]
-			>,
+			inferNaryMerge<[inferredA, inferredB, inferredC, inferredD, inferredE]>,
 			$
 		>
 	>(
@@ -1299,14 +1289,7 @@ export type NaryMergeParser<$> = {
 		inferredF = type.infer<f, $>,
 		r = Type<
 			inferNaryMerge<
-				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>
-				]
+				[inferredA, inferredB, inferredC, inferredD, inferredE, inferredF]
 			>,
 			$
 		>
@@ -1348,13 +1331,13 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG
 				]
 			>,
 			$
@@ -1402,14 +1385,14 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH
 				]
 			>,
 			$
@@ -1462,15 +1445,15 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI
 				]
 			>,
 			$
@@ -1528,16 +1511,16 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ
 				]
 			>,
 			$
@@ -1600,17 +1583,17 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK
 				]
 			>,
 			$
@@ -1678,18 +1661,18 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK,
+					inferredL
 				]
 			>,
 			$
@@ -1762,19 +1745,19 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK,
+					inferredL,
+					inferredM
 				]
 			>,
 			$
@@ -1852,20 +1835,20 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK,
+					inferredL,
+					inferredM,
+					inferredN
 				]
 			>,
 			$
@@ -1948,21 +1931,21 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>,
-					type.infer<o>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK,
+					inferredL,
+					inferredM,
+					inferredN,
+					inferredO
 				]
 			>,
 			$
@@ -2050,22 +2033,22 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>,
-					type.infer<o>,
-					type.infer<p>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK,
+					inferredL,
+					inferredM,
+					inferredN,
+					inferredO,
+					inferredP
 				]
 			>,
 			$
@@ -2158,23 +2141,23 @@ export type NaryMergeParser<$> = {
 		r = Type<
 			inferNaryMerge<
 				[
-					type.infer<a>,
-					type.infer<b>,
-					type.infer<c>,
-					type.infer<d>,
-					type.infer<e>,
-					type.infer<f>,
-					type.infer<g>,
-					type.infer<h>,
-					type.infer<i>,
-					type.infer<j>,
-					type.infer<k>,
-					type.infer<l>,
-					type.infer<m>,
-					type.infer<n>,
-					type.infer<o>,
-					type.infer<p>,
-					type.infer<q>
+					inferredA,
+					inferredB,
+					inferredC,
+					inferredD,
+					inferredE,
+					inferredF,
+					inferredG,
+					inferredH,
+					inferredI,
+					inferredJ,
+					inferredK,
+					inferredL,
+					inferredM,
+					inferredN,
+					inferredO,
+					inferredP,
+					inferredQ
 				]
 			>,
 			$
@@ -2234,7 +2217,7 @@ export type NaryMergeParser<$> = {
 	): r extends infer _ ? _ : never
 	<
 		const defs extends readonly unknown[],
-		r = Type<inferNaryMerge<{ [i in keyof defs]: type.infer<defs[i]> }>, $>
+		r = Type<inferNaryMerge<{ [i in keyof defs]: type.infer<defs[i], $> }>, $>
 	>(
 		...defs: {
 			[i in keyof defs]: type.validate<defs[i]> &
