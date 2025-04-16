@@ -1,4 +1,10 @@
-import type { array, JsonArray, JsonObject, listable } from "@ark/util"
+import type {
+	array,
+	autocomplete,
+	JsonArray,
+	JsonObject,
+	listable
+} from "@ark/util"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
 export type ListableJsonSchema = listable<JsonSchema>
@@ -23,12 +29,27 @@ export declare namespace JsonSchema {
 		$defs?: Record<string, JsonSchema>
 	}
 
+	export type Format = autocomplete<
+		| "date-time"
+		| "date"
+		| "time"
+		| "duration"
+		| "email"
+		| "hostname"
+		| "ipv4"
+		| "ipv6"
+		| "uri"
+		| "uuid"
+		| "regex"
+	>
+
 	/**
 	 * doesn't include root-only keys like $schema
 	 */
 	export interface UniversalMeta<t = unknown> {
 		title?: string
 		description?: string
+		format?: Format
 		deprecated?: true
 		default?: t
 		examples?: readonly t[]

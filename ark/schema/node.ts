@@ -39,8 +39,8 @@ import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
-	BaseMeta,
 	BaseNodeDeclaration,
+	NodeMeta,
 	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
@@ -826,6 +826,6 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
-	innerWithMeta: Inner<kind> & { meta: BaseMeta },
+	innerWithMeta: Inner<kind> & { meta: NodeMeta },
 	ctx: DeepNodeTransformContext
 ) => NormalizedSchema<kind> | null

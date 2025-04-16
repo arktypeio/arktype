@@ -3,8 +3,9 @@ import {
 	intrinsic,
 	node,
 	rootSchema,
-	type IntersectionNode,
+	type Intersection,
 	type Morph,
+	type mutableNormalizedRootOfKind,
 	type Traversal
 } from "@ark/schema"
 import {
@@ -18,20 +19,26 @@ import type { Module, Submodule } from "../module.ts"
 import { Scope } from "../scope.ts"
 import { number } from "./number.ts"
 
-// Non-trivial expressions should have an explanation or attribution
+// non-trivial expressions should have an explanation or attribution
 
 export const regexStringNode = (
 	regex: RegExp,
-	description: string
-): IntersectionNode =>
-	node("intersection", {
+	description: string,
+	jsonSchemaFormat?: string
+): Intersection.Node => {
+	const schema: mutableNormalizedRootOfKind<"intersection"> = {
 		domain: "string",
 		pattern: {
 			rule: regex.source,
 			flags: regex.flags,
 			meta: description
 		}
-	}) as never
+	}
+
+	if (jsonSchemaFormat) schema.meta = { format: jsonSchemaFormat }
+
+	return node("intersection", schema) as never
+}
 
 const stringIntegerRoot = regexStringNode(
 	wellFormedIntegerMatcher,

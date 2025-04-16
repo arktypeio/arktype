@@ -16,7 +16,7 @@ import {
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
-import type { BaseMeta } from "./declare.ts"
+import type { NodeMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
@@ -384,10 +384,10 @@ type ArkErrorContextInputsByCode = {
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
-	merge<ArkErrorContextInputsByCode[code], { meta?: BaseMeta }>
+	merge<ArkErrorContextInputsByCode[code], { meta?: NodeMeta }>
 
 export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorContextInputsByCode[code] & { meta: BaseMeta }
+	ArkErrorContextInputsByCode[code] & { meta: NodeMeta }
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkError<code>,

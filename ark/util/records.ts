@@ -1,4 +1,5 @@
 import type { array } from "./arrays.ts"
+import type { Primitive } from "./domain.ts"
 import { noSuggest } from "./errors.ts"
 import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
@@ -70,13 +71,11 @@ export type mutable<o, maxDepth extends number = 1> = _mutable<o, [], maxDepth>
 
 type _mutable<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
-	: o extends object ?
-		o extends Fn ?
-			o
-		:	{
-				-readonly [k in keyof o]: _mutable<o[k], [...depth, 1], maxDepth>
-			}
-	:	o
+	: o extends Primitive ? o
+	: o extends Fn ? o
+	: {
+			-readonly [k in keyof o]: _mutable<o[k], [...depth, 1], maxDepth>
+		}
 
 /**
  * extracts entries mimicking Object.entries, accounting for whether the
