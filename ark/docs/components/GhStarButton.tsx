@@ -14,7 +14,7 @@ export declare namespace GhStarButton {
 // based on the trpc component:
 // https://github.com/trpc/trpc/blob/7d10d7b028f1d85f6523e995ee7deb17dc886874/www/src/components/GithubStarsButton.tsx#L15
 export const GhStarButton = ({ className }: GhStarButton.Props) => {
-	const [starCount, setStarCount] = useState<string>("5.8k")
+	const [starCount, setStarCount] = useState<string>("5.9k")
 
 	const formatStarCount = (count: number): string => {
 		if (count < 1000) return count.toString()
