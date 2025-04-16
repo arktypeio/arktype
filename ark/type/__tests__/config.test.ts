@@ -151,7 +151,7 @@ contextualize(() => {
 		attest(T.precompilation).satisfies("string")
 	})
 
-	it("builtin keywords jit by default", () => {
+	it("built-in keywords jit by default", () => {
 		const T = type("string")
 		attest(T.precompilation).satisfies("string")
 

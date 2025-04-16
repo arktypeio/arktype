@@ -10,7 +10,7 @@ contextualize(() => {
 	})
 
 	it("Date", () => {
-		// should not expand builtin classes
+		// should not expand built-in classes
 		attest(type("Date").infer).type.toString.snap("Date")
 	})
 

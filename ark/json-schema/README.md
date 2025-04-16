@@ -22,7 +22,7 @@ This enables easy adoption of ArkType for people who currently have JSON Schema 
 
 If you want to convert your existing ArkType `Type`s to JSON Schema, you don't need this library.
 
-Instead, use the builtin `toJsonSchema()` method that exists on every `Type`, e.g.:
+Instead, use the built-in `toJsonSchema()` method that exists on every `Type`, e.g.:
 
 ```ts
 import { type } from "arktype"

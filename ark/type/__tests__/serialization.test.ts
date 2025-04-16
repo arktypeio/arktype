@@ -3,7 +3,7 @@ import { rootSchema } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
-	it("builtin prototypes", () => {
+	it("built-in prototypes", () => {
 		const A = type({
 			age: "number"
 		})

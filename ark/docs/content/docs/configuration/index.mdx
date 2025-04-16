@@ -17,7 +17,7 @@ However, it's equally important that when you need different behavior, you can e
   <tbody>
     <tr>
       <td>**default**</td>
-      <td>builtin defaults for all Types</td>
+      <td>built-in defaults for all Types</td>
       <td></td>
     </tr>
     <tr>
@@ -97,7 +97,7 @@ Some options only apply at specific levels, as reflected in the corresponding in
 	type="warn"
 	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
 >
-	If you need your config to apply to builtin keywords (important for options
+	If you need your config to apply to built-in keywords (important for options
 	like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and
 	`configure` from `"arktype/config"` before importing anything from
 	`"arktype"`.
@@ -108,7 +108,7 @@ Otherwise, keywords will have already been parsed by the time your config applie
 
 ### Errors
 
-To allow custom errors to be integrated seemlessly with builtin logic for composite errors (i.e. `union` and `intersection`), ArkType supports a set of composable options:
+To allow custom errors to be integrated seemlessly with built-in logic for composite errors (i.e. `union` and `intersection`), ArkType supports a set of composable options:
 
 <table>
 <thead>
@@ -248,7 +248,7 @@ These `ArkError` instances can be arbitrarily transformed and composed with an i
 
 ### Keywords
 
-Builtin keywords like `string.email` can be globally configured.
+Built-in keywords like `string.email` can be globally configured.
 
 This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
 
@@ -287,7 +287,7 @@ The options you can provide here are identical to those used to [configure a Typ
 
 ### Clone
 
-By default, before a [morph](/docs/intro/morphs-and-more) is applied, ArkType will deeply clone the original input value with a builtin `deepClone` function that tries to make reasonable assumptions about preserving prototypes etc. The implementation of `deepClone` can be found [here](https://github.com/arktypeio/arktype/blob/main/ark/util/clone.ts).
+By default, before a [morph](/docs/intro/morphs-and-more) is applied, ArkType will deeply clone the original input value with a built-in `deepClone` function that tries to make reasonable assumptions about preserving prototypes etc. The implementation of `deepClone` can be found [here](https://github.com/arktypeio/arktype/blob/main/ark/util/clone.ts).
 
 You can provide an alternate clone implementation to the `clone` config option.
 
@@ -343,7 +343,7 @@ Like TypeScript, ArkType defaults to ignoring undeclared keys during validation.
 - `"delete"`: Allow undeclared keys on input, delete them before returning output
 - `"reject"`: Reject input with undeclared keys
 
-These behaviors can be associated with individual Types via the builtin `"+"` syntax (see [those docs](/docs/objects#properties-undeclared) for more on how they work). You can also change the default globally:
+These behaviors can be associated with individual Types via the built-in `"+"` syntax (see [those docs](/docs/objects#properties-undeclared) for more on how they work). You can also change the default globally:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -514,6 +514,38 @@ const MrPingsSecretIngredientSoup = type({
 	ingredients: "string[]"
 }).configure({ secretIngredient: "nothing!" })
 ```
+
+### toJsonSchema
+
+Some ArkType features don't have direct JSON Schema equivalents. For these cases, you can provide fallback handlers:
+
+```ts
+const NumericString = type("string.numeric.parse")
+
+// This would normally throw an error because morphs aren't directly representable
+const schema = NumericString.toJsonSchema({
+	fallback: {
+		morph: ctx => ({
+			...ctx.base,
+			description: "Converts string to number"
+		})
+	}
+})
+```
+
+Available fallback handlers include:
+
+- `arrayObject`: For arrays with object properties
+- `arrayPostfix`: For arrays with postfix elements
+- `defaultValue`: For default values that aren't JSON-serializable
+- `domain`: For domains like `bigint` that don't map to JSON
+- `morph`: For type transformations
+- `patternIntersection`: For multiple regex pattern constraints
+- `predicate`: For custom validation functions
+- `proto`: For custom prototype constraints
+- `symbolKey`: For object properties with Symbol keys
+- `unit`: For unjsonifiable unit values
+- `date`: For date constraints
 
 ### prototypes
 

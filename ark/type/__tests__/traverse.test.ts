@@ -44,7 +44,7 @@ contextualize(() => {
 		)
 	})
 
-	it("customized builtin problem", () => {
+	it("customized built-in problem", () => {
 		const types = scope(
 			{ isEven: "number%2" },
 			{

@@ -476,7 +476,7 @@ discriminateValue({ oneValue: 3 })
 
 Special thanks to @thetayloredman who did a mind-blowingly good job helping us iterate toward the current type-level pattern-matching implementation🙇
 
-### Builtin keywords can now be globally configured
+### Built-in keywords can now be globally configured
 
 This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
 
