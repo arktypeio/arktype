@@ -1,6 +1,7 @@
 import { ArrowRightIcon, PlayIcon } from "lucide-react"
 import { MainAutoplayDemo } from "./AutoplayDemo.tsx"
 import { Button } from "./Button.tsx"
+import { GhStarButton } from "./GhStarButton.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
 
 export const Hero = () => (
@@ -23,7 +24,8 @@ export const Hero = () => (
 				<p className="text-fd-muted-foreground text-3xl leading-relaxed hero-tagline">
 					TypeScript's 1:1 validator, optimized from editor to runtime
 				</p>
-				<div className="w-full flex-1 flex items-start justify-start mt-6 gap-x-4">
+				<div className="w-full flex-1 flex items-start justify-around mt-6 md:justify-start md:gap-x-4">
+					<GhStarButton />
 					<Button
 						variant="outline"
 						href="/playground"
@@ -34,7 +36,7 @@ export const Hero = () => (
 						<PlayIcon />
 					</Button>
 					<Button variant="filled" href="/docs/intro/setup" size="lg">
-						Get Started
+						Intro
 						<ArrowRightIcon />
 					</Button>
 				</div>

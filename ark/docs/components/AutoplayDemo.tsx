@@ -87,6 +87,7 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 				<Button
 					variant="outline"
 					wiggle={!showPlayground}
+					className="hidden md:flex"
 					onClick={() => setShowPlayground(!showPlayground)}
 					aria-label={
 						showPlayground ? "Switch to Demo" : "Switch to Playground"
