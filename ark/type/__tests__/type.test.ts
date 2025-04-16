@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { TraversalError, type UnitNode } from "@ark/schema"
+import { TraversalError, type JsonSchema, type UnitNode } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import * as assert from "node:assert/strict"
@@ -296,19 +296,21 @@ contextualize(() => {
 
 		const schema = User.toJsonSchema()
 
-		attest(schema).snap({
+		const expected: JsonSchema = {
+			$schema: "https://json-schema.org/draft/2020-12/schema",
 			type: "object",
 			properties: {
-				age: { type: "number", minimum: 18 },
+				name: { type: "string" },
 				email: {
 					type: "string",
-					pattern: "^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$",
-					format: "email"
+					format: "email",
+					pattern: "^[\\w%+.-]+@[\\d.A-Za-z-]+\\.[A-Za-z]{2,}$"
 				},
-				name: { type: "string" }
+				age: { type: "number", minimum: 18 }
 			},
-			required: ["age", "email", "name"],
-			$schema: "https://json-schema.org/draft/2020-12/schema"
-		})
+			required: ["email", "name"]
+		}
+
+		attest(schema).equals(expected)
 	})
 })
