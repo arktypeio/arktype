@@ -116,7 +116,10 @@ export type listable<t> = t | readonly t[]
 
 export type flattenListable<t> = t extends array<infer element> ? element : t
 
-export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+export type minLengthArray<t, minLength extends number> = readonly [
+	...repeat<[t], minLength>,
+	...t[]
+]
 
 export type repeat<t extends array, count extends number> = _repeat<
 	t,
@@ -292,9 +295,8 @@ export const appendUnique = <to extends unknown[]>(
 		return Array.isArray(value) ? (value as never) : ([value] as never)
 
 	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
-	liftArray(value).forEach(v => {
+	for (const v of liftArray(value))
 		if (!to.some(existing => isEqual(existing as never, v as never))) to.push(v)
-	})
 
 	return to
 }

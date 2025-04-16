@@ -34,8 +34,9 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
@@ -424,17 +425,18 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		this.prefix?.forEach((node, i) =>
-			js.traverseKey(`${i}`, `data[${i}]`, node)
-		)
+		if (this.prefix) {
+			for (const [i, node] of this.prefix.entries())
+				js.traverseKey(`${i}`, `data[${i}]`, node)
+		}
 
-		this.defaultablesAndOptionals.forEach((node, i) => {
+		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
 			const dataIndex = `${i + this.prefixLength}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
 			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
-		})
+		}
 
 		if (this.variadic) {
 			if (this.postfix) {
@@ -448,10 +450,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				() => js.traverseKey("i", "data[i]", this.variadic!),
 				this.prevariadic.length
 			)
-			this.postfix?.forEach((node, i) => {
-				const keyExpression = `firstPostfixIndex + ${i}`
-				js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
-			})
+			if (this.postfix) {
+				for (const [i, node] of this.postfix.entries()) {
+					const keyExpression = `firstPostfixIndex + ${i}`
+					js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+				}
+			}
 		}
 
 		if (js.traversalKind === "Allows") js.return(true)
@@ -472,15 +476,22 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	reduceJsonSchema(
 		schema: JsonSchema.Array,
-		ctx: JsonSchema.ToContext
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Array {
 		if (this.prevariadic.length) {
 			schema.prefixItems = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
 				if (el.kind === "defaultables") {
-					const defaultValue =
+					const value =
 						typeof el.default === "function" ? el.default() : el.default
-					valueSchema.default = defaultValue
+					valueSchema.default =
+						$ark.intrinsic.jsonData.allows(value) ?
+							value
+						:	ctx.fallback.defaultValue({
+								code: "defaultValue",
+								base: valueSchema,
+								value
+							})
 				}
 				return valueSchema
 			})
@@ -491,21 +502,29 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		if (this.minLength) schema.minItems = this.minLength
 
 		if (this.variadic) {
-			schema.items = this.variadic?.toJsonSchemaRecurse(ctx)
+			// alias schema for narrowing (Object.assign mutates anyways)
+			const variadicSchema = Object.assign(schema, {
+				items: this.variadic.toJsonSchemaRecurse(ctx)
+			})
+
 			// maxLength constraint will be enforced by items: false
 			// for non-variadic arrays
-			if (this.maxLength) schema.maxItems = this.maxLength
+			if (this.maxLength) variadicSchema.maxItems = this.maxLength
+
+			// postfix can only be present if variadic is present so nesting this is fine
+			if (this.postfix) {
+				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
+				schema = ctx.fallback.arrayPostfix({
+					code: "arrayPostfix",
+					base: variadicSchema,
+					elements
+				})
+			}
 		} else {
 			schema.items = false
 			// delete maxItems constraint that will have been added by the
 			// base intersection node to enforce fixed length
 			delete schema.maxItems
-		}
-
-		if (this.postfix) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-			)
 		}
 
 		return schema
@@ -540,13 +559,18 @@ export const Sequence = {
 
 const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
-	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
-	inner.defaultables?.forEach(([node, defaultValue]) =>
-		tuple.push({ kind: "defaultables", node, default: defaultValue })
-	)
-	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
+	if (inner.prefix)
+		for (const node of inner.prefix) tuple.push({ kind: "prefix", node })
+	if (inner.defaultables) {
+		for (const [node, defaultValue] of inner.defaultables)
+			tuple.push({ kind: "defaultables", node, default: defaultValue })
+	}
+
+	if (inner.optionals)
+		for (const node of inner.optionals) tuple.push({ kind: "optionals", node })
 	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
-	inner.postfix?.forEach(node => tuple.push({ kind: "postfix", node }))
+	if (inner.postfix)
+		for (const node of inner.postfix) tuple.push({ kind: "postfix", node })
 	return tuple
 }
 

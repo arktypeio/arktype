@@ -4,7 +4,7 @@ import { stdout } from "node:process"
 export const cases = (cases: Record<string, () => unknown>) => {
 	let failed = 0
 
-	keysOf(cases).forEach(name => {
+	for (const name of keysOf(cases)) {
 		stdout.write(name)
 		try {
 			cases[name]()
@@ -16,7 +16,7 @@ export const cases = (cases: Record<string, () => unknown>) => {
 			console.groupEnd()
 			failed = 1
 		}
-	})
+	}
 
 	if (failed) process.exit(failed)
 }

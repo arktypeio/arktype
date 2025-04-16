@@ -12,7 +12,7 @@ bench.baseline(() => {
 bench("array-string", () => type("number[]")).types([921, "instantiations"])
 
 bench("array-tuple", () => type(["number", "[]"])).types([
-	900,
+	902,
 	"instantiations"
 ])
 
@@ -27,12 +27,12 @@ bench("union-string", () => type("number|string")).types([
 ])
 
 bench("union-tuple", () => type(["number", "|", "string"])).types([
-	1108,
+	1110,
 	"instantiations"
 ])
 
 bench("union-chain", () => type("number").or("string")).types([
-	1405,
+	1401,
 	"instantiations"
 ])
 
@@ -47,12 +47,12 @@ bench("intersection-string", () => type("number&0")).types([
 ])
 
 bench("intersection-tuple", () => type(["number", "&", "0"])).types([
-	1269,
+	1271,
 	"instantiations"
 ])
 
 bench("intersection-chain", () => type("number").and("0")).types([
-	1651,
+	1647,
 	"instantiations"
 ])
 
@@ -87,7 +87,7 @@ bench("bound-double", () => type("-7<=string.integer<99")).types([
 bench("divisor", () => type("number%5")).types([963, "instantiations"])
 
 bench("filter-tuple", () => type(["boolean", ":", b => b])).types([
-	1350,
+	1354,
 	"instantiations"
 ])
 
@@ -97,7 +97,7 @@ bench("filter-chain", () => type("boolean").narrow(b => b)).types([
 ])
 
 bench("morph-tuple", () => type(["boolean", "=>", b => b])).types([
-	1420,
+	1424,
 	"instantiations"
 ])
 
@@ -138,15 +138,15 @@ bench("to-string", () => type("string.numeric.parse |> number.integer")).types([
 
 bench("to-chain", () =>
 	type("string.numeric.parse").to("number.integer")
-).types([2426, "instantiations"])
+).types([2422, "instantiations"])
 
 bench("to-tuple", () =>
 	type(["string.numeric.parse", "|>", "number.integer"])
-).types([2151, "instantiations"])
+).types([2153, "instantiations"])
 
 bench("to-args", () =>
 	type("string.numeric.parse", "|>", "number.integer")
-).types([4261, "instantiations"])
+).types([4249, "instantiations"])
 
 bench("base object", () =>
 	type({
@@ -173,7 +173,7 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([12818, "instantiations"])
+).types([12817, "instantiations"])
 
 type Expected = {
 	readonly: "readonly"
@@ -225,4 +225,4 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([13036, "instantiations"])
+).types([13402, "instantiations"])

@@ -52,7 +52,7 @@
 			}
 		},
 		{
-			"name": "this, primitives, builtin types, quotes",
+			"name": "this, primitives, built-in types, quotes",
 			"scope": [
 				"variable.language",
 				"constant",

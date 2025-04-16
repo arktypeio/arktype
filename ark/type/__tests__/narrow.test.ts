@@ -171,7 +171,7 @@ contextualize(() => {
 		})
 	})
 
-	it("can distill constrained builtins", () => {
+	it("can distill constrained built-ins", () => {
 		const N = type("number")
 			.narrow(() => true)
 			.pipe(() => true)

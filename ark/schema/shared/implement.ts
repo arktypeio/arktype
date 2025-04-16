@@ -27,9 +27,9 @@ import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
 	BaseErrorContext,
-	BaseMeta,
 	BaseNodeDeclaration,
-	BaseNormalizedSchema
+	BaseNormalizedSchema,
+	NodeMeta
 } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
@@ -375,7 +375,7 @@ export interface UnknownAttachments {
 	readonly innerJson: object
 	readonly innerHash: string
 
-	readonly meta: BaseMeta
+	readonly meta: NodeMeta
 	readonly metaJson: object
 
 	readonly json: object

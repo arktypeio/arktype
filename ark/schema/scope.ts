@@ -269,6 +269,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		config?: ArkSchemaScopeConfig
 	) {
 		this.config = mergeConfigs($ark.config, config)
+
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
 
 		this.name =
@@ -282,7 +283,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this.preparseOwnAliasEntry(...entry)
 		)
 
-		aliasEntries.forEach(([k, v]) => {
+		for (const [k, v] of aliasEntries) {
 			let name = k
 			if (k[0] === "#") {
 				name = k.slice(1)
@@ -297,15 +298,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (
 				!hasArkKind(v, "module") &&
 				!hasArkKind(v, "generic") &&
-				// TODO: proto thunk defs?
 				!isThunk(v)
 			) {
 				const preparsed = this.preparseOwnDefinitionFormat(v, { alias: name })
-				if (hasArkKind(preparsed, "root"))
-					this.resolutions[name] = this.bindReference(preparsed)
-				else this.resolutions[name] = this.createParseContext(preparsed).id
+				this.resolutions[name] =
+					hasArkKind(preparsed, "root") ?
+						this.bindReference(preparsed)
+					:	this.createParseContext(preparsed).id
 			}
-		}) as never
+		}
 
 		// reduce union of all possible values reduces to unknown
 		rawUnknownUnion ??= this.node(
@@ -561,9 +562,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = this.bindReference(def))
 
 		if (hasArkKind(def, "module")) {
-			if (def.root)
-				return (this.resolutions[name] = this.bindReference(def.root))
-			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
+			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
+			return (this.resolutions[name] = this.bindReference(def.root))
 		}
 
 		return (this.resolutions[name] = this.parse(def, {
@@ -629,7 +629,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 					:	bootstrapAliasReferences(this.maybeResolve(name)!)
 			}
 
-			this.lazyResolutions.forEach(node => node.resolution)
+			// force node.resolution getter evaluation
+			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+			for (const node of this.lazyResolutions) node.resolution
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
@@ -750,18 +752,14 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 }
 
 const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
-	resolution.references
-		.filter(node => node.hasKind("alias"))
-		.forEach(aliasNode => {
-			Object.assign(
-				aliasNode.referencesById,
-				aliasNode.resolution.referencesById
-			)
-			resolution.references.forEach(ref => {
-				if (aliasNode.id in ref.referencesById)
-					Object.assign(ref.referencesById, aliasNode.referencesById)
-			})
-		})
+	const aliases = resolution.references.filter(node => node.hasKind("alias"))
+	for (const aliasNode of aliases) {
+		Object.assign(aliasNode.referencesById, aliasNode.resolution.referencesById)
+		for (const ref of resolution.references) {
+			if (aliasNode.id in ref.referencesById)
+				Object.assign(ref.referencesById, aliasNode.referencesById)
+		}
+	}
 	return resolution
 }
 

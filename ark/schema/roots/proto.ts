@@ -21,8 +21,9 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
@@ -151,14 +152,23 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledCondition = `data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 	compiledNegation = `!(${this.compiledCondition})`
 
-	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): JsonSchema.Array {
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		switch (this.builtinName) {
 			case "Array":
 				return {
 					type: "array"
 				}
+			case "Date":
+				return (
+					ctx.fallback.date?.({ code: "date", base: {} }) ??
+					ctx.fallback.proto({ code: "proto", base: {}, proto: this.proto })
+				)
 			default:
-				return JsonSchema.throwUnjsonifiableError(this.description)
+				return ctx.fallback.proto({
+					code: "proto",
+					base: {},
+					proto: this.proto
+				})
 		}
 	}
 

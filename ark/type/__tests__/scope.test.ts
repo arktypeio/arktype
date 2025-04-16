@@ -37,11 +37,11 @@ contextualize(() => {
 
 	it("docs example", () => {
 		const $ = type.scope({
-			// builtin keywords are still available in your scope
+			// built-in keywords are still available in your scope
 			id: "string",
 			// but you can also reference your own aliases directly!
 			user: { id: "id", friends: "id[]" },
-			// your aliases will be autocompleted alongside builtin keywords
+			// your aliases will be autocompleted alongside built-in keywords
 			usersById: {
 				"[id]": "user | undefined"
 			}

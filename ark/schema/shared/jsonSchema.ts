@@ -1,34 +1,16 @@
-import {
-	isKeyOf,
-	printable,
-	throwError,
-	throwInternalError,
-	type array,
-	type autocomplete,
-	type JsonArray,
-	type JsonObject,
-	type listable
+import type {
+	array,
+	autocomplete,
+	JsonArray,
+	JsonObject,
+	listable
 } from "@ark/util"
-import type { ConstraintKind } from "./implement.ts"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
 export type ListableJsonSchema = listable<JsonSchema>
 export type JsonSchemaOrBoolean = listable<JsonSchema.Branch>
 
 export declare namespace JsonSchema {
-	export interface ToOptions {
-		/** value to assign to the generated $schema key
-		 *
-		 *  - set to `null` to omit the `$schema` key
-		 *  - does not affect the contents of the generated schema
-		 *
-		 * @default "https://json-schema.org/draft/2020-12/schema"
-		 */
-		dialect?: string | null
-	}
-
-	export type ToContext = Required<ToOptions>
-
 	export type TypeName =
 		| "string"
 		| "integer"
@@ -44,7 +26,20 @@ export declare namespace JsonSchema {
 	 **/
 	export interface Meta<t = unknown> extends UniversalMeta<t> {
 		$schema?: string
+		$defs?: Record<string, JsonSchema>
 	}
+
+	export type Format = autocomplete<
+		| "date-time"
+		| "date"
+		| "time"
+		| "email"
+		| "ipv4"
+		| "ipv6"
+		| "uri"
+		| "uuid"
+		| "regex"
+	>
 
 	/**
 	 * doesn't include root-only keys like $schema
@@ -52,6 +47,7 @@ export declare namespace JsonSchema {
 	export interface UniversalMeta<t = unknown> {
 		title?: string
 		description?: string
+		format?: Format
 		deprecated?: true
 		default?: t
 		examples?: readonly t[]
@@ -68,8 +64,19 @@ export declare namespace JsonSchema {
 		| Numeric
 		| Object
 		| Array
+		| Ref
 
 	export type Branch = boolean | JsonSchema
+
+	export type RefString = `#/$defs/${string}`
+
+	// extending Meta and including "type" as an optional prop are important for
+	// interacting with JsonSchema as a union, although generally $ref should be
+	// the only key.
+	export interface Ref extends Meta {
+		$ref: RefString
+		type?: never
+	}
 
 	export interface Constrainable extends Meta {
 		type?: listable<TypeName>
@@ -103,7 +110,7 @@ export declare namespace JsonSchema {
 		type: "string"
 		minLength?: number
 		maxLength?: number
-		pattern?: string | RegExp
+		pattern?: string
 		format?: string
 	}
 
@@ -146,49 +153,4 @@ export declare namespace JsonSchema {
 	export type LengthBoundable = String | Array
 
 	export type Structure = Object | Array
-
-	export type UnjsonifiableError = InstanceType<
-		typeof JsonSchema.UnjsonifiableError
-	>
-}
-
-const unjsonifiableExplanations = {
-	morph:
-		"it represents a transformation, while JSON Schema only allows validation. Consider creating a Schema from one of its endpoints using `.in` or `.out`.",
-	cyclic:
-		"cyclic types are not yet convertible to JSON Schema. If this feature is important to you, please add your feedback at https://github.com/arktypeio/arktype/issues/1087"
-}
-
-type UnjsonifiableExplanation = autocomplete<"morph" | "cyclic">
-
-const writeUnjsonifiableMessage = (
-	description: string,
-	explanation?: UnjsonifiableExplanation
-): string => {
-	let message = `${description} is not convertible to JSON Schema`
-
-	if (explanation) {
-		const normalizedExplanation =
-			isKeyOf(explanation, unjsonifiableExplanations) ?
-				unjsonifiableExplanations[explanation]
-			:	explanation
-		message += ` because ${normalizedExplanation}`
-	}
-
-	return message
-}
-
-export const JsonSchema = {
-	writeUnjsonifiableMessage,
-	UnjsonifiableError: class UnjsonifiableError extends Error {},
-	throwUnjsonifiableError: (
-		...args: Parameters<typeof writeUnjsonifiableMessage>
-	): never => throwError(writeUnjsonifiableMessage(...args)),
-	throwInternalOperandError: (
-		kind: ConstraintKind,
-		schema: JsonSchema
-	): never =>
-		throwInternalError(
-			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
-		)
 }

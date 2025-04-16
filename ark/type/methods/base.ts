@@ -6,6 +6,7 @@ import type {
 	NodeSelector,
 	Predicate,
 	StandardSchemaV1,
+	ToJsonSchema,
 	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
@@ -135,9 +136,9 @@ export interface Inferred<out t = unknown, $ = {}> {
 	/**
 	 * #### generate a JSON Schema
 	 *
-	 * @throws {JsonSchema.UnjsonifiableError} if this cannot be converted to JSON Schema
+	 * @throws {ToJsonSchema.Error} if this cannot be converted to JSON Schema
 	 */
-	toJsonSchema(): JsonSchema
+	toJsonSchema(options?: ToJsonSchema.Options): JsonSchema
 
 	/**
 	 * #### metadata like custom descriptions and error messages
@@ -385,7 +386,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	/**
 	 * #### apply a predicate function to output
 	 *
-	 * ✅ go-to fallback for validation not composable via builtin types and operators
+	 * ✅ go-to fallback for validation not composable via built-in types and operators
 	 * ✅ runs after all other validators and morphs, if present
 	 * @predicateCast
 	 *
@@ -664,7 +665,7 @@ interface Type<out t = unknown, $ = {}>
 	/** @deprecated */
 	arguments: Function["arguments"]
 
-	// TS suggests Symbol to allow builtin symbolic access, so override that as well
+	// TS suggests Symbol to allow built-in symbolic access, so override that as well
 	/** @deprecated */
 	Symbol: never
 }

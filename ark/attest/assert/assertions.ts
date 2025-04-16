@@ -109,7 +109,7 @@ Actual: ${serializedActual}`,
 			const serializedExpected = printable(expected)
 			const serializedActual = printable(actual)
 			throw new assert.AssertionError({
-				message: `Assertion including at least one function or object was not between reference eqaul items
+				message: `Assertion including at least one function or object was not between reference equal items
 Expected: ${serializedExpected}
 Actual: ${serializedActual}`,
 				expected: serializedExpected,

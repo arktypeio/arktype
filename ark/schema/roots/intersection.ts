@@ -41,6 +41,7 @@ import {
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -308,8 +309,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return this.basis?.defaultShortDescription ?? "present"
 	}
 
-	protected innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema {
-		return this.children.reduce(
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		return this.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>
 				child.isBasis() ?
@@ -351,7 +352,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			this.children.forEach(child => js.check(child))
+			for (const child of this.children) js.check(child)
 			js.return(true)
 			return
 		}

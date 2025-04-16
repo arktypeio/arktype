@@ -147,7 +147,7 @@ div.twoslash-popup-container {
 
 /** .twoslash-error matches errors added by twoslash itself, e.g. type errors */
 .twoslash .twoslash-error {
-	/* Override the builtin error squiggle to match our theme */
+	/* Override the built-in error squiggle to match our theme */
 	background: url("/image/errorSquiggle.svg") repeat-x bottom left;
 }
 

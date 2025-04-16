@@ -186,7 +186,7 @@ export type inferObjectLiteral<def extends object, $, args> = show<
  */
 type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
-	// support for builtin readonly tracked here:
+	// support for built-in readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
 	-readonly [k in keyof def as nonOptionalKeyFromEntry<
 		k,

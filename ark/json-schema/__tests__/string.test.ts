@@ -56,14 +56,5 @@ contextualize(() => {
 		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
 		attest(tPatternString.allows("expression")).equals(true)
-
-		const tPatternRegExp = jsonSchemaToType({
-			type: "string",
-			pattern: /es/
-		})
-		attest(tPatternRegExp.expression).snap("/es/")
-		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
-		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
-		attest(tPatternRegExp.allows("expression")).equals(true)
 	})
 })

@@ -34,6 +34,7 @@ import type {
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
+import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
 import { Index } from "./structure/index.ts"
 import { Optional } from "./structure/optional.ts"
@@ -95,7 +96,8 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			numberAllowsNaN: false,
 			dateAllowsInvalid: false,
 			onFail: null,
-			keywords: {}
+			keywords: {},
+			toJsonSchema: ToJsonSchema.defaultConfig
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )

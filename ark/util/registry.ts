@@ -8,7 +8,7 @@ import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.45.10"
+export const arkUtilVersion = "0.46.0"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
@@ -34,7 +34,7 @@ declare global {
 	}
 }
 
-const namesByResolution = new WeakMap<object | symbol, string>()
+const namesByResolution = new Map<object | symbol, string>()
 const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
@@ -51,7 +51,7 @@ export const register = (value: object | symbol): string => {
 }
 
 export const isDotAccessible = (keyName: string): boolean =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
+	/^[$A-Z_a-z][\w$]*$/.test(keyName)
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {

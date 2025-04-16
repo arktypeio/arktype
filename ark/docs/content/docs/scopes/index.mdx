@@ -33,7 +33,7 @@ const coolScope = scope({
 
 <Callout type="warn" title="Don't wrap your scoped definitions in type!">
 
-Even if you reference it as part of your scope definition, the global 'type' parser only knows about builtin keywords.
+Even if you reference it as part of your scope definition, the global 'type' parser only knows about built-in keywords.
 
 ```ts
 // @errors: 2322
@@ -353,7 +353,7 @@ When users are first learning about Scopes, one of the most common mistakes is t
 
 <CodeBlock fromFile="nestedTypeInScopeError" />
 
-This error occurs because although the `id` alias would be resolvable in the current Scope directly, `type` only allows references to builtin keywords. In this case, the `type` wrapper is redundant and the fix is to simply remove it:
+This error occurs because although the `id` alias would be resolvable in the current Scope directly, `type` only allows references to built-in keywords. In this case, the `type` wrapper is redundant and the fix is to simply remove it:
 
 ```ts
 const myScope = scope({

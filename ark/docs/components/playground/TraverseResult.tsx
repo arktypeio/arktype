@@ -34,7 +34,7 @@ export const TraverseResult = ({ traversed }: TraverseResult.Props) => {
 							"(variable was never set)"
 						: resultKind === "failure" ?
 							(traversed as type.errors).summary
-						:	printable(traversed, 4)}
+						:	printable(traversed, { quoteKeys: false, indent: 4 })}
 					</code>
 				</pre>
 			}

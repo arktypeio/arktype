@@ -58,7 +58,7 @@ We also have some unique casing rules for our TypeScript types to facilitate typ
 - Use `PascalCase` for...
 
   - Entities/non-generic types (e.g. `User`, `SomeData`)
-  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
+  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's built-in `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
 
 - Use `camelCase` for...
 

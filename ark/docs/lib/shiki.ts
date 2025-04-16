@@ -23,7 +23,7 @@ const arkTypeTmJson = require("arkdark/tsWithArkType.tmLanguage.json")
 
 // Theme adjustments
 /** should match the css rule for .bg-fd-secondary\/50 */
-arkDarkTheme.colors["editor.background"] = "#0006"
+arkDarkTheme.colors["editor.background"] = "#060c18"
 
 arkDarkTheme.tokenColors.push({
 	// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,
@@ -137,7 +137,7 @@ declare global {
 								groupIndex < matchResult.length;
 								groupIndex++
 							) {
-								node.text = node.text.replace(
+								node.text = node.text.replaceAll(
 									new RegExp(`\\$${groupIndex}`, "gu"),
 									matchResult[Number(groupIndex)]
 								)

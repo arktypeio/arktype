@@ -298,7 +298,7 @@ If you'd like to fail in CI above a threshold, you can add flags like the follow
 
 ## CLI
 
-Attest also includes a builtin `attest` CLI including the following commands:
+Attest also includes a built-in `attest` CLI including the following commands:
 
 ### `stats`
 

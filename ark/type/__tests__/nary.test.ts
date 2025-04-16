@@ -295,6 +295,14 @@ contextualize(() => {
 				attest<unknown>(T.t)
 				attest(T.expression).snap("never")
 			})
+
+			it("spreadable scoped", $ => {
+				const types: { key: "a" }[] = []
+
+				const T = $.type.or(...types)
+
+				attest<{ key: 1 }>(T.t)
+			})
 		}
 	)
 
@@ -427,6 +435,25 @@ contextualize(() => {
 				attest<unknown>(T.t)
 				attest(T.expression).snap("unknown")
 			})
+
+			it("spreadable n-length", $ => {
+				const types: (
+					| { a: { key: "1" } }
+					| { "a?": { another: "1" }; "b?": "3" }
+				)[] = []
+
+				const T = $.type.and(...types)
+
+				attest<{
+					// should be required if one or branches is required
+					a: {
+						key: 1
+						another: 1
+					}
+					// should be optional if all branches are optional
+					b?: 3
+				}>(T.t)
+			})
 		}
 	)
 
@@ -557,6 +584,26 @@ contextualize(() => {
 
 				attest<{}>(T.t)
 				attest(T.expression).snap("object")
+			})
+
+			it("spreadable scoped", $ => {
+				const types: { key: "a" }[] = []
+
+				const T = $.type.merge(...types)
+
+				attest<{ key: { a1: 1 } }>(T.t)
+			})
+
+			it("spreadable n-length", $ => {
+				const types: ({ a: "1" } | { a: "2?"; b: "3" })[] = []
+
+				const T = $.type.merge(...types)
+
+				attest<{
+					// should be optional if one or more branches are optional
+					a?: 1 | 2
+					b: 3
+				}>(T.t)
 			})
 		}
 	)

@@ -16,12 +16,14 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
 import type { DomainNode } from "./domain.ts"
 import { defineRightwardIntersections } from "./utils.ts"
+
 export declare namespace Unit {
 	export interface Schema<value = unknown> extends BaseNormalizedSchema {
 		readonly unit: value
@@ -131,12 +133,12 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			:	this.description
 	}
 
-	protected innerToJsonSchema(_ctx: JsonSchema.ToContext): JsonSchema {
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		return (
 			// this is the more standard JSON schema representation, especially for Open API
 			this.unit === null ? { type: "null" }
 			: $ark.intrinsic.jsonPrimitive.allows(this.unit) ? { const: this.unit }
-			: JsonSchema.throwUnjsonifiableError(this.defaultShortDescription)
+			: ctx.fallback.unit({ code: "unit", base: {}, unit: this.unit })
 		)
 	}
 

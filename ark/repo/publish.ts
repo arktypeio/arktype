@@ -22,7 +22,7 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 const rewritePackageJsonName = (path: string, alias: string) =>
 	rewriteJson(path, data => ({ ...data, name: alias }))
 
-packages.forEach(pkg => {
+for (const pkg of packages) {
 	// primary name (either arktype or @ark/*)
 	publishPackage(pkg)
 
@@ -32,8 +32,9 @@ packages.forEach(pkg => {
 		// alias for original @arktype/ scope
 		publishPackage(pkg, `@arktype/${pkg.scope}`)
 	}
-})
+}
 
 shell("git push --tags")
 
-tagsToPublish.forEach(tagName => shell(`gh release create ${tagName} --latest`))
+for (const tagName of tagsToPublish)
+	shell(`gh release create ${tagName} --latest`)

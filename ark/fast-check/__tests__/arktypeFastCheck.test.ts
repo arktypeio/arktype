@@ -308,12 +308,12 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
-		it("array keyword with additional propss", () => {
+		it("array keyword with additional props", () => {
 			const T = type({ name: "string" }).and("Array<4")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
-		it("array with additional propss", () => {
+		it("array with additional props", () => {
 			const T = type({ name: "string" }).and("string[]")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)

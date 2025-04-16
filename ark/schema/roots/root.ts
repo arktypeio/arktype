@@ -1,5 +1,6 @@
 import {
 	arrayEquals,
+	flatMorph,
 	includes,
 	inferred,
 	omit,
@@ -8,6 +9,7 @@ import {
 	type Fn,
 	type array
 } from "@ark/util"
+import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
@@ -46,6 +48,7 @@ import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -127,22 +130,53 @@ export abstract class BaseRoot<
 		return this.meta.description ?? this.defaultShortDescription
 	}
 
-	toJsonSchema(opts: JsonSchema.ToOptions = {}): JsonSchema {
-		const ctx: JsonSchema.ToContext = {
-			dialect: "https://json-schema.org/draft/2020-12/schema",
-			...opts
+	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
+		const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
+			this.$.resolvedConfig.toJsonSchema,
+			opts
+		)
+
+		ctx.useRefs ||= this.isCyclic
+
+		// ensure $schema is the first key if present
+		const schema: JsonSchema =
+			typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
+
+		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
+
+		if (ctx.useRefs) {
+			schema.$defs = flatMorph(this.references, (i, ref) =>
+				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
+					[ref.id, ref.toResolvedJsonSchema(ctx)]
+				:	[]
+			)
 		}
-		const schema: any = this.toJsonSchemaRecurse(ctx)
-		if (typeof ctx.dialect === "string") schema.$schema = ctx.dialect
+
 		return schema
 	}
 
-	toJsonSchemaRecurse(ctx: JsonSchema.ToContext): JsonSchema {
-		const schema = this.innerToJsonSchema(ctx)
-		return Object.assign(schema, this.metaJson)
+	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
+		if (ctx.useRefs && !this.alwaysExpandJsonSchema)
+			return { $ref: `#/$defs/${this.id}` }
+
+		return this.toResolvedJsonSchema(ctx)
 	}
 
-	protected abstract innerToJsonSchema(ctx: JsonSchema.ToContext): JsonSchema
+	get alwaysExpandJsonSchema(): boolean {
+		return (
+			this.isBasis() ||
+			this.kind === "alias" ||
+			(this.hasKind("union") && this.isBoolean)
+		)
+	}
+
+	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		const result = this.innerToJsonSchema(ctx)
+
+		return Object.assign(result, this.metaJson)
+	}
+
+	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)

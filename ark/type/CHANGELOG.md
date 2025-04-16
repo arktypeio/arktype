@@ -1,5 +1,116 @@
 # arktype
 
+## 2.1.20
+
+### `toJsonSchema` config
+
+Some ArkType features don't have JSON Schema equivalents. By default, `toJsonSchema()` will throw in these cases.
+
+This behavior can be configured granularly to match your needs.
+
+```ts
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
+
+const schema = T.toJsonSchema({
+	fallback: {
+		// ✅ the "default" key is a fallback for any non-explicitly handled code
+		// ✅ ctx includes "base" (represents the schema being generated) and other code-specific props
+		// ✅ returning `ctx.base` will effectively ignore the incompatible constraint
+		default: ctx => ctx.base,
+		// handle specific incompatibilities granularly
+		date: ctx => ({
+			...ctx.base,
+			type: "string",
+			format: "date-time",
+			description: ctx.after ? `after ${ctx.after}` : "anytime"
+		})
+	}
+})
+
+const result = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "object",
+	properties: {
+		// Date instance is now a date-time string as specified by the `date` handler
+		birthday: { type: "string", format: "date-time", description: "anytime" }
+	},
+	required: ["birthday"]
+	// symbolic index signature ignored as specified by the `default` handler
+}
+```
+
+a `default` handler can also be specified at the root of a `fallback` config:
+
+```ts
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
+
+//--- cut ---
+
+const schema = T.toJsonSchema({
+	// "just make it work"
+	fallback: ctx => ctx.base
+})
+```
+
+These options can also be set at a [global or scope-level](/docs/configuration#levels).
+
+### Fallback Codes
+
+This is the full list of configurable reasons `toJsonSchema()` can fail.
+
+| Code                  | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `arrayObject`         | arrays with object properties                               |
+| `arrayPostfix`        | arrays with postfix elements                                |
+| `defaultValue`        | non-serializable default value                              |
+| `domain`              | non-serializable type keyword (always `bigint` or `symbol`) |
+| `morph`               | transformation                                              |
+| `patternIntersection` | multiple regex constraints                                  |
+| `predicate`           | custom narrow function                                      |
+| `proto`               | non-serializable `instanceof`                               |
+| `symbolKey`           | symbolic key on an object                                   |
+| `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
+| `date`                | a Date instance (supercedes `proto` for Dates )             |
+
+### cyclic types can now be converted to JSON Schema
+
+```ts
+// previously this threw
+const schema = type("object.json").toJsonSchema()
+
+// now generates the following schema
+const result = {
+	$ref: "#/$defs/intersection11",
+	$defs: {
+		intersection11: {
+			type: "object",
+			additionalProperties: { $ref: "#/$defs/jsonData1" }
+		},
+		jsonData1: {
+			anyOf: [
+				{ $ref: "#/$defs/intersection11" },
+				{ type: "number" },
+				{ type: "string" },
+				{ type: "boolean" },
+				{ type: "null" }
+			]
+		}
+	}
+}
+```
+
+### temporarily disable discrimination for cyclic unions
+
+This [addresses](https://github.com/arktypeio/arktype/issues/1188) [multiple](https://github.com/arktypeio/arktype/issues/1209) [issues](https://github.com/arktypeio/arktype/issues/1284) while we work on a permanent solution for accurately discriminating cyclic unions, tracked [here](https://github.com/arktypeio/arktype/issues/1026).
+
+### addresses inference issues on some n-ary APIs like `type.or` outside the default scope (see [the PR](https://github.com/arktypeio/arktype/pull/1423)- thanks @simonwkla) 🎊
+
 ## 2.1.19
 
 ##### [Multiple](https://github.com/arktypeio/arktype/issues/1328) [improvements](https://github.com/arktypeio/arktype/issues/1279) to `toJsonSchema()` output, aligning it more closely with Open API standards.
@@ -474,7 +585,7 @@ discriminateValue({ oneValue: 3 })
 
 Special thanks to @thetayloredman who did a mind-blowingly good job helping us iterate toward the current type-level pattern-matching implementation🙇
 
-### Builtin keywords can now be globally configured
+### Built-in keywords can now be globally configured
 
 This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
 

@@ -1,8 +1,7 @@
 import { ensureDir, getShellOutput, readJson, writeFile } from "@ark/fs"
-import type { ExecException } from "child_process"
+import type { ExecException } from "node:child_process"
 import { existsSync } from "node:fs"
-import { basename, join, relative } from "node:path"
-import { resolve } from "path"
+import { basename, join, relative, resolve } from "node:path"
 import ts from "typescript"
 import {
 	TsServer,
@@ -356,11 +355,11 @@ const buildCallTree = (ctx: AnalysisContext): void => {
 
 	const activeCallStack: CallRange[] = []
 
-	ctx.callRanges.forEach(call => {
+	for (const call of ctx.callRanges) {
 		popFinishedCalls(call, activeCallStack)
 		assignToParentOrRoot(call, activeCallStack, ctx)
 		activeCallStack.push(call)
-	})
+	}
 }
 
 const popFinishedCalls = (
@@ -422,7 +421,7 @@ const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	stats.count++
 
 	// Process children
-	call.children.forEach(child => collectFunctionStats(child, ctx))
+	for (const child of call.children) collectFunctionStats(child, ctx)
 }
 
 const addCallSiteToStats = (call: CallRange, stats: FunctionStats): void => {
@@ -439,9 +438,8 @@ const addCallSiteToStats = (call: CallRange, stats: FunctionStats): void => {
 
 const sortAndRankFunctions = (ctx: AnalysisContext): void => {
 	// Sort each function's call sites by self-time
-	Object.values(ctx.functionStats).forEach(stats => {
+	for (const stats of Object.values(ctx.functionStats))
 		stats.detailedCallSites.sort((a, b) => b.selfTime - a.selfTime)
-	})
 
 	// Sort functions by self-time
 	ctx.allFunctions = Object.values(ctx.functionStats).sort(
@@ -457,17 +455,17 @@ const analyzeTypeInstantiations = (traceDir: string): void => {
 	filterDurationEntries(ctx)
 
 	// Process each duration entry to extract call ranges
-	ctx.durationEntries.forEach(entry => processDurationEntry(entry, ctx))
+	for (const entry of ctx.durationEntries) processDurationEntry(entry, ctx)
 
 	// Build call tree from ranges
 	buildCallTree(ctx)
 
 	// Calculate self-time for each call
-	ctx.rootCalls.forEach(calculateSelfTimes)
+	for (const root of ctx.rootCalls) calculateSelfTimes(root)
 
 	// Collect statistics by view type
 	const ungroupedStats = collectUngroupedStats(ctx)
-	ctx.rootCalls.forEach(call => collectFunctionStats(call, ctx))
+	for (const call of ctx.rootCalls) collectFunctionStats(call, ctx)
 
 	// Sort and rank functions
 	sortAndRankFunctions(ctx)
@@ -549,10 +547,10 @@ const collectUngroupedStats = (ctx: AnalysisContext): UngroupedCallStats[] => {
 			selfTime: call.selfTime
 		})
 
-		call.children.forEach(flattenCallTree)
+		for (const child of call.children) flattenCallTree(child)
 	}
 
-	ctx.rootCalls.forEach(flattenCallTree)
+	for (const root of ctx.rootCalls) flattenCallTree(root)
 
 	// Sort by self time in descending order
 	return ungroupedStats.sort((a, b) => b.selfTime - a.selfTime)
@@ -566,7 +564,7 @@ const displayIndividualSummary = (stats: UngroupedCallStats[]): void => {
 
 	const top20 = stats.slice(0, 20)
 
-	top20.forEach((stat, index) => {
+	for (const [index, stat] of top20.entries()) {
 		const typeNameFormatted = formatTypeName(stat.functionName, 20)
 		const selfTimeMs = (stat.selfTime / 1000).toFixed(2).padStart(15)
 		const location = formatLocation(stat.callSite)
@@ -574,7 +572,7 @@ const displayIndividualSummary = (stats: UngroupedCallStats[]): void => {
 		outputCapture.write(
 			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${location}`
 		)
-	})
+	}
 }
 
 /**
@@ -614,7 +612,7 @@ const displayGroupedSummary = (functions: FunctionStats[]): void => {
 		"Top Usage"
 	])
 
-	functions.slice(0, 20).forEach((stats, index) => {
+	for (const [index, stats] of functions.slice(0, 20).entries()) {
 		const typeNameFormatted = formatTypeName(stats.functionName, 20)
 		const totalTimeMs = (stats.selfTime / 1000).toFixed(2).padStart(15)
 		const avgTimeMs = (stats.selfTime / stats.count / 1000)
@@ -637,7 +635,7 @@ const displayGroupedSummary = (functions: FunctionStats[]): void => {
 		outputCapture.write(
 			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${totalTimeMs} | ${avgTimeMs} | ${calls} | ${topUsageLocation} (${topUsageTime})`
 		)
-	})
+	}
 }
 
 /**
@@ -780,7 +778,7 @@ const escapeForCsv = (value: string): string => {
 	if (value.includes(",") || value.includes('"') || value.includes("\n")) {
 		// If the value contains commas, double quotes, or newlines, wrap it in quotes
 		// and escape any double quotes by doubling them
-		return `"${value.replace(/"/g, '""')}"`
+		return `"${value.replaceAll('"', '""')}"`
 	}
 	return value
 }

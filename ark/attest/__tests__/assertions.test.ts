@@ -168,9 +168,9 @@ describe("type assertions", () => {
 	it("does not boom on Type comparison", () => {
 		// @ts-expect-error
 		attest(() => attest(type.string).equals(type.number)).throws
-			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference eqaul items
-Expected: number
-Actual: string`)
+			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference equal items
+Expected: Function(fn10)
+Actual: Function(fn11)`)
 	})
 
 	it("doesn't boom on ArkErrors vs plain object", () => {
@@ -178,7 +178,7 @@ Actual: string`)
 			.throws
 			.snap(`AssertionError [ERR_ASSERTION]: Objects did not have the same constructor:
 Expected: {"a":"five"}
-Actual: ArkErrors`)
+Actual: [ArkError]`)
 	})
 
 	it("jsdoc ", () => {

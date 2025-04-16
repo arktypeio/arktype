@@ -92,7 +92,7 @@ export const getCallExpressionsByName = (
 	isSnapCall = false
 ): ts.CallExpression[] => {
 	const calls: ts.CallExpression[] = []
-	getDescendants(startNode).forEach(descendant => {
+	for (const descendant of getDescendants(startNode)) {
 		if (ts.isCallExpression(descendant)) {
 			if (names.includes(descendant.expression.getText()) || !names.length)
 				calls.push(descendant)
@@ -102,7 +102,7 @@ export const getCallExpressionsByName = (
 					calls.push(descendant as any as ts.CallExpression)
 			}
 		}
-	})
+	}
 	return calls
 }
 

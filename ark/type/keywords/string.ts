@@ -3,8 +3,10 @@ import {
 	intrinsic,
 	node,
 	rootSchema,
-	type IntersectionNode,
+	type Intersection,
+	type JsonSchema,
 	type Morph,
+	type mutableNormalizedRootOfKind,
 	type Traversal
 } from "@ark/schema"
 import {
@@ -18,20 +20,26 @@ import type { Module, Submodule } from "../module.ts"
 import { Scope } from "../scope.ts"
 import { number } from "./number.ts"
 
-// Non-trivial expressions should have an explanation or attribution
+// non-trivial expressions should have an explanation or attribution
 
 export const regexStringNode = (
 	regex: RegExp,
-	description: string
-): IntersectionNode =>
-	node("intersection", {
+	description: string,
+	jsonSchemaFormat?: JsonSchema.Format
+): Intersection.Node => {
+	const schema: mutableNormalizedRootOfKind<"intersection"> = {
 		domain: "string",
 		pattern: {
 			rule: regex.source,
 			flags: regex.flags,
 			meta: description
 		}
-	}) as never
+	}
+
+	if (jsonSchemaFormat) schema.meta = { format: jsonSchemaFormat }
+
+	return node("intersection", schema) as never
+}
 
 const stringIntegerRoot = regexStringNode(
 	wellFormedIntegerMatcher,
@@ -70,16 +78,16 @@ export declare namespace stringInteger {
 	}
 }
 
-const hex = regexStringNode(/^[0-9a-fA-F]+$/, "hex characters only")
+const hex = regexStringNode(/^[\dA-Fa-f]+$/, "hex characters only")
 
 const base64 = Scope.module(
 	{
 		root: regexStringNode(
-			/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
+			/^(?:[\d+/A-Za-z]{4})*(?:[\d+/A-Za-z]{2}==|[\d+/A-Za-z]{3}=)?$/,
 			"base64-encoded"
 		),
 		url: regexStringNode(
-			/^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==|%3D%3D)?|[A-Za-z0-9_-]{3}(?:=|%3D)?)?$/,
+			/^(?:[\w-]{4})*(?:[\w-]{2}(?:==|%3D%3D)?|[\w-]{3}(?:=|%3D)?)?$/,
 			"base64url-encoded"
 		)
 	},
@@ -128,7 +136,7 @@ export declare namespace capitalize {
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string): boolean => {
-	const sanitized = creditCardInput.replace(/[- ]+/g, "")
+	const sanitized = creditCardInput.replaceAll(/[ -]+/g, "")
 	let sum = 0
 	let digit: string
 	let tmpNum: number
@@ -138,8 +146,7 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 		tmpNum = Number.parseInt(digit, 10)
 		if (shouldDouble) {
 			tmpNum *= 2
-			if (tmpNum >= 10) sum += (tmpNum % 10) + 1
-			else sum += tmpNum
+			sum += tmpNum >= 10 ? (tmpNum % 10) + 1 : tmpNum
 		} else sum += tmpNum
 
 		shouldDouble = !shouldDouble
@@ -149,7 +156,7 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isCreditCard.js
 const creditCardMatcher: RegExp =
-	/^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/
+	/^(?:4\d{12}(?:\d{3,6})?|5[1-5]\d{14}|(222[1-9]|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)\d{12}|6(?:011|5\d\d)\d{12,15}|3[47]\d{13}|3(?:0[0-5]|[68]\d)\d{11}|(?:2131|1800|35\d{3})\d{11}|6[27]\d{14}|^(81\d{14,17}))$/
 
 export const creditCard = rootSchema({
 	domain: "string",
@@ -206,7 +213,7 @@ export type DateOptions = {
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
 // delimiter for date/time is mandatory. Regex from validator.js strict matcher:
 export const iso8601Matcher =
-	/^([+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T]((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([.,]\d+(?!:))?)?(\17[0-5]\d([.,]\d+)?)?([zZ]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
+	/^([+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))(T((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([,.]\d+(?!:))?)?(\17[0-5]\d([,.]\d+)?)?([Zz]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
 
 type ParsedDayParts = {
 	y?: string
@@ -271,7 +278,7 @@ const parsableDate = rootSchema({
 
 const epochRoot = stringInteger.root.internal
 	.narrow((s, ctx) => {
-		// we know this is safe since it has already
+		// this is safe since it has already
 		// been validated as an integer string
 		const n = Number.parseInt(s)
 		const out = number.epoch(n)
@@ -375,13 +382,17 @@ export declare namespace stringDate {
 }
 
 const email = regexStringNode(
+	// considered https://colinhacks.com/essays/reasonable-email-regex but it includes a lookahead
+	// which breaks some integrations e.g. fast-check
+
+	// regex based on:
 	// https://www.regular-expressions.info/email.html
-	/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
-	"an email address"
+	/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
+	"an email address",
+	"email"
 )
 
-// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
-// Adjusted to incorporate unmerged fix in https://github.com/validatorjs/validator.js/pull/2083
+// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
 const ipv4Address = `(${ipv4Segment}[.]){3}${ipv4Segment}`
 const ipv4Matcher = new RegExp(`^${ipv4Address}$`)
@@ -403,8 +414,8 @@ const ipv6Matcher = new RegExp(
 export const ip: ip.module = Scope.module(
 	{
 		root: ["v4 | v6", "@", "an IP address"],
-		v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
-		v6: regexStringNode(ipv6Matcher, "an IPv6 address")
+		v4: regexStringNode(ipv4Matcher, "an IPv4 address", "ipv4"),
+		v6: regexStringNode(ipv6Matcher, "an IPv6 address", "ipv6")
 	},
 	{
 		name: "string.ip"
@@ -660,7 +671,7 @@ const numericRoot = regexStringNode(
 	"a well-formed numeric string"
 )
 
-export const numeric: stringNumeric.module = Scope.module(
+export const stringNumeric: stringNumeric.module = Scope.module(
 	{
 		root: numericRoot,
 		parse: rootSchema({
@@ -685,9 +696,29 @@ export declare namespace stringNumeric {
 	}
 }
 
-// https://semver.org/
+const regexPatternDescription = "a regex pattern"
+const regex = rootSchema({
+	domain: "string",
+	predicate: {
+		meta: regexPatternDescription,
+		predicate: (s: string, ctx) => {
+			try {
+				new RegExp(s)
+				return true
+			} catch (e) {
+				return ctx.reject({
+					code: "predicate",
+					expected: regexPatternDescription,
+					problem: String(e)
+				})
+			}
+		}
+	},
+	meta: { format: "regex" }
+})
+
 const semverMatcher =
-	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+([\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
 
 const semver = regexStringNode(
 	semverMatcher,
@@ -754,7 +785,7 @@ declare namespace upper {
 
 const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)
-	// Can be removed once Node 18 is EOL
+	// TODO[2025-04-30] remove once Node 18 is EOL and we can rely on URL.canParse
 	try {
 		new URL(s)
 		return true
@@ -768,7 +799,10 @@ const urlRoot = rootSchema({
 	predicate: {
 		meta: "a URL string",
 		predicate: isParsableUrl
-	}
+	},
+	// URL.canParse allows a subset of the RFC-3986 URI spec
+	// since there is no other serializable validation, best include a format
+	meta: { format: "uri" }
 })
 
 export const url: url.module = Scope.module(
@@ -803,46 +837,50 @@ export declare namespace url {
 	}
 }
 
-// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
+// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const uuid = Scope.module(
 	{
 		// the meta tuple expression ensures the error message does not delegate
 		// to the individual branches, which are too detailed
-		root: ["versioned | nil | max", "@", "a UUID"],
+		root: [
+			"versioned | nil | max",
+			"@",
+			{ description: "a UUID", format: "uuid" }
+		],
 		"#nil": "'00000000-0000-0000-0000-000000000000'",
 		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
 		"#versioned":
-			/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
+			/[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}/i,
 		v1: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-1[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv1"
 		),
 		v2: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-2[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-2[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv2"
 		),
 		v3: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-3[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv3"
 		),
 		v4: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv4"
 		),
 		v5: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-5[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv5"
 		),
 		v6: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-6[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-6[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv6"
 		),
 		v7: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv7"
 		),
 		v8: regexStringNode(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+			/^[\da-f]{8}-[\da-f]{4}-8[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv8"
 		)
 	},
@@ -878,7 +916,7 @@ export const string = Scope.module(
 		root: intrinsic.string,
 		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
 		alphanumeric: regexStringNode(
-			/^[A-Za-z\d]*$/,
+			/^[\dA-Za-z]*$/,
 			"only letters and digits 0-9"
 		),
 		hex,
@@ -893,7 +931,8 @@ export const string = Scope.module(
 		json,
 		lower,
 		normalize,
-		numeric,
+		numeric: stringNumeric,
+		regex,
 		semver,
 		trim,
 		upper,
@@ -927,6 +966,7 @@ export declare namespace string {
 		lower: lower.submodule
 		normalize: normalize.submodule
 		numeric: stringNumeric.submodule
+		regex: string
 		semver: string
 		trim: trim.submodule
 		upper: upper.submodule

@@ -1,6 +1,6 @@
 import { fromHere, readFile, writeFile } from "@ark/fs"
 import { flatMorph, throwInternalError } from "@ark/util"
-import { existsSync } from "fs"
+import { existsSync } from "node:fs"
 
 /**
  * Previously, we used raw-loader imports like:

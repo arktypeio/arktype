@@ -23,7 +23,7 @@ import {
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import type { BaseMeta, TypeMeta } from "./shared/declare.ts"
+import type { NodeMeta, TypeMeta } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
@@ -157,7 +157,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		meta?: TypeMeta.Collapsible
 	}
 
-	const meta: BaseMeta & dict =
+	const meta: NodeMeta & dict =
 		metaSchema === undefined ? {}
 		: typeof metaSchema === "string" ? { description: metaSchema }
 		: (metaSchema as never)
@@ -221,7 +221,7 @@ export type CreateNodeInput = {
 	id: NodeId
 	kind: NodeKind
 	inner: dict
-	meta: BaseMeta
+	meta: NodeMeta
 	$: BaseScope
 	ignoreCache?: true
 }
@@ -239,7 +239,7 @@ export const createNode = ({
 	const children: BaseNode[] = []
 	let innerJson: dict = {}
 
-	innerEntries.forEach(([k, v]) => {
+	for (const [k, v] of innerEntries) {
 		const keyImpl = impl.keys[k]
 		const serialize =
 			keyImpl.serialize ??
@@ -253,13 +253,13 @@ export const createNode = ({
 			else children.push(listableNode)
 		} else if (typeof keyImpl.child === "function")
 			children.push(...keyImpl.child(v as never))
-	})
+	}
 
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
 	let json = { ...innerJson }
-	let metaJson: BaseMeta & dict = {}
+	let metaJson: NodeMeta & dict = {}
 
 	if (!isEmptyObject(meta)) {
 		metaJson = flatMorph(meta, (k, v) => [

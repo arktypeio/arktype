@@ -5,8 +5,9 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
@@ -93,7 +94,7 @@ export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 				schema.minItems = this.rule
 				return schema
 			default:
-				return JsonSchema.throwInternalOperandError("minLength", schema)
+				return ToJsonSchema.throwInternalOperandError("minLength", schema)
 		}
 	}
 }

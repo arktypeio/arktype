@@ -16,7 +16,7 @@ import {
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
-import type { BaseMeta } from "./declare.ts"
+import type { NodeMeta } from "./declare.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
@@ -229,7 +229,7 @@ export class ArkErrors
 
 	transform(f: (e: ArkError) => ArkError): ArkErrors {
 		const result = new ArkErrors(this.ctx)
-		this.forEach(e => result.add(f(e)))
+		for (const e of this) result.add(f(e))
 		return result
 	}
 
@@ -238,15 +238,15 @@ export class ArkErrors
 	 * prefixing their paths with that of the current Traversal.
 	 */
 	merge(errors: ArkErrors): void {
-		errors.forEach(e => {
-			if (this.includes(e)) return
+		for (const e of errors) {
+			if (this.includes(e)) continue
 			this._add(
 				new ArkError(
 					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
 					this.ctx
 				)
 			)
-		})
+		}
 	}
 
 	/**
@@ -328,17 +328,17 @@ export class ArkErrors
 	}
 
 	private addAncestorPaths(error: ArkError): void {
-		error.path.stringifyAncestors().forEach(propString => {
+		for (const propString of error.path.stringifyAncestors()) {
 			this.byAncestorPath[propString] = append(
 				this.byAncestorPath[propString],
 				error
 			)
-		})
+		}
 	}
 }
 
 export class TraversalError extends Error {
-	name = "TraversalError"
+	readonly name = "TraversalError"
 	declare arkErrors: ArkErrors
 
 	constructor(errors: ArkErrors) {
@@ -384,10 +384,10 @@ type ArkErrorContextInputsByCode = {
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
-	merge<ArkErrorContextInputsByCode[code], { meta?: BaseMeta }>
+	merge<ArkErrorContextInputsByCode[code], { meta?: NodeMeta }>
 
 export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
-	ArkErrorContextInputsByCode[code] & { meta: BaseMeta }
+	ArkErrorContextInputsByCode[code] & { meta: NodeMeta }
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkError<code>,

@@ -98,7 +98,7 @@ contextualize(() => {
 		)
 	})
 
-	entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
+	for (const [min, max] of entriesOf(boundKindPairsByLower)) {
 		describe(`${min}/${max}`, () => {
 			const basis =
 				min === "min" ? { domain: "number" }
@@ -221,5 +221,5 @@ contextualize(() => {
 				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})
 		})
-	})
+	}
 })

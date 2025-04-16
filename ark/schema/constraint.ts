@@ -41,6 +41,7 @@ import {
 } from "./shared/intersections.ts"
 import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
+import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
 import type { Structure } from "./structure/structure.ts"
@@ -94,7 +95,8 @@ export abstract class InternalPrimitiveConstraint<
 	abstract readonly compiledNegation: string
 
 	abstract reduceJsonSchema(
-		base: JsonSchema.Constrainable
+		base: JsonSchema.Constrainable,
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
@@ -203,8 +205,10 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	}
 	if (!matched) s.l.push(head)
 
-	if (s.kind === "intersection")
-		head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
+	if (s.kind === "intersection") {
+		if (head.impliedSiblings)
+			for (const node of head.impliedSiblings) appendUnique(s.r, node)
+	}
 	return intersectConstraints(s)
 }
 

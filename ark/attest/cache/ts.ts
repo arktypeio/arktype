@@ -26,7 +26,7 @@ export class TsServer {
 		const tsLibPaths = getTsLibFiles(this.tsConfigInfo.parsed.options)
 
 		// TS represents windows paths as `C:/Users/ssalb/...`
-		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
+		const normalizedCwd = fromCwd().replaceAll("\\", "/")
 
 		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path => {
 			if (!path.startsWith(normalizedCwd)) return
@@ -57,7 +57,7 @@ export class TsServer {
 	}
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
-		const tsPath = path.replaceAll(/\\/g, "/")
+		const tsPath = path.replaceAll("\\", "/")
 		const file = this.virtualEnv.getSourceFile(tsPath)
 		if (!file) {
 			throwInternalError(
@@ -264,9 +264,10 @@ export const getStringifiableType = (node: ts.Node): StringifiableType => {
 			ts.TypeFormatFlags.NoTruncation
 		)
 
-		if (nonTruncated.includes(" any") && !stringified.includes(" any"))
-			stringified = nonTruncated.replaceAll(" any", " cyclic")
-		else stringified = nonTruncated
+		stringified =
+			nonTruncated.includes(" any") && !stringified.includes(" any") ?
+				nonTruncated.replaceAll(" any", " cyclic")
+			:	nonTruncated
 	}
 
 	return Object.assign(nodeType, {

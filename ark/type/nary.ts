@@ -555,9 +555,9 @@ export type NaryUnionParser<$> = {
 	): r extends infer _ ? _ : never
 	<
 		const defs extends readonly unknown[],
-		r = Type<type.infer<defs[number]>, $>
+		r = Type<type.infer<defs[number], $>, $>
 	>(
-		...defs: { [i in keyof defs]: type.validate<defs[i]> }
+		...defs: { [i in keyof defs]: type.validate<defs[i], $> }
 	): r extends infer _ ? _ : never
 }
 
@@ -1024,7 +1024,7 @@ export type NaryIntersectionParser<$> = {
 					type.infer<l, $>,
 					type.infer<m, $>,
 					type.infer<n, $>,
-					type.infer<o>
+					type.infer<o, $>
 				]
 			>,
 			$
@@ -2220,7 +2220,7 @@ export type NaryMergeParser<$> = {
 		r = Type<inferNaryMerge<{ [i in keyof defs]: type.infer<defs[i], $> }>, $>
 	>(
 		...defs: {
-			[i in keyof defs]: type.validate<defs[i]> &
+			[i in keyof defs]: type.validate<defs[i], $> &
 				(type.infer<defs[i], $> extends object ? unknown
 				:	ErrorType<
 						NonObjectMergeErrorMessage,
