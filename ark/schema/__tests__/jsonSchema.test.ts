@@ -408,7 +408,7 @@ contextualize(() => {
 			})
 
 			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
-    code: "default",
+    code: "defaultValue",
     base: {},
     value: 0n
 }`)
@@ -427,7 +427,7 @@ contextualize(() => {
 			})
 
 			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
-    code: "default",
+    code: "defaultValue",
     base: {},
     value: 0n
 }`)
