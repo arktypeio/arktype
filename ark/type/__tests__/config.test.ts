@@ -236,7 +236,7 @@ contextualize(() => {
 	})
 
 	it("docs actual example", () => {
-		// avoid logging "was xxx" for password
+		// avoid logging "was supersecret" for password
 		const Password = type("string >= 8", "@", { actual: () => "" })
 
 		const User = type({
