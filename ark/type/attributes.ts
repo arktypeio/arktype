@@ -9,7 +9,9 @@ import {
 	type intersectArrays,
 	type isSafelyMappable,
 	type merge,
+	type optionalUnionKeyOf,
 	type Primitive,
+	type requiredUnionKeyOf,
 	type show
 } from "@ark/util"
 import type { arkPrototypes } from "./keywords/constructors.ts"
@@ -202,9 +204,28 @@ type _inferNaryIntersection<remaining extends readonly unknown[], result> =
 		_inferNaryIntersection<tail, inferIntersection<result, head>>
 	:	result
 
-export type inferNaryMerge<types extends readonly unknown[]> = _inferNaryMerge<
-	types,
-	{}
+export type inferNaryMerge<types extends readonly unknown[]> =
+	number extends types["length"] ? _inferUnorderedMerge<types>
+	:	_inferNaryMerge<types, {}>
+
+type _inferUnorderedMerge<types extends readonly unknown[]> = show<
+	{
+		[k in requiredUnionKeyOf<types[number]>]: types[number] extends infer v ?
+			v extends unknown ?
+				k extends keyof v ?
+					v[k]
+				:	never
+			:	never
+		:	never
+	} & {
+		[k in optionalUnionKeyOf<types[number]>]?: types[number] extends infer v ?
+			v extends unknown ?
+				k extends keyof v ?
+					v[k]
+				:	never
+			:	never
+		:	never
+	}
 >
 
 type _inferNaryMerge<remaining extends readonly unknown[], result> =
