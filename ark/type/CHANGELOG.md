@@ -1,5 +1,7 @@
 # arktype
 
+## 2.1.20
+
 ## 2.1.19
 
 ##### [Multiple](https://github.com/arktypeio/arktype/issues/1328) [improvements](https://github.com/arktypeio/arktype/issues/1279) to `toJsonSchema()` output, aligning it more closely with Open API standards.

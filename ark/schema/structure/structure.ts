@@ -831,8 +831,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				schema.properties![prop.key] = valueSchema
 			}
-			if (this.requiredKeys.length)
-				schema.required = this.requiredKeys as string[]
+			if (this.requiredKeys.length && schema.properties) {
+				schema.required = this.requiredKeys.filter(
+					(k): k is string => typeof k === "string" && k in schema.properties!
+				)
+			}
 		}
 
 		if (this.index) {

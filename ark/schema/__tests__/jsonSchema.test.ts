@@ -4,10 +4,16 @@ import {
 	intrinsic,
 	rootSchema,
 	rootSchemaScope,
-	type BaseRoot
+	schemaScope,
+	type BaseRoot,
+	type ToJsonSchema
 } from "@ark/schema"
+import type { omit } from "@ark/util"
 
-const toJsonSchema = (node: BaseRoot) => node.toJsonSchema({ dialect: null })
+const toJsonSchema = (
+	node: BaseRoot,
+	options?: omit<ToJsonSchema.Options, "dialect">
+) => node.toJsonSchema({ dialect: null, ...options })
 
 contextualize(() => {
 	it("generates dialect by default", () => {
@@ -24,7 +30,6 @@ contextualize(() => {
 			anyOf: [
 				{ type: "number" },
 				{ type: "string" },
-				// boolean is special-cased to merge during conversion
 				{ type: "boolean" },
 				{ type: "null" }
 			]
@@ -250,7 +255,6 @@ contextualize(() => {
 		})
 	})
 
-	// https://github.com/arktypeio/arktype/issues/1328
 	it("unions of literal values as enums", () => {
 		const Bit = rootSchemaScope.units([0, 1])
 
@@ -448,8 +452,7 @@ contextualize(() => {
 			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
     code: "morph",
     base: {
-        type: "string",
-        $schema: "https://json-schema.org/draft/2020-12/schema"
+        type: "string"
     },
     out: null
 }`)
@@ -563,17 +566,13 @@ contextualize(() => {
 				morphs: [(s: string) => Number.parseInt(s)]
 			})
 
-			const schema = T.toJsonSchema({
+			const schema = toJsonSchema(T, {
 				fallback: {
 					morph: ctx => ({ ...ctx.base, _testOut: ctx.out })
 				}
 			})
 
-			attest(schema).unknown.snap({
-				type: "string",
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				_testOut: null
-			})
+			attest(schema).unknown.snap({ type: "string", _testOut: null })
 		})
 
 		it("introspectable out", () => {
@@ -582,7 +581,7 @@ contextualize(() => {
 				morphs: [(s: string) => Number.parseInt(s), rootSchema("number")]
 			})
 
-			const schema = T.toJsonSchema({
+			const schema = toJsonSchema(T, {
 				fallback: {
 					morph: ctx => ({ ...ctx.out, _testIn: ctx.base }) as never
 				}
@@ -590,11 +589,7 @@ contextualize(() => {
 
 			attest(schema).unknown.snap({
 				type: "number",
-				$schema: "https://json-schema.org/draft/2020-12/schema",
-				_testIn: {
-					type: "string",
-					$schema: "https://json-schema.org/draft/2020-12/schema"
-				}
+				_testIn: { type: "string" }
 			})
 		})
 
@@ -603,7 +598,7 @@ contextualize(() => {
 				proto: "Date"
 			})
 
-			const schema = T.toJsonSchema({
+			const schema = toJsonSchema(T, {
 				fallback: {
 					proto: () => ({ type: "object" }),
 					date: () => ({
@@ -613,11 +608,7 @@ contextualize(() => {
 				}
 			})
 
-			attest(schema).snap({
-				type: "string",
-				format: "date-time",
-				$schema: "https://json-schema.org/draft/2020-12/schema"
-			})
+			attest(schema).snap({ type: "string", format: "date-time" })
 		})
 
 		it("date range with fallback", () => {
@@ -626,7 +617,7 @@ contextualize(() => {
 				before: new Date("06-01-2000")
 			})
 
-			const schema = T.toJsonSchema({
+			const schema = toJsonSchema(T, {
 				fallback: {
 					proto: () => ({ type: "object" }),
 					date: ctx => ({
@@ -640,8 +631,63 @@ contextualize(() => {
 			attest(schema).snap({
 				type: "string",
 				format: "date-time",
-				description: "before 2000-06-01T04:00:00.000Z",
-				$schema: "https://json-schema.org/draft/2020-12/schema"
+				description: "before 2000-06-01T04:00:00.000Z"
+			})
+		})
+
+		it("scope config", () => {
+			const zildjian = Symbol()
+			const { T } = schemaScope(
+				{
+					T: rootSchema({
+						domain: "object",
+						required: [
+							{ key: zildjian, value: "bigint" },
+							{ key: "valid", value: "string" }
+						]
+					})
+				},
+				{
+					toJsonSchema: {
+						fallback: ctx => ctx.base
+					}
+				}
+			).export()
+
+			const schema = toJsonSchema(T)
+
+			attest(schema).snap({
+				type: "object",
+				properties: { valid: { type: "string" } },
+				required: ["valid"]
+			})
+		})
+
+		it("scope config", () => {
+			const zildjian = Symbol()
+			const { T } = schemaScope(
+				{
+					T: rootSchema({
+						domain: "object",
+						required: [
+							{ key: zildjian, value: "bigint" },
+							{ key: "valid", value: "string" }
+						]
+					})
+				},
+				{
+					toJsonSchema: {
+						fallback: ctx => ctx.base
+					}
+				}
+			).export()
+
+			const schema = toJsonSchema(T)
+
+			attest(schema).snap({
+				type: "object",
+				properties: { valid: { type: "string" } },
+				required: ["valid"]
 			})
 		})
 	})
