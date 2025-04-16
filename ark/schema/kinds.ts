@@ -97,23 +97,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			dateAllowsInvalid: false,
 			onFail: null,
 			keywords: {},
-			toJsonSchema: {
-				dialect: "https://json-schema.org/draft/2020-12/schema",
-				fallback: {
-					arrayObject: ctx => ToJsonSchema.throw("arrayObject", ctx),
-					arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
-					default: ctx => ToJsonSchema.throw("default", ctx),
-					domain: ctx => ToJsonSchema.throw("domain", ctx),
-					morph: ctx => ToJsonSchema.throw("morph", ctx),
-					patternIntersection: ctx =>
-						ToJsonSchema.throw("patternIntersection", ctx),
-					predicate: ctx => ToJsonSchema.throw("predicate", ctx),
-					proto: ctx => ToJsonSchema.throw("proto", ctx),
-					symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
-					unit: ctx => ToJsonSchema.throw("unit", ctx),
-					date: ctx => ToJsonSchema.throw("date", ctx)
-				}
-			}
+			toJsonSchema: ToJsonSchema.defaultConfig
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )

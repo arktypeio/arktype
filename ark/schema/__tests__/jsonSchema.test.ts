@@ -228,9 +228,30 @@ contextualize(() => {
 	})
 
 	it("cyclic", () => {
-		attest(() => toJsonSchema($ark.intrinsic.jsonObject)).throws(
-			"not implemented"
-		)
+		const schema = toJsonSchema($ark.intrinsic.jsonObject)
+
+		attest(schema).snap({
+			$ref: "#/$defs/intersection11",
+			$defs: {
+				intersection11: {
+					type: "object",
+					additionalProperties: { $ref: "#/$defs/jsonData1" }
+				},
+				jsonData1: {
+					anyOf: [
+						{ $ref: "#/$defs/alias1" },
+						{ type: "number" },
+						{ type: "string" },
+						{ $ref: "#/$defs/boolean1" },
+						{ type: "null" }
+					]
+				},
+				alias1: { $ref: "#/$defs/alias1" },
+				union7: {
+					anyOf: [{ $ref: "#/$defs/alias1" }, { $ref: "#/$defs/boolean1" }]
+				}
+			}
+		})
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1328

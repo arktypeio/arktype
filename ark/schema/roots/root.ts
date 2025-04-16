@@ -1,5 +1,6 @@
 import {
 	arrayEquals,
+	flatMorph,
 	includes,
 	inferred,
 	omit,
@@ -134,12 +135,31 @@ export abstract class BaseRoot<
 			this.$.resolvedConfig.toJsonSchema,
 			opts
 		)
+
+		ctx.useRefs ||= this.isCyclic
+
 		const schema: any = this.toJsonSchemaRecurse(ctx)
+
 		if (typeof ctx.dialect === "string") schema.$schema = ctx.dialect
+
+		if (ctx.useRefs) {
+			schema.$defs = flatMorph(this.references, (i, ref) =>
+				ref.isRoot() && !ref.isBasis() ?
+					[ref.id, ref.toResolvedJsonSchema(ctx)]
+				:	[]
+			)
+		}
+
 		return schema
 	}
 
 	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
+		if (ctx.useRefs && !this.isBasis()) return { $ref: `#/$defs/${this.id}` }
+
+		return this.toResolvedJsonSchema(ctx)
+	}
+
+	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		const result = this.innerToJsonSchema(ctx)
 
 		return Object.assign(result, this.metaJson)

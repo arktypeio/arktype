@@ -33,6 +33,7 @@ class ToJsonSchemaError<
 
 const defaultConfig: ToJsonSchema.Context = {
 	dialect: "https://json-schema.org/draft/2020-12/schema",
+	useRefs: false,
 	fallback: {
 		arrayObject: ctx => ToJsonSchema.throw("arrayObject", ctx),
 		arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
@@ -209,6 +210,7 @@ export declare namespace ToJsonSchema {
 		 * @default "https://json-schema.org/draft/2020-12/schema"
 		 */
 		dialect?: string | null
+		useRefs?: boolean
 		fallback?: FallbackOption
 	}
 

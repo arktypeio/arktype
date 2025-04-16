@@ -154,7 +154,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx && throwInternalError("unimplemented")
+		return { $ref: `#/$defs/${this.id}` }
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
