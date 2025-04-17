@@ -93,3 +93,7 @@ discriminateValue({ id: 1, oneValue: 1 }) // "1!"
 discriminateValue({ id: 2, twoValue: "two" }) // 3
 discriminateValue({ oneValue: 3 })
 ```
+
+## As a type guard / Rust `matches!` equivalent
+
+If you just want to use your ArkType type as a type guard that returns a boolean, you can use [`.allows`](/type-api#:~:text=be%20accessed%20directly-,allows,-check%20input%20without) instead
