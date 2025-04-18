@@ -68,4 +68,18 @@ contextualize(() => {
 		const T = type({ foo: "string" }).or({ bar: "number" })
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))
 	})
+
+	it("structural operation removes narrow", () => {
+		const T = type({ foo: { key: "string" } })
+			.narrow(o => o.foo.key.length > 0)
+			.merge({
+				foo: "null"
+			})
+
+		attest(T({ foo: null })).equals({ foo: null })
+		attest(T.json).snap({
+			required: [{ key: "foo", value: { unit: null } }],
+			domain: "object"
+		})
+	})
 })

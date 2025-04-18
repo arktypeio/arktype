@@ -299,7 +299,7 @@ export abstract class BaseRoot<
 				: operation
 
 			return this.$.node("intersection", {
-				...branch.inner,
+				domain: "object",
 				structure: structure[structuralMethodName](...(args as [never]))
 			})
 		})
