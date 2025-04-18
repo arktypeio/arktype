@@ -74,9 +74,13 @@ const {
 	resolver: arktypeResolver(User)
 })
 ```
-important to note if you create a custom controlled input best approach to get type inference would be to pass the type to the hook itself
 
-`const {...} = useForm<typeof User.infer>`  // Will work fine and infer the types properly
+For a custom controlled input, you can pass the inferred type into the hook itself:
+
+```ts
+// @noErrors
+useForm<typeof User.infer>(/*...*/)
+```
 
 ### hono
 
