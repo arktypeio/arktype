@@ -2675,33 +2675,51 @@ type validateFnArgs<args, $> =
 	args extends readonly unknown[] ?
 		args extends readonly [...infer paramDefs, ":", infer returnDef] ?
 			readonly [
-				..._validateFnParamDefs<paramDefs, $>,
+				...validateFnParamDefs<paramDefs, $>,
 				":",
 				type.validate<returnDef, $>
 			]
-		:	_validateFnParamDefs<args, $>
+		:	validateFnParamDefs<args, $>
 	:	never
 
-type _validateFnParamDefs<paramDefs extends readonly unknown[], $> =
+type validateFnParamDefs<paramDefs extends readonly unknown[], $> =
 	paramDefs extends validateTupleLiteral<paramDefs, $, {}> ? paramDefs
 	: paramDefs extends {
 		[i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}>
 	} ?
-		validateTuple<paramDefs, $, {}>
+		validateTupleLiteral<paramDefs, $, {}>
 	:	{ [i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}> }
 
 export type NaryFnParser<$> = {
-	<const args>(
-		...args: validateFnArgs<args, $>
+	<
+		const args,
+		paramsT = inferTupleLiteral<
+			args extends readonly [...infer params, ":", unknown] ? params : args,
+			$,
+			{}
+		>,
+		returnT = args extends readonly [...unknown[], ":", infer returnDef] ?
+			type.infer<returnDef, $>
+		:	unknown
+	>(
+		...args: { [i in keyof args]: conform<args[i], validateFnArgs<args, $>[i]> }
 	): <
-		internalSignature extends (...args: distill.Out<paramsT>) => unknown,
-		paramsT = inferTupleLiteral<args, $, {}>,
+		internalSignature extends (
+			...args: distill.Out<paramsT>
+		) => distill.In<returnT>,
 		externalSignature extends Fn = (
 			...args: distill.In<paramsT>
-		) => ReturnType<internalSignature>
+		) => args extends readonly [...unknown[], ":", unknown] ?
+			distill.Out<returnT>
+		:	ReturnType<internalSignature>
 	>(
 		implementation: internalSignature
-	) => TypedFn<externalSignature, $>
+	) => TypedFn<
+		externalSignature,
+		$,
+		args extends readonly [...unknown[], ":", unknown] ? Return.introspectable
+		:	{}
+	>
 
 	// <const a>(
 	// 	a: type.validate<a, $>
