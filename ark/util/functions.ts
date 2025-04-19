@@ -20,15 +20,6 @@ export type Thunk<ret = unknown> = () => ret
 
 export type thunkable<t> = t | Thunk<t>
 
-export type mapParamNames<from extends Fn, to extends Fn> =
-	from extends Fn<infer fromPrams> ?
-		to extends Fn<infer toParams> ?
-			{
-				[i in keyof fromPrams]: toParams[i & keyof toParams]
-			}
-		:	never
-	:	never
-
 export const tryCatch = <returns, onError = never>(
 	fn: () => returns,
 	onError?: (e: unknown) => onError

@@ -95,7 +95,7 @@ contextualize(() => {
 		attest(() => type("number[]") satisfies Type<string[]>).type.errors(
 			"Type 'number' is not assignable to type 'string'"
 		)
-		attest.instantiations([525767, "instantiations"])
+		attest.instantiations([526049, "instantiations"])
 	})
 
 	it("args signature obeys assignability rules", () => {
@@ -105,7 +105,7 @@ contextualize(() => {
 		attest(() => type("number", "[]") satisfies Type<string[]>).type.errors(
 			"Type 'number' is not assignable to type 'string'"
 		)
-		attest.instantiations([524145, "instantiations"])
+		attest.instantiations([524406, "instantiations"])
 	})
 
 	it("type.Any allows arbitrary scope", () => {

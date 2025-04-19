@@ -1,12 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { badFnReturnTypeMessage } from "arktype/internal/fn.ts"
+import { badFnReturnTypeMessage, type TypedFn } from "arktype/internal/fn.ts"
+import type { Return } from "arktype/internal/nary.ts"
 
 contextualize(() => {
 	it("0 params implicit return", () => {
 		const f = type.fn()(() => 5)
 
-		attest<() => number>(f)
+		attest<TypedFn<() => number>>(f)
 
 		attest(f()).equals(5)
 
@@ -16,7 +17,7 @@ contextualize(() => {
 	it("0 params explicit return", () => {
 		const f = type.fn(":", "5")(() => 5)
 
-		attest<() => 5>(f)
+		attest<TypedFn<() => 5, {}, Return.introspectable>>(f)
 
 		attest(f()).equals(5)
 
@@ -26,7 +27,7 @@ contextualize(() => {
 	it("1 param implicit return", () => {
 		const len = type.fn("string | unknown[]")(s => s.length)
 
-		attest<(s: string) => number>(len)
+		attest<TypedFn<(s: string) => number>>(len)
 
 		attest(len.expression).snap("(a: string | Array) => unknown")
 
@@ -41,7 +42,7 @@ contextualize(() => {
 	it("1 param explicit return", () => {
 		const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 
-		attest<(s: string) => number>(len)
+		attest<TypedFn<(s: string) => number, {}, Return.introspectable>>(len)
 
 		attest(len.expression).snap("(a: string | Array) => number")
 
@@ -59,7 +60,7 @@ contextualize(() => {
 			"number"
 		)((s, n) => s === `${n}`)
 
-		attest<(s: string, n: number) => boolean>(isNumericEquivalent)
+		attest<TypedFn<(s: string, n: number) => boolean>>(isNumericEquivalent)
 
 		attest(isNumericEquivalent.expression).snap(
 			"(a: string, b: number) => unknown"
@@ -76,7 +77,9 @@ contextualize(() => {
 			"boolean"
 		)((s, n) => s === `${n}`)
 
-		attest<(s: string, n: number) => boolean>(isNumericEquivalent)
+		attest<
+			TypedFn<(s: string, n: number) => boolean, {}, Return.introspectable>
+		>(isNumericEquivalent)
 
 		attest(isNumericEquivalent.expression).snap(
 			"(a: string, b: number) => boolean"
@@ -85,25 +88,38 @@ contextualize(() => {
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
 
-	// it("morphs", () => {
-	// 	const f = type.fn({ foo: "string.n" })
-	// })
+	it("morphs", () => {
+		const stringToLength = type.string.pipe(function _fnStringToLength(s) {
+			return s.length
+		}, type.number)
 
-	it("nary", () => {
+		const f = type.fn(stringToLength, ":", stringToLength)(n => n.toFixed(2))
+		attest<TypedFn<(n: string) => number, {}, Return.introspectable>>(f)
+		attest(f.expression).snap(
+			"(a: (In: string) => To<number>) => (In: string) => To<number>"
+		)
+	})
+
+	it("nary inferred return", () => {
 		const f = type.fn(
-			{ a1: "1" },
-			{ a2: "2" },
-			{ a3: "3" },
-			{ a4: "4" },
-			{ a5: "5" },
-			{ a6: "6" },
-			{ a7: "7" },
-			{ a8: "8" },
-			{ a9: "9" },
-			{ a10: "10" },
-			":",
-			{ a11: "11" }
-		)((a, b, c, d, e, f, g, h, i, j) => ({
+			{ a: "1" },
+			{ b: "2" },
+			{ c: "3" },
+			{ d: "4" },
+			{ e: "5" },
+			{ f: "6" },
+			{ g: "7" },
+			{ h: "8" },
+			{ i: "9" },
+			{ j: "10" },
+			{ k: "11" },
+			{ l: "12" },
+			{ m: "13" },
+			{ n: "14" },
+			{ o: "15" },
+			{ p: "16" },
+			{ q: "17" }
+		)((a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q) => ({
 			...a,
 			...b,
 			...c,
@@ -114,14 +130,125 @@ contextualize(() => {
 			...h,
 			...i,
 			...j,
-			a11: 11
+			...k,
+			...l,
+			...m,
+			...n,
+			...o,
+			...p,
+			...q
 		}))
 
 		attest(f.expression).snap(
-			"(a: { a1: 1 }, b: { a2: 2 }, c: { a3: 3 }, d: { a4: 4 }, e: { a5: 5 }, f: { a6: 6 }, g: { a7: 7 }, h: { a8: 8 }, i: { a9: 9 }, j: { a10: 10 }) => { a11: 11 }"
+			"(a: { a: 1 }, b: { b: 2 }, c: { c: 3 }, d: { d: 4 }, e: { e: 5 }, f: { f: 6 }, g: { g: 7 }, h: { h: 8 }, i: { i: 9 }, j: { j: 10 }, k: { k: 11 }, l: { l: 12 }, m: { m: 13 }, n: { n: 14 }, o: { o: 15 }, p: { p: 16 }, q: { q: 17 }) => unknown"
 		)
 
-		attest(f).type.toString.snap()
+		attest(f).type.toString.snap(`TypedFn<
+	(
+		a: { a: 1 },
+		b: { b: 2 },
+		c: { c: 3 },
+		d: { d: 4 },
+		e: { e: 5 },
+		f: { f: 6 },
+		g: { g: 7 },
+		h: { h: 8 },
+		i: { i: 9 },
+		j: { j: 10 },
+		k: { k: 11 },
+		l: { l: 12 },
+		m: { m: 13 },
+		n: { n: 14 },
+		o: { o: 15 },
+		p: { p: 16 },
+		q: { q: 17 }
+	) => {
+		q: 17
+		p: 16
+		o: 15
+		n: 14
+		m: 13
+		l: 12
+		k: 11
+		j: 10
+		i: 9
+		h: 8
+		g: 7
+		f: 6
+		e: 5
+		d: 4
+		c: 3
+		b: 2
+		a: 1
+	},
+	{},
+	{}
+>`)
+	})
+
+	it("nary declared return", () => {
+		const f = type.fn(
+			{ a: "1" },
+			{ b: "2" },
+			{ c: "3" },
+			{ d: "4" },
+			{ e: "5" },
+			{ f: "6" },
+			{ g: "7" },
+			{ h: "8" },
+			{ i: "9" },
+			{ j: "10" },
+			{ k: "11" },
+			{ l: "12" },
+			{ m: "13" },
+			{ n: "14" },
+			{ o: "15" },
+			":",
+			{ p: "16" }
+		)((a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) => ({
+			...a,
+			...b,
+			...c,
+			...d,
+			...e,
+			...f,
+			...g,
+			...h,
+			...i,
+			...j,
+			...k,
+			...l,
+			...m,
+			...n,
+			...o,
+			p: 16
+		}))
+
+		attest(f.expression).snap(
+			"(a: { a: 1 }, b: { b: 2 }, c: { c: 3 }, d: { d: 4 }, e: { e: 5 }, f: { f: 6 }, g: { g: 7 }, h: { h: 8 }, i: { i: 9 }, j: { j: 10 }, k: { k: 11 }, l: { l: 12 }, m: { m: 13 }, n: { n: 14 }, o: { o: 15 }) => { p: 16 }"
+		)
+
+		attest(f).type.toString.snap(`TypedFn<
+	(
+		a: { a: 1 },
+		b: { b: 2 },
+		c: { c: 3 },
+		d: { d: 4 },
+		e: { e: 5 },
+		f: { f: 6 },
+		g: { g: 7 },
+		h: { h: 8 },
+		i: { i: 9 },
+		j: { j: 10 },
+		k: { k: 11 },
+		l: { l: 12 },
+		m: { m: 13 },
+		n: { n: 14 },
+		o: { o: 15 }
+	) => { p: 16 },
+	{},
+	introspectable
+>`)
 	})
 
 	it("signature precedence implicit return", () => {
@@ -131,7 +258,7 @@ contextualize(() => {
 
 		// signature should be wider from the declaration with name "v" from implementation
 		// 0 | 1 should be inferred from output since undeclared
-		attest(f).type.toString.snap("TypedFn<(v: string) => 0 | 1, {}>")
+		attest(f).type.toString.snap("TypedFn<(v: string) => 0 | 1, {}, {}>")
 	})
 
 	it("signature precedence explicit return", () => {
@@ -142,7 +269,9 @@ contextualize(() => {
 		)((v: string | number): 0 | 1 => (v === "foo" ? 1 : 0))
 
 		// signature should be wider from the declaration with name "v" from implementation
-		attest(f).type.toString.snap("TypedFn<(v: string) => number, {}>")
+		attest(f).type.toString.snap(
+			"TypedFn<(v: string) => number, {}, introspectable>"
+		)
 	})
 
 	it("attached params", () => {
@@ -267,7 +396,9 @@ contextualize(() => {
 
 			const f = $.type.fn("xxx", ":", "zzz")(s => s.length)
 
-			attest<(s: string) => number>(f)
+			attest<TypedFn<(s: string) => number, typeof $.t, Return.introspectable>>(
+				f
+			)
 
 			attest(f("foo")).equals(3)
 
@@ -276,7 +407,9 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => f(null))
 				.throws.snap("TraversalError: must be a string (was null)")
-				.type.errors.snap()
+				.type.errors.snap(
+					"Argument of type 'null' is not assignable to parameter of type 'string'."
+				)
 		})
 
 		it("completions", () => {
@@ -286,7 +419,10 @@ contextualize(() => {
 			})
 
 			// @ts-expect-error
-			attest(() => $.type.fn("zz", ":", "xx")).completions()
+			attest(() => $.type.fn("zz", ":", "xx")).completions({
+				zz: ["zzz"],
+				xx: ["xxx"]
+			})
 		})
 	})
 })

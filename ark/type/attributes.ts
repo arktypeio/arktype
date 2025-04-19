@@ -366,7 +366,7 @@ type intersectObjects<l, r, piped extends boolean> =
 			// don't compute the intersection to avoid including prototype props
 			l & r
 	: r extends array ? l & r
-	: keyof l & keyof r extends never ? l & r
+	: keyof l & keyof r extends never ? show<l & r>
 	: show<
 			// this looks redundant, but should hit the cache anyways and
 			// preserves index signature + optional keys correctly
