@@ -16,6 +16,7 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import type { FnParser } from "./fn.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -29,7 +30,6 @@ import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
-	FnParser,
 	NaryIntersectionParser,
 	NaryMergeParser,
 	NaryPipeParser,

@@ -59,8 +59,44 @@ contextualize(() => {
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
 
+	it("nary", () => {
+		const f = type.fn(
+			{ a1: "1" },
+			{ a2: "2" },
+			{ a3: "3" },
+			{ a4: "4" },
+			{ a5: "5" },
+			{ a6: "6" },
+			{ a7: "7" },
+			{ a8: "8" },
+			{ a9: "9" },
+			{ a10: "10" },
+			":",
+			{ a11: "11" }
+		)((a, b, c, d, e, f, g, h, i, j) => ({
+			...a,
+			...b,
+			...c,
+			...d,
+			...e,
+			...f,
+			...g,
+			...h,
+			...i,
+			...j,
+			a11: 11
+		}))
+
+		attest(f).type.toString.snap()
+	})
+
 	it("missing return", () => {
 		attest(() => type.fn("string", ":"))
+	})
+
+	it("name", () => {
+		const f = type.fn("string")(function originalName() {})
+		attest(f.name).snap("bound typed originalName")
 	})
 
 	describe("scoped", () => {
