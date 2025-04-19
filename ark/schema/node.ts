@@ -131,7 +131,7 @@ export abstract class BaseNode<
 		this.includesTransform =
 			this.hasKind("morph") ||
 			(this.hasKind("structure") && this.structuralMorph !== undefined) ||
-			(this.hasKind("sequence") && this.defaultablesLength !== 0)
+			(this.hasKind("sequence") && this.inner.defaultables !== undefined)
 
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`

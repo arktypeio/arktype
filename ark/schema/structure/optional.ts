@@ -92,7 +92,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	override get in(): OptionalNode {
 		const baseIn = super.in
-		if (!this.hasDefault) return baseIn as never
+		if (!this.hasDefault()) return baseIn as never
 
 		return this.$.node(
 			"optional",
