@@ -119,6 +119,27 @@ contextualize(() => {
 		attest(f).type.toString.snap()
 	})
 
+	it("signature precedence implicit return", () => {
+		const f = type.fn("string")((v: string | number): 0 | 1 =>
+			v === "foo" ? 1 : 0
+		)
+
+		// signature should be wider from the declaration with name "v" from implementation
+		// 0 | 1 should be inferred from output since undeclared
+		attest(f).type.toString.snap("TypedFn<(v: string) => 0 | 1, {}>")
+	})
+
+	it("signature precedence explicit return", () => {
+		const f = type.fn(
+			"string",
+			":",
+			"number"
+		)((v: string | number): 0 | 1 => (v === "foo" ? 1 : 0))
+
+		// signature should be wider from the declaration with name "v" from implementation
+		attest(f).type.toString.snap("TypedFn<(v: string) => number, {}>")
+	})
+
 	it("missing return", () => {
 		attest(() => type.fn("string", ":"))
 	})

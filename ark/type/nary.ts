@@ -2648,28 +2648,53 @@ export type NaryPipeParser<$, initial = unknown> = {
 	): r extends infer _ ? _ : never
 }
 
+export type mapParamNames<
+	fromParams extends readonly unknown[],
+	toParams extends readonly unknown[]
+> = {
+	[i in keyof fromParams]: toParams[i & keyof toParams]
+}
+
 export type NaryFnParser<$> = {
-	<const ret = unknown>(
-		_?: ":",
-		ret?: type.validate<ret, $>
-	): <
-		implementation extends () => unknown extends ret ? unknown
-		:	type.infer<ret, $>
-	>(
+	(): <implementation extends () => unknown>(
 		implementation: implementation
 	) => TypedFn<implementation, $>
 
-	<const arg0, const ret = unknown>(
-		arg0: type.validate<arg0, $>,
-		_?: ":",
-		ret?: type.validate<ret, $>
-	): <
-		implementation extends (
-			arg0: type.infer<arg0, $>
-		) => unknown extends ret ? unknown : type.infer<ret, $>
-	>(
+	<const ret>(
+		_: ":",
+		ret: type.validate<ret, $>
+	): <implementation extends () => type.infer<ret, $>>(
 		implementation: implementation
 	) => TypedFn<implementation, $>
+
+	<const arg0>(
+		arg0: type.validate<arg0, $>
+	): <
+		implementation extends (...args: params) => unknown,
+		params extends [type.infer<arg0, $>]
+	>(
+		implementation: implementation
+	) => TypedFn<
+		(
+			...args: mapParamNames<Parameters<implementation>, params>
+		) => ReturnType<implementation>,
+		$
+	>
+
+	<const arg0, const ret>(
+		arg0: type.validate<arg0, $>,
+		_: ":",
+		ret: type.validate<ret, $>
+	): <
+		implementation extends (...args: params) => returns,
+		params extends [type.infer<arg0, $>],
+		returns extends type.infer<ret, $>
+	>(
+		implementation: implementation
+	) => TypedFn<
+		(...args: mapParamNames<Parameters<implementation>, params>) => returns,
+		$
+	>
 
 	<const arg0, const arg1, const ret = unknown>(
 		arg0: type.validate<arg0, $>,
