@@ -1,7 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
+import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { badFnReturnTypeMessage, type TypedFn } from "arktype/internal/fn.ts"
 import type { Return } from "arktype/internal/nary.ts"
+import {
+	multipleVariadicMesage,
+	optionalOrDefaultableAfterVariadicMessage
+} from "arktype/internal/parser/tupleLiteral.ts"
 
 contextualize(() => {
 	it("0 params implicit return", () => {
@@ -29,13 +34,13 @@ contextualize(() => {
 
 		attest<TypedFn<(s: string) => number>>(len)
 
-		attest(len.expression).snap("(a: string | number[]) => unknown")
+		attest(len.expression).snap("(string | number[]) => unknown")
 
 		attest(len("foo")).equals(3)
 
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
-			"TraversalError: must be a string or an object (was a number)"
+			"TraversalError: value at [0] must be a string or an object (was a number)"
 		)
 	})
 
@@ -44,13 +49,13 @@ contextualize(() => {
 
 		attest<TypedFn<(s: string) => number, {}, Return.introspectable>>(len)
 
-		attest(len.expression).snap("(a: string | Array) => number")
+		attest(len.expression).snap("(string | Array) => number")
 
 		attest(len("foo")).equals(3)
 
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
-			"TraversalError: must be a string or an object (was a number)"
+			"TraversalError: value at [0] must be a string or an object (was a number)"
 		)
 	})
 
@@ -62,9 +67,7 @@ contextualize(() => {
 
 		attest<TypedFn<(s: string, n: number) => boolean>>(isNumericEquivalent)
 
-		attest(isNumericEquivalent.expression).snap(
-			"(a: string, b: number) => unknown"
-		)
+		attest(isNumericEquivalent.expression).snap("(string, number) => unknown")
 
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
@@ -81,9 +84,7 @@ contextualize(() => {
 			TypedFn<(s: string, n: number) => boolean, {}, Return.introspectable>
 		>(isNumericEquivalent)
 
-		attest(isNumericEquivalent.expression).snap(
-			"(a: string, b: number) => boolean"
-		)
+		attest(isNumericEquivalent.expression).snap("(string, number) => boolean")
 
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
@@ -96,7 +97,7 @@ contextualize(() => {
 		const f = type.fn(stringToLength, ":", stringToLength)(n => n.toFixed(2))
 		attest<TypedFn<(n: string) => number, {}, Return.introspectable>>(f)
 		attest(f.expression).snap(
-			"(a: (In: string) => To<number>) => (In: string) => To<number>"
+			"((In: string) => To<number>) => (In: string) => To<number>"
 		)
 	})
 
@@ -140,7 +141,7 @@ contextualize(() => {
 		}))
 
 		attest(f.expression).snap(
-			"(a: { a: 1 }, b: { b: 2 }, c: { c: 3 }, d: { d: 4 }, e: { e: 5 }, f: { f: 6 }, g: { g: 7 }, h: { h: 8 }, i: { i: 9 }, j: { j: 10 }, k: { k: 11 }, l: { l: 12 }, m: { m: 13 }, n: { n: 14 }, o: { o: 15 }, p: { p: 16 }, q: { q: 17 }) => unknown"
+			"({ a: 1 }, { b: 2 }, { c: 3 }, { d: 4 }, { e: 5 }, { f: 6 }, { g: 7 }, { h: 8 }, { i: 9 }, { j: 10 }, { k: 11 }, { l: 12 }, { m: 13 }, { n: 14 }, { o: 15 }, { p: 16 }, { q: 17 }) => unknown"
 		)
 
 		attest(f).type.toString.snap(`TypedFn<
@@ -225,7 +226,7 @@ contextualize(() => {
 		}))
 
 		attest(f.expression).snap(
-			"(a: { a: 1 }, b: { b: 2 }, c: { c: 3 }, d: { d: 4 }, e: { e: 5 }, f: { f: 6 }, g: { g: 7 }, h: { h: 8 }, i: { i: 9 }, j: { j: 10 }, k: { k: 11 }, l: { l: 12 }, m: { m: 13 }, n: { n: 14 }, o: { o: 15 }) => { p: 16 }"
+			"({ a: 1 }, { b: 2 }, { c: 3 }, { d: 4 }, { e: 5 }, { f: 6 }, { g: 7 }, { h: 8 }, { i: 9 }, { j: 10 }, { k: 11 }, { l: 12 }, { m: 13 }, { n: 14 }, { o: 15 }) => { p: 16 }"
 		)
 
 		attest(f).type.toString.snap(`TypedFn<
@@ -258,7 +259,7 @@ contextualize(() => {
 
 		// signature should be wider from the declaration with name "v" from implementation
 		// 0 | 1 should be inferred from output since undeclared
-		attest(f).type.toString.snap("TypedFn<(v: string) => 0 | 1, {}, {}>")
+		attest(f).type.toString.snap()
 	})
 
 	it("signature precedence explicit return", () => {
@@ -277,11 +278,10 @@ contextualize(() => {
 	it("attached params", () => {
 		const len = type.fn("string | unknown[]")(s => s.length)
 
-		const expectedParam = type("string | unknown[]")
+		const expectedParams = type(["string | unknown[]"])
 
-		attest<[typeof expectedParam]>(len.params)
-		attest(len.params.length).equals(1)
-		attest(len.params[0].expression).equals(expectedParam.expression)
+		attest<typeof expectedParams>(len.params)
+		attest(len.params.expression).equals(expectedParams.expression)
 	})
 
 	it("inferred returns", () => {
@@ -402,11 +402,11 @@ contextualize(() => {
 
 			attest(f("foo")).equals(3)
 
-			attest(f.expression).snap("(a: string) => number")
+			attest(f.expression).snap("(string) => number")
 
 			// @ts-expect-error
 			attest(() => f(null))
-				.throws.snap("TraversalError: must be a string (was null)")
+				.throws.snap("TraversalError: value at [0] must be a string (was null)")
 				.type.errors.snap(
 					"Argument of type 'null' is not assignable to parameter of type 'string'."
 				)
@@ -434,13 +434,13 @@ contextualize(() => {
 				"boolean?"
 			)((s, n, b) => `${s}${n}${b}`)
 
-			attest(f.expression).snap("([string, number = 5, boolean?]) => unknown")
+			attest(f.expression).snap("(string, number = 5, boolean?) => unknown")
 		})
 
 		it("non-variadic array", () => {
 			const join = type.fn("string[]")((...parts) => parts.join(","))
 
-			attest(join.expression).snap("([string[]]) => unknown")
+			attest(join.expression).snap("(string[]) => unknown")
 		})
 
 		it("variadic array", () => {
@@ -451,7 +451,7 @@ contextualize(() => {
 				"string"
 			)((...parts) => parts.join(","))
 
-			attest(join.expression).snap("(string[]) => string")
+			attest(join.expression).snap("(...string[]) => string")
 		})
 
 		it("intro example", () => {
@@ -464,6 +464,37 @@ contextualize(() => {
 			attest(() => safe("shitescript", "*" as any)).throws.snap(
 				"TraversalError: value at [1] must be a number (was a string)"
 			)
+		})
+
+		describe("errors", () => {
+			it("errors on multiple variadic", () => {
+				attest(() =>
+					// @ts-expect-error
+					type.fn("...", "string[]", "...", "number[]")(() => {})
+				).throwsAndHasTypeError(multipleVariadicMesage)
+			})
+
+			it("error on optional post-variadic in spread", () => {
+				// no type error yet, ideally would have one if tuple
+				// parsing were more precise for nested spread tuples
+				attest(() =>
+					type.fn("...", "string[]", "...", ["string?"])(() => {})
+				).throws(optionalOrDefaultableAfterVariadicMessage)
+			})
+
+			it("errors on postfix following optional", () => {
+				attest(() =>
+					// @ts-expect-error
+					type.fn("number?", "...", "boolean[]", "symbol")(() => {})
+				).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
+			})
+
+			it("errors on postfix following defaultable", () => {
+				attest(() =>
+					// @ts-expect-error
+					type.fn("number = 0", "...", "boolean[]", "symbol")(() => {})
+				).throwsAndHasTypeError(postfixAfterOptionalOrDefaultableMessage)
+			})
 		})
 	})
 })

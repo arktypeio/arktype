@@ -507,15 +507,20 @@ contextualize(() => {
 			)
 		})
 
-		it("extracts output as required", () => {
-			const T = type({
-				foo: "string = 'foo'"
-			})
+		it("defaultable input extracted as optional", () => {
+			const T = type({ foo: "number = 0" })
+			attest<{ foo?: number }>(T.in.t)
+			attest<{ foo?: number }>(T.inferIn)
 
-			attest<{ foo?: string }>(T.in.infer)
-			attest<{ foo: string }>(T.out.infer)
-			attest(T.in.expression).snap('{ foo: string = "foo" }')
-			attest(T.out.expression).snap("{ foo: string }")
+			attest(T.in.expression).snap("{ foo?: number }")
+		})
+
+		it("defaultable output extracted as required", () => {
+			const T = type({ foo: "number = 0" })
+			attest<{ foo: number }>(T.out.t)
+			attest<{ foo: number }>(T.inferOut)
+
+			attest(T.out.expression).snap("{ foo: number }")
 		})
 	})
 

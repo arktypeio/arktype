@@ -2680,7 +2680,8 @@ type validateFnArgs<args, $> =
 type validateFnParamDefs<paramDefs extends readonly unknown[], $> =
 	paramDefs extends validateTupleLiteral<paramDefs, $, {}> ? paramDefs
 	: paramDefs extends {
-		[i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}>
+		[i in keyof paramDefs]: paramDefs[i] extends "..." ? paramDefs[i]
+		:	validateInnerDefinition<paramDefs[i], $, {}>
 	} ?
 		validateTupleLiteral<paramDefs, $, {}>
 	:	{ [i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}> }

@@ -70,11 +70,7 @@ export interface TypedFn<
 	meta extends TypedFn.meta = {}
 > extends Callable<signature> {
 	expression: string
-	params: signature extends Fn<infer params> ?
-		{
-			[i in keyof params]: Type<params[i], $>
-		}
-	:	never
+	params: signature extends Fn<infer params> ? Type<params, $> : never
 	returns: Type<
 		meta extends Return.introspectable ? ReturnType<signature> : unknown,
 		$
@@ -103,7 +99,13 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.params = params
 		this.returns = returns
 
-		this.expression = `(${params.expression}) => ${returns?.expression ?? "unknown"}`
+		let argsExpression = params.expression
+		if (argsExpression[0] === "[" && argsExpression.at(-1) === "]")
+			argsExpression = argsExpression.slice(1, -1)
+		else if (argsExpression.endsWith("[]"))
+			argsExpression = `...${argsExpression}`
+
+		this.expression = `(${argsExpression}) => ${returns?.expression ?? "unknown"}`
 	}
 }
 
