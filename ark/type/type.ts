@@ -261,7 +261,6 @@ export class InternalTypeParser extends Callable<
 				return $.parse(args)
 			},
 			{
-				bind: $,
 				attach
 			}
 		)

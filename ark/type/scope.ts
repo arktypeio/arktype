@@ -44,6 +44,7 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
+import { InternalFnParser } from "./fn.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -332,6 +333,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	pipe: NaryPipeParser<$> = (...morphs: Morph[]) =>
 		this.intrinsic.unknown.pipe(...morphs) as never
 
+	fn: InternalFnParser = new InternalFnParser(this as never)
 	match: InternalMatchParser = new InternalMatchParser(this as never)
 
 	declare = (): { type: InternalTypeParser } => ({
