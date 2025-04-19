@@ -226,11 +226,11 @@ bench("fun(0)", () => {
 
 bench("fun(1, implicit)", () => {
 	type.fn({ a1: "1" })(a => a)
-}).types([697, "instantiations"])
+}).types([616, "instantiations"])
 
 bench("fun(1, explicit)", () => {
 	type.fn({ a1: "1" }, ":", { a2: "2" })(a => ({ ...a, a2: 2 }))
-}).types([1535, "instantiations"])
+}).types([1373, "instantiations"])
 
 bench("fun(2)", () => {
 	type.fn({ a1: "1" }, { a2: "2" }, ":", { a3: "3" })((a, b) => ({
@@ -238,7 +238,7 @@ bench("fun(2)", () => {
 		...b,
 		a3: 3
 	}))
-}).types([3070, "instantiations"])
+}).types([3034, "instantiations"])
 
 bench("fun(5)", () => {
 	type.fn(
@@ -250,7 +250,7 @@ bench("fun(5)", () => {
 		":",
 		{ a6: "6" }
 	)((a, b, c, d, e) => ({ ...a, ...b, ...c, ...d, ...e, a6: 6 }))
-}).types([6081, "instantiations"])
+}).types([6082, "instantiations"])
 
 bench("fun(10)", () => {
 	type.fn(
@@ -279,4 +279,4 @@ bench("fun(10)", () => {
 		...j,
 		a11: 11
 	}))
-}).types([11172, "instantiations"])
+}).types([11188, "instantiations"])
