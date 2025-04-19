@@ -98,7 +98,11 @@ contextualize(() => {
 		attest<[number?]>(T.in.t)
 		attest<[number?]>(T.inferIn)
 
-		attest(T.in.expression).snap()
+		attest(type({ foo: "number = 0" }).in.expression).snap(
+			"{ foo: number = 0 }"
+		)
+
+		attest(T.in.expression).snap("[number = 5]")
 	})
 
 	it("output extracted as required", () => {
@@ -106,6 +110,8 @@ contextualize(() => {
 		attest<[number]>(T.out.t)
 		attest<[number]>(T.inferOut)
 
-		attest(T.out.expression).snap()
+		attest(type({ foo: "number = 0" }).out.expression).snap("{ foo: number }")
+
+		attest(T.out.expression).snap("[number = 5]")
 	})
 })

@@ -2673,13 +2673,22 @@ type mapParamNames<from extends Fn, toParams extends readonly unknown[]> =
 
 type validateFnArgs<args, $> =
 	args extends readonly unknown[] ?
-		args extends validateTupleLiteral<args, $, {}> ? args
-		: args extends {
-			[i in keyof args]: validateInnerDefinition<args[i], $, {}>
-		} ?
-			validateTuple<args, $, {}>
-		:	{ [i in keyof args]: validateInnerDefinition<args[i], $, {}> }
+		args extends readonly [...infer paramDefs, ":", infer returnDef] ?
+			readonly [
+				..._validateFnParamDefs<paramDefs, $>,
+				":",
+				type.validate<returnDef, $>
+			]
+		:	_validateFnParamDefs<args, $>
 	:	never
+
+type _validateFnParamDefs<paramDefs extends readonly unknown[], $> =
+	paramDefs extends validateTupleLiteral<paramDefs, $, {}> ? paramDefs
+	: paramDefs extends {
+		[i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}>
+	} ?
+		validateTuple<paramDefs, $, {}>
+	:	{ [i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}> }
 
 export type NaryFnParser<$> = {
 	<const args>(
