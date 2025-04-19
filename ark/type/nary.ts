@@ -2660,39 +2660,40 @@ export type NaryFnParser<$> = {
 		implementation: implementation
 	) => TypedFn<implementation, $>
 
-	<const ret>(
+	<const returns>(
 		_: ":",
-		ret: type.validate<ret, $>
-	): <implementation extends () => type.infer<ret, $>>(
+		returns: type.validate<returns, $>
+	): <implementation extends () => type.infer<returns, $>>(
 		implementation: implementation
 	) => TypedFn<implementation, $>
 
 	<const arg0>(
 		arg0: type.validate<arg0, $>
 	): <
-		implementation extends (...args: params) => unknown,
-		params extends [type.infer<arg0, $>]
+		implementation extends signature,
+		signature extends (arg0: type.infer<arg0, $>) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
 		(
-			...args: mapParamNames<Parameters<implementation>, params>
+			...args: mapParamNames<Parameters<implementation>, Parameters<signature>>
 		) => ReturnType<implementation>,
 		$
 	>
 
-	<const arg0, const ret>(
+	<const arg0, const returns>(
 		arg0: type.validate<arg0, $>,
 		_: ":",
-		ret: type.validate<ret, $>
+		returns: type.validate<returns, $>
 	): <
-		implementation extends (...args: params) => returns,
-		params extends [type.infer<arg0, $>],
-		returns extends type.infer<ret, $>
+		implementation extends signature,
+		signature extends (arg0: type.infer<arg0, $>) => type.infer<returns, $>
 	>(
 		implementation: implementation
 	) => TypedFn<
-		(...args: mapParamNames<Parameters<implementation>, params>) => returns,
+		(
+			...args: mapParamNames<Parameters<implementation>, Parameters<signature>>
+		) => ReturnType<signature>,
 		$
 	>
 
