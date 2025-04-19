@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
+import { badFnReturnTypeMessage } from "arktype/internal/fn.ts"
 
 contextualize(() => {
 	it("0 params implicit return", () => {
@@ -141,7 +142,10 @@ contextualize(() => {
 	})
 
 	it("missing return", () => {
-		attest(() => type.fn("string", ":"))
+		// the type message just ends up being some overload nonsense
+		// but hopefully people will not try to do this and get confused
+		// @ts-expect-error
+		attest(() => type.fn("string", ":")).throws(badFnReturnTypeMessage)
 	})
 
 	it("name", () => {
