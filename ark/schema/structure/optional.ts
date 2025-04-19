@@ -1,6 +1,7 @@
 import {
 	hasDomain,
 	isThunk,
+	omit,
 	printable,
 	throwParseError,
 	type requireKeys
@@ -87,6 +88,19 @@ export class OptionalNode extends BaseProp<"optional"> {
 		super(...args)
 		if ("default" in this.inner)
 			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
+	}
+
+	override get in(): OptionalNode {
+		const baseIn = super.in
+		if (!this.hasDefault) return baseIn as never
+
+		return this.$.node(
+			"optional",
+			omit(baseIn.inner, { default: true }) as never,
+			{
+				prereduced: true
+			}
+		)
 	}
 
 	get outProp(): Prop.Node {

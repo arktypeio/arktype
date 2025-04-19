@@ -131,7 +131,16 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					defaults.map(element => [
 						element[0].collapsibleJson,
 						defaultValueSerializer(element[1])
-					])
+					]),
+				reduceIo: (ioKind, inner, defaultables) => {
+					if (ioKind === "in") {
+						inner.optionals = defaultables!.map(d => d[0].in)
+						return
+					}
+
+					inner.prefix = defaultables!.map(d => d[0].out)
+					return
+				}
 			},
 			variadic: {
 				child: true,

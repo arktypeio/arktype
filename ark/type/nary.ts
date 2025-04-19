@@ -1,6 +1,11 @@
-// @ts-nocheck
 import type { Morph } from "@ark/schema"
-import type { conform, ErrorType, Fn, merge } from "@ark/util"
+import type {
+	applyElementLabels,
+	conform,
+	ErrorType,
+	Fn,
+	merge
+} from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
@@ -14,11 +19,7 @@ import type { TypedFn } from "./fn.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type { NonObjectMergeErrorMessage } from "./methods/object.ts"
-import type {
-	validateInnerDefinition,
-	validateTuple
-} from "./parser/definition.ts"
-import type { BaseCompletions } from "./parser/string.ts"
+import type { validateInnerDefinition } from "./parser/definition.ts"
 import type {
 	inferTupleLiteral,
 	validateTupleLiteral
@@ -2665,13 +2666,6 @@ export declare namespace Return {
 	}
 }
 
-type mapParamNames<from extends Fn, toParams extends readonly unknown[]> =
-	from extends Fn<infer fromParams> ?
-		{
-			[i in keyof fromParams]: toParams[i & keyof toParams]
-		}
-	:	never
-
 type validateFnArgs<args, $> =
 	args extends readonly unknown[] ?
 		args extends readonly [...infer paramDefs, ":", infer returnDef] ?
@@ -2725,87 +2719,3 @@ export type NaryFnParser<$> = {
 		:	{}
 	>
 }
-
-export type applyElementLabels<
-	t extends readonly unknown[],
-	labels extends readonly unknown[]
-> =
-	labels extends [unknown, ...infer labelsTail] ?
-		t extends readonly [infer head, ...infer tail] ?
-			readonly [
-				...labelElement<head, labels>,
-				...applyElementLabels<tail, labelsTail>
-			]
-		:	applyOptionalElementLabels<Required<t>, labels>
-	:	t
-
-type applyOptionalElementLabels<
-	t extends readonly unknown[],
-	labels extends readonly unknown[]
-> =
-	labels extends readonly [unknown, ...infer labelsTail] ?
-		t extends readonly [infer head, ...infer tail] ?
-			[
-				...labelOptionalElement<head, labels>,
-				...applyOptionalElementLabels<tail, labelsTail>
-			]
-		:	applyRestElementLabels<t, labels>
-	:	t
-
-type applyRestElementLabels<
-	t extends readonly unknown[],
-	labels extends readonly unknown[]
-> =
-	t extends readonly [] ? []
-	: labels extends readonly [unknown, ...infer tail] ?
-		[...labelOptionalElement<t[0], labels>, ...applyRestElementLabels<t, tail>]
-	:	t
-
-type labelElement<element, labels extends readonly unknown[]> =
-	labels extends readonly [unknown] ? { [K in keyof labels]: element }
-	: labels extends readonly [...infer head, unknown] ?
-		labelElement<element, head>
-	:	[_: element]
-
-type labelOptionalElement<element, label extends readonly unknown[]> =
-	label extends readonly [unknown] ? { [K in keyof label]?: element }
-	: label extends readonly [...infer head, unknown] ?
-		labelOptionalElement<element, head>
-	:	[_?: element]
-
-// describe("labels", () => {
-// 	it("same length", () => {
-// 		const t = {} as applyElementLabels<[1, 2], [a: "a", b: "b"]>
-// 		attest(t).type.toString("[a: 1, b: 2]")
-// 	})
-
-// 	it("single optional element", () => {
-// 		const t = {} as applyElementLabels<[1?], [a: "a", b: "b"]>
-// 		attest(t).type.toString("[a?: 1]")
-// 	})
-
-// 	it("two elements with the second one optional", () => {
-// 		const t = {} as applyElementLabels<[1, 2?], [a: "a", b: "b"]>
-// 		attest(t).type.toString("[a: 1, b?: 2]")
-// 	})
-
-// 	it("three elements with the third one optional", () => {
-// 		const t = {} as applyElementLabels<[1, 2, 3?], [a: "a", b: "b"]>
-// 		attest(t).type.toString("[a: 1, b: 2, 3?]")
-// 	})
-
-// 	it("optional first element and variadic elements", () => {
-// 		const t = {} as applyElementLabels<[1?, ...0[]], [a: "a", b: "b"]>
-// 		attest(t).type.toString("[a?: 1, b?: 0, ...0[]]")
-// 	})
-
-// 	it("two elements with the second one optional and variadic elements", () => {
-// 		const t = {} as applyElementLabels<[1, 2?, ...0[]], [a: "a", b: "b"]>
-// 		attest(t).type.toString("[a: 1, b?: 2, ...0[]]")
-// 	})
-
-// 	it("extra labels with rest", () => {
-// 		const t = {} as applyElementLabels<string[], [a: "a", b: "b", c: "c"]>
-// 		attest(t).type.toString("[a?: string, b?: string, c?: string, ...string[]]")
-// 	})
-// })

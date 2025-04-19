@@ -29,7 +29,7 @@ contextualize(() => {
 
 		attest<TypedFn<(s: string) => number>>(len)
 
-		attest(len.expression).snap("(a: string | Array) => unknown")
+		attest(len.expression).snap("(a: string | number[]) => unknown")
 
 		attest(len("foo")).equals(3)
 
@@ -429,6 +429,8 @@ contextualize(() => {
 	describe("tuple elements", () => {
 		it("defaultable and optional", () => {
 			const f = type.fn("string", "number = 5", "boolean?")((s, n, b) => true)
+
+			attest(f.expression).snap()
 		})
 
 		it("variadic", () => {

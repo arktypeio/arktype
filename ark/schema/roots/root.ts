@@ -80,6 +80,16 @@ export abstract class BaseRoot<
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
 	}
 
+	// doesn't seem possible to override this at a type-level (e.g. via declare)
+	// without TS complaining about getters
+	override get in(): BaseRoot {
+		return super.in as never
+	}
+
+	override get out(): BaseRoot {
+		return super.out as never
+	}
+
 	get internal(): this {
 		return this
 	}

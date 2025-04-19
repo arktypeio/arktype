@@ -65,7 +65,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
-import { isNode, type arkKind } from "./shared/utils.ts"
+import { isNode } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
@@ -130,7 +130,8 @@ export abstract class BaseNode<
 
 		this.includesTransform =
 			this.hasKind("morph") ||
-			(this.hasKind("structure") && this.structuralMorph !== undefined)
+			(this.hasKind("structure") && this.structuralMorph !== undefined) ||
+			(this.hasKind("sequence") && this.defaultablesLength !== 0)
 
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
@@ -322,11 +323,11 @@ export abstract class BaseNode<
 		return this(data, pipedFromCtx, null)
 	}
 
-	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
+	get in(): BaseNode {
 		return this.cacheGetter("in", this.getIo("in")) as never
 	}
 
-	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
+	get out(): BaseNode {
 		return this.cacheGetter("out", this.getIo("out")) as never
 	}
 
