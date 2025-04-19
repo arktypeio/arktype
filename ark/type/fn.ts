@@ -1,7 +1,8 @@
 import type { BaseRoot } from "@ark/schema"
-import { Callable, throwParseError, type Fn } from "@ark/util"
+import { alphabet, Callable, throwParseError, type Fn } from "@ark/util"
 import type { NaryFnParser } from "./nary.ts"
 import type { InternalScope, Scope } from "./scope.ts"
+import type { Type } from "./type.ts"
 
 export interface FnParser<$ = {}> extends NaryFnParser<$> {
 	/**
@@ -53,10 +54,20 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 	}
 }
 
+export interface TypedFn<signature extends Fn = Fn, $ = {}>
+	extends Callable<signature> {
+	expression: string
+	params: {
+		[i in keyof Parameters<signature>]: Type<Parameters<signature>[i], $>
+	}
+	returns: BaseRoot | null
+}
+
 export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
-	readonly raw: Fn
-	readonly params: readonly BaseRoot[]
-	readonly returns: BaseRoot | null
+	raw: Fn
+	params: readonly BaseRoot[]
+	returns: BaseRoot | null
+	expression: string
 
 	constructor(raw: Fn, params: readonly BaseRoot[], returns: BaseRoot | null) {
 		const typedName = `typed ${raw.name}`
@@ -73,6 +84,11 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.raw = raw
 		this.params = params
 		this.returns = returns
+
+		const paramsExpression = params
+			.map((p, i) => `${alphabet[i]}: ${p.expression}`)
+			.join(", ")
+		this.expression = `(${paramsExpression}) => ${returns?.expression ?? "unknown"}`
 	}
 }
 

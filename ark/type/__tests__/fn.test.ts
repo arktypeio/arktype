@@ -4,21 +4,33 @@ import { type } from "arktype"
 contextualize(() => {
 	it("0 params implicit return", () => {
 		const f = type.fn()(() => 5)
+
 		attest<() => number>(f)
+
 		attest(f()).equals(5)
+
+		attest(f.expression).snap("() => unknown")
 	})
 
 	it("0 params explicit return", () => {
 		const f = type.fn(":", "5")(() => 5)
+
 		attest<() => 5>(f)
+
 		attest(f()).equals(5)
+
+		attest(f.expression).snap("() => 5")
 	})
 
 	it("1 param implicit return", () => {
 		const len = type.fn("string | unknown[]")(s => s.length)
+
 		attest<(s: string) => number>(len)
 
+		attest(len.expression).snap("(a: string | Array) => unknown")
+
 		attest(len("foo")).equals(3)
+
 		// @ts-expect-error
 		attest(() => len(1)).throws.snap(
 			"TraversalError: must be a string or an object (was a number)"
@@ -27,7 +39,10 @@ contextualize(() => {
 
 	it("1 param explicit return", () => {
 		const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
 		attest<(s: string) => number>(len)
+
+		attest(len.expression).snap("(a: string | Array) => number")
 
 		attest(len("foo")).equals(3)
 
@@ -42,7 +57,13 @@ contextualize(() => {
 			"string",
 			"number"
 		)((s, n) => s === `${n}`)
+
 		attest<(s: string, n: number) => boolean>(isNumericEquivalent)
+
+		attest(isNumericEquivalent.expression).snap(
+			"(a: string, b: number) => unknown"
+		)
+
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
 
@@ -55,6 +76,10 @@ contextualize(() => {
 		)((s, n) => s === `${n}`)
 
 		attest<(s: string, n: number) => boolean>(isNumericEquivalent)
+
+		attest(isNumericEquivalent.expression).snap(
+			"(a: string, b: number) => boolean"
+		)
 
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
@@ -87,6 +112,10 @@ contextualize(() => {
 			a11: 11
 		}))
 
+		attest(f.expression).snap(
+			"(a: { a1: 1 }, b: { a2: 2 }, c: { a3: 3 }, d: { a4: 4 }, e: { a5: 5 }, f: { a6: 6 }, g: { a7: 7 }, h: { a8: 8 }, i: { a9: 9 }, j: { a10: 10 }) => { a11: 11 }"
+		)
+
 		attest(f).type.toString.snap()
 	})
 
@@ -109,7 +138,10 @@ contextualize(() => {
 			const f = $.type.fn("xxx", ":", "zzz")(s => s.length)
 
 			attest<(s: string) => number>(f)
+
 			attest(f("foo")).equals(3)
+
+			attest(f.expression).snap("(a: string) => number")
 
 			// @ts-expect-error
 			attest(() => f(null))
