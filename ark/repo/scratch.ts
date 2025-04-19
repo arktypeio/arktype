@@ -1,9 +1,10 @@
 import { type } from "arktype"
 
-const Even = type.number.divisibleBy(2)
-const By3 = type.number.divisibleBy(3)
-const By6 = Even.and(By3)
+// type-checked, runtime-enforced functions from .ts or .js
+const safe = type.fn(
+	"string",
+	"number = 0.1"
+)((name, version) => console.log(`${name}@${version} is safe AF.`))
 
-console.log(By6.description)
-By6.extends(By3) //?
-By3.extends(By6) //?
+safe("arktype", 2.2) // "arktype@2.2 is safe AF"
+safe("shitescript", "*" as any) // must be a number (was string)
