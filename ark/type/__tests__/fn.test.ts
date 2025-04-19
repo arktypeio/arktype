@@ -4,7 +4,9 @@ import { badFnReturnTypeMessage, type TypedFn } from "arktype/internal/fn.ts"
 import type { Return } from "arktype/internal/nary.ts"
 
 contextualize(() => {
-	it("0 params implicit return", () => {
+	const f = type.fn("string", "number = 5", "boolean?")((s, n, b) => true)
+
+	it("0 paams implicit return", () => {
 		const f = type.fn()(() => 5)
 
 		attest<TypedFn<() => number>>(f)
@@ -25,7 +27,7 @@ contextualize(() => {
 	})
 
 	it("1 param implicit return", () => {
-		const len = type.fn("string | unknown[]")(s => s.length)
+		const len = type.fn("string | number[]")(s => s.length)
 
 		attest<TypedFn<(s: string) => number>>(len)
 
