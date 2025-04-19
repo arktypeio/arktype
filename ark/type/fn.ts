@@ -1,6 +1,6 @@
 import type { BaseRoot } from "@ark/schema"
 import { alphabet, Callable, throwParseError, type Fn } from "@ark/util"
-import type { NaryFnParser } from "./nary.ts"
+import type { NaryFnParser, Return } from "./nary.ts"
 import type { InternalScope, Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
 
@@ -39,7 +39,7 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 				for (; i < signature.length && signature[i] !== ":"; i++)
 					paramTypes[i] = $.parse(signature[i])
 
-				let returnType: BaseRoot | null = null
+				let returnType: BaseRoot = $.intrinsic.unknown
 
 				if (signature[i] === ":") {
 					if (i !== signature.length - 2)
@@ -54,29 +54,43 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 	}
 }
 
-export interface TypedFn<signature extends Fn = Fn, $ = {}>
-	extends Callable<signature> {
-	expression: string
-	params: {
-		[i in keyof Parameters<signature>]: Type<Parameters<signature>[i], $>
+export declare namespace TypedFn {
+	export type meta = {
+		introspectableReturn?: true
 	}
-	returns: BaseRoot | null
+}
+
+export interface TypedFn<
+	signature extends Fn = Fn,
+	$ = {},
+	meta extends TypedFn.meta = {}
+> extends Callable<signature> {
+	expression: string
+	params: signature extends Fn<infer params> ?
+		{
+			[i in keyof params]: Type<params[i], $>
+		}
+	:	never
+	returns: Type<
+		meta extends Return.introspectable ? ReturnType<signature> : unknown,
+		$
+	>
 }
 
 export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	raw: Fn
 	params: readonly BaseRoot[]
-	returns: BaseRoot | null
+	returns: BaseRoot
 	expression: string
 
-	constructor(raw: Fn, params: readonly BaseRoot[], returns: BaseRoot | null) {
+	constructor(raw: Fn, params: readonly BaseRoot[], returns: BaseRoot) {
 		const typedName = `typed ${raw.name}`
 		const typed = {
 			// assign to a key with the expected name to force it to be created that way
 			[typedName]: (...args: unknown[]) => {
 				const validatedArgs = params.map((p, i) => p.assert(args[i]))
 				const returned = raw(...validatedArgs)
-				return returns ? returns.assert(returned) : returned
+				return returns.assert(returned)
 			}
 		}[typedName]
 

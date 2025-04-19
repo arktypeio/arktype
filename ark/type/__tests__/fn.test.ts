@@ -141,6 +141,32 @@ contextualize(() => {
 		attest(f).type.toString.snap("TypedFn<(v: string) => number, {}>")
 	})
 
+	it("attached params", () => {
+		const len = type.fn("string | unknown[]")(s => s.length)
+
+		const expectedParam = type("string | unknown[]")
+
+		attest<[typeof expectedParam]>(len.params)
+		attest(len.params.length).equals(1)
+		attest(len.params[0].expression).equals(expectedParam.expression)
+	})
+
+	it("inferred returns", () => {
+		const len = type.fn("string | unknown[]")(s => s.length)
+
+		const Expected = type.unknown
+		attest<typeof Expected>(len.returns)
+		attest(len.returns.expression).equals(Expected.expression)
+	})
+
+	it("introspectable returns", () => {
+		const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
+		const Expected = type.number
+		attest<typeof Expected>(len.returns)
+		attest(len.returns.expression).equals(Expected.expression)
+	})
+
 	it("missing return", () => {
 		// the type message just ends up being some overload nonsense
 		// but hopefully people will not try to do this and get confused

@@ -2648,6 +2648,12 @@ export type NaryPipeParser<$, initial = unknown> = {
 	): r extends infer _ ? _ : never
 }
 
+export declare namespace Return {
+	export interface introspectable {
+		introspectableReturn: true
+	}
+}
+
 export type NaryFnParser<$> = {
 	(): <implementation extends () => unknown>(
 		implementation: implementation
@@ -2687,7 +2693,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<const arg0, const arg1>(
@@ -2725,7 +2732,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<const arg0, const arg1, const arg2>(
@@ -2767,7 +2775,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<const arg0, const arg1, const arg2, const arg3>(
@@ -2813,7 +2822,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<const arg0, const arg1, const arg2, const arg3, const arg4>(
@@ -2863,7 +2873,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<const arg0, const arg1, const arg2, const arg3, const arg4, const arg5>(
@@ -2925,7 +2936,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3000,7 +3012,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3081,7 +3094,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3168,7 +3182,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3261,7 +3276,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3360,7 +3376,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3465,7 +3482,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3576,7 +3594,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3693,7 +3712,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3816,7 +3836,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -3945,7 +3966,8 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 
 	<
@@ -4080,6 +4102,7 @@ export type NaryFnParser<$> = {
 		(
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
-		$
+		$,
+		Return.introspectable
 	>
 }
