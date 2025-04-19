@@ -1,6 +1,7 @@
 import type { BaseRoot } from "@ark/schema"
 import { Callable, throwParseError, type Fn } from "@ark/util"
 import type { InternalScope } from "./scope.ts"
+export type { FnParser } from "./nary.ts"
 
 export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 	constructor($: InternalScope) {

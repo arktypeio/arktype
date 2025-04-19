@@ -44,7 +44,7 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
-import { InternalFnParser } from "./fn.ts"
+import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -416,6 +416,8 @@ export interface Scope<$ = {}> {
 	type: TypeParser<$>
 
 	match: MatchParser<$>
+
+	fn: FnParser<$>
 
 	declare: DeclarationParser<$>
 

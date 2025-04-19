@@ -2647,7 +2647,7 @@ export type NaryPipeParser<$, initial = unknown> = {
 	): r extends infer _ ? _ : never
 }
 
-export type NaryFnParser<$> = {
+export type FnParser<$> = {
 	<const ret = unknown>(
 		_?: ":",
 		ret?: type.validate<ret, $>

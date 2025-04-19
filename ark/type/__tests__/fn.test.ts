@@ -59,6 +59,10 @@ contextualize(() => {
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
 
+	it("missing return", () => {
+		attest(() => type.fn("string", ":"))
+	})
+
 	describe("scoped", () => {
 		it("scoped param and return", () => {
 			const $ = type.scope({

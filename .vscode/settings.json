@@ -50,5 +50,11 @@
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"
+	},
+	"github.copilot.enable": {
+		"*": true,
+		"plaintext": false,
+		"markdown": false,
+		"scminput": false
 	}
 }

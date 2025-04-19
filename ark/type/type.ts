@@ -29,7 +29,7 @@ import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
-	NaryFnParser,
+	FnParser,
 	NaryIntersectionParser,
 	NaryMergeParser,
 	NaryPipeParser,
@@ -207,7 +207,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * // Runtime (throws): must be a string or an object (was boolean)
 	 * len(true)
 	 */
-	fn: NaryFnParser<$>
+	fn: FnParser<$>
 }
 
 export class InternalTypeParser extends Callable<

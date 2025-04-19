@@ -453,6 +453,187 @@ contextualize(() => {
 
 			it("completions", () => {
 				// @ts-expect-error
+				attest(() => type.and("boo", { foo: "big" })).completions({
+					boo: ["boolean"],
+					big: ["bigint"]
+				})
+			})
+
+			it("spreadable", () => {
+				const types: type[] = []
+
+				const T = type.and(...types)
+
+				attest<unknown>(T.t)
+				attest(T.expression).snap("unknown")
+			})
+
+			it("spreadable n-length", $ => {
+				const types: (
+					| { a: { key: "1" } }
+					| { "a?": { another: "1" }; "b?": "3" }
+				)[] = []
+
+				const T = $.type.and(...types)
+
+				attest<{
+					// should be required if one or branches is required
+					a: {
+						key: 1
+						another: 1
+					}
+					// should be optional if all branches are optional
+					b?: 3
+				}>(T.t)
+			})
+		}
+	)
+
+	contextualize.each(
+		"merge",
+		() => {
+			const $ = type.scope({
+				a: { a1: "1" },
+				b: { a2: "2" },
+				c: { a3: "3" },
+				d: { a4: "4" },
+				e: { a5: "5" }
+			})
+			return $
+		},
+		it => {
+			it("nullary", () => {
+				const T = type.merge()
+				attest<object>(T.t)
+				attest(T.expression).snap("object")
+				attest(T.$.internal.name).snap("ark")
+			})
+
+			it("unary", $ => {
+				const T = $.type.merge("a")
+				attest<{ a1: 1 }>(T.t)
+				attest(T.expression).snap("{ a1: 1 }")
+			})
+
+			it("binary", $ => {
+				const T = $.type.merge("a", "b")
+				attest<{ a1: 1; a2: 2 }>(T.t)
+				attest(T.expression).snap("{ a1: 1, a2: 2 }")
+			})
+
+			it("3-ary", $ => {
+				const T = $.type.merge("a", "b", "c")
+				attest<{
+					a1: 1
+					a2: 2
+					a3: 3
+				}>(T.t)
+				attest(T.expression).snap("{ a1: 1, a2: 2, a3: 3 }")
+			})
+
+			it("4-ary", $ => {
+				const T = $.type.merge("a", "b", "c", "d")
+				attest<{
+					a1: 1
+					a2: 2
+					a3: 3
+					a4: 4
+				}>(T.t)
+				attest(T.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4 }")
+			})
+
+			it("5-ary", $ => {
+				const T = $.type.merge("a", "b", "c", "d", "e")
+
+				attest<{
+					a1: 1
+					a2: 2
+					a3: 3
+					a4: 4
+					a5: 5
+				}>(T.t)
+				attest(T.expression).snap("{ a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }")
+			})
+
+			it("nary", () => {
+				const T = type.merge(
+					{ a1: "1" },
+					{ a2: "2" },
+					{ a3: "3" },
+					{ a4: "4" },
+					{ a5: "5" },
+					{ a6: "6" },
+					{ a7: "7" },
+					{ a8: "8" },
+					{ a9: "9" },
+					{ a10: "10" },
+					{ a11: "11" },
+					{ a12: "12" },
+					{ a13: "13" },
+					{ a14: "14" },
+					{ a15: "15" },
+					{ a16: "16" },
+					{ a17: "17" }
+				)
+
+				attest<{
+					a1: 1
+					a2: 2
+					a3: 3
+					a4: 4
+					a5: 5
+					a6: 6
+					a7: 7
+					a8: 8
+					a9: 9
+					a10: 10
+					a11: 11
+					a12: 12
+					a13: 13
+					a14: 14
+					a15: 15
+					a16: 16
+					a17: 17
+				}>(T.t)
+
+				attest(T.expression).snap(
+					"{ a1: 1, a10: 10, a11: 11, a12: 12, a13: 13, a14: 14, a15: 15, a16: 16, a17: 17, a2: 2, a3: 3, a4: 4, a5: 5, a6: 6, a7: 7, a8: 8, a9: 9 }"
+				)
+			})
+
+			// type-perf currently blows up here, investigation:
+			// https://github.com/arktypeio/arktype/issues/1394
+
+			// it("nary overlapping", () => {
+			// 	const T = type.merge(
+			// 		{ a1: "1" },
+			// 		{ a1: "2" },
+			// 		{ a1: "3" },
+			// 		{ a1: "4" },
+			// 		{ a1: "5" },
+			// 		{ a1: "6" },
+			// 		{ a1: "7" },
+			// 		{ a1: "8" },
+			// 		{ a1: "9" },
+			// 		{ a1: "10" },
+			// 		{ a1: "11" },
+			// 		{ a1: "12" },
+			// 		{ a1: "13" },
+			// 		{ a1: "14" },
+			// 		{ a1: "15" },
+			// 		{ a1: "16" },
+			// 		{ a1: "17" }
+			// 	)
+
+			// 	attest<{
+			// 		a1: 17
+			// 	}>(T.t)
+
+			// 	attest(T.expression).snap()
+			// })
+
+			it("completions", () => {
+				// @ts-expect-error
 				attest(() => type.merge({ boo: "boo" }, { foo: "big" })).completions({
 					big: ["bigint"],
 					boo: ["boolean"]

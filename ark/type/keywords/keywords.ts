@@ -6,6 +6,7 @@ import type { MatchParser } from "../match.ts"
 import type { BaseType } from "../methods/base.ts"
 import type { instantiateType } from "../methods/instantiate.ts"
 import type { BoundModule, Module } from "../module.ts"
+import type { FnParser } from "../nary.ts"
 import type {
 	inferDefinition,
 	validateDefinition
@@ -157,6 +158,8 @@ export declare namespace type {
 export type type<t = unknown, $ = {}> = Type<t, $>
 
 export const match: MatchParser<{}> = ark.match as never
+
+export const fn: FnParser<{}> = ark.fn as never
 
 export const generic: GenericParser<{}> = ark.generic as never
 
