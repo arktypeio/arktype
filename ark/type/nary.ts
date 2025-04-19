@@ -2643,9 +2643,6 @@ export type NaryPipeParser<$, initial = unknown> = {
 		p: p,
 		q: q
 	): r extends infer _ ? _ : never
-	<const morphs extends readonly Morph[], r = Type<inferNaryPipe<morphs>, $>>(
-		...defs: morphs
-	): r extends infer _ ? _ : never
 }
 
 export declare namespace Return {
@@ -2659,18 +2656,11 @@ export type NaryFnParser<$> = {
 		implementation: implementation
 	) => TypedFn<implementation, $>
 
-	<const returns>(
-		_: ":",
-		returns: type.validate<returns, $>
-	): <implementation extends () => type.infer<returns, $>>(
-		implementation: implementation
-	) => TypedFn<implementation, $>
-
-	<const arg0>(
-		arg0: type.validate<arg0, $>
+	<const a>(
+		a: type.validate<a, $>
 	): <
 		implementation extends signature,
-		signature extends (arg0: type.infer<arg0, $>) => unknown
+		signature extends (a: type.infer<a, $>) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2680,13 +2670,31 @@ export type NaryFnParser<$> = {
 		$
 	>
 
-	<const arg0, const returns>(
-		arg0: type.validate<arg0, $>,
-		_: ":",
-		returns: type.validate<returns, $>
+	<const a, const b>(
+		a: a extends ":" ? ":" : type.validate<a, $>,
+		b: type.validate<b, $>
 	): <
 		implementation extends signature,
-		signature extends (arg0: type.infer<arg0, $>) => type.infer<returns, $>
+		signature extends a extends ":" ? () => type.infer<b, $>
+		:	(a: type.infer<a, $>, b: type.infer<b, $>) => unknown
+	>(
+		implementation: implementation
+	) => TypedFn<
+		(
+			...args: mapParamNames<implementation, signature>
+		) => ReturnType<a extends ":" ? signature : implementation>,
+		$,
+		a extends ":" ? Return.introspectable : {}
+	>
+
+	<const a, const b, const c>(
+		a: type.validate<a, $>,
+		b: b extends ":" ? ":" : type.validate<b, $>,
+		c: type.validate<c, $>
+	): <
+		implementation extends signature,
+		signature extends b extends ":" ? (a: type.infer<a, $>) => type.infer<c, $>
+		:	(a: type.infer<a, $>, b: type.infer<b, $>, c: type.infer<c, $>) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2694,38 +2702,24 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		b extends ":" ? Return.introspectable : {}
 	>
 
-	<const arg0, const arg1>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>
+	<const a, const b, const c, const d>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: c extends ":" ? ":" : type.validate<c, $>,
+		d: type.validate<d, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<const arg0, const arg1, const returns>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>
-		) => type.infer<returns, $>
+		signature extends c extends ":" ?
+			(a: type.infer<a, $>, b: type.infer<b, $>) => type.infer<d, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2733,42 +2727,30 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		c extends ":" ? Return.introspectable : {}
 	>
 
-	<const arg0, const arg1, const arg2>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>
+	<const a, const b, const c, const d, const e>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: d extends ":" ? ":" : type.validate<d, $>,
+		e: type.validate<e, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<const arg0, const arg1, const arg2, const returns>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>
-		) => type.infer<returns, $>
+		signature extends d extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>
+			) => type.infer<e, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2776,46 +2758,33 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		d extends ":" ? Return.introspectable : {}
 	>
 
-	<const arg0, const arg1, const arg2, const arg3>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>
+	<const a, const b, const c, const d, const e, const f>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: e extends ":" ? ":" : type.validate<e, $>,
+		f: type.validate<f, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<const arg0, const arg1, const arg2, const arg3, const returns>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>
-		) => type.infer<returns, $>
+		signature extends e extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>
+			) => type.infer<f, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2823,50 +2792,36 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		e extends ":" ? Return.introspectable : {}
 	>
 
-	<const arg0, const arg1, const arg2, const arg3, const arg4>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>
+	<const a, const b, const c, const d, const e, const f, const g>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: f extends ":" ? ":" : type.validate<f, $>,
+		g: type.validate<g, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<const arg0, const arg1, const arg2, const arg3, const arg4, const returns>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>
-		) => type.infer<returns, $>
+		signature extends f extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>
+			) => type.infer<g, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2874,62 +2829,39 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		f extends ":" ? Return.introspectable : {}
 	>
 
-	<const arg0, const arg1, const arg2, const arg3, const arg4, const arg5>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>
+	<const a, const b, const c, const d, const e, const f, const g, const h>(
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: g extends ":" ? ":" : type.validate<g, $>,
+		h: type.validate<h, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>
-		) => type.infer<returns, $>
+		signature extends g extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>
+			) => type.infer<h, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -2937,75 +2869,52 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		g extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: h extends ":" ? ":" : type.validate<h, $>,
+		i: type.validate<i, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>
-		) => type.infer<returns, $>
+		signature extends h extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>
+			) => type.infer<i, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3013,81 +2922,56 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		h extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: i extends ":" ? ":" : type.validate<i, $>,
+		j: type.validate<j, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>
-		) => type.infer<returns, $>
+		signature extends i extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>
+			) => type.infer<j, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3095,87 +2979,60 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		i extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: j extends ":" ? ":" : type.validate<j, $>,
+		k: type.validate<k, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>
-		) => type.infer<returns, $>
+		signature extends j extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>
+			) => type.infer<k, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3183,93 +3040,64 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		j extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: k extends ":" ? ":" : type.validate<k, $>,
+		l: type.validate<l, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>
-		) => type.infer<returns, $>
+		signature extends k extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>
+			) => type.infer<l, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3277,99 +3105,68 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		k extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: l extends ":" ? ":" : type.validate<l, $>,
+		m: type.validate<m, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>
-		) => type.infer<returns, $>
+		signature extends l extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>
+			) => type.infer<m, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3377,105 +3174,72 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		l extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: m extends ":" ? ":" : type.validate<m, $>,
+		n: type.validate<n, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>
-		) => type.infer<returns, $>
+		signature extends m extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>
+			) => type.infer<n, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>,
+				n: type.infer<n, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3483,111 +3247,76 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		m extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		const o
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: n extends ":" ? ":" : type.validate<n, $>,
+		o: type.validate<o, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>
-		) => type.infer<returns, $>
+		signature extends n extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>
+			) => type.infer<o, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>,
+				n: type.infer<n, $>,
+				o: type.infer<o, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3595,117 +3324,80 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		n extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		const o,
+		const p
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: type.validate<n, $>,
+		o: o extends ":" ? ":" : type.validate<o, $>,
+		p: type.validate<p, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>
-		) => type.infer<returns, $>
+		signature extends o extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>,
+				n: type.infer<n, $>
+			) => type.infer<p, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>,
+				n: type.infer<n, $>,
+				o: type.infer<o, $>,
+				p: type.infer<p, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3713,123 +3405,84 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
+		o extends ":" ? Return.introspectable : {}
 	>
 
 	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const arg14
+		const a,
+		const b,
+		const c,
+		const d,
+		const e,
+		const f,
+		const g,
+		const h,
+		const i,
+		const j,
+		const k,
+		const l,
+		const m,
+		const n,
+		const o,
+		const p,
+		const q
 	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		arg14: type.validate<arg14, $>
+		a: type.validate<a, $>,
+		b: type.validate<b, $>,
+		c: type.validate<c, $>,
+		d: type.validate<d, $>,
+		e: type.validate<e, $>,
+		f: type.validate<f, $>,
+		g: type.validate<g, $>,
+		h: type.validate<h, $>,
+		i: type.validate<i, $>,
+		j: type.validate<j, $>,
+		k: type.validate<k, $>,
+		l: type.validate<l, $>,
+		m: type.validate<m, $>,
+		n: type.validate<n, $>,
+		o: type.validate<o, $>,
+		p: p extends ":" ? ":" : type.validate<p, $>,
+		q: type.validate<q, $>
 	): <
 		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>,
-			arg14: type.infer<arg14, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const arg14,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		arg14: type.validate<arg14, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>,
-			arg14: type.infer<arg14, $>
-		) => type.infer<returns, $>
+		signature extends p extends ":" ?
+			(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>,
+				n: type.infer<n, $>,
+				o: type.infer<o, $>
+			) => type.infer<q, $>
+		:	(
+				a: type.infer<a, $>,
+				b: type.infer<b, $>,
+				c: type.infer<c, $>,
+				d: type.infer<d, $>,
+				e: type.infer<e, $>,
+				f: type.infer<f, $>,
+				g: type.infer<g, $>,
+				h: type.infer<h, $>,
+				i: type.infer<i, $>,
+				j: type.infer<j, $>,
+				k: type.infer<k, $>,
+				l: type.infer<l, $>,
+				m: type.infer<m, $>,
+				n: type.infer<n, $>,
+				o: type.infer<o, $>,
+				p: type.infer<p, $>,
+				q: type.infer<q, $>
+			) => unknown
 	>(
 		implementation: implementation
 	) => TypedFn<
@@ -3837,272 +3490,6 @@ export type NaryFnParser<$> = {
 			...args: mapParamNames<implementation, signature>
 		) => ReturnType<signature>,
 		$,
-		Return.introspectable
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const arg14,
-		const arg15
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		arg14: type.validate<arg14, $>,
-		arg15: type.validate<arg15, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>,
-			arg14: type.infer<arg14, $>,
-			arg15: type.infer<arg15, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const arg14,
-		const arg15,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		arg14: type.validate<arg14, $>,
-		arg15: type.validate<arg15, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>,
-			arg14: type.infer<arg14, $>,
-			arg15: type.infer<arg15, $>
-		) => type.infer<returns, $>
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<signature>,
-		$,
-		Return.introspectable
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const arg14,
-		const arg15,
-		const arg16
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		arg14: type.validate<arg14, $>,
-		arg15: type.validate<arg15, $>,
-		arg16: type.validate<arg16, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>,
-			arg14: type.infer<arg14, $>,
-			arg15: type.infer<arg15, $>,
-			arg16: type.infer<arg16, $>
-		) => unknown
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<implementation>,
-		$
-	>
-
-	<
-		const arg0,
-		const arg1,
-		const arg2,
-		const arg3,
-		const arg4,
-		const arg5,
-		const arg6,
-		const arg7,
-		const arg8,
-		const arg9,
-		const arg10,
-		const arg11,
-		const arg12,
-		const arg13,
-		const arg14,
-		const arg15,
-		const arg16,
-		const returns
-	>(
-		arg0: type.validate<arg0, $>,
-		arg1: type.validate<arg1, $>,
-		arg2: type.validate<arg2, $>,
-		arg3: type.validate<arg3, $>,
-		arg4: type.validate<arg4, $>,
-		arg5: type.validate<arg5, $>,
-		arg6: type.validate<arg6, $>,
-		arg7: type.validate<arg7, $>,
-		arg8: type.validate<arg8, $>,
-		arg9: type.validate<arg9, $>,
-		arg10: type.validate<arg10, $>,
-		arg11: type.validate<arg11, $>,
-		arg12: type.validate<arg12, $>,
-		arg13: type.validate<arg13, $>,
-		arg14: type.validate<arg14, $>,
-		arg15: type.validate<arg15, $>,
-		arg16: type.validate<arg16, $>,
-		_: ":",
-		returns: type.validate<returns, $>
-	): <
-		implementation extends signature,
-		signature extends (
-			arg0: type.infer<arg0, $>,
-			arg1: type.infer<arg1, $>,
-			arg2: type.infer<arg2, $>,
-			arg3: type.infer<arg3, $>,
-			arg4: type.infer<arg4, $>,
-			arg5: type.infer<arg5, $>,
-			arg6: type.infer<arg6, $>,
-			arg7: type.infer<arg7, $>,
-			arg8: type.infer<arg8, $>,
-			arg9: type.infer<arg9, $>,
-			arg10: type.infer<arg10, $>,
-			arg11: type.infer<arg11, $>,
-			arg12: type.infer<arg12, $>,
-			arg13: type.infer<arg13, $>,
-			arg14: type.infer<arg14, $>,
-			arg15: type.infer<arg15, $>,
-			arg16: type.infer<arg16, $>
-		) => type.infer<returns, $>
-	>(
-		implementation: implementation
-	) => TypedFn<
-		(
-			...args: mapParamNames<implementation, signature>
-		) => ReturnType<signature>,
-		$,
-		Return.introspectable
+		p extends ":" ? Return.introspectable : {}
 	>
 }

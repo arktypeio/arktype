@@ -85,6 +85,10 @@ contextualize(() => {
 		attest(isNumericEquivalent("5", 5)).equals(true)
 	})
 
+	// it("morphs", () => {
+	// 	const f = type.fn({ foo: "string.n" })
+	// })
+
 	it("nary", () => {
 		const f = type.fn(
 			{ a1: "1" },
@@ -177,6 +181,81 @@ contextualize(() => {
 	it("name", () => {
 		const f = type.fn("string")(function originalName() {})
 		attest(f.name).snap("bound typed originalName")
+	})
+
+	it("arg submodule completions", () => {
+		// @ts-expect-error
+		attest(() => type.fn("string.nu")).completions({
+			"string.nu": ["string.numeric"]
+		})
+
+		// @ts-expect-error
+		attest(() => type.fn("boolean", "string.nu")).completions({
+			"string.nu": ["string.numeric"]
+		})
+	})
+
+	it("arg object completions", () => {
+		attest(() =>
+			type.fn({
+				// @ts-expect-error
+				a: "str"
+			})
+		).completions({
+			str: ["string"]
+		})
+
+		attest(() =>
+			type.fn(
+				{
+					a: "string"
+				},
+				{
+					// @ts-expect-error
+					b: "boo"
+				}
+			)
+		).completions({
+			boo: ["boolean"]
+		})
+	})
+
+	it("returns submodule completions", () => {
+		// @ts-expect-error
+		attest(() => type.fn(":", "string.nu")).completions({
+			"string.nu": ["string.numeric"]
+		})
+
+		// @ts-expect-error
+		attest(() => type.fn("boolean", ":", "string.nu")).completions({
+			"string.nu": ["string.numeric"]
+		})
+	})
+
+	it("returns object completions", () => {
+		attest(() =>
+			type.fn(":", {
+				// @ts-expect-error
+				a: "str"
+			})
+		).completions({
+			str: ["string"]
+		})
+
+		attest(() =>
+			type.fn(
+				{
+					a: "string"
+				},
+				":",
+				{
+					// @ts-expect-error
+					b: "boo"
+				}
+			)
+		).completions({
+			boo: ["boolean"]
+		})
 	})
 
 	describe("scoped", () => {
