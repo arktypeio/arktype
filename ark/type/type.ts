@@ -29,6 +29,7 @@ import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
+	NaryFnParser,
 	NaryIntersectionParser,
 	NaryMergeParser,
 	NaryPipeParser,
@@ -197,6 +198,16 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const T = type.pipe(type.string, s => JSON.parse(s), type.object)
 	 */
 	pipe: NaryPipeParser<$>
+	/**
+	 * Define a validated function
+	 * @example
+	 * const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+	 * len("foo") // 3
+	 * // TypeScript: boolean is not assignable to string | unknown[]
+	 * // Runtime (throws): must be a string or an object (was boolean)
+	 * len(true)
+	 */
+	fn: NaryFnParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -225,7 +236,8 @@ export class InternalTypeParser extends Callable<
 				or: $.or,
 				and: $.and,
 				merge: $.merge,
-				pipe: $.pipe
+				pipe: $.pipe,
+				fn: $.fn as never
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
