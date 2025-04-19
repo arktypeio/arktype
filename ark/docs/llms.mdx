@@ -1,0 +1,4564 @@
+// Relative Path: ark/docs/content/docs/generics/index.mdx
+
+---
+
+## title: Generics
+
+### Keywords
+
+This table includes all generic keywords available in default `type` API.
+
+<GenericKeywordTable />
+
+### Syntax
+
+Generics can be declared and instantiated in one of three ways.
+
+#### Definition
+
+```ts
+import { type } from "arktype"
+
+const boxOf = type("<t>", { box: "t" })
+
+// hover me!
+const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
+```
+
+#### Constrained Parameters
+
+All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any built-in keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
+
+```ts
+import { type } from "arktype"
+
+const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
+
+const nonEmptyNumberArray = nonEmpty("number[]")
+```
+
+#### Scoped
+
+There is a special syntax for specifying generics in a scope:
+
+```ts
+import { scope } from "arktype"
+
+const types = scope({
+	"box<t, u>": {
+		box: "t | u"
+	},
+	bitBox: "box<0, 1>"
+}).export()
+
+const out = types.bitBox({ box: 0 })
+```
+
+#### Invocation
+
+```ts
+import { type } from "arktype"
+
+const One = type("Extract<0 | 1, 1>")
+```
+
+##### Chained
+
+```ts
+import { type } from "arktype"
+
+const User = type({
+	name: "string",
+	"age?": "number",
+	isAdmin: "boolean"
+})
+
+// hover me!
+const basicUser = User.pick("name", "age")
+```
+
+#### Invoked
+
+```ts
+import { type } from "arktype"
+
+const unfalse = type.keywords.Exclude("boolean", "false")
+```
+
+### HKT
+
+Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible. As a preview, here's what the implementation of `Partial` looks like internally:
+
+```ts
+import { generic, Hkt } from "arktype"
+
+const Partial = generic(["T", "object"])(
+	args => args.T.partial(),
+	class PartialHkt extends Hkt<[object]> {
+		declare body: Partial<this[0]>
+	}
+)
+```
+
+Recursive and cyclic generics are also currently unavailable and will be added soon.
+
+For more usage examples, check out the unit tests for generics [here](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/generic.test.ts).
+
+### External
+
+The most basic pattern for wrapping a Type looks something like this:
+
+```ts
+const createBox = <t extends string>(of: type.Any<t>) =>
+	type({
+		box: of
+	})
+
+// @ts-expect-error
+createBox(type("number"))
+
+// Type<{ box: string }>
+const BoxType = createBox(type("string"))
+```
+
+For a deeper integration, you may wish to parse a definition directly:
+
+```ts
+const createBox = <const def>(
+	of: type.validate<def>
+): type.instantiate<{ of: def }> =>
+	type.raw({
+		box: of
+	}) as never
+
+// Type<{ box: string }>
+const BoxType = createBox("string")
+```
+
+The sky's the limit when it comes to this sort of integration, but be warned- TypeScript generics are notoriously finicky and [you may find APIs like these difficult to write if you're not used to it](/docs/faq#why-isnt-my-wrapper-generic-working).
+
+---
+
+// Relative Path: ark/docs/content/docs/type-api/index.mdx
+
+---
+
+## title: Type API
+
+<ApiTable group="Type" />
+
+### toJsonSchema
+
+Each `Type` instance exposes a `toJsonSchema()` method that can be used to generate a corresponding JSON Schema.
+
+```ts
+const User = type({
+	name: "string",
+	email: "string.email",
+	"age?": "number >= 18"
+})
+
+const schema = User.toJsonSchema()
+
+const result = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		email: {
+			type: "string",
+			format: "email",
+			pattern: "^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$"
+		},
+		age: { type: "number", minimum: 18 }
+	},
+	required: ["name", "email"]
+}
+```
+
+Options can be passed to change the behavior including how incompatibilities are handled. See [the associated config docs](/docs/configuration#toJsonSchema) for more details.
+
+---
+
+// Relative Path: ark/docs/content/docs/comparisons.mdx
+
+---
+
+## title: Comparisons
+
+---
+
+// Relative Path: ark/docs/content/docs/configuration/index.mdx
+
+---
+
+## title: Configuration
+
+A great out-of-the-box experience is a core goal of ArkType, including safe defaults and helpful messages for complex errors.
+
+However, it's equally important that when you need different behavior, you can easily configure it with the right granularity.
+
+### Levels
+
+<table>
+  <thead>
+    <tr>
+      <th>Level</th>
+      <th>Applies To</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>**default**</td>
+      <td>built-in defaults for all Types</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>**global**</td>
+      <td>all Types parsed after the config is applied</td>
+      <td>
+```ts title="config.ts"
+import { configure } from "arktype/config"
+// use the "arktype/config" entrypoint
+configure({ numberAllowsNaN: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+type.number.allows(Number.NaN) // true
+```
+
+     </td>
+    </tr>
+    <tr>
+      <td>**scope**</td>
+      <td>all Types parsed in the configured Scope</td>
+      <td>
+
+```ts
+const myScope = scope(
+	{ User: { age: "number < 100" } },
+	{
+		max: {
+			actual: () => "unacceptably large"
+		}
+	}
+)
+const types = myScope.export()
+// ArkErrors: age must be less than 100 (was unacceptably large)
+types.User({ name: "Alice", age: 101 })
+const parsedAfter = myScope.type({
+	age: "number <= 100"
+})
+// ArkErrors: age must be at most 100 (was unacceptably large)
+parsedAfter({ age: 101 })
+```
+
+      </td>
+    </tr>
+    <tr>
+      <td>**type**</td>
+      <td>all Types shallowly referenced by the configured Type</td>
+      <td>
+
+```ts
+// avoid logging "was xxx" for password
+const Password = type("string >= 8").configure({ actual: () => "" })
+const User = type({
+	email: "string.email",
+	password: Password
+})
+// ArkErrors: password must be at least length 8
+const out = User({
+	email: "david@arktype.io",
+	password: "ez123"
+})
+```
+
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+Some options only apply at specific levels, as reflected in the corresponding input types.
+
+<Callout
+	type="warn"
+	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
+>
+	If you need your config to apply to built-in keywords (important for options
+	like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and
+	`configure` from `"arktype/config"` before importing anything from
+	`"arktype"`.
+
+Otherwise, keywords will have already been parsed by the time your config applies!
+
+</Callout>
+
+### Errors
+
+To allow custom errors to be integrated seemlessly with built-in logic for composite errors (i.e. `union` and `intersection`), ArkType supports a set of composable options:
+
+<table>
+<thead>
+<tr>
+<th>optional</th>
+<th>description</th>
+<th>example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>**description**</td>
+<td>
+✅ a summary of the constraint that could complete the phrase "must be ___"
+
+🥇 reused by other metadata and should be your first go-to for customizing a message
+
+</td>
+<td>
+```ts
+const Password = type.string.atLeastLength(8).describe("a valid password")
+// ArkErrors: must be a valid password
+const out = Password("ez123")
+```
+</td>
+</tr>
+<tr>
+<td>**expected**</td>
+<td>
+✅ a function accepting the error context and returning a string of the format "must be ___"
+
+✅ specific to errors and takes precedence over `description` in those cases
+
+</td>
+    <td>
+```ts
+const Password = type.string.atLeastLength(8).configure({
+	expected: ctx =>
+		ctx.code === "minLength" ? `${ctx.rule} characters or better` : "way better"
+})
+// ArkErrors: must be 8 characters or better (was 5)
+const out1 = Password("ez123").toString()
+// ArkErrors: must be way better (was a number)
+const out2 = Password(12345678).toString()
+```
+</td>
+</tr>
+<tr>
+<td>**actual**</td>
+<td>
+✅ a function accepting the data that caused the error and returning a string of the format "(was ___)"
+
+✅ if an empty string is returned, the actual portion of the message will be omitted
+
+</td>
+    <td>
+```ts
+const Password = type("string >= 8").configure({ actual: () => "" })
+// ArkErrors: must be at least length 8
+const out = Password("ez123")
+```
+</td>
+</tr>
+<tr>
+<td>**problem**</td>
+<td>
+✅ a function accepting the results of `expected` and `actual` in addition to other context and returning a complete description of the problem like "must be a string (was a number)"
+
+❌ may not apply to composite errors like unions
+
+</td>
+<td>
+```ts
+const Password = type("string >= 8").configure({
+	problem: ctx => `${ctx.actual} isn't ${ctx.expected}`
+})
+// ArkErrors: 5 isn't at least length 8
+const out1 = Password("ez123")
+// ArkErrors: a number isn't a string
+const out2 = Password(12345678)
+```
+</td>
+</tr>
+<tr>
+<td>**message**</td>
+<td>
+✅ a function accepting the result of `problem` in addition to other context and returning a complete description of the problem including the path at which it occurred
+
+❌ may not apply to composite errors like unions
+
+</td>
+<td>
+```ts
+const User = type({
+	password: "string >= 8"
+}).configure({
+	message: ctx =>
+		`${ctx.propString || "(root)"}: ${ctx.actual} isn't ${ctx.expected}`
+})
+// ArkErrors: (root): a string isn't an object
+const out1 = User("ez123")
+// `.configure` only applies shallowly, so the nested error isn't changed!
+// ArkErrors: password must be at least length 8 (was 5)
+const out2 = User({ password: "ez123" })
+```
+</td>
+</tr>
+</tbody>
+</table>
+
+#### By Code
+
+Errors can also be configured by their associated `code` property at a _scope_ or _global_ level.
+
+For example:
+
+```ts
+const mod = type.module(
+	{ isEven: "number%2" },
+	{
+		divisor: {
+			// the available `ctx` types will include data specific to your errors
+			expected: ctx => `% ${ctx.rule} !== 0`,
+			problem: ctx => `${ctx.actual} ${ctx.expected}`
+		}
+	}
+)
+// ArkErrors: 3 % 2 !== 0
+mod.isEven(3)
+```
+
+#### ArkErrors
+
+For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` array returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+
+These `ArkError` instances can be arbitrarily transformed and composed with an internationalization library. This is still a topic we're working on investigating and documenting, so please reach out with any questions or feedback!
+
+### Keywords
+
+Built-in keywords like `string.email` can be globally configured.
+
+This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	keywords: {
+		string: "shorthand description",
+		"string.email": {
+			actual: () => "definitely fake"
+		}
+	}
+})
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({
+	name: "string",
+	email: "string.email"
+})
+
+const out = User({
+	// ArkErrors: name must be shorthand description (was a number)
+	name: 5,
+	// ArkErrors: email must be an email address (was definitely fake)
+	email: "449 Canal St"
+})
+```
+
+The options you can provide here are identical to those used to [configure a Type directly](/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](/docs/configuration#custom).
+
+### Clone
+
+By default, before a [morph](/docs/intro/morphs-and-more) is applied, ArkType will deeply clone the original input value with a built-in `deepClone` function that tries to make reasonable assumptions about preserving prototypes etc. The implementation of `deepClone` can be found [here](https://github.com/arktypeio/arktype/blob/main/ark/util/clone.ts).
+
+You can provide an alternate clone implementation to the `clone` config option.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ clone: structuredClone })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+// will now create a new object using structuredClone
+const UserForm = type({
+	age: "string.numeric.parse"
+})
+```
+
+To mutate the input object directly, you can set the `clone` config option to `false`.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ clone: false })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const UserForm = type({
+	age: "string.numeric.parse"
+})
+
+const formData = {
+	age: "42"
+}
+
+const out = UserForm(formData)
+
+// the original object's age key is now a number
+console.log(formData.age)
+```
+
+### onUndeclaredKey
+
+Like TypeScript, ArkType defaults to ignoring undeclared keys during validation. However, it also supports two additional behaviors:
+
+- `"ignore"` (default): Allow undeclared keys on input, preserve them on output
+- `"delete"`: Allow undeclared keys on input, delete them before returning output
+- `"reject"`: Reject input with undeclared keys
+
+These behaviors can be associated with individual Types via the built-in `"+"` syntax (see [those docs](/docs/objects#properties-undeclared) for more on how they work). You can also change the default globally:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ onUndeclaredKey: "delete" })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const UserForm = type({
+	name: "string"
+})
+
+// out is now { name: "Alice" }
+const out = UserForm({
+	name: "Alice",
+	age: "42"
+})
+```
+
+### exactOptionalPropertyTypes
+
+By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+const MyObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = MyObj({})
+
+// Error: key must be a number (was undefined)
+const errorResult = MyObj({ key: undefined })
+```
+
+</details>
+
+This approach allows the most granular control over optionality, as `| undefined` can be added to properties that should accept it.
+
+However, if you have not enabled TypeScript's `exactOptionalPropertyTypes` setting, you may globally configure ArkType's `exactOptionalPropertyTypes` to `false` to match TypeScript's behavior. If you do this, we'd recommend making a plan to enable `exactOptionalPropertyTypes` in the future.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+// since the default in ArkType is `true`, this will only have an effect if set to `false`
+configure({ exactOptionalPropertyTypes: false })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const MyObj = type({
+	"key?": "number"
+})
+
+// valid data
+const validResult = MyObj({})
+
+// now also valid data (would be an error by default)
+const secondResult = MyObj({ key: undefined })
+```
+
+<Callout type="warn" title="exactOptionalPropertyTypes does not yet affect default values!">
+
+```ts
+const MyObj = type({
+	key: "number = 5"
+})
+
+// { key: 5 }
+const omittedResult = MyObj({})
+
+// { key: undefined }
+const undefinedResult = MyObj({ key: undefined })
+```
+
+Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
+
+</Callout>
+
+### jitless
+
+By default, when a `Type` is instantiated, ArkType will precompile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
+
+If you'd like to opt out of it for another reason, you can set the `jitless` config option to `true`.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ jitless: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+// will not be precompiled
+const MyObject = type({
+	foo: "string"
+})
+```
+
+### onFail
+
+In some domains, you may always want to throw on failed validation or transform the result in some other way.
+
+By specifying `onFail` in your global config, you can control what happens when you invoke a `Type` on invalid data:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+const config = configure({
+	onFail: errors => errors.throw()
+})
+
+// be sure to specify both the runtime and static configs
+
+declare global {
+	interface ArkEnv {
+		onFail: typeof config.onFail
+	}
+}
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+// data is inferred as string- no need to discriminate!
+const data = type.string("foo")
+
+// now thrown instead of returned
+// ArkErrors: must be a string (was number)
+const bad = type.string(5)
+```
+
+### metadata
+
+Additional arbitrary metadata can also be associated with a Type.
+
+It can even be made type-safe via an interface extension ArkType exposes for this purpose:
+
+```ts
+// add this anywhere in your project
+declare global {
+	interface ArkEnv {
+		meta(): {
+			// meta properties should always be optional
+			secretIngredient?: string
+		}
+	}
+}
+
+// now types you define can specify and access your metadata
+const MrPingsSecretIngredientSoup = type({
+	broth: "'miso' | 'vegetable'",
+	ingredients: "string[]"
+}).configure({ secretIngredient: "nothing!" })
+```
+
+### toJsonSchema
+
+Some ArkType features don't have JSON Schema equivalents. By default, `toJsonSchema()` will throw in these cases.
+
+This behavior can be configured granularly to match your needs.
+
+```ts
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
+
+const schema = T.toJsonSchema({
+	fallback: {
+		// ✅ the "default" key is a fallback for any non-explicitly handled code
+		// ✅ ctx includes "base" (represents the schema being generated) and other code-specific props
+		// ✅ returning `ctx.base` will effectively ignore the incompatible constraint
+		default: ctx => ctx.base,
+		// handle specific incompatibilities granularly
+		date: ctx => ({
+			...ctx.base,
+			type: "string",
+			format: "date-time",
+			description: ctx.after ? `after ${ctx.after}` : "anytime"
+		})
+	}
+})
+
+const result = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "object",
+	properties: {
+		// Date instance is now a date-time string as specified by the `date` handler
+		birthday: { type: "string", format: "date-time", description: "anytime" }
+	},
+	required: ["birthday"]
+	// symbolic index signature ignored as specified by the `default` handler
+}
+```
+
+a `default` handler can also be specified at the root of a `fallback` config:
+
+```ts
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
+
+//--- cut ---
+
+const schema = T.toJsonSchema({
+	// "just make it work"
+	fallback: ctx => ctx.base
+})
+```
+
+These options can also be set at a [global or scope-level](/docs/configuration#levels).
+
+### Fallback Codes
+
+This is the full list of configurable reasons `toJsonSchema()` can fail.
+
+| Code                  | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `arrayObject`         | arrays with object properties                               |
+| `arrayPostfix`        | arrays with postfix elements                                |
+| `defaultValue`        | non-serializable default value                              |
+| `domain`              | non-serializable type keyword (always `bigint` or `symbol`) |
+| `morph`               | transformation                                              |
+| `patternIntersection` | multiple regex constraints                                  |
+| `predicate`           | custom narrow function                                      |
+| `proto`               | non-serializable `instanceof`                               |
+| `symbolKey`           | symbolic key on an object                                   |
+| `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
+| `date`                | a Date instance (supercedes `proto` for Dates )             |
+
+### prototypes
+
+When you `.infer` your Types, ArkType traverses them and extracts special values like morphs, e.g. `(In: string) => Out<number>`.
+
+Though generally this is able to preserve the original type, it is inefficient and can accidentally expand certain object types.
+
+You can use the type-level `prototypes` config to tell ArkType to treat those types as external:
+
+```ts
+declare global {
+	interface ArkEnv {
+		prototypes(): MySpecialClass
+	}
+}
+
+class MySpecialClass {}
+
+const T = type.instanceOf(MySpecialClass)
+//    ^? Type<MySpecialClass>
+```
+
+---
+
+// Relative Path: ark/docs/content/docs/intro/adding-constraints.mdx
+
+---
+
+## title: Adding Constraints
+
+TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `integer less than 100`?
+
+In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
+
+Constraints are a first-class citizen of ArkType. They are fully composable with TypeScript's built-in operators and governed by the same underlying principles of set-theory.
+
+## Define
+
+Let's create a new `contact` Type that enforces our example constraints.
+
+```ts
+const Contact = type({
+	// many common constraints are available as built-in keywords
+	email: "string.email",
+	// others can be written as type-safe expressions
+	score: "number.integer < 100"
+})
+
+// if you need the TS type, just infer it out as normal
+type Contact = typeof Contact.infer
+```
+
+## Compose
+
+Imagine we want to define a new Type representing a non-empty list of `Contact`.
+
+While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
+
+```ts
+const _Contact = type({
+	email: "string.email",
+	score: "number.integer < 100"
+})
+
+type _Contact = typeof _Contact.t
+
+interface Contact extends _Contact {}
+
+export const Contact: type<Contact> = _Contact
+// ---cut-start---
+// a non-empty list of Contact
+// ---cut-end---
+const Contacts = Contact.array().atLeastLength(1)
+```
+
+## Narrow
+
+Structured constraints like divisors and ranges will only take us so far. Luckily, they integrate seamlessly with whatever custom validation logic you need.
+
+```ts
+interface RuntimeErrors extends type.errors {
+	/**even must be even (was 7)
+odd must be odd (was 8)*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+// ---cut---
+
+// there's no "not divisible" expression - need to narrow
+const Odd = type("number").narrow((n, ctx) =>
+	// if even, add a customizable error and return false
+	n % 2 === 0 ? ctx.mustBe("odd") : true
+)
+
+const FavoriteNumbers = type({
+	even: "number % 2",
+	odd: Odd
+})
+
+const out = FavoriteNumbers({
+	even: 7,
+	odd: 8
+})
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover summary to see validation errors
+	console.error(out.summary)
+} else {
+	console.log(out.odd)
+}
+```
+
+You now know how to refine your types to enforce additional constraints at runtime.
+
+But what if once your input is fully validated, you still need to make some adjustments before it's ready to use?
+
+The final section of intro will cover **morphs**, an extremely powerful tool for composing and transforming Types.
+
+---
+
+// Relative Path: ark/docs/content/docs/intro/morphs-and-more.mdx
+
+---
+
+## title: Morphs & More
+
+Sometimes, data at the boundaries of your code requires more than validation before it's ready to use.
+
+**Morphs** allow you to arbitrarily transform the shape and format of your data.
+
+Morphs can be **piped** before, after or between validators and even chained to other morphs.
+
+```ts
+// Hover to see the type-level representation
+const parseJson = type("string").pipe((s): object => JSON.parse(s))
+
+// object: { ark: "type" }
+const out = parseJson('{ "ark": "type" }')
+
+// ArkErrors: must be a string (was object)
+const badOut = parseJson(out)
+```
+
+This is a good start, but there are still a couple major issues with our morph.
+
+What happens if we pass a string that isn't valid JSON?
+
+```ts
+const parseJson = type("string").pipe((s): object => JSON.parse(s))
+// ---cut---
+
+// Uncaught SyntaxError: Expected property name ☠️ // [!code error]
+const badOut = parseJson('{ unquoted: "keys" }')
+```
+
+Despite what `JSON.parse` might have you believe, throwing exceptions and returning `any` are not very good ways to parse a string. By default, ArkType assumes that if one of your morphs or narrows throws, you intend to crash.
+
+If you do happen to find yourself at the mercy of an unsafe API, you might consider wrapping your function body in a `try...catch`.
+
+Luckily, there is a built-in API for wrapping `pipe`d functions you don't trust:
+
+```ts
+const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
+
+// Now returns an introspectable error instead of crashing 🎉
+const badOut = parseJson('{ unquoted: "keys" }')
+
+const out = parseJson('{ "ark": "type" }')
+
+if (out instanceof type.errors) out.throw()
+// Unfortunately, a validated `object` still isn't very useful...
+else console.log(out)
+```
+
+The best part about `pipe` is that since any `Type` is root-invokable, `Type`s themselves _are_ already morphs! This means validating out parsed output is as easy as adding another pipe:
+
+```ts
+const parseJson = type("string").pipe.try(
+	(s): object => JSON.parse(s),
+	type({
+		name: "string",
+		version: "string.semver"
+	})
+)
+
+const out = parseJson('{ "name": "arktype", "version": "2.0.0" }')
+
+if (!(out instanceof type.errors)) {
+	// Logs "arktype:2.0.0"
+	console.log(`${out.name}:${out.version}`)
+}
+```
+
+At this point, our implementation is starting to look pretty clean, but in many cases like this one, we can skip straight to the punch line with one of ArkType's many built-in aliases for validation and parsing, `string.json.parse`:
+
+```ts
+interface RuntimeErrors extends type.errors {
+	/**name must be a string (was true) 
+version must be a semantic version (see https://semver.org/) (was "v2.0.0")*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+
+// ---cut---
+// .to is a sugared .pipe for a single parsed output validator
+const parseJson = type("string.json.parse").to({
+	name: "string",
+	version: "string.semver"
+})
+
+const out = parseJson('{ "name": true, "version": "v2.0.0" }')
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see the default error message
+	console.error(out.summary)
+}
+```
+
+If you've made it this far, congratulations! You should have all the fundamental intuitions you need to bring your types to runtime ⛵
+
+Our remaining docs will help you understand the trade offs between ArkType's most important APIs so that no matter the application, you can find a solution that feels great to write, great to read, and great to run.
+
+---
+
+// Relative Path: ark/docs/content/docs/intro/your-first-type.mdx
+
+---
+
+## title: Your First Type
+
+If you already know TypeScript, congratulations- you just learned most of ArkType's syntax 🎉
+
+## Define
+
+```ts
+import { type } from "arktype"
+
+const User = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
+})
+
+// extract the type if needed
+type User = typeof User.infer
+```
+
+If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to from your editor, all within TypeScript's type system.
+
+<Callout title="Will ArkType crash my TypeScript server?">
+	Thousands of hours of optimization have gone into making validating native
+	type syntax not just feasible, but often much faster than alternatives ⚡
+</Callout>
+
+## Compose
+
+Suppose we want to move `platform` and `version` from our original type to a new `device` property.
+
+```ts
+const User = type({
+	name: "string",
+	// nested definitions don't need to be wrapped
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
+```
+
+To decouple `device` from `User`, just move it to its own type and reference it.
+
+```ts
+const Device = type({
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
+})
+
+const User = type({
+	name: "string",
+	device: Device
+})
+```
+
+## Validate
+
+At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
+
+```ts
+const User = type({
+	name: "string",
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
+
+interface RuntimeErrors extends type.errors {
+	/**device.platform must be "android" or "ios" (was "enigma")
+device.versions[2] must be a number or a string (was bigint)*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+
+// ---cut---
+const out = User({
+	name: "Alan Turing",
+	device: {
+		platform: "enigma",
+		versions: [0, "1", 0n]
+	}
+})
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	// just a trick to display the runtime error
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see validation errors
+	console.error(out.summary)
+} else {
+	// hover out to see your validated data
+	console.log(`Hello, ${out.name}`)
+}
+```
+
+And that's it! You now know how to to define a `Type` use it to check your data at runtime.
+
+Next, we'll take a look at how ArkType extends TypeScript's type system to handle runtime constraints like `maxLength` and `pattern`.
+
+---
+
+// Relative Path: ark/docs/content/docs/intro/setup.mdx
+
+---
+
+## title: Setup
+
+## Installation
+
+<InstallationTabs />
+
+You'll also need...
+
+- TypeScript version `>=5.1`.
+- A `package.json` with `"type": "module"` (or an environment that supports ESM imports)
+- A `tsconfig.json` with...
+  - [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig#strictNullChecks) (**required**)
+  - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) (strongly recommended, see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules))
+  - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) (recommended)
+
+## VSCode
+
+### Settings
+
+To take advantage of all of ArkType's autocomplete capabilities, you'll need to add the following to your workspace settings at `.vscode/settings.json`:
+
+```json
+// allow autocomplete for ArkType expressions like "string | num"
+"editor.quickSuggestions": {
+	"strings": "on"
+},
+// prioritize ArkType's "type" for autoimports
+"typescript.preferences.autoImportSpecifierExcludeRegexes": [
+	"^(node:)?os$"
+],
+```
+
+### Extension (optional)
+
+[ArkDark](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) provides the embedded syntax highlighting you'll see throughout the docs.
+
+Without it, your definitions can still feel like a natural extension of the language.
+
+With it, you'll forget there was ever a boundary in the first place.
+
+## JetBrains IDEs
+
+### Extension (optional)
+
+[ArkType](https://plugins.jetbrains.com/plugin/27099-arktype) provides the embedded syntax highlighting you are familiar with for typescript types.
+
+## Other editors
+
+If you're using a different editor, we'd love [help adding support](https://github.com/arktypeio/arktype/issues/989). In the meantime, don't worry- ArkType still offers best-in-class DX anywhere TypeScript is supported.
+
+---
+
+// Relative Path: ark/docs/content/docs/traversal-api.mdx
+
+---
+
+## title: Traversal API
+
+<ApiTable group="Traversal" />
+
+---
+
+// Relative Path: ark/docs/content/docs/objects/index.mdx
+
+---
+
+## title: Objects
+
+## properties
+
+Objects definitions can include any combination of required, optional, defaultable named properties and index signatures.
+
+### required [#properties-required]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const MyObj = type({
+	requiredKey: "string",
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: "unknown"
+	}
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const MyObj = type({
+	requiredKey: type.string,
+	// Nested definitions don't require additional `type` calls!
+	[symbolicKey]: {
+		nested: type.unknown
+	}
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### optional [#properties-optional]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const symbolicKey = Symbol()
+
+const MyObj = type({
+	"optionalKey?": "number[]",
+	[symbolicKey]: "string?"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const symbolicKey = Symbol()
+
+const MyObj = type({
+	optionalKey: type.number.array().optional(),
+	[symbolicKey]: type.string.optional()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const symbolicKey = Symbol()
+
+const MyObj = type({
+	optionalKey: [{ type: "'script'" }, "?"],
+	[symbolicKey]: [{ ark: "'type'" }, "?"]
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<Callout type="info" title="Should I use key or value syntax for optionality?">
+
+    Optionality can either be expressed on the key or the corresponding value.
+
+    We recommend using the key syntax by default because...
+
+    - it mirrors TypeScript
+    - it better reflects a _key presence_ constraint that has no effect on allowed values
+
+    However, there are a few reasons you might want to use a value-embedded syntax:
+
+    1. The key is a symbol (makes key-embedded syntax impossible)
+    2. You want editor features like JSDoc and go-to-definition for the key (can't work if the key name changes)
+    3. You really hate having to quote key names
+
+</Callout>
+
+<Callout type="warn" title="Optional properties cannot be present with the value undefined">
+
+    In TypeScript, there is a setting called [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) that can be set to `true` to enforce the distinction between properties that are missing and properties that are present with the value `undefined`.
+
+    ArkType mirrors this behavior by default, so if you want to allow `undefined`, you'll need to add it to your value's definition. Though not recommended as a long-term solution, you may also [globally configure `exactOptionalPropertyTypes`](/docs/configuration#exactoptionalpropertytypes) to `false`.
+
+    <details>
+    	<summary>See an example</summary>
+
+    ```ts
+    const MyObj = type({
+    	"key?": "number"
+    })
+
+    // valid data
+    const validResult = MyObj({})
+
+    // Error: key must be a number (was undefined)
+    const errorResult = MyObj({ key: undefined })
+    ```
+
+    </details>
+
+</Callout>
+
+### defaultable [#properties-defaultable]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyObj = type({
+	defaultableKey: "boolean = false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const MyObj = type({
+	defaultableKey: type.boolean.default(false)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const MyObj = type({
+	defaultableKey: ["boolean", "=", false]
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<Callout type="warn" title="Optional and default only work within objects and tuples!">
+    Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
+
+    This reflects the fact that in ArkType's type system, optionality and defaultability are only meaningful in reference to a property. Attempting to create an optional or defaultable value outside an object like `type("string?")` will result in a `ParseError`.
+
+    To create a `Type` accepting `string` or `undefined`, use a union like `type("string | undefined")`.
+
+    To have it transform `undefined` to an empty string, use an explicit morph like:
+
+    ```ts
+    const FallbackString = type("string | undefined").pipe(v => v ?? "")
+    ```
+
+</Callout>
+
+### index [#properties-index]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyObj = type({
+	// index signatures do not require a label
+	"[string]": "number.integer",
+	// arbitrary string or symbolic expressions are allowed
+	"[string | symbol]": "number"
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### undeclared [#properties-undeclared]
+
+TypeScript's structural type system explicitly allows assigning objects with additional keys so long as all declared constraints are satisfied. ArkType mirrors this behavior by default because generally...
+
+- Existing objects can be reused more often.
+- Validation is much more efficient if you don't need to check for undeclared keys.
+- Extra properties don't usually matter as long as those you've declared are satisfied.
+
+However, sometimes the way you're using the object would make undeclared properties problematic. Even though they can't be reflected by TypeScript ([_yet_- please +1 the issue!](https://github.com/microsoft/TypeScript/issues/12936#issuecomment-1854411301)), ArkType _does_ support rejection or deletion of undeclared keys. This behavior can be defined for individual objects using the syntax below or [via configuration](/docs/configuration#undeclared) if you want to change the default across all objects.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// fail if any key other than "onlyAllowedKey" is present
+const MyClosedObject = type({
+	"+": "reject",
+	onlyAllowedKey: "string"
+})
+
+// delete all non-symbolic keys other than "onlyPreservedStringKey"
+const MyStrippedObject = type({
+	"+": "delete",
+	"[symbol]": "unknown",
+	onlyPreservedStringKey: "string"
+})
+
+// allow and preserve undeclared keys (the default behavior)
+const MyOpenObject = type({
+	// only specify "ignore" if you explicitly configured the default elsewhere
+	"+": "ignore",
+	nonexclusiveKey: "number"
+})
+```
+
+    </SyntaxTab>
+
+    	<SyntaxTab fluent>
+
+```ts
+// fail if any key other than "onlyAllowedKey" is present
+const MyClosedObject = type({
+	onlyAllowedKey: "string"
+}).onUndeclaredKey("reject")
+
+// delete all non-symbolic keys other than "onlyPreservedStringKey"
+const MyStrippedObject = type({
+	"[symbol]": "unknown",
+	onlyPreservedStringKey: "string"
+}).onUndeclaredKey("delete")
+
+// allow and preserve undeclared keys (the default behavior)
+const MyOpenObject = type({
+	nonexclusiveKey: "number"
+	// only specify "ignore" if you explicitly configured the default elsewhere
+}).onUndeclaredKey("ignore")
+
+// there is also a method for altering nested objects recursively
+const MyDeeplyStrippedObject = type({
+	preserved: "string",
+	nested: {
+		preserved: "string"
+	}
+}).onDeepUndeclaredKey("delete")
+```
+
+<Callout type="info" title="Prefer in-object syntax where possible">
+	Certain methods like `.onUndeclaredKey` or `.configure` require a full traversal and transformation of the node created by the initial `type` call.
+
+    <details>
+    	<summary>**Learn to recognize when chaining creates unnecessary overhead**</summary>
+
+Though they can be convenient if you need both variants of the type, most of the time you incur a significant performance cost instantiating your Type compared to the embedded syntax.
+
+Though how a Type is defined will never affect validation performance, depending on your sensitivity to initialization, you may want to avoid chained methods that transform rather than compose their base type. Methods like `.or` and `.pipe` that create new `Types` that directly reference the original incur no such overhead, so feel free to use whichever syntax is more convenient for those operations.
+
+    </details>
+
+</Callout>
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### spread [#properties-spread]
+
+The **spread operator** is great for merging sets of properties. When applied to two distinct (i.e. non-overlapping) sets of properties, it is equivalent to [intersection](/docs/expressions#intersection). However, if a key appears in both the base and merged objects, the base value will be discarded in favor of the merged rather than recursively intersected.
+
+Spreading bypasses a lot of the behavioral complexity and computational overhead of an intersection and should be the preferred method of combining property sets.
+
+A base object definition can be spread if `"..."` is the first key specified in an object literal. Subsequent properties will be merged into those from the base object, just like the `...` operator [in JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax).
+
+```ts
+const User = type({ isAdmin: "false", name: "string" })
+
+// hover to see the newly merged object
+const Admin = type({
+	"...": User,
+	// in an intersection, non-overlapping values at isAdmin would result in a ParseError
+	isAdmin: "true",
+	permissions: "string[]"
+})
+```
+
+The spread operator is semantically equivalent to the generic `Merge` keyword, which can be instantiated via a dedicated method on `Type` in addition to the standard keyword syntax.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const types = type.module({
+	base: {
+		"foo?": "0",
+		"bar?": "0"
+	},
+	merged: {
+		bar: "1",
+		"baz?": "1"
+	},
+	result: "Merge<base, merged>"
+})
+
+// hover to see the inferred result
+type Result = typeof types.result.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const zildjian = Symbol()
+
+const Base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// hover to see the inferred result
+const chainedResult = Base.merge({
+	"[string]": "bigint",
+	"foo?": "1n"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab function>
+
+```ts
+const zildjian = Symbol()
+
+const Base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// accepts ...objectDefinitions
+const functionResult = type.merge(
+	Base,
+	{
+		"[string]": "bigint",
+		"foo?": "1n"
+	},
+	{
+		includeThisPropAlso: "true"
+	}
+)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### keyof [#properties-keyof]
+
+Like in TypeScript, the `keyof` operator extracts the keys of an object as a union:
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const UsedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const UsedCarKey = UsedCar.keyof()
+
+type UsedCarKey = typeof UsedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab string>
+
+```ts
+const types = type.module({
+	UsedCar: {
+		originallyPurchased: "string.date",
+		remainingWheels: "number"
+	},
+	UsedCarKey: "keyof UsedCar"
+})
+
+type UsedCarKey = typeof types.UsedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const UsedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const UsedCarKey = type(["keyof", UsedCar])
+
+type UsedCarKey = typeof UsedCarKey.infer
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const UsedCar = type({
+	originallyPurchased: "string.date",
+	remainingWheels: "number"
+})
+
+const UsedCarKey = type("keyof", UsedCar)
+
+type UsedCarKey = typeof UsedCarKey.infer
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Also like in TypeScript, if an object includes an index signature like `[string]` alongside named properties, the union from `keyof` will reduce to `string`:
+
+```ts
+const RecordWithSpecialKeys = type({
+	"[string]": "unknown",
+	verySpecialKey: "0 < number <= 3.14159",
+	moderatelySpecialKey: "-9.51413 <= number < 0"
+})
+
+// in a union with the `string` index signature, string literals
+// "verySpecialKey" and "moderatelySpecialKey" are redundant and will be pruned
+const Key = RecordWithSpecialKeys.keyof()
+
+// key is identical to the base `string` Type
+console.log(Key.equals("string"))
+```
+
+<Callout type="warn" title="ArkType's `keyof` will never include `number`">
+	Though TypeScript's `keyof` operator can yield a `number`, the concept of
+	numeric keys does not exist in JavaScript at runtime. This leads to confusing
+	and inconsistent behavior. In ArkType, `keyof` will always return a `string`
+	or `symbol` in accordance with the construction of a JavaScript object.
+
+    <details>
+    	<summary>Learn more about our motivation for diverging from TypeScript on this issue</summary>
+
+In JavaScript, you can use a number literal to define a key, but the constructed value has no way to represent a numeric key, so it is coerced to a string.
+
+```ts
+const numberLiteralObj = {
+	4: true,
+	5: true
+}
+
+const stringLiteralObj = {
+	"4": true,
+	"5": true
+}
+
+// numberLiteralObj and stringLiteralObj are indistinguishable at this point
+Object.keys(numberLiteralObj) // ["4", "5"]
+Object.keys(stringLiteralObj) // ["4", "5"]
+```
+
+For a set-based type system to be correct, any two types representing the same set of underlying values must share a single representation. TypeScript's decision to have distinct numeric and string representations for the same underlying key has led to some if its most confusing inference pitfalls:
+
+```ts
+type Thing1 = {
+	[x: string]: unknown
+}
+
+// Thing2 is apparently identical to Thing1
+type Thing2 = Record<string, unknown>
+
+// and yet...
+type Key1 = keyof Thing1
+//   ^?
+
+type Key2 = keyof Thing2
+//   ^?
+```
+
+This sort of inconsistency is inevitable for a type system that has to reconcile multiple representations
+for identical sets of underlying values. Therefore, numeric keys are one of a handful of cases where ArkType intentionally diverges from TypeScript. ArkType will never return a `number` from `keyof`. Keys will always be normalized to a `string` or `symbol`, the two distinct property types that can be uniquely attached to a JavaScript object.
+
+    </details>
+
+</Callout>
+
+### get [#properties-get]
+
+Like an index access expression in TypeScript (e.g. `User["name"]`), the `get` operator extracts the Type of a value based on a specified key definition from an object:
+
+```ts
+const snorfUsage = type.enumerated("eating plants", "looking adorable")
+
+const Manatee = type({
+	isFriendly: "true",
+	snorf: {
+		uses: snorfUsage.array()
+	}
+})
+
+const True = Manatee.get("isFriendly")
+
+// nested properties can be accessed directly by passing additional args
+const SnorfUses = Manatee.get("snorf", "uses")
+```
+
+<Callout
+	type="warn"
+	title="Expressions like `get` and `omit` that extract a portion of an exising Type can be an antipattern!"
+>
+	Before using `get` to extract the type of a property you've defined, consider
+	whether you may be able to define the property value directly as a standalone
+	Type that can be easily referenced and composed as needed.
+
+    Usually, composing Types from the bottom up is clearer and more efficient than trying to rip the part you need out of an existing Type.
+
+</Callout>
+
+Though cases like this are quite straightforward, there are number of more nuanced behaviors to consider when accessing an arbitrary key that could be a union, literal, or index signature on an object Type that could also be a union including optional keys or index signatures.
+
+If you're interested in a deeper dive into this (or anything else in ArkType), [our unit tests](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/get.test.ts) are the closest thing we have to a comprehensive spec.
+
+Not your cup of tea? No worries- the inferred types and errors you'll see in editor will always be guiding you in the right direction 🧭
+
+<Callout
+	type="info"
+	title="Support for TypeScript's index access syntax is planned!"
+>
+	Leave a comment on [the
+	issue](https://github.com/arktypeio/arktype/issues/831) letting us know if
+	you're interested in using- or even helping implement- type-level parsing for
+	string-embedded index access 🤓
+</Callout>
+
+## arrays
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Arrays = type({
+	key: "string[]"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Arrays = type({
+	key: type.string.array()
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const Arrays = type({
+	key: [{ name: "string" }, "[]"]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const Arrays = type({
+	key: type({ name: "string" }, "[]")
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### lengths [#arrays-lengths]
+
+Constrain an array with an inclusive or exclusive min or max length.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Bounded = type({
+	nonEmptyStringArray: "string[] > 0",
+	atLeast3Integers: "number.integer[] >= 3",
+	lessThan10Emails: "string.email[] < 10",
+	atMost5Booleans: "boolean[] <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Bounded = type({
+	nonEmptyStringArray: type.string.array().moreThanLength(0),
+	atLeast3Integers: type.keywords.number.integer.array().atLeastLength(3),
+	lessThan10Emails: type.keywords.string.email.array().lessThanLength(10),
+	atMost5Booleans: type.boolean.array().atMostLength(5)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Range = type({
+	nonEmptyStringArrayAtMostLength10: "0 < string[] <= 10",
+	twoToFiveIntegers: "2 <= number.integer[] < 6"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Range = type({
+	nonEmptyStringArrayAtMostLength10: type.string
+		.array()
+		.moreThanLength(0)
+		.atMostLength(10),
+	twoToFiveIntegers: type.keywords.number.integer
+		.array()
+		.atLeastLength(2)
+		.lessThanLength(6)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## tuples
+
+Like objects, tuples are structures whose values are nested definitions. Like TypeScript, ArkType supports prefix, optional, variadic, and postfix elements, with the same restrictions about combining them.
+
+### prefix [#tuples-prefix]
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyTuple = type([
+	"string",
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: ["number", "number"]
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const MyTuple = type([
+	type.string,
+	// Object definitions can be nested in tuples- and vice versa!
+	{
+		coordinates: [type.number, type.number]
+	}
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### defaultable [#tuples-defaultable]
+
+Defaultable elements are optional elements that will be assigned their specified default if not present in the tuple's input.
+
+A tuple may include zero or more defaultable elements following its prefix elements and preceding its non-defaultable optional elements.
+
+Like optional elements, defaultable elements are mutually exclusive with postfix elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyTuple = type(["string", "boolean = false", "number = 0"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const MyTuple = type([
+	type.string,
+	type.boolean.default(false),
+	type.number.default(0)
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const MyTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"=",
+		() => ({ name: "Anon Eemuss" })
+	]
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### optional [#tuples-optional]
+
+Optional elements are tuple elements that may or may not be present in the input that do not have a default value.
+
+A tuple may include zero or more optional elements following its prefix and defaultable elements and preceding either a variadic element or the end of the tuple.
+
+Like in TypeScript, optional elements are mutually exclusive with postfix elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyTuple = type(["string", "bigint = 999n", "boolean?", "number?"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const MyTuple = type([
+	type.string,
+	type.bigint.default(999n),
+	type.boolean.optional(),
+	type.number.optional()
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const MyTuple = type([
+	"string",
+	[
+		{
+			name: "string"
+		},
+		"?"
+	]
+])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### variadic [#tuples-variadic]
+
+Like in TypeScript, variadic elements allow zero or more consecutive values of a given type and may occur at most once in a tuple.
+
+They are specified with a `"..."` operator preceding an array element.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// allows a string followed by zero or more numbers
+const MyTuple = type(["string", "...", "number[]"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allows a string followed by zero or more numbers
+const MyTuple = type([type.string, "...", type.number.array()])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### postfix [#tuples-postfix]
+
+Postfix elements are required elements following a variadic element.
+
+They are mutually exclusive with optional elements.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+// allows zero or more numbers followed by a boolean, then a string
+const MyTuple = type(["...", "number[]", "boolean", "string"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allows zero or more numbers followed by a boolean, then a string
+const MyTuple = type(["...", type.number.array(), type.boolean, type.string])
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## dates
+
+### literals [#dates-literals]
+
+Date literals represent a Date instance with an exact value.
+
+They're primarily useful in ranges.
+
+```ts
+const Literals = type({
+	singleQuoted: "d'01-01-1970'",
+	doubleQuoted: 'd"01-01-1970"'
+})
+```
+
+### ranges [#dates-ranges]
+
+Constrain a Date with an inclusive or exclusive min or max.
+
+Bounds can be expressed as either a [number](/docs/primitives#number-literals) representing its corresponding Unix epoch value or a [Date literal](/docs/objects#dates-literals).
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Bounded = type({
+	dateInThePast: `Date < ${Date.now()}`,
+	dateAfter2000: "Date > d'2000-01-01'",
+	dateAtOrAfter1970: "Date >= 0"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Bounded = type({
+	dateInThePast: type.Date.earlierThan(Date.now()),
+	dateAfter2000: type.Date.laterThan("2000-01-01"),
+	dateAtOrAfter1970: type.Date.atOrAfter(0)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const tenYearsAgo = new Date()
+	.setFullYear(new Date().getFullYear() - 10)
+	.valueOf()
+
+const Bounded = type({
+	dateInTheLast10Years: `${tenYearsAgo} <= Date < ${Date.now()}`
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const tenYearsAgo = new Date()
+	.setFullYear(new Date().getFullYear() - 10)
+	.valueOf()
+
+const Bounded = type({
+	dateInTheLast10Years: type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## instanceof
+
+Most built-in instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+class MyClass {}
+
+const instances = type.instanceOf(MyClass)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+class MyClass {}
+
+const Instances = type({
+	key: ["instanceof", MyClass]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+class MyClass {}
+
+const Instances = type({
+	key: type("instanceof", MyClass)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### keywords [#instanceof-keywords]
+
+A list of instanceof keywords can be found [here](/docs/keywords#instanceof) alongside the base and subtype keywords for [Array](/docs/keywords#array) and [FormData](/docs/keywords#formdata).
+
+---
+
+// Relative Path: ark/docs/content/docs/keywords.mdx
+
+---
+
+## title: Keywords
+
+### TypeScript
+
+<div>All\* built-in TypeScript keywords are directly available.</div>
+
+<SyntaxTabs>
+	<SyntaxTab string>
+```ts
+const Keywords = type({
+	string: "string",
+	date: "Date"
+})
+```
+	</SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Keywords = type({
+	string: type.string,
+	date: type.Date
+})
+```
+
+Common keywords are exposed directly on `type`.
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<sup>
+	\* `any` and `void` are misleading and unnecessary for runtime validation and
+	so are not included as keywords by default.
+</sup>
+
+### Subtype
+
+Subtype keywords refine or transform their root type.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+```ts
+const Keywords = type({
+	dateFormattedString: "string.date",
+	transformStringToDate: "string.date.parse",
+	isoFormattedString: "string.date.iso",
+	transformIsoFormattedStringToDate: "string.date.iso.parse"
+})
+```
+
+You can easily explore available subtypes via autocomplete by with a partial definition like `"string."`.
+
+</SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Keywords = type({
+	dateFormattedString: type.keywords.string.date.root,
+	isoFormattedString: type.keywords.string.date.iso.root,
+	transformStringToDate: type.keywords.string.date.parse,
+	transformIsoFormattedStringToDate: type.keywords.string.date.iso.parse
+})
+```
+
+All built-in keywords and modules are available in `type.keywords`.
+
+`.root` gets the base type of a subtyped module so that it can be used as a `Type` directly.
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### All Keywords
+
+This table includes all keywords available in default `type` API. To define your own string-embeddable keywords, see [scopes](/docs/scopes).
+
+<AllKeywordTables />
+
+---
+
+// Relative Path: ark/docs/content/docs/blog/2.1.mdx
+
+---
+
+title: Announcing ArkType 2.1
+description: Optimized pattern matching from type syntax
+
+---
+
+As of today, 2.1.0 is generally available 🎉
+
+The biggest feature is `match`, a pattern matching API that allows you to define cases using expressive type syntax. The result is a highly optimized matcher that uses set theory to automatically skip unmatched branches.
+
+We could not be more excited to share this not just as the first syntactic matcher in JS, but as the first ArkType feature to showcase the potential of runtime types to do more than just validation.
+
+Languages with introspectable types offer incredibly powerful features that have always felt out of reach in JS- until now.
+
+```ts
+// @noErrors
+const toJsonArkType = match({
+	"string | number | boolean | null": v => v,
+	bigint: b => `${b}n`,
+	object: o => {
+		for (const k in o) {
+			o[k] = toJsonArkType(o[k])
+		}
+		return o
+	},
+	default: "assert"
+})
+
+const toJsonTsPattern = (value: unknown) =>
+	tsPatternMatch(value)
+		.with(P.union(P.string, P.number, P.boolean, null), v => v)
+		.with(P.bigint, v => `${v}n`)
+		.with({}, o => {
+			for (const k in o) {
+				o[k] = toJsonTsPattern(o[k])
+			}
+			return o
+		})
+		.otherwise(() => {
+			throw new Error("value is not valid JSON")
+		})
+
+// "foo" (9 nanoseconds)
+toJsonArkType("foo")
+// "foo" (765 nanoseconds)
+toJsonTsPattern("foo")
+
+// "5n" (33 nanoseconds)
+toJsonArkType(5n)
+// "5n" (924 nanoseconds)
+toJsonTsPattern(5n)
+
+// { nestedValue: "5n" } (44 nanoseconds)
+toJsonArkType({ nestedValue: 5n })
+// { nestedValue: "5n" } (2080 nanoseconds)
+toJsonTsPattern({ nestedValue: 5n })
+```
+
+We're actually huge fans of [Gabriel Vergnaud](https://github.com/gvergnaud) and [ts-pattern](https://github.com/gvergnaud/ts-pattern), which has a great API and totally reasonable performance. We've referenced it for comparison to showcase the unique expressiveness and optimization runtime types unlock.
+
+Below are the full notes for the 2.1.0 release. We can't wait to hear what you think! 🚀
+
+### `match`
+
+The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type, like a type-safe `switch` statement.
+
+#### Case Record API
+
+The simplest way to define a matcher is with ArkType definition strings as keys with corresponding handlers as values:
+
+```ts
+import { match } from "arktype"
+
+const sizeOf = match({
+	"string | Array": v => v.length,
+	number: v => v,
+	bigint: v => v,
+	default: "assert"
+})
+
+// a match definition is complete once a `default` has been specified,
+// either as a case or via the .default() method
+
+sizeOf("abc") // 3
+sizeOf([1, 2, 3, 4]) // 4
+sizeOf(5n) // 5n
+// ArkErrors: must be an object, a string, a number or a bigint (was boolean)
+sizeOf(true)
+```
+
+In this example, `sizeOf` is a matcher that takes a string, array, number, or bigint as input. It returns the length of strings and arrays, and the value of numbers and bigints.
+
+`default` accepts one of 4 values:
+
+- `"assert"`: accept `unknown`, throw if none of the cases match
+- `"never"`: accept an input based on inferred cases, throw if none match
+- `"reject"`: accept `unknown`, return `ArkErrors` if none of the cases match
+- `(data: In) => unknown`: handle data not matching other cases directly
+
+Cases will be checked in the order they are specified, either as object literal keys or via chained methods.
+
+#### Fluent API
+
+The `match` function also provides a fluent API. This can be convenient for non-string-embeddable definitions:
+
+```ts
+// the Case Record and Fluent APIs can be easily combined
+const sizeOf = match({
+	string: v => v.length,
+	number: v => v,
+	bigint: v => v
+})
+	// match any object with a numeric length property and extract it
+	.case({ length: "number" }, o => o.length)
+	// return 0 for all other data
+	.default(() => 0)
+
+sizeOf("abc") // 3
+sizeOf({ name: "David", length: 5 }) // 5
+sizeOf(null) // 0
+```
+
+#### Narrowing input with `in`, property matching with `at`
+
+```ts
+// @errors: 2345
+type Data =
+	| {
+			id: 1
+			oneValue: number
+	  }
+	| {
+			id: 2
+			twoValue: string
+	  }
+
+const discriminateValue = match
+	// .in allows you to specify the input TypeScript allows for your matcher
+	.in<Data>()
+	// .at allows you to specify a key at which your input will be matched
+	.at("id")
+	.match({
+		1: o => `${o.oneValue}!`,
+		2: o => o.twoValue.length,
+		default: "assert"
+	})
+
+discriminateValue({ id: 1, oneValue: 1 }) // "1!"
+discriminateValue({ id: 2, twoValue: "two" }) // 3
+discriminateValue({ oneValue: 3 })
+```
+
+Special thanks to [@thetayloredman](https://github.com/thetayloredman) who did a mind-blowingly good job helping us iterate toward the current type-level pattern-matching implementation🙇
+
+### Built-in keywords can now be globally configured
+
+This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	keywords: {
+		string: "shorthand description",
+		"string.email": {
+			actual: () => "definitely fake"
+		}
+	}
+})
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const User = type({
+	name: "string",
+	email: "string.email"
+})
+
+const out = User({
+	// ArkErrors: name must be shorthand description (was a number)
+	name: 5,
+	// ArkErrors: email must be an email address (was definitely fake)
+	email: "449 Canal St"
+})
+```
+
+The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
+
+### Tuple and args expressions for `.to`
+
+If a morph returns an `ArkErrors` instance, validation will fail with that result instead of it being treated as a value. This is especially useful for using other Types as morphs to validate output or chain transformations.
+
+To make this easier, there's a special `to` operator that can pipe to a parsed definition without having to wrap it in `type` to make it a function.
+
+This was added before 2.0, but now it comes with a corresponding operator (`|>`) so that it can be expressed via a tuple or args like most other expressions:
+
+```ts
+const FluentStillWorks = type("string.numeric.parse").to("number % 2")
+
+const NowSoDoesTuple = type({
+	someKey: ["string.numeric.parse", "|>", "number % 2"]
+})
+
+const AndSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
+```
+
+### Error configurations now accept a string directly
+
+```ts
+const CustomOne = type("1", "@", {
+	// previously only a function returning a string was allowed here
+	message: "Yikes."
+})
+
+// ArkErrors: Yikes.
+CustomOne(2)
+```
+
+Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#errors), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
+
+Though generally, returning a string based on context is the best option, in situations where you always want the same static message, it's now easier to get that!
+
+### Type.toString() now wraps its syntactic representation in `Type<..>`
+
+Previously, `Type.toString()` just returned `Type.expression`. However, in contexts where the source of a message isn't always a `Type`, it could be confusing:
+
+```ts
+// < 2.1.0:  "(was string)"
+// >= 2.1.0: "(was Type<string>)"
+console.log(`(was ${type.string})`)
+```
+
+Hopefully if you interpolate a Type, you'll be less confused by the result from now on!
+
+### Improve how Type instances are inferred when wrapped in external generics
+
+Previously, we used `NoInfer` in some Type method returns. After migrating those to inlined conditionals, we get the same benefit and external inference for cases like this is more reliable:
+
+```ts
+// @noErrors
+function fn<
+	T extends {
+		schema: StandardSchemaV1
+	}
+>(_: T) {
+	return {} as StandardSchemaV1.InferOutput<T["schema"]>
+}
+
+// was inferred as unknown (now correctly { name: string })
+const arkRes = fn({
+	schema: type({
+		name: "string"
+	})
+})
+```
+
+### Fix an issue causing some discriminated unions to incorrectly reject default cases
+
+```ts
+const Discriminated = type({
+	id: "0",
+	k1: "number"
+})
+	.or({ id: "1", k1: "number" })
+	.or({
+		name: "string"
+	})
+
+// previously, this was rejected as requiring a "k1" key
+// will now hit the case discriminated for id: 1,
+// but still correctly be allowed via the { name: string } branch
+Discriminated({ name: "foo", id: 1 })
+```
+
+---
+
+// Relative Path: ark/docs/content/docs/blog/2.0.mdx
+
+---
+
+title: Announcing ArkType 2.0
+description: 100x faster validation with DX that will blow your mind
+
+---
+
+As of today, `arktype@2.0.0` is generally available and fully stable.
+
+ArkType 2.0 brings types to runtime JS in a way that, until today, has been a pipedream.
+
+Whether you're a first-time TypeScript dev trying to validate a form or a library author introspecting relationships, ArkType offers fundamentally better tools for navigating the perils of JavaScript.
+
+<MainAutoplayDemo />
+
+### Unparalleled DX
+
+Type syntax you already know with safety and completions unlike anything
+you&apos;ve ever seen
+
+<CodeBlock fromFile="unparalleledDx" includesCompletions />
+
+### Faster... everything
+
+100x faster than Zod at runtime with editor performance that will remind you
+how autocomplete is supposed to feel
+
+<RuntimeBenchmarksGraph className="mt-2" />
+
+### Clarity and Concision
+
+Definitions are half as long, type errors are twice as readable, and hovers
+tell you just what really matters
+
+<CodeBlock fromFile="clarityAndConcision" />
+
+### Better Errors
+
+Deeply customizable messages with great defaults
+
+<CodeBlock fromFile="betterErrors" />
+
+### Deep Introspectability
+
+ArkType uses set theory to understand and expose the relationships between
+your types at runtime the way TypeScript does at compile time
+
+<CodeBlock fromFile="deepIntrospectability" />
+
+### Intrinsic Optimization
+
+Every schema is internally normalized and reduced to its purest and fastest
+representation
+
+<CodeBlock fromFile="intrinsicOptimization" />
+
+### What next?
+
+ArkType doesn't require a special environment or build step to work- [our intro](/docs/intro/setup) will have you up and running in seconds.
+
+We have [big plans](https://github.com/orgs/arktypeio/projects/4) to ArkType 2.0 even further, but we're even more excited to see what you do with it!
+
+⚡ [Starting coding](/docs/intro/setup)
+
+⭐ [Check out the project on GitHub](/docs/intro/setup)
+
+👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
+
+- Follow any of these accounts for updates:
+
+  - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
+  - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/arktypeio) on X/Twitter
+
+- Consider supporting my full-time work on ArkType...
+
+  - via [GitHub Sponsors](https://github.com/sponsors/arktypeio)
+  - by convincing your team to let me optimize your types and fix editor lag (reach out directly to one of the accounts listed or `david@arktype.io`)
+
+---
+
+// Relative Path: ark/docs/content/docs/blog/index.mdx
+
+---
+
+## title: Posts
+
+<LinkCard
+	title="Announcing ArkType 2.1"
+	description="Optimized pattern matching from type syntax"
+	href="/docs/blog/2.1"
+	date="February 27, 2025"
+/>
+
+<LinkCard
+	title="Announcing ArkType 2.0"
+	description="100x faster validation with DX that will blow your mind"
+	href="/docs/blog/2.0"
+	date="January 17, 2025"
+/>
+
+---
+
+// Relative Path: ark/docs/content/docs/primitives/index.mdx
+
+---
+
+## title: Primitives
+
+## string
+
+### keywords
+
+The following keywords can be referenced in any definition, e.g.:
+
+```ts
+const Email = type("string.email")
+
+const User = type({
+	data: "string.json.parse",
+	ids: "string.uuid.v4[]"
+})
+```
+
+<StringKeywordTable />
+
+### literals [#string-literals]
+
+```ts
+const Literals = type({
+	singleQuoted: "'typescript'",
+	doubleQuoted: '"arktype"'
+})
+```
+
+### patterns [#string-patterns]
+
+Regex literals specify an unanchored regular expression that an input string must match.
+
+They can either be string-embedded or refer directly to a `RegExp` instance.
+
+```ts
+const Literals = type({
+	stringEmbedded: "/^a.*z$/",
+	regexLiteral: /^a.*z$/
+})
+```
+
+### lengths [#string-lengths]
+
+Constrain a string with an inclusive or exclusive min or max length.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Bounded = type({
+	nonEmpty: "string > 0",
+	atLeastLength3: "string.alphanumeric >= 3",
+	lessThanLength10: "string < 10",
+	atMostLength5: "string <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Bounded = type({
+	nonEmpty: type.string.moreThanLength(0),
+	atLeastLength3: type.keywords.string.alphanumeric.atLeastLength(3),
+	lessThanLength10: type.string.lessThanLength(10),
+	atMostLength5: type.string.atMostLength(5)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max length and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Range = type({
+	nonEmptyAtMostLength10: "0 < string <= 10",
+	integerStringWith2To5Digits: "2 <= string.integer < 6"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Range = type({
+	nonEmptyAtMostLength10: type.string.moreThanLength(0).atMostLength(10),
+	integerStringWith2To5Digits: type.keywords.string.integer.root
+		.atLeastLength(2)
+		.lessThanLength(6)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## number
+
+### keywords [#number-keywords]
+
+The following keywords can be referenced in any definition, e.g.:
+
+```ts
+const User = type({
+	createdAt: "number.epoch",
+	age: "number.integer >= 0"
+})
+```
+
+<NumberKeywordTable />
+
+### literals [#number-literals]
+
+```ts
+const Literals = type({
+	number: "1337"
+})
+```
+
+### ranges [#number-ranges]
+
+Constrain a number with an inclusive or exclusive min or max.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Bounded = type({
+	positive: "number > 0",
+	atLeast3: "number.integer >= 3",
+	lessThanPi: "number < 3.14159",
+	atMost5: "number <= 5"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Bounded = type({
+	positive: type.number.moreThan(0),
+	atLeast3: type.keywords.number.integer.atLeast(3),
+	lessThanPi: type.number.lessThan(3.14159),
+	atMost5: type.number.atMost(5)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Range expressions allow you to specify both a min and max and use the same syntax for exclusivity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Range = type({
+	positiveAtMostE: "0 < number <= 2.71828",
+	evenNumberAbsoluteValueLessThan50: "-50 < (number % 2) < 50"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Range = type({
+	positiveAtMostE: type.number.moreThan(0).atMost(2.71828),
+	evenNumberAbsoluteValueLessThan50: type.number
+		.divisibleBy(2)
+		.moreThan(-50)
+		.lessThan(50)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### divisors [#number-divisors]
+
+Constrain a `number` to a multiple of the specified integer.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Evens = type({
+	key: "number % 2"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Evens = type({
+	key: type.number.divisibleBy(2)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## bigint
+
+To allow any `bigint` value, use the `"bigint"` keyword.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Bigints = type({
+	foo: "bigint"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Symbols = type({
+	foo: type.bigint
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### literals [#bigint-literals]
+
+To require an exact `bigint` value in your type, you can use add the suffix `n` to a string-embedded [number literal](/docs/primitives#number-literals) to make it a `bigint`.
+
+```ts
+const Literals = type({
+	bigint: "1337n"
+})
+```
+
+You may also use a [unit expression](/docs/expressions#unit) to define `bigint` literals.
+
+## symbol
+
+To allow any `symbol` value, use the `"symbol"` keyword.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Symbols = type({
+	key: "symbol"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Symbols = type({
+	key: type.symbol
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+To reference a specific symbol in your definition, use a [unit expression](/docs/expressions#unit).
+
+No special syntax is required to define symbolic properties like `{ [mySymbol]: "string" }`. For more information and examples of how to combine symbolic keys with other syntax like optionality, see [properties](/docs/objects#properties).
+
+## boolean
+
+To allow `true` or `false`, use the `"boolean"` keyword.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Booleans = type({
+	key: "boolean"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Booleans = type({
+	key: type.boolean
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### literals [#boolean-literals]
+
+To require a specific boolean value, use the corresponding literal.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Booleans = type({
+	a: "true",
+	b: "false",
+	// equivalent to the "boolean" keyword
+	c: "true | false"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Booleans = type({
+	a: type.keywords.true,
+	b: type.keywords.false,
+	// equivalent to the "boolean" keyword
+	c: type.keywords.true.or(type.keywords.false)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## null
+
+The `"null"` keyword can be used to allow the exact value `null`, generally as part of a [union](/docs/expressions#union).
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyObj = type({
+	foo: "number | null"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const MyObj = type({
+	foo: type.number.or(type.null)
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+## undefined
+
+The `"undefined"` keyword can be used to allow the exact value `undefined`, generally as part of a [union](/docs/expressions#union).
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyObj = type({
+	requiredKey: "number | undefined",
+	"optionalKey?": "number | undefined"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const MyObj = type({
+	requiredKey: type.number.or(type.undefined),
+	optionalKey: type.number.or(type.undefined).optional()
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<Callout type="warn" title="Allowing undefined as a value does not make the key optional!">
+
+    In TypeScript, a required property that allows `undefined` must still be present for the type to be satisfied.
+
+    The same is true in ArkType.
+
+    <details>
+    	<summary>See an example</summary>
+
+    ```ts
+    const MyObj = type({
+    	key: "number | undefined"
+    })
+
+    // valid data
+    const validResult = MyObj({ key: undefined })
+
+    // Error: name must be a number or undefined (was missing)
+    const errorResult = MyObj({})
+    ```
+
+    </details>
+
+</Callout>
+
+---
+
+// Relative Path: ark/docs/content/docs/integrations/index.mdx
+
+---
+
+## title: Integrations
+
+### Standard Schema
+
+ArkType is proud to support and co-author the new [Standard Schema](https://github.com/standard-schema/standard-schema) API with [Valibot](https://github.com/fabian-hiller/valibot) and [Zod](https://github.com/colinhacks/zod).
+
+Standard Schema allows you and your dependencies to integrate library-agnostic validation logic. If you're building or maintaining a library with a peer dependency on ArkType and/or other validation libraries, we'd recommend consuming it through Standard Schema's API if possible so that your users can choose the solution that best suits their needs!
+
+### tRPC
+
+ArkType can easily be used with tRPC:
+
+```ts
+// @noErrors
+// trpc >= 11 accepts a Type directly
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	})
+)
+
+// tRPC < 11 accepts the `.assert` prop
+t.procedure.input(
+	type({
+		name: "string",
+		"age?": "number"
+	}).assert
+)
+```
+
+### drizzle
+
+Drizzle maintains an official [`drizzle-arktype` package](https://orm.drizzle.team/docs/arktype) that can be used to create Types for your Drizzle schemas.
+
+```ts
+// @noErrors
+import { pgTable, text, integer } from "drizzle-orm/pg-core"
+import { createSelectSchema } from "drizzle-arktype"
+
+const users = pgTable("users", {
+	id: integer().generatedAlwaysAsIdentity().primaryKey(),
+	name: text().notNull(),
+	age: integer().notNull()
+})
+
+// Type<{ id: number; name: string; age: number }>
+const User = createSelectSchema(users)
+```
+
+### react-hook-form
+
+react-hook-form has built-in support for ArkType via [`@hookform/resolvers`](https://github.com/react-hook-form/resolvers/tree/master):
+
+```ts
+// @noErrors
+import { useForm } from "react-hook-form"
+import { arktypeResolver } from "@hookform/resolvers/arktype"
+import { type } from "arktype"
+
+const User = type({
+	firstName: "string",
+	age: "number.integer > 0"
+})
+
+// in your component
+const {
+	register,
+	handleSubmit,
+	formState: { errors }
+} = useForm({
+	resolver: arktypeResolver(User)
+})
+```
+
+For a custom controlled input, you can pass the inferred type into the hook itself:
+
+```ts
+// @noErrors
+useForm<typeof User.infer>(/*...*/)
+```
+
+### hono
+
+Hono has built-in support for ArkType via [`@hono/arktype-validator`](https://github.com/honojs/middleware/tree/main/packages/arktype-validator):
+
+```ts
+// @noErrors
+const User = type({
+	name: "string",
+	age: "number"
+})
+
+app.post("/author", arktypeValidator("json", user), c => {
+	const data = c.req.valid("json")
+	return c.json({
+		success: true,
+		message: `${data.name} is ${data.age}`
+	})
+})
+```
+
+[`hono-openapi`](https://github.com/rhinobase/hono-openapi) also offers experimental support for OpenAPI docgen.
+
+### oRPC
+
+[oRPC](https://orpc.unnoq.com/) has built-in support for Standard Schema, so ArkType works seamlessly right out of the box:
+
+```ts
+// @noErrors
+os.input(
+	type({
+		name: "string",
+		"age?": "number"
+	})
+)
+```
+
+---
+
+// Relative Path: ark/docs/content/docs/expressions/index.mdx
+
+---
+
+## title: Expressions
+
+### Intersection
+
+Like its TypeScript counterpart, an intersection combines two existing `Type`s to create a new `Type` that enforces the constraints of both.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const MyObj = type({
+	// an email address with the domain arktype.io
+	intersected: "string.email & /@arktype\\.io$/"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const FooObject = type({
+	foo: "string"
+})
+
+// an object requiring both foo and bar
+const FoobarObject = FooObject.and({
+	bar: "number"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab function>
+
+```ts
+const FooObject = type({
+	foo: "string"
+})
+
+// accepts ...definitions
+const FoobarObject = type.and(
+	FooObject,
+	{
+		bar: "number"
+	},
+	{
+		baz: "string"
+	}
+)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// an object requiring both foo and bar
+const FoobarObject = type([
+	{
+		foo: "string"
+	},
+	"&",
+	{
+		bar: "number"
+	}
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+// an object requiring both foo and bar
+const FoobarObject = type(
+	{
+		foo: "string"
+	},
+	"&",
+	{
+		bar: "number"
+	}
+)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Union
+
+All unions are automatically discriminated to optimize check time and error message clarity.
+
+<SyntaxTabs>
+	<SyntaxTab string>
+
+```ts
+const Unions = type({
+	key: "string | number"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+const Unions = type({
+	key: type.string.or(type.number)
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab function>
+
+```ts
+// accepts ...definitions
+const Union = type.or(type.string, "number", { key: "unknown" })
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const Unions = type({
+	key: ["string", "|", { name: "string" }]
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const Unions = type({
+	key: type("string", "|", { name: "string" })
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+<a id="union-morphs" />
+
+<Callout
+	type="warn"
+	title="A union that could apply different morphs to the same data throws a ParseError!"
+>
+```ts
+// operands overlap, but neither transforms data
+const Okay = type("number > 0").or("number < 10")
+// operand transforms data, but there's no overlap between the inputs
+const AlsoOkay = type("string.numeric.parse").or({ box: "string" })
+// operands overlap and transform data, but in the same way
+const StillOkay = type("string > 5", "=>", Number.parseFloat).or([
+	"0 < string < 10",
+	"=>",
+	Number.parseFloat
+])
+// ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate
+const Bad = type({ box: "string.numeric.parse" }).or({ box: "string" })
+const SameError = type({ a: "string.numeric.parse" }).or({ b: "string.numeric.parse" })
+```
+
+<details>
+	<summary>Learn the set theory behind this restriction</summary>
+
+If you're relatively new to set-based types, that error might be daunting, but if you take a second to think through the example, it becomes clear why this isn't allowed. The logic of `bad` is essentially:
+
+- If the input is an object where `box` is a `string`, parse and return it as a number
+- If the input is an object where `box` is a `string`, return it as a string
+
+There is no way to deterministically return an output for this type without sacrificing the [commutativity](https://en.wikipedia.org/wiki/Commutative_property) of the union operator.
+
+`sameError` may look more innocuous, but has the same problem for an input like `{ a: "1", b: "2" }`.
+
+- Left branch would only parse `a`, resulting in `{ a: 1, b: "2" }`
+- Right branch would only parse `b`, resulting in `{ a: "1", b: 2 }`
+
+</details>
+
+</Callout>
+
+### Brand
+
+Add a type-only symbol to an existing type so that the only values that satisfy it are those that have been directly validated.
+
+<SyntaxTabs>
+
+    <SyntaxTab string>
+
+```ts
+// @noErrors
+const Even = type("(number % 2)#even")
+type Even = typeof even.infer
+
+const good: Even = even.assert(2)
+// TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
+const bad: Even = 5
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// @noErrors
+const even = type.number.divisibleBy(2).brand("even")
+type Even = typeof even.infer
+
+const good: Even = even.assert(2)
+// TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
+const bad: Even = 5
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+Brands can be a great way to represent constraints that fall outside the scope TypeScript, but remember they don't change anything about what is enforced at runtime!
+
+For more information on branding in general, check out [this excellent article](https://www.learningtypescript.com/articles/branded-types) from [Josh Goldberg](https://github.com/joshuakgoldberg).
+
+### Narrow
+
+Narrow expressions allow you to add custom validation logic and error messages. You can read more about them in [their intro section](/docs/intro/adding-constraints#narrow).
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const Form = type({
+	password: "string",
+	confirmPassword: "string"
+}).narrow((data, ctx) => {
+	if (data.password === data.confirmPassword) {
+		return true
+	}
+	return ctx.reject({
+		expected: "identical to password",
+		// don't display the password in the error message!
+		actual: "",
+		path: ["confirmPassword"]
+	})
+})
+
+// ArkErrors: confirmPassword must be identical to password
+const out = Form({
+	password: "arktype",
+	confirmPassword: "artkype"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const Form = type([
+	{
+		password: "string",
+		confirmPassword: "string"
+	},
+	":",
+	(data, ctx) => {
+		if (data.password === data.confirmPassword) {
+			return true
+		}
+		return ctx.reject({
+			expected: "identical to password",
+			// don't display the password in the error message!
+			actual: "",
+			path: ["confirmPassword"]
+		})
+	}
+])
+
+// ArkErrors: confirmPassword must be identical to password
+const out = Form({
+	password: "arktype",
+	confirmPassword: "artkype"
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const Form = type(
+	{
+		password: "string",
+		confirmPassword: "string"
+	},
+	":",
+	(data, ctx) => {
+		if (data.password === data.confirmPassword) {
+			return true
+		}
+		return ctx.reject({
+			expected: "identical to password",
+			// don't display the password in the error message!
+			actual: "",
+			path: ["confirmPassword"]
+		})
+	}
+)
+
+// ArkErrors: confirmPassword must be identical to password
+const out = Form({
+	password: "arktype",
+	confirmPassword: "artkype"
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+If the return type of a narrow is a type predicate, that will be reflected in the inferred `Type`.
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+// hover to see how the predicate is propagated to the outer `Type`
+const ArkString = type("string").narrow(
+	(data, ctx): data is `ark${string}` =>
+		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
+)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// hover to see how the predicate is propagated to the outer `Type`
+const ArkString = type([
+	"string",
+	":",
+	(data, ctx): data is `ark${string}` =>
+		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
+])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+// hover to see how the predicate is propagated to the outer `Type`
+const ArkString = type(
+	"string",
+	":",
+	(data, ctx): data is `ark${string}` =>
+		data.startsWith("ark") ?? ctx.reject("a string starting with 'ark'")
+)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Morph
+
+Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+// hover to see how morphs are represented at a type-level
+const trimStringStart = type("string").pipe(str => str.trimStart())
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab function>
+
+```ts
+// accepts ...morphsOrTypes
+const trimStartToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// hover to see how morphs are represented at a type-level
+const trimStringStart = type(["string", "=>", str => str.trimStart()])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+// hover to see how morphs are represented at a type-level
+const trimStringStart = type("string", "=>", str => str.trimStart())
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+#### To
+
+If a morph returns an `ArkErrors` instance, validation will fail with that result instead of it being treated as a value. This is especially useful for using other Types as morphs to validate output or chain transformations.
+
+To make this easier, there's a special `to` operator that can pipe to a parsed definition without having to wrap it in `type` to make it a function:
+
+<SyntaxTabs>
+    <SyntaxTab string>
+
+```ts
+const parseEvenTo = type("string.numeric.parse |> number % 2")
+
+const Even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
+```
+
+    </SyntaxTab>
+    <SyntaxTab fluent>
+
+```ts
+const parseEvenTo = type("string.numeric.parse").to("number % 2")
+
+const Even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const parseEvenTo = type(["string.numeric.parse", "|>", "number % 2"])
+
+const Even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const parseEvenTo = type("string.numeric.parse", "|>", "number % 2")
+
+const Even = type("number % 2")
+// equivalent to parseEvenTo
+const parseEvenPipe = type("string.numeric.parse").pipe(Even)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Unit
+
+While embedded [literal syntax](/docs/primitives#number-literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serialiazable value like a `symbol` from your type.
+
+<SyntaxTabs>
+
+    <SyntaxTab fluent>
+
+```ts
+const mySymbol = Symbol()
+
+const ExactValue = type.unit(mySymbol)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const mySymbol = Symbol()
+
+const ExactValue = type(["===", mySymbol])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const mySymbol = Symbol()
+
+const ExactValue = type("===", mySymbol)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Enumerated
+
+`type.enumerated` defines a Type based on a list of allowed values. It is semantically equivalent to `type.unit` if provided a single value.
+
+<SyntaxTabs>
+
+    <SyntaxTab fluent>
+
+```ts
+const mySymbol = Symbol()
+
+const ExactValueFromSet = type.enumerated(1337, true, mySymbol)
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const mySymbol = Symbol()
+
+const ExactValueFromSet = type(["===", 1337, true, mySymbol])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const mySymbol = Symbol()
+
+const ExactValueFromSet = type("===", 1337, true, mySymbol)
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### valueOf
+
+`type.valueOf` defines a Type from a TypeScript `enum` or enum-like object.
+
+<Callout
+	type="warn"
+	title="`enum` should be avoided in modern TypeScript"
+>
+
+Over time, TS has shifted away from features that affect the `.js` it ultimately outputs, including `enum`.
+
+With the introduction of the [`--erasableSyntaxOnly` option](https://www.typescriptlang.org/tsconfig/#erasableSyntaxOnly) to facilitate type-stripping, `enum` is no longer considered a best practice.
+
+`type.valueOf` exists primarily to facilitate integration with legacy code that relies on `enum`, but if you have the option, prefer transparently defining value sets via `["tupleLiterals"] as const`, `{ objectLiterals: true } as const`, or directly via [`type.enumerated`](/docs/expressions#enumerated).
+
+</Callout>
+
+```ts
+enum TsEnum {
+	numeric = 1
+}
+
+const EnumType = type.valueOf(TsEnum) // Type<1>
+```
+
+It is _almost_ semantically identical to `type.enumerated(...Object.values(o))`. The only exception occurs when an object has an entry with a numeric value and entry with that value as a key mapping back to the original:
+
+```ts
+// this is the structure TsEnum compiles to in JS
+const equivalentObject = {
+	numeric: 1,
+	"1": "numeric"
+} as const
+
+// only allows the number 1 even though it is inferred
+// to also allow the string "numeric"
+const EquivalentObject = type.valueOf(equivalentObject)
+```
+
+Notice `EquivalentObject` doesn't include `"numeric"` because it inverts a numeric value entry.
+
+We recommend `type.enumerated` as the more transparent option for converting value references to a Type. However, if the described inverted entry pairs can't exist on your object, you can safely use `type.valueOf`.
+
+### Meta
+
+Metadata allows you to associate arbitrary metadata with your types.
+
+Some metadata is consumed directly by ArkType, for example `description` is referenced by default when building an error message.
+
+Other properties are introspectable, but aren't used by default internally.
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+// this validator's error message will now start with "must be a special string"
+const SpecialString = type("string").configure({
+	description: "a special string"
+})
+
+// sugar for adding description metadata
+const SpecialNumber = type("number").describe("a special number")
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+// this validator's error message will now start with "must be a special string"
+const SpecialString = type([
+	"string",
+	"@",
+	{
+		description: "a special string"
+	}
+])
+
+// sugar for adding description metadata
+const SpecialNumber = type(["number", "@", "a special number"])
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+// this validator's error message will now start with "must be a special string"
+const SpecialString = type("string", "@", {
+	description: "a special string"
+})
+
+// sugar for adding description metadata
+const SpecialNumber = type("number", "@", "a special number")
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Cast
+
+Sometimes, you may want to directly specify how a `Type` should be inferred without affecting the runtime behavior. In these cases, you can use a cast expression.
+
+<SyntaxTabs>
+
+    <SyntaxTab string>
+
+```ts
+// allow any string, but suggest "foo" and "bar"
+type AutocompletedString = "foo" | "bar" | (string & {})
+
+const MyObj = type({
+	autocompletedString: "string" as type.cast<AutocompletedString>
+})
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab fluent>
+
+```ts
+// allow any string, but suggest "foo" and "bar"
+type AutocompletedString = "foo" | "bar" | (string & {})
+
+const MyObj = type({
+	autocompletedString: type.string.as<AutocompletedString>()
+})
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+### Parenthetical
+
+By default, ArkType's operators follow the same precedence as TypeScript's. Also like in TypeScript, this can be overridden by wrapping an expression in parentheses.
+
+```ts
+// hover to see the distinction!
+const Groups = type({
+	stringOrArrayOfNumbers: "string | number[]",
+	arrayOfStringsOrNumbers: "(string | number)[]"
+})
+```
+
+### this
+
+`this` is a special keyword that can be used to create a recursive type referencing the root of the current definition.
+
+```ts
+const DisappointingGift = type({
+	label: "string",
+	"box?": "this"
+})
+
+const out = DisappointingGift({
+	label: "foo",
+	box: { label: "bar", box: {} }
+})
+
+if (out instanceof type.errors) {
+	// ArkErrors: box.box.label must be a string (was missing)
+	console.error(out.summary)
+} else {
+	// narrowed inference to arbitrary depth
+	console.log(out.box?.box?.label)
+	//                         ^?
+}
+```
+
+Referencing `this` from within a scope will result in a ParseError. For similar behavior within a scoped definition, just reference the alias by name:
+
+```ts
+const types = scope({
+	DisappointingGift: {
+		label: "string",
+		// Resolves correctly to the root of the current type
+		"box?": "DisappointingGift"
+	}
+}).export()
+```
+
+---
+
+// Relative Path: ark/docs/content/docs/faq.mdx
+
+---
+
+## title: FAQ
+
+### Why do I see type errors in an ArkType package in `node_modules`?
+
+This can occur due to incompatibilities between your `tsconfig.json` and ours. It is totally harmless as long as your types are correct in source.
+
+We highly recommend enabling [`skipLibCheck`](https://www.typescriptlang.org/tsconfig/#skipLibCheck) in every TypeScript project to avoid false negatives like this and greatly improve editor performance.
+
+### Is there a way to create an async morph?
+
+Other than handling it as a promise on the output object, no.
+
+As it stands, it doesn't seem worth the significant complexity it would add to morphs in the type system.
+
+If you have a compelling use case, let us know on [this GitHub issue](https://github.com/arktypeio/arktype/issues/462).
+
+### What's up with your type/Type casing?
+
+You might have noticed in our documentation we use PascalCase for some Types and camelCase for others:
+
+```ts
+const User = type({
+	name: "string",
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
+})
+
+const parseJson = type("string.json.parse").to({
+	name: "string",
+	version: "string.semver"
+})
+```
+
+This distinction actually evolved from the rules we use for casing our internal TypeScript types:
+
+- Use `PascalCase` for...
+
+  - Entities/non-generic types (e.g. `User`, `SomeData`)
+  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's built-in `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
+
+- Use `camelCase` for...
+
+  - Generic types with verb names like `inferDomain<t>`. Types named this way should generally have at least one required parameter.
+  - Parameter names, e.g. `t` in `Array<t>`
+
+If you don't like this, feel free to use whatever casing rules best suit your repo- it will not affect your Types or scope aliases in any way.
+
+### Why isn't my wrapper generic working?
+
+TypeScript generic inference is notoriously finicky. General patterns for wrapping Types and definitions are outlined [in the Generics docs](/docs/generics#external).
+
+<Callout
+	type="info"
+	title="If you want to write type-level logic, you need to cast."
+>
+
+When implementing a function with a generic return type, you will almost always need to cast in your implementation, either explicitly via `as` or by using an overload.
+
+Think of it as trading internal safety for external precision. As long as the function you're writing will be called many times externally, the overhead is justified. If not, it may not need to be generic at all- a broad return type like `string` as opposed to `${prefix}.${key}` may be sufficient.
+
+<details>
+	<summary>See an example</summary>
+
+```ts
+// via explicit cast
+const createBox = <const def>(
+	of: type.validate<def>
+): type.instantiate<{ of: def }> =>
+	type.raw({
+		box: of
+		// when implementing generics, never is your go-to
+		// for allowing an arbitrary assignment with less risk than `any`
+	}) as never
+
+// via overloads
+// only the external signatures are considered on invocation
+function createBox2<const def>(
+	of: type.validate<def>
+): type.instantiate<{ of: def }>
+// the signature associated with the implementation is much looser and should
+// be thought of as equivalent to casting in terms of type safety
+function createBox2(of: unknown) {
+	return type.raw({
+		box: of
+	})
+}
+```
+
+Notice in both cases, we've explicitly annotated the return type we want and used some method of casting internally to allow our implementation. This is a very common for implementing generic functions and, more generally, associating an implementation with typings TS can't infer on its own.
+
+</details>
+
+</Callout>
+
+For anything more complex, you'll have to rely on your understanding of type manipulation to achieve the desired outcome. Tracing your way through ArkType's internal types may uncover helpful patterns, and you may even find friendly folks [in our Discord](https://arktype.io/discord) who may be willing to lend a hand.
+
+Generally speaking however, **we cannot guarantee your generics will behave the way you expect**.
+
+Writing a good generic function can require understanding many complex details and edge cases- the kind of stuff our core API abstracts away.
+
+Unfortunately, when it comes to how ArkType integrates with external generics, that is not possible.
+
+Getting the results you want will take patience, but the DX ceiling for this kind of API is crazy high.
+
+If we haven't scared you off by now, we're hyped to see what you build with it 🧗
+
+---
+
+// Relative Path: ark/docs/content/docs/match.mdx
+
+---
+
+## title: Match
+
+The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type, like a type-safe `switch` statement.
+
+## Case Record API
+
+The simplest way to define a matcher is with ArkType definition strings as keys with corresponding handlers as values:
+
+```ts
+import { match } from "arktype"
+
+const sizeOf = match({
+	"string | Array": v => v.length,
+	number: v => v,
+	bigint: v => v,
+	default: "assert"
+})
+
+// a match definition is complete once a `default` has been specified,
+// either as a case or via the .default() method
+
+sizeOf("abc") // 3
+sizeOf([1, 2, 3, 4]) // 4
+sizeOf(5n) // 5n
+// ArkErrors: must be an object, a string, a number or a bigint (was boolean)
+sizeOf(true)
+```
+
+In this example, `sizeOf` is a matcher that takes a string, array, number, or bigint as input. It returns the length of strings and arrays, and the value of numbers and bigints.
+
+`default` accepts one of 4 values:
+
+- `"assert"`: accept `unknown`, throw if none of the cases match
+- `"never"`: accept an input based on inferred cases, throw if none match
+- `"reject"`: accept `unknown`, return `ArkErrors` if none of the cases match
+- `(data: In) => unknown`: handle data not matching other cases directly
+
+Cases will be checked in the order they are specified, either as object literal keys or via chained methods.
+
+## Fluent API
+
+The `match` function also provides a fluent API. This can be convenient for non-string-embeddable definitions:
+
+```ts
+import { match } from "arktype"
+
+// the Case Record and Fluent APIs can be easily combined
+const sizeOf = match({
+	string: v => v.length,
+	number: v => v,
+	bigint: v => v
+})
+	// match any object with a numeric length property and extract it
+	.case({ length: "number" }, o => o.length)
+	// return 0 for all other data
+	.default(() => 0)
+
+sizeOf("abc") // 3
+sizeOf({ name: "David", length: 5 }) // 5
+sizeOf(null) // 0
+```
+
+## Narrowing input with `in`, property matching with `at`
+
+```ts
+// @errors: 2345
+import { match } from "arktype"
+
+type Data =
+	| {
+			id: 1
+			oneValue: number
+	  }
+	| {
+			id: 2
+			twoValue: string
+	  }
+
+const discriminateValue = match
+	// .in allows you to specify the input TypeScript allows for your matcher
+	.in<Data>()
+	// .at allows you to specify a key at which your input will be matched
+	.at("id")
+	.match({
+		1: o => `${o.oneValue}!`,
+		2: o => o.twoValue.length,
+		default: "assert"
+	})
+
+discriminateValue({ id: 1, oneValue: 1 }) // "1!"
+discriminateValue({ id: 2, twoValue: "two" }) // 3
+discriminateValue({ oneValue: 3 })
+```
+
+---
+
+// Relative Path: ark/docs/content/docs/scopes/index.mdx
+
+---
+
+## title: Scopes
+
+<a id="intro" />
+
+Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
+
+A scope is just like a scope in code- a resolution space where you can define types, generics, or other scopes. The `type` export is a actually just a method on our default `Scope`!
+
+## Defining a Scope
+
+To define a scope, you may either `import { scope } from "arktype"` or use `type.scope` on the default `type` export.
+
+A scope is specified as an object literal mapping names to definitions.
+
+```ts
+import { scope } from "arktype"
+
+const coolScope = scope({
+	// keywords are still available in your scope
+	Id: "string",
+	// but you can also reference your own aliases directly!
+	User: { id: "Id", friends: "Id[]" },
+	// your aliases will be autocompleted and validated alongside ArkType's keywords
+	UsersById: {
+		"[Id]": "User | undefined"
+	}
+})
+```
+
+`coolScope` is an object with reusable methods like `type` and `generic`. You can use it to create additional `Type`s that can reference your **aliases**- `id`, `user` and `usersById`.
+
+<Callout type="warn" title="Don't wrap your scoped definitions in type!">
+
+Even if you reference it as part of your scope definition, the global 'type' parser only knows about built-in keywords.
+
+```ts
+// @errors: 2322
+const badScope = scope({
+	Id: "string",
+	// ❌ wrapping this definition in `type` will fail
+	BadEntity: type({
+		id: "Id"
+	}),
+	// ✅ reference scoped definitions directly instead of wrapping them
+	GoodEntity: {
+		id: "Id"
+	}
+})
+```
+
+If you need access to fluent syntax from within a Scope, see [thunks](/docs/scopes#thunks).
+
+</Callout>
+
+```ts
+const coolScope = scope({
+	Id: "string",
+	User: { id: "Id", friends: "Id[]" },
+	UsersById: {
+		"[Id]": "User | undefined"
+	}
+})
+// ---cut---
+
+const group = coolScope.type({
+	name: "string",
+	members: "User[]"
+})
+
+// chained definitions are parsed in the same scope as the original Type
+const ownedGroup = group.and({
+	ownerId: "Id"
+})
+```
+
+To use the scoped types directly, you must `.export()` your `Scope` to a `Module`. A `Module` is just an object mapping aliases to `Type`s. They can be used for validation or in any other context a `Type` can be used.
+
+```ts
+const coolScope = scope({
+	Id: "string",
+	User: { id: "Id", friends: "Id[]" },
+	UsersById: {
+		"[Id]": "User | undefined"
+	}
+})
+
+interface RuntimeErrors extends type.errors {
+	/**friends[1] must be a string (was a number)*/
+	summary: string
+}
+
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
+// ---cut---
+
+const coolModule = coolScope.export()
+
+const out = coolModule.User({
+	id: "99",
+	friends: ["7", 8, "9"]
+})
+
+if (out instanceof type.errors) {
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover summary to see validation errors
+	console.error(out.summary)
+}
+```
+
+`.export()` is also useful in combination with the spread operator for extending your `Scope`s. Recall that a `Type` can be referenced as a definition. This means that spreading a `Module` into the definition you pass to `scope` includes all of that Module's aliases in your new `Scope`.
+
+```ts
+const coolScope = scope({
+	Id: "string",
+	User: { id: "Id", friends: "Id[]" },
+	UsersById: {
+		"[Id]": "User | undefined"
+	}
+})
+// ---cut---
+
+const threeSixtyNoScope = scope({
+	three: "3",
+	sixty: "60",
+	no: "'no'"
+})
+
+const superScope = scope({
+	...coolScope.export(),
+	// if you don't want to include the entire scope, you can pass a list of ...aliases
+	...threeSixtyNoScope.export("three", "sixty"),
+	saiyan: {
+		powerLevel: "number > 9000"
+	}
+})
+```
+
+If you don't plan to reuse your `Scope` to create additional types, it is common to export it inline:
+
+```ts
+const ezModule = scope({
+	Ez: "'moochi'"
+}).export()
+```
+
+`type.module` is available as sugar for this pattern:
+
+```ts
+const ezModule = type.module({
+	Ez: "'moochi'"
+})
+```
+
+### Cyclic Types
+
+Scopes make it easy to create recursive `Type`s. Just reference the alias like you would any other:
+
+```ts
+export const types = scope({
+	Package: {
+		name: "string",
+		"dependencies?": "Package[]",
+		"contributors?": "Contributor[]"
+	},
+	Contributor: {
+		email: "string.email",
+		"packages?": "Package[]"
+	}
+}).export()
+```
+
+Cyclic types are inferred to arbitrary depth. At runtime, they can safely validate cyclic data.
+
+```ts
+export const types = scope({
+	Package: {
+		name: "string",
+		"dependencies?": "Package[]",
+		"contributors?": "Contributor[]"
+	},
+	Contributor: {
+		email: "string.email",
+		"packages?": "Package[]"
+	}
+}).export()
+// ---cut---
+
+export type Package = typeof types.Package.infer
+
+const packageData: Package = {
+	name: "arktype",
+	dependencies: [{ name: "typescript" }],
+	contributors: [{ email: "david@sharktypeio" }]
+}
+
+// update arktype to depend on itself
+packageData.dependencies![0].dependencies = [packageData]
+
+// ArkErrors: contributors[0].email must be an email address (was "david@sharktypeio")
+const out = types.Package(packageData)
+```
+
+<Callout type="warn" title="Some `any`s are not what they seem!">
+
+By default, TypeScript represents anonymous cycles as `...`. However, if you have `noErrorTruncation` enabled, they are visually displayed as `any`😬
+
+Luckily, despite its appearance, the type otherwise behaves as you'd expect- TypeScript will provide completions and will complain as normal if you access a non-existent property.
+
+</Callout>
+
+### visibility
+
+Intermediate aliases can be useful for composing Scoped definitions from aliases. Sometimes, you may not want to expose those aliases externally as `Type`s when your `Scope` is `export`ed.
+
+This can be done using _private_ aliases:
+
+```ts
+const shapeScope = scope({
+	// aliases with a "#" prefix are treated as private
+	"#BaseShapeProps": {
+		perimeter: "number",
+		area: "number"
+	},
+	Ellipse: {
+		// when referencing a private alias, the "#" should not be included
+		"...": "BaseShapeProps",
+		radii: ["number", "number"]
+	},
+	Rectangle: {
+		"...": "BaseShapeProps",
+		width: "number",
+		height: "number"
+	}
+})
+
+// private aliases can be referenced from any scoped definition,
+// even outside the original scope
+const PartialShape = shapeScope.type("Partial<BaseShapeProps>")
+
+// when the scope is exported to a Module, they will not be included
+// hover to see the Scope's exports
+const shapeModule = shapeScope.export()
+```
+
+#### `import()`
+
+Private aliases are especially useful for building scopes without polluting them with every alias you might want to reference internally. To facilitate this, Scopes have an `import()` method that behaves identically to `export()` but converts all exported aliases to `private`.
+
+```ts
+const utilityScope = scope({
+	"withId<o extends object>": {
+		"...": "o",
+		id: "string"
+	}
+})
+
+const userModule = type.module({
+	// because we use `import()` here, we can reference our utilities
+	// internally, but they will not be included in `userModule`.
+	// if we used `export()` instead, `withId` could be accessed on `userModule`.
+	...utilityScope.import(),
+	Payload: {
+		name: "string",
+		age: "number"
+	},
+	db: "withId<Payload>"
+})
+```
+
+### submodules
+
+If you've used keywords like `string.email` or `number.integer`, you may wonder if aliases can be grouped in your own Scopes. Recall from [the introduction to Scopes](#intro) that `type` is actually just a method on ArkType's default `Scope`, meaning all of its functionality is available externally, including alias groups called _Submodules_.
+
+Submodules are groups of aliases with a shared prefix. To define one, just assign the value of the prefix to a `Module` with the names you want:
+
+```ts
+const subAliases = type.module({ alias: "number" })
+
+const rootScope = scope({
+	a: "string",
+	b: "sub.alias",
+	sub: subAliases
+})
+
+const myType = rootScope.type({
+	someKey: "sub.alias[]"
+})
+```
+
+Submodules are parsed bottom-up. This means subaliases can be referenced directly in the root scope,
+but root aliases can't be referenced from the submodule, even if it's inlined.
+
+#### nested
+
+Submodules can be nested to arbitrary depth:
+
+```ts
+const subAliases = type.module({ alias: "number" })
+
+const rootScope = scope({
+	a: "string",
+	b: "sub.alias",
+	sub: subAliases
+})
+// ---cut---
+
+const rootScopeSquared = scope({
+	// reference rootScope from our previous example
+	newRoot: rootScope.export()
+})
+
+const myNewType = rootScopeSquared.type({
+	someOtherKey: "newRoot.sub.alias | boolean"
+})
+```
+
+#### rooted
+
+The Submodules from our previous examples group `Type`s together, but cannot be referenced as `Type`s themselves the way `string` and `number` can. To define a _Rooted Submodule_, just use an alias called `root`:
+
+```ts
+const userModule = type.module({
+	root: {
+		name: "string"
+	},
+	// subaliases can extend a base type by referencing 'root'
+	// like any other alias
+	Admin: {
+		"...": "root",
+		isAdmin: "true"
+	},
+	Saiyan: {
+		"...": "root",
+		powerLevel: "number > 9000"
+	}
+})
+
+const types = type.module({
+	User: userModule,
+	// user can now be referenced directly in a definition
+	Group: "User[]",
+	// or used as a prefix to access subaliases
+	ElevatedUser: "User.Admin | User.Saiyan"
+})
+```
+
+### thunks
+
+When users are first learning about Scopes, one of the most common mistakes is to reference an alias in a nested `type` call:
+
+<CodeBlock fromFile="nestedTypeInScopeError" />
+
+This error occurs because although the `id` alias would be resolvable in the current Scope directly, `type` only allows references to built-in keywords. In this case, the `type` wrapper is redundant and the fix is to simply remove it:
+
+```ts
+const myScope = scope({
+	Id: "string#id",
+	User: {
+		name: "string",
+		// now resolves correctly
+		id: "Id"
+	}
+})
+```
+
+However, even if it is _possible_ to define your scope without invoking `type` by composing aliases and tuple expressions, the fluent methods available on `Type` can define complex types that can be cumbersome to express otherwise. In these situations, you can use a **thunk definition** to access the `type` method on the Scope you're currently defining:
+
+```ts
+const $ = scope({
+	Id: "string#id",
+	expandUserGroup: () =>
+		$.type({
+			name: "string",
+			id: "Id"
+		})
+			.or("Id")
+			.pipe(user =>
+				typeof user === "string" ? { id: user, name: "Anonymous" } : user
+			)
+			.array()
+			.atLeastLength(2)
+})
+
+const types = $.export()
+
+// input is validated and transformed to:
+// [{ name: "Magical Crawdad", id: "777" }, { name: "Anonymous", id: "778" }]
+const groups = types.expandUserGroup([
+	{ name: "Magical Crawdad", id: "777" },
+	"778"
+])
+```
+
+Though thunk definitions are really only useful when defining a Scope, they can be used anywhere a `Type` definition is expected:
+
+```ts
+// you *can* use them anywhere, but *should* you? (no)
+const MyInelegantType = type(() =>
+	type({ inelegantKey: () => type("'inelegant value'") })
+)
+```
+
+---
