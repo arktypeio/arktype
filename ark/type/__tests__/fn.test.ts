@@ -6,6 +6,10 @@ import type { Return } from "arktype/internal/nary.ts"
 contextualize(() => {
 	const f = type.fn("string", "number = 5", "boolean?")((s, n, b) => true)
 
+	const ss = type.fn("...", "string[]")
+
+	const zz = ss((s, n, b) => true)
+
 	it("0 paams implicit return", () => {
 		const f = type.fn()(() => 5)
 

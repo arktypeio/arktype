@@ -92,4 +92,20 @@ contextualize(() => {
 			defaultablePostOptionalMessage
 		)
 	})
+
+	it("input extracted as optional", () => {
+		const T = type(["number = 5"])
+		attest<[number?]>(T.in.t)
+		attest<[number?]>(T.inferIn)
+
+		attest(T.in.expression).snap()
+	})
+
+	it("output extracted as required", () => {
+		const T = type(["number = 5"])
+		attest<[number]>(T.out.t)
+		attest<[number]>(T.inferOut)
+
+		attest(T.out.expression).snap()
+	})
 })

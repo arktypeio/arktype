@@ -2685,14 +2685,10 @@ export type NaryFnParser<$> = {
 	<const args>(
 		...args: validateFnArgs<args, $>
 	): <
-		internalSignature extends (
-			...args: distill.Out<inferTupleLiteral<args, $, {}>>
-		) => unknown,
+		internalSignature extends (...args: distill.Out<paramsT>) => unknown,
+		paramsT = inferTupleLiteral<args, $, {}>,
 		externalSignature extends Fn = (
-			...args: mapParamNames<
-				internalSignature,
-				distill.In<inferTupleLiteral<args, $, {}>>
-			>
+			...args: distill.In<paramsT>
 		) => ReturnType<internalSignature>
 	>(
 		implementation: internalSignature

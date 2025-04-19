@@ -153,7 +153,9 @@ type distillArrayFromPrefix<
 		distillArrayFromPrefix<
 			tail,
 			endpoint,
-			[...prefix, _distill<head, endpoint>]
+			[endpoint, head] extends ["in", Default] ?
+				[...prefix, _distill<head, endpoint>?]
+			:	[...prefix, _distill<head, endpoint>]
 		>
 	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, []>]
 
