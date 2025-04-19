@@ -1,5 +1,5 @@
-import type { BaseRoot } from "@ark/schema"
-import { alphabet, Callable, throwParseError, type Fn } from "@ark/util"
+import type { BaseRoot, IntersectionNode } from "@ark/schema"
+import { Callable, throwParseError, type Fn } from "@ark/util"
 import type { NaryFnParser, Return } from "./nary.ts"
 import type { InternalScope, Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
@@ -33,21 +33,25 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 
 		super(
 			(...signature) => {
-				const paramTypes: BaseRoot[] = []
+				const returnOperatorIndex = signature.indexOf(":")
+				const lastParamIndex =
+					returnOperatorIndex === -1 ?
+						signature.length - 1
+					:	returnOperatorIndex - 1
 
-				let i = 0
-				for (; i < signature.length && signature[i] !== ":"; i++)
-					paramTypes[i] = $.parse(signature[i])
+				const paramDefs = signature.slice(0, lastParamIndex + 1)
+
+				const paramTuple = $.parse(paramDefs).assertHasKind("intersection")
 
 				let returnType: BaseRoot = $.intrinsic.unknown
 
-				if (signature[i] === ":") {
-					if (i !== signature.length - 2)
+				if (returnOperatorIndex !== -1) {
+					if (returnOperatorIndex !== signature.length - 2)
 						return throwParseError(badFnReturnTypeMessage)
-					returnType = $.parse(signature[i + 1])
+					returnType = $.parse(signature[returnOperatorIndex + 1])
 				}
 
-				return (impl: Fn) => new InternalTypedFn(impl, paramTypes, returnType)
+				return (impl: Fn) => new InternalTypedFn(impl, paramTuple, returnType)
 			},
 			{ attach }
 		)
@@ -79,16 +83,16 @@ export interface TypedFn<
 
 export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	raw: Fn
-	params: readonly BaseRoot[]
+	params: IntersectionNode
 	returns: BaseRoot
 	expression: string
 
-	constructor(raw: Fn, params: readonly BaseRoot[], returns: BaseRoot) {
+	constructor(raw: Fn, params: IntersectionNode, returns: BaseRoot) {
 		const typedName = `typed ${raw.name}`
 		const typed = {
 			// assign to a key with the expected name to force it to be created that way
 			[typedName]: (...args: unknown[]) => {
-				const validatedArgs = params.map((p, i) => p.assert(args[i]))
+				const validatedArgs = params.assert(args) as unknown[]
 				const returned = raw(...validatedArgs)
 				return returns.assert(returned)
 			}
@@ -99,10 +103,7 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.params = params
 		this.returns = returns
 
-		const paramsExpression = params
-			.map((p, i) => `${alphabet[i]}: ${p.expression}`)
-			.join(", ")
-		this.expression = `(${paramsExpression}) => ${returns?.expression ?? "unknown"}`
+		this.expression = `(${params.expression}) => ${returns?.expression ?? "unknown"}`
 	}
 }
 

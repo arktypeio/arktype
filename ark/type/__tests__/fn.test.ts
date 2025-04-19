@@ -428,13 +428,42 @@ contextualize(() => {
 
 	describe("tuple elements", () => {
 		it("defaultable and optional", () => {
-			const f = type.fn("string", "number = 5", "boolean?")((s, n, b) => true)
+			const f = type.fn(
+				"string",
+				"number = 5",
+				"boolean?"
+			)((s, n, b) => `${s}${n}${b}`)
 
-			attest(f.expression).snap()
+			attest(f.expression).snap("([string, number = 5, boolean?]) => unknown")
 		})
 
-		it("variadic", () => {
-			const join = type.fn("...", "string[]")((...parts) => parts.join(","))
+		it("non-variadic array", () => {
+			const join = type.fn("string[]")((...parts) => parts.join(","))
+
+			attest(join.expression).snap("([string[]]) => unknown")
+		})
+
+		it("variadic array", () => {
+			const join = type.fn(
+				"...",
+				"string[]",
+				":",
+				"string"
+			)((...parts) => parts.join(","))
+
+			attest(join.expression).snap("(string[]) => string")
+		})
+
+		it("intro example", () => {
+			const safe = type.fn(
+				"string",
+				"number = 0.1"
+			)((name, version) => `${name}@${version} is safe AF.`)
+
+			attest(safe("arktype", 2.2)).snap("arktype@2.2 is safe AF.")
+			attest(() => safe("shitescript", "*" as any)).throws.snap(
+				"TraversalError: value at [1] must be a number (was a string)"
+			)
 		})
 	})
 })
