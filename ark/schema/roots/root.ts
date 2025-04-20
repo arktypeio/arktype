@@ -82,12 +82,12 @@ export abstract class BaseRoot<
 
 	// doesn't seem possible to override this at a type-level (e.g. via declare)
 	// without TS complaining about getters
-	override get in(): BaseRoot {
-		return super.in as never
+	override get rawIn(): BaseRoot {
+		return super.rawIn as never
 	}
 
-	override get out(): BaseRoot {
-		return super.out as never
+	override get rawOut(): BaseRoot {
+		return super.rawOut as never
 	}
 
 	get internal(): this {
@@ -501,7 +501,10 @@ export abstract class BaseRoot<
 				)
 		}
 
-		const operand = io === "root" ? this : this[io]
+		const operand =
+			io === "root" ? this
+			: io === "in" ? this.rawIn
+			: this.rawOut
 		if (
 			operand.hasKind("morph") ||
 			(constraint.impliedBasis && !operand.extends(constraint.impliedBasis))

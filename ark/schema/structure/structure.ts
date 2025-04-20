@@ -58,7 +58,7 @@ import {
 import type { Index } from "./index.ts"
 import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
-import type { Required } from "./required.ts"
+import type { Required, RequiredNode } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
 
 /**
@@ -169,7 +169,10 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					// ensure we don't overwrite nodes added by optional
 					inner.required = append(
 						inner.required,
-						nodes!.map(node => node[ioKind] as Required.Node)
+						nodes!.map(
+							node =>
+								(ioKind === "in" ? node.rawIn : node.rawOut) as RequiredNode
+						)
 					)
 					return
 				}
@@ -179,14 +182,14 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				parse: constraintKeyParser("optional"),
 				reduceIo: (ioKind, inner, nodes) => {
 					if (ioKind === "in") {
-						inner.optional = nodes!.map(node => node.in as OptionalNode)
+						inner.optional = nodes!.map(node => node.rawIn as OptionalNode)
 						return
 					}
 
 					for (const node of nodes!) {
 						inner[node.outProp.kind] = append(
 							inner[node.outProp.kind],
-							node.outProp.out as Prop.Node
+							node.outProp.rawOut as Prop.Node
 						) as never
 					}
 				}
@@ -863,8 +866,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					if (keyBranch.hasKind("morph")) {
 						keySchema = ctx.fallback.morph({
 							code: "morph",
-							base: keyBranch.in.toJsonSchemaRecurse(ctx),
-							out: keyBranch.out.toJsonSchemaRecurse(ctx)
+							base: keyBranch.rawIn.toJsonSchemaRecurse(ctx),
+							out: keyBranch.rawOut.toJsonSchemaRecurse(ctx)
 						}) as never
 					}
 					if (!keyBranch.hasKind("intersection")) {

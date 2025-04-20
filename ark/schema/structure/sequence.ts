@@ -134,11 +134,11 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					]),
 				reduceIo: (ioKind, inner, defaultables) => {
 					if (ioKind === "in") {
-						inner.optionals = defaultables!.map(d => d[0].in)
+						inner.optionals = defaultables!.map(d => d[0].rawIn)
 						return
 					}
 
-					inner.prefix = defaultables!.map(d => d[0].out)
+					inner.prefix = defaultables!.map(d => d[0].rawOut)
 					return
 				}
 			},

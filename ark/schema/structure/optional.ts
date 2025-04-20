@@ -90,8 +90,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
 	}
 
-	override get in(): OptionalNode {
-		const baseIn = super.in
+	override get rawIn(): OptionalNode {
+		const baseIn = super.rawIn
 		if (!this.hasDefault()) return baseIn as never
 
 		return this.$.node(
@@ -188,7 +188,10 @@ export const assertDefaultValueAssignability = (
 	if (hasDomain(value, "object") && !wrapped)
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	const out = node.in(wrapped ? value() : value)
+	// if the node has a default value, finalize it and apply JIT optimizations
+	// if applicable to ensure behavior + error logging is externally consistent
+	// (using .in here insead of .rawIn triggers finalization)
+	const out = (node.in as BaseRoot)(wrapped ? value() : value)
 
 	if (out instanceof ArkErrors) {
 		if (key === null) {

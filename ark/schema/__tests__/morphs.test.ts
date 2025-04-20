@@ -12,14 +12,14 @@ contextualize(() => {
 			},
 			morphs: (s: string) => Number.parseFloat(s)
 		})
-		attest(parseNumber.in.json).snap({
+		attest(parseNumber.rawIn.json).snap({
 			domain: "string",
 			pattern: [
 				"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?)?))$"
 			],
 			meta: "a well-formed numeric string"
 		})
-		attest(parseNumber.out.json).snap({})
+		attest(parseNumber.rawOut.json).snap({})
 	})
 
 	it("in/out union", () => {
@@ -30,8 +30,8 @@ contextualize(() => {
 			},
 			"number"
 		])
-		attest(n.in.expression).snap("number | string")
-		attest(n.out.expression).snap("number")
+		attest(n.rawIn.expression).snap("number | string")
+		attest(n.rawOut.expression).snap("number")
 	})
 
 	contextualize.each(
@@ -62,8 +62,8 @@ contextualize(() => {
 				})
 
 				attest(declared.description).snap("declared")
-				attest(declaredMorph.in.description).equals(declared.description)
-				attest(declaredMorph.out.description).equals(declared.description)
+				attest(declaredMorph.rawIn.description).equals(declared.description)
+				attest(declaredMorph.rawOut.description).equals(declared.description)
 
 				// declared validator should not be called
 				attest(declaredMorph("{}")).equals({})
@@ -75,7 +75,7 @@ contextualize(() => {
 					morphs: [(s: string) => s.slice(1), declaredMorph]
 				})
 
-				attest(pipeToNode.out.description).equals(declared.description)
+				attest(pipeToNode.rawOut.description).equals(declared.description)
 
 				attest(pipeToNode("z{}")).equals({})
 			})

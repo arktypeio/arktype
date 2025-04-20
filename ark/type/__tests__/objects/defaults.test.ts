@@ -614,7 +614,7 @@ contextualize(() => {
 					() => type({ foo: [["number[]", "|", "string"], "=", true] })
 				)
 					.throws.snap(
-						"ParseError: Default for foo must be a string or an array (was boolean)"
+						"ParseError: Default for foo must be a string or an object (was boolean)"
 					)
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."

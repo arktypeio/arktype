@@ -323,12 +323,30 @@ export abstract class BaseNode<
 		return this(data, pipedFromCtx, null)
 	}
 
-	get in(): BaseNode {
-		return this.cacheGetter("in", this.getIo("in")) as never
+	/** rawIn should be used internally instead */
+	get in(): unknown {
+		// ensure the node has been finalized if in is being used externally
+		return this.cacheGetter(
+			"in",
+			this.rawIn.isRoot() ? this.$.finalize(this.rawIn) : this.rawIn
+		)
 	}
 
-	get out(): BaseNode {
-		return this.cacheGetter("out", this.getIo("out")) as never
+	get rawIn(): BaseNode {
+		return this.cacheGetter("rawIn", this.getIo("in")) as never
+	}
+
+	/** rawOut should be used internally instead */
+	get out(): unknown {
+		// ensure the node has been finalized if out is being used externally
+		return this.cacheGetter(
+			"out",
+			this.rawOut.isRoot() ? this.$.finalize(this.rawOut) : this.rawOut
+		)
+	}
+
+	get rawOut(): BaseNode {
+		return this.cacheGetter("rawOut", this.getIo("out")) as never
 	}
 
 	// Should be refactored to use transform
@@ -347,8 +365,11 @@ export abstract class BaseNode<
 
 				ioInner[k] =
 					isArray(childValue) ?
-						childValue.map(child => child[ioKind])
-					:	childValue[ioKind]
+						childValue.map(child =>
+							ioKind === "in" ? child.rawIn : child.rawOut
+						)
+					: ioKind === "in" ? childValue.rawIn
+					: childValue.rawOut
 			} else ioInner[k] = v
 		}
 

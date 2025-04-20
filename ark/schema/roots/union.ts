@@ -128,7 +128,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 									] as Morph.Node
 									branches[matchingMorphIndex] = ctx.$.node("morph", {
 										...matchingMorph.inner,
-										in: matchingMorph.in.rawOr(node.in)
+										in: matchingMorph.rawIn.rawOr(node.rawIn)
 									})
 								}
 							} else branches.push(node)
@@ -255,7 +255,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
-		n.in.hasKind("unit")
+		n.rawIn.hasKind("unit")
 	)
 
 	discriminant = this.discriminate()
@@ -481,7 +481,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (this.branches.length < 2 || this.isCyclic) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, n) => [
-				`${(n.in as Unit.Node).serializedValue}`,
+				`${(n.rawIn as Unit.Node).serializedValue}`,
 				n.hasKind("morph") ? n : (true as const)
 			])
 
@@ -497,7 +497,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const l = this.branches[lIndex]
 			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
 				const r = this.branches[rIndex]
-				const result = intersectNodesRoot(l.in, r.in, l.$)
+				const result = intersectNodesRoot(l.rawIn, r.rawIn, l.$)
 				if (!(result instanceof Disjoint)) continue
 
 				for (const entry of result) {
@@ -708,7 +708,7 @@ const resolveCase = (
 		)
 			resolvedEntries?.push(entry)
 		else {
-			if (entry.branch.in.overlaps(discriminantNode)) {
+			if (entry.branch.rawIn.overlaps(discriminantNode)) {
 				// include cases where an object not including the
 				// discriminant path might have that value present as an undeclared key
 				const overlapping = pruneDiscriminant(entry.branch, ctx.location)!
@@ -949,18 +949,18 @@ export const reduceBranches = ({
 				continue
 			}
 			const intersection = intersectNodesRoot(
-				branches[i].in,
-				branches[j].in,
+				branches[i].rawIn,
+				branches[j].rawIn,
 				branches[0].$
 			)!
 			if (intersection instanceof Disjoint) continue
 
 			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
 
-			if (intersection.equals(branches[i].in)) {
+			if (intersection.equals(branches[i].rawIn)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
 				uniquenessByIndex[i] = !!ordered
-			} else if (intersection.equals(branches[j].in))
+			} else if (intersection.equals(branches[j].rawIn))
 				uniquenessByIndex[j] = false
 		}
 	}
