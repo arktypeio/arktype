@@ -849,7 +849,7 @@ contextualize(() => {
 					d: o => o.value,
 					default: "assert"
 				})
-		).type.errors(`ErrorType<"d must be a possible string value", {}>`)
+		).type.errors(`ErrorType<"d must be a possible string value">`)
 	})
 
 	it("lone invalid string key", () => {

@@ -199,7 +199,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					`ErrorType<"Invalid argument for k", [expected: string | symbol]>`
+					`ErrorType<["Invalid argument for k", expected: string | symbol]>`
 				)
 		})
 
@@ -453,7 +453,7 @@ contextualize(() => {
 						)
 					)
 					.type.errors(
-						`ErrorType<"Invalid argument for t", [expected: { foo: number; }]>`
+						`ErrorType<["Invalid argument for t", expected: { foo: number; }]>`
 					)
 			})
 
@@ -577,15 +577,21 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					`ErrorType<"Invalid argument for N", [expected: { value: number; }]>`
+					`ErrorType<["Invalid argument for N", expected: { value: number; }]>`
 				)
 
 			attest(() =>
 				// @ts-expect-error
-				validateExternalGeneric({ numb: "numb" }, ["strin"])
+				validateExternalGeneric("strin", { numb: "number" })
 			).completions({
-				numb: ["number"],
 				strin: ["string"]
+			})
+
+			attest(() =>
+				// @ts-expect-error
+				validateExternalGeneric("string", { numb: "numb" })
+			).completions({
+				numb: ["number"]
 			})
 		})
 	})

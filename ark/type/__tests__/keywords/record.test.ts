@@ -41,6 +41,6 @@ contextualize(() => {
 					"boolean"
 				)
 			)
-			.type.errors(`ErrorType<"Invalid argument for K", [expected: Key]>`)
+			.type.errors(`ErrorType<["Invalid argument for K", expected: Key]>`)
 	})
 })

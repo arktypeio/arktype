@@ -27,9 +27,7 @@ contextualize(() => {
 		attest(
 			// @ts-expect-error
 			declare<[string, number]>().type(["string", "boolean"])
-		).type.errors(
-			`Type 'string' is not assignable to type '{ declared: number; inferred: boolean; }'`
-		)
+		).type.errors(`declared: number; inferred: boolean`)
 	})
 
 	it("too short", () => {
@@ -67,13 +65,13 @@ contextualize(() => {
 		attest(
 			// @ts-expect-error
 			declare<"foo" | "bar">().type(["'foo'", "|", "'baz'"])
-		).type.errors(`{ declared: "foo" | "bar"; inferred: "foo" | "baz"; }`)
+		).type.errors(`declared: "foo" | "bar"; inferred: "foo" | "baz"`)
 	})
 
 	it("narrower", () => {
 		// @ts-expect-error
 		attest(() => declare<string>().type("'foo'")).type.errors(
-			`Argument of type 'string' is not assignable to parameter of type '{ declared: string; inferred: "foo"; }'`
+			`declared: string; inferred: "foo"`
 		)
 	})
 
@@ -83,9 +81,7 @@ contextualize(() => {
 				// @ts-expect-error
 				a: "unknown"
 			})
-		).type.errors(
-			`Type 'string' is not assignable to type '{ declared: string; inferred: unknown; }'`
-		)
+		).type.errors(`declared: string; inferred: unknown`)
 	})
 
 	it("missing key", () => {
@@ -150,6 +146,8 @@ contextualize(() => {
 
 	it("missing generic argument", () => {
 		// @ts-expect-error
-		attest(() => declare().type({})).type.errors.snap()
+		attest(() => declare().type({})).type.errors.snap(
+			"Argument of type '{}' is not assignable to parameter of type '\"declare<ExternalType>() requires a generic argument \"'."
+		)
 	})
 })
