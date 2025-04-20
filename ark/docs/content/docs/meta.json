@@ -12,6 +12,7 @@
 		"integrations",
 		"scopes",
 		"generics",
+		"declare",
 		"blog",
 		"faq"
 	]

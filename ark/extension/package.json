@@ -66,7 +66,7 @@
 					"message": "$1"
 				},
 				{
-					"matcher": ".*brand\": \"ErrorType\";(.*) \\}'\\.$",
+					"matcher": ".*brand\": \"ErrorType\"; (.*) \\}'\\.$",
 					"message": "$1"
 				},
 				{

@@ -1,0 +1,25 @@
+---
+title: Declare
+---
+
+If your ArkType definitions are your source of truth, it's easy to infer out the type with an expression like `type User = typeof User.infer`.
+
+But what if you need to define a Type matching a pre-existing external type?
+
+The `declare` API allows just that, with autocomplete for object keys and clear, type-level errors for mismatches:
+
+```ts
+// @errors: 2322
+type Expected = { a: string; b?: number }
+
+const T = type.declare<Expected>().type({
+	a: "string",
+	"b?": "number"
+})
+
+const Bad = type.declare<Expected>().type({
+	a: "string",
+	// will error if the inferred type is too wide *or* too narrow
+	"b?": "1"
+})
+```
