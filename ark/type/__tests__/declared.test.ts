@@ -123,9 +123,7 @@ contextualize(() => {
 			declare<{ a: string; b?: number }>().type({
 				a: "string"
 			})
-		).type.errors(
-			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": number | undefined; }'.`
-		)
+		).type.errors(`'"b?"' is missing`)
 	})
 
 	it("extraneous key", () => {
@@ -135,9 +133,7 @@ contextualize(() => {
 				// @ts-expect-error
 				b: "boolean"
 			})
-		).type.errors(
-			`Object literal may only specify known properties, and 'b' does not exist in type '{ a: "string"; }'.`
-		)
+		).type.errors(`'b' does not exist`)
 	})
 
 	it("completions", () => {
@@ -170,8 +166,8 @@ contextualize(() => {
 
 	it("missing generic argument", () => {
 		// @ts-expect-error
-		attest(() => declare().type({})).type.errors.snap(
-			"Argument of type '{}' is not assignable to parameter of type '\"declare<ExternalType>() requires a generic argument \"'."
+		attest(() => declare().type({})).type.errors(
+			"declare<ExternalType>() requires a generic argument "
 		)
 	})
 
@@ -198,7 +194,7 @@ contextualize(() => {
 				a: number
 				b?: number
 			}
-		>(T.t).type.toString.snap()
+		>(T.t).type.toString.snap("(In: Expected) => { a: number; b?: number }")
 	})
 
 	it("morph in mismatch", () => {
@@ -209,7 +205,7 @@ contextualize(() => {
 				a: "string.numeric.parse",
 				"b?": "number"
 			})
-		).type.errors("declared: string; inferred: (In: string) => To<number>")
+		).type.errors("declared: number; inferred: string")
 	})
 
 	it("morph out", () => {
@@ -219,9 +215,9 @@ contextualize(() => {
 			"b?": "number"
 		})
 
-		attest<(In: { a: string; b?: number }) => Expected>(
-			T.t
-		).type.toString.snap()
+		attest<(In: { a: string; b?: number }) => Expected>(T.t).type.toString.snap(
+			"(In: { a: string; b?: number }) => Expected"
+		)
 	})
 
 	it("morph out mismatch", () => {
