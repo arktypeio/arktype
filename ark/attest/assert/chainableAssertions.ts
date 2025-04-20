@@ -1,4 +1,4 @@
-import { caller } from "@ark/fs"
+import { caller, positionToString } from "@ark/fs"
 import {
 	printable,
 	snapshot,
@@ -20,6 +20,7 @@ import type { Completions } from "../cache/writeAssertionCache.ts"
 import { getConfig } from "../config.ts"
 import { chainableNoOpProxy } from "../utils.ts"
 import {
+	MissingSnapshotError,
 	TypeAssertionMapping,
 	assertEqualOrMatching,
 	assertEquals,
@@ -124,9 +125,15 @@ export class ChainableAssertions implements AssertionRecord {
 			const snapName = this.ctx.lastSnapName ?? "snap"
 			const expectedSerialized = snapshot(args[0])
 			if (!args.length || this.ctx.cfg.updateSnapshots) {
+				const position = caller()
+				if (this.ctx.cfg.failOnMissingSnapshots) {
+					throw new MissingSnapshotError(
+						`.${snapName}() at ${positionToString(position)} must be populated.`
+					)
+				}
 				if (this.snapRequiresUpdate(expectedSerialized)) {
 					const snapshotArgs: SnapshotArgs = {
-						position: caller(),
+						position,
 						serializedValue: this.serializedActual,
 						snapFunctionName: snapName
 					}

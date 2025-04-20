@@ -22,6 +22,7 @@ type BaseAttestConfig = {
 	tsconfig: string | null | undefined
 	compilerOptions: ts.CompilerOptions
 	updateSnapshots: boolean
+	failOnMissingSnapshots: boolean
 	/** A string or list of strings representing the TypeScript version aliases to run.
 	 *
 	 * Aliases must be specified as a package.json dependency or devDependency beginning with "typescript".
@@ -65,6 +66,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
 	compilerOptions: {},
 	attestAliases: ["attest", "attestInternal"],
+	failOnMissingSnapshots: "CI" in process.env,
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,

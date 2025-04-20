@@ -20,6 +20,8 @@ export const throwAssertionError = ({
 	throw e
 }
 
+export class MissingSnapshotError extends Error {}
+
 export type AssertFn = (
 	expected: unknown,
 	actual: unknown,

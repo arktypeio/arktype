@@ -1,8 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { badFnReturnTypeMessage, type TypedFn } from "arktype/internal/fn.ts"
-import type { Return } from "arktype/internal/nary.ts"
+import {
+	badFnReturnTypeMessage,
+	type Return,
+	type TypedFn
+} from "arktype/internal/fn.ts"
 import {
 	multipleVariadicMesage,
 	optionalOrDefaultableAfterVariadicMessage
@@ -259,7 +262,7 @@ contextualize(() => {
 
 		// signature should be wider from the declaration with name "v" from implementation
 		// 0 | 1 should be inferred from output since undeclared
-		attest(f).type.toString.snap()
+		attest(f).type.toString.snap("TypedFn<(v: string) => 0 | 1, {}, {}>")
 	})
 
 	it("signature precedence explicit return", () => {

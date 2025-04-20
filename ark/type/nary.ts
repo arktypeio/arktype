@@ -1,11 +1,5 @@
 import type { Morph } from "@ark/schema"
-import type {
-	applyElementLabels,
-	conform,
-	ErrorType,
-	Fn,
-	merge
-} from "@ark/util"
+import type { ErrorType, merge } from "@ark/util"
 import type {
 	distill,
 	inferIntersection,
@@ -15,15 +9,9 @@ import type {
 	inferNaryMerge,
 	inferNaryPipe
 } from "./attributes.ts"
-import type { TypedFn } from "./fn.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type { NonObjectMergeErrorMessage } from "./methods/object.ts"
-import type { validateInnerDefinition } from "./parser/definition.ts"
-import type {
-	inferTupleLiteral,
-	validateTupleLiteral
-} from "./parser/tupleLiteral.ts"
 import type { Type } from "./type.ts"
 
 export type NaryUnionParser<$> = {
@@ -2658,65 +2646,4 @@ export type NaryPipeParser<$, initial = unknown> = {
 	<const morphs extends readonly Morph[], r = Type<inferNaryPipe<morphs>, $>>(
 		...defs: morphs
 	): r extends infer _ ? _ : never
-}
-
-export declare namespace Return {
-	export interface introspectable {
-		introspectableReturn: true
-	}
-}
-
-type validateFnArgs<args, $> =
-	args extends readonly unknown[] ?
-		args extends readonly [...infer paramDefs, ":", infer returnDef] ?
-			readonly [
-				...validateFnParamDefs<paramDefs, $>,
-				":",
-				type.validate<returnDef, $>
-			]
-		:	validateFnParamDefs<args, $>
-	:	never
-
-type validateFnParamDefs<paramDefs extends readonly unknown[], $> =
-	paramDefs extends validateTupleLiteral<paramDefs, $, {}> ? paramDefs
-	: paramDefs extends {
-		[i in keyof paramDefs]: paramDefs[i] extends "..." ? paramDefs[i]
-		:	validateInnerDefinition<paramDefs[i], $, {}>
-	} ?
-		validateTupleLiteral<paramDefs, $, {}>
-	:	{ [i in keyof paramDefs]: validateInnerDefinition<paramDefs[i], $, {}> }
-
-export type NaryFnParser<$> = {
-	<
-		const args,
-		paramsT = inferTupleLiteral<
-			args extends readonly [...infer params, ":", unknown] ? params : args,
-			$,
-			{}
-		>,
-		returnT = args extends readonly [...unknown[], ":", infer returnDef] ?
-			type.infer<returnDef, $>
-		:	unknown
-	>(
-		...args: { [i in keyof args]: conform<args[i], validateFnArgs<args, $>[i]> }
-	): <
-		internalSignature extends (
-			...args: distill.Out<paramsT>
-		) => distill.In<returnT>,
-		externalSignature extends Fn = (
-			...args: applyElementLabels<
-				distill.In<paramsT>,
-				Parameters<internalSignature>
-			>
-		) => args extends readonly [...unknown[], ":", unknown] ?
-			distill.Out<returnT>
-		:	ReturnType<internalSignature>
-	>(
-		implementation: internalSignature
-	) => TypedFn<
-		externalSignature,
-		$,
-		args extends readonly [...unknown[], ":", unknown] ? Return.introspectable
-		:	{}
-	>
 }
