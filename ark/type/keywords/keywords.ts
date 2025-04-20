@@ -1,6 +1,7 @@
 import type { ArkErrors, arkKind, flatResolutionsOf } from "@ark/schema"
 import type { Brand, inferred } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
+import type { DeclarationParser } from "../declare.ts"
 import type { FnParser } from "../fn.ts"
 import type { GenericParser } from "../generic.ts"
 import type { MatchParser } from "../match.ts"
@@ -13,7 +14,6 @@ import type {
 } from "../parser/definition.ts"
 import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
 import type {
-	DeclarationParser,
 	DefinitionParser,
 	SchemaParser,
 	Type,

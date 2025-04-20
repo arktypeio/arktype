@@ -44,6 +44,7 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
+import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
 	parseGenericParamName,
@@ -84,7 +85,6 @@ import { ArkTypeScanner } from "./parser/shift/scanner.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
-	type DeclarationParser,
 	type DefinitionParser,
 	type EnumeratedTypeParser,
 	type InstanceOfTypeParser,

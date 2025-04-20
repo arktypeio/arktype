@@ -119,4 +119,37 @@ contextualize(() => {
 			`Object literal may only specify known properties, and 'b' does not exist in type '{ a: "string"; }'.`
 		)
 	})
+
+	it("completions", () => {
+		attest(() =>
+			declare<{ a: string; b?: number }>().type({
+				// @ts-expect-error
+				"": type.unknown
+			})
+		).completions({
+			"": ["a", "b?"]
+		})
+	})
+
+	it("nested completions", () => {
+		attest(() =>
+			type
+				.declare<{
+					a: {
+						nested: boolean[]
+					}
+				}>()
+				.type({
+					// @ts-expect-error
+					a: { "": "boolean[]" }
+				})
+		).completions({
+			"": ["nested"]
+		})
+	})
+
+	it("missing generic argument", () => {
+		// @ts-expect-error
+		attest(() => declare().type({})).type.errors.snap()
+	})
 })

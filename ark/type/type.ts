@@ -16,6 +16,7 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import type { DeclarationParser } from "./declare.ts"
 import type { FnParser } from "./fn.ts"
 import type {
 	Generic,
@@ -35,7 +36,6 @@ import type {
 	NaryPipeParser,
 	NaryUnionParser
 } from "./nary.ts"
-import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
@@ -45,8 +45,7 @@ import type {
 	InternalScope,
 	ModuleParser,
 	Scope,
-	ScopeParser,
-	bindThis
+	ScopeParser
 } from "./scope.ts"
 
 /** The convenience properties attached to `type` */
@@ -145,6 +144,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	module: ModuleParser
 	scope: ScopeParser
 	define: DefinitionParser<$>
+	declare: DeclarationParser<$>
 	generic: GenericParser<$>
 	match: MatchParser<$>
 	schema: SchemaParser<$>
@@ -223,6 +223,7 @@ export class InternalTypeParser extends Callable<
 				raw: $.parse as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
+				declare: $.declare as never,
 				define: $.define as never,
 				match: $.match as never,
 				generic: $.generic as never,
@@ -277,13 +278,6 @@ export class InternalTypeParser extends Callable<
 			}
 		)
 	}
-}
-
-export type DeclarationParser<$> = <preinferred>() => {
-	// for some reason, making this a const parameter breaks preinferred validation
-	type: <const def>(
-		def: validateDeclared<preinferred, def, $, bindThis<def>>
-	) => Type<preinferred, $>
 }
 
 export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>

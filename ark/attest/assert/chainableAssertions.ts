@@ -346,20 +346,14 @@ type snapProperty<expected, kind extends AssertionKind> = {
 export type Unwrapper<expected = unknown> = (opts?: UnwrapOptions) => expected
 
 export const nonOverlappingSatisfiesMessage =
-	"The type of your actual value and expected satisfies constraint have no overlap"
+	"This type has no overlap with your satisfies constraint"
 
 export type nonOverlappingSatisfiesMessage =
 	typeof nonOverlappingSatisfiesMessage
 
 type validateExpectedOverlaps<expected, satisfies> =
 	isDisjoint<expected, satisfies> extends true ?
-		ErrorType<
-			nonOverlappingSatisfiesMessage,
-			{
-				actual: expected
-				satisfies: satisfies
-			}
-		>
+		ErrorType<nonOverlappingSatisfiesMessage>
 	:	unknown
 
 export type comparableValueAssertion<expected, kind extends AssertionKind> = {

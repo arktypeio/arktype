@@ -1,4 +1,5 @@
 import type { brand } from "./generics.ts"
+import type { CastableBase } from "./records.ts"
 
 export class InternalArktypeError extends Error {}
 
@@ -44,13 +45,8 @@ export type ZeroWidthSpace = typeof zeroWidthSpace
 export type ErrorMessage<message extends string = string> =
 	`${message}${ZeroWidthSpace}`
 
-export interface ErrorType<
-	message extends string = string,
-	ctx extends {} = {}
-> {
+export interface ErrorType<ctx extends {} = {}> extends CastableBase<ctx> {
 	[brand]: "ErrorType"
-	message: message
-	ctx: ctx
 }
 
 export type Completion<text extends string = string> =

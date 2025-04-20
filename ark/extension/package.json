@@ -66,6 +66,10 @@
 					"message": "$1"
 				},
 				{
+					"matcher": ".*brand\": \"ErrorType\";(.*) \\}'\\.$",
+					"message": "$1"
+				},
+				{
 					"matcher": ".*'\"(.*\\u200A)\"'\\.$",
 					"message": "$1"
 				},

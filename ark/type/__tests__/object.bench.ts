@@ -18,6 +18,22 @@ bench("object literal", () =>
 	})
 ).types([2492, "instantiations"])
 
+bench("declared object literal", () => {
+	type
+		.declare<{
+			a: string[]
+			b: number[]
+			c: {
+				nested: boolean[]
+			}
+		}>()
+		.type({
+			a: "string[]",
+			b: "number[]",
+			c: { nested: "boolean[]" }
+		})
+}).types([4139, "instantiations"])
+
 bench("object literal with optional keys", () =>
 	type({
 		"a?": "string[]",
