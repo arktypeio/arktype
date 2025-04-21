@@ -2147,7 +2147,7 @@ os.input(
 
 
 ---
-title: Select
+title: Internal
 ---
 
 Types have an extremely powerful internal representation defined in `@ark/schema` that is primarily exposed through the `.internal` property on each Type.
@@ -2377,6 +2377,12 @@ More details on the type system to come!
 
 #### select
 
+<Callout type="warn" title="select is not fully stable!">
+
+`select` relies on the internal representation defined in `@ark/schema`, which although relatively mature, is not guaranteed semver-stable.
+
+</Callout>
+
 `select` is the top-level first method we're introducing for interacting with a Type based on its internal representation.
 
 It can be used to filter a Type's references:
@@ -2405,12 +2411,6 @@ const minLengthConstraints = T.select({
 	boundary: "shallow"
 }) // [MinLengthNode<1>]
 ```
-
-<Callout type="warn" title="select is not fully stable!">
-
-`select` relies on the internal representation defined in `@ark/schema`, which although relatively mature, is not guaranteed semver-stable.
-
-</Callout>
 
 
 ---
