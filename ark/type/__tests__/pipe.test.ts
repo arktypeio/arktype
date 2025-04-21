@@ -167,14 +167,18 @@ contextualize(() => {
 	})
 
 	it("within type", () => {
-		const T = type(["boolean", "=>", data => !data])
+		const T = type([
+			"boolean",
+			"=>",
+			function notMorph(data) {
+				return !data
+			}
+		])
 		attest<Type<(In: boolean) => Out<boolean>>>(T)
-
-		const serializedMorphs = T.internal.assertHasKind("morph").serializedMorphs
 
 		attest(T.json).snap({
 			in: [{ unit: false }, { unit: true }],
-			morphs: serializedMorphs
+			morphs: ["$ark.notMorph"]
 		})
 
 		const out = T(true)
@@ -340,13 +344,13 @@ contextualize(() => {
 	})
 
 	it("doesn't pipe on error", () => {
-		const A = type({ a: "number" }).pipe(o => o.a + 1)
+		const A = type({ a: "number" }).pipe(function addOne(o) {
+			return o.a + 1
+		})
 
-		const aMorphs = A.internal.assertHasKind("morph").serializedMorphs
-
-		const B = type({ a: "string" }, "=>", o => o.a + "!")
-
-		const bMorphs = B.internal.assertHasKind("morph").serializedMorphs
+		const B = type({ a: "string" }, "=>", function appendExclamation(o) {
+			return o.a + "!"
+		})
 
 		const T = B.or(A)
 
@@ -357,11 +361,11 @@ contextualize(() => {
 		attest(T.json).snap([
 			{
 				in: { required: [{ key: "a", value: "number" }], domain: "object" },
-				morphs: aMorphs
+				morphs: ["$ark.addOne"]
 			},
 			{
 				in: { required: [{ key: "a", value: "string" }], domain: "object" },
-				morphs: bMorphs
+				morphs: ["$ark.appendExclamation"]
 			}
 		])
 
@@ -399,18 +403,22 @@ contextualize(() => {
 	it("intersection", () => {
 		const $ = scope({
 			b: "3.14",
-			a: ["number", "=>", data => `${data}`],
+			a: [
+				"number",
+				"=>",
+				function stringifyNumberMorph(data) {
+					return `${data}`
+				}
+			],
 			aAndB: () => $.type("a&b"),
 			bAndA: () => $.type("b&a")
 		})
 		const types = $.export()
-		assertNodeKind(types.bAndA.internal, "morph")
-		assertNodeKind(types.aAndB.internal, "morph")
 
 		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: types.aAndB.internal.serializedMorphs
+			morphs: ["$ark.stringifyNumberMorph"]
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
@@ -426,7 +434,6 @@ contextualize(() => {
 		const types = $.export()
 
 		attest(types.c.t).type.toString.snap("(In: { a: 1; b: 2 }) => Out<string>")
-		assertNodeKind(types.c.internal, "morph")
 		attest(types.c.json).snap({
 			in: {
 				domain: "object",
@@ -435,7 +442,7 @@ contextualize(() => {
 					{ key: "b", value: { unit: 2 } }
 				]
 			},
-			morphs: types.c.internal.serializedMorphs
+			morphs: ["$ark._directlyNestedStringToLength"]
 		})
 	})
 
@@ -511,42 +518,47 @@ contextualize(() => {
 
 	it("chained reference", () => {
 		const $ = scope({
-			a: type("string").pipe(s => s.length),
-			b: () => $.type("a").pipe(n => n === 0)
+			a: type("string").pipe(function stringToLength(s) {
+				return s.length
+			}),
+			b: () =>
+				$.type("a").pipe(function isZeroLength(n) {
+					return n === 0
+				})
 		})
 		const types = $.export()
 		attest<(In: string) => Out<boolean>>(types.b.t)
-		assertNodeKind(types.b.internal, "morph")
+
 		attest(types.b.json).snap({
 			in: "string",
-			morphs: types.b.internal.serializedMorphs
+			morphs: ["$ark.stringToLength", "$ark.isZeroLength"]
 		})
 	})
 
 	it("chained nested", () => {
 		const $ = scope({
-			a: type("string").pipe(s => s.length),
-			b: () => $.type({ a: "a" }).pipe(({ a }) => a === 0)
+			a: type("string").pipe(function chainedNestedToLength(s) {
+				return s.length
+			}),
+			b: () =>
+				$.type({ a: "a" }).pipe(function chainedNestedGetA({ a }) {
+					return a === 0
+				})
 		})
 
 		const types = $.export()
 		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
-		assertNodeKind(types.b.internal, "morph")
-		assertNodeKind(types.a.internal, "morph")
 		attest(types.b.json).snap({
 			in: {
-				domain: "object",
 				required: [
 					{
 						key: "a",
-						value: {
-							in: "string",
-							morphs: types.a.internal.serializedMorphs
-						}
+						value: { in: "string", morphs: ["$ark.chainedNestedToLength"] }
 					}
-				]
+				],
+				domain: "object"
 			},
-			morphs: types.b.internal.serializedMorphs
+			morphs: ["$ark.chainedNestedGetA"]
 		})
 	})
 
@@ -815,7 +827,9 @@ contextualize(() => {
 	it("allows undiscriminated union if morphs are equal", () => {
 		const T = type({ foo: "1" })
 			.or({ bar: "1" })
-			.pipe(o => Object.values(o))
+			.pipe(function getObjectValues(o) {
+				return Object.values(o)
+			})
 
 		attest<
 			(
@@ -829,14 +843,12 @@ contextualize(() => {
 			) => Out<1[]>
 		>(T.t)
 
-		const serializedMorphs = T.internal.assertHasKind("morph").serializedMorphs
-
 		attest(T.json).snap({
 			in: [
 				{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
 				{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
 			],
-			morphs: serializedMorphs
+			morphs: ["$ark.getObjectValues"]
 		})
 		attest(T({ foo: 1 })).snap([1])
 		attest(T({ bar: 1 })).snap([1])

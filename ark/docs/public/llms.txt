@@ -4507,6 +4507,224 @@ const MyInelegantType = type(() =>
 
 
 ---
+title: Select
+---
+
+Types have an extremely powerful internal representation defined in `@ark/schema` that is primarily exposed through the `.internal` property on each Type.
+
+Though APIs under `.internal` are not officially frozen, they are stable enough that we want to start giving users more direct access to some of the introspection capabilities they provide.
+
+The first method through which we're doing that is `select` for filtering the nodes referenced from a Type:
+
+```ts
+const T = type({
+	name: "string",
+	flag: "0 | 1"
+})
+
+const literals = T.select("unit")
+```
+
+#### Node kinds
+
+All Type nodes have a `kind` property indicating their purpose, structure and special properties.
+
+Here is a list of all possible node kinds:
+
+<div className="overflow-auto">
+	<table className="w-full">
+		<thead>
+			<tr>
+				<th>Kind</th>
+				<th>Description</th>
+				<th>Examples</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>
+					<code>alias</code>
+				</td>
+				<td>References a cyclic node by name</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>domain</code>
+				</td>
+				<td>
+					One of 5 non-enumerable type sets corresonding to : "string",
+					"number", "object", ""
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>unit</code>
+				</td>
+				<td>
+					Represents a specific literal value (e.g., <code>true</code>,{" "}
+					<code>42</code>, <code>"hello"</code>)
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>proto</code>
+				</td>
+				<td>
+					Represents an instance of a constructor (e.g., <code>Date</code>,{" "}
+					<code>RegExp</code>, <code>Array</code>)
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>union</code>
+				</td>
+				<td>
+					Represents a union of different types (e.g.,{" "}
+					<code>string | number</code>)
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>morph</code>
+				</td>
+				<td>
+					Represents transformations between types with validation and
+					conversion logic
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>intersection</code>
+				</td>
+				<td>Combines multiple types with logical</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>sequence</code>
+				</td>
+				<td>
+					Defines array patterns with tuples, rest elements, and variadic parts
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>divisor</code>
+				</td>
+				<td>Requires numbers to be divisible by a specific value</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>required</code>
+				</td>
+				<td>Defines a required property in an object structure</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>optional</code>
+				</td>
+				<td>Defines an optional property in an object structure</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>index</code>
+				</td>
+				<td>
+					Defines index signatures for objects (
+					<code>[key: string]: value</code>)
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>pattern</code>
+				</td>
+				<td>Enforces string pattern matching via regular expressions</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>predicate</code>
+				</td>
+				<td>Validates values using custom functions/predicates</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>structure</code>
+				</td>
+				<td>
+					Organizes object properties (required/optional) and index signatures
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>min</code>
+				</td>
+				<td>Enforces a minimum numeric value constraint</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>max</code>
+				</td>
+				<td>Enforces a maximum numeric value constraint</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>minLength</code>
+				</td>
+				<td>Enforces a minimum length for strings or arrays</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>maxLength</code>
+				</td>
+				<td>Enforces a maximum length for strings or arrays</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>exactLength</code>
+				</td>
+				<td>Requires strings or arrays to have a specific length</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>after</code>
+				</td>
+				<td>Requires dates to be after a specific date</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td>
+					<code>before</code>
+				</td>
+				<td>Requires dates to be before a specific date</td>
+				<td></td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+More details on the type system to come!
+
+
+---
 title: Traversal API
 ---
 

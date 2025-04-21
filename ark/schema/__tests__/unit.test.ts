@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { assertNodeKind, registeredReference, rootSchema } from "@ark/schema"
+import { registeredReference, rootSchema } from "@ark/schema"
 
 contextualize(() => {
 	it("string allows", () => {
@@ -28,9 +28,8 @@ contextualize(() => {
 		const T = rootSchema({ unit: 7n })
 		// serializes to string for JSON
 		attest(T.json).snap({ unit: "7n" })
-		assertNodeKind(T.internal, "unit")
 		// preserves the bigint for context
-		attest(T.internal.errorContext).equals({
+		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
 			description: "7n",
 			unit: 7n,
@@ -43,9 +42,8 @@ contextualize(() => {
 
 	it("undefined", () => {
 		const T = rootSchema({ unit: undefined })
-		assertNodeKind(T.internal, "unit")
 		attest(T.json).snap({ unit: "undefined" })
-		attest(T.internal.errorContext).equals({
+		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
 			description: "undefined",
 			unit: undefined,
@@ -60,11 +58,10 @@ contextualize(() => {
 		// this symbol description should not be reused in other tests
 		const status = Symbol("status")
 		const T = rootSchema({ unit: status })
-		assertNodeKind(T.internal, "unit")
 		// serializes to string for JSON
 		attest(T.json).snap({ unit: "$ark.status" })
 		// preserves the symbol for context
-		attest(T.internal.errorContext).equals({
+		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
 			description: "Symbol(status)",
 			unit: status,
@@ -78,9 +75,8 @@ contextualize(() => {
 		const o = new Object()
 		const ref = registeredReference(o)
 		const T = rootSchema({ unit: o })
-		assertNodeKind(T.internal, "unit")
 		attest(T.json).snap({ unit: ref })
-		attest(T.internal.errorContext).equals({
+		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
 			description: "{}",
 			unit: o,
