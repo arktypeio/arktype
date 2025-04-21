@@ -1694,6 +1694,88 @@ const SpecialNumber = type("number", "@", "a special number")
 
 </SyntaxTabs>
 
+For more control over how to apply the config to the Type's internal structure, a `NodeSelector` can be specified following the config:
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const SelectivelyConfigured = type({
+	name: "string",
+	age: "number"
+}).configure(
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
+)
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const SelectivelyConfigured = type([
+	{
+		name: "string",
+		age: "number"
+	},
+	"@",
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		// tuple expression syntax doesn't support narrowing d from kind here
+		where: d => d.assertHasKind("domain").domain === "string"
+	}
+])
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const SelectivelyConfigured = type(
+	{
+		name: "string",
+		age: "number"
+	},
+	"@",
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		// args expression syntax doesn't support narrowing d from kind here
+		where: d => d.assertHasKind("domain").domain === "string"
+	}
+)
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+For more details on the select API, [see the full docs](/docs/introspection#select).
+
 ### Cast
 
 Sometimes, you may want to directly specify how a `Type` should be inferred without affecting the runtime behavior. In these cases, you can use a cast expression.
@@ -2879,7 +2961,7 @@ Constraint nodes exist on an `intersection` (or its `structure`) and narrow the 
 
 ##### Refinements
 
-Primitive constraints that apply to the data shallowly.
+Constraints that apply directly to the root of an intersection (includes the base `structure` node but not [its children](#structural)).
 
 <div className="overflow-auto">
 	<table className="w-full">
@@ -2958,7 +3040,7 @@ Primitive constraints that apply to the data shallowly.
 
 ##### Structural
 
-These constraints define the shape and properties of objects or arrays.
+These constraints refine a `structure` node, defining the shape of properties and/or array elements.
 
 <div className="overflow-auto">
 	<table className="w-full">
@@ -2972,28 +3054,23 @@ These constraints define the shape and properties of objects or arrays.
 		<tbody>
 			<tr>
 				<td>`sequence`</td>
-				<td>
-					Defines array patterns with tuples, rest elements, and variadic parts
-				</td>
-				<td>`{ sequence: { prefix: ["string", "number"] } }`</td>
+				<td>Array/tuple shape</td>
+				<td>`{ prefix: ["string"], variadic: "number" }`</td>
 			</tr>
 			<tr>
 				<td>`required`</td>
-				<td>Defines a required property in an object structure</td>
+				<td>Required object property</td>
 				<td>`{ key: "id", value: "number" }`</td>
 			</tr>
 			<tr>
 				<td>`optional`</td>
-				<td>Defines an optional property in an object structure</td>
+				<td>Optional object property</td>
 				<td>`{ key: "name", value: "string" }`</td>
 			</tr>
 			<tr>
 				<td>`index`</td>
-				<td>
-					Defines index signatures for objects (
-					`[key: string]: value`)
-				</td>
-				<td>`{ key: "string", value: "boolean" }`</td>
+				<td>Properties allowed by `signature` must conform to `value`</td>
+				<td>`{ signature: "string", value: "boolean" }`</td>
 			</tr>
 		</tbody>
 	</table>
@@ -3037,6 +3114,8 @@ const minLengthConstraints = T.select({
 	boundary: "shallow"
 }) // [MinLengthNode<1>]
 ```
+
+This can be used directly or in combination with the [`configure` API](/docs/expressions#meta) for fine-grained control over which nodes to modify.
 
 
 ---

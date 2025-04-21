@@ -4,6 +4,7 @@ import {
 	GenericRoot,
 	type BaseParseOptions,
 	type Morph,
+	type NodeSelector,
 	type Predicate,
 	type RootSchema,
 	type TypeMeta
@@ -113,7 +114,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "|>" ? [type.validate<rest[0], $>]
-			: one extends "@" ? [TypeMeta.MappableInput]
+			: one extends "@" ? [TypeMeta.MappableInput, NodeSelector?]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r extends infer _ ? _ : never

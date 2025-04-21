@@ -647,6 +647,88 @@ const SpecialNumber = type("number", "@", "a special number")
 
 </SyntaxTabs>
 
+For more control over how to apply the config to the Type's internal structure, a `NodeSelector` can be specified following the config:
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const SelectivelyConfigured = type({
+	name: "string",
+	age: "number"
+}).configure(
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
+)
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const SelectivelyConfigured = type([
+	{
+		name: "string",
+		age: "number"
+	},
+	"@",
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		// tuple expression syntax doesn't support narrowing d from kind here
+		where: d => d.assertHasKind("domain").domain === "string"
+	}
+])
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const SelectivelyConfigured = type(
+	{
+		name: "string",
+		age: "number"
+	},
+	"@",
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		// args expression syntax doesn't support narrowing d from kind here
+		where: d => d.assertHasKind("domain").domain === "string"
+	}
+)
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+For more details on the select API, [see the full docs](/docs/introspection#select).
+
 ### Cast
 
 Sometimes, you may want to directly specify how a `Type` should be inferred without affecting the runtime behavior. In these cases, you can use a cast expression.
