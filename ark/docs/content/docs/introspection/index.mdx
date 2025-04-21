@@ -1,0 +1,265 @@
+---
+title: Introspection
+---
+
+Types have an extremely powerful internal representation defined in `@ark/schema` that is primarily exposed through the `.internal` property on each Type.
+
+Though APIs under `.internal` are not officially frozen, they are stable enough that we want to start giving users more direct access to some of the introspection capabilities they provide.
+
+### Node kinds
+
+All nodes have a `kind` property indicating their purpose, structure and special properties.
+
+#### Roots
+
+The `kind` at the root of a Type will always be one of the following **root** kind.
+
+##### Bases
+
+The simplest root nodes are defined by a single **basis** constraint.
+
+Only a single basis can exist in an intersection. From widest to narrowest:
+
+<div className="overflow-auto">
+	<table className="w-full">
+		<thead>
+			<tr>
+				<th>kind</th>
+				<th>description</th>
+				<th className="w-1/3">example</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>`domain`</td>
+				<td>
+					One of 5 non-enumerable type sets (`string`, `number`, `object`, `bigint`, `symbol`)
+				</td>
+				<td>`{ domain: "string" }`</td>
+			</tr>
+			<tr>
+				<td>`proto`</td>
+				<td>
+					A constructor checked by `instanceof` (implies domain `object`)
+				</td>
+				<td>`{ proto: Date }`</td>
+			</tr>
+			<tr>
+				<td>`unit`</td>
+				<td>
+					An exact value checked by `===` (can be intersected with any other constraint and reduced to itself or `never`)
+				</td>
+				<td>`{ unit: true }`</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+##### Composites
+
+Root kinds are built from references to other nodes.
+
+Will be normalized to appear in approximately the following hierarchical order:
+
+<div className="overflow-auto">
+	<table className="w-full">
+		<thead>
+			<tr>
+				<th>kind</th>
+				<th>description</th>
+				<th className="w-1/3">example</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>`alias`</td>
+				<td>Stores a cyclic reference to a node</td>
+				<td>`{ reference: "$name" }`</td>
+			</tr>
+			<tr>
+				<td>`union`</td>
+				<td>
+					A set of allowed nodes
+				</td>
+				<td>`{ branches: ["string", "Array"] }`</td>
+			</tr>
+			<tr>
+				<td>`morph`</td>
+				<td>
+					One or more transformations applied to valid data
+				</td>
+				<td>`{ in: "string", morphs: [(s) => s.trim()] }`</td>
+			</tr>
+			<tr>
+				<td>`intersection`</td>
+				<td>An intersection of constraints</td>
+				<td>`{ domain: "number", divisor: 5 }`</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+#### Constraints
+
+Constraint nodes exist on an `intersection` (or its `structure`) and narrow the set of values allowed by its [basis](#bases).
+
+##### Refinements
+
+Primitive constraints that apply to the data shallowly.
+
+<div className="overflow-auto">
+	<table className="w-full">
+		<thead>
+			<tr>
+				<th>kind</th>
+				<th>impliedBasis</th>
+				<th>description</th>
+				<th className="w-1/3">example</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>`divisor`</td>
+				<td>`number`</td>
+				<td>Multiple of the specified integer</td>
+				<td>`{ rule: 2 }`</td>
+			</tr>
+			<tr>
+				<td>`pattern`</td>
+				<td>`string`</td>
+				<td>Matched by a regex</td>
+				<td>`{ rule: "^[a-z]+$" }`</td>
+			</tr>
+			<tr>
+				<td>`min`</td>
+				<td>`number`</td>
+				<td>Numeric minimum (inclusive by default)</td>
+				<td>`{ rule: 0, exclusive: true }`</td>
+			</tr>
+			<tr>
+				<td>`max`</td>
+				<td>`number`</td>
+				<td>Numeric maximum (inclusive by default)</td>
+				<td>`{ rule: 100 }`</td>
+			</tr>
+			<tr>
+				<td>`minLength`</td>
+				<td>`string | Array`</td>
+				<td>Inclusive minimum length</td>
+				<td>`{ rule: 1 }`</td>
+			</tr>
+			<tr>
+				<td>`maxLength`</td>
+				<td>`string | Array`</td>
+				<td>Inclusive maximum length</td>
+				<td>`{ rule: 255 }`</td>
+			</tr>
+			<tr>
+				<td>`exactLength`</td>
+				<td>`string | Array`</td>
+				<td>Exact length</td>
+				<td>`{ rule: 10 }`</td>
+			</tr>
+			<tr>
+				<td>`after`</td>
+				<td>`Date`</td>
+				<td>Minimum Date (inclusive by default)</td>
+				<td>`{ rule: new Date("2000-01-01") }`</td>
+			</tr>
+			<tr>
+				<td>`before`</td>
+				<td>`Date`</td>
+				<td>Maximum Date (inclusive by default)</td>
+				<td>`{ rule: new Date() }`</td>
+			</tr>
+			<tr>
+				<td>`predicate`</td>
+				<td>`unknown`</td>
+				<td>Custom `narrow` function</td>
+				<td>`{ predicate: (n) => n % 2 === 1 }`</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+##### Structural
+
+These constraints define the shape and properties of objects or arrays.
+
+<div className="overflow-auto">
+	<table className="w-full">
+		<thead>
+			<tr>
+				<th>kind</th>
+				<th>description</th>
+				<th className="w-1/3">example</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>`sequence`</td>
+				<td>
+					Defines array patterns with tuples, rest elements, and variadic parts
+				</td>
+				<td>`{ sequence: { prefix: ["string", "number"] } }`</td>
+			</tr>
+			<tr>
+				<td>`required`</td>
+				<td>Defines a required property in an object structure</td>
+				<td>`{ key: "id", value: "number" }`</td>
+			</tr>
+			<tr>
+				<td>`optional`</td>
+				<td>Defines an optional property in an object structure</td>
+				<td>`{ key: "name", value: "string" }`</td>
+			</tr>
+			<tr>
+				<td>`index`</td>
+				<td>
+					Defines index signatures for objects (
+					`[key: string]: value`)
+				</td>
+				<td>`{ key: "string", value: "boolean" }`</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+
+More details on the type system to come!
+
+### select
+
+<Callout type="warn" title="select is not fully stable!">
+
+`select` relies on the internal representation defined in `@ark/schema`, which although relatively mature, is not guaranteed semver-stable.
+
+</Callout>
+
+`select` is the top-level first method we're introducing for interacting with a Type based on its internal representation.
+
+It can be used to filter a Type's references:
+
+```ts
+const T = type({
+	name: "string > 5",
+	flag: "0 | 1"
+})
+	.array()
+	.atLeastLength(1)
+
+// get all references representing literal values
+const literals = T.select("unit") // [Type<0>, Type<1>]
+
+// get all references representing literal positive numbers
+const positiveNumberLiterals = T.select({
+	kind: "unit",
+	where: u => typeof u.unit === "number" && u.unit > 0
+}) // [Type<1>]
+
+// get all minLength constraints at the root of the Type
+const minLengthConstraints = T.select({
+	kind: "minLength",
+	// the shallow filter excludes the constraint on `name`
+	boundary: "shallow"
+}) // [MinLengthNode<1>]
+```

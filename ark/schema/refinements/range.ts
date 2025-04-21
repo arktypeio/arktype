@@ -16,9 +16,10 @@ import type {
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
 } from "../shared/declare.ts"
-import type { keySchemaDefinitions, RangeKind } from "../shared/implement.ts"
+import type { keySchemaDefinitions } from "../shared/implement.ts"
 import type { After } from "./after.ts"
 import type { Before } from "./before.ts"
+import type { RangeKind } from "./kinds.ts"
 import type { MaxLength } from "./maxLength.ts"
 import type { MinLength } from "./minLength.ts"
 
