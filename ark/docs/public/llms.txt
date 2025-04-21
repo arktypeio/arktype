@@ -1053,6 +1053,17 @@ title: Expressions
 
 Like its TypeScript counterpart, an intersection combines two existing `Type`s to create a new `Type` that enforces the constraints of both.
 
+<Callout
+	type="warn"
+	title="If you don't need to intersect overlapping props, spread instead!"
+>
+
+Computing an intersection is more expensive than [merging props](/docs/objects#), both at runtime and in-editor.
+
+If you can get away with the latter, doing so will make your Types will be faster and cleaner.
+
+</Callout>
+
 <SyntaxTabs>
 	<SyntaxTab string>
 
@@ -1076,27 +1087,6 @@ const FooObject = type({
 const FoobarObject = FooObject.and({
 	bar: "number"
 })
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
-
-```ts
-const FooObject = type({
-	foo: "string"
-})
-
-// accepts ...definitions
-const FoobarObject = type.and(
-	FooObject,
-	{
-		bar: "number"
-	},
-	{
-		baz: "string"
-	}
-)
 ```
 
     </SyntaxTab>
@@ -1137,6 +1127,28 @@ const FoobarObject = type(
 
 </SyntaxTabs>
 
+<AnchorAliases intersection-n-ary />
+#### n-ary
+
+To create an intersection of many objects directly, `type.and` will avoid the need to chain or compose many binary expressions:
+
+```ts
+const FooObject = type({
+	foo: "string"
+})
+
+// accepts ...definitions
+const FoobarObject = type.and(
+	FooObject,
+	{
+		bar: "number"
+	},
+	{
+		baz: "string"
+	}
+)
+```
+
 ### Union
 
 All unions are automatically discriminated to optimize check time and error message clarity.
@@ -1158,15 +1170,6 @@ const Unions = type({
 const Unions = type({
 	key: type.string.or(type.number)
 })
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
-
-```ts
-// accepts ...definitions
-const Union = type.or(type.string, "number", { key: "unknown" })
 ```
 
     </SyntaxTab>
@@ -1193,7 +1196,17 @@ const Unions = type({
 
 </SyntaxTabs>
 
-<a id="union-morphs" />
+<AnchorAliases union-n-ary />
+#### n-ary
+
+To create a union of many objects directly, `type.or` will avoid the need to chain or compose many binary expressions:
+
+```ts
+// accepts ...definitions
+const Union = type.or(type.string, "number", { key: "unknown" })
+```
+
+<AnchorAliases union-morphs />
 
 <Callout
 	type="warn"
@@ -1415,9 +1428,10 @@ const ArkString = type(
 
 </SyntaxTabs>
 
-### Morph
+<AnchorAliases morph />
+### Pipe
 
-Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
+Piping allows you to transform your data after it is validated via one or more sequential **morphs**. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
 
 <SyntaxTabs>
     <SyntaxTab fluent>
@@ -1425,19 +1439,6 @@ Morphs allow you to transform your data after it is validated. You can read more
 ```ts
 // hover to see how morphs are represented at a type-level
 const trimStringStart = type("string").pipe(str => str.trimStart())
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
-
-```ts
-// accepts ...morphsOrTypes
-const trimStartToNonEmpty = type.pipe(
-	type.string,
-	s => s.trimStart(),
-	type.string.atLeastLength(1)
-)
 ```
 
     </SyntaxTab>
@@ -1517,6 +1518,20 @@ const parseEvenPipe = type("string.numeric.parse").pipe(Even)
     </SyntaxTab>
 
 </SyntaxTabs>
+
+<AnchorAliases pipe-n-ary />
+#### n-ary
+
+Though the fluent `.pipe(...morphsOrTypes)` method already accepts any number of arguments, `type.pipe()` allows you to define such an expression directly without having to explicitly instantiate the first input Type to chain from.
+
+```ts
+// directly accepts ...morphsOrTypes
+const trimStartToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
+```
 
 ### Unit
 
@@ -3581,13 +3596,38 @@ Though how a Type is defined will never affect validation performance, depending
 
 </SyntaxTabs>
 
-### spread [#properties-spread]
+<AnchorAliases properties-merge spread properties-spread />
+### merge
 
-The **spread operator** is great for merging sets of properties. When applied to two distinct (i.e. non-overlapping) sets of properties, it is equivalent to [intersection](/docs/expressions#intersection). However, if a key appears in both the base and merged objects, the base value will be discarded in favor of the merged rather than recursively intersected.
+**merge** allows you to extend an object with new properties or replace existing ones like the `...` operator [in JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax).
+
+When applied to two distinct (i.e. non-overlapping) sets of properties, it is a more efficient equivalent of [intersection](/docs/expressions#intersection).
+
+However, if a key appears in both the base and merged objects, the base value will be discarded in favor of the merged rather than recursively intersected.
 
 Spreading bypasses a lot of the behavioral complexity and computational overhead of an intersection and should be the preferred method of combining property sets.
 
-A base object definition can be spread if `"..."` is the first key specified in an object literal. Subsequent properties will be merged into those from the base object, just like the `...` operator [in JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax).
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const zildjian = Symbol()
+
+const Base = type({
+	"[string]": "number",
+	foo: "0",
+	[zildjian]: "true"
+})
+
+// hover to see the inferred result
+const chainedResult = Base.merge({
+	"[string]": "bigint",
+	"foo?": "1n"
+})
+```
+
+    </SyntaxTab>
+    <SyntaxTab string>
 
 ```ts
 const User = type({ isAdmin: "false", name: "string" })
@@ -3601,10 +3641,8 @@ const Admin = type({
 })
 ```
 
-The spread operator is semantically equivalent to the generic `Merge` keyword, which can be instantiated via a dedicated method on `Type` in addition to the standard keyword syntax.
-
-<SyntaxTabs>
-	<SyntaxTab string>
+    </SyntaxTab>
+    <SyntaxTab generic>
 
 ```ts
 const types = type.module({
@@ -3625,27 +3663,12 @@ type Result = typeof types.result.infer
 
     </SyntaxTab>
 
-    <SyntaxTab fluent>
+</SyntaxTabs>
 
-```ts
-const zildjian = Symbol()
+<AnchorAliases merge-n-ary />
+#### n-ary
 
-const Base = type({
-	"[string]": "number",
-	foo: "0",
-	[zildjian]: "true"
-})
-
-// hover to see the inferred result
-const chainedResult = Base.merge({
-	"[string]": "bigint",
-	"foo?": "1n"
-})
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
+To merge many objects directly, `type.merge` will avoid the need to chain or compose many binary expressions:
 
 ```ts
 const zildjian = Symbol()
@@ -3668,10 +3691,6 @@ const functionResult = type.merge(
 	}
 )
 ```
-
-    </SyntaxTab>
-
-</SyntaxTabs>
 
 ### keyof [#properties-keyof]
 
@@ -4717,7 +4736,7 @@ const MyObj = type({
 title: Scopes
 ---
 
-<a id="intro" />
+<AnchorAliases intro />
 
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
 

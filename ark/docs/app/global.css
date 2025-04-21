@@ -292,30 +292,6 @@ div.twoslash-popup-container {
 	}
 }
 
-h1 {
-	font-size: 2.5rem !important;
-}
-
-h2 {
-	font-size: 2rem !important;
-}
-
-h3 {
-	font-size: 1.75rem !important;
-}
-
-h4 {
-	font-size: 1.5rem !important;
-}
-
-h5 {
-	font-size: 1.25rem !important;
-}
-
-h6 {
-	font-size: 1rem !important;
-}
-
 h1,
 h2,
 h3,
@@ -328,4 +304,38 @@ h6,
 
 body {
 	font-family: var(--font-atkinson);
+}
+
+/* avoid excessive vertical margins in docs */
+
+h1 {
+	margin-bottom: 0.5rem !important;
+	font-size: 2.75rem !important;
+}
+
+.docs-body h2 {
+	margin-top: 0.3rem;
+	margin-bottom: 0.3rem;
+	font-size: 2.25rem !important;
+}
+
+.docs-body h3 {
+	margin-top: 0.2rem;
+	margin-bottom: 0.2rem;
+	font-size: 1.75rem !important;
+}
+
+.docs-body h4 {
+	font-size: 1.5rem !important;
+	color: #ffffffbf;
+}
+
+.docs-body h5 {
+	font-size: 1.25rem !important;
+	color: #ffffffcf;
+}
+
+.docs-body h6 {
+	font-size: 1rem !important;
+	color: #ffffffdf;
 }

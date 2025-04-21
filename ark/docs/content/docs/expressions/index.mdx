@@ -80,7 +80,7 @@ const FoobarObject = type(
 
 </SyntaxTabs>
 
-<a id="intersection-n-ary" />
+<AnchorAliases intersection-n-ary />
 #### n-ary
 
 To create an intersection of many objects directly, `type.and` will avoid the need to chain or compose many binary expressions:
@@ -149,7 +149,7 @@ const Unions = type({
 
 </SyntaxTabs>
 
-<a id="union-n-ary" />
+<AnchorAliases union-n-ary />
 #### n-ary
 
 To create a union of many objects directly, `type.or` will avoid the need to chain or compose many binary expressions:
@@ -159,7 +159,7 @@ To create a union of many objects directly, `type.or` will avoid the need to cha
 const Union = type.or(type.string, "number", { key: "unknown" })
 ```
 
-<a id="union-morphs" />
+<AnchorAliases union-morphs />
 
 <Callout
 	type="warn"
@@ -381,7 +381,7 @@ const ArkString = type(
 
 </SyntaxTabs>
 
-<a id="morph" />
+<AnchorAliases morph />
 ### Pipe
 
 Piping allows you to transform your data after it is validated via one or more sequential **morphs**. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
@@ -472,7 +472,7 @@ const parseEvenPipe = type("string.numeric.parse").pipe(Even)
 
 </SyntaxTabs>
 
-<a id="pipe-n-ary" />
+<AnchorAliases pipe-n-ary />
 #### n-ary
 
 Though the fluent `.pipe(...morphsOrTypes)` method already accepts any number of arguments, `type.pipe()` allows you to define such an expression directly without having to explicitly instantiate the first input Type to chain from.
