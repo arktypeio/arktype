@@ -345,7 +345,12 @@ const chainedResult = Base.merge({
 
     </SyntaxTab>
 
-    <SyntaxTab function>
+</SyntaxTabs>
+
+<a id="merge-n-ary" />
+#### n-ary
+
+To merge many objects directly, `type.merge` will avoid the need to chain or compose many binary expressions:
 
 ```ts
 const zildjian = Symbol()
@@ -368,10 +373,6 @@ const functionResult = type.merge(
 	}
 )
 ```
-
-    </SyntaxTab>
-
-</SyntaxTabs>
 
 ### keyof [#properties-keyof]
 

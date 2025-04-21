@@ -6,8 +6,7 @@ export const syntaxKinds = [
 	"string",
 	"fluent",
 	"tuple",
-	"args",
-	"function"
+	"args"
 	// don't infer as readonly since Fumadocs (incorrectly) doesn't support that
 ] as const satisfies string[]
 

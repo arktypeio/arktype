@@ -127,7 +127,6 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const out = myType(data)
 	 *
 	 * if(out instanceof type.errors) console.log(out.summary)
-	 *
 	 */
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
