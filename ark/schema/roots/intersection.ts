@@ -299,7 +299,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	refinements: array<nodeOfKind<RefinementKind>> = this.children.filter(
 		(node): node is never => {
 			if (!node.isRefinement()) return false
-			if (!includes(prestructuralKinds, node.kind))
+			if (includes(prestructuralKinds, node.kind))
 				// mutation is fine during initialization
 				(this.prestructurals as unknown[]).push(node)
 			return true
@@ -405,28 +405,25 @@ export const Intersection = {
 }
 
 const writeIntersectionExpression = (node: Intersection.Node) => {
-	if (node.structure?.expression) {
-		const expression = node.structure.expression
-		if (expression === "Array == 0") return "[]"
-		return expression
-	}
+	if (node.structure?.expression) return node.structure.expression
 
-	if (
-		node.basis &&
-		!node.refinements.some(n => n.impl.obviatesBasisExpression)
-	) {
-		const refinementsExpression = node.refinements
-			.map(n => n.expression)
-			.join(" & ")
-		return refinementsExpression ?
-				`${node.basis.nestableExpression} ${refinementsExpression}`
-			:	node.basis.nestableExpression
-	}
+	const basisExpression =
+		(
+			node.basis &&
+			!node.prestructurals.some(n => n.impl.obviatesBasisExpression)
+		) ?
+			node.basis.nestableExpression
+		:	""
 
-	if (node.refinements.length > 0)
-		return node.refinements.map(n => n.expression).join(" & ")
+	const refinementsExpression = node.prestructurals
+		.map(n => n.expression)
+		.join(" & ")
 
-	return "unknown"
+	const fullExpression = `${basisExpression}${basisExpression ? " " : ""}${refinementsExpression}`
+
+	if (fullExpression === "Array == 0") return "[]"
+
+	return fullExpression || "unknown"
 }
 
 const intersectIntersections = (

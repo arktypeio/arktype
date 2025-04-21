@@ -426,8 +426,13 @@ contextualize(() => {
 
 	it("object intersection", () => {
 		const $ = scope({
-			// ideally the annotation for data wouldn't be required
-			a: [{ a: "1" }, "=>", (data: { a: 1 }) => `${data}`],
+			a: [
+				{ a: "1" },
+				"=>",
+				function _pipeScopedObjectIntersection(data) {
+					return `${data}`
+				}
+			],
 			b: { b: "2" },
 			c: "a&b"
 		})
@@ -436,13 +441,13 @@ contextualize(() => {
 		attest(types.c.t).type.toString.snap("(In: { a: 1; b: 2 }) => Out<string>")
 		attest(types.c.json).snap({
 			in: {
-				domain: "object",
 				required: [
 					{ key: "a", value: { unit: 1 } },
 					{ key: "b", value: { unit: 2 } }
-				]
+				],
+				domain: "object"
 			},
-			morphs: ["$ark._directlyNestedStringToLength"]
+			morphs: ["$ark._pipeScopedObjectIntersection"]
 		})
 	})
 
