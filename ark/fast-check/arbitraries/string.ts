@@ -1,4 +1,4 @@
-import type { nodeOfKind, RefinementKind } from "@ark/schema"
+import type { nodeOfKind, PrestructuralKind } from "@ark/schema"
 import { throwInternalError, type array } from "@ark/util"
 import * as fc from "fast-check"
 import type { DomainInputNode } from "./domain.ts"
@@ -7,7 +7,7 @@ export const buildStringArbitrary = (
 	node: DomainInputNode
 ): fc.Arbitrary<string> => {
 	if (node.hasKind("domain")) return fc.string()
-	const stringConstraints = getFastCheckStringConstraints(node.refinements)
+	const stringConstraints = getFastCheckStringConstraints(node.prestructurals)
 	if ("pattern" in stringConstraints) {
 		if (stringConstraints.minLength || stringConstraints.maxLength)
 			throwInternalError("Bounded regex is not supported.")
@@ -18,7 +18,7 @@ export const buildStringArbitrary = (
 }
 
 const getFastCheckStringConstraints = (
-	refinements: array<nodeOfKind<RefinementKind>>
+	refinements: array<nodeOfKind<PrestructuralKind>>
 ) => {
 	const stringConstraints: fc.StringConstraints & {
 		pattern?: string
