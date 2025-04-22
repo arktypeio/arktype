@@ -4,11 +4,17 @@ import type {
 	InclusiveNumericRangeSchema,
 	Pattern
 } from "@ark/schema"
+import type { parseRegex } from "../parser/shift/operand/regex.ts"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends string = string, $ = {}> extends BaseType<t, $> {
-	matching(schema: Pattern.Schema): this
+	matching<const schema extends Pattern.Schema>(
+		schema: schema
+	): schema extends string ? Type<parseRegex<schema, true>, $>
+	: schema extends { rule: infer pattern extends string } ?
+		Type<parseRegex<pattern, true>, $>
+	:	this
 
 	atLeastLength(schema: InclusiveNumericRangeSchema): this
 

@@ -6,7 +6,7 @@ contextualize(() => {
 	describe("intersection", () => {
 		it("distinct strings", () => {
 			const T = type("/a/&/b/")
-			attest<string>(T.infer)
+			attest<`${string}a${string}` & `${string}b${string}`>(T.infer)
 			attest(T.allows("a")).equals(false)
 			attest(T.allows("b")).equals(false)
 			attest(T.allows("ab")).equals(true)
@@ -92,5 +92,122 @@ contextualize(() => {
 		const T = type(/^a.*z$/)
 
 		attest(T.expression).snap("/^a.*z$/")
+	})
+
+	describe("inference", () => {
+		it("infers literals", () => {
+			const T = type("/abc/")
+			attest<`${string}abc${string}`>(T.infer)
+		})
+
+		it("infers start", () => {
+			const T = type("/^a/")
+			attest<`a${string}`>(T.infer)
+		})
+
+		it("infers end", () => {
+			const T = type("/a$/")
+			attest<`${string}a`>(T.infer)
+		})
+
+		it("infers start and end", () => {
+			const T = type("/^a$/")
+			attest<`a`>(T.infer)
+		})
+
+		it("infers character sets", () => {
+			const T = type("/^a[abc]$/")
+			attest<`a${"a" | "b" | "c"}`>(T.infer)
+		})
+
+		it("infers character set ranges", () => {
+			const T = type("/^a[x-z]$/")
+			attest<`a${string}`>(T.infer)
+		})
+
+		it("infers character set dashes", () => {
+			const T = type("/^a[\\^a\\-b]$/")
+			attest<`a${"^" | "a" | "-" | "b"}`>(T.infer)
+		})
+
+		it("infers .", () => {
+			const T = type("/^a.$/")
+			attest<`a${string}`>(T.infer)
+		})
+
+		it("infers ?", () => {
+			const T = type("/^ab?c$/")
+			attest<`a${"b" | ""}c`>(T.infer)
+		})
+
+		it("infers +", () => {
+			const T = type("/^ab+c$/")
+			attest<`a${string}c`>(T.infer)
+		})
+
+		it("infers +?", () => {
+			const T = type("/^ab+?c$/")
+			attest<`a${string}c`>(T.infer)
+		})
+
+		it("infers *", () => {
+			const T = type("/^ab*c$/")
+			attest<`a${string}c`>(T.infer)
+		})
+
+		it("infers {} up to including length 3", () => {
+			const T = type("/^x{0}a{1}b{2}c{3}d{,3}e{1,2}f{4}$/")
+			attest<`abbccc${"" | "d" | "dd" | "ddd"}${"e" | "ee"}${string}`>(T.infer)
+		})
+
+		it("infers \\w", () => {
+			const T = type("/^a\\wc$/")
+			attest<`a${AlphanumericCharacter | "_"}c`>(T.infer)
+		})
+
+		it("infers \\d", () => {
+			const T = type("/^a\\dc$/")
+			attest<`a${DigitCharacter}c`>(T.infer)
+		})
+
+		it("infers \\s", () => {
+			const T = type("/^a\\sc$/")
+			attest<`a${WhitespaceCharacter}c`>(T.infer)
+		})
+
+		it("infers \\W", () => {
+			const T = type("/^a\\W$/")
+			attest<`a${string}`>(T.infer)
+		})
+
+		it("infers \\D", () => {
+			const T = type("/^a\\D$/")
+			attest<`a${string}`>(T.infer)
+		})
+
+		it("infers \\S", () => {
+			const T = type("/^a\\S$/")
+			attest<`a${string}`>(T.infer)
+		})
+
+		it("infers groups", () => {
+			const T = type("/^(abc)(?:def)(?=ghi)(?!jkl)$/")
+			attest<`abcdefghi${string}`>(T.infer)
+		})
+
+		it("infers backreferences and escaped character codes", () => {
+			const T = type("/^(abc)\\1\\256$/")
+			attest<`abc${string}${string}`>(T.infer)
+		})
+
+		it("infers unions", () => {
+			const T = type("/^abc|def|ghi$/")
+			attest<"abc" | "def" | "ghi">(T.infer)
+		})
+
+		it("reports unclosed character sets", () => {
+			const T = type("/^abc[$/")
+			attest<"abc" | "def" | "ghi">(T.infer)
+		})
 	})
 })
