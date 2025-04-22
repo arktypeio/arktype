@@ -187,7 +187,14 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 				return describeBranches(pathDescriptions)
 			},
 			problem: ctx => ctx.expected,
-			message: ctx => ctx.problem
+			message: ctx => {
+				if (ctx.problem[0] === "[") {
+					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+					return `value at ${ctx.problem}`
+				}
+
+				return ctx.problem
+			}
 		},
 		intersections: {
 			union: (l, r, ctx) => {
