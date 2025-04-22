@@ -429,7 +429,9 @@ contextualize(() => {
 			a: [
 				{ a: "1" },
 				"=>",
-				function _pipeScopedObjectIntersection(data) {
+				// as of TS 5.8, removing data's explicit annotation leads to
+				// the output being inferred as `never`
+				function _pipeScopedObjectIntersection(data: { a: 1 }) {
 					return `${data}`
 				}
 			],
