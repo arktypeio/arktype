@@ -3,7 +3,7 @@ import type { ArkTypeScanner } from "../scanner.ts"
 export type parseRegex<
 	unscanned extends string,
 	initial extends boolean = false
-> = string
+> = right<string>
 
 export type _parseRegex<
 	unscanned extends string,
@@ -332,11 +332,6 @@ type parseRegexCaptureGroup<
 		:	parseRegexCaptureGroup<unscanned>
 	:	parseRegex<unscanned>
 
-export type AlphanumericCharacter =
-	| DigitCharacter
-	| LowercaseLetterCharacter
-	| UppercaseLetterCharacter
-
 export type DigitCharacter =
 	| "0"
 	| "1"
@@ -348,61 +343,3 @@ export type DigitCharacter =
 	| "7"
 	| "8"
 	| "9"
-
-export type LowercaseLetterCharacter =
-	| "a"
-	| "b"
-	| "c"
-	| "d"
-	| "e"
-	| "f"
-	| "g"
-	| "h"
-	| "i"
-	| "j"
-	| "k"
-	| "l"
-	| "m"
-	| "n"
-	| "o"
-	| "p"
-	| "q"
-	| "r"
-	| "s"
-	| "t"
-	| "u"
-	| "v"
-	| "w"
-	| "x"
-	| "y"
-	| "z"
-
-export type UppercaseLetterCharacter =
-	| "A"
-	| "B"
-	| "C"
-	| "D"
-	| "E"
-	| "F"
-	| "G"
-	| "H"
-	| "I"
-	| "J"
-	| "K"
-	| "L"
-	| "M"
-	| "N"
-	| "O"
-	| "P"
-	| "Q"
-	| "R"
-	| "S"
-	| "T"
-	| "U"
-	| "V"
-	| "W"
-	| "X"
-	| "Y"
-	| "Z"
-
-export type WhitespaceCharacter = " " | "\t" | "\n" | "\r" | "\f"
