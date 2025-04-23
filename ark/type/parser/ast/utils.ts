@@ -1,6 +1,6 @@
 import type { satisfy, Stringifiable } from "@ark/util"
 import type { Comparator } from "../reduce/shared.ts"
-import type { ArkTypeScanner } from "../shift/scanner.ts"
+import type { OperatorToken } from "../shift/tokens.ts"
 import type {
 	DefAst,
 	InferredAst,
@@ -21,10 +21,7 @@ export type astToString<ast> =
 	: ast extends Stringifiable ? `${ast extends bigint ? `${ast}n` : ast}`
 	: "..."
 
-export type ConstraintOperator = satisfy<
-	ArkTypeScanner.OperatorToken,
-	"%" | Comparator
->
+export type ConstraintOperator = satisfy<OperatorToken, "%" | Comparator>
 
 export type writeConstrainedMorphMessage<constrainedAst> =
 	`To constrain the output of ${astToString<constrainedAst>}, pipe like myMorph.to('number > 0').

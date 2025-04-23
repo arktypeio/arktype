@@ -11,7 +11,7 @@ import {
 } from "@ark/schema"
 import {
 	append,
-	escapeChar,
+	Backslash,
 	isArray,
 	isEmptyObject,
 	printable,
@@ -21,7 +21,6 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
-	type EscapeChar,
 	type Key,
 	type merge,
 	type mutable,
@@ -292,7 +291,7 @@ export type IndexKey<def extends string = string> = `[${def}]`
 export const preparseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol" ? { kind: "required", normalized: key }
 	: key.at(-1) === "?" ?
-		key.at(-2) === escapeChar ?
+		key.at(-2) === Backslash ?
 			{ kind: "required", normalized: `${key.slice(0, -2)}?` }
 		:	{
 				kind: "optional",
@@ -300,7 +299,7 @@ export const preparseKey = (key: Key): PreparsedKey =>
 			}
 	: key[0] === "[" && key.at(-1) === "]" ?
 		{ kind: "index", normalized: key.slice(1, -1) }
-	: key[0] === escapeChar && key[1] === "[" && key.at(-1) === "]" ?
+	: key[0] === Backslash && key[1] === "[" && key.at(-1) === "]" ?
 		{ kind: "required", normalized: key.slice(1) }
 	: key === "..." ? { kind: "spread" }
 	: key === "+" ? { kind: "undeclared" }
@@ -319,7 +318,7 @@ export type preparseKey<k> =
 			normalized: k
 		}>
 	: k extends `${infer inner}?` ?
-		inner extends `${infer baseName}${EscapeChar}` ?
+		inner extends `${infer baseName}${Backslash}` ?
 			PreparsedKey.from<{
 				kind: "required"
 				normalized: `${baseName}?`
@@ -330,7 +329,7 @@ export type preparseKey<k> =
 			}>
 	: k extends "+" ? { kind: "undeclared" }
 	: k extends "..." ? { kind: "spread" }
-	: k extends `${EscapeChar}${infer escapedMeta extends MetaKey}` ?
+	: k extends `${Backslash}${infer escapedMeta extends MetaKey}` ?
 		PreparsedKey.from<{ kind: "required"; normalized: escapedMeta }>
 	: k extends IndexKey<infer def> ?
 		PreparsedKey.from<{
@@ -340,7 +339,7 @@ export type preparseKey<k> =
 	:	PreparsedKey.from<{
 			kind: "required"
 			normalized: k extends (
-				`${EscapeChar}${infer escapedIndexKey extends IndexKey}`
+				`${Backslash}${infer escapedIndexKey extends IndexKey}`
 			) ?
 				escapedIndexKey
 			: k extends Key ? k

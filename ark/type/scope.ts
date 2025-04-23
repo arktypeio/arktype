@@ -30,6 +30,7 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
+	Scanner,
 	enumValues,
 	flatMorph,
 	isArray,
@@ -81,7 +82,6 @@ import {
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
-import { ArkTypeScanner } from "./parser/shift/scanner.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
@@ -257,7 +257,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		opts: BaseParseOptions
 	): array<GenericParamDef> {
 		return parseGenericParamName(
-			new ArkTypeScanner(def),
+			new Scanner(def),
 			[],
 			this.createParseContext({
 				...opts,

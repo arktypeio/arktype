@@ -37,7 +37,7 @@ import {
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { BranchOperator } from "./reduce/shared.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
-import type { ArkTypeScanner } from "./shift/scanner.ts"
+import type { InfixToken } from "./shift/tokens.ts"
 import type { BaseCompletions } from "./string.ts"
 
 export const maybeParseTupleExpression = (
@@ -244,11 +244,7 @@ export type IndexOneOperator = keyof typeof indexOneParsers
 const isIndexOneExpression = (def: array): def is IndexOneExpression =>
 	indexOneParsers[def[1] as IndexOneOperator] !== undefined
 
-export type InfixExpression = readonly [
-	unknown,
-	ArkTypeScanner.InfixToken,
-	...unknown[]
-]
+export type InfixExpression = readonly [unknown, InfixToken, ...unknown[]]
 
 type IndexZeroParser<token extends string> = (
 	def: IndexZeroExpression<token>,

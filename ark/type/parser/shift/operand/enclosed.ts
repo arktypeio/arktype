@@ -1,8 +1,7 @@
 import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
 import type { InferredAst } from "../../ast/infer.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
-import type { ArkTypeScanner } from "../scanner.ts"
 import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
 export type StringLiteral<contents extends string = string> =
@@ -16,7 +15,7 @@ export type SingleQuotedStringLiteral<contents extends string = string> =
 	`'${contents}'`
 
 export const parseEnclosed = (
-	s: DynamicState,
+	s: RuntimeState,
 	enclosing: EnclosingStartToken
 ): void => {
 	const enclosed = s.scanner.shiftUntil(
@@ -55,10 +54,9 @@ export type parseEnclosed<
 	enclosingStart extends EnclosingStartToken,
 	unscanned extends string
 > =
-	ArkTypeScanner.shiftUntil<
-		unscanned,
-		EnclosingTokens[enclosingStart]
-	> extends ArkTypeScanner.shiftResult<infer scanned, infer nextUnscanned> ?
+	Scanner.shiftUntil<unscanned, EnclosingTokens[enclosingStart]> extends (
+		Scanner.shiftResult<infer scanned, infer nextUnscanned>
+	) ?
 		nextUnscanned extends "" ?
 			state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
 		:	state.setRoot<
@@ -69,8 +67,7 @@ export type parseEnclosed<
 					: Date,
 					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 				>,
-				nextUnscanned extends ArkTypeScanner.shift<string, infer unscanned> ?
-					unscanned
+				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
 				:	""
 			>
 	:	never

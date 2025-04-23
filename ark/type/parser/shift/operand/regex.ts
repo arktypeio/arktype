@@ -1,4 +1,17 @@
-import type { ArkTypeScanner } from "../scanner.ts"
+import type { Scanner } from "@ark/util"
+
+type inferRegex<unscanned extends string> = next<unscanned, never, []>
+
+type result = inferRegex<"/abc/">
+//    ^?
+
+type next<
+	unscanned extends string,
+	inferred extends string,
+	sequence extends string[]
+> =
+	unscanned extends Scanner.shift<infer lookahead, infer nextUnscanned> ? {}
+	:	{}
 
 export type parseRegex<
 	unscanned extends string,
@@ -22,28 +35,21 @@ export type _parseRegex<
 		parseRegexTokenResult<infer type, infer nextUnscanned>
 	) ?
 		continueParsing<right<type>, nextUnscanned>
-	: unscanned extends (
-		ArkTypeScanner.shift<infer lookahead, infer nextUnscanned>
-	) ?
+	: unscanned extends ArkScanner.shift<infer lookahead, infer nextUnscanned> ?
 		lookahead extends EnclosingStartToken ?
-			ArkTypeScanner.shiftUntil<
-				nextUnscanned,
-				EnclosingTokens[lookahead]
-			> extends ArkTypeScanner.shiftResult<infer scanned, infer nextUnscanned> ?
+			ArkScanner.shiftUntil<nextUnscanned, EnclosingTokens[lookahead]> extends (
+				ArkScanner.shiftResult<infer scanned, infer nextUnscanned>
+			) ?
 				nextUnscanned extends "" ? left<"Incomplete enclosure">
 				: lookahead extends "[" ?
-					nextUnscanned extends (
-						ArkTypeScanner.shift<string, infer nextUnscanned>
-					) ?
+					nextUnscanned extends ArkScanner.shift<string, infer nextUnscanned> ?
 						continueParsing<
 							parseRegexCharacterSet<scanned, true>,
 							nextUnscanned
 						>
 					:	never
 				: lookahead extends "(" ?
-					nextUnscanned extends (
-						ArkTypeScanner.shift<string, infer nextUnscanned>
-					) ?
+					nextUnscanned extends ArkScanner.shift<string, infer nextUnscanned> ?
 						continueParsing<
 							parseRegexCaptureGroup<scanned, true>,
 							nextUnscanned
@@ -100,23 +106,23 @@ type EnclosingTokens = {
 type EnclosingStartToken = keyof EnclosingTokens
 
 type parseRegexToken<unscanned extends string> =
-	unscanned extends ArkTypeScanner.shift<".", infer nextUnscanned> ?
+	unscanned extends ArkScanner.shift<".", infer nextUnscanned> ?
 		parseRegexTokenResult<string, nextUnscanned>
-	: unscanned extends ArkTypeScanner.shift<"\\w", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"\\w", infer nextUnscanned> ?
 		parseRegexTokenResult<AlphanumericCharacter | "_", nextUnscanned>
-	: unscanned extends ArkTypeScanner.shift<"\\d", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"\\d", infer nextUnscanned> ?
 		parseRegexTokenResult<DigitCharacter, nextUnscanned>
-	: unscanned extends ArkTypeScanner.shift<"\\s", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"\\s", infer nextUnscanned> ?
 		parseRegexTokenResult<WhitespaceCharacter, nextUnscanned>
-	: unscanned extends ArkTypeScanner.shift<"\\W", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"\\W", infer nextUnscanned> ?
 		parseRegexTokenResult<string, nextUnscanned>
-	: unscanned extends ArkTypeScanner.shift<"\\D", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"\\D", infer nextUnscanned> ?
 		parseRegexTokenResult<string, nextUnscanned>
-	: unscanned extends ArkTypeScanner.shift<"\\S", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"\\S", infer nextUnscanned> ?
 		parseRegexTokenResult<string, nextUnscanned>
 	: // this covers both backreferences and escaped character codes
 	unscanned extends (
-		ArkTypeScanner.shift<
+		ArkScanner.shift<
 			`\\${
 				| DigitCharacter
 				| `${DigitCharacter}${DigitCharacter}`
@@ -127,7 +133,7 @@ type parseRegexToken<unscanned extends string> =
 	) ?
 		parseRegexTokenResult<string, nextUnscanned>
 	: unscanned extends (
-		ArkTypeScanner.shift<`\\${infer lookahead}`, infer nextUnscanned>
+		ArkScanner.shift<`\\${infer lookahead}`, infer nextUnscanned>
 	) ?
 		lookahead extends "" ?
 			left<"Incomplete escape sequence">
@@ -140,8 +146,8 @@ type parseRegexTokenResult<type extends string, unscanned extends string> = {
 }
 
 type parseQuantifier<unscanned extends string> =
-	unscanned extends ArkTypeScanner.shift<Quantifier, infer nextUnscanned> ?
-		unscanned extends ArkTypeScanner.shift<infer quantifier, nextUnscanned> ?
+	unscanned extends ArkScanner.shift<Quantifier, infer nextUnscanned> ?
+		unscanned extends ArkScanner.shift<infer quantifier, nextUnscanned> ?
 			quantifier extends Quantifier ?
 				Quantifiers[quantifier] extends (
 					parseQuantifierResult<infer min, infer max, string>
@@ -150,31 +156,31 @@ type parseQuantifier<unscanned extends string> =
 				:	never
 			:	never
 		:	never
-	: unscanned extends ArkTypeScanner.shift<`{`, infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<`{`, infer nextUnscanned> ?
 		parseDigits<nextUnscanned> extends (
 			parseDigitsResult<infer min, infer nextUnscanned>
 		) ?
-			nextUnscanned extends ArkTypeScanner.shift<",", infer nextUnscanned> ?
+			nextUnscanned extends ArkScanner.shift<",", infer nextUnscanned> ?
 				parseDigits<nextUnscanned> extends (
 					parseDigitsResult<infer max, infer nextUnscanned>
 				) ?
-					nextUnscanned extends ArkTypeScanner.shift<"}", infer nextUnscanned> ?
+					nextUnscanned extends ArkScanner.shift<"}", infer nextUnscanned> ?
 						// {min,max}
 						parseUnsupportedQuantifierResult<nextUnscanned>
 					:	unknown
-				: nextUnscanned extends ArkTypeScanner.shift<"}", infer nextUnscanned> ?
+				: nextUnscanned extends ArkScanner.shift<"}", infer nextUnscanned> ?
 					// {min,}
 					parseUnsupportedQuantifierResult<nextUnscanned>
 				:	unknown
-			: nextUnscanned extends ArkTypeScanner.shift<"}", infer nextUnscanned> ?
+			: nextUnscanned extends ArkScanner.shift<"}", infer nextUnscanned> ?
 				// {count}
 				parseUnsupportedQuantifierResult<nextUnscanned>
 			:	unknown
-		: nextUnscanned extends ArkTypeScanner.shift<",", infer nextUnscanned> ?
+		: nextUnscanned extends ArkScanner.shift<",", infer nextUnscanned> ?
 			parseDigits<nextUnscanned> extends (
 				parseDigitsResult<infer max, infer nextUnscanned>
 			) ?
-				nextUnscanned extends ArkTypeScanner.shift<`}`, infer nextUnscanned> ?
+				nextUnscanned extends ArkScanner.shift<`}`, infer nextUnscanned> ?
 					// {,max}
 					parseUnsupportedQuantifierResult<nextUnscanned>
 				:	unknown
@@ -261,8 +267,8 @@ type parseUnsupportedQuantifierResult<unscanned extends string> =
 	parseQuantifierResult<0, Infinity, unscanned>
 
 type parseDigits<unscanned extends string> =
-	unscanned extends ArkTypeScanner.shift<DigitCharacter, infer nextUnscanned> ?
-		unscanned extends ArkTypeScanner.shift<infer digit, nextUnscanned> ?
+	unscanned extends ArkScanner.shift<DigitCharacter, infer nextUnscanned> ?
+		unscanned extends ArkScanner.shift<infer digit, nextUnscanned> ?
 			parseDigits<nextUnscanned> extends (
 				parseDigitsResult<infer digits, infer nextUnscanned>
 			) ?
@@ -286,35 +292,31 @@ type parseRegexCharacterSet<
 > =
 	initial extends true ?
 		// inverted character sets are not supported - default to string
-		unscanned extends ArkTypeScanner.shift<"^", infer nextUnscanned> ?
+		unscanned extends ArkScanner.shift<"^", infer nextUnscanned> ?
 			earlyReturn<string, parseRegexCharacterSet<nextUnscanned>>
 		:	parseRegexCharacterSet<unscanned>
 	: // support standard a-z, A-Z, and 0-9 ranges
-	unscanned extends ArkTypeScanner.shift<"a-z", infer nextUnscanned> ?
+	unscanned extends ArkScanner.shift<"a-z", infer nextUnscanned> ?
 		union<
 			right<LowercaseLetterCharacter>,
 			parseRegexCharacterSet<nextUnscanned>
 		>
-	: unscanned extends ArkTypeScanner.shift<"A-Z", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"A-Z", infer nextUnscanned> ?
 		union<
 			right<UppercaseLetterCharacter>,
 			parseRegexCharacterSet<nextUnscanned>
 		>
-	: unscanned extends ArkTypeScanner.shift<"0-9", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<"0-9", infer nextUnscanned> ?
 		union<right<DigitCharacter>, parseRegexCharacterSet<nextUnscanned>>
 	: parseRegexToken<unscanned> extends left<infer l> ? left<l>
 	: parseRegexToken<unscanned> extends (
 		parseRegexTokenResult<infer type, infer nextUnscanned>
 	) ?
 		union<right<type>, parseRegexCharacterSet<nextUnscanned>>
-	: unscanned extends (
-		ArkTypeScanner.shift<infer lookahead, infer nextUnscanned>
-	) ?
-		nextUnscanned extends ArkTypeScanner.shift<"-", infer nextUnscanned> ?
+	: unscanned extends ArkScanner.shift<infer lookahead, infer nextUnscanned> ?
+		nextUnscanned extends ArkScanner.shift<"-", infer nextUnscanned> ?
 			nextUnscanned extends "" ? right<lookahead | "-">
-			: nextUnscanned extends (
-				ArkTypeScanner.shift<string, infer nextUnscanned>
-			) ?
+			: nextUnscanned extends ArkScanner.shift<string, infer nextUnscanned> ?
 				earlyReturn<string, parseRegexCharacterSet<nextUnscanned>>
 			:	never
 		:	union<right<lookahead>, parseRegexCharacterSet<nextUnscanned>>
@@ -325,9 +327,9 @@ type parseRegexCaptureGroup<
 	initial extends boolean = false
 > =
 	initial extends true ?
-		unscanned extends ArkTypeScanner.shift<"?:" | "?=", infer nextUnscanned> ?
+		unscanned extends ArkScanner.shift<"?:" | "?=", infer nextUnscanned> ?
 			parseRegexCaptureGroup<nextUnscanned>
-		: unscanned extends ArkTypeScanner.shift<"?!", infer nextUnscanned> ?
+		: unscanned extends ArkScanner.shift<"?!", infer nextUnscanned> ?
 			earlyReturn<string, parseRegexCaptureGroup<nextUnscanned>>
 		:	parseRegexCaptureGroup<unscanned>
 	:	parseRegex<unscanned>

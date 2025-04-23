@@ -60,9 +60,9 @@ export const RegexPatterns = {
 	nonCapturingGroup: (pattern: string) => `(?:${pattern})` as const
 }
 
-export const escapeChar = "\\"
+export const Backslash = "\\"
 
-export type EscapeChar = typeof escapeChar
+export type Backslash = typeof Backslash
 
 export const whitespaceChars = {
 	" ": 1,

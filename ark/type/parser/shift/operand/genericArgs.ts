@@ -5,7 +5,7 @@ import type {
 	GenericRoot
 } from "@ark/schema"
 import type { array, ErrorMessage, join } from "@ark/util"
-import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { RuntimeState } from "../../reduce/dynamic.ts"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { parseUntilFinalizer } from "../../string.ts"
@@ -13,7 +13,7 @@ import type { parseUntilFinalizer } from "../../string.ts"
 export const parseGenericArgs = (
 	name: string,
 	g: GenericRoot,
-	s: DynamicState
+	s: RuntimeState
 ): BaseRoot[] => _parseGenericArgs(name, g, s, [])
 
 export type parseGenericArgs<
@@ -27,7 +27,7 @@ export type parseGenericArgs<
 const _parseGenericArgs = (
 	name: string,
 	g: GenericRoot,
-	s: DynamicState,
+	s: RuntimeState,
 	argNodes: BaseRoot[]
 ): BaseRoot[] => {
 	const argState = s.parseUntilFinalizer()

@@ -9,7 +9,7 @@ import type {
 import type { type } from "../../keywords/keywords.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator } from "../reduce/shared.ts"
-import type { ArkTypeScanner } from "../shift/scanner.ts"
+import type { InfixToken, PostfixToken } from "../shift/tokens.ts"
 import type {
 	GenericInstantiationAst,
 	inferGenericInstantiation
@@ -78,12 +78,12 @@ export type PrefixExpression<
 > = [operator, operand]
 
 export type PostfixExpression<
-	operator extends ArkTypeScanner.PostfixToken = ArkTypeScanner.PostfixToken,
+	operator extends PostfixToken = PostfixToken,
 	operand = unknown
 > = readonly [operand, operator]
 
 export type InfixExpression<
-	operator extends ArkTypeScanner.InfixToken = ArkTypeScanner.InfixToken,
+	operator extends InfixToken = InfixToken,
 	l = unknown,
 	r = unknown
 > = [l, operator, r]

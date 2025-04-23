@@ -1,5 +1,6 @@
 import type { BaseParseContext, resolvableReferenceIn } from "@ark/schema"
 import {
+	Scanner,
 	throwInternalError,
 	throwParseError,
 	type ErrorMessage
@@ -7,7 +8,7 @@ import {
 import type { ArkAmbient } from "../config.ts"
 import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { inferAstRoot } from "./ast/infer.ts"
-import { DynamicState, type DynamicStateWithRoot } from "./reduce/dynamic.ts"
+import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
 import type { state, StaticState } from "./reduce/static.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
@@ -16,7 +17,6 @@ import {
 	writeUnexpectedCharacterMessage,
 	type parseOperator
 } from "./shift/operator/operator.ts"
-import { ArkTypeScanner } from "./shift/scanner.ts"
 
 export const parseString = (
 	def: string,
@@ -30,7 +30,7 @@ export const parseString = (
 		if (possibleElementResolution) return possibleElementResolution.array()
 	}
 
-	const s = new DynamicState(new ArkTypeScanner(def), ctx)
+	const s = new RuntimeState(new Scanner(def), ctx)
 
 	const node = fullStringParse(s)
 
@@ -67,7 +67,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): InnerParseResult => {
+export const fullStringParse = (s: RuntimeState): InnerParseResult => {
 	s.parseOperand()
 	let result: InnerParseResult = parseUntilFinalizer(s).root
 	if (!result) {
@@ -76,7 +76,7 @@ export const fullStringParse = (s: DynamicState): InnerParseResult => {
 		)
 	}
 
-	if (s.finalizer === "=") result = parseDefault(s as DynamicStateWithRoot)
+	if (s.finalizer === "=") result = parseDefault(s as RootedRuntimeState)
 	else if (s.finalizer === "?") result = [result, "?"]
 
 	s.scanner.shiftUntilNonWhitespace()
@@ -91,10 +91,10 @@ type fullStringParse<s extends StaticState, $, args> = extractFinalizedResult<
 	parseUntilFinalizer<s, $, args>
 >
 
-export const parseUntilFinalizer = (s: DynamicState): DynamicStateWithRoot => {
+export const parseUntilFinalizer = (s: RuntimeState): RootedRuntimeState => {
 	while (s.finalizer === undefined) next(s)
 
-	return s as DynamicStateWithRoot
+	return s as RootedRuntimeState
 }
 
 export type parseUntilFinalizer<s extends StaticState, $, args> =
@@ -102,7 +102,7 @@ export type parseUntilFinalizer<s extends StaticState, $, args> =
 		parseUntilFinalizer<next<s, $, args>, $, args>
 	:	s
 
-const next = (s: DynamicState): void =>
+const next = (s: RuntimeState): void =>
 	s.hasRoot() ? s.parseOperator() : s.parseOperand()
 
 type next<s extends StaticState, $, args> =

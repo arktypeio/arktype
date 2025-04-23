@@ -1,5 +1,5 @@
 import type { KeySet } from "./records.ts"
-import { escapeChar, whitespaceChars } from "./strings.ts"
+import { Backslash, whitespaceChars, type WhitespaceChar } from "./strings.ts"
 
 export class Scanner<lookahead extends string = string> {
 	chars: string[]
@@ -33,7 +33,7 @@ export class Scanner<lookahead extends string = string> {
 		let shifted = ""
 		while (this.lookahead) {
 			if (condition(this, shifted)) {
-				if (shifted[shifted.length - 1] === escapeChar)
+				if (shifted[shifted.length - 1] === Backslash)
 					shifted = shifted.slice(0, -1)
 				else break
 			}
@@ -89,4 +89,43 @@ export class Scanner<lookahead extends string = string> {
 
 export declare namespace Scanner {
 	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
+
+	export type shift<
+		lookahead extends string,
+		unscanned extends string
+	> = `${lookahead}${unscanned}`
+
+	export type shiftUntil<
+		unscanned extends string,
+		terminator extends string,
+		appendTo extends string = ""
+	> =
+		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
+			lookahead extends terminator ?
+				appendTo extends `${infer base}${Backslash}` ?
+					shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
+				:	[appendTo, unscanned]
+			:	shiftUntil<nextUnscanned, terminator, `${appendTo}${lookahead}`>
+		:	[appendTo, ""]
+
+	export type shiftUntilNot<
+		unscanned extends string,
+		nonTerminator extends string,
+		appendTo extends string = ""
+	> =
+		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
+			lookahead extends nonTerminator ?
+				shiftUntilNot<nextUnscanned, nonTerminator, `${appendTo}${lookahead}`>
+			:	[appendTo, unscanned]
+		:	[appendTo, ""]
+
+	export type skipWhitespace<unscanned extends string> = shiftUntilNot<
+		unscanned,
+		WhitespaceChar
+	>[1]
+
+	export type shiftResult<scanned extends string, unscanned extends string> = [
+		scanned,
+		unscanned
+	]
 }

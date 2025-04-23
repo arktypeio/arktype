@@ -6,7 +6,7 @@ import type {
 	trim
 } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
-import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
+import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type { StringLiteral } from "../operand/enclosed.ts"
 
 type UnitLiteralKeyword = "null" | "undefined" | "true" | "false"
@@ -21,7 +21,7 @@ export type UnitLiteral =
 export type ParsedDefaultableProperty = readonly [BaseRoot, "=", unknown]
 
 export const parseDefault = (
-	s: DynamicStateWithRoot
+	s: RootedRuntimeState
 ): ParsedDefaultableProperty => {
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()

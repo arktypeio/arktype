@@ -2,22 +2,23 @@ import type { BaseParseContext, BaseRoot } from "@ark/schema"
 import {
 	isKeyOf,
 	type requireKeys,
+	type Scanner,
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
 import type { LimitLiteral } from "../../attributes.ts"
 import { parseOperand } from "../shift/operand/operand.ts"
 import { parseOperator } from "../shift/operator/operator.ts"
-import type { ArkTypeScanner } from "../shift/scanner.ts"
+import type { FinalizingLookahead, InfixToken } from "../shift/tokens.ts"
 import { parseUntilFinalizer } from "../string.ts"
 import {
 	type BranchOperator,
 	type Comparator,
+	invertedComparators,
 	type MinComparator,
+	minComparators,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator,
-	invertedComparators,
-	minComparators,
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnclosedGroupMessage,
@@ -33,10 +34,9 @@ type BranchState = {
 	pipe: BaseRoot | null
 }
 
-export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
+export type RootedRuntimeState = requireKeys<RuntimeState, "root">
 
-export class DynamicState {
-	// set root type to `any` so that all constraints can be applied
+export class RuntimeState {
 	root: BaseRoot | undefined
 	branches: BranchState = {
 		prefixes: [],
@@ -45,13 +45,13 @@ export class DynamicState {
 		union: null,
 		pipe: null
 	}
-	finalizer: ArkTypeScanner.FinalizingLookahead | undefined
+	finalizer: FinalizingLookahead | undefined
 	groups: BranchState[] = []
 
-	scanner: ArkTypeScanner
+	scanner: Scanner
 	ctx: BaseParseContext
 
-	constructor(scanner: ArkTypeScanner, ctx: BaseParseContext) {
+	constructor(scanner: Scanner, ctx: BaseParseContext) {
 		this.scanner = scanner
 		this.ctx = ctx
 	}
@@ -60,7 +60,7 @@ export class DynamicState {
 		return throwParseError(message)
 	}
 
-	hasRoot(): this is DynamicStateWithRoot {
+	hasRoot(): this is RootedRuntimeState {
 		return this.root !== undefined
 	}
 
@@ -78,7 +78,7 @@ export class DynamicState {
 		this.root = this.root!.constrain(args[0], args[1])
 	}
 
-	finalize(finalizer: ArkTypeScanner.FinalizingLookahead): void {
+	finalize(finalizer: FinalizingLookahead): void {
 		if (this.groups.length) return this.error(writeUnclosedGroupMessage(")"))
 
 		this.finalizeBranches()
@@ -177,11 +177,11 @@ export class DynamicState {
 		this.branches.union = null
 	}
 
-	parseUntilFinalizer(): DynamicStateWithRoot {
-		return parseUntilFinalizer(new DynamicState(this.scanner, this.ctx))
+	parseUntilFinalizer(): RootedRuntimeState {
+		return parseUntilFinalizer(new RuntimeState(this.scanner, this.ctx))
 	}
 
-	parseOperator(this: DynamicStateWithRoot): void {
+	parseOperator(this: RootedRuntimeState): void {
 		return parseOperator(this)
 	}
 
@@ -214,7 +214,7 @@ export class DynamicState {
 	previousOperator():
 		| MinComparator
 		| StringifiablePrefixOperator
-		| ArkTypeScanner.InfixToken
+		| InfixToken
 		| undefined {
 		return (
 			this.branches.leftBound?.comparator ??
