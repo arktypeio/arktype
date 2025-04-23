@@ -189,17 +189,18 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 		if (result === null) continue
 		if (result instanceof Disjoint) return result
 
+		if (result.isRoot()) {
+			s.roots.push(result)
+			s.l.splice(i)
+			return intersectConstraints(s)
+		}
+
 		if (!matched) {
-			if (result.isRoot()) {
-				s.roots.push(result)
-				s.l.splice(i)
-				return intersectConstraints(s)
-			}
 			s.l[i] = result as BaseConstraint
 			matched = true
 		} else if (!s.l.includes(result as never)) {
 			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
+				`Unexpectedly encountered multiple distinct intersection results for refinement ${head}`
 			)
 		}
 	}

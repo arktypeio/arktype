@@ -453,4 +453,10 @@ contextualize(() => {
 				.type.errors("Property 'atOrBefore' does not exist")
 		})
 	})
+
+	it("unit overlap", () => {
+		const five = type("5 <= number < 10").and("0 < number <= 5")
+
+		attest(five.expression).equals("5")
+	})
 })

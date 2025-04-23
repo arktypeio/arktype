@@ -89,7 +89,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			implementation.defaults
 		]),
 		{
-			jitless: true, // envHasCsp(),
+			jitless: envHasCsp(),
 			clone: deepClone,
 			onUndeclaredKey: "ignore",
 			exactOptionalPropertyTypes: true,
