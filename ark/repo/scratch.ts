@@ -1,8 +1,44 @@
-import { type } from "arktype"
+import { bench } from "@ark/attest"
+import type { Backslash, Scanner, WhitespaceChar } from "@ark/util"
 
-const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+type inferRegex<unscanned extends string> = parseSequence<unscanned, never, "">
 
-len.params.expression //?
-len.returns.allows(5) //?
+export type Quantifier = "*" | "+" | "?" | "{" | "}"
+export type Boundary = "^" | "$" | "(" | ")" | "[" | "]"
+export type Operator = "|" | "."
+export type Escape = "\\"
 
-len(5 as any)
+export type Control = Quantifier | Boundary | Operator | Escape
+
+export type StringClassChar = "w" | "W" | "D" | "S"
+
+type result = inferRegex<"afgdsfa|fsdhaoi|bag?|fdsa">
+//    ^?
+
+type parseSequence<
+	remaining extends string,
+	inferred extends string,
+	sequence extends string
+> =
+	remaining extends Scanner.shift<infer lookahead, infer unscanned> ?
+		lookahead extends Backslash ?
+			unscanned extends (
+				Scanner.shift<infer nextLookahead, infer nextUnscanned>
+			) ?
+				nextLookahead extends StringClassChar ?
+					parseSequence<nextUnscanned, inferred, `${sequence}${string}`>
+				: nextLookahead extends "d" ?
+					parseSequence<nextUnscanned, inferred, `${sequence}${number}`>
+				: nextLookahead extends "s" ?
+					parseSequence<nextUnscanned, inferred, `${sequence}${WhitespaceChar}`>
+				: nextLookahead extends Control | "/" ?
+					parseSequence<nextUnscanned, inferred, `${sequence}${nextLookahead}`>
+				:	"unnecessary escape"
+			:	"unmatched backslash"
+		: lookahead extends "|" ? parseSequence<unscanned, inferred | sequence, "">
+		: parseSequence<unscanned, inferred, `${sequence}${lookahead}`>
+	:	inferred | sequence
+
+bench("string", () => {
+	type Z = inferRegex<"abc|br?|superfood|okok">
+}).types([465, "instantiations"])
