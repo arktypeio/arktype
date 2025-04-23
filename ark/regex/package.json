@@ -25,7 +25,8 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"test": "ts ../repo/testPackage.ts",
+		"bench": "ts ./__tests__/regex.bench.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*"

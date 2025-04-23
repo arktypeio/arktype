@@ -1,3 +1,4 @@
+import type { regex } from "@ark/regex"
 import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
@@ -63,7 +64,7 @@ export type parseEnclosed<
 				s,
 				InferredAst<
 					enclosingStart extends EnclosingQuote ? scanned
-					: enclosingStart extends "/" ? string
+					: enclosingStart extends "/" ? regex.infer<scanned>
 					: Date,
 					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 				>,

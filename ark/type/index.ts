@@ -1,3 +1,4 @@
+export { regex } from "@ark/regex"
 export {
 	ArkError,
 	ArkErrors,

@@ -52,101 +52,118 @@ contextualize(() => {
 
 	it("start and end", () => {
 		const S = regex("^a$")
-		attest<`a`>(S.infer)
+		attest<`a`>(S.infer).type.toString.snap("a")
 	})
 
-	// it("character sets", () => {
-	// 	const S = regex("^a[abc]$")
-	// 	attest<`a${"a" | "b" | "c"}`>(S.infer)
-	// })
+	it("consecutive string tokens collapse", () => {
+		const S = regex("^..\\w\\W\\S$")
+		attest<string>(S.infer).type.toString.snap("string")
+	})
 
-	// it("character set ranges", () => {
-	// 	const S = regex("^a[x-z]$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("consecutive string tokens with interpolation", () => {
+		const S = regex("^..a..$")
+		attest<`${string}a${string}`>(S.infer).type.toString.snap(
+			"`${string}a${string}`"
+		)
+	})
 
-	// it("character set dashes", () => {
-	// 	const S = regex("^a[\\^a\\-b]$")
-	// 	attest<`a${"^" | "a" | "-" | "b"}`>(S.infer)
-	// })
+	it("consecutive string tokens collapsed with anchors", () => {
+		const S = regex(".a.")
+		attest<string>(S.infer)
+	})
 
-	// it(".", () => {
-	// 	const S = regex("^a.$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("character sets", () => {
+		const S = regex("^a[abc]$")
+		attest<`a${"a" | "b" | "c"}`>(S.infer)
+	})
 
-	// it("?", () => {
-	// 	const S = regex("^ab?c$")
-	// 	attest<`a${"b" | ""}c`>(S.infer)
-	// })
+	it("character set ranges", () => {
+		const S = regex("^a[x-z]$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("+", () => {
-	// 	const S = regex("^ab+c$")
-	// 	attest<`a${string}c`>(S.infer)
-	// })
+	it("character set dashes", () => {
+		const S = regex("^a[\\^a\\-b]$")
+		attest<`a${"^" | "a" | "-" | "b"}`>(S.infer)
+	})
 
-	// it("+?", () => {
-	// 	const S = regex("^ab+?c$")
-	// 	attest<`a${string}c`>(S.infer)
-	// })
+	it(".", () => {
+		const S = regex("^a.$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("*", () => {
-	// 	const S = regex("^ab*c$")
-	// 	attest<`a${string}c`>(S.infer)
-	// })
+	it("?", () => {
+		const S = regex("^ab?c$")
+		attest<`a${"b" | ""}c`>(S.infer)
+	})
 
-	// it("{} up to including length 3", () => {
-	// 	const S = regex("^x{0}a{1}b{2}c{3}d{,3}e{1,2}f{4}$")
-	// 	attest<`abbccc${"" | "d" | "dd" | "ddd"}${"e" | "ee"}${string}`>(S.infer)
-	// })
+	it("+", () => {
+		const S = regex("^ab+c$")
+		attest<`a${string}c`>(S.infer)
+	})
 
-	// it("\\w", () => {
-	// 	const S = regex("^a\\wc$")
-	// 	attest<`a${AlphanumericCharacter | "_"}c`>(S.infer)
-	// })
+	it("+?", () => {
+		const S = regex("^ab+?c$")
+		attest<`a${string}c`>(S.infer)
+	})
 
-	// it("\\d", () => {
-	// 	const S = regex("^a\\dc$")
-	// 	attest<`a${DigitCharacter}c`>(S.infer)
-	// })
+	it("*", () => {
+		const S = regex("^ab*c$")
+		attest<`a${string}c`>(S.infer)
+	})
 
-	// it("\\s", () => {
-	// 	const S = regex("^a\\sc$")
-	// 	attest<`a${WhitespaceCharacter}c`>(S.infer)
-	// })
+	it("{} up to including length 3", () => {
+		const S = regex("^x{0}a{1}b{2}c{3}d{,3}e{1,2}f{4}$")
+		attest<`abbccc${"" | "d" | "dd" | "ddd"}${"e" | "ee"}${string}`>(S.infer)
+	})
 
-	// it("\\W", () => {
-	// 	const S = regex("^a\\W$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("\\w", () => {
+		const S = regex("^a\\wc$")
+		attest<`a${AlphanumericCharacter | "_"}c`>(S.infer)
+	})
 
-	// it("\\D", () => {
-	// 	const S = regex("^a\\D$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("\\d", () => {
+		const S = regex("^a\\dc$")
+		attest<`a${DigitCharacter}c`>(S.infer)
+	})
 
-	// it("\\S", () => {
-	// 	const S = regex("^a\\S$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("\\s", () => {
+		const S = regex("^a\\sc$")
+		attest<`a${WhitespaceCharacter}c`>(S.infer)
+	})
 
-	// it("groups", () => {
-	// 	const S = regex("^(abc)(?:def)(?=ghi)(?!jkl)$")
-	// 	attest<`abcdefghi${string}`>(S.infer)
-	// })
+	it("\\W", () => {
+		const S = regex("^a\\W$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("backreferences and escaped character codes", () => {
-	// 	const S = regex("^(abc)\\1\\256$")
-	// 	attest<`abc${string}${string}`>(S.infer)
-	// })
+	it("\\D", () => {
+		const S = regex("^a\\D$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("unions", () => {
-	// 	const S = regex("^abc|def|ghi$")
-	// 	attest<"abc" | "def" | "ghi">(S.infer)
-	// })
+	it("\\S", () => {
+		const S = regex("^a\\S$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("reports unclosed character sets", () => {
-	// 	const S = regex("^abc[$")
-	// 	attest<"abc" | "def" | "ghi">(S.infer)
-	// })
+	it("groups", () => {
+		const S = regex("^(abc)(?:def)(?=ghi)(?!jkl)$")
+		attest<`abcdefghi${string}`>(S.infer)
+	})
+
+	it("backreferences and escaped character codes", () => {
+		const S = regex("^(abc)\\1\\256$")
+		attest<`abc${string}${string}`>(S.infer)
+	})
+
+	it("unions", () => {
+		const S = regex("^abc|def|ghi$")
+		attest<"abc" | "def" | "ghi">(S.infer)
+	})
+
+	it("reports unclosed character sets", () => {
+		const S = regex("^abc[$")
+		attest<"abc" | "def" | "ghi">(S.infer)
+	})
 })

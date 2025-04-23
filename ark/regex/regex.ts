@@ -2,10 +2,33 @@ import type {
 	Backslash,
 	ErrorMessage,
 	inferred,
+	leftIfEqual,
 	Scanner,
 	WhitespaceChar,
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
+
+export interface Regex<pattern extends string = string> extends RegExp {
+	[inferred]: pattern
+	infer: pattern
+
+	test(s: string): s is pattern
+}
+
+export const regex = <src extends string>(
+	src: regex.validate<src>
+): Regex<regex.infer<src>> => new RegExp(src) as never
+
+export type regex<pattern extends string = string> = Regex<pattern>
+
+export declare namespace regex {
+	type infer<unscanned extends string> = finalize<
+		continueSequence<unscanned, [], GroupState.Initial>
+	>
+
+	type validate<src extends string> =
+		regex.infer<src> extends ErrorMessage ? regex.infer<src> : src
+}
 
 export type Quantifier = "*" | "+" | "?" | "{"
 export type Boundary = Anchor | "(" | ")" | "[" | "]"
@@ -15,6 +38,7 @@ export type Control = Quantifier | Boundary | "|" | "."
 type GroupState = {
 	branches: string
 	sequence: string
+	sequenceBranchCounter: 1[]
 	last: string | empty
 }
 
@@ -22,6 +46,7 @@ declare namespace GroupState {
 	export type Initial = {
 		branches: never
 		sequence: ""
+		sequenceBranchCounter: [1]
 		last: empty
 	}
 }
@@ -53,18 +78,23 @@ type ParsedAnchor<a extends Anchor> = `$ark${a}`
 // since it not stringifiable so it must be handled
 type empty = symbol
 
+// TODO: accept 2 params, call from anchoring
 type sequenceWithLast<s extends GroupState> =
-	s["last"] extends string ? `${s["sequence"]}${s["last"]}` : s["sequence"]
+	s["last"] extends string ?
+		leftIfEqual<s["sequence"], `${s["sequence"]}${s["last"]}`>
+	:	s["sequence"]
 
 type updateState<s extends GroupState, last extends string | empty> = {
 	branches: s["branches"]
 	sequence: sequenceWithLast<s>
+	sequenceBranchCounter: s["sequenceBranchCounter"]
 	last: last
 }
 
 type finalizeBranch<s extends GroupState> = {
 	branches: s["branches"] | sequenceWithLast<s>
 	sequence: ""
+	sequenceBranchCounter: s["sequenceBranchCounter"]
 	last: empty
 }
 
@@ -73,6 +103,7 @@ type anchor<s extends GroupState, a extends Anchor> = {
 	// if Anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
 	// but we append to it since we handle that error during root-level finalization
 	sequence: `${sequenceWithLast<s>}${ParsedAnchor<a>}`
+	sequenceBranchCounter: s["sequenceBranchCounter"]
 	last: empty
 }
 
@@ -82,7 +113,9 @@ type continueSequence<
 	s extends GroupState
 > =
 	source extends Scanner.shift<infer lookahead, infer unscanned> ?
-		lookahead extends Backslash ?
+		lookahead extends "." ?
+			continueSequence<unscanned, groups, updateState<s, string>>
+		: lookahead extends Backslash ?
 			parseEscapedChar<unscanned> extends (
 				ParsedEscapeSequence<infer result, infer nextUnscanned>
 			) ?
@@ -129,24 +162,4 @@ type parseEscapedChar<source extends string> =
 		>
 	:	ParsedEscapeSequence<ErrorMessage<`A regex cannot end with \\`>, "">
 
-export interface Regex<pattern extends string = string> extends RegExp {
-	[inferred]: pattern
-	infer: pattern
-
-	test(s: string): s is pattern
-}
-
-export const regex = <src extends string>(
-	src: regex.validate<src>
-): Regex<regex.infer<src>> => new RegExp(src) as never
-
-export type regex<pattern extends string = string> = Regex<pattern>
-
-export declare namespace regex {
-	type infer<unscanned extends string> = finalize<
-		continueSequence<unscanned, [], GroupState.Initial>
-	>
-
-	type validate<src extends string> =
-		regex.infer<src> extends ErrorMessage ? regex.infer<src> : src
-}
+// type quantify<last extends string, min extends number, max extends number> = repeat<>
