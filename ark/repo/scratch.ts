@@ -1,7 +1,12 @@
 import { bench } from "@ark/attest"
-import type { Backslash, Scanner, WhitespaceChar } from "@ark/util"
+import type { Backslash, Scanner, unset, WhitespaceChar } from "@ark/util"
 
-type inferRegex<unscanned extends string> = parseSequence<unscanned, never, "">
+type inferRegex<unscanned extends string> = parseSequence<
+	unscanned,
+	never,
+	"",
+	""
+>
 
 export type Quantifier = "*" | "+" | "?" | "{" | "}"
 export type Boundary = "^" | "$" | "(" | ")" | "[" | "]"
@@ -17,7 +22,8 @@ type result = inferRegex<"afgdsfa|fsdhaoi|bag?|fdsa">
 
 type parseSequence<
 	remaining extends string,
-	inferred extends string,
+	branches extends string,
+	last extends string,
 	sequence extends string
 > =
 	remaining extends Scanner.shift<infer lookahead, infer unscanned> ?
@@ -26,18 +32,34 @@ type parseSequence<
 				Scanner.shift<infer nextLookahead, infer nextUnscanned>
 			) ?
 				nextLookahead extends StringClassChar ?
-					parseSequence<nextUnscanned, inferred, `${sequence}${string}`>
+					parseSequence<nextUnscanned, branches, string, `${sequence}${last}`>
 				: nextLookahead extends "d" ?
-					parseSequence<nextUnscanned, inferred, `${sequence}${number}`>
+					parseSequence<
+						nextUnscanned,
+						branches,
+						`${bigint}`,
+						`${sequence}${last}`
+					>
 				: nextLookahead extends "s" ?
-					parseSequence<nextUnscanned, inferred, `${sequence}${WhitespaceChar}`>
+					parseSequence<
+						nextUnscanned,
+						branches,
+						WhitespaceChar,
+						`${sequence}${last}`
+					>
 				: nextLookahead extends Control | "/" ?
-					parseSequence<nextUnscanned, inferred, `${sequence}${nextLookahead}`>
+					parseSequence<
+						nextUnscanned,
+						branches,
+						nextLookahead,
+						`${sequence}${last}`
+					>
 				:	"unnecessary escape"
 			:	"unmatched backslash"
-		: lookahead extends "|" ? parseSequence<unscanned, inferred | sequence, "">
-		: parseSequence<unscanned, inferred, `${sequence}${lookahead}`>
-	:	inferred | sequence
+		: lookahead extends "|" ?
+			parseSequence<unscanned, branches | sequence, "", "">
+		:	parseSequence<unscanned, branches, lookahead, `${sequence}${last}`>
+	:	branches | sequence
 
 bench("string", () => {
 	type Z = inferRegex<"abc|br?|superfood|okok">
