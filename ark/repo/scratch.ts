@@ -6,7 +6,6 @@ import type {
 	WhitespaceChar
 } from "@ark/util"
 import type { writeUnmatchedGroupCloseMessage } from "arktype/internal/parser/reduce/shared.ts"
-import type { group } from "node:console"
 
 export type Quantifier = "*" | "+" | "?" | "{"
 export type Boundary = Anchor | "(" | ")" | "[" | "]"
