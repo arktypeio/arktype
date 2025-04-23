@@ -19,18 +19,25 @@ type GroupState = {
 	last: string | empty
 }
 
-type parseSequence<
-	source extends string,
-	groups extends GroupState[]
-> = continueSequence<
-	source,
-	groups,
-	{
-		branches: never
-		sequence: ""
-		last: empty
-	}
->
+type parseSequence<source extends string, groups extends GroupState[]> =
+	continueSequence<
+		source,
+		groups,
+		{
+			branches: never
+			sequence: ""
+			last: empty
+		}
+	> extends infer result extends string ?
+		result extends ErrorMessage ? result
+		: groups extends [] ?
+			result extends StartAnchorAst<infer inner> ?
+				inner
+			:	`${string}${result}`
+		:	result
+	:	never
+
+type StartAnchorAst<s extends string> = `$ark^${s}`
 
 // we're just using the symbol keyword itself to represent an unset value here
 // since it not stringifiable so it must be handled
@@ -47,13 +54,13 @@ type updateState<s extends GroupState, last extends string | empty> = {
 
 type finalizeBranch<s extends GroupState> = {
 	branches: s["branches"] | sequenceWithLast<s>
-	sequence: string
+	sequence: ""
 	last: empty
 }
 
 type anchorStart<s extends GroupState> = {
 	branches: s["branches"]
-	sequence: ""
+	sequence: StartAnchorAst<"">
 	last: empty
 }
 
@@ -72,14 +79,13 @@ type continueSequence<
 				:	continueSequence<nextUnscanned, groups, updateState<s, result>>
 			:	never
 		: lookahead extends "|" ?
-			parseSequence<unscanned, [...groups, finalizeBranch<s>]>
+			continueSequence<unscanned, groups, finalizeBranch<s>>
 		: lookahead extends "^" ?
-			[allGroupsEmpty<groups>, s["sequence"], s["last"]] extends (
-				[true, "", empty]
-			) ?
-				continueSequence<unscanned, groups, anchorStart<s>>
+			[allGroupsEmpty<groups>, s["last"]] extends [true, empty] ?
+				s["sequence"] extends "" ?
+					continueSequence<unscanned, groups, anchorStart<s>>
+				:	ErrorMessage<`Anchor ^ may not appear mid-pattern`>
 			:	ErrorMessage<`Anchor ^ may not appear mid-pattern`>
-		: lookahead extends "$" ? ErrorMessage<`bad`>
 		: lookahead extends "(" ?
 			continueSequence<unscanned, groups, updateState<s, lookahead>>
 		:	continueSequence<unscanned, groups, updateState<s, lookahead>>
@@ -87,7 +93,7 @@ type continueSequence<
 
 type allGroupsEmpty<groups extends unknown[]> =
 	groups extends [infer head extends GroupState, ...infer tail] ?
-		string extends head["sequence"] ?
+		head["sequence"] extends "" ?
 			allGroupsEmpty<tail>
 		:	false
 	:	true
@@ -122,6 +128,9 @@ type TestC = inferRegex<"^foo|^bar">
 //    ^?
 
 type TestD = inferRegex<"f(^)">
+//    ^?
+
+type TestE = inferRegex<"(^)">
 //    ^?
 
 bench("string", () => {
