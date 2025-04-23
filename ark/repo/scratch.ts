@@ -19,7 +19,11 @@ type GroupState = {
 	last: string | empty
 }
 
-type parseSequence<source extends string, groups extends GroupState[]> =
+type parseSequence<
+	source extends string,
+	groups extends GroupState[]
+> = finalize<
+	groups,
 	continueSequence<
 		source,
 		groups,
@@ -28,16 +32,50 @@ type parseSequence<source extends string, groups extends GroupState[]> =
 			sequence: ""
 			last: empty
 		}
-	> extends infer result extends string ?
-		result extends ErrorMessage ? result
-		: groups extends [] ?
-			result extends StartAnchorAst<infer inner> ?
-				inner
-			:	`${string}${result}`
-		:	result
-	:	never
+	>
+>
+
+// type parseSequence<
+// 	source extends string,
+// 	groups extends GroupState[]
+// > = continueSequence<
+// 	source,
+// 	groups,
+// 	{
+// 		branches: never
+// 		sequence: ""
+// 		last: empty
+// 	}
+// >
+
+type test = finalize<[], "okok" | "abc" | "$ark^br?" | "superfood">
+//    ^?
+
+type finalize<groups extends GroupState[], result extends string> =
+	result extends ErrorMessage ? result
+	: groups extends [] ? finalizeRoot<result>
+	: result
+
+type finalizeRoot<result extends string> =
+	result extends StartAnchorAst<infer startStripped> ?
+		startStripped extends EndAnchorAst<infer bothStripped> ?
+			validateAnchorless<bothStripped>
+		:	validateAnchorless<`${startStripped}${string}`>
+	: result extends EndAnchorAst<infer endStripped> ?
+		validateAnchorless<`${string}${endStripped}`>
+	:	validateAnchorless<`${string}${result}${string}`>
+
+type validateAnchorless<inner extends string> =
+	inner extends `${string}$ark${infer anchor extends "^" | "$"}${string}` ?
+		AnchorMidPatternError<anchor>
+	:	inner
+
+type AnchorMidPatternError<anchor extends "^" | "$"> =
+	ErrorMessage<`Anchor ${anchor} may not appear mid-pattern`>
 
 type StartAnchorAst<s extends string> = `$ark^${s}`
+
+type EndAnchorAst<s extends string> = `${s}$ark$`
 
 // we're just using the symbol keyword itself to represent an unset value here
 // since it not stringifiable so it must be handled
@@ -60,7 +98,9 @@ type finalizeBranch<s extends GroupState> = {
 
 type anchorStart<s extends GroupState> = {
 	branches: s["branches"]
-	sequence: StartAnchorAst<"">
+	// s["sequence"] and s["last"] should always be empty here if the regex is valid,
+	// but we append to it since we handle that error during root-level finalization
+	sequence: `${sequenceWithLast<s>}${StartAnchorAst<"">}`
 	last: empty
 }
 
@@ -81,22 +121,11 @@ type continueSequence<
 		: lookahead extends "|" ?
 			continueSequence<unscanned, groups, finalizeBranch<s>>
 		: lookahead extends "^" ?
-			[allGroupsEmpty<groups>, s["last"]] extends [true, empty] ?
-				s["sequence"] extends "" ?
-					continueSequence<unscanned, groups, anchorStart<s>>
-				:	ErrorMessage<`Anchor ^ may not appear mid-pattern`>
-			:	ErrorMessage<`Anchor ^ may not appear mid-pattern`>
+			continueSequence<unscanned, groups, anchorStart<s>>
 		: lookahead extends "(" ?
 			continueSequence<unscanned, groups, updateState<s, lookahead>>
 		:	continueSequence<unscanned, groups, updateState<s, lookahead>>
 	:	groups[number]["branches"] | finalizeBranch<s>["branches"]
-
-type allGroupsEmpty<groups extends unknown[]> =
-	groups extends [infer head extends GroupState, ...infer tail] ?
-		head["sequence"] extends "" ?
-			allGroupsEmpty<tail>
-		:	false
-	:	true
 
 type ParsedEscapeSequence<result extends string, unscanned extends string> = [
 	result: result,
