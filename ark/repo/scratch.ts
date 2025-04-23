@@ -1,12 +1,9 @@
 import { bench } from "@ark/attest"
-import type {
-	Backslash,
-	ErrorMessage,
-	Scanner,
-	WhitespaceChar
-} from "@ark/util"
+import type { ErrorMessage, Scanner, WhitespaceChar } from "@ark/util"
+import { type } from "arktype"
 import type { writeUnmatchedGroupCloseMessage } from "arktype/internal/parser/reduce/shared.ts"
 
+export type Backslash = "\\"
 export type Quantifier = "*" | "+" | "?" | "{"
 export type Boundary = Anchor | "(" | ")" | "[" | "]"
 export type Anchor = "^" | "$"
@@ -149,6 +146,17 @@ type TestE = inferRegex<"(^bo(innerAnchored$|innerUnanchored))">
 //    ^?
 
 bench("string", () => {
-	type fdasZ = inferRegex<"abc|^br?|superfood|okok">
+	type fdasZ = inferRegex<"typescript|^go$|brrr$">
 	//     ^?
 }).types([785, "instantiations"])
+
+type validateRegex<src extends string> =
+	inferRegex<src> extends ErrorMessage ? inferRegex<src> : src
+
+interface TypedRegExp<pattern extends string = string> extends RegExp {
+	test(s: string): s is pattern
+}
+
+const regex = <src extends string>(
+	src: validateRegex<src>
+): TypedRegExp<inferRegex<src>> => new RegExp(src) as never
