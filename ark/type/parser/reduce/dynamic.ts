@@ -4,7 +4,9 @@ import {
 	type requireKeys,
 	type Scanner,
 	throwInternalError,
-	throwParseError
+	throwParseError,
+	writeUnclosedGroupMessage,
+	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
 import type { LimitLiteral } from "../../attributes.ts"
 import { parseOperand } from "../shift/operand/operand.ts"
@@ -21,8 +23,6 @@ import {
 	type StringifiablePrefixOperator,
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
-	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
 } from "./shared.ts"
 

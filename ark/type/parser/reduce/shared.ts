@@ -46,21 +46,6 @@ export type BranchOperator = "&" | "|" | "|>"
 
 export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
 
-export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
-	unscanned: unscanned
-): writeUnmatchedGroupCloseMessage<unscanned> =>
-	`Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
-
-export type writeUnmatchedGroupCloseMessage<unscanned extends string> =
-	`Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`
-
-export const writeUnclosedGroupMessage = <missingChar extends string>(
-	missingChar: missingChar
-): writeUnclosedGroupMessage<missingChar> => `Missing ${missingChar}`
-
-export type writeUnclosedGroupMessage<missingChar extends string> =
-	`Missing ${missingChar}`
-
 export const writeOpenRangeMessage = <
 	min extends LimitLiteral,
 	comparator extends MinComparator

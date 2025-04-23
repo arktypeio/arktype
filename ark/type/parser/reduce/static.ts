@@ -1,4 +1,10 @@
-import type { Completion, ErrorMessage, defined } from "@ark/util"
+import type {
+	Completion,
+	ErrorMessage,
+	defined,
+	writeUnclosedGroupMessage,
+	writeUnmatchedGroupCloseMessage
+} from "@ark/util"
 import type { LimitLiteral } from "../../attributes.ts"
 import type { FinalizingLookahead } from "../shift/tokens.ts"
 import type {
@@ -11,8 +17,6 @@ import type {
 	StringifiablePrefixOperator,
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
-	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
 } from "./shared.ts"
 

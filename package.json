@@ -118,7 +118,10 @@
 		"peerDependencyRules": {
 			"allowedVersions": {
 				"typescript": "*"
-			}
+			},
+			"ignoreMissing": [
+				"eslint"
+			]
 		}
 	}
 }

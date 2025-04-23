@@ -4,9 +4,13 @@ import type {
 	genericParamNames,
 	GenericRoot
 } from "@ark/schema"
-import type { array, ErrorMessage, join } from "@ark/util"
+import {
+	writeUnclosedGroupMessage,
+	type array,
+	type ErrorMessage,
+	type join
+} from "@ark/util"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
-import { writeUnclosedGroupMessage } from "../../reduce/shared.ts"
 import type { state, StaticState } from "../../reduce/static.ts"
 import type { parseUntilFinalizer } from "../../string.ts"
 
