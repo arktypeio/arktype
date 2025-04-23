@@ -9,28 +9,58 @@ import type {
 export type Quantifier = "*" | "+" | "?" | "{"
 export type Boundary = "^" | "$" | "(" | ")" | "[" | "]"
 
-export type Control = Quantifier | Boundary | "|" | "." | "/"
+export type Control = Quantifier | Boundary | "|" | "."
 
-type inferRegex<unscanned extends string> = parseSequence<unscanned, never>
+type inferRegex<unscanned extends string> = parseSequence<unscanned, []>
+
+type GroupState = {
+	branches: string
+	sequence: string
+	last: string | empty
+}
 
 type parseSequence<
 	source extends string,
-	inferredBranches extends string
-> = continueSequence<source, inferredBranches, [], string, empty>
+	groups extends GroupState[]
+> = continueSequence<
+	source,
+	groups,
+	{
+		branches: never
+		sequence: ""
+		last: empty
+	}
+>
 
 // we're just using the symbol keyword itself to represent an unset value here
 // since it not stringifiable so it must be handled
 type empty = symbol
 
-type updateSequence<sequence extends string, last extends string | empty> =
-	last extends string ? `${sequence}${last}` : string
+type sequenceWithLast<s extends GroupState> =
+	s["last"] extends string ? `${s["sequence"]}${s["last"]}` : s["sequence"]
+
+type updateState<s extends GroupState, last extends string | empty> = {
+	branches: s["branches"]
+	sequence: sequenceWithLast<s>
+	last: last
+}
+
+type finalizeBranch<s extends GroupState> = {
+	branches: s["branches"] | sequenceWithLast<s>
+	sequence: string
+	last: empty
+}
+
+type anchorStart<s extends GroupState> = {
+	branches: s["branches"]
+	sequence: ""
+	last: empty
+}
 
 type continueSequence<
 	source extends string,
-	inferredBranches extends string,
-	groups extends string[],
-	sequence extends string,
-	last extends string | empty
+	groups extends GroupState[],
+	s extends GroupState
 > =
 	source extends Scanner.shift<infer lookahead, infer unscanned> ?
 		lookahead extends Backslash ?
@@ -39,35 +69,25 @@ type continueSequence<
 			) ?
 				result extends ErrorMessage ?
 					result
-				:	continueSequence<
-						nextUnscanned,
-						inferredBranches,
-						groups,
-						updateSequence<sequence, last>,
-						result
-					>
+				:	continueSequence<nextUnscanned, groups, updateState<s, result>>
 			:	never
 		: lookahead extends "|" ?
-			parseSequence<unscanned, inferredBranches | sequence>
+			parseSequence<unscanned, [...groups, finalizeBranch<s>]>
 		: lookahead extends "^" ?
-			[allGroupsEmpty<groups>, string, last] extends [true, sequence, empty] ?
-				continueSequence<unscanned, inferredBranches, groups, "", empty>
+			[allGroupsEmpty<groups>, s["sequence"], s["last"]] extends (
+				[true, "", empty]
+			) ?
+				continueSequence<unscanned, groups, anchorStart<s>>
 			:	ErrorMessage<`Anchor ^ may not appear mid-pattern`>
-		: lookahead extends "$" ?
-			ErrorMessage<`Anchor $ may not appear mid-pattern`>
-		: lookahead extends "(" ? "groups unsupported"
-		: continueSequence<
-				unscanned,
-				inferredBranches,
-				groups,
-				updateSequence<sequence, last>,
-				lookahead
-			>
-	:	inferredBranches | sequence
+		: lookahead extends "$" ? ErrorMessage<`bad`>
+		: lookahead extends "(" ?
+			continueSequence<unscanned, groups, updateState<s, lookahead>>
+		:	continueSequence<unscanned, groups, updateState<s, lookahead>>
+	:	groups[number]["branches"] | finalizeBranch<s>["branches"]
 
 type allGroupsEmpty<groups extends unknown[]> =
-	groups extends [infer head, ...infer tail] ?
-		string extends head ?
+	groups extends [infer head extends GroupState, ...infer tail] ?
+		string extends head["sequence"] ?
 			allGroupsEmpty<tail>
 		:	false
 	:	true
