@@ -7,4 +7,4 @@ bench.baseline(() => {
 
 bench("string", () => {
 	regex("typescript|^go$|brrr$")
-}).types([725, "instantiations"])
+}).types([1523, "instantiations"])

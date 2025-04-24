@@ -157,11 +157,11 @@ type tryResolve<
 		parseResolution<s, unscanned, token, args[token], $, args>
 	: token extends keyof $ ?
 		parseResolution<s, unscanned, token, $[token], $, args>
-	: `#${token}` extends keyof $ ?
-		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
 	: // this assumes there are no private aliases in the ambient scope
 	token extends keyof ArkAmbient.$ ?
 		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
+	: `#${token}` extends keyof $ ?
+		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
 	: token extends NumberLiteral<infer n> ?
 		s.setRoot<s, InferredAst<n, token>, unscanned>
 	: token extends (
