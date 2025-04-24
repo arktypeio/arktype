@@ -59,10 +59,10 @@ type anchorsAway<result extends string> =
 	result extends `${ParsedAnchor<"^">}${infer startStripped}` ?
 		startStripped extends `${infer bothStripped}${ParsedAnchor<"$">}` ?
 			bothStripped
-		:	`${startStripped}${string}`
+		:	appendNonRedundant<startStripped, string>
 	: result extends `${infer endStripped}${ParsedAnchor<"$">}` ?
-		`${string}${endStripped}`
-	:	`${string}${result}${string}`
+		prependNonRedundant<endStripped, string>
+	:	prependNonRedundant<appendNonRedundant<result, string>, string>
 
 type validateNoMidPatternAnchors<inner extends string> =
 	inner extends `${string}$ark${infer anchor extends Anchor}${string}` ?
@@ -78,21 +78,29 @@ type ParsedAnchor<a extends Anchor> = `$ark${a}`
 // since it not stringifiable so it must be handled
 type empty = symbol
 
-// TODO: accept 2 params, call from anchoring
-type sequenceWithLast<s extends GroupState> =
-	s["last"] extends string ?
-		leftIfEqual<s["sequence"], `${s["sequence"]}${s["last"]}`>
-	:	s["sequence"]
+type appendLast<sequence extends string, last extends string | empty> =
+	last extends string ? appendNonRedundant<sequence, last> : sequence
+
+// avoid string expanding to `${string}${string}`
+type appendNonRedundant<
+	base extends string,
+	suffix extends string
+> = leftIfEqual<base, `${base}${suffix}`>
+
+type prependNonRedundant<
+	base extends string,
+	prefix extends string
+> = leftIfEqual<base, `${prefix}${base}`>
 
 type updateState<s extends GroupState, last extends string | empty> = {
 	branches: s["branches"]
-	sequence: sequenceWithLast<s>
+	sequence: appendLast<s["sequence"], s["last"]>
 	sequenceBranchCounter: s["sequenceBranchCounter"]
 	last: last
 }
 
 type finalizeBranch<s extends GroupState> = {
-	branches: s["branches"] | sequenceWithLast<s>
+	branches: s["branches"] | appendLast<s["sequence"], s["last"]>
 	sequence: ""
 	sequenceBranchCounter: s["sequenceBranchCounter"]
 	last: empty
@@ -102,7 +110,7 @@ type anchor<s extends GroupState, a extends Anchor> = {
 	branches: s["branches"]
 	// if Anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
 	// but we append to it since we handle that error during root-level finalization
-	sequence: `${sequenceWithLast<s>}${ParsedAnchor<a>}`
+	sequence: `${appendLast<s["sequence"], s["last"]>}${ParsedAnchor<a>}`
 	sequenceBranchCounter: s["sequenceBranchCounter"]
 	last: empty
 }
