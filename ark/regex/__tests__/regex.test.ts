@@ -1,6 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import { regex } from "@ark/regex"
 
+type({
+	foo: "/.* | string | number \\d/"
+})
+
 contextualize(() => {
 	describe("anchors", () => {
 		it("multiple start branches", () => {
@@ -75,7 +79,7 @@ contextualize(() => {
 	})
 
 	it("?", () => {
-		const S = regex("b?c?")
+		const S = regex("^ab?c$")
 		attest<`a${"b" | ""}c`>(S.infer)
 	})
 

@@ -39,6 +39,7 @@
 		"benchMatch": "ts ./ark/type/__tests__/match.bench.ts",
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
 		"benchRuntime": "ts ./ark/type/__tests__/runtime.bench.ts",
+		"benchRegex": "ts ./ark/regex/__tests__/regex.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
 		"lint": "pnpm checkPrettier && pnpm checkEslint",
 		"checkPrettier": "prettier --check .",

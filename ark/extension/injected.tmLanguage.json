@@ -9,6 +9,9 @@
 		},
 		{
 			"include": "#arkChained"
+		},
+		{
+			"include": "#arkRegexFunction"
 		}
 	],
 	"repository": {
@@ -97,22 +100,7 @@
 			"captures": {
 				"1": { "name": "keyword.operator" },
 				"2": {
-					"patterns": [
-						{
-							"name": "entity.name.type.ts",
-							"match": "[A-Za-z]"
-						},
-						{
-							"name": "constant.numeric.decimal.ts",
-							"match": "[0-9]"
-						},
-						{
-							"name": "keyword.operator",
-							"match": "[^ \\w]"
-						},
-						{ "include": "#arkOperator" },
-						{ "include": "#arkQuoted" }
-					]
+					"patterns": [{ "include": "#arkRegexSource" }]
 				},
 				"4": { "name": "keyword.operator" }
 			}
@@ -151,6 +139,51 @@
 				{
 					"include": "#arkAll"
 				}
+			]
+		},
+
+		"arkRegexFunction": {
+			"contentName": "meta.embedded.arktype.regex",
+			"begin": "([^\\)\\(\\s]+)?(\\.)?\\b(regex)(\\()",
+			"beginCaptures": {
+				"2": {
+					"name": "punctuation.accessor.ts"
+				},
+				"3": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#arkRegexSource"
+				}
+			]
+		},
+		"arkRegexSource": {
+			"patterns": [
+				{
+					"name": "entity.name.type.ts",
+					"match": "[A-Za-z]"
+				},
+				{
+					"name": "constant.numeric.decimal.ts",
+					"match": "[0-9]"
+				},
+				{
+					"name": "keyword.operator",
+					"match": "[^ \\w]"
+				},
+				{ "include": "#arkOperator" },
+				{ "include": "#arkQuoted" }
 			]
 		},
 		"arkAll": {

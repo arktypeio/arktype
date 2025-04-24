@@ -5,6 +5,10 @@ bench.baseline(() => {
 	regex("foo|^bar$")
 })
 
-bench("string", () => {
+bench("anchored union", () => {
 	regex("typescript|^go$|brrr$")
 }).types([1523, "instantiations"])
+
+bench("?", () => {
+	regex("a?")
+}).types([360, "instantiations"])

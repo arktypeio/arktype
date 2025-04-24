@@ -3,6 +3,7 @@ import type {
 	ErrorMessage,
 	inferred,
 	leftIfEqual,
+	repeat,
 	Scanner,
 	WhitespaceChar,
 	writeUnmatchedGroupCloseMessage
@@ -22,12 +23,12 @@ export const regex = <src extends string>(
 export type regex<pattern extends string = string> = Regex<pattern>
 
 export declare namespace regex {
-	type infer<unscanned extends string> = finalize<
-		s.parse<unscanned, [], GroupState.Initial>
-	>
+	export type infer<src extends string> = finalize<parse<src>>
 
-	type validate<src extends string> =
+	export type validate<src extends string> =
 		regex.infer<src> extends ErrorMessage ? regex.infer<src> : src
+
+	export type parse<src extends string> = s.parse<src, [], GroupState.Initial>
 }
 
 export type Quantifier = "*" | "+" | "?" | "{"
@@ -207,39 +208,47 @@ type parseEscapedChar<source extends string> =
 		>
 	:	ParsedEscapeSequence<ErrorMessage<`A regex cannot end with \\`>, "">
 
-type quantify<
+export type quantify<
 	last extends string[],
 	quantifier extends string,
 	min extends number,
 	max extends number
 > =
-	last extends string ? _loopUntilMin<last, min, max, [], "">
-	:	`Quantifier ${quantifier} requires a preceding token`
+	last extends [] ?
+		ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>
+	:	_loopUntilMin<last, min, max, [], { [i in keyof last]: "" }>
 
 type _loopUntilMin<
-	s extends string,
+	s extends string[],
 	min extends number,
 	max extends number,
 	i extends 1[],
-	repetitions extends string
+	repetitions extends string[]
 > =
-	i["length"] extends min ? _loopUntilMax<s, min, max, i, repetitions, []>
-	:	_loopUntilMin<s, min, max, [...i, 1], `${repetitions}${s}`>
-
-type _loopUntilMax<
-	s extends string,
-	min extends number,
-	max extends number,
-	i extends 1[],
-	repetitions extends string,
-	branches extends string[]
-> =
-	i["length"] extends max ? branches
-	:	_loopUntilMax<
+	i["length"] extends min ? _loopUntilMax<s, min, max, i, repetitions>
+	:	_loopUntilMin<
 			s,
 			min,
 			max,
 			[...i, 1],
-			`${repetitions}${s}`,
-			[...branches, `${repetitions}${s}`]
+			{ [i in keyof s]: `${repetitions[i]}${s[i]}` }
 		>
+
+type _loopUntilMax<
+	s extends string[],
+	min extends number,
+	max extends number,
+	i extends 1[],
+	repetitions extends string[]
+> =
+	i["length"] extends max ? repetitions
+	:	[
+			...repetitions,
+			..._loopUntilMax<
+				s,
+				min,
+				max,
+				[...i, 1],
+				{ [i in keyof s]: `${repetitions[i]}${s[i]}` }
+			>
+		]
