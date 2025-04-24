@@ -3,7 +3,6 @@ import type {
 	ErrorMessage,
 	inferred,
 	leftIfEqual,
-	repeat,
 	Scanner,
 	WhitespaceChar,
 	writeUnmatchedGroupCloseMessage
@@ -132,11 +131,25 @@ declare namespace s {
 				parse<unscanned, [...groups, s], GroupState.Initial>
 			: lookahead extends ")" ? parseGroup<unscanned, groups, s>
 			: lookahead extends "?" ?
-				quantify<s["last"], lookahead, 0, 1> extends infer quantified ?
-					quantified extends string[] ?
-						parse<unscanned, groups, quantifyLast<s, quantified>>
-					:	quantified
-				:	never
+				s["last"] extends [] ?
+					UnmatchedQuantifierError<"?">
+				:	parse<unscanned, groups, appendQuantified<s, [...s["last"], ""]>>
+			: lookahead extends "+" ?
+				s["last"] extends [] ?
+					UnmatchedQuantifierError<"+">
+				:	parse<
+						unscanned,
+						groups,
+						appendQuantified<s, suffix<s["last"], string>>
+					>
+			: lookahead extends "*" ?
+				s["last"] extends [] ?
+					UnmatchedQuantifierError<"*">
+				:	parse<
+						unscanned,
+						groups,
+						appendQuantified<s, ["", ...suffix<s["last"], string>]>
+					>
 			:	parse<unscanned, groups, s.pushToken<s, [lookahead]>>
 		:	[
 				...{ [i in keyof groups]: groups[i]["branches"] },
@@ -164,7 +177,10 @@ declare namespace s {
 		last: last
 	}>
 
-	export type quantifyLast<s extends GroupState, last extends string[]> = from<{
+	export type appendQuantified<
+		s extends GroupState,
+		last extends string[]
+	> = from<{
 		branches: s["branches"]
 		sequence: appendLast<s["sequence"], last>
 		last: []
@@ -208,14 +224,21 @@ type parseEscapedChar<source extends string> =
 		>
 	:	ParsedEscapeSequence<ErrorMessage<`A regex cannot end with \\`>, "">
 
+type UnmatchedQuantifierError<quantifier extends string> =
+	ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>
+
+export type suffix<last extends string[], suffix extends string> = [
+	...last,
+	...{ [i in keyof last]: `${last[i]}${string}` }
+]
+
 export type quantify<
 	last extends string[],
 	quantifier extends string,
 	min extends number,
 	max extends number
 > =
-	last extends [] ?
-		ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>
+	last extends [] ? UnmatchedQuantifierError<quantifier>
 	:	_loopUntilMin<last, min, max, [], { [i in keyof last]: "" }>
 
 type _loopUntilMin<
@@ -231,7 +254,7 @@ type _loopUntilMin<
 			min,
 			max,
 			[...i, 1],
-			{ [i in keyof s]: `${repetitions[i]}${s[i]}` }
+			{ [i in keyof s]: `${repetitions[i & keyof repetitions]}${s[i]}` }
 		>
 
 type _loopUntilMax<
@@ -249,6 +272,6 @@ type _loopUntilMax<
 				min,
 				max,
 				[...i, 1],
-				{ [i in keyof s]: `${repetitions[i]}${s[i]}` }
+				{ [i in keyof s]: `${repetitions[i & keyof repetitions]}${s[i]}` }
 			>
 		]

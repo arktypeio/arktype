@@ -1,10 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { regex } from "@ark/regex"
 
-type({
-	foo: "/.* | string | number \\d/"
-})
-
 contextualize(() => {
 	describe("anchors", () => {
 		it("multiple start branches", () => {
@@ -80,7 +76,32 @@ contextualize(() => {
 
 	it("?", () => {
 		const S = regex("^ab?c$")
+		attest<"ac" | "abc">(S.infer)
+	})
+
+	it(".", () => {
+		const S = regex("^a.$")
+		attest<`a${string}`>(S.infer)
+	})
+
+	it("?", () => {
+		const S = regex("^ab?c$")
 		attest<`a${"b" | ""}c`>(S.infer)
+	})
+
+	it("+", () => {
+		const S = regex("^ab+c$")
+		attest<`ab${string}c`>(S.infer)
+	})
+
+	it("+?", () => {
+		const S = regex("^ab+?c$")
+		attest<`a${string}c`>(S.infer)
+	})
+
+	it("*", () => {
+		const S = regex("^ab*c$")
+		attest<"ac" | `ab${string}c`>(S.infer)
 	})
 
 	// it("character sets", () => {
@@ -96,31 +117,6 @@ contextualize(() => {
 	// it("character set dashes", () => {
 	// 	const S = regex("^a[\\^a\\-b]$")
 	// 	attest<`a${"^" | "a" | "-" | "b"}`>(S.infer)
-	// })
-
-	// it(".", () => {
-	// 	const S = regex("^a.$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
-
-	// it("?", () => {
-	// 	const S = regex("^ab?c$")
-	// 	attest<`a${"b" | ""}c`>(S.infer)
-	// })
-
-	// it("+", () => {
-	// 	const S = regex("^ab+c$")
-	// 	attest<`a${string}c`>(S.infer)
-	// })
-
-	// it("+?", () => {
-	// 	const S = regex("^ab+?c$")
-	// 	attest<`a${string}c`>(S.infer)
-	// })
-
-	// it("*", () => {
-	// 	const S = regex("^ab*c$")
-	// 	attest<`a${string}c`>(S.infer)
 	// })
 
 	// it("{} up to including length 3", () => {
