@@ -35,25 +35,11 @@ export type Boundary = Anchor | "(" | ")" | "[" | "]"
 export type Anchor = "^" | "$"
 export type Control = Quantifier | Boundary | "|" | "."
 
-type GroupState = {
-	branches: string
-	sequence: string
-	sequenceBranchCounter: 1[]
-	last: string | empty
-}
-
-declare namespace GroupState {
-	export type Initial = {
-		branches: never
-		sequence: ""
-		sequenceBranchCounter: [1]
-		last: empty
-	}
-}
-
-type finalize<result extends string> =
-	result extends ErrorMessage ? result
-	:	validateNoMidPatternAnchors<anchorsAway<result>>
+type finalize<result extends ErrorMessage | string[]> =
+	result extends string[] ?
+		validateNoMidPatternAnchors<anchorsAway<result[number]>>
+	: result extends ErrorMessage ? result
+	: never
 
 type anchorsAway<result extends string> =
 	result extends `${ParsedAnchor<"^">}${infer startStripped}` ?
@@ -74,12 +60,26 @@ type AnchorMidPatternError<anchor extends Anchor> =
 
 type ParsedAnchor<a extends Anchor> = `$ark${a}`
 
-// we're just using the symbol keyword itself to represent an unset value here
-// since it not stringifiable so it must be handled
-type empty = symbol
+type shiftBranches<head extends string, tail extends string[]> = [head, ...tail]
 
-type appendLast<sequence extends string, last extends string | empty> =
-	last extends string ? appendNonRedundant<sequence, last> : sequence
+type appendLast<
+	sequence extends string[],
+	last extends string[],
+	result extends string[] = []
+> =
+	last extends [] ? sequence
+	: sequence extends shiftBranches<infer seqHead, infer seqTail> ?
+		appendLast<seqTail, last, [...result, ..._appendLast<seqHead, last, []>]>
+	:	result
+
+type _appendLast<
+	head extends string,
+	last extends string[],
+	result extends string[]
+> =
+	last extends shiftBranches<infer lastHead, infer lastTail> ?
+		_appendLast<head, lastTail, [...result, `${head}${lastHead}`]>
+	:	result
 
 // avoid string expanding to `${string}${string}`
 type appendNonRedundant<
@@ -92,6 +92,20 @@ type prependNonRedundant<
 	prefix extends string
 > = leftIfEqual<base, `${prefix}${base}`>
 
+export type GroupState = {
+	branches: string[]
+	sequence: string[]
+	last: string[]
+}
+
+declare namespace GroupState {
+	export type Initial = {
+		branches: []
+		sequence: [""]
+		last: []
+	}
+}
+
 declare namespace s {
 	export type parse<
 		source extends string,
@@ -99,14 +113,14 @@ declare namespace s {
 		s extends GroupState
 	> =
 		source extends Scanner.shift<infer lookahead, infer unscanned> ?
-			lookahead extends "." ? parse<unscanned, groups, s.pushToken<s, string>>
+			lookahead extends "." ? parse<unscanned, groups, s.pushToken<s, [string]>>
 			: lookahead extends Backslash ?
 				parseEscapedChar<unscanned> extends (
 					ParsedEscapeSequence<infer result, infer nextUnscanned>
 				) ?
 					result extends ErrorMessage ?
 						result
-					:	parse<nextUnscanned, groups, s.pushToken<s, result>>
+					:	parse<nextUnscanned, groups, s.pushToken<s, [result]>>
 				:	never
 			: lookahead extends "|" ? parse<unscanned, groups, s.finalizeBranch<s>>
 			: lookahead extends Anchor ?
@@ -115,40 +129,56 @@ declare namespace s {
 				parse<unscanned, [...groups, s], GroupState.Initial>
 			: lookahead extends ")" ?
 				groups extends (
-					[...infer init extends GroupState[], infer last extends GroupState]
+					[
+						...infer init extends GroupState[],
+						infer popGroup extends GroupState
+					]
 				) ?
 					parse<
 						unscanned,
 						init,
-						s.pushToken<last, s.finalizeBranch<s>["branches"]>
+						s.pushToken<popGroup, s.finalizeBranch<s>["branches"]>
 					>
 				:	ErrorMessage<writeUnmatchedGroupCloseMessage<unscanned>>
 			: lookahead extends "?" ?
-				parse<unscanned, groups, s.pushToken<s, lookahead>>
-			:	parse<unscanned, groups, s.pushToken<s, lookahead>>
-		:	groups[number]["branches"] | s.finalizeBranch<s>["branches"]
+				quantify<s["last"], lookahead, 0, 1> extends infer quantified ?
+					quantified extends string[] ?
+						parse<unscanned, groups, quantifyLast<s, quantified>>
+					:	quantified
+				:	never
+			:	parse<unscanned, groups, s.pushToken<s, [lookahead]>>
+		:	[
+				...{ [i in keyof groups]: groups[i]["branches"] },
+				...s.finalizeBranch<s>["branches"]
+			]
 
-	export type pushToken<s extends GroupState, last extends string | empty> = {
+	export type pushToken<s extends GroupState, last extends string[]> = {
 		branches: s["branches"]
 		sequence: appendLast<s["sequence"], s["last"]>
-		sequenceBranchCounter: s["sequenceBranchCounter"]
 		last: last
 	}
 
+	export type quantifyLast<s extends GroupState, last extends string[]> = {
+		branches: s["branches"]
+		sequence: appendLast<s["sequence"], last>
+		last: []
+	}
+
 	export type finalizeBranch<s extends GroupState> = {
-		branches: s["branches"] | appendLast<s["sequence"], s["last"]>
-		sequence: ""
-		sequenceBranchCounter: s["sequenceBranchCounter"]
-		last: empty
+		branches: [...s["branches"], ...appendLast<s["sequence"], s["last"]>]
+		sequence: [""]
+		last: []
 	}
 
 	export type anchor<s extends GroupState, a extends Anchor> = {
 		branches: s["branches"]
 		// if anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
 		// but we append to it since we handle that error during root-level finalization
-		sequence: `${appendLast<s["sequence"], s["last"]>}${ParsedAnchor<a>}`
-		sequenceBranchCounter: s["sequenceBranchCounter"]
-		last: empty
+		sequence: appendLast<
+			appendLast<s["sequence"], s["last"]>,
+			[ParsedAnchor<a>]
+		>
+		last: []
 	}
 }
 
@@ -172,8 +202,39 @@ type parseEscapedChar<source extends string> =
 		>
 	:	ParsedEscapeSequence<ErrorMessage<`A regex cannot end with \\`>, "">
 
-// type quantify<
-// 	last extends string,
-// 	min extends number,
-// 	max extends number
-// > = repeat<>
+type quantify<
+	last extends string[],
+	quantifier extends string,
+	min extends number,
+	max extends number
+> =
+	last extends string ? _loopUntilMin<last, min, max, [], "">
+	:	`Quantifier ${quantifier} requires a preceding token`
+
+type _loopUntilMin<
+	s extends string,
+	min extends number,
+	max extends number,
+	i extends 1[],
+	repetitions extends string
+> =
+	i["length"] extends min ? _loopUntilMax<s, min, max, i, repetitions, []>
+	:	_loopUntilMin<s, min, max, [...i, 1], `${repetitions}${s}`>
+
+type _loopUntilMax<
+	s extends string,
+	min extends number,
+	max extends number,
+	i extends 1[],
+	repetitions extends string,
+	branches extends string[]
+> =
+	i["length"] extends max ? branches
+	:	_loopUntilMax<
+			s,
+			min,
+			max,
+			[...i, 1],
+			`${repetitions}${s}`,
+			[...branches, `${repetitions}${s}`]
+		>

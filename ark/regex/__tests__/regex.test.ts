@@ -74,6 +74,11 @@ contextualize(() => {
 		)
 	})
 
+	it("?", () => {
+		const S = regex("b?c?")
+		attest<`a${"b" | ""}c`>(S.infer)
+	})
+
 	// it("character sets", () => {
 	// 	const S = regex("^a[abc]$")
 	// 	attest<`a${"a" | "b" | "c"}`>(S.infer)
