@@ -105,7 +105,6 @@ const $: JsonSchemaScope = scope(
 			type: "'string'"
 		}
 	},
-	{ jitless: true } // workaround for https://github.com/arktypeio/arktype/issues/1188
 ) as never
 
 export const JsonSchemaScope = $.export()
