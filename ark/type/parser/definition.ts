@@ -134,14 +134,14 @@ export type validateDefinition<def, $, args> =
 export type validateInnerDefinition<def, $, args> =
 	[def] extends [Terminal] ? def
 	: def extends string ? validateString<def, $, args>
-	: def extends BadDefinitionType ?
-		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
 	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
 		BaseCompletions<$, args> | {}
 	: def extends readonly unknown[] ? validateTuple<def, $, args>
-	: validateObjectLiteral<def, $, args>
+	: def extends BadDefinitionType ?
+		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
+	:	validateObjectLiteral<def, $, args>
 
 export const parseTuple = (def: array, ctx: BaseParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
