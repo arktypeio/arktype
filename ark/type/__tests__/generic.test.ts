@@ -7,10 +7,9 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { Hkt } from "@ark/util"
+import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
-import { writeUnclosedGroupMessage } from "arktype/internal/parser/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"

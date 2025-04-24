@@ -23,7 +23,7 @@ export type regex<pattern extends string = string> = Regex<pattern>
 
 export declare namespace regex {
 	type infer<unscanned extends string> = finalize<
-		continueSequence<unscanned, [], GroupState.Initial>
+		s.parse<unscanned, [], GroupState.Initial>
 	>
 
 	type validate<src extends string> =
@@ -92,63 +92,65 @@ type prependNonRedundant<
 	prefix extends string
 > = leftIfEqual<base, `${prefix}${base}`>
 
-type updateState<s extends GroupState, last extends string | empty> = {
-	branches: s["branches"]
-	sequence: appendLast<s["sequence"], s["last"]>
-	sequenceBranchCounter: s["sequenceBranchCounter"]
-	last: last
-}
+declare namespace s {
+	export type parse<
+		source extends string,
+		groups extends GroupState[],
+		s extends GroupState
+	> =
+		source extends Scanner.shift<infer lookahead, infer unscanned> ?
+			lookahead extends "." ? parse<unscanned, groups, s.pushToken<s, string>>
+			: lookahead extends Backslash ?
+				parseEscapedChar<unscanned> extends (
+					ParsedEscapeSequence<infer result, infer nextUnscanned>
+				) ?
+					result extends ErrorMessage ?
+						result
+					:	parse<nextUnscanned, groups, s.pushToken<s, result>>
+				:	never
+			: lookahead extends "|" ? parse<unscanned, groups, s.finalizeBranch<s>>
+			: lookahead extends Anchor ?
+				parse<unscanned, groups, s.anchor<s, lookahead>>
+			: lookahead extends "(" ?
+				parse<unscanned, [...groups, s], GroupState.Initial>
+			: lookahead extends ")" ?
+				groups extends (
+					[...infer init extends GroupState[], infer last extends GroupState]
+				) ?
+					parse<
+						unscanned,
+						init,
+						s.pushToken<last, s.finalizeBranch<s>["branches"]>
+					>
+				:	ErrorMessage<writeUnmatchedGroupCloseMessage<unscanned>>
+			: lookahead extends "?" ?
+				parse<unscanned, groups, s.pushToken<s, lookahead>>
+			:	parse<unscanned, groups, s.pushToken<s, lookahead>>
+		:	groups[number]["branches"] | s.finalizeBranch<s>["branches"]
 
-type finalizeBranch<s extends GroupState> = {
-	branches: s["branches"] | appendLast<s["sequence"], s["last"]>
-	sequence: ""
-	sequenceBranchCounter: s["sequenceBranchCounter"]
-	last: empty
-}
+	export type pushToken<s extends GroupState, last extends string | empty> = {
+		branches: s["branches"]
+		sequence: appendLast<s["sequence"], s["last"]>
+		sequenceBranchCounter: s["sequenceBranchCounter"]
+		last: last
+	}
 
-type anchor<s extends GroupState, a extends Anchor> = {
-	branches: s["branches"]
-	// if Anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
-	// but we append to it since we handle that error during root-level finalization
-	sequence: `${appendLast<s["sequence"], s["last"]>}${ParsedAnchor<a>}`
-	sequenceBranchCounter: s["sequenceBranchCounter"]
-	last: empty
-}
+	export type finalizeBranch<s extends GroupState> = {
+		branches: s["branches"] | appendLast<s["sequence"], s["last"]>
+		sequence: ""
+		sequenceBranchCounter: s["sequenceBranchCounter"]
+		last: empty
+	}
 
-type continueSequence<
-	source extends string,
-	groups extends GroupState[],
-	s extends GroupState
-> =
-	source extends Scanner.shift<infer lookahead, infer unscanned> ?
-		lookahead extends "." ?
-			continueSequence<unscanned, groups, updateState<s, string>>
-		: lookahead extends Backslash ?
-			parseEscapedChar<unscanned> extends (
-				ParsedEscapeSequence<infer result, infer nextUnscanned>
-			) ?
-				result extends ErrorMessage ?
-					result
-				:	continueSequence<nextUnscanned, groups, updateState<s, result>>
-			:	never
-		: lookahead extends "|" ?
-			continueSequence<unscanned, groups, finalizeBranch<s>>
-		: lookahead extends Anchor ?
-			continueSequence<unscanned, groups, anchor<s, lookahead>>
-		: lookahead extends "(" ?
-			continueSequence<unscanned, [...groups, s], GroupState.Initial>
-		: lookahead extends ")" ?
-			groups extends (
-				[...infer init extends GroupState[], infer last extends GroupState]
-			) ?
-				continueSequence<
-					unscanned,
-					init,
-					updateState<last, finalizeBranch<s>["branches"]>
-				>
-			:	ErrorMessage<writeUnmatchedGroupCloseMessage<unscanned>>
-		:	continueSequence<unscanned, groups, updateState<s, lookahead>>
-	:	groups[number]["branches"] | finalizeBranch<s>["branches"]
+	export type anchor<s extends GroupState, a extends Anchor> = {
+		branches: s["branches"]
+		// if anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
+		// but we append to it since we handle that error during root-level finalization
+		sequence: `${appendLast<s["sequence"], s["last"]>}${ParsedAnchor<a>}`
+		sequenceBranchCounter: s["sequenceBranchCounter"]
+		last: empty
+	}
+}
 
 type ParsedEscapeSequence<result extends string, unscanned extends string> = [
 	result: result,
@@ -170,4 +172,8 @@ type parseEscapedChar<source extends string> =
 		>
 	:	ParsedEscapeSequence<ErrorMessage<`A regex cannot end with \\`>, "">
 
-// type quantify<last extends string, min extends number, max extends number> = repeat<>
+// type quantify<
+// 	last extends string,
+// 	min extends number,
+// 	max extends number
+// > = repeat<>

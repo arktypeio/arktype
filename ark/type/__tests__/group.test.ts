@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
-} from "arktype/internal/parser/reduce/shared.ts"
+} from "@ark/util"
+import { type } from "arktype"
 import { writeExpressionExpectedMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
