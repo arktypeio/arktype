@@ -5,7 +5,7 @@ import {
 	type WhitespaceChar
 } from "@ark/util"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
+import type { StaticState, s } from "../../reduce/static.ts"
 import { lookaheadIsFinalizing, type FinalizingLookahead } from "../tokens.ts"
 import {
 	comparatorStartChars,
@@ -43,27 +43,24 @@ export type parseOperator<s extends StaticState, $, args> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
 		lookahead extends "[" ?
 			unscanned extends Scanner.shift<"]", infer nextUnscanned> ?
-				state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-			:	state.error<incompleteArrayTokenMessage>
+				s.setRoot<s, [s["root"], "[]"], nextUnscanned>
+			:	s.error<incompleteArrayTokenMessage>
 		: lookahead extends "|" ?
 			unscanned extends Scanner.shift<">", infer nextUnscanned> ?
-				state.reduceBranch<s, "|>", nextUnscanned>
-			:	state.reduceBranch<s, lookahead, unscanned>
-		: lookahead extends "&" ? state.reduceBranch<s, lookahead, unscanned>
-		: lookahead extends ")" ? state.finalizeGroup<s, unscanned>
+				s.reduceBranch<s, "|>", nextUnscanned>
+			:	s.reduceBranch<s, lookahead, unscanned>
+		: lookahead extends "&" ? s.reduceBranch<s, lookahead, unscanned>
+		: lookahead extends ")" ? s.finalizeGroup<s, unscanned>
 		: lookaheadIsFinalizing<lookahead, unscanned> extends true ?
-			state.finalize<
-				state.scanTo<s, unscanned>,
-				lookahead & FinalizingLookahead
-			>
+			s.finalize<s.scanTo<s, unscanned>, lookahead & FinalizingLookahead>
 		: lookahead extends ComparatorStartChar ?
 			parseBound<s, lookahead, unscanned, $, args>
 		: lookahead extends "%" ? parseDivisor<s, unscanned>
 		: lookahead extends "#" ? parseBrand<s, unscanned>
 		: lookahead extends WhitespaceChar ?
-			parseOperator<state.scanTo<s, unscanned>, $, args>
-		:	state.error<writeUnexpectedCharacterMessage<lookahead>>
-	:	state.finalize<s, "">
+			parseOperator<s.scanTo<s, unscanned>, $, args>
+		:	s.error<writeUnexpectedCharacterMessage<lookahead>>
+	:	s.finalize<s, "">
 
 export const writeUnexpectedCharacterMessage = <
 	char extends string,

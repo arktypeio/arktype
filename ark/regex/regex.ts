@@ -99,14 +99,16 @@ export type GroupState = {
 }
 
 declare namespace GroupState {
-	export type Initial = {
+	export type Initial = s.from<{
 		branches: []
 		sequence: [""]
 		last: []
-	}
+	}>
 }
 
 declare namespace s {
+	export type from<s extends GroupState> = s
+
 	export type parse<
 		source extends string,
 		groups extends GroupState[],
@@ -127,19 +129,7 @@ declare namespace s {
 				parse<unscanned, groups, s.anchor<s, lookahead>>
 			: lookahead extends "(" ?
 				parse<unscanned, [...groups, s], GroupState.Initial>
-			: lookahead extends ")" ?
-				groups extends (
-					[
-						...infer init extends GroupState[],
-						infer popGroup extends GroupState
-					]
-				) ?
-					parse<
-						unscanned,
-						init,
-						s.pushToken<popGroup, s.finalizeBranch<s>["branches"]>
-					>
-				:	ErrorMessage<writeUnmatchedGroupCloseMessage<unscanned>>
+			: lookahead extends ")" ? parseGroup<unscanned, groups, s>
 			: lookahead extends "?" ?
 				quantify<s["last"], lookahead, 0, 1> extends infer quantified ?
 					quantified extends string[] ?
@@ -152,25 +142,40 @@ declare namespace s {
 				...s.finalizeBranch<s>["branches"]
 			]
 
-	export type pushToken<s extends GroupState, last extends string[]> = {
+	type parseGroup<
+		unscanned extends string,
+		groups extends GroupState[],
+		s extends GroupState
+	> =
+		groups extends (
+			[...infer init extends GroupState[], infer popGroup extends GroupState]
+		) ?
+			parse<
+				unscanned,
+				init,
+				s.pushToken<popGroup, s.finalizeBranch<s>["branches"]>
+			>
+		:	ErrorMessage<writeUnmatchedGroupCloseMessage<unscanned>>
+
+	export type pushToken<s extends GroupState, last extends string[]> = from<{
 		branches: s["branches"]
 		sequence: appendLast<s["sequence"], s["last"]>
 		last: last
-	}
+	}>
 
-	export type quantifyLast<s extends GroupState, last extends string[]> = {
+	export type quantifyLast<s extends GroupState, last extends string[]> = from<{
 		branches: s["branches"]
 		sequence: appendLast<s["sequence"], last>
 		last: []
-	}
+	}>
 
-	export type finalizeBranch<s extends GroupState> = {
+	export type finalizeBranch<s extends GroupState> = from<{
 		branches: [...s["branches"], ...appendLast<s["sequence"], s["last"]>]
 		sequence: [""]
 		last: []
-	}
+	}>
 
-	export type anchor<s extends GroupState, a extends Anchor> = {
+	export type anchor<s extends GroupState, a extends Anchor> = from<{
 		branches: s["branches"]
 		// if anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
 		// but we append to it since we handle that error during root-level finalization
@@ -179,7 +184,7 @@ declare namespace s {
 			[ParsedAnchor<a>]
 		>
 		last: []
-	}
+	}>
 }
 
 type ParsedEscapeSequence<result extends string, unscanned extends string> = [

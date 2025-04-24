@@ -10,7 +10,7 @@ import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
-import type { state, StaticState } from "./reduce/static.ts"
+import type { s, StaticState } from "./reduce/static.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
 import { parseDefault } from "./shift/operator/default.ts"
 import {
@@ -51,8 +51,8 @@ export type parseString<def extends string, $, args> =
 	: def extends `${infer child}[]` ?
 		child extends keyof $ ?
 			[resolutionToAst<child, $[child]>, "[]"]
-		:	fullStringParse<state.initialize<def>, $, args>
-	:	fullStringParse<state.initialize<def>, $, args>
+		:	fullStringParse<s.initialize<def>, $, args>
+	:	fullStringParse<s.initialize<def>, $, args>
 
 export type inferString<def extends string, $, args> = inferAstRoot<
 	parseString<def, $, args>,

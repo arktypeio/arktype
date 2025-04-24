@@ -25,7 +25,7 @@ import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
 import type { inferDefinition } from "./parser/definition.ts"
 import { RuntimeState } from "./parser/reduce/dynamic.ts"
-import type { state, StaticState } from "./parser/reduce/static.ts"
+import type { s, StaticState } from "./parser/reduce/static.ts"
 import { terminatingChars } from "./parser/shift/tokens.ts"
 import { parseUntilFinalizer } from "./parser/string.ts"
 import type { Scope } from "./scope.ts"
@@ -307,7 +307,7 @@ type _parseOptionalConstraint<
 	Scanner.skipWhitespace<unscanned> extends (
 		`${extendsToken}${infer nextUnscanned}`
 	) ?
-		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
+		parseUntilFinalizer<s.initialize<nextUnscanned>, $, {}> extends (
 			infer finalArgState extends StaticState
 		) ?
 			validateAst<finalArgState["root"], $, {}> extends (

@@ -26,7 +26,7 @@ import type { GenericInstantiationAst } from "../../ast/generic.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import { writePrefixedPrivateReferenceMessage } from "../../ast/validate.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
+import type { StaticState, s } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
 import { terminatingChars, type TerminatingChar } from "../tokens.ts"
 import {
@@ -45,7 +45,7 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 	Scanner.shiftUntil<s["unscanned"], TerminatingChar> extends (
 		Scanner.shiftResult<infer token, infer unscanned>
 	) ?
-		tryResolve<s, unscanned, token, $, args> extends state.from<infer s> ?
+		tryResolve<s, unscanned, token, $, args> extends s.from<infer s> ?
 			s
 		:	never
 	:	never
@@ -60,8 +60,8 @@ type parseResolution<
 > =
 	resolutionToAst<alias, resolution> extends infer ast ?
 		ast extends GenericAst ?
-			parseGenericInstantiation<alias, ast, state.scanTo<s, unscanned>, $, args>
-		:	state.setRoot<s, ast, unscanned>
+			parseGenericInstantiation<alias, ast, s.scanTo<s, unscanned>, $, args>
+		:	s.setRoot<s, ast, unscanned>
 	:	never
 
 export const parseGenericInstantiation = (
@@ -89,11 +89,11 @@ export type parseGenericInstantiation<
 	Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}` ?
 		parseGenericArgs<name, g, unscanned, $, args> extends infer result ?
 			result extends ParsedArgs<infer argAsts, infer nextUnscanned> ?
-				state.setRoot<s, GenericInstantiationAst<g, argAsts>, nextUnscanned>
+				s.setRoot<s, GenericInstantiationAst<g, argAsts>, nextUnscanned>
 			:	// propagate error
 				result
 		:	never
-	:	state.error<
+	:	s.error<
 			writeInvalidGenericArgCountMessage<
 				name,
 				genericParamNames<g["paramsAst"]>,
@@ -163,7 +163,7 @@ type tryResolve<
 	token extends keyof ArkAmbient.$ ?
 		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
 	: token extends NumberLiteral<infer n> ?
-		state.setRoot<s, InferredAst<n, token>, unscanned>
+		s.setRoot<s, InferredAst<n, token>, unscanned>
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
@@ -191,8 +191,8 @@ type tryResolve<
 			[submodule]
 		>
 	: token extends BigintLiteral<infer b> ?
-		state.setRoot<s, InferredAst<b, token>, unscanned>
-	: token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
+		s.setRoot<s, InferredAst<b, token>, unscanned>
+	: token extends "keyof" ? s.addPrefix<s, "keyof", unscanned>
 	: unresolvableState<s, token, $, args, []>
 
 type tryResolveSubmodule<
@@ -222,7 +222,7 @@ type tryResolveSubmodule<
 				[...submodulePath, nestedSubmodule]
 			>
 		:	unresolvableState<s, reference, resolution, {}, submodulePath>
-	:	state.error<writeNonSubmoduleDotMessage<lastOf<submodulePath>>>
+	:	s.error<writeNonSubmoduleDotMessage<lastOf<submodulePath>>>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
@@ -237,15 +237,13 @@ export type unresolvableState<
 		Scanner.shiftUntil<unscanned, TerminatingChar> extends (
 			Scanner.shiftResult<infer name, string>
 		) ?
-			state.error<writePrefixedPrivateReferenceMessage<name>>
+			s.error<writePrefixedPrivateReferenceMessage<name>>
 		:	never
 	: validReferenceFromToken<token, resolutions, args, submodulePath> extends (
 		never
 	) ?
-		state.error<
-			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
-		>
-	:	state.completion<`${s["scanned"]}${qualifiedReference<
+		s.error<writeUnresolvableMessage<qualifiedReference<token, submodulePath>>>
+	:	s.completion<`${s["scanned"]}${qualifiedReference<
 			validReferenceFromToken<token, resolutions, args, submodulePath>,
 			submodulePath
 		>}`>

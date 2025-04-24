@@ -2,7 +2,7 @@ import type { regex } from "@ark/regex"
 import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
+import type { StaticState, s } from "../../reduce/static.ts"
 import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
 export type StringLiteral<contents extends string = string> =
@@ -59,8 +59,8 @@ export type parseEnclosed<
 		Scanner.shiftResult<infer scanned, infer nextUnscanned>
 	) ?
 		nextUnscanned extends "" ?
-			state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
-		:	state.setRoot<
+			s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+		:	s.setRoot<
 				s,
 				InferredAst<
 					enclosingStart extends EnclosingQuote ? scanned
