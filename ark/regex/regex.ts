@@ -62,23 +62,33 @@ type ParsedAnchor<a extends Anchor> = `$ark${a}`
 
 type shiftBranches<head extends string, tail extends string[]> = [head, ...tail]
 
-type appendLast<
+type appendQuantifiable<
 	sequence extends string[],
-	last extends string[],
+	quantifiable extends string[],
 	result extends string[] = []
 > =
-	last extends [] ? sequence
+	quantifiable extends [] ? sequence
 	: sequence extends shiftBranches<infer seqHead, infer seqTail> ?
-		appendLast<seqTail, last, [...result, ..._appendLast<seqHead, last, []>]>
+		appendQuantifiable<
+			seqTail,
+			quantifiable,
+			[...result, ..._appendQuantifiable<seqHead, quantifiable, []>]
+		>
 	:	result
 
-type _appendLast<
+type _appendQuantifiable<
 	head extends string,
-	last extends string[],
+	quantifiable extends string[],
 	result extends string[]
 > =
-	last extends shiftBranches<infer lastHead, infer lastTail> ?
-		_appendLast<head, lastTail, [...result, `${head}${lastHead}`]>
+	quantifiable extends (
+		shiftBranches<infer quantifiableHead, infer quantifiableTail>
+	) ?
+		_appendQuantifiable<
+			head,
+			quantifiableTail,
+			[...result, `${head}${quantifiableHead}`]
+		>
 	:	result
 
 // avoid string expanding to `${string}${string}`
@@ -95,14 +105,14 @@ type prependNonRedundant<
 export type GroupState = {
 	branches: string[]
 	sequence: string[]
-	last: string[]
+	quantifiable: string[]
 }
 
 declare namespace GroupState {
 	export type Initial = s.from<{
 		branches: []
 		sequence: [""]
-		last: []
+		quantifiable: []
 	}>
 }
 
@@ -115,14 +125,15 @@ declare namespace s {
 		s extends GroupState
 	> =
 		source extends Scanner.shift<infer lookahead, infer unscanned> ?
-			lookahead extends "." ? parse<unscanned, groups, s.pushToken<s, [string]>>
+			lookahead extends "." ?
+				parse<unscanned, groups, s.shiftQuantifiable<s, [string]>>
 			: lookahead extends Backslash ?
 				parseEscapedChar<unscanned> extends (
 					ParsedEscapeSequence<infer result, infer nextUnscanned>
 				) ?
 					result extends ErrorMessage ?
 						result
-					:	parse<nextUnscanned, groups, s.pushToken<s, [result]>>
+					:	parse<nextUnscanned, groups, s.shiftQuantifiable<s, [result]>>
 				:	never
 			: lookahead extends "|" ? parse<unscanned, groups, s.finalizeBranch<s>>
 			: lookahead extends Anchor ?
@@ -131,26 +142,26 @@ declare namespace s {
 				parse<unscanned, [...groups, s], GroupState.Initial>
 			: lookahead extends ")" ? parseGroup<unscanned, groups, s>
 			: lookahead extends "?" ?
-				s["last"] extends [] ?
+				s["quantifiable"] extends [] ?
 					UnmatchedQuantifierError<"?">
-				:	parse<unscanned, groups, appendQuantified<s, [...s["last"], ""]>>
+				:	parse<unscanned, groups, pushQuantified<s, [...s["quantifiable"], ""]>>
 			: lookahead extends "+" ?
-				s["last"] extends [] ?
+				s["quantifiable"] extends [] ?
 					UnmatchedQuantifierError<"+">
 				:	parse<
 						unscanned,
 						groups,
-						appendQuantified<s, suffix<s["last"], string>>
+						pushQuantified<s, suffix<s["quantifiable"], string>>
 					>
 			: lookahead extends "*" ?
-				s["last"] extends [] ?
+				s["quantifiable"] extends [] ?
 					UnmatchedQuantifierError<"*">
 				:	parse<
 						unscanned,
 						groups,
-						appendQuantified<s, ["", ...suffix<s["last"], string>]>
+						pushQuantified<s, ["", ...suffix<s["quantifiable"], string>]>
 					>
-			:	parse<unscanned, groups, s.pushToken<s, [lookahead]>>
+			:	parse<unscanned, groups, s.shiftQuantifiable<s, [lookahead]>>
 		:	[
 				...{ [i in keyof groups]: groups[i]["branches"] },
 				...s.finalizeBranch<s>["branches"]
@@ -167,40 +178,46 @@ declare namespace s {
 			parse<
 				unscanned,
 				init,
-				s.pushToken<popGroup, s.finalizeBranch<s>["branches"]>
+				s.shiftQuantifiable<popGroup, s.finalizeBranch<s>["branches"]>
 			>
 		:	ErrorMessage<writeUnmatchedGroupCloseMessage<unscanned>>
 
-	export type pushToken<s extends GroupState, last extends string[]> = from<{
-		branches: s["branches"]
-		sequence: appendLast<s["sequence"], s["last"]>
-		last: last
-	}>
-
-	export type appendQuantified<
+	export type shiftQuantifiable<
 		s extends GroupState,
-		last extends string[]
+		quantifiable extends string[]
 	> = from<{
 		branches: s["branches"]
-		sequence: appendLast<s["sequence"], last>
-		last: []
+		sequence: appendQuantifiable<s["sequence"], s["quantifiable"]>
+		quantifiable: quantifiable
+	}>
+
+	export type pushQuantified<
+		s extends GroupState,
+		quantified extends string[]
+	> = from<{
+		branches: s["branches"]
+		sequence: appendQuantifiable<s["sequence"], quantified>
+		quantifiable: []
 	}>
 
 	export type finalizeBranch<s extends GroupState> = from<{
-		branches: [...s["branches"], ...appendLast<s["sequence"], s["last"]>]
+		branches: [
+			...s["branches"],
+			...appendQuantifiable<s["sequence"], s["quantifiable"]>
+		]
 		sequence: [""]
-		last: []
+		quantifiable: []
 	}>
 
 	export type anchor<s extends GroupState, a extends Anchor> = from<{
 		branches: s["branches"]
-		// if anchor is ^, s["sequence"] and s["last"] should always be empty here if the regex is valid,
+		// if anchor is ^, s["sequence"] and s["quantifiable"] should always be empty here if the regex is valid,
 		// but we append to it since we handle that error during root-level finalization
-		sequence: appendLast<
-			appendLast<s["sequence"], s["last"]>,
+		sequence: appendQuantifiable<
+			appendQuantifiable<s["sequence"], s["quantifiable"]>,
 			[ParsedAnchor<a>]
 		>
-		last: []
+		quantifiable: []
 	}>
 }
 
@@ -227,19 +244,19 @@ type parseEscapedChar<source extends string> =
 type UnmatchedQuantifierError<quantifier extends string> =
 	ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>
 
-export type suffix<last extends string[], suffix extends string> = [
-	...last,
-	...{ [i in keyof last]: `${last[i]}${string}` }
+export type suffix<quantifiable extends string[], suffix extends string> = [
+	...quantifiable,
+	...{ [i in keyof quantifiable]: `${quantifiable[i]}${string}` }
 ]
 
 export type quantify<
-	last extends string[],
+	quantifiable extends string[],
 	quantifier extends string,
 	min extends number,
 	max extends number
 > =
-	last extends [] ? UnmatchedQuantifierError<quantifier>
-	:	_loopUntilMin<last, min, max, [], { [i in keyof last]: "" }>
+	quantifiable extends [] ? UnmatchedQuantifierError<quantifier>
+	:	_loopUntilMin<quantifiable, min, max, [], { [i in keyof quantifiable]: "" }>
 
 type _loopUntilMin<
 	s extends string[],
