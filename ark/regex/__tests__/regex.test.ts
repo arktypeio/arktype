@@ -206,7 +206,12 @@ contextualize(() => {
 
 	it("character sets", () => {
 		const S = regex("^a[abc]$")
-		attest<`a${"a" | "b" | "c"}`>(S.infer)
+		attest<"ab" | "aa" | "ac">(S.infer)
+	})
+
+	it("\b", () => {
+		const S = regex("^\b$")
+		attest<"\b">(S.infer)
 	})
 
 	// it("character set ranges", () => {

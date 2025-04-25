@@ -46,7 +46,14 @@ export declare namespace State {
 
 export type Boundary = Anchor | "(" | ")" | "[" | "]"
 export type Anchor = "^" | "$"
-export type Control = BuiltinQuantifier | Boundary | "|" | "." | "{"
+export type Control =
+	| BuiltinQuantifier
+	| Boundary
+	| "|"
+	| "."
+	| "{"
+	| "-"
+	| "\\"
 export type AnchorMarker<a extends Anchor = Anchor> = `$ark${a}`
 
 export declare namespace s {
