@@ -10,14 +10,11 @@ export type parseBuiltinQuantifier<
 	unscanned extends string
 > =
 	s["quantifiable"] extends NonEmptyQuantifiable ?
-		parse<
-			s.pushQuantified<
-				s,
-				quantifyBuiltin<quantifier, s["quantifiable"]>,
-				unscanned extends Scanner.shift<"?", infer lazyUnscanned> ?
-					lazyUnscanned
-				:	unscanned
-			>
+		s.pushQuantified<
+			s,
+			quantifyBuiltin<quantifier, s["quantifiable"]>,
+			unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
+			:	unscanned
 		>
 	:	s.error<writeUnmatchedQuantifierError<quantifier>>
 
@@ -75,20 +72,18 @@ export type parsePossibleRange<
 					:	never
 				>
 			>
-	:	parse<s.shiftQuantifiable<s, ["{"], unscanned>>
+	:	s.shiftQuantifiable<s, ["{"], unscanned>
 
 type applyQuantified<
 	s extends State,
 	quantified,
 	unscanned extends string
-> = parse<
-	s.pushQuantified<
-		s,
-		// TS flops trying to check this as a constraint, so just conform it here
-		conform<quantified, string[]>,
-		unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
-		:	unscanned
-	>
+> = s.pushQuantified<
+	s,
+	// TS flops trying to check this as a constraint, so just conform it here
+	conform<quantified, string[]>,
+	unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
+	:	unscanned
 >
 
 type quantifyBuiltin<

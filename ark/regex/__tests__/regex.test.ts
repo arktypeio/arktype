@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { regex } from "@ark/regex"
+import type { WhitespaceChar } from "@ark/util"
 
 contextualize(() => {
 	describe("anchors", () => {
@@ -203,10 +204,10 @@ contextualize(() => {
 		})
 	})
 
-	// it("character sets", () => {
-	// 	const S = regex("^a[abc]$")
-	// 	attest<`a${"a" | "b" | "c"}`>(S.infer)
-	// })
+	it("character sets", () => {
+		const S = regex("^a[abc]$")
+		attest<`a${"a" | "b" | "c"}`>(S.infer)
+	})
 
 	// it("character set ranges", () => {
 	// 	const S = regex("^a[x-z]$")
@@ -218,35 +219,35 @@ contextualize(() => {
 	// 	attest<`a${"^" | "a" | "-" | "b"}`>(S.infer)
 	// })
 
-	// it("\\w", () => {
-	// 	const S = regex("^a\\wc$")
-	// 	attest<`a${AlphanumericCharacter | "_"}c`>(S.infer)
-	// })
+	it("\\w", () => {
+		const S = regex("^a\\wc$")
+		attest<`a${string}c`>(S.infer)
+	})
 
-	// it("\\d", () => {
-	// 	const S = regex("^a\\dc$")
-	// 	attest<`a${DigitCharacter}c`>(S.infer)
-	// })
+	it("\\d", () => {
+		const S = regex("^a\\dc$")
+		attest<`a${bigint}c`>(S.infer)
+	})
 
-	// it("\\s", () => {
-	// 	const S = regex("^a\\sc$")
-	// 	attest<`a${WhitespaceCharacter}c`>(S.infer)
-	// })
+	it("\\s", () => {
+		const S = regex("^a\\sc$")
+		attest<`a${WhitespaceChar}c`>(S.infer)
+	})
 
-	// it("\\W", () => {
-	// 	const S = regex("^a\\W$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("\\W", () => {
+		const S = regex("^a\\W$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("\\D", () => {
-	// 	const S = regex("^a\\D$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("\\D", () => {
+		const S = regex("^a\\D$")
+		attest<`a${string}`>(S.infer)
+	})
 
-	// it("\\S", () => {
-	// 	const S = regex("^a\\S$")
-	// 	attest<`a${string}`>(S.infer)
-	// })
+	it("\\S", () => {
+		const S = regex("^a\\S$")
+		attest<`a${string}`>(S.infer)
+	})
 
 	// it("groups", () => {
 	// 	const S = regex("^(abc)(?:def)(?=ghi)(?!jkl)$")
@@ -258,13 +259,8 @@ contextualize(() => {
 	// 	attest<`abc${string}${string}`>(S.infer)
 	// })
 
-	// it("unions", () => {
-	// 	const S = regex("^abc|def|ghi$")
-	// 	attest<"abc" | "def" | "ghi">(S.infer)
-	// })
-
-	// it("reports unclosed character sets", () => {
-	// 	const S = regex("^abc[$")
-	// 	attest<"abc" | "def" | "ghi">(S.infer)
-	// })
+	it("reports unclosed character sets", () => {
+		// @ts-expect-error
+		attest(() => regex("^abc[$")).type.errors.snap()
+	})
 })

@@ -8,7 +8,7 @@ export type parseEscape<
 	parsed extends ParsedEscapeSequence = parseEscapedChar<unscanned, false>
 > =
 	parsed["result"] extends ErrorMessage ? parsed["result"]
-	:	parse<s.shiftQuantifiable<s, [parsed["result"]], parsed["unscanned"]>>
+	:	s.shiftQuantifiable<s, [parsed["result"]], parsed["unscanned"]>
 
 export type parseEscapedChar<source extends string, inCharSet extends boolean> =
 	source extends Scanner.shift<infer lookahead, infer unscanned> ?

@@ -137,8 +137,7 @@ export declare namespace s {
 		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
 	export type finalize<s extends State> =
-		s["unscanned"] extends ErrorMessage ? s["unscanned"]
-		: s["groups"] extends [] ?
+		s["groups"] extends [] ?
 			finalizePattern<State.Group.finalize<s>["branches"]>
 		:	ErrorMessage<writeUnclosedGroupMessage<")">>
 }
