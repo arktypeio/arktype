@@ -148,21 +148,24 @@
 		},
 		"arkRegexFunction": {
 			"contentName": "meta.embedded.arktype.regex",
-			"begin": "([^\\)\\(\\s]+)?(\\.)?\\b(regex)(\\()",
+			"begin": "\\b(regex)(\\()(['\"`])",
 			"beginCaptures": {
-				"2": {
-					"name": "punctuation.accessor.ts"
-				},
-				"3": {
+				"1": {
 					"name": "entity.name.function.ts"
 				},
-				"4": {
+				"2": {
 					"name": "meta.brace.round.ts"
+				},
+				"3": {
+					"name": "string.quoted.ts punctuation.definition.string.begin.ts"
 				}
 			},
-			"end": "\\)",
+			"end": "(\\3)(\\))",
 			"endCaptures": {
-				"0": {
+				"1": {
+					"name": "string.quoted.ts punctuation.definition.string.end.ts"
+				},
+				"2": {
 					"name": "meta.brace.round.ts"
 				}
 			},
