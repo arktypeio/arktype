@@ -36,7 +36,7 @@ export declare namespace State {
 		export type finalize<g extends Group> = from<{
 			branches: [
 				...g["branches"],
-				...appendQuantifiable<g["sequence"], g["quantifiable"]>
+				...appendQuantifiableOuter<g["sequence"], g["quantifiable"]>
 			]
 			sequence: [""]
 			quantifiable: []
@@ -66,7 +66,7 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		branches: s["branches"]
-		sequence: appendQuantifiable<s["sequence"], s["quantifiable"]>
+		sequence: appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
 		quantifiable: quantifiable
 	}>
 
@@ -78,7 +78,7 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		branches: s["branches"]
-		sequence: appendQuantifiable<s["sequence"], quantified>
+		sequence: appendQuantifiableOuter<s["sequence"], quantified>
 		quantifiable: []
 	}>
 
@@ -90,7 +90,7 @@ export declare namespace s {
 		groups: s["groups"]
 		branches: [
 			...s["branches"],
-			...appendQuantifiable<s["sequence"], s["quantifiable"]>
+			...appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
 		]
 		sequence: [""]
 		quantifiable: []
@@ -104,8 +104,8 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		branches: s["branches"]
-		sequence: appendQuantifiable<
-			appendQuantifiable<s["sequence"], s["quantifiable"]>,
+		sequence: appendQuantifiableOuter<
+			appendQuantifiableOuter<s["sequence"], s["quantifiable"]>,
 			[AnchorMarker<a>]
 		>
 		quantifiable: []
@@ -128,7 +128,10 @@ export declare namespace s {
 				unscanned: unscanned
 				groups: init
 				branches: last["branches"]
-				sequence: appendQuantifiable<last["sequence"], last["quantifiable"]>
+				sequence: appendQuantifiableOuter<
+					last["sequence"],
+					last["quantifiable"]
+				>
 				quantifiable: State.Group.finalize<s>["branches"]
 			}>
 		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
@@ -142,36 +145,36 @@ export declare namespace s {
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]
 
-type appendQuantifiable<
+type appendQuantifiableOuter<
 	sequence extends string[],
 	quantifiable extends string[],
 	result extends string[] = []
 > =
 	quantifiable extends [] ? sequence
 	: sequence extends shiftTokens<infer seqHead, infer seqTail> ?
-		appendQuantifiable<
+		appendQuantifiableOuter<
 			seqTail,
 			quantifiable,
-			[...result, ..._appendQuantifiable<seqHead, quantifiable, []>]
+			[...result, ...appendQuantifiableInner<seqHead, quantifiable, []>]
 		>
 	:	result
 
-type _appendQuantifiable<
-	head extends string,
+type appendQuantifiableInner<
+	seqHead extends string,
 	quantifiable extends string[],
 	result extends string[]
 > =
 	quantifiable extends (
 		shiftTokens<infer quantifiableHead, infer quantifiableTail>
 	) ?
-		_appendQuantifiable<
-			head,
+		appendQuantifiableInner<
+			seqHead,
 			quantifiableTail,
-			[...result, `${head}${quantifiableHead}`]
+			[...result, appendNonRedundant<seqHead, quantifiableHead>]
 		>
 	:	result
 
-export type finalizePattern<tokens extends string[]> =
+type finalizePattern<tokens extends string[]> =
 	tokens extends string[] ? validateAnchorless<anchorsAway<tokens[number]>>
 	: tokens extends ErrorMessage ? tokens
 	: never

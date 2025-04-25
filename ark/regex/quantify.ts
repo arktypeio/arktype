@@ -31,6 +31,9 @@ declare namespace ParsedRange {
 	export type from<r extends ParsedRange> = r
 }
 
+type skipPossibleQuestionMark<unscanned extends string> =
+	unscanned extends `?${infer next}` ? next : unscanned
+
 type parsePossibleRangeString<unscanned extends string> =
 	unscanned extends (
 		`${infer l extends number},${infer r extends number}}${infer next}`
@@ -38,19 +41,19 @@ type parsePossibleRangeString<unscanned extends string> =
 		ParsedRange.from<{
 			min: l
 			max: r
-			unscanned: next
+			unscanned: skipPossibleQuestionMark<next>
 		}>
 	: unscanned extends `${infer l extends number},}${infer next}` ?
 		ParsedRange.from<{
 			min: l
 			max: null
-			unscanned: next
+			unscanned: skipPossibleQuestionMark<next>
 		}>
 	: unscanned extends `${infer l extends number}}${infer next}` ?
 		ParsedRange.from<{
 			min: l
 			max: l
-			unscanned: next
+			unscanned: skipPossibleQuestionMark<next>
 		}>
 	:	null
 
@@ -68,7 +71,7 @@ export type parsePossibleRange<
 			>
 		:	s.error<
 				writeUnmatchedQuantifierError<
-					unscanned extends `${infer range}${parsed["unscanned"]}` ? range
+					unscanned extends `${infer range}${parsed["unscanned"]}` ? `{${range}`
 					:	never
 				>
 			>

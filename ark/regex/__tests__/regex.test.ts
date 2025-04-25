@@ -5,12 +5,14 @@ contextualize(() => {
 	describe("anchors", () => {
 		it("multiple start branches", () => {
 			const S = regex("^foo|^bar")
-			attest<`foo${string}` | `bar${string}`>(S.infer)
+			attest<`foo${string}` | `bar${string}`>(S.infer).type.toString.snap()
 		})
 
 		it("inner outer anchors", () => {
 			const S = regex("(^bo(innerAnchored$|innerUnanchored))")
-			attest<"boinnerAnchored" | `boinnerUnanchored${string}`>(S.infer)
+			attest<"boinnerAnchored" | `boinnerUnanchored${string}`>(
+				S.infer
+			).type.toString.snap()
 		})
 
 		it("consecutive start", () => {
@@ -37,12 +39,12 @@ contextualize(() => {
 
 	it("literals", () => {
 		const S = regex("abc")
-		attest<`${string}abc${string}`>(S.infer)
+		attest<`${string}abc${string}`>(S.infer).type.toString.snap()
 	})
 
 	it("start", () => {
 		const S = regex("^a")
-		attest<`a${string}`>(S.infer)
+		attest<`a${string}`>(S.infer).type.toString.snap()
 	})
 
 	it("end", () => {
@@ -76,32 +78,129 @@ contextualize(() => {
 
 	it("?", () => {
 		const S = regex("^ab?c$")
-		attest<"ac" | "abc">(S.infer)
+		attest<"ac" | "abc">(S.infer).type.toString.snap()
 	})
 
 	it(".", () => {
 		const S = regex("^a.$")
-		attest<`a${string}`>(S.infer)
+		attest<`a${string}`>(S.infer).type.toString.snap()
 	})
 
 	it("?", () => {
 		const S = regex("^ab?c$")
-		attest<`a${"b" | ""}c`>(S.infer)
+		attest<`a${"b" | ""}c`>(S.infer).type.toString.snap()
 	})
 
 	it("+", () => {
 		const S = regex("^ab+c$")
-		attest<`ab${string}c`>(S.infer)
+		attest<`ab${string}c`>(S.infer).type.toString.snap()
 	})
 
 	it("+?", () => {
 		const S = regex("^ab+?c$")
-		attest<`a${string}c`>(S.infer)
+		attest<`ab${string}c`>(S.infer).type.toString.snap()
 	})
 
 	it("*", () => {
 		const S = regex("^ab*c$")
-		attest<"ac" | `ab${string}c`>(S.infer)
+		attest<"ac" | `ab${string}c`>(S.infer).type.toString.snap()
+	})
+
+	describe("ranges", () => {
+		it("exact", () => {
+			const S = regex("^a{2}$")
+			attest<"aa">(S.infer).type.toString.snap()
+		})
+
+		it("min", () => {
+			const S = regex("^a{2,}$")
+			attest<`aa${string}`>(S.infer).type.toString.snap()
+		})
+
+		it("min max", () => {
+			const S = regex("^a{2,4}$")
+			attest<"aa" | "aaa" | "aaaa">(S.infer).type.toString.snap()
+		})
+
+		it("min max lazy", () => {
+			const S = regex("^a{2,4}?$")
+			attest<"aa" | "aaa" | "aaaa">(S.infer).type.toString.snap()
+		})
+
+		it("min max group", () => {
+			const S = regex("^(ab){1,2}$")
+			attest<"ab" | "abab">(S.infer).type.toString.snap()
+		})
+
+		it("zero or more greedy", () => {
+			const S = regex("^a{0,}$")
+			attest<string>(S.infer).type.toString.snap()
+		})
+
+		it("zero or more lazy", () => {
+			const S = regex("^a{0,}?$")
+			attest<string>(S.infer).type.toString.snap()
+		})
+
+		it("zero or one", () => {
+			const S = regex("^a{0,1}$")
+			attest<"" | "a">(S.infer).type.toString.snap()
+		})
+
+		it("zero or one lazy", () => {
+			const S = regex("^a{0,1}?$")
+			attest<"" | "a">(S.infer).type.toString.snap()
+		})
+
+		it("falls back to literal for missing min", () => {
+			const r = regex("^a{,2}$")
+			attest<"a{,2}">(r.infer).type.toString.snap()
+		})
+
+		it("fallsback to literal on empty", () => {
+			const r = regex("^a{}$")
+			attest<"a{}">(r.infer).type.toString.snap()
+		})
+
+		it("falls back to literal for non-numeric", () => {
+			const r = regex("^a{1,foo}$")
+			attest<"a{1,foo}">(r.infer).type.toString.snap()
+		})
+
+		it("many ranges", () => {
+			const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
+			attest<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`>(
+				S.infer
+			).type.toString.snap()
+		})
+
+		it("unmatched", () => {
+			// @ts-expect-error
+			attest(() => regex("{2}")).type.errors(
+				"Quantifier {2} requires a preceding token"
+			)
+		})
+
+		it("unmatched comma", () => {
+			// @ts-expect-error
+			attest(() => regex("{2,}")).type.errors(
+				"Quantifier {2,} requires a preceding token"
+			)
+		})
+
+		it("unmatched min max", () => {
+			// @ts-expect-error
+			attest(() => regex("{2,3}")).type.errors(
+				"Quantifier {2,3} requires a preceding token"
+			)
+		})
+
+		it("unmatched lazy", () => {
+			// @ts-expect-error
+			attest(() => regex("{2,3}?")).type.errors(
+				"Quantifier {2,3}? requires a preceding token"
+			)
+		})
 	})
 
 	// it("character sets", () => {
@@ -118,11 +217,6 @@ contextualize(() => {
 	// 	const S = regex("^a[\\^a\\-b]$")
 	// 	attest<`a${"^" | "a" | "-" | "b"}`>(S.infer)
 	// })
-
-	it("many ranges", () => {
-		const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
-		attest<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`>(S.infer)
-	})
 
 	// it("\\w", () => {
 	// 	const S = regex("^a\\wc$")
@@ -169,8 +263,8 @@ contextualize(() => {
 	// 	attest<"abc" | "def" | "ghi">(S.infer)
 	// })
 
-	it("reports unclosed character sets", () => {
-		const S = regex("^abc[$")
-		attest<"abc" | "def" | "ghi">(S.infer)
-	})
+	// it("reports unclosed character sets", () => {
+	// 	const S = regex("^abc[$")
+	// 	attest<"abc" | "def" | "ghi">(S.infer)
+	// })
 })
