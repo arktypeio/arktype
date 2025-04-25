@@ -1,10 +1,94 @@
-import type { ErrorMessage } from "@ark/util"
+import type { conform, ErrorMessage, Scanner } from "@ark/util"
 import type { parse } from "./parse.ts"
-import type { s } from "./state.ts"
+import type { s, State } from "./state.ts"
 
 export type NonEmptyQuantifiable = [string, ...string[]]
 
-export type quantifyBuiltin<
+export type parseBuiltinQuantifier<
+	s extends State,
+	quantifier extends BuiltinQuantifier,
+	unscanned extends string
+> =
+	s["quantifiable"] extends NonEmptyQuantifiable ?
+		parse<
+			s.pushQuantified<
+				s,
+				quantifyBuiltin<quantifier, s["quantifiable"]>,
+				unscanned extends Scanner.shift<"?", infer lazyUnscanned> ?
+					lazyUnscanned
+				:	unscanned
+			>
+		>
+	:	s.error<writeUnmatchedQuantifierError<quantifier>>
+
+type ParsedRange = {
+	min: number
+	max: number | null
+	unscanned: string
+}
+
+declare namespace ParsedRange {
+	export type from<r extends ParsedRange> = r
+}
+
+type parsePossibleRangeString<unscanned extends string> =
+	unscanned extends (
+		`${infer l extends number},${infer r extends number}}${infer next}`
+	) ?
+		ParsedRange.from<{
+			min: l
+			max: r
+			unscanned: next
+		}>
+	: unscanned extends `${infer l extends number},}${infer next}` ?
+		ParsedRange.from<{
+			min: l
+			max: null
+			unscanned: next
+		}>
+	: unscanned extends `${infer l extends number}}${infer next}` ?
+		ParsedRange.from<{
+			min: l
+			max: l
+			unscanned: next
+		}>
+	:	null
+
+export type parsePossibleRange<
+	s extends State,
+	unscanned extends string,
+	parsed extends ParsedRange | null = parsePossibleRangeString<unscanned>
+> =
+	parsed extends ParsedRange ?
+		s["quantifiable"] extends NonEmptyQuantifiable ?
+			applyQuantified<
+				s,
+				quantify<s["quantifiable"], parsed["min"], parsed["max"]>,
+				parsed["unscanned"]
+			>
+		:	s.error<
+				writeUnmatchedQuantifierError<
+					unscanned extends `${infer range}${parsed["unscanned"]}` ? range
+					:	never
+				>
+			>
+	:	parse<s.shiftQuantifiable<s, ["{"], unscanned>>
+
+type applyQuantified<
+	s extends State,
+	quantified,
+	unscanned extends string
+> = parse<
+	s.pushQuantified<
+		s,
+		// TS flops trying to check this as a constraint, so just conform it here
+		conform<quantified, string[]>,
+		unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
+		:	unscanned
+	>
+>
+
+type quantifyBuiltin<
 	quantifier extends BuiltinQuantifier,
 	token extends NonEmptyQuantifiable
 > =
@@ -13,33 +97,35 @@ export type quantifyBuiltin<
 	: quantifier extends "*" ? ["", ...suffix<token, string>]
 	: never
 
-export type quantify<
-	quantifiable extends string[],
-	quantifier extends string,
+type quantify<
+	token extends NonEmptyQuantifiable,
 	min extends number,
-	max extends number
-> =
-	quantifiable extends [] ? writeUnmatchedQuantifierError<quantifier>
-	:	_loopUntilMin<quantifiable, min, max, [], { [i in keyof quantifiable]: "" }>
+	max extends number | null
+> = _loopUntilMin<token, min, max, [], { [i in keyof token]: "" }>
 
 type _loopUntilMin<
-	s extends string[],
+	token extends NonEmptyQuantifiable,
 	min extends number,
-	max extends number,
+	max extends number | null,
 	i extends 1[],
 	repetitions extends string[]
 > =
-	i["length"] extends min ? _loopUntilMax<s, min, max, i, repetitions>
+	i["length"] extends min ?
+		max extends number ?
+			_loopUntilMax<token, min, max, i, repetitions>
+		:	suffix<repetitions, string>
 	:	_loopUntilMin<
-			s,
+			token,
 			min,
 			max,
 			[...i, 1],
-			{ [i in keyof s]: `${repetitions[i & keyof repetitions]}${s[i]}` }
+			{
+				[i in keyof token]: `${repetitions[i & keyof repetitions]}${token[i]}`
+			}
 		>
 
 type _loopUntilMax<
-	s extends string[],
+	quantifiable extends NonEmptyQuantifiable,
 	min extends number,
 	max extends number,
 	i extends 1[],
@@ -49,11 +135,13 @@ type _loopUntilMax<
 	:	[
 			...repetitions,
 			..._loopUntilMax<
-				s,
+				quantifiable,
 				min,
 				max,
 				[...i, 1],
-				{ [i in keyof s]: `${repetitions[i & keyof repetitions]}${s[i]}` }
+				{
+					[i in keyof quantifiable]: `${repetitions[i & keyof repetitions]}${quantifiable[i]}`
+				}
 			>
 		]
 
@@ -62,7 +150,7 @@ export type BuiltinQuantifier = "*" | "+" | "?"
 export type writeUnmatchedQuantifierError<quantifier extends string> =
 	ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>
 
-type suffix<quantifiable extends string[], suffix extends string> = [
-	...quantifiable,
-	...{ [i in keyof quantifiable]: `${quantifiable[i]}${suffix}` }
+type suffix<token extends string[], suffix extends string> = [
+	...token,
+	...{ [i in keyof token]: `${token[i]}${suffix}` }
 ]

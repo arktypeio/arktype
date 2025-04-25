@@ -2,9 +2,8 @@ import type { Backslash, ErrorMessage, Scanner } from "@ark/util"
 import type { parseEscape } from "./escape.ts"
 import type {
 	BuiltinQuantifier,
-	NonEmptyQuantifiable,
-	quantifyBuiltin,
-	writeUnmatchedQuantifierError
+	parseBuiltinQuantifier,
+	parsePossibleRange
 } from "./quantify.ts"
 import type { Anchor, s, State } from "./state.ts"
 
@@ -18,14 +17,7 @@ export type parse<s extends State> =
 		: lookahead extends "(" ? parse<s.pushGroup<s, unscanned>>
 		: lookahead extends ")" ? parse<s.popGroup<s, unscanned>>
 		: lookahead extends BuiltinQuantifier ?
-			s["quantifiable"] extends NonEmptyQuantifiable ?
-				parse<
-					s.pushQuantified<
-						s,
-						quantifyBuiltin<lookahead, s["quantifiable"]>,
-						unscanned
-					>
-				>
-			:	s.error<writeUnmatchedQuantifierError<lookahead>>
-		:	parse<s.shiftQuantifiable<s, [lookahead], unscanned>>
+			parseBuiltinQuantifier<s, lookahead, unscanned>
+		: lookahead extends "{" ? parsePossibleRange<s, unscanned>
+		: parse<s.shiftQuantifiable<s, [lookahead], unscanned>>
 	:	s

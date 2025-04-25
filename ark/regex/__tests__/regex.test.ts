@@ -119,10 +119,10 @@ contextualize(() => {
 	// 	attest<`a${"^" | "a" | "-" | "b"}`>(S.infer)
 	// })
 
-	// it("{} up to including length 3", () => {
-	// 	const S = regex("^x{0}a{1}b{2}c{3}d{,3}e{1,2}f{4}$")
-	// 	attest<`abbccc${"" | "d" | "dd" | "ddd"}${"e" | "ee"}${string}`>(S.infer)
-	// })
+	it("many ranges", () => {
+		const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
+		attest<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`>(S.infer)
+	})
 
 	// it("\\w", () => {
 	// 	const S = regex("^a\\wc$")
@@ -169,8 +169,8 @@ contextualize(() => {
 	// 	attest<"abc" | "def" | "ghi">(S.infer)
 	// })
 
-	// it("reports unclosed character sets", () => {
-	// 	const S = regex("^abc[$")
-	// 	attest<"abc" | "def" | "ghi">(S.infer)
-	// })
+	it("reports unclosed character sets", () => {
+		const S = regex("^abc[$")
+		attest<"abc" | "def" | "ghi">(S.infer)
+	})
 })
