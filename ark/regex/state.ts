@@ -122,7 +122,9 @@ export declare namespace s {
 		s extends State,
 		unscanned extends string
 	> = State.from<{
-		unscanned: unscanned
+		unscanned: unscanned extends `?:${infer next}` ? next
+		: unscanned extends `?<${infer next}` ? shiftNamedGroup<next>
+		: unscanned
 		groups: [...s["groups"], s]
 		branches: []
 		sequence: [""]
@@ -150,6 +152,13 @@ export declare namespace s {
 }
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]
+
+type shiftNamedGroup<unscanned extends string> =
+	unscanned extends `${infer name}>${infer next}` ?
+		name extends "" ?
+			ErrorMessage<"Capture group <> requires a name">
+		:	next
+	:	ErrorMessage<writeUnclosedGroupMessage<">">>
 
 type appendQuantifiableOuter<
 	sequence extends string[],

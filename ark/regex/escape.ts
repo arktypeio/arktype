@@ -3,9 +3,23 @@ import type { Control, State, s } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer char, infer nextUnscanned> ?
-		parseEscapedChar<char> extends infer result extends string ?
+		char extends `${bigint}` ?
+			s.shiftQuantifiable<
+				s,
+				[string],
+				nextUnscanned extends `${bigint}${infer following}` ? following
+				:	nextUnscanned
+			>
+		: char extends "k" ?
+			s.shiftQuantifiable<
+				s,
+				[string],
+				nextUnscanned extends `<${string}>${infer following}` ? following
+				:	ErrorMessage<"\\k must be followed by a named reference like <name>">
+			>
+		: parseEscapedChar<char> extends infer result extends string ?
 			result extends ErrorMessage ?
-				parseEscapedChar<char>
+				s.error<result>
 			:	s.shiftQuantifiable<s, [result], nextUnscanned>
 		:	never
 	:	s.error<`A regex cannot end with \\`>

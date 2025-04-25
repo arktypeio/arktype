@@ -10,19 +10,22 @@ export type parseCharset<s extends State, unscanned extends string> =
 			// we don't care about the contents of the negated char set because we can't infer it
 			scanned extends Scanner.shift<"^", string> ?
 				s.shiftQuantifiable<s, [string], remaining>
-			:	s.shiftQuantifiable<s, parseNonNegatedCharset<scanned, []>, remaining>
+			: parseNonNegatedCharset<scanned, []> extends (
+				infer result extends string[]
+			) ?
+				result extends [] ?
+					s.error<"Empty character set [] is unsatisfiable">
+				:	s.shiftQuantifiable<s, result, remaining>
+			:	never
 		:	writeUnclosedGroupMessage<"]">
 	:	never
 
 type parseNonNegatedCharset<chars extends string, set extends string[]> =
 	parseChar<chars> extends Scanner.shiftResult<infer result, infer unscanned> ?
-		chars extends Scanner.shift<infer lookahead, infer unscanned> ?
-			{}
-		:	{}
-	:	// lookahead extends "-" ?
-		// 	parseDash<unscanned, set>
-		// :	parseNonNegatedCharset<unscanned, [...set, lookahead]>
-		set
+		result extends UnescapedDashMarker ?
+			parseDash<unscanned, set>
+		:	parseNonNegatedCharset<unscanned, [...set, result]>
+	:	set
 
 type parseDash<unscanned extends string, set extends string[]> =
 	// leading -, treat as literal
@@ -35,10 +38,7 @@ type parseDash<unscanned extends string, set extends string[]> =
 	:	// trailing -, treat as literal
 		[...set, "-"]
 
-type parseEscape<unscanned extends string, set extends string[]> =
-	unscanned extends Scanner.shift<infer char, infer postEscape> ?
-		parseNonNegatedCharset<postEscape, [...set, parseEscapedChar<char>]>
-	:	never
+type UnescapedDashMarker = "dash"
 
 type parseChar<unscanned extends string> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
@@ -46,5 +46,9 @@ type parseChar<unscanned extends string> =
 			next extends Scanner.shift<infer escaped, infer postEscaped> ?
 				Scanner.shiftResult<parseEscapedChar<escaped>, postEscaped>
 			:	never
-		:	Scanner.shiftResult<lookahead, next>
-	:	never
+		:	Scanner.shiftResult<
+				lookahead extends "-" ? UnescapedDashMarker : lookahead,
+				next
+			>
+	:	// return null if called on an empty string
+		null
