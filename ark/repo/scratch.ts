@@ -1,5 +1,5 @@
 import { type } from "arktype"
 
-const T = type.enumerated(...[...new Array(12)].map((_, i) => i))
+const Thing = type(/^user-/).as<"foo">()
 
-console.log(T.expression)
+const out = Thing("f")
