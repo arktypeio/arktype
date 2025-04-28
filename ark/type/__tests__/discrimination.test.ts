@@ -429,4 +429,59 @@ contextualize(() => {
 			"k1 must be a number (was missing)"
 		)
 	})
+
+	it("discriminate array and tuple", () => {
+		const T = type("null[] | false").or([type.undefined])
+
+		const { discriminantJson } = T.select({
+			kind: "union",
+			method: "assertFind"
+		})
+
+		attest(discriminantJson).snap({
+			kind: "domain",
+			path: [],
+			cases: {
+				'"object"': [
+					{
+						sequence: { prefix: [{ unit: "undefined" }] },
+						proto: "Array",
+						exactLength: 1
+					},
+					{ sequence: { unit: null }, proto: "Array" }
+				],
+				'"boolean"': { unit: false }
+			}
+		})
+	})
+
+	it("discriminate bounded array and tuple", () => {
+		const T = type("3 <= null[] <= 10 | false").or([type.undefined])
+
+		const { discriminantJson } = T.select({
+			kind: "union",
+			method: "assertFind"
+		})
+
+		attest(discriminantJson).snap({
+			kind: "domain",
+			path: [],
+			cases: {
+				'"object"': [
+					{
+						sequence: { prefix: [{ unit: "undefined" }] },
+						proto: "Array",
+						exactLength: 1
+					},
+					{
+						sequence: { unit: null },
+						proto: "Array",
+						maxLength: 10,
+						minLength: 3
+					}
+				],
+				'"boolean"': { unit: false }
+			}
+		})
+	})
 })

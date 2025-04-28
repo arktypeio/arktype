@@ -32,12 +32,11 @@ export class Scanner<lookahead extends string = string> {
 	shiftUntil(condition: Scanner.UntilCondition): string {
 		let shifted = ""
 		while (this.lookahead) {
-			if (condition(this, shifted)) {
-				if (shifted[shifted.length - 1] === Backslash)
-					shifted = shifted.slice(0, -1)
-				else break
-			}
-			shifted += this.shift()
+			if (this.lookahead === Backslash) {
+				this.shift()
+				shifted += this.shift()
+			} else if (condition(this, shifted)) break
+			else shifted += this.shift()
 		}
 		return shifted
 	}

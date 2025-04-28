@@ -571,12 +571,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 		}
 
-		const orderedCandidates =
-			this.ordered ? orderCandidates(candidates, this.branches) : candidates
+		const viableCandidates =
+			this.ordered ?
+				viableOrderedCandidates(candidates, this.branches)
+			:	candidates
 
-		if (!orderedCandidates.length) return null
+		if (!viableCandidates.length) return null
 
-		const ctx = createCaseResolutionContext(orderedCandidates, this)
+		const ctx = createCaseResolutionContext(viableCandidates, this)
 
 		const cases: DiscriminatedCases = {}
 
@@ -645,12 +647,17 @@ type BranchEntry = {
 }
 
 const createCaseResolutionContext = (
-	orderedCandidates: DiscriminantCandidate[],
+	viableCandidates: DiscriminantCandidate[],
 	node: Union.Node
 ): CaseResolutionContext => {
-	const best = orderedCandidates.sort(
-		(l, r) => Object.keys(r.cases).length - Object.keys(l.cases).length
-	)[0]
+	const ordered = viableCandidates.sort((l, r) =>
+		l.path.length === r.path.length ?
+			Object.keys(r.cases).length - Object.keys(l.cases).length
+			// prefer shorter paths first
+		:	l.path.length - r.path.length
+	)
+
+	const best = ordered[0]
 
 	const location: DiscriminantLocation = {
 		kind: best.kind,
@@ -732,7 +739,7 @@ const resolveCase = (
 	return resolvedEntries
 }
 
-const orderCandidates = (
+const viableOrderedCandidates = (
 	candidates: DiscriminantCandidate[],
 	originalBranches: readonly Union.ChildNode[]
 ): DiscriminantCandidate[] => {

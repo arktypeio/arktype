@@ -93,8 +93,10 @@ contextualize(() => {
 	it("escaped backslash", () => {
 		const T = type("'\\\\'")
 
-		attest<"\\">(T.t)
-		attest(T.expression).snap()
+		const Expected = type.unit("\\")
+
+		attest<typeof Expected.t>(T.t)
+		attest(T.expression).equals(Expected.expression)
 	})
 
 	it("string literal stress", () => {
