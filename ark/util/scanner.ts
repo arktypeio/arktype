@@ -101,10 +101,17 @@ export declare namespace Scanner {
 		appendTo extends string = ""
 	> =
 		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
-			lookahead extends terminator ?
-				appendTo extends `${infer base}${Backslash}` ?
-					shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
-				:	[appendTo, unscanned]
+			lookahead extends terminator ? [appendTo, unscanned]
+			: lookahead extends Backslash ?
+				nextUnscanned extends (
+					shift<infer nextLookahead, infer postEscapedUnscanned>
+				) ?
+					shiftUntil<
+						postEscapedUnscanned,
+						terminator,
+						`${appendTo}${nextLookahead}`
+					>
+				:	[`${appendTo}${Backslash}`, ""]
 			:	shiftUntil<nextUnscanned, terminator, `${appendTo}${lookahead}`>
 		:	[appendTo, ""]
 

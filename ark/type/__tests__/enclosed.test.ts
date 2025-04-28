@@ -90,6 +90,13 @@ contextualize(() => {
 		attest(T.expression).snap('"don\'t"')
 	})
 
+	it("escaped backslash", () => {
+		const T = type("'\\\\'")
+
+		attest<"\\">(T.t)
+		attest(T.expression).snap()
+	})
+
 	it("string literal stress", () => {
 		const s = `"3.
 14159265358979323846264338327950288419716939937510

@@ -75,7 +75,7 @@ export default tseslint.config(
 					args: "after-used",
 					argsIgnorePattern: "^_",
 					// ignore eslint parsing issue with parser state namespace s
-					varsIgnorePattern: "s",
+					varsIgnorePattern: "^s$",
 					ignoreRestSiblings: true
 				}
 			],

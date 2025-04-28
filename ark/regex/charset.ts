@@ -1,6 +1,13 @@
-import type { Backslash, Scanner, writeUnclosedGroupMessage } from "@ark/util"
+import type {
+	Backslash,
+	ErrorMessage,
+	Scanner,
+	writeUnclosedGroupMessage
+} from "@ark/util"
 import type { parseEscapedChar } from "./escape.ts"
 import type { s, State } from "./state.ts"
+
+type Z = parseCharset<State.initialize<"">, "bc\\\\]">
 
 export type parseCharset<s extends State, unscanned extends string> =
 	Scanner.shiftUntil<unscanned, "]"> extends (
@@ -10,29 +17,30 @@ export type parseCharset<s extends State, unscanned extends string> =
 			// we don't care about the contents of the negated char set because we can't infer it
 			scanned extends Scanner.shift<"^", string> ?
 				s.shiftQuantifiable<s, [string], remaining>
-			: parseNonNegatedCharset<scanned, []> extends (
-				infer result extends string[]
-			) ?
-				result extends [] ?
-					s.error<"Empty character set [] is unsatisfiable">
-				:	s.shiftQuantifiable<s, result, remaining>
+			: parseNonNegatedCharset<scanned, []> extends infer result ?
+				result extends string[] ?
+					result extends [] ?
+						s.error<"Empty character set [] is unsatisfiable">
+					:	s.shiftQuantifiable<s, result, remaining>
+				:	never
 			:	never
 		:	writeUnclosedGroupMessage<"]">
 	:	never
 
 type parseNonNegatedCharset<chars extends string, set extends string[]> =
 	parseChar<chars> extends Scanner.shiftResult<infer result, infer unscanned> ?
-		result extends UnescapedDashMarker ?
-			parseDash<unscanned, set>
-		:	parseNonNegatedCharset<unscanned, [...set, result]>
+		result extends UnescapedDashMarker ? parseDash<unscanned, set>
+		: result extends ErrorMessage ? result
+		: parseNonNegatedCharset<unscanned, [...set, result]>
 	:	set
 
 type parseDash<unscanned extends string, set extends string[]> =
 	// leading -, treat as literal
 	set extends [] ? parseNonNegatedCharset<unscanned, ["-"]>
-	: unscanned extends Scanner.shift<infer rangeEnd, infer next> ?
-		rangeEnd extends Backslash ? {}
-		: next extends `-${infer postLiteralDash}` ?
+	: parseChar<unscanned> extends (
+		Scanner.shiftResult<infer rangeEnd, infer next>
+	) ?
+		next extends `-${infer postLiteralDash}` ?
 			parseNonNegatedCharset<postLiteralDash, [...set, string, "-"]>
 		:	parseNonNegatedCharset<next, [...set, string]>
 	:	// trailing -, treat as literal
