@@ -19,7 +19,7 @@ export const parseEnclosed = (
 	s: RuntimeState,
 	enclosing: EnclosingStartToken
 ): void => {
-	const enclosed = s.scanner.shiftUntil(
+	const enclosed = s.scanner.shiftUntilEscapable(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]]
 	)
 	if (s.scanner.lookahead === "")
@@ -55,9 +55,11 @@ export type parseEnclosed<
 	enclosingStart extends EnclosingStartToken,
 	unscanned extends string
 > =
-	Scanner.shiftUntil<unscanned, EnclosingTokens[enclosingStart]> extends (
-		Scanner.shiftResult<infer scanned, infer nextUnscanned>
-	) ?
+	Scanner.shiftUntilEscapable<
+		unscanned,
+		EnclosingTokens[enclosingStart],
+		""
+	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
 		nextUnscanned extends "" ?
 			s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
 		:	s.setRoot<

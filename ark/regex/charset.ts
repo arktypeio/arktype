@@ -7,10 +7,8 @@ import type {
 import type { parseEscapedChar } from "./escape.ts"
 import type { s, State } from "./state.ts"
 
-type Z = parseCharset<State.initialize<"">, "bc\\\\]">
-
 export type parseCharset<s extends State, unscanned extends string> =
-	Scanner.shiftUntil<unscanned, "]"> extends (
+	Scanner.shiftUntilEscapable<unscanned, "]", Backslash> extends (
 		Scanner.shiftResult<infer scanned, infer nextUnscanned>
 	) ?
 		nextUnscanned extends `]${infer remaining}` ?

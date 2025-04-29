@@ -32,9 +32,20 @@ export class Scanner<lookahead extends string = string> {
 	shiftUntil(condition: Scanner.UntilCondition): string {
 		let shifted = ""
 		while (this.lookahead) {
+			if (condition(this, shifted)) break
+			else shifted += this.shift()
+		}
+		return shifted
+	}
+
+	shiftUntilEscapable(condition: Scanner.UntilCondition): string {
+		let shifted = ""
+		while (this.lookahead) {
 			if (this.lookahead === Backslash) {
 				this.shift()
-				shifted += this.shift()
+				if (condition(this, shifted)) shifted += this.shift()
+				else if (this.lookahead === Backslash) shifted += this.shift()
+				else shifted += `${Backslash}${this.shift()}`
 			} else if (condition(this, shifted)) break
 			else shifted += this.shift()
 		}
@@ -100,18 +111,38 @@ export declare namespace Scanner {
 		appendTo extends string = ""
 	> =
 		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
+			lookahead extends terminator ?
+				[appendTo, unscanned]
+			:	shiftUntil<nextUnscanned, terminator, `${appendTo}${lookahead}`>
+		:	[appendTo, ""]
+
+	export type shiftUntilEscapable<
+		unscanned extends string,
+		terminator extends string,
+		escapeEscape extends Backslash | "",
+		appendTo extends string = ""
+	> =
+		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
 			lookahead extends terminator ? [appendTo, unscanned]
 			: lookahead extends Backslash ?
 				nextUnscanned extends (
 					shift<infer nextLookahead, infer postEscapedUnscanned>
 				) ?
-					shiftUntil<
+					shiftUntilEscapable<
 						postEscapedUnscanned,
 						terminator,
-						`${appendTo}${nextLookahead}`
+						escapeEscape,
+						`${appendTo}${nextLookahead extends terminator ? ""
+						: nextLookahead extends Backslash ? escapeEscape
+						: Backslash}${nextLookahead}`
 					>
 				:	[`${appendTo}${Backslash}`, ""]
-			:	shiftUntil<nextUnscanned, terminator, `${appendTo}${lookahead}`>
+			:	shiftUntilEscapable<
+					nextUnscanned,
+					terminator,
+					escapeEscape,
+					`${appendTo}${lookahead}`
+				>
 		:	[appendTo, ""]
 
 	export type shiftUntilNot<
