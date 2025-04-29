@@ -157,12 +157,17 @@ type maybeLiftToKey<t, ctx extends MatchParserContext> =
 type _finalizeCaseArg<
 	t,
 	ctx extends MatchParserContext,
-	endpoint extends "in" | "out"
+	endpoint extends "in" | "out",
+	ctxInput = ctx["input"]
 > =
-	[distill<t, "in">, distill<t, endpoint>] extends [infer i, infer result] ?
-		[i] extends [ctx["input"]] ? result
-		: Extract<ctx["input"], i> extends never ? result
-		: Extract<ctx["input"], result>
+	ctxInput extends unknown ?
+		t extends unknown ?
+			[distill<t, "in">, distill<t, endpoint>] extends [infer i, infer result] ?
+				i extends ctxInput ? result
+				: isDisjoint<i, ctxInput> extends true ? never
+				: ctxInput & result
+			:	never
+		:	never
 	:	never
 
 type CaseParser<ctx extends MatchParserContext> = <const def, ret>(

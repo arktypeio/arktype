@@ -6,7 +6,11 @@ import {
 } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
-import { doubleAtMessage, throwOnDefault } from "arktype/internal/match.ts"
+import {
+	doubleAtMessage,
+	throwOnDefault,
+	type Match
+} from "arktype/internal/match.ts"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
 
@@ -889,5 +893,23 @@ contextualize(() => {
 		const out = check({ foo: "value" })
 
 		attest<"value">(out).equals("value")
+	})
+
+	it("union at input key", () => {
+		type Data = {
+			id: 1 | 2
+			value: number
+		}
+
+		const discriminateValue = type.match
+			.in<Data>()
+			.at("id")
+			.match({
+				1: o => `${o.value}!`,
+				2: o => o.value,
+				default: "assert"
+			})
+
+		attest(discriminateValue).type.toString.snap()
 	})
 })
