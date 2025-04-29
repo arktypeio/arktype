@@ -35,9 +35,7 @@ type parseNonNegatedCharset<chars extends string, set extends string[]> =
 type parseDash<unscanned extends string, set extends string[]> =
 	// leading -, treat as literal
 	set extends [] ? parseNonNegatedCharset<unscanned, ["-"]>
-	: parseChar<unscanned> extends (
-		Scanner.shiftResult<infer rangeEnd, infer next>
-	) ?
+	: parseChar<unscanned> extends Scanner.shiftResult<string, infer next> ?
 		next extends `-${infer postLiteralDash}` ?
 			parseNonNegatedCharset<postLiteralDash, [...set, string, "-"]>
 		:	parseNonNegatedCharset<next, [...set, string]>
