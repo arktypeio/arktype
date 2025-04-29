@@ -179,11 +179,13 @@ export declare namespace s {
 			:	never
 		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
-	export type finalize<s extends State> = Regex<
-		s["groups"] extends [] ? finalizePattern<State.Group.finalize<s>>
+	export type finalize<
+		s extends State,
+		pattern extends string = s["groups"] extends [] ?
+			finalizePattern<State.Group.finalize<s>>
 		:	ErrorMessage<writeUnclosedGroupMessage<")">>,
-		s["captures"] & s["namedCaptures"]
-	>
+		captures = s["captures"] & s["namedCaptures"]
+	> = Regex<pattern, captures>
 }
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]

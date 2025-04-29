@@ -11,12 +11,9 @@ export type parseEscape<s extends State, unscanned extends string> =
 				:	nextUnscanned
 			>
 		: char extends "k" ?
-			s.shiftQuantifiable<
-				s,
-				[string],
-				nextUnscanned extends `<${string}>${infer following}` ? following
-				:	ErrorMessage<"\\k must be followed by a named reference like <name>">
-			>
+			nextUnscanned extends `<${string}>${infer following}` ?
+				s.shiftQuantifiable<s, [string], following>
+			:	s.error<"\\k must be followed by a named reference like <name>">
 		: parseEscapedChar<char> extends infer result extends string ?
 			result extends ErrorMessage ?
 				s.error<result>

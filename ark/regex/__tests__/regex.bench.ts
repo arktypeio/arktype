@@ -7,16 +7,16 @@ bench.baseline(() => {
 
 bench("anchored union", () => {
 	const r = regex("typescript|^go$|brrr$")
-}).types([2010, "instantiations"])
+}).types([2215, "instantiations"])
 
 bench("?(1)", () => {
 	const r = regex("^a?$")
-}).types([456, "instantiations"])
+}).types([511, "instantiations"])
 
 bench("?(4)", () => {
 	const r = regex("^a?b?c?d?$")
-}).types([3039, "instantiations"])
+}).types([3136, "instantiations"])
 
 bench("?(7)", () => {
 	const r = regex("^a?b?c?d?e?f?g?$")
-}).types([31459, "instantiations"])
+}).types([31598, "instantiations"])
