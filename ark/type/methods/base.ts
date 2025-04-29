@@ -375,7 +375,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 		narrowed extends this["inferIn"] = never,
 		r = instantiateType<
 			[narrowed] extends [never] ? t
-			: t extends InferredMorph<any, infer o> ? (In: narrowed) => o
+			: t extends InferredMorph<never, infer o> ? (In: narrowed) => o
 			: narrowed,
 			$
 		>

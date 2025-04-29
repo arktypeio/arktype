@@ -265,7 +265,7 @@ export interface To<o = any> extends Out<o> {
 	introspectable: true
 }
 
-export type InferredMorph<i = any, o extends Out = Out> = (In: i) => o
+export type InferredMorph<i = never, o extends Out = Out> = (In: i) => o
 
 const defaultsToKey = noSuggest("defaultsTo")
 
@@ -288,7 +288,7 @@ type addDefaultToMorph<t extends InferredMorph, v> =
 type normalizeMorphDistribution<
 	t,
 	undistributedIn = t extends InferredMorph<infer i> ? i : never,
-	undistributedOut extends Out = t extends InferredMorph<any, infer o> ?
+	undistributedOut extends Out = t extends InferredMorph<never, infer o> ?
 		[o] extends [To<infer unwrappedOut>] ?
 			To<unwrappedOut>
 		:	o
@@ -334,7 +334,7 @@ export type inferPipe<l, r> = normalizeMorphDistribution<
 type _inferIntersection<l, r, piped extends boolean> =
 	[l & r] extends [infer t extends anyOrNever] ? t
 	: l extends InferredMorph<infer lIn, infer lOut> ?
-		r extends InferredMorph<any, infer rOut> ?
+		r extends InferredMorph<never, infer rOut> ?
 			piped extends true ?
 				(In: lIn) => rOut
 			:	// a commutative intersection between two morphs is a ParseError

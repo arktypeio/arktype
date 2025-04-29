@@ -952,10 +952,10 @@ const getPossibleMorph = (
 
 	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
 
-	const $arkStructuralMorph: Morph = (data, ctx) => {
+	const $arkStructuralMorph: Morph<any> = (data, ctx) => {
 		for (let i = 0; i < node.defaultable.length; i++) {
 			if (!(node.defaultable[i].key in data))
-				node.defaultable[i].defaultValueMorph(data, ctx)
+				node.defaultable[i].defaultValueMorph(data as never, ctx)
 		}
 
 		if (node.sequence?.defaultables) {
@@ -964,7 +964,7 @@ const getPossibleMorph = (
 				i < node.sequence.defaultables.length;
 				i++
 			)
-				node.sequence.defaultValueMorphs[i](data, ctx)
+				node.sequence.defaultValueMorphs[i](data as never, ctx)
 		}
 
 		if (node.undeclared === "delete")

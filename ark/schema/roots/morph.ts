@@ -59,10 +59,10 @@ export declare namespace Morph {
 	export type Out<morph extends Morph> =
 		morph extends Morph<never, infer o> ? o : never
 
-	export type ContextFree<i = any, o = unknown> = (In: i) => o
+	export type ContextFree<i = never, o = unknown> = (In: i) => o
 }
 
-export type Morph<i = any, o = unknown> = (In: i, ctx: Traversal) => o
+export type Morph<i = never, o = unknown> = (In: i, ctx: Traversal) => o
 
 const implementation: nodeImplementationOf<Morph.Declaration> =
 	implementNode<Morph.Declaration>({

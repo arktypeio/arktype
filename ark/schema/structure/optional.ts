@@ -147,7 +147,7 @@ export const computeDefaultValueMorph = (
 	key: PropertyKey,
 	value: BaseRoot,
 	defaultInput: unknown
-): Morph => {
+): Morph<any> => {
 	if (typeof defaultInput === "function") {
 		// if the value has a morph, pipe context through it
 		return value.includesTransform ?

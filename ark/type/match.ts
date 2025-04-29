@@ -163,9 +163,11 @@ type _finalizeCaseArg<
 	ctxInput extends unknown ?
 		t extends unknown ?
 			[distill<t, "in">, distill<t, endpoint>] extends [infer i, infer result] ?
-				i extends ctxInput ? result
-				: isDisjoint<i, ctxInput> extends true ? never
-				: ctxInput & result
+				i extends ctxInput ?
+					ctxInput extends result ?
+						ctxInput
+					:	ctxInput & result
+				:	ctxInput & result
 			:	never
 		:	never
 	:	never
@@ -352,7 +354,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		super(cases =>
 			this.caseEntries(
 				Object.entries(cases).map(([k, v]) =>
-					k === "default" ? [k, v] : [this.$.parse(k), v as Morph]
+					k === "default" ? [k, v as never] : [this.$.parse(k), v as Morph]
 				)
 			)
 		)
@@ -389,7 +391,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		return this.caseEntries(
 			Object.entries(cases).map(([k, v]) =>
 				k === "default" ?
-					[k, v]
+					[k, v as never]
 				:	[this.$.node("unit", { unit: k }), v as Morph]
 			)
 		)
