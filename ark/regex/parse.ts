@@ -1,6 +1,7 @@
 import type { Backslash, ErrorMessage, Scanner } from "@ark/util"
 import type { parseCharset } from "./charset.ts"
 import type { parseEscape } from "./escape.ts"
+import type { parseGroup } from "./group.ts"
 import type {
 	BuiltinQuantifier,
 	parseBuiltinQuantifier,
@@ -19,7 +20,7 @@ type next<s extends State> =
 		: lookahead extends Backslash ? parseEscape<s, unscanned>
 		: lookahead extends "|" ? s.finalizeBranch<s, unscanned>
 		: lookahead extends Anchor ? s.anchor<s, lookahead, unscanned>
-		: lookahead extends "(" ? s.pushGroup<s, unscanned>
+		: lookahead extends "(" ? parseGroup<s, unscanned>
 		: lookahead extends ")" ? s.popGroup<s, unscanned>
 		: lookahead extends BuiltinQuantifier ?
 			parseBuiltinQuantifier<s, lookahead, unscanned>

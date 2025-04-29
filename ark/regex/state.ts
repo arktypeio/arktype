@@ -1,6 +1,7 @@
 import type {
 	ErrorMessage,
 	leftIfEqual,
+	setIndex,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
@@ -8,7 +9,8 @@ import type { BuiltinQuantifier } from "./quantify.ts"
 
 export interface State extends State.Group {
 	unscanned: string
-	captures: Record<string | number, string[]>
+	captures: string[][]
+	namedCaptures: Record<string, string[]>
 	groups: State.Group[]
 }
 
@@ -18,15 +20,18 @@ export declare namespace State {
 	export type initialize<source extends string> = from<{
 		unscanned: source
 		groups: []
-		captures: {}
+		captures: []
+		namedCaptures: {}
 		name: null
+		index: null
 		branches: []
 		sequence: [""]
 		quantifiable: []
 	}>
 
 	export type Group = {
-		name: string | number | null
+		name: string | null
+		index: number | null
 		branches: string[]
 		sequence: string[]
 		quantifiable: string[]
@@ -62,7 +67,9 @@ export declare namespace s {
 		unscanned: ErrorMessage<message>
 		groups: []
 		name: null
-		captures: {}
+		index: null
+		captures: []
+		namedCaptures: {}
 		branches: []
 		sequence: []
 		quantifiable: []
@@ -76,7 +83,9 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		name: s["name"]
-		captures: {}
+		index: s["index"]
+		captures: s["captures"]
+		namedCaptures: s["namedCaptures"]
 		branches: s["branches"]
 		sequence: appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
 		quantifiable: quantifiable
@@ -90,7 +99,9 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		name: s["name"]
-		captures: {}
+		index: s["index"]
+		captures: s["captures"]
+		namedCaptures: s["namedCaptures"]
 		branches: s["branches"]
 		sequence: appendQuantifiableOuter<s["sequence"], quantified>
 		quantifiable: []
@@ -103,7 +114,9 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		name: s["name"]
-		captures: {}
+		index: s["index"]
+		captures: s["captures"]
+		namedCaptures: s["namedCaptures"]
 		branches: [
 			...s["branches"],
 			...appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
@@ -120,7 +133,9 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		name: s["name"]
-		captures: {}
+		index: s["index"]
+		captures: s["captures"]
+		namedCaptures: s["namedCaptures"]
 		branches: s["branches"]
 		sequence: appendQuantifiableOuter<
 			appendQuantifiableOuter<s["sequence"], s["quantifiable"]>,
@@ -131,14 +146,17 @@ export declare namespace s {
 
 	export type pushGroup<
 		s extends State,
-		unscanned extends string
+		capture extends boolean | string,
+		unscanned extends string,
+		nextCaptures extends string[][] = capture extends false ? s["captures"]
+		:	[...s["captures"], never]
 	> = State.from<{
-		unscanned: unscanned extends `?:${infer next}` ? next
-		: unscanned extends `?<${infer next}` ? shiftNamedGroup<next>
-		: unscanned
+		unscanned: unscanned
 		groups: [...s["groups"], s]
-		name: s["name"]
-		captures: {}
+		name: capture extends string ? capture : null
+		index: nextCaptures["length"]
+		captures: nextCaptures
+		namedCaptures: s["namedCaptures"]
 		branches: []
 		sequence: [""]
 		quantifiable: []
@@ -146,18 +164,25 @@ export declare namespace s {
 
 	export type popGroup<s extends State, unscanned extends string> =
 		s["groups"] extends State.Group.pop<infer last, infer init> ?
-			State.from<{
-				unscanned: unscanned
-				groups: init
-				captures: {}
-				name: s["name"]
-				branches: last["branches"]
-				sequence: appendQuantifiableOuter<
-					last["sequence"],
-					last["quantifiable"]
-				>
-				quantifiable: State.Group.finalize<s>
-			}>
+			appendQuantifiableOuter<last["sequence"], last["quantifiable"]> extends (
+				infer sequence extends string[]
+			) ?
+				State.from<{
+					unscanned: unscanned
+					groups: init
+					captures: s["index"] extends number ?
+						setIndex<s["captures"], s["index"], sequence>
+					:	s["captures"]
+					namedCaptures: s["name"] extends string ?
+						s["namedCaptures"] & { [k in s["name"]]: sequence }
+					:	s["namedCaptures"]
+					name: last["name"]
+					index: last["index"]
+					branches: last["branches"]
+					sequence: sequence
+					quantifiable: State.Group.finalize<s>
+				}>
+			:	never
 		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
 	export type finalize<s extends State> =
@@ -166,13 +191,6 @@ export declare namespace s {
 }
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]
-
-type shiftNamedGroup<unscanned extends string> =
-	unscanned extends `${infer name}>${infer next}` ?
-		name extends "" ?
-			ErrorMessage<"Capture group <> requires a name">
-		:	next
-	:	ErrorMessage<writeUnclosedGroupMessage<">">>
 
 type appendQuantifiableOuter<
 	sequence extends string[],

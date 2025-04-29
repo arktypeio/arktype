@@ -398,3 +398,22 @@ type labelOptionalElement<element, label extends readonly unknown[]> =
 	: label extends readonly [...infer head, unknown] ?
 		labelOptionalElement<element, head>
 	:	[_?: element]
+
+export type setIndex<
+	arr extends readonly unknown[],
+	i extends number,
+	to extends arr[number]
+> =
+	// preserve mutability of original array
+	arr extends arr[number][] ? _setIndex<arr, i, to, []>
+	:	Readonly<_setIndex<arr, i, to, []>>
+
+type _setIndex<
+	arr extends readonly unknown[],
+	i extends number,
+	to extends arr[number],
+	result extends arr[number][]
+> =
+	arr extends readonly [infer head, ...infer tail] ?
+		_setIndex<tail, i, to, [...result, result["length"] extends i ? to : head]>
+	:	result

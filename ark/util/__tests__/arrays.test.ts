@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { getDuplicatesOf, groupBy, spliterate } from "@ark/util"
+import { getDuplicatesOf, groupBy, spliterate, type setIndex } from "@ark/util"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
 type Gala = { group: "apple"; kind: "Gala" }
@@ -59,5 +59,17 @@ contextualize(() => {
 
 		attest<number[]>(numbers).equals([1, 4, 5])
 		attest<string[]>(strings).equals(["2", "3"])
+	})
+
+	it("setIndex", () => {
+		type T = setIndex<[1, 2], 1, 1>
+
+		attest<[1, 1], T>()
+	})
+
+	it("setIndex readonly", () => {
+		type T = setIndex<readonly [1, 2], 1, 1>
+
+		attest<readonly [1, 1], T>()
 	})
 })
