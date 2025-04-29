@@ -5,7 +5,8 @@ import type {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
-import type { BuiltinQuantifier } from "./quantify.ts"
+import type { QuantifyingChar } from "./quantify.ts"
+import type { Regex } from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
@@ -51,14 +52,7 @@ export declare namespace State {
 
 export type Boundary = Anchor | "(" | ")" | "[" | "]"
 export type Anchor = "^" | "$"
-export type Control =
-	| BuiltinQuantifier
-	| Boundary
-	| "|"
-	| "."
-	| "{"
-	| "-"
-	| "\\"
+export type Control = QuantifyingChar | Boundary | "|" | "." | "{" | "-" | "\\"
 
 export type AnchorMarker<a extends Anchor = Anchor> = `$ark${a}`
 
@@ -185,9 +179,11 @@ export declare namespace s {
 			:	never
 		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
-	export type finalize<s extends State> =
+	export type finalize<s extends State> = Regex<
 		s["groups"] extends [] ? finalizePattern<State.Group.finalize<s>>
-		:	ErrorMessage<writeUnclosedGroupMessage<")">>
+		:	ErrorMessage<writeUnclosedGroupMessage<")">>,
+		s["captures"] & s["namedCaptures"]
+	>
 }
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]

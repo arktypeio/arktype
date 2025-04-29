@@ -1,12 +1,11 @@
 import type { conform, ErrorMessage, Scanner } from "@ark/util"
-import type { parse } from "./parse.ts"
 import type { s, State } from "./state.ts"
 
 export type NonEmptyQuantifiable = [string, ...string[]]
 
 export type parseBuiltinQuantifier<
 	s extends State,
-	quantifier extends BuiltinQuantifier,
+	quantifier extends QuantifyingChar,
 	unscanned extends string
 > =
 	s["quantifiable"] extends NonEmptyQuantifiable ?
@@ -87,7 +86,7 @@ type applyQuantified<
 >
 
 type quantifyBuiltin<
-	quantifier extends BuiltinQuantifier,
+	quantifier extends QuantifyingChar,
 	token extends NonEmptyQuantifiable
 > =
 	quantifier extends "?" ? [...token, ""]
@@ -143,7 +142,7 @@ type _loopUntilMax<
 			>
 		]
 
-export type BuiltinQuantifier = "*" | "+" | "?"
+export type QuantifyingChar = "*" | "+" | "?"
 
 export type writeUnmatchedQuantifierError<quantifier extends string> =
 	ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>

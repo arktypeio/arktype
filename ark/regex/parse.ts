@@ -3,16 +3,17 @@ import type { parseCharset } from "./charset.ts"
 import type { parseEscape } from "./escape.ts"
 import type { parseGroup } from "./group.ts"
 import type {
-	BuiltinQuantifier,
 	parseBuiltinQuantifier,
-	parsePossibleRange
+	parsePossibleRange,
+	QuantifyingChar
 } from "./quantify.ts"
+import type { Regex } from "./regex.ts"
 import type { Anchor, s, State } from "./state.ts"
 
-export type parse<s extends State> =
+export type loop<s extends State> =
 	s["unscanned"] extends "" ? s.finalize<s>
-	: s["unscanned"] extends ErrorMessage ? s["unscanned"]
-	: parse<next<s>>
+	: s["unscanned"] extends ErrorMessage ? Regex<s["unscanned"], s["groups"]>
+	: loop<next<s>>
 
 type next<s extends State> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
@@ -22,7 +23,7 @@ type next<s extends State> =
 		: lookahead extends Anchor ? s.anchor<s, lookahead, unscanned>
 		: lookahead extends "(" ? parseGroup<s, unscanned>
 		: lookahead extends ")" ? s.popGroup<s, unscanned>
-		: lookahead extends BuiltinQuantifier ?
+		: lookahead extends QuantifyingChar ?
 			parseBuiltinQuantifier<s, lookahead, unscanned>
 		: lookahead extends "{" ? parsePossibleRange<s, unscanned>
 		: lookahead extends "[" ? parseCharset<s, unscanned>
