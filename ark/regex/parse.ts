@@ -10,7 +10,7 @@ import type {
 import type { Anchor, s, State } from "./state.ts"
 
 export type parseState<s extends State> =
-	s["unscanned"] extends "" | ErrorMessage ? s : parseState<next<s>>
+	s["unscanned"] extends "" | ErrorMessage ? s.finalize<s> : parseState<next<s>>
 
 type next<s extends State> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?

@@ -18,13 +18,11 @@ export const regex = <src extends string>(
 export type regex<pattern extends string = string> = Regex<pattern>
 
 export declare namespace regex {
-	export type parse<src extends string> =
-		parseState<State.initialize<src>> extends infer s extends State ?
-			s.finalize<s>
-		:	never
+	export type parse<src extends string> = parseState<State.initialize<src>>
 
-	export type infer<src extends string> = parse<src>["infer"]
+	export type infer<src extends string> =
+		parse<src> extends Regex<infer pattern> ? pattern : never
 
 	export type validate<src extends string> =
-		regex.infer<src> extends ErrorMessage ? regex.infer<src> : src
+		parse<src> extends Regex<infer e extends ErrorMessage> ? e : src
 }
