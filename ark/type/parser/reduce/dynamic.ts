@@ -133,8 +133,11 @@ export class RuntimeState {
 	finalizeGroup(): void {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
-		if (!topBranchState)
-			return this.error(writeUnmatchedGroupCloseMessage(this.scanner.unscanned))
+		if (!topBranchState) {
+			return this.error(
+				writeUnmatchedGroupCloseMessage(")", this.scanner.unscanned)
+			)
+		}
 
 		this.branches = topBranchState
 	}

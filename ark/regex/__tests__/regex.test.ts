@@ -571,7 +571,7 @@ contextualize(() => {
 		it("unmatched", () => {
 			// @ts-expect-error
 			attest(() => regex("abc)")).type.errors(
-				writeUnmatchedGroupCloseMessage(")")
+				writeUnmatchedGroupCloseMessage(")", "")
 			)
 		})
 

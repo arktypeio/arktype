@@ -154,7 +154,7 @@ export declare namespace s {
 					quantifiable: State.Group.finalize<s>
 				}>
 			:	never
-		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
+		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
 
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?

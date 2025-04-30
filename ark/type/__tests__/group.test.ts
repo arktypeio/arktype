@@ -45,7 +45,7 @@ contextualize(() => {
 		attest(() => {
 			// @ts-expect-error
 			type("string|number[]|boolean)")
-		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(""))
+		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(")", ""))
 	})
 
 	it("lone )", () => {
@@ -73,7 +73,7 @@ contextualize(() => {
 		attest(() => {
 			// @ts-expect-error
 			type("((string|number)[]|boolean))[]")
-		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage("[]"))
+		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(")", "[]"))
 	})
 
 	it("starting )", () => {

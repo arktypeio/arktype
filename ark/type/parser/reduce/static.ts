@@ -254,7 +254,7 @@ export declare namespace s {
 				scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 				unscanned: unscanned
 			}>
-		:	s.error<writeUnmatchedGroupCloseMessage<unscanned>>
+		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
 
 	export type reduceGroupOpen<
 		s extends StaticState,

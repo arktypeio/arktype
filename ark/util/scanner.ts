@@ -167,13 +167,19 @@ export declare namespace Scanner {
 	]
 }
 
-export const writeUnmatchedGroupCloseMessage = <unscanned extends string>(
+export const writeUnmatchedGroupCloseMessage = <
+	char extends string,
+	unscanned extends string
+>(
+	char: char,
 	unscanned: unscanned
-): writeUnmatchedGroupCloseMessage<unscanned> =>
-	`Unmatched )${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
+): writeUnmatchedGroupCloseMessage<char, unscanned> =>
+	`Unmatched ${char}${(unscanned === "" ? "" : ` before ${unscanned}`) as any}`
 
-export type writeUnmatchedGroupCloseMessage<unscanned extends string> =
-	`Unmatched )${unscanned extends "" ? "" : ` before ${unscanned}`}`
+export type writeUnmatchedGroupCloseMessage<
+	char extends string,
+	unscanned extends string
+> = `Unmatched ${char}${unscanned extends "" ? "" : ` before ${unscanned}`}`
 
 export const writeUnclosedGroupMessage = <missingChar extends string>(
 	missingChar: missingChar
