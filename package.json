@@ -42,40 +42,40 @@
 		"benchRegex": "ts ./ark/regex/__tests__/regex.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
 		"lint": "pnpm checkPrettier && pnpm checkEslint",
-		"checkPrettier": "prettier --check .",
+		"checkPrettier": "prettier --ignore-path .gitignore --ignore-path ./ark/repo/.prettierignore --check .",
 		"checkEslint": "eslint --max-warnings=0 .",
-		"format": "prettier --write .",
+		"format": "prettier --ignore-path .gitignore --ignore-path ./ark/repo/.prettierignore --write .",
 		"knip": "knip",
 		"ci:publish": "ts ./ark/repo/publish.ts",
 		"publishExtension": "cd ark/dark && pnpm publishExtension",
 		"upDeps": "pnpm up -r --latest"
 	},
 	"devDependencies": {
-		"@ark/attest": "workspace:*",
+		"@ark/attest": "link:ark/attest",
 		"@ark/attest-ts-min": "catalog:",
 		"@ark/attest-ts-next": "catalog:",
 		"@ark/fs": "workspace:*",
 		"@ark/json-schema": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@eslint/js": "9.23.0",
+		"@eslint/js": "9.25.1",
 		"@standard-schema/spec": "1.0.0",
 		"@types/mocha": "10.0.10",
-		"@types/node": "22.14.0",
+		"@types/node": "22.15.3",
 		"c8": "10.1.3",
 		"dts-bundle-generator": "9.5.1",
-		"eslint": "9.23.0",
+		"eslint": "9.25.1",
 		"eslint-plugin-import": "2.30.0",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.6.2",
-		"eslint-plugin-unicorn": "58.0.0",
-		"knip": "5.46.5",
+		"eslint-plugin-unicorn": "59.0.0",
+		"knip": "5.51.0",
 		"mocha": "11.1.0",
 		"prettier": "3.5.3",
 		"tsup": "8.4.0",
-		"tsx": "4.19.3",
+		"tsx": "4.19.4",
 		"typescript": "catalog:",
-		"typescript-eslint": "8.29.0"
+		"typescript-eslint": "8.31.1"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
@@ -111,18 +111,19 @@
 		"node": ">=18",
 		"pnpm": ">=10"
 	},
-	"packageManager": "pnpm@10.7.1",
+	"packageManager": "pnpm@10.10.0",
 	"pnpm": {
 		"overrides": {
 			"@ark/attest": "link:ark/attest"
 		},
 		"peerDependencyRules": {
 			"allowedVersions": {
-				"typescript": "*"
-			},
-			"ignoreMissing": [
-				"eslint"
-			]
-		}
+				"typescript": "*",
+				"eslint": "*"
+			}
+		},
+		"ignoredBuiltDependencies": [
+			"sharp"
+		]
 	}
 }

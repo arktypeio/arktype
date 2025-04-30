@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/components/api"
+import { cn } from "fumadocs-ui/utils/cn"
 import Link from "next/link"
 import { type ComponentPropsWithoutRef, forwardRef } from "react"
 

@@ -1,6 +1,6 @@
 "use client"
-
-import { buttonVariants, cn } from "fumadocs-ui/components/api"
+import { buttonVariants } from "fumadocs-ui/components/ui/button"
+import { cn } from "fumadocs-ui/utils/cn"
 import { X } from "lucide-react"
 import Link from "next/link.js"
 import {

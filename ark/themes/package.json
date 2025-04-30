@@ -14,7 +14,7 @@
 	},
 	"devDependencies": {
 		"@vscode/vsce": "3.3.2",
-		"ovsx": "0.10.1"
+		"ovsx": "0.10.2"
 	},
 	"repository": {
 		"type": "git",

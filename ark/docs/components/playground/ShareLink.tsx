@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/components/api"
+import { cn } from "fumadocs-ui/utils/cn"
 import { CheckIcon, LinkIcon } from "lucide-react"
 import { useState } from "react"
 import { copyToClipboard } from "./utils.ts"

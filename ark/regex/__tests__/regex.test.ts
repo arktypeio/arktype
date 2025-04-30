@@ -1,12 +1,22 @@
 import { attest, contextualize } from "@ark/attest"
 import { regex } from "@ark/regex"
+import type { next } from "@ark/regex/internal/parse.js"
+import type { State } from "@ark/regex/internal/state.js"
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	type WhitespaceChar
 } from "@ark/util"
 
+type iterate<s extends State, until extends number, counter extends 1[] = []> =
+	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
+
 contextualize(() => {
+	it("erate", () => {
+		type s = iterate<State.initialize<"^(a)b\\1$">, 4>
+		attest<"b\\1$", s["unscanned"]>()
+	})
+
 	describe("literals", () => {
 		it("base", () => {
 			const S = regex("abc")
@@ -520,6 +530,11 @@ contextualize(() => {
 		it("numeric basic", () => {
 			const S = regex("^(a)b\\1$")
 			attest<`ab${string}`>(S.infer).type.toString.snap()
+		})
+
+		it("numeric reference to current", () => {
+			const S = regex("^(a\\1b)c\\1$")
+			attest<"abcab">(S.infer).type.toString.snap("abcab")
 		})
 
 		it("named basic", () => {

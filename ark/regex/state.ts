@@ -1,7 +1,7 @@
 import type {
 	ErrorMessage,
 	leftIfEqual,
-	merge,
+	show,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
@@ -10,7 +10,7 @@ import type { Regex } from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
-	captures: State.Captures
+	captures: Record<string | number, unknown>
 	groups: State.Group[]
 }
 
@@ -26,8 +26,6 @@ export declare namespace State {
 		sequence: [""]
 		quantifiable: []
 	}>
-
-	export type Captures = Record<string | number, []>
 
 	export type Group = {
 		name: string | number
@@ -135,7 +133,7 @@ export declare namespace s {
 		groups: [...s["groups"], s]
 		name: capture
 		captures: s["captures"] extends false ? s["captures"]
-		:	s["captures"] & Record<capture, string[]>
+		:	s["captures"] & Record<capture, unknown>
 		branches: []
 		sequence: [""]
 		quantifiable: []
@@ -150,7 +148,7 @@ export declare namespace s {
 					unscanned: unscanned
 					groups: init
 					captures: s["name"] extends never ? s["captures"]
-					:	merge<s["captures"], Record<s["name"], sequence>>
+					:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
 					name: last["name"]
 					branches: last["branches"]
 					sequence: sequence
@@ -165,7 +163,7 @@ export declare namespace s {
 		: finalizePattern<State.Group.finalize<s>> extends (
 			infer pattern extends string
 		) ?
-			Regex<pattern, s["captures"] & s["captures"]>
+			Regex<pattern, show<s["captures"]>>
 		:	never
 }
 

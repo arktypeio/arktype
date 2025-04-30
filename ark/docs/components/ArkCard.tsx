@@ -1,5 +1,5 @@
-import { cn } from "fumadocs-ui/components/api"
 import { Card, type CardProps, Cards } from "fumadocs-ui/components/card"
+import { cn } from "fumadocs-ui/utils/cn"
 
 export const ArkCards: React.FC<{ children: React.ReactNode }> = ({
 	children

@@ -10,17 +10,13 @@ import type {
 import type { Regex } from "./regex.ts"
 import type { Anchor, s, State } from "./state.ts"
 
-type Result = iterate<State.initialize<"^(a)b\\1$">, 4>
 
 export type parseState<s extends State> =
 	s["unscanned"] extends ErrorMessage ? Regex<s["unscanned"]>
 	: s["unscanned"] extends "" ? s.finalize<s>
 	: parseState<next<s>>
 
-type iterate<s extends State, until extends number, counter extends 1[] = []> =
-	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
-
-type next<s extends State> =
+export type next<s extends State> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
 		lookahead extends "." ? s.shiftQuantifiable<s, [string], unscanned>
 		: lookahead extends Backslash ? parseEscape<s, unscanned>

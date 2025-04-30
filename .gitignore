@@ -14,6 +14,3 @@ tmp
 .attest
 tsconfig.build.json
 coverage
-# we avoid committing the root pnpm-lock in order to keep the root of the repo as clean as possible.
-# we can get away with this to since we're only installing devDependencies and they're all pinned.
-/pnpm-lock.yaml

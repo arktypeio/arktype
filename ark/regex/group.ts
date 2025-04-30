@@ -22,10 +22,8 @@ type shiftNamedGroup<unscanned extends string> =
 		:	Scanner.shiftResult<name, next>
 	:	Scanner.shiftResult<"", ErrorMessage<writeUnclosedGroupMessage<">">>>
 
-type nextCaptureIndex<
-	captures extends State.Captures,
-	counter extends 1[] = []
-> =
+// first capture group is 1
+type nextCaptureIndex<captures, counter extends 1[] = [1]> =
 	counter["length"] extends keyof captures ?
 		nextCaptureIndex<captures, [...counter, 1]>
 	:	counter["length"]

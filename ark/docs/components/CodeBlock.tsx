@@ -1,11 +1,11 @@
 import { throwInternalError, type propwiseXor } from "@ark/util"
 import type { HighlightOptions } from "fumadocs-core/highlight"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
-import { cn } from "fumadocs-ui/components/api"
 import {
 	CodeBlock as FumaCodeBlock,
 	Pre
 } from "fumadocs-ui/components/codeblock"
+import { cn } from "fumadocs-ui/utils/cn"
 import { toJsxRuntime } from "hast-util-to-jsx-runtime"
 import { Fragment, jsx, jsxs } from "react/jsx-runtime"
 import { getSingletonHighlighter } from "shiki"

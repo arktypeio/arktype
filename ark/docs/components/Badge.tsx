@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "fumadocs-ui/components/api"
+import { cn } from "fumadocs-ui/utils/cn"
 import * as React from "react"
 
 export const badgeVariants = cva(

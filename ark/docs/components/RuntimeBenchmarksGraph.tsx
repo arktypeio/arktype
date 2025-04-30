@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/components/api"
+import { cn } from "fumadocs-ui/utils/cn"
 import React from "react"
 
 const barStyles: React.CSSProperties = {

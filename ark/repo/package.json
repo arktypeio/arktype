@@ -9,9 +9,9 @@
 		"arktype": "workspace:*",
 		"ts-morph": "25.0.1",
 		"ts-pattern": "5.7.0",
-		"type-fest": "4.39.1",
+		"type-fest": "4.40.1",
 		"typescript": "catalog:",
-		"zod": "3.24.2"
+		"zod": "3.24.3"
 	},
 	"scripts": {
 		"build": "echo No build required!"

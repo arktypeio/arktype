@@ -5139,8 +5139,6 @@ const MyInelegantType = type(() =>
 ```
 
 
-
-
 ---
 title: Traversal API
 ---
