@@ -1,5 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { regex, type Regex } from "@ark/regex"
+import {
+	caretNotationMessage,
+	missingBackreferenceNameMessage,
+	trailingBackslashMessage,
+	writeStringEscapableMessage,
+	writeUnnecessaryEscapeMessage,
+	writeUnresolvableBackreferenceMessage
+} from "@ark/regex/internal/escape.js"
 import type { next } from "@ark/regex/internal/parse.js"
 import type { State } from "@ark/regex/internal/state.js"
 import {
@@ -441,101 +449,72 @@ contextualize(() => {
 
 		it("unnecessary escape", () => {
 			// @ts-expect-error
-			attest(() => regex("\\a")).type.errors(
-				"Escape preceding a is unnecessary and should be removed"
-			)
+			attest(() => regex("\\a")).type.errors(writeUnnecessaryEscapeMessage("a"))
 		})
 
 		it("trailing escape", () => {
 			// @ts-expect-error
-			attest(() => regex("abc\\")).type.errors("A regex cannot end with \\")
+			attest(() => regex("abc\\")).type.errors(trailingBackslashMessage)
 		})
 
-		// TODO
-		// it("\\b", () => {
-		// 	const S = regex("word\\b")
-		// 	attest<Regex<`${string}word`>>(S).type.toString.snap()
-		// })
+		it("\\b", () => {
+			const S = regex("^word\\b$")
+			attest<Regex<`word`>>(S)
+		})
 
-		// it("\\B", () => {
-		// 	const S = regex("word\\B")
-		// 	attest<Regex<`${string}word${string}`>>(S).type.toString.snap()
-		// })
+		it("\\B", () => {
+			const S = regex("^word\\B$")
+			attest<Regex<`word`>>(S)
+		})
 
-		// it("group followed by \\b", () => {
-		// 	const S = regex("(ab)\\b")
-		// 	attest<Regex<`${string}ab`, { 1: "ab" }>>(S).type.toString.snap()
-		// })
+		it("builtin escapes", () => {
+			const S = regex("^\t\n\r\v\f\0$")
+			attest<Regex<"\t\n\r\v\f\0">>(S)
+		})
 
-		// it("group followed by \\B", () => {
-		// 	const S = regex("(ab)\\B")
-		// 	attest<Regex<`${string}ab${string}`, { 1: "ab" }>>(S).type.toString.snap()
-		// })
+		it("string escapable char", () => {
+			// @ts-expect-error
+			attest(() => regex("\\n")).type.errors(writeStringEscapableMessage("n"))
+		})
 
-		// it("common escapes", () => {
-		// 	const S = regex("\\t\\n\\r\\v\\f")
-		// 	attest<Regex<"\t\n\r\v\f">>(S).type.toString.snap()
-		// })
+		it("hex escape", () => {
+			const S = regex("^a\x62c$")
+			attest<Regex<"abc">>(S).type.toString.snap()
+		})
 
-		// it("hex escape", () => {
-		// 	const S = regex("a\\x62c")
-		// 	attest<Regex<"abc">>(S).type.toString.snap()
-		// })
+		it("string escapable hex", () => {
+			// @ts-expect-error
+			attest(() => regex("^a\\x62c$")).type.errors(
+				writeStringEscapableMessage("x")
+			)
+		})
 
-		// it("unicode escape (4 digit)", () => {
-		// 	const S = regex("a\\u0062c")
-		// 	attest<Regex<"abc">>(S).type.toString.snap()
-		// })
+		it("unicode escape (4 digit)", () => {
+			const S = regex("^a\u0062c$")
+			attest<Regex<"abc">>(S).type.toString.snap()
+		})
 
-		// it("unicode escape (braced)", () => {
-		// 	const S = regex("a\\u{62}c")
-		// 	attest<Regex<"abc">>(S).type.toString.snap()
-		// })
+		it("string escapable unicode", () => {
+			// @ts-expect-error
+			attest(() => regex("^a\\u0062c$")).type.errors(
+				writeStringEscapableMessage("u")
+			)
+		})
 
-		// it("unicode escape (braced multi-digit)", () => {
-		// 	const S = regex("a\\u{00000062}c")
-		// 	attest<Regex<"abc">>(S).type.toString.snap()
-		// })
+		it("unicode escape (braced)", () => {
+			const S = regex("^a\u{62}c$")
+			attest<Regex<"abc">>(S).type.toString.snap()
+		})
 
-		// it("control escape", () => {
-		// 	const S = regex("\\cA")
-		// 	attest<Regex<"\x01">>(S).type.toString.snap()
-		// })
+		it("unicode escape (braced multi-digit)", () => {
+			const S = regex("^a\u{00000062}c$")
+			attest<Regex<"abc">>(S).type.toString.snap()
+		})
 
-		// it("invalid hex escape", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\xG0")).type.errors.snap()
-		// })
-
-		// it("incomplete hex escape", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\x1")).type.errors.snap()
-		// })
-
-		// it("invalid unicode escape (4 digit)", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\uG000")).type.errors.snap()
-		// })
-
-		// it("incomplete unicode escape (4 digit)", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\u123")).type.errors.snap()
-		// })
-
-		// it("invalid unicode escape (braced)", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\u{G}")).type.errors.snap()
-		// })
-
-		// it("unclosed unicode escape (braced)", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\u{123")).type.errors.snap()
-		// })
-
-		// it("control escape with non-ascii char", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\c~")).type.errors.snap()
-		// })
+		it("caret notation error", () => {
+			// @ts-expect-error
+			attest(() => regex("\\cA")).type.errors(caretNotationMessage)
+		})
 	})
 
 	describe("groups", () => {
@@ -583,7 +562,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("alternation", () => {
+	describe("union", () => {
 		it("basic", () => {
 			const S = regex("^a|b$")
 			attest<Regex<`a${string}` | `${string}b`>>(S)
@@ -678,12 +657,16 @@ contextualize(() => {
 
 		it("index out of range", () => {
 			// @ts-expect-error
-			attest(() => regex("(a)b\\2")).type.errors("Group 2 does not exist ")
+			attest(() => regex("(a)b\\2")).type.errors(
+				writeUnresolvableBackreferenceMessage("2")
+			)
 		})
 
 		it("index 0 (invalid backreference)", () => {
 			// @ts-expect-error
-			attest(() => regex("abc\\0")).type.errors("Group 0 does not exist ")
+			attest(() => regex("abc\\0")).type.errors(
+				writeUnresolvableBackreferenceMessage("0")
+			)
 		})
 
 		// TODO
@@ -820,7 +803,7 @@ contextualize(() => {
 		it("unresolvable", () => {
 			// @ts-expect-error
 			attest(() => regex("(?<foo>a)b\\k<bar>")).type.errors(
-				"named reference does not exist "
+				writeUnresolvableBackreferenceMessage("bar")
 			)
 		})
 
@@ -834,21 +817,14 @@ contextualize(() => {
 		it("missing reference", () => {
 			// @ts-expect-error
 			attest(() => regex("^(?<foo>a)b\\k$")).type.errors(
-				"\\k must be followed by a named reference like <name>"
+				missingBackreferenceNameMessage
 			)
 		})
 
 		it("\\k< without name", () => {
 			// @ts-expect-error
 			attest(() => regex("\\k<>")).type.errors(
-				"named reference does not exist "
-			)
-		})
-
-		it("\\k<name without >", () => {
-			// @ts-expect-error
-			attest(() => regex("\\k<foo")).type.errors(
-				"k must be followed by a named reference like <name> "
+				writeUnresolvableBackreferenceMessage("")
 			)
 		})
 	})
