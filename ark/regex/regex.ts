@@ -1,9 +1,11 @@
 import type { ErrorMessage, inferred } from "@ark/util"
 import type { parseState } from "./parse.ts"
-import type { State, s } from "./state.ts"
+import type { State } from "./state.ts"
 
-export interface Regex<pattern extends string = string, groups = {}>
-	extends RegExp {
+export interface Regex<
+	pattern extends string = string,
+	groups extends Record<string | number, string> = {}
+> extends RegExp {
 	[inferred]: pattern
 	infer: pattern
 	inferGroups: groups
@@ -15,7 +17,10 @@ export const regex = <src extends string>(
 	src: regex.validate<src>
 ): regex.parse<src> => new RegExp(src) as never
 
-export type regex<pattern extends string = string> = Regex<pattern>
+export type regex<
+	pattern extends string = string,
+	groups extends Record<string | number, string> = {}
+> = Regex<pattern, groups>
 
 export declare namespace regex {
 	export type parse<src extends string> = parseState<State.initialize<src>>

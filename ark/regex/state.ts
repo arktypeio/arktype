@@ -1,7 +1,6 @@
 import type {
 	ErrorMessage,
 	leftIfEqual,
-	show,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
@@ -163,9 +162,15 @@ export declare namespace s {
 		: finalizePattern<State.Group.finalize<s>> extends (
 			infer pattern extends string
 		) ?
-			Regex<pattern, show<s["captures"]>>
+			Regex<pattern, finalizeCaptures<s["captures"]>>
 		:	never
 }
+
+type finalizeCaptures<captures> = {
+	[k in keyof captures]: captures[k] extends (infer pattern extends string)[] ?
+		anchorsAway<pattern>
+	:	never
+} & unknown
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]
 
@@ -199,11 +204,11 @@ type appendQuantifiableInner<
 	:	result
 
 type finalizePattern<tokens extends string[]> =
-	tokens extends string[] ? validateAnchorless<anchorsAway<tokens[number]>>
+	tokens extends string[] ? validateAnchorless<applyAnchors<tokens[number]>>
 	: tokens extends ErrorMessage ? tokens
 	: never
 
-type anchorsAway<pattern extends string> =
+type applyAnchors<pattern extends string> =
 	pattern extends `${AnchorMarker<"^">}${infer startStripped}` ?
 		startStripped extends `${infer bothStripped}${AnchorMarker<"$">}` ?
 			bothStripped
@@ -211,6 +216,14 @@ type anchorsAway<pattern extends string> =
 	: pattern extends `${infer endStripped}${AnchorMarker<"$">}` ?
 		prependNonRedundant<endStripped, string>
 	:	prependNonRedundant<appendNonRedundant<pattern, string>, string>
+
+type anchorsAway<pattern extends string> =
+	pattern extends `${AnchorMarker<"^">}${infer startStripped}` ?
+		startStripped extends `${infer bothStripped}${AnchorMarker<"$">}` ?
+			bothStripped
+		:	startStripped
+	: pattern extends `${infer endStripped}${AnchorMarker<"$">}` ? endStripped
+	: pattern
 
 type appendNonRedundant<
 	base extends string,

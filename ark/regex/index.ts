@@ -1,1 +1,1 @@
-export { regex } from "./regex.ts"
+export { regex, type Regex } from "./regex.ts"

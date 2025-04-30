@@ -10,12 +10,12 @@ import type {
 import type { Regex } from "./regex.ts"
 import type { Anchor, s, State } from "./state.ts"
 
-
 export type parseState<s extends State> =
 	s["unscanned"] extends ErrorMessage ? Regex<s["unscanned"]>
 	: s["unscanned"] extends "" ? s.finalize<s>
 	: parseState<next<s>>
 
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
 export type next<s extends State> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
 		lookahead extends "." ? s.shiftQuantifiable<s, [string], unscanned>
