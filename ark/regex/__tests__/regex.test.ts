@@ -20,44 +20,50 @@ contextualize(() => {
 	describe("literals", () => {
 		it("base", () => {
 			const S = regex("abc")
-			attest<Regex<`${string}abc${string}`>>(S).type.toString.snap()
+			attest<Regex<`${string}abc${string}`>>(S).type.toString.snap(
+				"Regex<`${string}abc${string}`, {}>"
+			)
 		})
 
 		it("empty", () => {
 			const S = regex("")
-			attest<Regex<string>>(S).type.toString.snap()
+			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
 		})
 	})
 
 	describe("anchors", () => {
 		it("start", () => {
 			const S = regex("^a")
-			attest<Regex<`a${string}`>>(S).type.toString.snap()
+			attest<Regex<`a${string}`>>(S).type.toString.snap(
+				"Regex<`a${string}`, {}>"
+			)
 		})
 
 		it("end", () => {
 			const S = regex("a$")
-			attest<Regex<`${string}a`>>(S).type.toString.snap()
+			attest<Regex<`${string}a`>>(S).type.toString.snap(
+				"Regex<`${string}a`, {}>"
+			)
 		})
 
 		it("start and end", () => {
 			const S = regex("^a$")
-			attest<Regex<`a`>>(S).type.toString.snap()
+			attest<Regex<`a`>>(S).type.toString.snap('Regex<"a", {}>')
 		})
 
 		it("multiple start branches", () => {
 			const S = regex("^foo|^bar")
-			attest<Regex<`foo${string}` | `bar${string}`>>(S).type.toString.snap()
+			attest<Regex<`foo${string}` | `bar${string}`>>(S)
 		})
 
 		it("multiple end branches", () => {
 			const S = regex("foo$|bar$")
-			attest<Regex<`${string}foo` | `${string}bar`>>(S).type.toString.snap()
+			attest<Regex<`${string}foo` | `${string}bar`>>(S)
 		})
 
 		it("mixed anchor branches", () => {
 			const S = regex("^foo|bar$")
-			attest<Regex<`foo${string}` | `${string}bar`>>(S).type.toString.snap()
+			attest<Regex<`foo${string}` | `${string}bar`>>(S)
 		})
 
 		it("inner outer anchors", () => {
@@ -70,7 +76,7 @@ contextualize(() => {
 						2: "innerAnchored" | "innerUnanchored"
 					}
 				>
-			>(S).type.toString.snap()
+			>(S)
 		})
 
 		it("consecutive start", () => {
@@ -119,32 +125,40 @@ contextualize(() => {
 	describe("simple quantifiers", () => {
 		it("?", () => {
 			const S = regex("^ab?c$")
-			attest<Regex<`a${"b" | ""}c`>>(S).type.toString.snap()
+			attest<Regex<`a${"b" | ""}c`>>(S)
 		})
 
 		it("??", () => {
 			const S = regex("^ab??c$")
-			attest<Regex<`a${"b" | ""}c`>>(S).type.toString.snap()
+			attest<Regex<`a${"b" | ""}c`>>(S)
 		})
 
 		it("+", () => {
 			const S = regex("^ab+c$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<`ab${string}c`>>(S).type.toString.snap(
+				"Regex<`ab${string}c`, {}>"
+			)
 		})
 
 		it("+?", () => {
 			const S = regex("^ab+?c$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<`ab${string}c`>>(S).type.toString.snap(
+				"Regex<`ab${string}c`, {}>"
+			)
 		})
 
 		it("*", () => {
 			const S = regex("^ab*c$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<"ac" | `ab${string}c`>>(S).type.toString.snap(
+				'Regex<"ac" | `ab${string}c`, {}>'
+			)
 		})
 
 		it("*?", () => {
 			const S = regex("^ab*?c$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<"ac" | `ab${string}c`>>(S).type.toString.snap(
+				'Regex<"ac" | `ab${string}c`, {}>'
+			)
 		})
 
 		it("unmatched ?", () => {
@@ -171,7 +185,7 @@ contextualize(() => {
 		it("unmatched ??", () => {
 			// @ts-expect-error
 			attest(() => regex("??")).type.errors(
-				"Quantifier ?? requires a preceding token"
+				"Quantifier ? requires a preceding token"
 			)
 		})
 	})
@@ -179,69 +193,69 @@ contextualize(() => {
 	describe("ranges", () => {
 		it("exact", () => {
 			const S = regex("^a{2}$")
-			attest<Regex<"aa">>(S).type.toString.snap()
+			attest<Regex<"aa">>(S).type.toString.snap('Regex<"aa", {}>')
 		})
 
 		it("min", () => {
 			const S = regex("^a{2,}$")
-			attest<Regex<`aa${string}`>>(S).type.toString.snap()
+			attest<Regex<`aa${string}`>>(S).type.toString.snap(
+				"Regex<`aa${string}`, {}>"
+			)
 		})
 
 		it("min max", () => {
 			const S = regex("^a{2,4}$")
-			attest<Regex<"aa" | "aaa" | "aaaa">>(S).type.toString.snap()
+			attest<Regex<"aa" | "aaa" | "aaaa">>(S)
 		})
 
 		it("min max lazy", () => {
 			const S = regex("^a{2,4}?$")
-			attest<Regex<"aa" | "aaa" | "aaaa">>(S).type.toString.snap()
+			attest<Regex<"aa" | "aaa" | "aaaa">>(S)
 		})
 
 		it("min max group", () => {
 			const S = regex("^(ab){1,2}$")
-			attest<Regex<"ab" | "abab", { 1: "ab" | "abab" }>>(S).type.toString.snap()
+			attest<Regex<"ab" | "abab", { 1: "ab" }>>(S)
 		})
 
 		it("zero or more greedy", () => {
 			const S = regex("^a{0,}$")
-			attest<Regex<string>>(S).type.toString.snap()
+			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
 		})
 
 		it("zero or more lazy", () => {
 			const S = regex("^a{0,}?$")
-			attest<Regex<string>>(S).type.toString.snap()
+			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
 		})
 
 		it("zero or one", () => {
 			const S = regex("^a{0,1}$")
-			attest<Regex<"" | "a">>(S).type.toString.snap()
+			attest<Regex<"" | "a">>(S)
 		})
 
 		it("zero or one lazy", () => {
 			const S = regex("^a{0,1}?$")
-			attest<Regex<"" | "a">>(S).type.toString.snap()
+			attest<Regex<"" | "a">>(S)
 		})
 
 		it("falls back to literal for missing min", () => {
 			const r = regex("^a{,2}$")
-			attest<Regex<"a{,2}">>(r).type.toString.snap()
+			attest<Regex<"a{,2}">>(r).type.toString.snap('Regex<"a{,2}", {}>')
 		})
 
 		it("fallsback to literal on empty", () => {
 			const r = regex("^a{}$")
-			attest<Regex<"a{}">>(r).type.toString.snap()
+			attest<Regex<"a{}">>(r).type.toString.snap('Regex<"a{}", {}>')
 		})
 
 		it("falls back to literal for non-numeric", () => {
 			const r = regex("^a{1,foo}$")
-			attest<Regex<"a{1,foo}">>(r).type.toString.snap()
+			attest<Regex<"a{1,foo}">>(r).type.toString.snap('Regex<"a{1,foo}", {}>')
 		})
 
 		it("many ranges", () => {
 			const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
-			attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`>>(
-				S
-			).type.toString.snap()
+			attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`>>(S)
 		})
 
 		it("unmatched", () => {
@@ -276,53 +290,59 @@ contextualize(() => {
 	describe("character sets", () => {
 		it("literals", () => {
 			const S = regex("^a[abc]$")
-			attest<Regex<`a${"a" | "b" | "c"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"a" | "b" | "c"}`>>(S)
 		})
 
 		it("ranges", () => {
 			const S = regex("^a[x-z]$")
-			attest<Regex<`a${string}`>>(S).type.toString.snap() // Ranges widen to string for now
+			attest<Regex<`a${string}`>>(S).type.toString.snap(
+				"Regex<`a${string}`, {}>"
+			) // ranges widen to string for now
 		})
 
 		it("literal dash start", () => {
 			const S = regex("^a[-abc]$")
-			attest<Regex<`a${"-" | "a" | "b" | "c"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"-" | "a" | "b" | "c"}`>>(S)
 		})
 
 		it("literal dash end", () => {
 			const S = regex("^a[abc-]$")
-			attest<Regex<`a${"a" | "b" | "c" | "-"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"a" | "b" | "c" | "-"}`>>(S)
 		})
 
 		it("escaped dash", () => {
 			const S = regex("^a[a\\-c]$")
-			attest<Regex<`a${"a" | "-" | "c"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"a" | "-" | "c"}`>>(S)
 		})
 
 		it("escaped caret", () => {
 			const S = regex("^a[\\^bc]$")
-			attest<Regex<`a${"^" | "b" | "c"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"^" | "b" | "c"}`>>(S)
 		})
 
 		it("escaped closing bracket", () => {
 			const S = regex("^a[bc\\]]$")
-			attest<Regex<`a${"b" | "c" | "]"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"b" | "c" | "]"}`>>(S)
 		})
 
 		it("escaped backslash", () => {
 			const S = regex("^a[bc\\\\]$")
-			attest<Regex<`a${"b" | "c" | "\\"}`>>(S).type.toString.snap()
+			attest<Regex<`a${"b" | "c" | "\\"}`>>(S)
 		})
 
 		it("negated", () => {
 			const S = regex("^a[^abc]$")
 			// always widens to string, inner contents not parsed
-			attest<Regex<`a${string}`>>(S).type.toString.snap()
+			attest<Regex<`a${string}`>>(S).type.toString.snap(
+				"Regex<`a${string}`, {}>"
+			)
 		})
 
 		it("shorthand", () => {
 			const S = regex("^a[\\d]$")
-			attest<Regex<`a${bigint}`>>(S).type.toString.snap()
+			attest<Regex<`a${bigint}`>>(S).type.toString.snap(
+				"Regex<`a${bigint}`, {}>"
+			)
 		})
 
 		it("unclosed", () => {
@@ -337,84 +357,98 @@ contextualize(() => {
 
 		it("empty", () => {
 			// @ts-expect-error
-			attest(() => regex("[]")).type.errors.snap()
+			attest(() => regex("[]")).type.errors(
+				"Empty character set [] is unsatisfiable"
+			)
 		})
 	})
 
 	describe("escapes", () => {
 		it("\\w", () => {
 			const S = regex("^a\\wc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<`a${string}c`>>(S).type.toString.snap(
+				"Regex<`a${string}c`, {}>"
+			)
 		})
 
 		it("\\d", () => {
 			const S = regex("^a\\dc$")
-			attest<Regex<`a${bigint}c`>>(S).type.toString.snap()
+			attest<Regex<`a${bigint}c`>>(S).type.toString.snap(
+				"Regex<`a${bigint}c`, {}>"
+			)
 		})
 
 		it("\\s", () => {
 			const S = regex("^a\\sc$")
-			attest<Regex<`a${WhitespaceChar}c`>>(S).type.toString.snap()
+			attest<Regex<`a${WhitespaceChar}c`>>(S)
 		})
 
 		it("\\W", () => {
 			const S = regex("^a\\Wc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<`a${string}c`>>(S).type.toString.snap(
+				"Regex<`a${string}c`, {}>"
+			)
 		})
 
 		it("\\D", () => {
 			const S = regex("^a\\Dc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<`a${string}c`>>(S).type.toString.snap(
+				"Regex<`a${string}c`, {}>"
+			)
 		})
 
 		it("\\S", () => {
 			const S = regex("^a\\Sc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
+			attest<Regex<`a${string}c`>>(S).type.toString.snap(
+				"Regex<`a${string}c`, {}>"
+			)
 		})
 
 		it("escaped quantifier", () => {
 			const S = regex("^a\\?c$")
-			attest<Regex<`a?c`>>(S).type.toString.snap()
+			attest<Regex<`a?c`>>(S)
 		})
 
 		it("escaped anchor", () => {
 			const S = regex("^a\\^c$")
-			attest<Regex<`a^c`>>(S).type.toString.snap()
+			attest<Regex<`a^c`>>(S)
 		})
 
 		it("escaped group delimiter", () => {
 			const S = regex("^a\\(c$")
-			attest<Regex<`a(c`>>(S).type.toString.snap()
+			attest<Regex<`a(c`>>(S)
 		})
 
 		it("escaped charset delimiter", () => {
 			const S = regex("^a\\[c$")
-			attest<Regex<`a[c`>>(S).type.toString.snap()
+			attest<Regex<`a[c`>>(S)
 		})
 
 		it("escaped alternator", () => {
 			const S = regex("^a\\|c$")
-			attest<Regex<`a|c`>>(S).type.toString.snap()
+			attest<Regex<`a|c`>>(S)
 		})
 
 		it("escaped wildcard", () => {
 			const S = regex("^a\\.c$")
-			attest<Regex<`a.c`>>(S).type.toString.snap()
+			attest<Regex<`a.c`>>(S)
 		})
 
 		it("escaped backslash", () => {
 			const S = regex("^a\\\\c$")
-			attest<Regex<`a\\c`>>(S).type.toString.snap()
+			attest<Regex<`a\\c`>>(S)
 		})
 
 		it("unnecessary escape", () => {
 			// @ts-expect-error
-			attest(() => regex("\\a")).type.errors.snap()
+			attest(() => regex("\\a")).type.errors(
+				"Escape preceding a is unnecessary and should be removed"
+			)
 		})
 
 		it("trailing escape", () => {
 			// @ts-expect-error
-			attest(() => regex("abc\\")).type.errors.snap()
+			attest(() => regex("abc\\")).type.errors("A regex cannot end with \\")
 		})
 
 		// TODO
@@ -507,24 +541,26 @@ contextualize(() => {
 	describe("groups", () => {
 		it("capturing", () => {
 			const S = regex("^(a(b)c)$")
-			attest<Regex<`abc`, { 1: `abc`; 2: `b` }>>(S).type.toString.snap()
+			attest<Regex<`abc`, { 1: `abc`; 2: `b` }>>(S)
 		})
 
 		it("non-capturing", () => {
 			const S = regex("^(a(?:b)c)$")
-			attest<Regex<`abc`, { 1: `abc` }>>(S).type.toString.snap()
+			attest<Regex<`abc`, { 1: `abc` }>>(S).type.toString.snap(
+				'Regex<"abc", { 1: "abc" }>'
+			)
 		})
 
 		it("quantified", () => {
 			const S = regex("^a(?:b)+c$")
-			attest<Regex<`ab${string}c`>>(S).type.toString.snap()
+			attest<Regex<`ab${string}c`>>(S).type.toString.snap(
+				"Regex<`ab${string}c`, {}>"
+			)
 		})
 
 		it("nested", () => {
 			const S = regex("^(a(b(c)))$")
-			attest<Regex<`abc`, { 1: `abc`; 2: `bc`; 3: `c` }>>(
-				S
-			).type.toString.snap()
+			attest<Regex<`abc`, { 1: `abc`; 2: `bc`; 3: `c` }>>(S)
 		})
 
 		it("unclosed", () => {
@@ -541,66 +577,69 @@ contextualize(() => {
 
 		it("empty", () => {
 			const S = regex("()")
-			attest<Regex<`${string}${string}`, { 1: "" }>>(S).type.toString.snap()
+			attest<Regex<`${string}${string}`, { 1: "" }>>(S).type.toString.snap(
+				'Regex<string, { 1: "" }>'
+			)
 		})
 	})
 
 	describe("alternation", () => {
 		it("basic", () => {
 			const S = regex("^a|b$")
-			attest<Regex<`a${string}` | `${string}b`>>(S).type.toString.snap()
+			attest<Regex<`a${string}` | `${string}b`>>(S)
 		})
 
 		it("multiple", () => {
 			const S = regex("^a|b|c$")
-			attest<Regex<`a${string}` | `${string}b${string}` | `${string}c`>>(
-				S
-			).type.toString.snap()
+			attest<Regex<`a${string}` | `${string}b${string}` | `${string}c`>>(S)
 		})
 
 		it("within group", () => {
 			const S = regex("^(a|b)c$")
-			attest<Regex<"ac" | "bc", { 1: "a" | "b" }>>(S).type.toString.snap()
+			attest<Regex<"ac" | "bc", { 1: "a" | "b" }>>(S)
 		})
 
 		it("empty start branch", () => {
 			const S = regex("^|b$")
-			attest<Regex<string>>(S).type.toString.snap()
+			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
 		})
 
 		it("empty end branch", () => {
 			const S = regex("^a|$")
-			attest<Regex<string>>(S).type.toString.snap()
+			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
 		})
 
 		it("empty middle branch", () => {
 			const S = regex("^a||c$")
-			attest<Regex<string>>(S).type.toString.snap()
+			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
 		})
 	})
 
-	describe("wildcard", () => {
-		it(".", () => {
-			const S = regex("^a.$")
-			attest<Regex<`a${string}`>>(S).type.toString.snap()
-		})
-		it("consecutive .", () => {
-			const S = regex("^a..c$")
-			// collapsed to single {string}
-			attest<Regex<`a${string}c`>>(S).type.toString.snap()
-		})
+	it(".", () => {
+		const S = regex("^a.$")
+		attest<Regex<`a${string}`>>(S)
+	})
+
+	it("consecutive .", () => {
+		const S = regex("^a..c$")
+		// collapsed to single {string}
+		attest<Regex<`a${string}c`>>(S).type.toString.snap(
+			"Regex<`a${string}c`, {}>"
+		)
 	})
 
 	describe("index backreferences", () => {
 		it("basic", () => {
 			const S = regex("^(a)b\\1$")
-			attest<Regex<`aba`, { 1: "a" }>>(S).type.toString.snap()
+			attest<Regex<`aba`, { 1: "a" }>>(S).type.toString.snap(
+				'Regex<"aba", { 1: "a" }>'
+			)
 		})
 
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(a\\1b)c\\1$")
-			attest<Regex<`abcab`, { 1: `ab` }>>(S).type.toString.snap()
+			attest<Regex<`abcab`, { 1: `ab` }>>(S)
 		})
 
 		it("union", () => {
@@ -612,17 +651,17 @@ contextualize(() => {
 						1: "a" | "b"
 					}
 				>
-			>(S).type.toString.snap()
+			>(S)
 		})
 
 		it("inner quantified", () => {
 			const S = regex("^(a+)\\1$")
-			attest<Regex<`a${string}`, { 1: `a${string}` }>>(S).type.toString.snap()
+			attest<Regex<`a${string}`, { 1: `a${string}` }>>(S)
 		})
 
 		it("group quantified", () => {
 			const S = regex("^(a)+\\1$")
-			attest<Regex<`a${string}a`, { 1: "a" }>>(S).type.toString.snap()
+			attest<Regex<`a${string}a`, { 1: "a" }>>(S)
 		})
 
 		it("ref quantified", () => {
@@ -634,17 +673,17 @@ contextualize(() => {
 						1: "a"
 					}
 				>
-			>(S).type.toString.snap()
+			>(S)
 		})
 
 		it("index out of range", () => {
 			// @ts-expect-error
-			attest(() => regex("(a)b\\2")).type.errors.snap()
+			attest(() => regex("(a)b\\2")).type.errors("Group 2 does not exist ")
 		})
 
 		it("index 0 (invalid backreference)", () => {
 			// @ts-expect-error
-			attest(() => regex("abc\\0")).type.errors.snap()
+			attest(() => regex("abc\\0")).type.errors("Group 0 does not exist ")
 		})
 
 		// TODO
@@ -692,12 +731,12 @@ contextualize(() => {
 	describe("named backreference", () => {
 		it("unreferenced", () => {
 			const S = regex("^(?<foo>abc)$")
-			attest<Regex<`abc`, { foo: `abc`; 1: `abc` }>>(S).type.toString.snap()
+			attest<Regex<`abc`, { foo: `abc`; 1: `abc` }>>(S)
 		})
 
 		it("simple reference", () => {
 			const S = regex("^(?<foo>a)b\\k<foo>$")
-			attest<Regex<`aba`, { foo: "a"; 1: "a" }>>(S).type.toString.snap()
+			attest<Regex<`aba`, { foo: "a"; 1: "a" }>>(S)
 		})
 
 		it("nested", () => {
@@ -712,25 +751,23 @@ contextualize(() => {
 						inner: "b"
 					}
 				>
-			>(S).type.toString.snap()
+			>(S)
 		})
 
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(?<foo>a\\k<foo>b)c\\k<foo>$")
-			attest<Regex<`abcab`, { foo: `ab` }>>(S).type.toString.snap()
+			attest<Regex<"abcab", { foo: "ab"; 1: "ab" }>>(S)
 		})
 
 		it("inner quantified group", () => {
 			const S = regex("^(?<foo>a+)\\k<foo>$")
-			attest<Regex<`a${string}`, { foo: `a${string}`; 1: `a${string}` }>>(
-				S
-			).type.toString.snap()
+			attest<Regex<`a${string}`, { foo: `a${string}`; 1: `a${string}` }>>(S)
 		})
 
 		it("group quantified", () => {
 			const S = regex("^(?<foo>a)+\\k<foo>$")
-			attest<Regex<`a${string}a`, { foo: "a"; 1: "a" }>>(S).type.toString.snap()
+			attest<Regex<`a${string}a`, { foo: "a"; 1: "a" }>>(S)
 		})
 
 		it("ref quantified", () => {
@@ -743,7 +780,7 @@ contextualize(() => {
 						1: "a"
 					}
 				>
-			>(S).type.toString.snap()
+			>(S)
 		})
 
 		it("named union group", () => {
@@ -756,7 +793,7 @@ contextualize(() => {
 						1: "a" | "b"
 					}
 				>
-			>(S).type.toString.snap()
+			>(S)
 		})
 
 		it("unclosed group", () => {
@@ -775,32 +812,44 @@ contextualize(() => {
 
 		it("empty name", () => {
 			// @ts-expect-error
-			attest(() => regex("(?<>foo)")).type.errors.snap()
+			attest(() => regex("(?<>foo)")).type.errors(
+				"Capture group <> requires a name "
+			)
 		})
 
-		it("name not found", () => {
+		it("unresolvable", () => {
 			// @ts-expect-error
-			attest(() => regex("(?<foo>a)b\\k<bar>")).type.errors.snap()
+			attest(() => regex("(?<foo>a)b\\k<bar>")).type.errors(
+				"named reference does not exist "
+			)
 		})
 
 		it("forward reference", () => {
 			// @ts-expect-error
-			attest(() => regex("\\k<foo>(?<foo>a)")).type.errors.snap()
+			attest(() => regex("\\k<foo>(?<foo>a)")).type.errors(
+				"named reference does not exist "
+			)
 		})
 
 		it("missing reference", () => {
 			// @ts-expect-error
-			attest(() => regex("^(?<foo>a)b\\k$")).type.errors.snap()
+			attest(() => regex("^(?<foo>a)b\\k$")).type.errors(
+				"\\k must be followed by a named reference like <name>"
+			)
 		})
 
 		it("\\k< without name", () => {
 			// @ts-expect-error
-			attest(() => regex("\\k<>")).type.errors.snap()
+			attest(() => regex("\\k<>")).type.errors(
+				"named reference does not exist "
+			)
 		})
 
 		it("\\k<name without >", () => {
 			// @ts-expect-error
-			attest(() => regex("\\k<foo")).type.errors.snap()
+			attest(() => regex("\\k<foo")).type.errors(
+				"k must be followed by a named reference like <name> "
+			)
 		})
 	})
 
