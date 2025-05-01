@@ -13,9 +13,10 @@ export interface Regex<
 	test(s: string): s is pattern
 }
 
-export const regex = <src extends string>(
-	src: regex.validate<src>
-): regex.parse<src> => new RegExp(src) as never
+export const regex = <src extends string, flags extends string = "">(
+	src: regex.validate<src>,
+	flags?: flags
+): regex.parse<src, flags> => new RegExp(src, flags) as never
 
 export type regex<
 	pattern extends string = string,

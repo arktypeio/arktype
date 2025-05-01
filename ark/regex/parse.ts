@@ -28,5 +28,11 @@ export type next<s extends State> =
 			parseBuiltinQuantifier<s, lookahead, unscanned>
 		: lookahead extends "{" ? parsePossibleRange<s, unscanned>
 		: lookahead extends "[" ? parseCharset<s, unscanned>
-		: s.shiftQuantifiable<s, [lookahead], unscanned>
+		: s.shiftQuantifiable<
+				s,
+				s["caseInsensitive"] extends false ? [lookahead]
+				: Lowercase<lookahead> extends Capitalize<lookahead> ? [lookahead]
+				: [Lowercase<lookahead>, Capitalize<lookahead>],
+				unscanned
+			>
 	:	never

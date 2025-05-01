@@ -155,13 +155,16 @@
 					"name": "string.quoted.ts punctuation.definition.string.begin.ts"
 				}
 			},
-			"end": "(\\3)(\\))",
+			"end": "(\\3)(?:(\\)|(,)))",
 			"endCaptures": {
 				"1": {
 					"name": "string.quoted.ts punctuation.definition.string.end.ts"
 				},
 				"2": {
 					"name": "meta.brace.round.ts"
+				},
+				"3": {
+					"name": "punctuation.separator.comma.ts"
 				}
 			},
 			"patterns": [

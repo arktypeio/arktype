@@ -829,4 +829,11 @@ contextualize(() => {
 			attest(() => regex("(?<=ab")).type.errors(writeUnclosedGroupMessage(")"))
 		})
 	})
+
+	describe("flags", () => {
+		it("i", () => {
+			const S = regex("^aB$", "i")
+			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+	})
 })
