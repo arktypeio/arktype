@@ -12,7 +12,6 @@ export interface State extends State.Group {
 	unscanned: string
 	captures: Record<string | number, unknown>
 	groups: State.Group[]
-	caseInsensitive: boolean
 }
 
 export declare namespace State {
@@ -34,6 +33,7 @@ export declare namespace State {
 		branches: string[]
 		sequence: string[]
 		quantifiable: string[]
+		caseInsensitive: boolean
 	}
 
 	export namespace Group {
@@ -137,7 +137,8 @@ export declare namespace s {
 		s extends State,
 		capture extends string | number,
 		unscanned extends string,
-		isLookaround extends boolean
+		isLookaround extends boolean,
+		caseInsensitive extends boolean | undefined
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
@@ -146,7 +147,8 @@ export declare namespace s {
 		branches: []
 		sequence: [""]
 		quantifiable: []
-		caseInsensitive: s["caseInsensitive"]
+		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
+		:	s["caseInsensitive"]
 	}>
 
 	export type popGroup<s extends State, unscanned extends string> =
@@ -165,7 +167,7 @@ export declare namespace s {
 					quantifiable: s["name"] extends never ? State.Group.finalize<s>
 					: s["name"] extends lookaroundMarker ? []
 					: State.Group.finalize<s>
-					caseInsensitive: s["caseInsensitive"]
+					caseInsensitive: last["caseInsensitive"]
 				}>
 			:	never
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
