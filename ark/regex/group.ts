@@ -20,7 +20,7 @@ type parseNonCapturingGroup<s extends State, unscanned extends string> =
 		: // for now, lookarounds don't affect inference
 		lookahead extends LookaroundChar ? s.pushGroup<s, never, next, true>
 		: lookahead extends "<" ? parseNamedGroupOrLookbehind<s, next>
-		: s.pushGroup<s, nextCaptureIndex<s["captures"]>, unscanned, false>
+		: s.error<unescapedLiteralQuestionMarkMessage>
 	:	s.error<writeUnclosedGroupMessage<")">>
 
 type parseNamedGroupOrLookbehind<s extends State, unscanned extends string> =
@@ -45,3 +45,9 @@ type nextCaptureIndex<captures, counter extends 1[] = [1]> =
 	counter["length"] extends keyof captures ?
 		nextCaptureIndex<captures, [...counter, 1]>
 	:	counter["length"]
+
+export const unescapedLiteralQuestionMarkMessage =
+	"literal ? must be escaped at the start of a group"
+
+export type unescapedLiteralQuestionMarkMessage =
+	typeof unescapedLiteralQuestionMarkMessage

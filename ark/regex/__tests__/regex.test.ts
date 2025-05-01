@@ -9,6 +9,7 @@ import {
 	writeUnnecessaryEscapeMessage,
 	writeUnresolvableBackreferenceMessage
 } from "@ark/regex/internal/escape.js"
+import { unescapedLiteralQuestionMarkMessage } from "@ark/regex/internal/group.js"
 import type { next } from "@ark/regex/internal/parse.js"
 import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
 import { writeMidAnchorError, type State } from "@ark/regex/internal/state.js"
@@ -534,6 +535,13 @@ contextualize(() => {
 			const S = regex("()")
 			attest<Regex<`${string}${string}`, { 1: "" }>>(S).type.toString.snap(
 				'Regex<string, { 1: "" }>'
+			)
+		})
+
+		it("unescaped literal question mark", () => {
+			// @ts-expect-error
+			attest(() => regex("(?ab)")).type.errors(
+				unescapedLiteralQuestionMarkMessage
 			)
 		})
 	})
