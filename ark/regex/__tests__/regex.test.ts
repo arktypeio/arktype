@@ -463,7 +463,7 @@ contextualize(() => {
 
 		it("hex escape", () => {
 			const S = regex("^a\x62c$")
-			attest<Regex<"abc">>(S).type.toString.snap()
+			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
 		})
 
 		it("string escapable hex", () => {
@@ -475,7 +475,7 @@ contextualize(() => {
 
 		it("unicode escape (4 digit)", () => {
 			const S = regex("^a\u0062c$")
-			attest<Regex<"abc">>(S).type.toString.snap()
+			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
 		})
 
 		it("string escapable unicode", () => {
@@ -487,12 +487,12 @@ contextualize(() => {
 
 		it("unicode escape (braced)", () => {
 			const S = regex("^a\u{62}c$")
-			attest<Regex<"abc">>(S).type.toString.snap()
+			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
 		})
 
 		it("unicode escape (braced multi-digit)", () => {
 			const S = regex("^a\u{00000062}c$")
-			attest<Regex<"abc">>(S).type.toString.snap()
+			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
 		})
 
 		it("caret notation error", () => {
@@ -815,17 +815,17 @@ contextualize(() => {
 
 		it("positive", () => {
 			const S = regex("^a(?<=a)b$")
-			attest<Regex<"ab">>(S).type.toString.snap()
+			attest<Regex<"ab">>(S).type.toString.snap('Regex<"ab", {}>')
 		})
 
 		it("negative", () => {
 			const S = regex("^a(?<!b)c$")
-			attest<Regex<"ac">>(S).type.toString.snap()
+			attest<Regex<"ac">>(S).type.toString.snap('Regex<"ac", {}>')
 		})
 
 		it("nested", () => {
 			const S = regex("^abc(?<=b(?<!d)c)$")
-			attest<Regex<"abc">>(S).type.toString.snap()
+			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
 		})
 
 		it("unclosed lookbehind", () => {
