@@ -242,8 +242,12 @@ type prependNonRedundant<
 
 type validateAnchorless<pattern extends string> =
 	pattern extends `${string}$ark${infer anchor extends Anchor}${string}` ?
-		MidAnchorError<anchor>
+		ErrorMessage<writeMidAnchorError<anchor>>
 	:	pattern
 
-type MidAnchorError<anchor extends Anchor> =
-	ErrorMessage<`Anchor ${anchor} may not appear mid-pattern`>
+export const writeMidAnchorError = <anchor extends Anchor>(
+	anchor: anchor
+): writeMidAnchorError<anchor> => `Anchor ${anchor} may not appear mid-pattern`
+
+type writeMidAnchorError<anchor extends Anchor> =
+	`Anchor ${anchor} may not appear mid-pattern`

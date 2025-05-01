@@ -143,6 +143,7 @@ type _loopUntilMax<
 		]
 
 export type QuantifyingChar = "*" | "+" | "?"
+
 export const writeUnmatchedQuantifierError = <quantifier extends string>(
 	quantifier: quantifier
 ): writeUnmatchedQuantifierError<quantifier> =>

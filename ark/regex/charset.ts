@@ -18,7 +18,7 @@ export type parseCharset<s extends State, unscanned extends string> =
 			: parseNonNegatedCharset<scanned, []> extends infer result ?
 				result extends string[] ?
 					result extends [] ?
-						s.error<"Empty character set [] is unsatisfiable">
+						s.error<emptyCharacterSetMessage>
 					:	s.shiftQuantifiable<s, result, remaining>
 				:	never
 			:	never
@@ -56,3 +56,8 @@ type parseChar<unscanned extends string> =
 			>
 	:	// return null if called on an empty string
 		null
+
+export const emptyCharacterSetMessage =
+	"Empty character set [] is unsatisfiable"
+
+export type emptyCharacterSetMessage = typeof emptyCharacterSetMessage

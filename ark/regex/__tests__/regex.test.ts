@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { regex, type Regex } from "@ark/regex"
+import { emptyCharacterSetMessage } from "@ark/regex/internal/charset.js"
 import {
 	caretNotationMessage,
 	missingBackreferenceNameMessage,
@@ -10,7 +11,7 @@ import {
 } from "@ark/regex/internal/escape.js"
 import type { next } from "@ark/regex/internal/parse.js"
 import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
-import type { State } from "@ark/regex/internal/state.js"
+import { writeMidAnchorError, type State } from "@ark/regex/internal/state.js"
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
@@ -90,44 +91,32 @@ contextualize(() => {
 
 		it("consecutive start", () => {
 			// @ts-expect-error
-			attest(() => regex("^^")).type.errors(
-				"Anchor ^ may not appear mid-pattern"
-			)
+			attest(() => regex("^^")).type.errors(writeMidAnchorError("^"))
 		})
 
 		it("consecutive end", () => {
 			// @ts-expect-error
-			attest(() => regex("$$")).type.errors(
-				"Anchor $ may not appear mid-pattern"
-			)
+			attest(() => regex("$$")).type.errors(writeMidAnchorError("$"))
 		})
 
 		it("start after first char", () => {
 			// @ts-expect-error
-			attest(() => regex("a^")).type.errors(
-				"Anchor ^ may not appear mid-pattern"
-			)
+			attest(() => regex("a^")).type.errors(writeMidAnchorError("^"))
 		})
 
 		it("end before last char", () => {
 			// @ts-expect-error
-			attest(() => regex("$a")).type.errors(
-				"Anchor $ may not appear mid-pattern"
-			)
+			attest(() => regex("$a")).type.errors(writeMidAnchorError("$"))
 		})
 
 		it("start after first char in group", () => {
 			// @ts-expect-error
-			attest(() => regex("f(^)")).type.errors(
-				"Anchor ^ may not appear mid-pattern"
-			)
+			attest(() => regex("f(^)")).type.errors(writeMidAnchorError("^"))
 		})
 
 		it("end before last char in group", () => {
 			// @ts-expect-error
-			attest(() => regex("($a)")).type.errors(
-				"Anchor $ may not appear mid-pattern"
-			)
+			attest(() => regex("($a)")).type.errors(writeMidAnchorError("$"))
 		})
 	})
 
@@ -258,28 +247,28 @@ contextualize(() => {
 		it("unmatched", () => {
 			// @ts-expect-error
 			attest(() => regex("{2}")).type.errors(
-				"Quantifier {2} requires a preceding token"
+				writeUnmatchedQuantifierError("{2}")
 			)
 		})
 
 		it("unmatched comma", () => {
 			// @ts-expect-error
 			attest(() => regex("{2,}")).type.errors(
-				"Quantifier {2,} requires a preceding token"
+				writeUnmatchedQuantifierError("{2,}")
 			)
 		})
 
 		it("unmatched min max", () => {
 			// @ts-expect-error
 			attest(() => regex("{2,3}")).type.errors(
-				"Quantifier {2,3} requires a preceding token"
+				writeUnmatchedQuantifierError("{2,3}")
 			)
 		})
 
 		it("unmatched lazy", () => {
 			// @ts-expect-error
 			attest(() => regex("{2,3}?")).type.errors(
-				"Quantifier {2,3}? requires a preceding token"
+				writeUnmatchedQuantifierError("{2,3}?")
 			)
 		})
 	})
@@ -354,9 +343,7 @@ contextualize(() => {
 
 		it("empty", () => {
 			// @ts-expect-error
-			attest(() => regex("[]")).type.errors(
-				"Empty character set [] is unsatisfiable"
-			)
+			attest(() => regex("[]")).type.errors(emptyCharacterSetMessage)
 		})
 	})
 
@@ -766,7 +753,7 @@ contextualize(() => {
 		it("forward reference", () => {
 			// @ts-expect-error
 			attest(() => regex("\\k<foo>(?<foo>a)")).type.errors(
-				"named reference does not exist "
+				writeUnresolvableBackreferenceMessage("foo")
 			)
 		})
 

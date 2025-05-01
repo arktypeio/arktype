@@ -5,9 +5,7 @@ import type {
 } from "@ark/util"
 import type { State, s } from "./state.ts"
 
-export type LookaheadPrefix = "?=" | "?!"
-
-export type LookaroundChar = "=" | "!"
+type LookaroundChar = "=" | "!"
 
 export type parseGroup<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
