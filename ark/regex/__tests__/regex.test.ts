@@ -669,46 +669,13 @@ contextualize(() => {
 			)
 		})
 
-		// TODO
-		// it("invalid octal (\\8)", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\8")).type.errors.snap()
-		// })
+		it("escaped octal error", () => {
+			// just gives based \\0 error message since it is not mentioned in
+			// MDN docs even though it is technically valid JS.
 
-		// it("invalid octal (\\08)", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\08")).type.errors.snap()
-		// })
-
-		// it("forward reference", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("\\1(a)")).type.errors.snap()
-		// })
-
-		// it("forward reference in group", () => {
-		// 	// @ts-expect-error
-		// 	attest(() => regex("(\\2a)(b)")).type.errors.snap()
-		// })
-
-		// it("escaped digit not backreference", () => {
-		// 	const S = regex("\\1")
-		// 	attest<Regex<"\\1">>(S).type.toString.snap()
-		// })
-
-		// it("escaped octal 0 not backreference", () => {
-		// 	const S = regex("\\0") // Literal null character
-		// 	attest<Regex<"\x00">>(S).type.toString.snap()
-		// })
-
-		// it("escaped octal not backreference", () => {
-		// 	const S = regex("\\07") // Octal escape
-		// 	attest<Regex<"\x07">>(S).type.toString.snap()
-		// })
-
-		// it("escaped octal with non-octal char", () => {
-		// 	const S = regex("\\07a") // Octal + literal
-		// 	attest<Regex<"\x07a">>(S).type.toString.snap()
-		// })
+			// @ts-expect-error
+			attest(() => regex("\\07")).type.errors(writeStringEscapableMessage("0"))
+		})
 	})
 
 	describe("named backreference", () => {

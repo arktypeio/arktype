@@ -20,3 +20,7 @@ bench("?(4)", () => {
 bench("?(7)", () => {
 	const r = regex("^a?b?c?d?e?f?g?$")
 }).types([31504, "instantiations"])
+
+bench("escape(6)", () => {
+	const r = regex("^\t\n\r\v\f\0$")
+}).types([818, "instantiations"])

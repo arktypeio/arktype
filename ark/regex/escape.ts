@@ -3,7 +3,7 @@ import type { Control, s, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer char, infer nextUnscanned> ?
-		char extends `${bigint}` ? parseNumericBackreference<s, unscanned>
+		char extends NonZeroDigit ? parseNumericBackreference<s, unscanned>
 		: char extends "k" ? parseNamedBackreference<s, nextUnscanned>
 		: char extends UnicodePropertyChar ?
 			parseUnicodeProperty<s, char, nextUnscanned>
@@ -123,3 +123,5 @@ export type RegexClassChar = "w" | "W" | "D" | "S"
 export type BoundaryChar = "b" | "B"
 
 export type UnicodePropertyChar = "p" | "P"
+
+export type NonZeroDigit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
