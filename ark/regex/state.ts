@@ -43,7 +43,7 @@ export declare namespace State {
 
 		export type finalize<g extends Group> = [
 			...g["branches"],
-			...appendQuantifiableOuter<g["sequence"], g["quantifiable"]>
+			...appendQuantifiable<g["sequence"], g["quantifiable"]>
 		]
 	}
 }
@@ -76,7 +76,7 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
+		sequence: appendQuantifiable<s["sequence"], s["quantifiable"]>
 		quantifiable: quantifiable
 		caseInsensitive: s["caseInsensitive"]
 	}>
@@ -91,7 +91,7 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: appendQuantifiableOuter<s["sequence"], quantified>
+		sequence: appendQuantifiable<s["sequence"], quantified>
 		quantifiable: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
@@ -106,7 +106,7 @@ export declare namespace s {
 		captures: s["captures"]
 		branches: [
 			...s["branches"],
-			...appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
+			...appendQuantifiable<s["sequence"], s["quantifiable"]>
 		]
 		sequence: [""]
 		quantifiable: []
@@ -123,8 +123,8 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: appendQuantifiableOuter<
-			appendQuantifiableOuter<s["sequence"], s["quantifiable"]>,
+		sequence: appendQuantifiable<
+			appendQuantifiable<s["sequence"], s["quantifiable"]>,
 			[AnchorMarker<a>]
 		>
 		quantifiable: []
@@ -153,7 +153,7 @@ export declare namespace s {
 
 	export type popGroup<s extends State, unscanned extends string> =
 		s["groups"] extends State.Group.pop<infer last, infer init> ?
-			appendQuantifiableOuter<last["sequence"], last["quantifiable"]> extends (
+			appendQuantifiable<last["sequence"], last["quantifiable"]> extends (
 				infer sequence extends string[]
 			) ?
 				State.from<{
@@ -190,10 +190,15 @@ type finalizeCaptures<captures> = {
 
 type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]
 
+type appendQuantifiable<
+	sequence extends string[],
+	quantifiable extends string[]
+> = appendQuantifiableOuter<sequence, quantifiable, []>
+
 type appendQuantifiableOuter<
 	sequence extends string[],
 	quantifiable extends string[],
-	result extends string[] = []
+	result extends string[]
 > =
 	quantifiable extends [] ? sequence
 	: sequence extends shiftTokens<infer seqHead, infer seqTail> ?

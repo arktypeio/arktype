@@ -848,8 +848,8 @@ contextualize(() => {
 
 	describe("modifiers", () => {
 		it("i enable", () => {
-			const S = regex("^(?i:aB)$")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+			const S = regex("^a(?i:bC)d$")
+			attest<Regex<"abcd" | "abCd" | "aBcd" | "aBCd">>(S)
 		})
 
 		it("i disable", () => {
