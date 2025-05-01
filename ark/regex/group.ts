@@ -5,15 +5,35 @@ import type {
 } from "@ark/util"
 import type { State, s } from "./state.ts"
 
+export type LookaheadPrefix = "?=" | "?!"
+
+export type LookaroundChar = "=" | "!"
+
 export type parseGroup<s extends State, unscanned extends string> =
-	unscanned extends `?:${infer next}` ? s.pushGroup<s, never, next>
-	: unscanned extends `?<${infer next}` ?
-		shiftNamedGroup<next> extends (
-			Scanner.shiftResult<infer name, infer following>
-		) ?
-			s.pushGroup<s, name | nextCaptureIndex<s["captures"]>, following>
-		:	never
-	:	s.pushGroup<s, nextCaptureIndex<s["captures"]>, unscanned>
+	unscanned extends Scanner.shift<infer lookahead, infer next> ?
+		lookahead extends "?" ?
+			parseNonCapturingGroup<s, next>
+		:	s.pushGroup<s, nextCaptureIndex<s["captures"]>, unscanned, false>
+	:	s.error<writeUnclosedGroupMessage<")">>
+
+type parseNonCapturingGroup<s extends State, unscanned extends string> =
+	unscanned extends Scanner.shift<infer lookahead, infer next> ?
+		lookahead extends ":" ? s.pushGroup<s, never, next, false>
+		: // for now, lookarounds don't affect inference
+		lookahead extends LookaroundChar ? s.pushGroup<s, never, next, true>
+		: lookahead extends "<" ? parseNamedGroupOrLookbehind<s, next>
+		: s.pushGroup<s, nextCaptureIndex<s["captures"]>, unscanned, false>
+	:	s.error<writeUnclosedGroupMessage<")">>
+
+type parseNamedGroupOrLookbehind<s extends State, unscanned extends string> =
+	unscanned extends Scanner.shift<LookaroundChar, infer next> ?
+		// for now, lookarounds don't affect inference
+		s.pushGroup<s, never, next, true>
+	: shiftNamedGroup<unscanned> extends (
+		Scanner.shiftResult<infer name, infer following>
+	) ?
+		s.pushGroup<s, name | nextCaptureIndex<s["captures"]>, following, false>
+	:	s.error<writeUnclosedGroupMessage<")">>
 
 type shiftNamedGroup<unscanned extends string> =
 	unscanned extends `${infer name}>${infer next}` ?

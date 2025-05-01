@@ -9,6 +9,7 @@ import {
 	writeUnresolvableBackreferenceMessage
 } from "@ark/regex/internal/escape.js"
 import type { next } from "@ark/regex/internal/parse.js"
+import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
 import type { State } from "@ark/regex/internal/state.js"
 import {
 	writeUnclosedGroupMessage,
@@ -157,44 +158,32 @@ contextualize(() => {
 
 		it("*", () => {
 			const S = regex("^ab*c$")
-			attest<Regex<"ac" | `ab${string}c`>>(S).type.toString.snap(
-				'Regex<"ac" | `ab${string}c`, {}>'
-			)
+			attest<Regex<"ac" | `ab${string}c`>>(S)
 		})
 
 		it("*?", () => {
 			const S = regex("^ab*?c$")
-			attest<Regex<"ac" | `ab${string}c`>>(S).type.toString.snap(
-				'Regex<"ac" | `ab${string}c`, {}>'
-			)
+			attest<Regex<"ac" | `ab${string}c`>>(S)
 		})
 
 		it("unmatched ?", () => {
 			// @ts-expect-error
-			attest(() => regex("?")).type.errors(
-				"Quantifier ? requires a preceding token"
-			)
+			attest(() => regex("?")).type.errors(writeUnmatchedQuantifierError("?"))
 		})
 
 		it("unmatched +", () => {
 			// @ts-expect-error
-			attest(() => regex("+")).type.errors(
-				"Quantifier + requires a preceding token"
-			)
+			attest(() => regex("+")).type.errors(writeUnmatchedQuantifierError("+"))
 		})
 
 		it("unmatched *", () => {
 			// @ts-expect-error
-			attest(() => regex("*")).type.errors(
-				"Quantifier * requires a preceding token"
-			)
+			attest(() => regex("*")).type.errors(writeUnmatchedQuantifierError("*"))
 		})
 
 		it("unmatched ??", () => {
 			// @ts-expect-error
-			attest(() => regex("??")).type.errors(
-				"Quantifier ? requires a preceding token"
-			)
+			attest(() => regex("??")).type.errors(writeUnmatchedQuantifierError("?"))
 		})
 	})
 
@@ -796,57 +785,52 @@ contextualize(() => {
 		})
 	})
 
-	// TODO
-	// describe("lookaheads", () => {
-	// 	it("positive", () => {
-	// 		const S = regex("a(?=b)b")
-	// 		attest<Regex<"ab">>(S).type.toString.snap()
-	// 	})
+	describe("lookarounds", () => {
+		it("positive", () => {
+			const S = regex("^a(?=b)b$")
+			attest<Regex<"ab">>(S)
+		})
 
-	// 	it("negative", () => {
-	// 		const S = regex("a(?!c)b")
-	// 		attest<Regex<"ab">>(S).type.toString.snap()
-	// 	})
+		it("negative", () => {
+			const S = regex("^a(?!c)b$")
+			attest<Regex<"ab">>(S)
+		})
 
-	// 	it("nested", () => {
-	// 		const S = regex("a(?=b(?!d)c)bc")
-	// 		attest<Regex<"abc">>(S).type.toString.snap()
-	// 	})
+		it("nested", () => {
+			const S = regex("^a(?=b(?!d)c)bc$")
+			attest<Regex<"abc">>(S)
+		})
 
-	// 	it("quantified lookahead", () => {
-	// 		// Note: Quantifiers on lookarounds generally don't make sense semantically
-	// 		// and are often ignored or behave unexpectedly in regex engines.
-	// 		// The type inference might reflect the engine's behavior or a simplified
-	// 		// interpretation.
-	// 		const S = regex("a(?=b)?b")
-	// 		attest<Regex<"ab">>(S).type.toString.snap()
-	// 	})
+		it("quantified lookahead", () => {
+			// @ts-expect-error
+			attest(() => regex("^a(?=b)?b$")).type.errors(
+				writeUnmatchedQuantifierError("?")
+			)
+		})
 
-	// 	it("unclosed lookahead", () => {
-	// 		// @ts-expect-error
-	// 		attest(() => regex("a(?=b")).type.errors(writeUnclosedGroupMessage(")"))
-	// 	})
-	// })
+		it("unclosed lookahead", () => {
+			// @ts-expect-error
+			attest(() => regex("a(?=b")).type.errors(writeUnclosedGroupMessage(")"))
+		})
 
-	// describe("lookbehinds", () => {
-	// 	it("positive", () => {
-	// 		const S = regex("a(?<=a)b")
-	// 		attest<Regex<"ab">>(S).type.toString.snap()
-	// 	})
+		it("positive", () => {
+			const S = regex("^a(?<=a)b$")
+			attest<Regex<"ab">>(S).type.toString.snap()
+		})
 
-	// 	it("negative", () => {
-	// 		const S = regex("a(?<!b)c")
-	// 		attest<Regex<"ac">>(S).type.toString.snap()
-	// 	})
+		it("negative", () => {
+			const S = regex("^a(?<!b)c$")
+			attest<Regex<"ac">>(S).type.toString.snap()
+		})
 
-	// 	it("nested", () => {
-	// 		const S = regex("abc(?<=b(?<!d)c)")
-	// 		attest<Regex<"abc">>(S).type.toString.snap()
-	// 	})
+		it("nested", () => {
+			const S = regex("^abc(?<=b(?<!d)c)$")
+			attest<Regex<"abc">>(S).type.toString.snap()
+		})
 
-	// 	it("unclosed lookbehind", () => {
-	// 		// @ts-expect-error
-	// 		attest(() => regex("(?<=a)b")).type.errors(writeUnclosedGroupMessage(")"))
-	// 	})
-	// })
+		it("unclosed lookbehind", () => {
+			// @ts-expect-error
+			attest(() => regex("(?<=ab")).type.errors(writeUnclosedGroupMessage(")"))
+		})
+	})
 })

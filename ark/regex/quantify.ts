@@ -1,4 +1,4 @@
-import type { conform, ErrorMessage, Scanner } from "@ark/util"
+import type { conform, Scanner } from "@ark/util"
 import type { s, State } from "./state.ts"
 
 export type NonEmptyQuantifiable = [string, ...string[]]
@@ -143,9 +143,13 @@ type _loopUntilMax<
 		]
 
 export type QuantifyingChar = "*" | "+" | "?"
+export const writeUnmatchedQuantifierError = <quantifier extends string>(
+	quantifier: quantifier
+): writeUnmatchedQuantifierError<quantifier> =>
+	`Quantifier ${quantifier} requires a preceding token`
 
 export type writeUnmatchedQuantifierError<quantifier extends string> =
-	ErrorMessage<`Quantifier ${quantifier} requires a preceding token`>
+	`Quantifier ${quantifier} requires a preceding token`
 
 type suffix<token extends string[], suffix extends string> = [
 	...token,

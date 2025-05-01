@@ -1,6 +1,7 @@
 import type {
 	ErrorMessage,
 	leftIfEqual,
+	noSuggest,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
 } from "@ark/util"
@@ -123,16 +124,18 @@ export declare namespace s {
 		quantifiable: []
 	}>
 
+	type lookaroundMarker = noSuggest<"lookahead">
+
 	export type pushGroup<
 		s extends State,
 		capture extends string | number,
-		unscanned extends string
+		unscanned extends string,
+		isLookaround extends boolean
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
-		name: capture
-		captures: s["captures"] extends false ? s["captures"]
-		:	s["captures"] & Record<capture, unknown>
+		name: isLookaround extends true ? lookaroundMarker : capture
+		captures: s["captures"] & Record<capture, unknown>
 		branches: []
 		sequence: [""]
 		quantifiable: []
@@ -146,12 +149,14 @@ export declare namespace s {
 				State.from<{
 					unscanned: unscanned
 					groups: init
-					captures: s["name"] extends never ? s["captures"]
+					captures: s["name"] extends lookaroundMarker ? s["captures"]
 					:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
 					name: last["name"]
 					branches: last["branches"]
 					sequence: sequence
-					quantifiable: State.Group.finalize<s>
+					quantifiable: s["name"] extends never ? State.Group.finalize<s>
+					: s["name"] extends lookaroundMarker ? []
+					: State.Group.finalize<s>
 				}>
 			:	never
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
