@@ -15,7 +15,16 @@ export interface State extends State.Group {
 	groups: State.Group[]
 }
 
-export type NestableString = string | NestableString[]
+export type SequenceTree =
+	| string
+	| {
+			union: SequenceTree
+	  }
+	| SequenceTree[]
+
+export type UnionTree<branches extends SequenceTree[] = SequenceTree[]> = {
+	union: branches
+}
 
 export declare namespace State {
 	export type from<s extends State> = s
@@ -33,9 +42,9 @@ export declare namespace State {
 
 	export type Group = {
 		name: string | number
-		branches: NestableString[]
-		sequence: NestableString[]
-		quantifiable: NestableString
+		branches: SequenceTree[]
+		sequence: SequenceTree[]
+		quantifiable: SequenceTree
 		caseInsensitive: boolean
 	}
 
@@ -44,10 +53,12 @@ export declare namespace State {
 
 		type pop<init extends Group, last extends Group[]> = [...last, init]
 
-		export type finalize<g extends Group> = [
-			...g["branches"],
-			pushQuantifiable<g["sequence"], g["quantifiable"]>
-		]
+		export type finalize<g extends Group> =
+			g["branches"] extends [] ?
+				pushQuantifiable<g["sequence"], g["quantifiable"]>
+			:	UnionTree<
+					[...g["branches"], pushQuantifiable<g["sequence"], g["quantifiable"]>]
+				>
 	}
 }
 
@@ -75,7 +86,7 @@ export declare namespace s {
 
 	export type shiftQuantifiable<
 		s extends State,
-		quantifiable extends NestableString,
+		quantifiable extends SequenceTree,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -183,13 +194,13 @@ export declare namespace s {
 }
 
 type pushQuantifiable<
-	sequence extends NestableString[],
-	quantifiable extends NestableString
+	sequence extends SequenceTree[],
+	quantifiable extends SequenceTree
 > = quantifiable extends [] ? sequence : [...sequence, quantifiable]
 
 type finalizeCaptures<captures> = {
 	[k in keyof captures]: captures[k] extends (
-		infer pattern extends NestableString
+		infer pattern extends SequenceTree
 	) ?
 		string
 	:	never
