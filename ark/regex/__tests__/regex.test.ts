@@ -10,8 +10,10 @@ import {
 	writeUnresolvableBackreferenceMessage
 } from "@ark/regex/internal/escape.js"
 import {
+	missingNegatedModifierMessage,
 	unescapedLiteralQuestionMarkMessage,
-	unnamedCaptureGroupMessage
+	unnamedCaptureGroupMessage,
+	writeInvalidModifierMessage
 } from "@ark/regex/internal/group.js"
 import type { next } from "@ark/regex/internal/parse.js"
 import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
@@ -831,9 +833,112 @@ contextualize(() => {
 	})
 
 	describe("flags", () => {
+		it("empty string", () => {
+			const S = regex("^aB$", "")
+			attest<Regex<"aB">>(S)
+		})
+
 		it("i", () => {
 			const S = regex("^aB$", "i")
 			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+	})
+
+	describe("modifiers", () => {
+		it("i enable", () => {
+			const S = regex("^(?i:aB)$")
+			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+
+		it("i disable", () => {
+			const S = regex("^(?-i:aB)$")
+			attest<Regex<"aB">>(S)
+		})
+
+		it("i enable overrides global i disable", () => {
+			const S = regex("^(?i:aB)$", "")
+			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+
+		it("i disable overrides global i enable", () => {
+			const S = regex("^(?-i:aB)$", "i")
+			attest<Regex<"aB">>(S)
+		})
+
+		it("i enable with global i enable", () => {
+			const S = regex("^(?i:aB)$", "i")
+			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+
+		it("i disable with global i disable", () => {
+			const S = regex("^(?-i:aB)$", "")
+			attest<Regex<"aB">>(S)
+		})
+
+		it("nested enable/disable", () => {
+			const S = regex("^(?i:a(?-i:B)c)$")
+			attest<Regex<"aBc" | "aBC" | "ABc" | "ABC">>(S)
+		})
+
+		it("nested disable/enable", () => {
+			const S = regex("^(?-i:a(?i:B)c)$")
+			attest<Regex<"aBc" | "abc">>(S)
+		})
+
+		it("multiple modifiers enable i", () => {
+			const S = regex("^(?im:aB)$")
+			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+
+		it("multiple modifiers disable i", () => {
+			const S = regex("^(?-im:aB)$")
+			attest<Regex<"aB">>(S)
+		})
+
+		it("multiple modifiers enable/disable i", () => {
+			const S = regex("^(?i-m:aB)$")
+			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+		})
+
+		it("multiple modifiers disable/disable i", () => {
+			const S = regex("^(?-i-m:aB)$")
+			attest<Regex<"aB">>(S)
+		})
+
+		it("invalid modifier", () => {
+			// @ts-expect-error
+			attest(() => regex("(?x:abc)")).type.errors(
+				writeInvalidModifierMessage("x")
+			)
+		})
+
+		it("invalid negated modifier", () => {
+			// @ts-expect-error
+			attest(() => regex("(?-x:abc)")).type.errors(
+				writeInvalidModifierMessage("x")
+			)
+		})
+
+		it("missing negated modifier", () => {
+			// @ts-expect-error
+			attest(() => regex("(?-:abc)")).type.errors(missingNegatedModifierMessage)
+		})
+
+		it("unclosed modifier group", () => {
+			// @ts-expect-error
+			attest(() => regex("(?i")).type.errors(writeUnclosedGroupMessage(")"))
+		})
+
+		it("modifier group without colon", () => {
+			// @ts-expect-error
+			attest(() => regex("(?i)")).type.errors(
+				unescapedLiteralQuestionMarkMessage
+			)
+		})
+
+		it("modifier group with colon but no content", () => {
+			const S = regex("^(?i:)$")
+			attest<Regex<"">>(S)
 		})
 	})
 })

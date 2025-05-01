@@ -29,7 +29,7 @@ type parseNonCapturingGroup<s extends State, unscanned extends string> =
 		lookahead extends LookaroundChar ?
 			s.pushGroup<s, never, next, true, undefined>
 		: lookahead extends "<" ? parseNamedGroupOrLookbehind<s, next>
-		: shiftModifiers<next> extends (
+		: shiftModifiers<unscanned> extends (
 			ModifierShiftResult<infer result, infer following>
 		) ?
 			result extends boolean | undefined ?
