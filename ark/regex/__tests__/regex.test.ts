@@ -11,8 +11,10 @@ import {
 } from "@ark/regex/internal/escape.js"
 import {
 	missingNegatedModifierMessage,
+	multipleModifierDashesMessage,
 	unescapedLiteralQuestionMarkMessage,
 	unnamedCaptureGroupMessage,
+	writeDuplicateModifierMessage,
 	writeInvalidModifierMessage
 } from "@ark/regex/internal/group.js"
 import type { next } from "@ark/regex/internal/parse.js"
@@ -900,9 +902,32 @@ contextualize(() => {
 			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
 		})
 
-		it("multiple modifiers disable/disable i", () => {
-			const S = regex("^(?-i-m:aB)$")
-			attest<Regex<"aB">>(S)
+		it("duplicate conflicting modifier", () => {
+			// @ts-expect-error
+			attest(() => regex("(?m-m:.*)")).type.errors(
+				writeDuplicateModifierMessage("m")
+			)
+		})
+
+		it("duplicate positive modifier", () => {
+			// @ts-expect-error
+			attest(() => regex("(?mm:.*)")).type.errors(
+				writeDuplicateModifierMessage("m")
+			)
+		})
+
+		it("duplicate negated modifier", () => {
+			// @ts-expect-error
+			attest(() => regex("(?-mm:.*)")).type.errors(
+				writeDuplicateModifierMessage("m")
+			)
+		})
+
+		it("multiple dashes", () => {
+			// @ts-expect-error
+			attest(() => regex("^(?-i-m:aB)$")).type.errors(
+				multipleModifierDashesMessage
+			)
 		})
 
 		it("invalid modifier", () => {
