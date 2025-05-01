@@ -9,7 +9,10 @@ import {
 	writeUnnecessaryEscapeMessage,
 	writeUnresolvableBackreferenceMessage
 } from "@ark/regex/internal/escape.js"
-import { unescapedLiteralQuestionMarkMessage } from "@ark/regex/internal/group.js"
+import {
+	unescapedLiteralQuestionMarkMessage,
+	unnamedCaptureGroupMessage
+} from "@ark/regex/internal/group.js"
 import type { next } from "@ark/regex/internal/parse.js"
 import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
 import { writeMidAnchorError, type State } from "@ark/regex/internal/state.js"
@@ -24,7 +27,7 @@ type iterate<s extends State, until extends number, counter extends 1[] = []> =
 
 contextualize(() => {
 	it("erate", () => {
-		type s = iterate<State.initialize<"^(a)b\\1$">, 4>
+		type s = iterate<State.initialize<"^(a)b\\1$", "">, 4>
 		attest<"b\\1$", s["unscanned"]>()
 	})
 
@@ -746,9 +749,7 @@ contextualize(() => {
 
 		it("empty name", () => {
 			// @ts-expect-error
-			attest(() => regex("(?<>foo)")).type.errors(
-				"Capture group <> requires a name "
-			)
+			attest(() => regex("(?<>foo)")).type.errors(unnamedCaptureGroupMessage)
 		})
 
 		it("unresolvable", () => {

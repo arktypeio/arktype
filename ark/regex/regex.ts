@@ -23,11 +23,13 @@ export type regex<
 > = Regex<pattern, groups>
 
 export declare namespace regex {
-	export type parse<src extends string> = parseState<State.initialize<src>>
+	export type parse<src extends string, flags extends string = ""> = parseState<
+		State.initialize<src, flags>
+	>
 
-	export type infer<src extends string> =
-		parse<src> extends Regex<infer pattern> ? pattern : never
+	export type infer<src extends string, flags extends string = ""> =
+		parse<src, flags> extends Regex<infer pattern> ? pattern : never
 
-	export type validate<src extends string> =
-		parse<src> extends Regex<infer e extends ErrorMessage> ? e : src
+	export type validate<src extends string, flags extends string = ""> =
+		parse<src, flags> extends Regex<infer e extends ErrorMessage> ? e : src
 }

@@ -12,12 +12,13 @@ export interface State extends State.Group {
 	unscanned: string
 	captures: Record<string | number, unknown>
 	groups: State.Group[]
+	caseInsensitive: boolean
 }
 
 export declare namespace State {
 	export type from<s extends State> = s
 
-	export type initialize<source extends string> = from<{
+	export type initialize<source extends string, flags extends string> = from<{
 		unscanned: source
 		groups: []
 		captures: {}
@@ -25,6 +26,7 @@ export declare namespace State {
 		branches: []
 		sequence: [""]
 		quantifiable: []
+		caseInsensitive: flags extends `${string}i${string}` ? true : false
 	}>
 
 	export type Group = {
@@ -61,6 +63,7 @@ export declare namespace s {
 		branches: []
 		sequence: []
 		quantifiable: []
+		caseInsensitive: false
 	}>
 
 	export type shiftQuantifiable<
@@ -75,6 +78,7 @@ export declare namespace s {
 		branches: s["branches"]
 		sequence: appendQuantifiableOuter<s["sequence"], s["quantifiable"]>
 		quantifiable: quantifiable
+		caseInsensitive: s["caseInsensitive"]
 	}>
 
 	export type pushQuantified<
@@ -89,6 +93,7 @@ export declare namespace s {
 		branches: s["branches"]
 		sequence: appendQuantifiableOuter<s["sequence"], quantified>
 		quantifiable: []
+		caseInsensitive: s["caseInsensitive"]
 	}>
 
 	export type finalizeBranch<
@@ -105,6 +110,7 @@ export declare namespace s {
 		]
 		sequence: [""]
 		quantifiable: []
+		caseInsensitive: s["caseInsensitive"]
 	}>
 
 	export type anchor<
@@ -122,6 +128,7 @@ export declare namespace s {
 			[AnchorMarker<a>]
 		>
 		quantifiable: []
+		caseInsensitive: s["caseInsensitive"]
 	}>
 
 	type lookaroundMarker = noSuggest<"lookahead">
@@ -139,6 +146,7 @@ export declare namespace s {
 		branches: []
 		sequence: [""]
 		quantifiable: []
+		caseInsensitive: s["caseInsensitive"]
 	}>
 
 	export type popGroup<s extends State, unscanned extends string> =
@@ -157,6 +165,7 @@ export declare namespace s {
 					quantifiable: s["name"] extends never ? State.Group.finalize<s>
 					: s["name"] extends lookaroundMarker ? []
 					: State.Group.finalize<s>
+					caseInsensitive: s["caseInsensitive"]
 				}>
 			:	never
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>

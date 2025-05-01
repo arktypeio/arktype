@@ -36,7 +36,7 @@ type parseNamedGroupOrLookbehind<s extends State, unscanned extends string> =
 type shiftNamedGroup<unscanned extends string> =
 	unscanned extends `${infer name}>${infer next}` ?
 		name extends "" ?
-			Scanner.shiftResult<"", ErrorMessage<"Capture group <> requires a name">>
+			Scanner.shiftResult<"", ErrorMessage<unnamedCaptureGroupMessage>>
 		:	Scanner.shiftResult<name, next>
 	:	Scanner.shiftResult<"", ErrorMessage<writeUnclosedGroupMessage<">">>>
 
@@ -45,6 +45,10 @@ type nextCaptureIndex<captures, counter extends 1[] = [1]> =
 	counter["length"] extends keyof captures ?
 		nextCaptureIndex<captures, [...counter, 1]>
 	:	counter["length"]
+
+export const unnamedCaptureGroupMessage = "Capture group <> requires a name"
+
+export type unnamedCaptureGroupMessage = typeof unnamedCaptureGroupMessage
 
 export const unescapedLiteralQuestionMarkMessage =
 	"literal ? must be escaped at the start of a group"
