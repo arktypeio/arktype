@@ -26,6 +26,9 @@ export type charsBeforeLast<s extends string> =
 		:	`${head}${charsBeforeLast<tail>}`
 	:	""
 
+export type contains<s extends string, sub extends string> =
+	s extends `${string}${sub}${string}` ? true : false
+
 export const anchoredRegex = (regex: RegExp | string): RegExp =>
 	new RegExp(
 		anchoredSource(regex),

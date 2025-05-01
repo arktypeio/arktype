@@ -1,9 +1,10 @@
 import type {
+	contains,
 	ErrorMessage,
 	leftIfEqual,
-	noSuggest,
 	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage
+	writeUnmatchedGroupCloseMessage,
+	ZeroWidthSpace
 } from "@ark/util"
 import type { QuantifyingChar } from "./quantify.ts"
 import type { Regex } from "./regex.ts"
@@ -14,6 +15,8 @@ export interface State extends State.Group {
 	groups: State.Group[]
 }
 
+export type NestableString = string | NestableString[]
+
 export declare namespace State {
 	export type from<s extends State> = s
 
@@ -23,16 +26,16 @@ export declare namespace State {
 		captures: {}
 		name: never
 		branches: []
-		sequence: [""]
+		sequence: []
 		quantifiable: []
-		caseInsensitive: flags extends `${string}i${string}` ? true : false
+		caseInsensitive: contains<flags, "i">
 	}>
 
 	export type Group = {
 		name: string | number
-		branches: string[]
-		sequence: string[]
-		quantifiable: string[]
+		branches: NestableString[]
+		sequence: NestableString[]
+		quantifiable: NestableString
 		caseInsensitive: boolean
 	}
 
@@ -43,7 +46,7 @@ export declare namespace State {
 
 		export type finalize<g extends Group> = [
 			...g["branches"],
-			...appendQuantifiable<g["sequence"], g["quantifiable"]>
+			pushQuantifiable<g["sequence"], g["quantifiable"]>
 		]
 	}
 }
@@ -52,7 +55,11 @@ export type Boundary = Anchor | "(" | ")" | "[" | "]"
 export type Anchor = "^" | "$"
 export type Control = QuantifyingChar | Boundary | "|" | "." | "{" | "-" | "\\"
 
-export type AnchorMarker<a extends Anchor = Anchor> = `$ark${a}`
+export type AnchorMarker<inner extends Anchor = Anchor> =
+	`<${ZeroWidthSpace}${inner}${ZeroWidthSpace}>`
+
+export type StartAnchorMarker = AnchorMarker<"^">
+export type EndAnchorMarker = AnchorMarker<"$">
 
 export declare namespace s {
 	export type error<message extends string> = State.from<{
@@ -68,7 +75,7 @@ export declare namespace s {
 
 	export type shiftQuantifiable<
 		s extends State,
-		quantifiable extends string[],
+		quantifiable extends NestableString,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -76,7 +83,7 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: appendQuantifiable<s["sequence"], s["quantifiable"]>
+		sequence: pushQuantifiable<s["sequence"], s["quantifiable"]>
 		quantifiable: quantifiable
 		caseInsensitive: s["caseInsensitive"]
 	}>
@@ -91,7 +98,7 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: appendQuantifiable<s["sequence"], quantified>
+		sequence: [...s["sequence"], quantified]
 		quantifiable: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
@@ -106,16 +113,16 @@ export declare namespace s {
 		captures: s["captures"]
 		branches: [
 			...s["branches"],
-			...appendQuantifiable<s["sequence"], s["quantifiable"]>
+			pushQuantifiable<s["sequence"], s["quantifiable"]>
 		]
-		sequence: [""]
+		sequence: []
 		quantifiable: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
 	export type anchor<
 		s extends State,
-		a extends Anchor,
+		a extends AnchorMarker,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -123,15 +130,12 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: appendQuantifiable<
-			appendQuantifiable<s["sequence"], s["quantifiable"]>,
-			[AnchorMarker<a>]
-		>
+		sequence: [...pushQuantifiable<s["sequence"], s["quantifiable"]>, a]
 		quantifiable: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
-	type lookaroundMarker = noSuggest<"lookahead">
+	type LookaroundMarker = `${ZeroWidthSpace}lookahead`
 
 	export type pushGroup<
 		s extends State,
@@ -142,10 +146,10 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
-		name: isLookaround extends true ? lookaroundMarker : capture
+		name: isLookaround extends true ? LookaroundMarker : capture
 		captures: s["captures"] & Record<capture, unknown>
 		branches: []
-		sequence: [""]
+		sequence: []
 		quantifiable: []
 		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
 		:	s["caseInsensitive"]
@@ -153,23 +157,19 @@ export declare namespace s {
 
 	export type popGroup<s extends State, unscanned extends string> =
 		s["groups"] extends State.Group.pop<infer last, infer init> ?
-			appendQuantifiable<last["sequence"], last["quantifiable"]> extends (
-				infer sequence extends string[]
-			) ?
-				State.from<{
-					unscanned: unscanned
-					groups: init
-					captures: s["name"] extends lookaroundMarker ? s["captures"]
-					:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
-					name: last["name"]
-					branches: last["branches"]
-					sequence: sequence
-					quantifiable: s["name"] extends never ? State.Group.finalize<s>
-					: s["name"] extends lookaroundMarker ? []
-					: State.Group.finalize<s>
-					caseInsensitive: last["caseInsensitive"]
-				}>
-			:	never
+			State.from<{
+				unscanned: unscanned
+				groups: init
+				captures: s["name"] extends LookaroundMarker ? s["captures"]
+				:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
+				name: last["name"]
+				branches: last["branches"]
+				sequence: pushQuantifiable<last["sequence"], last["quantifiable"]>
+				quantifiable: s["name"] extends never ? State.Group.finalize<s>
+				: s["name"] extends LookaroundMarker ? []
+				: State.Group.finalize<s>
+				caseInsensitive: last["caseInsensitive"]
+			}>
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
 
 	export type finalize<s extends State> =
@@ -182,47 +182,18 @@ export declare namespace s {
 		:	never
 }
 
+type pushQuantifiable<
+	sequence extends NestableString[],
+	quantifiable extends NestableString
+> = quantifiable extends [] ? sequence : [...sequence, quantifiable]
+
 type finalizeCaptures<captures> = {
-	[k in keyof captures]: captures[k] extends (infer pattern extends string)[] ?
-		anchorsAway<pattern>
+	[k in keyof captures]: captures[k] extends (
+		infer pattern extends NestableString
+	) ?
+		string
 	:	never
 } & unknown
-
-type shiftTokens<head extends string, tail extends string[]> = [head, ...tail]
-
-type appendQuantifiable<
-	sequence extends string[],
-	quantifiable extends string[]
-> = appendQuantifiableOuter<sequence, quantifiable, []>
-
-type appendQuantifiableOuter<
-	sequence extends string[],
-	quantifiable extends string[],
-	result extends string[]
-> =
-	quantifiable extends [] ? sequence
-	: sequence extends shiftTokens<infer seqHead, infer seqTail> ?
-		appendQuantifiableOuter<
-			seqTail,
-			quantifiable,
-			[...result, ...appendQuantifiableInner<seqHead, quantifiable, []>]
-		>
-	:	result
-
-type appendQuantifiableInner<
-	seqHead extends string,
-	quantifiable extends string[],
-	result extends string[]
-> =
-	quantifiable extends (
-		shiftTokens<infer quantifiableHead, infer quantifiableTail>
-	) ?
-		appendQuantifiableInner<
-			seqHead,
-			quantifiableTail,
-			[...result, appendNonRedundant<seqHead, quantifiableHead>]
-		>
-	:	result
 
 type finalizePattern<tokens extends string[]> =
 	tokens extends string[] ? validateAnchorless<applyAnchors<tokens[number]>>
@@ -230,20 +201,20 @@ type finalizePattern<tokens extends string[]> =
 	: never
 
 type applyAnchors<pattern extends string> =
-	pattern extends `${AnchorMarker<"^">}${infer startStripped}` ?
-		startStripped extends `${infer bothStripped}${AnchorMarker<"$">}` ?
+	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
+		startStripped extends `${infer bothStripped}${EndAnchorMarker}` ?
 			bothStripped
 		:	appendNonRedundant<startStripped, string>
-	: pattern extends `${infer endStripped}${AnchorMarker<"$">}` ?
+	: pattern extends `${infer endStripped}${EndAnchorMarker}` ?
 		prependNonRedundant<endStripped, string>
 	:	prependNonRedundant<appendNonRedundant<pattern, string>, string>
 
 type anchorsAway<pattern extends string> =
-	pattern extends `${AnchorMarker<"^">}${infer startStripped}` ?
-		startStripped extends `${infer bothStripped}${AnchorMarker<"$">}` ?
+	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
+		startStripped extends `${infer bothStripped}${EndAnchorMarker}` ?
 			bothStripped
 		:	startStripped
-	: pattern extends `${infer endStripped}${AnchorMarker<"$">}` ? endStripped
+	: pattern extends `${infer endStripped}${EndAnchorMarker}` ? endStripped
 	: pattern
 
 type appendNonRedundant<
@@ -257,8 +228,10 @@ type prependNonRedundant<
 > = leftIfEqual<base, `${prefix}${base}`>
 
 type validateAnchorless<pattern extends string> =
-	pattern extends `${string}$ark${infer anchor extends Anchor}${string}` ?
-		ErrorMessage<writeMidAnchorError<anchor>>
+	contains<pattern, StartAnchorMarker> extends true ?
+		ErrorMessage<writeMidAnchorError<"^">>
+	: contains<pattern, EndAnchorMarker> extends true ?
+		ErrorMessage<writeMidAnchorError<"$">>
 	:	pattern
 
 export const writeMidAnchorError = <anchor extends Anchor>(

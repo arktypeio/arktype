@@ -37,10 +37,6 @@
 		"ATTEST_skipTypes": "true"
 	},
 	"testExplorer.useNativeTesting": true,
-	"editor.unicodeHighlight.allowedCharacters": {
-		// Hair Space: used as a sentinel for error messages
-		" ": true
-	},
 	"search.exclude": {
 		"**/out": true,
 		"**/.next": true,

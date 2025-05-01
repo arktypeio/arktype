@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkType",
 	"description": "Syntax highlighting and inline errors for ArkType⛵",
-	"version": "6.5.0",
+	"version": "6.6.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
@@ -70,7 +70,7 @@
 					"message": "$1"
 				},
 				{
-					"matcher": ".*'\"(.*\\u200A)\"'\\.$",
+					"matcher": ".*'\"(.*[\\u200A\\u200B])\"'\\.$",
 					"message": "$1"
 				},
 				{

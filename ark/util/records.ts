@@ -1,6 +1,6 @@
 import type { array } from "./arrays.ts"
 import type { Primitive } from "./domain.ts"
-import { noSuggest, zeroWidthSpace } from "./errors.ts"
+import { noSuggest, ZeroWidthSpace } from "./errors.ts"
 import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
@@ -306,7 +306,7 @@ export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
 ): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
 
-export const unset = noSuggest(`unset${zeroWidthSpace}`)
+export const unset = noSuggest(`unset${ZeroWidthSpace}`)
 
 export type unset = typeof unset
 

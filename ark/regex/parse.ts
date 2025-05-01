@@ -8,7 +8,7 @@ import type {
 	QuantifyingChar
 } from "./quantify.ts"
 import type { Regex } from "./regex.ts"
-import type { Anchor, s, State } from "./state.ts"
+import type { Anchor, AnchorMarker, s, State } from "./state.ts"
 
 export type parseState<s extends State> =
 	s["unscanned"] extends ErrorMessage ? Regex<s["unscanned"]>
@@ -21,7 +21,7 @@ export type next<s extends State> =
 		lookahead extends "." ? s.shiftQuantifiable<s, [string], unscanned>
 		: lookahead extends Backslash ? parseEscape<s, unscanned>
 		: lookahead extends "|" ? s.finalizeBranch<s, unscanned>
-		: lookahead extends Anchor ? s.anchor<s, lookahead, unscanned>
+		: lookahead extends Anchor ? s.anchor<s, AnchorMarker<lookahead>, unscanned>
 		: lookahead extends "(" ? parseGroup<s, unscanned>
 		: lookahead extends ")" ? s.popGroup<s, unscanned>
 		: lookahead extends QuantifyingChar ?
@@ -30,9 +30,12 @@ export type next<s extends State> =
 		: lookahead extends "[" ? parseCharset<s, unscanned>
 		: s.shiftQuantifiable<
 				s,
-				s["caseInsensitive"] extends false ? [lookahead]
-				: Lowercase<lookahead> extends Capitalize<lookahead> ? [lookahead]
-				: [Lowercase<lookahead>, Capitalize<lookahead>],
+				maybeSplitCasing<s["caseInsensitive"], lookahead>,
 				unscanned
 			>
 	:	never
+
+type maybeSplitCasing<caseInsensitive extends boolean, char extends string> =
+	caseInsensitive extends false ? char
+	: Lowercase<char> extends Uppercase<char> ? char
+	: [Lowercase<char>, Capitalize<char>]
