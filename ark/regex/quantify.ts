@@ -1,5 +1,5 @@
-import type { conform, Scanner } from "@ark/util"
-import type { s, SequenceTree, State, UnionTree } from "./state.ts"
+import type { Scanner } from "@ark/util"
+import type { PatternTree, s, State, UnionTree } from "./state.ts"
 
 export type parseBuiltinQuantifier<
 	s extends State,
@@ -73,7 +73,7 @@ export type parsePossibleRange<
 
 type applyQuantified<
 	s extends State,
-	quantified extends SequenceTree,
+	quantified extends PatternTree,
 	unscanned extends string
 > = s.pushQuantified<
 	s,
@@ -84,27 +84,24 @@ type applyQuantified<
 
 type quantifyBuiltin<
 	quantifier extends QuantifyingChar,
-	tree extends SequenceTree
+	tree extends PatternTree
 > =
 	quantifier extends "?" ? UnionTree<[tree, ""]>
 	: quantifier extends "+" ? [tree, string]
 	: quantifier extends "*" ? UnionTree<[[tree, string], ""]>
 	: never
 
-type Result = quantify<"a", 2, 4>
-//   ^?
-
 type quantify<
-	token extends SequenceTree,
+	token extends PatternTree,
 	min extends number,
 	max extends number | null
 > = _loopUntilMin<token, min, max, []>
 
 type _loopUntilMin<
-	token extends SequenceTree,
+	token extends PatternTree,
 	min extends number,
 	max extends number | null,
-	repetitions extends SequenceTree[]
+	repetitions extends PatternTree[]
 > =
 	repetitions["length"] extends min ?
 		max extends number ?
@@ -116,12 +113,12 @@ type _loopUntilMin<
 	:	_loopUntilMin<token, min, max, [...repetitions, token]>
 
 type _loopUntilMax<
-	tree extends SequenceTree,
+	tree extends PatternTree,
 	min extends number,
 	max extends number,
-	repetitions extends SequenceTree[],
-	branches extends SequenceTree[],
-	nextRepetitions extends SequenceTree[] = [...repetitions, tree]
+	repetitions extends PatternTree[],
+	branches extends PatternTree[],
+	nextRepetitions extends PatternTree[] = [...repetitions, tree]
 > =
 	repetitions["length"] extends max ? UnionTree<branches>
 	:	_loopUntilMax<

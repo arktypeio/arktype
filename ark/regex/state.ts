@@ -15,14 +15,14 @@ export interface State extends State.Group {
 	groups: State.Group[]
 }
 
-export type SequenceTree =
+export type PatternTree =
 	| string
 	| {
-			union: SequenceTree
+			union: PatternTree
 	  }
-	| SequenceTree[]
+	| PatternTree[]
 
-export type UnionTree<branches extends SequenceTree[] = SequenceTree[]> = {
+export type UnionTree<branches extends PatternTree[] = PatternTree[]> = {
 	union: branches
 }
 
@@ -42,9 +42,9 @@ export declare namespace State {
 
 	export type Group = {
 		name: string | number
-		branches: SequenceTree[]
-		sequence: SequenceTree
-		quantifiable: SequenceTree
+		branches: PatternTree[]
+		sequence: PatternTree
+		quantifiable: PatternTree
 		caseInsensitive: boolean
 	}
 
@@ -86,7 +86,7 @@ export declare namespace s {
 
 	export type shiftQuantifiable<
 		s extends State,
-		quantifiable extends SequenceTree,
+		quantifiable extends PatternTree,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -101,7 +101,7 @@ export declare namespace s {
 
 	export type pushQuantified<
 		s extends State,
-		quantified extends SequenceTree,
+		quantified extends PatternTree,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -189,19 +189,18 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
-		: finalizeRoot<State.Group.finalize<s>> extends (
-			infer pattern extends string
-		) ?
-			Regex<pattern, finalizeCaptures<s["captures"]>>
-		:	never
+		:	Regex<
+				finalizeRoot<State.Group.finalize<s>>,
+				finalizeCaptures<s["captures"]>
+			>
 }
 
 type pushQuantifiable<
-	sequence extends SequenceTree,
-	quantifiable extends SequenceTree
+	sequence extends PatternTree,
+	quantifiable extends PatternTree
 > =
 	quantifiable extends [] ? sequence
-	: sequence extends any[] ?
+	: sequence extends unknown[] ?
 		sequence extends [] ?
 			quantifiable
 		:	[...sequence, quantifiable]
