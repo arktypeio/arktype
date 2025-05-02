@@ -16,29 +16,50 @@ export interface State extends State.Group {
 	groups: State.Group[]
 }
 
-export type PatternTree = string | UnionTree.Base | SequenceTree.Base
+export type PatternTree = string | UnionTree | SequenceTree
 
 export interface SequenceTree<
-	elements extends PatternTree[],
-	depth extends 1[]
+	elements extends PatternTree[] = PatternTree[],
+	depth extends 1[] = 1[]
 > {
 	sequence: elements
 	depth: depth
 }
 
 export declare namespace SequenceTree {
-	export type Base = SequenceTree<PatternTree[], 1[]>
-
 	export type Empty = SequenceTree<[], [1]>
+
+	export type finalize<self extends SequenceTree> = _finalize<
+		self["sequence"],
+		self["depth"],
+		""
+	>
+
+	type _finalize<
+		tree extends unknown[],
+		depth extends 1[],
+		result extends string
+	> =
+		tree extends [infer head, ...infer tail] ?
+			_finalize<tail, depth, appendNonRedundant<result, finalizeTree<head>>>
+		:	result
 }
 
-export interface UnionTree<branches extends PatternTree[], depth extends 1[]> {
+export interface UnionTree<
+	branches extends PatternTree[] = PatternTree[],
+	depth extends 1[] = 1[]
+> {
 	union: branches
 	depth: depth
 }
 
 export declare namespace UnionTree {
-	export type Base = UnionTree<PatternTree[], 1[]>
+	type finalize<self extends UnionTree> = _finalize<self["union"], never>
+
+	type _finalize<branches extends unknown[], pattern extends string> =
+		branches extends [infer head, ...infer tail] ?
+			_finalize<tail, pattern | finalizeTree<head>>
+		:	pattern
 }
 
 export declare namespace State {
@@ -223,7 +244,7 @@ export type pushQuantifiable<
 		sequence extends "" ?
 			root
 		:	SequenceTree<[sequence, root], depthOf<root>>
-	: sequence extends SequenceTree.Base ?
+	: sequence extends SequenceTree ?
 		sequence extends SequenceTree.Empty ?
 			root
 		:	pushToSequence<sequence, root>
@@ -233,7 +254,7 @@ export type pushQuantifiable<
 		>
 
 export type pushToSequence<
-	sequence extends SequenceTree.Base,
+	sequence extends SequenceTree,
 	root extends PatternTree
 > =
 	root extends string ?
@@ -259,21 +280,9 @@ type finalizeCaptures<captures> = {
 
 type finalizeTree<tree> =
 	tree extends string ? tree
-	: tree extends SequenceTree<infer parts, any> ?
-		finalizeTreeSequence<parts, "">
-	: tree extends UnionTree<infer branches, any> ?
-		finalizeTreeUnion<branches, never>
-	:	never
-
-type finalizeTreeSequence<tree extends unknown[], result extends string> =
-	tree extends [infer head, ...infer tail] ?
-		finalizeTreeSequence<tail, appendNonRedundant<result, finalizeTree<head>>>
-	:	result
-
-type finalizeTreeUnion<branches extends unknown[], pattern extends string> =
-	branches extends [infer head, ...infer tail] ?
-		finalizeTreeUnion<tail, pattern | finalizeTree<head>>
-	:	pattern
+	: tree extends SequenceTree ? SequenceTree.finalize<tree>
+	: tree extends UnionTree ? UnionTree.finalize<tree>
+	: never
 
 type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?

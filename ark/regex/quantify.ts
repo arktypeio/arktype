@@ -147,7 +147,7 @@ type _loopUntilMax<
 	max extends number,
 	repetitions extends PatternTree[],
 	repetitionDepth extends 1[],
-	branches extends SequenceTree.Base[],
+	branches extends SequenceTree[],
 	branchesDepth extends 1[],
 	nextRepetitions extends PatternTree[] = [...repetitions, base],
 	nextRepetitionDepth extends 1[] = repeat<repetitionDepth, baseDepth["length"]>
