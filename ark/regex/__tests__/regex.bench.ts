@@ -1,5 +1,6 @@
 import { bench } from "@ark/attest"
 import { regex } from "@ark/regex"
+import type { repeat } from "@ark/util"
 
 bench.baseline(() => {
 	regex("foo|^bar$|baz?")

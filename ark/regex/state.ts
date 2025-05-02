@@ -2,6 +2,7 @@ import type {
 	contains,
 	ErrorMessage,
 	leftIfEqual,
+	repeat,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
@@ -189,27 +190,54 @@ export declare namespace s {
 type pushQuantifiable<sequence extends PatternTree, root extends PatternTree> =
 	root extends [] ? sequence
 	: sequence extends unknown[] ?
-		sequence extends [] ?
-			root
-		:	[...sequence, root]
+		sequence extends [] ? root
+		: root extends unknown[] ? [...sequence, ...root]
+		: [...sequence, root]
 	:	[sequence, root]
 
 type finalizeCaptures<captures> = {
-	[k in keyof captures]: anchorsAway<finalizeTree<captures[k]>>
+	[k in keyof captures]: anchorsAway<finalizeTree<captures[k], [1]>["pattern"]>
 } & unknown
 
-type finalizeRoot<tree> = validateAnchorless<applyAnchors<finalizeTree<tree>>>
+type finalizeRoot<tree> = validateAnchorless<
+	applyAnchors<finalizeTree<tree, [1]>["pattern"]>
+>
 
-type finalizeTree<tree> =
-	tree extends string ? tree
-	: tree extends unknown[] ? finalizeTreeSequence<tree>
-	: tree extends UnionTree<infer branches> ? finalizeTree<branches[number]>
-	: never
+type TreeResult<pattern extends string = string, depth extends 1[] = 1[]> = {
+	pattern: pattern
+	depth: depth
+}
 
-type finalizeTreeSequence<tree extends unknown[], result extends string = ""> =
+type finalizeTree<tree, depth extends 1[]> =
+	tree extends string ? TreeResult<tree, depth>
+	: tree extends unknown[] ? finalizeTreeSequence<tree, TreeResult<"", [1]>>
+	: tree extends UnionTree<infer branches> ?
+		finalizeTreeUnion<branches, never, repeat<depth, branches["length"]>>
+	:	never
+
+type finalizeTreeSequence<tree extends unknown[], result extends TreeResult> =
 	tree extends [infer head, ...infer tail] ?
-		finalizeTreeSequence<tail, appendNonRedundant<result, finalizeTree<head>>>
+		finalizeTree<head, [1]> extends infer next extends TreeResult ?
+			finalizeTreeSequence<
+				tail,
+				TreeResult<
+					appendNonRedundant<result["pattern"], next["pattern"]>,
+					repeat<result["depth"], next["depth"]["length"]>
+				>
+			>
+		:	never
 	:	result
+
+type finalizeTreeUnion<
+	branches extends unknown[],
+	pattern extends string,
+	depth extends 1[]
+> =
+	branches extends [infer head, ...infer tail] ?
+		finalizeTree<head, depth> extends infer next extends TreeResult ?
+			finalizeTreeUnion<tail, pattern | next["pattern"], depth>
+		:	never
+	:	TreeResult<pattern, depth>
 
 type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?

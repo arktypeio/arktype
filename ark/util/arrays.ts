@@ -137,6 +137,45 @@ type _repeat<
 	depth["length"] extends maxDepth ? result
 	:	_repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
 
+export type longerThan<l extends array, r extends array> =
+	`${r["length"]}` extends keyof l ? true : false
+
+export type buildArray<element, count extends number> =
+	number extends 0 ? []
+	:	_repeat<
+			element,
+			[element],
+			buildSegments<element, [[element]], count>,
+			count
+		>
+
+type buildSegments<
+	element,
+	segments extends unknown[][],
+	count extends number,
+	next extends unknown[] = [...segments[0], ...segments[0]]
+> =
+	`${count}` extends keyof next ? segments
+	:	buildSegments<element, [next, ...segments], count>
+
+type _repeat<
+	element,
+	result extends unknown[],
+	segments extends unknown[][],
+	count extends number,
+	next extends unknown[] = [...result, ...segments[0]]
+> =
+	next["length"] extends count ? next
+	: `${count}` extends keyof next ?
+		_repeat<
+			element,
+			result,
+			segments extends [unknown, ...infer tail extends unknown[][]] ? tail
+			:	never,
+			count
+		>
+	:	_repeat<element, next, segments, count>
+
 export type CollapsingList<t = unknown> =
 	| readonly []
 	| t
