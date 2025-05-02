@@ -18,7 +18,7 @@ export type parseState<s extends State> =
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions/Cheatsheet
 export type next<s extends State> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
-		lookahead extends "." ? s.shiftQuantifiable<s, [string], unscanned>
+		lookahead extends "." ? s.shiftQuantifiable<s, string, unscanned>
 		: lookahead extends Backslash ? parseEscape<s, unscanned>
 		: lookahead extends "|" ? s.finalizeBranch<s, unscanned>
 		: lookahead extends Anchor ? s.anchor<s, AnchorMarker<lookahead>, unscanned>
@@ -38,4 +38,4 @@ export type next<s extends State> =
 type maybeSplitCasing<caseInsensitive extends boolean, char extends string> =
 	caseInsensitive extends false ? char
 	: Lowercase<char> extends Uppercase<char> ? char
-	: UnionTree<[Lowercase<char>, Capitalize<char>]>
+	: UnionTree<[Lowercase<char>, Capitalize<char>], [1, 1]>

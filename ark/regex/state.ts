@@ -16,15 +16,29 @@ export interface State extends State.Group {
 	groups: State.Group[]
 }
 
-export type PatternTree =
-	| string
-	| {
-			union: PatternTree
-	  }
-	| PatternTree[]
+export type PatternTree = string | UnionTree.Base | SequenceTree.Base
 
-export type UnionTree<branches extends PatternTree[] = PatternTree[]> = {
+export interface SequenceTree<
+	elements extends PatternTree[],
+	depth extends 1[]
+> {
+	sequence: elements
+	depth: depth
+}
+
+export declare namespace SequenceTree {
+	export type Base = SequenceTree<PatternTree[], 1[]>
+
+	export type Empty = SequenceTree<[], [1]>
+}
+
+export interface UnionTree<branches extends PatternTree[], depth extends 1[]> {
 	union: branches
+	depth: depth
+}
+
+export declare namespace UnionTree {
+	export type Base = UnionTree<PatternTree[], 1[]>
 }
 
 export declare namespace State {
@@ -36,8 +50,8 @@ export declare namespace State {
 		captures: {}
 		name: never
 		branches: []
-		sequence: []
-		root: []
+		sequence: SequenceTree.Empty
+		root: ""
 		caseInsensitive: contains<flags, "i">
 	}>
 
@@ -56,7 +70,20 @@ export declare namespace State {
 
 		export type finalize<g extends Group> =
 			g["branches"] extends [] ? pushQuantifiable<g["sequence"], g["root"]>
-			:	UnionTree<[...g["branches"], pushQuantifiable<g["sequence"], g["root"]>]>
+			:	UnionTree<
+					[...g["branches"], pushQuantifiable<g["sequence"], g["root"]>],
+					[1]
+				>
+
+		type branchStateToTree<branches extends PatternTree[]> = UnionTree<
+			branches,
+			unionDepth<branches, [1]>
+		>
+
+		type unionDepth<branches extends unknown[], depth extends 1[]> =
+			branches extends [infer head, ...infer tail] ?
+				unionDepth<tail, [...depth, ...depthOf<head>]>
+			:	depth
 	}
 }
 
@@ -77,8 +104,8 @@ export declare namespace s {
 		name: never
 		captures: {}
 		branches: []
-		sequence: []
-		root: []
+		sequence: SequenceTree.Empty
+		root: ""
 		caseInsensitive: false
 	}>
 
@@ -108,7 +135,7 @@ export declare namespace s {
 		captures: s["captures"]
 		branches: s["branches"]
 		sequence: pushQuantifiable<s["sequence"], quantified>
-		root: []
+		root: ""
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -121,8 +148,8 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
-		sequence: []
-		root: []
+		sequence: SequenceTree.Empty
+		root: ""
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -137,7 +164,7 @@ export declare namespace s {
 		captures: s["captures"]
 		branches: s["branches"]
 		sequence: pushQuantifiable<s["sequence"], pushQuantifiable<s["root"], a>>
-		root: []
+		root: ""
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -155,8 +182,8 @@ export declare namespace s {
 		name: isLookaround extends true ? LookaroundMarker : capture
 		captures: s["captures"] & Record<capture, unknown>
 		branches: []
-		sequence: []
-		root: []
+		sequence: SequenceTree.Empty
+		root: ""
 		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
 		:	s["caseInsensitive"]
 	}>
@@ -172,7 +199,7 @@ export declare namespace s {
 				branches: last["branches"]
 				sequence: pushQuantifiable<last["sequence"], last["root"]>
 				root: s["name"] extends never ? State.Group.finalize<s>
-				: s["name"] extends LookaroundMarker ? []
+				: s["name"] extends LookaroundMarker ? ""
 				: State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
 			}>
@@ -182,63 +209,67 @@ export declare namespace s {
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
 		:	Regex<
-				validateAnchorless<applyAnchors<finalizeRoot<State.Group.finalize<s>>>>,
+				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
 				finalizeCaptures<s["captures"]>
 			>
 }
 
-type pushQuantifiable<sequence extends PatternTree, root extends PatternTree> =
-	root extends [] ? sequence
-	: sequence extends unknown[] ?
-		sequence extends [] ? root
-		: root extends unknown[] ? [...sequence, ...root]
-		: [...sequence, root]
-	:	[sequence, root]
+export type pushQuantifiable<
+	sequence extends PatternTree,
+	root extends PatternTree
+> =
+	root extends "" ? sequence
+	: sequence extends SequenceTree.Base ?
+		sequence extends SequenceTree.Empty ?
+			root
+		:	pushToSequence<sequence, root>
+	:	SequenceTree<
+			[sequence, root],
+			repeat<depthOf<sequence>, depthOf<root>["length"]>
+		>
+
+export type pushToSequence<
+	sequence extends SequenceTree.Base,
+	root extends PatternTree
+> =
+	root extends string ?
+		SequenceTree<[...sequence["sequence"], root], sequence["depth"]>
+	: root extends SequenceTree<infer rootSequence, infer rootDepth> ?
+		SequenceTree<
+			[...sequence["sequence"], ...rootSequence],
+			repeat<sequence["depth"], rootDepth["length"]>
+		>
+	: root extends UnionTree<any, infer rootDepth> ?
+		SequenceTree<
+			[...sequence["sequence"], root],
+			repeat<sequence["depth"], rootDepth["length"]>
+		>
+	:	never
+
+export type depthOf<tree> =
+	tree extends { depth: infer depth extends 1[] } ? depth : [1]
 
 type finalizeCaptures<captures> = {
-	[k in keyof captures]: anchorsAway<finalizeRoot<captures[k]>>
+	[k in keyof captures]: anchorsAway<finalizeTree<captures[k]>>
 } & unknown
 
-type finalizeRoot<tree> =
-	finalizeTree<tree, [1]> extends { pattern: infer pattern extends string } ?
-		pattern
+type finalizeTree<tree> =
+	tree extends string ? tree
+	: tree extends SequenceTree<infer parts, any> ?
+		finalizeTreeSequence<parts, "">
+	: tree extends UnionTree<infer branches, any> ?
+		finalizeTreeUnion<branches, never>
 	:	never
 
-type TreeResult<pattern extends string = string, depth extends 1[] = 1[]> = {
-	pattern: pattern
-	depth: depth
-}
-
-type finalizeTree<tree, depth extends 1[]> =
-	tree extends string ? TreeResult<tree, depth>
-	: tree extends unknown[] ? finalizeTreeSequence<tree, TreeResult<"", [1]>>
-	: tree extends UnionTree<infer branches> ?
-		finalizeTreeUnion<branches, never, repeat<depth, branches["length"]>>
-	:	never
-
-type finalizeTreeSequence<tree extends unknown[], result extends TreeResult> =
+type finalizeTreeSequence<tree extends unknown[], result extends string> =
 	tree extends [infer head, ...infer tail] ?
-		finalizeTree<head, [1]> extends infer next extends TreeResult ?
-			finalizeTreeSequence<
-				tail,
-				TreeResult<
-					appendNonRedundant<result["pattern"], next["pattern"]>,
-					repeat<result["depth"], next["depth"]["length"]>
-				>
-			>
-		:	never
+		finalizeTreeSequence<tail, appendNonRedundant<result, finalizeTree<head>>>
 	:	result
 
-type finalizeTreeUnion<
-	branches extends unknown[],
-	pattern extends string,
-	depth extends 1[]
-> =
+type finalizeTreeUnion<branches extends unknown[], pattern extends string> =
 	branches extends [infer head, ...infer tail] ?
-		finalizeTree<head, depth> extends infer next extends TreeResult ?
-			finalizeTreeUnion<tail, pattern | next["pattern"], depth>
-		:	never
-	:	TreeResult<pattern, depth>
+		finalizeTreeUnion<tail, pattern | finalizeTree<head>>
+	:	pattern
 
 type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?

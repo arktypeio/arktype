@@ -1,12 +1,20 @@
-import type { Scanner } from "@ark/util"
-import type { PatternTree, s, State, UnionTree } from "./state.ts"
+import type { conform, repeat, Scanner } from "@ark/util"
+import type {
+	depthOf,
+	PatternTree,
+	pushQuantifiable,
+	s,
+	SequenceTree,
+	State,
+	UnionTree
+} from "./state.ts"
 
 export type parseBuiltinQuantifier<
 	s extends State,
 	quantifier extends QuantifyingChar,
 	unscanned extends string
 > =
-	s["root"] extends [] ? s.error<writeUnmatchedQuantifierError<quantifier>>
+	s["root"] extends "" ? s.error<writeUnmatchedQuantifierError<quantifier>>
 	:	s.pushQuantified<
 			s,
 			quantifyBuiltin<quantifier, s["root"]>,
@@ -56,7 +64,7 @@ export type parsePossibleRange<
 	parsed extends ParsedRange | null = parsePossibleRangeString<unscanned>
 > =
 	parsed extends ParsedRange ?
-		s["root"] extends [] ?
+		s["root"] extends "" ?
 			s.error<
 				writeUnmatchedQuantifierError<
 					unscanned extends `${infer range}${parsed["unscanned"]}` ? `{${range}`
@@ -65,7 +73,7 @@ export type parsePossibleRange<
 			>
 		:	applyQuantified<
 				s,
-				quantify<s["root"], parsed["min"], parsed["max"]>,
+				conform<quantify<s["root"], parsed["min"], parsed["max"]>, PatternTree>,
 				parsed["unscanned"]
 			>
 	:	s.shiftQuantifiable<s, "{", unscanned>
@@ -85,47 +93,75 @@ type quantifyBuiltin<
 	quantifier extends QuantifyingChar,
 	tree extends PatternTree
 > =
-	quantifier extends "?" ? UnionTree<[tree, ""]>
-	: quantifier extends "+" ? [tree, string]
-	: quantifier extends "*" ? UnionTree<[[tree, string], ""]>
-	: never
+	quantifier extends "?" ? UnionTree<[tree, ""], [...depthOf<tree>, 1]>
+	: quantifier extends "+" ? pushQuantifiable<tree, string>
+	: quantifier extends "*" ?
+		UnionTree<[pushQuantifiable<tree, string>, ""], [...depthOf<tree>, 1]>
+	:	never
 
 type quantify<
-	token extends PatternTree,
+	base extends PatternTree,
 	min extends number,
 	max extends number | null
-> = _loopUntilMin<token, min, max, []>
+> = _loopUntilMin<base, depthOf<base>, min, max, [], [1]>
 
 type _loopUntilMin<
-	token extends PatternTree,
+	base extends PatternTree,
+	baseDepth extends 1[],
 	min extends number,
 	max extends number | null,
-	repetitions extends PatternTree[]
+	repetitions extends PatternTree[],
+	repetitionDepth extends 1[]
 > =
 	repetitions["length"] extends min ?
 		max extends number ?
 			max extends min ?
 				// avoid handling a range like {2} as a 1-branch union
-				repetitions
-			:	_loopUntilMax<token, min, max, repetitions, [repetitions]>
-		:	[...repetitions, string]
-	:	_loopUntilMin<token, min, max, [...repetitions, token]>
+				repetitions["length"] extends 1 ?
+					repetitions[0]
+				:	SequenceTree<repetitions, repetitionDepth>
+			:	_loopUntilMax<
+					base,
+					baseDepth,
+					min,
+					max,
+					repetitions,
+					repetitionDepth,
+					[SequenceTree<repetitions, repetitionDepth>],
+					repetitionDepth
+				>
+		:	SequenceTree<[...repetitions, string], repetitionDepth>
+	:	_loopUntilMin<
+			base,
+			baseDepth,
+			min,
+			max,
+			[...repetitions, base],
+			repeat<repetitionDepth, baseDepth["length"]>
+		>
 
 type _loopUntilMax<
-	tree extends PatternTree,
+	base extends PatternTree,
+	baseDepth extends 1[],
 	min extends number,
 	max extends number,
 	repetitions extends PatternTree[],
-	branches extends PatternTree[],
-	nextRepetitions extends PatternTree[] = [...repetitions, tree]
+	repetitionDepth extends 1[],
+	branches extends SequenceTree.Base[],
+	branchesDepth extends 1[],
+	nextRepetitions extends PatternTree[] = [...repetitions, base],
+	nextRepetitionDepth extends 1[] = repeat<repetitionDepth, baseDepth["length"]>
 > =
-	repetitions["length"] extends max ? UnionTree<branches>
+	repetitions["length"] extends max ? UnionTree<branches, branchesDepth>
 	:	_loopUntilMax<
-			tree,
+			base,
+			baseDepth,
 			min,
 			max,
 			nextRepetitions,
-			[...branches, nextRepetitions]
+			nextRepetitionDepth,
+			[...branches, SequenceTree<nextRepetitions, nextRepetitionDepth>],
+			[...branchesDepth, ...nextRepetitionDepth]
 		>
 
 export type QuantifyingChar = "*" | "+" | "?"

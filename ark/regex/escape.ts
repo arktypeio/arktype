@@ -40,7 +40,7 @@ type parseUnicodeProperty<
 	unscanned extends string
 > =
 	unscanned extends `{${string}}${infer following}` ?
-		s.shiftQuantifiable<s, [string], following>
+		s.shiftQuantifiable<s, string, following>
 	:	s.error<writeInvalidUnicodePropertyMessage<char>>
 
 type parseSingleEscapedCharacter<
@@ -51,7 +51,7 @@ type parseSingleEscapedCharacter<
 	parseEscapedChar<char> extends infer result extends string ?
 		result extends ErrorMessage ?
 			s.error<result>
-		:	s.shiftQuantifiable<s, [result], remaining>
+		:	s.shiftQuantifiable<s, result, remaining>
 	:	never
 
 export type parseEscapedChar<char extends string> =
