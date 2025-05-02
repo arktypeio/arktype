@@ -5,7 +5,7 @@ import type {
 	writeUnclosedGroupMessage
 } from "@ark/util"
 import type { parseEscapedChar } from "./escape.ts"
-import type { s, State } from "./state.ts"
+import type { s, State, UnionTree } from "./state.ts"
 
 export type parseCharset<s extends State, unscanned extends string> =
 	Scanner.shiftUntilEscapable<unscanned, "]", Backslash> extends (
@@ -15,11 +15,11 @@ export type parseCharset<s extends State, unscanned extends string> =
 			// we don't care about the contents of the negated char set because we can't infer it
 			scanned extends Scanner.shift<"^", string> ?
 				s.shiftQuantifiable<s, [string], remaining>
-			: parseNonNegatedCharset<scanned, []> extends infer result ?
-				result extends string[] ?
-					result extends [] ?
+			: parseNonNegatedCharset<scanned, []> extends infer branches ?
+				branches extends string[] ?
+					branches extends [] ?
 						s.error<emptyCharacterSetMessage>
-					:	s.shiftQuantifiable<s, result, remaining>
+					:	s.shiftQuantifiable<s, UnionTree<branches>, remaining>
 				:	never
 			:	never
 		:	writeUnclosedGroupMessage<"]">

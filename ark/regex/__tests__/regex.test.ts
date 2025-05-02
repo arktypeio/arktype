@@ -29,13 +29,13 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type Result = iterate<State.initialize<"^(a)b\\1$", "">, 4>
+type Result = iterate<State.initialize<"^(a)b\\1$", "">, 7>
 type Sequence = Result["sequence"]
 //   ^?
 
 contextualize(() => {
 	it("erate", () => {
-		type s = iterate<State.initialize<"^(a)b\\1$", "">, 6>
+		type s = iterate<State.initialize<"^(a)b\\1$", "">, 4>
 		attest<"b\\1$", s["unscanned"]>()
 	})
 

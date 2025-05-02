@@ -1,5 +1,5 @@
 import type { ErrorMessage, Scanner, WhitespaceChar } from "@ark/util"
-import type { Control, s, State } from "./state.ts"
+import type { Control, s, SequenceTree, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer char, infer nextUnscanned> ?
@@ -32,7 +32,7 @@ type parseNamedBackreference<s extends State, unscanned extends string> =
 
 // if the group is still being parsed, JS treats it as an empty string
 type getCapturedSequence<captures, ref extends keyof captures> =
-	captures[ref] extends string[] ? captures[ref] : [""]
+	captures[ref] extends SequenceTree ? captures[ref] : ""
 
 type parseUnicodeProperty<
 	s extends State,

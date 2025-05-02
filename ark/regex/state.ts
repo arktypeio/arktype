@@ -43,7 +43,7 @@ export declare namespace State {
 	export type Group = {
 		name: string | number
 		branches: SequenceTree[]
-		sequence: SequenceTree[]
+		sequence: SequenceTree
 		quantifiable: SequenceTree
 		caseInsensitive: boolean
 	}
@@ -101,7 +101,7 @@ export declare namespace s {
 
 	export type pushQuantified<
 		s extends State,
-		quantified extends string[],
+		quantified extends SequenceTree,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -109,7 +109,7 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: [...s["sequence"], quantified]
+		sequence: pushQuantifiable<s["sequence"], quantified>
 		quantifiable: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
@@ -141,7 +141,10 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: [...pushQuantifiable<s["sequence"], s["quantifiable"]>, a]
+		sequence: pushQuantifiable<
+			s["sequence"],
+			pushQuantifiable<s["quantifiable"], a>
+		>
 		quantifiable: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
@@ -186,7 +189,7 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
-		: finalizePattern<State.Group.finalize<s>> extends (
+		: finalizeRoot<State.Group.finalize<s>> extends (
 			infer pattern extends string
 		) ?
 			Regex<pattern, finalizeCaptures<s["captures"]>>
@@ -194,22 +197,32 @@ export declare namespace s {
 }
 
 type pushQuantifiable<
-	sequence extends SequenceTree[],
+	sequence extends SequenceTree,
 	quantifiable extends SequenceTree
-> = quantifiable extends [] ? sequence : [...sequence, quantifiable]
+> =
+	quantifiable extends [] ? sequence
+	: sequence extends any[] ?
+		sequence extends [] ?
+			quantifiable
+		:	[...sequence, quantifiable]
+	:	[sequence, quantifiable]
 
 type finalizeCaptures<captures> = {
-	[k in keyof captures]: captures[k] extends (
-		infer pattern extends SequenceTree
-	) ?
-		string
-	:	never
+	[k in keyof captures]: anchorsAway<finalizeTree<captures[k]>>
 } & unknown
 
-type finalizePattern<tokens extends string[]> =
-	tokens extends string[] ? validateAnchorless<applyAnchors<tokens[number]>>
-	: tokens extends ErrorMessage ? tokens
+type finalizeRoot<tree> = validateAnchorless<applyAnchors<finalizeTree<tree>>>
+
+type finalizeTree<tree> =
+	tree extends UnionTree<infer branches> ? finalizeTree<branches[number]>
+	: tree extends unknown[] ? finalizeTreeSequence<tree>
+	: tree extends string ? tree
 	: never
+
+type finalizeTreeSequence<tree extends unknown[], result extends string = ""> =
+	tree extends [infer head, ...infer tail] ?
+		finalizeTreeSequence<tail, appendNonRedundant<result, finalizeTree<head>>>
+	:	result
 
 type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?

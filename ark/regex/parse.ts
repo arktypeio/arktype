@@ -8,7 +8,7 @@ import type {
 	QuantifyingChar
 } from "./quantify.ts"
 import type { Regex } from "./regex.ts"
-import type { Anchor, AnchorMarker, s, State } from "./state.ts"
+import type { Anchor, AnchorMarker, s, State, UnionTree } from "./state.ts"
 
 export type parseState<s extends State> =
 	s["unscanned"] extends ErrorMessage ? Regex<s["unscanned"]>
@@ -38,4 +38,4 @@ export type next<s extends State> =
 type maybeSplitCasing<caseInsensitive extends boolean, char extends string> =
 	caseInsensitive extends false ? char
 	: Lowercase<char> extends Uppercase<char> ? char
-	: [Lowercase<char>, Capitalize<char>]
+	: UnionTree<[Lowercase<char>, Capitalize<char>]>
