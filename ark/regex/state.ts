@@ -182,7 +182,7 @@ export declare namespace s {
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
 		:	Regex<
-				finalizeRoot<State.Group.finalize<s>>,
+				validateAnchorless<applyAnchors<finalizeRoot<State.Group.finalize<s>>>>,
 				finalizeCaptures<s["captures"]>
 			>
 }
@@ -196,12 +196,13 @@ type pushQuantifiable<sequence extends PatternTree, root extends PatternTree> =
 	:	[sequence, root]
 
 type finalizeCaptures<captures> = {
-	[k in keyof captures]: anchorsAway<finalizeTree<captures[k], [1]>["pattern"]>
+	[k in keyof captures]: anchorsAway<finalizeRoot<captures[k]>>
 } & unknown
 
-type finalizeRoot<tree> = validateAnchorless<
-	applyAnchors<finalizeTree<tree, [1]>["pattern"]>
->
+type finalizeRoot<tree> =
+	finalizeTree<tree, [1]> extends { pattern: infer pattern extends string } ?
+		pattern
+	:	never
 
 type TreeResult<pattern extends string = string, depth extends 1[] = 1[]> = {
 	pattern: pattern
