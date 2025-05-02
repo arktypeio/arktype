@@ -484,4 +484,10 @@ contextualize(() => {
 			}
 		})
 	})
+
+	it("dimscrinate literal undefined value", () => {
+		const T = type(["number[]", "|", ["undefined"]])
+
+		attest(T.assert([])).equals([])
+	})
 })
