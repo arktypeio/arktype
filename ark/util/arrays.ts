@@ -142,7 +142,7 @@ export type longerThan<l extends array, r extends array> =
 
 export type buildArray<element, count extends number> =
 	number extends 0 ? []
-	:	_repeat<
+	:	buildFromSegments<
 			element,
 			[element],
 			buildSegments<element, [[element]], count>,
@@ -158,7 +158,7 @@ type buildSegments<
 	`${count}` extends keyof next ? segments
 	:	buildSegments<element, [next, ...segments], count>
 
-type _repeat<
+type buildFromSegments<
 	element,
 	result extends unknown[],
 	segments extends unknown[][],
@@ -167,14 +167,14 @@ type _repeat<
 > =
 	next["length"] extends count ? next
 	: `${count}` extends keyof next ?
-		_repeat<
+		buildFromSegments<
 			element,
 			result,
 			segments extends [unknown, ...infer tail extends unknown[][]] ? tail
 			:	never,
 			count
 		>
-	:	_repeat<element, next, segments, count>
+	:	buildFromSegments<element, next, segments, count>
 
 export type CollapsingList<t = unknown> =
 	| readonly []
