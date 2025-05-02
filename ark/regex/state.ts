@@ -16,52 +16,6 @@ export interface State extends State.Group {
 	groups: State.Group[]
 }
 
-export type PatternTree = string | UnionTree | SequenceTree
-
-export interface SequenceTree<
-	elements extends PatternTree[] = PatternTree[],
-	depth extends 1[] = 1[]
-> {
-	sequence: elements
-	depth: depth
-}
-
-export declare namespace SequenceTree {
-	export type Empty = SequenceTree<[], [1]>
-
-	export type finalize<self extends SequenceTree> = _finalize<
-		self["sequence"],
-		self["depth"],
-		""
-	>
-
-	type _finalize<
-		tree extends unknown[],
-		depth extends 1[],
-		result extends string
-	> =
-		tree extends [infer head, ...infer tail] ?
-			_finalize<tail, depth, appendNonRedundant<result, finalizeTree<head>>>
-		:	result
-}
-
-export interface UnionTree<
-	branches extends PatternTree[] = PatternTree[],
-	depth extends 1[] = 1[]
-> {
-	union: branches
-	depth: depth
-}
-
-export declare namespace UnionTree {
-	type finalize<self extends UnionTree> = _finalize<self["union"], never>
-
-	type _finalize<branches extends unknown[], pattern extends string> =
-		branches extends [infer head, ...infer tail] ?
-			_finalize<tail, pattern | finalizeTree<head>>
-		:	pattern
-}
-
 export declare namespace State {
 	export type from<s extends State> = s
 
@@ -233,6 +187,52 @@ export declare namespace s {
 				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
 				finalizeCaptures<s["captures"]>
 			>
+}
+
+export type PatternTree = string | UnionTree | SequenceTree
+
+export interface SequenceTree<
+	elements extends PatternTree[] = PatternTree[],
+	depth extends 1[] = 1[]
+> {
+	sequence: elements
+	depth: depth
+}
+
+export declare namespace SequenceTree {
+	export type Empty = SequenceTree<[], [1]>
+
+	export type finalize<self extends SequenceTree> = _finalize<
+		self["sequence"],
+		self["depth"],
+		""
+	>
+
+	type _finalize<
+		tree extends unknown[],
+		depth extends 1[],
+		result extends string
+	> =
+		tree extends [infer head, ...infer tail] ?
+			_finalize<tail, depth, appendNonRedundant<result, finalizeTree<head>>>
+		:	result
+}
+
+export interface UnionTree<
+	branches extends PatternTree[] = PatternTree[],
+	depth extends 1[] = 1[]
+> {
+	union: branches
+	depth: depth
+}
+
+export declare namespace UnionTree {
+	type finalize<self extends UnionTree> = _finalize<self["union"], never>
+
+	type _finalize<branches extends unknown[], pattern extends string> =
+		branches extends [infer head, ...infer tail] ?
+			_finalize<tail, pattern | finalizeTree<head>>
+		:	pattern
 }
 
 export type pushQuantifiable<
