@@ -219,6 +219,10 @@ export type pushQuantifiable<
 	root extends PatternTree
 > =
 	root extends "" ? sequence
+	: sequence extends string ?
+		sequence extends "" ?
+			root
+		:	SequenceTree<[sequence, root], depthOf<root>>
 	: sequence extends SequenceTree.Base ?
 		sequence extends SequenceTree.Empty ?
 			root

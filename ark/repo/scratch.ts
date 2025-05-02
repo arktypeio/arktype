@@ -1,5 +1,12 @@
 import { type } from "arktype"
 
-const T = type(["number[]", "|", ["undefined"]])
+const Foo = type.unit("foo").describe("foo")
+const Bar = type.unit("bar").describe("bar")
 
-T.assert([])
+const Thing = type({
+	"versions?": Foo.or(Bar)
+})
+
+const fooSchema = Thing.toJsonSchema()
+
+console.log(fooSchema)

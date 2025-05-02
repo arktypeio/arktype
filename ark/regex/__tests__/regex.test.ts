@@ -29,7 +29,7 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type Result = iterate<State.initialize<"^foo|bar$", "">, 9>
+type Result = iterate<State.initialize<"^foo|bar$", "">, 1>
 type Sequence = State.Group.finalize<Result> //["sequence"]
 //   ^?
 
