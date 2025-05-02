@@ -6,11 +6,10 @@ export type parseBuiltinQuantifier<
 	quantifier extends QuantifyingChar,
 	unscanned extends string
 > =
-	s["quantifiable"] extends [] ?
-		s.error<writeUnmatchedQuantifierError<quantifier>>
+	s["root"] extends [] ? s.error<writeUnmatchedQuantifierError<quantifier>>
 	:	s.pushQuantified<
 			s,
-			quantifyBuiltin<quantifier, s["quantifiable"]>,
+			quantifyBuiltin<quantifier, s["root"]>,
 			unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
 			:	unscanned
 		>
@@ -57,7 +56,7 @@ export type parsePossibleRange<
 	parsed extends ParsedRange | null = parsePossibleRangeString<unscanned>
 > =
 	parsed extends ParsedRange ?
-		s["quantifiable"] extends [] ?
+		s["root"] extends [] ?
 			s.error<
 				writeUnmatchedQuantifierError<
 					unscanned extends `${infer range}${parsed["unscanned"]}` ? `{${range}`
@@ -66,7 +65,7 @@ export type parsePossibleRange<
 			>
 		:	applyQuantified<
 				s,
-				quantify<s["quantifiable"], parsed["min"], parsed["max"]>,
+				quantify<s["root"], parsed["min"], parsed["max"]>,
 				parsed["unscanned"]
 			>
 	:	s.shiftQuantifiable<s, "{", unscanned>

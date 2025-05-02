@@ -36,7 +36,7 @@ export declare namespace State {
 		name: never
 		branches: []
 		sequence: []
-		quantifiable: []
+		root: []
 		caseInsensitive: contains<flags, "i">
 	}>
 
@@ -44,7 +44,7 @@ export declare namespace State {
 		name: string | number
 		branches: PatternTree[]
 		sequence: PatternTree
-		quantifiable: PatternTree
+		root: PatternTree
 		caseInsensitive: boolean
 	}
 
@@ -54,11 +54,8 @@ export declare namespace State {
 		type pop<init extends Group, last extends Group[]> = [...last, init]
 
 		export type finalize<g extends Group> =
-			g["branches"] extends [] ?
-				pushQuantifiable<g["sequence"], g["quantifiable"]>
-			:	UnionTree<
-					[...g["branches"], pushQuantifiable<g["sequence"], g["quantifiable"]>]
-				>
+			g["branches"] extends [] ? pushQuantifiable<g["sequence"], g["root"]>
+			:	UnionTree<[...g["branches"], pushQuantifiable<g["sequence"], g["root"]>]>
 	}
 }
 
@@ -80,13 +77,13 @@ export declare namespace s {
 		captures: {}
 		branches: []
 		sequence: []
-		quantifiable: []
+		root: []
 		caseInsensitive: false
 	}>
 
 	export type shiftQuantifiable<
 		s extends State,
-		quantifiable extends PatternTree,
+		root extends PatternTree,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -94,8 +91,8 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: pushQuantifiable<s["sequence"], s["quantifiable"]>
-		quantifiable: quantifiable
+		sequence: pushQuantifiable<s["sequence"], s["root"]>
+		root: root
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -110,7 +107,7 @@ export declare namespace s {
 		captures: s["captures"]
 		branches: s["branches"]
 		sequence: pushQuantifiable<s["sequence"], quantified>
-		quantifiable: []
+		root: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -122,12 +119,9 @@ export declare namespace s {
 		groups: s["groups"]
 		name: s["name"]
 		captures: s["captures"]
-		branches: [
-			...s["branches"],
-			pushQuantifiable<s["sequence"], s["quantifiable"]>
-		]
+		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
 		sequence: []
-		quantifiable: []
+		root: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -141,11 +135,8 @@ export declare namespace s {
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
-		sequence: pushQuantifiable<
-			s["sequence"],
-			pushQuantifiable<s["quantifiable"], a>
-		>
-		quantifiable: []
+		sequence: pushQuantifiable<s["sequence"], pushQuantifiable<s["root"], a>>
+		root: []
 		caseInsensitive: s["caseInsensitive"]
 	}>
 
@@ -164,7 +155,7 @@ export declare namespace s {
 		captures: s["captures"] & Record<capture, unknown>
 		branches: []
 		sequence: []
-		quantifiable: []
+		root: []
 		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
 		:	s["caseInsensitive"]
 	}>
@@ -178,8 +169,8 @@ export declare namespace s {
 				:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
 				name: last["name"]
 				branches: last["branches"]
-				sequence: pushQuantifiable<last["sequence"], last["quantifiable"]>
-				quantifiable: s["name"] extends never ? State.Group.finalize<s>
+				sequence: pushQuantifiable<last["sequence"], last["root"]>
+				root: s["name"] extends never ? State.Group.finalize<s>
 				: s["name"] extends LookaroundMarker ? []
 				: State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
@@ -195,16 +186,13 @@ export declare namespace s {
 			>
 }
 
-type pushQuantifiable<
-	sequence extends PatternTree,
-	quantifiable extends PatternTree
-> =
-	quantifiable extends [] ? sequence
+type pushQuantifiable<sequence extends PatternTree, root extends PatternTree> =
+	root extends [] ? sequence
 	: sequence extends unknown[] ?
 		sequence extends [] ?
-			quantifiable
-		:	[...sequence, quantifiable]
-	:	[sequence, quantifiable]
+			root
+		:	[...sequence, root]
+	:	[sequence, root]
 
 type finalizeCaptures<captures> = {
 	[k in keyof captures]: anchorsAway<finalizeTree<captures[k]>>
