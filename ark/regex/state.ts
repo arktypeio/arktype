@@ -201,9 +201,9 @@ type finalizeCaptures<captures> = {
 type finalizeRoot<tree> = validateAnchorless<applyAnchors<finalizeTree<tree>>>
 
 type finalizeTree<tree> =
-	tree extends UnionTree<infer branches> ? finalizeTree<branches[number]>
+	tree extends string ? tree
 	: tree extends unknown[] ? finalizeTreeSequence<tree>
-	: tree extends string ? tree
+	: tree extends UnionTree<infer branches> ? finalizeTree<branches[number]>
 	: never
 
 type finalizeTreeSequence<tree extends unknown[], result extends string = ""> =
