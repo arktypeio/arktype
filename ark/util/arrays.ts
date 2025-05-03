@@ -166,8 +166,8 @@ export type listable<t> = t | readonly t[]
 
 export type flattenListable<t> = t extends array<infer element> ? element : t
 
-export type longerThan<l extends array, r extends array> =
-	`${r["length"]}` extends keyof l ? true : false
+export type longerThan<t extends array, n extends number> =
+	`${n}` extends keyof t ? true : false
 
 export type CollapsingList<t = unknown> =
 	| readonly []

@@ -966,4 +966,11 @@ contextualize(() => {
 			attest<Regex<"">>(S)
 		})
 	})
+
+	describe("depth limits", () => {
+		it("string fallback", () => {
+			const S = regex("^a?b?c?d?e?f?g?h?i?$")
+			attest<Regex<`${string}toolong${string}`>>(S)
+		})
+	})
 })

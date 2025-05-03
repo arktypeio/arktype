@@ -3,6 +3,7 @@ import type {
 	contains,
 	ErrorMessage,
 	leftIfEqual,
+	longerThan,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
@@ -202,11 +203,9 @@ export interface SequenceTree<
 export declare namespace SequenceTree {
 	export type Empty = SequenceTree<[], [1]>
 
-	export type finalize<self extends SequenceTree> = _finalize<
-		self["sequence"],
-		self["depth"],
-		""
-	>
+	export type finalize<self extends SequenceTree> =
+		longerThan<self["depth"], 500> extends true ? "toolong"
+		:	_finalize<self["sequence"], self["depth"], "">
 
 	type _finalize<
 		tree extends unknown[],
@@ -227,7 +226,9 @@ export interface UnionTree<
 }
 
 export declare namespace UnionTree {
-	type finalize<self extends UnionTree> = _finalize<self["union"], never>
+	type finalize<self extends UnionTree> =
+		longerThan<self["depth"], 500> extends true ? "toolong"
+		:	_finalize<self["union"], never>
 
 	type _finalize<branches extends unknown[], pattern extends string> =
 		branches extends [infer head, ...infer tail] ?
