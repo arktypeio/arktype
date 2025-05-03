@@ -968,9 +968,16 @@ contextualize(() => {
 	})
 
 	describe("depth limits", () => {
+		// 		📊 aggregated type performance:
+		// from before limit:
+		// {
+		//     "checkTime": 5.33,
+		//     "types": 181215,
+		//     "instantiations": 683907
+		// }
 		it("string fallback", () => {
-			const S = regex("^a?b?c?d?e?f?g?h?i?$")
-			attest<Regex<`${string}toolong${string}`>>(S)
+			const S = regex("^a?b?c?d?e?f?g?h?i?j?k?l?m?$")
+			attest<Regex<`${string}8192${string}`>>(S)
 		})
 	})
 })
