@@ -1,4 +1,4 @@
-import type { conform, repeat, Scanner } from "@ark/util"
+import type { array, conform, Scanner } from "@ark/util"
 import type {
 	depthOf,
 	PatternTree,
@@ -137,7 +137,7 @@ type _loopUntilMin<
 			min,
 			max,
 			[...repetitions, base],
-			repeat<repetitionDepth, baseDepth["length"]>
+			array.multiply<repetitionDepth, baseDepth["length"]>
 		>
 
 type _loopUntilMax<
@@ -150,7 +150,10 @@ type _loopUntilMax<
 	branches extends SequenceTree[],
 	branchesDepth extends 1[],
 	nextRepetitions extends PatternTree[] = [...repetitions, base],
-	nextRepetitionDepth extends 1[] = repeat<repetitionDepth, baseDepth["length"]>
+	nextRepetitionDepth extends 1[] = array.multiply<
+		repetitionDepth,
+		baseDepth["length"]
+	>
 > =
 	repetitions["length"] extends max ? UnionTree<branches, branchesDepth>
 	:	_loopUntilMax<

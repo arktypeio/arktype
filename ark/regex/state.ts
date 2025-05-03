@@ -1,8 +1,8 @@
 import type {
+	array,
 	contains,
 	ErrorMessage,
 	leftIfEqual,
-	repeat,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
@@ -250,7 +250,7 @@ export type pushQuantifiable<
 		:	pushToSequence<sequence, root>
 	:	SequenceTree<
 			[sequence, root],
-			repeat<depthOf<sequence>, depthOf<root>["length"]>
+			array.multiply<depthOf<sequence>, depthOf<root>["length"]>
 		>
 
 export type pushToSequence<
@@ -262,12 +262,12 @@ export type pushToSequence<
 	: root extends SequenceTree<infer rootSequence, infer rootDepth> ?
 		SequenceTree<
 			[...sequence["sequence"], ...rootSequence],
-			repeat<sequence["depth"], rootDepth["length"]>
+			array.multiply<sequence["depth"], rootDepth["length"]>
 		>
 	: root extends UnionTree<any, infer rootDepth> ?
 		SequenceTree<
 			[...sequence["sequence"], root],
-			repeat<sequence["depth"], rootDepth["length"]>
+			array.multiply<sequence["depth"], rootDepth["length"]>
 		>
 	:	never
 
