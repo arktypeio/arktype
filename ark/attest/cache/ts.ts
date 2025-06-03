@@ -58,15 +58,34 @@ export class TsServer {
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
 		const tsPath = path.replaceAll("\\", "/")
-		const file = this.virtualEnv.getSourceFile(tsPath)
-		if (!file) {
+		const existingFile = this.virtualEnv.getSourceFile(tsPath)
+		if (existingFile) return existingFile
+
+		if (!this.virtualEnv.sys.fileExists(tsPath)) {
 			throwInternalError(
-				`TypeScript was unable to resolve expected file at ${path}.\n
-Make sure it is included in your tsconfig.json.`
+				`@ark/attest: TypeScript was unable to resolve expected file at ${tsPath}.\n`
 			)
 		}
 
-		return file
+		const contents = this.virtualEnv.sys.readFile(tsPath)
+
+		if (!contents) {
+			throwInternalError(
+				`@ark/attest: TypeScript says a file exists at ${tsPath}, but was unable to read its contents.\n`
+			)
+		}
+
+		this.virtualEnv.createFile(tsPath, contents)
+
+		const createdFile = this.virtualEnv.getSourceFile(tsPath)
+
+		if (!createdFile) {
+			throwInternalError(
+				`@ark/attest: TypeScript tried to create a file at ${tsPath} but was unable to access it.`
+			)
+		}
+
+		return createdFile
 	}
 }
 
