@@ -269,6 +269,7 @@ export class Traversal {
 					this.errors.merge(result)
 				}
 				// skip any remaining morphs at the current path
+				this.queuedMorphs = []
 				break
 			}
 
@@ -280,6 +281,9 @@ export class Traversal {
 			// if the current morph queued additional morphs,
 			// applying them before subsequent morphs
 			this.applyQueuedMorphs()
+
+			// Queued morphs might have changed this.path, so we need to reset it
+			this.path = [...path]
 		}
 	}
 }

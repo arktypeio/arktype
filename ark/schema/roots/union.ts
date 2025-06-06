@@ -378,23 +378,28 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// only the first layer can be optimistic
 		js.optimistic = false
 
-		js.block(`switch(${condition})`, () => {
+		js.block(`switch(${condition})`, self => {
 			for (const k in cases) {
 				const v = cases[k]
 				const caseCondition = k === "default" ? k : `case ${k}`
-				js.line(
-					`${caseCondition}: return ${
-						v === true ?
-							optimistic ? js.data
-							:	v
-						: optimistic ?
-							`${js.invoke(v)} ? ${v.contextFreeMorph ? `${registeredReference(v.contextFreeMorph)}(${js.data})` : js.data} : "${unset}"`
-						:	js.invoke(v)
-					}`
-				)
+				if (v === true)
+					js.line(`${caseCondition}: return ${optimistic ? js.data : v}`)
+				else if (optimistic) {
+					if (v.hasKind("union"))
+						js.line(
+							`${caseCondition}: return this.${v.id}Optimistic(data, ctx)`
+						)
+					else if (v.contextFreeMorph)
+						js.line(
+							`${caseCondition}: return ${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(${js.data}) : "${unset}"`
+						)
+					else
+						js.line(
+							`${caseCondition}: return ${js.invoke(v)} ? ${js.data} : "${unset}"`
+						)
+				} else js.line(`${caseCondition}: return ${js.invoke(v)}`)
 			}
-
-			return js
+			return self
 		})
 
 		if (js.traversalKind === "Allows") {
