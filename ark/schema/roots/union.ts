@@ -385,18 +385,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				if (v === true)
 					js.line(`${caseCondition}: return ${optimistic ? js.data : v}`)
 				else if (optimistic) {
-					if (v.hasKind("union"))
+					if (v.hasKind("union")) {
 						js.line(
 							`${caseCondition}: return this.${v.id}Optimistic(data, ctx)`
 						)
-					else if (v.contextFreeMorph)
+					} else if (v.contextFreeMorph) {
 						js.line(
 							`${caseCondition}: return ${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(${js.data}) : "${unset}"`
 						)
-					else
+					} else {
 						js.line(
 							`${caseCondition}: return ${js.invoke(v)} ? ${js.data} : "${unset}"`
 						)
+					}
 				} else js.line(`${caseCondition}: return ${js.invoke(v)}`)
 			}
 			return self
