@@ -155,11 +155,11 @@ export abstract class BaseRoot<
 		return schema
 	}
 
-    toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
+	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
 		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
-            const defId = this.meta.defId ?? this.id
+			const defId = this.meta.defId ?? this.id
 			return { $ref: `#/$defs/${defId}` }
-        }
+		}
 
 		return this.toResolvedJsonSchema(ctx)
 	}
