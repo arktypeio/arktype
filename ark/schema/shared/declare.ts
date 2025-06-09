@@ -19,7 +19,7 @@ export interface NodeMeta
 	extends JsonSchema.UniversalMeta,
 		UnknownErrorConfigs {
 	alias?: string
-    defId?: string
+	defId?: string
 	onFail?: ArkErrors.Handler
 }
 
