@@ -46,15 +46,11 @@ export declare namespace State {
 
 		export type finalize<g extends Group> =
 			g["branches"] extends [] ? pushQuantifiable<g["sequence"], g["root"]>
-			:	UnionTree<
-					[...g["branches"], pushQuantifiable<g["sequence"], g["root"]>],
-					[1]
-				>
-
-		type branchStateToTree<branches extends PatternTree[]> = UnionTree<
-			branches,
-			unionDepth<branches, [1]>
-		>
+			: [...g["branches"], pushQuantifiable<g["sequence"], g["root"]>] extends (
+				infer branches extends PatternTree[]
+			) ?
+				UnionTree<branches, unionDepth<branches, [1]>>
+			:	never
 
 		type unionDepth<branches extends unknown[], depth extends 1[]> =
 			branches extends [infer head, ...infer tail] ?
@@ -184,11 +180,23 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
-		:	Regex<
-				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
-				finalizeCaptures<s["captures"]>
-			>
+		:	State.Group.finalize<s>
+	// Regex<
+	// 		validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
+	// 		finalizeCaptures<s["captures"]>
+	// 	>
 }
+
+type Z = UnionTree<
+	[
+		SequenceTree<["t", "y", "p", "e", "s", "c", "r", "i", "p", "t"], [1]>,
+		SequenceTree<["<​^​>", "g", "o", "<​$​>"], [1]>,
+		SequenceTree<["b", "r", "r", "r", "<​$​>"], [1]>
+	],
+	[1]
+>
+
+type R = Z["depth"]
 
 export type PatternTree = string | UnionTree | SequenceTree
 

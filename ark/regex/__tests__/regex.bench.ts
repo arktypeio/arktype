@@ -6,6 +6,8 @@ bench.baseline(() => {
 	regex("foo|^bar$|baz?")
 })
 
+const r = regex("a?(b|cd)")
+
 type Result = array.repeat<3, 50>
 
 bench("repeat(100)", () => {
