@@ -1,3 +1,4 @@
-import { bench } from "@ark/attest"
+import { type } from "arktype"
 
-bench("tuples", () => {}).types([8253, "instantiations"])
+type("string").extends("string | number") // true
+type("string | number").extends("string") // false
