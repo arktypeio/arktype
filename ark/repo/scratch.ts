@@ -1,4 +1,8 @@
 import { type } from "arktype"
 
-type("string").extends("string | number") // true
-type("string | number").extends("string") // false
+const User = type({
+	name: "string",
+	id: "number#id"
+})
+
+User
