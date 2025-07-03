@@ -192,24 +192,35 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
-		:	prune<State.Group.finalize<s>>
+		:	// prune<>
+			State.Group.finalize<s>
 	// Regex<
 	// 		validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
 	// 		finalizeCaptures<s["captures"]>
 	// 	>
 }
 
-type Z = prune<regex.parse<"(a|b|c)(c|d(e|f))">>
+type Z = prune<regex.parse<"(a|b|c)(c|d(e|f))g?h?">>
 
 // ArkEnv.maxDepth
 type prune<tree> =
-	longerThan<depthOf<tree>, 2> extends true ? prune<pruneDeepest<tree>> : tree
+	longerThan<depthOf<tree>, 11> extends true ? prune<pruneDeepest<tree>> : tree
 
 type pruneDeepest<tree> =
 	tree extends UnionTree<infer branches> ?
-		pruneDeepestChild<branches, findDeepestChild<branches, SequenceTree.Empty>>
+		pruneDeepestChild<
+			branches,
+			findDeepestChild<branches, SequenceTree.Empty>
+		> extends infer unionParts ?
+			UnionTree<unionParts, UnionTree.recomputeDepth<unionParts>>
+		:	never
 	: tree extends SequenceTree<infer parts> ?
-		pruneDeepestChild<parts, findDeepestChild<parts, SequenceTree.Empty>>
+		pruneDeepestChild<
+			parts,
+			findDeepestChild<parts, SequenceTree.Empty>
+		> extends infer sequenceParts ?
+			SequenceTree<sequenceParts, SequenceTree.recomputeDepth<sequenceParts>>
+		:	never
 	:	tree
 
 type pruneDeepestChild<children extends PatternTree[], deepest> =
@@ -221,7 +232,7 @@ type pruneDeepestChild<children extends PatternTree[], deepest> =
 		last extends deepest ?
 			[
 				...init, // prune largest leaf union to ${string}
-				last extends UnionTree.Shallow ? string : prune<last>
+				string //last extends UnionTree.Shallow ? string : prune<last>
 			]
 		:	[...pruneDeepestChild<init, deepest>, last]
 	:	[]
@@ -263,6 +274,16 @@ export interface SequenceTree<
 export declare namespace SequenceTree {
 	export type Empty = SequenceTree<[], [1]>
 
+	export type recomputeDepth<children extends PatternTree[]> = _recomputeDepth<
+		children,
+		[1]
+	>
+
+	type _recomputeDepth<children, depth extends 1[]> =
+		children extends [infer head, ...infer tail] ?
+			_recomputeDepth<tail, array.multiply<depth, depthOf<head>["length"]>>
+		:	depth
+
 	export type finalize<self extends SequenceTree> =
 		longerThan<self["depth"], ArkEnv.maxDepth> extends true ?
 			`sequence${self["depth"]["length"]}`
@@ -286,7 +307,17 @@ export interface UnionTree<
 }
 
 export declare namespace UnionTree {
-	type finalize<self extends UnionTree> =
+	export type recomputeDepth<children extends PatternTree[]> = _recomputeDepth<
+		children,
+		[]
+	>
+
+	type _recomputeDepth<children, depth extends 1[]> =
+		children extends [infer head, ...infer tail] ?
+			_recomputeDepth<tail, [...depth, ...depthOf<head>]>
+		:	depth
+
+	export type finalize<self extends UnionTree> =
 		longerThan<self["depth"], ArkEnv.maxDepth> extends true ?
 			`union${self["depth"]["length"]}`
 		:	_finalize<self["children"], never>
