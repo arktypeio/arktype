@@ -103,18 +103,21 @@ export const writeUnnecessaryEscapeMessage = <char extends string>(
 export type writeUnnecessaryEscapeMessage<char extends string> =
 	`Escape preceding ${char} is unnecessary and should be removed.`
 
-export const writeStringEscapableMessage = <char extends StringEscapableChar>(
-	char: char
-): writeStringEscapableMessage<char> =>
-	`\\${char} should be specified with a single backslash like regex('\n')`
+// we have to add extra backslashes to the runtime variants of these
+// so that attest can compare them correctly to their type-level equivalents
+// the runtime variants are only used for the tests
+
+export const writeStringEscapableMessage = (char: StringEscapableChar) =>
+	`\\${char} should be specified with a single backslash like regex('\\n')` as const
 
 export type writeStringEscapableMessage<char extends StringEscapableChar> =
 	`\\${char} should be specified with a single backslash like regex('\n')`
 
 export const caretNotationMessage =
-	"\\cX notation is not supported. Use hex (\\x) or unicode (\\u) instead."
+	"\\\\cX notation is not supported. Use hex (\\\\x) or unicode (\\\\u) instead."
 
-export type caretNotationMessage = typeof caretNotationMessage
+export type caretNotationMessage =
+	"\\cX notation is not supported. Use hex (\\x) or unicode (\\u) instead."
 
 export type StringEscapableChar = "t" | "n" | "r" | "f" | "v" | "0" | "x" | "u"
 

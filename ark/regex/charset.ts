@@ -26,7 +26,7 @@ export type parseCharset<s extends State, unscanned extends string> =
 						>
 				:	never
 			:	never
-		:	writeUnclosedGroupMessage<"]">
+		:	s.error<writeUnclosedGroupMessage<"]">>
 	:	never
 
 type parseNonNegatedCharset<chars extends string, set extends string[]> =

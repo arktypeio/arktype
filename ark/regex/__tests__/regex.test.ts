@@ -340,7 +340,6 @@ contextualize(() => {
 		})
 
 		it("unclosed", () => {
-			const z = regex("[abc")
 			// @ts-expect-error
 			attest(() => regex("[abc")).type.errors(writeUnclosedGroupMessage("]"))
 		})
@@ -627,7 +626,7 @@ contextualize(() => {
 
 		it("inner quantified", () => {
 			const S = regex("^(a+)\\1$")
-			attest<Regex<`a${string}`, { 1: `a${string}` }>>(S)
+			attest<Regex<`a${string}a${string}`, { 1: `a${string}` }>>(S)
 		})
 
 		it("group quantified", () => {
@@ -657,7 +656,7 @@ contextualize(() => {
 		it("index 0 (invalid backreference)", () => {
 			// @ts-expect-error
 			attest(() => regex("abc\\0")).type.errors(
-				writeUnresolvableBackreferenceMessage("0")
+				writeStringEscapableMessage("0")
 			)
 		})
 
@@ -704,7 +703,9 @@ contextualize(() => {
 
 		it("inner quantified group", () => {
 			const S = regex("^(?<foo>a+)\\k<foo>$")
-			attest<Regex<`a${string}`, { foo: `a${string}`; 1: `a${string}` }>>(S)
+			attest<
+				Regex<`a${string}a${string}`, { foo: `a${string}`; 1: `a${string}` }>
+			>(S)
 		})
 
 		it("group quantified", () => {
