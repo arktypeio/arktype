@@ -9,7 +9,7 @@ import type {
 	ZeroWidthSpace
 } from "@ark/util"
 import type { QuantifyingChar } from "./quantify.ts"
-import type { regex, Regex } from "./regex.ts"
+import type { Regex } from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
@@ -192,67 +192,11 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
-		:	// prune<>
-			State.Group.finalize<s>
-	// Regex<
-	// 		validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
-	// 		finalizeCaptures<s["captures"]>
-	// 	>
+		:	Regex<
+				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
+				finalizeCaptures<s["captures"]>
+			>
 }
-
-type Z = prune<regex.parse<"(a|b|c)(c|d(e|f))g?h?">>
-
-// ArkEnv.maxDepth
-type prune<tree> =
-	longerThan<depthOf<tree>, 11> extends true ? prune<pruneDeepest<tree>> : tree
-
-type pruneDeepest<tree> =
-	tree extends UnionTree<infer branches> ?
-		pruneDeepestChild<
-			branches,
-			findDeepestChild<branches, SequenceTree.Empty>
-		> extends infer unionParts ?
-			UnionTree<unionParts, UnionTree.recomputeDepth<unionParts>>
-		:	never
-	: tree extends SequenceTree<infer parts> ?
-		pruneDeepestChild<
-			parts,
-			findDeepestChild<parts, SequenceTree.Empty>
-		> extends infer sequenceParts ?
-			SequenceTree<sequenceParts, SequenceTree.recomputeDepth<sequenceParts>>
-		:	never
-	:	tree
-
-type pruneDeepestChild<children extends PatternTree[], deepest> =
-	// check from right to left so that if multiple instances of the
-	// deepest child occur, those at the beginning of the string are preserved
-	children extends (
-		[...infer init extends PatternTree[], infer last extends PatternTree]
-	) ?
-		last extends deepest ?
-			[
-				...init, // prune largest leaf union to ${string}
-				string //last extends UnionTree.Shallow ? string : prune<last>
-			]
-		:	[...pruneDeepestChild<init, deepest>, last]
-	:	[]
-
-type findDeepestChild<children, deepest extends CompositeTree> =
-	children extends [...infer init, infer last] ?
-		findDeepestChild<
-			init,
-			last extends CompositeTree ?
-				longerThan<last["depth"], deepest["depth"]["length"]> extends true ?
-					last
-				:	deepest
-			:	deepest
-		>
-	:	deepest
-
-// while root depth is greater than max depth:
-// 1. Traverse down deepest branch until sequence with leaf union
-// 2. Prune largest leaf union to ${string} (check if all branches are strings)
-// 3. Recompute depth back up the branch
 
 export type PatternTree = string | UnionTree | SequenceTree
 
@@ -274,20 +218,11 @@ export interface SequenceTree<
 export declare namespace SequenceTree {
 	export type Empty = SequenceTree<[], [1]>
 
-	export type recomputeDepth<children extends PatternTree[]> = _recomputeDepth<
-		children,
-		[1]
+	export type finalize<self extends SequenceTree> = _finalize<
+		self["children"],
+		self["depth"],
+		""
 	>
-
-	type _recomputeDepth<children, depth extends 1[]> =
-		children extends [infer head, ...infer tail] ?
-			_recomputeDepth<tail, array.multiply<depth, depthOf<head>["length"]>>
-		:	depth
-
-	export type finalize<self extends SequenceTree> =
-		longerThan<self["depth"], ArkEnv.maxDepth> extends true ?
-			`sequence${self["depth"]["length"]}`
-		:	_finalize<self["children"], self["depth"], "">
 
 	type _finalize<
 		tree extends unknown[],
@@ -307,20 +242,10 @@ export interface UnionTree<
 }
 
 export declare namespace UnionTree {
-	export type recomputeDepth<children extends PatternTree[]> = _recomputeDepth<
-		children,
-		[]
+	export type finalize<self extends UnionTree> = _finalize<
+		self["children"],
+		never
 	>
-
-	type _recomputeDepth<children, depth extends 1[]> =
-		children extends [infer head, ...infer tail] ?
-			_recomputeDepth<tail, [...depth, ...depthOf<head>]>
-		:	depth
-
-	export type finalize<self extends UnionTree> =
-		longerThan<self["depth"], ArkEnv.maxDepth> extends true ?
-			`union${self["depth"]["length"]}`
-		:	_finalize<self["children"], never>
 
 	type _finalize<branches extends unknown[], pattern extends string> =
 		branches extends [infer head, ...infer tail] ?
@@ -349,32 +274,57 @@ export type pushQuantifiable<
 		sequence extends "" ?
 			root
 		:	SequenceTree<[sequence, root], depthOf<root>>
-	: sequence extends SequenceTree ?
-		sequence extends SequenceTree.Empty ?
-			root
-		:	pushToSequence<sequence, root>
-	:	SequenceTree<
-			[sequence, root],
+	: sequence extends SequenceTree ? pushToSequence<sequence, root>
+	: pushToUnion<
+			sequence,
+			root,
 			array.multiply<depthOf<sequence>, depthOf<root>["length"]>
 		>
 
-export type pushToSequence<
-	sequence extends SequenceTree,
-	root extends PatternTree
+type pushToUnion<
+	union extends PatternTree,
+	root extends PatternTree,
+	depth extends 1[]
 > =
-	root extends string ?
+	longerThan<depth, ArkEnv.maxDepth> extends true ?
+		SequenceTree<[union, string], depthOf<union>>
+	:	SequenceTree<[union, root], depth>
+
+type pushToSequence<sequence extends SequenceTree, root extends PatternTree> =
+	sequence extends SequenceTree.Empty ? root
+	: root extends string ?
 		SequenceTree<[...sequence["children"], root], sequence["depth"]>
-	: root extends SequenceTree<infer rootSequence, infer rootDepth> ?
-		SequenceTree<
-			[...sequence["children"], ...rootSequence],
-			array.multiply<sequence["depth"], rootDepth["length"]>
+	: root extends SequenceTree ?
+		pushSequenceToSequence<
+			sequence,
+			root,
+			array.multiply<sequence["depth"], root["depth"]["length"]>
 		>
-	: root extends UnionTree<any, infer rootDepth> ?
-		SequenceTree<
-			[...sequence["children"], root],
-			array.multiply<sequence["depth"], rootDepth["length"]>
+	: root extends UnionTree ?
+		pushUnionToSequence<
+			sequence,
+			root,
+			array.multiply<sequence["depth"], root["depth"]["length"]>
 		>
 	:	never
+
+type pushUnionToSequence<
+	sequence extends SequenceTree,
+	union extends UnionTree,
+	depth extends 1[]
+> =
+	longerThan<depth, ArkEnv.maxDepth> extends true ?
+		SequenceTree<[...sequence["children"], string], sequence["depth"]>
+	:	SequenceTree<[...sequence["children"], union], depth>
+
+type pushSequenceToSequence<
+	sequence extends SequenceTree,
+	append extends SequenceTree,
+	depth extends 1[]
+> =
+	longerThan<depth, ArkEnv.maxDepth> extends true ?
+		SequenceTree<[...sequence["children"], string], sequence["depth"]>
+	:	SequenceTree<[...sequence["children"], ...append["children"]], depth>
 
 export type depthOf<tree> =
 	tree extends { depth: infer depth extends 1[] } ? depth : [1]
