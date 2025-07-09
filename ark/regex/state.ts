@@ -251,13 +251,11 @@ export declare namespace UnionTree {
 		branches extends [infer head, ...infer tail] ?
 			_finalize<tail, pattern | finalizeTree<head>>
 		:	pattern
-
-	export type Shallow = UnionTree<string[]>
 }
 
 declare global {
 	export interface ArkEnv {
-		maxDepth(): 1000
+		maxDepth(): 8191
 	}
 
 	export namespace ArkEnv {
