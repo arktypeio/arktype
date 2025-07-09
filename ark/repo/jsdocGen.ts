@@ -340,8 +340,8 @@ const findInheritedDocs = (
 	if (!inheritDocsSource) return
 
 	const sourceDeclaration = sourceFile
-		.getDescendantsOfKind(ts.SyntaxKind.Identifier)
-		.find(i => i.getText() === inheritDocsSource)
+		.getDescendantsOfKind(ts.SyntaxKind.Identifier as never)
+		.find((i): i is any => i.getText() === inheritDocsSource)
 		?.getDefinitions()[0]
 		.getDeclarationNode()
 
