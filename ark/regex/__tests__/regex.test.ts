@@ -89,10 +89,10 @@ contextualize(() => {
 			attest<
 				Regex<
 					"boinnerAnchored" | `boinnerUnanchored${string}`,
-					{
-						1: "boinnerAnchored" | "boinnerUnanchored"
-						2: "innerAnchored" | "innerUnanchored"
-					}
+					[
+						"boinnerAnchored" | "boinnerUnanchored",
+						"innerAnchored" | "innerUnanchored"
+					]
 				>
 			>(S)
 		})
@@ -209,7 +209,7 @@ contextualize(() => {
 
 		it("min max group", () => {
 			const S = regex("^(ab){1,2}$")
-			attest<Regex<"ab" | "abab", { 1: "ab" }>>(S)
+			attest<Regex<"ab" | "abab", ["ab"]>>(S)
 		})
 
 		it("zero or more greedy", () => {
@@ -504,12 +504,12 @@ contextualize(() => {
 	describe("groups", () => {
 		it("capturing", () => {
 			const S = regex("^(a(b)c)$")
-			attest<Regex<`abc`, { 1: `abc`; 2: `b` }>>(S)
+			attest<Regex<`abc`, [`abc`, `b`]>>(S)
 		})
 
 		it("non-capturing", () => {
 			const S = regex("^(a(?:b)c)$")
-			attest<Regex<`abc`, { 1: `abc` }>>(S).type.toString.snap(
+			attest<Regex<`abc`, [`abc`]>>(S).type.toString.snap(
 				'Regex<"abc", { 1: "abc" }>'
 			)
 		})
@@ -523,7 +523,7 @@ contextualize(() => {
 
 		it("nested", () => {
 			const S = regex("^(a(b(c)))$")
-			attest<Regex<`abc`, { 1: `abc`; 2: `bc`; 3: `c` }>>(S)
+			attest<Regex<`abc`, [`abc`, `bc`, `c`]>>(S)
 		})
 
 		it("unclosed", () => {
@@ -540,7 +540,7 @@ contextualize(() => {
 
 		it("empty", () => {
 			const S = regex("()")
-			attest<Regex<`${string}${string}`, { 1: "" }>>(S).type.toString.snap(
+			attest<Regex<`${string}${string}`, [""]>>(S).type.toString.snap(
 				'Regex<string, { 1: "" }>'
 			)
 		})
@@ -566,7 +566,7 @@ contextualize(() => {
 
 		it("within group", () => {
 			const S = regex("^(a|b)c$")
-			attest<Regex<"ac" | "bc", { 1: "a" | "b" }>>(S)
+			attest<Regex<"ac" | "bc", ["a" | "b"]>>(S)
 		})
 
 		it("empty start branch", () => {
@@ -601,7 +601,7 @@ contextualize(() => {
 	describe("index backreferences", () => {
 		it("basic", () => {
 			const S = regex("^(a)b\\1$")
-			attest<Regex<`aba`, { 1: "a" }>>(S).type.toString.snap(
+			attest<Regex<`aba`, ["a"]>>(S).type.toString.snap(
 				'Regex<"aba", { 1: "a" }>'
 			)
 		})
@@ -609,41 +609,27 @@ contextualize(() => {
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(a\\1b)c\\1$")
-			attest<Regex<`abcab`, { 1: `ab` }>>(S)
+			attest<Regex<`abcab`, [`ab`]>>(S)
 		})
 
 		it("union", () => {
 			const S = regex("^(a|b)\\1$")
-			attest<
-				Regex<
-					"ab" | "aa" | "ba" | "bb",
-					{
-						1: "a" | "b"
-					}
-				>
-			>(S)
+			attest<Regex<"ab" | "aa" | "ba" | "bb", ["a" | "b"]>>(S)
 		})
 
 		it("inner quantified", () => {
 			const S = regex("^(a+)\\1$")
-			attest<Regex<`a${string}a${string}`, { 1: `a${string}` }>>(S)
+			attest<Regex<`a${string}a${string}`, [`a${string}`]>>(S)
 		})
 
 		it("group quantified", () => {
 			const S = regex("^(a)+\\1$")
-			attest<Regex<`a${string}a`, { 1: "a" }>>(S)
+			attest<Regex<`a${string}a`, ["a"]>>(S)
 		})
 
 		it("ref quantified", () => {
 			const S = regex("^(a)\\1+$")
-			attest<
-				Regex<
-					`aa${string}`,
-					{
-						1: "a"
-					}
-				>
-			>(S)
+			attest<Regex<`aa${string}`, ["a"]>>(S)
 		})
 
 		it("index out of range", () => {
@@ -672,12 +658,12 @@ contextualize(() => {
 	describe("named backreference", () => {
 		it("unreferenced", () => {
 			const S = regex("^(?<foo>abc)$")
-			attest<Regex<`abc`, { foo: `abc`; 1: `abc` }>>(S)
+			attest<Regex<`abc`, ["abc"], { foo: `abc` }>>(S)
 		})
 
 		it("simple reference", () => {
 			const S = regex("^(?<foo>a)b\\k<foo>$")
-			attest<Regex<`aba`, { foo: "a"; 1: "a" }>>(S)
+			attest<Regex<`aba`, ["a"], { foo: "a" }>>(S)
 		})
 
 		it("nested", () => {
@@ -685,10 +671,9 @@ contextualize(() => {
 			attest<
 				Regex<
 					"abcabcb",
+					["abc", "b"],
 					{
 						outer: "abc"
-						1: "abc"
-						2: "b"
 						inner: "b"
 					}
 				>
@@ -698,19 +683,19 @@ contextualize(() => {
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(?<foo>a\\k<foo>b)c\\k<foo>$")
-			attest<Regex<"abcab", { foo: "ab"; 1: "ab" }>>(S)
+			attest<Regex<"abcab", ["ab"], { foo: "ab" }>>(S)
 		})
 
 		it("inner quantified group", () => {
 			const S = regex("^(?<foo>a+)\\k<foo>$")
 			attest<
-				Regex<`a${string}a${string}`, { foo: `a${string}`; 1: `a${string}` }>
+				Regex<`a${string}a${string}`, [`a${string}`], { foo: `a${string}` }>
 			>(S)
 		})
 
 		it("group quantified", () => {
 			const S = regex("^(?<foo>a)+\\k<foo>$")
-			attest<Regex<`a${string}a`, { foo: "a"; 1: "a" }>>(S)
+			attest<Regex<`a${string}a`, ["a"], { foo: "a" }>>(S)
 		})
 
 		it("ref quantified", () => {
@@ -718,9 +703,9 @@ contextualize(() => {
 			attest<
 				Regex<
 					`aa${string}`,
+					["a"],
 					{
 						foo: "a"
-						1: "a"
 					}
 				>
 			>(S)
@@ -731,9 +716,9 @@ contextualize(() => {
 			attest<
 				Regex<
 					"aa" | "ab" | "ba" | "bb",
+					["a" | "b"],
 					{
 						foo: "a" | "b"
-						1: "a" | "b"
 					}
 				>
 			>(S)

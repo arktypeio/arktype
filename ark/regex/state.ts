@@ -4,6 +4,7 @@ import type {
 	ErrorMessage,
 	leftIfEqual,
 	longerThan,
+	tailOf,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
@@ -194,7 +195,8 @@ export declare namespace s {
 			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
 		:	Regex<
 				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
-				finalizeCaptures<s["captures"]>
+				finalizeCaptures<s["captures"]>,
+				finalizeNamedCaptures<s["captures"]>
 			>
 }
 
@@ -327,8 +329,22 @@ type pushSequenceToSequence<
 export type depthOf<tree> =
 	tree extends { depth: infer depth extends 1[] } ? depth : [1]
 
-type finalizeCaptures<captures> = {
-	[k in keyof captures]: anchorsAway<finalizeTree<captures[k]>>
+// add an initial dummy element to align with the 1-based indexing of capture
+// groups maintained in state
+type finalizeCaptures<captures> = _finalizeCaptures<captures, [never]>
+
+type _finalizeCaptures<captures, finalized extends unknown[]> =
+	finalized["length"] extends keyof captures ?
+		_finalizeCaptures<
+			captures,
+			[...finalized, anchorsAway<finalizeTree<captures[finalized["length"]]>>]
+		>
+	:	tailOf<finalized>
+
+type finalizeNamedCaptures<captures> = {
+	[k in keyof captures as k extends string ? k : never]: anchorsAway<
+		finalizeTree<captures[k]>
+	>
 } & unknown
 
 type finalizeTree<tree> =

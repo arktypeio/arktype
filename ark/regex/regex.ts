@@ -1,24 +1,28 @@
-// @ts-nocheck
 import type { DynamicBase, ErrorMessage, inferred } from "@ark/util"
 import type { parseState } from "./parse.ts"
 import type { State } from "./state.ts"
 
 export interface Regex<
 	pattern extends string = string,
-	groups extends Record<string | number, string> = {}
+	captures extends string[] = string[],
+	namedCaptures extends NamedCaptures = {}
 > extends RegExp {
 	[inferred]: pattern
 	infer: pattern
-	inferGroups: groups
+	inferCaptures: captures
+	inferNamedCaptures: namedCaptures
 
 	test(s: string): s is pattern
-	exec(s: string): groups | null
+	exec(s: string): RegexExecArray<pattern, captures, namedCaptures> | null
 }
 
+export type NamedCaptures = Record<string, string>
+
 export interface RegexExecArray<
-	captures extends string[],
-	names extends Record<string, string>
-> extends DynamicBase<captures> {
+	pattern extends string = string,
+	captures extends string[] = string[],
+	namedCaptures extends NamedCaptures = NamedCaptures
+> extends DynamicBase<[pattern, ...captures]> {
 	/**
 	 * The index of the search at which the result was found.
 	 */
@@ -27,28 +31,17 @@ export interface RegexExecArray<
 	/**
 	 * A copy of the search string.
 	 */
-	input: string
+	input: pattern
 
-	/**
-	 * The first match. This will always be present because `null` will be returned if there are no matches.
-	 */
-	0: string
-
-	groups:
-		| {
-				[key: string]: string
-		  }
-		| undefined
+	groups?: NamedCaptures
 
 	indices?: RegExpIndicesArray
 }
 
 interface RegExpIndicesArray extends Array<[number, number]> {
-	groups:
-		| {
-				[key: string]: [number, number]
-		  }
-		| undefined
+	groups?: {
+		[key: string]: [number, number]
+	}
 }
 
 export const regex = <src extends string, flags extends string = "">(
@@ -58,8 +51,9 @@ export const regex = <src extends string, flags extends string = "">(
 
 export type regex<
 	pattern extends string = string,
-	groups extends Record<string | number, string> = {}
-> = Regex<pattern, groups>
+	captures extends string[] = string[],
+	namedCaptures extends NamedCaptures = NamedCaptures
+> = Regex<pattern, captures, namedCaptures>
 
 export declare namespace regex {
 	export type parse<src extends string, flags extends string = ""> = parseState<
@@ -72,26 +66,3 @@ export declare namespace regex {
 	export type validate<src extends string, flags extends string = ""> =
 		parse<src, flags> extends Regex<infer e extends ErrorMessage> ? e : src
 }
-
-const r = regex("^(foo)-(?<kmo>fooobar)$")
-
-// apply transform to derive the type of capture groups
-
-// A (current)
-type a = Regex<
-	"foo-fooobar",
-	{
-		1: "foo"
-		2: "fooobar"
-		kmo: "fooobar"
-	}
->
-
-// B
-type B = Regex<
-	"foo-fooobar",
-	["foo", "foobar"],
-	{
-		kmo: "fooobar"
-	}
->
