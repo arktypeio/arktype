@@ -29,8 +29,6 @@ import type {
 } from "./generic.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { MatchParser } from "./match.ts"
-import type { BaseType } from "./methods/base.ts"
-import type { instantiateType } from "./methods/instantiate.ts"
 import type {
 	NaryIntersectionParser,
 	NaryMergeParser,
@@ -48,6 +46,8 @@ import type {
 	Scope,
 	ScopeParser
 } from "./scope.ts"
+import type { BaseType } from "./variants/base.ts"
+import type { instantiateType } from "./variants/instantiate.ts"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =

@@ -10,9 +10,9 @@ import type {
 	inferNaryPipe
 } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { instantiateType } from "./methods/instantiate.ts"
-import type { NonObjectMergeErrorMessage } from "./methods/object.ts"
 import type { Type } from "./type.ts"
+import type { instantiateType } from "./variants/instantiate.ts"
+import type { NonObjectMergeErrorMessage } from "./variants/object.ts"
 
 export type NaryUnionParser<$> = {
 	(): Type<never, $>

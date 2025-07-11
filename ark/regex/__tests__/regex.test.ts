@@ -38,50 +38,52 @@ contextualize(() => {
 	describe("literals", () => {
 		it("base", () => {
 			const S = regex("abc")
-			attest<Regex<`${string}abc${string}`>>(S).type.toString.snap(
-				"Regex<`${string}abc${string}`, {}>"
+			attest<Regex<`${string}abc${string}`, [], {}>>(S).type.toString.snap(
+				"Regex<`${string}abc${string}`, [], {}>"
 			)
 		})
 
 		it("empty", () => {
 			const S = regex("")
-			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<string, [], {}>>(S).type.toString.snap(
+				"Regex<string, [], {}>"
+			)
 		})
 	})
 
 	describe("anchors", () => {
 		it("start", () => {
 			const S = regex("^a")
-			attest<Regex<`a${string}`>>(S).type.toString.snap(
-				"Regex<`a${string}`, {}>"
+			attest<Regex<`a${string}`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}`, [], {}>"
 			)
 		})
 
 		it("end", () => {
 			const S = regex("a$")
-			attest<Regex<`${string}a`>>(S).type.toString.snap(
-				"Regex<`${string}a`, {}>"
+			attest<Regex<`${string}a`, [], {}>>(S).type.toString.snap(
+				"Regex<`${string}a`, [], {}>"
 			)
 		})
 
 		it("start and end", () => {
 			const S = regex("^a$")
-			attest<Regex<`a`>>(S).type.toString.snap('Regex<"a", {}>')
+			attest<Regex<`a`, [], {}>>(S).type.toString.snap('Regex<"a", [], {}>')
 		})
 
 		it("multiple start branches", () => {
 			const S = regex("^foo|^bar")
-			attest<Regex<`foo${string}` | `bar${string}`>>(S)
+			attest<Regex<`foo${string}` | `bar${string}`, [], {}>>(S)
 		})
 
 		it("multiple end branches", () => {
 			const S = regex("foo$|bar$")
-			attest<Regex<`${string}foo` | `${string}bar`>>(S)
+			attest<Regex<`${string}foo` | `${string}bar`, [], {}>>(S)
 		})
 
 		it("mixed anchor branches", () => {
 			const S = regex("^foo|bar$")
-			attest<Regex<`foo${string}` | `${string}bar`>>(S)
+			attest<Regex<`foo${string}` | `${string}bar`, [], {}>>(S)
 		})
 
 		it("inner outer anchors", () => {
@@ -131,36 +133,36 @@ contextualize(() => {
 	describe("simple quantifiers", () => {
 		it("?", () => {
 			const S = regex("^ab?c$")
-			attest<Regex<`a${"b" | ""}c`>>(S)
+			attest<Regex<`a${"b" | ""}c`, [], {}>>(S)
 		})
 
 		it("??", () => {
 			const S = regex("^ab??c$")
-			attest<Regex<`a${"b" | ""}c`>>(S)
+			attest<Regex<`a${"b" | ""}c`, [], {}>>(S)
 		})
 
 		it("+", () => {
 			const S = regex("^ab+c$")
-			attest<Regex<`ab${string}c`>>(S).type.toString.snap(
-				"Regex<`ab${string}c`, {}>"
+			attest<Regex<`ab${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`ab${string}c`, [], {}>"
 			)
 		})
 
 		it("+?", () => {
 			const S = regex("^ab+?c$")
-			attest<Regex<`ab${string}c`>>(S).type.toString.snap(
-				"Regex<`ab${string}c`, {}>"
+			attest<Regex<`ab${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`ab${string}c`, [], {}>"
 			)
 		})
 
 		it("*", () => {
 			const S = regex("^ab*c$")
-			attest<Regex<"ac" | `ab${string}c`>>(S)
+			attest<Regex<"ac" | `ab${string}c`, [], {}>>(S)
 		})
 
 		it("*?", () => {
 			const S = regex("^ab*?c$")
-			attest<Regex<"ac" | `ab${string}c`>>(S)
+			attest<Regex<"ac" | `ab${string}c`, [], {}>>(S)
 		})
 
 		it("unmatched ?", () => {
@@ -187,69 +189,79 @@ contextualize(() => {
 	describe("ranges", () => {
 		it("exact", () => {
 			const S = regex("^a{2}$")
-			attest<Regex<"aa">>(S).type.toString.snap('Regex<"aa", {}>')
+			attest<Regex<"aa", [], {}>>(S).type.toString.snap('Regex<"aa", [], {}>')
 		})
 
 		it("min", () => {
 			const S = regex("^a{2,}$")
-			attest<Regex<`aa${string}`>>(S).type.toString.snap(
-				"Regex<`aa${string}`, {}>"
+			attest<Regex<`aa${string}`, [], {}>>(S).type.toString.snap(
+				"Regex<`aa${string}`, [], {}>"
 			)
 		})
 
 		it("min max", () => {
 			const S = regex("^a{2,4}$")
-			attest<Regex<"aa" | "aaa" | "aaaa">>(S)
+			attest<Regex<"aa" | "aaa" | "aaaa", [], {}>>(S)
 		})
 
 		it("min max lazy", () => {
 			const S = regex("^a{2,4}?$")
-			attest<Regex<"aa" | "aaa" | "aaaa">>(S)
+			attest<Regex<"aa" | "aaa" | "aaaa", [], {}>>(S)
 		})
 
 		it("min max group", () => {
 			const S = regex("^(ab){1,2}$")
-			attest<Regex<"ab" | "abab", ["ab"]>>(S)
+			attest<Regex<"ab" | "abab", ["ab"], {}>>(S)
 		})
 
 		it("zero or more greedy", () => {
 			const S = regex("^a{0,}$")
-			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<string, [], {}>>(S).type.toString.snap(
+				"Regex<string, [], {}>"
+			)
 		})
 
 		it("zero or more lazy", () => {
 			const S = regex("^a{0,}?$")
-			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<string, [], {}>>(S).type.toString.snap(
+				"Regex<string, [], {}>"
+			)
 		})
 
 		it("zero or one", () => {
 			const S = regex("^a{0,1}$")
-			attest<Regex<"" | "a">>(S)
+			attest<Regex<"" | "a", [], {}>>(S)
 		})
 
 		it("zero or one lazy", () => {
 			const S = regex("^a{0,1}?$")
-			attest<Regex<"" | "a">>(S)
+			attest<Regex<"" | "a", [], {}>>(S)
 		})
 
 		it("falls back to literal for missing min", () => {
 			const r = regex("^a{,2}$")
-			attest<Regex<"a{,2}">>(r).type.toString.snap('Regex<"a{,2}", {}>')
+			attest<Regex<"a{,2}", [], {}>>(r).type.toString.snap(
+				'Regex<"a{,2}", [], {}>'
+			)
 		})
 
 		it("fallsback to literal on empty", () => {
 			const r = regex("^a{}$")
-			attest<Regex<"a{}">>(r).type.toString.snap('Regex<"a{}", {}>')
+			attest<Regex<"a{}", [], {}>>(r).type.toString.snap('Regex<"a{}", [], {}>')
 		})
 
 		it("falls back to literal for non-numeric", () => {
 			const r = regex("^a{1,foo}$")
-			attest<Regex<"a{1,foo}">>(r).type.toString.snap('Regex<"a{1,foo}", {}>')
+			attest<Regex<"a{1,foo}", [], {}>>(r).type.toString.snap(
+				'Regex<"a{1,foo}", [], {}>'
+			)
 		})
 
 		it("many ranges", () => {
 			const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
-			attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`>>(S)
+			attest<
+				Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`, [], {}>
+			>(S)
 		})
 
 		it("unmatched", () => {
@@ -284,58 +296,58 @@ contextualize(() => {
 	describe("character sets", () => {
 		it("literals", () => {
 			const S = regex("^a[abc]$")
-			attest<Regex<`a${"a" | "b" | "c"}`>>(S)
+			attest<Regex<`a${"a" | "b" | "c"}`, [], {}>>(S)
 		})
 
 		it("ranges", () => {
 			const S = regex("^a[x-z]$")
-			attest<Regex<`a${string}`>>(S).type.toString.snap(
-				"Regex<`a${string}`, {}>"
+			attest<Regex<`a${string}`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}`, [], {}>"
 			) // ranges widen to string for now
 		})
 
 		it("literal dash start", () => {
 			const S = regex("^a[-abc]$")
-			attest<Regex<`a${"-" | "a" | "b" | "c"}`>>(S)
+			attest<Regex<`a${"-" | "a" | "b" | "c"}`, [], {}>>(S)
 		})
 
 		it("literal dash end", () => {
 			const S = regex("^a[abc-]$")
-			attest<Regex<`a${"a" | "b" | "c" | "-"}`>>(S)
+			attest<Regex<`a${"a" | "b" | "c" | "-"}`, [], {}>>(S)
 		})
 
 		it("escaped dash", () => {
 			const S = regex("^a[a\\-c]$")
-			attest<Regex<`a${"a" | "-" | "c"}`>>(S)
+			attest<Regex<`a${"a" | "-" | "c"}`, [], {}>>(S)
 		})
 
 		it("escaped caret", () => {
 			const S = regex("^a[\\^bc]$")
-			attest<Regex<`a${"^" | "b" | "c"}`>>(S)
+			attest<Regex<`a${"^" | "b" | "c"}`, [], {}>>(S)
 		})
 
 		it("escaped closing bracket", () => {
 			const S = regex("^a[bc\\]]$")
-			attest<Regex<`a${"b" | "c" | "]"}`>>(S)
+			attest<Regex<`a${"b" | "c" | "]"}`, [], {}>>(S)
 		})
 
 		it("escaped backslash", () => {
 			const S = regex("^a[bc\\\\]$")
-			attest<Regex<`a${"b" | "c" | "\\"}`>>(S)
+			attest<Regex<`a${"b" | "c" | "\\"}`, [], {}>>(S)
 		})
 
 		it("negated", () => {
 			const S = regex("^a[^abc]$")
 			// always widens to string, inner contents not parsed
-			attest<Regex<`a${string}`>>(S).type.toString.snap(
-				"Regex<`a${string}`, {}>"
+			attest<Regex<`a${string}`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}`, [], {}>"
 			)
 		})
 
 		it("shorthand", () => {
 			const S = regex("^a[\\d]$")
-			attest<Regex<`a${bigint}`>>(S).type.toString.snap(
-				"Regex<`a${bigint}`, {}>"
+			attest<Regex<`a${bigint}`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${bigint}`, [], {}>"
 			)
 		})
 
@@ -358,77 +370,77 @@ contextualize(() => {
 	describe("escapes", () => {
 		it("\\w", () => {
 			const S = regex("^a\\wc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap(
-				"Regex<`a${string}c`, {}>"
+			attest<Regex<`a${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}c`, [], {}>"
 			)
 		})
 
 		it("\\d", () => {
 			const S = regex("^a\\dc$")
-			attest<Regex<`a${bigint}c`>>(S).type.toString.snap(
-				"Regex<`a${bigint}c`, {}>"
+			attest<Regex<`a${bigint}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${bigint}c`, [], {}>"
 			)
 		})
 
 		it("\\s", () => {
 			const S = regex("^a\\sc$")
-			attest<Regex<`a${WhitespaceChar}c`>>(S)
+			attest<Regex<`a${WhitespaceChar}c`, [], {}>>(S)
 		})
 
 		it("\\W", () => {
 			const S = regex("^a\\Wc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap(
-				"Regex<`a${string}c`, {}>"
+			attest<Regex<`a${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}c`, [], {}>"
 			)
 		})
 
 		it("\\D", () => {
 			const S = regex("^a\\Dc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap(
-				"Regex<`a${string}c`, {}>"
+			attest<Regex<`a${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}c`, [], {}>"
 			)
 		})
 
 		it("\\S", () => {
 			const S = regex("^a\\Sc$")
-			attest<Regex<`a${string}c`>>(S).type.toString.snap(
-				"Regex<`a${string}c`, {}>"
+			attest<Regex<`a${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`a${string}c`, [], {}>"
 			)
 		})
 
 		it("escaped quantifier", () => {
 			const S = regex("^a\\?c$")
-			attest<Regex<`a?c`>>(S)
+			attest<Regex<`a?c`, [], {}>>(S)
 		})
 
 		it("escaped anchor", () => {
 			const S = regex("^a\\^c$")
-			attest<Regex<`a^c`>>(S)
+			attest<Regex<`a^c`, [], {}>>(S)
 		})
 
 		it("escaped group delimiter", () => {
 			const S = regex("^a\\(c$")
-			attest<Regex<`a(c`>>(S)
+			attest<Regex<`a(c`, [], {}>>(S)
 		})
 
 		it("escaped charset delimiter", () => {
 			const S = regex("^a\\[c$")
-			attest<Regex<`a[c`>>(S)
+			attest<Regex<`a[c`, [], {}>>(S)
 		})
 
 		it("escaped alternator", () => {
 			const S = regex("^a\\|c$")
-			attest<Regex<`a|c`>>(S)
+			attest<Regex<`a|c`, [], {}>>(S)
 		})
 
 		it("escaped wildcard", () => {
 			const S = regex("^a\\.c$")
-			attest<Regex<`a.c`>>(S)
+			attest<Regex<`a.c`, [], {}>>(S)
 		})
 
 		it("escaped backslash", () => {
 			const S = regex("^a\\\\c$")
-			attest<Regex<`a\\c`>>(S)
+			attest<Regex<`a\\c`, [], {}>>(S)
 		})
 
 		it("unnecessary escape", () => {
@@ -443,17 +455,17 @@ contextualize(() => {
 
 		it("\\b", () => {
 			const S = regex("^word\\b$")
-			attest<Regex<`word`>>(S)
+			attest<Regex<`word`, [], {}>>(S)
 		})
 
 		it("\\B", () => {
 			const S = regex("^word\\B$")
-			attest<Regex<`word`>>(S)
+			attest<Regex<`word`, [], {}>>(S)
 		})
 
 		it("builtin escapes", () => {
 			const S = regex("^\t\n\r\v\f\0$")
-			attest<Regex<"\t\n\r\v\f\0">>(S)
+			attest<Regex<"\t\n\r\v\f\0", [], {}>>(S)
 		})
 
 		it("string escapable char", () => {
@@ -463,7 +475,7 @@ contextualize(() => {
 
 		it("hex escape", () => {
 			const S = regex("^a\x62c$")
-			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
+			attest<Regex<"abc", [], {}>>(S).type.toString.snap('Regex<"abc", [], {}>')
 		})
 
 		it("string escapable hex", () => {
@@ -475,7 +487,7 @@ contextualize(() => {
 
 		it("unicode escape (4 digit)", () => {
 			const S = regex("^a\u0062c$")
-			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
+			attest<Regex<"abc", [], {}>>(S).type.toString.snap('Regex<"abc", [], {}>')
 		})
 
 		it("string escapable unicode", () => {
@@ -487,12 +499,12 @@ contextualize(() => {
 
 		it("unicode escape (braced)", () => {
 			const S = regex("^a\u{62}c$")
-			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
+			attest<Regex<"abc", [], {}>>(S).type.toString.snap('Regex<"abc", [], {}>')
 		})
 
 		it("unicode escape (braced multi-digit)", () => {
 			const S = regex("^a\u{00000062}c$")
-			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
+			attest<Regex<"abc", [], {}>>(S).type.toString.snap('Regex<"abc", [], {}>')
 		})
 
 		it("caret notation error", () => {
@@ -504,26 +516,26 @@ contextualize(() => {
 	describe("groups", () => {
 		it("capturing", () => {
 			const S = regex("^(a(b)c)$")
-			attest<Regex<`abc`, [`abc`, `b`]>>(S)
+			attest<Regex<`abc`, [`abc`, `b`], {}>>(S)
 		})
 
 		it("non-capturing", () => {
 			const S = regex("^(a(?:b)c)$")
-			attest<Regex<`abc`, [`abc`]>>(S).type.toString.snap(
-				'Regex<"abc", { 1: "abc" }>'
+			attest<Regex<`abc`, [`abc`], {}>>(S).type.toString.snap(
+				'Regex<"abc", ["abc"], {}>'
 			)
 		})
 
 		it("quantified", () => {
 			const S = regex("^a(?:b)+c$")
-			attest<Regex<`ab${string}c`>>(S).type.toString.snap(
-				"Regex<`ab${string}c`, {}>"
+			attest<Regex<`ab${string}c`, [], {}>>(S).type.toString.snap(
+				"Regex<`ab${string}c`, [], {}>"
 			)
 		})
 
 		it("nested", () => {
 			const S = regex("^(a(b(c)))$")
-			attest<Regex<`abc`, [`abc`, `bc`, `c`]>>(S)
+			attest<Regex<`abc`, [`abc`, `bc`, `c`], {}>>(S)
 		})
 
 		it("unclosed", () => {
@@ -540,8 +552,8 @@ contextualize(() => {
 
 		it("empty", () => {
 			const S = regex("()")
-			attest<Regex<`${string}${string}`, [""]>>(S).type.toString.snap(
-				'Regex<string, { 1: "" }>'
+			attest<Regex<`${string}${string}`, [""], {}>>(S).type.toString.snap(
+				'Regex<string, [""], {}>'
 			)
 		})
 
@@ -556,80 +568,88 @@ contextualize(() => {
 	describe("union", () => {
 		it("basic", () => {
 			const S = regex("^a|b$")
-			attest<Regex<`a${string}` | `${string}b`>>(S)
+			attest<Regex<`a${string}` | `${string}b`, [], {}>>(S)
 		})
 
 		it("multiple", () => {
 			const S = regex("^a|b|c$")
-			attest<Regex<`a${string}` | `${string}b${string}` | `${string}c`>>(S)
+			attest<
+				Regex<`a${string}` | `${string}b${string}` | `${string}c`, [], {}>
+			>(S)
 		})
 
 		it("within group", () => {
 			const S = regex("^(a|b)c$")
-			attest<Regex<"ac" | "bc", ["a" | "b"]>>(S)
+			attest<Regex<"ac" | "bc", ["a" | "b"], {}>>(S)
 		})
 
 		it("empty start branch", () => {
 			const S = regex("^|b$")
-			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<string, [], {}>>(S).type.toString.snap(
+				"Regex<string, [], {}>"
+			)
 		})
 
 		it("empty end branch", () => {
 			const S = regex("^a|$")
-			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<string, [], {}>>(S).type.toString.snap(
+				"Regex<string, [], {}>"
+			)
 		})
 
 		it("empty middle branch", () => {
 			const S = regex("^a||c$")
-			attest<Regex<string>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<string, [], {}>>(S).type.toString.snap(
+				"Regex<string, [], {}>"
+			)
 		})
 	})
 
 	it(".", () => {
 		const S = regex("^a.$")
-		attest<Regex<`a${string}`>>(S)
+		attest<Regex<`a${string}`, [], {}>>(S)
 	})
 
 	it("consecutive .", () => {
 		const S = regex("^a..c$")
 		// collapsed to single {string}
-		attest<Regex<`a${string}c`>>(S).type.toString.snap(
-			"Regex<`a${string}c`, {}>"
+		attest<Regex<`a${string}c`, [], {}>>(S).type.toString.snap(
+			"Regex<`a${string}c`, [], {}>"
 		)
 	})
 
 	describe("index backreferences", () => {
 		it("basic", () => {
 			const S = regex("^(a)b\\1$")
-			attest<Regex<`aba`, ["a"]>>(S).type.toString.snap(
-				'Regex<"aba", { 1: "a" }>'
+			attest<Regex<`aba`, ["a"], {}>>(S).type.toString.snap(
+				'Regex<"aba", ["a"], {}>'
 			)
 		})
 
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(a\\1b)c\\1$")
-			attest<Regex<`abcab`, [`ab`]>>(S)
+			attest<Regex<`abcab`, [`ab`], {}>>(S)
 		})
 
 		it("union", () => {
 			const S = regex("^(a|b)\\1$")
-			attest<Regex<"ab" | "aa" | "ba" | "bb", ["a" | "b"]>>(S)
+			attest<Regex<"ab" | "aa" | "ba" | "bb", ["a" | "b"], {}>>(S)
 		})
 
 		it("inner quantified", () => {
 			const S = regex("^(a+)\\1$")
-			attest<Regex<`a${string}a${string}`, [`a${string}`]>>(S)
+			attest<Regex<`a${string}a${string}`, [`a${string}`], {}>>(S)
 		})
 
 		it("group quantified", () => {
 			const S = regex("^(a)+\\1$")
-			attest<Regex<`a${string}a`, ["a"]>>(S)
+			attest<Regex<`a${string}a`, ["a"], {}>>(S)
 		})
 
 		it("ref quantified", () => {
 			const S = regex("^(a)\\1+$")
-			attest<Regex<`aa${string}`, ["a"]>>(S)
+			attest<Regex<`aa${string}`, ["a"], {}>>(S)
 		})
 
 		it("index out of range", () => {
@@ -775,17 +795,17 @@ contextualize(() => {
 	describe("lookarounds", () => {
 		it("positive", () => {
 			const S = regex("^a(?=b)b$")
-			attest<Regex<"ab">>(S)
+			attest<Regex<"ab", [], {}>>(S)
 		})
 
 		it("negative", () => {
 			const S = regex("^a(?!c)b$")
-			attest<Regex<"ab">>(S)
+			attest<Regex<"ab", [], {}>>(S)
 		})
 
 		it("nested", () => {
 			const S = regex("^a(?=b(?!d)c)bc$")
-			attest<Regex<"abc">>(S)
+			attest<Regex<"abc", [], {}>>(S)
 		})
 
 		it("quantified lookahead", () => {
@@ -802,17 +822,17 @@ contextualize(() => {
 
 		it("positive", () => {
 			const S = regex("^a(?<=a)b$")
-			attest<Regex<"ab">>(S).type.toString.snap('Regex<"ab", {}>')
+			attest<Regex<"ab", [], {}>>(S).type.toString.snap('Regex<"ab", [], {}>')
 		})
 
 		it("negative", () => {
 			const S = regex("^a(?<!b)c$")
-			attest<Regex<"ac">>(S).type.toString.snap('Regex<"ac", {}>')
+			attest<Regex<"ac", [], {}>>(S).type.toString.snap('Regex<"ac", [], {}>')
 		})
 
 		it("nested", () => {
 			const S = regex("^abc(?<=b(?<!d)c)$")
-			attest<Regex<"abc">>(S).type.toString.snap('Regex<"abc", {}>')
+			attest<Regex<"abc", [], {}>>(S).type.toString.snap('Regex<"abc", [], {}>')
 		})
 
 		it("unclosed lookbehind", () => {
@@ -824,69 +844,69 @@ contextualize(() => {
 	describe("flags", () => {
 		it("empty string", () => {
 			const S = regex("^aB$", "")
-			attest<Regex<"aB">>(S)
+			attest<Regex<"aB", [], {}>>(S)
 		})
 
 		it("i", () => {
 			const S = regex("^aB$", "i")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", [], {}>>(S)
 		})
 	})
 
 	describe("modifiers", () => {
 		it("i enable", () => {
 			const S = regex("^a(?i:bC)d$")
-			attest<Regex<"abcd" | "abCd" | "aBcd" | "aBCd">>(S)
+			attest<Regex<"abcd" | "abCd" | "aBcd" | "aBCd", [], {}>>(S)
 		})
 
 		it("i disable", () => {
 			const S = regex("^(?-i:aB)$")
-			attest<Regex<"aB">>(S)
+			attest<Regex<"aB", [], {}>>(S)
 		})
 
 		it("i enable overrides global i disable", () => {
 			const S = regex("^(?i:aB)$", "")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", [], {}>>(S)
 		})
 
 		it("i disable overrides global i enable", () => {
 			const S = regex("^(?-i:aB)$", "i")
-			attest<Regex<"aB">>(S)
+			attest<Regex<"aB", [], {}>>(S)
 		})
 
 		it("i enable with global i enable", () => {
 			const S = regex("^(?i:aB)$", "i")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", [], {}>>(S)
 		})
 
 		it("i disable with global i disable", () => {
 			const S = regex("^(?-i:aB)$", "")
-			attest<Regex<"aB">>(S)
+			attest<Regex<"aB", [], {}>>(S)
 		})
 
 		it("nested enable/disable", () => {
 			const S = regex("^(?i:a(?-i:B)c)$")
-			attest<Regex<"aBc" | "aBC" | "ABc" | "ABC">>(S)
+			attest<Regex<"aBc" | "aBC" | "ABc" | "ABC", [], {}>>(S)
 		})
 
 		it("nested disable/enable", () => {
 			const S = regex("^(?-i:a(?i:B)c)$")
-			attest<Regex<"aBc" | "abc">>(S)
+			attest<Regex<"aBc" | "abc", [], {}>>(S)
 		})
 
 		it("multiple modifiers enable i", () => {
 			const S = regex("^(?im:aB)$")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", [], {}>>(S)
 		})
 
 		it("multiple modifiers disable i", () => {
 			const S = regex("^(?-im:aB)$")
-			attest<Regex<"aB">>(S)
+			attest<Regex<"aB", [], {}>>(S)
 		})
 
 		it("multiple modifiers enable/disable i", () => {
 			const S = regex("^(?i-m:aB)$")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB">>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", [], {}>>(S)
 		})
 
 		it("duplicate conflicting modifier", () => {
@@ -950,7 +970,7 @@ contextualize(() => {
 
 		it("modifier group with colon but no content", () => {
 			const S = regex("^(?i:)$")
-			attest<Regex<"">>(S)
+			attest<Regex<"", [], {}>>(S)
 		})
 	})
 
@@ -963,12 +983,12 @@ contextualize(() => {
 		//     "instantiations": 683907
 		// }
 		it("string fallback", () => {
-			const S = regex("^a?b?c?d?e?f?gh?i?j?k?l?m?$")
+			const S = regex("^ab?c?d?e?f?g?h?i?j?k?l?m?n?o?$")
 
-			// characters after j fallback to string to avoid the sequence depth exceeding ArkEnv.maxDepth
+			// characters after m fallback to string to avoid the sequence depth exceeding ArkEnv.maxDepth
 			type Expected =
-				`${"a" | ""}${"b" | ""}${"c" | ""}${"d" | ""}${"e" | ""}${"f" | ""}g${"h" | ""}${"i" | ""}${"j" | ""}${string | ""}`
-			attest<Regex<Expected>>(S)
+				`a${"b" | ""}${"c" | ""}${"d" | ""}${"e" | ""}${"f" | ""}${"g" | ""}${"h" | ""}${"i" | ""}${"j" | ""}${"k" | ""}${"l" | ""}${"m" | ""}${string | ""}`
+			attest<Regex<Expected, [], {}>>(S)
 		})
 	})
 })

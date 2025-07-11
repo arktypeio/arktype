@@ -21,9 +21,9 @@ import {
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { Inferred } from "./methods/base.ts"
 import type { BaseCompletions } from "./parser/string.ts"
 import type { InternalScope } from "./scope.ts"
+import type { Inferred } from "./variants/base.ts"
 
 type MatchParserContext<input = unknown> = {
 	cases: Morph[]

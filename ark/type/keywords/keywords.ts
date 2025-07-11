@@ -5,8 +5,6 @@ import type { DeclarationParser } from "../declare.ts"
 import type { FnParser } from "../fn.ts"
 import type { GenericParser } from "../generic.ts"
 import type { MatchParser } from "../match.ts"
-import type { BaseType } from "../methods/base.ts"
-import type { instantiateType } from "../methods/instantiate.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
 	inferDefinition,
@@ -19,6 +17,8 @@ import type {
 	Type,
 	TypeParser
 } from "../type.ts"
+import type { BaseType } from "../variants/base.ts"
+import type { instantiateType } from "../variants/instantiate.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors.ts"
 import { number } from "./number.ts"

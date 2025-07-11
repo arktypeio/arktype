@@ -5,7 +5,7 @@ import type { State } from "./state.ts"
 export interface Regex<
 	pattern extends string = string,
 	captures extends string[] = string[],
-	namedCaptures extends NamedCaptures = {}
+	namedCaptures extends NamedCaptures = NamedCaptures
 > extends RegExp {
 	[inferred]: pattern
 	infer: pattern
@@ -16,9 +16,20 @@ export interface Regex<
 	exec(s: string): RegexExecArray<pattern, captures, namedCaptures> | null
 }
 
+// /^f$/m
+// "f" | "F"
+
+const reg: RegExp = {} as Regex
+
 export type NamedCaptures = Record<string, string>
 
-export interface RegexExecArray<
+export type RegexExecArray<
+	pattern extends string = string,
+	captures extends string[] = string[],
+	namedCaptures extends NamedCaptures = NamedCaptures
+> = {}
+
+export interface BaseRegexExecArray<
 	pattern extends string = string,
 	captures extends string[] = string[],
 	namedCaptures extends NamedCaptures = NamedCaptures
@@ -33,7 +44,15 @@ export interface RegexExecArray<
 	 */
 	input: pattern
 
-	groups?: NamedCaptures
+	indices?: RegExpIndicesArray
+}
+
+export interface RegexExecArrayWithNamedCaptures<
+	pattern extends string = string,
+	captures extends string[] = string[],
+	namedCaptures extends NamedCaptures = NamedCaptures
+> extends BaseRegexExecArray<pattern, captures, namedCaptures> {
+	groups: namedCaptures
 
 	indices?: RegExpIndicesArray
 }
