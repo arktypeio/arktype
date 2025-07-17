@@ -2,6 +2,10 @@ import type { ErrorMessage, inferred } from "@ark/util"
 import type { RegexExecArray } from "./execArray.ts"
 import type { parseState } from "./parse.ts"
 import type { State } from "./state.ts"
+import type { CapturesRegex } from "./variants/captures.ts"
+import type { FlagsRegex } from "./variants/flags.ts"
+import type { NamedCapturesRegex } from "./variants/namedCaptures.ts"
+import type { PatternRegex } from "./variants/pattern.ts"
 
 export type NamedCaptures = Record<string, string>
 
@@ -9,11 +13,28 @@ export type UnicodeFlag = "v" | "u"
 export type Flags =
 	`${"d" | ""}${"g" | ""}${"i" | ""}${"m" | ""}${"s" | ""}${UnicodeFlag | ""}${"y" | ""}`
 
-export interface Regex<
+export type Regex<
 	pattern extends string = string,
 	flags extends Flags = Flags,
 	captures extends string[] = string[],
 	namedCaptures extends NamedCaptures = NamedCaptures
+> =
+	captures extends [] ?
+		flags extends "" ?
+			PatternRegex<pattern>
+		:	FlagsRegex<pattern, captures, flags>
+	: [keyof namedCaptures] extends [never] ?
+		flags extends "" ?
+			CapturesRegex<pattern, captures>
+		:	FlagsRegex<pattern, captures, flags>
+	:	NamedCapturesRegex<pattern, flags, captures, namedCaptures>
+
+export interface BaseRegex<
+	out pattern extends string,
+	out captures extends string[],
+	out flags extends Flags,
+	// @ts-ignore (override variance)
+	out namedCaptures extends NamedCaptures
 > extends RegExp {
 	[inferred]: pattern
 	infer: pattern
@@ -28,11 +49,7 @@ export interface Regex<
 	): RegexExecArray<[pattern, ...captures], namedCaptures, flags> | null
 }
 
-declare const r: Regex<"foo", "d", ["bar"], { baz: "baz" }>
-
 // TODO: fix regex group could be undefined if quantified by 0
-
-const reg: RegExp = {} as Regex
 
 export const regex = <src extends string, flags extends Flags = "">(
 	src: regex.validate<src, flags>,

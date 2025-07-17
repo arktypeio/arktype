@@ -29,11 +29,26 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
+declare const r: Regex<"foo", "d", ["bar"], { baz: "baz" }>
+
+const reg: RegExp = r
+
+const zzzzzzz: Regex = r
+
 contextualize(() => {
 	it("erate", () => {
 		type Result = iterate<State.initialize<"^(a)b\\1$", "">, 4>
 		attest<"b\\1$", Result["unscanned"]>()
 	})
+
+	// option 1: Regex has one signature that accepts 4 type parameters
+	//           - pattern, flags, captures, namedCaptures
+	//           - defaultable
+	//           - is the order good?
+	// option 2: Regex has multiple signatures like Type
+	//          - pattern
+	//          - pattern + flags
+	//          - pattern + captures
 
 	describe("literals", () => {
 		it("base", () => {
