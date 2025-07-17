@@ -1,9 +1,17 @@
-import type { DynamicBase, ErrorMessage, inferred } from "@ark/util"
+import type { ErrorMessage, inferred } from "@ark/util"
+import type { RegexExecArray } from "./execArray.ts"
 import type { parseState } from "./parse.ts"
 import type { State } from "./state.ts"
 
+export type NamedCaptures = Record<string, string>
+
+export type UnicodeFlag = "v" | "u"
+export type Flags =
+	`${"d" | ""}${"g" | ""}${"i" | ""}${"m" | ""}${"s" | ""}${UnicodeFlag | ""}${"y" | ""}`
+
 export interface Regex<
 	pattern extends string = string,
+	flags extends Flags = Flags,
 	captures extends string[] = string[],
 	namedCaptures extends NamedCaptures = NamedCaptures
 > extends RegExp {
@@ -12,56 +20,19 @@ export interface Regex<
 	inferCaptures: captures
 	inferNamedCaptures: namedCaptures
 
+	flags: flags
+
 	test(s: string): s is pattern
-	exec(s: string): RegexExecArray<pattern, captures, namedCaptures> | null
+	exec(
+		s: string
+	): RegexExecArray<[pattern, ...captures], namedCaptures, flags> | null
 }
 
-// /^f$/m
-// "f" | "F"
+declare const r: Regex<"foo", "d", ["bar"], { baz: "baz" }>
+
+// TODO: fix regex group could be undefined if quantified by 0
 
 const reg: RegExp = {} as Regex
-
-export type NamedCaptures = Record<string, string>
-
-export type RegexExecArray<
-	pattern extends string = string,
-	captures extends string[] = string[],
-	namedCaptures extends NamedCaptures = NamedCaptures
-> = {}
-
-export interface BaseRegexExecArray<
-	pattern extends string = string,
-	captures extends string[] = string[],
-	namedCaptures extends NamedCaptures = NamedCaptures
-> extends DynamicBase<[pattern, ...captures]> {
-	/**
-	 * The index of the search at which the result was found.
-	 */
-	index: number
-
-	/**
-	 * A copy of the search string.
-	 */
-	input: pattern
-
-	indices?: RegExpIndicesArray
-}
-
-export interface RegexExecArrayWithNamedCaptures<
-	pattern extends string = string,
-	captures extends string[] = string[],
-	namedCaptures extends NamedCaptures = NamedCaptures
-> extends BaseRegexExecArray<pattern, captures, namedCaptures> {
-	groups: namedCaptures
-
-	indices?: RegExpIndicesArray
-}
-
-interface RegExpIndicesArray extends Array<[number, number]> {
-	groups?: {
-		[key: string]: [number, number]
-	}
-}
 
 export const regex = <src extends string, flags extends string = "">(
 	src: regex.validate<src>,

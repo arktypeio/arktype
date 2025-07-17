@@ -1,29 +1,5 @@
-import type { DynamicBase, inferred } from "@ark/util"
-
-export type NamedCaptures = Record<string, string>
-
-export type UnicodeFlag = "v" | "u"
-export type Flags =
-	`${"d" | ""}${"g" | ""}${"i" | ""}${"m" | ""}${"s" | ""}${UnicodeFlag | ""}${"y" | ""}`
-
-export interface Regex<
-	pattern extends string,
-	flags extends Flags,
-	captures extends string[],
-	namedCaptures extends NamedCaptures
-> extends RegExp {
-	[inferred]: pattern
-	infer: pattern
-	inferCaptures: captures
-	inferNamedCaptures: namedCaptures
-
-	flags: flags
-
-	test(s: string): s is pattern
-	exec(
-		s: string
-	): RegexExecArray<[pattern, ...captures], namedCaptures, flags> | null
-}
+import type { DynamicBase } from "@ark/util"
+import type { Flags, NamedCaptures } from "./regex.ts"
 
 export type RegexExecArray<
 	patternAndCaptures extends string[],
@@ -81,7 +57,3 @@ interface MatchIndicesWithNames<
 > extends BaseRegexIndicesArray<patternAndCaptures> {
 	groups: { [k in keyof namedCaptures]: RegexIndexRange }
 }
-
-declare const r: Regex<"foo", "d", ["bar"], { baz: "baz" }>
-
-// TODO: fix regex group could be undefined if quantified by 0
