@@ -7,11 +7,10 @@ import type {
 	parsePossibleRange,
 	QuantifyingChar
 } from "./quantify.ts"
-import type { Regex } from "./regex.ts"
 import type { Anchor, AnchorMarker, s, State, UnionTree } from "./state.ts"
 
 export type parseState<s extends State> =
-	s["unscanned"] extends ErrorMessage ? Regex<s["unscanned"]>
+	s["unscanned"] extends ErrorMessage ? s["unscanned"]
 	: s["unscanned"] extends "" ? s.finalize<s>
 	: parseState<next<s>>
 

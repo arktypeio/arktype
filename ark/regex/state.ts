@@ -10,7 +10,7 @@ import type {
 	ZeroWidthSpace
 } from "@ark/util"
 import type { QuantifyingChar } from "./quantify.ts"
-import type { Regex } from "./regex.ts"
+import type { NamedCaptures } from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
@@ -31,6 +31,16 @@ export declare namespace State {
 		root: ""
 		caseInsensitive: contains<flags, "i">
 	}>
+
+	export type Finalized = {
+		pattern: string
+		captures: string[]
+		namedCaptures: NamedCaptures
+	}
+
+	export namespace Finalized {
+		export type from<s extends Finalized> = s
+	}
 
 	export type Group = {
 		name: string | number
@@ -192,12 +202,14 @@ export declare namespace s {
 
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
-			Regex<ErrorMessage<writeUnclosedGroupMessage<")">>>
-		:	Regex<
-				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
-				finalizeCaptures<s["captures"]>,
-				finalizeNamedCaptures<s["captures"]>
-			>
+			ErrorMessage<writeUnclosedGroupMessage<")">>
+		:	State.Finalized.from<{
+				pattern: validateAnchorless<
+					applyAnchors<finalizeTree<State.Group.finalize<s>>>
+				>
+				captures: finalizeCaptures<s["captures"]>
+				namedCaptures: finalizeNamedCaptures<s["captures"]>
+			}>
 }
 
 export type PatternTree = string | UnionTree | SequenceTree
