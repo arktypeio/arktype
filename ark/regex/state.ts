@@ -10,18 +10,20 @@ import type {
 	ZeroWidthSpace
 } from "@ark/util"
 import type { QuantifyingChar } from "./quantify.ts"
-import type { NamedCaptures } from "./regex.ts"
+import type { Flags, NamedCaptures, Regex } from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
 	captures: Record<string | number, unknown>
 	groups: State.Group[]
+	/** the initial flags passed to the root of the expression */
+	flags: Flags
 }
 
 export declare namespace State {
 	export type from<s extends State> = s
 
-	export type initialize<source extends string, flags extends string> = from<{
+	export type initialize<source extends string, flags extends Flags> = from<{
 		unscanned: source
 		groups: []
 		captures: {}
@@ -30,17 +32,8 @@ export declare namespace State {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: contains<flags, "i">
+		flags: flags
 	}>
-
-	export type Finalized = {
-		pattern: string
-		captures: string[]
-		namedCaptures: NamedCaptures
-	}
-
-	export namespace Finalized {
-		export type from<s extends Finalized> = s
-	}
 
 	export type Group = {
 		name: string | number
@@ -102,6 +95,7 @@ export declare namespace s {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: false
+		flags: ""
 	}>
 
 	export type shiftQuantifiable<
@@ -117,6 +111,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], s["root"]>
 		root: root
 		caseInsensitive: s["caseInsensitive"]
+		flags: s["flags"]
 	}>
 
 	export type pushQuantified<
@@ -132,6 +127,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], quantified>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		flags: s["flags"]
 	}>
 
 	export type finalizeBranch<
@@ -146,6 +142,7 @@ export declare namespace s {
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		flags: s["flags"]
 	}>
 
 	export type anchor<
@@ -161,6 +158,7 @@ export declare namespace s {
 		sequence: pushQuantifiable<s["sequence"], pushQuantifiable<s["root"], a>>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
+		flags: s["flags"]
 	}>
 
 	type LookaroundMarker = `${ZeroWidthSpace}lookahead`
@@ -181,6 +179,7 @@ export declare namespace s {
 		root: ""
 		caseInsensitive: caseInsensitive extends boolean ? caseInsensitive
 		:	s["caseInsensitive"]
+		flags: s["flags"]
 	}>
 
 	export type popGroup<s extends State, unscanned extends string> =
@@ -197,19 +196,46 @@ export declare namespace s {
 				: s["name"] extends LookaroundMarker ? ""
 				: State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
+				flags: s["flags"]
 			}>
 		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
 
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			ErrorMessage<writeUnclosedGroupMessage<")">>
-		:	State.Finalized.from<{
-				pattern: validateAnchorless<
-					applyAnchors<finalizeTree<State.Group.finalize<s>>>
-				>
-				captures: finalizeCaptures<s["captures"]>
-				namedCaptures: finalizeNamedCaptures<s["captures"]>
-			}>
+		:	Regex<
+				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
+				keyof s["captures"] extends never ?
+					s["flags"] extends "" ?
+						{}
+					:	{
+							flags: s["flags"]
+						}
+				: [
+					finalizeCaptures<s["captures"]>,
+					finalizeNamedCaptures<s["captures"]>
+				] extends (
+					[
+						infer captures extends string[],
+						infer namedCaptures extends NamedCaptures
+					]
+				) ?
+					keyof namedCaptures extends never ?
+						s["flags"] extends "" ?
+							{ captures: captures }
+						:	{ flags: s["flags"]; captures: captures }
+					: s["flags"] extends "" ?
+						{
+							captures: captures
+							names: namedCaptures
+						}
+					:	{
+							flags: s["flags"]
+							captures: captures
+							names: namedCaptures
+						}
+				:	never
+			>
 }
 
 export type PatternTree = string | UnionTree | SequenceTree
