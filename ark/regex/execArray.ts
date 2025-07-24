@@ -1,12 +1,12 @@
 import type { DynamicBase } from "@ark/util"
-import type { Flags, NamedCaptures } from "./regex.ts"
+import type { Flags, IndexedCaptures, NamedCaptures } from "./regex.ts"
 
 export type RegexExecArray<
-	patternAndCaptures extends string[],
+	patternAndCaptures extends IndexedCaptures,
 	namedCaptures extends NamedCaptures,
 	flags extends Flags
 > =
-	{} extends namedCaptures ?
+	keyof namedCaptures extends never ?
 		flags extends `${string}d${string}` ?
 			MatchesWithIndices<patternAndCaptures>
 		:	BaseRegexExecArray<patternAndCaptures>
@@ -14,7 +14,7 @@ export type RegexExecArray<
 		MatchesWithIndicesAndNames<patternAndCaptures, namedCaptures>
 	:	MatchesWithNames<patternAndCaptures, namedCaptures>
 
-interface BaseRegexExecArray<patternAndCaptures extends string[]>
+interface BaseRegexExecArray<patternAndCaptures extends IndexedCaptures>
 	extends DynamicBase<patternAndCaptures> {
 	/**
 	 * The index of the search at which the result was found.
@@ -27,20 +27,20 @@ interface BaseRegexExecArray<patternAndCaptures extends string[]>
 	input: patternAndCaptures[0]
 }
 
-interface MatchesWithIndices<patternAndCaptures extends string[]>
+interface MatchesWithIndices<patternAndCaptures extends IndexedCaptures>
 	extends BaseRegexExecArray<patternAndCaptures> {
 	indices: { [i in keyof patternAndCaptures]: [number, number] }
 }
 
 interface MatchesWithNames<
-	patternAndCaptures extends string[],
+	patternAndCaptures extends IndexedCaptures,
 	namedCaptures extends NamedCaptures
 > extends BaseRegexExecArray<patternAndCaptures> {
 	groups: namedCaptures
 }
 
 interface MatchesWithIndicesAndNames<
-	patternAndCaptures extends string[],
+	patternAndCaptures extends IndexedCaptures,
 	namedCaptures extends NamedCaptures
 > extends MatchesWithNames<patternAndCaptures, namedCaptures> {
 	indices: MatchIndicesWithNames<patternAndCaptures, namedCaptures>
@@ -48,11 +48,11 @@ interface MatchesWithIndicesAndNames<
 
 export type RegexIndexRange = [start: number, end: number]
 
-interface BaseRegexIndicesArray<patternAndCaptures extends string[]>
+interface BaseRegexIndicesArray<patternAndCaptures extends IndexedCaptures>
 	extends DynamicBase<{ [i in keyof patternAndCaptures]: RegexIndexRange }> {}
 
 interface MatchIndicesWithNames<
-	patternAndCaptures extends string[],
+	patternAndCaptures extends IndexedCaptures,
 	namedCaptures extends NamedCaptures
 > extends BaseRegexIndicesArray<patternAndCaptures> {
 	groups: { [k in keyof namedCaptures]: RegexIndexRange }

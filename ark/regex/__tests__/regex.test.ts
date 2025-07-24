@@ -539,6 +539,30 @@ contextualize(() => {
 			>(S).type.toString.snap('Regex<"abc", { captures: ["abc"] }>')
 		})
 
+		it("optional capture group includes undefined", () => {
+			const S = regex("^(a)?$")
+			attest<
+				Regex<
+					"" | "a",
+					{
+						captures: ["a" | undefined]
+					}
+				>
+			>(S)
+		})
+
+		it("quantified capture group including 0 includes undefined", () => {
+			const S = regex("^(a){0,1}$")
+			attest<
+				Regex<
+					"" | "a",
+					{
+						captures: ["a" | undefined]
+					}
+				>
+			>(S)
+		})
+
 		it("quantified", () => {
 			const S = regex("^a(?:b)+c$")
 			attest<Regex<`ab${string}c`, {}>>(S).type.toString.snap(

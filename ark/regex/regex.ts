@@ -3,6 +3,7 @@ import type { RegexExecArray } from "./execArray.ts"
 import type { parseState } from "./parse.ts"
 import type { State } from "./state.ts"
 
+export type IndexedCaptures = Array<string | undefined>
 export type NamedCaptures = Record<string, string>
 
 export type UnicodeFlag = "v" | "u"
@@ -11,7 +12,7 @@ export type Flags =
 
 export type RegexContext = {
 	flags?: Flags
-	captures?: string[]
+	captures?: IndexedCaptures
 	names?: NamedCaptures
 }
 
@@ -22,7 +23,7 @@ export interface Regex<
 > extends RegExp {
 	[inferred]: pattern
 	infer: pattern
-	inferCaptures: ctx["captures"] extends string[] ? ctx["captures"] : []
+	inferCaptures: ctx["captures"] extends IndexedCaptures ? ctx["captures"] : []
 	inferNamedCaptures: ctx["names"] extends NamedCaptures ? ctx["names"] : {}
 
 	flags: ctx["flags"] extends Flags ? ctx["flags"] : ""
@@ -36,9 +37,8 @@ export interface Regex<
 		this["inferNamedCaptures"],
 		this["flags"]
 	> | null
+	exec(s: string): never
 }
-
-// TODO: fix regex group could be undefined if quantified by 0
 
 export const regex = <src extends string, flags extends Flags = "">(
 	src: regex.validate<src, flags>,
