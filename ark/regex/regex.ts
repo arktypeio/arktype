@@ -37,6 +37,8 @@ export interface Regex<
 		this["inferNamedCaptures"],
 		this["flags"]
 	> | null
+	// allow extension of base RegExp with more accurate types
+	// since parameters are identical, this overload will never be hit
 	exec(s: string): never
 }
 
