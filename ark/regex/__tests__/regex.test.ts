@@ -536,7 +536,7 @@ contextualize(() => {
 						captures: ["abc"]
 					}
 				>
-			>(S).type.toString.snap('Regex<"abc", ["abc"], {}>')
+			>(S).type.toString.snap('Regex<"abc", { captures: ["abc"] }>')
 		})
 
 		it("quantified", () => {
@@ -579,7 +579,7 @@ contextualize(() => {
 						captures: [""]
 					}
 				>
-			>(S).type.toString.snap('Regex<string, [""], {}>')
+			>(S).type.toString.snap('Regex<string, { captures: [""] }>')
 		})
 
 		it("unescaped literal question mark", () => {
@@ -652,7 +652,7 @@ contextualize(() => {
 						captures: ["a"]
 					}
 				>
-			>(S).type.toString.snap('Regex<"aba", ["a"], {}>')
+			>(S).type.toString.snap('Regex<"aba", { captures: ["a"] }>')
 		})
 
 		// treated as empty string by JS since capture hasn't occurred yet
@@ -967,7 +967,7 @@ contextualize(() => {
 
 		it("i", () => {
 			const S = regex("^aB$", "i")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
 		})
 	})
 
@@ -989,12 +989,12 @@ contextualize(() => {
 
 		it("i disable overrides global i enable", () => {
 			const S = regex("^(?-i:aB)$", "i")
-			attest<Regex<"aB", {}>>(S)
+			attest<Regex<"aB", { flags: "i" }>>(S)
 		})
 
 		it("i enable with global i enable", () => {
 			const S = regex("^(?i:aB)$", "i")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
+			attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
 		})
 
 		it("i disable with global i disable", () => {
