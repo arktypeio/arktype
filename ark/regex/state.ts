@@ -203,39 +203,47 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			ErrorMessage<writeUnclosedGroupMessage<")">>
-		:	Regex<
-				validateAnchorless<applyAnchors<finalizeTree<State.Group.finalize<s>>>>,
-				keyof s["captures"] extends never ?
-					s["flags"] extends "" ?
-						{}
-					:	{
-							flags: s["flags"]
-						}
-				: [
-					finalizeCaptures<s["captures"]>,
-					finalizeNamedCaptures<s["captures"]>
-				] extends (
-					[
-						infer captures extends string[],
-						infer namedCaptures extends NamedCaptures
-					]
-				) ?
-					keyof namedCaptures extends never ?
+		: applyAnchors<finalizeTree<State.Group.finalize<s>>> extends (
+			infer pattern extends string
+		) ?
+			contains<pattern, StartAnchorMarker> extends true ?
+				ErrorMessage<writeMidAnchorError<"^">>
+			: contains<pattern, EndAnchorMarker> extends true ?
+				ErrorMessage<writeMidAnchorError<"$">>
+			:	Regex<
+					pattern,
+					keyof s["captures"] extends never ?
 						s["flags"] extends "" ?
-							{ captures: captures }
-						:	{ flags: s["flags"]; captures: captures }
-					: s["flags"] extends "" ?
-						{
-							captures: captures
-							names: namedCaptures
-						}
-					:	{
-							flags: s["flags"]
-							captures: captures
-							names: namedCaptures
-						}
-				:	never
-			>
+							{}
+						:	{
+								flags: s["flags"]
+							}
+					: [
+						finalizeCaptures<s["captures"]>,
+						finalizeNamedCaptures<s["captures"]>
+					] extends (
+						[
+							infer captures extends string[],
+							infer namedCaptures extends NamedCaptures
+						]
+					) ?
+						keyof namedCaptures extends never ?
+							s["flags"] extends "" ?
+								{ captures: captures }
+							:	{ flags: s["flags"]; captures: captures }
+						: s["flags"] extends "" ?
+							{
+								captures: captures
+								names: namedCaptures
+							}
+						:	{
+								flags: s["flags"]
+								captures: captures
+								names: namedCaptures
+							}
+					:	never
+				>
+		:	never
 }
 
 export type PatternTree = string | UnionTree | SequenceTree
@@ -417,13 +425,6 @@ type prependNonRedundant<
 	base extends string,
 	prefix extends string
 > = leftIfEqual<base, `${prefix}${base}`>
-
-type validateAnchorless<pattern extends string> =
-	contains<pattern, StartAnchorMarker> extends true ?
-		ErrorMessage<writeMidAnchorError<"^">>
-	: contains<pattern, EndAnchorMarker> extends true ?
-		ErrorMessage<writeMidAnchorError<"$">>
-	:	pattern
 
 export const writeMidAnchorError = <anchor extends Anchor>(
 	anchor: anchor
