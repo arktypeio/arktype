@@ -197,7 +197,7 @@ Add a type-only symbol to an existing type so that the only values that satisfy 
 
 ```ts
 // @noErrors
-const Even = type("(number % 2)#even")
+const even = type("(number % 2)#even")
 type Even = typeof even.infer
 
 const good: Even = even.assert(2)
