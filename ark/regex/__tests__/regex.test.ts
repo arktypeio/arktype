@@ -29,6 +29,8 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
+type Result = iterate<State.initialize<"(a)(b)", "">, 6>["closedGroups"]
+
 contextualize(() => {
 	it("erate", () => {
 		type Result = iterate<State.initialize<"^(a)b\\1$", "">, 4>

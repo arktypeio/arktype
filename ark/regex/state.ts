@@ -60,11 +60,11 @@ type Captures2 = [
 		name: "foo"
 	}
 ]
-// cons: harder to know what backreferences exist
 
 export interface State extends State.Group {
 	unscanned: string
 	captures: Record<string | number, unknown>
+	closedGroups: State.Group[]
 	groups: State.Group[]
 	/** the initial flags passed to the root of the expression */
 	flags: Flags
@@ -75,6 +75,7 @@ export declare namespace State {
 
 	export type initialize<source extends string, flags extends Flags> = from<{
 		unscanned: source
+		closedGroups: []
 		groups: []
 		captures: {}
 		name: never
@@ -139,6 +140,7 @@ export declare namespace s {
 	export type error<message extends string> = State.from<{
 		unscanned: ErrorMessage<message>
 		groups: []
+		closedGroups: []
 		name: never
 		captures: {}
 		branches: []
@@ -155,6 +157,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
+		closedGroups: s["closedGroups"]
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
@@ -171,6 +174,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
+		closedGroups: s["closedGroups"]
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
@@ -186,6 +190,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
+		closedGroups: s["closedGroups"]
 		name: s["name"]
 		captures: s["captures"]
 		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
@@ -202,6 +207,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
+		closedGroups: s["closedGroups"]
 		name: s["name"]
 		captures: s["captures"]
 		branches: s["branches"]
@@ -222,6 +228,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
+		closedGroups: s["closedGroups"]
 		name: isLookaround extends true ? LookaroundMarker : capture
 		captures: s["captures"] & Record<capture, unknown>
 		branches: []
@@ -237,6 +244,7 @@ export declare namespace s {
 			State.from<{
 				unscanned: unscanned
 				groups: init
+				closedGroups: [...s["closedGroups"], s]
 				captures: s["name"] extends LookaroundMarker ? s["captures"]
 				:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
 				name: last["name"]
