@@ -551,6 +551,20 @@ contextualize(() => {
 			>(S)
 		})
 
+		it("inner optional capture group includes undefined", () => {
+			const S = regex("^a(b(c)d)?e$")
+			attest<
+				Regex<
+					"ae" | "abcde",
+					{
+						// or...
+						// ["bcd", "c"] | [undefined, undefined]
+						captures: ["bcd" | undefined, "c" | undefined]
+					}
+				>
+			>(S)
+		})
+
 		it("quantified capture group including 0 includes undefined", () => {
 			const S = regex("^(a){0,1}$")
 			attest<
