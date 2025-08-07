@@ -12,10 +12,48 @@ import type {
 import type { QuantifyingChar } from "./quantify.ts"
 import type { Flags, NamedCaptures, Regex } from "./regex.ts"
 
-// const S = regex("^a(?<foo>b(c)d)?e$")
-
-type OptimalPattern = "ae" | "abcde"
+type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
+
+// ^a(?<foo>b(c)d)?e\\1\\2?$
+
+export type Captures2 = {
+	kind: "sequence"
+	ast: [
+		"<^>",
+		"a",
+		{
+			kind: "quantifier"
+			value: 0 | 1
+			ast: {
+				kind: "capture"
+				name: "foo"
+				ast: [
+					"b",
+					{
+						kind: "capture"
+						ast: "c"
+					},
+					"d"
+				]
+			}
+		},
+		"e",
+		{
+			kind: "reference"
+			to: 1
+		},
+		{
+			kind: "quantifier"
+			value: 0 | 1
+			ast: {
+				kind: "reference"
+				to: 2
+			}
+		},
+		"<$>"
+	]
+}
 
 // 1. use current mapping representation, but add references that encode hierarchy
 
@@ -46,20 +84,20 @@ type Captures = {
 
 // 2. use a hierarchical representation, extract actual indices later
 
-type Captures2 = [
-	{
-		pattern: "bcd"
-		optional: true
-		children: [
-			{
-				pattern: "c"
-				optional: false
-				children: []
-			}
-		]
-		name: "foo"
-	}
-]
+// type Captures2 = [
+// 	{
+// 		pattern: "bcd"
+// 		optional: true
+// 		children: [
+// 			{
+// 				pattern: "c"
+// 				optional: false
+// 				children: []
+// 			}
+// 		]
+// 		name: "foo"
+// 	}
+// ]
 
 export interface State extends State.Group {
 	unscanned: string
