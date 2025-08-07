@@ -101,8 +101,6 @@ type Captures = {
 
 export interface State extends State.Group {
 	unscanned: string
-	captures: Record<string | number, unknown>
-	closedGroups: State.Group[]
 	groups: State.Group[]
 	/** the initial flags passed to the root of the expression */
 	flags: Flags
@@ -113,10 +111,8 @@ export declare namespace State {
 
 	export type initialize<source extends string, flags extends Flags> = from<{
 		unscanned: source
-		closedGroups: []
 		groups: []
-		captures: {}
-		name: never
+		capture: never
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
@@ -124,8 +120,15 @@ export declare namespace State {
 		flags: flags
 	}>
 
+	enum UnnamedCaptureKind {
+		indexed,
+		lookaround,
+		noncapturing
+	}
+
 	export type Group = {
-		name: string | number
+		/** the name of the group or its kind */
+		capture: string | UnnamedCaptureKind
 		branches: PatternTree[]
 		sequence: PatternTree
 		root: PatternTree
@@ -178,9 +181,7 @@ export declare namespace s {
 	export type error<message extends string> = State.from<{
 		unscanned: ErrorMessage<message>
 		groups: []
-		closedGroups: []
-		name: never
-		captures: {}
+		capture: never
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
@@ -195,9 +196,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
-		closedGroups: s["closedGroups"]
-		name: s["name"]
-		captures: s["captures"]
+		capture: s["capture"]
 		branches: s["branches"]
 		sequence: pushQuantifiable<s["sequence"], s["root"]>
 		root: root
@@ -212,9 +211,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
-		closedGroups: s["closedGroups"]
-		name: s["name"]
-		captures: s["captures"]
+		capture: s["capture"]
 		branches: s["branches"]
 		sequence: pushQuantifiable<s["sequence"], quantified>
 		root: ""
@@ -228,9 +225,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
-		closedGroups: s["closedGroups"]
-		name: s["name"]
-		captures: s["captures"]
+		capture: s["capture"]
 		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
 		sequence: SequenceTree.Empty
 		root: ""
@@ -245,9 +240,7 @@ export declare namespace s {
 	> = State.from<{
 		unscanned: unscanned
 		groups: s["groups"]
-		closedGroups: s["closedGroups"]
-		name: s["name"]
-		captures: s["captures"]
+		capture: s["capture"]
 		branches: s["branches"]
 		sequence: pushQuantifiable<s["sequence"], pushQuantifiable<s["root"], a>>
 		root: ""
@@ -255,20 +248,15 @@ export declare namespace s {
 		flags: s["flags"]
 	}>
 
-	type LookaroundMarker = `${ZeroWidthSpace}lookahead`
-
 	export type pushGroup<
 		s extends State,
-		capture extends string | number,
+		capture extends string | State.UnnamedCaptureKind,
 		unscanned extends string,
-		isLookaround extends boolean,
 		caseInsensitive extends boolean | undefined
 	> = State.from<{
 		unscanned: unscanned
 		groups: [...s["groups"], s]
-		closedGroups: s["closedGroups"]
-		name: isLookaround extends true ? LookaroundMarker : capture
-		captures: s["captures"] & Record<capture, unknown>
+		capture: capture
 		branches: []
 		sequence: SequenceTree.Empty
 		root: ""
@@ -282,15 +270,11 @@ export declare namespace s {
 			State.from<{
 				unscanned: unscanned
 				groups: init
-				closedGroups: [...s["closedGroups"], s]
-				captures: s["name"] extends LookaroundMarker ? s["captures"]
-				:	s["captures"] & Record<s["name"], State.Group.finalize<s>>
-				name: last["name"]
+				capture: last["capture"]
 				branches: last["branches"]
 				sequence: pushQuantifiable<last["sequence"], last["root"]>
-				root: s["name"] extends never ? State.Group.finalize<s>
-				: s["name"] extends LookaroundMarker ? ""
-				: State.Group.finalize<s>
+				root: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
+				:	State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
 				flags: s["flags"]
 			}>

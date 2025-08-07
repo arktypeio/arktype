@@ -13,21 +13,16 @@ export type parseGroup<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
 		lookahead extends "?" ?
 			parseNonCapturingGroup<s, next>
-		:	s.pushGroup<
-				s,
-				nextCaptureIndex<s["captures"]>,
-				unscanned,
-				false,
-				undefined
-			>
+		:	s.pushGroup<s, State.UnnamedCaptureKind.indexed, unscanned, undefined>
 	:	s.error<writeUnclosedGroupMessage<")">>
 
 type parseNonCapturingGroup<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
-		lookahead extends ":" ? s.pushGroup<s, never, next, false, undefined>
+		lookahead extends ":" ?
+			s.pushGroup<s, State.UnnamedCaptureKind.noncapturing, next, undefined>
 		: // for now, lookarounds don't affect inference
 		lookahead extends LookaroundChar ?
-			s.pushGroup<s, never, next, true, undefined>
+			s.pushGroup<s, State.UnnamedCaptureKind.lookaround, next, undefined>
 		: lookahead extends "<" ? parseNamedGroupOrLookbehind<s, next>
 		: shiftModifiers<unscanned> extends (
 			ShiftedModifiers<infer flags, infer negated, infer following>
@@ -36,9 +31,8 @@ type parseNonCapturingGroup<s extends State, unscanned extends string> =
 				s.error<message>
 			:	s.pushGroup<
 					s,
-					never,
+					State.UnnamedCaptureKind.noncapturing,
 					following,
-					false,
 					"i" extends flags ? true
 					: "i" extends negated ? false
 					: undefined
@@ -149,17 +143,11 @@ type writeInvalidModifierMessage<char extends string> =
 type parseNamedGroupOrLookbehind<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<LookaroundChar, infer next> ?
 		// for now, lookarounds don't affect inference
-		s.pushGroup<s, never, next, true, undefined>
+		s.pushGroup<s, State.UnnamedCaptureKind.lookaround, next, undefined>
 	: shiftNamedGroup<unscanned> extends (
 		Scanner.shiftResult<infer name, infer following>
 	) ?
-		s.pushGroup<
-			s,
-			name | nextCaptureIndex<s["captures"]>,
-			following,
-			false,
-			undefined
-		>
+		s.pushGroup<s, name, following, undefined>
 	:	s.error<writeUnclosedGroupMessage<")">>
 
 type shiftNamedGroup<unscanned extends string> =
