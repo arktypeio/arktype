@@ -1,8 +1,8 @@
 import type { array, conform, Scanner } from "@ark/util"
 import type {
 	depthOf,
-	PatternTree,
 	pushQuantifiable,
+	RegexAst,
 	s,
 	SequenceTree,
 	State,
@@ -73,14 +73,14 @@ export type parsePossibleRange<
 			>
 		:	applyQuantified<
 				s,
-				conform<quantify<s["root"], parsed["min"], parsed["max"]>, PatternTree>,
+				conform<quantify<s["root"], parsed["min"], parsed["max"]>, RegexAst>,
 				parsed["unscanned"]
 			>
 	:	s.shiftQuantifiable<s, "{", unscanned>
 
 type applyQuantified<
 	s extends State,
-	quantified extends PatternTree,
+	quantified extends RegexAst,
 	unscanned extends string
 > = s.pushQuantified<
 	s,
@@ -91,7 +91,7 @@ type applyQuantified<
 
 type quantifyBuiltin<
 	quantifier extends QuantifyingChar,
-	tree extends PatternTree
+	tree extends RegexAst
 > =
 	quantifier extends "?" ? UnionTree<[tree, ""], [...depthOf<tree>, 1]>
 	: quantifier extends "+" ? pushQuantifiable<tree, string>
@@ -100,17 +100,17 @@ type quantifyBuiltin<
 	:	never
 
 type quantify<
-	base extends PatternTree,
+	base extends RegexAst,
 	min extends number,
 	max extends number | null
 > = _loopUntilMin<base, depthOf<base>, min, max, [], [1]>
 
 type _loopUntilMin<
-	base extends PatternTree,
+	base extends RegexAst,
 	baseDepth extends 1[],
 	min extends number,
 	max extends number | null,
-	repetitions extends PatternTree[],
+	repetitions extends RegexAst[],
 	repetitionDepth extends 1[]
 > =
 	repetitions["length"] extends min ?
@@ -141,15 +141,15 @@ type _loopUntilMin<
 		>
 
 type _loopUntilMax<
-	base extends PatternTree,
+	base extends RegexAst,
 	baseDepth extends 1[],
 	min extends number,
 	max extends number,
-	repetitions extends PatternTree[],
+	repetitions extends RegexAst[],
 	repetitionDepth extends 1[],
 	branches extends SequenceTree[],
 	branchesDepth extends 1[],
-	nextRepetitions extends PatternTree[] = [...repetitions, base],
+	nextRepetitions extends RegexAst[] = [...repetitions, base],
 	nextRepetitionDepth extends 1[] = array.multiply<
 		repetitionDepth,
 		baseDepth["length"]

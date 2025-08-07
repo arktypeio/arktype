@@ -126,12 +126,14 @@ export declare namespace State {
 		noncapturing
 	}
 
+	export type CaptureKind = string | UnnamedCaptureKind
+
 	export type Group = {
 		/** the name of the group or its kind */
-		capture: string | UnnamedCaptureKind
-		branches: PatternTree[]
-		sequence: PatternTree
-		root: PatternTree
+		capture: CaptureKind
+		branches: RegexAst[]
+		sequence: RegexAst
+		root: RegexAst
 		caseInsensitive: boolean
 	}
 
@@ -143,18 +145,18 @@ export declare namespace State {
 		export type finalize<g extends Group> =
 			g["branches"] extends [] ? pushQuantifiable<g["sequence"], g["root"]>
 			: [...g["branches"], pushQuantifiable<g["sequence"], g["root"]>] extends (
-				infer branches extends PatternTree[]
+				infer branches extends RegexAst[]
 			) ?
 				finalizeUnion<branches, [], []>
 			:	never
 
 		type finalizeUnion<
-			remaining extends PatternTree[],
-			flattened extends PatternTree[],
+			remaining extends RegexAst[],
+			flattened extends RegexAst[],
 			depth extends 1[]
 		> =
 			remaining extends (
-				[infer head extends PatternTree, ...infer tail extends PatternTree[]]
+				[infer head extends RegexAst, ...infer tail extends RegexAst[]]
 			) ?
 				head extends UnionTree<infer headBranches, infer headDepth> ?
 					finalizeUnion<
@@ -191,7 +193,7 @@ export declare namespace s {
 
 	export type shiftQuantifiable<
 		s extends State,
-		root extends PatternTree,
+		root extends RegexAst,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -206,7 +208,7 @@ export declare namespace s {
 
 	export type pushQuantified<
 		s extends State,
-		quantified extends PatternTree,
+		quantified extends RegexAst,
 		unscanned extends string
 	> = State.from<{
 		unscanned: unscanned
@@ -273,8 +275,15 @@ export declare namespace s {
 				capture: last["capture"]
 				branches: last["branches"]
 				sequence: pushQuantifiable<last["sequence"], last["root"]>
-				root: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
-				:	State.Group.finalize<s>
+				root: s["capture"] extends CapturedGroupKind ?
+					GroupTree<
+						State.Group.finalize<s>,
+						s["capture"],
+						depthOf<State.Group.finalize<s>>
+					>
+				: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
+				: // non-capturing
+					State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
 				flags: s["flags"]
 			}>
@@ -326,20 +335,30 @@ export declare namespace s {
 		:	never
 }
 
-export type PatternTree = string | UnionTree | SequenceTree
+export type RegexAst =
+	| string
+	| ReferenceNode
+	| UnionTree
+	| SequenceTree
+	| GroupTree
+
+export interface ReferenceNode<to extends string | number = string | number> {
+	kind: "reference"
+	to: to
+}
 
 export interface CompositeTree<
-	children extends PatternTree[] = PatternTree[],
+	ast extends RegexAst[] = RegexAst[],
 	depth extends 1[] = 1[]
 > {
-	children: children
+	ast: ast
 	depth: depth
 }
 
 export interface SequenceTree<
-	children extends PatternTree[] = PatternTree[],
+	ast extends RegexAst[] = RegexAst[],
 	depth extends 1[] = 1[]
-> extends CompositeTree<children, depth> {
+> extends CompositeTree<ast, depth> {
 	kind: "sequence"
 }
 
@@ -347,7 +366,7 @@ export declare namespace SequenceTree {
 	export type Empty = SequenceTree<[], [1]>
 
 	export type finalize<self extends SequenceTree> = _finalize<
-		self["children"],
+		self["ast"],
 		self["depth"],
 		""
 	>
@@ -363,22 +382,32 @@ export declare namespace SequenceTree {
 }
 
 export interface UnionTree<
-	children extends PatternTree[] = PatternTree[],
+	ast extends RegexAst[] = RegexAst[],
 	depth extends 1[] = 1[]
-> extends CompositeTree<children, depth> {
+> extends CompositeTree<ast, depth> {
 	kind: "union"
 }
 
 export declare namespace UnionTree {
-	export type finalize<self extends UnionTree> = _finalize<
-		self["children"],
-		never
-	>
+	export type finalize<self extends UnionTree> = _finalize<self["ast"], never>
 
 	type _finalize<branches extends unknown[], pattern extends string> =
 		branches extends [infer head, ...infer tail] ?
 			_finalize<tail, pattern | finalizeTree<head>>
 		:	pattern
+}
+
+export type CapturedGroupKind = string | State.UnnamedCaptureKind.indexed
+
+export interface GroupTree<
+	ast extends RegexAst = RegexAst,
+	capture extends CapturedGroupKind = CapturedGroupKind,
+	depth extends 1[] = 1[]
+> {
+	kind: "group"
+	capture: capture
+	ast: ast
+	depth: depth
 }
 
 declare global {
@@ -391,10 +420,7 @@ declare global {
 	}
 }
 
-export type pushQuantifiable<
-	sequence extends PatternTree,
-	root extends PatternTree
-> =
+export type pushQuantifiable<sequence extends RegexAst, root extends RegexAst> =
 	root extends "" ? sequence
 	: sequence extends string ?
 		sequence extends "" ?
@@ -408,18 +434,18 @@ export type pushQuantifiable<
 		>
 
 type pushToUnion<
-	union extends PatternTree,
-	root extends PatternTree,
+	union extends RegexAst,
+	root extends RegexAst,
 	depth extends 1[]
 > =
 	longerThan<depth, ArkEnv.maxDepth> extends true ?
 		SequenceTree<[union, string], depthOf<union>>
 	:	SequenceTree<[union, root], depth>
 
-type pushToSequence<sequence extends SequenceTree, root extends PatternTree> =
+type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 	sequence extends SequenceTree.Empty ? root
 	: root extends string ?
-		SequenceTree<[...sequence["children"], root], sequence["depth"]>
+		SequenceTree<[...sequence["ast"], root], sequence["depth"]>
 	: root extends SequenceTree ?
 		pushSequenceToSequence<
 			sequence,
@@ -440,8 +466,8 @@ type pushUnionToSequence<
 	depth extends 1[]
 > =
 	longerThan<depth, ArkEnv.maxDepth> extends true ?
-		SequenceTree<[...sequence["children"], string], sequence["depth"]>
-	:	SequenceTree<[...sequence["children"], union], depth>
+		SequenceTree<[...sequence["ast"], string], sequence["depth"]>
+	:	SequenceTree<[...sequence["ast"], union], depth>
 
 type pushSequenceToSequence<
 	sequence extends SequenceTree,
@@ -449,8 +475,8 @@ type pushSequenceToSequence<
 	depth extends 1[]
 > =
 	longerThan<depth, ArkEnv.maxDepth> extends true ?
-		SequenceTree<[...sequence["children"], string], sequence["depth"]>
-	:	SequenceTree<[...sequence["children"], ...append["children"]], depth>
+		SequenceTree<[...sequence["ast"], string], sequence["depth"]>
+	:	SequenceTree<[...sequence["ast"], ...append["ast"]], depth>
 
 export type depthOf<tree> =
 	tree extends { depth: infer depth extends 1[] } ? depth : [1]
