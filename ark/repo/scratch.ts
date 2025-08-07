@@ -1,5 +1,8 @@
 import { type } from "arktype"
 
-const why = type("(0 | (1 | (2 | (3 | (4 | 5)[])[])[])[])[]")
+const User = type({
+	name: "string",
+	age: "number = 0"
+})
 
-why.assert([0, [2]])
+User
