@@ -308,25 +308,34 @@ export declare namespace s {
 					ErrorMessage<writeMidAnchorError<"$">>
 				:	Regex<
 						pattern,
-						keyof f["captures"] extends never ?
-							f["flags"] extends "" ?
-								{}
+						f["captures"] extends [] ?
+							keyof f["names"] extends never ?
+								f["flags"] extends "" ?
+									{}
+								:	{
+										flags: f["flags"]
+									}
+							: f["flags"] extends "" ?
+								{
+									names: f["names"]
+								}
 							:	{
+									names: f["names"]
 									flags: f["flags"]
 								}
 						: keyof f["names"] extends never ?
 							f["flags"] extends "" ?
 								{ captures: f["captures"] }
-							:	{ flags: f["flags"]; captures: f["captures"] }
+							:	{ captures: f["captures"]; flags: f["flags"] }
 						: f["flags"] extends "" ?
 							{
 								captures: f["captures"]
 								names: f["names"]
 							}
 						:	{
-								flags: f["flags"]
 								captures: f["captures"]
 								names: f["names"]
+								flags: f["flags"]
 							}
 					>
 			:	never
