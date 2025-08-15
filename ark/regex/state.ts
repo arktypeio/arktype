@@ -301,11 +301,13 @@ export declare namespace s {
 			}
 		> extends infer r extends FinalizationResult ?
 			applyAnchors<r["pattern"]> extends infer pattern extends string ?
-				contains<pattern, StartAnchorMarker> extends true ?
-					ErrorMessage<writeMidAnchorError<"^">>
-				: contains<pattern, EndAnchorMarker> extends true ?
-					ErrorMessage<writeMidAnchorError<"$">>
-				:	Regex<pattern, finalizeContext<r["ctx"]>>
+				// check the negation in case pattern is a union in which some
+				// branches contain invalid anchors
+				contains<pattern, StartAnchorMarker> extends false ?
+					contains<pattern, EndAnchorMarker> extends false ?
+						Regex<pattern, finalizeContext<r["ctx"]>>
+					:	ErrorMessage<writeMidAnchorError<"$">>
+				:	ErrorMessage<writeMidAnchorError<"^">>
 			:	never
 		:	never
 

@@ -125,6 +125,16 @@ contextualize(() => {
 			attest(() => regex("$a")).type.errors(writeMidAnchorError("$"))
 		})
 
+		it("invalid start anchor union", () => {
+			// @ts-expect-error
+			attest(() => regex("^f^oo|^bar")).type.errors(writeMidAnchorError("^"))
+		})
+
+		it("invalid end anchor union", () => {
+			// @ts-expect-error
+			attest(() => regex("^foo|^b$ar")).type.errors(writeMidAnchorError("$"))
+		})
+
 		it("start after first char in group", () => {
 			// @ts-expect-error
 			attest(() => regex("f(^)")).type.errors(writeMidAnchorError("^"))
