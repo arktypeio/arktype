@@ -448,7 +448,44 @@ export declare namespace GroupTree {
 	export type finalize<
 		self extends GroupTree,
 		ctx extends FinalizationContext
-	> = finalizeTree<self["ast"], ctx>
+	> =
+		finalizeTree<
+			self["ast"],
+			self["capture"] extends string ?
+				{
+					// in case the group references itself
+					captures: [...ctx["captures"], ""]
+					names: ctx["names"] & { [_ in self["capture"]]: string }
+					flags: ctx["flags"]
+				}
+			: self["capture"] extends State.UnnamedCaptureKind.indexed ?
+				{
+					captures: [...ctx["captures"], string]
+					names: ctx["names"]
+					flags: ctx["flags"]
+				}
+			:	ctx
+		> extends infer r extends FinalizationResult ?
+			// TODO: this needs to update the specific index that was captured in the first half
+			// of this logic as opposed to pushing, since other nested captures could be
+			// parsed and would be overwritten based on the current logic
+			FinalizationResult.from<{
+				pattern: r["pattern"]
+				ctx: self["capture"] extends string ?
+					{
+						captures: [...ctx["captures"], r["pattern"]]
+						names: r["ctx"]["names"] & { [_ in self["capture"]]: r["pattern"] }
+						flags: r["ctx"]["flags"]
+					}
+				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
+					{
+						captures: [...ctx["captures"], r["pattern"]]
+						names: r["ctx"]["names"]
+						flags: r["ctx"]["flags"]
+					}
+				:	r["ctx"]
+			}>
+		:	never
 }
 
 declare global {
