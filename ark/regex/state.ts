@@ -306,40 +306,40 @@ export declare namespace s {
 					ErrorMessage<writeMidAnchorError<"^">>
 				: contains<pattern, EndAnchorMarker> extends true ?
 					ErrorMessage<writeMidAnchorError<"$">>
-				:	Regex<
-						pattern,
-						f["captures"] extends [] ?
-							keyof f["names"] extends never ?
-								f["flags"] extends "" ?
-									{}
-								:	{
-										flags: f["flags"]
-									}
-							: f["flags"] extends "" ?
-								{
-									names: f["names"]
-								}
-							:	{
-									names: f["names"]
-									flags: f["flags"]
-								}
-						: keyof f["names"] extends never ?
-							f["flags"] extends "" ?
-								{ captures: f["captures"] }
-							:	{ captures: f["captures"]; flags: f["flags"] }
-						: f["flags"] extends "" ?
-							{
-								captures: f["captures"]
-								names: f["names"]
-							}
-						:	{
-								captures: f["captures"]
-								names: f["names"]
-								flags: f["flags"]
-							}
-					>
+				:	Regex<pattern, finalizeContext<f>>
 			:	never
 		:	never
+
+	type finalizeContext<f extends FinalizationState> =
+		f["captures"] extends [] ?
+			keyof f["names"] extends never ?
+				f["flags"] extends "" ?
+					{}
+				:	{
+						flags: f["flags"]
+					}
+			: f["flags"] extends "" ?
+				{
+					names: f["names"]
+				}
+			:	{
+					names: f["names"]
+					flags: f["flags"]
+				}
+		: keyof f["names"] extends never ?
+			f["flags"] extends "" ?
+				{ captures: f["captures"] }
+			:	{ captures: f["captures"]; flags: f["flags"] }
+		: f["flags"] extends "" ?
+			{
+				captures: f["captures"]
+				names: f["names"]
+			}
+		:	{
+				captures: f["captures"]
+				names: f["names"]
+				flags: f["flags"]
+			}
 }
 
 export type RegexAst =
