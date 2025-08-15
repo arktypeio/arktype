@@ -87,7 +87,7 @@ code {
 	}
 }
 
-.fd-codeblock {
+.fd-codeblock.twoslash {
 	border-radius: 1.5rem !important;
 }
 
