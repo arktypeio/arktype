@@ -10,7 +10,7 @@ import type {
 	ZeroWidthSpace
 } from "@ark/util"
 import type { QuantifyingChar } from "./quantify.ts"
-import type { Flags, NamedCaptures, Regex } from "./regex.ts"
+import type { Flags, NamedCaptures, Regex, RegexContext } from "./regex.ts"
 
 type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
@@ -292,46 +292,44 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			ErrorMessage<writeUnclosedGroupMessage<")">>
-		: applyAnchors<finalizeTree<State.Group.finalize<s>>> extends (
-			infer pattern extends string
-		) ?
-			contains<pattern, StartAnchorMarker> extends true ?
-				ErrorMessage<writeMidAnchorError<"^">>
-			: contains<pattern, EndAnchorMarker> extends true ?
-				ErrorMessage<writeMidAnchorError<"$">>
-			:	Regex<
-					pattern,
-					keyof s["captures"] extends never ?
-						s["flags"] extends "" ?
-							{}
-						:	{
-								flags: s["flags"]
-							}
-					: [
-						finalizeCaptures<s["captures"]>,
-						finalizeNamedCaptures<s["captures"]>
-					] extends (
-						[
-							infer captures extends string[],
-							infer namedCaptures extends NamedCaptures
-						]
-					) ?
-						keyof namedCaptures extends never ?
-							s["flags"] extends "" ?
-								{ captures: captures }
-							:	{ flags: s["flags"]; captures: captures }
-						: s["flags"] extends "" ?
+		: finalizeTree<
+			State.Group.finalize<s>,
+			{
+				pattern: ""
+				captures: []
+				names: {}
+				flags: s["flags"]
+			}
+		> extends infer f extends FinalizationState ?
+			applyAnchors<f["pattern"]> extends infer pattern extends string ?
+				contains<pattern, StartAnchorMarker> extends true ?
+					ErrorMessage<writeMidAnchorError<"^">>
+				: contains<pattern, EndAnchorMarker> extends true ?
+					ErrorMessage<writeMidAnchorError<"$">>
+				:	Regex<
+						pattern,
+						keyof f["captures"] extends never ?
+							f["flags"] extends "" ?
+								{}
+							:	{
+									flags: f["flags"]
+								}
+						: keyof f["names"] extends never ?
+							f["flags"] extends "" ?
+								{ captures: f["captures"] }
+							:	{ flags: f["flags"]; captures: f["captures"] }
+						: f["flags"] extends "" ?
 							{
-								captures: captures
-								names: namedCaptures
+								captures: f["captures"]
+								names: f["names"]
 							}
 						:	{
-								flags: s["flags"]
-								captures: captures
-								names: namedCaptures
+								flags: f["flags"]
+								captures: f["captures"]
+								names: f["names"]
 							}
-					:	never
-				>
+					>
+			:	never
 		:	never
 }
 
@@ -345,6 +343,18 @@ export type RegexAst =
 export interface ReferenceNode<to extends string | number = string | number> {
 	kind: "reference"
 	to: to
+}
+
+export declare namespace ReferenceNode {
+	export type finalize<
+		self extends ReferenceNode,
+		f extends FinalizationState
+	> = FinalizationState.from<{
+		pattern: appendNonRedundant<f["pattern"], `${self["to"]}`>
+		captures: f["captures"]
+		names: f["names"]
+		flags: f["flags"]
+	}>
 }
 
 export interface CompositeTree<
@@ -365,20 +375,25 @@ export interface SequenceTree<
 export declare namespace SequenceTree {
 	export type Empty = SequenceTree<[], [1]>
 
-	export type finalize<self extends SequenceTree> = _finalize<
-		self["ast"],
-		self["depth"],
-		""
-	>
+	export type finalize<
+		self extends SequenceTree,
+		f extends FinalizationState
+	> = _finalize<self["ast"], f>
 
-	type _finalize<
-		tree extends unknown[],
-		depth extends 1[],
-		result extends string
-	> =
+	type _finalize<tree extends unknown[], f extends FinalizationState> =
 		tree extends [infer head, ...infer tail] ?
-			_finalize<tail, depth, appendNonRedundant<result, finalizeTree<head>>>
-		:	result
+			finalizeTree<head, f> extends infer next extends FinalizationState ?
+				_finalize<
+					tail,
+					{
+						pattern: appendNonRedundant<f["pattern"], next["pattern"]>
+						captures: next["captures"]
+						names: next["names"]
+						flags: next["flags"]
+					}
+				>
+			:	never
+		:	f
 }
 
 export interface UnionTree<
@@ -389,12 +404,25 @@ export interface UnionTree<
 }
 
 export declare namespace UnionTree {
-	export type finalize<self extends UnionTree> = _finalize<self["ast"], never>
+	export type finalize<
+		self extends UnionTree,
+		f extends FinalizationState
+	> = _finalize<self["ast"], f>
 
-	type _finalize<branches extends unknown[], pattern extends string> =
+	type _finalize<branches extends unknown[], f extends FinalizationState> =
 		branches extends [infer head, ...infer tail] ?
-			_finalize<tail, pattern | finalizeTree<head>>
-		:	pattern
+			finalizeTree<head, f> extends infer next extends FinalizationState ?
+				_finalize<
+					tail,
+					{
+						pattern: f["pattern"] | next["pattern"]
+						captures: next["captures"]
+						names: next["names"]
+						flags: next["flags"]
+					}
+				>
+			:	never
+		:	f
 }
 
 export type CapturedGroupKind = string | State.UnnamedCaptureKind.indexed
@@ -408,6 +436,13 @@ export interface GroupTree<
 	capture: capture
 	ast: ast
 	depth: depth
+}
+
+export declare namespace GroupTree {
+	export type finalize<
+		self extends GroupTree,
+		f extends FinalizationState
+	> = finalizeTree<self["ast"], f>
 }
 
 declare global {
@@ -444,7 +479,7 @@ type pushToUnion<
 
 type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 	sequence extends SequenceTree.Empty ? root
-	: root extends string ?
+	: root extends string | ReferenceNode ?
 		SequenceTree<[...sequence["ast"], root], sequence["depth"]>
 	: root extends SequenceTree ?
 		pushSequenceToSequence<
@@ -456,6 +491,11 @@ type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 		pushUnionToSequence<
 			sequence,
 			root,
+			array.multiply<sequence["depth"], root["depth"]["length"]>
+		>
+	: root extends GroupTree ?
+		SequenceTree<
+			[...sequence["ast"], root],
 			array.multiply<sequence["depth"], root["depth"]["length"]>
 		>
 	:	never
@@ -481,28 +521,44 @@ type pushSequenceToSequence<
 export type depthOf<tree> =
 	tree extends { depth: infer depth extends 1[] } ? depth : [1]
 
-// add an initial dummy element to align with the 1-based indexing of capture
-// groups maintained in state
-type finalizeCaptures<captures> = _finalizeCaptures<captures, [never]>
+// // add an initial dummy element to align with the 1-based indexing of capture
+// // groups maintained in state
+// type finalizeCaptures<captures> = _finalizeCaptures<captures, [never]>
 
-type _finalizeCaptures<captures, finalized extends unknown[]> =
-	finalized["length"] extends keyof captures ?
-		_finalizeCaptures<
-			captures,
-			[...finalized, anchorsAway<finalizeTree<captures[finalized["length"]]>>]
-		>
-	:	tailOf<finalized>
+// type _finalizeCaptures<captures, finalized extends unknown[]> =
+// 	finalized["length"] extends keyof captures ?
+// 		_finalizeCaptures<
+// 			captures,
+// 			[...finalized, anchorsAway<finalizeTree<captures[finalized["length"]]>>]
+// 		>
+// 	:	tailOf<finalized>
 
-type finalizeNamedCaptures<captures> = {
-	[k in keyof captures as k extends string ? k : never]: anchorsAway<
-		finalizeTree<captures[k]>
-	>
-} & unknown
+// type finalizeNamedCaptures<captures> = {
+// 	[k in keyof captures as k extends string ? k : never]: anchorsAway<
+// 		finalizeTree<captures[k]>
+// 	>
+// } & unknown
 
-type finalizeTree<tree> =
-	tree extends string ? tree
-	: tree extends SequenceTree ? SequenceTree.finalize<tree>
-	: tree extends UnionTree ? UnionTree.finalize<tree>
+interface FinalizationState extends Required<RegexContext> {
+	pattern: string
+}
+
+declare namespace FinalizationState {
+	export type from<f extends FinalizationState> = f
+}
+
+type finalizeTree<tree, f extends FinalizationState> =
+	tree extends string ?
+		FinalizationState.from<{
+			pattern: tree
+			captures: f["captures"]
+			names: f["names"]
+			flags: f["flags"]
+		}>
+	: tree extends SequenceTree ? SequenceTree.finalize<tree, f>
+	: tree extends UnionTree ? UnionTree.finalize<tree, f>
+	: tree extends GroupTree ? GroupTree.finalize<tree, f>
+	: tree extends ReferenceNode ? ReferenceNode.finalize<tree, f>
 	: never
 
 type applyAnchors<pattern extends string> =

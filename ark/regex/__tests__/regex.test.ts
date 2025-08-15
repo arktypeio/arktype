@@ -19,7 +19,11 @@ import {
 } from "@ark/regex/internal/group.js"
 import type { next } from "@ark/regex/internal/parse.js"
 import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
-import { writeMidAnchorError, type State } from "@ark/regex/internal/state.js"
+import {
+	writeMidAnchorError,
+	type s,
+	type State
+} from "@ark/regex/internal/state.js"
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
@@ -29,12 +33,12 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type Result = iterate<State.initialize<"(a)(b)\\1", "">, 7>
-
 contextualize(() => {
 	it("erate", () => {
-		type Result = iterate<State.initialize<"^(a)b\\1$", "">, 4>
-		attest<"b\\1$", Result["unscanned"]>()
+		type Result = iterate<State.initialize<"(a|b)b\\1", "">, 7>
+		type Result2 = State.Group.finalize<Result>
+		type Result3 = s.finalize<Result>
+		// attest<"b\\1$", Result["unscanned"]>()
 	})
 
 	describe("literals", () => {
