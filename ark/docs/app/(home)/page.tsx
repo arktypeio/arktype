@@ -39,7 +39,7 @@ export default () => (
 				/>
 			</ArkCard>
 			<ArkCard title="Faster... everything" icon={<RocketIcon />}>
-				100x faster than Zod and 2,000x faster than Yup at runtime, with editor
+				20x faster than Zod4 and 2,000x faster than Yup at runtime, with editor
 				performance that will remind you how autocomplete is supposed to feel
 				<RuntimeBenchmarksGraph className="pt-4" />
 			</ArkCard>
