@@ -264,7 +264,7 @@ contextualize(() => {
 		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("kekw"))
 	})
 
-	it("errors on public and private refrence with same name", () => {
+	it("errors on public and private reference with same name", () => {
 		attest(() =>
 			scope({
 				kekw: "1",

@@ -73,7 +73,7 @@ const parsePatternProperties = (jsonSchema: JsonSchema.Object) => {
 		([key, value]) => [new RegExp(key), jsonSchemaToType(value)] as const
 	)
 
-	// NB: We don't validate compatability of schemas for overlapping patternProperties
+	// NB: We don't validate compatibility of schemas for overlapping patternProperties
 	// since getting the intersection of regexes is inherently non-trivial.
 	const indexSchemas = patternProperties.map(
 		([pattern, parsedPatternPropertySchema]) => ({

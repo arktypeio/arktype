@@ -25,19 +25,19 @@ type DuplicateData<val = unknown> = { element: val; indices: number[] }
 			isEqual(duplicate.element, element)
 		)
 		if (duplicatesIndx !== -1) {
-			// This is at least the third occurence of an item equal to `element`,
+			// This is at least the third occurrence of an item equal to `element`,
 			// so add this index to the list of indices where the element is duplicated.
 			duplicates[duplicatesIndx].indices.push(indx)
 			continue
 		}
 
 		// At this point, we know this is either the first
-		// or second occurence of an item equal to `element`...
+		// or second occurrence of an item equal to `element`...
 
 		let found = false
 		for (const [existingElement, firstSeenIndx] of elementFirstSeenIndx) {
 			if (isEqual(element, existingElement)) {
-				// This is the second occurence of an item equal to `element`,
+				// This is the second occurrence of an item equal to `element`,
 				// so store it as a duplicate.
 				found = true
 				duplicates.push({
