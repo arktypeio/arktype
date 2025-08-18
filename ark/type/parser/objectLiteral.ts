@@ -234,7 +234,7 @@ type nonOptionalKeyFromEntry<k extends PropertyKey, v, $, args> =
 			:	parsedKey["normalized"]
 		: parsedKey extends PreparsedEntryKey<"index"> ?
 			inferDefinition<parsedKey["normalized"], $, args> & Key
-		:	// optional keys are not included by defintion
+		:	// optional keys are not included by definition
 			// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 			// "+" has no effect on inference
 			never

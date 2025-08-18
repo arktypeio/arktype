@@ -245,7 +245,7 @@ const Base = type({
 
 // accepts ...definitions
 const intersection = type.and(
-	base,
+	Base,
 	{
 		bar: "number"
 	},
@@ -264,7 +264,7 @@ const Base = type({
 
 // accepts ...objectDefinitions
 const merged = type.merge(
-	base,
+	Base,
 	{
 		"[string]": "bigint",
 		"foo?": "1n"
