@@ -4,6 +4,7 @@ import type {
 	ErrorMessage,
 	leftIfEqual,
 	longerThan,
+	setIndex,
 	tailOf,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
@@ -466,20 +467,25 @@ export declare namespace GroupTree {
 				}
 			:	ctx
 		> extends infer r extends FinalizationResult ?
-			// TODO: this needs to update the specific index that was captured in the first half
-			// of this logic as opposed to pushing, since other nested captures could be
-			// parsed and would be overwritten based on the current logic
 			FinalizationResult.from<{
 				pattern: r["pattern"]
 				ctx: self["capture"] extends string ?
 					{
-						captures: [...ctx["captures"], r["pattern"]]
+						captures: setIndex<
+							r["ctx"]["captures"],
+							ctx["captures"]["length"],
+							r["pattern"]
+						>
 						names: r["ctx"]["names"] & { [_ in self["capture"]]: r["pattern"] }
 						flags: r["ctx"]["flags"]
 					}
 				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 					{
-						captures: [...ctx["captures"], r["pattern"]]
+						captures: setIndex<
+							r["ctx"]["captures"],
+							ctx["captures"]["length"],
+							r["pattern"]
+						>
 						names: r["ctx"]["names"]
 						flags: r["ctx"]["flags"]
 					}
