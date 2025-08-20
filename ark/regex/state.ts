@@ -5,13 +5,12 @@ import type {
 	leftIfEqual,
 	longerThan,
 	setIndex,
-	tailOf,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
 } from "@ark/util"
 import type { QuantifyingChar } from "./quantify.ts"
-import type { Flags, NamedCaptures, Regex, RegexContext } from "./regex.ts"
+import type { Flags, Regex, RegexContext } from "./regex.ts"
 
 type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
@@ -55,50 +54,6 @@ export type Captures2 = {
 		"<$>"
 	]
 }
-
-// 1. use current mapping representation, but add references that encode hierarchy
-
-type Captures = {
-	1: {
-		ast: {
-			kind: "sequence"
-			children: ["b", { kind: "reference"; name: 2 }, "d"]
-		}
-		optional: true
-		nestedInOptional: false
-		name: "foo"
-	}
-	2: {
-		ast: "c"
-		optional: false
-		nestedInOptional: true
-	}
-}
-
-// { kind: "sequence", children: ["a", "b", "c", "d", "e"]}
-// { kind: "sequence", children: ["a", "$captureGroup1", "e"] }
-
-// original definition
-// { kind: "reference", name: "foo" }
-// backreference
-// { kind: "reference", name: "foo" }
-
-// 2. use a hierarchical representation, extract actual indices later
-
-// type Captures2 = [
-// 	{
-// 		pattern: "bcd"
-// 		optional: true
-// 		children: [
-// 			{
-// 				pattern: "c"
-// 				optional: false
-// 				children: []
-// 			}
-// 		]
-// 		name: "foo"
-// 	}
-// ]
 
 export interface State extends State.Group {
 	unscanned: string
@@ -350,6 +305,7 @@ export type RegexAst =
 	| UnionTree
 	| SequenceTree
 	| GroupTree
+	| QuantifierTree
 
 export interface ReferenceNode<to extends string | number = string | number> {
 	kind: "reference"
@@ -372,6 +328,15 @@ export interface CompositeTree<
 > {
 	ast: ast
 	depth: depth
+}
+
+export interface QuantifierTree<
+	ast extends RegexAst[] = RegexAst[],
+	depth extends 1[] = 1[]
+> extends CompositeTree<ast, depth> {
+	kind: "quantifier"
+	min: number
+	max: number
 }
 
 export interface SequenceTree<
