@@ -1,7 +1,6 @@
-import type { array, conform, Scanner } from "@ark/util"
+import type { array, Scanner } from "@ark/util"
 import type {
 	depthOf,
-	pushQuantifiable,
 	RegexAst,
 	s,
 	SequenceTree,
@@ -15,12 +14,22 @@ export type parseBuiltinQuantifier<
 	unscanned extends string
 > =
 	s["root"] extends "" ? s.error<writeUnmatchedQuantifierError<quantifier>>
-	:	s.pushQuantified<
+	:	quantifyBuiltin<
 			s,
-			quantifyBuiltin<quantifier, s["root"]>,
+			quantifier,
 			unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
 			:	unscanned
 		>
+
+type quantifyBuiltin<
+	s extends State,
+	quantifier extends QuantifyingChar,
+	unscanned extends string
+> =
+	quantifier extends "?" ? s.pushQuantifier<s, 0, 1, unscanned>
+	: quantifier extends "+" ? s.pushQuantifier<s, 1, null, unscanned>
+	: quantifier extends "*" ? s.pushQuantifier<s, 0, null, unscanned>
+	: never
 
 type ParsedRange = {
 	min: number
@@ -71,33 +80,15 @@ export type parsePossibleRange<
 					:	never
 				>
 			>
-		:	applyQuantified<
+		:	s.pushQuantifier<
 				s,
-				conform<quantify<s["root"], parsed["min"], parsed["max"]>, RegexAst>,
-				parsed["unscanned"]
+				parsed["min"],
+				parsed["max"],
+				parsed["unscanned"] extends Scanner.shift<"?", infer lazyUnscanned> ?
+					lazyUnscanned
+				:	parsed["unscanned"]
 			>
 	:	s.shiftQuantifiable<s, "{", unscanned>
-
-type applyQuantified<
-	s extends State,
-	quantified extends RegexAst,
-	unscanned extends string
-> = s.pushQuantified<
-	s,
-	quantified,
-	unscanned extends Scanner.shift<"?", infer lazyUnscanned> ? lazyUnscanned
-	:	unscanned
->
-
-type quantifyBuiltin<
-	quantifier extends QuantifyingChar,
-	tree extends RegexAst
-> =
-	quantifier extends "?" ? UnionTree<[tree, ""], [...depthOf<tree>, 1]>
-	: quantifier extends "+" ? pushQuantifiable<tree, string>
-	: quantifier extends "*" ?
-		UnionTree<[pushQuantifiable<tree, string>, ""], [...depthOf<tree>, 1]>
-	:	never
 
 type quantify<
 	base extends RegexAst,

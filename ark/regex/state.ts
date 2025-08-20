@@ -9,7 +9,7 @@ import type {
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
 } from "@ark/util"
-import type { QuantifyingChar } from "./quantify.ts"
+import type { quantify, QuantifyingChar } from "./quantify.ts"
 import type { Flags, Regex, RegexContext } from "./regex.ts"
 
 type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
@@ -177,6 +177,31 @@ export declare namespace s {
 		flags: s["flags"]
 	}>
 
+	export type pushQuantifier<
+		s extends State,
+		min extends number,
+		max extends number | null,
+		unscanned extends string
+	> = State.from<{
+		unscanned: unscanned
+		groups: s["groups"]
+		capture: s["capture"]
+		branches: s["branches"]
+		sequence: pushQuantifiable<
+			s["sequence"],
+			{
+				kind: "quantifier"
+				ast: s["root"]
+				min: min
+				max: max
+				depth: []
+			}
+		>
+		root: ""
+		caseInsensitive: s["caseInsensitive"]
+		flags: s["flags"]
+	}>
+
 	export type finalizeBranch<
 		s extends State,
 		unscanned extends string
@@ -330,15 +355,6 @@ export interface CompositeTree<
 	depth: depth
 }
 
-export interface QuantifierTree<
-	ast extends RegexAst[] = RegexAst[],
-	depth extends 1[] = 1[]
-> extends CompositeTree<ast, depth> {
-	kind: "quantifier"
-	min: number
-	max: number
-}
-
 export interface SequenceTree<
 	ast extends RegexAst[] = RegexAst[],
 	depth extends 1[] = 1[]
@@ -459,6 +475,38 @@ export declare namespace GroupTree {
 		:	never
 }
 
+export interface QuantifierTree<
+	ast extends RegexAst = RegexAst,
+	depth extends 1[] = 1[]
+> {
+	kind: "quantifier"
+	ast: ast
+	depth: depth
+	min: number
+	max: number | null
+}
+
+export declare namespace QuantifierTree {
+	export type finalize<
+		self extends QuantifierTree,
+		ctx extends FinalizationContext
+	> =
+		finalizeTree<self["ast"], ctx> extends infer r extends FinalizationResult ?
+			FinalizationResult.from<{
+				pattern: quantify<r["pattern"], self["min"], self["max"]>
+				ctx: r["ctx"]
+			}>
+		:	never
+
+	// 	finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
+	// 		_finalize<tail, pattern | r["pattern"], r["ctx"]>
+	// 	:	never
+	// :	FinalizationResult.from<{
+	// 		pattern: pattern
+	// 		ctx: ctx
+	// 	}>
+}
+
 declare global {
 	export interface ArkEnv {
 		maxDepth(): 8191
@@ -573,6 +621,7 @@ type finalizeTree<tree, ctx extends FinalizationContext> =
 	: tree extends SequenceTree ? SequenceTree.finalize<tree, ctx>
 	: tree extends UnionTree ? UnionTree.finalize<tree, ctx>
 	: tree extends GroupTree ? GroupTree.finalize<tree, ctx>
+	: tree extends QuantifierTree ? {}
 	: tree extends ReferenceNode ? ReferenceNode.finalize<tree, ctx>
 	: never
 
