@@ -474,7 +474,7 @@ export declare namespace GroupTree {
 						captures: setIndex<
 							r["ctx"]["captures"],
 							ctx["captures"]["length"],
-							r["pattern"]
+							anchorsAway<r["pattern"]>
 						>
 						names: r["ctx"]["names"] & { [_ in self["capture"]]: r["pattern"] }
 						flags: r["ctx"]["flags"]
@@ -484,7 +484,7 @@ export declare namespace GroupTree {
 						captures: setIndex<
 							r["ctx"]["captures"],
 							ctx["captures"]["length"],
-							r["pattern"]
+							anchorsAway<r["pattern"]>
 						>
 						names: r["ctx"]["names"]
 						flags: r["ctx"]["flags"]
