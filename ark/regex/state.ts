@@ -457,9 +457,6 @@ export type pushQuantifiable<sequence extends RegexAst, root extends RegexAst> =
 	: sequence extends SequenceTree ? pushToSequence<sequence, root>
 	: SequenceTree<[sequence, root]>
 
-// 	longerThan<depth, ArkEnv.maxDepth> extends true ?
-
-// TODO: more trees?
 type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 	sequence extends SequenceTree.Empty ? root
 	: root extends string | ReferenceNode ?
@@ -468,18 +465,21 @@ type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 		SequenceTree<[...sequence["ast"], ...root["ast"]]>
 	: root extends UnionTree ? SequenceTree<[...sequence["ast"], root]>
 	: root extends GroupTree ? SequenceTree<[...sequence["ast"], root]>
-	: never
+	: // TODO: reference node etc.
+		never
 
-type FinalizationContext = Required<RegexContext>
+export interface FinalizationContext extends Required<RegexContext> {}
 
-type FinalizationResult = {
+export type FinalizationResult = {
 	pattern: string
 	ctx: FinalizationContext
 }
 
-declare namespace FinalizationResult {
+export declare namespace FinalizationResult {
 	export type from<r extends FinalizationResult> = r
 }
+
+// 	longerThan<depth, ArkEnv.maxDepth> extends true ?
 
 type finalizeTree<tree, ctx extends FinalizationContext> =
 	tree extends string ?
@@ -490,7 +490,7 @@ type finalizeTree<tree, ctx extends FinalizationContext> =
 	: tree extends SequenceTree ? SequenceTree.finalize<tree, ctx>
 	: tree extends UnionTree ? UnionTree.finalize<tree, ctx>
 	: tree extends GroupTree ? GroupTree.finalize<tree, ctx>
-	: tree extends QuantifierTree ? finalizeTree<tree["ast"], ctx>
+	: tree extends QuantifierTree ? QuantifierTree.finalize<tree, ctx>
 	: tree extends ReferenceNode ? ReferenceNode.finalize<tree, ctx>
 	: never
 

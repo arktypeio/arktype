@@ -1,5 +1,5 @@
 import type { Scanner } from "@ark/util"
-import type { RegexAst, s, SequenceTree, State, UnionTree } from "./state.ts"
+import type { s, State } from "./state.ts"
 
 export type parseBuiltinQuantifier<
 	s extends State,
@@ -83,58 +83,37 @@ export type parsePossibleRange<
 			>
 	:	s.shiftQuantifiable<s, "{", unscanned>
 
-type quantify<
-	base extends RegexAst,
+export type quantify<
+	pattern extends string,
 	min extends number,
 	max extends number | null
-> = _loopUntilMin<base, min, max, []>
-
-//  depthOf<base>
-// baseDepth extends 1[],
-// repetitionDepth extends 1[]
+> = _loopUntilMin<pattern, min, max, "", []>
 
 type _loopUntilMin<
-	base extends RegexAst,
+	base extends string,
 	min extends number,
 	max extends number | null,
-	repetitions extends RegexAst[]
+	acc extends string,
+	repetitions extends 1[]
 > =
 	repetitions["length"] extends min ?
 		max extends number ?
 			max extends min ?
-				// avoid handling a range like {2} as a 1-branch union
-				repetitions["length"] extends 1 ?
-					repetitions[0]
-				:	SequenceTree<repetitions>
-			:	_loopUntilMax<base, min, max, repetitions, [SequenceTree<repetitions>]> // repetitionsDepth
-		:	SequenceTree<[...repetitions, string]>
-	:	_loopUntilMin<base, min, max, [...repetitions, base]> // array.multiply<repetitionDepth, baseDepth["length"]>
-
-// baseDepth extends 1[],
-// repetitionDepth extends 1[],
-// branchesDepth extends 1[],
-// nextRepetitionDepth extends 1[] = array.multiply<
-// 	repetitionDepth,
-// 	baseDepth["length"]
-// >
+				acc
+			:	_loopUntilMax<base, min, max, acc, repetitions>
+		:	// TODO: infer redundant ${string}${string}
+			`${acc}${string}`
+	:	_loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]> // array.multiply<repetitionDepth, baseDepth["length"]>
 
 type _loopUntilMax<
-	base extends RegexAst,
+	base extends string,
 	min extends number,
 	max extends number,
-	repetitions extends RegexAst[],
-	branches extends SequenceTree[],
-	nextRepetitions extends RegexAst[] = [...repetitions, base]
+	acc extends string,
+	repetitions extends 1[]
 > =
-	repetitions["length"] extends max ?
-		UnionTree<branches> // branches depth
-	:	_loopUntilMax<
-			base,
-			min,
-			max,
-			nextRepetitions,
-			[...branches, SequenceTree<nextRepetitions>] // next repetitions depth
-		>
+	repetitions["length"] extends max ? acc
+	:	_loopUntilMax<base, min, max, acc | `${acc}${base}`, [...repetitions, 1]>
 
 export type QuantifyingChar = "*" | "+" | "?"
 
