@@ -98,9 +98,7 @@ type _loopUntilMin<
 > =
 	repetitions["length"] extends min ?
 		max extends number ?
-			max extends min ?
-				acc
-			:	_loopUntilMax<base, min, max, acc, repetitions>
+			_loopUntilMax<base, min, max, acc, repetitions>
 		:	// TODO: infer redundant ${string}${string}
 			`${acc}${string}`
 	:	_loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]> // array.multiply<repetitionDepth, baseDepth["length"]>

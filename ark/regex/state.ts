@@ -459,14 +459,9 @@ export type pushQuantifiable<sequence extends RegexAst, root extends RegexAst> =
 
 type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 	sequence extends SequenceTree.Empty ? root
-	: root extends string | ReferenceNode ?
-		SequenceTree<[...sequence["ast"], root]>
 	: root extends SequenceTree ?
 		SequenceTree<[...sequence["ast"], ...root["ast"]]>
-	: root extends UnionTree ? SequenceTree<[...sequence["ast"], root]>
-	: root extends GroupTree ? SequenceTree<[...sequence["ast"], root]>
-	: // TODO: reference node etc.
-		never
+	:	SequenceTree<[...sequence["ast"], root]>
 
 export interface FinalizationContext extends Required<RegexContext> {}
 
