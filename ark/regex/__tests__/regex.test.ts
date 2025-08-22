@@ -770,6 +770,13 @@ contextualize(() => {
 			>(S)
 		})
 
+		it("multiple refs", () => {
+			type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
+			type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
+
+			const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
+		})
+
 		it("index out of range", () => {
 			// @ts-expect-error
 			attest(() => regex("(a)b\\2")).type.errors(

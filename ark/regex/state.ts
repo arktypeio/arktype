@@ -12,49 +12,6 @@ import type {
 import type { quantify, QuantifyingChar } from "./quantify.ts"
 import type { Flags, Regex, RegexContext } from "./regex.ts"
 
-type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
-type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
-
-// ^a(?<foo>b(c)d)?e\\1\\2?$
-
-export type Captures2 = {
-	kind: "sequence"
-	ast: [
-		"<^>",
-		"a",
-		{
-			kind: "quantifier"
-			value: 0 | 1
-			ast: {
-				kind: "capture"
-				name: "foo"
-				ast: [
-					"b",
-					{
-						kind: "capture"
-						ast: "c"
-					},
-					"d"
-				]
-			}
-		},
-		"e",
-		{
-			kind: "reference"
-			to: 1
-		},
-		{
-			kind: "quantifier"
-			value: 0 | 1
-			ast: {
-				kind: "reference"
-				to: 2
-			}
-		},
-		"<$>"
-	]
-}
-
 export interface State extends State.Group {
 	unscanned: string
 	groups: State.Group[]
@@ -621,7 +578,7 @@ type finalizeTree<tree, ctx extends FinalizationContext> =
 	: tree extends SequenceTree ? SequenceTree.finalize<tree, ctx>
 	: tree extends UnionTree ? UnionTree.finalize<tree, ctx>
 	: tree extends GroupTree ? GroupTree.finalize<tree, ctx>
-	: tree extends QuantifierTree ? {}
+	: tree extends QuantifierTree ? finalizeTree<tree["ast"], ctx>
 	: tree extends ReferenceNode ? ReferenceNode.finalize<tree, ctx>
 	: never
 
