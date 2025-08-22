@@ -37,4 +37,4 @@ export type next<s extends State> =
 type maybeSplitCasing<caseInsensitive extends boolean, char extends string> =
 	caseInsensitive extends false ? char
 	: Lowercase<char> extends Uppercase<char> ? char
-	: UnionTree<[Lowercase<char>, Capitalize<char>], [1, 1]>
+	: UnionTree<[Lowercase<char>, Capitalize<char>]>

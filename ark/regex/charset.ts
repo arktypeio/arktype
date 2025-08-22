@@ -19,11 +19,7 @@ export type parseCharset<s extends State, unscanned extends string> =
 				branches extends string[] ?
 					branches extends [] ?
 						s.error<emptyCharacterSetMessage>
-					:	s.shiftQuantifiable<
-							s,
-							UnionTree<branches, { [i in keyof branches]: 1 }>,
-							remaining
-						>
+					:	s.shiftQuantifiable<s, UnionTree<branches>, remaining>
 				:	never
 			:	never
 		:	s.error<writeUnclosedGroupMessage<"]">>

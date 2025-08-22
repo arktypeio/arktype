@@ -1,12 +1,5 @@
-import type { array, Scanner } from "@ark/util"
-import type {
-	depthOf,
-	RegexAst,
-	s,
-	SequenceTree,
-	State,
-	UnionTree
-} from "./state.ts"
+import type { Scanner } from "@ark/util"
+import type { RegexAst, s, SequenceTree, State, UnionTree } from "./state.ts"
 
 export type parseBuiltinQuantifier<
 	s extends State,
@@ -94,15 +87,17 @@ type quantify<
 	base extends RegexAst,
 	min extends number,
 	max extends number | null
-> = _loopUntilMin<base, depthOf<base>, min, max, [], [1]>
+> = _loopUntilMin<base, min, max, []>
+
+//  depthOf<base>
+// baseDepth extends 1[],
+// repetitionDepth extends 1[]
 
 type _loopUntilMin<
 	base extends RegexAst,
-	baseDepth extends 1[],
 	min extends number,
 	max extends number | null,
-	repetitions extends RegexAst[],
-	repetitionDepth extends 1[]
+	repetitions extends RegexAst[]
 > =
 	repetitions["length"] extends min ?
 		max extends number ?
@@ -110,52 +105,35 @@ type _loopUntilMin<
 				// avoid handling a range like {2} as a 1-branch union
 				repetitions["length"] extends 1 ?
 					repetitions[0]
-				:	SequenceTree<repetitions, repetitionDepth>
-			:	_loopUntilMax<
-					base,
-					baseDepth,
-					min,
-					max,
-					repetitions,
-					repetitionDepth,
-					[SequenceTree<repetitions, repetitionDepth>],
-					repetitionDepth
-				>
-		:	SequenceTree<[...repetitions, string], repetitionDepth>
-	:	_loopUntilMin<
-			base,
-			baseDepth,
-			min,
-			max,
-			[...repetitions, base],
-			array.multiply<repetitionDepth, baseDepth["length"]>
-		>
+				:	SequenceTree<repetitions>
+			:	_loopUntilMax<base, min, max, repetitions, [SequenceTree<repetitions>]> // repetitionsDepth
+		:	SequenceTree<[...repetitions, string]>
+	:	_loopUntilMin<base, min, max, [...repetitions, base]> // array.multiply<repetitionDepth, baseDepth["length"]>
+
+// baseDepth extends 1[],
+// repetitionDepth extends 1[],
+// branchesDepth extends 1[],
+// nextRepetitionDepth extends 1[] = array.multiply<
+// 	repetitionDepth,
+// 	baseDepth["length"]
+// >
 
 type _loopUntilMax<
 	base extends RegexAst,
-	baseDepth extends 1[],
 	min extends number,
 	max extends number,
 	repetitions extends RegexAst[],
-	repetitionDepth extends 1[],
 	branches extends SequenceTree[],
-	branchesDepth extends 1[],
-	nextRepetitions extends RegexAst[] = [...repetitions, base],
-	nextRepetitionDepth extends 1[] = array.multiply<
-		repetitionDepth,
-		baseDepth["length"]
-	>
+	nextRepetitions extends RegexAst[] = [...repetitions, base]
 > =
-	repetitions["length"] extends max ? UnionTree<branches, branchesDepth>
+	repetitions["length"] extends max ?
+		UnionTree<branches> // branches depth
 	:	_loopUntilMax<
 			base,
-			baseDepth,
 			min,
 			max,
 			nextRepetitions,
-			nextRepetitionDepth,
-			[...branches, SequenceTree<nextRepetitions, nextRepetitionDepth>],
-			[...branchesDepth, ...nextRepetitionDepth]
+			[...branches, SequenceTree<nextRepetitions>] // next repetitions depth
 		>
 
 export type QuantifyingChar = "*" | "+" | "?"
