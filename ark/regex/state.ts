@@ -1,4 +1,5 @@
 import type {
+	conform,
 	contains,
 	ErrorMessage,
 	leftIfEqual,
@@ -400,53 +401,72 @@ export declare namespace GroupTree {
 		self extends GroupTree,
 		ctx extends FinalizationContext
 	> =
-		finalizeTree<
-			self["ast"],
-			self["capture"] extends string ?
-				{
-					// if the group references itself while it is still being
-					// parsed, JS treats it as an empty string
-					captures: [...ctx["captures"], ""]
-					names: ctx["names"] & { [_ in self["capture"]]: "" }
-					flags: ctx["flags"]
-					errors: ctx["errors"]
-				}
-			: self["capture"] extends State.UnnamedCaptureKind.indexed ?
-				{
-					captures: [...ctx["captures"], ""]
-					names: ctx["names"]
-					flags: ctx["flags"]
-					errors: ctx["errors"]
-				}
-			:	ctx
-		> extends infer r extends FinalizationResult ?
-			FinalizationResult.from<{
-				pattern: r["pattern"]
-				ctx: self["capture"] extends string ?
-					{
-						captures: setIndex<
-							r["ctx"]["captures"],
-							ctx["captures"]["length"],
-							anchorsAway<r["pattern"]>
-						>
-						names: r["ctx"]["names"] & { [_ in self["capture"]]: r["pattern"] }
-						flags: r["ctx"]["flags"]
-						errors: r["ctx"]["errors"]
-					}
-				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
-					{
-						captures: setIndex<
-							r["ctx"]["captures"],
-							ctx["captures"]["length"],
-							anchorsAway<r["pattern"]>
-						>
-						names: r["ctx"]["names"]
-						flags: r["ctx"]["flags"]
-						errors: r["ctx"]["errors"]
-					}
-				:	r["ctx"]
-			}>
+		finalizeGroupAst<self, ctx> extends infer r extends FinalizationResult ?
+			finalizeGroupResult<self, ctx, r>
 		:	never
+
+	type finalizeGroupAst<
+		self extends GroupTree,
+		ctx extends FinalizationContext
+	> = finalizeTree<
+		self["ast"],
+		self["capture"] extends string ?
+			{
+				// if the group references itself while it is still being
+				// parsed, JS treats it as an empty string
+				captures: [...ctx["captures"], undefined]
+				names: ctx["names"] & { [_ in self["capture"]]: undefined }
+				flags: ctx["flags"]
+				errors: ctx["errors"]
+			}
+		: self["capture"] extends State.UnnamedCaptureKind.indexed ?
+			{
+				captures: [...ctx["captures"], undefined]
+				names: ctx["names"]
+				flags: ctx["flags"]
+				errors: ctx["errors"]
+			}
+		:	ctx
+	>
+
+	type finalizeGroupResult<
+		self extends GroupTree,
+		ctx extends FinalizationContext,
+		r extends FinalizationResult
+	> = FinalizationResult.from<{
+		pattern: r["pattern"]
+		ctx: self["capture"] extends string ?
+			finalizeNamedCapture<self["capture"], ctx["captures"]["length"], r>
+		: self["capture"] extends State.UnnamedCaptureKind.indexed ?
+			finalizeUnnamedCapture<ctx["captures"]["length"], r>
+		:	r["ctx"]
+	}>
+
+	type finalizeNamedCapture<
+		name extends string,
+		index extends number,
+		r extends FinalizationResult
+	> = FinalizationContext.from<{
+		// replace undefined (representing a group being parsed)
+		// with the inferred reference
+		captures: setIndex<r["ctx"]["captures"], index, anchorsAway<r["pattern"]>>
+		names: {
+			[k in keyof r["ctx"]["names"]]: k extends name ? anchorsAway<r["pattern"]>
+			:	r["ctx"]["names"][k]
+		}
+		flags: r["ctx"]["flags"]
+		errors: r["ctx"]["errors"]
+	}>
+
+	type finalizeUnnamedCapture<
+		index extends number,
+		r extends FinalizationResult
+	> = FinalizationContext.from<{
+		captures: setIndex<r["ctx"]["captures"], index, anchorsAway<r["pattern"]>>
+		names: r["ctx"]["names"]
+		flags: r["ctx"]["flags"]
+		errors: r["ctx"]["errors"]
+	}>
 }
 
 export interface QuantifierTree<ast extends RegexAst = RegexAst> {
@@ -498,6 +518,10 @@ export interface FinalizationContext extends Required<RegexContext> {
 	errors: ErrorMessage[]
 }
 
+export declare namespace FinalizationContext {
+	export type from<ctx extends FinalizationContext> = ctx
+}
+
 export type FinalizationResult = {
 	pattern: string
 	ctx: FinalizationContext
@@ -506,7 +530,8 @@ export type FinalizationResult = {
 export declare namespace FinalizationResult {
 	export type from<r extends FinalizationResult> = r
 
-	/** Offset captures to match 1-based indexing for references
+	/**
+	 * Offset captures to match 1-based indexing for references
 	 * (i.e so that \1 would match the first capture group)
 	 */
 	export type EmptyCaptures = [never]

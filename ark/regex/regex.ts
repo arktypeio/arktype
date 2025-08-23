@@ -4,7 +4,7 @@ import type { parseState } from "./parse.ts"
 import type { State } from "./state.ts"
 
 export type IndexedCaptures = Array<string | undefined>
-export type NamedCaptures = Record<string, string>
+export type NamedCaptures = Record<string, string | undefined>
 
 export type UnicodeFlag = "v" | "u"
 export type Flags =

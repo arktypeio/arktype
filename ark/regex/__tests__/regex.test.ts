@@ -729,6 +729,18 @@ contextualize(() => {
 			>(S).type.toString.snap('Regex<"aba", { captures: ["a"] }>')
 		})
 
+		it("anchored ref", () => {
+			const S = regex("(^f)")
+			attest<
+				Regex<
+					`f${string}`,
+					{
+						captures: ["f"]
+					}
+				>
+			>(S)
+		})
+
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(a\\1b)c\\1$")
@@ -830,6 +842,21 @@ contextualize(() => {
 						captures: ["abc"]
 						names: {
 							foo: "abc"
+						}
+					}
+				>
+			>(S)
+		})
+
+		it("anchored ref", () => {
+			const S = regex("(?<anchored>^f)$")
+			attest<
+				Regex<
+					"f",
+					{
+						captures: ["f"]
+						names: {
+							anchored: "f"
 						}
 					}
 				>
