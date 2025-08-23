@@ -2,11 +2,13 @@ import type {
 	contains,
 	ErrorMessage,
 	leftIfEqual,
+	NumberLiteral,
 	setIndex,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
 } from "@ark/util"
+import type { writeUnresolvableBackreferenceMessage } from "./escape.ts"
 import type { quantify, QuantifyingChar } from "./quantify.ts"
 import type { Flags, IndexedCaptures, Regex, RegexContext } from "./regex.ts"
 
@@ -218,14 +220,20 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			ErrorMessage<writeUnclosedGroupMessage<")">>
-		: finalizeTree<
-			State.Group.finalize<s>,
-			{
-				captures: FinalizationResult.EmptyCaptures
-				names: {}
-				flags: s["flags"]
-			}
-		> extends infer r extends FinalizationResult ?
+		:	finalizeRegexOrError<
+				finalizeTree<
+					State.Group.finalize<s>,
+					{
+						captures: FinalizationResult.EmptyCaptures
+						names: {}
+						flags: s["flags"]
+						errors: []
+					}
+				>
+			>
+
+	type finalizeRegexOrError<r extends FinalizationResult> =
+		r["ctx"]["errors"] extends [] ?
 			applyAnchors<r["pattern"]> extends infer pattern extends string ?
 				// check the negation in case pattern is a union in which some
 				// branches contain invalid anchors
@@ -235,7 +243,8 @@ export declare namespace s {
 					:	ErrorMessage<writeMidAnchorError<"$">>
 				:	ErrorMessage<writeMidAnchorError<"^">>
 			:	never
-		:	never
+		:	// if there were errors, return the first one
+			r["ctx"]["errors"][0]
 
 	type finalizeContext<ctx extends FinalizationContext> =
 		ctx["captures"] extends FinalizationResult.EmptyCaptures ?
@@ -250,6 +259,7 @@ export declare namespace s {
 				:	never
 				names: ctx["names"]
 				flags: ctx["flags"]
+				errors: ctx["errors"]
 			}>
 
 	type finalizeContextWithoutCaptures<ctx extends FinalizationContext> =
@@ -283,24 +293,43 @@ export type RegexAst =
 	| GroupTree
 	| QuantifierTree
 
-export interface ReferenceNode<to extends string | number = string | number> {
+export interface ReferenceNode<to extends string = string> {
 	kind: "reference"
 	to: to
 }
 
 export declare namespace ReferenceNode {
+	// TODO: if the group is still being parsed, JS treats it as an empty string
+
 	export type finalize<
 		self extends ReferenceNode,
 		ctx extends FinalizationContext,
 		// ensure `to` distributes
-		to = self["to"]
-	> = FinalizationResult.from<{
-		pattern: to extends number ? ctx["captures"][to] : ctx["names"][to]
-		ctx: ctx
-	}>
-
-	// s.error<writeUnresolvableBackreferenceMessage<`${ref}`>>
-	// if the group is still being parsed, JS treats it as an empty string
+		to extends string = self["to"]
+	> =
+		to extends NumberLiteral & keyof ctx["captures"] ?
+			FinalizationResult.from<{
+				pattern: ctx["captures"][to]
+				ctx: ctx
+			}>
+		: to extends keyof ctx["names"] ?
+			FinalizationResult.from<{
+				// TODO: undefined?
+				pattern: ctx["names"][to]
+				ctx: ctx
+			}>
+		:	FinalizationResult.from<{
+				pattern: string
+				ctx: {
+					captures: ctx["captures"]
+					names: ctx["names"]
+					flags: ctx["flags"]
+					errors: [
+						...ctx["errors"],
+						ErrorMessage<writeUnresolvableBackreferenceMessage<to>>
+					]
+				}
+			}>
 }
 
 export interface SequenceTree<ast extends RegexAst[] = RegexAst[]> {
@@ -381,12 +410,14 @@ export declare namespace GroupTree {
 					captures: [...ctx["captures"], ""]
 					names: ctx["names"] & { [_ in self["capture"]]: string }
 					flags: ctx["flags"]
+					errors: ctx["errors"]
 				}
 			: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 				{
 					captures: [...ctx["captures"], string]
 					names: ctx["names"]
 					flags: ctx["flags"]
+					errors: ctx["errors"]
 				}
 			:	ctx
 		> extends infer r extends FinalizationResult ?
@@ -401,6 +432,7 @@ export declare namespace GroupTree {
 						>
 						names: r["ctx"]["names"] & { [_ in self["capture"]]: r["pattern"] }
 						flags: r["ctx"]["flags"]
+						errors: r["ctx"]["errors"]
 					}
 				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 					{
@@ -411,6 +443,7 @@ export declare namespace GroupTree {
 						>
 						names: r["ctx"]["names"]
 						flags: r["ctx"]["flags"]
+						errors: r["ctx"]["errors"]
 					}
 				:	r["ctx"]
 			}>
@@ -462,7 +495,9 @@ type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 		SequenceTree<[...sequence["ast"], ...root["ast"]]>
 	:	SequenceTree<[...sequence["ast"], root]>
 
-export interface FinalizationContext extends Required<RegexContext> {}
+export interface FinalizationContext extends Required<RegexContext> {
+	errors: ErrorMessage[]
+}
 
 export type FinalizationResult = {
 	pattern: string

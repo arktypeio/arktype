@@ -18,13 +18,7 @@ type parseNumericBackreference<
 	Scanner.shiftUntilNot<fullUnscanned, StringDigit> extends (
 		Scanner.shiftResult<infer ref, infer remaining>
 	) ?
-		s.shiftQuantifiable<
-			s,
-			ReferenceNode<
-				ref extends `${infer index extends number}` ? index : never
-			>,
-			remaining
-		>
+		s.shiftQuantifiable<s, ReferenceNode<ref>, remaining>
 	:	never
 
 type parseNamedBackreference<s extends State, unscanned extends string> =
@@ -68,11 +62,13 @@ export const trailingBackslashMessage = "A regex cannot end with \\"
 
 export type trailingBackslashMessage = typeof trailingBackslashMessage
 
-export const writeUnresolvableBackreferenceMessage = <ref extends string>(
+export const writeUnresolvableBackreferenceMessage = <
+	ref extends string | number
+>(
 	ref: ref
 ): writeUnresolvableBackreferenceMessage<ref> => `Group ${ref} does not exist`
 
-export type writeUnresolvableBackreferenceMessage<ref extends string> =
+export type writeUnresolvableBackreferenceMessage<ref extends string | number> =
 	`Group ${ref} does not exist`
 
 export const missingBackreferenceNameMessage =
