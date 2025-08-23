@@ -1,5 +1,5 @@
 import type { ErrorMessage, Scanner, WhitespaceChar } from "@ark/util"
-import type { Control, ReferenceNode, RegexAst, s, State } from "./state.ts"
+import type { Control, ReferenceNode, s, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer char, infer nextUnscanned> ?
@@ -18,25 +18,19 @@ type parseNumericBackreference<
 	Scanner.shiftUntilNot<fullUnscanned, StringDigit> extends (
 		Scanner.shiftResult<infer ref, infer remaining>
 	) ?
-		s.shiftQuantifiable<s, ReferenceNode<ref>, remaining>
+		s.shiftQuantifiable<
+			s,
+			ReferenceNode<
+				ref extends `${infer index extends number}` ? index : never
+			>,
+			remaining
+		>
 	:	never
-
-//  fullUnscanned extends `${infer ref extends bigint}${string}` ?
-// 		s.error<writeUnresolvableBackreferenceMessage<`${ref}`>>
-// 	:	never
 
 type parseNamedBackreference<s extends State, unscanned extends string> =
 	unscanned extends `<${infer ref}>${infer following}` ?
 		s.shiftQuantifiable<s, ReferenceNode<ref>, following>
 	:	s.error<missingBackreferenceNameMessage>
-
-// ref extends keyof s["captures"] ?
-// 			s.shiftQuantifiable<s, getCapturedSequence<s["captures"], ref>, following>
-// 		:	s.error<writeUnresolvableBackreferenceMessage<ref>>
-
-// if the group is still being parsed, JS treats it as an empty string
-type getCapturedSequence<captures, ref extends keyof captures> =
-	captures[ref] extends RegexAst ? captures[ref] : ""
 
 type parseUnicodeProperty<
 	s extends State,

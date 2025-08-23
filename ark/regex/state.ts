@@ -8,7 +8,7 @@ import type {
 	ZeroWidthSpace
 } from "@ark/util"
 import type { quantify, QuantifyingChar } from "./quantify.ts"
-import type { Flags, Regex, RegexContext } from "./regex.ts"
+import type { Flags, IndexedCaptures, Regex, RegexContext } from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
@@ -221,7 +221,7 @@ export declare namespace s {
 		: finalizeTree<
 			State.Group.finalize<s>,
 			{
-				captures: []
+				captures: FinalizationResult.EmptyCaptures
 				names: {}
 				flags: s["flags"]
 			}
@@ -238,22 +238,28 @@ export declare namespace s {
 		:	never
 
 	type finalizeContext<ctx extends FinalizationContext> =
-		ctx["captures"] extends [] ?
-			keyof ctx["names"] extends never ?
-				ctx["flags"] extends "" ?
-					{}
-				:	{
-						flags: ctx["flags"]
-					}
-			: ctx["flags"] extends "" ?
-				{
-					names: ctx["names"]
-				}
-			:	{
-					names: ctx["names"]
-					flags: ctx["flags"]
-				}
-		: keyof ctx["names"] extends never ?
+		ctx["captures"] extends FinalizationResult.EmptyCaptures ?
+			finalizeContextWithoutCaptures<ctx>
+		:	finalizeContextWithCaptures<{
+				// re-align 1-based indexing for capture groups to 0-based for
+				// external display
+				captures: ctx["captures"] extends (
+					[never, ...infer rest extends IndexedCaptures]
+				) ?
+					rest
+				:	never
+				names: ctx["names"]
+				flags: ctx["flags"]
+			}>
+
+	type finalizeContextWithoutCaptures<ctx extends FinalizationContext> =
+		ctx["flags"] extends "" ? {}
+		:	{
+				flags: ctx["flags"]
+			}
+
+	type finalizeContextWithCaptures<ctx extends FinalizationContext> =
+		keyof ctx["names"] extends never ?
 			ctx["flags"] extends "" ?
 				{ captures: ctx["captures"] }
 			:	{ captures: ctx["captures"]; flags: ctx["flags"] }
@@ -285,20 +291,21 @@ export interface ReferenceNode<to extends string | number = string | number> {
 export declare namespace ReferenceNode {
 	export type finalize<
 		self extends ReferenceNode,
-		ctx extends FinalizationContext
+		ctx extends FinalizationContext,
+		// ensure `to` distributes
+		to = self["to"]
 	> = FinalizationResult.from<{
-		pattern: `${self["to"]}`
+		pattern: to extends number ? ctx["captures"][to] : ctx["names"][to]
 		ctx: ctx
 	}>
+
+	// s.error<writeUnresolvableBackreferenceMessage<`${ref}`>>
+	// if the group is still being parsed, JS treats it as an empty string
 }
 
-export interface CompositeTree<ast extends RegexAst[] = RegexAst[]> {
-	ast: ast
-}
-
-export interface SequenceTree<ast extends RegexAst[] = RegexAst[]>
-	extends CompositeTree<ast> {
+export interface SequenceTree<ast extends RegexAst[] = RegexAst[]> {
 	kind: "sequence"
+	ast: ast
 }
 
 export declare namespace SequenceTree {
@@ -324,9 +331,9 @@ export declare namespace SequenceTree {
 			}>
 }
 
-export interface UnionTree<ast extends RegexAst[] = RegexAst[]>
-	extends CompositeTree<ast> {
+export interface UnionTree<ast extends RegexAst[] = RegexAst[]> {
 	kind: "union"
+	ast: ast
 }
 
 export declare namespace UnionTree {
@@ -428,14 +435,6 @@ export declare namespace QuantifierTree {
 				ctx: r["ctx"]
 			}>
 		:	never
-
-	// 	finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
-	// 		_finalize<tail, pattern | r["pattern"], r["ctx"]>
-	// 	:	never
-	// :	FinalizationResult.from<{
-	// 		pattern: pattern
-	// 		ctx: ctx
-	// 	}>
 }
 
 declare global {
@@ -472,6 +471,11 @@ export type FinalizationResult = {
 
 export declare namespace FinalizationResult {
 	export type from<r extends FinalizationResult> = r
+
+	/** Offset captures to match 1-based indexing for references
+	 * (i.e so that \1 would match the first capture group)
+	 */
+	export type EmptyCaptures = [never]
 }
 
 // 	longerThan<depth, ArkEnv.maxDepth> extends true ?

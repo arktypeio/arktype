@@ -717,6 +717,18 @@ contextualize(() => {
 			>(S).type.toString.snap('Regex<"aba", { captures: ["a"] }>')
 		})
 
+		it("reference to union", () => {
+			const S = regex("^(a|b)\\1$")
+			attest<
+				Regex<
+					"aa" | "bb",
+					{
+						captures: ["a" | "b"]
+					}
+				>
+			>(S).type.toString.snap('Regex<"aba", { captures: ["a"] }>')
+		})
+
 		// treated as empty string by JS since capture hasn't occurred yet
 		it("reference to current", () => {
 			const S = regex("^(a\\1b)c\\1$")
