@@ -20,6 +20,7 @@ import {
 import type { next } from "@ark/regex/internal/parse.js"
 import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
 import {
+	writeIncompleteReferenceError,
 	writeMidAnchorError,
 	type s,
 	type State
@@ -717,7 +718,7 @@ contextualize(() => {
 			>(S).type.toString.snap('Regex<"aba", { captures: ["a"] }>')
 		})
 
-		it("reference to union", () => {
+		it("union", () => {
 			const S = regex("^(a|b)\\1$")
 			attest<
 				Regex<
@@ -726,7 +727,7 @@ contextualize(() => {
 						captures: ["a" | "b"]
 					}
 				>
-			>(S).type.toString.snap('Regex<"aba", { captures: ["a"] }>')
+			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["a" | "b"] }>')
 		})
 
 		it("anchored ref", () => {
@@ -741,29 +742,11 @@ contextualize(() => {
 			>(S)
 		})
 
-		// treated as empty string by JS since capture hasn't occurred yet
-		it("reference to current", () => {
-			const S = regex("^(a\\1b)c\\1$")
-			attest<
-				Regex<
-					`abcab`,
-					{
-						captures: ["ab"]
-					}
-				>
-			>(S)
-		})
-
-		it("union", () => {
-			const S = regex("^(a|b)\\1$")
-			attest<
-				Regex<
-					"ab" | "aa" | "ba" | "bb",
-					{
-						captures: ["a" | "b"]
-					}
-				>
-			>(S)
+		it("incomplete reference", () => {
+			// @ts-expect-error
+			attest(() => regex("^(a\\1b)c\\1$")).type.errors(
+				writeIncompleteReferenceError("1")
+			)
 		})
 
 		it("inner quantified", () => {
@@ -894,20 +877,11 @@ contextualize(() => {
 			>(S)
 		})
 
-		// treated as empty string by JS since capture hasn't occurred yet
-		it("reference to current", () => {
-			const S = regex("^(?<foo>a\\k<foo>b)c\\k<foo>$")
-			attest<
-				Regex<
-					"abcab",
-					{
-						captures: ["ab"]
-						names: {
-							foo: "ab"
-						}
-					}
-				>
-			>(S)
+		it("incomplete reference", () => {
+			// @ts-expect-error
+			attest(() => regex("^(?<foo>a\\k<foo>b)c\\k<foo>$")).type.errors(
+				writeIncompleteReferenceError("foo")
+			)
 		})
 
 		it("inner quantified group", () => {

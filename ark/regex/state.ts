@@ -1,5 +1,4 @@
 import type {
-	conform,
 	contains,
 	ErrorMessage,
 	leftIfEqual,
@@ -307,29 +306,32 @@ export declare namespace ReferenceNode {
 		to extends string = self["to"]
 	> =
 		to extends NumberLiteral & keyof ctx["captures"] ?
-			FinalizationResult.from<{
-				pattern: ctx["captures"][to]
-				ctx: ctx
-			}>
+			ctx["captures"][to] extends string ?
+				FinalizationResult.from<{
+					pattern: ctx["captures"][to]
+					ctx: ctx
+				}>
+			:	// if the capture is not a string, it is undefined,
+				// representing an unclosed group. referencing an unclosed
+				// group is a no-op, so error to help users avoid it
+				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 		: to extends keyof ctx["names"] ?
-			FinalizationResult.from<{
-				// TODO: undefined?
-				pattern: ctx["names"][to]
-				ctx: ctx
-			}>
-		:	FinalizationResult.from<{
-				pattern: string
-				ctx: {
-					captures: ctx["captures"]
-					names: ctx["names"]
-					flags: ctx["flags"]
-					errors: [
-						...ctx["errors"],
-						ErrorMessage<writeUnresolvableBackreferenceMessage<to>>
-					]
-				}
-			}>
+			ctx["names"][to] extends string ?
+				FinalizationResult.from<{
+					pattern: ctx["names"][to]
+					ctx: ctx
+				}>
+			:	FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
+		:	FinalizationResult.error<ctx, writeUnresolvableBackreferenceMessage<to>>
 }
+
+export const writeIncompleteReferenceError = <ref extends string>(
+	ref: ref
+): writeIncompleteReferenceError<ref> =>
+	`Reference to incomplete group '${ref}' has no effect`
+
+export type writeIncompleteReferenceError<ref extends string> =
+	`Reference to incomplete group '${ref}' has no effect`
 
 export interface SequenceTree<ast extends RegexAst[] = RegexAst[]> {
 	kind: "sequence"
@@ -529,6 +531,19 @@ export type FinalizationResult = {
 
 export declare namespace FinalizationResult {
 	export type from<r extends FinalizationResult> = r
+
+	export type error<
+		ctx extends FinalizationContext,
+		message extends string
+	> = from<{
+		pattern: string
+		ctx: {
+			captures: ctx["captures"]
+			names: ctx["names"]
+			flags: ctx["flags"]
+			errors: [...ctx["errors"], ErrorMessage<message>]
+		}
+	}>
 
 	/**
 	 * Offset captures to match 1-based indexing for references
