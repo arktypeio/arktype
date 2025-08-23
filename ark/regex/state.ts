@@ -299,8 +299,6 @@ export interface ReferenceNode<to extends string = string> {
 }
 
 export declare namespace ReferenceNode {
-	// TODO: if the group is still being parsed, JS treats it as an empty string
-
 	export type finalize<
 		self extends ReferenceNode,
 		ctx extends FinalizationContext,
@@ -406,15 +404,16 @@ export declare namespace GroupTree {
 			self["ast"],
 			self["capture"] extends string ?
 				{
-					// in case the group references itself
+					// if the group references itself while it is still being
+					// parsed, JS treats it as an empty string
 					captures: [...ctx["captures"], ""]
-					names: ctx["names"] & { [_ in self["capture"]]: string }
+					names: ctx["names"] & { [_ in self["capture"]]: "" }
 					flags: ctx["flags"]
 					errors: ctx["errors"]
 				}
 			: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 				{
-					captures: [...ctx["captures"], string]
+					captures: [...ctx["captures"], ""]
 					names: ctx["names"]
 					flags: ctx["flags"]
 					errors: ctx["errors"]
