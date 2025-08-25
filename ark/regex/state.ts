@@ -352,8 +352,11 @@ export declare namespace SequenceTree {
 		ctx extends FinalizationContext
 	> =
 		tree extends [infer head, ...infer tail] ?
-			finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
-				_finalize<tail, appendNonRedundant<pattern, r["pattern"]>, r["ctx"]>
+			finalizeTree<head, ctx> extends infer r ?
+				r extends FinalizationResult ?
+					// preserve the distribution from Group.finalize
+					_finalize<tail, appendNonRedundant<pattern, r["pattern"]>, r["ctx"]>
+				:	never
 			:	never
 		:	FinalizationResult.from<{
 				pattern: pattern
@@ -378,6 +381,12 @@ export declare namespace UnionTree {
 		ctx extends FinalizationContext
 	> =
 		branches extends [infer head, ...infer tail] ?
+			// TODO: union branches need to keep track of their own captures
+			// and add undefined to the captures of other branches in the place of groups
+			// that occurerd within that branch:
+
+			// expression:  ^((a)|b)\\1$
+			// captures: ["a", "a"] | ["b", undefined]
 			finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
 				_finalize<tail, pattern | r["pattern"], r["ctx"]>
 			:	never
@@ -434,15 +443,23 @@ export declare namespace GroupTree {
 	type finalizeGroupResult<
 		self extends GroupTree,
 		ctx extends FinalizationContext,
-		r extends FinalizationResult
-	> = FinalizationResult.from<{
-		pattern: r["pattern"]
-		ctx: self["capture"] extends string ?
-			finalizeNamedCapture<self["capture"], ctx["captures"]["length"], r>
-		: self["capture"] extends State.UnnamedCaptureKind.indexed ?
-			finalizeUnnamedCapture<ctx["captures"]["length"], r>
-		:	r["ctx"]
-	}>
+		r extends FinalizationResult,
+		pattern extends string = r["pattern"]
+	> =
+		pattern extends unknown ?
+			// allow the result to distribute to a particular branch
+			// to preserve associations between groups and references
+			// so that e.g. "(a|b)\\1" is inferred as "aa" | "bb"
+			// as opposed to "aa" | "ab" | "ba" | "bb"
+			FinalizationResult.from<{
+				pattern: pattern
+				ctx: self["capture"] extends string ?
+					finalizeNamedCapture<self["capture"], ctx["captures"]["length"], r>
+				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
+					finalizeUnnamedCapture<ctx["captures"]["length"], pattern, r["ctx"]>
+				:	r["ctx"]
+			}>
+		:	never
 
 	type finalizeNamedCapture<
 		name extends string,
@@ -462,12 +479,13 @@ export declare namespace GroupTree {
 
 	type finalizeUnnamedCapture<
 		index extends number,
-		r extends FinalizationResult
+		pattern extends string,
+		ctx extends FinalizationContext
 	> = FinalizationContext.from<{
-		captures: setIndex<r["ctx"]["captures"], index, anchorsAway<r["pattern"]>>
-		names: r["ctx"]["names"]
-		flags: r["ctx"]["flags"]
-		errors: r["ctx"]["errors"]
+		captures: setIndex<ctx["captures"], index, anchorsAway<pattern>>
+		names: ctx["names"]
+		flags: ctx["flags"]
+		errors: ctx["errors"]
 	}>
 }
 
