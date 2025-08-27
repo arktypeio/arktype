@@ -205,7 +205,10 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			undeclared: {
 				parse: behavior => (behavior === "ignore" ? undefined : behavior),
 				reduceIo: (ioKind, inner, value) => {
-					if (value !== "delete") return
+					if (value === "reject") {
+						inner.undeclared = "reject"
+						return
+					}
 
 					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
 					// on input and "reject" on output

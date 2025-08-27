@@ -1332,4 +1332,38 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		attest(res.toString()).snap("hello world")
 	})
+
+	it("allows morph union with non-overlapping root objects", () => {
+		const MasterSkinItem = type({
+			"+": "reject",
+			type: "'skin'",
+			masterItem: "true",
+
+			skin: "string",
+			short: "string",
+
+			minPrice: "number.integer >=0",
+			stattrakAvailable: "boolean = false",
+			souvenirAvailable: "boolean = false",
+			qualities: type("1 | 2 | 3 | 4 |5").array().or(["null"])
+		})
+
+		const SkinItem = type({
+			"+": "reject",
+			type: "'skin'",
+			// "masterItem?": "false",
+			skin: "string",
+			short: "string",
+
+			"weight?": "number",
+			souvenir: "boolean = false",
+			stattrak: "boolean = false",
+			quality: type("1 | 2 | 3 | 4 |5").optional()
+		})
+
+		const Skinish = MasterSkinItem.or(SkinItem)
+		attest(Skinish.expression).snap(
+			'{ masterItem: true, minPrice: number % 1 & >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", souvenir: boolean = false, stattrak: boolean = false, quality?: 1 | 2 | 3 | 4 | 5, weight?: number, + (undeclared): reject }'
+		)
+	})
 })

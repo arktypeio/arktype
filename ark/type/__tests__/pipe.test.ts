@@ -1061,4 +1061,13 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 		attest<number>(t.morphed)
 		attest<number | undefined>(t.nested?.morphed)
 	})
+
+	it("extract in/out preserves undeclared rejection", () => {
+		const T = type({
+			"+": "reject",
+			foo: "true"
+		})
+
+		attest(T.in.expression).snap("{ foo: true, + (undeclared): reject }")
+	})
 })
