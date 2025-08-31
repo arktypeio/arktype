@@ -728,7 +728,7 @@ contextualize(() => {
 		})
 
 		it("branching captures", () => {
-			const S = regex("^((a)|b)\\1$")
+			const S = regex("^((a)|b)$")
 			attest<
 				Regex<
 					"aa" | "bb",

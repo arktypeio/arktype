@@ -369,30 +369,55 @@ export interface UnionTree<ast extends RegexAst[] = RegexAst[]> {
 	ast: ast
 }
 
+// TODO: union branches need to keep track of their own captures
+// and add undefined to the captures of other branches in the place of groups
+// that occurerd within that branch:
+
+// expression:  ^((a)|b)\\1$
+// captures: ["a", "a"] | ["b", undefined]
+
 export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], never, ctx>
+	> = _finalize<self["ast"], never, ctx, ctx, []>
 
 	type _finalize<
 		branches extends unknown[],
 		pattern extends string,
-		ctx extends FinalizationContext
+		originalContext extends FinalizationContext,
+		ctx extends FinalizationContext,
+		captures extends IndexedCaptures
 	> =
 		branches extends [infer head, ...infer tail] ?
-			// TODO: union branches need to keep track of their own captures
-			// and add undefined to the captures of other branches in the place of groups
-			// that occurerd within that branch:
-
-			// expression:  ^((a)|b)\\1$
-			// captures: ["a", "a"] | ["b", undefined]
 			finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
-				_finalize<tail, pattern | r["pattern"], r["ctx"]>
+				_finalize<
+					tail,
+					pattern | r["pattern"],
+					originalContext,
+					r["ctx"],
+					r["ctx"]["captures"] extends (
+						[
+							...ctx["captures"],
+							...infer branchCaptures extends IndexedCaptures
+						]
+					) ?
+						branchCaptures extends [] ?
+							captures | { [i in keyof captures]: undefined }
+						:	| [...{ [i in keyof captures]: undefined }, ...branchCaptures]
+							| (captures extends [] ? never
+							  :	[...captures, ...{ [i in keyof branchCaptures]: undefined }])
+					:	never
+				>
 			:	never
 		:	FinalizationResult.from<{
 				pattern: pattern
-				ctx: ctx
+				ctx: {
+					flags: ctx["flags"]
+					captures: [...originalContext["captures"], ...captures]
+					names: ctx["names"]
+					errors: ctx["errors"]
+				}
 			}>
 }
 
@@ -423,8 +448,8 @@ export declare namespace GroupTree {
 		self["ast"],
 		self["capture"] extends string ?
 			{
-				// if the group references itself while it is still being
-				// parsed, JS treats it as an empty string
+				// undefined represents a capture group that is still being parsed
+				// error on trying to reference it (will always be empty)
 				captures: [...ctx["captures"], undefined]
 				names: ctx["names"] & { [_ in self["capture"]]: undefined }
 				flags: ctx["flags"]
@@ -454,7 +479,12 @@ export declare namespace GroupTree {
 			FinalizationResult.from<{
 				pattern: pattern
 				ctx: self["capture"] extends string ?
-					finalizeNamedCapture<self["capture"], ctx["captures"]["length"], r>
+					finalizeNamedCapture<
+						self["capture"],
+						ctx["captures"]["length"],
+						pattern,
+						r["ctx"]
+					>
 				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 					finalizeUnnamedCapture<ctx["captures"]["length"], pattern, r["ctx"]>
 				:	r["ctx"]
@@ -464,17 +494,18 @@ export declare namespace GroupTree {
 	type finalizeNamedCapture<
 		name extends string,
 		index extends number,
-		r extends FinalizationResult
+		pattern extends string,
+		ctx extends FinalizationContext
 	> = FinalizationContext.from<{
 		// replace undefined (representing a group being parsed)
 		// with the inferred reference
-		captures: setIndex<r["ctx"]["captures"], index, anchorsAway<r["pattern"]>>
+		captures: setIndex<ctx["captures"], index, anchorsAway<pattern>>
 		names: {
-			[k in keyof r["ctx"]["names"]]: k extends name ? anchorsAway<r["pattern"]>
-			:	r["ctx"]["names"][k]
+			[k in keyof ctx["names"]]: k extends name ? anchorsAway<pattern>
+			:	ctx["names"][k]
 		}
-		flags: r["ctx"]["flags"]
-		errors: r["ctx"]["errors"]
+		flags: ctx["flags"]
+		errors: ctx["errors"]
 	}>
 
 	type finalizeUnnamedCapture<
