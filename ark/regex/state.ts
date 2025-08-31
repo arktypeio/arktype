@@ -381,12 +381,11 @@ export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], never, ctx, ctx, []>
+	> = _finalize<self["ast"], never, ctx, []>
 
 	type _finalize<
 		branches extends unknown[],
 		pattern extends string,
-		originalContext extends FinalizationContext,
 		ctx extends FinalizationContext,
 		captures extends IndexedCaptures
 	> =
@@ -395,8 +394,7 @@ export declare namespace UnionTree {
 				_finalize<
 					tail,
 					pattern | r["pattern"],
-					originalContext,
-					r["ctx"],
+					ctx,
 					r["ctx"]["captures"] extends (
 						[
 							...ctx["captures"],
@@ -415,7 +413,7 @@ export declare namespace UnionTree {
 				pattern: pattern
 				ctx: {
 					flags: ctx["flags"]
-					captures: [...originalContext["captures"], ...captures]
+					captures: [...ctx["captures"], ...captures]
 					names: ctx["names"]
 					errors: ctx["errors"]
 				}
