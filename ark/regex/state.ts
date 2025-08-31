@@ -369,6 +369,7 @@ export interface UnionTree<ast extends RegexAst[] = RegexAst[]> {
 	ast: ast
 }
 
+// TODO: try distributing entire result and grouping capture union with pattern union
 // TODO: union branches need to keep track of their own captures
 // and add undefined to the captures of other branches in the place of groups
 // that occurerd within that branch:
