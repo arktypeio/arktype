@@ -1,35 +1,5 @@
-import { type } from "arktype"
+const ark: { foo?: string } = {}
 
-const original = type({
-	id: "string",
-	name: "string",
-	"favoriteColor?": "string"
-})
+ark.foo &&= `${ark.foo}1`
 
-const updateSchema = original.map(prop =>
-	prop.key === "name" ?
-		{
-			...prop,
-			// update key name if needed
-			key: `prefix${prop.key}` as const,
-			// update optionality if needed
-			kind: "optional",
-			// update value if needed
-			value: prop.value.or(type.null)
-		}
-	:	prop
-)
-
-type Result = {
-	id: string
-	favoriteColor?: string
-	prefixname?: string | null
-}
-
-/* updateSchema:
-{
-id: "string",
-"name?": "string"
-"favoriteColor?": "string | null"
-}
-*/
+console.log(ark.foo)
