@@ -72,7 +72,8 @@ $ark.config ??= {}
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
-	$ark.resolvedConfig &&= mergeConfigs($ark.resolvedConfig, result)
+	if ($ark.resolvedConfig)
+		$ark.resolvedConfig = mergeConfigs($ark.resolvedConfig, result)
 
 	return result
 }

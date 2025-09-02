@@ -1,5 +1,11 @@
 # arktype
 
+## 2.1.21
+
+### ~standard `toJSONSchema` support
+
+Adds support for the upcoming StandardJSONSchemaSourceV1 spec (standardschema.dev)
+
 ## 2.1.20
 
 ### `toJsonSchema` config
