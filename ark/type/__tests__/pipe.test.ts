@@ -1042,4 +1042,34 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 		attest<number>(t.morphed)
 		attest<number | undefined>(t.nested?.morphed)
 	})
+
+	it("complex morphs are applied on correct path", () => {
+		let c: null | 1
+
+		const M = type({
+			list: type("object")
+				.pipe(e => e)
+				.pipe(
+					type({
+						z: type("unknown").pipe(() => c)
+					})
+				)
+				.array(),
+			_: ["unknown", ":", () => true]
+		})
+
+		c = null
+		attest(() =>
+			M({
+				list: [{ z: "" }, { z: "" }]
+			}).toString()
+		).throws.snap("TypeError: Cannot read properties of null (reading 'z')")
+
+		c = 1
+		attest(() =>
+			M({
+				list: [{ z: "" }, { z: "" }]
+			}).toString()
+		).throws.snap("TypeError: Cannot create property 'z' on number '1'")
+	})
 })
