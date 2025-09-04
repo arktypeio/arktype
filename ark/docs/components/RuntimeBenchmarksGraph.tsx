@@ -54,11 +54,11 @@ export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 		</div>
 		<div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
 			<div style={{ display: "flex", alignItems: "center" }}>
-				<div style={{ ...arkBarStyles, width: "0.5%" }}></div>
+				<div style={{ ...arkBarStyles, width: "2%" }}></div>
 				ArkType ⚡ 14 nanoseconds
 			</div>
-			<div style={{ ...zodBarStyles, width: "50%" }}>
-				&nbsp;&nbsp;&nbsp;Zod 👍 1397 nanoseconds
+			<div style={{ ...zodBarStyles, width: "40%" }}>
+				&nbsp;&nbsp;&nbsp;Zod 👍 281 nanoseconds
 			</div>
 			<div style={{ ...yupBarStyles, width: "100%" }}>
 				&nbsp;&nbsp;&nbsp;Yup 🐌 40755 nanoseconds*

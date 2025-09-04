@@ -21,7 +21,7 @@ export const formatStarCount = (count: number): string => {
 	return `${finalCount}k`
 }
 
-const defaultStars = "6k"
+const defaultStars = "6.5k"
 
 export const fetchStars = async () => {
 	const res = await fetch("https://api.github.com/repos/arktypeio/arktype")

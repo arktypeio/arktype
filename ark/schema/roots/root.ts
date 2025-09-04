@@ -69,7 +69,7 @@ export abstract class BaseRoot<
 		out d extends InternalRootDeclaration = InternalRootDeclaration
 	>
 	extends BaseNode<d>
-	implements StandardSchemaV1
+	implements StandardSchemaV1.WithJSONSchemaSource
 {
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
@@ -102,6 +102,15 @@ export abstract class BaseRoot<
 				const out = this(input)
 				if (out instanceof ArkErrors) return out
 				return { value: out }
+			},
+			toJSONSchema: opts => {
+				if (opts.target && opts.target !== "draft-2020-12") {
+					return throwParseError(
+						`JSONSchema target '${opts.target}' is not supported (must be "draft-2020-12")`
+					)
+				}
+				if (opts.io === "input") return this.in.toJsonSchema() as never
+				return this.out.toJsonSchema() as never
 			}
 		}
 	}

@@ -79,7 +79,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
         <th>tmm</th>
         <th>mishushakov</th>
         <th>mewhhaha</th>
-        <th>codeandcats</th>
+        <th>jahands</th>
     </tr>
     <tr>
         <td>
@@ -108,20 +108,20 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
                     src="https://avatars.githubusercontent.com/mewhhaha"
             /></a>
         </td>
-        <td>
-            <a href="https://github.com/codeandcats"
+	<td>
+            <a href="https://github.com/jahands"
                 ><img
                     height="64px"
-                    src="https://avatars.githubusercontent.com/codeandcats"
+                    src="https://avatars.githubusercontent.com/jahands"
             /></a>
         </td>
     </tr>
     <tr>
         <th>drwpwrs</th>
-        <th>Timeraa</th>
         <th>Phalangers</th>
         <th>WilliamConnatser</th>
         <th>JameEnder</th>
+	<th>tylim88</th>
     </tr>
     <tr>
         <td>
@@ -129,13 +129,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
                 ><img
                     height="64px"
                     src="https://avatars.githubusercontent.com/drwpwrs"
-            /></a>
-        </td>
-        <td>
-            <a href="https://github.com/Timeraa"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/Timeraa"
             /></a>
         </td>
         <td>
@@ -159,34 +152,12 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
                     src="https://avatars.githubusercontent.com/JameEnder"
             /></a>
         </td>
-    </tr>
-    <tr>
-        <th>tylim88</th>
-        <th>jahands</th>
-		<th></th>
-        <th></th>
-		<th></th>
-    </tr>
-    <tr>
-        <td>
+	<td>
             <a href="https://github.com/tylim88"
                 ><img
                     height="64px"
                     src="https://avatars.githubusercontent.com/tylim88"
             /></a>
         </td>
-        <td>
-            <a href="https://github.com/jahands"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/jahands"
-            /></a>
-        </td>
-		<td>
-		</td>
-		<td>
-		</td>
-		<td>
-		</td>
     </tr>
 </table>
