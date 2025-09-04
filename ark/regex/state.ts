@@ -377,48 +377,70 @@ export interface UnionTree<ast extends RegexAst[] = RegexAst[]> {
 // expression:  ^((a)|b)\\1$
 // captures: ["a", "a"] | ["b", undefined]
 
+type Z = UnionTree<[GroupTree<"a", State.UnnamedCaptureKind.indexed>, "b"]>
+
+type R = UnionTree.finalize<
+	Z,
+	{
+		errors: []
+		flags: ""
+		captures: []
+		names: {}
+	}
+>
+
 export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], never, ctx, []>
+	> = _finalize<self["ast"], [], ctx, []>
 
 	type _finalize<
 		branches extends unknown[],
-		pattern extends string,
+		patterns extends string[],
 		ctx extends FinalizationContext,
-		captures extends IndexedCaptures
+		captures extends IndexedCaptures[]
 	> =
 		branches extends [infer head, ...infer tail] ?
 			finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
 				_finalize<
 					tail,
-					pattern | r["pattern"],
+					[...patterns, r["pattern"]],
 					ctx,
 					r["ctx"]["captures"] extends (
-						// extract new captures
 						[
 							...ctx["captures"],
+							// extract new captures
 							...infer branchCaptures extends IndexedCaptures
 						]
 					) ?
 						branchCaptures extends [] ?
-							captures | { [i in keyof captures]: undefined }
-						:	| [...{ [i in keyof captures]: undefined }, ...branchCaptures]
-							| (captures extends [] ? never
-							  :	[...captures, ...{ [i in keyof branchCaptures]: undefined }])
+							[...captures, { [i in keyof captures]: undefined }]
+						:	[
+								...{
+									[i in keyof captures]: [
+										...captures[i],
+										...{ [_ in keyof branchCaptures]: undefined }
+									]
+								},
+								[...{ [i in keyof captures]: undefined }, ...branchCaptures]
+							]
 					:	never
 				>
 			:	never
-		:	FinalizationResult.from<{
-				pattern: pattern
-				ctx: {
-					flags: ctx["flags"]
-					captures: [...ctx["captures"], ...captures]
-					names: ctx["names"]
-					errors: ctx["errors"]
-				}
-			}>
+		: keyof patterns extends infer i ?
+			i extends keyof patterns & keyof captures & NumberLiteral ?
+				FinalizationResult.from<{
+					pattern: patterns[i]
+					ctx: {
+						flags: ctx["flags"]
+						captures: [...ctx["captures"], ...captures[i]]
+						names: ctx["names"]
+						errors: ctx["errors"]
+					}
+				}>
+			:	never
+		:	never
 }
 
 export type CapturedGroupKind = string | State.UnnamedCaptureKind.indexed
@@ -468,25 +490,28 @@ export declare namespace GroupTree {
 	type finalizeGroupResult<
 		self extends GroupTree,
 		ctx extends FinalizationContext,
-		r extends FinalizationResult,
-		pattern extends string = r["pattern"]
+		r extends FinalizationResult
 	> =
-		pattern extends unknown ?
+		r extends unknown ?
 			// allow the result to distribute to a particular branch
 			// to preserve associations between groups and references
 			// so that e.g. "(a|b)\\1" is inferred as "aa" | "bb"
 			// as opposed to "aa" | "ab" | "ba" | "bb"
 			FinalizationResult.from<{
-				pattern: pattern
+				pattern: r["pattern"]
 				ctx: self["capture"] extends string ?
 					finalizeNamedCapture<
 						self["capture"],
 						ctx["captures"]["length"],
-						pattern,
+						r["pattern"],
 						r["ctx"]
 					>
 				: self["capture"] extends State.UnnamedCaptureKind.indexed ?
-					finalizeUnnamedCapture<ctx["captures"]["length"], pattern, r["ctx"]>
+					finalizeUnnamedCapture<
+						ctx["captures"]["length"],
+						r["pattern"],
+						r["ctx"]
+					>
 				:	r["ctx"]
 			}>
 		:	never

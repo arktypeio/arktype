@@ -36,7 +36,7 @@ type iterate<s extends State, until extends number, counter extends 1[] = []> =
 
 contextualize(() => {
 	it("erate", () => {
-		type Result = iterate<State.initialize<"^(a|b)\\1$", "">, 8>
+		type Result = iterate<State.initialize<"^((a)|b)$", "">, 9>
 		type Result2 = State.Group.finalize<Result>
 		type Result3 = s.finalize<Result>
 		// attest<"b\\1$", Result["unscanned"]>()
@@ -731,7 +731,7 @@ contextualize(() => {
 			const S = regex("^((a)|b)$")
 			attest<
 				Regex<
-					"aa" | "bb",
+					"a" | "b",
 					{
 						captures: ["a", "a"] | ["b", undefined]
 					}
