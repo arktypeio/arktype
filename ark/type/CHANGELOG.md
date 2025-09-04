@@ -1,5 +1,11 @@
 # arktype
 
+## 2.1.22
+
+### fix an issue with some recursive transforms
+
+See https://github.com/arktypeio/arktype/issues/1496
+
 ## 2.1.21
 
 ### ~standard `toJSONSchema` support
