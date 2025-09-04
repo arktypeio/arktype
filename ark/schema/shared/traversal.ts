@@ -244,9 +244,10 @@ export class Traversal {
 				parent = parent[path[pathIndex]]
 		}
 
-		this.path = [...path]
-
 		for (const morph of morphs) {
+			// applyMorphsAtPath may be called recursively, so we need to reset the path here
+			this.path = [...path]
+
 			const morphIsNode = isNode(morph)
 
 			const result = morph(
