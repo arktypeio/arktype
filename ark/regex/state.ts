@@ -369,14 +369,6 @@ export interface UnionTree<ast extends RegexAst[] = RegexAst[]> {
 	ast: ast
 }
 
-// TODO: try distributing entire result and grouping capture union with pattern union
-// TODO: union branches need to keep track of their own captures
-// and add undefined to the captures of other branches in the place of groups
-// that occurerd within that branch:
-
-// expression:  ^((a)|b)\\1$
-// captures: ["a", "a"] | ["b", undefined]
-
 type Z = UnionTree<[GroupTree<"a", State.UnnamedCaptureKind.indexed>, "b"]>
 
 type R = UnionTree.finalize<
@@ -393,20 +385,19 @@ export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], [], ctx, []>
+	> = _finalize<self["ast"], [], [], ctx>
 
 	type _finalize<
 		branches extends unknown[],
 		patterns extends string[],
-		ctx extends FinalizationContext,
-		captures extends IndexedCaptures[]
+		captures extends IndexedCaptures[],
+		ctx extends FinalizationContext
 	> =
 		branches extends [infer head, ...infer tail] ?
 			finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
 				_finalize<
 					tail,
 					[...patterns, r["pattern"]],
-					ctx,
 					r["ctx"]["captures"] extends (
 						[
 							...ctx["captures"],
@@ -414,8 +405,16 @@ export declare namespace UnionTree {
 							...infer branchCaptures extends IndexedCaptures
 						]
 					) ?
-						branchCaptures extends [] ?
-							[...captures, { [i in keyof captures]: undefined }]
+						captures extends [] ? [branchCaptures]
+						: branchCaptures extends [] ?
+							[
+								...captures,
+								captures[0] extends (
+									infer firstCaptures extends IndexedCaptures
+								) ?
+									{ [i in keyof firstCaptures]: undefined }
+								:	never
+							]
 						:	[
 								...{
 									[i in keyof captures]: [
@@ -423,9 +422,17 @@ export declare namespace UnionTree {
 										...{ [_ in keyof branchCaptures]: undefined }
 									]
 								},
-								[...{ [i in keyof captures]: undefined }, ...branchCaptures]
+								captures[0] extends (
+									infer firstCaptures extends IndexedCaptures
+								) ?
+									[
+										...{ [i in keyof firstCaptures]: undefined },
+										...branchCaptures
+									]
+								:	never
 							]
-					:	never
+					:	never,
+					ctx
 				>
 			:	never
 		: keyof patterns extends infer i ?

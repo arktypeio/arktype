@@ -97,10 +97,9 @@ contextualize(() => {
 				Regex<
 					"boinnerAnchored" | `boinnerUnanchored${string}`,
 					{
-						captures: [
-							"boinnerAnchored" | "boinnerUnanchored",
-							"innerAnchored" | "innerUnanchored"
-						]
+						captures:
+							| ["boinnerAnchored", "innerAnchored"]
+							| ["boinnerUnanchored", "innerUnanchored"]
 					}
 				>
 			>(S)
@@ -795,6 +794,7 @@ contextualize(() => {
 		})
 
 		it("multiple refs", () => {
+			// TODO: ?????????
 			type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 			type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
 
