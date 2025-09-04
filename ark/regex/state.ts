@@ -396,6 +396,7 @@ export declare namespace UnionTree {
 					pattern | r["pattern"],
 					ctx,
 					r["ctx"]["captures"] extends (
+						// extract new captures
 						[
 							...ctx["captures"],
 							...infer branchCaptures extends IndexedCaptures
