@@ -4,13 +4,20 @@ import type {
 	leftIfEqual,
 	NumberLiteral,
 	setIndex,
+	unionKeyOf,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
 } from "@ark/util"
 import type { writeUnresolvableBackreferenceMessage } from "./escape.ts"
 import type { quantify, QuantifyingChar } from "./quantify.ts"
-import type { Flags, IndexedCaptures, Regex, RegexContext } from "./regex.ts"
+import type {
+	Flags,
+	IndexedCaptures,
+	NamedCaptures,
+	Regex,
+	RegexContext
+} from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
@@ -385,12 +392,13 @@ export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], [], [], ctx>
+	> = _finalize<self["ast"], [], [], [], ctx>
 
 	type _finalize<
 		branches extends unknown[],
 		patterns extends string[],
 		captures extends IndexedCaptures[],
+		names extends NamedCaptures[],
 		ctx extends FinalizationContext
 	> =
 		branches extends [infer head, ...infer tail] ?
@@ -432,17 +440,22 @@ export declare namespace UnionTree {
 								:	never
 							]
 					:	never,
+					[...names, r["ctx"]["names"]],
 					ctx
 				>
 			:	never
 		: keyof patterns extends infer i ?
-			i extends keyof patterns & keyof captures & NumberLiteral ?
+			i extends keyof patterns & keyof captures & keyof names & NumberLiteral ?
 				FinalizationResult.from<{
 					pattern: patterns[i]
 					ctx: {
 						flags: ctx["flags"]
 						captures: [...ctx["captures"], ...captures[i]]
-						names: ctx["names"]
+						names: {
+							[k in unionKeyOf<names[number]>]: k extends keyof names[i] ?
+								names[i][k]
+							:	undefined
+						}
 						errors: ctx["errors"]
 					}
 				}>

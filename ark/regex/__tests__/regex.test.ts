@@ -666,7 +666,7 @@ contextualize(() => {
 				Regex<
 					"ac" | "bc",
 					{
-						captures: ["a" | "b"]
+						captures: ["a"] | ["b"]
 					}
 				>
 			>(S)
@@ -733,6 +733,27 @@ contextualize(() => {
 					"a" | "b",
 					{
 						captures: ["a", "a"] | ["b", undefined]
+					}
+				>
+			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["a" | "b"] }>')
+		})
+
+		it("branching named captures", () => {
+			const S = regex("^(?<foo>(?<bar>a)|b)$")
+			attest<
+				Regex<
+					"a" | "b",
+					{
+						captures: ["a", "a"] | ["b", undefined]
+						names:
+							| {
+									foo: "a"
+									bar: "a"
+							  }
+							| {
+									foo: "b"
+									bar: undefined
+							  }
 					}
 				>
 			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["a" | "b"] }>')
