@@ -1042,4 +1042,34 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 		attest<number>(t.morphed)
 		attest<number | undefined>(t.nested?.morphed)
 	})
+
+	it("complex morphs are applied on correct path", () => {
+		let c: null | 1
+
+		const M = type({
+			list: type("object")
+				.pipe(e => e)
+				.pipe(
+					type({
+						z: type("unknown").pipe(() => c)
+					})
+				)
+				.array(),
+			_: ["unknown", ":", () => true]
+		})
+
+		c = null
+		attest(() =>
+			M.assert({
+				list: [{ z: "" }, { z: "" }]
+			})
+		).throws.snap("TraversalError: _ must be present (was missing)")
+
+		c = 1
+		attest(() =>
+			M.assert({
+				list: [{ z: "" }, { z: "" }]
+			})
+		).throws.snap("TraversalError: _ must be present (was missing)")
+	})
 })
