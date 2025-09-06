@@ -109,8 +109,8 @@ export abstract class BaseRoot<
 						`JSONSchema target '${opts.target}' is not supported (must be "draft-2020-12")`
 					)
 				}
-				if (opts.io === "input") return this.in.toJsonSchema() as never
-				return this.out.toJsonSchema() as never
+				if (opts.io === "input") return this.rawIn.toJsonSchema() as never
+				return this.rawOut.toJsonSchema() as never
 			}
 		}
 	}
