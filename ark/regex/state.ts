@@ -1,8 +1,8 @@
 import type {
 	contains,
 	ErrorMessage,
-	extractNewElements,
 	leftIfEqual,
+	noSuggest,
 	NumberLiteral,
 	setIndex,
 	unionKeyOf,
@@ -12,7 +12,13 @@ import type {
 } from "@ark/util"
 import type { writeUnresolvableBackreferenceMessage } from "./escape.ts"
 import type { quantify, QuantifyingChar } from "./quantify.ts"
-import type { Flags, IndexedCaptures, NamedCaptures, Regex } from "./regex.ts"
+import type {
+	Flags,
+	IndexedCaptures,
+	NamedCaptures,
+	Regex,
+	RegexContext
+} from "./regex.ts"
 
 export interface State extends State.Group {
 	unscanned: string
@@ -308,22 +314,21 @@ export declare namespace ReferenceNode {
 		to extends string = self["to"]
 	> =
 		to extends NumberLiteral & keyof ctx["captures"] ?
-			ctx["captures"][to] extends string | undefined ?
-				FinalizationResult.from<{
-					pattern: inferReference<ctx["captures"][to]>
-					ctx: ctx
-				}>
-			:	// a null capture representing an unclosed group.
+			ctx["captures"] extends IncompleteCaptureGroup ?
 				// referencing an unclosed group is a no-op, so error
 				// to help users avoid it
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
+			:	FinalizationResult.from<{
+					pattern: inferReference<ctx["captures"][to]>
+					ctx: ctx
+				}>
 		: to extends keyof ctx["names"] ?
-			ctx["names"][to] extends string | undefined ?
-				FinalizationResult.from<{
+			ctx["captures"] extends IncompleteCaptureGroup ?
+				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
+			:	FinalizationResult.from<{
 					pattern: inferReference<ctx["names"][to]>
 					ctx: ctx
 				}>
-			:	FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 		:	FinalizationResult.error<ctx, writeUnresolvableBackreferenceMessage<to>>
 
 	type inferReference<to extends string | undefined> =
@@ -418,7 +423,7 @@ export declare namespace UnionTree {
 		acc extends FinalizedBranch[],
 		ctx extends FinalizationContext,
 		r extends FinalizationResult,
-		branchCaptures extends IndexedCaptures = extractNewElements<
+		branchCaptures extends IndexedCaptures = extractNewCaptures<
 			ctx["captures"],
 			r["ctx"]["captures"]
 		>
@@ -434,20 +439,20 @@ export declare namespace UnionTree {
 
 	type finalizeBranches<
 		i,
-		branches extends FinalizedBranch[],
+		acc extends FinalizedBranch[],
 		ctx extends FinalizationContext
 	> =
-		i extends keyof branches & NumberLiteral ?
+		i extends keyof acc & NumberLiteral ?
 			FinalizationResult.from<{
-				pattern: branches[i]["pattern"]
+				pattern: acc[i]["pattern"]
 				ctx: {
 					flags: ctx["flags"]
-					captures: [...ctx["captures"], ...branches[i]["captures"]]
+					captures: [...ctx["captures"], ...acc[i]["captures"]]
 					names: {
-						[k in unionKeyOf<branches[number]["names"]>]: k extends (
-							keyof branches[i]["names"]
+						[k in unionKeyOf<acc[number]["names"]>]: k extends (
+							keyof acc[i]["names"]
 						) ?
-							branches[i]["names"][k]
+							acc[i]["names"][k]
 						:	undefined
 					}
 					errors: ctx["errors"]
@@ -457,6 +462,8 @@ export declare namespace UnionTree {
 }
 
 export type CapturedGroupKind = string | State.UnnamedCaptureKind.indexed
+
+export type IncompleteCaptureGroup = noSuggest<"incompleteCaptureGroup">
 
 export interface GroupTree<
 	ast extends RegexAst = RegexAst,
@@ -485,14 +492,14 @@ export declare namespace GroupTree {
 			{
 				// null represents a capture group that is still being parsed
 				// error on trying to reference it (will always be empty)
-				captures: [...ctx["captures"], null]
-				names: ctx["names"] & { [_ in self["capture"]]: null }
+				captures: [...ctx["captures"], IncompleteCaptureGroup]
+				names: ctx["names"] & { [_ in self["capture"]]: IncompleteCaptureGroup }
 				flags: ctx["flags"]
 				errors: ctx["errors"]
 			}
 		: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 			{
-				captures: [...ctx["captures"], null]
+				captures: [...ctx["captures"], IncompleteCaptureGroup]
 				names: ctx["names"]
 				flags: ctx["flags"]
 				errors: ctx["errors"]
@@ -600,7 +607,7 @@ export declare namespace QuantifierTree {
 	type finalizeZeroQuantified<
 		ctx extends FinalizationContext,
 		r extends FinalizationResult,
-		quantifiedCaptures extends unknown[] = extractNewElements<
+		quantifiedCaptures extends unknown[] = extractNewCaptures<
 			ctx["captures"],
 			r["ctx"]["captures"]
 		>
@@ -658,10 +665,17 @@ type pushToSequence<sequence extends SequenceTree, root extends RegexAst> =
 		SequenceTree<[...sequence["ast"], ...root["ast"]]>
 	:	SequenceTree<[...sequence["ast"], root]>
 
-export interface FinalizationContext {
-	flags: Flags
-	captures: Array<string | undefined | null>
-	names: Record<string, string | undefined | null>
+type extractNewCaptures<
+	base extends FinalizationContext["captures"],
+	compare extends IndexedCaptures
+> =
+	compare extends (
+		readonly [...base, ...infer elements extends IndexedCaptures]
+	) ?
+		elements
+	:	[]
+
+export interface FinalizationContext extends Required<RegexContext> {
 	errors: ErrorMessage[]
 }
 
