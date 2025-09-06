@@ -818,6 +818,7 @@ contextualize(() => {
 			// TODO: ??????????
 			type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 			type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
+			type OptimalNames = { foo: "bcd" | undefined }
 
 			const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
 		})
