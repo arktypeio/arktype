@@ -381,17 +381,17 @@ export declare namespace UnionTree {
 	> = _finalize<self["ast"], [], [], [], ctx>
 
 	type _finalize<
-		branches extends unknown[],
-		patterns extends string[],
-		captures extends IndexedCaptures[],
-		names extends NamedCaptures[],
+		astBranches extends unknown[],
+		patternBranches extends string[],
+		captureBranches extends IndexedCaptures[],
+		nameBranches extends NamedCaptures[],
 		ctx extends FinalizationContext
 	> =
-		branches extends [infer head, ...infer tail] ?
+		astBranches extends [infer head, ...infer tail] ?
 			finalizeTree<head, ctx> extends infer r extends FinalizationResult ?
 				_finalize<
 					tail,
-					[...patterns, r["pattern"]],
+					[...patternBranches, r["pattern"]],
 					r["ctx"]["captures"] extends (
 						[
 							...ctx["captures"],
@@ -399,11 +399,11 @@ export declare namespace UnionTree {
 							...infer branchCaptures extends IndexedCaptures
 						]
 					) ?
-						captures extends [] ? [branchCaptures]
+						captureBranches extends [] ? [branchCaptures]
 						: branchCaptures extends [] ?
 							[
-								...captures,
-								captures[0] extends (
+								...captureBranches,
+								captureBranches[0] extends (
 									infer firstCaptures extends IndexedCaptures
 								) ?
 									{ [i in keyof firstCaptures]: undefined }
@@ -411,12 +411,12 @@ export declare namespace UnionTree {
 							]
 						:	[
 								...{
-									[i in keyof captures]: [
-										...captures[i],
+									[i in keyof captureBranches]: [
+										...captureBranches[i],
 										...{ [_ in keyof branchCaptures]: undefined }
 									]
 								},
-								captures[0] extends (
+								captureBranches[0] extends (
 									infer firstCaptures extends IndexedCaptures
 								) ?
 									[
@@ -426,26 +426,46 @@ export declare namespace UnionTree {
 								:	never
 							]
 					:	never,
-					[...names, r["ctx"]["names"]],
+					[...nameBranches, r["ctx"]["names"]],
 					ctx
 				>
 			:	never
-		: keyof patterns extends infer i ?
-			i extends keyof patterns & keyof captures & keyof names & NumberLiteral ?
-				FinalizationResult.from<{
-					pattern: patterns[i]
-					ctx: {
-						flags: ctx["flags"]
-						captures: [...ctx["captures"], ...captures[i]]
-						names: {
-							[k in unionKeyOf<names[number]>]: k extends keyof names[i] ?
-								names[i][k]
-							:	undefined
-						}
-						errors: ctx["errors"]
+		:	finalizeBranches<
+				keyof patternBranches,
+				patternBranches,
+				captureBranches,
+				nameBranches,
+				ctx
+			>
+
+	type finalizeBranches<
+		i,
+		patternBranches extends string[],
+		captureBranches extends IndexedCaptures[],
+		nameBranches extends NamedCaptures[],
+		ctx extends FinalizationContext
+	> =
+		i extends (
+			keyof patternBranches &
+				keyof captureBranches &
+				keyof nameBranches &
+				NumberLiteral
+		) ?
+			FinalizationResult.from<{
+				pattern: patternBranches[i]
+				ctx: {
+					flags: ctx["flags"]
+					captures: [...ctx["captures"], ...captureBranches[i]]
+					names: {
+						[k in unionKeyOf<nameBranches[number]>]: k extends (
+							keyof nameBranches[i]
+						) ?
+							nameBranches[i][k]
+						:	undefined
 					}
-				}>
-			:	never
+					errors: ctx["errors"]
+				}
+			}>
 		:	never
 }
 
