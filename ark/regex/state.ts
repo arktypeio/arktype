@@ -1,6 +1,7 @@
 import type {
 	contains,
 	ErrorMessage,
+	extractNewElements,
 	leftIfEqual,
 	NumberLiteral,
 	setIndex,
@@ -563,36 +564,66 @@ export declare namespace QuantifierTree {
 		ctx extends FinalizationContext
 	> =
 		finalizeTree<self["ast"], ctx> extends infer r extends FinalizationResult ?
-			self["min"] extends 0 ?
-				r["ctx"]["captures"] extends (
-					[
-						...ctx["captures"],
-						...infer quantifiedCaptures extends IndexedCaptures
-					]
-				) ?
-					// TODO: 0 should be its own finalization result
-					FinalizationResult.from<{
-						pattern: quantify<r["pattern"], self["min"], self["max"]>
-						ctx: {
-							captures:
-								| r["ctx"]["captures"]
-								| [
-										...ctx["captures"],
-										...{
-											[i in keyof quantifiedCaptures]: undefined
-										}
-								  ]
-							flags: r["ctx"]["flags"]
-							names: r["ctx"]["names"]
-							errors: r["ctx"]["errors"]
-						}
-					}>
-				:	never
-			:	FinalizationResult.from<{
-					pattern: quantify<r["pattern"], self["min"], self["max"]>
-					ctx: r["ctx"]
-				}>
+			finalizeQuantifierResult<self, ctx, r>
 		:	never
+
+	type finalizeQuantifierResult<
+		self extends QuantifierTree,
+		ctx extends FinalizationContext,
+		r extends FinalizationResult
+	> =
+		self["min"] extends 0 ? finalizeZeroMinQuantified<self, ctx, r>
+		:	finalizeNonZeroMinQuantified<self, r>
+
+	type finalizeNonZeroMinQuantified<
+		self extends QuantifierTree,
+		r extends FinalizationResult
+	> = FinalizationResult.from<{
+		pattern: quantify<r["pattern"], self["min"], self["max"]>
+		ctx: r["ctx"]
+	}>
+
+	type finalizeZeroMinQuantified<
+		self extends QuantifierTree,
+		ctx extends FinalizationContext,
+		r extends FinalizationResult
+	> = finalizeZeroQuantified<ctx, r> | finalizeOnePlusQuantified<self["max"], r>
+
+	// add `| undefined` to any capture groups quantified by zero
+	type finalizeZeroQuantified<
+		ctx extends FinalizationContext,
+		r extends FinalizationResult,
+		quantifiedCaptures extends unknown[] = extractNewElements<
+			ctx["captures"],
+			r["ctx"]["captures"]
+		>
+	> = FinalizationResult.from<{
+		pattern: ""
+		ctx: {
+			captures:
+				| r["ctx"]["captures"]
+				| [
+						...ctx["captures"],
+						...{
+							[i in keyof quantifiedCaptures]: undefined
+						}
+				  ]
+			flags: r["ctx"]["flags"]
+			names: r["ctx"]["names"]
+			errors: r["ctx"]["errors"]
+		}
+	}>
+
+	type finalizeOnePlusQuantified<
+		max extends number | null,
+		r extends FinalizationResult
+	> =
+		max extends 1 ? r
+		:	FinalizationResult.from<{
+				// don't include 0 since it has been inferred separately
+				pattern: quantify<r["pattern"], 1, max>
+				ctx: r["ctx"]
+			}>
 }
 
 declare global {

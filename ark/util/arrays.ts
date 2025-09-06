@@ -333,6 +333,11 @@ export const appendUnique = <to extends unknown[]>(
 	return to
 }
 
+export type extractNewElements<
+	base extends readonly unknown[],
+	compare extends readonly unknown[]
+> = compare extends readonly [...base, ...infer elements] ? elements : []
+
 export type groupableKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
