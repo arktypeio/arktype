@@ -314,7 +314,7 @@ export declare namespace ReferenceNode {
 		to extends string = self["to"]
 	> =
 		to extends NumberLiteral & keyof ctx["captures"] ?
-			ctx["captures"] extends IncompleteCaptureGroup ?
+			ctx["captures"][to] extends IncompleteCaptureGroup ?
 				// referencing an unclosed group is a no-op, so error
 				// to help users avoid it
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
@@ -323,7 +323,7 @@ export declare namespace ReferenceNode {
 					ctx: ctx
 				}>
 		: to extends keyof ctx["names"] ?
-			ctx["captures"] extends IncompleteCaptureGroup ?
+			ctx["names"][to] extends IncompleteCaptureGroup ?
 				FinalizationResult.error<ctx, writeIncompleteReferenceError<to>>
 			:	FinalizationResult.from<{
 					pattern: inferReference<ctx["names"][to]>
