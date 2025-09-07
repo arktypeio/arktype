@@ -36,7 +36,7 @@ type iterate<s extends State, until extends number, counter extends 1[] = []> =
 
 contextualize(() => {
 	it("erate", () => {
-		type Result = iterate<State.initialize<"^((a)|b)$", "">, 9>
+		type Result = iterate<State.initialize<"^a(?<foo>b(c)d)?e\\1\\2$", "">, 14>
 		type Result2 = State.Group.finalize<Result>
 		type Result3 = s.finalize<Result>
 		// attest<"b\\1$", Result["unscanned"]>()
@@ -816,11 +816,11 @@ contextualize(() => {
 		})
 
 		it("multiple refs", () => {
-			// TODO: ??????????
 			type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 			type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
 			type OptimalNames = { foo: "bcd" | undefined }
 
+			// todo: ?
 			const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
 		})
 
