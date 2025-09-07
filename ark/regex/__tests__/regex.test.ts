@@ -22,7 +22,12 @@ import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
 import {
 	writeIncompleteReferenceError,
 	writeMidAnchorError,
+	type finalizeTree,
+	type GroupTree,
+	type IndexedCaptureOffset,
+	type ReferenceNode,
 	type s,
+	type SequenceTree,
 	type State
 } from "@ark/regex/internal/state.js"
 import {
@@ -34,13 +39,44 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
+type _ParseResult = iterate<
+	State.initialize<"^a(?<foo>b(c)d)?e\\1\\2$", "">,
+	14
+>
+type _AstResult = State.Group.finalize<_ParseResult>
+type _FinalizedResult = s.finalize<_ParseResult>
+
+type _Tree = SequenceTree<
+	[
+		"a",
+		{
+			kind: "quantifier"
+			ast: GroupTree<
+				SequenceTree<
+					["b", GroupTree<"c", State.UnnamedCaptureKind.indexed>, "d"]
+				>,
+				"foo"
+			>
+			min: 0
+			max: 1
+		},
+		"e",
+		ReferenceNode<"1">,
+		ReferenceNode<"2">
+	]
+>
+
+type _Result = finalizeTree<
+	_Tree,
+	{ errors: []; flags: ""; captures: [IndexedCaptureOffset]; names: {} }
+>
+
 contextualize(() => {
 	it("erate", () => {
-		type Result = iterate<State.initialize<"^a(?<foo>b(c)d)?e\\1\\2$", "">, 14>
-		type Result2 = State.Group.finalize<Result>
-		type Result3 = s.finalize<Result>
 		// attest<"b\\1$", Result["unscanned"]>()
 	})
+
+	it("erate more", () => {})
 
 	describe("literals", () => {
 		it("base", () => {
@@ -818,10 +854,25 @@ contextualize(() => {
 		it("multiple refs", () => {
 			type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
 			type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
-			type OptimalNames = { foo: "bcd" | undefined }
+			type OptimalNames = { foo: "bcd" } | { foo: undefined }
 
-			// todo: ?
 			const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
+
+			attest<
+				Regex<
+					"abcdebcd" | "abcdebcdc" | "ae",
+					{
+						captures: ["bcd", "c"] | [undefined, undefined]
+						names:
+							| {
+									foo: "bcd"
+							  }
+							| {
+									foo: undefined
+							  }
+					}
+				>
+			>(S).type.toString.snap()
 		})
 
 		it("index out of range", () => {
