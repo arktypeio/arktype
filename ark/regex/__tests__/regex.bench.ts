@@ -3,7 +3,7 @@ import { regex } from "@ark/regex"
 import type { array } from "@ark/util"
 
 bench.baseline(() => {
-	regex("foo|^bar$|baz?")
+	regex("foo|^bar$|baz{9,10}?")
 })
 
 const r = regex("a?(b|cd)")
@@ -36,12 +36,24 @@ bench("?(1)", () => {
 
 bench("?(4)", () => {
 	const r = regex("^a?b?c?d?$")
-}).types([1495, "instantiations"])
+}).types([1510, "instantiations"])
 
 bench("?(7)", () => {
 	const r = regex("^a?b?c?d?e?f?g?$")
-}).types([4180, "instantiations"])
+}).types([4210, "instantiations"])
 
 bench("escape(6)", () => {
 	const r = regex("^\t\n\r\v\f\0$")
 }).types([1011, "instantiations"])
+
+bench("quantified char", () => {
+	const r = regex("^a{5}$")
+}).types([605, "instantiations"])
+
+bench("quantified char min max", () => {
+	const r = regex("^a{5,10}$")
+}).types([694, "instantiations"])
+
+bench("quantified string", () => {
+	const r = regex("^.{5,10}$")
+}).types([509, "instantiations"])

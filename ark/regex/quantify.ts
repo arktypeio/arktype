@@ -87,7 +87,10 @@ export type quantify<
 	pattern extends string,
 	min extends number,
 	max extends number | null
-> = _loopUntilMin<pattern, min, max, "", []>
+> =
+	max extends 0 ? ""
+	: string extends pattern ? string
+	: _loopUntilMin<pattern, min, max, "", []>
 
 type _loopUntilMin<
 	base extends string,
@@ -98,9 +101,7 @@ type _loopUntilMin<
 > =
 	repetitions["length"] extends min ?
 		max extends number ? _loopUntilMax<base, min, max, acc, repetitions>
-		: // TODO: infer redundant ${string}${string}
-		// give better type hint for 0-min quantifiers
-		repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
+		: repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
 		: `${acc}${string}`
 	:	_loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]> // array.multiply<repetitionDepth, baseDepth["length"]>
 

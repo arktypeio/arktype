@@ -309,6 +309,11 @@ contextualize(() => {
 			)
 		})
 
+		it("${string} does not duplicate when quantified", () => {
+			const r = regex("^.{5,10}$")
+			attest<Regex<string, {}>>(r).type.toString.snap("Regex<string, {}>")
+		})
+
 		it("many ranges", () => {
 			const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
 			attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`, {}>>(
@@ -1247,7 +1252,7 @@ contextualize(() => {
 	})
 
 	describe("depth limits", () => {
-		// 		📊 aggregated type performance:
+		// 📊 aggregated type performance:
 		// from before limit:
 		// {
 		//     "checkTime": 5.33,
