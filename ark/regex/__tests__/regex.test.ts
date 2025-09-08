@@ -1291,4 +1291,26 @@ contextualize(() => {
 			attest<Regex<Expected, {}>>(S)
 		})
 	})
+
+	it("semver", () => {
+		const S = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
+
+		type ExpectedPattern =
+			| `0.0.${string}`
+			| `0.${string}.0`
+			| `0.${string}.${string}`
+			| `${string}.0.0`
+			| `${string}.0.${string}`
+			| `${string}.${string}.0`
+			| `${string}.${string}.${string}`
+
+		attest<
+			Regex<
+				ExpectedPattern,
+				{
+					captures: [string, string, string]
+				}
+			>
+		>(S)
+	})
 })

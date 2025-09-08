@@ -61,5 +61,3 @@ bench("quantified string", () => {
 bench("semver", () => {
 	const r = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
 }).types()
-
-const z = regex("^(0|[1-9]\\d*)\\.$")
