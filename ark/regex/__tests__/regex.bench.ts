@@ -28,20 +28,20 @@ bench("repeat(513)", () => {
 
 bench("anchored union", () => {
 	const r = regex("typescript|^go$|brrr$")
-}).types([2608, "instantiations"])
+}).types([2969, "instantiations"])
 
 bench("?(1)", () => {
 	const r = regex("^a?$")
-}).types([421, "instantiations"])
+}).types([498, "instantiations"])
 
 bench("?(4)", () => {
 	const r = regex("^a?b?c?d?$")
-}).types([1449, "instantiations"])
+}).types([1495, "instantiations"])
 
 bench("?(7)", () => {
 	const r = regex("^a?b?c?d?e?f?g?$")
-}).types([4208, "instantiations"])
+}).types([4180, "instantiations"])
 
 bench("escape(6)", () => {
 	const r = regex("^\t\n\r\v\f\0$")
-}).types([980, "instantiations"])
+}).types([1011, "instantiations"])
