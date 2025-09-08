@@ -1,0 +1,34 @@
+---
+title: Ecosystem
+---
+
+### ArkEnv
+
+[ArkEnv](https://arkenv.js.org) brings the power of ArkType to your environment variables.
+
+Define an ArkType schema, pull values from your environment or config source, validate them, apply type conversions and transformations, and end up with a fully typesafe, ready-to-use `env` object.
+
+Inspired by tools like [T3 Env](https://env.t3.gg) but tailored specifically for ArkType, ArkEnv also adds keywords like `string.host` and `number.port` for env-specific use cases.
+
+```ts
+// @noErrors
+import { createEnv } from "arkenv"
+
+const envSchema = type({
+	HOST: "string.host",
+	PORT: "number.port",
+	NODE_ENV: "'development' | 'production' | 'test' = 'development'"
+})
+
+const env = createEnv({
+	HOST: "string.host",
+	PORT: "number.port",
+	NODE_ENV: "'development' | 'production' | 'test' = 'development'"
+})
+
+// Automatically validate and parse process.env
+// TypeScript knows the ✨exact✨ types!
+console.log(env.HOST) // (property) HOST: string
+console.log(env.PORT) // (property) PORT: number
+console.log(env.NODE_ENV) // (property) NODE_ENV: "development" | "production" | "test"
+```

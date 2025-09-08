@@ -9,6 +9,7 @@
 		"type-api",
 		"traversal-api",
 		"integrations",
+		"ecosystem",
 		"scopes",
 		"generics",
 		"blog",
