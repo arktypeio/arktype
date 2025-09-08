@@ -2,7 +2,7 @@ import { ReadonlyArray, type array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
 import type { requireKeys } from "./records.ts"
 import { isDotAccessible } from "./registry.ts"
-import { printable } from "./serialize.ts"
+import { printable, type JsonArray } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
@@ -62,19 +62,35 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 }
 
 export const stringifyPath: StringifyPathFn = (path, ...opts) =>
-	path.reduce<string>((s, k) => appendStringifiedKey(s, k, ...opts), "")
+	path.reduce<string>(
+		(s, k) => appendStringifiedKey(s, k, ...(opts as any)),
+		""
+	)
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
 	private cache: {
 		stringify?: string
 		stringifyAncestors?: readonly string[]
+		json?: JsonArray
 	} = {}
 
 	constructor(...items: array<PropertyKey>) {
 		super()
 		// avoid case where a single number will create empty slots
 		;(this as any).push(...items)
+	}
+
+	toJSON(): JsonArray {
+		if (this.cache.json) return this.cache.json
+		this.cache.json = []
+		for (let i = 0; i < this.length; i++) {
+			this.cache.json.push(
+				typeof this[i] === "symbol" ? printable(this[i]) : (this[i] as never)
+			)
+		}
+
+		return this.cache.json
 	}
 
 	stringify(): string {
@@ -86,10 +102,10 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		if (this.cache.stringifyAncestors) return this.cache.stringifyAncestors
 		let propString = ""
 		const result: string[] = [propString]
-		this.forEach(path => {
+		for (const path of this) {
 			propString = appendStringifiedKey(propString, path)
 			result.push(propString)
-		})
+		}
 		return (this.cache.stringifyAncestors = result)
 	}
 }

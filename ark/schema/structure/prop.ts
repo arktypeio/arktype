@@ -104,14 +104,10 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
-	override get flatRefs(): FlatRef[] {
-		return append(
-			this.value.flatRefs.map(ref =>
-				flatRef([this.key, ...ref.path], ref.node)
-			),
-			flatRef([this.key], this.value)
-		)
-	}
+	flatRefs: FlatRef[] = append(
+		this.value.flatRefs.map(ref => flatRef([this.key, ...ref.path], ref.node)),
+		flatRef([this.key], this.value)
+	)
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
@@ -123,7 +119,7 @@ export abstract class BaseProp<
 		return result
 	}
 
-	hasDefault(): this is Optional.Node & { default: unknown } {
+	hasDefault(): this is Optional.Node.withDefault {
 		return "default" in this.inner
 	}
 
@@ -148,7 +144,6 @@ export abstract class BaseProp<
 			)
 		} else if (this.hasKind("required"))
 			ctx.errorFromNodeContext(this.errorContext)
-		else if (this.hasDefault()) ctx.queueMorphs(this.defaultValueMorphs)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -157,16 +152,10 @@ export abstract class BaseProp<
 		)
 
 		if (this.hasKind("required")) {
-			js.else(() => {
-				if (js.traversalKind === "Apply") {
-					return js.line(
-						`ctx.errorFromNodeContext(${this.compiledErrorContext})`
-					)
-				} else return js.return(false)
-			})
-		} else if (js.traversalKind === "Apply" && this.hasDefault()) {
 			js.else(() =>
-				js.line(`ctx.queueMorphs(${this.defaultValueMorphsReference})`)
+				js.traversalKind === "Apply" ?
+					js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+				:	js.return(false)
 			)
 		}
 

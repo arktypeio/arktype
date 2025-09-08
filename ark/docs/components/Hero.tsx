@@ -1,6 +1,7 @@
-import { ArrowRightIcon } from "lucide-react"
-import Link from "next/link"
+import { ArrowRightIcon, PlayIcon } from "lucide-react"
 import { MainAutoplayDemo } from "./AutoplayDemo.tsx"
+import { Button } from "./Button.tsx"
+import { GhStarButton } from "./GhStarButton.tsx"
 import { PlatformCloud } from "./PlatformCloud.tsx"
 
 export const Hero = () => (
@@ -20,20 +21,24 @@ export const Hero = () => (
 
 			<div className="relative w-full flex flex-col md:items-start text-center md:text-left">
 				<h1 className="mb-4 text-3xl md:text-8xl">ArkType</h1>
-				<p className="text-fd-muted-foreground text-2xl leading-relaxed">
-					Optimized runtime validation from familiar, type-safe syntax.
+				<p className="text-fd-muted-foreground text-3xl leading-relaxed hero-tagline">
+					TypeScript's 1:1 validator, optimized from editor to runtime
 				</p>
-
-				{/* This wrapper grows to fill remaining vertical space, placing the link in the centered area */}
-				<div className="flex-1 flex items-center justify-center md:justify-start mt-6">
-					<Link
-						tabIndex={1}
-						href="/docs/intro/setup"
-						className="bg-highlight text-black focus-within:outline focus-within:outline-2 outline-white hover:bg-highlight/80 p-5 rounded-full flex gap-2 text-sm items-center"
+				<div className="w-full flex-1 flex items-start justify-around mt-6 md:justify-start md:gap-x-4">
+					<GhStarButton />
+					<Button
+						variant="outline"
+						href="/playground"
+						size="lg"
+						className="hidden md:flex"
 					>
-						Set Sail
+						Playground
+						<PlayIcon />
+					</Button>
+					<Button variant="filled" href="/docs/intro/setup" size="lg">
+						Intro
 						<ArrowRightIcon />
-					</Link>
+					</Button>
 				</div>
 			</div>
 

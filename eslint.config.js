@@ -1,20 +1,18 @@
 // @ts-check
-
 import tseslint from "typescript-eslint"
 
 /** These actually have types but I'm not sure how to enable esModuleInterop
  * with allowJs in the root tsconfig, which dramatically slows typechecking */
-
-// @ts-expect-error
+// @ts-ignore
 import eslint from "@eslint/js"
-// @ts-expect-error
+// @ts-ignore
 import importPlugin from "eslint-plugin-import"
+import eslintPluginUnicorn from "eslint-plugin-unicorn"
 
 /** These actually don't have types as of now */
-
-// @ts-expect-error
+// @ts-ignore
 import onlyWarn from "eslint-plugin-only-warn"
-// @ts-expect-error
+// @ts-ignore
 import preferArrowFunctions from "eslint-plugin-prefer-arrow-functions"
 
 export default tseslint.config(
@@ -26,6 +24,7 @@ export default tseslint.config(
 			"**/*js",
 			"**/*.astro",
 			"**/.next/**/*",
+			"**/.source/**/*",
 			"**/*scratch.ts",
 			"**/scratch/**/*",
 			"**/examples/**/*"
@@ -37,6 +36,8 @@ export default tseslint.config(
 		plugins: {
 			"@typescript-eslint": tseslint.plugin,
 			import: importPlugin,
+			unicorn: eslintPluginUnicorn,
+			// @ts-ignore
 			"only-warn": onlyWarn,
 			"prefer-arrow-functions": preferArrowFunctions
 		},
@@ -57,6 +58,17 @@ export default tseslint.config(
 				}
 			],
 			"arrow-body-style": ["warn", "as-needed"],
+			"unicorn/better-regex": "warn",
+			"unicorn/expiring-todo-comments": [
+				"warn",
+				{ allowWarningComments: false }
+			],
+			"unicorn/no-array-for-each": "warn",
+			"unicorn/no-typeof-undefined": "warn",
+			"unicorn/prefer-node-protocol": "warn",
+			"unicorn/prefer-regexp-test": "warn",
+			"unicorn/prefer-string-replace-all": "warn",
+			"unicorn/prefer-ternary": "warn",
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
 				{
@@ -206,7 +218,10 @@ export default tseslint.config(
 						}
 					]
 				}
-			]
+			],
+			// function foo is particularly useful for defining a named function inline e.g. to
+			// be passed to a morph so it can be uniquely snapshotted
+			"prefer-arrow-functions/prefer-arrow-functions": "off"
 		}
 	}
 )

@@ -16,6 +16,8 @@ import {
 
 export type TsVersionAliases = autocomplete<"*"> | string[]
 
+export type BenchErrorConfig = "runtime" | "types" | boolean
+
 type BaseAttestConfig = {
 	tsconfig: string | null | undefined
 	compilerOptions: ts.CompilerOptions
@@ -38,7 +40,7 @@ type BaseAttestConfig = {
 	skipInlineInstantiations: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
-	benchErrorOnThresholdExceeded: boolean
+	benchErrorOnThresholdExceeded: BenchErrorConfig
 	filter: string | undefined
 	testDeclarationAliases: string[]
 	formatCmd: string
@@ -121,13 +123,13 @@ const getParamValue = (param: keyof AttestConfig) => {
 export const attestEnvPrefix = "ATTEST_"
 
 const addEnvConfig = (config: BaseAttestConfig) => {
-	Object.entries(process.env as Record<string, string>).forEach(([k, v]) => {
+	for (const [k, v] of Object.entries(process.env as Record<string, string>)) {
 		if (k.startsWith(attestEnvPrefix)) {
 			const optionName = k.slice(attestEnvPrefix.length)
 			if (optionName === "CONFIG") Object.assign(config, JSON.parse(v))
 			else (config as any)[optionName] = JSON.parse(v)
 		}
-	})
+	}
 	let k: keyof BaseAttestConfig
 	for (k in config) {
 		if (config[k] === false) config[k] = hasFlag(k) as never

@@ -9,8 +9,9 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 
 export declare namespace Pattern {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
@@ -56,6 +57,8 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 					{ rule: schema.source, flags: schema.flags }
 				:	{ rule: schema.source }
 			:	schema,
+		obviatesBasisDescription: true,
+		obviatesBasisExpression: true,
 		hasAssociatedError: true,
 		intersectionIsOpen: true,
 		defaults: {
@@ -79,14 +82,19 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 
-	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
-		if (schema.pattern) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Intersection of patterns ${schema.pattern} & ${this.rule}`
-			)
+	reduceJsonSchema(
+		base: JsonSchema.String,
+		ctx: ToJsonSchema.Context
+	): JsonSchema.String {
+		if (base.pattern) {
+			return ctx.fallback.patternIntersection({
+				code: "patternIntersection",
+				base: base as ToJsonSchema.StringSchemaWithPattern,
+				pattern: this.rule
+			})
 		}
-		schema.pattern = this.rule
-		return schema
+		base.pattern = this.rule
+		return base
 	}
 }
 

@@ -1,3 +1,9 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/ocean.css";
+@import "fumadocs-ui/css/preset.css";
+
+@source '../node_modules/fumadocs-ui/dist/**/*.js';
+
 @font-face {
 	font-family: "Cascadia Mono";
 	src:
@@ -5,9 +11,25 @@
 		url("https://fonts.cdnfonts.com/s/37910/CascadiaMono.woff") format("woff");
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+	--color-background: var(--color-fd-background);
+	--color-foreground: var(--color-fd-foreground);
+	--color-muted: var(--color-fd-muted);
+	--color-muted-foreground: var(--color-fd-muted-foreground);
+	--color-popover: var(--color-fd-popover);
+	--color-popover-foreground: var(--color-fd-popover-foreground);
+	--color-card: var(--color-fd-card);
+	--color-card-foreground: var(--color-fd-card-foreground);
+	--color-border: var(--color-fd-border);
+	--color-primary: var(--color-fd-primary);
+	--color-primary-foreground: var(--color-fd-primary-foreground);
+	--color-secondary: var(--color-fd-secondary);
+	--color-secondary-foreground: var(--color-fd-secondary-foreground);
+	--color-accent: var(--color-fd-accent);
+	--color-accent-foreground: var(--color-fd-accent-foreground);
+	--color-ring: var(--color-fd-ring);
+	--color-highlight: #f5cf8f;
+}
 
 /** the * ensures this overrides the variable definitions from shiki*/
 :root * {
@@ -56,6 +78,17 @@
 pre,
 code {
 	font-family: "Cascadia Mono", monospace;
+}
+
+/* hack to avoid max-height on fuma codeblocks */
+@layer utilities {
+	.max-h-\[600px\] {
+		max-height: unset;
+	}
+}
+
+.fd-codeblock.twoslash {
+	border-radius: 1.5rem !important;
 }
 
 pre.shiki,
@@ -114,7 +147,7 @@ div.twoslash-popup-container {
 
 /** .twoslash-error matches errors added by twoslash itself, e.g. type errors */
 .twoslash .twoslash-error {
-	/* Override the builtin error squiggle to match our theme */
+	/* Override the built-in error squiggle to match our theme */
 	background: url("/image/errorSquiggle.svg") repeat-x bottom left;
 }
 
@@ -164,4 +197,111 @@ div.twoslash-popup-container {
 /* allow us to inject a badge at order 1 */
 #nd-sidebar .lucide-chevron-down {
 	order: 2;
+}
+
+#nd-home-layout,
+#nd-nav {
+	overflow: hidden;
+	transition: margin-top 0.3s ease;
+}
+
+/* if release banner is visible, add top offset to home navbar and layout equal to its height */
+:root:has(.release-banner:not([hidden]):not(.hidden)) #nd-home-layout,
+:root:has(.release-banner:not([hidden]):not(.hidden)) #nd-nav {
+	margin-top: 3.5rem;
+}
+
+.glass-container,
+.monaco-editor {
+	box-shadow:
+		0 10px 15px 0 rgba(0, 0, 0, 0.3),
+		0 15px 30px 0 rgba(0, 0, 0, 0.22);
+	backdrop-filter: blur(16px);
+	/* without this Monaco ends up adding a 1px outline at the top of the editor for some reason */
+	outline-width: 0px !important;
+}
+
+.monaco-editor,
+.overflow-guard {
+	border-radius: 16px;
+}
+
+/* Chrome/Safari/Edge scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+	background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+/* Firefox scrollbar styling */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.wiggle-animation {
+	animation: wiggle 4s ease-in-out infinite;
+	transform-origin: center center;
+}
+
+@keyframes wiggle {
+	0%,
+	87.5%,
+	100% {
+		transform: rotate(0deg);
+	}
+	88.5% {
+		transform: rotate(1.5deg);
+	}
+	89.5% {
+		transform: rotate(-0.5deg);
+	}
+	90.5% {
+		transform: rotate(-1.5deg);
+	}
+	91.5% {
+		transform: rotate(1deg);
+	}
+	92.5% {
+		transform: rotate(1.5deg);
+	}
+	93.5% {
+		transform: rotate(-1deg);
+	}
+	94.5% {
+		transform: rotate(-0.5deg);
+	}
+	96% {
+		transform: rotate(0.25deg);
+	}
+	98% {
+		transform: rotate(0deg);
+	}
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.hero-tagline {
+	font-family: var(--font-raleway);
+}
+
+body {
+	font-family: var(--font-atkinson);
 }

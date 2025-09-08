@@ -5,7 +5,7 @@ import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Union } from "../roots/union.ts"
 import type { BaseScope } from "../scope.ts"
-import type { BaseMeta } from "./declare.ts"
+import type { NodeMeta } from "./declare.ts"
 import { Disjoint } from "./disjoint.ts"
 import {
 	rootKinds,
@@ -69,7 +69,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		}
 
 		const isPureIntersection =
-			!ctx.pipe || (!l.includesMorph && !r.includesMorph)
+			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
 
 		if (isPureIntersection && l.equals(r)) return l
 
@@ -117,7 +117,7 @@ const _pipeNodes = (
 	r: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ) =>
-	l.includesMorph || r.includesMorph ?
+	l.includesTransform || r.includesTransform ?
 		ctx.invert ?
 			pipeMorphed(r, l, ctx)
 		:	pipeMorphed(l, r, ctx)
@@ -149,14 +149,14 @@ const pipeMorphed = (
 
 			// otherwise, the input has not changed so preserve metadata
 
-			let meta: BaseMeta | undefined
+			let meta: NodeMeta | undefined
 
 			if (viableBranches.length === 1) {
 				const onlyBranch = viableBranches[0]
 				if (!meta) return onlyBranch
 				return ctx.$.node("morph", {
 					...onlyBranch.inner,
-					in: onlyBranch.in.withMeta(meta)
+					in: onlyBranch.in.configure(meta, "self")
 				})
 			}
 

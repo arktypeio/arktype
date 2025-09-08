@@ -20,6 +20,9 @@ _Note: This package is still in alpha! Your feedback will help us iterate toward
 
 To use attest's type assertions, you'll need to call our setup/cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
 
+> [!IMPORTANT]
+> If you run your tests in watch mode or otherwise iteratively during dev, you will want to enable [`--skipTypes` mode](#skiptypes).
+
 ### Vitest
 
 `vitest.config.ts`
@@ -76,7 +79,7 @@ Here are some simple examples of type assertions and snapshotting:
 // @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {
 	it("type and value assertions", () => {
-		const even = type("number%2")
+		const Even = type("number%2")
 		// asserts even.infer is exactly number
 		attest<number>(even.infer)
 		// make assertions about types and values seamlessly
@@ -112,8 +115,20 @@ describe("attest features", () => {
 		attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
 	})
 
+	it("jsdoc snapshotting", () => {
+		// match or snapshot expected jsdoc associated with the value passed to attest
+		const T = type({
+			/** FOO */
+			foo: "string"
+		})
+
+		const out = T.assert({ foo: "foo" })
+
+		attest(out.foo).jsdoc.snap("FOO")
+	})
+
 	it("integrate runtime logic with type assertions", () => {
-		const arrayOf = type("<t>", "t[]")
+		const ArrayOf = type("<t>", "t[]")
 		const numericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
@@ -124,7 +139,7 @@ describe("attest features", () => {
 	})
 
 	it("integrated type performance benchmarking", () => {
-		const user = type({
+		const User = type({
 			kind: "'admin'",
 			"powers?": "string[]"
 		})
@@ -185,7 +200,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 
 `skipTypes` is extremely useful for iterating quickly during development without having to typecheck your project to test runtime logic.
 
-When this setting is enabled, setup will skip typechecking and all assertions requiring type information will be skipped.
+When this setting is enabled, setup will skip type checking and all assertions requiring type information will be skipped.
 
 You likely want two scripts, one for running tests with types and one for tests without:
 
@@ -283,7 +298,7 @@ If you'd like to fail in CI above a threshold, you can add flags like the follow
 
 ## CLI
 
-Attest also includes a builtin `attest` CLI including the following commands:
+Attest also includes a built-in `attest` CLI including the following commands:
 
 ### `stats`
 

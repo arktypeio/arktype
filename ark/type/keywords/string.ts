@@ -3,8 +3,10 @@ import {
 	intrinsic,
 	node,
 	rootSchema,
-	type IntersectionNode,
+	type Intersection,
+	type JsonSchema,
 	type Morph,
+	type mutableNormalizedRootOfKind,
 	type Traversal
 } from "@ark/schema"
 import {
@@ -18,41 +20,52 @@ import type { Module, Submodule } from "../module.ts"
 import { Scope } from "../scope.ts"
 import { number } from "./number.ts"
 
-// Non-trivial expressions should have an explanation or attribution
+// non-trivial expressions should have an explanation or attribution
 
 export const regexStringNode = (
 	regex: RegExp,
-	description: string
-): IntersectionNode =>
-	node("intersection", {
+	description: string,
+	jsonSchemaFormat?: JsonSchema.Format
+): Intersection.Node => {
+	const schema: mutableNormalizedRootOfKind<"intersection"> = {
 		domain: "string",
 		pattern: {
 			rule: regex.source,
 			flags: regex.flags,
 			meta: description
 		}
-	}) as never
+	}
+
+	if (jsonSchemaFormat) schema.meta = { format: jsonSchemaFormat }
+
+	return node("intersection", schema) as never
+}
 
 const stringIntegerRoot = regexStringNode(
 	wellFormedIntegerMatcher,
 	"a well-formed integer string"
 )
 
-export const stringInteger: stringInteger.module = Scope.module({
-	root: stringIntegerRoot,
-	parse: rootSchema({
-		in: stringIntegerRoot,
-		morphs: (s: string, ctx: Traversal) => {
-			const parsed = Number.parseInt(s)
-			return Number.isSafeInteger(parsed) ? parsed : (
-					ctx.error(
-						"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
+export const stringInteger: stringInteger.module = Scope.module(
+	{
+		root: stringIntegerRoot,
+		parse: rootSchema({
+			in: stringIntegerRoot,
+			morphs: (s: string, ctx: Traversal) => {
+				const parsed = Number.parseInt(s)
+				return Number.isSafeInteger(parsed) ? parsed : (
+						ctx.error(
+							"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
+						)
 					)
-				)
-		},
-		declaredOut: intrinsic.integer
-	})
-})
+			},
+			declaredOut: intrinsic.integer
+		})
+	},
+	{
+		name: "string.integer"
+	}
+)
 
 export declare namespace stringInteger {
 	export type module = Module<submodule>
@@ -65,16 +78,23 @@ export declare namespace stringInteger {
 	}
 }
 
-const base64 = Scope.module({
-	root: regexStringNode(
-		/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
-		"base64-encoded"
-	),
-	url: regexStringNode(
-		/^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==|%3D%3D)?|[A-Za-z0-9_-]{3}(?:=|%3D)?)?$/,
-		"base64url-encoded"
-	)
-})
+const hex = regexStringNode(/^[\dA-Fa-f]+$/, "hex characters only")
+
+const base64 = Scope.module(
+	{
+		root: regexStringNode(
+			/^(?:[\d+/A-Za-z]{4})*(?:[\d+/A-Za-z]{2}==|[\d+/A-Za-z]{3}=)?$/,
+			"base64-encoded"
+		),
+		url: regexStringNode(
+			/^(?:[\w-]{4})*(?:[\w-]{2}(?:==|%3D%3D)?|[\w-]{3}(?:=|%3D)?)?$/,
+			"base64url-encoded"
+		)
+	},
+	{
+		name: "string.base64"
+	}
+)
 
 declare namespace base64 {
 	export type module = Module<submodule>
@@ -89,14 +109,19 @@ declare namespace base64 {
 
 const preformattedCapitalize = regexStringNode(/^[A-Z].*$/, "capitalized")
 
-export const capitalize: capitalize.module = Scope.module({
-	root: rootSchema({
-		in: "string",
-		morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
-		declaredOut: preformattedCapitalize
-	}),
-	preformatted: preformattedCapitalize
-})
+export const capitalize: capitalize.module = Scope.module(
+	{
+		root: rootSchema({
+			in: "string",
+			morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
+			declaredOut: preformattedCapitalize
+		}),
+		preformatted: preformattedCapitalize
+	},
+	{
+		name: "string.capitalize"
+	}
+)
 
 export declare namespace capitalize {
 	export type module = Module<submodule>
@@ -111,7 +136,7 @@ export declare namespace capitalize {
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string): boolean => {
-	const sanitized = creditCardInput.replace(/[- ]+/g, "")
+	const sanitized = creditCardInput.replaceAll(/[ -]+/g, "")
 	let sum = 0
 	let digit: string
 	let tmpNum: number
@@ -121,8 +146,7 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 		tmpNum = Number.parseInt(digit, 10)
 		if (shouldDouble) {
 			tmpNum *= 2
-			if (tmpNum >= 10) sum += (tmpNum % 10) + 1
-			else sum += tmpNum
+			sum += tmpNum >= 10 ? (tmpNum % 10) + 1 : tmpNum
 		} else sum += tmpNum
 
 		shouldDouble = !shouldDouble
@@ -132,7 +156,7 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isCreditCard.js
 const creditCardMatcher: RegExp =
-	/^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}|6(?:011|5[0-9][0-9])[0-9]{12,15}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11}|6[27][0-9]{14}|^(81[0-9]{14,17}))$/
+	/^(?:4\d{12}(?:\d{3,6})?|5[1-5]\d{14}|(222[1-9]|22[3-9]\d|2[3-6]\d{2}|27[01]\d|2720)\d{12}|6(?:011|5\d\d)\d{12,15}|3[47]\d{13}|3(?:0[0-5]|[68]\d)\d{11}|(?:2131|1800|35\d{3})\d{11}|6[27]\d{14}|^(81\d{14,17}))$/
 
 export const creditCard = rootSchema({
 	domain: "string",
@@ -189,7 +213,7 @@ export type DateOptions = {
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
 // delimiter for date/time is mandatory. Regex from validator.js strict matcher:
 export const iso8601Matcher =
-	/^([+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))([T]((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([.,]\d+(?!:))?)?(\17[0-5]\d([.,]\d+)?)?([zZ]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
+	/^([+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(\3([12]\d|0[1-9]|3[01]))?|W([0-4]\d|5[0-3])(-?[1-7])?|(00[1-9]|0[1-9]\d|[12]\d{2}|3([0-5]\d|6[1-6])))(T((([01]\d|2[0-3])((:?)[0-5]\d)?|24:?00)([,.]\d+(?!:))?)?(\17[0-5]\d([,.]\d+)?)?([Zz]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?)?)?$/
 
 type ParsedDayParts = {
 	y?: string
@@ -254,7 +278,7 @@ const parsableDate = rootSchema({
 
 const epochRoot = stringInteger.root.internal
 	.narrow((s, ctx) => {
-		// we know this is safe since it has already
+		// this is safe since it has already
 		// been validated as an integer string
 		const n = Number.parseInt(s)
 		const out = number.epoch(n)
@@ -264,49 +288,67 @@ const epochRoot = stringInteger.root.internal
 		}
 		return true
 	})
-	.withMeta({
-		description: "an integer string representing a safe Unix timestamp"
-	})
+	.configure(
+		{
+			description: "an integer string representing a safe Unix timestamp"
+		},
+		"self"
+	)
 	.assertHasKind("intersection")
 
-const epoch = Scope.module({
-	root: epochRoot,
-	parse: rootSchema({
-		in: epochRoot,
-		morphs: (s: string) => new Date(s),
-		declaredOut: intrinsic.Date
-	})
-})
+const epoch = Scope.module(
+	{
+		root: epochRoot,
+		parse: rootSchema({
+			in: epochRoot,
+			morphs: (s: string) => new Date(s),
+			declaredOut: intrinsic.Date
+		})
+	},
+	{
+		name: "string.date.epoch"
+	}
+)
 
 const isoRoot = regexStringNode(
 	iso8601Matcher,
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
-const iso = Scope.module({
-	root: isoRoot,
-	parse: rootSchema({
-		in: isoRoot,
-		morphs: (s: string) => new Date(s),
-		declaredOut: intrinsic.Date
-	})
-})
+const iso = Scope.module(
+	{
+		root: isoRoot,
+		parse: rootSchema({
+			in: isoRoot,
+			morphs: (s: string) => new Date(s),
+			declaredOut: intrinsic.Date
+		})
+	},
+	{
+		name: "string.date.iso"
+	}
+)
 
-export const stringDate: stringDate.module = Scope.module({
-	root: parsableDate,
-	parse: rootSchema({
-		declaredIn: parsableDate,
-		in: "string",
-		morphs: (s: string, ctx: Traversal) => {
-			const date = new Date(s)
-			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
-			return date
-		},
-		declaredOut: intrinsic.Date
-	}),
-	iso,
-	epoch
-})
+export const stringDate: stringDate.module = Scope.module(
+	{
+		root: parsableDate,
+		parse: rootSchema({
+			declaredIn: parsableDate,
+			in: "string",
+			morphs: (s: string, ctx: Traversal) => {
+				const date = new Date(s)
+				if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
+				return date
+			},
+			declaredOut: intrinsic.Date
+		}),
+		iso,
+		epoch
+	},
+	{
+		name: "string.date"
+	}
+)
 
 export declare namespace stringDate {
 	export type module = Module<stringDate.submodule>
@@ -340,13 +382,17 @@ export declare namespace stringDate {
 }
 
 const email = regexStringNode(
+	// considered https://colinhacks.com/essays/reasonable-email-regex but it includes a lookahead
+	// which breaks some integrations e.g. fast-check
+
+	// regex based on:
 	// https://www.regular-expressions.info/email.html
-	/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
-	"an email address"
+	/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
+	"an email address",
+	"email"
 )
 
-// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
-// Adjusted to incorporate unmerged fix in https://github.com/validatorjs/validator.js/pull/2083
+// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
 const ipv4Address = `(${ipv4Segment}[.]){3}${ipv4Segment}`
 const ipv4Matcher = new RegExp(`^${ipv4Address}$`)
@@ -365,11 +411,16 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z.]{1,})?$"
 )
 
-export const ip: ip.module = Scope.module({
-	root: ["v4 | v6", "@", "an IP address"],
-	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
-	v6: regexStringNode(ipv6Matcher, "an IPv6 address")
-})
+export const ip: ip.module = Scope.module(
+	{
+		root: ["v4 | v6", "@", "an IP address"],
+		v4: regexStringNode(ipv4Matcher, "an IPv4 address", "ipv4"),
+		v6: regexStringNode(ipv6Matcher, "an IPv6 address", "ipv6")
+	},
+	{
+		name: "string.ip"
+	}
+)
 
 export declare namespace ip {
 	export type module = Module<submodule>
@@ -391,6 +442,7 @@ export const writeJsonSyntaxErrorProblem = (error: unknown): string => {
 }
 
 const jsonRoot = rootSchema({
+	meta: jsonStringDescription,
 	domain: "string",
 	predicate: {
 		meta: jsonStringDescription,
@@ -428,14 +480,20 @@ const parseJson: Morph<string> = (s: string, ctx: Traversal) => {
 	}
 }
 
-export const json: stringJson.module = Scope.module({
-	root: jsonRoot,
-	parse: rootSchema({
-		in: "string",
-		morphs: parseJson,
-		declaredOut: intrinsic.json
-	})
-})
+export const json: stringJson.module = Scope.module(
+	{
+		root: jsonRoot,
+		parse: rootSchema({
+			meta: "safe JSON string parser",
+			in: "string",
+			morphs: parseJson,
+			declaredOut: intrinsic.jsonObject
+		})
+	},
+	{
+		name: "string.json"
+	}
+)
 
 export declare namespace stringJson {
 	export type module = Module<submodule>
@@ -450,14 +508,19 @@ export declare namespace stringJson {
 
 const preformattedLower = regexStringNode(/^[a-z]*$/, "only lowercase letters")
 
-const lower: lower.module = Scope.module({
-	root: rootSchema({
-		in: "string",
-		morphs: (s: string) => s.toLowerCase(),
-		declaredOut: preformattedLower
-	}),
-	preformatted: preformattedLower
-})
+const lower: lower.module = Scope.module(
+	{
+		root: rootSchema({
+			in: "string",
+			morphs: (s: string) => s.toLowerCase(),
+			declaredOut: preformattedLower
+		}),
+		preformatted: preformattedLower
+	},
+	{
+		name: "string.lower"
+	}
+)
 
 export declare namespace lower {
 	export type module = Module<submodule>
@@ -500,33 +563,58 @@ const normalizeNodes = flatMorph(
 		] as const
 )
 
-export const NFC = Scope.module({
-	root: normalizeNodes.NFC,
-	preformatted: preformattedNodes.NFC
-})
+export const NFC = Scope.module(
+	{
+		root: normalizeNodes.NFC,
+		preformatted: preformattedNodes.NFC
+	},
+	{
+		name: "string.normalize.NFC"
+	}
+)
 
-export const NFD = Scope.module({
-	root: normalizeNodes.NFD,
-	preformatted: preformattedNodes.NFD
-})
+export const NFD = Scope.module(
+	{
+		root: normalizeNodes.NFD,
+		preformatted: preformattedNodes.NFD
+	},
+	{
+		name: "string.normalize.NFD"
+	}
+)
 
-export const NFKC = Scope.module({
-	root: normalizeNodes.NFKC,
-	preformatted: preformattedNodes.NFKC
-})
+export const NFKC = Scope.module(
+	{
+		root: normalizeNodes.NFKC,
+		preformatted: preformattedNodes.NFKC
+	},
+	{
+		name: "string.normalize.NFKC"
+	}
+)
 
-export const NFKD = Scope.module({
-	root: normalizeNodes.NFKD,
-	preformatted: preformattedNodes.NFKD
-})
+export const NFKD = Scope.module(
+	{
+		root: normalizeNodes.NFKD,
+		preformatted: preformattedNodes.NFKD
+	},
+	{
+		name: "string.normalize.NFKD"
+	}
+)
 
-export const normalize = Scope.module({
-	root: "NFC",
-	NFC,
-	NFD,
-	NFKC,
-	NFKD
-})
+export const normalize = Scope.module(
+	{
+		root: "NFC",
+		NFC,
+		NFD,
+		NFKC,
+		NFKD
+	},
+	{
+		name: "string.normalize"
+	}
+)
 
 export declare namespace normalize {
 	export type module = Module<submodule>
@@ -583,14 +671,19 @@ const numericRoot = regexStringNode(
 	"a well-formed numeric string"
 )
 
-export const numeric: stringNumeric.module = Scope.module({
-	root: numericRoot,
-	parse: rootSchema({
-		in: numericRoot,
-		morphs: (s: string) => Number.parseFloat(s),
-		declaredOut: intrinsic.number
-	})
-})
+export const stringNumeric: stringNumeric.module = Scope.module(
+	{
+		root: numericRoot,
+		parse: rootSchema({
+			in: numericRoot,
+			morphs: (s: string) => Number.parseFloat(s),
+			declaredOut: intrinsic.number
+		})
+	},
+	{
+		name: "string.numeric"
+	}
+)
 
 export declare namespace stringNumeric {
 	export type module = Module<submodule>
@@ -603,9 +696,29 @@ export declare namespace stringNumeric {
 	}
 }
 
-// https://semver.org/
+const regexPatternDescription = "a regex pattern"
+const regex = rootSchema({
+	domain: "string",
+	predicate: {
+		meta: regexPatternDescription,
+		predicate: (s: string, ctx) => {
+			try {
+				new RegExp(s)
+				return true
+			} catch (e) {
+				return ctx.reject({
+					code: "predicate",
+					expected: regexPatternDescription,
+					problem: String(e)
+				})
+			}
+		}
+	},
+	meta: { format: "regex" }
+})
+
 const semverMatcher =
-	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+([\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
 
 const semver = regexStringNode(
 	semverMatcher,
@@ -618,14 +731,19 @@ const preformattedTrim = regexStringNode(
 	"trimmed"
 )
 
-const trim: trim.module = Scope.module({
-	root: rootSchema({
-		in: "string",
-		morphs: (s: string) => s.trim(),
-		declaredOut: preformattedTrim
-	}),
-	preformatted: preformattedTrim
-})
+const trim: trim.module = Scope.module(
+	{
+		root: rootSchema({
+			in: "string",
+			morphs: (s: string) => s.trim(),
+			declaredOut: preformattedTrim
+		}),
+		preformatted: preformattedTrim
+	},
+	{
+		name: "string.trim"
+	}
+)
 
 export declare namespace trim {
 	export type module = Module<submodule>
@@ -640,14 +758,19 @@ export declare namespace trim {
 
 const preformattedUpper = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
 
-const upper: upper.module = Scope.module({
-	root: rootSchema({
-		in: "string",
-		morphs: (s: string) => s.toUpperCase(),
-		declaredOut: preformattedUpper
-	}),
-	preformatted: preformattedUpper
-})
+const upper: upper.module = Scope.module(
+	{
+		root: rootSchema({
+			in: "string",
+			morphs: (s: string) => s.toUpperCase(),
+			declaredOut: preformattedUpper
+		}),
+		preformatted: preformattedUpper
+	},
+	{
+		name: "string.upper"
+	}
+)
 
 declare namespace upper {
 	export type module = Module<submodule>
@@ -662,7 +785,7 @@ declare namespace upper {
 
 const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)
-	// Can be removed once Node 18 is EOL
+	// TODO[2025-04-30] remove once Node 18 is EOL and we can rely on URL.canParse
 	try {
 		new URL(s)
 		return true
@@ -676,24 +799,32 @@ const urlRoot = rootSchema({
 	predicate: {
 		meta: "a URL string",
 		predicate: isParsableUrl
-	}
+	},
+	// URL.canParse allows a subset of the RFC-3986 URI spec
+	// since there is no other serializable validation, best include a format
+	meta: { format: "uri" }
 })
 
-export const url: url.module = Scope.module({
-	root: urlRoot,
-	parse: rootSchema({
-		declaredIn: urlRoot,
-		in: "string",
-		morphs: (s: string, ctx: Traversal) => {
-			try {
-				return new URL(s)
-			} catch {
-				return ctx.error("a URL string")
-			}
-		},
-		declaredOut: rootSchema(URL)
-	})
-})
+export const url: url.module = Scope.module(
+	{
+		root: urlRoot,
+		parse: rootSchema({
+			declaredIn: urlRoot,
+			in: "string",
+			morphs: (s: string, ctx: Traversal) => {
+				try {
+					return new URL(s)
+				} catch {
+					return ctx.error("a URL string")
+				}
+			},
+			declaredOut: rootSchema(URL)
+		})
+	},
+	{
+		name: "string.url"
+	}
+)
 
 export declare namespace url {
 	export type module = Module<submodule>
@@ -706,48 +837,57 @@ export declare namespace url {
 	}
 }
 
-// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-export const uuid = Scope.module({
-	// the meta tuple expression ensures the error message does not delegate
-	// to the individual branches, which are too detailed
-	root: ["versioned | nil | max", "@", "a UUID"],
-	"#nil": "'00000000-0000-0000-0000-000000000000'",
-	"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
-	"#versioned":
-		/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
-	v1: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv1"
-	),
-	v2: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-2[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv2"
-	),
-	v3: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv3"
-	),
-	v4: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv4"
-	),
-	v5: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv5"
-	),
-	v6: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-6[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv6"
-	),
-	v7: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv7"
-	),
-	v8: regexStringNode(
-		/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-		"a UUIDv8"
-	)
-})
+// based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
+export const uuid = Scope.module(
+	{
+		// the meta tuple expression ensures the error message does not delegate
+		// to the individual branches, which are too detailed
+		root: [
+			"versioned | nil | max",
+			"@",
+			{ description: "a UUID", format: "uuid" }
+		],
+		"#nil": "'00000000-0000-0000-0000-000000000000'",
+		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
+		"#versioned":
+			/[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}/i,
+		v1: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-1[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv1"
+		),
+		v2: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-2[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv2"
+		),
+		v3: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-3[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv3"
+		),
+		v4: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv4"
+		),
+		v5: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-5[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv5"
+		),
+		v6: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-6[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv6"
+		),
+		v7: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv7"
+		),
+		v8: regexStringNode(
+			/^[\da-f]{8}-[\da-f]{4}-8[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
+			"a UUIDv8"
+		)
+	},
+	{
+		name: "string.uuid"
+	}
+)
 
 export declare namespace uuid {
 	export type module = Module<submodule>
@@ -765,30 +905,44 @@ export declare namespace uuid {
 		v7: string
 		v8: string
 	}
+
+	export namespace $ {
+		export type flat = {}
+	}
 }
 
-export const string = Scope.module({
-	root: intrinsic.string,
-	alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
-	alphanumeric: regexStringNode(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),
-	base64,
-	capitalize,
-	creditCard,
-	date: stringDate,
-	digits: regexStringNode(/^\d*$/, "only digits 0-9"),
-	email,
-	integer: stringInteger,
-	ip,
-	json,
-	lower,
-	normalize,
-	numeric,
-	semver,
-	trim,
-	upper,
-	url,
-	uuid
-})
+export const string = Scope.module(
+	{
+		root: intrinsic.string,
+		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
+		alphanumeric: regexStringNode(
+			/^[\dA-Za-z]*$/,
+			"only letters and digits 0-9"
+		),
+		hex,
+		base64,
+		capitalize,
+		creditCard,
+		date: stringDate,
+		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
+		email,
+		integer: stringInteger,
+		ip,
+		json,
+		lower,
+		normalize,
+		numeric: stringNumeric,
+		regex,
+		semver,
+		trim,
+		upper,
+		url,
+		uuid
+	},
+	{
+		name: "string"
+	}
+)
 
 export declare namespace string {
 	export type module = Module<string.submodule>
@@ -799,6 +953,7 @@ export declare namespace string {
 		root: string
 		alpha: string
 		alphanumeric: string
+		hex: string
 		base64: base64.submodule
 		capitalize: capitalize.submodule
 		creditCard: string
@@ -811,6 +966,7 @@ export declare namespace string {
 		lower: lower.submodule
 		normalize: normalize.submodule
 		numeric: stringNumeric.submodule
+		regex: string
 		semver: string
 		trim: trim.submodule
 		upper: upper.submodule

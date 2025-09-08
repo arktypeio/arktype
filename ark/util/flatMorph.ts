@@ -84,7 +84,7 @@ export const flatMorph: FlatMorph = (
 	const inputIsArray = Array.isArray(o)
 	let outputShouldBeArray = false
 
-	Object.entries(o).forEach((entry, i) => {
+	for (const [i, entry] of Object.entries(o).entries()) {
 		const mapped =
 			inputIsArray ? flatMapEntry(i, entry[1]) : flatMapEntry(...entry, i)
 
@@ -99,11 +99,11 @@ export const flatMorph: FlatMorph = (
 				// so it doesn't get spread when the result is flattened
 			:	[mapped as GroupableEntry]
 
-		flattenedEntries.forEach(([k, v]) => {
+		for (const [k, v] of flattenedEntries) {
 			if (typeof k === "object") result[k.group] = append(result[k.group], v)
 			else result[k] = v
-		})
-	})
+		}
+	}
 
 	return outputShouldBeArray ? Object.values(result) : result
 }

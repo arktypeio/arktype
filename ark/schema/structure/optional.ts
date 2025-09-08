@@ -1,10 +1,18 @@
-import { hasDomain, isThunk, printable, throwParseError } from "@ark/util"
+import {
+	hasDomain,
+	isThunk,
+	printable,
+	throwParseError,
+	type requireKeys
+} from "@ark/util"
+import { intrinsic } from "../intrinsic.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
+	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -30,6 +38,13 @@ export declare namespace Optional {
 	>
 
 	export type Node = OptionalNode
+
+	export namespace Node {
+		export type withDefault = requireKeys<
+			Node,
+			"default" | "defaultValueMorph" | "defaultValueMorphRef"
+		>
+	}
 }
 
 const implementation: nodeImplementationOf<Optional.Declaration> =
@@ -48,6 +63,17 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			}
 		},
 		normalize: schema => schema,
+		reduce: (inner, $) => {
+			if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
+				if (!inner.value.allows(undefined)) {
+					return $.node(
+						"optional",
+						{ ...inner, value: inner.value.or(intrinsic.undefined) },
+						{ prereduced: true }
+					)
+				}
+			}
+		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		},
@@ -78,12 +104,10 @@ export class OptionalNode extends BaseProp<"optional"> {
 			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorphs: Morph[] =
-		this.hasDefault() ?
-			computeDefaultValueMorphs(this.key, this.value, this.default)
-		:	[]
+	defaultValueMorph: Morph | undefined = getDefaultableMorph(this)
 
-	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+	defaultValueMorphRef: string | undefined =
+		this.defaultValueMorph && registeredReference(this.defaultValueMorph)
 }
 
 export const Optional = {
@@ -91,15 +115,28 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-export const computeDefaultValueMorphs = (
+const defaultableMorphCache: Record<string, Morph | undefined> = {}
+
+const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
+	if (!node.hasDefault()) return
+
+	const cacheKey = `{${node.compiledKey}: ${node.value.id} = ${defaultValueSerializer(node.default)}}`
+
+	return (defaultableMorphCache[cacheKey] ??= computeDefaultValueMorph(
+		node.key,
+		node.value,
+		node.default
+	))
+}
+
+export const computeDefaultValueMorph = (
 	key: PropertyKey,
 	value: BaseRoot,
 	defaultInput: unknown
-): Morph[] => {
+): Morph => {
 	if (typeof defaultInput === "function") {
-		return [
-			// if the value has a morph, pipe context through it
-			value.includesMorph ?
+		// if the value has a morph, pipe context through it
+		return value.includesTransform ?
 				(data, ctx) => {
 					traverseKey(key, () => value((data[key] = defaultInput()), ctx), ctx)
 					return data
@@ -108,16 +145,14 @@ export const computeDefaultValueMorphs = (
 					data[key] = defaultInput()
 					return data
 				}
-		]
 	}
 
 	// non-functional defaults can be safely cached as long as the morph is
 	// guaranteed to be pure and the output is primitive
 	const precomputedMorphedDefault =
-		value.includesMorph ? value.assert(defaultInput) : defaultInput
+		value.includesTransform ? value.assert(defaultInput) : defaultInput
 
-	return [
-		hasDomain(precomputedMorphedDefault, "object") ?
+	return hasDomain(precomputedMorphedDefault, "object") ?
 			// the type signature only allows this if the value was morphed
 			(data, ctx) => {
 				traverseKey(key, () => value((data[key] = defaultInput), ctx), ctx)
@@ -127,7 +162,6 @@ export const computeDefaultValueMorphs = (
 				data[key] = precomputedMorphedDefault
 				return data
 			}
-	]
 }
 
 export const assertDefaultValueAssignability = (
@@ -143,19 +177,18 @@ export const assertDefaultValueAssignability = (
 	const out = node.in(wrapped ? value() : value)
 
 	if (out instanceof ArkErrors) {
-		// error summaries are computed via getters, so it is safe to
-		// mutate the paths to include key to ensure messages are
-		// generated the integrate the location with the reason
-		if (key !== null) out.forEach(e => (e.path as any).unshift(key))
+		if (key === null) {
+			// e.g. "Default must be assignable to number (was string)"
+			throwParseError(`Default ${out.summary}`)
+		}
 
-		const message =
-			key === null ?
-				// e.g. "Default must be assignable to number (was string)"
-				`Default ${out.message}`
-				// e.g. "Default for bar must be assignable to number (was string)"
-				// e.g. "Default for value at [0] must be assignable to number (was string)"
-			:	`Default for ${out.message}`
-		throwParseError(message)
+		const atPath = out.transform(e =>
+			e.transform(input => ({ ...input, prefixPath: [key] }) as never)
+		)
+
+		// e.g. "Default for bar must be assignable to number (was string)"
+		// e.g. "Default for value at [0] must be assignable to number (was string)"
+		throwParseError(`Default for ${atPath.summary}`)
 	}
 
 	return value

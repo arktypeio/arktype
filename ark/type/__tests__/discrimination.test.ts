@@ -5,58 +5,58 @@ import { scope, type } from "arktype"
 contextualize(() => {
 	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid needless convolution
-		const t = type("'a'|'b'")
-		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const T = type("'a'|'b'")
+		attest(T.json).snap([{ unit: "a" }, { unit: "b" }])
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true }
 		})
-		attest(t.allows("a")).equals(true)
-		attest(t.allows("b")).equals(true)
-		attest(t.allows("c")).equals(false)
+		attest(T.allows("a")).equals(true)
+		attest(T.allows("b")).equals(true)
+		attest(T.allows("c")).equals(false)
 	})
 
 	it(">2 literal branches", () => {
-		const t = type("'a'|'b'|'c'")
-		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const T = type("'a'|'b'|'c'")
+		attest(T.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true, '"c"': true }
 		})
-		attest(t.allows("a")).equals(true)
-		attest(t.allows("b")).equals(true)
-		attest(t.allows("c")).equals(true)
-		attest(t.allows("d")).equals(false)
+		attest(T.allows("a")).equals(true)
+		attest(T.allows("b")).equals(true)
+		attest(T.allows("c")).equals(true)
+		attest(T.allows("d")).equals(false)
 	})
 
 	it(">2 domain branches", () => {
-		const t = type("string|bigint|number")
-		attest(t.json).snap(["bigint", "number", "string"])
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const T = type("string|bigint|number")
+		attest(T.json).snap(["bigint", "number", "string"])
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],
 			cases: { '"bigint"': true, '"number"': true, '"string"': true }
 		})
-		attest(t.allows("foo")).equals(true)
-		attest(t.allows(5n)).equals(true)
-		attest(t.allows(5)).equals(true)
-		attest(t.allows(true)).equals(false)
+		attest(T.allows("foo")).equals(true)
+		attest(T.allows(5n)).equals(true)
+		attest(T.allows(5)).equals(true)
+		attest(T.allows(true)).equals(false)
 	})
 
 	it("literals can be included in domain branches", () => {
-		const t = type("string|bigint|true")
-		attest(t.json).snap(["bigint", "string", { unit: true }])
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const T = type("string|bigint|true")
+		attest(T.json).snap(["bigint", "string", { unit: true }])
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],
 			cases: { '"bigint"': true, '"string"': true, '"boolean"': { unit: true } }
 		})
-		attest(t.allows("foo")).equals(true)
-		attest(t.allows(5n)).equals(true)
-		attest(t.allows(true)).equals(true)
-		attest(t.allows(5)).equals(false)
+		attest(T.allows("foo")).equals(true)
+		attest(T.allows(5n)).equals(true)
+		attest(T.allows(true)).equals(true)
+		attest(T.allows(5)).equals(false)
 	})
 
 	const getPlaces = () =>
@@ -73,8 +73,24 @@ contextualize(() => {
 
 	it("nested", () => {
 		const $ = getPlaces()
-		const t = $.type("ocean|sky|rainForest|desert")
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const climate = $.type("ocean | sky | rainForest | desert")
+
+		const missingLabel = climate({
+			climate: "wet",
+			color: "blue"
+		})
+
+		attest(missingLabel.toString()).snap("isOcean must be true (was missing)")
+
+		const twoMissingKeys = climate({
+			color: "blue"
+		})
+
+		attest(twoMissingKeys.toString()).snap(
+			'climate must be "dry" or "wet" (was undefined)'
+		)
+
+		attest(climate.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -103,7 +119,7 @@ contextualize(() => {
 	})
 
 	it("indiscriminable", () => {
-		const t = getPlaces().type([
+		const T = getPlaces().type([
 			"ocean",
 			"|",
 			{
@@ -113,11 +129,11 @@ contextualize(() => {
 			}
 		])
 
-		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
+		attest(T.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
 	it("discriminate optional key", () => {
-		const t = type({
+		const T = type({
 			direction: "'forward' | 'backward'",
 			"operator?": "'by'"
 		}).or({
@@ -125,32 +141,38 @@ contextualize(() => {
 			operator: "'to'"
 		})
 
-		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
+		attest(T.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
-	it("default case", () => {
-		const t = getPlaces().type([
+	it("overlapping default case", () => {
+		const T = getPlaces().type([
 			"ocean|rainForest",
 			"|",
 			{ temperature: "'hot'" }
 		])
 
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
-				'"blue"': {
-					required: [
-						{ key: "climate", value: { unit: "wet" } },
-						{ key: "isOcean", value: { unit: true } }
-					]
-				},
-				'"green"': {
-					required: [
-						{ key: "climate", value: { unit: "wet" } },
-						{ key: "isRainForest", value: { unit: true } }
-					]
-				},
+				'"blue"': [
+					{
+						required: [
+							{ key: "climate", value: { unit: "wet" } },
+							{ key: "isOcean", value: { unit: true } }
+						]
+					},
+					{ required: [{ key: "temperature", value: { unit: "hot" } }] }
+				],
+				'"green"': [
+					{
+						required: [
+							{ key: "climate", value: { unit: "wet" } },
+							{ key: "isRainForest", value: { unit: true } }
+						]
+					},
+					{ required: [{ key: "temperature", value: { unit: "hot" } }] }
+				],
 				default: {
 					required: [{ key: "temperature", value: { unit: "hot" } }],
 					domain: "object"
@@ -160,49 +182,63 @@ contextualize(() => {
 	})
 
 	it("discriminable default", () => {
-		const t = getPlaces().type([
+		const T = getPlaces().type([
 			{ temperature: "'cold'" },
 			"|",
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
-			path: ["temperature"],
+			path: ["color"],
 			cases: {
-				'"cold"': true,
-				'"hot"': true,
-				default: {
+				'"blue"': {
 					kind: "unit",
-					path: ["color"],
+					path: ["temperature"],
 					cases: {
-						'"blue"': {
+						'"cold"': true,
+						'"hot"': true,
+						default: {
 							required: [
 								{ key: "climate", value: { unit: "wet" } },
 								{ key: "isOcean", value: { unit: true } }
 							]
-						},
-						'"green"': {
+						}
+					}
+				},
+				'"green"': {
+					kind: "unit",
+					path: ["temperature"],
+					cases: {
+						'"cold"': true,
+						'"hot"': true,
+						default: {
 							required: [
 								{ key: "climate", value: { unit: "wet" } },
 								{ key: "isRainForest", value: { unit: true } }
 							]
 						}
 					}
+				},
+				default: {
+					kind: "unit",
+					path: ["temperature"],
+					cases: { '"cold"': true, '"hot"': true }
 				}
 			}
 		})
 	})
 
 	it("won't discriminate between possibly empty arrays", () => {
-		const t = type("string[]|boolean[]")
-		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
+		const T = type("string[]|boolean[]")
+		attest(T.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)
-		const t = type({ [s]: "0" }).or({ [s]: "1" })
-		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+		const T = type({ [s]: "0" }).or({ [s]: "1" })
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: [sRef],
 			cases: {
@@ -211,31 +247,31 @@ contextualize(() => {
 			}
 		})
 
-		attest(t.allows({ [s]: 0 })).equals(true)
-		attest(t.allows({ [s]: -1 })).equals(false)
+		attest(T.allows({ [s]: 0 })).equals(true)
+		attest(T.allows({ [s]: -1 })).equals(false)
 
-		attest(t({ [s]: 1 })).equals({ [s]: 1 })
-		attest(t({ [s]: 2 }).toString()).snap(
+		attest(T({ [s]: 1 })).equals({ [s]: 1 })
+		attest(T({ [s]: 2 }).toString()).snap(
 			"value at [Symbol(lobmyS)] must be 0 or 1 (was 2)"
 		)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1100
 	it("discriminated null + object", () => {
-		const company = type({
+		const Company = type({
 			id: "number"
 		}).or("string | null")
 
-		attest(company(null)).equals(null)
-		attest(company({ id: 1 })).equals({ id: 1 })
-		attest(company("foo")).equals("foo")
-		attest(company(5)?.toString()).snap(
+		attest(Company(null)).equals(null)
+		attest(Company({ id: 1 })).equals({ id: 1 })
+		attest(Company("foo")).equals("foo")
+		attest(Company(5)?.toString()).snap(
 			"must be a string, an object or null (was a number)"
 		)
 	})
 
 	it("differing inner discriminated paths", () => {
-		const discriminated = type(
+		const Discriminated = type(
 			{
 				innerA: {
 					id: "1"
@@ -251,29 +287,29 @@ contextualize(() => {
 			.or({ innerA: { id: "2" } })
 			.or({ innerB: { id: "2" } })
 
-		const union = discriminated.internal.assertHasKind("union")
+		const Union = Discriminated.internal.assertHasKind("union")
 
-		attest(union.discriminantJson).snap({
+		attest(Union.discriminantJson).snap({
 			kind: "unit",
-			path: ["innerB", "id"],
+			path: ["innerA", "id"],
 			cases: {
 				"1": true,
 				"2": true,
 				default: {
 					kind: "unit",
-					path: ["innerA", "id"],
+					path: ["innerB", "id"],
 					cases: { "1": true, "2": true }
 				}
 			}
 		})
 
-		attest(union({ innerA: { id: 1 } })).equals({ innerA: { id: 1 } })
-		attest(union({ innerB: { id: 1 } })).equals({ innerB: { id: 1 } })
-		attest(union({ innerA: { id: 2 } })).equals({ innerA: { id: 2 } })
-		attest(union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
+		attest(Union({ innerA: { id: 1 } })).equals({ innerA: { id: 1 } })
+		attest(Union({ innerB: { id: 1 } })).equals({ innerB: { id: 1 } })
+		attest(Union({ innerA: { id: 2 } })).equals({ innerA: { id: 2 } })
+		attest(Union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
 
-		attest(union({})?.toString()).snap(
-			"innerA.id must be 1 or 2 (was undefined)"
+		attest(Union({})?.toString()).snap(
+			"innerB.id must be 1 or 2 (was undefined)"
 		)
 	})
 
@@ -327,5 +363,70 @@ contextualize(() => {
 		})
 
 		attest(AorB({ something: "A" })).snap({ something: "A" })
+	})
+
+	it("includes non-disjoint branches in corresponding cases", () => {
+		const T = type({
+			id: "0",
+			k1: "number"
+		})
+			.or({ id: "1", k1: "number" })
+			.or({
+				name: "string"
+			})
+
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["id"],
+			cases: {
+				"0": [
+					{ required: [{ key: "k1", value: "number" }] },
+					{ required: [{ key: "name", value: "string" }] }
+				],
+				"1": [
+					{ required: [{ key: "k1", value: "number" }] },
+					{ required: [{ key: "name", value: "string" }] }
+				],
+				default: {
+					required: [{ key: "name", value: "string" }],
+					domain: "object"
+				}
+			}
+		})
+
+		// should hit the case discriminated for id: 1,
+		// but still resolve correctly via the { name: string } branch
+		attest(T({ name: "foo", id: 1 })).unknown.snap({ name: "foo", id: 1 })
+	})
+
+	it("correctly dsicriminated onDeclaredKey: reject in the above scenario", () => {
+		const T = type({
+			id: "0",
+			k1: "number"
+		})
+			.or({ id: "1", k1: "number" })
+			.or({
+				"+": "reject",
+				name: "string"
+			})
+
+		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["id"],
+			cases: {
+				"0": { required: [{ key: "k1", value: "number" }] },
+				"1": { required: [{ key: "k1", value: "number" }] },
+				default: {
+					undeclared: "reject",
+					required: [{ key: "name", value: "string" }],
+					domain: "object"
+				}
+			}
+		})
+
+		// now that we are rejecting undeclared keys, all branches fail
+		attest(T({ name: "foo", id: 1 }).toString()).snap(
+			"k1 must be a number (was missing)"
+		)
 	})
 })

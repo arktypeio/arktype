@@ -1,4 +1,5 @@
 import {
+	domainDescriptions,
 	entriesOf,
 	flatMorph,
 	hasDomain,
@@ -22,7 +23,7 @@ import {
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
+import type { NodeMeta, TypeMeta } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
@@ -90,7 +91,13 @@ export const schemaKindOf = <kind extends RootKind = RootKind>(
 
 const discriminateRootKind = (schema: unknown): RootKind => {
 	if (hasArkKind(schema, "root")) return schema.kind
-	if (typeof schema === "string") return schema[0] === "$" ? "alias" : "domain"
+	if (typeof schema === "string") {
+		return (
+			schema[0] === "$" ? "alias"
+			: schema in domainDescriptions ? "domain"
+			: "proto"
+		)
+	}
 	if (typeof schema === "function") return "proto"
 
 	// throw at end of function
@@ -147,10 +154,10 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
 	const inner: dict = {}
 	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
-		meta?: MetaSchema
+		meta?: TypeMeta.Collapsible
 	}
 
-	const meta: BaseMeta & dict =
+	const meta: NodeMeta & dict =
 		metaSchema === undefined ? {}
 		: typeof metaSchema === "string" ? { description: metaSchema }
 		: (metaSchema as never)
@@ -199,25 +206,40 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
-	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
+	const node = createNode({
+		id: ctx.id,
+		kind: ctx.kind,
+		inner,
+		meta,
+		$: ctx.$
+	})
 
 	return node
 }
 
-export const createNode = (
-	id: NodeId,
-	kind: NodeKind,
-	inner: dict,
-	meta: BaseMeta,
-	$: BaseScope,
+export type CreateNodeInput = {
+	id: NodeId
+	kind: NodeKind
+	inner: dict
+	meta: NodeMeta
+	$: BaseScope
 	ignoreCache?: true
-): BaseNode => {
+}
+
+export const createNode = ({
+	id,
+	kind,
+	inner,
+	meta,
+	$,
+	ignoreCache
+}: CreateNodeInput): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const innerEntries = entriesOf(inner)
 	const children: BaseNode[] = []
 	let innerJson: dict = {}
 
-	innerEntries.forEach(([k, v]) => {
+	for (const [k, v] of innerEntries) {
 		const keyImpl = impl.keys[k]
 		const serialize =
 			keyImpl.serialize ??
@@ -231,13 +253,13 @@ export const createNode = (
 			else children.push(listableNode)
 		} else if (typeof keyImpl.child === "function")
 			children.push(...keyImpl.child(v as never))
-	})
+	}
 
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
 	let json = { ...innerJson }
-	let metaJson: BaseMeta & dict = {}
+	let metaJson: NodeMeta & dict = {}
 
 	if (!isEmptyObject(meta)) {
 		metaJson = flatMorph(meta, (k, v) => [
@@ -289,7 +311,14 @@ export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	// have to ignore cache to force creation of new potentially cyclic id
-	return createNode(id, node.kind, node.inner, node.meta, node.$, true) as never
+	return createNode({
+		id,
+		kind: node.kind,
+		inner: node.inner,
+		meta: node.meta,
+		$: node.$,
+		ignoreCache: true
+	}) as never
 }
 
 export const withMeta = <node extends BaseNode>(
@@ -299,13 +328,13 @@ export const withMeta = <node extends BaseNode>(
 ): node => {
 	if (id && isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
-	return createNode(
-		id ?? registerNodeId(meta.alias ?? node.kind),
-		node.kind,
-		node.inner,
+	return createNode({
+		id: id ?? registerNodeId(meta.alias ?? node.kind),
+		kind: node.kind,
+		inner: node.inner,
 		meta,
-		node.$
-	) as never
+		$: node.$
+	}) as never
 }
 
 const possiblyCollapse = <allowPrimitive extends boolean>(

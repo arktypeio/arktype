@@ -72,10 +72,9 @@ export const getFramesFromError = (error: Error): string[] => {
 	}
 
 	// Handle different stack formats
-	if (stack) {
-		if (Array.isArray(stack)) frames = Array(stack)
-		else frames = stack.toString().split("\n")
-	} else frames = []
+	if (stack)
+		frames = Array.isArray(stack) ? Array(stack) : stack.toString().split("\n")
+	else frames = []
 
 	// Parse our frames
 	return frames

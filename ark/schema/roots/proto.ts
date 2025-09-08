@@ -1,6 +1,7 @@
 import {
 	builtinConstructors,
 	constructorExtends,
+	domainOf,
 	getBuiltinNameOfConstructor,
 	hasKey,
 	objectKindDescriptions,
@@ -20,8 +21,9 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
@@ -85,6 +87,9 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				: typeof schema.proto === "string" ?
 					{ ...schema, proto: builtinConstructors[schema.proto] }
 				:	(schema as never)
+			if (typeof normalized.proto !== "function")
+				throwParseError(Proto.writeInvalidSchemaMessage(normalized.proto))
+
 			if (hasKey(normalized, "dateAllowsInvalid") && normalized.proto !== Date)
 				throwParseError(Proto.writeBadInvalidDateMessage(normalized.proto))
 			return normalized
@@ -147,14 +152,23 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledCondition = `data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 	compiledNegation = `!(${this.compiledCondition})`
 
-	protected innerToJsonSchema(): JsonSchema.Array {
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		switch (this.builtinName) {
 			case "Array":
 				return {
 					type: "array"
 				}
+			case "Date":
+				return (
+					ctx.fallback.date?.({ code: "date", base: {} }) ??
+					ctx.fallback.proto({ code: "proto", base: {}, proto: this.proto })
+				)
 			default:
-				return JsonSchema.throwUnjsonifiableError(this.description)
+				return ctx.fallback.proto({
+					code: "proto",
+					base: {},
+					proto: this.proto
+				})
 		}
 	}
 
@@ -167,7 +181,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 	readonly domain = "object"
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return this.description
 	}
 }
@@ -176,5 +190,7 @@ export const Proto = {
 	implementation,
 	Node: ProtoNode,
 	writeBadInvalidDateMessage: (actual: Constructor): string =>
-		`dateAllowsInvalid may only be specified with constructor Date (was ${actual.name})`
+		`dateAllowsInvalid may only be specified with constructor Date (was ${actual.name})`,
+	writeInvalidSchemaMessage: (actual: unknown): string =>
+		`instanceOf operand must be a function (was ${domainOf(actual)})`
 }

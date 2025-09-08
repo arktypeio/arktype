@@ -2,21 +2,14 @@
 title: Keywords
 ---
 
-import { Asterisk } from "../../components/Asterisk.tsx"
-import { AllKeywordTables } from "../../components/KeywordTable.tsx"
-import { SyntaxTab, SyntaxTabs } from "../../components/SyntaxTabs.tsx"
-
 ### TypeScript
 
-<div>
-	All
-	<Asterisk /> builtin TypeScript keywords are directly available.
-</div>
+<div>All\* built-in TypeScript keywords are directly available.</div>
 
 <SyntaxTabs>
 	<SyntaxTab string>
 ```ts
-const keywords = type({
+const Keywords = type({
 	string: "string",
 	date: "Date"
 })
@@ -26,7 +19,7 @@ const keywords = type({
     <SyntaxTab fluent>
 
 ```ts
-const keywords = type({
+const Keywords = type({
 	string: type.string,
 	date: type.Date
 })
@@ -39,8 +32,8 @@ Common keywords are exposed directly on `type`.
 </SyntaxTabs>
 
 <sup>
-	<Asterisk /> `any` and `void` are misleading and unnecessary for runtime
-	validation and so are not included as keywords by default.
+	\* `any` and `void` are misleading and unnecessary for runtime validation and
+	so are not included as keywords by default.
 </sup>
 
 ### Subtype
@@ -50,7 +43,7 @@ Subtype keywords refine or transform their root type.
 <SyntaxTabs>
 	<SyntaxTab string>
 ```ts
-const keywords = type({
+const Keywords = type({
 	dateFormattedString: "string.date",
 	transformStringToDate: "string.date.parse",
 	isoFormattedString: "string.date.iso",
@@ -65,7 +58,7 @@ You can easily explore available subtypes via autocomplete by with a partial def
     <SyntaxTab fluent>
 
 ```ts
-const keywords = type({
+const Keywords = type({
 	dateFormattedString: type.keywords.string.date.root,
 	isoFormattedString: type.keywords.string.date.iso.root,
 	transformStringToDate: type.keywords.string.date.parse,
@@ -73,7 +66,7 @@ const keywords = type({
 })
 ```
 
-All builtin keywords and modules are available in `type.keywords`.
+All built-in keywords and modules are available in `type.keywords`.
 
 `.root` gets the base type of a subtyped module so that it can be used as a `Type` directly.
 

@@ -1,4 +1,4 @@
-import type { keyNonimal } from "./generics.ts"
+import type { brand } from "./generics.ts"
 
 export class InternalArktypeError extends Error {}
 
@@ -13,7 +13,7 @@ export const throwError: (
 }
 
 export class ParseError extends Error {
-	name = "ParseError"
+	readonly name = "ParseError"
 }
 
 export const throwParseError: (message: string) => never = message =>
@@ -48,7 +48,7 @@ export interface ErrorType<
 	message extends string = string,
 	ctx extends {} = {}
 > {
-	[keyNonimal]: "ErrorObject"
+	[brand]: "ErrorType"
 	message: message
 	ctx: ctx
 }

@@ -8,8 +8,12 @@ import {
 	type Hkt,
 	type intersectArrays,
 	type isSafelyMappable,
+	type merge,
+	type optionalKeyOf,
 	type Primitive,
-	type show
+	type show,
+	type unionKeyOf,
+	type unionToTuple
 } from "@ark/util"
 import type { arkPrototypes } from "./keywords/constructors.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -34,7 +38,7 @@ export type normalizeLimit<limit> =
 export type distill<
 	t,
 	endpoint extends distill.Endpoint
-> = finalizeDistillation<t, _distill<t, endpoint, never>>
+> = finalizeDistillation<t, _distill<t, endpoint>>
 
 export declare namespace distill {
 	export type Endpoint = "in" | "out" | "out.introspectable"
@@ -51,10 +55,10 @@ export declare namespace distill {
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
-type _distill<t, endpoint extends distill.Endpoint, seen> =
+type _distill<t, endpoint extends distill.Endpoint> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
-	: [t] extends [anyOrNever | seen] ? t
+	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
 	: t extends Brand<infer base> ?
 		endpoint extends "in" ?
@@ -64,32 +68,33 @@ type _distill<t, endpoint extends distill.Endpoint, seen> =
 	// those types could be inferred before checking for morphs
 	t extends TerminallyInferredObject | Primitive ? t
 	: t extends Function ?
-		t extends InferredMorph<infer i, infer o> ?
-			distillIo<i, o, endpoint, seen>
-		:	t
-	: t extends Default<infer constraint> ? _distill<constraint, endpoint, seen>
-	: t extends array ? distillArray<t, endpoint, seen | t>
-	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint, seen | t>
+		// don't treat functions like () => never as morphs
+		t extends (...args: never) => anyOrNever ? t
+		: t extends InferredMorph<infer i, infer o> ? distillIo<i, o, endpoint>
+		: t
+	: t extends Default<infer constraint> ? _distill<constraint, endpoint>
+	: t extends array ? distillArray<t, endpoint>
+	: isSafelyMappable<t> extends true ? distillMappable<t, endpoint>
 	: t
 
-type distillMappable<o, endpoint extends distill.Endpoint, seen> =
+type distillMappable<o, endpoint extends distill.Endpoint> =
 	endpoint extends "in" ?
 		show<
 			{
 				// this is homomorphic so includes parsed optional keys like "key?": "string"
 				[k in keyof o as k extends inferredDefaultKeyOf<o> ? never
-				:	k]: _distill<o[k], endpoint, seen>
+				:	k]: _distill<o[k], endpoint>
 			} & {
-				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], endpoint, seen>
+				[k in inferredDefaultKeyOf<o>]?: _distill<o[k], endpoint>
 			}
 		>
-	:	{ [k in keyof o]: _distill<o[k], endpoint, seen> }
+	:	{ [k in keyof o]: _distill<o[k], endpoint> }
 
-type distillIo<i, o extends Out, endpoint extends distill.Endpoint, seen> =
-	endpoint extends "out" ? _distill<o["t"], endpoint, seen>
-	: endpoint extends "in" ? _distill<i, endpoint, seen>
+type distillIo<i, o extends Out, endpoint extends distill.Endpoint> =
+	endpoint extends "out" ? _distill<o["t"], endpoint>
+	: endpoint extends "in" ? _distill<i, endpoint>
 	: // out.introspectable only respects To (schema-validated output)
-	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint, seen>
+	o extends To<infer validatedOut> ? _distill<validatedOut, endpoint>
 	: unknown
 
 type unwrapInput<t> =
@@ -110,16 +115,14 @@ type inferredDefaultKeyOf<o> =
 		:	never
 	:	never
 
-type distillArray<t extends array, endpoint extends distill.Endpoint, seen> =
+type distillArray<t extends array, endpoint extends distill.Endpoint> =
 	// fast path for non-tuple arrays with no extra props
 	// this also allows TS to infer certain recursive arrays like JSON
-	t[number][] extends t ?
-		alignReadonly<_distill<t[number], endpoint, seen>[], t>
+	t[number][] extends t ? alignReadonly<_distill<t[number], endpoint>[], t>
 	:	distillNonArraykeys<
 			t,
-			alignReadonly<distillArrayFromPrefix<[...t], endpoint, seen, []>, t>,
-			endpoint,
-			seen
+			alignReadonly<distillArrayFromPrefix<[...t], endpoint, []>, t>,
+			endpoint
 		>
 
 type alignReadonly<result extends unknown[], original extends array> =
@@ -129,8 +132,7 @@ type alignReadonly<result extends unknown[], original extends array> =
 type distillNonArraykeys<
 	originalArray extends array,
 	distilledArray,
-	endpoint extends distill.Endpoint,
-	seen
+	endpoint extends distill.Endpoint
 > =
 	keyof originalArray extends keyof distilledArray ? distilledArray
 	:	distilledArray &
@@ -139,42 +141,37 @@ type distillNonArraykeys<
 					[k in keyof originalArray as k extends keyof distilledArray ? never
 					:	k]: originalArray[k]
 				},
-				endpoint,
-				seen
+				endpoint
 			>
 
 type distillArrayFromPrefix<
 	t extends array,
 	endpoint extends distill.Endpoint,
-	seen,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
 		distillArrayFromPrefix<
 			tail,
 			endpoint,
-			seen,
-			[...prefix, _distill<head, endpoint, seen>]
+			[...prefix, _distill<head, endpoint>]
 		>
-	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, seen, []>]
+	:	[...prefix, ...distillArrayFromPostfix<t, endpoint, []>]
 
 type distillArrayFromPostfix<
 	t extends array,
 	endpoint extends distill.Endpoint,
-	seen,
 	postfix extends array
 > =
 	t extends readonly [...infer init, infer last] ?
 		distillArrayFromPostfix<
 			init,
 			endpoint,
-			seen,
-			[_distill<last, endpoint, seen>, ...postfix]
+			[_distill<last, endpoint>, ...postfix]
 		>
-	:	[...{ [i in keyof t]: _distill<t[i], endpoint, seen> }, ...postfix]
+	:	[...{ [i in keyof t]: _distill<t[i], endpoint> }, ...postfix]
 
 type BuiltinTerminalObjectKind = Exclude<
-	keyof arkPrototypes.instances,
+	arkPrototypes.NonDegenerateName,
 	"Array" | "Function"
 >
 
@@ -188,15 +185,71 @@ export type inferPredicate<t, predicate> =
 		narrowed
 	:	t
 
-export type inferPipes<t, pipes extends Morph[]> =
-	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
-		inferPipes<
-			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
-			: inferMorphOut<head> extends infer out ? (In: distill.In<t>) => Out<out>
-			: never,
-			tail
-		>
-	:	t
+export type inferNaryPipe<morphs extends readonly Morph[]> = _inferNaryPipe<
+	morphs,
+	unknown
+>
+
+type _inferNaryPipe<remaining extends readonly unknown[], result> =
+	remaining extends (
+		readonly [infer head extends Morph, ...infer tail extends Morph[]]
+	) ?
+		_inferNaryPipe<tail, inferMorph<result, head>>
+	:	result
+
+export type inferNaryIntersection<types extends readonly unknown[]> =
+	number extends types["length"] ?
+		_inferNaryIntersection<unionToTuple<types[number]>, unknown>
+	:	_inferNaryIntersection<types, unknown>
+
+type _inferNaryIntersection<remaining extends readonly unknown[], result> =
+	remaining extends readonly [infer head, ...infer tail] ?
+		_inferNaryIntersection<tail, inferIntersection<result, head>>
+	:	result
+
+export type inferNaryMerge<types extends readonly unknown[]> =
+	number extends types["length"] ? _inferUnorderedMerge<types>
+	:	_inferNaryMerge<types, {}>
+
+type _inferUnorderedMerge<
+	types extends readonly unknown[],
+	optionalKey extends PropertyKey = optionalAtLeastOnceUnionKeyOf<
+		types[number]
+	>,
+	requiredKey extends PropertyKey = Exclude<
+		unionKeyOf<types[number]>,
+		optionalKey
+	>
+> = show<
+	{
+		[k in requiredKey]: types[number] extends infer v ?
+			v extends unknown ?
+				k extends keyof v ?
+					v[k]
+				:	never
+			:	never
+		:	never
+	} & {
+		[k in optionalKey]?: types[number] extends infer v ?
+			v extends unknown ?
+				k extends keyof v ?
+					v[k]
+				:	never
+			:	never
+		:	never
+	}
+>
+
+/** Coalesce keys that exist and are optional on one or more branches of a union */
+type optionalAtLeastOnceUnionKeyOf<t> =
+	t extends unknown ? optionalKeyOf<t> : never
+
+type _inferNaryMerge<remaining extends readonly unknown[], result> =
+	remaining extends (
+		readonly [infer head, ...infer tail extends readonly unknown[]]
+	) ?
+		_inferNaryMerge<tail, merge<result, head>>
+	:	result
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
@@ -238,7 +291,7 @@ type addDefaultToMorph<t extends InferredMorph, v> =
 type normalizeMorphDistribution<
 	t,
 	undistributedIn = t extends InferredMorph<infer i> ? i : never,
-	undistributedOut extends Out = [t] extends [InferredMorph<any, infer o>] ?
+	undistributedOut extends Out = t extends InferredMorph<any, infer o> ?
 		[o] extends [To<infer unwrappedOut>] ?
 			To<unwrappedOut>
 		:	o
@@ -255,7 +308,10 @@ type normalizeMorphDistribution<
 				(In: undistributedIn) => undistributedOut
 			:	t
 	  :	never)
-	| Exclude<t, InferredMorph>
+	| Exclude<t, InferredMorph> extends infer _ ?
+		// needed to avoid normalizeMorphDistribution or similar showing up in finalized type
+		_
+	:	never
 
 export type defaultFor<t = unknown> =
 	| (Primitive extends t ? Primitive
@@ -268,6 +324,11 @@ export type termOrType<t> = t | Type<t, any>
 export type inferIntersection<l, r> = normalizeMorphDistribution<
 	_inferIntersection<l, r, false>
 >
+
+export type inferMorph<t, morph extends Morph> =
+	morph extends type.cast<infer tMorph> ? inferPipe<t, tMorph>
+	: inferMorphOut<morph> extends infer out ? (In: distill.In<t>) => Out<out>
+	: never
 
 export type inferPipe<l, r> = normalizeMorphDistribution<
 	_inferIntersection<l, r, true>

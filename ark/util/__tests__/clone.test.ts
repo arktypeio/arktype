@@ -69,4 +69,19 @@ contextualize(() => {
 		attest(cloned.getDate()).equals(3)
 		attest(original.getDate()).equals(2)
 	})
+
+	it("can handle own getters", () => {
+		let callCount = 0
+		const o = {
+			get foo() {
+				return `foo${++callCount}`
+			}
+		}
+
+		const cloned = deepClone(o)
+
+		attest(cloned).snap({ foo: "foo2" })
+		attest(o.foo).snap("foo3")
+		attest(cloned.foo).snap("foo4")
+	})
 })

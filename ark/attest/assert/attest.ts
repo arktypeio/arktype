@@ -70,7 +70,7 @@ export const attestInternal = (
 	}
 	if (!cfg.skipTypes) {
 		ctx.typeRelationshipAssertionEntries = getTypeAssertionsAtPosition(position)
-		if (ctx.typeRelationshipAssertionEntries[0][1].typeArgs[0]) {
+		if (ctx.typeRelationshipAssertionEntries[0]?.[1].typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}
@@ -81,7 +81,7 @@ export const attestInternal = (
 export const attest: AttestFn = Object.assign(attestInternal, {
 	instantiations: (args: Measure<"instantiations"> | undefined) => {
 		const attestConfig = getConfig()
-		if (attestConfig.skipInlineInstantiations) return
+		if (attestConfig.skipTypes || attestConfig.skipInlineInstantiations) return
 
 		const calledFrom = caller()
 		const ctx = getBenchCtx([calledFrom.file])

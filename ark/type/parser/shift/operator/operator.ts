@@ -18,7 +18,11 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 			s.scanner.shift() === "]" ?
 				s.setRoot(s.root.array())
 			:	s.error(incompleteArrayTokenMessage)
-		: lookahead === "|" || lookahead === "&" ? s.pushRootToBranch(lookahead)
+		: lookahead === "|" ?
+			s.scanner.lookahead === ">" ?
+				s.shiftedByOne().pushRootToBranch("|>")
+			:	s.pushRootToBranch(lookahead)
+		: lookahead === "&" ? s.pushRootToBranch(lookahead)
 		: lookahead === ")" ? s.finalizeGroup()
 		: ArkTypeScanner.lookaheadIsFinalizing(lookahead, s.scanner.unscanned) ?
 			s.finalize(lookahead)
@@ -38,7 +42,11 @@ export type parseOperator<s extends StaticState, $, args> =
 			unscanned extends ArkTypeScanner.shift<"]", infer nextUnscanned> ?
 				state.setRoot<s, [s["root"], "[]"], nextUnscanned>
 			:	state.error<incompleteArrayTokenMessage>
-		: lookahead extends "|" | "&" ? state.reduceBranch<s, lookahead, unscanned>
+		: lookahead extends "|" ?
+			unscanned extends ArkTypeScanner.shift<">", infer nextUnscanned> ?
+				state.reduceBranch<s, "|>", nextUnscanned>
+			:	state.reduceBranch<s, lookahead, unscanned>
+		: lookahead extends "&" ? state.reduceBranch<s, lookahead, unscanned>
 		: lookahead extends ")" ? state.finalizeGroup<s, unscanned>
 		: ArkTypeScanner.lookaheadIsFinalizing<lookahead, unscanned> extends true ?
 			state.finalize<

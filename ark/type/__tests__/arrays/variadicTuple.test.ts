@@ -9,33 +9,33 @@ import {
 
 contextualize(() => {
 	it("spreads simple arrays", () => {
-		const wellRested = type(["string", "...", "number[]"])
-		attest<[string, ...number[]]>(wellRested.infer)
-		attest(wellRested(["foo"])).equals(["foo"])
-		attest(wellRested(["foo", 1, 2])).equals(["foo", 1, 2])
+		const WellRested = type(["string", "...", "number[]"])
+		attest<[string, ...number[]]>(WellRested.infer)
+		attest(WellRested(["foo"])).equals(["foo"])
+		attest(WellRested(["foo", 1, 2])).equals(["foo", 1, 2])
 	})
 
 	it("spreads array expressions", () => {
-		const greatSpread = type(["0", "...", "(Date|RegExp)[]"])
-		attest<[0, ...(RegExp | Date)[]]>(greatSpread.infer)
+		const GreatSpread = type(["0", "...", "(Date|RegExp)[]"])
+		attest<[0, ...(RegExp | Date)[]]>(GreatSpread.infer)
 	})
 
 	it("distributes spread unions", () => {
-		const t = type(["1", "...", "(Date[] | RegExp[])"])
-		attest<[1, ...(Date[] | RegExp[])]>(t.infer)
-		const expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
-		attest(t.json).equals(expected.json)
+		const T = type(["1", "...", "(Date[] | RegExp[])"])
+		attest<[1, ...(Date[] | RegExp[])]>(T.infer)
+		const Expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("distributes spread union tuples", () => {
 		const counting = ["2", "3", "4"] as const
 		const fibbing = ["1", "2", "3", "5", "8"] as const
-		const countOrFib = type(counting, "|", fibbing)
-		attest<[2, 3, 4] | [1, 2, 3, 5, 8]>(countOrFib.infer)
-		const t = type(["1", "...", countOrFib])
-		attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(t.infer)
-		const expected = type(["1", ...counting]).or(["1", ...fibbing])
-		attest(t.json).equals(expected.json)
+		const CountOrFib = type(counting, "|", fibbing)
+		attest<[2, 3, 4] | [1, 2, 3, 5, 8]>(CountOrFib.infer)
+		const T = type(["1", "...", CountOrFib])
+		attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(T.infer)
+		const Expected = type(["1", ...counting]).or(["1", ...fibbing])
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("allows array keyword", () => {
@@ -54,7 +54,7 @@ contextualize(() => {
 	})
 
 	it("allows multiple fixed spreads", () => {
-		const t = type([
+		const T = type([
 			"string",
 			"...",
 			"number[]",
@@ -63,7 +63,7 @@ contextualize(() => {
 			"...",
 			["symbol"]
 		])
-		const expected = type([
+		const Expected = type([
 			"string",
 			"...",
 			"number[]",
@@ -71,9 +71,9 @@ contextualize(() => {
 			"bigint",
 			"symbol"
 		])
-		attest<[string, ...number[], boolean, bigint, symbol]>(t.infer)
-		attest<typeof expected.infer>(t.infer)
-		attest(t.json).equals(expected.json)
+		attest<[string, ...number[], boolean, bigint, symbol]>(T.infer)
+		attest<typeof Expected.infer>(T.infer)
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("errors on multiple variadic", () => {
@@ -106,10 +106,10 @@ contextualize(() => {
 	})
 
 	it("doesn't mistake a string literal containing '=' for defaultable", () => {
-		const t = type(["'='", "number"])
+		const T = type(["'='", "number"])
 
-		attest<["=", number]>(t.t)
-		attest(t.infer).type.toString.snap(`["=", number]`)
-		attest(t.expression).snap('["=", number]')
+		attest<["=", number]>(T.t)
+		attest(T.infer).type.toString.snap(`["=", number]`)
+		attest(T.expression).snap('["=", number]')
 	})
 })

@@ -4,15 +4,15 @@ import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/shift/
 
 contextualize(() => {
 	it("with spaces", () => {
-		const t = type("'this has spaces'")
-		attest<"this has spaces">(t.infer)
-		attest(t.json).snap({ unit: "this has spaces" })
+		const T = type("'this has spaces'")
+		attest<"this has spaces">(T.infer)
+		attest(T.json).snap({ unit: "this has spaces" })
 	})
 
 	it("with neighbors", () => {
-		const t = type("'foo'|/.*/[]")
-		attest<"foo" | string[]>(t.infer)
-		attest(t.json).snap([
+		const T = type("'foo'|/.*/[]")
+		attest<"foo" | string[]>(T.infer)
+		attest(T.json).snap([
 			{ proto: "Array", sequence: { domain: "string", pattern: [".*"] } },
 			{ unit: "foo" }
 		])
@@ -40,17 +40,21 @@ contextualize(() => {
 	})
 
 	it("single-quoted", () => {
-		const t = type("'hello'")
-		attest<"hello">(t.infer)
-		attest(t.json).snap({ unit: "hello" })
+		const T = type("'hello'")
+		attest<"hello">(T.infer)
+		attest(T.json).snap({ unit: "hello" })
 	})
 
 	it("double-quoted", () => {
-		attest<"goodbye">(type('"goodbye"').infer)
+		const T = type('"goodbye"')
+		attest<"goodbye">(T.infer)
+		attest(T.expression).snap('"goodbye"')
 	})
 
 	it("regex literal", () => {
-		attest<string>(type("/.*/").infer)
+		const T = type("/.*/")
+		attest<string>(T.infer)
+		attest(T.expression).snap("/.*/")
 	})
 
 	it("invalid regex", () => {
@@ -60,21 +64,30 @@ contextualize(() => {
 	})
 
 	it("mixed quote types", () => {
-		attest<"'single-quoted'">(type(`"'single-quoted'"`).infer)
-		attest<'"double-quoted"'>(type(`'"double-quoted"'`).infer)
+		const T = type(`"'single-quoted'"`)
+		attest<"'single-quoted'">(T.infer)
+		attest(T.expression).snap("\"'single-quoted'\"")
+
+		const U = type(`'"double-quoted"'`)
+		attest<'"double-quoted"'>(U.infer)
 	})
 
 	it("ignores enclosed operators", () => {
-		attest<"yes|no|maybe">(type("'yes|no|maybe'").infer)
+		const T = type("'yes|no|maybe'")
+		attest<"yes|no|maybe">(T.infer)
+		attest(T.expression).snap('"yes|no|maybe"')
 	})
 
 	it("mix of enclosed and unenclosed operators", () => {
-		attest<"yes|no" | "true|false">(type("'yes|no'|'true|false'").infer)
+		const T = type("'yes|no'|'true|false'")
+		attest<"yes|no" | "true|false">(T.infer)
+		attest(T.expression).snap('"true|false" | "yes|no"')
 	})
 
 	it("escaped enclosing", () => {
-		const t = type("'don\\'t'")
-		attest<"don't">(t.infer)
+		const T = type("'don\\'t'")
+		attest<"don't">(T.infer)
+		attest(T.expression).snap('"don\'t"')
 	})
 
 	it("string literal stress", () => {
@@ -100,8 +113,8 @@ contextualize(() => {
 59825349042875546873115956286388235378759375195778
 185778053217122680661300192"`
 		// parses exactly 1001 characters before hitting a recursion limit
-		const t = type(s)
+		const T = type(s)
 		type Expected = typeof s extends `"${infer enclosed}"` ? enclosed : never
-		attest<Expected>(t.infer)
+		attest<Expected>(T.infer)
 	})
 })

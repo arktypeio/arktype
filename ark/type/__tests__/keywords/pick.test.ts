@@ -26,32 +26,32 @@ contextualize(() => {
 	})
 
 	it("chained", () => {
-		const user = type({
+		const User = type({
 			name: "string",
 			"age?": "number",
 			isAdmin: "boolean"
 		})
 
-		const basicUser = user.pick("name", "age")
+		const BasicUser = User.pick("name", "age")
 
-		const expected = type({
+		const Expected = type({
 			name: "string",
 			"age?": "number"
 		})
 
-		attest<typeof expected.t>(basicUser.t)
+		attest<typeof Expected.t>(BasicUser.t)
 
-		attest(basicUser.expression).equals(expected.expression)
+		attest(BasicUser.expression).equals(Expected.expression)
 	})
 
 	it("invalid key", () => {
-		const user = type({
+		const User = type({
 			name: "string"
 		})
 
 		// @ts-expect-error
-		attest(() => user.pick("length"))
-			.throws(writeInvalidKeysMessage(user.expression, ["length"]))
+		attest(() => User.pick("length"))
+			.throws(writeInvalidKeysMessage(User.expression, ["length"]))
 			.type.errors.snap(
 				'Argument of type \'"length"\' is not assignable to parameter of type \'"name" | cast<"name">\'.'
 			)

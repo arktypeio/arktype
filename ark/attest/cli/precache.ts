@@ -1,5 +1,5 @@
 import { ensureDir } from "@ark/fs"
-import { join } from "path"
+import { join } from "node:path"
 import { writeAssertionData } from "../fixtures.ts"
 
 export const precache = (args: string[]): void => {

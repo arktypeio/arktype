@@ -27,9 +27,9 @@ import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
 	BaseErrorContext,
-	BaseMeta,
 	BaseNodeDeclaration,
-	BaseNormalizedSchema
+	BaseNormalizedSchema,
+	NodeMeta
 } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
@@ -313,6 +313,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		$: BaseScope
 	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
+	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
 
 export interface UnknownNodeImplementation
@@ -365,7 +366,6 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 ) => string
 
 export interface UnknownAttachments {
-	alias?: string
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
 	readonly id: NodeId
@@ -375,7 +375,7 @@ export interface UnknownAttachments {
 	readonly innerJson: object
 	readonly innerHash: string
 
-	readonly meta: BaseMeta
+	readonly meta: NodeMeta
 	readonly metaJson: object
 
 	readonly json: object

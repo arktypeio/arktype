@@ -10,8 +10,7 @@ import {
 	flatRef,
 	type BaseNode,
 	type DeepNodeTransformContext,
-	type DeepNodeTransformation,
-	type FlatRef
+	type DeepNodeTransformation
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
@@ -122,6 +121,13 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
+	flatRefs = append(
+		this.value.flatRefs.map(ref =>
+			flatRef([this.signature, ...ref.path], ref.node)
+		),
+		flatRef([this.signature], this.value)
+	)
+
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).every(entry => {
 			if (this.signature.traverseAllows(entry[0], ctx)) {
@@ -134,8 +140,8 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 			return true
 		})
 
-	traverseApply: TraverseApply<object> = (data, ctx) =>
-		stringAndSymbolicEntriesOf(data).forEach(entry => {
+	traverseApply: TraverseApply<object> = (data, ctx) => {
+		for (const entry of stringAndSymbolicEntriesOf(data)) {
 			if (this.signature.traverseAllows(entry[0], ctx)) {
 				traverseKey(
 					entry[0],
@@ -143,7 +149,8 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 					ctx
 				)
 			}
-		})
+		}
+	}
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
@@ -153,15 +160,6 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
-	}
-
-	override get flatRefs(): FlatRef[] {
-		return append(
-			this.value.flatRefs.map(ref =>
-				flatRef([this.signature, ...ref.path], ref.node)
-			),
-			flatRef([this.signature], this.value)
-		)
 	}
 
 	compile(): void {

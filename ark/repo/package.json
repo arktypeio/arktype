@@ -4,15 +4,14 @@
 	"type": "module",
 	"license": "MIT",
 	"dependencies": {
-		"@ark/attest": "workspace:*",
+		"@ark/attest": "link:../attest",
 		"@ark/fs": "workspace:*",
-		"@sinclair/typebox": "0.34.14",
-		"@trpc/server": "10.45.2",
 		"arktype": "workspace:*",
-		"ts-morph": "25.0.0",
-		"type-fest": "4.33.0",
+		"ts-morph": "25.0.1",
+		"ts-pattern": "5.7.0",
+		"type-fest": "4.39.1",
 		"typescript": "catalog:",
-		"zod": "3.24.1"
+		"zod": "3.24.2"
 	},
 	"scripts": {
 		"build": "echo No build required!"

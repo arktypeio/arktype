@@ -61,8 +61,12 @@ export const formatFilePath = (
 			formatted
 		)
 	}
-	if (separator)
-		formatted = formatted.replace(new RegExp(`\\${path.sep}`, "g"), separator)
+	if (separator) {
+		formatted = formatted.replaceAll(
+			new RegExp(`\\${path.sep}`, "g"),
+			separator
+		)
+	}
 
 	return formatted
 }

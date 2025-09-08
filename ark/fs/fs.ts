@@ -218,10 +218,10 @@ const findReplace: (matchers: Matchers) => (input: string) => string =
  */
 const findReplaceMany =
 	(matchers: Matchers) =>
-	(files: readonly string[] = []): void =>
-		void files.forEach(file => {
+	(files: readonly string[] = []) => {
+		for (const file of files)
 			writeFile(file, findReplace(matchers)(readFile(file)))
-		})
+	}
 
 /**
  * Given a directory and a set of {@link Matchers}, recursively walks

@@ -1,5 +1,5 @@
 import { throwInternalError, type propwiseXor } from "@ark/util"
-import type { HighlightOptions } from "fumadocs-core/server"
+import type { HighlightOptions } from "fumadocs-core/highlight"
 import { Popup, PopupContent, PopupTrigger } from "fumadocs-twoslash/ui"
 import { cn } from "fumadocs-ui/components/api"
 import {
@@ -31,23 +31,6 @@ const highlighter = await getSingletonHighlighter({
 	themes: [shikiConfig.themes.dark]
 })
 
-const components: HighlightOptions["components"] = {
-	// rounded none is for syntax tabs
-	pre: ({ className, children, ...props }) => (
-		<Pre className={cn(className, "!rounded-none")} {...props}>
-			{children}
-		</Pre>
-	)
-}
-
-// overriding these custom components allows hovers to render
-// correctly in code blocks outside markdown (e.g. on the home page)
-Object.assign(components, {
-	Popup,
-	PopupContent,
-	PopupTrigger
-})
-
 export const CodeBlock: React.FC<CodeBlockProps> = ({
 	lang = "ts",
 	children,
@@ -67,9 +50,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 		)
 	}
 
-	decorators?.forEach(d => {
-		if (!src.includes(d)) src = `// ${d}\n${src}`
-	})
+	if (decorators)
+		for (const d of decorators) if (!src.includes(d)) src = `// ${d}\n${src}`
 
 	const highlighted = highlight(lang, src)
 
@@ -86,6 +68,24 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 		</FumaCodeBlock>
 	)
 }
+
+const components: HighlightOptions["components"] = {
+	// rounded none is for syntax tabs
+	pre: ({ className, children, ...props }) => (
+		<Pre className={cn(className, "!rounded-none")} {...props}>
+			{children}
+		</Pre>
+	),
+	CodeBlock
+}
+
+// overriding these custom components allows hovers to render
+// correctly in code blocks outside markdown (e.g. on the home page)
+Object.assign(components, {
+	Popup,
+	PopupContent,
+	PopupTrigger
+})
 
 const highlight = (lang: BuiltinLang, contents: string) => {
 	try {

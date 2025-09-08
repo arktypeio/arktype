@@ -21,67 +21,67 @@ const lengthCases = flatMorph(numericCases, (name, v) => [name, "1".repeat(v)])
 
 contextualize(() => {
 	it("numeric apply", () => {
-		const t = rootSchema({
+		const T = rootSchema({
 			domain: "number",
 			min: { rule: 5, exclusive: true },
 			max: { rule: 10 }
 		})
 
-		attest(t.traverse(numericCases.lessThanMin)?.toString()).snap(
+		attest(T.traverse(numericCases.lessThanMin)?.toString()).snap(
 			"must be more than 5 (was 4)"
 		)
-		attest(t.traverse(numericCases.equalToExclusiveMin)?.toString()).snap(
+		attest(T.traverse(numericCases.equalToExclusiveMin)?.toString()).snap(
 			"must be more than 5 (was 5)"
 		)
-		attest(t.traverse(numericCases.between)).equals(numericCases.between)
-		attest(t.traverse(numericCases.equalToInclusiveMax)).equals(
+		attest(T.traverse(numericCases.between)).equals(numericCases.between)
+		attest(T.traverse(numericCases.equalToInclusiveMax)).equals(
 			numericCases.equalToInclusiveMax
 		)
-		attest(t.traverse(numericCases.greaterThanMax)?.toString()).snap(
+		attest(T.traverse(numericCases.greaterThanMax)?.toString()).snap(
 			"must be at most 10 (was 11)"
 		)
 	})
 
 	it("length apply", () => {
-		const t = rootSchema({
+		const T = rootSchema({
 			domain: "string",
 			minLength: { rule: 5, exclusive: true },
 			maxLength: { rule: 10 }
 		})
 
-		attest(t.traverse(lengthCases.lessThanMin)?.toString()).snap(
+		attest(T.traverse(lengthCases.lessThanMin)?.toString()).snap(
 			"must be at least length 6 (was 4)"
 		)
-		attest(t.traverse(lengthCases.equalToExclusiveMin)?.toString()).snap(
+		attest(T.traverse(lengthCases.equalToExclusiveMin)?.toString()).snap(
 			"must be at least length 6 (was 5)"
 		)
-		attest(t.traverse(lengthCases.between)).equals(lengthCases.between)
-		attest(t.traverse(lengthCases.equalToInclusiveMax)).equals(
+		attest(T.traverse(lengthCases.between)).equals(lengthCases.between)
+		attest(T.traverse(lengthCases.equalToInclusiveMax)).equals(
 			lengthCases.equalToInclusiveMax
 		)
-		attest(t.traverse(lengthCases.greaterThanMax)?.toString()).snap(
+		attest(T.traverse(lengthCases.greaterThanMax)?.toString()).snap(
 			"must be at most length 10 (was 11)"
 		)
 	})
 
 	it("date apply", () => {
-		const t = rootSchema({
+		const T = rootSchema({
 			proto: Date,
 			after: { rule: 5, exclusive: true },
 			before: { rule: 10 }
 		})
 
-		attest(t.traverse(dateCases.lessThanMin)?.toString()).snap(
+		attest(T.traverse(dateCases.lessThanMin)?.toString()).snap(
 			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.004 PM, December 31, 1969)"
 		)
-		attest(t.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
+		attest(T.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
 			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.005 PM, December 31, 1969)"
 		)
-		attest(t.traverse(dateCases.between)).equals(dateCases.between)
-		attest(t.traverse(dateCases.equalToInclusiveMax)).equals(
+		attest(T.traverse(dateCases.between)).equals(dateCases.between)
+		attest(T.traverse(dateCases.equalToInclusiveMax)).equals(
 			dateCases.equalToInclusiveMax
 		)
-		attest(t.traverse(dateCases.greaterThanMax)?.toString()).snap(
+		attest(T.traverse(dateCases.greaterThanMax)?.toString()).snap(
 			"must be 7:00:00.010 PM, December 31, 1969 or earlier (was 7:00:00.011 PM, December 31, 1969)"
 		)
 	})
@@ -98,7 +98,7 @@ contextualize(() => {
 		)
 	})
 
-	entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
+	for (const [min, max] of entriesOf(boundKindPairsByLower)) {
 		describe(`${min}/${max}`, () => {
 			const basis =
 				min === "min" ? { domain: "number" }
@@ -110,33 +110,33 @@ contextualize(() => {
 				: dateCases
 
 			it("allows", () => {
-				const t = rootSchema({
+				const T = rootSchema({
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
 				} as never)
 
-				attest(t.allows(cases.lessThanMin)).equals(false)
-				attest(t.allows(cases.equalToExclusiveMin)).equals(false)
-				attest(t.allows(cases.between)).equals(true)
-				attest(t.allows(cases.equalToInclusiveMax)).equals(true)
-				attest(t.allows(cases.greaterThanMax)).equals(false)
+				attest(T.allows(cases.lessThanMin)).equals(false)
+				attest(T.allows(cases.equalToExclusiveMin)).equals(false)
+				attest(T.allows(cases.between)).equals(true)
+				attest(T.allows(cases.equalToInclusiveMax)).equals(true)
+				attest(T.allows(cases.greaterThanMax)).equals(false)
 			})
 
 			it("unit range reduces", () => {
-				const l = rootSchema({
+				const L = rootSchema({
 					...basis,
 					[min]: {
 						rule: 6
 					}
 				} as never)
-				const r = rootSchema({
+				const R = rootSchema({
 					...basis,
 					[max]: {
 						rule: 6
 					}
 				} as never)
-				const expected =
+				const Expected =
 					min === "min" ?
 						rootSchema({
 							unit: 6
@@ -150,36 +150,36 @@ contextualize(() => {
 							unit: new Date(6)
 						})
 
-				attest(l.and(r).json).equals(expected.json)
-				attest(r.and(l).json).equals(expected.json)
+				attest(L.and(R).json).equals(Expected.json)
+				attest(R.and(L).json).equals(Expected.json)
 			})
 
 			it("non-overlapping exclusive", () => {
-				const l = rootSchema({
+				const L = rootSchema({
 					...basis,
 					[min]: {
 						rule: 3
 					}
 				} as never)
-				const r = rootSchema({
+				const R = rootSchema({
 					...basis,
 					[max]: {
 						rule: 3,
 						exclusive: true
 					}
 				} as never)
-				attest(l.intersect(r)).instanceOf(Disjoint)
-				attest(r.intersect(l)).instanceOf(Disjoint)
+				attest(L.intersect(R)).instanceOf(Disjoint)
+				attest(R.intersect(L)).instanceOf(Disjoint)
 			})
 
 			it("non-overlapping limits", () => {
-				const l = rootSchema({ ...basis, [min]: 3 } as never)
-				const r = rootSchema({
+				const L = rootSchema({ ...basis, [min]: 3 } as never)
+				const R = rootSchema({
 					...basis,
 					[max]: 1
 				} as never)
-				attest(l.intersect(r)).instanceOf(Disjoint)
-				attest(r.intersect(l)).instanceOf(Disjoint)
+				attest(L.intersect(R)).instanceOf(Disjoint)
+				attest(R.intersect(L)).instanceOf(Disjoint)
 			})
 
 			it("greater min is stricter", () => {
@@ -221,5 +221,5 @@ contextualize(() => {
 				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})
 		})
-	})
+	}
 })

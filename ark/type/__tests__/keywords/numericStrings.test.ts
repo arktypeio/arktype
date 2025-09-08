@@ -3,10 +3,10 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("string.numeric", () => {
-		const numericString = type("string.numeric")
-		attest(numericString("5")).equals("5")
-		attest(numericString("5.5")).equals("5.5")
-		attest(numericString("five").toString()).snap(
+		const NumericString = type("string.numeric")
+		attest(NumericString("5")).equals("5")
+		attest(NumericString("5.5")).equals("5.5")
+		attest(NumericString("five").toString()).snap(
 			'must be a well-formed numeric string (was "five")'
 		)
 	})
@@ -21,17 +21,17 @@ contextualize(() => {
 	})
 
 	it("string.integer", () => {
-		const integerString = type("string.integer")
-		attest(integerString("5")).equals("5")
-		attest(integerString("5.5").toString()).snap(
+		const IntegerString = type("string.integer")
+		attest(IntegerString("5")).equals("5")
+		attest(IntegerString("5.5").toString()).snap(
 			'must be a well-formed integer string (was "5.5")'
 		)
-		attest(integerString("five").toString()).snap(
+		attest(IntegerString("five").toString()).snap(
 			'must be a well-formed integer string (was "five")'
 		)
-		attest(integerString(5).toString()).snap("must be a string (was a number)")
+		attest(IntegerString(5).toString()).snap("must be a string (was a number)")
 		// unsafe integers are allowed within strings as long as they are not parsed
-		attest(integerString("9007199254740992")).equals("9007199254740992")
+		attest(IntegerString("9007199254740992")).equals("9007199254740992")
 	})
 
 	it("string.integer.parse", () => {

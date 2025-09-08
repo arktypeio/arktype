@@ -6,7 +6,7 @@ import type { ShikiTransformer } from "shiki"
 
 /** for some reason a standard import with an attribute like:
  
-    import arkDarkTheme from "arkdark/arkdark.json" with { type: "json" }
+	import arkDarkTheme from "arkdark/arkdark.json" with { type: "json" }
     
 results in an error like:
 
@@ -17,13 +17,13 @@ like the one above if possible in the future without breaking the build.*/
 
 const require = createRequire(import.meta.url)
 
-const arkDarkTheme = require("arkdark/arkdark.json")
+const arkDarkTheme = require("arkthemes/arkdark.json")
 const arkTypePackageJson = require("arkdark/package.json")
 const arkTypeTmJson = require("arkdark/tsWithArkType.tmLanguage.json")
 
 // Theme adjustments
 /** should match the css rule for .bg-fd-secondary\/50 */
-arkDarkTheme.colors["editor.background"] = "#0006"
+arkDarkTheme.colors["editor.background"] = "#060c18"
 
 arkDarkTheme.tokenColors.push({
 	// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,
@@ -54,10 +54,31 @@ declare global {
 		}
 
 		export type errors = a.ArkErrors
+
+		export type validate<def, $ = {}, args = a.bindThis<def>> = a.validateDefinition<
+			def,
+			$,
+			args
+		>
+	
+		export type instantiate<def, $ = {}, args = a.bindThis<def>> = type<
+			a.inferDefinition<def, $, args>,
+			$
+		>
+	
+		export type infer<def, $ = {}, args = a.bindThis<def>> = a.inferDefinition<
+			def,
+			$,
+			args
+		>
+
+		/** @ts-ignore cast variance */
+		export interface Any<out t = any, $ = any> extends a.BaseType<t, $> {}
 	}
 
 	type type<t = unknown, $ = {}> = a.Type<t, $>
 	const scope: typeof a.scope
+	const match: typeof a.match
 }`
 		},
 		filterNode: node => {
@@ -116,7 +137,7 @@ declare global {
 								groupIndex < matchResult.length;
 								groupIndex++
 							) {
-								node.text = node.text.replace(
+								node.text = node.text.replaceAll(
 									new RegExp(`\\$${groupIndex}`, "gu"),
 									matchResult[Number(groupIndex)]
 								)
@@ -145,6 +166,7 @@ const descendantIncludesText = (
 	)
 
 export const shikiConfig = {
+	experimentalJSEngine: true,
 	themes: {
 		dark: arkDarkTheme,
 		light: arkDarkTheme

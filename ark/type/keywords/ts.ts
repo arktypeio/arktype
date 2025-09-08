@@ -47,10 +47,15 @@ export declare namespace arkTsKeywords {
 	}
 }
 
-export const unknown = Scope.module({
-	root: intrinsic.unknown,
-	any: intrinsic.unknown
-})
+export const unknown = Scope.module(
+	{
+		root: intrinsic.unknown,
+		any: intrinsic.unknown
+	},
+	{
+		name: "unknown"
+	}
+)
 
 export declare namespace unknown {
 	export type submodule = Submodule<$>
@@ -61,14 +66,19 @@ export declare namespace unknown {
 	}
 }
 
-export const json = Scope.module({
-	root: intrinsic.json,
-	stringify: node("morph", {
-		in: intrinsic.json,
-		morphs: (data: Json) => JSON.stringify(data),
-		declaredOut: intrinsic.string
-	})
-})
+export const json = Scope.module(
+	{
+		root: intrinsic.jsonObject,
+		stringify: node("morph", {
+			in: intrinsic.jsonObject,
+			morphs: (data: Json) => JSON.stringify(data),
+			declaredOut: intrinsic.string
+		})
+	},
+	{
+		name: "object.json"
+	}
+)
 
 export declare namespace json {
 	export type submodule = Submodule<$>
@@ -79,10 +89,15 @@ export declare namespace json {
 	}
 }
 
-export const object = Scope.module({
-	root: intrinsic.object,
-	json
-})
+export const object = Scope.module(
+	{
+		root: intrinsic.object,
+		json
+	},
+	{
+		name: "object"
+	}
+)
 
 export declare namespace object {
 	export type submodule = Submodule<$>
@@ -97,7 +112,7 @@ class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
 
 	description =
-		"a generic type that instantiates an object from a single index signature and corresponding value type"
+		'instantiate an object from an index signature and corresponding value type like `Record("string", "number")`'
 }
 
 const Record = genericNode(["K", intrinsic.key], "V")(
@@ -113,6 +128,9 @@ const Record = genericNode(["K", intrinsic.key], "V")(
 
 class PickHkt extends Hkt<[object, Key]> {
 	declare body: pick<this[0], this[1] & keyof this[0]>
+
+	description =
+		'pick a set of properties from an object like `Pick(User, "name | age")`'
 }
 
 const Pick = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
@@ -122,6 +140,9 @@ const Pick = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
 
 class OmitHkt extends Hkt<[object, Key]> {
 	declare body: omit<this[0], this[1] & keyof this[0]>
+
+	description =
+		'omit a set of properties from an object like `Omit(User, "age")`'
 }
 
 const Omit = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
@@ -131,6 +152,9 @@ const Omit = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
 
 class PartialHkt extends Hkt<[object]> {
 	declare body: show<Partial<this[0]>>
+
+	description =
+		"make all named properties of an object optional like `Partial(User)`"
 }
 
 const Partial = genericNode(["T", intrinsic.object])(
@@ -140,6 +164,9 @@ const Partial = genericNode(["T", intrinsic.object])(
 
 class RequiredHkt extends Hkt<[object]> {
 	declare body: show<Required<this[0]>>
+
+	description =
+		"make all named properties of an object required like `Required(User)`"
 }
 
 const Required = genericNode(["T", intrinsic.object])(
@@ -149,6 +176,8 @@ const Required = genericNode(["T", intrinsic.object])(
 
 class ExcludeHkt extends Hkt<[unknown, unknown]> {
 	declare body: Exclude<this[0], this[1]>
+
+	description = 'exclude branches of a union like `Exclude("boolean", "true")`'
 }
 
 const Exclude = genericNode("T", "U")(
@@ -158,6 +187,9 @@ const Exclude = genericNode("T", "U")(
 
 class ExtractHkt extends Hkt<[unknown, unknown]> {
 	declare body: Extract<this[0], this[1]>
+
+	description =
+		'extract branches of a union like `Extract("0 | false | 1", "number")`'
 }
 
 const Extract = genericNode("T", "U")(

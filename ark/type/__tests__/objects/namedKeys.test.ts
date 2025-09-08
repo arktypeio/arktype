@@ -5,15 +5,15 @@ import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("empty", () => {
-		const o = type({})
-		attest<object>(o.t).type.toString("object")
-		attest(o.json).equals(type("object").json)
+		const O = type({})
+		attest<object>(O.t).type.toString("object")
+		attest(O.json).equals(type("object").json)
 	})
 
 	it("required", () => {
-		const o = type({ a: "string", b: "number" })
-		attest<{ a: string; b: number }>(o.infer)
-		attest(o.json).snap({
+		const O = type({ a: "string", b: "number" })
+		attest<{ a: string; b: number }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			required: [
 				{ key: "a", value: "string" },
@@ -23,9 +23,9 @@ contextualize(() => {
 	})
 
 	it("optional keys", () => {
-		const o = type({ "a?": "string", b: "number" })
-		attest<{ a?: string; b: number }>(o.infer)
-		attest(o.json).snap({
+		const O = type({ "a?": "string", b: "number" })
+		attest<{ a?: string; b: number }>(O.infer)
+		attest(O.json).snap({
 			domain: "object",
 			required: [{ key: "b", value: "number" }],
 			optional: [{ key: "a", value: "string" }]
@@ -33,16 +33,16 @@ contextualize(() => {
 	})
 
 	it("chained optional", () => {
-		const optionalString = type("string").optional()
-		attest<[Type<string>, "?"]>(optionalString)
+		const OptionalString = type("string").optional()
+		attest<[Type<string>, "?"]>(OptionalString)
 
-		const o = type({ a: optionalString })
+		const O = type({ a: OptionalString })
 		// directly inferring the optional key causes recursive generics/intersections to fail,
 		// so instead we just distill it out like defaults
-		attest(o.t).type.toString.snap("{ a?: string }")
-		attest(o.infer).type.toString.snap("{ a?: string }")
-		attest(o.inferIn).type.toString.snap("{ a?: string }")
-		attest(o.json).snap({
+		attest(O.t).type.toString.snap("{ a?: string }")
+		attest(O.infer).type.toString.snap("{ a?: string }")
+		attest(O.inferIn).type.toString.snap("{ a?: string }")
+		attest(O.json).snap({
 			optional: [
 				{
 					key: "a",
@@ -56,14 +56,14 @@ contextualize(() => {
 	it("string-embedded value optional", () => {
 		const s = Symbol("ok")
 		const ref = registeredReference(s)
-		const t = type({ [s]: "string?" })
+		const T = type({ [s]: "string?" })
 
 		attest<{
 			[s]?: string
-		}>(t.t)
-		attest<{ [s]?: string }>(t.infer)
+		}>(T.t)
+		attest<{ [s]?: string }>(T.infer)
 
-		attest(t.json).equals({
+		attest(T.json).equals({
 			optional: [
 				{
 					key: ref,
@@ -77,11 +77,11 @@ contextualize(() => {
 	it("tuple value optional", () => {
 		const s = Symbol("ok")
 		const ref = registeredReference(s)
-		const t = type({ [s]: [{ foo: "string" }, "?"] })
+		const T = type({ [s]: [{ foo: "string" }, "?"] })
 
-		attest<{ [s]?: { foo: string } }>(t.infer)
+		attest<{ [s]?: { foo: string } }>(T.infer)
 
-		attest(t.json).snap({
+		attest(T.json).snap({
 			optional: [
 				{
 					key: ref,
@@ -97,9 +97,9 @@ contextualize(() => {
 
 	// https://github.com/arktypeio/arktype/issues/1102
 	it("only optional keys not reduced to object", () => {
-		const o = type({ "a?": "number" })
+		const O = type({ "a?": "number" })
 
-		const U = type({ b: o })
+		const U = type({ b: O })
 		attest(U.expression).snap("{ b: { a?: number } }")
 		attest<{
 			b: {
@@ -126,19 +126,19 @@ contextualize(() => {
 	it("symbol key", () => {
 		const s = Symbol()
 		const name = registeredReference(s)
-		const t = type({
+		const T = type({
 			[s]: "string"
 		})
-		attest<{ [s]: string }>(t.infer)
-		attest(t.json).snap({
+		attest<{ [s]: string }>(T.infer)
+		attest(T.json).snap({
 			domain: "object",
 			required: [{ key: name, value: "string" }]
 		})
 	})
 
 	it("serializes to same value but not reference equal", () => {
-		const t = type("===", {})
-		attest(t({}).toString()).snap(
+		const T = type("===", {})
+		attest(T({}).toString()).snap(
 			"must be reference equal to {} (serialized to the same value)"
 		)
 	})
@@ -153,51 +153,51 @@ contextualize(() => {
 	})
 
 	it("nested", () => {
-		const t = type({ "a?": { b: "boolean" } })
-		attest<{ a?: { b: boolean } }>(t.infer)
+		const T = type({ "a?": { b: "boolean" } })
+		attest<{ a?: { b: boolean } }>(T.infer)
 	})
 
 	it("intersections", () => {
 		const a = { "a?": "string" } as const
 		const b = { b: "string" } as const
 		const c = { "c?": "string" } as const
-		const abc = type(a).and(b).and(c)
-		attest<{ a?: string; b: string; c?: string }>(abc.infer)
-		attest(abc.json).equals(type({ ...a, ...b, ...c }).json)
-		attest(abc.json).equals(type([[a, "&", b], "&", c]).json)
+		const Abc = type(a).and(b).and(c)
+		attest<{ a?: string; b: string; c?: string }>(Abc.infer)
+		attest(Abc.json).equals(type({ ...a, ...b, ...c }).json)
+		attest(Abc.json).equals(type([[a, "&", b], "&", c]).json)
 	})
 
 	it("intersection", () => {
-		const t = type({ a: "number" }).and({ b: "boolean" })
+		const T = type({ a: "number" }).and({ b: "boolean" })
 		// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
-		attest(t.infer).type.toString.snap("{ a: number; b: boolean }")
-		attest(t.json).equals(type({ a: "number", b: "boolean" }).json)
+		attest(T.infer).type.toString.snap("{ a: number; b: boolean }")
+		attest(T.json).equals(type({ a: "number", b: "boolean" }).json)
 	})
 
 	it("escaped optional token", () => {
-		const t = type({ "a\\?": "string" })
-		attest<{ "a?": string }>(t.infer)
-		attest(t.json).snap({
+		const T = type({ "a\\?": "string" })
+		attest<{ "a?": string }>(T.infer)
+		attest(T.json).snap({
 			required: [{ key: "a?", value: "string" }],
 			domain: "object"
 		})
 	})
 
 	it("traverse optional", () => {
-		const o = type({ "a?": "string" })
-		attest(o({ a: "a" })).snap({ a: "a" })
-		attest(o({})).snap({})
-		attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
+		const O = type({ "a?": "string" })
+		attest(O({ a: "a" })).snap({ a: "a" })
+		attest(O({})).snap({})
+		attest(O({ a: 1 }).toString()).snap("a must be a string (was a number)")
 	})
 
 	it("optional symbol", () => {
 		const s = Symbol()
 		const keyReference = registeredReference(s)
-		const t = type({
+		const T = type({
 			[s]: type.number.optional()
 		})
-		attest<{ [s]?: number }>(t.infer)
-		attest(t.json).equals({
+		attest<{ [s]?: number }>(T.infer)
+		attest(T.json).equals({
 			optional: [
 				{
 					key: keyReference,
@@ -209,7 +209,7 @@ contextualize(() => {
 	})
 
 	it("morphed", () => {
-		const processForm = type({
+		const ProcessForm = type({
 			bool_value: type("string")
 				.pipe(v => (v === "on" ? true : false))
 				.optional()
@@ -217,22 +217,44 @@ contextualize(() => {
 
 		attest<{
 			bool_value?: (In: string) => Out<boolean>
-		}>(processForm.t)
+		}>(ProcessForm.t)
 		attest<{
 			// key should still be distilled as optional even inside a morph
 			bool_value?: string
-		}>(processForm.inferIn)
+		}>(ProcessForm.inferIn)
 		attest<{
 			// out should also be inferred as optional
 			bool_value?: boolean
-		}>(processForm.infer)
+		}>(ProcessForm.infer)
 
-		attest(processForm({})).snap({})
+		attest(ProcessForm({})).snap({})
 
-		attest(processForm({ bool_value: "on" })).snap({ bool_value: true })
+		attest(ProcessForm({ bool_value: "on" })).snap({ bool_value: true })
 
-		attest(processForm({ bool_value: true }).toString()).snap(
+		attest(ProcessForm({ bool_value: true }).toString()).snap(
 			"bool_value must be a string (was boolean)"
 		)
+	})
+
+	it("required key homomorphic", () => {
+		const T = type({
+			/** FOO */
+			foo: "string"
+		})
+
+		const out = T.assert({ foo: "foo" })
+
+		attest(out.foo).jsdoc.snap("FOO")
+	})
+
+	it("optional value homomorphic", () => {
+		const T = type({
+			/** BAR */
+			bar: "number?"
+		})
+
+		const out = T.assert({})
+
+		attest(out.bar).jsdoc.snap("BAR")
 	})
 })

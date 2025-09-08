@@ -15,7 +15,8 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
 
@@ -120,13 +121,20 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		return this.numberAllowsNaN ? `(${this.expression})` : this.expression
 	}
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return domainDescriptions[this.domain]
 	}
 
-	protected innerToJsonSchema(): JsonSchema.Constrainable {
-		if (this.domain === "bigint" || this.domain === "symbol")
-			return JsonSchema.throwUnjsonifiableError(this.domain)
+	protected innerToJsonSchema(
+		ctx: ToJsonSchema.Context
+	): JsonSchema.Constrainable {
+		if (this.domain === "bigint" || this.domain === "symbol") {
+			return ctx.fallback.domain({
+				code: "domain",
+				base: {},
+				domain: this.domain
+			})
+		}
 		return {
 			type: this.domain
 		}

@@ -3,6 +3,59 @@ import type { anyOrNever, conform } from "./generics.ts"
 import type { isDisjoint } from "./intersections.ts"
 import type { parseNonNegativeInteger } from "./numbers.ts"
 
+type DuplicateData<val = unknown> = { element: val; indices: number[] }
+
+/**
+ * Extracts duplicated elements and their indices from an array, returning them.
+ *
+ * Note that given `a === b && b === c`, then `c === a` must be `true` for this to give accurate results.
+ *
+ * @param arr The array to extract duplicate elements from.
+ */ export const getDuplicatesOf = <const arr extends array>(
+	arr: arr,
+	opts?: ComparisonOptions<arr[number]>
+): DuplicateData<arr[number]>[] => {
+	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
+
+	const elementFirstSeenIndx: Map<arr[number], number> = new Map()
+	const duplicates: DuplicateData<arr[number]>[] = []
+
+	for (const [indx, element] of arr.entries()) {
+		const duplicatesIndx = duplicates.findIndex(duplicate =>
+			isEqual(duplicate.element, element)
+		)
+		if (duplicatesIndx !== -1) {
+			// This is at least the third occurrence of an item equal to `element`,
+			// so add this index to the list of indices where the element is duplicated.
+			duplicates[duplicatesIndx].indices.push(indx)
+			continue
+		}
+
+		// At this point, we know this is either the first
+		// or second occurrence of an item equal to `element`...
+
+		let found = false
+		for (const [existingElement, firstSeenIndx] of elementFirstSeenIndx) {
+			if (isEqual(element, existingElement)) {
+				// This is the second occurrence of an item equal to `element`,
+				// so store it as a duplicate.
+				found = true
+				duplicates.push({
+					element: existingElement,
+					indices: [firstSeenIndx, indx]
+				})
+			}
+		}
+		if (!found) {
+			// We haven't seen this element before,
+			// so just store the index it was first seen
+			elementFirstSeenIndx.set(element, indx)
+		}
+	}
+
+	return duplicates
+}
+
 export type pathToString<
 	segments extends string[],
 	delimiter extends string = "/"
@@ -63,7 +116,10 @@ export type listable<t> = t | readonly t[]
 
 export type flattenListable<t> = t extends array<infer element> ? element : t
 
-export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
+export type minLengthArray<t, minLength extends number> = readonly [
+	...repeat<[t], minLength>,
+	...t[]
+]
 
 export type repeat<t extends array, count extends number> = _repeat<
 	t,
@@ -239,9 +295,8 @@ export const appendUnique = <to extends unknown[]>(
 		return Array.isArray(value) ? (value as never) : ([value] as never)
 
 	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
-	liftArray(value).forEach(v => {
+	for (const v of liftArray(value))
 		if (!to.some(existing => isEqual(existing as never, v as never))) to.push(v)
-	})
 
 	return to
 }

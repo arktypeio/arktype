@@ -1,11 +1,12 @@
 import {
 	Disjoint,
 	intersectNodesRoot,
+	pipeNodesRoot,
 	type BaseParseContext,
 	type BaseRoot,
-	type MetaSchema,
 	type Morph,
 	type Predicate,
+	type TypeMeta,
 	type unwrapDefault
 } from "@ark/schema"
 import {
@@ -22,6 +23,7 @@ import type {
 	distill,
 	inferIntersection,
 	inferMorphOut,
+	inferPipe,
 	inferPredicate,
 	Out,
 	withDefault
@@ -32,6 +34,7 @@ import {
 	shallowOptionalMessage
 } from "./ast/validate.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { BranchOperator } from "./reduce/shared.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
 import type { ArkTypeScanner } from "./shift/scanner.ts"
 import type { BaseCompletions } from "./string.ts"
@@ -40,7 +43,7 @@ export const maybeParseTupleExpression = (
 	def: array,
 	ctx: BaseParseContext
 ): BaseRoot | null =>
-	isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
+	isIndexZeroExpression(def) ? indexZeroParsers[def[0]](def as never, ctx)
 	: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
 	: null
 
@@ -71,6 +74,7 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 	: def[1] extends ":" ?
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
+	: def[1] extends "|>" ? parseTo<def[0], def[2], $, args>
 	: def[1] extends "=" ?
 		withDefault<inferDefinition<def[0], $, args>, unwrapDefault<def[2]>>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
@@ -107,8 +111,9 @@ export type validateIndexOneExpression<
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
+			: def[1] extends "|>" ? validateDefinition<def[2], $, args>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
-			: def[1] extends "@" ? MetaSchema
+			: def[1] extends "@" ? TypeMeta.MappableInput
 			: validateDefinition<def[2], $, args>
 		]
 
@@ -119,21 +124,24 @@ export type UnparsedTupleExpressionInput = {
 
 export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
-export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
+export const parseKeyOfTuple: IndexZeroParser<"keyof"> = (def, ctx) =>
 	ctx.$.parseOwnDefinitionFormat(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
 >
 
-const parseBranchTuple: IndexOneParser<"|" | "&"> = (def, ctx) => {
+const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 
 	const l = ctx.$.parseOwnDefinitionFormat(def[0], ctx)
 	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
 	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
-	const result = intersectNodesRoot(l, r, ctx.$)
+	const result =
+		def[1] === "&" ?
+			intersectNodesRoot(l, r, ctx.$)
+		:	pipeNodesRoot(l, r, ctx.$)
 	if (result instanceof Disjoint) return result.throw()
 	return result
 }
@@ -141,34 +149,11 @@ const parseBranchTuple: IndexOneParser<"|" | "&"> = (def, ctx) => {
 const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) =>
 	ctx.$.parseOwnDefinitionFormat(def[0], ctx).array()
 
-export type IndexOneParser<token extends IndexOneOperator> = (
-	def: IndexOneExpression<token>,
-	ctx: BaseParseContext
-) => BaseRoot
-
-export type PrefixParser<token extends IndexZeroOperator> = (
-	def: IndexZeroExpression<token>,
-	ctx: BaseParseContext
-) => BaseRoot
-
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
 export type TupleExpressionOperator = IndexZeroOperator | IndexOneOperator
 
-export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
-
 export type ArgTwoOperator = Exclude<IndexOneOperator, "?" | "=">
-
-export type TuplePostfixOperator = "[]" | "?"
-
-export type TupleInfixOperator = "&" | "|" | "=>" | "=" | ":" | "@"
-
-export type IndexOneExpression<
-	token extends IndexOneOperator = IndexOneOperator
-> = readonly [unknown, token, ...unknown[]]
-
-const isIndexOneExpression = (def: array): def is IndexOneExpression =>
-	indexOneParsers[def[1] as IndexOneOperator] !== undefined
 
 export const parseMorphTuple: IndexOneParser<"=>"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {
@@ -186,6 +171,11 @@ export const writeMalformedFunctionalExpressionMessage = (
 	`${
 		operator === ":" ? "Narrow" : "Morph"
 	} expression requires a function following '${operator}' (was ${typeof value})`
+
+export type parseTo<inDef, outDef, $, args> = inferPipe<
+	inferDefinition<inDef, $, args>,
+	inferDefinition<outDef, $, args>
+>
 
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
@@ -207,30 +197,50 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 }
 
 const parseAttributeTuple: IndexOneParser<"@"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureShallowDescendants(
-		def[2] as never
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureReferences(
+		def[2] as never,
+		"shallow"
 	)
 
-const indexOneParsers: {
-	[token in IndexOneOperator]: IndexOneParser<token>
-} = {
+export type IndexOneExpression<token extends string = IndexOneOperator> =
+	readonly [unknown, token, ...unknown[]]
+
+type IndexOneParser<token extends string> = (
+	def: IndexOneExpression<token>,
+	ctx: BaseParseContext
+) => BaseRoot
+
+const defineIndexOneParsers = <parsers>(parsers: {
+	[k in keyof parsers & string]: IndexOneParser<k>
+}) => parsers
+
+const postfixParsers = defineIndexOneParsers({
 	"[]": parseArrayTuple,
+	"?": () => throwParseError(shallowOptionalMessage)
+})
+
+export type TuplePostfixOperator = keyof typeof postfixParsers
+
+const infixParsers = defineIndexOneParsers({
 	"|": parseBranchTuple,
 	"&": parseBranchTuple,
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
+	"|>": parseBranchTuple,
 	"@": parseAttributeTuple,
 	// since object and tuple literals parse there via `parseProperty`,
 	// they must be shallow if parsed directly as a tuple expression
-	"=": () => throwParseError(shallowDefaultableMessage),
-	"?": () => throwParseError(shallowOptionalMessage)
-}
+	"=": () => throwParseError(shallowDefaultableMessage)
+})
 
-export type IndexZeroOperator = "keyof" | "instanceof" | "==="
+export type TupleInfixOperator = keyof typeof infixParsers
 
-export type IndexZeroExpression<
-	token extends IndexZeroOperator = IndexZeroOperator
-> = readonly [token, ...unknown[]]
+const indexOneParsers = { ...postfixParsers, ...infixParsers }
+
+export type IndexOneOperator = keyof typeof indexOneParsers
+
+const isIndexOneExpression = (def: array): def is IndexOneExpression =>
+	indexOneParsers[def[1] as IndexOneOperator] !== undefined
 
 export type InfixExpression = readonly [
 	unknown,
@@ -238,9 +248,21 @@ export type InfixExpression = readonly [
 	...unknown[]
 ]
 
-const prefixParsers: {
-	[token in IndexZeroOperator]: PrefixParser<token>
-} = {
+type IndexZeroParser<token extends string> = (
+	def: IndexZeroExpression<token>,
+	ctx: BaseParseContext
+) => BaseRoot
+
+type IndexZeroExpression<token extends string = IndexZeroOperator> = readonly [
+	token,
+	...unknown[]
+]
+
+const defineIndexZeroParsers = <parsers>(parsers: {
+	[k in keyof parsers & string]: IndexZeroParser<k>
+}) => parsers
+
+const indexZeroParsers = defineIndexZeroParsers({
 	keyof: parseKeyOfTuple,
 	instanceof: (def, ctx) => {
 		if (typeof def[1] !== "function") {
@@ -262,10 +284,12 @@ const prefixParsers: {
 			:	ctx.$.node("union", { branches })
 	},
 	"===": (def, ctx) => ctx.$.units(def.slice(1))
-}
+})
+
+export type IndexZeroOperator = keyof typeof indexZeroParsers
 
 const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>
-	prefixParsers[def[0] as IndexZeroOperator] !== undefined
+	indexZeroParsers[def[0] as IndexZeroOperator] !== undefined
 
 export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind

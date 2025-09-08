@@ -16,17 +16,17 @@ contextualize(() => {
 
 	describe("json", () => {
 		it("root", () => {
-			const json = type("object.json")
+			const Json = type("object.json")
 
-			attest<Json>(json.t)
-			attest<Json>(json.infer)
-			attest<Json>(json.inferIn)
+			attest<Json>(Json.t)
+			attest<Json>(Json.infer)
+			attest<Json>(Json.inferIn)
 
-			attest(json({})).equals({})
-			attest(json([])).equals([])
-			attest(json(5)?.toString()).snap("must be an object or an array (was 5)")
-			attest(json({ foo: [5n] })?.toString()).snap(
-				"foo[0] must be an object (was a bigint) or must be an array (was object)"
+			attest(Json({})).equals({})
+			attest(Json([])).equals([])
+			attest(Json(5)?.toString()).snap("must be an object (was a number)")
+			attest(Json({ foo: [5n] })?.toString()).snap(
+				'foo["0"] must be an object, a number, a string, false, null or true (was 5n) or foo must be a number, a string, false, null or true (was ["5n"])'
 			)
 		})
 
@@ -39,7 +39,7 @@ contextualize(() => {
 
 			// this error kind of sucks, would not be sad if it was discriminated and changed
 			attest(stringify({ foo: undefined }).toString()).snap(
-				"foo must be an object (was undefined) or must be an array (was object)"
+				"foo must be an object, a number, a string, false, null or true (was undefined)"
 			)
 
 			// has declared out
@@ -65,12 +65,12 @@ contextualize(() => {
 		})
 
 		it("invoked", () => {
-			const t = keywords.Array.liftFrom({ data: "number" })
+			const T = keywords.Array.liftFrom({ data: "number" })
 
-			attest(t.t).type.toString.snap(`(
+			attest(T.t).type.toString.snap(`(
 	In: { data: number } | { data: number }[]
 ) => To<{ data: number }[]>`)
-			attest(t.expression).snap(
+			attest(T.expression).snap(
 				"(In: { data: number } | { data: number }[]) => Out<{ data: number }[]>"
 			)
 		})

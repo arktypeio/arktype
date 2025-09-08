@@ -3,17 +3,17 @@ import { rootSchema } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
-	it("builtin prototypes", () => {
-		const a = type({
+	it("built-in prototypes", () => {
+		const A = type({
 			age: "number"
 		})
 
-		const b = type({
-			ages: a.array()
+		const B = type({
+			ages: A.array()
 		})
 
-		const c = rootSchema(b.json as never)
+		const C = rootSchema(B.json as never)
 
-		attest(b.json).equals(c.json)
+		attest(B.json).equals(C.json)
 	})
 })

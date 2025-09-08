@@ -14,8 +14,9 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
@@ -81,6 +82,15 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 			...defineRightwardIntersections("alias", (l, r, ctx) => {
 				if (r.isUnknown()) return l
 				if (r.isNever()) return r
+				if (r.isBasis() && !r.overlaps($ark.intrinsic.object)) {
+					// can be more robust as part of https://github.com/arktypeio/arktype/issues/1026
+					return Disjoint.init(
+						"assignability",
+						$ark.intrinsic.object as never,
+						r
+					)
+				}
+
 				return ctx.$.lazilyResolve(
 					() => neverIfDisjoint(intersectOrPipeNodes(l.resolution, r, ctx)),
 					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
@@ -139,12 +149,12 @@ Resolution: ${printable(resolution)}`)
 		)
 	}
 
-	get shortDescription(): string {
+	get defaultShortDescription(): string {
 		return domainDescriptions.object
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
-		return JsonSchema.throwUnjsonifiableError(this.expression, "cyclic")
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		return this.resolution.toJsonSchemaRecurse(ctx)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

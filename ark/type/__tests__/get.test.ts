@@ -4,18 +4,18 @@ import { keywords, type } from "arktype"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
-		const t = type({
+		const T = type({
 			foo: "string",
 			bar: "number|bigint"
 		})
 
-		const a = t.get("bar")
+		const a = T.get("bar")
 		attest<number | bigint>(a.infer)
 		attest(a.expression).snap("bigint | number")
 	})
 
 	it("can get deep roots by path", () => {
-		const t = type({
+		const T = type({
 			foo: {
 				baz: "1"
 			},
@@ -24,17 +24,17 @@ contextualize(() => {
 			}
 		})
 
-		const a = t.get("foo", "baz")
+		const a = T.get("foo", "baz")
 		attest<1>(a.t)
 		attest(a.expression).snap("1")
 
-		const b = t.get("bar", "quux")
+		const b = T.get("bar", "quux")
 		attest<2>(b.t)
 		attest(b.expression).snap("2")
 	})
 
 	it("can merge across a deep union", () => {
-		const base = type(
+		const Base = type(
 			{
 				foo: {
 					bar: "0"
@@ -48,29 +48,29 @@ contextualize(() => {
 			}
 		)
 
-		const t = base.get("foo", "bar")
+		const T = Base.get("foo", "bar")
 
-		attest<0 | 1>(t.infer)
-		attest(t.expression).snap("0 | 1")
+		attest<0 | 1>(T.infer)
+		attest(T.expression).snap("0 | 1")
 	})
 
 	it("can get index keys", () => {
-		const t = type({
+		const T = type({
 			"[/^f/]": "0",
 			named: "1"
 		})
 
-		const a = t.get("foo")
+		const a = T.get("foo")
 		attest<0>(a.t)
 		attest(a.expression).snap("undefined | 0")
 
-		attest(() => t.get("bar")).throws(
-			writeInvalidKeysMessage(t.expression, ["bar"])
+		attest(() => T.get("bar")).throws(
+			writeInvalidKeysMessage(T.expression, ["bar"])
 		)
 	})
 
 	it("named and multiple indices", () => {
-		const t = type({
+		const T = type({
 			"[/^f/]": {
 				a: "1"
 			},
@@ -78,16 +78,16 @@ contextualize(() => {
 			foof: { c: "1" }
 		})
 
-		const a = t.get("foo")
+		const a = T.get("foo")
 
 		attest<{ a: 1 } | { b: 1 }>(a.infer)
 		attest(a.expression).snap("{ a: 1 } | undefined")
 
-		const b = t.get("oof")
+		const b = T.get("oof")
 		attest<{ a: 1 } | { b: 1 }>(b.infer)
 		attest(b.expression).snap("{ b: 1 } | undefined")
 
-		const c = t.get("fof" as string)
+		const c = T.get("fof" as string)
 		attest<
 			| {
 					a: 1
@@ -96,96 +96,121 @@ contextualize(() => {
 		>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
-		const d = t.get("foof")
+		const d = T.get("foof")
 
 		attest<{ c: 1 }>(d.infer)
 		attest(d.expression).snap("{ a: 1, b: 1, c: 1 }")
 
-		attest(() => t.get("goog").expression).throws(
-			writeInvalidKeysMessage(t.expression, ["goog"])
+		attest(() => T.get("goog").expression).throws(
+			writeInvalidKeysMessage(T.expression, ["goog"])
 		)
 	})
 
 	it("optional key adds undefined", () => {
-		const t = type({
+		const T = type({
 			"foo?": "null"
 		})
 
-		const a = t.get("foo")
+		const a = T.get("foo")
 		attest<null | undefined>(a.t)
 		attest(a.expression).snap("undefined | null")
 	})
 
 	it("non-fixed array", () => {
-		const t = type("string[]")
+		const T = type("string[]")
 
-		const a = t.get("0")
+		const a = T.get("0")
 		attest<string>(a.infer)
 		attest(a.expression).snap("string | undefined")
 
 		// @ts-expect-error
-		attest(() => t.get("-1")).throws(
-			writeInvalidKeysMessage(t.expression, ["-1"])
+		attest(() => T.get("-1")).throws(
+			writeInvalidKeysMessage(T.expression, ["-1"])
 		)
 		// @ts-expect-error
-		attest(() => t.get("5.5")).throws(
-			writeInvalidKeysMessage(t.expression, ["5.5"])
+		attest(() => T.get("5.5")).throws(
+			writeInvalidKeysMessage(T.expression, ["5.5"])
 		)
 
-		attest(t.get(type.arrayIndex).expression).snap("string | undefined")
+		attest(T.get(type.arrayIndex).expression).snap("string | undefined")
 	})
 
-	it("number access on non-variadic", () => {
-		const t = type({ foo: "number" }).array()
+	it("array specific-index access access on non-tuple", () => {
+		const T = type({ foo: "number" }).array()
+
+		attest(T.get(0).expression).snap("{ foo: number } | undefined")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1261
+	it("nested index access on non-tuple", () => {
+		const Simple = type({
+			id: "number",
+			array: type({
+				name: "string",
+				age: "number"
+			}).array()
+		})
+
+		const Arr = Simple.get("array")
+		const InnerArr = Arr.get(0)
+
+		attest(InnerArr.expression).snap(
+			"{ age: number, name: string } | undefined"
+		)
+		InnerArr.assert({ name: "Rico", age: 25 })
+	})
+
+	it("number access on non-tuple", () => {
+		const T = type({ foo: "number" }).array()
 
 		// @ts-expect-error
-		attest(() => t.get(keywords.number.root)).throws(
-			writeNumberIndexMessage("number", t.expression)
+		attest(() => T.get(type.number)).throws(
+			writeNumberIndexMessage("number", T.expression)
 		)
 
 		// number subtype
 		// @ts-expect-error
-		attest(() => t.get(keywords.number.integer)).throws(
-			writeNumberIndexMessage("number % 1", t.expression)
+		attest(() => T.get(keywords.number.integer)).throws(
+			writeNumberIndexMessage("number % 1", T.expression)
 		)
 	})
 
 	it("tuple", () => {
-		const t = type(["1", "2?"])
+		const T = type(["1", "2?"])
 
 		// fixed
-		const a = t.get(0)
+		const a = T.get(0)
 		attest<1>(a.infer)
 		attest(a.expression).snap("1")
-		const b = t.get(1)
+		const b = T.get(1)
 		attest<2 | undefined>(b.infer)
 		attest(b.expression).snap("undefined | 2")
 
 		// out of bounds
 		// @ts-expect-error
-		attest(() => t.get(2)).throws(writeInvalidKeysMessage(t.expression, ["2"]))
+		attest(() => T.get(2)).throws(writeInvalidKeysMessage(T.expression, ["2"]))
 	})
 
 	it("variadic tuple", () => {
-		const t = type(["1", "2", "...", "3[]", "4", "5"])
+		const T = type(["1", "2", "...", "3[]", "4", "5"])
 
 		// fixed
-		const a = t.get(0)
+		const a = T.get(0)
 		attest<1>(a.t)
 		attest(a.expression).snap("1")
 
-		const b = t.get(1)
+		const b = T.get(1)
 		attest<2>(b.t)
 		attest(b.expression).snap("2")
 
 		// variadic
 		// based on length, we could narrow this to remove undefined in the future
-		attest(t.get("2").expression).snap("undefined | 3 | 4 | 5")
-		attest(t.get("100").expression).snap("undefined | 3 | 4 | 5")
+		attest(T.get("2").expression).snap("undefined | 3 | 4 | 5")
+		attest(T.get("100").expression).snap("undefined | 3 | 4 | 5")
 	})
 
 	it("deep", () => {
-		const t = type({
+		const T = type({
 			foo: {
 				"[symbol]": {
 					bar: "1",
@@ -194,16 +219,16 @@ contextualize(() => {
 			}
 		})
 
-		const bar = t.get("foo", keywords.symbol, "bar")
+		const bar = T.get("foo", keywords.symbol, "bar")
 		attest<1>(bar.t)
 		attest(bar.expression).snap("undefined | 1")
 
-		const baz = t.get("foo", keywords.symbol, "baz")
+		const baz = T.get("foo", keywords.symbol, "baz")
 		attest<2 | undefined>(baz.t)
 		attest(baz.expression).snap("undefined | 2")
 
 		// @ts-expect-error
-		attest(() => t.get("foo", keywords.symbol, "")).completions({
+		attest(() => T.get("foo", keywords.symbol, "")).completions({
 			"": ["bar", "baz"]
 		})
 	})

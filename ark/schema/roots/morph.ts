@@ -16,8 +16,9 @@ import {
 	type RootKind
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -52,6 +53,13 @@ export declare namespace Morph {
 		}> {}
 
 	export type Node = MorphNode
+
+	export type In<morph extends Morph> = morph extends Morph<infer i> ? i : never
+
+	export type Out<morph extends Morph> =
+		morph extends Morph<never, infer o> ? o : never
+
+	export type ContextFree<i = any, o = unknown> = (In: i) => o
 }
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: Traversal) => o
@@ -152,7 +160,14 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		this.lastMorphIfNode ?
 			Object.assign(this.referencesById, this.lastMorphIfNode.referencesById) &&
 			this.lastMorphIfNode.out
-		:	undefined;
+		:	undefined
+
+	get shallowMorphs(): array<Morph> {
+		// if the morph input is a union, it should not contain any other shallow morphs
+		return Array.isArray(this.inner.in?.shallowMorphs) ?
+				[...this.inner.in.shallowMorphs, ...this.morphs]
+			:	this.morphs
+	}
 
 	override get in(): BaseRoot {
 		return (
@@ -182,14 +197,18 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		})
 	}
 
-	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
+	expression = `(In: ${this.in.expression}) => ${this.lastMorphIfNode ? "To" : "Out"}<${this.out.expression}>`
 
-	get shortDescription(): string {
-		return this.in.shortDescription
+	get defaultShortDescription(): string {
+		return this.in.meta.description ?? this.in.defaultShortDescription
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
-		return JsonSchema.throwUnjsonifiableError(this.expression, "morph")
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		return ctx.fallback.morph({
+			code: "morph",
+			base: this.in.toJsonSchemaRecurse(ctx),
+			out: this.introspectableOut?.toJsonSchemaRecurse(ctx) ?? null
+		})
 	}
 
 	compile(js: NodeCompiler): void {
@@ -211,7 +230,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
-	hasEqualMorphs(r: MorphNode): boolean {
+	override hasEqualMorphs(r: MorphNode): boolean {
 		return arrayEquals(this.morphs, r.morphs, {
 			isEqual: (lMorph, rMorph) =>
 				lMorph === rMorph ||

@@ -186,7 +186,7 @@ contextualize(() => {
 			>
 		>(types)
 
-		const t = types.baz.or({
+		const T = types.baz.or({
 			foo: "foo",
 			bar: "bar",
 			baz: "baz"
@@ -206,9 +206,9 @@ contextualize(() => {
 					baz: 1
 				}
 			>
-		>(t)
-		attest(t.expression).snap("{ bar: 1, baz: 1, foo: 1 } | 1")
-		attest(t.$.json).snap({
+		>(T)
+		attest(T.expression).snap("{ bar: 1, baz: 1, foo: 1 } | 1")
+		attest(T.$.json).snap({
 			foo: { unit: 1 },
 			bar: { unit: 1 },
 			baz: { unit: 1 }
@@ -264,7 +264,7 @@ contextualize(() => {
 		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("kekw"))
 	})
 
-	it("errors on public and private refrence with same name", () => {
+	it("errors on public and private reference with same name", () => {
 		attest(() =>
 			scope({
 				kekw: "1",
@@ -287,10 +287,10 @@ contextualize(() => {
 			"#bar<t>": ["t"]
 		}).export()
 
-		const expected = type(["string"]).array()
+		const Expected = type(["string"]).array()
 
-		attest<typeof expected.t>(types.foo.t)
+		attest<typeof Expected.t>(types.foo.t)
 		attest(types.foo.expression).snap("[string][]")
-		attest(types.foo.expression).equals(expected.expression)
+		attest(types.foo.expression).equals(Expected.expression)
 	})
 })

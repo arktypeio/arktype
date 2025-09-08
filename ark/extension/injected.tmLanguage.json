@@ -1,0 +1,176 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "InjectedArkTypeScript",
+	"scopeName": "source.arktype.injection.ts",
+	"injectionSelector": "L:source.ts - comment, L:source.tsx - comment, L:source.js - comment, L:source.jsx - comment, L:source.mdx - comment, L:meta.embedded.block.typescript - comment, L:meta.embedded.block.typescriptreact - comment, L:meta.embedded.block.javascript - comment",
+	"patterns": [
+		{
+			"include": "#arkDefinition"
+		},
+		{
+			"include": "#arkChained"
+		}
+	],
+	"repository": {
+		"arkDefinition": {
+			"contentName": "meta.embedded.arktype.definition",
+			"begin": "([^\\)\\(\\s]+)?(\\.)?\\b(type|generic|scope|define|match|fn|module|[aA]rk[a-zA-Z]*)(\\()",
+			"beginCaptures": {
+				"2": {
+					"name": "punctuation.accessor.ts"
+				},
+				"3": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#arkAll"
+				}
+			]
+		},
+		"arkChained": {
+			"contentName": "meta.embedded.arktype.definition",
+			"begin": "([^\\)\\(\\s]+)?(\\.)\\b(and|or|case|in|extends|ifExtends|intersect|merge|exclude|extract|overlaps|subsumes|to|satisfies)(\\()",
+			"beginCaptures": {
+				"2": {
+					"name": "punctuation.accessor.ts"
+				},
+				"3": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#arkAll"
+				}
+			]
+		},
+		"arkQuoted": {
+			"match": "([\"'`])(.*?)(\\\\)*(\\1)",
+			"captures": {
+				"1": {
+					"name": "string.quoted"
+				},
+				"2": {
+					"patterns": [
+						{
+							"include": "#arkOperator"
+						},
+						{
+							"include": "#arkRegex"
+						},
+						{
+							"name": "keyword.operator",
+							"match": "[^ \\w]"
+						},
+						{
+							"include": "source.ts#type"
+						}
+					]
+				},
+				"4": {
+					"name": "string.quoted"
+				}
+			}
+		},
+		"arkRegex": {
+			"match": "(\\/)(.*?)(\\\\)*(\\1)",
+			"captures": {
+				"1": { "name": "keyword.operator" },
+				"2": {
+					"patterns": [
+						{
+							"name": "entity.name.type.ts",
+							"match": "[A-Za-z]"
+						},
+						{
+							"name": "constant.numeric.decimal.ts",
+							"match": "[0-9]"
+						},
+						{
+							"name": "keyword.operator",
+							"match": "[^ \\w]"
+						},
+						{ "include": "#arkOperator" },
+						{ "include": "#arkQuoted" }
+					]
+				},
+				"4": { "name": "keyword.operator" }
+			}
+		},
+		"arkOperator": {
+			"name": "keyword.operator",
+			"match": "[<>=%`'&]|\""
+		},
+		"arkObject": {
+			"begin": "(\\s*)?\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.block.ts"
+				}
+			},
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.block.ts"
+				}
+			},
+			"patterns": [
+				{
+					"match": "\\w+\\:",
+					"name": "meta.object-literal.key.ts"
+				},
+				{
+					"include": "#arkAll"
+				}
+			]
+		},
+		"arkTuple": {
+			"begin": "(\\s*)?\\[",
+			"end": "\\]",
+			"patterns": [
+				{
+					"include": "#arkAll"
+				}
+			]
+		},
+		"arkAll": {
+			"patterns": [
+				{
+					"include": "#arkObject"
+				},
+				{
+					"include": "#arkTuple"
+				},
+				{
+					"include": "#arkQuoted"
+				},
+				{
+					"include": "source.ts#comment"
+				},
+				{
+					"include": "source.ts"
+				}
+			]
+		}
+	}
+}

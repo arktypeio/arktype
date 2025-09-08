@@ -20,16 +20,16 @@ contextualize(() => {
 		it("unary", () => {
 			const boxOf = type("<t>", { box: "t" })
 
-			const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
+			const SchrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
 
-			const expected = type({
+			const Expected = type({
 				box: {
 					cat: { isAlive: "boolean" }
 				}
 			})
 
-			attest<typeof expected.t>(schrodingersBox.t)
-			attest(schrodingersBox.json).equals(expected.json)
+			attest<typeof Expected.t>(SchrodingersBox.t)
+			attest(SchrodingersBox.json).equals(Expected.json)
 		})
 
 		it("body completions", () => {
@@ -48,12 +48,12 @@ contextualize(() => {
 
 		it("binary", () => {
 			const either = type("<first, second>", "first|second")
-			const schrodingersBox = either(
+			const SchrodingersBox = either(
 				{ cat: { isAlive: "true" } },
 				{ cat: { isAlive: "false" } }
 			)
 
-			const expected = type(
+			const Expected = type(
 				{
 					cat: {
 						isAlive: "true"
@@ -67,10 +67,10 @@ contextualize(() => {
 				}
 			)
 
-			attest<typeof expected.t>(schrodingersBox.t)
+			attest<typeof Expected.t>(SchrodingersBox.t)
 			// ideally, this would be reduced to { cat: { isAlive: boolean } }:
 			// https://github.com/arktypeio/arktype/issues/751
-			attest(schrodingersBox.json).equals(expected.json)
+			attest(SchrodingersBox.json).equals(Expected.json)
 		})
 
 		it("referenced from other scope", () => {
@@ -78,11 +78,11 @@ contextualize(() => {
 				arrayOf: type("<t>", "t[]")
 			}).export()
 
-			const stringArray = types.arrayOf("string")
-			const expected = type("string[]")
+			const StringArray = types.arrayOf("string")
+			const Expected = type("string[]")
 
-			attest<typeof expected.t>(stringArray.t)
-			attest(stringArray.json).equals(expected.json)
+			attest<typeof Expected.t>(StringArray.t)
+			attest(StringArray.json).equals(Expected.json)
 		})
 
 		it("this not resolvable in generic def", () => {
@@ -98,12 +98,13 @@ contextualize(() => {
 			const boxOf = type("<t>", {
 				box: "t"
 			})
-			const t = boxOf({
-				a: "string|this"
+
+			const T = boxOf({
+				a: "string | this"
 			})
 
-			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
-			attest(t.expression).satisfies(/{ box: { a: type\d+ \| string } }/)
+			attest(T.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
+			attest(T.expression).satisfies(/{ box: { a: type\d+ \| string } }/)
 		})
 
 		it("too few args", () => {
@@ -127,11 +128,11 @@ contextualize(() => {
 		const testNonEmpty = (
 			nonEmpty: Generic<[["arr", unknown[]]], "arr > 0", {}>
 		) => {
-			const t = nonEmpty("number[]")
-			const expected = type("number[] > 0")
+			const T = nonEmpty("number[]")
+			const Expected = type("number[] > 0")
 
-			attest<typeof expected.t>(t.t)
-			attest(t.expression).equals(expected.expression)
+			attest<typeof Expected.t>(T.t)
+			attest(T.expression).equals(Expected.expression)
 		}
 
 		it("can apply constraints to parameters", () => {
@@ -147,11 +148,11 @@ contextualize(() => {
 		it("constrained constraint", () => {
 			const positiveToInteger = type("<n extends number > 0>", "n % 1")
 
-			const t = positiveToInteger("number > 0")
-			const expected = type("number.integer > 0")
+			const T = positiveToInteger("number > 0")
+			const Expected = type("number.integer > 0")
 
-			attest<typeof expected.t>(t.t)
-			attest(t.expression).equals(expected.expression)
+			attest<typeof Expected.t>(T.t)
+			attest(T.expression).equals(Expected.expression)
 			attest(() => positiveToInteger("number")).throws(
 				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
 			)
@@ -165,10 +166,10 @@ contextualize(() => {
 
 			const types = $.export()
 
-			const expected = type(["'foo'", "'bar'"])
+			const Expected = type(["'foo'", "'bar'"])
 
-			attest<typeof expected.t>(types.foobar.t)
-			attest(types.foobar.expression).equals(expected.expression)
+			attest<typeof Expected.t>(types.foobar.t)
+			attest(types.foobar.expression).equals(Expected.expression)
 
 			// @ts-expect-error
 			attest(() => $.type("entry<0, 1>")).throwsAndHasTypeError(
@@ -184,10 +185,10 @@ contextualize(() => {
 
 			const types = $.export()
 
-			const ok = types.entry("string", "number")
+			const Ok = types.entry("string", "number")
 
-			attest<[string, number]>(ok.t)
-			attest(ok.expression).snap("[string, number]")
+			attest<[string, number]>(Ok.t)
+			attest(Ok.expression).snap("[string, number]")
 			// @ts-expect-error
 			attest(() => types.entry("boolean", "number"))
 				.throws(
@@ -252,41 +253,41 @@ contextualize(() => {
 		},
 		it => {
 			it("referenced in scope", ({ types }) => {
-				const expected = type({ box: "0|1" })
+				const Expected = type({ box: "0|1" })
 
-				attest(types.bitBox.json).equals(expected.json)
-				attest<typeof expected.t>(types.bitBox.t)
+				attest(types.bitBox.json).equals(Expected.json)
+				attest<typeof Expected.t>(types.bitBox.t)
 			})
 
 			it("nested", ({ $ }) => {
-				const t = $.type("box<0|1, box<'one', 'zero'>>")
+				const T = $.type("box<0|1, box<'one', 'zero'>>")
 
-				const expected = type({ box: ["0|1", "|", { box: "'one'|'zero'" }] })
+				const Expected = type({ box: ["0|1", "|", { box: "'one'|'zero'" }] })
 
-				attest<typeof expected.t>(t.t)
-				attest(t.json).equals(expected.json)
+				attest<typeof Expected.t>(T.t)
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("in expression", ({ $ }) => {
-				const t = $.type("string | box<0, 1> | boolean")
+				const T = $.type("string | box<0, 1> | boolean")
 
-				const expected = type("string|boolean", "|", { box: "0|1" })
+				const Expected = type("string|boolean", "|", { box: "0|1" })
 
-				attest<typeof expected.t>(t.t)
-				attest(t.json).equals(expected.json)
+				attest<typeof Expected.t>(T.t)
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("right bounds", ({ $ }) => {
 				// should be able to differentiate between > that is part of a right
 				// bound and > that closes a generic instantiation
-				const t = $.type("box<number>5, string>=7>")
+				const T = $.type("box<number>5, string>=7>")
 
-				const expected = type({
+				const Expected = type({
 					box: "number>5|string>=7"
 				})
 
-				attest<typeof expected.t>(t.t)
-				attest(t.json).equals(expected.json)
+				attest<typeof Expected.t>(T.t)
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("unclosed instantiation", ({ $ }) => {
@@ -337,19 +338,19 @@ contextualize(() => {
 
 			it("parameter supercedes alias with same name", () => {
 				const types = scope({
-					"box<foo>": {
-						box: "foo|bar"
+					"box<Foo>": {
+						box: "Foo|Bar"
 					},
-					foo: "'foo'",
-					bar: "'bar'"
+					Foo: "'foo'",
+					Bar: "'bar'"
 				}).export()
 
-				const t = types.box("'baz'")
+				const T = types.box("'baz'")
 
-				const expected = type({ box: "'bar' | 'baz'" })
+				const Expected = type({ box: "'bar' | 'baz'" })
 
-				attest<typeof expected.t>(t.t)
-				attest(t.json).equals(expected.json)
+				attest<typeof Expected.t>(T.t)
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("declaration and instantiation leading and trailing whitespace", () => {
@@ -360,12 +361,12 @@ contextualize(() => {
 					actual: "  box  < 'foo'  ,   'bar'  > "
 				}).export()
 
-				const expected = type({
+				const Expected = type({
 					box: "'foo' | 'bar'"
 				})
 
-				attest<typeof expected.t>(types.actual.t)
-				attest(expected.json).equals(types.actual.json)
+				attest<typeof Expected.t>(types.actual.t)
+				attest(Expected.json).equals(types.actual.json)
 			})
 
 			it("allows external scope reference to be resolved", () => {
@@ -379,10 +380,10 @@ contextualize(() => {
 					internal: "orExternal<'internal'>"
 				}).export()
 
-				const expected = type("'internal' | 'external'")
+				const Expected = type("'internal' | 'external'")
 
-				attest<typeof expected.t>(b.internal.t)
-				attest(b.internal.json).equals(expected.json)
+				attest<typeof Expected.t>(b.internal.t)
+				attest(b.internal.json).equals(Expected.json)
 			})
 
 			it("empty string in declaration", () => {
@@ -402,9 +403,9 @@ contextualize(() => {
 		attest(() =>
 			g({
 				// @ts-expect-error
-				foo: "numb",
+				Foo: "numb",
 				// @ts-expect-error
-				bar: "big"
+				Bar: "big"
 			})
 		).completions({
 			numb: ["number"],
@@ -423,18 +424,18 @@ contextualize(() => {
 			])({ boxOf: "t" }),
 		it => {
 			it("valid", g => {
-				const t = g({
+				const T = g({
 					foo: "number"
 				})
 
-				const expected = type({
+				const Expected = type({
 					boxOf: {
 						foo: "number"
 					}
 				})
 
-				attest<typeof expected.t>(t.t)
-				attest(t.expression).equals(expected.expression)
+				attest<typeof Expected.t>(T.t)
+				attest(T.expression).equals(Expected.expression)
 			})
 
 			it("invalid", g => {
@@ -480,10 +481,10 @@ contextualize(() => {
 			it("is available on type", () => {
 				const nonEmpty = type.generic(["s", "string"])("s > 0")
 
-				const expected = type("string.alpha > 0")
+				const Expected = type("string.alpha > 0")
 				const actual = nonEmpty("string.alpha")
-				attest<typeof expected>(actual)
-				attest(actual.expression).equals(expected.expression)
+				attest<typeof Expected>(actual)
+				attest(actual.expression).equals(Expected.expression)
 			})
 		}
 	)
@@ -508,7 +509,7 @@ contextualize(() => {
 				}
 			)
 
-			const t = validateExternalGeneric({
+			const T = validateExternalGeneric({
 				name: "string",
 				age: "number"
 			})
@@ -518,9 +519,9 @@ contextualize(() => {
 					name: string
 					age: number
 				}>
-			>(t.t)
+			>(T.t)
 
-			attest(t.json).snap({
+			attest(T.json).snap({
 				required: [
 					{
 						key: "data",
@@ -553,7 +554,7 @@ contextualize(() => {
 				}
 			)
 
-			const t = validateExternalGeneric("string", { value: "1" })
+			const T = validateExternalGeneric("string", { value: "1" })
 
 			attest<
 				[
@@ -562,9 +563,9 @@ contextualize(() => {
 						value: 1
 					}
 				]
-			>(t.t)
+			>(T.t)
 
-			attest(t.expression).snap("[string >= 1, { value: 1 }]")
+			attest(T.expression).snap("[string >= 1, { value: 1 }]")
 
 			// @ts-expect-error
 			attest(() => validateExternalGeneric("string", { value: "string" }))
@@ -621,8 +622,110 @@ contextualize(() => {
 					}
 				}).export()
 			).type.errors.snap(
-				'Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... "\'.'
+				'Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... "\'.'
 			)
+		})
+	})
+
+	it("assignability rules", () => {
+		// like Type methods, generic invocation needs to return:
+		//  	r extends infer _ ? _ : never
+		// or similar to avoid breaking assignability
+
+		it("unary", () => {
+			const unary = type("<t>", "t")
+
+			unary("0") satisfies type<0>
+			// @ts-expect-error
+			attest(() => unary("0") satisfies type<null>).type.errors(
+				"not assignable to type 'null'"
+			)
+		})
+
+		it("binary", () => {
+			const binary = type("<t, u>", "t | u")
+
+			binary("0", "1") satisfies type<0 | 1>
+			// @ts-expect-error
+			attest(() => binary("0", "1") satisfies type<string>).type.errors(
+				"not assignable to type 'string'"
+			)
+		})
+
+		it("ternary", () => {
+			const ternary = type("<t, u, v>", "t | u | v")
+
+			ternary("0", "1", "2") satisfies type<0 | 1 | 2>
+			// @ts-expect-error
+			attest(() => ternary("0", "1", "2") satisfies type<0>).type.errors(
+				"not assignable to type '0'"
+			)
+		})
+
+		it("quaternary", () => {
+			const quaternary = type("<t, u, v, w>", "t | u | v | w")
+
+			quaternary("0", "1", "2", "3") satisfies type<0 | 1 | 2 | 3>
+
+			attest(
+				// @ts-expect-error
+				() => quaternary("0", "1", "2", "3") satisfies type<string>
+			).type.errors("not assignable to type 'string'")
+		})
+
+		it("quinary", () => {
+			const quinary = type("<t, u, v, w, x>", "t | u | v | w | x")
+
+			quinary("0", "1", "2", "3", "4") satisfies type<0 | 1 | 2 | 3 | 4>
+
+			attest(
+				// @ts-expect-error
+				() => quinary("0", "1", "2", "3", "4") satisfies type<null>
+			).type.errors("not assignable to type 'null'")
+		})
+
+		it("senary", () => {
+			const senary = type("<t, u, v, w, x, y>", "t | u | v | w | x | y")
+
+			senary("0", "1", "2", "3", "4", "5") satisfies type<0 | 1 | 2 | 3 | 4 | 5>
+
+			attest(
+				// @ts-expect-error
+				() => senary("0", "1", "2", "3", "4", "5") satisfies type<boolean>
+			).type.errors("not assignable to type 'boolean'")
+		})
+	})
+
+	describe("external", () => {
+		it("docs def", () => {
+			const createBox = <const def>(
+				of: type.validate<def>
+			): type.instantiate<{ of: def }> =>
+				type.raw({
+					box: of
+				}) as never
+
+			const BoxType = createBox("string")
+
+			attest<{ of: string }>(BoxType.t)
+		})
+
+		it("docs def", () => {
+			const createBox = <const def>(
+				of: type.validate<def>
+			): type.instantiate<{ of: def }> =>
+				type.raw({
+					box: of
+				}) as never
+
+			const BoxType = createBox("string")
+
+			// @ts-expect-error
+			attest(() => createBox("str")).completions({
+				str: ["string"]
+			})
+
+			attest<{ of: string }>(BoxType.t)
 		})
 	})
 })

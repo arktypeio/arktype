@@ -1,2 +1,2 @@
 export const baseDiagnosticTscCmd =
-	"pnpm tsc --noEmit --extendedDiagnostics --incremental false --tsBuildInfoFile null"
+	"npm exec -- tsc --noEmit --extendedDiagnostics --incremental false --tsBuildInfoFile null"

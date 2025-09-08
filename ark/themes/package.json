@@ -1,0 +1,57 @@
+{
+	"name": "arkthemes",
+	"displayName": "ArkThemes",
+	"description": "A collection of themes with special highlighting for TypeScript generics ⛵",
+	"version": "6.1.0",
+	"publisher": "arktypeio",
+	"type": "module",
+	"license": "MIT",
+	"scripts": {
+		"publishExtension": "pnpm packageExtension && pnpm publishVsce && pnpm publishOvsx",
+		"packageExtension": "vsce package --out arkthemes.vsix",
+		"publishVsce": "vsce publish -i arkthemes.vsix",
+		"publishOvsx": "ovsx publish -i arkthemes.vsix"
+	},
+	"devDependencies": {
+		"@vscode/vsce": "3.3.2",
+		"ovsx": "0.10.1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype"
+	},
+	"engines": {
+		"vscode": "^1.0.0"
+	},
+	"categories": [
+		"Themes"
+	],
+	"icon": "icon.png",
+	"exports": {
+		"./*.json": "./*.json"
+	},
+	"contributes": {
+		"themes": [
+			{
+				"label": "ArkDark",
+				"uiTheme": "vs-dark",
+				"path": "./arkdark.json"
+			},
+			{
+				"label": "ArkDark (italic)",
+				"uiTheme": "vs-dark",
+				"path": "./arkdarkItalic.json"
+			},
+			{
+				"label": "ArkLight",
+				"uiTheme": "vs",
+				"path": "./arklight.json"
+			},
+			{
+				"label": "ArkLight (italic)",
+				"uiTheme": "vs",
+				"path": "./arklightItalic.json"
+			}
+		]
+	}
+}

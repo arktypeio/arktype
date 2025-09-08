@@ -34,8 +34,9 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
@@ -43,7 +44,7 @@ import {
 } from "../shared/traversal.ts"
 import {
 	assertDefaultValueAssignability,
-	computeDefaultValueMorphs
+	computeDefaultValueMorph
 } from "./optional.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
 
@@ -300,17 +301,59 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	defaultablesLength: number = this.defaultables?.length ?? 0
 	optionalsLength: number = this.optionals?.length ?? 0
 	postfixLength: number = this.postfix?.length ?? 0
+	defaultablesAndOptionals: BaseRoot[] = []
 	prevariadic: array<PrevariadicSequenceElement> = this.tuple.filter(
-		el =>
-			el.kind === "prefix" ||
-			el.kind === "defaultables" ||
-			el.kind === "optionals"
+		(el): el is PrevariadicSequenceElement => {
+			if (el.kind === "defaultables" || el.kind === "optionals") {
+				// populate defaultablesAndOptionals while filtering prevariadic
+				this.defaultablesAndOptionals.push(el.node)
+				return true
+			}
+
+			return el.kind === "prefix"
+		}
 	)
 
 	variadicOrPostfix: array<BaseRoot> = conflatenate(
 		this.variadic && [this.variadic],
 		this.postfix
 	)
+
+	// have to wait until prevariadic and variadicOrPostfix are set to calculate
+	flatRefs: FlatRef[] = this.addFlatRefs()
+
+	protected addFlatRefs(): FlatRef[] {
+		appendUniqueFlatRefs(
+			this.flatRefs,
+			this.prevariadic.flatMap((element, i) =>
+				append(
+					element.node.flatRefs.map(ref =>
+						flatRef([`${i}`, ...ref.path], ref.node)
+					),
+					flatRef([`${i}`], element.node)
+				)
+			)
+		)
+
+		appendUniqueFlatRefs(
+			this.flatRefs,
+			this.variadicOrPostfix.flatMap(element =>
+				// a postfix index can't be directly represented as a type
+				// key, so we just use the same matcher for variadic
+				append(
+					element.flatRefs.map(ref =>
+						flatRef(
+							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
+							ref.node
+						)
+					),
+					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
+				)
+			)
+		)
+
+		return this.flatRefs
+	}
 
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfixLength === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
@@ -333,12 +376,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
-	defaultValueMorphs: Morph[][] =
-		this.defaultables?.map(([node, defaultValue], i) =>
-			computeDefaultValueMorphs(this.prefixLength + i, node, defaultValue)
-		) ?? []
+	defaultValueMorphs: Morph[] = getDefaultableMorphs(this)
 
-	defaultValueMorphsReference = registeredReference(this.defaultValueMorphs)
+	defaultValueMorphsReference =
+		this.defaultValueMorphs.length ?
+			registeredReference(this.defaultValueMorphs)
+		:	undefined
 
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
@@ -374,44 +417,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				ctx
 			)
 		}
-
-		for (; i < this.prefixLength + this.defaultablesLength; i++)
-			ctx.queueMorphs(this.defaultValueMorphs[i - this.prefixLength])
-	}
-
-	override get flatRefs(): FlatRef[] {
-		const refs: FlatRef[] = []
-
-		appendUniqueFlatRefs(
-			refs,
-			this.prevariadic.flatMap((element, i) =>
-				append(
-					element.node.flatRefs.map(ref =>
-						flatRef([`${i}`, ...ref.path], ref.node)
-					),
-					flatRef([`${i}`], element.node)
-				)
-			)
-		)
-
-		appendUniqueFlatRefs(
-			refs,
-			this.variadicOrPostfix.flatMap(element =>
-				// a postfix index can't be directly represented as a type
-				// key, so we just use the same matcher for variadic
-				append(
-					element.flatRefs.map(ref =>
-						flatRef(
-							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
-							ref.node
-						)
-					),
-					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
-				)
-			)
-		)
-
-		return refs
 	}
 
 	get element(): BaseRoot {
@@ -420,27 +425,18 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		this.prefix?.forEach((node, i) =>
-			js.traverseKey(`${i}`, `data[${i}]`, node)
-		)
+		if (this.prefix) {
+			for (const [i, node] of this.prefix.entries())
+				js.traverseKey(`${i}`, `data[${i}]`, node)
+		}
 
-		this.defaultables?.forEach((node, i) => {
+		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
 			const dataIndex = `${i + this.prefixLength}`
-			js.if(`${dataIndex} >= ${js.data}.length`, () =>
-				js.traversalKind === "Allows" ?
-					js.return(true)
-				:	js.return(`ctx.queueMorphs(${this.defaultValueMorphsReference}[${i}])`)
-			)
-			js.traverseKey(dataIndex, `data[${dataIndex}]`, node[0])
-		})
-
-		this.optionals?.forEach((node, i) => {
-			const dataIndex = `${i + this.prefixLength + this.defaultablesLength}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
 			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
-		})
+		}
 
 		if (this.variadic) {
 			if (this.postfix) {
@@ -454,10 +450,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				() => js.traverseKey("i", "data[i]", this.variadic!),
 				this.prevariadic.length
 			)
-			this.postfix?.forEach((node, i) => {
-				const keyExpression = `firstPostfixIndex + ${i}`
-				js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
-			})
+			if (this.postfix) {
+				for (const [i, node] of this.postfix.entries()) {
+					const keyExpression = `firstPostfixIndex + ${i}`
+					js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+				}
+			}
 		}
 
 		if (js.traversalKind === "Allows") js.return(true)
@@ -476,38 +474,82 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
 
-	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
-		if (this.prefix)
-			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
-
-		if (this.optionals) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Optional tuple element${this.optionalsLength > 1 ? "s" : ""} ${this.optionals.join(", ")}`
-			)
+	reduceJsonSchema(
+		schema: JsonSchema.Array,
+		ctx: ToJsonSchema.Context
+	): JsonSchema.Array {
+		if (this.prevariadic.length) {
+			schema.prefixItems = this.prevariadic.map(el => {
+				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
+				if (el.kind === "defaultables") {
+					const value =
+						typeof el.default === "function" ? el.default() : el.default
+					valueSchema.default =
+						$ark.intrinsic.jsonData.allows(value) ?
+							value
+						:	ctx.fallback.defaultValue({
+								code: "defaultValue",
+								base: valueSchema,
+								value
+							})
+				}
+				return valueSchema
+			})
 		}
+
+		// by default JSON schema prefixElements are optional
+		// add minLength here if there are any required prefix elements
+		if (this.minLength) schema.minItems = this.minLength
 
 		if (this.variadic) {
-			schema.items = this.variadic?.toJsonSchema()
-			// length constraints will be enforced by items: false
+			// alias schema for narrowing (Object.assign mutates anyways)
+			const variadicSchema = Object.assign(schema, {
+				items: this.variadic.toJsonSchemaRecurse(ctx)
+			})
+
+			// maxLength constraint will be enforced by items: false
 			// for non-variadic arrays
-			if (this.minLength) schema.minItems = this.minLength
-			if (this.maxLength) schema.maxItems = this.maxLength
+			if (this.maxLength) variadicSchema.maxItems = this.maxLength
+
+			// postfix can only be present if variadic is present so nesting this is fine
+			if (this.postfix) {
+				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
+				schema = ctx.fallback.arrayPostfix({
+					code: "arrayPostfix",
+					base: variadicSchema,
+					elements
+				})
+			}
 		} else {
 			schema.items = false
-			// delete min/maxLength constraints that will have been added by the
+			// delete maxItems constraint that will have been added by the
 			// base intersection node to enforce fixed length
-			delete schema.minItems
 			delete schema.maxItems
-		}
-
-		if (this.postfix) {
-			return JsonSchema.throwUnjsonifiableError(
-				`Postfix tuple element${this.postfixLength > 1 ? "s" : ""} ${this.postfix.join(", ")}`
-			)
 		}
 
 		return schema
 	}
+}
+
+const defaultableMorphsCache: Record<string, Morph[] | undefined> = {}
+
+const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
+	if (!node.defaultables) return []
+
+	const morphs: Morph[] = []
+	let cacheKey = "["
+
+	const lastDefaultableIndex = node.prefixLength + node.defaultablesLength - 1
+
+	for (let i = node.prefixLength; i <= lastDefaultableIndex; i++) {
+		const [elementNode, defaultValue] = node.defaultables[i - node.prefixLength]
+		morphs.push(computeDefaultValueMorph(i, elementNode, defaultValue))
+		cacheKey += `${i}: ${elementNode.id} = ${defaultValueSerializer(defaultValue)}, `
+	}
+
+	cacheKey += "]"
+
+	return (defaultableMorphsCache[cacheKey] ??= morphs)
 }
 
 export const Sequence = {
@@ -517,13 +559,18 @@ export const Sequence = {
 
 const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
-	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
-	inner.defaultables?.forEach(([node, defaultValue]) =>
-		tuple.push({ kind: "defaultables", node, default: defaultValue })
-	)
-	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
+	if (inner.prefix)
+		for (const node of inner.prefix) tuple.push({ kind: "prefix", node })
+	if (inner.defaultables) {
+		for (const [node, defaultValue] of inner.defaultables)
+			tuple.push({ kind: "defaultables", node, default: defaultValue })
+	}
+
+	if (inner.optionals)
+		for (const node of inner.optionals) tuple.push({ kind: "optionals", node })
 	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
-	inner.postfix?.forEach(node => tuple.push({ kind: "postfix", node }))
+	if (inner.postfix)
+		for (const node of inner.postfix) tuple.push({ kind: "postfix", node })
 	return tuple
 }
 
@@ -654,7 +701,7 @@ const _intersectSequences = (
 				...result.withPrefixKey(
 					// ideally we could handle disjoint paths more precisely here,
 					// but not trivial to serialize postfix elements as keys
-					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`,
+					kind === "prefix" ? s.result.length : `-${lTail.length + 1}`,
 					"required"
 				)
 			)

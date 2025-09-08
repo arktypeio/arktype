@@ -41,6 +41,7 @@ import {
 } from "../shared/implement.ts"
 import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -53,6 +54,7 @@ import type {
 	UndeclaredKeyBehavior
 } from "../structure/structure.ts"
 import type { Domain } from "./domain.ts"
+import type { Morph } from "./morph.ts"
 import type { Proto } from "./proto.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
@@ -252,7 +254,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				return childDescriptions.join(" and ")
 			},
 			expected: source =>
-				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
+				`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
 			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 		},
 		intersections: {
@@ -295,19 +297,25 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	structure: Structure.Node | undefined = this.inner.structure
 
-	expression: string = describeIntersection(this)
+	expression: string = writeIntersectionExpression(this)
 
-	get shortDescription(): string {
-		return this.basis?.shortDescription ?? "present"
+	get shallowMorphs(): array<Morph> {
+		return this.inner.structure?.structuralMorph ?
+				[this.inner.structure.structuralMorph]
+			:	[]
 	}
 
-	protected innerToJsonSchema(): JsonSchema {
-		return this.children.reduce(
+	get defaultShortDescription(): string {
+		return this.basis?.defaultShortDescription ?? "present"
+	}
+
+	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		return this.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>
 				child.isBasis() ?
-					child.toJsonSchema()
-				:	child.reduceJsonSchema(schema as never),
+					child.toJsonSchemaRecurse(ctx)
+				:	child.reduceJsonSchema(schema as never, ctx),
 			{}
 		)
 	}
@@ -344,7 +352,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			this.children.forEach(child => js.check(child))
+			for (const child of this.children) js.check(child)
 			js.return(true)
 			return
 		}
@@ -385,10 +393,10 @@ export const Intersection = {
 	Node: IntersectionNode
 }
 
-const describeIntersection = (node: Intersection.Node) => {
+const writeIntersectionExpression = (node: Intersection.Node) => {
 	let expression =
 		node.structure?.expression ||
-		`${node.basis ? node.basis.nestableExpression + " " : ""}${node.refinements.join(" & ")}` ||
+		`${node.basis && !node.refinements.some(n => n.impl.obviatesBasisExpression) ? node.basis.nestableExpression + " " : ""}${node.refinements.map(n => n.expression).join(" & ")}` ||
 		"unknown"
 	if (expression === "Array == 0") expression = "[]"
 	return expression

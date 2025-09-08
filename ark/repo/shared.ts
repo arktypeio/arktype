@@ -31,7 +31,14 @@ export const repoDirs = {
 	repo: join(arkDir, "repo")
 }
 
-export const packageScopes = ["attest", "fs", "schema", "type", "util"] as const
+export const packageScopes = [
+	"attest",
+	"fs",
+	"json-schema",
+	"schema",
+	"type",
+	"util"
+] as const
 
 export type PackageScope = (typeof packageScopes)[number]
 

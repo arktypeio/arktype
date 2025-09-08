@@ -2,93 +2,129 @@
 
 import { buttonVariants, cn } from "fumadocs-ui/components/api"
 import { X } from "lucide-react"
-import { type HTMLAttributes, useCallback, useEffect, useState } from "react"
+import Link from "next/link.js"
+import {
+	type HTMLAttributes,
+	type MouseEvent,
+	useCallback,
+	useEffect,
+	useState
+} from "react"
 import { FloatYourBoat } from "./FloatYourBoat.tsx"
 
 // Based on:
 // https://github.com/fuma-nama/fumadocs/blob/1e6ece043987c8bf607249b66a8945632b229982/packages/ui/src/components/banner.tsx#L65
 
+export declare namespace Banner {
+	export interface Props extends HTMLAttributes<HTMLDivElement> {
+		href: string
+		boat?: boolean
+		changeLayout?: boolean
+	}
+}
+
 export const Banner = ({
 	id = "banner",
 	changeLayout = true,
 	boat,
+	href,
 	children,
 	...props
-}: HTMLAttributes<HTMLDivElement> & {
-	boat?: boolean
-	/**
-	 * Change Fumadocs layout styles
-	 *
-	 * @defaultValue true
-	 */
-	changeLayout?: boolean
-}): React.ReactElement => {
-	const [open, setOpen] = useState(true)
+}: Banner.Props): React.ReactElement => {
+	const [open, setOpen] = useState(false)
 	const globalKey = id ? `nd-banner-${id}` : undefined
 
 	useEffect(() => {
 		if (globalKey) setOpen(localStorage.getItem(globalKey) !== "true")
 	}, [globalKey])
 
-	const onClick = useCallback(() => {
-		setOpen(false)
-		if (globalKey) localStorage.setItem(globalKey, "true")
-	}, [globalKey])
+	const handleCloseClick = useCallback(
+		(e: MouseEvent<HTMLButtonElement>) => {
+			// prevent the close button click from also triggering the link on
+			// the rest the rest of the branner
+			e.stopPropagation()
+			setOpen(false)
+			if (globalKey) localStorage.setItem(globalKey, "true")
+		},
+		[globalKey]
+	)
+
+	const BannerContent = (
+		<>
+			<div style={{ width: 100 }}>
+				{boat ?
+					<FloatYourBoat kind="banner" />
+				:	null}
+			</div>
+			<div>{children}</div>
+			<div style={{ width: 100 }} />
+		</>
+	)
 
 	return (
 		<div
 			id={id}
 			{...props}
 			className={cn(
+				"release-banner",
 				"sticky top-0 z-40 flex h-12 flex-row items-center justify-around bg-fd-secondary px-4 text-center text-sm font-medium",
 				"bg-fd-background",
+				// fix offset scrolling on Chromium-based browsers:
+				// https://github.com/arktypeio/arktype/issues/1290
+				"!overflow-hidden",
 				!open && "hidden",
 				props.className
 			)}
 		>
-			<div>
-				{changeLayout && open ?
-					<style>{`
+			{changeLayout && open ?
+				<style>{`
         :root:not(.${globalKey ?? "nd-banner-never"}) { --fd-banner-height: 3rem; }
         `}</style>
-				:	null}
-				{globalKey ?
-					<style>{`.${globalKey} #${id} { display: none; }`}</style>
-				:	null}
-				{id ?
-					<script
-						dangerouslySetInnerHTML={{
-							__html: `if (localStorage.getItem('${globalKey}') === 'true') document.documentElement.classList.add('${globalKey}');`
-						}}
-					/>
-				:	null}
-				{background}
-				<div style={{ width: 100 }}>
-					{boat ?
-						<FloatYourBoat kind="banner" />
-					:	null}
+			:	null}
+			{globalKey ?
+				<style>{`.${globalKey} #${id} { display: none; }`}</style>
+			:	null}
+			{id ?
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `if (localStorage.getItem('${globalKey}') === 'true') document.documentElement.classList.add('${globalKey}');`
+					}}
+				/>
+			:	null}
+			{background}
+			{href ?
+				<Link
+					href={href}
+					className="flex flex-grow items-center justify-around"
+					style={{ zIndex: 0 }}
+					onClick={() => {
+						// remove the banner when someone navigates to the announcement
+						if (globalKey) localStorage.setItem(globalKey, "true")
+					}}
+				>
+					{BannerContent}
+				</Link>
+			:	<div className="flex flex-grow items-center justify-around">
+					{BannerContent}
 				</div>
-			</div>
-			<div>{children}</div>
-			<div style={{ width: 100 }}>
-				{id ?
-					<button
-						type="button"
-						aria-label="Close Banner"
-						onClick={onClick}
-						className={cn(
-							buttonVariants({
-								color: "ghost",
-								className:
-									"absolute end-2 top-1/2 -translate-y-1/2 text-fd-muted-foreground",
-								size: "icon"
-							})
-						)}
-					>
-						<X />
-					</button>
-				:	null}
-			</div>
+			}
+			{id ?
+				<button
+					type="button"
+					aria-label="Close Banner"
+					onClick={handleCloseClick}
+					className={cn(
+						buttonVariants({
+							color: "ghost",
+							className:
+								"absolute end-2 top-1/2 -translate-y-1/2 text-fd-muted-foreground z-10",
+							size: "icon"
+						})
+					)}
+				>
+					<X />
+				</button>
+			:	null}
 		</div>
 	)
 }
@@ -113,11 +149,9 @@ const background = (
 				animation: "fd-moving-banner 16s linear infinite",
 				animationDirection: "reverse",
 				...palette,
-				// A wave-like repeating gradient with blues only
 				backgroundImage:
 					"repeating-linear-gradient(60deg, var(--start), var(--start) 5%, var(--via) 12%, var(--mid) 20%, var(--end) 28%, transparent 40%)",
 				backgroundSize: "200% 100%",
-				// Use 'normal' to avoid darkening or rainbow on text
 				mixBlendMode: "normal"
 			}}
 		/>
@@ -128,7 +162,6 @@ const background = (
 				maskComposite: "intersect",
 				animation: "fd-moving-banner 20s linear infinite",
 				...palette,
-				// Another wave-like gradient
 				backgroundImage:
 					"repeating-linear-gradient(45deg, var(--start), var(--start) 5%, var(--via) 12%, var(--mid) 20%, var(--end) 28%, transparent 40%)",
 				backgroundSize: "200% 100%",

@@ -3,6 +3,7 @@
 	"pages": [
 		"[Standard Schema](/docs/integrations#standard-schema)",
 		"[tRPC](/docs/integrations#trpc)",
+		"[drizzle](/docs/integrations#drizzle)",
 		"[react-hook-form](/docs/integrations#react-hook-form)",
 		"[hono](/docs/integrations#hono)"
 	]

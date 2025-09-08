@@ -68,13 +68,99 @@ export const analyzeAssertCall = (
 	const typeArgs = types.typeArgs.map(typeArg => serializeArg(typeArg, types))
 	const errors = checkDiagnosticMessages(assertCall, diagnosticsByFile)
 	const completions = getCompletions(assertCall)
-	return {
+
+	// Extract JSDoc comment for first argument if available
+	const jsdoc = extractJSDocFromArgument(assertCall)
+
+	const result: TypeAssertionData = {
 		location,
 		args,
 		typeArgs,
 		errors,
 		completions
 	}
+
+	if (jsdoc) result.jsdoc = jsdoc
+
+	return result
+}
+
+/**
+ * Extract JSDoc comments associated with the first argument of a call expression
+ */
+const extractJSDocFromArgument = (
+	callExpr: ts.CallExpression
+): string | undefined => {
+	// We're only interested in the first argument
+	const firstArg = callExpr.arguments[0]
+	if (!firstArg) return undefined
+
+	const checker = getInternalTypeChecker()
+
+	// If the argument is a property access expression (e.g., out.foo)
+	if (ts.isPropertyAccessExpression(firstArg)) {
+		// Try to find the symbol for the property
+		const propSymbol = checker.getSymbolAtLocation(firstArg)
+		if (propSymbol) {
+			// Get JSDoc from property declarations
+			return getJSDocFromSymbol(propSymbol)
+		}
+	}
+	// If argument is an identifier, try to find its declaration's JSDoc
+	else if (ts.isIdentifier(firstArg)) {
+		const symbol = checker.getSymbolAtLocation(firstArg)
+		if (symbol) return getJSDocFromSymbol(symbol)
+	}
+
+	return undefined
+}
+
+/**
+ * Extract JSDoc comments from a symbol's declarations
+ */
+const getJSDocFromSymbol = (symbol: ts.Symbol): string | undefined => {
+	// Get JSDoc directly from the symbol if possible
+	const symbolDocumentation = ts.displayPartsToString(
+		symbol.getDocumentationComment(getInternalTypeChecker())
+	)
+	if (symbolDocumentation) return symbolDocumentation.trim()
+
+	// If no symbol documentation, try to get JSDoc from declarations
+	const declarations = symbol.getDeclarations() || []
+	for (const declaration of declarations) {
+		// For property declarations in object literals, get the JSDoc comment
+		if (
+			ts.isPropertyAssignment(declaration) ||
+			ts.isShorthandPropertyAssignment(declaration) ||
+			ts.isPropertyDeclaration(declaration)
+		) {
+			const jsDocTags = ts.getJSDocTags(declaration)
+			if (jsDocTags.length > 0) {
+				return jsDocTags
+					.map(tag => {
+						const comment = tag.comment?.toString() || ""
+						return tag.tagName.text + (comment ? ` ${comment}` : "")
+					})
+					.join("\n")
+			}
+
+			// Try to get JSDoc comment before the property
+			const jsDocComments = ts.getJSDocCommentsAndTags(declaration)
+			if (jsDocComments && jsDocComments.length > 0) {
+				return jsDocComments
+					.map(doc => {
+						if (ts.isJSDoc(doc)) return doc.comment || ""
+
+						return ""
+					})
+					.filter(Boolean)
+					.join("\n")
+					.trim()
+			}
+		}
+	}
+
+	return undefined
 }
 
 const serializeArg = (
@@ -197,6 +283,8 @@ export type TypeRelationshipAssertionData = {
 	typeArgs: ArgAssertionData[]
 	errors: string[]
 	completions: Completions
+	/** JSDoc comment for the first argument, if any */
+	jsdoc?: string
 }
 
 export type TypeBenchmarkingAssertionData = {

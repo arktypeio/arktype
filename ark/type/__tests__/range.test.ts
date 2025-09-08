@@ -19,141 +19,141 @@ import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator
 contextualize(() => {
 	describe("string expressions", () => {
 		it(">", () => {
-			const t = type("number>0")
-			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<number, {}>")
-			attest(t.json).snap({
+			const T = type("number>0")
+			attest<number>(T.infer)
+			attest(T).type.toString.snap("Type<number, {}>")
+			attest(T.json).snap({
 				domain: "number",
 				min: { exclusive: true, rule: 0 }
 			})
 		})
 
 		it("<", () => {
-			const t = type("number<10")
-			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<number, {}>")
-			const expected = rootSchema({
+			const T = type("number<10")
+			attest<number>(T.infer)
+			attest(T).type.toString.snap("Type<number, {}>")
+			const Expected = rootSchema({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
-			attest(t.json).equals(expected.json)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("<=", () => {
-			const t = type("number<=-49")
-			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<number, {}>")
-			const expected = rootSchema({
+			const T = type("number<=-49")
+			attest<number>(T.infer)
+			attest(T).type.toString.snap("Type<number, {}>")
+			const Expected = rootSchema({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
-			attest(t.json).equals(expected.json)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("==", () => {
-			const t = type("number==3211993")
-			attest<number>(t.infer)
-			attest(t).type.toString.snap("Type<number, {}>")
-			const expected = rootSchema({ unit: 3211993 })
-			attest(t.json).equals(expected.json)
+			const T = type("number==3211993")
+			attest<number>(T.infer)
+			attest(T).type.toString.snap("Type<number, {}>")
+			const Expected = rootSchema({ unit: 3211993 })
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("== length", () => {
-			const verifyCodeSchema = type({ code: "string==6" })
+			const T = type({ code: "string==6" })
 
-			attest(verifyCodeSchema({ code: "123456" })).snap({ code: "123456" })
-			attest(verifyCodeSchema({ code: "foo" }).toString()).snap(
+			attest(T({ code: "123456" })).snap({ code: "123456" })
+			attest(T({ code: "foo" }).toString()).snap(
 				"code must be exactly length 6 (was 3)"
 			)
 		})
 
 		it("<,<=", () => {
-			const t = type("-5<number<=5")
-			attest(t).type.toString.snap("Type<number, {}>")
-			attest<number>(t.infer)
-			const expected = rootSchema({
+			const T = type("-5<number<=5")
+			attest(T).type.toString.snap("Type<number, {}>")
+			attest<number>(T.infer)
+			const Expected = rootSchema({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: 5
 			})
-			attest(t.json).equals(expected.json)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("<=,<", () => {
-			const t = type("-3.23<=number<4.654")
-			attest(t).type.toString.snap("Type<number, {}>")
-			attest<number>(t.infer)
-			const expected = rootSchema({
+			const T = type("-3.23<=number<4.654")
+			attest(T).type.toString.snap("Type<number, {}>")
+			attest<number>(T.infer)
+			const Expected = rootSchema({
 				domain: "number",
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
 			})
-			attest(t.json).equals(expected.json)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("whitespace following comparator", () => {
-			const t = type("number > 3")
-			attest(t).type.toString.snap("Type<number, {}>")
-			attest<number>(t.infer)
-			const expected = rootSchema({
+			const T = type("number > 3")
+			attest(T).type.toString.snap("Type<number, {}>")
+			attest<number>(T.infer)
+			const Expected = rootSchema({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})
-			attest(t.json).equals(expected.json)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("single Date", () => {
-			const t = type("Date<d'2023/1/12'")
-			attest<Date>(t.infer)
-			attest(t).type.toString.snap("Type<Date, {}>")
-			attest(t.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
+			const T = type("Date<d'2023/1/12'")
+			attest<Date>(T.infer)
+			attest(T).type.toString.snap("Type<Date, {}>")
+			attest(T.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
 		})
 
 		it("Date equality", () => {
-			const t = type("Date==d'2020-1-1'")
-			attest<Date>(t.infer)
-			attest(t).type.toString.snap("Type<Date, {}>")
-			attest(t.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
-			attest(t.allows(new Date("2020/01/01"))).equals(true)
-			attest(t.allows(new Date("2020/01/02"))).equals(false)
+			const T = type("Date==d'2020-1-1'")
+			attest<Date>(T.infer)
+			attest(T).type.toString.snap("Type<Date, {}>")
+			attest(T.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
+			attest(T.allows(new Date("2020/01/01"))).equals(true)
+			attest(T.allows(new Date("2020/01/02"))).equals(false)
 		})
 
 		it("double Date", () => {
-			const t = type("d'2001/10/10'< Date < d'2005/10/10'")
-			attest<Date>(t.infer)
-			attest(t.t).type.toString.snap("Date")
-			attest(t.json).snap({
+			const T = type("d'2001/10/10'< Date < d'2005/10/10'")
+			attest<Date>(T.infer)
+			attest(T.t).type.toString.snap("Date")
+			attest(T.json).snap({
 				proto: "Date",
 				before: "2005-10-10T03:59:59.999Z",
 				after: "2001-10-10T04:00:00.001Z"
 			})
-			attest(t.allows(new Date("2003/10/10"))).equals(true)
-			attest(t.allows(new Date("2001/10/10"))).equals(false)
-			attest(t.allows(new Date("2005/10/10"))).equals(false)
+			attest(T.allows(new Date("2003/10/10"))).equals(true)
+			attest(T.allows(new Date("2001/10/10"))).equals(false)
+			attest(T.allows(new Date("2005/10/10"))).equals(false)
 		})
 
 		it("dynamic Date", () => {
 			const now = new Date()
-			const t = type(`d'2000'< Date <=d'${now.toISOString()}'`)
-			attest<Date>(t.infer)
-			attest(t).type.toString.snap("Type<Date, {}>")
-			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
-			attest(t.allows(now)).equals(true)
-			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
+			const T = type(`d'2000'< Date <=d'${now.toISOString()}'`)
+			attest<Date>(T.infer)
+			attest(T).type.toString.snap("Type<Date, {}>")
+			attest(T.allows(new Date(now.valueOf() - 1000))).equals(true)
+			attest(T.allows(now)).equals(true)
+			attest(T.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
 
 		it("exclusive length normalized", () => {
-			const t = type("string > 0")
-			const expected = type("string >= 1")
+			const T = type("string > 0")
+			const Expected = type("string >= 1")
 
-			attest(t.expression).equals(expected.expression)
+			attest(T.expression).equals(Expected.expression)
 		})
 
 		it("trivially satisfied length normalized", () => {
-			const t = type("string >= 0")
-			const expected = type("string")
+			const T = type("string >= 0")
+			const Expected = type("string")
 
-			attest(t.expression).equals(expected.expression)
+			attest(T.expression).equals(Expected.expression)
 		})
 
 		it("invalid left comparator", () => {
@@ -215,8 +215,8 @@ contextualize(() => {
 		it("non-narrowed bounds", () => {
 			const a = 5 as number
 			const b = 7 as number
-			const t = type(`${a}<number<${b}`)
-			attest<number>(t.infer)
+			const T = type(`${a}<number<${b}`)
+			attest<number>(T.infer)
 		})
 
 		it("fails at runtime on malformed right", () => {
@@ -264,11 +264,22 @@ contextualize(() => {
 			)
 		})
 
+		it("morph", () => {
+			// @ts-expect-error
+			attest(() => type("string.trim > 2"))
+				.throws.snap(
+					"ParseError: MinLength operand must be a string or an array (was a morph)"
+				)
+				.type.errors.snap(
+					"Argument of type '\"string.trim > 2\"' is not assignable to parameter of type '\"To constrain the output of string.trim, pipe like myMorph.to('number > 0').\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+				)
+		})
+
 		it("same bound kind union", () => {
-			const t = type("1<(number[]|object[])<10")
-			attest<number[] | object[]>(t.infer)
-			const expected = type("1<number[]<10 | 1<object[]<10")
-			attest(t.json).equals(expected.json)
+			const T = type("1<(number[]|object[])<10")
+			attest<number[] | object[]>(T.infer)
+			const Expected = type("1<number[]<10 | 1<object[]<10")
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("number with right Date bound", () => {
@@ -290,10 +301,10 @@ contextualize(() => {
 
 	describe("chained", () => {
 		it("atLeast", () => {
-			const t = type("number").atLeast(5)
-			const expected = type("number>=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("number").atLeast(5)
+			const Expected = type("number>=5")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("invalid min operand", () => {
@@ -306,24 +317,24 @@ contextualize(() => {
 		})
 
 		it("moreThan", () => {
-			const t = type("number").moreThan(5)
-			const expected = type("number>5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("number").moreThan(5)
+			const Expected = type("number>5")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("atMost", () => {
-			const t = type("number").atMost(10)
-			const expected = type("number<=10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("number").atMost(10)
+			const Expected = type("number<=10")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("lessThan", () => {
-			const t = type("number").lessThan(10)
-			const expected = type("number<10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("number").lessThan(10)
+			const Expected = type("number<10")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("invalid max operand", () => {
@@ -336,17 +347,17 @@ contextualize(() => {
 		})
 
 		it("atLeastLength", () => {
-			const t = type("string").atLeastLength(5)
-			const expected = type("string>=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("string").atLeastLength(5)
+			const Expected = type("string>=5")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("moreThanLength", () => {
-			const t = type("string[]").moreThanLength(5)
-			const expected = type("string[]>5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("string[]").moreThanLength(5)
+			const Expected = type("string[]>5")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("invalid minLength operand", () => {
@@ -363,17 +374,17 @@ contextualize(() => {
 		})
 
 		it("atMostLength", () => {
-			const t = type("string").atMostLength(10)
-			const expected = type("string<=10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("string").atMostLength(10)
+			const Expected = type("string<=10")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("lessThanLength", () => {
-			const t = type("string[]").lessThanLength(10)
-			const expected = type("string[]<10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("string[]").lessThanLength(10)
+			const Expected = type("string[]<10")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("invalid maxLength operand", () => {
@@ -390,18 +401,18 @@ contextualize(() => {
 		})
 
 		it("atOrAfter", () => {
-			const t = type("Date").atOrAfter(new Date("2022-01-01"))
+			const T = type("Date").atOrAfter(new Date("2022-01-01"))
 			// widen the input to a string so both are non-narrowed
-			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const Expected = type(`Date>=d'${"2022-01-01" as string}'`)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("laterThan", () => {
-			const t = type("Date").laterThan(new Date("2022-01-01"))
-			const expected = type(`Date>d'${"2022-01-01" as string}'`)
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("Date").laterThan(new Date("2022-01-01"))
+			const Expected = type(`Date>d'${"2022-01-01" as string}'`)
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("invalid after operand", () => {
@@ -414,17 +425,17 @@ contextualize(() => {
 		})
 
 		it("atOrBefore", () => {
-			const t = type("Date").atOrBefore(5)
-			const expected = type("Date<=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("Date").atOrBefore(5)
+			const Expected = type("Date<=5")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("earlierThan", () => {
-			const t = type("Date").earlierThan(5)
-			const expected = type("Date<5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
+			const T = type("Date").earlierThan(5)
+			const Expected = type("Date<5")
+			attest<typeof Expected>(T)
+			attest(T.json).equals(Expected.json)
 		})
 
 		it("invalid before operand", () => {

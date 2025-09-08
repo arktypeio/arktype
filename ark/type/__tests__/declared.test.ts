@@ -10,17 +10,17 @@ contextualize(() => {
 
 	it("obj", () => {
 		type Expected = { a: string; b?: number }
-		const t = declare<Expected>().type({
+		const T = declare<Expected>().type({
 			a: "string",
 			"b?": "number"
 		})
-		attest<Expected>(t.infer)
+		attest<Expected>(T.infer)
 	})
 
 	it("tuple", () => {
 		type Expected = [string, number]
-		const t = declare<Expected>().type(["string", "number"])
-		attest<Expected>(t.infer)
+		const T = declare<Expected>().type(["string", "number"])
+		attest<Expected>(T.infer)
 	})
 
 	it("bad element", () => {
@@ -47,20 +47,20 @@ contextualize(() => {
 	})
 
 	it("tuple expression", () => {
-		const t = declare<0 | 1>().type(["0", "|", "1"])
-		attest<0 | 1>(t.infer)
+		const T = declare<0 | 1>().type(["0", "|", "1"])
+		attest<0 | 1>(T.infer)
 	})
 
 	it("regexp", () => {
-		const t = declare<string>().type(/.*/)
-		attest<string>(t.t)
-		attest<string>(t.infer)
+		const T = declare<string>().type(/.*/)
+		attest<string>(T.t)
+		attest<string>(T.infer)
 	})
 
 	it("Inferred<t>", () => {
-		const foo = type("'foo'")
-		const t = declare<"foo">().type(foo)
-		attest<"foo">(t.infer)
+		const Foo = type("'foo'")
+		const T = declare<"foo">().type(Foo)
+		attest<"foo">(T.infer)
 	})
 
 	it("bad tuple expression", () => {

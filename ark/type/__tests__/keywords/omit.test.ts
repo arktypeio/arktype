@@ -22,22 +22,22 @@ contextualize(() => {
 	})
 
 	it("chained", () => {
-		const user = type({
+		const User = type({
 			name: "string",
 			"age?": "number",
 			isAdmin: "boolean",
 			"isActive?": "boolean"
 		})
 
-		const extras = user.omit("name", "age")
+		const extras = User.omit("name", "age")
 
-		const expected = type({
+		const Expected = type({
 			isAdmin: "boolean",
 			"isActive?": "boolean"
 		})
 
-		attest<typeof expected.t>(extras.t)
+		attest<typeof Expected.t>(extras.t)
 
-		attest(extras.expression).equals(expected.expression)
+		attest(extras.expression).equals(Expected.expression)
 	})
 })

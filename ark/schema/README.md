@@ -2,8 +2,6 @@
 
 Underlying schema language parsed from arktype syntax.
 
-UNDER DEVELOPMENT
-
 The parts of ArkType's type system that exist in TS (i.e. not runtime-only constraints like bounds, divisors, custom predicates, morphs etc.) are structured like this:
 
 - Union: a set of intersections

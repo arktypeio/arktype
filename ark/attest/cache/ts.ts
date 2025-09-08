@@ -1,4 +1,4 @@
-import { fromCwd, type SourcePosition } from "@ark/fs"
+import { fromCwd, readFile, type SourcePosition } from "@ark/fs"
 import { printable, throwError, throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
@@ -26,11 +26,17 @@ export class TsServer {
 		const tsLibPaths = getTsLibFiles(this.tsConfigInfo.parsed.options)
 
 		// TS represents windows paths as `C:/Users/ssalb/...`
-		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
+		const normalizedCwd = fromCwd().replaceAll("\\", "/")
 
-		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path =>
-			path.startsWith(normalizedCwd)
-		)
+		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path => {
+			if (!path.startsWith(normalizedCwd)) return
+
+			// exclude empty files as they lead to a crash
+			// when createVirtualTypeScriptEnvironment is called
+			const contents = readFile(path).trim()
+
+			return contents !== ""
+		})
 
 		const system = tsvfs.createFSBackedSystem(
 			tsLibPaths.defaultMapFromNodeModules,
@@ -51,9 +57,14 @@ export class TsServer {
 	}
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
-		const tsPath = path.replaceAll(/\\/g, "/")
+		const tsPath = path.replaceAll("\\", "/")
 		const file = this.virtualEnv.getSourceFile(tsPath)
-		if (!file) throwInternalError(`Could not find TS path ${path}`)
+		if (!file) {
+			throwInternalError(
+				`TypeScript was unable to resolve expected file at ${path}.\n
+Make sure it is included in your tsconfig.json.`
+			)
+		}
 
 		return file
 	}
@@ -74,7 +85,7 @@ export const nearestCallExpressionChild = (
 	return result
 }
 
-const nearestBoundingCallExpression = (
+export const nearestBoundingCallExpression = (
 	node: ts.Node,
 	position: number
 ): ts.CallExpression | undefined =>
@@ -253,9 +264,10 @@ export const getStringifiableType = (node: ts.Node): StringifiableType => {
 			ts.TypeFormatFlags.NoTruncation
 		)
 
-		if (nonTruncated.includes(" any") && !stringified.includes(" any"))
-			stringified = nonTruncated.replaceAll(" any", " cyclic")
-		else stringified = nonTruncated
+		stringified =
+			nonTruncated.includes(" any") && !stringified.includes(" any") ?
+				nonTruncated.replaceAll(" any", " cyclic")
+			:	nonTruncated
 	}
 
 	return Object.assign(nodeType, {

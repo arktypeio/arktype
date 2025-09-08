@@ -41,6 +41,7 @@ import {
 } from "./shared/intersections.ts"
 import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { $ark } from "./shared/registry.ts"
+import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
 import type { Structure } from "./structure/structure.ts"
@@ -61,8 +62,8 @@ export declare namespace Constraint {
 }
 
 export abstract class BaseConstraint<
-	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
-	 * @ts-ignore allow instantiation assignment to the base type */
+	// uses -ignore rather than -expect-error because this is not an error in .d.ts
+	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
 	declare readonly [arkKind]: "constraint"
@@ -94,7 +95,8 @@ export abstract class InternalPrimitiveConstraint<
 	abstract readonly compiledNegation: string
 
 	abstract reduceJsonSchema(
-		base: JsonSchema.Constrainable
+		base: JsonSchema.Constrainable,
+		ctx: ToJsonSchema.Context
 	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
@@ -203,8 +205,10 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	}
 	if (!matched) s.l.push(head)
 
-	if (s.kind === "intersection")
-		head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
+	if (s.kind === "intersection") {
+		if (head.impliedSiblings)
+			for (const node of head.impliedSiblings) appendUnique(s.r, node)
+	}
 	return intersectConstraints(s)
 }
 
@@ -276,10 +280,16 @@ export const writeInvalidOperandMessage = <
 	kind: kind,
 	expected: expected,
 	actual: actual
-): string =>
-	`${capitalize(kind)} operand must be ${
+): string => {
+	const actualDescription =
+		actual.hasKind("morph") ? "a morph"
+		: actual.isUnknown() ? "unknown"
+		: actual.exclude(expected).defaultShortDescription
+
+	return `${capitalize(kind)} operand must be ${
 		expected.description
-	} (was ${actual.exclude(expected).description})` as never
+	} (was ${actualDescription})` as never
+}
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,

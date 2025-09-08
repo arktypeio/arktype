@@ -3,18 +3,19 @@ import {
 	DynamicFunction,
 	hasDomain,
 	isDotAccessible,
-	serializePrimitive
+	serializePrimitive,
+	type Fn
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
-import type { Discriminant } from "../roots/union.ts"
 import { registeredReference } from "./registry.ts"
 import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
 export class CompiledFunction<
-	args extends readonly string[]
+	compiledSignature = (...args: unknown[]) => unknown,
+	args extends readonly string[] = readonly string[]
 > extends CastableBase<{
 	[k in args[number]]: k
 }> {
@@ -109,19 +110,19 @@ export class CompiledFunction<
 		return this.line(`return ${expression}`)
 	}
 
-	write(name = "anonymous"): string {
-		return `${name}(${this.argNames.join(", ")}) {
-${this.body}}`
+	write(name = "anonymous", indent: number = 0): string {
+		return `${name}(${this.argNames.join(", ")}) { ${
+			indent ?
+				this.body
+					.split("\n")
+					.map(l => " ".repeat(indent) + `${l}`)
+					.join("\n")
+			:	this.body
+		} }`
 	}
 
-	compile<
-		f extends (
-			...args: {
-				[i in keyof args]: never
-			}
-		) => unknown
-	>(): f {
-		return new DynamicFunction(...this.argNames, this.body)
+	compile(): compiledSignature {
+		return new DynamicFunction(...this.argNames, this.body) as never
 	}
 }
 
@@ -155,14 +156,21 @@ export interface ReferenceOptions {
 	bind?: string
 }
 
-export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
-	path: string[] = []
-	discriminants: Discriminant[] = []
-	traversalKind: TraversalKind
+export declare namespace NodeCompiler {
+	export interface Context {
+		kind: TraversalKind
+		optimistic?: true
+	}
+}
 
-	constructor(traversalKind: TraversalKind) {
+export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
+	traversalKind: TraversalKind
+	optimistic: boolean
+
+	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
-		this.traversalKind = traversalKind
+		this.traversalKind = ctx.kind
+		this.optimistic = ctx.optimistic === true
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {

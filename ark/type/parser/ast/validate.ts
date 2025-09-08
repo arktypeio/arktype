@@ -12,7 +12,7 @@ import type {
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
 import type { Generic } from "../../generic.ts"
-import type { Comparator } from "../reduce/shared.ts"
+import type { BranchOperator, Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
 import type { UnitLiteral } from "../shift/operator/default.ts"
 import type { parseString } from "../string.ts"
@@ -48,7 +48,7 @@ export type validateAst<ast, $, args> =
 		// (was tested and had a significant impact on repo-wide perf)
 		validateAst<operand, $, args>
 	: ast extends InfixExpression<infer operator, infer l, infer r> ?
-		operator extends "&" | "|" ? validateInfix<ast, $, args>
+		operator extends BranchOperator ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: // shallowDefaultableMessage is handled in type.validate
@@ -64,7 +64,7 @@ export type validateAst<ast, $, args> =
 		}
 
 type writeUnexpectedExpressionMessage<expression extends string> =
-	`Unexpectedly failed to parse the expression resulting from ${expression}`
+	`Failed to parse the expression resulting from ${expression}`
 
 export const writePrefixedPrivateReferenceMessage = <name extends string>(
 	name: name

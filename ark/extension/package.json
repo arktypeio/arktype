@@ -1,0 +1,83 @@
+{
+	"name": "arkdark",
+	"displayName": "ArkType",
+	"description": "Syntax highlighting and inline errors for ArkType⛵",
+	"version": "6.1.0",
+	"publisher": "arktypeio",
+	"type": "module",
+	"license": "MIT",
+	"scripts": {
+		"publishExtension": "pnpm packageExtension && pnpm publishVsce && pnpm publishOvsx",
+		"packageExtension": "vsce package --out arkdark.vsix",
+		"publishVsce": "vsce publish -i arkdark.vsix",
+		"publishOvsx": "ovsx publish -i arkdark.vsix"
+	},
+	"devDependencies": {
+		"@vscode/vsce": "3.3.2",
+		"ovsx": "0.10.1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype"
+	},
+	"engines": {
+		"vscode": "^1.0.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"icon": "icon.png",
+	"exports": {
+		"./*.json": "./*.json"
+	},
+	"extensionDependencies": [
+		"usernamehw.errorlens"
+	],
+	"contributes": {
+		"grammars": [
+			{
+				"injectTo": [
+					"source.ts",
+					"source.tsx",
+					"source.js",
+					"source.jsx",
+					"source.mdx",
+					"source.svelte",
+					"source.vue",
+					"source.astro",
+					"text.html.markdown"
+				],
+				"scopeName": "source.arktype.injection.ts",
+				"path": "injected.tmLanguage.json"
+			}
+		],
+		"configurationDefaults": {
+			"editor.quickSuggestions": {
+				"strings": "on"
+			},
+			"errorLens.followCursor": "closestProblem",
+			"errorLens.delay": 0,
+			"errorLens.editorHoverPartsEnabled": {
+				"buttonsEnabled": false
+			},
+			"errorLens.replace": [
+				{
+					"matcher": ".*'ErrorType<(.*)>'.*$",
+					"message": "$1"
+				},
+				{
+					"matcher": ".*'\"(.*\\u200A)\"'\\.$",
+					"message": "$1"
+				},
+				{
+					"matcher": "^(?:Type|Argument of type) '\"(.*)\"' is not assignable to (?:parameter of )?type '(\"\\1.*\")'\\.",
+					"message": "$2"
+				},
+				{
+					"matcher": "[^]*\n([^\n]*)$",
+					"message": "$1"
+				}
+			]
+		}
+	}
+}

@@ -1,4 +1,4 @@
-import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsDocGen.ts"
+import type { ApiGroup, ParsedJsDocPart } from "../../repo/jsdocGen.ts"
 import { apiDocsByGroup } from "./apiData.ts"
 import { CodeBlock } from "./CodeBlock.tsx"
 import { LocalFriendlyUrl } from "./LocalFriendlyUrl.tsx"
@@ -41,10 +41,17 @@ interface ApiTableRowProps {
 	name: string
 	summary: ParsedJsDocPart[]
 	example?: string
+	experimental?: ParsedJsDocPart[]
 	notes: ParsedJsDocPart[][]
 }
 
-const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
+const ApiTableRow = ({
+	name,
+	summary,
+	example,
+	experimental,
+	notes
+}: ApiTableRowProps) => (
 	<tr key={name}>
 		<td
 			style={{
@@ -62,6 +69,7 @@ const ApiTableRow = ({ name, summary, example, notes }: ApiTableRowProps) => (
 			{notes.map((note, i) => (
 				<div key={i}>{JsDocParts(note)} </div>
 			))}
+			{experimental ? JsDocParts(experimental) : null}
 			<ApiExample>{example}</ApiExample>
 		</td>
 	</tr>
@@ -83,10 +91,10 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 					key={i}
 					dangerouslySetInnerHTML={{
 						__html: part.value
-							.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
-							.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
-							.replace(/`([^`]+)`/g, "<code>$1</code>")
-							.replace(/^-(.*)/g, "• $1")
+							.replaceAll(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
+							.replaceAll(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
+							.replaceAll(/`([^`]+)`/g, "<code>$1</code>")
+							.replaceAll(/^-(.*)/g, "• $1")
 					}}
 				/>
 			}

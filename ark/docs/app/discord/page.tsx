@@ -1,11 +1,11 @@
-"use client"
+import { redirect } from "next/navigation"
+import { defineMetadata } from "../metadata.ts"
 
-import { useEffect } from "react"
+export const metadata = defineMetadata({
+	title: "ArkType Discord",
+	ogImage: "ogDiscord.png"
+})
 
-export default () => {
-	useEffect(() => {
-		window.location.href = "https://discord.com/invite/xEzdc3fJQC"
-	}, [])
-
-	return null
+export default function DiscordPage() {
+	redirect("https://discord.com/invite/xEzdc3fJQC")
 }

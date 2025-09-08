@@ -4,8 +4,10 @@ import {
 	flatMorph,
 	printable,
 	spliterate,
+	throwInternalError,
 	throwParseError,
 	type array,
+	type dict,
 	type Key,
 	type listable
 } from "@ark/util"
@@ -15,11 +17,18 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.ts"
+import { intrinsic } from "../intrinsic.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import type {
+	attachmentsOf,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
@@ -27,12 +36,13 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { intersectNodesRoot } from "../shared/intersections.ts"
-import { JsonSchema } from "../shared/jsonSchema.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
+import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type InternalTraversal,
@@ -50,7 +60,6 @@ import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
-import { arrayIndexMatcherReference } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
@@ -98,8 +107,8 @@ export declare namespace Structure {
 const createStructuralWriter =
 	(childStringProp: "expression" | "description") => (node: StructureNode) => {
 		if (node.props.length || node.index) {
-			const parts = node.index?.map(String) ?? []
-			node.props.forEach(node => parts.push(node[childStringProp]))
+			const parts = node.index?.map(index => index[childStringProp]) ?? []
+			for (const prop of node.props) parts.push(prop[childStringProp])
 
 			if (node.undeclared) parts.push(`+ (undeclared): ${node.undeclared}`)
 
@@ -113,6 +122,30 @@ const createStructuralWriter =
 
 const structuralDescription = createStructuralWriter("description")
 const structuralExpression = createStructuralWriter("expression")
+
+const intersectPropsAndIndex = <
+	l extends nodeOfKind<"required"> | nodeOfKind<"optional">
+>(
+	l: l,
+	r: nodeOfKind<"index">,
+	$: BaseScope
+): l | Disjoint | null => {
+	const kind = l.required ? "required" : "optional"
+
+	if (!r.signature.allows(l.key)) return null
+
+	const value = intersectNodesRoot(l.value, r.value, $)
+	if (value instanceof Disjoint) {
+		return kind === "optional" ?
+				($.node("optional", {
+					key: l.key,
+					value: $ark.intrinsic.never.internal
+				}) as l)
+			:	value.withPrefixKey(l.key, l.kind)
+	}
+
+	return null
+}
 
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
@@ -150,13 +183,12 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						return
 					}
 
-					nodes!.forEach(
-						node =>
-							(inner[node.outProp.kind] = append(
-								inner[node.outProp.kind],
-								node.outProp.out as Prop.Node
-							) as never)
-					)
+					for (const node of nodes!) {
+						inner[node.outProp.kind] = append(
+							inner[node.outProp.kind],
+							node.outProp.out as Prop.Node
+						) as never
+					}
 				}
 			},
 			index: {
@@ -190,7 +222,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				const disjointResult = new Disjoint()
 				if (l.undeclared) {
 					const lKey = l.keyof()
-					r.requiredKeys.forEach(k => {
+					for (const k of r.requiredKeys) {
 						if (!lKey.allows(k)) {
 							disjointResult.add(
 								"presence",
@@ -201,7 +233,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 								}
 							)
 						}
-					})
+					}
 
 					if (rInner.optional)
 						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
@@ -229,7 +261,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				}
 				if (r.undeclared) {
 					const rKey = r.keyof()
-					l.requiredKeys.forEach(k => {
+					for (const k of l.requiredKeys) {
 						if (!rKey.allows(k)) {
 							disjointResult.add(
 								"presence",
@@ -240,7 +272,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 								}
 							)
 						}
-					})
+					}
 
 					if (lInner.optional)
 						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
@@ -293,6 +325,40 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 
 				return childIntersectionResult
 			}
+		},
+		reduce: (inner, $) => {
+			if (inner.index) {
+				if (!(inner.required || inner.optional)) return
+
+				let updated = false
+
+				const requiredProps = inner.required ?? []
+				const optionalProps = inner.optional ?? []
+				const newOptionalProps: OptionalNode[] = [...optionalProps]
+
+				for (const index of inner.index) {
+					for (const requiredProp of requiredProps) {
+						const intersection = intersectPropsAndIndex(requiredProp, index, $)
+						if (intersection instanceof Disjoint) return intersection
+					}
+
+					for (const [indx, optionalProp] of optionalProps.entries()) {
+						const intersection = intersectPropsAndIndex(optionalProp, index, $)
+						if (intersection instanceof Disjoint) return intersection
+						if (intersection === null) continue
+						newOptionalProps[indx] = intersection
+						updated = true
+					}
+				}
+
+				if (updated) {
+					return $.node(
+						"structure",
+						{ ...inner, optional: newOptionalProps },
+						{ prereduced: true }
+					)
+				}
+			}
 		}
 	})
 
@@ -328,9 +394,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	keyof(): BaseRoot {
 		if (this._keyof) return this._keyof
 		let branches = this.$.units(this.literalKeys).branches
-		this.index?.forEach(({ signature }) => {
-			branches = branches.concat(signature.branches)
-		})
+		if (this.index) {
+			for (const { signature } of this.index)
+				branches = branches.concat(signature.branches)
+		}
 		return (this._keyof = this.$.node("union", branches))
 	}
 
@@ -399,10 +466,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			required = this.propsByKey[key]!.required
 		}
 
-		this.index?.forEach(n => {
-			if (typeOrTermExtends(key, n.signature))
-				value = value?.and(n.value) ?? n.value
-		})
+		if (this.index) {
+			for (const n of this.index) {
+				if (typeOrTermExtends(key, n.signature))
+					value = value?.and(n.value) ?? n.value
+			}
+		}
 
 		if (
 			this.sequence &&
@@ -549,202 +618,394 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (!requireExhasutiveTraversal(this, traversalKind)) return true
+		if (this.index || this.undeclared === "reject") {
+			const keys: Key[] = Object.keys(data)
+			keys.push(...Object.getOwnPropertySymbols(data))
 
-		const keys: Key[] = Object.keys(data)
-		keys.push(...Object.getOwnPropertySymbols(data))
+			for (let i = 0; i < keys.length; i++) {
+				const k = keys[i]
 
-		for (let i = 0; i < keys.length; i++) {
-			const k = keys[i]
-
-			let matched = false
-
-			if (this.index) {
-				for (const node of this.index) {
-					if (node.signature.traverseAllows(k, ctx)) {
-						if (traversalKind === "Allows") {
-							const result = traverseKey(
-								k,
-								() => node.value.traverseAllows(data[k as never], ctx),
-								ctx
-							)
-							if (!result) return false
-						} else {
-							traverseKey(
-								k,
-								() => node.value.traverseApply(data[k as never], ctx),
-								ctx
-							)
-							if (ctx.failFast && ctx.currentErrorCount > errorCount)
-								return false
+				if (this.index) {
+					for (const node of this.index) {
+						if (node.signature.traverseAllows(k, ctx)) {
+							if (traversalKind === "Allows") {
+								const result = traverseKey(
+									k,
+									() => node.value.traverseAllows(data[k as never], ctx),
+									ctx
+								)
+								if (!result) return false
+							} else {
+								traverseKey(
+									k,
+									() => node.value.traverseApply(data[k as never], ctx),
+									ctx
+								)
+								if (ctx.failFast && ctx.currentErrorCount > errorCount)
+									return false
+							}
 						}
-
-						matched = true
 					}
 				}
-			}
 
-			if (this.undeclared) {
-				matched ||= k in this.propsByKey
-				matched ||=
-					this.sequence !== undefined &&
-					typeof k === "string" &&
-					$ark.intrinsic.nonNegativeIntegerString.allows(k)
-				if (!matched) {
+				if (this.undeclared === "reject" && !this.declaresKey(k)) {
 					if (traversalKind === "Allows") return false
-					if (this.undeclared === "reject") {
-						ctx.errorFromNodeContext({
-							// TODO: this should have its own error code
-							code: "predicate",
-							expected: "removed",
-							actual: "",
-							relativePath: [k],
-							meta: this.meta
-						})
-					} else {
-						ctx.queueMorphs([
-							data => {
-								delete data[k]
-								return data
-							}
-						])
-					}
+
+					// this should have its own error code:
+					// https://github.com/arktypeio/arktype/issues/1403
+					ctx.errorFromNodeContext({
+						code: "predicate",
+						expected: "removed",
+						actual: "",
+						relativePath: [k],
+						meta: this.meta
+					})
 
 					if (ctx.failFast) return false
 				}
 			}
 		}
 
+		// added additional ctx check here to address
+		// https://github.com/arktypeio/arktype/issues/1346
+		if (this.structuralMorph && ctx && !ctx.hasError())
+			ctx.queueMorphs([this.structuralMorph])
+
 		return true
 	}
 
-	compile(js: NodeCompiler): void {
+	get defaultable(): Optional.Node.withDefault[] {
+		return this.cacheGetter(
+			"defaultable",
+			this.optional?.filter(o => o.hasDefault()) ?? []
+		)
+	}
+
+	declaresKey = (k: Key): boolean =>
+		k in this.propsByKey ||
+		this.index?.some(n => n.signature.allows(k)) ||
+		(this.sequence !== undefined &&
+			$ark.intrinsic.nonNegativeIntegerString.allows(k))
+
+	_compileDeclaresKey(js: NodeCompiler): string {
+		const parts: string[] = []
+		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
+
+		if (this.index) {
+			for (const index of this.index)
+				parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
+		}
+
+		if (this.sequence)
+			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
+
+		// if parts is empty, this is a structure like { "+": "reject" }
+		// that declares no keys, so return false
+		return parts.join(" || ") || "false"
+	}
+
+	get structuralMorph(): Morph | undefined {
+		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
+	}
+
+	structuralMorphRef: RegisteredReference | undefined =
+		this.structuralMorph && registeredReference(this.structuralMorph)
+
+	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
-		this.props.forEach(prop => {
+		for (const prop of this.props) {
 			js.check(prop)
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
-		})
+		}
 
 		if (this.sequence) {
 			js.check(this.sequence)
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
 		}
 
-		if (requireExhasutiveTraversal(this, js.traversalKind)) {
+		if (this.index || this.undeclared === "reject") {
 			js.const("keys", "Object.keys(data)")
 			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
 		}
 
-		if (js.traversalKind === "Allows") js.return(true)
+		if (js.traversalKind === "Allows") return js.return(true)
+
+		// always queue deleteUndeclared on valid traversal for "delete"
+		if (this.structuralMorphRef) {
+			// added additional ctx check here to address
+			// https://github.com/arktypeio/arktype/issues/1346
+			js.if("ctx && !ctx.hasError()", () => {
+				js.line(`ctx.queueMorphs([`)
+				precompileMorphs(js, this)
+				return js.line("])")
+			})
+		}
 	}
 
 	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
 		js.const("k", "keys[i]")
 
-		if (this.undeclared) js.let("matched", false)
-
-		this.index?.forEach(node => {
-			js.if(
-				`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-				() => {
-					js.traverseKey("k", "data[k]", node.value)
-					if (this.undeclared) js.set("matched", true)
-					return js
-				}
-			)
-		})
-
-		if (this.undeclared) {
-			if (this.props?.length !== 0)
-				js.line(`matched ||= k in ${this.propsByKeyReference}`)
-
-			if (this.sequence) {
-				js.line(
-					`matched ||= typeof k === "string" && ${arrayIndexMatcherReference}.test(k)`
+		if (this.index) {
+			for (const node of this.index) {
+				js.if(
+					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
+					() => js.traverseKey("k", "data[k]", node.value)
 				)
 			}
+		}
 
-			js.if("!matched", () => {
+		if (this.undeclared === "reject") {
+			js.if(`!(${this._compileDeclaresKey(js)})`, () => {
 				if (js.traversalKind === "Allows") return js.return(false)
-				return this.undeclared === "reject" ?
-						js
-							.line(
-								// TODO: should have its own error code
-								`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
-							)
-							.if("ctx.failFast", () => js.return())
-					:	js.line(`ctx.queueMorphs([data => { delete data[k]; return data }])`)
+				return js
+					.line(
+						`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
+					)
+					.if("ctx.failFast", () => js.return())
 			})
 		}
 
 		return js
 	}
 
-	reduceJsonSchema(schema: JsonSchema.Structure): JsonSchema.Structure {
+	reduceJsonSchema(
+		schema: JsonSchema.Structure,
+		ctx: ToJsonSchema.Context
+	): JsonSchema.Structure {
 		switch (schema.type) {
 			case "object":
-				return this.reduceObjectJsonSchema(schema)
+				return this.reduceObjectJsonSchema(schema, ctx)
 			case "array":
+				const arraySchema =
+					this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
 				if (this.props.length || this.index) {
-					return JsonSchema.throwUnjsonifiableError(
-						`Additional properties on array ${this.expression}`
-					)
+					return ctx.fallback.arrayObject({
+						code: "arrayObject",
+						base: arraySchema,
+						object: this.reduceObjectJsonSchema({ type: "object" }, ctx)
+					})
 				}
-				return this.sequence?.reduceJsonSchema(schema) ?? schema
+
+				return arraySchema
+
 			default:
-				return JsonSchema.throwInternalOperandError("structure", schema)
+				return ToJsonSchema.throwInternalOperandError("structure", schema)
 		}
 	}
 
-	reduceObjectJsonSchema(schema: JsonSchema.Object): JsonSchema.Object {
+	reduceObjectJsonSchema(
+		schema: JsonSchema.Object,
+		ctx: ToJsonSchema.Context
+	): JsonSchema.Object {
 		if (this.props.length) {
 			schema.properties = {}
-			this.props.forEach(prop => {
+			for (const prop of this.props) {
+				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
+
 				if (typeof prop.key === "symbol") {
-					return JsonSchema.throwUnjsonifiableError(
-						`Symbolic key ${prop.serializedKey}`
-					)
+					ctx.fallback.symbolKey({
+						code: "symbolKey",
+						base: schema,
+						key: prop.key,
+						value: valueSchema,
+						optional: prop.optional
+					})
+					continue
 				}
 
-				schema.properties![prop.key] = prop.value.toJsonSchema()
-			})
-			if (this.requiredKeys.length)
-				schema.required = this.requiredKeys as string[]
-		}
+				if (prop.hasDefault()) {
+					const value =
+						typeof prop.default === "function" ? prop.default() : prop.default
+					valueSchema.default =
+						$ark.intrinsic.jsonData.allows(value) ?
+							value
+						:	ctx.fallback.defaultValue({
+								code: "defaultValue",
+								base: valueSchema,
+								value
+							})
+				}
 
-		this.index?.forEach(index => {
-			if (index.signature.equals($ark.intrinsic.string))
-				return (schema.additionalProperties = index.value.toJsonSchema())
-
-			if (!index.signature.extends($ark.intrinsic.string)) {
-				return JsonSchema.throwUnjsonifiableError(
-					`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
+				schema.properties![prop.key] = valueSchema
+			}
+			if (this.requiredKeys.length && schema.properties) {
+				schema.required = this.requiredKeys.filter(
+					(k): k is string => typeof k === "string" && k in schema.properties!
 				)
 			}
+		}
 
-			index.signature.branches.forEach(keyBranch => {
-				if (
-					!keyBranch.hasKind("intersection") ||
-					keyBranch.inner.pattern?.length !== 1
-				) {
-					return JsonSchema.throwUnjsonifiableError(
-						`Index signature ${keyBranch}`
-					)
+		if (this.index) {
+			for (const index of this.index) {
+				const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
+
+				if (index.signature.equals($ark.intrinsic.string)) {
+					schema.additionalProperties = valueJsonSchema
+					continue
 				}
 
-				schema.patternProperties ??= {}
-				schema.patternProperties[keyBranch.inner.pattern[0].rule] =
-					index.value.toJsonSchema()
-			})
-		})
+				for (const keyBranch of index.signature.branches) {
+					if (!keyBranch.extends($ark.intrinsic.string)) {
+						schema = ctx.fallback.symbolKey({
+							code: "symbolKey",
+							base: schema,
+							key: null,
+							value: valueJsonSchema,
+							optional: false
+						})
+
+						continue
+					}
+
+					let keySchema: JsonSchema.String = { type: "string" }
+					if (keyBranch.hasKind("morph")) {
+						keySchema = ctx.fallback.morph({
+							code: "morph",
+							base: keyBranch.in.toJsonSchemaRecurse(ctx),
+							out: keyBranch.out.toJsonSchemaRecurse(ctx)
+						}) as never
+					}
+					if (!keyBranch.hasKind("intersection")) {
+						return throwInternalError(
+							`Unexpected index branch kind ${keyBranch.kind}.`
+						)
+					}
+
+					const { pattern } = keyBranch.inner
+
+					if (pattern) {
+						const keySchemaWithPattern = Object.assign(keySchema, {
+							pattern: pattern[0].rule
+						})
+
+						for (let i = 1; i < pattern.length; i++) {
+							keySchema = ctx.fallback.patternIntersection({
+								code: "patternIntersection",
+								base: keySchemaWithPattern,
+								pattern: pattern[i].rule
+							})
+						}
+
+						schema.patternProperties ??= {}
+						schema.patternProperties[keySchemaWithPattern.pattern] =
+							valueJsonSchema
+					}
+				}
+			}
+		}
 
 		if (this.undeclared && !schema.additionalProperties)
 			schema.additionalProperties = false
 
 		return schema
 	}
+}
+
+const defaultableMorphsCache: Record<string, Morph | undefined> = {}
+
+type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
+	Pick<Structure.Node, "defaultable" | "declaresKey">
+
+const constructStructuralMorphCacheKey = (
+	node: PartiallyInitializedStructure
+): string => {
+	let cacheKey = ""
+
+	for (let i = 0; i < node.defaultable.length; i++)
+		cacheKey += node.defaultable[i].defaultValueMorphRef
+
+	if (node.sequence?.defaultValueMorphsReference)
+		cacheKey += node.sequence?.defaultValueMorphsReference
+
+	if (node.undeclared === "delete") {
+		cacheKey += "delete !("
+		if (node.required)
+			for (const n of node.required) cacheKey += n.compiledKey + " | "
+		if (node.optional)
+			for (const n of node.optional) cacheKey += n.compiledKey + " | "
+		if (node.index)
+			for (const index of node.index) cacheKey += index.signature.id + " | "
+		if (node.sequence) {
+			if (node.sequence.maxLength === null)
+				cacheKey += intrinsic.nonNegativeIntegerString.id
+			else {
+				for (let i = 0; i < node.sequence.tuple.length; i++)
+					cacheKey += i + " | "
+			}
+		}
+		cacheKey += ")"
+	}
+
+	return cacheKey
+}
+
+const getPossibleMorph = (
+	node: PartiallyInitializedStructure
+): Morph | undefined => {
+	const cacheKey = constructStructuralMorphCacheKey(node)
+	if (!cacheKey) return undefined
+
+	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
+
+	const $arkStructuralMorph: Morph = (data, ctx) => {
+		for (let i = 0; i < node.defaultable.length; i++) {
+			if (!(node.defaultable[i].key in data))
+				node.defaultable[i].defaultValueMorph(data, ctx)
+		}
+
+		if (node.sequence?.defaultables) {
+			for (
+				let i = data.length - node.sequence.prefixLength;
+				i < node.sequence.defaultables.length;
+				i++
+			)
+				node.sequence.defaultValueMorphs[i](data, ctx)
+		}
+
+		if (node.undeclared === "delete")
+			for (const k in data) if (!node.declaresKey(k)) delete (data as dict)[k]
+
+		return data
+	}
+
+	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
+}
+
+const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
+	const requiresContext =
+		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
+		node.sequence?.defaultValueMorphs.some(morph => morph.length === 2)
+
+	const args = `(data${requiresContext ? ", ctx" : ""})`
+
+	return js.block(`${args} => `, js => {
+		for (let i = 0; i < node.defaultable.length; i++) {
+			const { serializedKey, defaultValueMorphRef } = node.defaultable[i]
+			js.if(`!(${serializedKey} in data)`, js =>
+				js.line(`${defaultValueMorphRef}${args}`)
+			)
+		}
+
+		if (node.sequence?.defaultables) {
+			js.for(
+				`i < ${node.sequence.defaultables.length}`,
+				js => js.set(`data[i]`, 5),
+				`data.length - ${node.sequence.prefixLength}`
+			)
+		}
+
+		if (node.undeclared === "delete") {
+			js.forIn("data", js =>
+				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
+					js.line(`delete data[k]`)
+				)
+			)
+		}
+
+		return js.return("data")
+	})
 }
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
@@ -763,19 +1024,6 @@ export interface OptionalMappedPropInner extends Optional.Schema {
 export const Structure = {
 	implementation,
 	Node: StructureNode
-}
-
-const requireExhasutiveTraversal = (
-	node: Structure.Node,
-	traversalKind: TraversalKind
-) => {
-	if (node.index || node.undeclared === "reject") return true
-
-	// when applying key deletion, we must queue morphs for all undeclared keys
-	// when checking whether an input is allowed, they are irrelevant because it always will be
-	if (node.undeclared === "delete" && traversalKind === "Apply") return true
-
-	return false
 }
 
 const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {
@@ -813,13 +1061,13 @@ export const normalizeIndex = (
 
 	const normalized: NormalizedIndex = {}
 
-	enumerableBranches.forEach(n => {
+	for (const n of enumerableBranches) {
 		// since required can be reduced to optional if it has a default or
 		// optional meta on its value, we have to assign it depending on the
 		// compiled kind
 		const prop = $.node("required", { key: n.unit as Key, value })
 		normalized[prop.kind] = append(normalized[prop.kind], prop as never)
-	})
+	}
 
 	if (nonEnumerableBranches.length) {
 		normalized.index = $.node("index", {

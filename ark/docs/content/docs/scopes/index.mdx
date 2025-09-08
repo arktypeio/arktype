@@ -2,8 +2,6 @@
 title: Scopes
 ---
 
-import { CodeBlock } from "../../../components/CodeBlock.tsx"
-
 <a id="intro" />
 
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.
@@ -21,12 +19,12 @@ import { scope } from "arktype"
 
 const coolScope = scope({
 	// keywords are still available in your scope
-	id: "string",
+	Id: "string",
 	// but you can also reference your own aliases directly!
-	user: { id: "id", friends: "id[]" },
+	User: { id: "Id", friends: "Id[]" },
 	// your aliases will be autocompleted and validated alongside ArkType's keywords
-	usersById: {
-		"[id]": "user | undefined"
+	UsersById: {
+		"[Id]": "User | undefined"
 	}
 })
 ```
@@ -35,19 +33,19 @@ const coolScope = scope({
 
 <Callout type="warn" title="Don't wrap your scoped definitions in type!">
 
-Even if you reference it as part of your scope definition, the global 'type' parser only knows about builtin keywords.
+Even if you reference it as part of your scope definition, the global 'type' parser only knows about built-in keywords.
 
 ```ts
 // @errors: 2322
 const badScope = scope({
-	id: "string",
+	Id: "string",
 	// ❌ wrapping this definition in `type` will fail
-	badEntity: type({
-		id: "id"
+	BadEntity: type({
+		id: "Id"
 	}),
 	// ✅ reference scoped definitions directly instead of wrapping them
-	goodEntity: {
-		id: "id"
+	GoodEntity: {
+		id: "Id"
 	}
 })
 ```
@@ -58,22 +56,22 @@ If you need access to fluent syntax from within a Scope, see [thunks](/docs/scop
 
 ```ts
 const coolScope = scope({
-	id: "string",
-	user: { id: "id", friends: "id[]" },
-	usersById: {
-		"[id]": "user | undefined"
+	Id: "string",
+	User: { id: "Id", friends: "Id[]" },
+	UsersById: {
+		"[Id]": "User | undefined"
 	}
 })
 // ---cut---
 
 const group = coolScope.type({
 	name: "string",
-	members: "user[]"
+	members: "User[]"
 })
 
 // chained definitions are parsed in the same scope as the original Type
 const ownedGroup = group.and({
-	ownerId: "id"
+	ownerId: "Id"
 })
 ```
 
@@ -81,10 +79,10 @@ To use the scoped types directly, you must `.export()` your `Scope` to a `Module
 
 ```ts
 const coolScope = scope({
-	id: "string",
-	user: { id: "id", friends: "id[]" },
-	usersById: {
-		"[id]": "user | undefined"
+	Id: "string",
+	User: { id: "Id", friends: "Id[]" },
+	UsersById: {
+		"[Id]": "User | undefined"
 	}
 })
 
@@ -98,7 +96,7 @@ const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 const coolModule = coolScope.export()
 
-const out = coolModule.user({
+const out = coolModule.User({
 	id: "99",
 	friends: ["7", 8, "9"]
 })
@@ -116,13 +114,10 @@ if (out instanceof type.errors) {
 
 ```ts
 const coolScope = scope({
-	// keywords are still available in your scope
-	id: "string",
-	// but you can also reference your own aliases directly!
-	user: { id: "id", friends: "id[]" },
-	// your aliases will be autocompleted and validated alongside ArkType's keywords
-	usersById: {
-		"[id]": "user | undefined"
+	Id: "string",
+	User: { id: "Id", friends: "Id[]" },
+	UsersById: {
+		"[Id]": "User | undefined"
 	}
 })
 // ---cut---
@@ -147,7 +142,7 @@ If you don't plan to reuse your `Scope` to create additional types, it is common
 
 ```ts
 const ezModule = scope({
-	ez: "'moochi'"
+	Ez: "'moochi'"
 }).export()
 ```
 
@@ -155,7 +150,7 @@ const ezModule = scope({
 
 ```ts
 const ezModule = type.module({
-	ez: "'moochi'"
+	Ez: "'moochi'"
 })
 ```
 
@@ -165,14 +160,14 @@ Scopes make it easy to create recursive `Type`s. Just reference the alias like y
 
 ```ts
 export const types = scope({
-	package: {
+	Package: {
 		name: "string",
-		"dependencies?": "package[]",
-		"contributors?": "contributor[]"
+		"dependencies?": "Package[]",
+		"contributors?": "Contributor[]"
 	},
-	contributor: {
+	Contributor: {
 		email: "string.email",
-		"packages?": "package[]"
+		"packages?": "Package[]"
 	}
 }).export()
 ```
@@ -181,19 +176,19 @@ Cyclic types are inferred to arbitrary depth. At runtime, they can safely valida
 
 ```ts
 export const types = scope({
-	package: {
+	Package: {
 		name: "string",
-		"dependencies?": "package[]",
-		"contributors?": "contributor[]"
+		"dependencies?": "Package[]",
+		"contributors?": "Contributor[]"
 	},
-	contributor: {
+	Contributor: {
 		email: "string.email",
-		"packages?": "package[]"
+		"packages?": "Package[]"
 	}
 }).export()
 // ---cut---
 
-export type Package = typeof types.package.infer
+export type Package = typeof types.Package.infer
 
 const packageData: Package = {
 	name: "arktype",
@@ -205,7 +200,7 @@ const packageData: Package = {
 packageData.dependencies![0].dependencies = [packageData]
 
 // ArkErrors: contributors[0].email must be an email address (was "david@sharktypeio")
-const out = types.package(packageData)
+const out = types.Package(packageData)
 ```
 
 <Callout type="warn" title="Some `any`s are not what they seem!">
@@ -225,17 +220,17 @@ This can be done using _private_ aliases:
 ```ts
 const shapeScope = scope({
 	// aliases with a "#" prefix are treated as private
-	"#baseShapeProps": {
+	"#BaseShapeProps": {
 		perimeter: "number",
 		area: "number"
 	},
-	ellipse: {
+	Ellipse: {
 		// when referencing a private alias, the "#" should not be included
-		"...": "baseShapeProps",
+		"...": "BaseShapeProps",
 		radii: ["number", "number"]
 	},
-	rectangle: {
-		"...": "baseShapeProps",
+	Rectangle: {
+		"...": "BaseShapeProps",
 		width: "number",
 		height: "number"
 	}
@@ -243,7 +238,7 @@ const shapeScope = scope({
 
 // private aliases can be referenced from any scoped definition,
 // even outside the original scope
-const partialShape = shapeScope.type("Partial<baseShapeProps>")
+const PartialShape = shapeScope.type("Partial<BaseShapeProps>")
 
 // when the scope is exported to a Module, they will not be included
 // hover to see the Scope's exports
@@ -267,11 +262,11 @@ const userModule = type.module({
 	// internally, but they will not be included in `userModule`.
 	// if we used `export()` instead, `withId` could be accessed on `userModule`.
 	...utilityScope.import(),
-	payload: {
+	Payload: {
 		name: "string",
 		age: "number"
 	},
-	db: "withId<payload>"
+	db: "withId<Payload>"
 })
 ```
 
@@ -333,22 +328,22 @@ const userModule = type.module({
 	},
 	// subaliases can extend a base type by referencing 'root'
 	// like any other alias
-	admin: {
+	Admin: {
 		"...": "root",
 		isAdmin: "true"
 	},
-	saiyan: {
+	Saiyan: {
 		"...": "root",
 		powerLevel: "number > 9000"
 	}
 })
 
-const rootModule = type.module({
-	user: userModule,
+const types = type.module({
+	User: userModule,
 	// user can now be referenced directly in a definition
-	group: "user[]",
+	Group: "User[]",
 	// or used as a prefix to access subaliases
-	elevatedUser: "user.admin | user.saiyan"
+	ElevatedUser: "User.Admin | User.Saiyan"
 })
 ```
 
@@ -358,15 +353,15 @@ When users are first learning about Scopes, one of the most common mistakes is t
 
 <CodeBlock fromFile="nestedTypeInScopeError" />
 
-This error occurs because although the `id` alias would be resolvable in the current Scope directly, `type` only allows references to builtin keywords. In this case, the `type` wrapper is redundant and the fix is to simply remove it:
+This error occurs because although the `id` alias would be resolvable in the current Scope directly, `type` only allows references to built-in keywords. In this case, the `type` wrapper is redundant and the fix is to simply remove it:
 
 ```ts
 const myScope = scope({
-	id: "string#id",
-	user: {
+	Id: "string#id",
+	User: {
 		name: "string",
 		// now resolves correctly
-		id: "id"
+		id: "Id"
 	}
 })
 ```
@@ -375,13 +370,13 @@ However, even if it is _possible_ to define your scope without invoking `type` b
 
 ```ts
 const $ = scope({
-	id: "string#id",
+	Id: "string#id",
 	expandUserGroup: () =>
 		$.type({
 			name: "string",
-			id: "id"
+			id: "Id"
 		})
-			.or("id")
+			.or("Id")
 			.pipe(user =>
 				typeof user === "string" ? { id: user, name: "Anonymous" } : user
 			)
@@ -403,7 +398,7 @@ Though thunk definitions are really only useful when defining a Scope, they can 
 
 ```ts
 // you *can* use them anywhere, but *should* you? (no)
-const myInelegantType = type(() =>
+const MyInelegantType = type(() =>
 	type({ inelegantKey: () => type("'inelegant value'") })
 )
 ```

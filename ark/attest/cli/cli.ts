@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { fileName } from "@ark/fs"
-import { basename } from "path"
+import { basename } from "node:path"
 import { precache } from "./precache.ts"
 import { stats } from "./stats.ts"
 import { trace } from "./trace.ts"

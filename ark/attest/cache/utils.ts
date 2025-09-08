@@ -11,10 +11,7 @@ import {
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
 } from "./ts.ts"
-import type {
-	AssertionsByFile,
-	LinePositionRange
-} from "./writeAssertionCache.ts"
+import type { LinePositionRange } from "./writeAssertionCache.ts"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression
@@ -41,15 +38,16 @@ export const getCallLocationFromCallExpression = (
 	return location
 }
 
+/**
+ * Processes inline instantiations from an attest call
+ * Preserves any JSDoc comments that are associated with the original expression
+ */
 export const gatherInlineInstantiationData = (
 	file: ts.SourceFile,
-	fileAssertions: AssertionsByFile,
-	attestAliasInstantiationMethodCalls: string[]
+	assertionsByFile: Record<string, any[]>,
+	instantiationMethodCalls: string[]
 ): void => {
-	const expressions = getCallExpressionsByName(
-		file,
-		attestAliasInstantiationMethodCalls
-	)
+	const expressions = getCallExpressionsByName(file, instantiationMethodCalls)
 	if (!expressions.length) return
 
 	const enclosingFunctions = expressions.map(expression => {
@@ -81,8 +79,8 @@ ${enclosingFunction.ancestor.getText()}`
 			count: getInstantiationsContributedByNode(file, body)
 		}
 	})
-	const assertions = fileAssertions[getFileKey(file.fileName)] ?? []
-	fileAssertions[getFileKey(file.fileName)] = [
+	const assertions = assertionsByFile[getFileKey(file.fileName)] ?? []
+	assertionsByFile[getFileKey(file.fileName)] = [
 		...assertions,
 		...instantiationInfo
 	]
@@ -94,7 +92,7 @@ export const getCallExpressionsByName = (
 	isSnapCall = false
 ): ts.CallExpression[] => {
 	const calls: ts.CallExpression[] = []
-	getDescendants(startNode).forEach(descendant => {
+	for (const descendant of getDescendants(startNode)) {
 		if (ts.isCallExpression(descendant)) {
 			if (names.includes(descendant.expression.getText()) || !names.length)
 				calls.push(descendant)
@@ -104,7 +102,7 @@ export const getCallExpressionsByName = (
 					calls.push(descendant as any as ts.CallExpression)
 			}
 		}
-	})
+	}
 	return calls
 }
 
@@ -208,11 +206,21 @@ const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
 
 	let baselineSourceFileText = originalFile.getFullText()
 
-	calls.forEach(call => {
+	// for each test function like `it` or `bench`, walk up the AST to find the complete expression
+	for (const call of calls) {
+		let currentNode: ts.Node = call
+
+		// ensure we capture the entire chain like bench(...).types(...)
+		while (currentNode.parent && !ts.isExpressionStatement(currentNode))
+			currentNode = currentNode.parent
+
+		const fullExpressionText = currentNode.getFullText()
+
 		baselineSourceFileText = baselineSourceFileText.replace(
-			call.getFullText(),
+			fullExpressionText,
 			""
 		)
-	})
+	}
+
 	return baselineSourceFileText
 }

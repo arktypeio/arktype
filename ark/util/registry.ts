@@ -1,5 +1,6 @@
 import { domainOf } from "./domain.ts"
 import { throwInternalError } from "./errors.ts"
+import { isomorphic } from "./isomorphic.ts"
 import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 
 // Eventually we can just import from package.json in the source itself
@@ -7,11 +8,11 @@ import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.37.0"
+export const arkUtilVersion = "0.49.0"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: import.meta.filename ?? globalThis.__filename ?? "unknown",
+	filename: isomorphic.fileName(),
 	FileConstructor
 }
 
@@ -33,7 +34,7 @@ declare global {
 	}
 }
 
-const namesByResolution = new WeakMap<object | symbol, string>()
+const namesByResolution = new Map<object | symbol, string>()
 const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
@@ -50,7 +51,7 @@ export const register = (value: object | symbol): string => {
 }
 
 export const isDotAccessible = (keyName: string): boolean =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
+	/^[$A-Z_a-z][\w$]*$/.test(keyName)
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {

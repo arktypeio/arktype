@@ -3,60 +3,74 @@ import { keywords, type } from "arktype"
 
 contextualize(() => {
 	it("alpha", () => {
-		const alpha = type("string.alpha")
-		attest(alpha("user")).snap("user")
-		attest(alpha("user123").toString()).snap(
+		const Alpha = type("string.alpha")
+		attest(Alpha("user")).snap("user")
+		attest(Alpha("user123").toString()).snap(
 			'must be only letters (was "user123")'
 		)
 	})
 
 	it("alphanumeric", () => {
-		const alphanumeric = type("string.alphanumeric")
-		attest(alphanumeric("user123")).snap("user123")
-		attest(alphanumeric("user")).snap("user")
-		attest(alphanumeric("123")).snap("123")
-		attest(alphanumeric("abc@123").toString()).equals(
+		const Alphanumeric = type("string.alphanumeric")
+		attest(Alphanumeric("user123")).snap("user123")
+		attest(Alphanumeric("user")).snap("user")
+		attest(Alphanumeric("123")).snap("123")
+		attest(Alphanumeric("abc@123").toString()).equals(
 			'must be only letters and digits 0-9 (was "abc@123")'
 		)
 	})
 
+	it("hex", () => {
+		const Hex = type("string.hex")
+		attest(Hex("1fA3").toString()).equals("1fA3")
+		attest(Hex("0x1A3").toString()).equals(
+			'must be hex characters only (was "0x1A3")'
+		)
+		attest(Hex("V29.yZA").toString()).equals(
+			'must be hex characters only (was "V29.yZA")'
+		)
+		attest(Hex("fn5-").toString()).equals(
+			'must be hex characters only (was "fn5-")'
+		)
+	})
+
 	it("base64", () => {
-		const b64 = type("string.base64")
-		attest(b64("fn5+")).snap("fn5+")
-		attest(b64("V29yZA==")).snap("V29yZA==")
-		attest(b64("V29yZA").toString()).equals(
+		const B64 = type("string.base64")
+		attest(B64("fn5+")).snap("fn5+")
+		attest(B64("V29yZA==")).snap("V29yZA==")
+		attest(B64("V29yZA").toString()).equals(
 			'must be base64-encoded (was "V29yZA")'
 		)
-		attest(b64("V29.yZA").toString()).equals(
+		attest(B64("V29.yZA").toString()).equals(
 			'must be base64-encoded (was "V29.yZA")'
 		)
-		attest(b64("fn5-").toString()).equals('must be base64-encoded (was "fn5-")')
+		attest(B64("fn5-").toString()).equals('must be base64-encoded (was "fn5-")')
 
-		const b64url = type("string.base64.url")
-		attest(b64url("fn5-")).snap("fn5-")
-		attest(b64url("V29yZA")).snap("V29yZA")
-		attest(b64url("V29yZA==")).snap("V29yZA==")
-		attest(b64url("V29yZA%3D%3D")).snap("V29yZA%3D%3D")
-		attest(b64url("V29.yZA").toString()).equals(
+		const B64url = type("string.base64.url")
+		attest(B64url("fn5-")).snap("fn5-")
+		attest(B64url("V29yZA")).snap("V29yZA")
+		attest(B64url("V29yZA==")).snap("V29yZA==")
+		attest(B64url("V29yZA%3D%3D")).snap("V29yZA%3D%3D")
+		attest(B64url("V29.yZA").toString()).equals(
 			'must be base64url-encoded (was "V29.yZA")'
 		)
-		attest(b64url("fn5+").toString()).equals(
+		attest(B64url("fn5+").toString()).equals(
 			'must be base64url-encoded (was "fn5+")'
 		)
 	})
 
 	it("digits", () => {
-		const digits = type("string.digits")
-		attest(digits("123")).snap("123")
-		attest(digits("user123").toString()).equals(
+		const Digits = type("string.digits")
+		attest(Digits("123")).snap("123")
+		attest(Digits("user123").toString()).equals(
 			'must be only digits 0-9 (was "user123")'
 		)
 	})
 
 	it("email", () => {
-		const email = type("string.email")
-		attest(email("shawn@mail.com")).snap("shawn@mail.com")
-		attest(email("shawn@email").toString()).equals(
+		const Email = type("string.email")
+		attest(Email("shawn@mail.com")).snap("shawn@mail.com")
+		attest(Email("shawn@email").toString()).equals(
 			'must be an email address (was "shawn@email")'
 		)
 	})
@@ -86,31 +100,31 @@ contextualize(() => {
 		const validIPv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
 
 		it("root", () => {
-			const ip = type("string.ip")
+			const Ip = type("string.ip")
 
-			attest(ip(validIPv4)).equals(validIPv4)
+			attest(Ip(validIPv4)).equals(validIPv4)
 
-			attest(ip(validIPv6)).equals(validIPv6)
+			attest(Ip(validIPv6)).equals(validIPv6)
 
-			attest(ip("192.168.1.256").toString()).snap(
+			attest(Ip("192.168.1.256").toString()).snap(
 				'must be an IP address (was "192.168.1.256")'
 			)
-			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap(
+			attest(Ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap(
 				'must be an IP address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
 
 		it("version subtype", () => {
-			const uuidv4 = type("string.ip.v4")
+			const Uuidv4 = type("string.ip.v4")
 
-			attest(uuidv4(validIPv4)).equals(validIPv4)
-			attest(uuidv4("1234").toString()).snap(
+			attest(Uuidv4(validIPv4)).equals(validIPv4)
+			attest(Uuidv4("1234").toString()).snap(
 				'must be an IPv4 address (was "1234")'
 			)
 
 			attest(keywords.string.ip.v6(validIPv6)).equals(validIPv6)
 
-			attest(uuidv4(validIPv6).toString()).snap(
+			attest(Uuidv4(validIPv6).toString()).snap(
 				'must be an IPv4 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:7334")'
 			)
 

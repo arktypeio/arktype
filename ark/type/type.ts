@@ -3,10 +3,10 @@ import {
 	BaseRoot,
 	GenericRoot,
 	type BaseParseOptions,
-	type MetaSchema,
 	type Morph,
 	type Predicate,
-	type RootSchema
+	type RootSchema,
+	type TypeMeta
 } from "@ark/schema"
 import {
 	Callable,
@@ -25,8 +25,15 @@ import type {
 	validateParameterString
 } from "./generic.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
+import type { MatchParser } from "./match.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
+import type {
+	NaryIntersectionParser,
+	NaryMergeParser,
+	NaryPipeParser,
+	NaryUnionParser
+} from "./nary.ts"
 import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
@@ -50,13 +57,13 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	/**
 	 * Create a {@link Type} from your definition.
 	 *
-	 * @example const person = type({ name: "string" })
+	 * @example const Person = type({ name: "string" })
 	 */
-	<const def, r = Type<type.infer<def, $>, $>>(
+	<const def, r = type.instantiate<def, $>>(
 		// Parse and check the definition, returning either the original input for a
 		// valid definition or a string representing an error message.
 		def: type.validate<def, $>
-	): r
+	): r extends infer _ ? _ : never
 
 	/**
 	 * Create a {@link Generic} from a parameter string and body definition.
@@ -68,16 +75,20 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * parameter names specified in the previous argument in addition to aliases
 	 * from its {@link Scope}.
 	 *
-	 * @example const boxOf = type("<t extends string | number>", { contents: "t" })
+	 * @example const BoxOf = type("<t extends string | number>", { contents: "t" })
 	 */
-	<const params extends ParameterString, const def>(
+	<
+		const params extends ParameterString,
+		const def,
+		r = Generic<parseValidGenericParams<params, $>, def, $>
+	>(
 		params: validateParameterString<params, $>,
 		def: type.validate<
 			def,
 			$,
 			baseGenericConstraints<parseValidGenericParams<params, $>>
 		>
-	): Generic<parseValidGenericParams<params, $>, def, $>
+	): r extends infer _ ? _ : never
 
 	/**
 	 * Create a {@link Type} from a [tuple expression](http://localhost:3000/docs/expressions)
@@ -89,7 +100,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		const zero,
 		const one,
 		const rest extends array,
-		r = Type<type.infer<[zero, one, ...rest], $>, $>
+		r = type.instantiate<[zero, one, ...rest], $>
 	>(
 		_0: zero extends IndexZeroOperator ? zero : type.validate<zero, $>,
 		_1: zero extends "keyof" ? type.validate<one, $>
@@ -101,10 +112,11 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		: one extends TupleInfixOperator ?
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
-			: one extends "@" ? [MetaSchema]
+			: one extends "|>" ? [type.validate<rest[0], $>]
+			: one extends "@" ? [TypeMeta.MappableInput]
 			: [type.validate<rest[0], $>]
 		:	[]
-	): r
+	): r extends infer _ ? _ : never
 
 	/**
 	 * An alias of the {@link ArkErrors} class, an instance of which is returned when a {@link Type}
@@ -133,6 +145,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	scope: ScopeParser
 	define: DefinitionParser<$>
 	generic: GenericParser<$>
+	match: MatchParser<$>
 	schema: SchemaParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to the argument passed to this function.
@@ -143,15 +156,47 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	/**
 	 * Create a {@link Type} that is satisfied only by a value strictly equal (`===`) to one of the arguments passed to this function.
 	 * @example const enum = type.enumerated('foo', 'bar', obj) // obj is a by-reference object
-	 * @example const tupleForm = type(['===', 'foo', 'bar', obj])
-	 * @example const argsForm = type('===', 'foo', 'bar', obj)
+	 * @example const TupleForm = type(['===', 'foo', 'bar', obj])
+	 * @example const ArgsForm = type('===', 'foo', 'bar', obj)
 	 */
 	enumerated: EnumeratedTypeParser<$>
+	/**
+	 * Create a {@link Type} that is satisfied only by one of the Object.values() of the argument passed to this function.
+	 *
+	 * ⚠️ For TypeScript enum compatibility, values at numeric keys with corresponding numeric values will not be included.
+	 * @example const myEnum = type.valueOf(myTsEnum)
+	 */
+	valueOf: ValueOfTypeParser<$>
 	/**
 	 * Create a {@link Type} that is satisfied only by a value of a specific class.
 	 * @example const array = type.instanceOf(Array)
 	 */
 	instanceOf: InstanceOfTypeParser<$>
+	/**
+	 * Create a {@link Type} from a union of definitions
+	 * @example const T = type.or("string", "number")
+	 */
+	or: NaryUnionParser<$>
+	/**
+	 * Create a {@link Type} from an intersection of definitions
+	 * @example const T = type.and({ a: "1" }, { b: "2" })
+	 */
+	and: NaryIntersectionParser<$>
+	/**
+	 * Create a {@link Type} by merging object definitions, with later
+	 * definitions having precedence for overlapping keys
+	 * @example
+	 * // Type<{ a: "3", b: "2", c: "4" }>
+	 * const T = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
+	 */
+	merge: NaryMergeParser<$>
+	/**
+	 * Create a {@link Type} from a set of morphs (including Types)
+	 * @example
+	 * // Type<(In: string) => To<object>>
+	 * const T = type.pipe(type.string, s => JSON.parse(s), type.object)
+	 */
+	pipe: NaryPipeParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -168,13 +213,19 @@ export class InternalTypeParser extends Callable<
 				module: $.constructor.module,
 				scope: $.constructor.scope,
 				define: $.define as never,
+				match: $.match as never,
 				generic: $.generic as never,
 				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
 				keywords: $.ambient as never,
 				unit: $.unit,
 				enumerated: $.enumerated,
-				instanceOf: $.instanceOf
+				instanceOf: $.instanceOf,
+				valueOf: $.valueOf,
+				or: $.or,
+				and: $.and,
+				merge: $.merge,
+				pipe: $.pipe
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
@@ -233,6 +284,10 @@ export type InstanceOfTypeParser<$> = <const t extends object>(
 export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
+
+export type ValueOfTypeParser<$> = <const o extends object>(
+	o: o
+) => Type<o[keyof o], $>
 
 export type DefinitionParser<$> = <const def>(def: type.validate<def, $>) => def
 

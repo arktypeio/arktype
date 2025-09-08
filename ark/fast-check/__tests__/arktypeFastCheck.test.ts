@@ -7,62 +7,62 @@ import { describe } from "mocha"
 contextualize(() => {
 	describe("union", () => {
 		it("boolean", () => {
-			const t = type("boolean")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("boolean")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("number|string", () => {
-			const t = type("number|string")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("number|string")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 	})
 
 	describe("number", () => {
 		it("number", () => {
-			const t = type("number")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("number")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("Tight Bound", () => {
-			const t = type("4<number<5")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("4<number<5")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("Integer", () => {
-			const t = type("number.integer")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("number.integer")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("Invalid Bound", () => {
-			const t = type("4<number.integer<5")
-			attest(() => assertProperty(arkToArbitrary(t), t)).throws(
+			const T = type("4<number.integer<5")
+			attest(() => assertProperty(arkToArbitrary(T), T)).throws(
 				"No integer value satisfies >5 & <4"
 			)
 		})
 		it("equals", () => {
-			const t = type("number==2")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("number==2")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("divisible", () => {
-			const t = type("number%2")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("number%2")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("large divisor", () => {
-			const t = type("number%7654321001>1")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("number%7654321001>1")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("divisible within range", () => {
-			const t = type("15<number%7<39")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("15<number%7<39")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("non-divisible within range", () => {
-			const t = type("52<number%10<58")
-			attest(() => arkToArbitrary(t)).throws(
+			const T = type("52<number%10<58")
+			attest(() => arkToArbitrary(T)).throws(
 				"No values within range 53 - 57 are divisible by 10."
 			)
 		})
@@ -70,214 +70,214 @@ contextualize(() => {
 
 	describe("string", () => {
 		it("string", () => {
-			const t = type("string")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("string")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("bounded string", () => {
-			const t = type("string < 5")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("string < 5")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("double bounded string", () => {
-			const t = type("3<string <= 8")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("3<string <= 8")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("regex", () => {
-			const t = type("string.email")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("string.email")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("multiple regexes", () => {
-			const t = type("string.email").and("string.alpha")
-			attest(() => arkToArbitrary(t)).throws(
+			const T = type("string.email").and("string.alpha")
+			attest(() => arkToArbitrary(T)).throws(
 				"Multiple regexes on a single node is not supported."
 			)
 		})
 		it("bounded regex", () => {
-			const t = type("string.email<5")
-			attest(() => arkToArbitrary(t)).throws("Bounded regex is not supported.")
+			const T = type("string.email<5")
+			attest(() => arkToArbitrary(T)).throws("Bounded regex is not supported.")
 		})
 	})
 
 	describe("misc", () => {
 		it("unknown", () => {
-			const t = type("unknown")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("unknown")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("unknown[]", () => {
-			const t = type("unknown[]")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("unknown[]")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("bigint", () => {
-			const t = type("bigint")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("bigint")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("symbol", () => {
-			const t = type("symbol")
-			const arbitrary = arkToArbitrary(t)
-			return assertProperty(arbitrary, t)
+			const T = type("symbol")
+			const arbitrary = arkToArbitrary(T)
+			return assertProperty(arbitrary, T)
 		})
 		it("false", () => {
-			const t = type("false")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("false")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("true", () => {
-			const t = type("true")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("true")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("literal number", () => {
-			const t = type("0.5")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("0.5")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("literal string", () => {
-			const t = type("'hello'")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("'hello'")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("morph", () => {
-			const t = type(["string<5", "=>", val => `${val}`])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["string<5", "=>", val => `${val}`])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 	})
 
 	describe("array", () => {
 		it("Array keyword", () => {
-			const t = type("Array")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("Array")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("constrained Array keyword", () => {
-			const t = type("Array<2")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("Array<2")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("string[]", () => {
-			const t = type("string[]")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("string[]")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("number[][]", () => {
-			const t = type("number[][]")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("number[][]")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("bounded array", () => {
-			const t = type("3<number[]<=5")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("3<number[]<=5")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("union array", () => {
-			const t = type("(string|number)[]")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("(string|number)[]")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 	})
 
 	describe("tuple", () => {
 		it("empty tuple", () => {
-			const t = type([])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type([])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("one element tuple", () => {
-			const t = type(["string"])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["string"])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("two element tuple", () => {
-			const t = type(["string", "number"])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["string", "number"])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 
 		it("just variadic", () => {
-			const t = type(["...", "string[]"])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["...", "string[]"])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("variadic", () => {
-			const t = type(["number", "...", "string[]"])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["number", "...", "string[]"])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("one element optional tuple", () => {
-			const t = type(["string?"])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["string?"])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("tuple with optional", () => {
-			const t = type(["number", "string>2?"])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type(["number", "string>2?"])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 	})
 
 	describe("object", () => {
 		it("{}", () => {
-			const t = type({})
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type({})
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("object keyword", () => {
-			const t = type("object")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("object")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("object with optional key", () => {
-			const t = type({ a: "string", "b?": "3<number<5" })
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type({ a: "string", "b?": "3<number<5" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("nested object", () => {
-			const t = type({
+			const T = type({
 				a: {
 					b: "string >= 2",
 					"c?": "string"
 				},
 				"d?": "number"
 			})
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("intersected object", () => {
-			const t = type([{ a: "string" }, "&", { b: "number" }])
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type([{ a: "string" }, "&", { b: "number" }])
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("symbol key", () => {
 			const s = Symbol()
-			const t = type({
+			const T = type({
 				[s]: "string"
 			})
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("index signature", () => {
-			const t = type({ "[string]": "number|string" })
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type({ "[string]": "number|string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("multiple index signatures", () => {
-			const t = type({
+			const T = type({
 				"[string]": "number|string",
 				"[symbol]": "string"
 			})
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("symbol index signature", () => {
-			const t = type({ "[symbol]": "number|string" })
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type({ "[symbol]": "number|string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("contains alias", () => {
 			const example = {
@@ -286,9 +286,9 @@ contextualize(() => {
 					friends: "user[]"
 				}
 			} as const
-			const t = scope(example).type("user")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = scope(example).type("user")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("cyclic", () => {
 			const $ = scope({
@@ -304,37 +304,37 @@ contextualize(() => {
 			)
 		})
 		it("unknown array with additional props", () => {
-			const t = type({ name: "string" }).and("unknown[]")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type({ name: "string" }).and("unknown[]")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
-		it("array keyword with additional propss", () => {
-			const t = type({ name: "string" }).and("Array<4")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+		it("array keyword with additional props", () => {
+			const T = type({ name: "string" }).and("Array<4")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
-		it("array with additional propss", () => {
-			const t = type({ name: "string" }).and("string[]")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+		it("array with additional props", () => {
+			const T = type({ name: "string" }).and("string[]")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 	})
 
 	describe("proto", () => {
 		it("Set", () => {
-			const t = type("Set")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("Set")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("Date", () => {
-			const t = type("Date")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("Date")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 		it("bounded date", () => {
-			const t = type("d'2001/10/10'<Date<=d'2005/10/10'")
-			const arbitrary = arkToArbitrary(t)
-			assertProperty(arbitrary, t)
+			const T = type("d'2001/10/10'<Date<=d'2005/10/10'")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
 		})
 	})
 })

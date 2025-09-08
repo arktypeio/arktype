@@ -1,4 +1,6 @@
 import {
+	arrayEquals,
+	flatMorph,
 	includes,
 	inferred,
 	omit,
@@ -7,14 +9,14 @@ import {
 	type Fn,
 	type array
 } from "@ark/util"
+import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
-	appendUniqueFlatRefs,
-	type FlatRef,
 	type GettableKeyOrNode,
-	type KeyOrKeyNode
+	type KeyOrKeyNode,
+	type NodeSelector
 } from "../node.ts"
 import type { Predicate } from "../predicate.ts"
 import type { Divisor } from "../refinements/divisor.ts"
@@ -29,7 +31,7 @@ import type {
 	UnknownRangeSchema
 } from "../refinements/range.ts"
 import type { BaseScope } from "../scope.ts"
-import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
+import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
@@ -46,6 +48,7 @@ import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
+import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -66,7 +69,7 @@ export abstract class BaseRoot<
 		out d extends InternalRootDeclaration = InternalRootDeclaration
 	>
 	extends BaseNode<d>
-	implements StandardSchemaV1
+	implements StandardSchemaV1.WithJSONSchemaSource
 {
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
@@ -75,11 +78,6 @@ export abstract class BaseRoot<
 		super(attachments, $)
 		// define as a getter to avoid it being enumerable/spreadable
 		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
-	}
-
-	assert = (data: unknown): unknown => {
-		const result = this.traverse(data)
-		return result instanceof ArkErrors ? result.throw() : result
 	}
 
 	get internal(): this {
@@ -94,6 +92,15 @@ export abstract class BaseRoot<
 				const out = this(input)
 				if (out instanceof ArkErrors) return out
 				return { value: out }
+			},
+			toJSONSchema: opts => {
+				if (opts.target && opts.target !== "draft-2020-12") {
+					return throwParseError(
+						`JSONSchema target '${opts.target}' is not supported (must be "draft-2020-12")`
+					)
+				}
+				if (opts.io === "input") return this.in.toJsonSchema() as never
+				return this.out.toJsonSchema() as never
 			}
 		}
 	}
@@ -126,14 +133,59 @@ export abstract class BaseRoot<
 		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
-	abstract get shortDescription(): string
+	abstract get defaultShortDescription(): string
 
-	protected abstract innerToJsonSchema(): JsonSchema
-
-	toJsonSchema(): JsonSchema {
-		const schema = this.innerToJsonSchema()
-		return Object.assign(schema, this.metaJson)
+	get shortDescription(): string {
+		return this.meta.description ?? this.defaultShortDescription
 	}
+
+	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
+		const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
+			this.$.resolvedConfig.toJsonSchema,
+			opts
+		)
+
+		ctx.useRefs ||= this.isCyclic
+
+		// ensure $schema is the first key if present
+		const schema: JsonSchema =
+			typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
+
+		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
+
+		if (ctx.useRefs) {
+			schema.$defs = flatMorph(this.references, (i, ref) =>
+				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
+					[ref.id, ref.toResolvedJsonSchema(ctx)]
+				:	[]
+			)
+		}
+
+		return schema
+	}
+
+	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
+		if (ctx.useRefs && !this.alwaysExpandJsonSchema)
+			return { $ref: `#/$defs/${this.id}` }
+
+		return this.toResolvedJsonSchema(ctx)
+	}
+
+	get alwaysExpandJsonSchema(): boolean {
+		return (
+			this.isBasis() ||
+			this.kind === "alias" ||
+			(this.hasKind("union") && this.isBoolean)
+		)
+	}
+
+	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		const result = this.innerToJsonSchema(ctx)
+
+		return Object.assign(result, this.metaJson)
+	}
+
+	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
@@ -284,10 +336,12 @@ export abstract class BaseRoot<
 
 	array(): BaseRoot {
 		return this.$.schema(
-			{
-				proto: Array,
-				sequence: this
-			},
+			this.isUnknown() ?
+				{ proto: Array }
+			:	{
+					proto: Array,
+					sequence: this
+				},
 			{ prereduced: true }
 		) as never
 	}
@@ -313,12 +367,15 @@ export abstract class BaseRoot<
 		return rNode.extends(this)
 	}
 
-	configure(meta: MetaSchema): this {
-		return this.configureShallowDescendants(meta)
+	configure(
+		meta: TypeMeta.MappableInput,
+		selector: NodeSelector = "shallow"
+	): this {
+		return this.configureReferences(meta, selector)
 	}
 
-	describe(description: string): this {
-		return this.configure({ description })
+	describe(description: string, selector: NodeSelector = "shallow"): this {
+		return this.configure({ description }, selector)
 	}
 
 	// these should ideally be implemented in arktype since they use its syntax
@@ -342,13 +399,17 @@ export abstract class BaseRoot<
 	}
 
 	protected _pipe(...morphs: Morph[]): BaseRoot {
-		return morphs.reduce<BaseRoot>((acc, morph) => acc.pipeOnce(morph), this)
+		const result = morphs.reduce<BaseRoot>(
+			(acc, morph) => acc.rawPipeOnce(morph),
+			this
+		)
+		return this.$.finalize(result)
 	}
 
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
-		return morphs.reduce<BaseRoot>(
+		const result = morphs.reduce<BaseRoot>(
 			(acc, morph) =>
-				acc.pipeOnce(
+				acc.rawPipeOnce(
 					hasArkKind(morph, "root") ? morph : (
 						(In, ctx) => {
 							try {
@@ -365,6 +426,7 @@ export abstract class BaseRoot<
 				),
 			this
 		)
+		return this.$.finalize(result)
 	}
 
 	pipe = Object.assign(this._pipe.bind(this), {
@@ -381,7 +443,7 @@ export abstract class BaseRoot<
 		return result as BaseRoot
 	}
 
-	private pipeOnce(morph: Morph): BaseRoot {
+	rawPipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "root")) return this.toNode(morph)
 
 		return this.distribute(
@@ -396,29 +458,6 @@ export abstract class BaseRoot<
 						morphs: [morph]
 					}),
 			this.$.parseSchema
-		)
-	}
-
-	get flatMorphs(): array<FlatRef<Morph.Node>> {
-		return this.cacheGetter(
-			"flatMorphs",
-			this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
-				(branches, ref) =>
-					appendUniqueFlatRefs(
-						branches,
-						ref.node.hasKind("union") ?
-							ref.node.branches
-								.filter(b => b.hasKind("morph"))
-								.map(branch => ({
-									path: ref.path,
-									propString: ref.propString,
-									node: branch
-								}))
-						: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
-						: []
-					),
-				[]
-			)
 		)
 	}
 
@@ -505,6 +544,29 @@ export abstract class BaseRoot<
 				)
 			)
 		)
+	}
+
+	hasEqualMorphs(r: BaseRoot): boolean {
+		if (!this.includesTransform && !r.includesTransform) return true
+
+		if (!arrayEquals(this.shallowMorphs as Morph[], r.shallowMorphs as Morph[]))
+			return false
+
+		if (
+			!arrayEquals(this.flatMorphs, r.flatMorphs, {
+				isEqual: (l, r) =>
+					l.propString === r.propString &&
+					(l.node.hasKind("morph") && r.node.hasKind("morph") ?
+						l.node.hasEqualMorphs(r.node)
+					: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
+						l.node.structure?.structuralMorphRef ===
+						r.node.structure?.structuralMorphRef
+					:	false)
+			})
+		)
+			return false
+
+		return true
 	}
 
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {
