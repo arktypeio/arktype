@@ -72,12 +72,6 @@ type _Result = finalizeTree<
 >
 
 contextualize(() => {
-	it("erate", () => {
-		// attest<"b\\1$", Result["unscanned"]>()
-	})
-
-	it("erate more", () => {})
-
 	describe("literals", () => {
 		it("base", () => {
 			const S = regex("abc")
@@ -315,13 +309,12 @@ contextualize(() => {
 			)
 		})
 
-		// TODO: reenable
-		// it("many ranges", () => {
-		// 	const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
-		// 	attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`, {}>>(
-		// 		S
-		// 	)
-		// })
+		it("many ranges", () => {
+			const S = regex("^x{0}a{1}b{2}c{3}d{3,}e{1,2}f{4}$")
+			attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`, {}>>(
+				S
+			)
+		})
 
 		it("unmatched", () => {
 			// @ts-expect-error
@@ -852,10 +845,6 @@ contextualize(() => {
 		})
 
 		it("multiple refs", () => {
-			type OptimalPattern = "ae" | "abcdebcd" | "abcdebcdc"
-			type OptimalCaptures = ["bcd", "c"] | [undefined, undefined]
-			type OptimalNames = { foo: "bcd" } | { foo: undefined }
-
 			const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
 
 			attest<
