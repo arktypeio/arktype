@@ -57,3 +57,9 @@ bench("quantified char min max", () => {
 bench("quantified string", () => {
 	const r = regex("^.{5,10}$")
 }).types([509, "instantiations"])
+
+bench("semver", () => {
+	const r = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
+}).types()
+
+const z = regex("^(0|[1-9]\\d*)\\.$")

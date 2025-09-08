@@ -28,7 +28,8 @@ import {
 	type ReferenceNode,
 	type s,
 	type SequenceTree,
-	type State
+	type State,
+	type UnionTree
 } from "@ark/regex/internal/state.js"
 import {
 	writeUnclosedGroupMessage,
@@ -39,30 +40,34 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type _ParseResult = iterate<
-	State.initialize<"^a(?<foo>b(c)d)?e\\1\\2$", "">,
-	14
->
+type _ParseResult = iterate<State.initialize<"[1-9]", "">, 1>
 type _AstResult = State.Group.finalize<_ParseResult>
 type _FinalizedResult = s.finalize<_ParseResult>
 
 type _Tree = SequenceTree<
 	[
-		"a",
-		{
-			kind: "quantifier"
-			ast: GroupTree<
-				SequenceTree<
-					["b", GroupTree<"c", State.UnnamedCaptureKind.indexed>, "d"]
-				>,
-				"foo"
-			>
-			min: 0
-			max: 1
-		},
-		"e",
-		ReferenceNode<"1">,
-		ReferenceNode<"2">
+		"<​^​>",
+		GroupTree<
+			UnionTree<
+				[
+					"0",
+					SequenceTree<
+						[
+							UnionTree<["1", string]>,
+							{
+								kind: "quantifier"
+								ast: `${bigint}`
+								min: 0
+								max: null
+							}
+						]
+					>
+				]
+			>,
+			State.UnnamedCaptureKind.indexed
+		>,
+		".",
+		"<​$​>"
 	]
 >
 
@@ -363,6 +368,14 @@ contextualize(() => {
 			) // ranges widen to string for now
 		})
 
+		it("range tree", () => {
+			// was previously incorrectly inferred as UnionTree<["1", string]>
+			type Tree = State.Group.finalize<
+				iterate<State.initialize<"[1-9]", "">, 1>
+			>
+			attest<string, Tree>()
+		})
+
 		it("literal dash start", () => {
 			const S = regex("^a[-abc]$")
 			attest<Regex<`a${"-" | "a" | "b" | "c"}`, {}>>(S)
@@ -371,6 +384,16 @@ contextualize(() => {
 		it("literal dash end", () => {
 			const S = regex("^a[abc-]$")
 			attest<Regex<`a${"a" | "b" | "c" | "-"}`, {}>>(S)
+		})
+
+		it("literal dash post range", () => {
+			type Tree = State.Group.finalize<
+				iterate<State.initialize<"[a-z-Z]", "">, 1>
+			>
+			attest<UnionTree<[string, "-", "Z"]>, Tree>()
+
+			const S = regex("[a-z-Z]")
+			attest<Regex<string, {}>>(S)
 		})
 
 		it("escaped dash", () => {

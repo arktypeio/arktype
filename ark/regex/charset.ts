@@ -1,6 +1,7 @@
 import type {
 	Backslash,
 	ErrorMessage,
+	noSuggest,
 	Scanner,
 	writeUnclosedGroupMessage
 } from "@ark/util"
@@ -19,7 +20,11 @@ export type parseCharset<s extends State, unscanned extends string> =
 				branches extends string[] ?
 					branches extends [] ?
 						s.error<emptyCharacterSetMessage>
-					:	s.shiftQuantifiable<s, UnionTree<branches>, remaining>
+					:	s.shiftQuantifiable<
+							s,
+							branches["length"] extends 1 ? branches[0] : UnionTree<branches>,
+							remaining
+						>
 				:	never
 			:	never
 		:	s.error<writeUnclosedGroupMessage<"]">>
@@ -33,16 +38,21 @@ type parseNonNegatedCharset<chars extends string, set extends string[]> =
 	:	set
 
 type parseDash<unscanned extends string, set extends string[]> =
-	// leading -, treat as literal
-	set extends [] ? parseNonNegatedCharset<unscanned, ["-"]>
-	: parseChar<unscanned> extends Scanner.shiftResult<string, infer next> ?
-		next extends `-${infer postLiteralDash}` ?
-			parseNonNegatedCharset<postLiteralDash, [...set, string, "-"]>
-		:	parseNonNegatedCharset<next, [...set, string]>
-	:	// trailing -, treat as literal
-		[...set, "-"]
+	set extends [...infer chars extends string[], string] ?
+		// the last element of the set will be the range start
+		parseChar<unscanned> extends Scanner.shiftResult<string, infer next> ?
+			// the next unscanned character will be the range end
+			next extends `-${infer postLiteralDash}` ?
+				// literal - post range, e.g. "-" in [a-z-Z]
+				// (both the second - and Z are treated as literal here)
+				parseNonNegatedCharset<postLiteralDash, [...chars, string, "-"]>
+			:	parseNonNegatedCharset<next, [...chars, string]>
+		:	// trailing -, treat as literal
+			[...set, "-"]
+	:	// leading -, treat as literal
+		parseNonNegatedCharset<unscanned, ["-"]>
 
-type UnescapedDashMarker = "dash"
+type UnescapedDashMarker = noSuggest<"dash">
 
 type parseChar<unscanned extends string> =
 	unscanned extends Scanner.shift<infer lookahead, infer next> ?
