@@ -14,12 +14,6 @@ Inspired by tools like [T3 Env](https://env.t3.gg) but tailored specifically for
 // @noErrors
 import { createEnv } from "arkenv"
 
-const envSchema = type({
-	HOST: "string.host",
-	PORT: "number.port",
-	NODE_ENV: "'development' | 'production' | 'test' = 'development'"
-})
-
 const env = createEnv({
 	HOST: "string.host",
 	PORT: "number.port",
