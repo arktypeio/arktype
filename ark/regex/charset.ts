@@ -6,7 +6,7 @@ import type {
 	writeUnclosedGroupMessage
 } from "@ark/util"
 import type { parseEscapedChar, StringDigit } from "./escape.ts"
-import type { s, State, UnionTree } from "./state.ts"
+import type { s, State } from "./state.ts"
 
 export type parseCharset<s extends State, unscanned extends string> =
 	Scanner.shiftUntilEscapable<unscanned, "]", Backslash> extends (
@@ -16,51 +16,42 @@ export type parseCharset<s extends State, unscanned extends string> =
 			// we don't care about the contents of the negated char set because we can't infer it
 			scanned extends Scanner.shift<"^", string> ?
 				s.shiftQuantifiable<s, string, remaining>
-			: parseNonNegatedCharset<scanned, []> extends (
-				infer branches extends string[]
+			: parseNonNegatedCharset<scanned, never, null> extends (
+				infer result extends string
 			) ?
-				branches extends [] ?
+				[result] extends [never] ?
 					s.error<emptyCharacterSetMessage>
-				:	s.shiftQuantifiable<
-						s,
-						branches["length"] extends 1 ? branches[0] : UnionTree<branches>,
-						remaining
-					>
+				:	s.shiftQuantifiable<s, result, remaining>
 			:	never
 		:	s.error<writeUnclosedGroupMessage<"]">>
 	:	never
 
-type parseNonNegatedCharset<chars extends string, set extends string[]> =
+type parseNonNegatedCharset<
+	chars extends string,
+	set extends string,
+	lastChar extends string | null
+> =
 	parseChar<chars> extends Scanner.shiftResult<infer result, infer unscanned> ?
-		result extends UnescapedDashMarker ? parseDash<unscanned, set>
+		result extends UnescapedDashMarker ? parseDash<unscanned, set, lastChar>
 		: result extends ErrorMessage ? result
-		: parseNonNegatedCharset<unscanned, [...set, result]>
+		: parseNonNegatedCharset<unscanned, set | result, result>
 	:	set
 
-type parseDash<unscanned extends string, set extends string[]> =
-	set extends (
-		[...infer chars extends string[], infer rangeStart extends string]
-	) ?
-		// the last element of the set will be the range start
+type parseDash<
+	unscanned extends string,
+	set extends string,
+	lastChar extends string | null
+> =
+	lastChar extends string ?
+		// we have a last character to use as range start
 		parseChar<unscanned> extends (
 			Scanner.shiftResult<infer rangeEnd, infer next>
 		) ?
-			// the next unscanned character will be the range end
-			next extends `-${infer postLiteralDash}` ?
-				// literal - post range, e.g. "-" in [a-z-Z]
-				// (both the second - and Z are treated as literal here)
-				parseNonNegatedCharset<
-					postLiteralDash,
-					[...chars, inferRange<rangeStart, rangeEnd>, "-"]
-				>
-			:	parseNonNegatedCharset<
-					next,
-					[...chars, inferRange<rangeStart, rangeEnd>]
-				>
+			parseNonNegatedCharset<next, set | inferRange<lastChar, rangeEnd>, null>
 		:	// trailing -, treat as literal
-			[...set, "-"]
-	:	// leading -, treat as literal
-		parseNonNegatedCharset<unscanned, ["-"]>
+			set | "-"
+	:	// leading -, treat as literal (lastChar is null)
+		parseNonNegatedCharset<unscanned, set | "-", "-">
 
 // don't infer the full union of characters for ranges as it would blow up tsc
 // immediately, but handle cases like 0-9 better than just `string`

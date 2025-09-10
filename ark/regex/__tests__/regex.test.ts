@@ -388,9 +388,9 @@ contextualize(() => {
 
 		it("literal dash post range", () => {
 			type Tree = State.Group.finalize<
-				iterate<State.initialize<"[a-z-Z]", "">, 1>
+				iterate<State.initialize<"[0-9-Z]", "">, 1>
 			>
-			attest<UnionTree<[string, "-", "Z"]>, Tree>()
+			attest<"-" | "Z" | `${bigint}`, Tree>()
 
 			const S = regex("[a-z-Z]")
 			attest<Regex<string, {}>>(S)
