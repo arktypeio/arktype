@@ -1,6 +1,5 @@
 import type {
 	contains,
-	equals,
 	ErrorMessage,
 	leftIfEqual,
 	noSuggest,
@@ -742,10 +741,16 @@ type anchorsAway<pattern extends string> =
 	: pattern extends `${infer endStripped}${EndAnchorMarker}` ? endStripped
 	: pattern
 
-type appendNonRedundant<
-	base extends string,
-	suffix extends string
-> = leftIfEqual<base, `${base}${suffix}`>
+type appendNonRedundant<base extends string, suffix extends string> =
+	string extends base ?
+		string extends suffix ?
+			string
+		:	`${base}${suffix}`
+	: `${bigint}` extends base ?
+		`${bigint}` extends suffix ?
+			`${bigint}`
+		:	`${base}${suffix}`
+	:	`${base}${suffix}`
 
 type prependNonRedundant<
 	base extends string,
