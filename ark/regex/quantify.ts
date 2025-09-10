@@ -89,7 +89,9 @@ export type quantify<
 	max extends number | null
 > =
 	max extends 0 ? ""
-	: string extends pattern ? string
+	: // repeating string or `${bigint}` any number of times will not change the type
+	string extends pattern ? string
+	: `${bigint}` extends pattern ? `${bigint}`
 	: _loopUntilMin<pattern, min, max, "", []>
 
 type _loopUntilMin<
@@ -103,7 +105,7 @@ type _loopUntilMin<
 		max extends number ? _loopUntilMax<base, min, max, acc, repetitions>
 		: repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
 		: `${acc}${string}`
-	:	_loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]> // array.multiply<repetitionDepth, baseDepth["length"]>
+	:	_loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 
 type _loopUntilMax<
 	base extends string,

@@ -60,4 +60,4 @@ bench("quantified string", () => {
 
 bench("semver", () => {
 	const r = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
-}).types()
+}).types([36320, "instantiations"])

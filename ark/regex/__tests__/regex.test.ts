@@ -1274,22 +1274,11 @@ contextualize(() => {
 		})
 	})
 
-	describe("depth limits", () => {
-		// 📊 aggregated type performance:
-		// from before limit:
-		// {
-		//     "checkTime": 5.33,
-		//     "types": 181215,
-		//     "instantiations": 683907
-		// }
-		it("string fallback", () => {
-			const S = regex("^ab?c?d?e?f?g?h?i?j?k?l?m?n?o?$")
-
-			// characters after m fallback to string to avoid the sequence depth exceeding ArkEnv.maxDepth
-			type Expected =
-				`a${"b" | ""}${"c" | ""}${"d" | ""}${"e" | ""}${"f" | ""}${"g" | ""}${"h" | ""}${"i" | ""}${"j" | ""}${"k" | ""}${"l" | ""}${"m" | ""}${string | ""}`
-			attest<Regex<Expected, {}>>(S)
-		})
+	it("combinatorial", () => {
+		const S = regex("^ab?c?d?e?f?g?h?i?j?k?l?m?n?o?$")
+		type Expected =
+			`a${"b" | ""}${"c" | ""}${"d" | ""}${"e" | ""}${"f" | ""}${"g" | ""}${"h" | ""}${"i" | ""}${"j" | ""}${"k" | ""}${"l" | ""}${"m" | ""}${"n" | ""}${"o" | ""}`
+		attest<Regex<Expected, {}>>(S)
 	})
 
 	it("semver", () => {

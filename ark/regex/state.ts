@@ -1,5 +1,6 @@
 import type {
 	contains,
+	equals,
 	ErrorMessage,
 	leftIfEqual,
 	noSuggest,
@@ -658,16 +659,6 @@ export declare namespace QuantifierTree {
 			}>
 }
 
-declare global {
-	export interface ArkEnv {
-		maxDepth(): 8191
-	}
-
-	export namespace ArkEnv {
-		export type maxDepth = ReturnType<ArkEnv["maxDepth"]>
-	}
-}
-
 export type pushQuantifiable<sequence extends RegexAst, root extends RegexAst> =
 	root extends "" ? sequence
 	: sequence extends string ?
@@ -720,8 +711,6 @@ export declare namespace FinalizationResult {
 		}
 	}>
 }
-
-// 	longerThan<depth, ArkEnv.maxDepth> extends true ?
 
 export type finalizeTree<tree, ctx extends FinalizationContext> =
 	tree extends string ?
