@@ -1285,19 +1285,19 @@ contextualize(() => {
 		const S = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
 
 		type ExpectedPattern =
-			| `0.0.${string}`
-			| `0.${string}.0`
-			| `0.${string}.${string}`
-			| `${string}.0.0`
-			| `${string}.0.${string}`
-			| `${string}.${string}.0`
-			| `${string}.${string}.${string}`
+			| `0.0.${bigint}`
+			| `0.${bigint}.0`
+			| `0.${bigint}.${bigint}`
+			| `${bigint}.0.0`
+			| `${bigint}.0.${bigint}`
+			| `${bigint}.${bigint}.0`
+			| `${bigint}.${bigint}.${bigint}`
 
 		attest<
 			Regex<
 				ExpectedPattern,
 				{
-					captures: [string, string, string]
+					captures: [`${bigint}`, `${bigint}`, `${bigint}`]
 				}
 			>
 		>(S)

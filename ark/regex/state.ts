@@ -742,10 +742,7 @@ type anchorsAway<pattern extends string> =
 	: pattern
 
 type appendNonRedundant<base extends string, suffix extends string> =
-	string extends base ?
-		string extends suffix ?
-			string
-		:	`${base}${suffix}`
+	string extends base & suffix ? string
 	: `${bigint}` extends base ?
 		`${bigint}` extends suffix ?
 			`${bigint}`

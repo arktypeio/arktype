@@ -28,36 +28,36 @@ bench("repeat(513)", () => {
 
 bench("anchored union", () => {
 	const r = regex("typescript|^go$|brrr$")
-}).types([2969, "instantiations"])
+}).types([2836, "instantiations"])
 
 bench("?(1)", () => {
 	const r = regex("^a?$")
-}).types([498, "instantiations"])
+}).types([483, "instantiations"])
 
 bench("?(4)", () => {
 	const r = regex("^a?b?c?d?$")
-}).types([1510, "instantiations"])
+}).types([1480, "instantiations"])
 
 bench("?(7)", () => {
 	const r = regex("^a?b?c?d?e?f?g?$")
-}).types([4210, "instantiations"])
+}).types([4165, "instantiations"])
 
 bench("escape(6)", () => {
 	const r = regex("^\t\n\r\v\f\0$")
-}).types([1011, "instantiations"])
+}).types([961, "instantiations"])
 
 bench("quantified char", () => {
 	const r = regex("^a{5}$")
-}).types([605, "instantiations"])
+}).types([592, "instantiations"])
 
 bench("quantified char min max", () => {
 	const r = regex("^a{5,10}$")
-}).types([694, "instantiations"])
+}).types([681, "instantiations"])
 
 bench("quantified string", () => {
 	const r = regex("^.{5,10}$")
-}).types([509, "instantiations"])
+}).types([484, "instantiations"])
 
 bench("semver", () => {
 	const r = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
-}).types([36320, "instantiations"])
+}).types([35631, "instantiations"])
