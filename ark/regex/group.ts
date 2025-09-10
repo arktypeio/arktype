@@ -118,13 +118,13 @@ type _parseModifiers<
 export const writeDuplicateModifierMessage = <modifier extends ModifiableFlag>(
 	modifier: modifier
 ): writeDuplicateModifierMessage<modifier> =>
-	`modifier ${modifier} cannot appear multiple times in a single group`
+	`Modifier ${modifier} cannot appear multiple times in a single group`
 
 type writeDuplicateModifierMessage<modifier extends ModifiableFlag> =
-	`modifier ${modifier} cannot appear multiple times in a single group`
+	`Modifier ${modifier} cannot appear multiple times in a single group`
 
 export const multipleModifierDashesMessage =
-	"modifiers can include at most one '-' to negate subsequent flags"
+	"Modifiers can include at most one '-' to negate subsequent flags"
 
 type multipleModifierDashesMessage = typeof multipleModifierDashesMessage
 
@@ -156,12 +156,6 @@ type shiftNamedGroup<unscanned extends string> =
 			Scanner.shiftResult<"", ErrorMessage<unnamedCaptureGroupMessage>>
 		:	Scanner.shiftResult<name, next>
 	:	Scanner.shiftResult<"", ErrorMessage<writeUnclosedGroupMessage<">">>>
-
-// first capture group is 1
-type nextCaptureIndex<captures, counter extends 1[] = [1]> =
-	counter["length"] extends keyof captures ?
-		nextCaptureIndex<captures, [...counter, 1]>
-	:	counter["length"]
 
 export const unnamedCaptureGroupMessage = "Capture group <> requires a name"
 

@@ -16,16 +16,16 @@ export type parseCharset<s extends State, unscanned extends string> =
 			// we don't care about the contents of the negated char set because we can't infer it
 			scanned extends Scanner.shift<"^", string> ?
 				s.shiftQuantifiable<s, string, remaining>
-			: parseNonNegatedCharset<scanned, []> extends infer branches ?
-				branches extends string[] ?
-					branches extends [] ?
-						s.error<emptyCharacterSetMessage>
-					:	s.shiftQuantifiable<
-							s,
-							branches["length"] extends 1 ? branches[0] : UnionTree<branches>,
-							remaining
-						>
-				:	never
+			: parseNonNegatedCharset<scanned, []> extends (
+				infer branches extends string[]
+			) ?
+				branches extends [] ?
+					s.error<emptyCharacterSetMessage>
+				:	s.shiftQuantifiable<
+						s,
+						branches["length"] extends 1 ? branches[0] : UnionTree<branches>,
+						remaining
+					>
 			:	never
 		:	s.error<writeUnclosedGroupMessage<"]">>
 	:	never

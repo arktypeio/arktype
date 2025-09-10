@@ -253,6 +253,13 @@ export declare namespace s {
 		:	// if there were errors, return the first one
 			r["ctx"]["errors"][0]
 
+	type collapseUnion<t, base = t> =
+		t extends unknown ?
+			t extends Exclude<base, t> ?
+				never
+			:	t
+		:	never
+
 	type finalizeContext<ctx extends FinalizationContext> =
 		ctx["captures"] extends EmptyCaptures ? finalizeContextWithoutCaptures<ctx>
 		:	finalizeContextWithCaptures<{
@@ -415,6 +422,8 @@ export declare namespace UnionTree {
 		FinalizedBranch.from<{
 			pattern: r["pattern"]
 			captures: finalizeBranchCaptures<acc, ctx, r>
+			// undefined will be added to named captures as needed
+			// by finalizeBranches since it can be done in one step
 			names: r["ctx"]["names"]
 		}>
 	]
