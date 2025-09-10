@@ -79,7 +79,7 @@ Here are some simple examples of type assertions and snapshotting:
 // @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {
 	it("type and value assertions", () => {
-		const Even = type("number%2")
+		const even = type("number%2")
 		// asserts even.infer is exactly number
 		attest<number>(even.infer)
 		// make assertions about types and values seamlessly
@@ -128,11 +128,11 @@ describe("attest features", () => {
 	})
 
 	it("integrate runtime logic with type assertions", () => {
-		const ArrayOf = type("<t>", "t[]")
+		const arrayOf = type("<t>", "t[]")
 		const numericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
-		if (getTsVersionUnderTest().startsWith("5")) {
+		if (getPrimaryTsVersionUnderTest().startsWith("5")) {
 			// this assertion will only occur when testing TypeScript 5+!
 			attest<(number | bigint)[]>(numericArray.infer)
 		}
