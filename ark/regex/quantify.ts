@@ -87,14 +87,34 @@ export type quantify<
 	pattern extends string,
 	min extends number,
 	max extends number | null
+> = tryFastPath<pattern, min, max>
+
+type tryFastPath<
+	pattern extends string,
+	min extends number,
+	max extends number | null
 > =
 	max extends 0 ? ""
 	: // repeating string or `${bigint}` any number of times will not change the type
 	string extends pattern ? string
 	: `${bigint}` extends pattern ? `${bigint}`
-	: _loopUntilMin<pattern, min, max, "", []>
+	: min extends 0 ?
+		max extends 1 ? "" | pattern
+		: max extends number ? loopFromZero<pattern, max, "", []>
+		: // max is null, all we can do is append ${string}
+			"" | `${pattern}${string}`
+	:	loopUntilMin<pattern, min, max, "", []>
 
-type _loopUntilMin<
+type loopFromZero<
+	base extends string,
+	max extends number,
+	acc extends string,
+	repetitions extends 1[]
+> =
+	repetitions["length"] extends max ? acc
+	:	loopFromZero<base, max, acc | `${acc}${base}`, [...repetitions, 1]>
+
+type loopUntilMin<
 	base extends string,
 	min extends number,
 	max extends number | null,
@@ -102,12 +122,15 @@ type _loopUntilMin<
 	repetitions extends 1[]
 > =
 	repetitions["length"] extends min ?
-		max extends number ? _loopUntilMax<base, min, max, acc, repetitions>
-		: repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
+		max extends number ? loopUntilMax<base, min, max, acc, repetitions>
+		: // don't need appendNonRedundant for these cases because if the pattern is
+		// something collapsible like `string` or `bigint, the fast path has
+		// already been taken
+		repetitions["length"] extends 0 ? acc | `${acc}${base}${string}`
 		: `${acc}${string}`
-	:	_loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]>
+	:	loopUntilMin<base, min, max, `${acc}${base}`, [...repetitions, 1]>
 
-type _loopUntilMax<
+type loopUntilMax<
 	base extends string,
 	min extends number,
 	max extends number,
@@ -115,7 +138,7 @@ type _loopUntilMax<
 	repetitions extends 1[]
 > =
 	repetitions["length"] extends max ? acc
-	:	_loopUntilMax<base, min, max, acc | `${acc}${base}`, [...repetitions, 1]>
+	:	loopUntilMax<base, min, max, acc | `${acc}${base}`, [...repetitions, 1]>
 
 export type QuantifyingChar = "*" | "+" | "?"
 
