@@ -5,7 +5,7 @@ import type {
 	Scanner,
 	writeUnclosedGroupMessage
 } from "@ark/util"
-import type { parseEscapedChar } from "./escape.ts"
+import type { parseEscapedChar, StringDigit } from "./escape.ts"
 import type { s, State, UnionTree } from "./state.ts"
 
 export type parseCharset<s extends State, unscanned extends string> =
@@ -38,19 +38,34 @@ type parseNonNegatedCharset<chars extends string, set extends string[]> =
 	:	set
 
 type parseDash<unscanned extends string, set extends string[]> =
-	set extends [...infer chars extends string[], string] ?
+	set extends (
+		[...infer chars extends string[], infer rangeStart extends string]
+	) ?
 		// the last element of the set will be the range start
-		parseChar<unscanned> extends Scanner.shiftResult<string, infer next> ?
+		parseChar<unscanned> extends (
+			Scanner.shiftResult<infer rangeEnd, infer next>
+		) ?
 			// the next unscanned character will be the range end
 			next extends `-${infer postLiteralDash}` ?
 				// literal - post range, e.g. "-" in [a-z-Z]
 				// (both the second - and Z are treated as literal here)
-				parseNonNegatedCharset<postLiteralDash, [...chars, string, "-"]>
-			:	parseNonNegatedCharset<next, [...chars, string]>
+				parseNonNegatedCharset<
+					postLiteralDash,
+					[...chars, inferRange<rangeStart, rangeEnd>, "-"]
+				>
+			:	parseNonNegatedCharset<
+					next,
+					[...chars, inferRange<rangeStart, rangeEnd>]
+				>
 		:	// trailing -, treat as literal
 			[...set, "-"]
 	:	// leading -, treat as literal
 		parseNonNegatedCharset<unscanned, ["-"]>
+
+// don't infer the full union of characters for ranges as it would blow up tsc
+// immediately, but handle cases like 0-9 better than just `string`
+type inferRange<start extends string, end extends string> =
+	start | end extends StringDigit ? `${bigint}` : string
 
 type UnescapedDashMarker = noSuggest<"dash">
 
