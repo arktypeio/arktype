@@ -1302,4 +1302,26 @@ contextualize(() => {
 			>
 		>(S)
 	})
+
+	describe("regex.cast", () => {
+		it("0 type parameters", () => {
+			const S = regex.cast("^hello$")
+			attest<Regex<string, {}>>(S)
+			attest(S.source).equals("^hello$")
+			attest(S.flags).equals("")
+		})
+
+		it("1 type parameter", () => {
+			const S = regex.cast<"hello">("^hello$")
+			attest<Regex<"hello", {}>>(S)
+		})
+
+		it("2 type parameters", () => {
+			const S = regex.cast<"hello", { captures: ["hello"]; flags: "gi" }>(
+				"^(hello)$",
+				"gi"
+			)
+			attest<Regex<"hello", { captures: ["hello"]; flags: "gi" }>>(S)
+		})
+	})
 })

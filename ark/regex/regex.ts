@@ -42,10 +42,22 @@ export interface Regex<
 	exec(s: string): never
 }
 
-export const regex = <src extends string, flags extends Flags = "">(
-	src: regex.validate<src, flags>,
-	flags?: flags
-): regex.parse<src, flags> => new RegExp(src, flags) as never
+export interface RegexParser {
+	<src extends string, flags extends Flags = "">(
+		src: regex.validate<src, flags>,
+		flags?: flags
+	): regex.parse<src, flags>
+
+	cast: <pattern extends string = string, ctx extends RegexContext = {}>(
+		src: string,
+		flags?: Flags
+	) => Regex<pattern, ctx>
+}
+
+export const regex: RegexParser = ((src, flags) =>
+	new RegExp(src, flags)) as RegexParser
+
+Object.assign(regex, { cast: regex })
 
 export type regex<
 	pattern extends string = string,

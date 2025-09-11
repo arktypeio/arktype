@@ -48,7 +48,9 @@ const caseInsensitive = regex("^ok$", "i")
 // Type: Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 ```
 
-## My regex is too long
+## FAQ
+
+### Why doesn't it work with my massive RegExp?
 
 If your expression is especially long or complex, TypeScript won't be able to infer it.
 
@@ -61,8 +63,9 @@ const complexPattern: Regex<"complex-string", { captures: [string, string] }> =
 ```
 
 <a id="footnote"></a>
-\*The actual runtime bundle size is one line:
+\*The actual runtime bundle size is two lines:
 
 ```ts
 export const regex = (src, flags) => new RegExp(src, flags)
+Object.assign(regex, { cast: regex })
 ```
