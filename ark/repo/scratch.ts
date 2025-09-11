@@ -1,8 +1,7 @@
 import { type } from "arktype"
 
-const User = type({
-	name: "string",
-	age: "number = 0"
+const RegexSignature = type({
+	"[/^_/]": "(string | number)[]"
 })
 
-User
+RegexSignature
