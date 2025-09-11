@@ -253,13 +253,6 @@ export declare namespace s {
 		:	// if there were errors, return the first one
 			r["ctx"]["errors"][0]
 
-	type collapseUnion<t, base = t> =
-		t extends unknown ?
-			t extends Exclude<base, t> ?
-				never
-			:	t
-		:	never
-
 	type finalizeContext<ctx extends FinalizationContext> =
 		ctx["captures"] extends EmptyCaptures ? finalizeContextWithoutCaptures<ctx>
 		:	finalizeContextWithCaptures<{
