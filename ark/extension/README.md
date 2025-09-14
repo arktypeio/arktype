@@ -4,11 +4,11 @@
 </div>
 <div align="center">
 
-[ArkType](https://arktype.io) syntax highlighting and theme⛵
+[ArkType](https://arktype.io) syntax highlighting and ErrorLens ⛵
 
 </div>
 
-We're building a 1:1 validator for TypeScript! Check out our core project [on GitHub](https://github.com/arktypeio/arktype)!
+ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. Check out our core project [on GitHub](https://github.com/arktypeio/arktype)!
 
 ## Features
 
