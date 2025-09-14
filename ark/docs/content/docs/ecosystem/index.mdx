@@ -12,9 +12,9 @@ Inspired by tools like [T3 Env](https://env.t3.gg) but tailored specifically for
 
 ```ts
 // @noErrors
-import arkenv from "arkenv"
+import { createEnv } from "arkenv"
 
-const env = arkenv({
+const env = createEnv({
 	HOST: "string.host",
 	PORT: "number.port",
 	NODE_ENV: "'development' | 'production' | 'test' = 'development'"
