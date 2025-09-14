@@ -48,7 +48,7 @@ export type parseDefault<root, unscanned extends string> =
 export const writeNonLiteralDefaultMessage = <defaultDef extends string>(
 	defaultDef: defaultDef
 ): writeNonLiteralDefaultMessage<defaultDef> =>
-	`Default value '${defaultDef}' must a literal value`
+	`Default value '${defaultDef}' must be a literal value`
 
 export type writeNonLiteralDefaultMessage<defaultDef extends string> =
-	`Default value '${defaultDef}' must a literal value`
+	`Default value '${defaultDef}' must be a literal value`
