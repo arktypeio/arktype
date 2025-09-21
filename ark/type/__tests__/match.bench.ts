@@ -16,7 +16,7 @@ bench("case(3, define)", () =>
 		.case("-2", n => `${n}` as const)
 		.case("-3", n => `${n}` as const)
 		.default("assert")
-).types([2581, "instantiations"])
+).types([2336, "instantiations"])
 
 bench("case(10, define)", () =>
 	match
@@ -31,7 +31,7 @@ bench("case(10, define)", () =>
 		.case("8", n => `${n}` as const)
 		.case("9", n => `${n}` as const)
 		.default("assert")
-).types([9409, "instantiations"])
+).types([8541, "instantiations"])
 
 bench("match.in<t> cases define and invoke", () => {
 	const matcher = match
@@ -45,7 +45,7 @@ bench("match.in<t> cases define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3526, "instantiations"])
+}).types([3233, "instantiations"])
 
 bench("record(3, define)", () =>
 	match({
@@ -54,7 +54,7 @@ bench("record(3, define)", () =>
 		"22": n => `${n}` as const,
 		default: "assert"
 	})
-).types([3121, "instantiations"])
+).types([2657, "instantiations"])
 
 bench("record(10, define)", () =>
 	match({
@@ -70,7 +70,7 @@ bench("record(10, define)", () =>
 		"-9n": n => `${n}` as const,
 		default: "assert"
 	})
-).types([8726, "instantiations"])
+).types([7618, "instantiations"])
 
 bench("record.in<t> define and invoke", () => {
 	const matcher = match.in<string | number | boolean>().match({
@@ -84,7 +84,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([4639, "instantiations"])
+}).types([3994, "instantiations"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
@@ -96,7 +96,7 @@ bench("case(3, invoke)", () => {
 	invokedCases3(31)
 	invokedCases3(32)
 	invokedCases3(33)
-}).types([566, "instantiations"])
+}).types([543, "instantiations"])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -115,10 +115,10 @@ bench("case(10, invoke first)", () => {
 	invokedCases10(0n)
 	invokedCases10(1n)
 	invokedCases10(2n)
-}).types([1201, "instantiations"])
+}).types([1144, "instantiations"])
 
 bench("case(10, invoke last)", () => {
 	invokedCases10(7n)
 	invokedCases10(8n)
 	invokedCases10(9n)
-}).types([1201, "instantiations"])
+}).types([1143, "instantiations"])

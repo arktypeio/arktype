@@ -522,6 +522,16 @@ contextualize(() => {
 
 			attest(T.out.expression).snap("{ foo: number }")
 		})
+
+		it("fails on expression value", () => {
+			const Thing = type({
+				test: "'y' | 'n' = 'n' |> 'y'"
+			})
+
+			const T = type({
+				test: "string = '5'"
+			})
+		})
 	})
 
 	describe("works properly with types", () => {
