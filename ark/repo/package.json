@@ -11,7 +11,8 @@
 		"ts-pattern": "5.7.0",
 		"type-fest": "4.40.1",
 		"typescript": "catalog:",
-		"zod": "3.24.3"
+		"zod": "3.24.3",
+		"arkenv": "0.7.1"
 	},
 	"scripts": {
 		"build": "echo No build required!"
