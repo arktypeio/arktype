@@ -88,11 +88,19 @@ export const enclosingChar = {
 	'"': 1
 } as const
 
-export const enclosingTokens = {
+export const enclosingLiteralTokens = {
 	"d'": "'",
 	'd"': '"',
 	"'": "'",
-	'"': '"',
+	'"': '"'
+} as const
+
+export type EnclosingLiteralTokens = typeof enclosingLiteralTokens
+
+export type EnclosingLiteralStartToken = keyof EnclosingLiteralTokens
+
+export const enclosingTokens = {
+	...enclosingLiteralTokens,
 	"/": "/"
 } as const
 

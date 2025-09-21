@@ -9,6 +9,7 @@ import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
 import { invalidDefaultableKeyKindMessage } from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
+import { writeUnexpectedCharacterMessage } from "../../parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -523,14 +524,16 @@ contextualize(() => {
 			attest(T.out.expression).snap("{ foo: number }")
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1507
 		it("fails on expression value", () => {
-			const Thing = type({
-				test: "'y' | 'n' = 'n' |> 'y'"
-			})
-
-			const T = type({
-				test: "string = '5'"
-			})
+			attest(() =>
+				type({
+					// @ts-expect-error
+					test: "'y' | 'n' = 'n' |> 'y'"
+				})
+			)
+				.throws(writeUnexpectedCharacterMessage("|"))
+				.type.errors(writeNonLiteralDefaultMessage("'n' |> 'y'"))
 		})
 	})
 
