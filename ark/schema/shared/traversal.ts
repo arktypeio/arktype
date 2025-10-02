@@ -245,6 +245,9 @@ export class Traversal {
 		}
 
 		for (const morph of morphs) {
+			// ensure morphs are applied relative to the correct path
+			// in case previous operations modified this.path
+			this.path = [...path]
 			const morphIsNode = isNode(morph)
 
 			const result = morph(
@@ -278,9 +281,6 @@ export class Traversal {
 			// if the current morph queued additional morphs,
 			// applying them before subsequent morphs
 			this.applyQueuedMorphs()
-
-			// Queued morphs might have changed this.path, so we need to reset it
-			this.path = [...path]
 		}
 	}
 }
