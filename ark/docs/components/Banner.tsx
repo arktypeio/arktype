@@ -53,7 +53,7 @@ export const Banner = ({
 		<>
 			<div style={{ width: 100 }}>
 				{boat ?
-					<FloatYourBoat kind="banner" />
+					<FloatYourBoat />
 				:	null}
 			</div>
 			<div>{children}</div>
