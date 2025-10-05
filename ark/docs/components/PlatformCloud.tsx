@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { BunIcon } from "./icons/bun.tsx"
 import { ChromiumIcon } from "./icons/chromium.tsx"
 import { DenoIcon } from "./icons/deno.tsx"
@@ -81,7 +80,7 @@ export const PlatformCloud = ({
 			>
 				<Left height={50} aria-label={left} />
 			</div>
-			<motion.div
+			<div
 				style={{
 					position: "absolute",
 					height: 45,
@@ -91,7 +90,7 @@ export const PlatformCloud = ({
 				}}
 			>
 				<Top height={45} aria-label={top} />
-			</motion.div>
+			</div>
 		</div>
 	)
 }

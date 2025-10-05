@@ -26,7 +26,6 @@
 		"arkthemes": "workspace:*",
 		"arktype": "workspace:*",
 		"class-variance-authority": "0.7.1",
-		"framer-motion": "12.23.12",
 		"fumadocs-core": "15.2.3",
 		"fumadocs-mdx": "11.5.7",
 		"fumadocs-twoslash": "3.1.0",
