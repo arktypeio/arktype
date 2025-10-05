@@ -146,13 +146,13 @@ const background = (
 			style={{
 				maskImage,
 				maskComposite: "intersect",
-				animation: "fd-moving-banner 16s linear infinite",
-				animationDirection: "reverse",
+				animation: "fd-moving-banner 16s linear infinite alternate-reverse",
 				...palette,
 				backgroundImage:
 					"repeating-linear-gradient(60deg, var(--start), var(--start) 5%, var(--via) 12%, var(--mid) 20%, var(--end) 28%, transparent 40%)",
 				backgroundSize: "200% 100%",
-				mixBlendMode: "normal"
+				mixBlendMode: "normal",
+				left: "-25%"
 			}}
 		/>
 		<div
@@ -160,19 +160,25 @@ const background = (
 			style={{
 				maskImage,
 				maskComposite: "intersect",
-				animation: "fd-moving-banner 20s linear infinite",
+				animation: "fd-moving-banner 20s linear infinite alternate",
 				...palette,
 				backgroundImage:
 					"repeating-linear-gradient(45deg, var(--start), var(--start) 5%, var(--via) 12%, var(--mid) 20%, var(--end) 28%, transparent 40%)",
 				backgroundSize: "200% 100%",
-				mixBlendMode: "normal"
+				mixBlendMode: "normal",
+				left: "-25%"
 			}}
 		/>
 		<style>
-			{`@keyframes fd-moving-banner {
-                from { background-position: 0% 0; }
-                to { background-position: 100% 0; }
-            }`}
+			{`
+@keyframes fd-moving-banner {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(25%);
+  }
+}`}
 		</style>
 	</>
 )
