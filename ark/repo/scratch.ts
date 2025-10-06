@@ -1,13 +1,15 @@
-import arkenv from "arkenv"
+import { regex } from "arktype"
 
-export const env = arkenv({
-	// Built-in validators
-	DATABASE_HOST: "string.host",
-	DATABASE_PORT: "number.port",
+declare const myString: string
 
-	// Optional variables with defaults
-	LOG_LEVEL: "'debug' | 'info' | 'warn' | 'error' = 'info'",
+const ab = regex("^(a|b)\\1$")
 
-	// Optional environment variable
-	"API_KEY?": "string"
-})
+if (ab.test(myString)) {
+	console.log(myString)
+	//          ^?
+}
+
+const capture = ab.exec("aa")?.[1]
+//    ^?
+
+capture
