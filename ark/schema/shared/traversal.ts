@@ -302,9 +302,10 @@ export const traverseKey = <result>(
 export type TraversalMethodsByKind<input = unknown> = {
 	Allows: TraverseAllows<input>
 	Apply: TraverseApply<input>
+	Optimistic: TraverseApply<input>
 }
 
-export type TraversalKind = keyof TraversalMethodsByKind
+export type TraversalKind = keyof TraversalMethodsByKind & {}
 
 export type TraverseAllows<data = unknown> = (
 	data: data,

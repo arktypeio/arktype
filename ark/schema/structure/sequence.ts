@@ -432,7 +432,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
 			const dataIndex = `${i + this.prefixLength}`
-			js.if(`${dataIndex} >= ${js.data}.length`, () =>
+			js.if(`${dataIndex} >= data.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
 			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
@@ -442,7 +442,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			if (this.postfix) {
 				js.const(
 					"firstPostfixIndex",
-					`${js.data}.length${this.postfix ? `- ${this.postfix.length}` : ""}`
+					`data.length${this.postfix ? `- ${this.postfix.length}` : ""}`
 				)
 			}
 			js.for(

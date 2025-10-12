@@ -378,29 +378,24 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// only the first layer can be optimistic
 		js.optimistic = false
 
-		js.block(`switch(${condition})`, self => {
+		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
 				const caseCondition = k === "default" ? k : `case ${k}`
-				if (v === true)
-					js.line(`${caseCondition}: return ${optimistic ? js.data : v}`)
+
+				let caseResult: string
+				if (v === true) caseResult = optimistic ? "data" : "true"
 				else if (optimistic) {
-					if (v.hasKind("union")) {
-						js.line(
-							`${caseCondition}: return this.${v.id}Optimistic(data, ctx)`
-						)
-					} else if (v.contextFreeMorph) {
-						js.line(
-							`${caseCondition}: return ${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(${js.data}) : "${unset}"`
-						)
-					} else {
-						js.line(
-							`${caseCondition}: return ${js.invoke(v)} ? ${js.data} : "${unset}"`
-						)
-					}
-				} else js.line(`${caseCondition}: return ${js.invoke(v)}`)
+					if (v.rootApplyStrategy === "branchedOptimistic")
+						caseResult = js.invoke(v, { kind: "Optimistic" })
+					else if (v.contextFreeMorph)
+						caseResult = `${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(data) : "${unset}"`
+					else caseResult = `${js.invoke(v)} ? data : "${unset}"`
+				} else caseResult = js.invoke(v)
+
+				js.line(`${caseCondition}: return ${caseResult}`)
 			}
-			return self
+			return js
 		})
 
 		if (js.traversalKind === "Allows") {
@@ -466,8 +461,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					js.return(
 						optimistic ?
 							branch.contextFreeMorph ?
-								`${registeredReference(branch.contextFreeMorph)}(${js.data})`
-							:	js.data
+								`${registeredReference(branch.contextFreeMorph)}(data)`
+							:	"data"
 						:	true
 					)
 				)
