@@ -6,7 +6,7 @@ import { createElement } from "react"
 import { docs } from "../.source/index.ts"
 import { Badge } from "../components/Badge.tsx"
 
-export type IconName = keyof typeof icons | "Advanced"
+export type IconName = keyof typeof icons | "Advanced" | "New"
 
 export const source = loader({
 	baseUrl: "/docs",
@@ -26,6 +26,20 @@ export const source = loader({
 					}}
 				>
 					advanced
+				</Badge>
+			)
+		}
+		if (name === "New") {
+			return (
+				<Badge
+					style={{
+						height: "1rem",
+						fontSize: 10,
+						padding: "0 0.2rem",
+						order: 1
+					}}
+				>
+					new
 				</Badge>
 			)
 		}

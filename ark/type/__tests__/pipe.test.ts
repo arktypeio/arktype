@@ -1100,4 +1100,132 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 			})
 		).throws.snap("TraversalError: _ must be present (was missing)")
 	})
+
+	// https://github.com/arktypeio/arktype/pull/1464
+	it("branched optimistic pipe union", () => {
+		class TypeA {
+			type = "typeA"
+			constructor() {}
+		}
+
+		class TypeB {
+			type = "typeB"
+			constructor() {}
+		}
+
+		const typeA = new TypeA()
+
+		const Thing = type.or(
+			type.instanceOf(TypeB),
+			type.string.pipe(_value => new TypeB()),
+			type.instanceOf(TypeA).pipe(_value => new TypeB())
+		)
+
+		const out = Thing.assert(typeA)
+		attest(out).instanceOf(TypeB)
+	})
+
+	// https://github.com/arktypeio/arktype/pull/1464
+	it("complex pipes", () => {
+		const inputData = [
+			{
+				OuterKey: [
+					{
+						MiddleKey: [
+							{
+								InnerKey: []
+							}
+						]
+					}
+				]
+			}
+		]
+
+		const genericSchema = type("Record<string, unknown>[]")
+			.pipe.try(arr =>
+				arr.map(item => {
+					const [kind, value] = Object.entries(item)[0]
+					return { kind, value }
+				})
+			)
+			.pipe(
+				type({ kind: "string", value: "unknown" })
+					.pipe(item => ({ kind: item.kind, value: item.value }))
+					.array(),
+				arr =>
+					arr.reduce<Record<string, { value: unknown }>>(
+						(acc, { kind, value }) => {
+							acc[kind] = { value }
+							return acc
+						},
+						{}
+					),
+				type({
+					OuterKey: {
+						value: type({
+							MiddleKey: type({ InnerKey: type("object") })
+								.array()
+								.pipe(v => v[0])
+						}).array()
+					}
+				})
+			)
+
+		const result = genericSchema(inputData)
+		attest(result).equals({
+			OuterKey: {
+				value: [
+					{
+						MiddleKey: { InnerKey: [] }
+					}
+				]
+			}
+		})
+	})
+
+	// https://github.com/arktypeio/arktype/pull/1464
+	it("nested pipes", () => {
+		const parseFirstElementToNumber = type("string[]")
+			.pipe(v => v[0])
+			.to("string.numeric.parse")
+
+		const extractAndParseFirstElement = type({
+			Value: parseFirstElementToNumber
+		})
+			.array()
+			.pipe(v => v[0])
+
+		const Item = type({
+			SubItem: extractAndParseFirstElement,
+			Meta: {}
+		})
+
+		const T = type({
+			Item: Item.array()
+		})
+
+		const data = {
+			Item: [
+				{
+					SubItem: [
+						{
+							Value: ["0"]
+						}
+					]
+				},
+				{
+					SubItem: [
+						{
+							Value: ["0"]
+						}
+					]
+				}
+			]
+		}
+
+		const result = T(data)
+
+		attest(result.toString()).snap(`Item[0].Meta must be an object (was missing)
+Item[1].Meta must be an object (was missing)`)
+	})
 })

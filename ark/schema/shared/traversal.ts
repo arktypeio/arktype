@@ -245,9 +245,9 @@ export class Traversal {
 		}
 
 		for (const morph of morphs) {
-			// applyMorphsAtPath may be called recursively, so we need to reset the path here
+			// ensure morphs are applied relative to the correct path
+			// in case previous operations modified this.path
 			this.path = [...path]
-
 			const morphIsNode = isNode(morph)
 
 			const result = morph(
@@ -269,6 +269,7 @@ export class Traversal {
 					this.errors.merge(result)
 				}
 				// skip any remaining morphs at the current path
+				this.queuedMorphs = []
 				break
 			}
 
@@ -301,9 +302,10 @@ export const traverseKey = <result>(
 export type TraversalMethodsByKind<input = unknown> = {
 	Allows: TraverseAllows<input>
 	Apply: TraverseApply<input>
+	Optimistic: TraverseApply<input>
 }
 
-export type TraversalKind = keyof TraversalMethodsByKind
+export type TraversalKind = keyof TraversalMethodsByKind & {}
 
 export type TraverseAllows<data = unknown> = (
 	data: data,
