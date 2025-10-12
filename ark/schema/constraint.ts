@@ -108,7 +108,7 @@ export abstract class InternalPrimitiveConstraint<
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
 		else {
 			js.if(this.compiledNegation, () =>
-				js.line(`${js.ctx}.errorFromNodeContext(${this.compiledErrorContext})`)
+				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
 			)
 		}
 	}

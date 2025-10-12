@@ -382,18 +382,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const k in cases) {
 				const v = cases[k]
 				const caseCondition = k === "default" ? k : `case ${k}`
-				js.line(
-					`${caseCondition}: return ${
-						v === true ?
-							optimistic ? js.data
-							:	v
-						: optimistic ?
-							`${js.invoke(v)} ? ${v.contextFreeMorph ? `${registeredReference(v.contextFreeMorph)}(${js.data})` : js.data} : "${unset}"`
-						:	js.invoke(v)
-					}`
-				)
-			}
 
+				let caseResult: string
+				if (v === true) caseResult = optimistic ? "data" : "true"
+				else if (optimistic) {
+					if (v.rootApplyStrategy === "branchedOptimistic")
+						caseResult = js.invoke(v, { kind: "Optimistic" })
+					else if (v.contextFreeMorph)
+						caseResult = `${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(data) : "${unset}"`
+					else caseResult = `${js.invoke(v)} ? data : "${unset}"`
+				} else caseResult = js.invoke(v)
+
+				js.line(`${caseCondition}: return ${caseResult}`)
+			}
 			return js
 		})
 
@@ -460,8 +461,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					js.return(
 						optimistic ?
 							branch.contextFreeMorph ?
-								`${registeredReference(branch.contextFreeMorph)}(${js.data})`
-							:	js.data
+								`${registeredReference(branch.contextFreeMorph)}(data)`
+							:	"data"
 						:	true
 					)
 				)
