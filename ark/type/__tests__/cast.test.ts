@@ -72,7 +72,7 @@ contextualize(() => {
 		it("missing type param with arg", () => {
 			// @ts-expect-error
 			attest(() => type("string").as("foo")).type.errors(
-				"as requires an explicit type parameter like myType.as<t>() "
+				"as requires an explicit type parameter like myType.as<t>()"
 			)
 		})
 	})

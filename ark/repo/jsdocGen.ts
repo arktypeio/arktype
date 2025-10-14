@@ -155,7 +155,7 @@ const extractNameAndGroup = (
 
 	const filePath = doc.getSourceFile().getFilePath()
 	let group: ApiGroup
-	if (filePath.includes("methods")) group = "Type"
+	if (filePath.includes("variants")) group = "Type"
 	else if (filePath.endsWith("traversal.d.ts")) group = "Traversal"
 	else return undefined
 

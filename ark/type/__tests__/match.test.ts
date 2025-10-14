@@ -910,6 +910,9 @@ contextualize(() => {
 				default: "assert"
 			})
 
-		attest(discriminateValue).type.toString.snap()
+		attest(discriminateValue).type.toString.snap(`Match<
+	Data,
+	[(In: Data) => string, (In: Data) => number]
+>`)
 	})
 })

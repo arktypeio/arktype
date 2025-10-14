@@ -17,6 +17,7 @@ import {
 	type mutable,
 	type numericStringKeyOf,
 	type propValueOf,
+	type show,
 	type unionToTuple
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
@@ -162,12 +163,10 @@ type _finalizeCaseArg<
 > =
 	ctxInput extends unknown ?
 		t extends unknown ?
-			[distill<t, "in">, distill<t, endpoint>] extends [infer i, infer result] ?
-				i extends ctxInput ?
-					ctxInput extends result ?
-						ctxInput
-					:	ctxInput & result
-				:	ctxInput & result
+			distill<t, endpoint> extends infer result ?
+				ctxInput extends result ?
+					ctxInput
+				:	show<ctxInput & result>
 			:	never
 		:	never
 	:	never

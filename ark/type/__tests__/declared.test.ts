@@ -167,7 +167,7 @@ contextualize(() => {
 	it("missing generic argument", () => {
 		// @ts-expect-error
 		attest(() => declare().type({})).type.errors(
-			"declare<ExternalType>() requires a generic argument "
+			"declare<ExternalType>() requires a generic argument"
 		)
 	})
 

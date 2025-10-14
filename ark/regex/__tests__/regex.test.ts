@@ -887,13 +887,7 @@ contextualize(() => {
 							  }
 					}
 				>
-			>(S).type.toString.snap(`Regex<
-	"ae" | "abcdebcd" | "abcdebcdc",
-	{
-		captures: [undefined, undefined] | ["bcd", "c"]
-		names: { foo: "bcd" } | { foo: undefined }
-	}
->`)
+			>(S)
 		})
 
 		it("index out of range", () => {

@@ -205,7 +205,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for foo must be a number (was boolean)"
 				)
-				.type.errors("Default value true must be assignable to number ")
+				.type.errors("Default value true must be assignable to number")
 		})
 
 		it("morphed", () => {
