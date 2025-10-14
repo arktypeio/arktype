@@ -1286,7 +1286,7 @@ Add a type-only symbol to an existing type so that the only values that satisfy 
 ```ts
 // @noErrors
 const Even = type("(number % 2)#even")
-type Even = typeof even.infer
+type Even = typeof Even.infer
 
 const good: Even = even.assert(2)
 // TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
@@ -1300,7 +1300,7 @@ const bad: Even = 5
 ```ts
 // @noErrors
 const even = type.number.divisibleBy(2).brand("even")
-type Even = typeof even.infer
+type Even = typeof Even.infer
 
 const good: Even = even.assert(2)
 // TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
