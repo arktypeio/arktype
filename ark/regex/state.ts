@@ -662,9 +662,9 @@ export declare namespace QuantifierTree {
 export type pushQuantifiable<sequence extends RegexAst, root extends RegexAst> =
 	root extends "" ? sequence
 	: sequence extends string ?
-		sequence extends "" ?
-			root
-		:	SequenceTree<[sequence, root]>
+		sequence extends "" ? root
+		: root extends string ? appendNonRedundant<sequence, root>
+		: SequenceTree<[sequence, root]>
 	: sequence extends SequenceTree ? pushToSequence<sequence, root>
 	: SequenceTree<[sequence, root]>
 

@@ -25,7 +25,6 @@ import {
 	type finalizeTree,
 	type GroupTree,
 	type IndexedCaptureOffset,
-	type ReferenceNode,
 	type s,
 	type SequenceTree,
 	type State,
@@ -781,7 +780,7 @@ contextualize(() => {
 						captures: ["a"] | ["b"]
 					}
 				>
-			>(S).type.toString.snap()
+			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["b"] | ["a"] }>')
 		})
 
 		it("branching captures", () => {
@@ -889,7 +888,13 @@ contextualize(() => {
 							  }
 					}
 				>
-			>(S).type.toString.snap()
+			>(S).type.toString.snap(`Regex<
+	"ae" | "abcdebcd" | "abcdebcdc",
+	{
+		captures: [undefined, undefined] | ["bcd", "c"]
+		names: { foo: "bcd" } | { foo: undefined }
+	}
+>`)
 		})
 
 		it("index out of range", () => {
