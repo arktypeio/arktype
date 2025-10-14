@@ -1156,124 +1156,130 @@ contextualize(() => {
 	})
 
 	describe("modifiers", () => {
-		it("i enable", () => {
-			const S = regex("^a(?i:bC)d$")
-			attest<Regex<"abcd" | "abCd" | "aBcd" | "aBCd", {}>>(S)
-		})
+		const nodeMajor = parseInt(process.versions.node.split(".")[0], 10)
+		// modifier support was added in node 24
+		if (nodeMajor >= 24) {
+			it("i enable", () => {
+				const S = regex("^a(?i:bC)d$")
+				attest<Regex<"abcd" | "abCd" | "aBcd" | "aBCd", {}>>(S)
+			})
 
-		it("i disable", () => {
-			const S = regex("^(?-i:aB)$")
-			attest<Regex<"aB", {}>>(S)
-		})
+			it("i disable", () => {
+				const S = regex("^(?-i:aB)$")
+				attest<Regex<"aB", {}>>(S)
+			})
 
-		it("i enable overrides global i disable", () => {
-			const S = regex("^(?i:aB)$", "")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
-		})
+			it("i enable overrides global i disable", () => {
+				const S = regex("^(?i:aB)$", "")
+				attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
+			})
 
-		it("i disable overrides global i enable", () => {
-			const S = regex("^(?-i:aB)$", "i")
-			attest<Regex<"aB", { flags: "i" }>>(S)
-		})
+			it("i disable overrides global i enable", () => {
+				const S = regex("^(?-i:aB)$", "i")
+				attest<Regex<"aB", { flags: "i" }>>(S)
+			})
 
-		it("i enable with global i enable", () => {
-			const S = regex("^(?i:aB)$", "i")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
-		})
+			it("i enable with global i enable", () => {
+				const S = regex("^(?i:aB)$", "i")
+				attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
+			})
 
-		it("i disable with global i disable", () => {
-			const S = regex("^(?-i:aB)$", "")
-			attest<Regex<"aB", {}>>(S)
-		})
+			it("i disable with global i disable", () => {
+				const S = regex("^(?-i:aB)$", "")
+				attest<Regex<"aB", {}>>(S)
+			})
 
-		it("nested enable/disable", () => {
-			const S = regex("^(?i:a(?-i:B)c)$")
-			attest<Regex<"aBc" | "aBC" | "ABc" | "ABC", {}>>(S)
-		})
+			it("nested enable/disable", () => {
+				const S = regex("^(?i:a(?-i:B)c)$")
+				attest<Regex<"aBc" | "aBC" | "ABc" | "ABC", {}>>(S)
+			})
 
-		it("nested disable/enable", () => {
-			const S = regex("^(?-i:a(?i:B)c)$")
-			attest<Regex<"aBc" | "abc", {}>>(S)
-		})
+			it("nested disable/enable", () => {
+				const S = regex("^(?-i:a(?i:B)c)$")
+				attest<Regex<"aBc" | "abc", {}>>(S)
+			})
 
-		it("multiple modifiers enable i", () => {
-			const S = regex("^(?im:aB)$")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
-		})
+			it("multiple modifiers enable i", () => {
+				const S = regex("^(?im:aB)$")
+				attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
+			})
 
-		it("multiple modifiers disable i", () => {
-			const S = regex("^(?-im:aB)$")
-			attest<Regex<"aB", {}>>(S)
-		})
+			it("multiple modifiers disable i", () => {
+				const S = regex("^(?-im:aB)$")
+				attest<Regex<"aB", {}>>(S)
+			})
 
-		it("multiple modifiers enable/disable i", () => {
-			const S = regex("^(?i-m:aB)$")
-			attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
-		})
+			it("multiple modifiers enable/disable i", () => {
+				const S = regex("^(?i-m:aB)$")
+				attest<Regex<"aB" | "ab" | "Ab" | "AB", {}>>(S)
+			})
 
-		it("duplicate conflicting modifier", () => {
-			// @ts-expect-error
-			attest(() => regex("(?m-m:.*)")).type.errors(
-				writeDuplicateModifierMessage("m")
-			)
-		})
+			it("duplicate conflicting modifier", () => {
+				// @ts-expect-error
+				attest(() => regex("(?m-m:.*)")).type.errors(
+					writeDuplicateModifierMessage("m")
+				)
+			})
 
-		it("duplicate positive modifier", () => {
-			// @ts-expect-error
-			attest(() => regex("(?mm:.*)")).type.errors(
-				writeDuplicateModifierMessage("m")
-			)
-		})
+			it("duplicate positive modifier", () => {
+				// @ts-expect-error
+				attest(() => regex("(?mm:.*)")).type.errors(
+					writeDuplicateModifierMessage("m")
+				)
+			})
 
-		it("duplicate negated modifier", () => {
-			// @ts-expect-error
-			attest(() => regex("(?-mm:.*)")).type.errors(
-				writeDuplicateModifierMessage("m")
-			)
-		})
+			it("duplicate negated modifier", () => {
+				// @ts-expect-error
+				attest(() => regex("(?-mm:.*)")).type.errors(
+					writeDuplicateModifierMessage("m")
+				)
+			})
 
-		it("multiple dashes", () => {
-			// @ts-expect-error
-			attest(() => regex("^(?-i-m:aB)$")).type.errors(
-				multipleModifierDashesMessage
-			)
-		})
+			it("multiple dashes", () => {
+				// @ts-expect-error
+				attest(() => regex("^(?-i-m:aB)$")).type.errors(
+					multipleModifierDashesMessage
+				)
+			})
 
-		it("invalid modifier", () => {
-			// @ts-expect-error
-			attest(() => regex("(?x:abc)")).type.errors(
-				writeInvalidModifierMessage("x")
-			)
-		})
+			it("invalid modifier", () => {
+				// @ts-expect-error
+				attest(() => regex("(?x:abc)")).type.errors(
+					writeInvalidModifierMessage("x")
+				)
+			})
 
-		it("invalid negated modifier", () => {
-			// @ts-expect-error
-			attest(() => regex("(?-x:abc)")).type.errors(
-				writeInvalidModifierMessage("x")
-			)
-		})
+			it("invalid negated modifier", () => {
+				// @ts-expect-error
+				attest(() => regex("(?-x:abc)")).type.errors(
+					writeInvalidModifierMessage("x")
+				)
+			})
 
-		it("missing negated modifier", () => {
-			// @ts-expect-error
-			attest(() => regex("(?-:abc)")).type.errors(missingNegatedModifierMessage)
-		})
+			it("missing negated modifier", () => {
+				// @ts-expect-error
+				attest(() => regex("(?-:abc)")).type.errors(
+					missingNegatedModifierMessage
+				)
+			})
 
-		it("unclosed modifier group", () => {
-			// @ts-expect-error
-			attest(() => regex("(?i")).type.errors(writeUnclosedGroupMessage(")"))
-		})
+			it("unclosed modifier group", () => {
+				// @ts-expect-error
+				attest(() => regex("(?i")).type.errors(writeUnclosedGroupMessage(")"))
+			})
 
-		it("modifier group without colon", () => {
-			// @ts-expect-error
-			attest(() => regex("(?i)")).type.errors(
-				unescapedLiteralQuestionMarkMessage
-			)
-		})
+			it("modifier group without colon", () => {
+				// @ts-expect-error
+				attest(() => regex("(?i)")).type.errors(
+					unescapedLiteralQuestionMarkMessage
+				)
+			})
 
-		it("modifier group with colon but no content", () => {
-			const S = regex("^(?i:)$")
-			attest<Regex<"", {}>>(S)
-		})
+			it("modifier group with colon but no content", () => {
+				const S = regex("^(?i:)$")
+				attest<Regex<"", {}>>(S)
+			})
+		}
 	})
 
 	it("combinatorial", () => {
