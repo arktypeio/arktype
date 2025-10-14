@@ -1,6 +1,12 @@
-import type { Completion, ErrorMessage, defined } from "@ark/util"
+import type {
+	Completion,
+	ErrorMessage,
+	defined,
+	writeUnclosedGroupMessage,
+	writeUnmatchedGroupCloseMessage
+} from "@ark/util"
 import type { LimitLiteral } from "../../attributes.ts"
-import type { ArkTypeScanner } from "../shift/scanner.ts"
+import type { FinalizingLookahead } from "../shift/tokens.ts"
 import type {
 	BranchOperator,
 	Comparator,
@@ -11,8 +17,6 @@ import type {
 	StringifiablePrefixOperator,
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
-	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
 } from "./shared.ts"
 
@@ -20,7 +24,7 @@ export type StaticState = {
 	root: unknown
 	branches: BranchState
 	groups: BranchState[]
-	finalizer: ArkTypeScanner.FinalizingLookahead | ErrorMessage | undefined
+	finalizer: FinalizingLookahead | ErrorMessage | undefined
 	scanned: string
 	unscanned: string
 }
@@ -35,7 +39,7 @@ type BranchState = {
 
 export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
-export declare namespace state {
+export declare namespace s {
 	export type initialize<def extends string> = from<{
 		root: undefined
 		branches: initialBranches
@@ -144,7 +148,7 @@ export declare namespace state {
 	> =
 		comparator extends "<" | "<=" ?
 			s["branches"]["leftBound"] extends {} ?
-				state.error<
+				s.error<
 					writeMultipleLeftBoundsMessage<
 						s["branches"]["leftBound"]["limit"],
 						s["branches"]["leftBound"]["comparator"],
@@ -169,7 +173,7 @@ export declare namespace state {
 					scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 					unscanned: unscanned
 				}>
-		:	state.error<writeUnpairableComparatorMessage<comparator>>
+		:	s.error<writeUnpairableComparatorMessage<comparator>>
 
 	export type reduceRange<
 		s extends StaticState,
@@ -178,7 +182,7 @@ export declare namespace state {
 		maxComparator extends MaxComparator,
 		maxLimit extends LimitLiteral,
 		unscanned extends string
-	> = state.from<{
+	> = s.from<{
 		root: [minLimit, minComparator, [s["root"], maxComparator, maxLimit]]
 		branches: {
 			prefixes: s["branches"]["prefixes"]
@@ -198,7 +202,7 @@ export declare namespace state {
 		comparator extends Comparator,
 		limit extends number | string,
 		unscanned extends string
-	> = state.from<{
+	> = s.from<{
 		root: [s["root"], comparator, limit]
 		branches: {
 			prefixes: s["branches"]["prefixes"]
@@ -250,7 +254,7 @@ export declare namespace state {
 				scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 				unscanned: unscanned
 			}>
-		:	state.error<writeUnmatchedGroupCloseMessage<unscanned>>
+		:	s.error<writeUnmatchedGroupCloseMessage<")", unscanned>>
 
 	export type reduceGroupOpen<
 		s extends StaticState,
@@ -266,7 +270,7 @@ export declare namespace state {
 
 	export type finalize<
 		s extends StaticState,
-		finalizer extends ArkTypeScanner.FinalizingLookahead
+		finalizer extends FinalizingLookahead
 	> =
 		s["groups"] extends [] ?
 			s["branches"]["leftBound"] extends {} ?
@@ -279,10 +283,10 @@ export declare namespace state {
 					scanned: s["scanned"]
 					unscanned: s["unscanned"]
 				}>
-		:	state.error<writeUnclosedGroupMessage<")">>
+		:	s.error<writeUnclosedGroupMessage<")">>
 
 	type openRangeError<range extends defined<BranchState["leftBound"]>> =
-		state.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
+		s.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
 
 	export type previousOperator<s extends StaticState> =
 		s["branches"]["leftBound"] extends {} ?

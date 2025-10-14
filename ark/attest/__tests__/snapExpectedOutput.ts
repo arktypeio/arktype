@@ -72,7 +72,7 @@ attest({ [Symbol("mySymbol")]: 1 }).snap({ "Symbol(mySymbol)": 1 })
 const it = (name: string, fn: () => void) => fn()
 
 it("can snap instantiations", () => {
-	attest.instantiations([229, "instantiations"])
+	attest.instantiations([212, "instantiations"])
 	return {} as makeComplexType<"asbsdfsaodisfhsda">
 })
 

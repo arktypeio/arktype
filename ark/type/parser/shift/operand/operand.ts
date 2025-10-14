@@ -1,8 +1,7 @@
-import { whitespaceChars, type WhitespaceChar } from "@ark/util"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
+import { whitespaceChars, type Scanner, type WhitespaceChar } from "@ark/util"
+import type { RuntimeState } from "../../reduce/dynamic.ts"
+import type { StaticState, s } from "../../reduce/static.ts"
 import type { BaseCompletions } from "../../string.ts"
-import type { ArkTypeScanner } from "../scanner.ts"
 import {
 	enclosingChar,
 	enclosingQuote,
@@ -12,7 +11,7 @@ import {
 } from "./enclosed.ts"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
 
-export const parseOperand = (s: DynamicState): void =>
+export const parseOperand = (s: RuntimeState): void =>
 	s.scanner.lookahead === "" ? s.error(writeMissingOperandMessage(s))
 	: s.scanner.lookahead === "(" ? s.shiftedByOne().reduceGroupOpen()
 	: s.scanner.lookaheadIsIn(enclosingChar) ? parseEnclosed(s, s.scanner.shift())
@@ -27,17 +26,15 @@ export const parseOperand = (s: DynamicState): void =>
 	:	parseUnenclosed(s)
 
 export type parseOperand<s extends StaticState, $, args> =
-	s["unscanned"] extends (
-		ArkTypeScanner.shift<infer lookahead, infer unscanned>
-	) ?
-		lookahead extends "(" ? state.reduceGroupOpen<s, unscanned>
+	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
+		lookahead extends "(" ? s.reduceGroupOpen<s, unscanned>
 		: lookahead extends EnclosingStartToken ?
 			parseEnclosed<s, lookahead, unscanned>
 		: lookahead extends WhitespaceChar ?
-			parseOperand<state.scanTo<s, unscanned>, $, args>
+			parseOperand<s.scanTo<s, unscanned>, $, args>
 		: lookahead extends "d" ?
 			unscanned extends (
-				ArkTypeScanner.shift<
+				Scanner.shift<
 					infer enclosing extends EnclosingQuote,
 					infer nextUnscanned
 				>
@@ -45,4 +42,4 @@ export type parseOperand<s extends StaticState, $, args> =
 				parseEnclosed<s, `d${enclosing}`, nextUnscanned>
 			:	parseUnenclosed<s, $, args>
 		:	parseUnenclosed<s, $, args>
-	:	state.completion<`${s["scanned"]}${BaseCompletions<$, args>}`>
+	:	s.completion<`${s["scanned"]}${BaseCompletions<$, args>}`>

@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
 import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage
-} from "arktype/internal/parser/reduce/shared.ts"
+} from "@ark/util"
+import { type } from "arktype"
 import { writeExpressionExpectedMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
 contextualize(() => {
@@ -45,7 +45,7 @@ contextualize(() => {
 		attest(() => {
 			// @ts-expect-error
 			type("string|number[]|boolean)")
-		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(""))
+		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(")", ""))
 	})
 
 	it("lone )", () => {
@@ -73,7 +73,7 @@ contextualize(() => {
 		attest(() => {
 			// @ts-expect-error
 			type("((string|number)[]|boolean))[]")
-		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage("[]"))
+		}).throwsAndHasTypeError(writeUnmatchedGroupCloseMessage(")", "[]"))
 	})
 
 	it("starting )", () => {

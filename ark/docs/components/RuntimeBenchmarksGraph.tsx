@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/components/api"
+import { cx } from "class-variance-authority"
 import React from "react"
 
 const barStyles: React.CSSProperties = {
@@ -39,7 +39,7 @@ export const RuntimeBenchmarksGraph: React.FC<{ className?: string }> = ({
 			flexDirection: "column",
 			flexGrow: 1
 		}}
-		className={cn("font-semibold text-white", className)}
+		className={cx("font-semibold text-white", className)}
 	>
 		<div style={{ display: "flex", flexDirection: "row" }}>
 			<h6 className="text-xl mb-2">Object Validation, Node v23.6.1</h6>{" "}

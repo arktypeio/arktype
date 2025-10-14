@@ -1,6 +1,7 @@
 import {
 	flatMorph,
 	hasDomain,
+	includes,
 	isEmptyObject,
 	isKeyOf,
 	throwParseError,
@@ -31,11 +32,13 @@ import { Disjoint } from "../shared/disjoint.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
+	prestructuralKinds,
 	structureKeys,
 	type ConstraintKind,
 	type IntersectionContext,
 	type nodeImplementationOf,
 	type OpenNodeKind,
+	type PrestructuralKind,
 	type RefinementKind,
 	type StructuralKind
 } from "../shared/implement.ts"
@@ -62,7 +65,7 @@ import { defineRightwardIntersections } from "./utils.ts"
 export declare namespace Intersection {
 	export type BasisKind = "domain" | "proto"
 
-	export type ChildKind = BasisKind | RefinementKind | "predicate" | "structure"
+	export type ChildKind = BasisKind | RefinementKind
 
 	export type FlattenedChildKind = ChildKind | StructuralKind
 
@@ -233,12 +236,12 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 
 				if (
 					node.basis &&
-					!node.refinements.some(r => r.impl.obviatesBasisDescription)
+					!node.prestructurals.some(r => r.impl.obviatesBasisDescription)
 				)
 					childDescriptions.push(node.basis.description)
 
-				if (node.refinements.length) {
-					const sortedRefinementDescriptions = node.refinements
+				if (node.prestructurals.length) {
+					const sortedRefinementDescriptions = node.prestructurals
 						// override alphabetization to describe min before max
 						.toSorted((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
 						.map(r => r.description)
@@ -291,8 +294,16 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	basis: nodeOfKind<Intersection.BasisKind> | null =
 		this.inner.domain ?? this.inner.proto ?? null
 
-	refinements: array<nodeOfKind<RefinementKind>> = this.children.filter(node =>
-		node.isRefinement()
+	prestructurals: array<nodeOfKind<PrestructuralKind>> = []
+
+	refinements: array<nodeOfKind<RefinementKind>> = this.children.filter(
+		(node): node is never => {
+			if (!node.isRefinement()) return false
+			if (includes(prestructuralKinds, node.kind))
+				// mutation is fine during initialization
+				(this.prestructurals as unknown[]).push(node)
+			return true
+		}
 	)
 
 	structure: Structure.Node | undefined = this.inner.structure
@@ -329,12 +340,12 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			this.basis.traverseApply(data, ctx)
 			if (ctx.currentErrorCount > errorCount) return
 		}
-		if (this.refinements.length) {
-			for (let i = 0; i < this.refinements.length - 1; i++) {
-				this.refinements[i].traverseApply(data as never, ctx)
+		if (this.prestructurals.length) {
+			for (let i = 0; i < this.prestructurals.length - 1; i++) {
+				this.prestructurals[i].traverseApply(data as never, ctx)
 				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 			}
-			this.refinements.at(-1)!.traverseApply(data as never, ctx)
+			this.prestructurals.at(-1)!.traverseApply(data as never, ctx)
 			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.structure) {
@@ -364,12 +375,12 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			// we only have to return conditionally if this is not the last check
 			if (this.children.length > 1) js.returnIfFail()
 		}
-		if (this.refinements.length) {
-			for (let i = 0; i < this.refinements.length - 1; i++) {
-				js.check(this.refinements[i])
+		if (this.prestructurals.length) {
+			for (let i = 0; i < this.prestructurals.length - 1; i++) {
+				js.check(this.prestructurals[i])
 				js.returnIfFailFast()
 			}
-			js.check(this.refinements.at(-1)!)
+			js.check(this.prestructurals.at(-1)!)
 			if (this.structure || this.inner.predicate) js.returnIfFail()
 		}
 		if (this.structure) {
@@ -394,12 +405,25 @@ export const Intersection = {
 }
 
 const writeIntersectionExpression = (node: Intersection.Node) => {
-	let expression =
-		node.structure?.expression ||
-		`${node.basis && !node.refinements.some(n => n.impl.obviatesBasisExpression) ? node.basis.nestableExpression + " " : ""}${node.refinements.map(n => n.expression).join(" & ")}` ||
-		"unknown"
-	if (expression === "Array == 0") expression = "[]"
-	return expression
+	if (node.structure?.expression) return node.structure.expression
+
+	const basisExpression =
+		(
+			node.basis &&
+			!node.prestructurals.some(n => n.impl.obviatesBasisExpression)
+		) ?
+			node.basis.nestableExpression
+		:	""
+
+	const refinementsExpression = node.prestructurals
+		.map(n => n.expression)
+		.join(" & ")
+
+	const fullExpression = `${basisExpression}${basisExpression ? " " : ""}${refinementsExpression}`
+
+	if (fullExpression === "Array == 0") return "[]"
+
+	return fullExpression || "unknown"
 }
 
 const intersectIntersections = (

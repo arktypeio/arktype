@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { declare, type } from "arktype"
+import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	it("shallow", () => {
@@ -15,6 +16,18 @@ contextualize(() => {
 			"b?": "number"
 		})
 		attest<Expected>(T.infer)
+		// name should be preserved
+		attest(T.t).type.toString("Expected")
+	})
+
+	it("syntax error", () => {
+		type Expected = { a: string; b?: number }
+		attest(() =>
+			declare<Expected>().type({
+				// @ts-expect-error
+				a: "string["
+			})
+		).throwsAndHasTypeError(incompleteArrayTokenMessage)
 	})
 
 	it("tuple", () => {
@@ -27,9 +40,7 @@ contextualize(() => {
 		attest(
 			// @ts-expect-error
 			declare<[string, number]>().type(["string", "boolean"])
-		).type.errors(
-			`Type 'string' is not assignable to type '{ declared: number; inferred: boolean; }'`
-		)
+		).type.errors(`declared: number; inferred: boolean`)
 	})
 
 	it("too short", () => {
@@ -67,14 +78,25 @@ contextualize(() => {
 		attest(
 			// @ts-expect-error
 			declare<"foo" | "bar">().type(["'foo'", "|", "'baz'"])
-		).type.errors(`{ declared: "foo" | "bar"; inferred: "foo" | "baz"; }`)
+		).type.errors(`declared: "foo" | "bar"; inferred: "foo" | "baz"`)
 	})
 
 	it("narrower", () => {
 		// @ts-expect-error
 		attest(() => declare<string>().type("'foo'")).type.errors(
-			`Argument of type 'string' is not assignable to parameter of type '{ declared: string; inferred: "foo"; }'`
+			`declared: string; inferred: "foo"`
 		)
+	})
+
+	it("narrower in object (from docs)", () => {
+		type Expected = { a: string; b?: number }
+		attest(() =>
+			type.declare<Expected>().type({
+				a: "string",
+				// @ts-expect-error
+				"b?": "1"
+			})
+		).type.errors(`declared: number; inferred: 1`)
 	})
 
 	it("wider", () => {
@@ -83,9 +105,7 @@ contextualize(() => {
 				// @ts-expect-error
 				a: "unknown"
 			})
-		).type.errors(
-			`Type 'string' is not assignable to type '{ declared: string; inferred: unknown; }'`
-		)
+		).type.errors(`declared: string; inferred: unknown`)
 	})
 
 	it("missing key", () => {
@@ -103,9 +123,7 @@ contextualize(() => {
 			declare<{ a: string; b?: number }>().type({
 				a: "string"
 			})
-		).type.errors(
-			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": number | undefined; }'.`
-		)
+		).type.errors(`'"b?"' is missing`)
 	})
 
 	it("extraneous key", () => {
@@ -115,8 +133,101 @@ contextualize(() => {
 				// @ts-expect-error
 				b: "boolean"
 			})
-		).type.errors(
-			`Object literal may only specify known properties, and 'b' does not exist in type '{ a: "string"; }'.`
+		).type.errors(`'b' does not exist`)
+	})
+
+	it("completions", () => {
+		attest(() =>
+			declare<{ a: string; b?: number }>().type({
+				// @ts-expect-error
+				"": type.unknown
+			})
+		).completions({
+			"": ["a", "b?"]
+		})
+	})
+
+	it("nested completions", () => {
+		attest(() =>
+			type
+				.declare<{
+					a: {
+						nested: boolean[]
+					}
+				}>()
+				.type({
+					// @ts-expect-error
+					a: { "": "boolean[]" }
+				})
+		).completions({
+			"": ["nested"]
+		})
+	})
+
+	it("missing generic argument", () => {
+		// @ts-expect-error
+		attest(() => declare().type({})).type.errors(
+			"declare<ExternalType>() requires a generic argument"
 		)
+	})
+
+	it("morph", () => {
+		type Expected = { a: string; b?: number }
+		attest(() =>
+			declare<Expected>().type({
+				// @ts-expect-error
+				a: "string.numeric.parse",
+				"b?": "number"
+			})
+		).type.errors("declared: string; inferred: (In: string) => To<number>")
+	})
+
+	it("morph in", () => {
+		type Expected = { a: string; b?: number }
+		const T = declare<Expected, { side: "in" }>().type({
+			a: "string.numeric.parse",
+			"b?": "number"
+		})
+
+		attest<
+			(In: Expected) => {
+				a: number
+				b?: number
+			}
+		>(T.t).type.toString.snap("(In: Expected) => { a: number; b?: number }")
+	})
+
+	it("morph in mismatch", () => {
+		type Expected = { a: number; b?: number }
+		attest(() =>
+			declare<Expected, { side: "in" }>().type({
+				// @ts-expect-error
+				a: "string.numeric.parse",
+				"b?": "number"
+			})
+		).type.errors("declared: number; inferred: string")
+	})
+
+	it("morph out", () => {
+		type Expected = { a: number; b?: number }
+		const T = declare<Expected, { side: "out" }>().type({
+			a: "string.numeric.parse",
+			"b?": "number"
+		})
+
+		attest<(In: { a: string; b?: number }) => Expected>(T.t).type.toString.snap(
+			"(In: { a: string; b?: number }) => Expected"
+		)
+	})
+
+	it("morph out mismatch", () => {
+		type Expected = { a: string; b?: number }
+		attest(() =>
+			declare<Expected, { side: "out" }>().type({
+				// @ts-expect-error
+				a: "string.numeric.parse",
+				"b?": "number"
+			})
+		).type.errors("declared: string; inferred: number")
 	})
 })

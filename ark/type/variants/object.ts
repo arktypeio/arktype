@@ -100,7 +100,7 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 			// if you can figure out a way to avoid inlining this without
 			// breaking autocomplete and validation, do it!
 			(inferredDef extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredDef]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredDef]>)
 	): r extends infer _ ? _ : never
 
 	/**

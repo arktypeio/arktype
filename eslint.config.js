@@ -74,6 +74,8 @@ export default tseslint.config(
 				{
 					args: "after-used",
 					argsIgnorePattern: "^_",
+					// ignore eslint parsing issue with parser state namespace s
+					varsIgnorePattern: "^s$",
 					ignoreRestSiblings: true
 				}
 			],
@@ -205,6 +207,7 @@ export default tseslint.config(
 		rules: {
 			"@typescript-eslint/ban-ts-comment": "off",
 			"@typescript-eslint/explicit-module-boundary-types": "off",
+			"@typescript-eslint/no-unused-vars": "off",
 			"import/no-extraneous-dependencies": "off",
 			"import/no-nodejs-modules": "off",
 			"@typescript-eslint/no-restricted-imports": [

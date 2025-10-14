@@ -15,11 +15,11 @@ import { baseDiagnosticTscCmd } from "./shared.ts"
 interface TraceEntry {
 	pid: number
 	tid: number
-	ph: string
-	cat: string
-	ts: number
-	name: string
-	dur?: number
+	ph: string // Phase (e.g., "X" for Complete Event)
+	cat: string // Category
+	ts: number // Timestamp (microseconds)
+	name: string // Name of the event
+	dur?: number // Duration (microseconds)
 	args: {
 		kind?: number
 		pos?: number
@@ -36,25 +36,25 @@ interface CallRange {
 	typeId: string
 	functionName: string
 	callSite: string
-	startTime: number
-	endTime: number
-	duration: number
+	startTime: number // microseconds
+	endTime: number // microseconds
+	duration: number // microseconds
 	children: CallRange[]
-	selfTime: number
+	selfTime: number // microseconds
 }
 
 interface CallSiteDetail {
 	path: string
 	pos: number
 	end: number
-	selfTime: number
+	selfTime: number // microseconds
 }
 
 interface FunctionStats {
 	typeId: string
 	functionName: string
-	totalTime: number
-	selfTime: number
+	totalTime: number // microseconds
+	selfTime: number // microseconds
 	count: number
 	firstLocation?: string
 	detailedCallSites: CallSiteDetail[]
@@ -64,7 +64,7 @@ interface AnalysisContext {
 	traceDir: string
 	tsServer: TsServer
 	traceEntries: TraceEntry[]
-	durationEntries: TraceEntry[]
+	durationEntries: TraceEntry[] // Filtered entries with duration
 	callRanges: CallRange[]
 	rootCalls: CallRange[]
 	functionStats: Record<string, FunctionStats>
@@ -75,8 +75,8 @@ interface UngroupedCallStats {
 	typeId: string
 	functionName: string
 	callSite: string
-	duration: number
-	selfTime: number
+	duration: number // microseconds
+	selfTime: number // microseconds
 }
 
 /**
@@ -91,17 +91,125 @@ const outputCapture = (() => {
 			buffer.push(text)
 		},
 		getBuffer: () => buffer.join("\n"),
+		getLines: () => [...buffer],
 		clear: () => {
 			buffer = []
 		}
 	}
 })()
 
+/**
+ * Formats microseconds to a string of milliseconds.
+ */
+const formatMillis = (ms: number, fractionDigits = 2): string =>
+	(ms / 1000).toFixed(fractionDigits)
+
+/**
+ * Formats microseconds to a padded string of milliseconds.
+ */
+const formatPaddedMillis = (
+	ms: number,
+	pad: number,
+	fractionDigits = 2
+): string => formatMillis(ms, fractionDigits).padStart(pad)
+
+// Helper to format duration in seconds to a human-readable string
+const formatSeconds = (totalSeconds: number): string => {
+	if (totalSeconds < 0) totalSeconds = 0
+	const hours = Math.floor(totalSeconds / 3600)
+	const minutes = Math.floor((totalSeconds % 3600) / 60)
+	const seconds = Math.floor(totalSeconds % 60)
+
+	if (hours > 0) return `about ${hours} hour(s)`
+	if (minutes > 0) return `about ${minutes} minute(s)`
+	return `${seconds}s`
+}
+
+class ProgressDisplay {
+	private totalItems: number
+	private processedItems: number = 0
+	private startTime: number = 0
+	private timerId?: NodeJS.Timeout
+	private barWidth: number = 30 // Width of the progress bar itself
+
+	constructor(totalItems: number) {
+		this.totalItems = totalItems
+		if (this.totalItems <= 0) this.totalItems = 0
+	}
+
+	start(): void {
+		if (this.totalItems === 0) return
+
+		this.startTime = Date.now()
+		this.processedItems = 0
+		this.render() // Initial render
+		// Update every second for elapsed time and ETA
+		this.timerId = setInterval(() => this.render(), 1000)
+	}
+
+	update(processedCount: number): void {
+		if (this.totalItems === 0) return
+
+		this.processedItems = Math.min(processedCount, this.totalItems)
+		this.render() // Re-render on each item processed for immediate feedback
+
+		if (this.processedItems >= this.totalItems) this.stop() // Automatically stop if all items are processed
+	}
+
+	private render(): void {
+		if (this.totalItems === 0 && this.processedItems === 0 && !this.startTime)
+			return // Avoid rendering if not started for 0 items
+
+		const percent =
+			this.totalItems > 0 ?
+				Math.min(100, (this.processedItems / this.totalItems) * 100)
+			:	100
+		const filledLength = Math.floor((this.barWidth * percent) / 100)
+		const emptyLength = this.barWidth - filledLength
+
+		const bar = `[${"=".repeat(filledLength)}${" ".repeat(emptyLength)}]`
+
+		const elapsedMs = Date.now() - this.startTime
+		const elapsedSec = elapsedMs / 1000
+		const formattedElapsed = formatSeconds(elapsedSec)
+
+		let etaStr = ""
+		if (this.processedItems > 0 && this.processedItems < this.totalItems) {
+			const avgTimePerItemMs = elapsedMs / this.processedItems
+			const remainingItems = this.totalItems - this.processedItems
+			const etaMs = remainingItems * avgTimePerItemMs
+			etaStr = ` (ETA: ${formatSeconds(etaMs / 1000)})`
+		} else if (this.processedItems >= this.totalItems && this.totalItems > 0)
+			etaStr = " (Done)"
+
+		const summary = `${this.processedItems}/${this.totalItems} entries (${percent.toFixed(0)}%)`
+		const timeInfo = `${formattedElapsed} elapsed${etaStr}`
+
+		process.stdout.clearLine(0) // Clear the current line
+		process.stdout.cursorTo(0) // Move cursor to the beginning of the line
+		process.stdout.write(`Processing: ${bar} ${summary} | ${timeInfo}`)
+	}
+
+	stop(): void {
+		if (this.timerId) {
+			clearInterval(this.timerId)
+			this.timerId = undefined as never
+		}
+		if (this.totalItems > 0) {
+			this.processedItems = this.totalItems // Ensure final state is 100%
+			this.render() // Final render
+			process.stdout.write("\n") // Move to the next line
+		}
+	}
+}
+
 export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = resolve(args[0] ?? process.cwd())
 	const config = getConfig()
 
 	if (!config.tsconfig) {
+		// This message should go to console.error and also be captured if needed,
+		// but since it exits, direct console.error is fine.
 		console.error(
 			`attest trace must be run from a directory with a tsconfig.json file`
 		)
@@ -111,34 +219,43 @@ export const trace = async (args: string[]): Promise<void> => {
 	const traceDir = resolve(config.cacheDir, "trace")
 	ensureDir(traceDir)
 
-	let tracingOutput = ""
 	outputCapture.clear()
+	const initialMessages: string[] = []
 
-	outputCapture.write(`⏳ Gathering type trace data for ${packageDir}...`)
-	tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
+	initialMessages.push(`⏳ Gathering type trace data for ${packageDir}...`)
+	outputCapture.write(initialMessages[0]) // This goes to console and buffer
+
+	const tracingOutput = generateTraceData(traceDir, config.tsconfig, packageDir)
 
 	const traceFile = join(traceDir, "trace.json")
 
 	if (!existsSync(traceFile)) {
 		outputCapture.write(
-			`❌ No trace data found (expected a file at ${join(traceDir, "trace.json")})`
+			`❌ No trace data found (expected a file at ${traceFile}). TSC output:\n${tracingOutput}`
 		)
+		const summaryPath = join(traceDir, "summary.txt")
+		writeFile(summaryPath, outputCapture.getBuffer())
 		return
 	}
 
+	// This message will be followed by the progress bar on the next line
 	outputCapture.write(`⏳ Analyzing type trace data for ${packageDir}...`)
-	analyzeTypeInstantiations(traceDir)
+	analyzeTypeInstantiations(traceDir) // This function now handles its own progress display
 
-	// Write summary file containing our messages followed by compiler output
-	// This ensures the initial message comes first in the file
+	// Collect all messages for the summary file
+	// The progress bar output is not part of outputCapture.getLines()
+	const analysisMessages = outputCapture
+		.getLines()
+		.slice(initialMessages.length + 1) // +1 for the "Analyzing..." message
+
+	const summaryContent = [
+		...initialMessages,
+		tracingOutput,
+		outputCapture.getLines()[initialMessages.length], // The "Analyzing..." message
+		...analysisMessages
+	].join("\n")
+
 	const summaryPath = join(traceDir, "summary.txt")
-	const summaryContent =
-		outputCapture.getBuffer().split("\n")[0] +
-		"\n" +
-		tracingOutput +
-		"\n" +
-		outputCapture.getBuffer().split("\n").slice(1).join("\n")
-
 	writeFile(summaryPath, summaryContent)
 }
 
@@ -148,21 +265,14 @@ const generateTraceData = (
 	packageDir: string
 ): string => {
 	try {
-		// Capture the output instead of just displaying it
 		const output = getShellOutput(
 			`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
 			{ cwd: packageDir }
 		)
-
-		// Display the output to the console as before
-		process.stdout.write(output)
-
+		process.stdout.write(output) // Display tsc output directly
 		return output
-	} catch (_: any) {
-		// even if tsc returns a non-zero exit code,
-		// we can still proceed as long as the trace.json
-		// file was generated
-		const e: ExecException = _
+	} catch (error: any) {
+		const e: ExecException = error
 		const output = e.stdout ?? ""
 		const errorOutput = e.stderr ?? ""
 
@@ -175,11 +285,13 @@ const generateTraceData = (
 
 const initializeAnalysisContext = (traceDir: string): AnalysisContext => {
 	const tsServer = TsServer.instance
-
-	// Load trace data
 	const tracePath = join(traceDir, "trace.json")
-	if (!existsSync(tracePath))
-		throw new Error(`Expected a trace file at ${tracePath}`)
+
+	if (!existsSync(tracePath)) {
+		throw new Error(
+			`Critical: Expected a trace file at ${tracePath}, but it was not found during context initialization.`
+		)
+	}
 
 	const traceEntries: TraceEntry[] = readJson(tracePath) as never
 
@@ -196,17 +308,20 @@ const initializeAnalysisContext = (traceDir: string): AnalysisContext => {
 }
 
 const filterDurationEntries = (ctx: AnalysisContext): void => {
-	ctx.durationEntries = ctx.traceEntries.filter(
-		entry =>
-			entry.ph === "X" &&
-			entry.dur !== undefined &&
-			entry.args.path &&
-			entry.args.pos &&
-			entry.args.end
-	)
-
+	ctx.durationEntries = ctx.traceEntries.filter(entry => {
+		const { args, dur, ph } = entry
+		return (
+			ph === "X" &&
+			typeof dur === "number" &&
+			args &&
+			typeof args.path === "string" &&
+			typeof args.pos === "number" &&
+			typeof args.end === "number"
+		)
+	})
+	// This message goes to outputCapture for the summary file
 	outputCapture.write(
-		`Found ${ctx.durationEntries.length} traces with duration information`
+		`Found ${ctx.durationEntries.length} complete event traces with duration, path, and position.`
 	)
 }
 
@@ -214,190 +329,128 @@ const processDurationEntry = (
 	entry: TraceEntry,
 	ctx: AnalysisContext
 ): void => {
-	try {
-		const sourceFile = ctx.tsServer.getSourceFileOrThrow(entry.args.path!)
-		const pos = entry.args.pos!
-		const end = entry.args.end!
+	const entryPath = entry.args.path as string
+	const entryPos = entry.args.pos as number
+	const entryEnd = entry.args.end as number
+	const entryDur = entry.dur as number
 
-		// First try to find any call expression in the range
-		const callExpr = findCallExpressionInRange(sourceFile, pos, end)
-		if (callExpr) processCallExpression(callExpr, entry, pos, end, ctx)
-		else {
-			// Try to process as another type of node
-			processNonCallNode(sourceFile, entry, pos, end, ctx)
+	const sourceFile = ctx.tsServer.getSourceFileOrThrow(entryPath)
+	let callRangeData: { typeId: string; functionName: string } | undefined
+
+	const callExpr = findCallExpressionInRange(sourceFile, entryPos, entryEnd)
+	if (callExpr) {
+		const functionName = extractFunctionName(callExpr)
+		callRangeData = {
+			typeId: `function-${functionName}`,
+			functionName
 		}
-	} catch (e) {
-		handleProcessingError(e, entry)
+	} else {
+		const relevantNode = findMostSpecificNodeInRange(
+			sourceFile,
+			entryPos,
+			entryEnd
+		)
+		if (relevantNode) {
+			const nodeType = getStringifiableType(relevantNode)
+			const nodeKind = ts.SyntaxKind[relevantNode.kind]
+			const typeName = `${nodeKind}: ${nodeType.toString().substring(0, 25)}`
+			const typeNodeIdPart =
+				(nodeType as any).id ?? nodeType.toString().substring(0, 20)
+			callRangeData = {
+				typeId: `node-${relevantNode.kind}-${typeNodeIdPart}`,
+				functionName: typeName
+			}
+		}
+	}
+
+	if (callRangeData) {
+		ctx.callRanges.push({
+			id: `${entry.ts}-${entryPos}-${entryEnd}`,
+			typeId: callRangeData.typeId,
+			functionName: callRangeData.functionName,
+			callSite: `${entryPath}:${entryPos}-${entryEnd}`,
+			startTime: entry.ts,
+			endTime: entry.ts + entryDur,
+			duration: entryDur,
+			children: [],
+			selfTime: entryDur
+		})
+	} else {
+		throw new Error(
+			`Failed to identify a processable AST node for duration entry (name: ${entry.name}, path: ${entryPath}, pos: ${entryPos}-${entryEnd}).`
+		)
 	}
 }
 
-/**
- * Find any call expression within the given range, with preference for method calls
- */
 const findCallExpressionInRange = (
 	file: ts.SourceFile,
 	start: number,
 	end: number
 ): ts.CallExpression | undefined => {
-	// First try the default nearest bounding call expression
 	const boundingCall = nearestBoundingCallExpression(file, start)
-	if (boundingCall) return boundingCall
+	if (boundingCall && boundingCall.pos >= start && boundingCall.end <= end)
+		return boundingCall
 
-	// If that fails, search for any call expressions in the range
 	const allNodes = getDescendants(file)
 	const nodesInRange = allNodes.filter(
 		node => node.pos >= start && node.end <= end
 	)
 
-	// Find all call expressions in the range
 	const callExpressions = nodesInRange.filter(node =>
 		ts.isCallExpression(node)
 	) as ts.CallExpression[]
 
 	if (callExpressions.length === 0) return undefined
 
-	// Prioritize method calls (e.g. x.and(), x.or())
 	const methodCalls = callExpressions.filter(call =>
 		ts.isPropertyAccessExpression(call.expression)
 	)
-
-	// Return a method call if found, otherwise the first call expression
 	return methodCalls.length > 0 ? methodCalls[0] : callExpressions[0]
 }
 
-/**
- * Extract function or method name from a call expression, normalizing the format
- */
 const extractFunctionName = (callExpr: ts.CallExpression): string => {
-	// For method calls like x.and()
 	if (ts.isPropertyAccessExpression(callExpr.expression))
 		return callExpr.expression.name.getText()
-
-	// For direct function calls like type() or scope()
 	if (ts.isIdentifier(callExpr.expression)) return callExpr.expression.getText()
-
-	// For other expressions, try to get a reasonable name
-	return "anonymous"
-}
-
-const processCallExpression = (
-	callExpr: ts.CallExpression,
-	entry: TraceEntry,
-	pos: number,
-	end: number,
-	ctx: AnalysisContext
-): void => {
-	// Simply use the function name for grouping
-	const functionName = extractFunctionName(callExpr)
-
-	// Use the function name for both ID and display name
-	// This will ensure all calls to the same function are grouped together
-	const typeId = `function-${functionName}`
-
-	const callSite = `${entry.args.path}:${pos}-${end}`
-
-	ctx.callRanges.push({
-		id: `${entry.ts}-${pos}-${end}`,
-		typeId,
-		functionName,
-		callSite,
-		startTime: entry.ts,
-		endTime: entry.ts + (entry.dur || 0),
-		duration: entry.dur || 0,
-		children: [],
-		selfTime: entry.dur || 0
-	})
-}
-
-const processNonCallNode = (
-	sourceFile: ts.SourceFile,
-	entry: TraceEntry,
-	pos: number,
-	end: number,
-	ctx: AnalysisContext
-): void => {
-	const relevantNode = findMostSpecificNodeInRange(sourceFile, pos, end)
-	if (!relevantNode) return
-
-	const nodeType = getStringifiableType(relevantNode)
-	const nodeKind = ts.SyntaxKind[relevantNode.kind]
-	const typeName = `${nodeKind}: ${nodeType.toString().substring(0, 25)}`
-	const typeId = `node-${relevantNode.kind}-${(nodeType as any).id || nodeType.toString().substring(0, 20)}`
-	const callSite = `${entry.args.path}:${pos}-${end}`
-
-	ctx.callRanges.push({
-		id: `${entry.ts}-${pos}-${end}`,
-		typeId,
-		functionName: typeName,
-		callSite,
-		startTime: entry.ts,
-		endTime: entry.ts + (entry.dur || 0),
-		duration: entry.dur || 0,
-		children: [],
-		selfTime: entry.dur || 0
-	})
-}
-
-const handleProcessingError = (e: unknown, entry: TraceEntry): void => {
-	if (!(e instanceof Error)) throw e
-
-	// Silent failure for common case of not finding a call expression
-	if (e.message?.includes("Unable to find bounding call expression")) return
-
-	console.warn(
-		`Error processing entry at ${entry.args.path}:${entry.args.pos}: ${e.message}`
-	)
+	return "anonymousFunction"
 }
 
 const buildCallTree = (ctx: AnalysisContext): void => {
-	// Sort by start time for nesting analysis
+	// This message goes to outputCapture for the summary file
+	outputCapture.write(
+		`Building call tree from ${ctx.callRanges.length} ranges...`
+	)
 	ctx.callRanges.sort((a, b) => a.startTime - b.startTime)
-
 	const activeCallStack: CallRange[] = []
 
 	for (const call of ctx.callRanges) {
-		popFinishedCalls(call, activeCallStack)
-		assignToParentOrRoot(call, activeCallStack, ctx)
+		while (
+			activeCallStack.length > 0 &&
+			activeCallStack[activeCallStack.length - 1].endTime < call.startTime
+		)
+			activeCallStack.pop()
+
+		if (activeCallStack.length === 0) ctx.rootCalls.push(call)
+		else {
+			const parent = activeCallStack[activeCallStack.length - 1]
+			parent.children.push(call)
+		}
 		activeCallStack.push(call)
 	}
-}
-
-const popFinishedCalls = (
-	call: CallRange,
-	activeCallStack: CallRange[]
-): void => {
-	while (
-		activeCallStack.length > 0 &&
-		activeCallStack[activeCallStack.length - 1].endTime < call.startTime
+	outputCapture.write(
+		`Call tree built with ${ctx.rootCalls.length} root calls.`
 	)
-		activeCallStack.pop()
-}
-
-const assignToParentOrRoot = (
-	call: CallRange,
-	activeCallStack: CallRange[],
-	ctx: AnalysisContext
-): void => {
-	if (activeCallStack.length === 0) {
-		// This is a root call
-		ctx.rootCalls.push(call)
-	} else {
-		// This call is nested inside the current active call
-		const parent = activeCallStack[activeCallStack.length - 1]
-		parent.children.push(call)
-	}
 }
 
 const calculateSelfTimes = (call: CallRange): number => {
 	let childrenTime = 0
 	for (const child of call.children) childrenTime += calculateSelfTimes(child)
-
 	call.selfTime = call.duration - childrenTime
+	if (call.selfTime < 0) call.selfTime = 0
 	return call.duration
 }
 
 const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
-	// Initialize stats object if needed
 	if (!ctx.functionStats[call.typeId]) {
 		ctx.functionStats[call.typeId] = {
 			typeId: call.typeId,
@@ -411,133 +464,151 @@ const collectFunctionStats = (call: CallRange, ctx: AnalysisContext): void => {
 	}
 
 	const stats = ctx.functionStats[call.typeId]
-
-	// Track detailed call site information
-	addCallSiteToStats(call, stats)
-
-	// Update aggregate metrics
-	stats.totalTime += call.duration
-	stats.selfTime += call.selfTime
-	stats.count++
-
-	// Process children
-	for (const child of call.children) collectFunctionStats(child, ctx)
-}
-
-const addCallSiteToStats = (call: CallRange, stats: FunctionStats): void => {
 	const [filePath, positionRange] = call.callSite.split(":")
+	if (!filePath || !positionRange)
+		throw new Error(`Invalid callSite format: ${call.callSite}`)
 	const [posStr, endStr] = positionRange.split("-")
+	const pos = parseInt(posStr, 10)
+	const end = parseInt(endStr, 10)
+	if (isNaN(pos) || isNaN(end)) {
+		throw new Error(
+			`Invalid position in callSite: ${call.callSite}. Pos: ${posStr}, End: ${endStr}`
+		)
+	}
 
 	stats.detailedCallSites.push({
 		path: filePath,
-		pos: parseInt(posStr),
-		end: parseInt(endStr),
+		pos,
+		end,
 		selfTime: call.selfTime
 	})
+	stats.totalTime += call.duration
+	stats.selfTime += call.selfTime
+	stats.count++
+	for (const child of call.children) collectFunctionStats(child, ctx)
 }
 
 const sortAndRankFunctions = (ctx: AnalysisContext): void => {
-	// Sort each function's call sites by self-time
+	outputCapture.write("Sorting and ranking functions...")
 	for (const stats of Object.values(ctx.functionStats))
 		stats.detailedCallSites.sort((a, b) => b.selfTime - a.selfTime)
-
-	// Sort functions by self-time
 	ctx.allFunctions = Object.values(ctx.functionStats).sort(
 		(a, b) => b.selfTime - a.selfTime
 	)
 }
 
 const analyzeTypeInstantiations = (traceDir: string): void => {
-	// Initialize the analysis context
 	const ctx = initializeAnalysisContext(traceDir)
+	filterDurationEntries(ctx) // Uses outputCapture
 
-	// Filter entries with duration information
-	filterDurationEntries(ctx)
+	const totalEntries = ctx.durationEntries.length
+	if (totalEntries === 0) {
+		outputCapture.write("No duration entries with path/pos to process.")
+		outputCapture.write(
+			`\n✅ Analysis complete! No data to export. Summary written to:\n` +
+				`   - ${join(traceDir, "summary.txt")}`
+		)
+		return
+	}
 
-	// Process each duration entry to extract call ranges
-	for (const entry of ctx.durationEntries) processDurationEntry(entry, ctx)
+	const progressDisplay = new ProgressDisplay(totalEntries)
+	progressDisplay.start()
 
-	// Build call tree from ranges
-	buildCallTree(ctx)
+	for (const [index, entry] of ctx.durationEntries.entries()) {
+		try {
+			processDurationEntry(entry, ctx)
+		} catch (e: any) {
+			progressDisplay.stop() // Stop progress before printing error via outputCapture
+			outputCapture.write(
+				`\n❌ Error processing entry ${index + 1}/${totalEntries} (Path: ${entry.args.path ?? "N/A"}, Pos: ${entry.args.pos ?? "N/A"}): ${e.message}`
+			)
+			outputCapture.write("Aborting analysis due to error.")
+			// Early exit, summary will be written by the main trace function
+			return
+		}
+		progressDisplay.update(index + 1)
+	}
+	progressDisplay.stop() // Ensure it's stopped if loop finished
 
-	// Calculate self-time for each call
+	// Subsequent messages use outputCapture and will appear after the progress bar
+	buildCallTree(ctx) // Uses outputCapture
+
+	outputCapture.write("Calculating self-times for call tree nodes...")
 	for (const root of ctx.rootCalls) calculateSelfTimes(root)
 
-	// Collect statistics by view type
-	const ungroupedStats = collectUngroupedStats(ctx)
-	for (const call of ctx.rootCalls) collectFunctionStats(call, ctx)
+	outputCapture.write("Collecting statistics...")
+	const ungroupedStats = collectUngroupedStats(ctx) // Uses outputCapture
+	for (const root of ctx.rootCalls) collectFunctionStats(root, ctx)
 
-	// Sort and rank functions
-	sortAndRankFunctions(ctx)
+	sortAndRankFunctions(ctx) // Uses outputCapture
 
-	// Display summaries to console
 	outputCapture.write("\n📊 Performance Analysis - Top Individual Calls:\n")
-	displayIndividualSummary(ungroupedStats)
+	displayIndividualSummary(ungroupedStats) // Uses outputCapture
 
 	outputCapture.write("\n📊 Performance Analysis - Functions by Self Time:\n")
-	displayGroupedSummary(ctx.allFunctions)
+	displayGroupedSummary(ctx.allFunctions) // Uses outputCapture
 
-	// Write CSV reports
 	const rangesCsvPath = join(traceDir, "ranges.csv")
 	const namesCsvPath = join(traceDir, "names.csv")
-	const summaryPath = join(traceDir, "summary.txt")
+	const summaryFilePath = join(traceDir, "summary.txt") // Path already defined in trace()
 
-	// Export individual ranges to CSV
-	writeToCsv(
-		rangesCsvPath,
-		["Function Name", "Self (ms)", "Duration (ms)", "Location"],
-		ungroupedStats.map(stat => [
-			stat.functionName,
-			(stat.selfTime / 1000).toFixed(3),
-			(stat.duration / 1000).toFixed(3),
-			formatLocation(stat.callSite)
-		])
-	)
+	if (ctx.callRanges.length > 0) {
+		outputCapture.write("Exporting CSV reports...")
+		writeToCsv(
+			rangesCsvPath,
+			["Function Name", "Self (ms)", "Duration (ms)", "Location"],
+			ungroupedStats.map(stat => [
+				stat.functionName,
+				formatMillis(stat.selfTime, 3),
+				formatMillis(stat.duration, 3),
+				formatLocation(stat.callSite)
+			])
+		)
 
-	// Export grouped functions to CSV
-	writeToCsv(
-		namesCsvPath,
-		[
-			"Function Name",
-			"Total Self (ms)",
-			"Avg Self (ms)",
-			"Call Count",
-			"Top Location",
-			"Top Self (ms)"
-		],
-		ctx.allFunctions.map(stats => {
-			const topUsage = stats.detailedCallSites[0] || {
-				path: "unknown",
-				pos: 0,
-				end: 0,
-				selfTime: 0
-			}
-			return [
-				stats.functionName,
-				(stats.selfTime / 1000).toFixed(3),
-				(stats.selfTime / stats.count / 1000).toFixed(3),
-				stats.count.toString(),
-				formatLocation(`${topUsage.path}:${topUsage.pos}-${topUsage.end}`),
-				(topUsage.selfTime / 1000).toFixed(3)
-			]
-		})
-	)
-
-	outputCapture.write(
-		`\n✅ Analysis complete! Results exported to:\n` +
-			`   - ${rangesCsvPath} (individual calls)\n` +
-			`   - ${namesCsvPath} (grouped by function name)\n` +
-			`   - ${summaryPath} (complete analysis report)`
-	)
+		writeToCsv(
+			namesCsvPath,
+			[
+				"Function Name",
+				"Total Self (ms)",
+				"Avg Self (ms)",
+				"Call Count",
+				"Top Location",
+				"Top Self (ms)"
+			],
+			ctx.allFunctions.map(stats => {
+				const topUsage = stats.detailedCallSites[0] ?? {
+					path: "unknown",
+					pos: 0,
+					end: 0,
+					selfTime: 0
+				}
+				return [
+					stats.functionName,
+					formatMillis(stats.selfTime, 3),
+					formatMillis(stats.selfTime / Math.max(1, stats.count), 3),
+					stats.count.toString(),
+					formatLocation(`${topUsage.path}:${topUsage.pos}-${topUsage.end}`),
+					formatMillis(topUsage.selfTime, 3)
+				]
+			})
+		)
+		outputCapture.write(
+			`\n✅ Analysis complete! Results exported to:\n` +
+				`   - ${rangesCsvPath} (individual calls)\n` +
+				`   - ${namesCsvPath} (grouped by function name)\n` +
+				`   - ${summaryFilePath} (complete analysis report)`
+		)
+	} else {
+		outputCapture.write(
+			`\n✅ Analysis complete! No call ranges processed to export to CSV. Summary written to:\n` +
+				`   - ${summaryFilePath}`
+		)
+	}
 }
 
-/**
- * Collect statistics for individual (ungrouped) calls
- */
 const collectUngroupedStats = (ctx: AnalysisContext): UngroupedCallStats[] => {
+	outputCapture.write("Collecting and sorting ungrouped call statistics...")
 	const ungroupedStats: UngroupedCallStats[] = []
-
-	// Flatten the call tree into individual entries
 	const flattenCallTree = (call: CallRange): void => {
 		ungroupedStats.push({
 			typeId: call.typeId,
@@ -546,62 +617,43 @@ const collectUngroupedStats = (ctx: AnalysisContext): UngroupedCallStats[] => {
 			duration: call.duration,
 			selfTime: call.selfTime
 		})
-
 		for (const child of call.children) flattenCallTree(child)
 	}
-
 	for (const root of ctx.rootCalls) flattenCallTree(root)
-
-	// Sort by self time in descending order
 	return ungroupedStats.sort((a, b) => b.selfTime - a.selfTime)
 }
 
-/**
- * Display a summary of individual calls
- */
 const displayIndividualSummary = (stats: UngroupedCallStats[]): void => {
 	displayTableHeader(["Rank", "Function Name", "Self (ms)", "Location"])
-
-	const top20 = stats.slice(0, 20)
-
-	for (const [index, stat] of top20.entries()) {
+	const topN = Math.min(stats.length, 20)
+	for (let i = 0; i < topN; i++) {
+		const stat = stats[i]
 		const typeNameFormatted = formatTypeName(stat.functionName, 20)
-		const selfTimeMs = (stat.selfTime / 1000).toFixed(2).padStart(15)
+		const selfTimeMs = formatPaddedMillis(stat.selfTime, 15, 2)
 		const location = formatLocation(stat.callSite)
-
 		outputCapture.write(
-			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${location}`
+			`${(i + 1).toString().padStart(4)} | ${typeNameFormatted} | ${selfTimeMs} | ${location}`
 		)
 	}
 }
 
-/**
- * Display a summary table header with aligned columns
- */
 const displayTableHeader = (columns: string[]): void => {
-	// Create header row with standard column widths
 	const headerRow = [
 		columns[0].padEnd(4),
 		columns[1].padEnd(20),
 		columns[2].padEnd(15),
 		...columns.slice(3)
 	].join(" | ")
-
-	// Create separator line matching the header column widths
 	const separatorRow = [
-		"----",
-		"--------------------",
-		"---------------",
+		"-".repeat(4),
+		"-".repeat(20),
+		"-".repeat(15),
 		...columns.slice(3).map(col => "-".repeat(col.length))
 	].join("-|-")
-
 	outputCapture.write(headerRow)
 	outputCapture.write(separatorRow)
 }
 
-/**
- * Display a combined summary of grouped functions showing both total and average times
- */
 const displayGroupedSummary = (functions: FunctionStats[]): void => {
 	displayTableHeader([
 		"Rank",
@@ -611,47 +663,39 @@ const displayGroupedSummary = (functions: FunctionStats[]): void => {
 		"Calls",
 		"Top Usage"
 	])
-
-	for (const [index, stats] of functions.slice(0, 20).entries()) {
+	const topN = Math.min(functions.length, 20)
+	for (let i = 0; i < topN; i++) {
+		const stats = functions[i]
 		const typeNameFormatted = formatTypeName(stats.functionName, 20)
-		const totalTimeMs = (stats.selfTime / 1000).toFixed(2).padStart(15)
-		const avgTimeMs = (stats.selfTime / stats.count / 1000)
-			.toFixed(2)
-			.padStart(13)
+		const totalTimeMs = formatPaddedMillis(stats.selfTime, 15, 2)
+		const avgTimeMs = formatPaddedMillis(
+			stats.selfTime / Math.max(1, stats.count),
+			13,
+			2
+		)
 		const calls = stats.count.toString().padStart(5)
-
-		// Get details about top usage site
-		const topUsage = stats.detailedCallSites[0] || {
+		const topUsage = stats.detailedCallSites[0] ?? {
 			path: "unknown",
 			pos: 0,
 			end: 0,
 			selfTime: 0
 		}
-		const topUsageTime = (topUsage.selfTime / 1000).toFixed(2) + "ms"
+		const topUsageTime = formatMillis(topUsage.selfTime, 2) + "ms"
 		const topUsageLocation = formatLocation(
 			`${topUsage.path}:${topUsage.pos}-${topUsage.end}`
 		)
-
 		outputCapture.write(
-			`${(index + 1).toString().padStart(4)} | ${typeNameFormatted} | ${totalTimeMs} | ${avgTimeMs} | ${calls} | ${topUsageLocation} (${topUsageTime})`
+			`${(i + 1).toString().padStart(4)} | ${typeNameFormatted} | ${totalTimeMs} | ${avgTimeMs} | ${calls} | ${topUsageLocation} (${topUsageTime})`
 		)
 	}
 }
 
-/**
- * Format a type name for display, ensuring the most identifiable parts are preserved
- */
 const formatTypeName = (typeName: string, maxLength: number): string => {
-	// Remove any () from the name
 	typeName = typeName.replace(/\(\)$/, "")
-
 	if (typeName.length <= maxLength) return typeName.padEnd(maxLength)
-
-	// Default truncation strategy
-	const charsToKeep = maxLength - 3 // Account for "..."
-	const firstPart = Math.ceil(charsToKeep * 0.7) // Keep more of the start
+	const charsToKeep = maxLength - 3
+	const firstPart = Math.ceil(charsToKeep * 0.7)
 	const lastPart = charsToKeep - firstPart
-
 	return (
 		typeName.substring(0, firstPart) +
 		"..." +
@@ -659,51 +703,32 @@ const formatTypeName = (typeName: string, maxLength: number): string => {
 	).padEnd(maxLength)
 }
 
-/**
- * Format a file location to be more readable with relative path and line:char
- */
 const formatLocation = (location: string): string => {
-	if (!location || location === "unknown") return "unknown"
-
-	// Extract file path and position range
-	const [filePath, positionRange] = location.split(":")
-
-	try {
-		const relativePath = relative(process.cwd(), filePath)
-
-		// Get position values
-		const [posStr] = positionRange.split("-")
-		const pos = parseInt(posStr)
-
-		// Get the source file to convert position to line:character
-		const sourceFile = TsServer.instance.getSourceFileOrThrow(filePath)
-		const lineAndChar = sourceFile.getLineAndCharacterOfPosition(pos)
-
-		// Format as relative-path:line:char
-		return `${relativePath}:${lineAndChar.line + 1}:${lineAndChar.character + 1}`
-	} catch {
-		// If any part fails, return the basic filename as fallback
-		return basename(filePath) + (positionRange ? `:${positionRange}` : "")
-	}
+	if (!location || location === "unknown" || !location.includes(":"))
+		return location || "unknown"
+	const parts = location.split(":")
+	if (parts.length < 2) return basename(location)
+	const filePath = parts.slice(0, -1).join(":")
+	const positionRange = parts[parts.length - 1]
+	const relativePath = relative(process.cwd(), filePath)
+	const [posStr] = positionRange.split("-")
+	const pos = parseInt(posStr, 10)
+	if (isNaN(pos)) return `${relativePath}:${positionRange}`
+	const sourceFile = TsServer.instance.getSourceFileOrThrow(filePath)
+	const lineAndChar = sourceFile.getLineAndCharacterOfPosition(pos)
+	return `${relativePath}:${lineAndChar.line + 1}:${lineAndChar.character + 1}`
 }
 
-/**
- * Finds the most specific non-trivial node within the given range
- */
 const findMostSpecificNodeInRange = (
 	file: ts.SourceFile,
 	start: number,
 	end: number
 ): ts.Node | undefined => {
-	// Get all descendants in the file
 	const allNodes = getDescendants(file)
-
-	// Filter nodes that are completely contained within our range
 	const nodesInRange = allNodes.filter(
 		node => node.pos >= start && node.end <= end
 	)
-
-	// Find most specific nodes (leaf nodes)
+	if (nodesInRange.length === 0) return undefined
 	const leafNodes = nodesInRange.filter(
 		node =>
 			!nodesInRange.some(
@@ -711,19 +736,15 @@ const findMostSpecificNodeInRange = (
 					other !== node && other.pos >= node.pos && other.end <= node.end
 			)
 	)
-
-	// Find nodes in order of preference
-	return findNodeByPreference(leafNodes)
+	return findNodeByPreference(leafNodes.length > 0 ? leafNodes : nodesInRange)
 }
 
 const findNodeByPreference = (nodes: ts.Node[]): ts.Node | undefined => {
-	// 1. Type references
+	if (nodes.length === 0) return undefined
 	const typeReference = nodes.find(
 		node => ts.isTypeReferenceNode(node) || ts.isTypeQueryNode(node)
 	)
 	if (typeReference) return typeReference
-
-	// 2. Declarations
 	const declaration = nodes.find(
 		node =>
 			ts.isVariableDeclaration(node) ||
@@ -732,32 +753,21 @@ const findNodeByPreference = (nodes: ts.Node[]): ts.Node | undefined => {
 			ts.isInterfaceDeclaration(node)
 	)
 	if (declaration) return declaration
-
-	// 3. Property accesses
 	const propertyAccess = nodes.find(node => ts.isPropertyAccessExpression(node))
 	if (propertyAccess) return propertyAccess
-
-	// 4. Assignments
 	const assignment = nodes.find(
 		node =>
 			ts.isBinaryExpression(node) &&
 			node.operatorToken.kind === ts.SyntaxKind.EqualsToken
 	)
 	if (assignment) return assignment
-
-	// 5. Expressions
 	const expression = nodes.find(
 		node => ts.isExpressionStatement(node) || ts.isExpression(node)
 	)
 	if (expression) return expression
-
-	// Default: first node
-	return nodes[0]
+	return nodes.sort((a, b) => a.end - a.pos - (b.end - b.pos))[0]
 }
 
-/**
- * Write data to a CSV file
- */
 const writeToCsv = (
 	filePath: string,
 	headers: string[],
@@ -767,18 +777,11 @@ const writeToCsv = (
 		headers.join(","),
 		...rows.map(row => row.map(escapeForCsv).join(","))
 	].join("\n")
-
 	writeFile(filePath, content)
 }
 
-/**
- * Escape string for CSV format
- */
 const escapeForCsv = (value: string): string => {
-	if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-		// If the value contains commas, double quotes, or newlines, wrap it in quotes
-		// and escape any double quotes by doubling them
+	if (value.includes(",") || value.includes('"') || value.includes("\n"))
 		return `"${value.replaceAll('"', '""')}"`
-	}
 	return value
 }

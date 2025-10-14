@@ -1,5 +1,13 @@
 # arktype
 
+## 2.1.23
+
+### regex literals are now inferred (will be announced and documented as part of 2.2)
+
+### fix an issue with some discriminated morphs (thanks @JeremyMoeglich)
+
+See https://github.com/arktypeio/arktype/pull/1464
+
 ## 2.1.22
 
 ### fix an issue with some recursive transforms

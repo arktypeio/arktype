@@ -1,4 +1,5 @@
 import type { brand } from "./generics.ts"
+import type { CastableBase } from "./records.ts"
 
 export class InternalArktypeError extends Error {}
 
@@ -31,26 +32,17 @@ export const noSuggest = <s extends string>(s: s): noSuggest<s> => ` ${s}`
  */
 export type noSuggest<s extends string = string> = ` ${s}`
 
-/** "Hair Space" character, used  as a non-rendered sentinel for an error message string:
- *  https://www.compart.com/en/unicode/U+200A
- */
-export const zeroWidthSpace = " "
+/** Unrendered character (U+200B) used to mark a string type */
+export const ZeroWidthSpace = "\u{200B}"
 
-/** "Hair Space" character, used  as a non-rendered sentinel for an error message string:
- *  https://www.compart.com/en/unicode/U+200A
- */
-export type ZeroWidthSpace = typeof zeroWidthSpace
+/** Unrendered character (U+200B) used to mark a string type */
+export type ZeroWidthSpace = typeof ZeroWidthSpace
 
 export type ErrorMessage<message extends string = string> =
 	`${message}${ZeroWidthSpace}`
 
-export interface ErrorType<
-	message extends string = string,
-	ctx extends {} = {}
-> {
+export interface ErrorType<ctx extends {} = {}> extends CastableBase<ctx> {
 	[brand]: "ErrorType"
-	message: message
-	ctx: ctx
 }
 
 export type Completion<text extends string = string> =

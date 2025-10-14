@@ -783,16 +783,7 @@ declare namespace upper {
 	}
 }
 
-const isParsableUrl = (s: string) => {
-	if (URL.canParse as unknown) return URL.canParse(s)
-	// TODO[2025-04-30] remove once Node 18 is EOL and we can rely on URL.canParse
-	try {
-		new URL(s)
-		return true
-	} catch {
-		return false
-	}
-}
+const isParsableUrl = (s: string) => URL.canParse(s)
 
 const urlRoot = rootSchema({
 	domain: "string",

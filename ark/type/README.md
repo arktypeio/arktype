@@ -3,7 +3,7 @@
 
 ArkType is a runtime validation library that parses optimized validators from familiar, type-safe syntax.
 
-It can be used to check external data like JSON payloads or form submissions at the boundaries of your code (similar to Zod or Yup).
+It can be used to check external data like JSON payloads or forms at the boundaries of your code (similar to Zod or Yup).
 
 <video
 autoPlay

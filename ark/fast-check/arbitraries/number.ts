@@ -69,7 +69,7 @@ export const buildNumberArbitrary = (
 }
 
 const getFastCheckNumberConstraints = (node: IntersectionNode) => {
-	const hasDivisor = node.refinements.find(refinement =>
+	const hasDivisor = node.prestructurals.find(refinement =>
 		refinement.hasKind("divisor")
 	)
 	const numberConstraints: fc.DoubleConstraints & {
@@ -78,7 +78,7 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 		noNaN: !node.inner.domain?.numberAllowsNaN
 	}
 
-	for (const refinement of node.refinements) {
+	for (const refinement of node.prestructurals) {
 		if (refinement.hasKindIn("min", "max")) {
 			let rule = refinement.rule
 			if ("exclusive" in refinement) {

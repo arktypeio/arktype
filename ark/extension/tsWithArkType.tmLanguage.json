@@ -105,22 +105,7 @@
 			"captures": {
 				"1": { "name": "keyword.operator" },
 				"2": {
-					"patterns": [
-						{
-							"name": "entity.name.type.ts",
-							"match": "[A-Za-z]"
-						},
-						{
-							"name": "constant.numeric.decimal.ts",
-							"match": "[0-9]"
-						},
-						{
-							"name": "keyword.operator",
-							"match": "[^ \\w]"
-						},
-						{ "include": "#arkOperator" },
-						{ "include": "#arkQuoted" }
-					]
+					"patterns": [{ "include": "#arkRegexSource" }]
 				},
 				"4": { "name": "keyword.operator" }
 			}
@@ -159,6 +144,56 @@
 				{
 					"include": "#arkAll"
 				}
+			]
+		},
+		"arkRegexFunction": {
+			"contentName": "meta.embedded.arktype.regex",
+			"begin": "\\b(regex)(\\()(['\"`])",
+			"beginCaptures": {
+				"1": {
+					"name": "entity.name.function.ts"
+				},
+				"2": {
+					"name": "meta.brace.round.ts"
+				},
+				"3": {
+					"name": "string.quoted.ts punctuation.definition.string.begin.ts"
+				}
+			},
+			"end": "(\\3)(?:(\\)|(,)))",
+			"endCaptures": {
+				"1": {
+					"name": "string.quoted.ts punctuation.definition.string.end.ts"
+				},
+				"2": {
+					"name": "meta.brace.round.ts"
+				},
+				"3": {
+					"name": "punctuation.separator.comma.ts"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#arkRegexSource"
+				}
+			]
+		},
+		"arkRegexSource": {
+			"patterns": [
+				{
+					"name": "entity.name.type.ts",
+					"match": "[A-Za-z]"
+				},
+				{
+					"name": "constant.numeric.decimal.ts",
+					"match": "[0-9]"
+				},
+				{
+					"name": "keyword.operator",
+					"match": "[^ \\w]"
+				},
+				{ "include": "#arkOperator" },
+				{ "include": "#arkQuoted" }
 			]
 		},
 		"arkAll": {

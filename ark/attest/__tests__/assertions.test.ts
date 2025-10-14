@@ -1,4 +1,6 @@
 import { attest } from "@ark/attest"
+import { MissingSnapshotError } from "@ark/attest/internal/assert/assertions.js"
+import { attestInternal } from "@ark/attest/internal/assert/attest.js"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
 
@@ -199,6 +201,14 @@ Actual: [ArkError]`)
 			() => attest(o.bar).jsdoc.equals("BAR"),
 			assert.AssertionError,
 			"BAR"
+		)
+	})
+
+	it("failOnMissingSnapshots", () => {
+		assert.throws(
+			() =>
+				attestInternal("", { cfg: { failOnMissingSnapshots: true } }).snap(),
+			MissingSnapshotError
 		)
 	})
 })

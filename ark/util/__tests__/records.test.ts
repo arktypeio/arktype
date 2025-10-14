@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	enumValues,
 	type merge,
-	type mergeExact,
 	type unionToPropwiseXor,
 	type withJsDoc
 } from "@ark/util"
@@ -103,23 +102,6 @@ contextualize(() => {
 		attest<
 			{
 				[x: string]: number
-				bar: 0
-				baz?: 0
-			},
-			t
-		>()
-	})
-
-	it("mergeExact with index signatures", () => {
-		type t = mergeExact<
-			{ [k: string]: number | string; foo?: 1; bar: 1 },
-			{ [k: string]: number; bar: 0; baz?: 0 }
-		>
-
-		attest<
-			{
-				[x: string]: number
-				foo?: 1
 				bar: 0
 				baz?: 0
 			},

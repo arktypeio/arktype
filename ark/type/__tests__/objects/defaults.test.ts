@@ -9,6 +9,7 @@ import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
 import { invalidDefaultableKeyKindMessage } from "arktype/internal/parser/property.ts"
 import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/shift/operator/default.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -204,7 +205,7 @@ contextualize(() => {
 				.throws.snap(
 					"ParseError: Default for foo must be a number (was boolean)"
 				)
-				.type.errors("Default value true must be assignable to number ")
+				.type.errors("Default value true must be assignable to number")
 		})
 
 		it("morphed", () => {
@@ -507,15 +508,32 @@ contextualize(() => {
 			)
 		})
 
-		it("extracts output as required", () => {
-			const T = type({
-				foo: "string = 'foo'"
-			})
+		it("defaultable input extracted as optional", () => {
+			const T = type({ foo: "number = 0" })
+			attest<{ foo?: number }>(T.in.t)
+			attest<{ foo?: number }>(T.inferIn)
 
-			attest<{ foo?: string }>(T.in.infer)
-			attest<{ foo: string }>(T.out.infer)
-			attest(T.in.expression).snap('{ foo: string = "foo" }')
-			attest(T.out.expression).snap("{ foo: string }")
+			attest(T.in.expression).snap("{ foo?: number }")
+		})
+
+		it("defaultable output extracted as required", () => {
+			const T = type({ foo: "number = 0" })
+			attest<{ foo: number }>(T.out.t)
+			attest<{ foo: number }>(T.inferOut)
+
+			attest(T.out.expression).snap("{ foo: number }")
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1507
+		it("fails on expression value", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					test: "'y' | 'n' = 'n' |> 'y'"
+				})
+			)
+				.throws(writeUnexpectedCharacterMessage("|"))
+				.type.errors(writeNonLiteralDefaultMessage("'n' |> 'y'"))
 		})
 	})
 
@@ -609,7 +627,7 @@ contextualize(() => {
 					() => type({ foo: [["number[]", "|", "string"], "=", true] })
 				)
 					.throws.snap(
-						"ParseError: Default for foo must be a string or an array (was boolean)"
+						"ParseError: Default for foo must be a string or an object (was boolean)"
 					)
 					.type.errors.snap(
 						"Type 'boolean' is not assignable to type 'defaultFor<string | number[]>'."

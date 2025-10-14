@@ -9,6 +9,7 @@ import {
 	DocsTitle
 } from "fumadocs-ui/page"
 import { notFound, redirect } from "next/navigation"
+import { AnchorAliases } from "../../../components/AnchorAliases.tsx"
 import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 import { source } from "../../../lib/source.tsx"
 
@@ -31,15 +32,18 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 		page.data.title.endsWith("API") || page.data.title.endsWith("Configuration")
 
 	return (
-		<DocsPage toc={isApiPage ? [] : toc} full={page.data.full ?? false}>
+		<DocsPage
+			toc={isApiPage ? [] : toc}
+			// "clerk" causes left border to wind in and out to mirror header structure
+			tableOfContent={{ style: "clerk" }}
+			full={page.data.full ?? false}
+		>
 			<DocsTitle>
 				{page.data.title}
-				<DocsDescription style={{ margin: 0 }}>
-					{page.data.description}
-				</DocsDescription>
+				<DocsDescription>{page.data.description}</DocsDescription>
 			</DocsTitle>
 
-			<DocsBody>
+			<DocsBody className="docs-body">
 				<MDX
 					components={{
 						...defaultMdxComponents,
@@ -50,6 +54,7 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 						Tab,
 						SyntaxTabs,
 						SyntaxTab,
+						AnchorAliases,
 						...(await import("../../../components/AutoplayDemo.tsx")),
 						...(await import("../../../components/CodeBlock.tsx")),
 						...(await import("../../../components/InstallationTabs.tsx")),

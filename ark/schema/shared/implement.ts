@@ -47,11 +47,7 @@ export const structuralKinds = [
 
 export type StructuralKind = (typeof structuralKinds)[number]
 
-export type RangeKind = Exclude<BoundKind, "exactLength">
-
-export type BoundKind = Exclude<RefinementKind, "pattern" | "divisor">
-
-export const refinementKinds = [
+export const prestructuralKinds = [
 	"pattern",
 	"divisor",
 	"exactLength",
@@ -63,21 +59,17 @@ export const refinementKinds = [
 	"after"
 ] as const
 
+export type PrestructuralKind = (typeof prestructuralKinds)[number]
+
+export const refinementKinds = [
+	...prestructuralKinds,
+	"structure",
+	"predicate"
+] as const
+
 export type RefinementKind = (typeof refinementKinds)[number]
 
-type orderedConstraintKinds = [
-	...typeof refinementKinds,
-	...typeof structuralKinds,
-	"structure",
-	"predicate"
-]
-
-export const constraintKinds: orderedConstraintKinds = [
-	...refinementKinds,
-	...structuralKinds,
-	"structure",
-	"predicate"
-]
+export const constraintKinds = [...refinementKinds, ...structuralKinds] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
@@ -105,7 +97,7 @@ export type OpenNodeKind = {
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
 
-export type PrimitiveKind = RefinementKind | BasisKind | "predicate"
+export type PrimitiveKind = Exclude<RefinementKind | BasisKind, "structure">
 
 export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 

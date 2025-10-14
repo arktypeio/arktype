@@ -17,7 +17,7 @@ import { JsonSchemaScope } from "./scope.ts"
 import { parseStringJsonSchema } from "./string.ts"
 
 const jsonSchemaTypeMatcher = type.match
-	.in<Extract<JsonSchema, { type: unknown }>>()
+	.in<Extract<JsonSchema, { type?: unknown }>>()
 	.at("type")
 	.match({
 		"unknown[]": jsonSchema =>

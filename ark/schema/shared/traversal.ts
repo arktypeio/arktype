@@ -251,7 +251,7 @@ export class Traversal {
 			const morphIsNode = isNode(morph)
 
 			const result = morph(
-				parent === undefined ? this.root : parent[key!],
+				(parent === undefined ? this.root : parent[key!]) as never,
 				this
 			)
 

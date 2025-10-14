@@ -17,15 +17,16 @@ import {
 	type ErrorType,
 	type Hkt,
 	type JsonStructure,
+	type Scanner,
 	type WhitespaceChar
 } from "@ark/util"
 import type { type } from "./keywords/keywords.ts"
 import type { inferAstRoot } from "./parser/ast/infer.ts"
 import type { validateAst } from "./parser/ast/validate.ts"
 import type { inferDefinition } from "./parser/definition.ts"
-import { DynamicState } from "./parser/reduce/dynamic.ts"
-import type { state, StaticState } from "./parser/reduce/static.ts"
-import type { ArkTypeScanner } from "./parser/shift/scanner.ts"
+import { RuntimeState } from "./parser/reduce/dynamic.ts"
+import type { s, StaticState } from "./parser/reduce/static.ts"
+import { terminatingChars } from "./parser/shift/tokens.ts"
 import { parseUntilFinalizer } from "./parser/string.ts"
 import type { Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
@@ -42,7 +43,7 @@ export type validateParameterString<s extends ParameterString, $> =
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
 	type.infer<arg, $> extends param[1] ? unknown
-	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
+	:	ErrorType<[`Invalid argument for ${param[0]}`, expected: param[1]]>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
@@ -219,7 +220,7 @@ export const emptyGenericParameterMessage =
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
 export type parseGenericParams<def extends string, $> = parseNextNameChar<
-	ArkTypeScanner.skipWhitespace<def>,
+	Scanner.skipWhitespace<def>,
 	"",
 	[],
 	$
@@ -228,12 +229,12 @@ export type parseGenericParams<def extends string, $> = parseNextNameChar<
 type ParamsTerminator = WhitespaceChar | ","
 
 export const parseGenericParamName = (
-	scanner: ArkTypeScanner,
+	scanner: Scanner,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
 ): GenericParamDef[] => {
 	scanner.shiftUntilNonWhitespace()
-	const name = scanner.shiftUntilNextTerminator()
+	const name = scanner.shiftUntilLookahead(terminatingChars)
 	if (name === "") {
 		// if we've reached the end of the string and have parsed at least one
 		// param, return the valid result
@@ -250,7 +251,7 @@ type parseName<
 	unscanned extends string,
 	result extends array<GenericParamAst>,
 	$
-> = parseNextNameChar<ArkTypeScanner.skipWhitespace<unscanned>, "", result, $>
+> = parseNextNameChar<Scanner.skipWhitespace<unscanned>, "", result, $>
 
 type parseNextNameChar<
 	unscanned extends string,
@@ -275,7 +276,7 @@ const extendsToken = "extends "
 type extendsToken = typeof extendsToken
 
 const _parseOptionalConstraint = (
-	scanner: ArkTypeScanner,
+	scanner: Scanner,
 	name: string,
 	result: GenericParamDef[],
 	ctx: BaseParseContext
@@ -291,7 +292,7 @@ const _parseOptionalConstraint = (
 		return parseGenericParamName(scanner, result, ctx)
 	}
 
-	const s = parseUntilFinalizer(new DynamicState(scanner, ctx))
+	const s = parseUntilFinalizer(new RuntimeState(scanner, ctx))
 	result.push([name, s.root])
 
 	return parseGenericParamName(scanner, result, ctx)
@@ -303,10 +304,10 @@ type _parseOptionalConstraint<
 	result extends array<GenericParamAst>,
 	$
 > =
-	ArkTypeScanner.skipWhitespace<unscanned> extends (
+	Scanner.skipWhitespace<unscanned> extends (
 		`${extendsToken}${infer nextUnscanned}`
 	) ?
-		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
+		parseUntilFinalizer<s.initialize<nextUnscanned>, $, {}> extends (
 			infer finalArgState extends StaticState
 		) ?
 			validateAst<finalArgState["root"], $, {}> extends (
@@ -320,9 +321,7 @@ type _parseOptionalConstraint<
 				>
 		:	never
 	:	parseName<
-			ArkTypeScanner.skipWhitespace<unscanned> extends (
-				`,${infer nextUnscanned}`
-			) ?
+			Scanner.skipWhitespace<unscanned> extends `,${infer nextUnscanned}` ?
 				nextUnscanned
 			:	unscanned,
 			[...result, [name, unknown]],

@@ -26,6 +26,9 @@ export type charsBeforeLast<s extends string> =
 		:	`${head}${charsBeforeLast<tail>}`
 	:	""
 
+export type contains<s extends string, sub extends string> =
+	s extends `${string}${sub}${string}` ? true : false
+
 export const anchoredRegex = (regex: RegExp | string): RegExp =>
 	new RegExp(
 		anchoredSource(regex),
@@ -60,9 +63,9 @@ export const RegexPatterns = {
 	nonCapturingGroup: (pattern: string) => `(?:${pattern})` as const
 }
 
-export const escapeChar = "\\"
+export const Backslash = "\\"
 
-export type EscapeChar = typeof escapeChar
+export type Backslash = typeof Backslash
 
 export const whitespaceChars = {
 	" ": 1,
@@ -99,3 +102,32 @@ export const emojiToUnicode = (emoji: string): string =>
 			return codePoint ? `\\u${codePoint.toString(16).padStart(4, "0")}` : ""
 		})
 		.join("")
+
+export const alphabet = [
+	"a",
+	"b",
+	"c",
+	"d",
+	"e",
+	"f",
+	"g",
+	"h",
+	"i",
+	"j",
+	"k",
+	"l",
+	"m",
+	"n",
+	"o",
+	"p",
+	"q",
+	"r",
+	"s",
+	"t",
+	"u",
+	"v",
+	"w",
+	"x",
+	"y",
+	"z"
+] as const

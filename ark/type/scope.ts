@@ -30,6 +30,7 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
+	Scanner,
 	enumValues,
 	flatMorph,
 	isArray,
@@ -44,6 +45,8 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
+import type { DeclarationParser } from "./declare.ts"
+import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
 	parseGenericParamName,
 	type GenericDeclaration,
@@ -79,11 +82,9 @@ import {
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
-import { ArkTypeScanner } from "./parser/shift/scanner.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
-	type DeclarationParser,
 	type DefinitionParser,
 	type EnumeratedTypeParser,
 	type InstanceOfTypeParser,
@@ -256,7 +257,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		opts: BaseParseOptions
 	): array<GenericParamDef> {
 		return parseGenericParamName(
-			new ArkTypeScanner(def),
+			new Scanner(def),
 			[],
 			this.createParseContext({
 				...opts,
@@ -332,6 +333,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	pipe: NaryPipeParser<$> = (...morphs: Morph[]) =>
 		this.intrinsic.unknown.pipe(...morphs) as never
 
+	fn: InternalFnParser = new InternalFnParser(this as never)
 	match: InternalMatchParser = new InternalMatchParser(this as never)
 
 	declare = (): { type: InternalTypeParser } => ({
@@ -414,6 +416,8 @@ export interface Scope<$ = {}> {
 	type: TypeParser<$>
 
 	match: MatchParser<$>
+
+	fn: FnParser<$>
 
 	declare: DeclarationParser<$>
 

@@ -65,7 +65,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
-import { isNode, type arkKind } from "./shared/utils.ts"
+import { isNode } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 export abstract class BaseNode<
@@ -130,7 +130,8 @@ export abstract class BaseNode<
 
 		this.includesTransform =
 			this.hasKind("morph") ||
-			(this.hasKind("structure") && this.structuralMorph !== undefined)
+			(this.hasKind("structure") && this.structuralMorph !== undefined) ||
+			(this.hasKind("sequence") && this.inner.defaultables !== undefined)
 
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
@@ -322,12 +323,30 @@ export abstract class BaseNode<
 		return this(data, pipedFromCtx, null)
 	}
 
-	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		return this.cacheGetter("in", this.getIo("in")) as never
+	/** rawIn should be used internally instead */
+	get in(): unknown {
+		// ensure the node has been finalized if in is being used externally
+		return this.cacheGetter(
+			"in",
+			this.rawIn.isRoot() ? this.$.finalize(this.rawIn) : this.rawIn
+		)
 	}
 
-	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		return this.cacheGetter("out", this.getIo("out")) as never
+	get rawIn(): BaseNode {
+		return this.cacheGetter("rawIn", this.getIo("in")) as never
+	}
+
+	/** rawOut should be used internally instead */
+	get out(): unknown {
+		// ensure the node has been finalized if out is being used externally
+		return this.cacheGetter(
+			"out",
+			this.rawOut.isRoot() ? this.$.finalize(this.rawOut) : this.rawOut
+		)
+	}
+
+	get rawOut(): BaseNode {
+		return this.cacheGetter("rawOut", this.getIo("out")) as never
 	}
 
 	// Should be refactored to use transform
@@ -346,8 +365,11 @@ export abstract class BaseNode<
 
 				ioInner[k] =
 					isArray(childValue) ?
-						childValue.map(child => child[ioKind])
-					:	childValue[ioKind]
+						childValue.map(child =>
+							ioKind === "in" ? child.rawIn : child.rawOut
+						)
+					: ioKind === "in" ? childValue.rawIn
+					: childValue.rawOut
 			} else ioInner[k] = v
 		}
 

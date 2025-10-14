@@ -66,6 +66,7 @@ export type CallableOptions<attachments extends object> = {
 export interface Callable<fn extends Fn, attachments extends object>
 	extends fn,
 		attachments {}
+
 export class Callable<fn extends Fn, attachments extends object = {}> {
 	constructor(
 		fn: fn,

@@ -144,12 +144,10 @@ contextualize(() => {
 	})
 
 	it("error in obj that has tuple that writes error at proper path", () => {
-		// @ts-expect-error
-		attest(() => type({ "a?": ["string", ["stringx", "?"]] }))
-			.throws(writeUnresolvableMessage("stringx"))
-			.type.errors.snap(
-				"Type '\"stringx\"' is not assignable to type '\"'stringx' is unresolvable \"'."
-			)
+		attest(() =>
+			// @ts-expect-error
+			type({ "a?": ["string", ["stringx", "?"]] })
+		).throwsAndHasTypeError(writeUnresolvableMessage("stringx"))
 	})
 
 	it("nested", () => {

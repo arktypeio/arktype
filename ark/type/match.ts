@@ -17,13 +17,14 @@ import {
 	type mutable,
 	type numericStringKeyOf,
 	type propValueOf,
+	type show,
 	type unionToTuple
 } from "@ark/util"
 import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { Inferred } from "./methods/base.ts"
 import type { BaseCompletions } from "./parser/string.ts"
 import type { InternalScope } from "./scope.ts"
+import type { Inferred } from "./variants/base.ts"
 
 type MatchParserContext<input = unknown> = {
 	cases: Morph[]
@@ -157,12 +158,17 @@ type maybeLiftToKey<t, ctx extends MatchParserContext> =
 type _finalizeCaseArg<
 	t,
 	ctx extends MatchParserContext,
-	endpoint extends "in" | "out"
+	endpoint extends "in" | "out",
+	ctxInput = ctx["input"]
 > =
-	[distill<t, "in">, distill<t, endpoint>] extends [infer i, infer result] ?
-		[i] extends [ctx["input"]] ? result
-		: Extract<ctx["input"], i> extends never ? result
-		: Extract<ctx["input"], result>
+	ctxInput extends unknown ?
+		t extends unknown ?
+			distill<t, endpoint> extends infer result ?
+				ctxInput extends result ?
+					ctxInput
+				:	show<ctxInput & result>
+			:	never
+		:	never
 	:	never
 
 type CaseParser<ctx extends MatchParserContext> = <const def, ret>(
@@ -347,7 +353,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		super(cases =>
 			this.caseEntries(
 				Object.entries(cases).map(([k, v]) =>
-					k === "default" ? [k, v] : [this.$.parse(k), v as Morph]
+					k === "default" ? [k, v as never] : [this.$.parse(k), v as Morph]
 				)
 			)
 		)
@@ -384,7 +390,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		return this.caseEntries(
 			Object.entries(cases).map(([k, v]) =>
 				k === "default" ?
-					[k, v]
+					[k, v as never]
 				:	[this.$.node("unit", { unit: k }), v as Morph]
 			)
 		)

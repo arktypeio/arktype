@@ -1,8 +1,10 @@
 import { createMDX } from "fumadocs-mdx/next"
 import type { NextConfig } from "next"
+import { writeLlmsTxt } from "./lib/writeLlmsTxt.ts"
 import { updateSnippetsEntrypoint } from "./lib/writeSnippetsEntrypoint.ts"
 
 updateSnippetsEntrypoint()
+writeLlmsTxt()
 
 const config = {
 	reactStrictMode: true,

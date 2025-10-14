@@ -63,6 +63,18 @@ const setupMonaco = async (
 	return tsLanguageServiceInstance!
 }
 
+const stripTypes = async (): Promise<string | undefined> => {
+	if (!tsLanguageServiceInstance) return
+
+	try {
+		const emitOutput =
+			await tsLanguageServiceInstance.getEmitOutput(editorFileUri)
+		if (emitOutput.outputFiles.length) return emitOutput.outputFiles[0].text
+	} catch (e) {
+		console.error("Error transforming .ts to .js:", e)
+	}
+}
+
 type LoadingState = "unloaded" | "loading" | "loaded"
 
 export interface PlaygroundProps {
@@ -121,11 +133,20 @@ export const Playground = ({
 		}
 	}, [monaco, loadingState, initialValue])
 
-	const validateNow = useCallback((code: string) => {
-		const result = executeCode(code)
-		setValidationResult(result)
-		setCurrentCode(code)
-	}, [])
+	const validateNow = useCallback(
+		async (code: string) => {
+			if (!tsLanguageServiceInstance) return
+
+			setCurrentCode(code)
+			const stripped = await stripTypes()
+
+			if (!stripped) return
+
+			const result = executeCode(stripped)
+			setValidationResult(result)
+		},
+		[tsLanguageServiceInstance]
+	)
 
 	const shareCode = useCallback(() => {
 		if (editorRef.current) {

@@ -7,10 +7,9 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { Hkt } from "@ark/util"
+import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
-import { writeUnclosedGroupMessage } from "arktype/internal/parser/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
@@ -199,7 +198,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					`ErrorType<"Invalid argument for k", [expected: string | symbol]>`
+					`ErrorType<["Invalid argument for k", expected: string | symbol]>`
 				)
 		})
 
@@ -453,7 +452,7 @@ contextualize(() => {
 						)
 					)
 					.type.errors(
-						`ErrorType<"Invalid argument for t", [expected: { foo: number; }]>`
+						`ErrorType<["Invalid argument for t", expected: { foo: number; }]>`
 					)
 			})
 
@@ -577,15 +576,21 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					`ErrorType<"Invalid argument for N", [expected: { value: number; }]>`
+					`ErrorType<["Invalid argument for N", expected: { value: number; }]>`
 				)
 
 			attest(() =>
 				// @ts-expect-error
-				validateExternalGeneric({ numb: "numb" }, ["strin"])
+				validateExternalGeneric("strin", { numb: "number" })
 			).completions({
-				numb: ["number"],
 				strin: ["string"]
+			})
+
+			attest(() =>
+				// @ts-expect-error
+				validateExternalGeneric("string", { numb: "numb" })
+			).completions({
+				numb: ["number"]
 			})
 		})
 	})
@@ -621,8 +626,6 @@ contextualize(() => {
 						nest: "nest"
 					}
 				}).export()
-			).type.errors.snap(
-				'Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Failed to parse the expression resulting from ... "\'.'
 			)
 		})
 	})

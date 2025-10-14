@@ -1,5 +1,5 @@
 import type { BaseConstraint } from "../constraint.ts"
-import type { BoundKind, nodeImplementationOf } from "../shared/implement.ts"
+import type { nodeImplementationOf } from "../shared/implement.ts"
 import { After } from "./after.ts"
 import { Before } from "./before.ts"
 import { ExactLength } from "./exactLength.ts"
@@ -27,6 +27,10 @@ export interface BoundNodesByKind {
 	after: After.Node
 	before: Before.Node
 }
+
+export type BoundKind = keyof BoundDeclarations
+
+export type RangeKind = Exclude<BoundKind, "exactLength">
 
 export type boundImplementationsByKind = {
 	[k in BoundKind]: nodeImplementationOf<BoundDeclarations[k]>

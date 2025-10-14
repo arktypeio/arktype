@@ -6,6 +6,17 @@ title: Expressions
 
 Like its TypeScript counterpart, an intersection combines two existing `Type`s to create a new `Type` that enforces the constraints of both.
 
+<Callout
+	type="warn"
+	title="If you don't need to intersect overlapping props, spread instead!"
+>
+
+Computing an intersection is more expensive than [merging props](/docs/objects#), both at runtime and in-editor.
+
+If you can get away with the latter, doing so will make your Types will be faster and cleaner.
+
+</Callout>
+
 <SyntaxTabs>
 	<SyntaxTab string>
 
@@ -29,27 +40,6 @@ const FooObject = type({
 const FoobarObject = FooObject.and({
 	bar: "number"
 })
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
-
-```ts
-const FooObject = type({
-	foo: "string"
-})
-
-// accepts ...definitions
-const FoobarObject = type.and(
-	FooObject,
-	{
-		bar: "number"
-	},
-	{
-		baz: "string"
-	}
-)
 ```
 
     </SyntaxTab>
@@ -90,6 +80,28 @@ const FoobarObject = type(
 
 </SyntaxTabs>
 
+<AnchorAliases intersection-n-ary />
+#### n-ary
+
+To create an intersection of many objects directly, `type.and` will avoid the need to chain or compose many binary expressions:
+
+```ts
+const FooObject = type({
+	foo: "string"
+})
+
+// accepts ...definitions
+const FoobarObject = type.and(
+	FooObject,
+	{
+		bar: "number"
+	},
+	{
+		baz: "string"
+	}
+)
+```
+
 ### Union
 
 All unions are automatically discriminated to optimize check time and error message clarity.
@@ -111,15 +123,6 @@ const Unions = type({
 const Unions = type({
 	key: type.string.or(type.number)
 })
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
-
-```ts
-// accepts ...definitions
-const Union = type.or(type.string, "number", { key: "unknown" })
 ```
 
     </SyntaxTab>
@@ -146,7 +149,17 @@ const Unions = type({
 
 </SyntaxTabs>
 
-<a id="union-morphs" />
+<AnchorAliases union-n-ary />
+#### n-ary
+
+To create a union of many objects directly, `type.or` will avoid the need to chain or compose many binary expressions:
+
+```ts
+// accepts ...definitions
+const Union = type.or(type.string, "number", { key: "unknown" })
+```
+
+<AnchorAliases union-morphs />
 
 <Callout
 	type="warn"
@@ -198,7 +211,7 @@ Add a type-only symbol to an existing type so that the only values that satisfy 
 ```ts
 // @noErrors
 const Even = type("(number % 2)#even")
-type Even = typeof even.infer
+type Even = typeof Even.infer
 
 const good: Even = even.assert(2)
 // TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
@@ -212,7 +225,7 @@ const bad: Even = 5
 ```ts
 // @noErrors
 const even = type.number.divisibleBy(2).brand("even")
-type Even = typeof even.infer
+type Even = typeof Even.infer
 
 const good: Even = even.assert(2)
 // TypeScript: Type 'number' is not assignable to type 'Brand<number, "even">'
@@ -368,9 +381,10 @@ const ArkString = type(
 
 </SyntaxTabs>
 
-### Morph
+<AnchorAliases morph />
+### Pipe
 
-Morphs allow you to transform your data after it is validated. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
+Piping allows you to transform your data after it is validated via one or more sequential **morphs**. You can read more about them in [their intro section](/docs/intro/morphs-and-more/).
 
 <SyntaxTabs>
     <SyntaxTab fluent>
@@ -378,19 +392,6 @@ Morphs allow you to transform your data after it is validated. You can read more
 ```ts
 // hover to see how morphs are represented at a type-level
 const trimStringStart = type("string").pipe(str => str.trimStart())
-```
-
-    </SyntaxTab>
-
-    <SyntaxTab function>
-
-```ts
-// accepts ...morphsOrTypes
-const trimStartToNonEmpty = type.pipe(
-	type.string,
-	s => s.trimStart(),
-	type.string.atLeastLength(1)
-)
 ```
 
     </SyntaxTab>
@@ -470,6 +471,20 @@ const parseEvenPipe = type("string.numeric.parse").pipe(Even)
     </SyntaxTab>
 
 </SyntaxTabs>
+
+<AnchorAliases pipe-n-ary />
+#### n-ary
+
+Though the fluent `.pipe(...morphsOrTypes)` method already accepts any number of arguments, `type.pipe()` allows you to define such an expression directly without having to explicitly instantiate the first input Type to chain from.
+
+```ts
+// directly accepts ...morphsOrTypes
+const trimStartToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
+```
 
 ### Unit
 
@@ -646,6 +661,88 @@ const SpecialNumber = type("number", "@", "a special number")
     </SyntaxTab>
 
 </SyntaxTabs>
+
+For more control over how to apply the config to the Type's internal structure, a `NodeSelector` can be specified following the config:
+
+<SyntaxTabs>
+    <SyntaxTab fluent>
+
+```ts
+const SelectivelyConfigured = type({
+	name: "string",
+	age: "number"
+}).configure(
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		where: d => d.domain === "string"
+	}
+)
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab tuple>
+
+```ts
+const SelectivelyConfigured = type([
+	{
+		name: "string",
+		age: "number"
+	},
+	"@",
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		// tuple expression syntax doesn't support narrowing d from kind here
+		where: d => d.assertHasKind("domain").domain === "string"
+	}
+])
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+    <SyntaxTab args>
+
+```ts
+const SelectivelyConfigured = type(
+	{
+		name: "string",
+		age: "number"
+	},
+	"@",
+	{
+		description: "a special string"
+	},
+	// only add the description to string keywords
+	{
+		kind: "domain",
+		// args expression syntax doesn't support narrowing d from kind here
+		where: d => d.assertHasKind("domain").domain === "string"
+	}
+)
+
+SelectivelyConfigured.get("name").description // "a special string"
+SelectivelyConfigured.get("age").description // "a number"
+```
+
+    </SyntaxTab>
+
+</SyntaxTabs>
+
+For more details on the select API, [see the full docs](/docs/introspection#select).
 
 ### Cast
 

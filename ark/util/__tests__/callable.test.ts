@@ -99,4 +99,10 @@ contextualize(() => {
 		attest<1>(foo.getAttached("a")).equals(1)
 		attest<1>(foo("a")).equals(1)
 	})
+
+	it("preserves original name", () => {
+		const f = new Callable(function originalName() {})
+
+		attest(f.name).snap("bound originalName")
+	})
 })

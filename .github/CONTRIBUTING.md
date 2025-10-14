@@ -47,7 +47,6 @@ git checkout -b amazing-feature
 ```
 
 6. Do your best to write code that is stylistically consistent with its context. The linter will help with this, but it won't catch everything. Here's a few general guidelines:
-
    - Favor mutation over copying objects in perf-sensitive contexts
    - Favor clarity in naming with the following exceptions:
      - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
@@ -56,13 +55,11 @@ git checkout -b amazing-feature
 We also have some unique casing rules for our TypeScript types to facilitate type-level code that can parallel its runtime implementation and be easily understood:
 
 - Use `PascalCase` for...
-
   - Entities/non-generic types (e.g. `User`, `SomeData`)
-  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's built-in `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
+  - Generic types with noun names, like `Array<t>`. As a rule of thumb, if your generic is named this way, all parameters have defaults.
 
 - Use `camelCase` for...
-
-  - Generic types with verb names like `inferDomain<t>`. Types named this way should generally have at least one required parameter.
+  - Generic types with verb names like `inferDomain<t>`. Types named this way have at least one required parameter.
   - Parameter names, e.g. `t` in `Array<t>`
 
 7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any errors:

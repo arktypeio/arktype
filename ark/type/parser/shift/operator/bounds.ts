@@ -5,14 +5,11 @@ import {
 	type BoundKind,
 	type NodeSchema
 } from "@ark/schema"
-import { isKeyOf, throwParseError, type KeySet } from "@ark/util"
+import { isKeyOf, throwParseError, type KeySet, type Scanner } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { astToString } from "../../ast/utils.ts"
-import type {
-	DynamicState,
-	DynamicStateWithRoot
-} from "../../reduce/dynamic.ts"
+import type { RootedRuntimeState, RuntimeState } from "../../reduce/dynamic.ts"
 import {
 	invertedComparators,
 	maxComparators,
@@ -22,13 +19,12 @@ import {
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
+import type { s, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
-import type { ArkTypeScanner } from "../scanner.ts"
 
 export const parseBound = (
-	s: DynamicStateWithRoot,
+	s: RootedRuntimeState,
 	start: ComparatorStartChar
 ): void => {
 	const comparator = shiftComparator(s, start)
@@ -58,7 +54,7 @@ export type parseBound<
 > =
 	shiftComparator<start, unscanned> extends infer shiftResultOrError ?
 		shiftResultOrError extends (
-			ArkTypeScanner.shiftResult<
+			Scanner.shiftResult<
 				infer comparator extends Comparator,
 				infer nextUnscanned
 			>
@@ -69,8 +65,8 @@ export type parseBound<
 					`${infer limit extends number | DateLiteral}`
 				>
 			) ?
-				state.reduceLeftBound<s, limit, comparator, nextUnscanned>
-			:	parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
+				s.reduceLeftBound<s, limit, comparator, nextUnscanned>
+			:	parseRightBound<s.scanTo<s, nextUnscanned>, comparator, $, args>
 		:	shiftResultOrError
 	:	never
 
@@ -86,7 +82,7 @@ export const comparatorStartChars: KeySet<ComparatorStartChar> = {
 }
 
 const shiftComparator = (
-	s: DynamicState,
+	s: RuntimeState,
 	start: ComparatorStartChar
 ): Comparator =>
 	s.scanner.lookaheadIs("=") ?
@@ -158,7 +154,7 @@ const openLeftBoundToRoot = (
 })
 
 export const parseRightBound = (
-	s: DynamicStateWithRoot,
+	s: RootedRuntimeState,
 	comparator: Comparator
 ): void => {
 	// store the node that will be bounded
@@ -225,7 +221,7 @@ export type parseRightBound<
 		) ?
 			s["branches"]["leftBound"] extends {} ?
 				comparator extends MaxComparator ?
-					state.reduceRange<
+					s.reduceRange<
 						s,
 						s["branches"]["leftBound"]["limit"],
 						s["branches"]["leftBound"]["comparator"],
@@ -233,9 +229,9 @@ export type parseRightBound<
 						limit,
 						nextState["unscanned"]
 					>
-				:	state.error<writeUnpairableComparatorMessage<comparator>>
-			:	state.reduceSingleBound<s, comparator, limit, nextState["unscanned"]>
-		:	state.error<
+				:	s.error<writeUnpairableComparatorMessage<comparator>>
+			:	s.reduceSingleBound<s, comparator, limit, nextState["unscanned"]>
+		:	s.error<
 				writeInvalidLimitMessage<
 					comparator,
 					astToString<nextState["root"]>,

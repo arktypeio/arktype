@@ -948,8 +948,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.throws.snap(
 				"ParseError: MaxLength operand must be a string or an array (was a morph)"
 			)
-			.type.errors.snap(
-				"Argument of type '\"2 < Array.liftFrom<string> < 4\"' is not assignable to parameter of type '\"To constrain the output of ... < 4, pipe like myMorph.to('number > 0').\\nTo constrain the input, intersect like myMorph.and('number > 0'). \"'."
+			.type.errors(
+				"To constrain the output of ... < 4, pipe like myMorph.to('number > 0').\\nTo constrain the input, intersect like myMorph.and('number > 0')."
 			)
 	})
 
@@ -1331,5 +1331,39 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		const res = Schema("efg")
 
 		attest(res.toString()).snap("hello world")
+	})
+
+	it("allows morph union with non-overlapping root objects", () => {
+		const MasterSkinItem = type({
+			"+": "reject",
+			type: "'skin'",
+			masterItem: "true",
+
+			skin: "string",
+			short: "string",
+
+			minPrice: "number.integer >=0",
+			stattrakAvailable: "boolean = false",
+			souvenirAvailable: "boolean = false",
+			qualities: type("1 | 2 | 3 | 4 |5").array().or(["null"])
+		})
+
+		const SkinItem = type({
+			"+": "reject",
+			type: "'skin'",
+			// "masterItem?": "false",
+			skin: "string",
+			short: "string",
+
+			"weight?": "number",
+			souvenir: "boolean = false",
+			stattrak: "boolean = false",
+			quality: type("1 | 2 | 3 | 4 |5").optional()
+		})
+
+		const Skinish = MasterSkinItem.or(SkinItem)
+		attest(Skinish.expression).snap(
+			'{ masterItem: true, minPrice: number % 1 & >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", souvenir: boolean = false, stattrak: boolean = false, quality?: 1 | 2 | 3 | 4 | 5, weight?: number, + (undeclared): reject }'
+		)
 	})
 })

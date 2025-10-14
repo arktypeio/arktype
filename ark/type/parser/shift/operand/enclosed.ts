@@ -1,25 +1,25 @@
+import type { regex } from "@ark/regex"
 import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
 import type { InferredAst } from "../../ast/infer.ts"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
-import type { ArkTypeScanner } from "../scanner.ts"
+import type { RuntimeState } from "../../reduce/dynamic.ts"
+import type { StaticState, s } from "../../reduce/static.ts"
 import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
-export type StringLiteral<Text extends string = string> =
-	| DoubleQuotedStringLiteral<Text>
-	| SingleQuotedStringLiteral<Text>
+export type StringLiteral<contents extends string = string> =
+	| DoubleQuotedStringLiteral<contents>
+	| SingleQuotedStringLiteral<contents>
 
-export type DoubleQuotedStringLiteral<Text extends string = string> =
-	`"${Text}"`
+export type DoubleQuotedStringLiteral<contents extends string = string> =
+	`"${contents}"`
 
-export type SingleQuotedStringLiteral<Text extends string = string> =
-	`'${Text}'`
+export type SingleQuotedStringLiteral<contents extends string = string> =
+	`'${contents}'`
 
 export const parseEnclosed = (
-	s: DynamicState,
+	s: RuntimeState,
 	enclosing: EnclosingStartToken
 ): void => {
-	const enclosed = s.scanner.shiftUntil(
+	const enclosed = s.scanner.shiftUntilEscapable(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]]
 	)
 	if (s.scanner.lookahead === "")
@@ -55,22 +55,22 @@ export type parseEnclosed<
 	enclosingStart extends EnclosingStartToken,
 	unscanned extends string
 > =
-	ArkTypeScanner.shiftUntil<
+	Scanner.shiftUntilEscapable<
 		unscanned,
-		EnclosingTokens[enclosingStart]
-	> extends ArkTypeScanner.shiftResult<infer scanned, infer nextUnscanned> ?
+		EnclosingTokens[enclosingStart],
+		""
+	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
 		nextUnscanned extends "" ?
-			state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
-		:	state.setRoot<
+			s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+		:	s.setRoot<
 				s,
 				InferredAst<
 					enclosingStart extends EnclosingQuote ? scanned
-					: enclosingStart extends "/" ? string
+					: enclosingStart extends "/" ? regex.infer<scanned>
 					: Date,
 					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 				>,
-				nextUnscanned extends ArkTypeScanner.shift<string, infer unscanned> ?
-					unscanned
+				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
 				:	""
 			>
 	:	never
@@ -88,11 +88,19 @@ export const enclosingChar = {
 	'"': 1
 } as const
 
-export const enclosingTokens = {
+export const enclosingLiteralTokens = {
 	"d'": "'",
 	'd"': '"',
 	"'": "'",
-	'"': '"',
+	'"': '"'
+} as const
+
+export type EnclosingLiteralTokens = typeof enclosingLiteralTokens
+
+export type EnclosingLiteralStartToken = keyof EnclosingLiteralTokens
+
+export const enclosingTokens = {
+	...enclosingLiteralTokens,
 	"/": "/"
 } as const
 

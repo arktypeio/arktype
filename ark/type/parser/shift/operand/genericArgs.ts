@@ -4,16 +4,20 @@ import type {
 	genericParamNames,
 	GenericRoot
 } from "@ark/schema"
-import type { array, ErrorMessage, join } from "@ark/util"
-import type { DynamicState } from "../../reduce/dynamic.ts"
-import { writeUnclosedGroupMessage } from "../../reduce/shared.ts"
-import type { state, StaticState } from "../../reduce/static.ts"
+import {
+	writeUnclosedGroupMessage,
+	type array,
+	type ErrorMessage,
+	type join
+} from "@ark/util"
+import type { RuntimeState } from "../../reduce/dynamic.ts"
+import type { s, StaticState } from "../../reduce/static.ts"
 import type { parseUntilFinalizer } from "../../string.ts"
 
 export const parseGenericArgs = (
 	name: string,
 	g: GenericRoot,
-	s: DynamicState
+	s: RuntimeState
 ): BaseRoot[] => _parseGenericArgs(name, g, s, [])
 
 export type parseGenericArgs<
@@ -27,7 +31,7 @@ export type parseGenericArgs<
 const _parseGenericArgs = (
 	name: string,
 	g: GenericRoot,
-	s: DynamicState,
+	s: RuntimeState,
 	argNodes: BaseRoot[]
 ): BaseRoot[] => {
 	const argState = s.parseUntilFinalizer()
@@ -66,7 +70,7 @@ type _parseGenericArgs<
 	argDefs extends string[],
 	argAsts extends unknown[]
 > =
-	parseUntilFinalizer<state.initialize<unscanned>, $, args> extends (
+	parseUntilFinalizer<s.initialize<unscanned>, $, args> extends (
 		infer finalArgState extends StaticState
 	) ?
 		{
@@ -87,7 +91,7 @@ type _parseGenericArgs<
 			finalArgState["finalizer"] extends ">" ?
 				nextAsts["length"] extends g["paramsAst"]["length"] ?
 					ParsedArgs<nextAsts, nextUnscanned>
-				:	state.error<
+				:	s.error<
 						writeInvalidGenericArgCountMessage<
 							name,
 							genericParamNames<g["paramsAst"]>,
@@ -97,7 +101,7 @@ type _parseGenericArgs<
 			: finalArgState["finalizer"] extends "," ?
 				_parseGenericArgs<name, g, nextUnscanned, $, args, nextDefs, nextAsts>
 			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
-			: state.error<writeUnclosedGroupMessage<">">>
+			: s.error<writeUnclosedGroupMessage<">">>
 		:	never
 	:	never
 

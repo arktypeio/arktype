@@ -1,0 +1,51 @@
+---
+title: Declare
+---
+
+If your ArkType definitions are your source of truth, it's easy to infer out the type with an expression like `type User = typeof User.infer`.
+
+But what if you need to define a Type matching a pre-existing external type?
+
+The `declare` API allows just that, with autocomplete for object keys and clear, type-level errors for mismatches:
+
+```ts
+// @errors: 2322
+type Expected = { a: string; b?: number }
+
+const T = type.declare<Expected>().type({
+	a: "string",
+	"b?": "number"
+})
+
+const Bad = type.declare<Expected>().type({
+	a: "string",
+	// will error if the inferred type is too wide *or* too narrow
+	"b?": "1"
+})
+```
+
+### `side`
+
+If your Type contains morphs or default values, its input and output will be inferred differently.
+
+You can see this represented when you hover a Type like `string.numeric.parse` and see `(In: string) => To<number>`.
+
+By default, `declare` does not allow the type you define to include morphs (unless you explicitly add them to the declared generic argument).
+
+Passing a `side` config to `declare` can change this behavior:
+
+```ts
+// @errors: 2322
+type Expected = { a: number; b?: number }
+
+const Bad = type.declare<Expected>().type({
+	a: "string.numeric.parse",
+	"b?": "number"
+})
+
+// passing a config object like { side: "in" | "out" } to validate that side
+const T = type.declare<Expected, { side: "out" }>().type({
+	a: "string.numeric.parse",
+	"b?": "number"
+})
+```

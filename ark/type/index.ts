@@ -1,3 +1,4 @@
+export { regex } from "@ark/regex"
 export {
 	ArkError,
 	ArkErrors,
@@ -21,7 +22,6 @@ export {
 	type,
 	type Ark
 } from "./keywords/keywords.ts"
-export type { BaseType } from "./methods/base.ts"
 export { Module, type BoundModule, type Submodule } from "./module.ts"
 export type {
 	inferDefinition,
@@ -29,3 +29,4 @@ export type {
 } from "./parser/definition.ts"
 export { scope, type bindThis, type Scope } from "./scope.ts"
 export { Type } from "./type.ts"
+export type { BaseType } from "./variants/base.ts"

@@ -59,10 +59,10 @@ export declare namespace Morph {
 	export type Out<morph extends Morph> =
 		morph extends Morph<never, infer o> ? o : never
 
-	export type ContextFree<i = any, o = unknown> = (In: i) => o
+	export type ContextFree<i = never, o = unknown> = (In: i) => o
 }
 
-export type Morph<i = any, o = unknown> = (In: i, ctx: Traversal) => o
+export type Morph<i = never, o = unknown> = (In: i, ctx: Traversal) => o
 
 const implementation: nodeImplementationOf<Morph.Declaration> =
 	implementNode<Morph.Declaration>({
@@ -92,7 +92,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		normalize: schema => schema,
 		defaults: {
 			description: node =>
-				`a morph from ${node.in.description} to ${node.out?.description ?? "unknown"}`
+				`a morph from ${node.rawIn.description} to ${node.rawOut?.description ?? "unknown"}`
 		},
 		intersections: {
 			morph: (l, r, ctx) => {
@@ -101,7 +101,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 						writeMorphIntersectionMessage(l.expression, r.expression)
 					)
 				}
-				const inTersection = intersectOrPipeNodes(l.in, r.in, ctx)
+				const inTersection = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
 				if (inTersection instanceof Disjoint) return inTersection
 
 				const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
@@ -109,7 +109,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				}
 
 				if (l.declaredIn || r.declaredIn) {
-					const declaredIn = intersectOrPipeNodes(l.in, r.in, ctx)
+					const declaredIn = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
 					// we can't treat this as a normal Disjoint since it's just declared
 					// it should only happen if someone's essentially trying to create a broken type
 					if (declaredIn instanceof Disjoint) return declaredIn.throw()
@@ -117,7 +117,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				}
 
 				if (l.declaredOut || r.declaredOut) {
-					const declaredOut = intersectOrPipeNodes(l.out, r.out, ctx)
+					const declaredOut = intersectOrPipeNodes(l.rawOut, r.rawOut, ctx)
 					if (declaredOut instanceof Disjoint) return declaredOut.throw()
 					else baseInner.declaredOut = declaredOut
 				}
@@ -159,7 +159,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	introspectableOut: BaseRoot | undefined =
 		this.lastMorphIfNode ?
 			Object.assign(this.referencesById, this.lastMorphIfNode.referencesById) &&
-			this.lastMorphIfNode.out
+			this.lastMorphIfNode.rawOut
 		:	undefined
 
 	get shallowMorphs(): array<Morph> {
@@ -169,13 +169,13 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			:	this.morphs
 	}
 
-	override get in(): BaseRoot {
+	override get rawIn(): BaseRoot {
 		return (
-			this.declaredIn ?? this.inner.in?.in ?? $ark.intrinsic.unknown.internal
+			this.declaredIn ?? this.inner.in?.rawIn ?? $ark.intrinsic.unknown.internal
 		)
 	}
 
-	override get out(): BaseRoot {
+	override get rawOut(): BaseRoot {
 		return (
 			this.declaredOut ??
 			this.introspectableOut ??
@@ -197,16 +197,16 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		})
 	}
 
-	expression = `(In: ${this.in.expression}) => ${this.lastMorphIfNode ? "To" : "Out"}<${this.out.expression}>`
+	expression = `(In: ${this.rawIn.expression}) => ${this.lastMorphIfNode ? "To" : "Out"}<${this.rawOut.expression}>`
 
 	get defaultShortDescription(): string {
-		return this.in.meta.description ?? this.in.defaultShortDescription
+		return this.rawIn.meta.description ?? this.rawIn.defaultShortDescription
 	}
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		return ctx.fallback.morph({
 			code: "morph",
-			base: this.in.toJsonSchemaRecurse(ctx),
+			base: this.rawIn.toJsonSchemaRecurse(ctx),
 			out: this.introspectableOut?.toJsonSchemaRecurse(ctx) ?? null
 		})
 	}

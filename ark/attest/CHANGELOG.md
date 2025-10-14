@@ -2,6 +2,10 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.47.0
+
+Add a `failOnMissingSnapshots` config option. Defaults to `true` if `CI` is set in your environment, `false` otherwise.
+
 ## 0.46.0
 
 Fix an issue causing some bench files to not be parsed correctly, leading to errors and 0 instantiation counts.

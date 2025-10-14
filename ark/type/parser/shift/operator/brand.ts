@@ -1,21 +1,21 @@
 import type { emptyBrandNameMessage } from "@ark/schema"
-import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
-import type { ArkTypeScanner } from "../scanner.ts"
+import type { Scanner } from "@ark/util"
+import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
+import type { StaticState, s } from "../../reduce/static.ts"
+import { terminatingChars, type TerminatingChar } from "../tokens.ts"
 
-export const parseBrand = (s: DynamicStateWithRoot): void => {
+export const parseBrand = (s: RootedRuntimeState): void => {
 	s.scanner.shiftUntilNonWhitespace()
-	const brandName = s.scanner.shiftUntilNextTerminator()
+	const brandName = s.scanner.shiftUntilLookahead(terminatingChars)
 	s.root = s.root.brand(brandName)
 }
 
 export type parseBrand<s extends StaticState, unscanned extends string> =
-	ArkTypeScanner.shiftUntilNextTerminator<
-		ArkTypeScanner.skipWhitespace<unscanned>
-	> extends (
-		ArkTypeScanner.shiftResult<`${infer brandName}`, infer nextUnscanned>
-	) ?
+	Scanner.shiftUntil<
+		Scanner.skipWhitespace<unscanned>,
+		TerminatingChar
+	> extends Scanner.shiftResult<`${infer brandName}`, infer nextUnscanned> ?
 		brandName extends "" ?
-			state.error<emptyBrandNameMessage>
-		:	state.setRoot<s, [s["root"], "#", brandName], nextUnscanned>
+			s.error<emptyBrandNameMessage>
+		:	s.setRoot<s, [s["root"], "#", brandName], nextUnscanned>
 	:	never

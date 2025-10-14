@@ -112,30 +112,62 @@ export type filter<t extends array, constraint, result extends unknown[] = []> =
 
 export type array<t = unknown> = readonly t[]
 
+export declare namespace array {
+	export type multiply<t extends array, count extends number> = _multiply<
+		t,
+		[],
+		count,
+		[]
+	>
+
+	type _multiply<
+		base extends array,
+		result extends array,
+		count extends number,
+		i extends 1[]
+	> =
+		i["length"] extends count ? result
+		:	_multiply<base, [...result, ...base], count, [...i, 1]>
+
+	export type repeat<element, count extends number> = buildFromSegments<
+		element,
+		[],
+		exponentials.max<count>,
+		count
+	>
+
+	type buildFromSegments<
+		element,
+		result extends 1[],
+		segments extends 1[][],
+		count extends number,
+		next extends 1[] = [...result, ...segments[0]]
+	> =
+		// next is just right
+		next["length"] extends count ? { [i in keyof next]: element }
+		: `${count}` extends keyof next ?
+			// next is too long
+			buildFromSegments<element, result, nextSegments<segments>, count>
+		:	// next is too short
+			buildFromSegments<element, next, nextSegments<segments>, count>
+
+	type nextSegments<segments extends 1[][]> =
+		segments extends [unknown, ...infer nextSegments extends 1[][]] ?
+			nextSegments
+		:	never
+
+	export type minLength<element, minLength extends number> = readonly [
+		...multiply<[element], minLength>,
+		...element[]
+	]
+}
+
 export type listable<t> = t | readonly t[]
 
 export type flattenListable<t> = t extends array<infer element> ? element : t
 
-export type minLengthArray<t, minLength extends number> = readonly [
-	...repeat<[t], minLength>,
-	...t[]
-]
-
-export type repeat<t extends array, count extends number> = _repeat<
-	t,
-	[],
-	count,
-	[]
->
-
-type _repeat<
-	base extends array,
-	result extends array,
-	maxDepth extends number,
-	depth extends 1[]
-> =
-	depth["length"] extends maxDepth ? result
-	:	_repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
+export type longerThan<t extends array, n extends number> =
+	`${n}` extends keyof t ? true : false
 
 export type CollapsingList<t = unknown> =
 	| readonly []
@@ -351,3 +383,127 @@ export type validateExhaustiveKeys<
 		]
 	: [expectedKey] extends [never] ? []
 	: [expectedKey]
+
+export type applyElementLabels<
+	t extends readonly unknown[],
+	labels extends readonly unknown[]
+> =
+	labels extends [unknown, ...infer labelsTail] ?
+		t extends readonly [infer head, ...infer tail] ?
+			readonly [
+				...labelElement<head, labels>,
+				...applyElementLabels<tail, labelsTail>
+			]
+		:	applyOptionalElementLabels<Required<t>, labels>
+	:	t
+
+type applyOptionalElementLabels<
+	t extends readonly unknown[],
+	labels extends readonly unknown[]
+> =
+	labels extends readonly [unknown, ...infer labelsTail] ?
+		t extends readonly [infer head, ...infer tail] ?
+			[
+				...labelOptionalElement<head, labels>,
+				...applyOptionalElementLabels<tail, labelsTail>
+			]
+		:	applyRestElementLabels<t, labels>
+	:	t
+
+type applyRestElementLabels<
+	t extends readonly unknown[],
+	labels extends readonly unknown[]
+> =
+	t extends readonly [] ? []
+	: labels extends readonly [unknown, ...infer tail] ?
+		[...labelOptionalElement<t[0], labels>, ...applyRestElementLabels<t, tail>]
+	:	t
+
+type labelElement<element, labels extends readonly unknown[]> =
+	labels extends readonly [unknown] ? { [K in keyof labels]: element }
+	: labels extends readonly [...infer head, unknown] ?
+		labelElement<element, head>
+	:	[_: element]
+
+type labelOptionalElement<element, label extends readonly unknown[]> =
+	label extends readonly [unknown] ? { [K in keyof label]?: element }
+	: label extends readonly [...infer head, unknown] ?
+		labelOptionalElement<element, head>
+	:	[_?: element]
+
+export type setIndex<
+	arr extends readonly unknown[],
+	i extends number,
+	to extends arr[number]
+> =
+	// preserve mutability of original array
+	arr extends arr[number][] ? _setIndex<arr, i, to, []>
+	:	Readonly<_setIndex<arr, i, to, []>>
+
+type _setIndex<
+	arr extends readonly unknown[],
+	i extends number,
+	to extends arr[number],
+	result extends arr[number][]
+> =
+	arr extends readonly [infer head, ...infer tail] ?
+		_setIndex<tail, i, to, [...result, result["length"] extends i ? to : head]>
+	:	result
+
+type zero = []
+
+type one = [1]
+
+type two = [1, 1]
+
+type three = [...two, ...two]
+
+type four = [...three, ...three]
+
+type five = [...four, ...four]
+
+type six = [...five, ...five]
+
+type seven = [...six, ...six]
+
+type eight = [...seven, ...seven]
+
+type nine = [...eight, ...eight]
+
+type ten = [...nine, ...nine]
+
+type eleven = [...ten, ...ten]
+
+type twelve = [...eleven, ...eleven]
+
+type thirteen = [...twelve, ...twelve]
+
+type fourteen = [...thirteen, ...thirteen]
+
+// extending this pattern further results in:
+// "Expression produces a tuple type that is too large to represnet"
+
+type exponentials = [
+	fourteen,
+	thirteen,
+	twelve,
+	eleven,
+	ten,
+	nine,
+	eight,
+	seven,
+	six,
+	five,
+	four,
+	three,
+	two,
+	one,
+	zero
+]
+
+declare namespace exponentials {
+	export type max<n extends number> = _max<n, exponentials>
+
+	type _max<n extends number, filtered extends unknown[]> =
+		`${n}` extends keyof filtered[0] ? _max<n, tailOf<filtered>> : filtered
+}

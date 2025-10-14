@@ -5,7 +5,7 @@
 		"[unions](/docs/expressions#unions)",
 		"[brand](/docs/expressions#brand)",
 		"[narrow](/docs/expressions#narrow)",
-		"[morph](/docs/expressions#morph)",
+		"[pipe](/docs/expressions#pipe)",
 		"[unit](/docs/expressions#unit)",
 		"[enumerated](/docs/expressions#enumerated)",
 		"[valueOf](/docs/expressions#valueOf)",

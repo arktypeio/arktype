@@ -1,6 +1,7 @@
 import {
 	hasDomain,
 	isThunk,
+	omit,
 	printable,
 	throwParseError,
 	type requireKeys
@@ -89,6 +90,19 @@ export class OptionalNode extends BaseProp<"optional"> {
 			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
 	}
 
+	override get rawIn(): OptionalNode {
+		const baseIn = super.rawIn
+		if (!this.hasDefault()) return baseIn as never
+
+		return this.$.node(
+			"optional",
+			omit(baseIn.inner, { default: true }) as never,
+			{
+				prereduced: true
+			}
+		)
+	}
+
 	get outProp(): Prop.Node {
 		if (!this.hasDefault()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner
@@ -133,7 +147,7 @@ export const computeDefaultValueMorph = (
 	key: PropertyKey,
 	value: BaseRoot,
 	defaultInput: unknown
-): Morph => {
+): Morph<any> => {
 	if (typeof defaultInput === "function") {
 		// if the value has a morph, pipe context through it
 		return value.includesTransform ?
@@ -174,7 +188,10 @@ export const assertDefaultValueAssignability = (
 	if (hasDomain(value, "object") && !wrapped)
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	const out = node.in(wrapped ? value() : value)
+	// if the node has a default value, finalize it and apply JIT optimizations
+	// if applicable to ensure behavior + error logging is externally consistent
+	// (using .in here insead of .rawIn triggers finalization)
+	const out = (node.in as BaseRoot)(wrapped ? value() : value)
 
 	if (out instanceof ArkErrors) {
 		if (key === null) {

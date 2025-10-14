@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkType",
 	"description": "Syntax highlighting and inline errors for ArkType⛵",
-	"version": "6.1.0",
+	"version": "6.6.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"license": "MIT",
@@ -13,8 +13,8 @@
 		"publishOvsx": "ovsx publish -i arkdark.vsix"
 	},
 	"devDependencies": {
-		"@vscode/vsce": "3.3.2",
-		"ovsx": "0.10.1"
+		"@vscode/vsce": "3.6.2",
+		"ovsx": "0.10.6"
 	},
 	"repository": {
 		"type": "git",
@@ -62,11 +62,15 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": ".*'ErrorType<(.*)>'.*$",
+					"matcher": ".*'ErrorType<\"?(.*?)\"?>'.*$",
 					"message": "$1"
 				},
 				{
-					"matcher": ".*'\"(.*\\u200A)\"'\\.$",
+					"matcher": ".*brand\": \"ErrorType\"; (.*) \\}'\\.$",
+					"message": "$1"
+				},
+				{
+					"matcher": ".*'\"(.*[\\u200A\\u200B])\"'\\.$",
 					"message": "$1"
 				},
 				{

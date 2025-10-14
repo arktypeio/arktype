@@ -6,7 +6,7 @@ contextualize(() => {
 	describe("intersection", () => {
 		it("distinct strings", () => {
 			const T = type("/a/&/b/")
-			attest<string>(T.infer)
+			attest<`${string}a${string}` & `${string}b${string}`>(T.infer)
 			attest(T.allows("a")).equals(false)
 			attest(T.allows("b")).equals(false)
 			attest(T.allows("ab")).equals(true)
@@ -88,7 +88,7 @@ contextualize(() => {
 		})
 	})
 
-	it("expression doesn't include string", () => {
+	it("expression doesn't include string basis", () => {
 		const T = type(/^a.*z$/)
 
 		attest(T.expression).snap("/^a.*z$/")

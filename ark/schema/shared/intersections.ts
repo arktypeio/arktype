@@ -142,7 +142,7 @@ const pipeMorphed = (
 			if (
 				viableBranches.length < from.branches.length ||
 				!from.branches.every((branch, i) =>
-					branch.in.equals(viableBranches[i].in)
+					branch.rawIn.equals(viableBranches[i].rawIn)
 				)
 			)
 				return ctx.$.parseSchema(viableBranches)
@@ -156,7 +156,7 @@ const pipeMorphed = (
 				if (!meta) return onlyBranch
 				return ctx.$.node("morph", {
 					...onlyBranch.inner,
-					in: onlyBranch.in.configure(meta, "self")
+					in: onlyBranch.rawIn.configure(meta, "self")
 				})
 			}
 
@@ -197,7 +197,7 @@ const _pipeMorphed = (
 	}
 
 	if (to.hasKind("morph")) {
-		const inTersection = intersectOrPipeNodes(from, to.in, ctx)
+		const inTersection = intersectOrPipeNodes(from, to.rawIn, ctx)
 		if (inTersection instanceof Disjoint) return inTersection
 
 		return ctx.$.node("morph", {

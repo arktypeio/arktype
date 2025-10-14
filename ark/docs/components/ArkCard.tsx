@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/components/api"
+import { cx } from "class-variance-authority"
 import { Card, type CardProps, Cards } from "fumadocs-ui/components/card"
 
 export const ArkCards: React.FC<{ children: React.ReactNode }> = ({
@@ -12,7 +12,7 @@ export const ArkCard: React.FC<CardProps> = ({
 }) => (
 	<Card
 		{...props}
-		className={cn(
+		className={cx(
 			"sm:even:translate-y-10 [&>h3]:text-2xl [&>h3]:font-semibold [&_.prose-no-margin]:text-lg",
 			"[&>.prose-no-margin]:flex [&>.prose-no-margin]:flex-col [&>.prose-no-margin]:flex-grow",
 			"flex flex-col",

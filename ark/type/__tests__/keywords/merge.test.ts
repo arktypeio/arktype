@@ -79,7 +79,7 @@ contextualize(() => {
 		)
 			.throws(writeNonStructuralOperandMessage("merge", "string"))
 			.type.errors(
-				`ErrorType<"Merged type must be an object", [actual: string]>`
+				`ErrorType<["Merged type must be an object", actual: string]>`
 			)
 	})
 })

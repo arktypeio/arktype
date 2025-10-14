@@ -131,7 +131,16 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					defaults.map(element => [
 						element[0].collapsibleJson,
 						defaultValueSerializer(element[1])
-					])
+					]),
+				reduceIo: (ioKind, inner, defaultables) => {
+					if (ioKind === "in") {
+						inner.optionals = defaultables!.map(d => d[0].rawIn)
+						return
+					}
+
+					inner.prefix = defaultables!.map(d => d[0].rawOut)
+					return
+				}
 			},
 			variadic: {
 				child: true,
@@ -702,7 +711,10 @@ const _intersectSequences = (
 					// ideally we could handle disjoint paths more precisely here,
 					// but not trivial to serialize postfix elements as keys
 					kind === "prefix" ? s.result.length : `-${lTail.length + 1}`,
-					"required"
+					// both operands must be required for the disjoint to be considered required
+					elementIsRequired(lHead) && elementIsRequired(rHead) ?
+						"required"
+					:	"optional"
 				)
 			)
 			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
@@ -769,3 +781,6 @@ const _intersectSequences = (
 
 	return _intersectSequences(s)
 }
+
+const elementIsRequired = (el: SequenceElement) =>
+	el.kind === "prefix" || el.kind === "postfix"

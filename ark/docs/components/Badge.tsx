@@ -1,5 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "fumadocs-ui/components/api"
+import { cva, cx, type VariantProps } from "class-variance-authority"
 import * as React from "react"
 
 export const badgeVariants = cva(
@@ -27,5 +26,5 @@ export interface BadgeProps
 		VariantProps<typeof badgeVariants> {}
 
 export const Badge = ({ className, variant, ...props }: BadgeProps) => (
-	<div className={cn(badgeVariants({ variant }), className)} {...props} />
+	<div className={cx(badgeVariants({ variant }), className)} {...props} />
 )

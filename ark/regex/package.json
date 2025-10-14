@@ -1,0 +1,37 @@
+{
+	"name": "@ark/regex",
+	"version": "0.0.0",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"type": "module",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
+	"exports": {
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*": {
+			"ark-ts": "./*",
+			"default": "./out/*"
+		}
+	},
+	"files": [
+		"out"
+	],
+	"scripts": {
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"bench": "ts ./__tests__/regex.bench.ts"
+	},
+	"dependencies": {
+		"@ark/util": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

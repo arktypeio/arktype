@@ -1,10 +1,10 @@
 import { isArray, stringifyPath, throwParseError, type Key } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
+import type { BoundKind } from "../refinements/kinds.ts"
 import type { Domain } from "../roots/domain.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { Prop } from "../structure/prop.ts"
-import type { BoundKind } from "./implement.ts"
 import { $ark } from "./registry.ts"
 import { isNode } from "./utils.ts"
 

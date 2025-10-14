@@ -4,6 +4,7 @@ import {
 	GenericRoot,
 	type BaseParseOptions,
 	type Morph,
+	type NodeSelector,
 	type Predicate,
 	type RootSchema,
 	type TypeMeta
@@ -16,6 +17,8 @@ import {
 	type conform
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
+import type { DeclarationParser } from "./declare.ts"
+import type { FnParser } from "./fn.ts"
 import type {
 	Generic,
 	GenericParser,
@@ -26,15 +29,12 @@ import type {
 } from "./generic.ts"
 import type { Ark, keywords, type } from "./keywords/keywords.ts"
 import type { MatchParser } from "./match.ts"
-import type { BaseType } from "./methods/base.ts"
-import type { instantiateType } from "./methods/instantiate.ts"
 import type {
 	NaryIntersectionParser,
 	NaryMergeParser,
 	NaryPipeParser,
 	NaryUnionParser
 } from "./nary.ts"
-import type { validateDeclared } from "./parser/definition.ts"
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
@@ -44,9 +44,10 @@ import type {
 	InternalScope,
 	ModuleParser,
 	Scope,
-	ScopeParser,
-	bindThis
+	ScopeParser
 } from "./scope.ts"
+import type { BaseType } from "./variants/base.ts"
+import type { instantiateType } from "./variants/instantiate.ts"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -113,7 +114,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "|>" ? [type.validate<rest[0], $>]
-			: one extends "@" ? [TypeMeta.MappableInput]
+			: one extends "@" ? [TypeMeta.MappableInput, NodeSelector?]
 			: [type.validate<rest[0], $>]
 		:	[]
 	): r extends infer _ ? _ : never
@@ -126,7 +127,6 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const out = myType(data)
 	 *
 	 * if(out instanceof type.errors) console.log(out.summary)
-	 *
 	 */
 	errors: typeof ArkErrors
 	hkt: typeof Hkt
@@ -144,6 +144,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	module: ModuleParser
 	scope: ScopeParser
 	define: DefinitionParser<$>
+	declare: DeclarationParser<$>
 	generic: GenericParser<$>
 	match: MatchParser<$>
 	schema: SchemaParser<$>
@@ -197,6 +198,16 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * const T = type.pipe(type.string, s => JSON.parse(s), type.object)
 	 */
 	pipe: NaryPipeParser<$>
+	/**
+	 * Define a validated function
+	 * @example
+	 * const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+	 * len("foo") // 3
+	 * // TypeScript: boolean is not assignable to string | unknown[]
+	 * // Runtime (throws): must be a string or an object (was boolean)
+	 * len(true)
+	 */
+	fn: FnParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -212,6 +223,7 @@ export class InternalTypeParser extends Callable<
 				raw: $.parse as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
+				declare: $.declare as never,
 				define: $.define as never,
 				match: $.match as never,
 				generic: $.generic as never,
@@ -225,7 +237,8 @@ export class InternalTypeParser extends Callable<
 				or: $.or,
 				and: $.and,
 				merge: $.merge,
-				pipe: $.pipe
+				pipe: $.pipe,
+				fn: $.fn as never
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
@@ -261,18 +274,10 @@ export class InternalTypeParser extends Callable<
 				return $.parse(args)
 			},
 			{
-				bind: $,
 				attach
 			}
 		)
 	}
-}
-
-export type DeclarationParser<$> = <preinferred>() => {
-	// for some reason, making this a const parameter breaks preinferred validation
-	type: <const def>(
-		def: validateDeclared<preinferred, def, $, bindThis<def>>
-	) => Type<preinferred, $>
 }
 
 export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>

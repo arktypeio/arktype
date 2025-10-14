@@ -142,14 +142,40 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 		)
 			continue
 
-		try {
-			// Check for regular typescript or typescript-* directories
-			const dirNames = readdirSync(nodeModulesPath)
-			for (const dirName of dirNames) {
-				// Skip node_modules/@* directories - we'll handle them below
-				if (dirName.startsWith("@")) continue
+		// Check for regular typescript or typescript-* directories
+		const dirNames = readdirSync(nodeModulesPath)
+		for (const dirName of dirNames) {
+			// Skip node_modules/@* directories - we'll handle them below
+			if (dirName.startsWith("@")) continue
 
-				const fullPath = join(nodeModulesPath, dirName)
+			const fullPath = join(nodeModulesPath, dirName)
+			if (!statSync(fullPath).isDirectory()) continue
+
+			const alias = getDirAlias(dirName)
+			if (!alias) continue
+
+			// Skip if we already found this alias in a closer package
+			if (foundVersionAliases.has(alias)) continue
+
+			const version = getTsVersion(fullPath)
+			if (version) {
+				foundVersionAliases.add(alias)
+				versions.push({
+					alias,
+					version,
+					path: fullPath
+				})
+			}
+		}
+
+		// Check for @ark/attest-ts-* directories
+		const arkDir = join(nodeModulesPath, "@ark")
+		if (existsSync(arkDir) && statSync(arkDir).isDirectory()) {
+			const arkDirs = readdirSync(arkDir)
+			for (const dirName of arkDirs) {
+				if (!dirName.startsWith("attest-ts-")) continue
+
+				const fullPath = join(arkDir, dirName)
 				if (!statSync(fullPath).isDirectory()) continue
 
 				const alias = getDirAlias(dirName)
@@ -168,36 +194,6 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 					})
 				}
 			}
-
-			// Check for @ark/attest-ts-* directories
-			const arkDir = join(nodeModulesPath, "@ark")
-			if (existsSync(arkDir) && statSync(arkDir).isDirectory()) {
-				const arkDirs = readdirSync(arkDir)
-				for (const dirName of arkDirs) {
-					if (!dirName.startsWith("attest-ts-")) continue
-
-					const fullPath = join(arkDir, dirName)
-					if (!statSync(fullPath).isDirectory()) continue
-
-					const alias = getDirAlias(dirName)
-					if (!alias) continue
-
-					// Skip if we already found this alias in a closer package
-					if (foundVersionAliases.has(alias)) continue
-
-					const version = getTsVersion(fullPath)
-					if (version) {
-						foundVersionAliases.add(alias)
-						versions.push({
-							alias,
-							version,
-							path: fullPath
-						})
-					}
-				}
-			}
-		} catch (err) {
-			console.warn(`Warning: Error scanning ${nodeModulesPath}: ${err}`)
 		}
 	}
 

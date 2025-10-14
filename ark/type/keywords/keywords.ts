@@ -1,10 +1,10 @@
 import type { ArkErrors, arkKind, flatResolutionsOf } from "@ark/schema"
 import type { Brand, inferred } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
+import type { DeclarationParser } from "../declare.ts"
+import type { FnParser } from "../fn.ts"
 import type { GenericParser } from "../generic.ts"
 import type { MatchParser } from "../match.ts"
-import type { BaseType } from "../methods/base.ts"
-import type { instantiateType } from "../methods/instantiate.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
 	inferDefinition,
@@ -12,12 +12,13 @@ import type {
 } from "../parser/definition.ts"
 import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
 import type {
-	DeclarationParser,
 	DefinitionParser,
 	SchemaParser,
 	Type,
 	TypeParser
 } from "../type.ts"
+import type { BaseType } from "../variants/base.ts"
+import type { instantiateType } from "../variants/instantiate.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors.ts"
 import { number } from "./number.ts"
@@ -157,6 +158,8 @@ export declare namespace type {
 export type type<t = unknown, $ = {}> = Type<t, $>
 
 export const match: MatchParser<{}> = ark.match as never
+
+export const fn: FnParser<{}> = ark.fn as never
 
 export const generic: GenericParser<{}> = ark.generic as never
 

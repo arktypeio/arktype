@@ -13,8 +13,8 @@
 		"publishOvsx": "ovsx publish -i arkthemes.vsix"
 	},
 	"devDependencies": {
-		"@vscode/vsce": "3.3.2",
-		"ovsx": "0.10.1"
+		"@vscode/vsce": "3.6.2",
+		"ovsx": "0.10.6"
 	},
 	"repository": {
 		"type": "git",

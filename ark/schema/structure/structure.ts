@@ -58,7 +58,7 @@ import {
 import type { Index } from "./index.ts"
 import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
-import type { Required } from "./required.ts"
+import type { Required, RequiredNode } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
 
 /**
@@ -169,7 +169,10 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					// ensure we don't overwrite nodes added by optional
 					inner.required = append(
 						inner.required,
-						nodes!.map(node => node[ioKind] as Required.Node)
+						nodes!.map(
+							node =>
+								(ioKind === "in" ? node.rawIn : node.rawOut) as RequiredNode
+						)
 					)
 					return
 				}
@@ -179,14 +182,14 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				parse: constraintKeyParser("optional"),
 				reduceIo: (ioKind, inner, nodes) => {
 					if (ioKind === "in") {
-						inner.optional = nodes!.map(node => node.in as OptionalNode)
+						inner.optional = nodes!.map(node => node.rawIn as OptionalNode)
 						return
 					}
 
 					for (const node of nodes!) {
 						inner[node.outProp.kind] = append(
 							inner[node.outProp.kind],
-							node.outProp.out as Prop.Node
+							node.outProp.rawOut as Prop.Node
 						) as never
 					}
 				}
@@ -202,7 +205,10 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			undeclared: {
 				parse: behavior => (behavior === "ignore" ? undefined : behavior),
 				reduceIo: (ioKind, inner, value) => {
-					if (value !== "delete") return
+					if (value === "reject") {
+						inner.undeclared = "reject"
+						return
+					}
 
 					// if base is "delete", undeclared keys are "ignore" (i.e. unconstrained)
 					// on input and "reject" on output
@@ -863,8 +869,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					if (keyBranch.hasKind("morph")) {
 						keySchema = ctx.fallback.morph({
 							code: "morph",
-							base: keyBranch.in.toJsonSchemaRecurse(ctx),
-							out: keyBranch.out.toJsonSchemaRecurse(ctx)
+							base: keyBranch.rawIn.toJsonSchemaRecurse(ctx),
+							out: keyBranch.rawOut.toJsonSchemaRecurse(ctx)
 						}) as never
 					}
 					if (!keyBranch.hasKind("intersection")) {
@@ -949,10 +955,10 @@ const getPossibleMorph = (
 
 	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
 
-	const $arkStructuralMorph: Morph = (data, ctx) => {
+	const $arkStructuralMorph: Morph<any> = (data, ctx) => {
 		for (let i = 0; i < node.defaultable.length; i++) {
 			if (!(node.defaultable[i].key in data))
-				node.defaultable[i].defaultValueMorph(data, ctx)
+				node.defaultable[i].defaultValueMorph(data as never, ctx)
 		}
 
 		if (node.sequence?.defaultables) {
@@ -961,7 +967,7 @@ const getPossibleMorph = (
 				i < node.sequence.defaultables.length;
 				i++
 			)
-				node.sequence.defaultValueMorphs[i](data, ctx)
+				node.sequence.defaultValueMorphs[i](data as never, ctx)
 		}
 
 		if (node.undeclared === "delete")

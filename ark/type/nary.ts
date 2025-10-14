@@ -10,9 +10,9 @@ import type {
 	inferNaryPipe
 } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { instantiateType } from "./methods/instantiate.ts"
-import type { NonObjectMergeErrorMessage } from "./methods/object.ts"
 import type { Type } from "./type.ts"
+import type { instantiateType } from "./variants/instantiate.ts"
+import type { NonObjectMergeErrorMessage } from "./variants/object.ts"
 
 export type NaryUnionParser<$> = {
 	(): Type<never, $>
@@ -1183,7 +1183,7 @@ export type NaryMergeParser<$> = {
 			// if you can figure out a way to avoid inlining this without
 			// breaking autocomplete and error display, do it!
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1194,10 +1194,10 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<"Merged type must be an object", [actual: inferredB]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1210,13 +1210,13 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1231,16 +1231,16 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1260,19 +1260,19 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1296,22 +1296,22 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1345,25 +1345,25 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1400,28 +1400,28 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1461,31 +1461,31 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1528,34 +1528,34 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1601,37 +1601,37 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1680,40 +1680,40 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>),
 		l: type.validate<l, $> &
 			(inferredL extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredL]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredL]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1765,43 +1765,43 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>),
 		l: type.validate<l, $> &
 			(inferredL extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredL]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredL]>),
 		m: type.validate<m, $> &
 			(inferredM extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredM]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredM]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1856,46 +1856,46 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>),
 		l: type.validate<l, $> &
 			(inferredL extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredL]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredL]>),
 		m: type.validate<m, $> &
 			(inferredM extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredM]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredM]>),
 		n: type.validate<n, $> &
 			(inferredN extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredN]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredN]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -1953,49 +1953,49 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>),
 		l: type.validate<l, $> &
 			(inferredL extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredL]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredL]>),
 		m: type.validate<m, $> &
 			(inferredM extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredM]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredM]>),
 		n: type.validate<n, $> &
 			(inferredN extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredN]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredN]>),
 		o: type.validate<o, $> &
 			(inferredO extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredO]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredO]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -2056,52 +2056,52 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>),
 		l: type.validate<l, $> &
 			(inferredL extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredL]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredL]>),
 		m: type.validate<m, $> &
 			(inferredM extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredM]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredM]>),
 		n: type.validate<n, $> &
 			(inferredN extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredN]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredN]>),
 		o: type.validate<o, $> &
 			(inferredO extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredO]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredO]>),
 		p: type.validate<p, $> &
 			(inferredP extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredP]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredP]>)
 	): r extends infer _ ? _ : never
 	<
 		const a,
@@ -2165,55 +2165,55 @@ export type NaryMergeParser<$> = {
 	>(
 		a: type.validate<a, $> &
 			(inferredA extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredA]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredA]>),
 		b: type.validate<b, $> &
 			(inferredB extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredB]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredB]>),
 		c: type.validate<c, $> &
 			(inferredC extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredC]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredC]>),
 		d: type.validate<d, $> &
 			(inferredD extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredD]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredD]>),
 		e: type.validate<e, $> &
 			(inferredE extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredE]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredE]>),
 		f: type.validate<f, $> &
 			(inferredF extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredF]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredF]>),
 		g: type.validate<g, $> &
 			(inferredG extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredG]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredG]>),
 		h: type.validate<h, $> &
 			(inferredH extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredH]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredH]>),
 		i: type.validate<i, $> &
 			(inferredI extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredI]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredI]>),
 		j: type.validate<j, $> &
 			(inferredJ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredJ]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredJ]>),
 		k: type.validate<k, $> &
 			(inferredK extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredK]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredK]>),
 		l: type.validate<l, $> &
 			(inferredL extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredL]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredL]>),
 		m: type.validate<m, $> &
 			(inferredM extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredM]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredM]>),
 		n: type.validate<n, $> &
 			(inferredN extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredN]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredN]>),
 		o: type.validate<o, $> &
 			(inferredO extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredO]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredO]>),
 		p: type.validate<p, $> &
 			(inferredP extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredP]>),
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredP]>),
 		q: type.validate<q, $> &
 			(inferredQ extends object ? unknown
-			:	ErrorType<NonObjectMergeErrorMessage, [actual: inferredQ]>)
+			:	ErrorType<[NonObjectMergeErrorMessage, actual: inferredQ]>)
 	): r extends infer _ ? _ : never
 	<
 		const defs extends readonly unknown[],
@@ -2223,8 +2223,7 @@ export type NaryMergeParser<$> = {
 			[i in keyof defs]: type.validate<defs[i], $> &
 				(type.infer<defs[i], $> extends object ? unknown
 				:	ErrorType<
-						NonObjectMergeErrorMessage,
-						[actual: type.infer<defs[i], $>]
+						[NonObjectMergeErrorMessage, actual: type.infer<defs[i], $>]
 					>)
 		}
 	): r extends infer _ ? _ : never
@@ -2642,6 +2641,7 @@ export type NaryPipeParser<$, initial = unknown> = {
 		p: p,
 		q: q
 	): r extends infer _ ? _ : never
+
 	<const morphs extends readonly Morph[], r = Type<inferNaryPipe<morphs>, $>>(
 		...defs: morphs
 	): r extends infer _ ? _ : never

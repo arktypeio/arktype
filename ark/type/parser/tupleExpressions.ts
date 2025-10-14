@@ -5,6 +5,7 @@ import {
 	type BaseParseContext,
 	type BaseRoot,
 	type Morph,
+	type NodeSelector,
 	type Predicate,
 	type TypeMeta,
 	type unwrapDefault
@@ -36,7 +37,7 @@ import {
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { BranchOperator } from "./reduce/shared.ts"
 import { writeMissingRightOperandMessage } from "./shift/operand/unenclosed.ts"
-import type { ArkTypeScanner } from "./shift/scanner.ts"
+import type { InfixToken } from "./shift/tokens.ts"
 import type { BaseCompletions } from "./string.ts"
 
 export const maybeParseTupleExpression = (
@@ -114,7 +115,8 @@ export type validateIndexOneExpression<
 			: def[1] extends "|>" ? validateDefinition<def[2], $, args>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
 			: def[1] extends "@" ? TypeMeta.MappableInput
-			: validateDefinition<def[2], $, args>
+			: validateDefinition<def[2], $, args>,
+			...(def[1] extends "@" ? [NodeSelector?] : [])
 		]
 
 export type UnparsedTupleExpressionInput = {
@@ -196,10 +198,10 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 	)
 }
 
-const parseAttributeTuple: IndexOneParser<"@"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configureReferences(
+const parseMetaTuple: IndexOneParser<"@"> = (def, ctx) =>
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).configure(
 		def[2] as never,
-		"shallow"
+		def[3] as NodeSelector
 	)
 
 export type IndexOneExpression<token extends string = IndexOneOperator> =
@@ -227,7 +229,7 @@ const infixParsers = defineIndexOneParsers({
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
 	"|>": parseBranchTuple,
-	"@": parseAttributeTuple,
+	"@": parseMetaTuple,
 	// since object and tuple literals parse there via `parseProperty`,
 	// they must be shallow if parsed directly as a tuple expression
 	"=": () => throwParseError(shallowDefaultableMessage)
@@ -242,11 +244,7 @@ export type IndexOneOperator = keyof typeof indexOneParsers
 const isIndexOneExpression = (def: array): def is IndexOneExpression =>
 	indexOneParsers[def[1] as IndexOneOperator] !== undefined
 
-export type InfixExpression = readonly [
-	unknown,
-	ArkTypeScanner.InfixToken,
-	...unknown[]
-]
+export type InfixExpression = readonly [unknown, InfixToken, ...unknown[]]
 
 type IndexZeroParser<token extends string> = (
 	def: IndexZeroExpression<token>,

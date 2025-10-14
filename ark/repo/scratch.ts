@@ -1,5 +1,15 @@
-const ark: { foo?: string } = {}
+import { regex } from "arktype"
 
-ark.foo &&= `${ark.foo}1`
+declare const myString: string
 
-console.log(ark.foo)
+const ab = regex("^(a|b)\\1$")
+
+if (ab.test(myString)) {
+	console.log(myString)
+	//          ^?
+}
+
+const capture = ab.exec("aa")?.[1]
+//    ^?
+
+capture

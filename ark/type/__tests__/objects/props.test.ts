@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { writeLiteralUnionEntriesMessage } from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
-import type { BaseTypeProp } from "arktype/internal/methods/object.ts"
+import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
 
 // by default because of the toJSON method, it wouldn't be clear
 // if the snapshotted props were requied or optional
@@ -67,5 +67,19 @@ contextualize(() => {
 	it("union", () => {
 		const T = type({ foo: "string" }).or({ bar: "number" })
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))
+	})
+
+	it("structural operation removes narrow", () => {
+		const T = type({ foo: { key: "string" } })
+			.narrow(o => o.foo.key.length > 0)
+			.merge({
+				foo: "null"
+			})
+
+		attest(T({ foo: null })).equals({ foo: null })
+		attest(T.json).snap({
+			required: [{ key: "foo", value: { unit: null } }],
+			domain: "object"
+		})
 	})
 })

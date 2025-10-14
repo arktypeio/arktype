@@ -155,7 +155,7 @@ const extractNameAndGroup = (
 
 	const filePath = doc.getSourceFile().getFilePath()
 	let group: ApiGroup
-	if (filePath.includes("methods")) group = "Type"
+	if (filePath.includes("variants")) group = "Type"
 	else if (filePath.endsWith("traversal.d.ts")) group = "Traversal"
 	else return undefined
 
@@ -340,8 +340,8 @@ const findInheritedDocs = (
 	if (!inheritDocsSource) return
 
 	const sourceDeclaration = sourceFile
-		.getDescendantsOfKind(ts.SyntaxKind.Identifier)
-		.find(i => i.getText() === inheritDocsSource)
+		.getDescendantsOfKind(ts.SyntaxKind.Identifier as never)
+		.find((i): i is any => i.getText() === inheritDocsSource)
 		?.getDefinitions()[0]
 		.getDeclarationNode()
 
