@@ -12,7 +12,7 @@ export default ({ children }: LayoutProps): React.ReactElement => (
 		{...baseOptions}
 		nav={{
 			...baseOptions.nav,
-			children: <FloatYourBoat kind="header" />
+			children: <FloatYourBoat />
 		}}
 	>
 		{children}

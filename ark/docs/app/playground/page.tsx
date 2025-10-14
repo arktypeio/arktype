@@ -27,7 +27,7 @@ export default function PlaygroundPage() {
 			}}
 			nav={{
 				...baseOptions.nav,
-				children: <FloatYourBoat kind="header" />
+				children: <FloatYourBoat />
 			}}
 		>
 			<div className="flex-1 flex flex-col items-center justify-center py-8">
