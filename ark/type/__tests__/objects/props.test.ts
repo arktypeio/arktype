@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { writeLiteralUnionEntriesMessage } from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
-import type { BaseTypeProp } from "../../variants/object.ts"
+import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
 
 // by default because of the toJSON method, it wouldn't be clear
 // if the snapshotted props were requied or optional

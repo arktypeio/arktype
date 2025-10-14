@@ -65,12 +65,10 @@ We have [big plans](https://github.com/orgs/arktypeio/projects/4) to ArkType 2.0
 👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
 
 - Follow any of these accounts for updates:
-
   - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
   - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/arktypeio) on X/Twitter
 
 - Consider supporting my full-time work on ArkType...
-
   - via [GitHub Sponsors](https://github.com/sponsors/arktypeio)
   - by convincing your team to let me optimize your types and fix editor lag (reach out directly to one of the accounts listed or `david@arktype.io`)
 
@@ -1943,12 +1941,10 @@ const parseJson = type("string.json.parse").to({
 This distinction actually evolved from the rules we use for casing our internal TypeScript types:
 
 - Use `PascalCase` for...
-
   - Entities/non-generic types (e.g. `User`, `SomeData`)
   - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's built-in `Array` type doesn't have a default parameter, but it probably should have been `unknown`!)
 
 - Use `camelCase` for...
-
   - Generic types with verb names like `inferDomain<t>`. Types named this way should generally have at least one required parameter.
   - Parameter names, e.g. `t` in `Array<t>`
 
