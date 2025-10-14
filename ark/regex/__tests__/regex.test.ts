@@ -39,7 +39,7 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type _ParseResult = iterate<State.initialize<"[1-9]", "">, 1>
+type _ParseResult = iterate<State.initialize<"^a..c$", "">, 4>
 type _AstResult = State.Group.finalize<_ParseResult>
 type _FinalizedResult = s.finalize<_ParseResult>
 
@@ -278,12 +278,12 @@ contextualize(() => {
 
 		it("zero or more greedy", () => {
 			const S = regex("^a{0,}$")
-			attest<Regex<string, {}>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<"" | `a${string}`, {}>>(S)
 		})
 
 		it("zero or more lazy", () => {
 			const S = regex("^a{0,}?$")
-			attest<Regex<string, {}>>(S).type.toString.snap("Regex<string, {}>")
+			attest<Regex<"" | `a${string}`, {}>>(S)
 		})
 
 		it("zero or one", () => {
@@ -372,7 +372,7 @@ contextualize(() => {
 			type Tree = State.Group.finalize<
 				iterate<State.initialize<"[1-9]", "">, 1>
 			>
-			attest<string, Tree>()
+			attest<`${bigint}`, Tree>()
 		})
 
 		it("literal dash start", () => {
@@ -635,9 +635,7 @@ contextualize(() => {
 				Regex<
 					"ae" | "abcde",
 					{
-						// or...
-						// ["bcd", "c"] | [undefined, undefined]
-						captures: ["bcd" | undefined, "c" | undefined]
+						captures: ["bcd", "c"] | [undefined, undefined]
 					}
 				>
 			>(S)
@@ -752,9 +750,10 @@ contextualize(() => {
 
 	it("consecutive .", () => {
 		const S = regex("^a..c$")
-		// collapsed to single {string}
-		attest<Regex<`a${string}c`, {}>>(S).type.toString.snap(
-			"Regex<`a${string}c`, {}>"
+		// ideally this could be collapsed to a single {string} but seems
+		// inefficient for perf based on current implementation
+		attest<Regex<`a${string}${string}c`, {}>>(S).type.toString.snap(
+			"Regex<`a${string}${string}c`, {}>"
 		)
 	})
 
@@ -792,7 +791,7 @@ contextualize(() => {
 						captures: ["a", "a"] | ["b", undefined]
 					}
 				>
-			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["a" | "b"] }>')
+			>(S)
 		})
 
 		it("branching named captures", () => {
@@ -813,7 +812,7 @@ contextualize(() => {
 							  }
 					}
 				>
-			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["a" | "b"] }>')
+			>(S)
 		})
 
 		it("anchored ref", () => {
@@ -1038,12 +1037,16 @@ contextualize(() => {
 			const S = regex("^(?<foo>a|b)\\k<foo>$")
 			attest<
 				Regex<
-					"aa" | "ab" | "ba" | "bb",
+					"aa" | "bb",
 					{
-						captures: ["a" | "b"]
-						names: {
-							foo: "a" | "b"
-						}
+						captures: ["a"] | ["b"]
+						names:
+							| {
+									foo: "b"
+							  }
+							| {
+									foo: "a"
+							  }
 					}
 				>
 			>(S)
