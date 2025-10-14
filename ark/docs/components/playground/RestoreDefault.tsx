@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/utils/cn"
+import { cx } from "class-variance-authority"
 import { RotateCcwIcon } from "lucide-react"
 
 export interface RestoreDefaultProps {
@@ -15,7 +15,7 @@ export const RestoreDefault = ({
 	if (variant === "icon") {
 		return (
 			<button
-				className={cn(
+				className={cx(
 					"absolute top-4 right-16 p-2 rounded-lg cursor-pointer",
 					"bg-blue-900/50 hover:bg-blue-900 transition-colors",
 					"text-white/70 hover:text-white",
@@ -32,7 +32,7 @@ export const RestoreDefault = ({
 
 	return (
 		<button
-			className={cn(
+			className={cx(
 				"mt-4 px-4 py-2 bg-blue-900 text-white rounded cursor-pointer",
 				"hover:bg-blue-950 transition-colors",
 				"flex items-center gap-2",

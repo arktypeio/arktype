@@ -1,6 +1,6 @@
 "use client"
+import { cx } from "class-variance-authority"
 import { buttonVariants } from "fumadocs-ui/components/ui/button"
-import { cn } from "fumadocs-ui/utils/cn"
 import { X } from "lucide-react"
 import Link from "next/link.js"
 import {
@@ -65,7 +65,7 @@ export const Banner = ({
 		<div
 			id={id}
 			{...props}
-			className={cn(
+			className={cx(
 				"release-banner",
 				"sticky top-0 z-40 flex h-12 flex-row items-center justify-around bg-fd-secondary px-4 text-center text-sm font-medium",
 				"bg-fd-background",
@@ -113,7 +113,7 @@ export const Banner = ({
 					type="button"
 					aria-label="Close Banner"
 					onClick={handleCloseClick}
-					className={cn(
+					className={cx(
 						buttonVariants({
 							color: "ghost",
 							className:

@@ -1,4 +1,4 @@
-import { cn } from "fumadocs-ui/utils/cn"
+import { cx } from "class-variance-authority"
 import Link from "next/link"
 import { type ComponentPropsWithoutRef, forwardRef } from "react"
 
@@ -32,20 +32,20 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 			lg: "py-4 px-6 text-base"
 		}
 
-		const baseClasses = cn(
+		const baseClasses = cx(
 			"rounded-[1.5rem] flex items-center gap-[6px] transition-all duration-150 ease-linear cursor-pointer",
 			"focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
 		)
 
 		const variantClasses = {
-			outline: cn(
+			outline: cx(
 				"bg-transparent text-white border-2 border-white/60 backdrop-blur-[5px]",
 				"shadow-[0_0_7px_rgba(255,255,255,0.5),_0_0_14px_rgba(149,88,248,0.3),_inset_0_0_6px_rgba(255,255,255,0.15)]",
 				"[text-shadow:0_0_6px_rgba(255,255,255,0.6)]",
 				"hover:border-white hover:shadow-[0_0_12px_rgba(255,255,255,0.7),_0_0_22px_rgba(149,88,248,0.45)] hover:text-white/95 hover:-translate-y-[1px]",
 				"active:scale-[0.98] active:brightness-95 active:translate-y-0"
 			),
-			filled: cn(
+			filled: cx(
 				"bg-[#f5cf8f] text-black border-2 border-transparent",
 				"shadow-[0_4px_10px_rgba(0,0,0,0.2),_0_0_10px_#f5cf8f]",
 				"hover:bg-[#f7e1b1] hover:shadow-[0_4px_15px_rgba(0,0,0,0.15),_0_0_15px_#f7e1b1] hover:-translate-y-[1px]",
@@ -55,7 +55,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
 		const wiggleClasses = wiggle ? "wiggle-animation" : ""
 
-		const combinedClasses = cn(
+		const combinedClasses = cx(
 			baseClasses,
 			sizeClasses[size],
 			variantClasses[variant],

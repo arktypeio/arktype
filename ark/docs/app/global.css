@@ -306,9 +306,7 @@ body {
 	font-family: var(--font-atkinson);
 }
 
-/* avoid excessive vertical margins in docs */
-
-h1 {
+#nd-docs-layout h1 {
 	margin-bottom: 0.5rem !important;
 	font-size: 2.75rem !important;
 }
