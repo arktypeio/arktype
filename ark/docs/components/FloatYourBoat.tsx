@@ -1,87 +1,53 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { useLayoutEffect, useMemo, useState } from "react"
 import { BoatIcon } from "./icons/boat.tsx"
+import { cx } from "class-variance-authority"
 
-const BOB_HEIGHT_PX = 2
-const BOB_WIDTH_PX = 16
-
-export type FloatYourBoatProps = {
-	kind: "header" | "banner"
-}
-
-const selectorsByKind = {
-	header: "header",
-	banner: "#banner"
-}
-
-export const FloatYourBoat = ({ kind }: FloatYourBoatProps) => {
-	const [headerRect, setHeaderRect] = useState<DOMRect | null>()
-
-	const loopDuration = headerRect ? headerRect.width / BOB_WIDTH_PX : 0
-
-	const bobFrames = useMemo(() => {
-		if (!loopDuration) return []
-
-		const frames: number[] = []
-		for (let i = 0; i < loopDuration; i++)
-			frames.push(i % 2 ? BOB_HEIGHT_PX : 0)
-		return frames
-	}, [headerRect])
-
-	useLayoutEffect(() => {
-		setHeaderRect(
-			document.querySelector(selectorsByKind[kind])?.getBoundingClientRect()
-		)
-	}, [])
-
-	if (!headerRect) return null
-
-	return (
-		<Boat
-			headerRect={headerRect}
-			loopDuration={loopDuration}
-			bobFrames={bobFrames}
-		/>
-	)
-}
-
-type BoatProps = {
-	headerRect: DOMRect
-	loopDuration: number
-	bobFrames: number[]
-}
-
-const Boat = ({ headerRect, loopDuration, bobFrames }: BoatProps) => {
-	const opacityFrames = bobFrames.map((_, i) =>
-		i === 0 || i === bobFrames.length - 1 ? 0
-		: i === 1 || i === bobFrames.length - 2 ? 0.5
-		: 1
-	)
-	return (
-		<motion.div
-			className="pointer-events-none"
-			initial={{
+export const FloatYourBoat = () => (
+	<>
+		<div
+			className={cx("pointer-events-none", "motion-reduce:hidden")}
+			style={{
 				position: "absolute",
-				top: headerRect.height - 88,
-				x: -40,
 				zIndex: -10,
-				opacity: 0
-			}}
-			animate={{
-				x: headerRect.width - 100,
-				y: bobFrames,
-				opacity: opacityFrames
-			}}
-			transition={{
-				duration: loopDuration,
-				repeat: Infinity,
-				ease: "linear",
-				delay: 1
+				animation: "float 150s linear infinite,		bob 2s ease-in-out infinite",
+				opacity: 0,
+				transform: "translateZ(0)",
+				bottom: "-30%"
 			}}
 		>
 			<BoatIcon height={100} />
-		</motion.div>
-	)
+		</div>
+		<style>
+			{`
+@keyframes float {
+	0% {
+		left: 0;
+		opacity: 0;
+	}
+	2% {
+		opacity: 1;
+	}
+	98% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		left: calc(100% - 100px);
+	}
 }
+@keyframes bob {
+	0% {
+		transform: translateY(0px);
+	}
+	50% {
+		transform: translateY(2px);
+	}
+	100% {
+		transform: translateY(0px);
+	}
+}
+`}
+		</style>
+	</>
+)
