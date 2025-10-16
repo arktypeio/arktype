@@ -82,4 +82,13 @@ contextualize(() => {
 			domain: "object"
 		})
 	})
+
+	it("duplicate optional key", () => {
+		attest(() =>
+			type({
+				a: "true",
+				"a?": "true"
+			})
+		).throws()
+	})
 })

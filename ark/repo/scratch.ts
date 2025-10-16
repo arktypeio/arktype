@@ -1,15 +1,8 @@
-import { regex } from "arktype"
+import { type } from "arktype"
 
-declare const myString: string
+const t = type({
+	a: "true",
+	"a?": "true"
+})
 
-const ab = regex("^(a|b)\\1$")
-
-if (ab.test(myString)) {
-	console.log(myString)
-	//          ^?
-}
-
-const capture = ab.exec("aa")?.[1]
-//    ^?
-
-capture
+console.log(t.expression)
