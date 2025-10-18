@@ -1,8 +1,8 @@
 import { type } from "arktype"
 
 const t = type({
-	a: "true",
-	"a?": "true"
+	a: "string.date.parse",
+	"b?": "number > 5"
 })
 
 console.log(t.expression)

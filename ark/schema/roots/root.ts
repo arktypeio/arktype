@@ -362,6 +362,8 @@ export abstract class BaseRoot<
 	}
 
 	extends(r: unknown): boolean {
+		if (this.isNever()) return true
+
 		const intersection = this.intersect(r)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
