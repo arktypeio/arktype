@@ -7,7 +7,7 @@ import {
 	type Predicate,
 	type Traversal
 } from "@ark/schema"
-import { getDuplicatesOf, printable, throwParseError } from "@ark/util"
+import { printable, throwParseError } from "@ark/util"
 import { type, type JsonSchema, type Out, type Type } from "arktype"
 
 import {
