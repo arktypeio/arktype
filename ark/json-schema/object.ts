@@ -98,15 +98,6 @@ const parseRequiredAndOptionalKeys = (
 	const requiredKeys: string[] = []
 	if ("properties" in jsonSchema) {
 		if ("required" in jsonSchema) {
-			const duplicateRequiredKeys = getDuplicatesOf(jsonSchema.required)
-			if (duplicateRequiredKeys.length !== 0) {
-				ctx.reject({
-					path: ["required"],
-					expected: "an array of unique strings",
-					actual: `an array with the following duplicates: ${printable(duplicateRequiredKeys)}`
-				})
-			}
-
 			for (const key of jsonSchema.required) {
 				if (key in jsonSchema.properties) requiredKeys.push(key)
 				else {

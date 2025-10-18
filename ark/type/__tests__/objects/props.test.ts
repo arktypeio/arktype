@@ -1,5 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeLiteralUnionEntriesMessage } from "@ark/schema"
+import {
+	writeDuplicateKeyMessage,
+	writeLiteralUnionEntriesMessage
+} from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
@@ -89,6 +92,6 @@ contextualize(() => {
 				a: "true",
 				"a?": "true"
 			})
-		).throws()
+		).throws(writeDuplicateKeyMessage("a"))
 	})
 })
