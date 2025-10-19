@@ -2,6 +2,12 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.51.0
+
+Fix some tsconfig path resolution (thanks @LukeAbby🎉)
+
+https://github.com/arktypeio/arktype/pull/1522
+
 ## 0.47.0
 
 Add a `failOnMissingSnapshots` config option. Defaults to `true` if `CI` is set in your environment, `false` otherwise.
