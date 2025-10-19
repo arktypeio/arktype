@@ -2,7 +2,7 @@ import { fromCwd, readFile, type SourcePosition } from "@ark/fs"
 import { printable, throwError, throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { resolve, dirname, join } from "node:path"
 import ts from "typescript"
 import { getConfig } from "../config.ts"
 
@@ -198,12 +198,14 @@ const instantiateTsconfigFromPath = (
 		arkConfig.compilerOptions
 	)
 
+	const configPath = resolve(path)
+
 	const instantiatedConfig = ts.parseJsonConfigFileContent(
 		rawConfig,
 		ts.sys,
-		dirname(path),
+		dirname(configPath),
 		{},
-		path
+		configPath
 	)
 
 	if (instantiatedConfig.errors.length > 0)
