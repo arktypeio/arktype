@@ -44,7 +44,7 @@ type BaseAttestConfig = {
 	benchErrorOnThresholdExceeded: BenchErrorConfig
 	filter: string | undefined
 	testDeclarationAliases: string[]
-	formatCmd: string
+	formatCmd: string[]
 	shouldFormat: boolean
 	/**
 	 *  Provided options will override the following defaults.
@@ -75,7 +75,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
 	testDeclarationAliases: ["bench", "it", "test"],
-	formatCmd: `npm exec --no -- prettier --write`,
+	formatCmd: ["npm", "exec", "--no", "--", "prettier", "--write"],
 	shouldFormat: true,
 	typeToStringFormat: {}
 })
