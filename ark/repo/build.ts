@@ -19,9 +19,11 @@ const outDir = fromCwd("out")
 const packageName = readPackageJson(process.cwd()).name
 
 const buildCurrentProject = () =>
-	shell(
-		`node ${fromHere("node_modules", "typescript", "lib", "tsc.js")} --project tsconfig.build.json`
-	)
+	shell("node", [
+		fromHere("node_modules", "typescript", "lib", "tsc.js"),
+		"--project",
+		"tsconfig.build.json"
+	])
 
 try {
 	rmRf(outDir)
