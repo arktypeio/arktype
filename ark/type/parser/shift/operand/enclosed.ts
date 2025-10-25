@@ -1,5 +1,5 @@
-import type { regex } from "@ark/regex"
 import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
+import type { regex } from "arkregex"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"

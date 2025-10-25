@@ -1,4 +1,4 @@
-# @ark/regex
+# arkregex
 
 A drop-in replacement for `new RegExp()` with types.
 
@@ -7,7 +7,7 @@ A drop-in replacement for `new RegExp()` with types.
 The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax.
 
 ```ts
-import { regex } from "@ark/regex"
+import { regex } from "arkregex"
 
 const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
 // Type: Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
@@ -49,6 +49,12 @@ const caseInsensitive = regex("^ok$", "i")
 ```
 
 ## FAQ
+
+### Why aren't some patterns like `[a-Z]` inferred more precisely?
+
+Constructing string literal types for these sorts of expressions is combinatorial and will explode very quickly if we infer character ranges like this as literal characters.
+
+We've tried to strike a balanace between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
 
 ### Why doesn't it work with my massive RegExp?
 

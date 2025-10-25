@@ -1,6 +1,6 @@
 {
-	"name": "@ark/regex",
-	"version": "0.0.0",
+	"name": "arkregex",
+	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -15,9 +15,9 @@
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
-		"./internal/*": {
-			"ark-ts": "./*",
-			"default": "./out/*"
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
 		}
 	},
 	"files": [

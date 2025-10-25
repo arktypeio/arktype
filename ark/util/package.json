@@ -15,9 +15,9 @@
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
-		"./internal/*": {
-			"ark-ts": "./*",
-			"default": "./out/*"
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
 		},
 		"./tsconfig.base.json": "./tsconfig.base.json"
 	},

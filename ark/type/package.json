@@ -44,7 +44,7 @@
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",
-		"@ark/regex": "workspace:*",
+		"arkregex": "workspace:*",
 		"@ark/schema": "workspace:*"
 	},
 	"publishConfig": {

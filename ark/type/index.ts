@@ -1,4 +1,3 @@
-export { regex } from "@ark/regex"
 export {
 	ArkError,
 	ArkErrors,
@@ -8,8 +7,9 @@ export {
 	type ArkSchemaScopeConfig,
 	type JsonSchema
 } from "@ark/schema"
-export { Hkt, inferred, ParseError } from "@ark/util"
-export type { distill, Out } from "./attributes.ts"
+export { Hkt, ParseError, inferred } from "@ark/util"
+export { regex } from "arkregex"
+export type { Out, distill } from "./attributes.ts"
 export * from "./config.ts"
 export { Generic } from "./generic.ts"
 export {
@@ -27,6 +27,6 @@ export type {
 	inferDefinition,
 	validateDefinition
 } from "./parser/definition.ts"
-export { scope, type bindThis, type Scope } from "./scope.ts"
+export { scope, type Scope, type bindThis } from "./scope.ts"
 export { Type } from "./type.ts"
 export type { BaseType } from "./variants/base.ts"

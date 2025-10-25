@@ -1,10 +1,10 @@
-import type { regex } from "@ark/regex"
 import type {
 	ExactLength,
 	ExclusiveNumericRangeSchema,
 	InclusiveNumericRangeSchema,
 	Pattern
 } from "@ark/schema"
+import type { regex } from "arkregex"
 import type { BaseType } from "./base.ts"
 
 /** @ts-ignore cast variance */
