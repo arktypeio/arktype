@@ -34,10 +34,8 @@ jobs:
         include:
           - os: ubuntu-latest
             node: lts/-1
-          # reenable once localStorage issue is addressed in node 25:
-          # https://github.com/nodejs/node/issues/60303
-          # - os: ubuntu-latest
-          #   node: latest
+          - os: ubuntu-latest
+            node: latest
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
