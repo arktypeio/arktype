@@ -15,11 +15,15 @@
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
+		"./tsconfig.base.json": "./tsconfig.base.json",
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"
 		},
-		"./tsconfig.base.json": "./tsconfig.base.json"
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
 	},
 	"files": [
 		"out",

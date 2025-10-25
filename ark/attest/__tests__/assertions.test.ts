@@ -1,6 +1,6 @@
 import { attest } from "@ark/attest"
-import { MissingSnapshotError } from "@ark/attest/internal/assert/assertions.js"
-import { attestInternal } from "@ark/attest/internal/assert/attest.js"
+import { MissingSnapshotError } from "@ark/attest/internal/assert/assertions.ts"
+import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
 

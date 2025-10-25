@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { nonOverlappingSatisfiesMessage } from "@ark/attest/internal/assert/chainableAssertions.js"
+import { nonOverlappingSatisfiesMessage } from "@ark/attest/internal/assert/chainableAssertions.ts"
 
 contextualize(() => {
 	it("can assert types", () => {

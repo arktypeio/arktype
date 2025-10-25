@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { chainableNoOpProxy } from "@ark/attest/internal/utils.js"
+import { chainableNoOpProxy } from "@ark/attest/internal/utils.ts"
 import {
 	intrinsic,
 	writeIndivisibleMessage,

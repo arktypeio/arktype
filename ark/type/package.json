@@ -28,6 +28,10 @@
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"
+		},
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
 		}
 	},
 	"files": [
@@ -44,8 +48,8 @@
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",
-		"arkregex": "workspace:*",
-		"@ark/schema": "workspace:*"
+		"@ark/schema": "workspace:*",
+		"arkregex": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"
