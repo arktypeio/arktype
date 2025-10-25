@@ -39,41 +39,41 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type _ParseResult = iterate<State.initialize<"^a..c$", "">, 4>
+type _ParseResult = iterate<State.initialize<"^a|c$", "">, 5>
 type _AstResult = State.Group.finalize<_ParseResult>
 type _FinalizedResult = s.finalize<_ParseResult>
 
-type _Tree = SequenceTree<
-	[
-		"<​^​>",
-		GroupTree<
-			UnionTree<
-				[
-					"0",
-					SequenceTree<
-						[
-							UnionTree<["1", string]>,
-							{
-								kind: "quantifier"
-								ast: `${bigint}`
-								min: 0
-								max: null
-							}
-						]
-					>
-				]
-			>,
-			State.UnnamedCaptureKind.indexed
-		>,
-		".",
-		"<​$​>"
-	]
->
+// type _Tree = SequenceTree<
+// 	[
+// 		"<​^​>",
+// 		GroupTree<
+// 			UnionTree<
+// 				[
+// 					"0",
+// 					SequenceTree<
+// 						[
+// 							UnionTree<["1", string]>,
+// 							{
+// 								kind: "quantifier"
+// 								ast: `${bigint}`
+// 								min: 0
+// 								max: null
+// 							}
+// 						]
+// 					>
+// 				]
+// 			>,
+// 			State.UnnamedCaptureKind.indexed
+// 		>,
+// 		".",
+// 		"<​$​>"
+// 	]
+// >
 
-type _Result = finalizeTree<
-	_Tree,
-	{ errors: []; flags: ""; captures: [IndexedCaptureOffset]; names: {} }
->
+// type _Result = finalizeTree<
+// 	_Tree,
+// 	{ errors: []; flags: ""; captures: [IndexedCaptureOffset]; names: {} }
+// >
 
 contextualize(() => {
 	describe("literals", () => {

@@ -51,7 +51,7 @@ export declare namespace State {
 	export type Group = {
 		/** the name of the group or its kind */
 		capture: CaptureKind
-		branches: RegexAst[]
+		branches: UnionTree.FinalizedBranch[]
 		sequence: RegexAst
 		root: RegexAst
 		caseInsensitive: boolean
@@ -64,23 +64,20 @@ export declare namespace State {
 
 		export type finalize<g extends Group> =
 			g["branches"] extends [] ? pushQuantifiable<g["sequence"], g["root"]>
-			: [...g["branches"], pushQuantifiable<g["sequence"], g["root"]>] extends (
-				infer branches extends RegexAst[]
-			) ?
-				finalizeUnion<branches, []>
+			: [
+				...g["branches"],
+				UnionTree.fastFinalizeBranch<pushQuantifiable<g["sequence"], g["root"]>>
+			] extends infer branches extends UnionTree.FinalizedBranch[] ?
+				UnionTree.finalize<
+					branches,
+					FinalizationContext.from<{
+						errors: never
+						flags: ""
+						captures: []
+						names: {}
+					}>
+				>
 			:	never
-
-		type finalizeUnion<
-			remaining extends RegexAst[],
-			flattened extends RegexAst[]
-		> =
-			remaining extends (
-				[infer head extends RegexAst, ...infer tail extends RegexAst[]]
-			) ?
-				head extends UnionTree<infer headBranches> ?
-					finalizeUnion<tail, [...flattened, ...headBranches]>
-				:	finalizeUnion<tail, [...flattened, head]>
-			:	UnionTree<flattened>
 	}
 }
 
@@ -167,7 +164,10 @@ export declare namespace s {
 		unscanned: unscanned
 		groups: s["groups"]
 		capture: s["capture"]
-		branches: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>]
+		branches: [
+			...s["branches"],
+			UnionTree.fastFinalizeBranch<pushQuantifiable<s["sequence"], s["root"]>>
+		]
 		sequence: SequenceTree.Empty
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
@@ -372,16 +372,13 @@ export declare namespace SequenceTree {
 			}>
 }
 
-export interface UnionTree<ast extends RegexAst[] = RegexAst[]> {
-	kind: "union"
-	ast: ast
-}
+export type UnionTree = UnionTree.FinalizedBranch[]
 
 export declare namespace UnionTree {
 	export type finalize<
 		self extends UnionTree,
 		ctx extends FinalizationContext
-	> = _finalize<self["ast"], [], ctx>
+	> = finalizeBranches<keyof self, self, ctx>
 
 	type FinalizedBranch = {
 		pattern: string
@@ -393,51 +390,58 @@ export declare namespace UnionTree {
 		export type from<b extends FinalizedBranch> = b
 	}
 
-	type _finalize<
-		astBranches extends unknown[],
-		acc extends FinalizedBranch[],
-		ctx extends FinalizationContext
-	> =
-		astBranches extends [infer head, ...infer tail] ?
-			finalizeTree<head, ctx> extends infer r ?
-				r extends FinalizationResult ?
-					_finalize<tail, finalizeBranch<acc, ctx, r>, ctx>
-				:	never
-			:	never
-		:	finalizeBranches<keyof acc, acc, ctx>
+	// type _finalize<
+	// 	astBranches extends unknown[],
+	// 	acc extends FinalizedBranch[],
+	// 	ctx extends FinalizationContext
+	// > =
+	// 	astBranches extends [infer head, ...infer tail] ?
+	// 		finalizeTree<head, ctx> extends infer r ?
+	// 			// distribute
+	// 			r extends FinalizationResult ?
+	// 				_finalize<tail, finalizeBranch<acc, ctx, r>, ctx>
+	// 			:	never
+	// 		:	never
+	// 	:	finalizeBranches<keyof acc, acc, ctx>
 
-	type finalizeBranch<
-		acc extends FinalizedBranch[],
-		ctx extends FinalizationContext,
-		r extends FinalizationResult
-	> = [
-		...acc,
-		FinalizedBranch.from<{
-			pattern: r["pattern"]
-			captures: finalizeBranchCaptures<acc, ctx, r>
-			// undefined will be added to named captures as needed
-			// by finalizeBranches since it can be done in one step
-			names: r["ctx"]["names"]
-		}>
-	]
+	export type fastFinalizeBranch<pattern> = FinalizedBranch.from<{
+		pattern: pattern extends string ? pattern : "(ast)"
+		captures: []
+		names: {}
+	}>
 
-	type finalizeBranchCaptures<
-		acc extends FinalizedBranch[],
-		ctx extends FinalizationContext,
-		r extends FinalizationResult,
-		branchCaptures extends IndexedCaptures = extractNewCaptures<
-			ctx["captures"],
-			r["ctx"]["captures"]
-		>
-	> =
-		acc extends [] ? branchCaptures
-		: acc[0]["captures"] extends (
-			infer firstCaptureBranch extends IndexedCaptures
-		) ?
-			branchCaptures extends [] ?
-				{ [i in keyof firstCaptureBranch]: undefined }
-			:	[...{ [i in keyof firstCaptureBranch]: undefined }, ...branchCaptures]
-		:	never
+	// type finalizeBranch<
+	// 	acc extends FinalizedBranch[],
+	// 	ctx extends FinalizationContext,
+	// 	r extends FinalizationResult
+	// > = [
+	// 	...acc,
+	// 	FinalizedBranch.from<{
+	// 		pattern: r["pattern"]
+	// 		captures: finalizeBranchCaptures<acc, ctx, r>
+	// 		// undefined will be added to named captures as needed
+	// 		// by finalizeBranches since it can be done in one step
+	// 		names: r["ctx"]["names"]
+	// 	}>
+	// ]
+
+	// type finalizeBranchCaptures<
+	// 	acc extends FinalizedBranch[],
+	// 	ctx extends FinalizationContext,
+	// 	r extends FinalizationResult,
+	// 	branchCaptures extends IndexedCaptures = extractNewCaptures<
+	// 		ctx["captures"],
+	// 		r["ctx"]["captures"]
+	// 	>
+	// > =
+	// 	acc extends [] ? branchCaptures
+	// 	: acc[0]["captures"] extends (
+	// 		infer firstCaptureBranch extends IndexedCaptures
+	// 	) ?
+	// 		branchCaptures extends [] ?
+	// 			{ [i in keyof firstCaptureBranch]: undefined }
+	// 		:	[...{ [i in keyof firstCaptureBranch]: undefined }, ...branchCaptures]
+	// 	:	never
 
 	type finalizeBranches<
 		i,
