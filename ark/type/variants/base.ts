@@ -184,7 +184,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 *
 	 * @throws {TraversalError}
 	 */
-	assert(data: unknown): this["infer"]
+	assert: (data: unknown) => this["infer"]
 
 	/**
 	 * #### check input without applying morphs
@@ -196,7 +196,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * // [0, 2n]
 	 * const numerics = [0, "one", 2n].filter(Numeric.allows)
 	 */
-	allows(data: unknown): data is this["inferIn"]
+	allows: (data: unknown) => data is this["inferIn"]
 
 	/**
 	 * #### add metadata to shallow references

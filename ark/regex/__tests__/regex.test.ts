@@ -325,6 +325,16 @@ contextualize(() => {
 			)
 		})
 
+		it("quantified charset", () => {
+			const S = regex("^[ab]{2}$")
+			attest<Regex<"aa" | "ab" | "ba" | "bb">>(S)
+		})
+
+		it("quantified union group", () => {
+			const S = regex("^(a|b){2}$")
+			attest<Regex<"aa" | "ab" | "ba" | "bb", { captures: ["a"] | ["b"] }>>(S)
+		})
+
 		it("unmatched", () => {
 			// @ts-expect-error
 			attest(() => regex("{2}")).type.errors(

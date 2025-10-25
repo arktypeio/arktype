@@ -7,6 +7,7 @@ import {
 	throwInternalError,
 	throwParseError,
 	type array,
+	type describe,
 	type dict,
 	type Key,
 	type listable
@@ -23,7 +24,7 @@ import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import type { NodeCompiler } from "../shared/compile.ts"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type {
 	attachmentsOf,
 	BaseNormalizedSchema,
@@ -333,37 +334,65 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			}
 		},
 		reduce: (inner, $) => {
-			if (inner.index) {
-				if (!(inner.required || inner.optional)) return
+			if (!inner.required && !inner.optional) return
 
-				let updated = false
+			const seen: Record<Key, true | undefined> = {}
+			let updated = false
+			const newOptionalProps: OptionalNode[] =
+				inner.optional ? [...inner.optional] : []
 
-				const requiredProps = inner.required ?? []
-				const optionalProps = inner.optional ?? []
-				const newOptionalProps: OptionalNode[] = [...optionalProps]
+			// check required keys for duplicates and handle index intersections
+			if (inner.required) {
+				for (let i = 0; i < inner.required.length; i++) {
+					const requiredProp = inner.required[i]
+					if (requiredProp.key in seen)
+						throwParseError(writeDuplicateKeyMessage(requiredProp.key))
+					seen[requiredProp.key] = true
 
-				for (const index of inner.index) {
-					for (const requiredProp of requiredProps) {
-						const intersection = intersectPropsAndIndex(requiredProp, index, $)
-						if (intersection instanceof Disjoint) return intersection
-					}
-
-					for (const [indx, optionalProp] of optionalProps.entries()) {
-						const intersection = intersectPropsAndIndex(optionalProp, index, $)
-						if (intersection instanceof Disjoint) return intersection
-						if (intersection === null) continue
-						newOptionalProps[indx] = intersection
-						updated = true
+					if (inner.index) {
+						for (const index of inner.index) {
+							const intersection = intersectPropsAndIndex(
+								requiredProp,
+								index,
+								$
+							)
+							if (intersection instanceof Disjoint) return intersection
+						}
 					}
 				}
+			}
 
-				if (updated) {
-					return $.node(
-						"structure",
-						{ ...inner, optional: newOptionalProps },
-						{ prereduced: true }
-					)
+			// check optional keys for duplicates and handle index intersections
+			if (inner.optional) {
+				for (let i = 0; i < inner.optional.length; i++) {
+					const optionalProp = inner.optional[i]
+					if (optionalProp.key in seen)
+						throwParseError(writeDuplicateKeyMessage(optionalProp.key))
+					seen[optionalProp.key] = true
+
+					if (inner.index) {
+						for (const index of inner.index) {
+							const intersection = intersectPropsAndIndex(
+								optionalProp,
+								index,
+								$
+							)
+							if (intersection instanceof Disjoint) return intersection
+							if (intersection !== null) {
+								newOptionalProps[i] = intersection
+								updated = true
+							}
+						}
+					}
 				}
+			}
+
+			if (updated) {
+				return $.node(
+					"structure",
+					{ ...inner, optional: newOptionalProps },
+					{ prereduced: true }
+				)
 			}
 		}
 	})
@@ -1096,3 +1125,11 @@ export const writeInvalidKeysMessage = <
 	keys: keys
 ): string =>
 	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}`
+
+export const writeDuplicateKeyMessage = <key extends Key>(
+	key: key
+): writeDuplicateKeyMessage<key> =>
+	`Duplicate key ${compileSerializedValue(key) as never}`
+
+export type writeDuplicateKeyMessage<key extends Key> =
+	`Duplicate key '${describe<key>}'`

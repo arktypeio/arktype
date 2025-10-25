@@ -582,10 +582,8 @@ export declare namespace QuantifierTree {
 		self extends QuantifierTree,
 		ctx extends FinalizationContext
 	> =
-		finalizeTree<self["ast"], ctx> extends infer r ?
-			r extends FinalizationResult ?
-				finalizeQuantifierResult<self, ctx, r>
-			:	never
+		finalizeTree<self["ast"], ctx> extends infer r extends FinalizationResult ?
+			finalizeQuantifierResult<self, ctx, r>
 		:	never
 
 	type finalizeQuantifierResult<

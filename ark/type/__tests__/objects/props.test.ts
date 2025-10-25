@@ -1,5 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeLiteralUnionEntriesMessage } from "@ark/schema"
+import {
+	writeDuplicateKeyMessage,
+	writeLiteralUnionEntriesMessage
+} from "@ark/schema"
 import { register, type array } from "@ark/util"
 import { type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
@@ -81,5 +84,14 @@ contextualize(() => {
 			required: [{ key: "foo", value: { unit: null } }],
 			domain: "object"
 		})
+	})
+
+	it("duplicate optional key", () => {
+		attest(() =>
+			type({
+				a: "true",
+				"a?": "true"
+			})
+		).throws(writeDuplicateKeyMessage("a"))
 	})
 })

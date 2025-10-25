@@ -119,4 +119,14 @@ contextualize(() => {
 			"ParseError: Intersection at a of string and number results in an unsatisfiable type"
 		)
 	})
+
+	it("never subtype comparisons", () => {
+		const MyType = type({
+			something: "string"
+		})
+
+		attest(type.never.extends(MyType)).equals(true)
+
+		attest(MyType.internal.subsumes(type.never)).equals(true)
+	})
 })
