@@ -67,20 +67,20 @@ export declare namespace State {
 			: [...g["branches"], pushQuantifiable<g["sequence"], g["root"]>] extends (
 				infer branches extends RegexAst[]
 			) ?
-				finalizeUnion<branches, []>
+				branches[number]
 			:	never
 
-		type finalizeUnion<
-			remaining extends RegexAst[],
-			flattened extends RegexAst[]
-		> =
-			remaining extends (
-				[infer head extends RegexAst, ...infer tail extends RegexAst[]]
-			) ?
-				head extends UnionTree<infer headBranches> ?
-					finalizeUnion<tail, [...flattened, ...headBranches]>
-				:	finalizeUnion<tail, [...flattened, head]>
-			:	UnionTree<flattened>
+		// type finalizeUnion<
+		// 	remaining extends RegexAst[],
+		// 	flattened extends RegexAst[]
+		// > =
+		// 	remaining extends (
+		// 		[infer head extends RegexAst, ...infer tail extends RegexAst[]]
+		// 	) ?
+		// 		head extends UnionTree<infer headBranches> ?
+		// 			finalizeUnion<tail, [...flattened, ...headBranches]>
+		// 		:	finalizeUnion<tail, [...flattened, head]>
+		// 	:	UnionTree<flattened>
 	}
 }
 
