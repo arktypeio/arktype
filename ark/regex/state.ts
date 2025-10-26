@@ -52,9 +52,16 @@ export declare namespace State {
 
 		type pop<init extends Group, last extends Group[]> = [...last, init]
 
-		export type finalize<g extends Group> =
-			g["branches"] extends [] ? pushQuantifiable<g["sequence"], g["root"]>
-			: [...g["branches"], pushQuantifiable<g["sequence"], g["root"]>] extends (
+		// s["capture"] extends CapturedGroupKind ? State.Group.finalize<s>
+		// 				: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
+		// 				: // non-capturing
+		// 					State.Group.finalize<s>
+
+		export type finalize<s extends State> = finalizeBranches<s>
+
+		type finalizeBranches<s extends State> =
+			s["branches"] extends [] ? pushQuantifiable<s["sequence"], s["root"]>
+			: [...s["branches"], pushQuantifiable<s["sequence"], s["root"]>] extends (
 				infer branches extends Branch[]
 			) ?
 				branches[number]
@@ -206,10 +213,7 @@ export declare namespace s {
 				capture: last["capture"]
 				branches: last["branches"]
 				sequence: pushQuantifiable<last["sequence"], last["root"]>
-				root: s["capture"] extends CapturedGroupKind ? State.Group.finalize<s>
-				: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
-				: // non-capturing
-					State.Group.finalize<s>
+				root: State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
 				flags: s["flags"]
 			}>
