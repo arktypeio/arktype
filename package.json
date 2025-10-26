@@ -112,7 +112,7 @@
 		"node": ">=18",
 		"pnpm": ">=10"
 	},
-	"packageManager": "pnpm@10.10.0",
+	"packageManager": "pnpm@10.19.0",
 	"pnpm": {
 		"overrides": {
 			"@ark/attest": "link:ark/attest"
