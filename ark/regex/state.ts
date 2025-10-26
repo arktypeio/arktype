@@ -145,14 +145,14 @@ export declare namespace s {
 		branches: s["branches"]
 		sequence: pushQuantifiable<
 			s["sequence"],
-			s["root"] extends CaptureBranch ?
+			s["root"] extends string ? quantify<s["root"], min, max>
+			: s["root"] extends CaptureBranch ?
 				CaptureBranch.from<{
 					pattern: quantify<s["root"]["pattern"], min, max>
 					captures: s["root"]["captures"]
 					names: s["root"]["names"]
 				}>
-			: s["root"] extends string ? quantify<s["root"], min, max>
-			: never
+			:	never
 		>
 		root: ""
 		caseInsensitive: s["caseInsensitive"]
@@ -314,33 +314,16 @@ export type IndexedCaptureOffset = noSuggest<"indexedCaptureOffset">
  */
 export type EmptyCaptures = [IndexedCaptureOffset]
 
-export type pushQuantifiable<sequence extends Branch, root extends Branch> =
-	root extends "" ? sequence
-	: sequence extends CaptureBranch ?
-		root extends CaptureBranch ?
-			CaptureBranch.from<{
-				pattern: appendNonRedundant<sequence["pattern"], root["pattern"]>
-				captures: [...sequence["captures"], ...root["captures"]]
-				names: sequence["names"] & root["names"]
-			}>
-		: root extends string ?
-			CaptureBranch.from<{
-				pattern: appendNonRedundant<sequence["pattern"], root>
-				captures: sequence["captures"]
-				names: sequence["names"]
-			}>
-		:	never
-	: sequence extends string ?
-		sequence extends "" ? root
-		: root extends CaptureBranch ?
-			CaptureBranch.from<{
-				pattern: appendNonRedundant<sequence, root["pattern"]>
-				captures: root["captures"]
-				names: root["names"]
-			}>
-		: root extends string ? appendNonRedundant<sequence, root>
-		: never
-	:	never
+export type pushQuantifiable<
+	sequence extends Branch,
+	root extends Branch
+> = appendNonRedundant<sequence, root>
+// root extends "" ? sequence
+// : sequence extends string ?
+// 	sequence extends "" ? root
+// 	: root extends string ? appendNonRedundant<sequence, root>
+// 	: never
+// :	never
 
 type applyAnchors<pattern extends string> =
 	pattern extends `${StartAnchorMarker}${infer startStripped}` ?
