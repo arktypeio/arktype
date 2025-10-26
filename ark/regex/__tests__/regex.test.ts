@@ -34,7 +34,7 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type _ParseResult = iterate<State.initialize<"ab", "">, 2>
+type _ParseResult = iterate<State.initialize<"(a)", "">, 3>
 type _AstResult = State.Group.finalize<_ParseResult>
 type _FinalizedResult = s.finalize<_ParseResult>
 

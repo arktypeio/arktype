@@ -2,6 +2,7 @@ import type {
 	contains,
 	ErrorMessage,
 	noSuggest,
+	setIndex,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	ZeroWidthSpace
@@ -52,12 +53,51 @@ export declare namespace State {
 
 		type pop<init extends Group, last extends Group[]> = [...last, init]
 
-		// s["capture"] extends CapturedGroupKind ? State.Group.finalize<s>
-		// 				: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
-		// 				: // non-capturing
-		// 					State.Group.finalize<s>
+		export type finalize<
+			s extends State,
+			r extends Branch = finalizeBranches<s>
+		> =
+			// s["capture"] extends string ?
+			// 	finalizeNamedCapture<
+			// 		s["capture"],
+			// 		ctx["captures"]["length"],
+			// 		root["pattern"],
+			// 		r["ctx"]
+			// 	>
+			// :
+			s["capture"] extends State.UnnamedCaptureKind.indexed ?
+				finalizeUnnamedCapture<1, r>
+			:	r
 
-		export type finalize<s extends State> = finalizeBranches<s>
+		// type finalizeNamedCapture<
+		// 	name extends string,
+		// 	index extends number,
+		// 	pattern extends string,
+		// 	ctx extends FinalizationContext
+		// > = FinalizationContext.from<{
+		// 	// replace undefined (representing a group being parsed)
+		// 	// with the inferred reference
+		// 	captures: setIndex<ctx["captures"], index, anchorsAway<pattern>>
+		// 	names: {
+		// 		[k in keyof ctx["names"]]: k extends name ? anchorsAway<pattern>
+		// 		:	ctx["names"][k]
+		// 	}
+		// 	flags: ctx["flags"]
+		// 	errors: ctx["errors"]
+		// }>
+
+		type finalizeUnnamedCapture<index extends number, b extends Branch> =
+			b extends CaptureBranch ?
+				CaptureBranch.from<{
+					pattern: b["pattern"]
+					captures: setIndex<b["captures"], index, anchorsAway<b["pattern"]>>
+					names: b["names"]
+				}>
+			:	CaptureBranch.from<{
+					pattern: b & string
+					captures: [IndexedCaptureOffset, anchorsAway<b & string>]
+					names: {}
+				}>
 
 		type finalizeBranches<s extends State> =
 			s["branches"] extends [] ? pushQuantifiable<s["sequence"], s["root"]>
