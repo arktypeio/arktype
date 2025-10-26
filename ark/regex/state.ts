@@ -721,7 +721,7 @@ export type finalizeTree<tree, ctx extends FinalizationContext> =
 			ctx: ctx
 		}>
 	: tree extends SequenceTree ? SequenceTree.finalize<tree, ctx>
-	: tree extends UnionTree ? UnionTree.finalize<tree, ctx>
+	: tree extends FinalizationResult ? tree
 	: tree extends GroupTree ? GroupTree.finalize<tree, ctx>
 	: tree extends QuantifierTree ? QuantifierTree.finalize<tree, ctx>
 	: tree extends ReferenceNode ? ReferenceNode.finalize<tree, ctx>

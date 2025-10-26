@@ -27,13 +27,8 @@ import { writeUnmatchedQuantifierError } from "arkregex/internal/quantify.ts"
 import {
 	writeIncompleteReferenceError,
 	writeMidAnchorError,
-	type finalizeTree,
-	type GroupTree,
-	type IndexedCaptureOffset,
 	type s,
-	type SequenceTree,
-	type State,
-	type UnionTree
+	type State
 } from "arkregex/internal/state.ts"
 
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
