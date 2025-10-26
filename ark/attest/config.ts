@@ -202,7 +202,7 @@ export const getConfig = (): ParsedAttestConfig => parseConfig()
 // https://github.com/nodejs/node/issues/60303
 
 // this can be removed once the bug is addressed in Node
-if (!globalThis.localStorage.getItem)
+if (!globalThis.localStorage?.getItem)
 	globalThis.localStorage = undefined as never
 
 export const ensureCacheDirs = (): void => {
