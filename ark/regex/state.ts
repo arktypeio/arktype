@@ -227,17 +227,7 @@ export declare namespace s {
 	export type finalize<s extends State> =
 		s["groups"] extends [unknown, ...unknown[]] ?
 			ErrorMessage<writeUnclosedGroupMessage<")">>
-		:	finalizeRegexOrError<
-				finalizeTree<
-					State.Group.finalize<s>,
-					{
-						captures: EmptyCaptures
-						names: {}
-						flags: s["flags"]
-						errors: []
-					}
-				>
-			>
+		:	finalizeRegexOrError<State.Group.finalize<s>>
 
 	type finalizeRegexOrError<r extends FinalizationResult> =
 		r["ctx"]["errors"] extends [] ?
@@ -715,13 +705,13 @@ export declare namespace FinalizationResult {
 }
 
 export type finalizeTree<tree, ctx extends FinalizationContext> =
-	tree extends string ?
+	tree extends FinalizationResult ? tree
+	: tree extends string ?
 		FinalizationResult.from<{
 			pattern: tree
 			ctx: ctx
 		}>
 	: tree extends SequenceTree ? SequenceTree.finalize<tree, ctx>
-	: tree extends FinalizationResult ? tree
 	: tree extends GroupTree ? GroupTree.finalize<tree, ctx>
 	: tree extends QuantifierTree ? QuantifierTree.finalize<tree, ctx>
 	: tree extends ReferenceNode ? ReferenceNode.finalize<tree, ctx>
