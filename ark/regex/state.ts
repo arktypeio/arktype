@@ -226,7 +226,7 @@ export declare namespace s {
 					result["names"],
 					s["flags"]
 				>
-			:	finalizeRegex<result & string, [], {}, s["flags"]>
+			:	finalizeRegex<result & string, EmptyCaptures, {}, s["flags"]>
 		:	never
 
 	type finalizeRegex<
