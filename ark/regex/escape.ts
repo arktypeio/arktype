@@ -1,5 +1,5 @@
 import type { ErrorMessage, Scanner, WhitespaceChar } from "@ark/util"
-import type { Control, ReferenceNode, s, State } from "./state.ts"
+import type { Control, s, State } from "./state.ts"
 
 export type parseEscape<s extends State, unscanned extends string> =
 	unscanned extends Scanner.shift<infer char, infer nextUnscanned> ?
@@ -18,12 +18,12 @@ type parseNumericBackreference<
 	Scanner.shiftUntilNot<fullUnscanned, StringDigit> extends (
 		Scanner.shiftResult<infer ref, infer remaining>
 	) ?
-		s.shiftQuantifiable<s, ReferenceNode<ref>, remaining>
+		s.shiftQuantifiable<s, `<ref:${ref}>`, remaining>
 	:	never
 
 type parseNamedBackreference<s extends State, unscanned extends string> =
 	unscanned extends `<${infer ref}>${infer following}` ?
-		s.shiftQuantifiable<s, ReferenceNode<ref>, following>
+		s.shiftQuantifiable<s, `<ref:${ref}>`, following>
 	:	s.error<missingBackreferenceNameMessage>
 
 type parseUnicodeProperty<
