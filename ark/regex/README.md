@@ -54,18 +54,18 @@ const caseInsensitive = regex("^ok$", "i")
 
 Constructing string literal types for these sorts of expressions is combinatorial and will explode very quickly if we infer character ranges like this as literal characters.
 
-We've tried to strike a balanace between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
+We've tried to strike a balance between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
 
 ### Why doesn't it work with my massive RegExp?
 
 If your expression is especially long or complex, TypeScript won't be able to infer it.
 
-If your types start to slow down or you see the dreaded `Type is excessively deep...`, you can manually type your expression:
+If your types start to slow down or you see the dreaded `Type is excessively deep...`, you can manually type your expression using `regex.cast`:
 
 ```ts
-// For complex patterns, use the typed Regex class directly
-const complexPattern: Regex<"complex-string", { captures: [string, string] }> =
-	new RegExp("very-long-complex-pattern-here") as never
+const complexPattern = regex.cast<`pattern-${string}`, { captures: [string] }>(
+	"very-long-complex-expression-here"
+)
 ```
 
 <a id="footnote"></a>
