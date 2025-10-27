@@ -1,6 +1,6 @@
 # arkregex
 
-A drop-in replacement for `new RegExp()` with types.
+A drop-in replacement for `new RegExp()` with types
 
 ## Usage
 
@@ -9,11 +9,14 @@ The `regex` function creates a `Regex` instance with types for `.test()`, `.exec
 ```ts
 import { regex } from "arkregex"
 
+const ok = regex("^ok$", "i")
+// 	  ^ Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
+
 const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
-// Type: Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
+// 	  ^ Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
 
 const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
-// Type: Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
+// 	  ^ Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
 ```
 
 ## Features
@@ -22,31 +25,6 @@ const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
 - **Parity**: Supports 100% of [features](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) allowed by `new RegExp()`
 - **Safety**: Syntax errors like referencing a group that doesn't exist are now type errors
 - **Zero Runtime**: Improves your type safety without impacting your bundle size[\*](#footnote)
-
-## Examples
-
-```ts
-// Anchored patterns
-const start = regex("^hello") // Type: Regex<`hello${string}`, {}>
-const end = regex("world$") // Type: Regex<`${string}world`, {}>
-const exact = regex("^hello$") // Type: Regex<"hello", {}>
-
-// Quantifiers
-const optional = regex("^colou?r$") // Type: Regex<"color" | "colour", {}>
-const multiple = regex("^a+$") // Type: Regex<`a${string}`, {}>
-
-// Character classes
-const digits = regex("^\\d+$") // Type: Regex<`${bigint}`, {}>
-const words = regex("^\\w+$") // Type: Regex<string, {}>
-
-// Capture groups
-const captured = regex("^(\\w+):(\\d+)$")
-// Type: Regex<`${string}:${bigint}`, { captures: [string, `${bigint}`] }>
-
-// Case-insensitive flag
-const caseInsensitive = regex("^ok$", "i")
-// Type: Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
-```
 
 ## FAQ
 

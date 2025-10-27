@@ -1343,3 +1343,5 @@ contextualize(() => {
 		})
 	})
 })
+
+const ok = regex("^ok$", "i")
