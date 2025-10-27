@@ -60,7 +60,7 @@ We have [big plans](https://github.com/orgs/arktypeio/projects/4) to ArkType 2.0
 
 ⚡ [Starting coding](/docs/intro/setup)
 
-⭐ [Check out the project on GitHub](/docs/intro/setup)
+⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
 
 👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
 
@@ -350,8 +350,45 @@ Discriminated({ name: "foo", id: 1 })
 
 
 ---
+title: Announcing arkregex
+description: A drop-in replacement for new RegExp() with types
+---
+
+As of today, `arktype@2.0.0` is generally available and fully stable.
+
+ArkType 2.0 brings types to runtime JS in a way that, until today, has been a pipedream.
+
+Whether you're a first-time TypeScript dev trying to validate a form or a library author introspecting relationships, ArkType offers fundamentally better tools for navigating the perils of JavaScript.
+
+<MainAutoplayDemo />
+
+### What next?
+
+ArkType doesn't require a special environment or build step to work- [our intro](/docs/intro/setup) will have you up and running in seconds.
+
+We have [big plans](https://github.com/orgs/arktypeio/projects/4) to ArkType 2.0 even further, but we're even more excited to see what you do with it!
+
+⚡ [Starting coding](/docs/intro/setup)
+
+⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
+
+👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
+
+- Follow any of these accounts for updates:
+  - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
+  - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/arktypeio) on X/Twitter
+
+
+---
 title: Posts
 ---
+
+<LinkCard
+	title="Announcing arkregex"
+	description="Optimized pattern matching from type syntax"
+	href="/docs/blog/arkregex"
+	date="October 27, 2025"
+/>
 
 <LinkCard
 	title="Announcing ArkType 2.1"

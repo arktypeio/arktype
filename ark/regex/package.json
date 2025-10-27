@@ -1,5 +1,6 @@
 {
 	"name": "arkregex",
+	"description": "A drop-in replacement for `new RegExp()` with types",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
