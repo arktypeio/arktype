@@ -64,10 +64,10 @@ export const AutoplayDemo = (props: AutoplayDemoProps) => {
 					ref={videoRef}
 					autoPlay
 					loop
-					controls={true}
+					controls
 					playsInline
 					muted
-					disablePictureInPicture={true}
+					disablePictureInPicture
 					style={{ width: "100%", display: "block", margin: "0 auto" }}
 					{...props}
 				/>

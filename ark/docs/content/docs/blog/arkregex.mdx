@@ -1,8 +1,25 @@
-# arkregex
+---
+title: Introducing arkregex
+description: A drop-in replacement for new RegExp() with types
+---
 
-A drop-in replacement for `new RegExp()` with types
+Regular expressions are ubiquitous in modern code.
 
-## Usage
+A few characters sprinkled into your JavaScript can validate and parse strings that would require dozens of lines of imperative logic.
+
+However, that concision comes at a cost. Complex expressions can be hard to understand and type safety is a pipe dream- or at least, it was.
+
+**Introducing `arkregex`, a type-safe wrapper of `new RegExp()`.**
+
+<video
+	autoPlay
+	loop
+	controls
+	playsInline
+	muted
+	disablePictureInPicture
+	src="https://private-user-images.githubusercontent.com/10645823/506446535-73cf79b1-ef0e-4870-86ce-c57af490c8aa.mp4?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjE2NDE3NzksIm5iZiI6MTc2MTY0MTQ3OSwicGF0aCI6Ii8xMDY0NTgyMy81MDY0NDY1MzUtNzNjZjc5YjEtZWYwZS00ODcwLTg2Y2UtYzU3YWY0OTBjOGFhLm1wND9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTEwMjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUxMDI4VDA4NTExOVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJmYTgyN2NhZGQ4NGU5NTA3MDg0NWU4NDU1NjhiMGNkNjJkNmIzM2ZhZmQ0NTRjZTVhY2Q5MjEzZGY2MDQ3MDQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.pkDrLsKvjvxuMBk55GUBHiYX-q-rVP9CIZW7_Hs-_lo"
+/>
 
 The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
 
@@ -54,6 +71,16 @@ const complexPattern = regex.cast<`pattern-${string}`, { captures: [string] }>(
 
 If anything not covered by the other FAQs is not behaving how you'd expect, please don't hesitate to [create an issue](https://github.com/arktypeio/arktype/issues/new).
 
-#### How can I get syntax highlighting for `regex`?
+#### How can I get syntax highlighting for my expressions?
 
 The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) can be installed to add syntax highlighting to `regex` calls.
+
+### Useful links
+
+⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
+
+👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
+
+- Follow any of these accounts for updates:
+  - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
+  - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/arktypeio) on X/Twitter

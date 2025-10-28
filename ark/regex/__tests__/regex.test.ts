@@ -1,6 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { regex, type Regex } from "@ark/regex"
-import { emptyCharacterSetMessage } from "@ark/regex/internal/charset.js"
+import {
+	writeUnclosedGroupMessage,
+	writeUnmatchedGroupCloseMessage,
+	type WhitespaceChar
+} from "@ark/util"
+import { regex, type Regex } from "arkregex"
+import { emptyCharacterSetMessage } from "arkregex/internal/charset.ts"
 import {
 	caretNotationMessage,
 	missingBackreferenceNameMessage,
@@ -8,7 +13,7 @@ import {
 	writeStringEscapableMessage,
 	writeUnnecessaryEscapeMessage,
 	writeUnresolvableBackreferenceMessage
-} from "@ark/regex/internal/escape.js"
+} from "arkregex/internal/escape.ts"
 import {
 	missingNegatedModifierMessage,
 	multipleModifierDashesMessage,
@@ -16,9 +21,9 @@ import {
 	unnamedCaptureGroupMessage,
 	writeDuplicateModifierMessage,
 	writeInvalidModifierMessage
-} from "@ark/regex/internal/group.js"
-import type { next } from "@ark/regex/internal/parse.js"
-import { writeUnmatchedQuantifierError } from "@ark/regex/internal/quantify.js"
+} from "arkregex/internal/group.ts"
+import type { next } from "arkregex/internal/parse.ts"
+import { writeUnmatchedQuantifierError } from "arkregex/internal/quantify.ts"
 import {
 	writeIncompleteReferenceError,
 	writeMidAnchorError,
@@ -29,12 +34,7 @@ import {
 	type SequenceTree,
 	type State,
 	type UnionTree
-} from "@ark/regex/internal/state.js"
-import {
-	writeUnclosedGroupMessage,
-	writeUnmatchedGroupCloseMessage,
-	type WhitespaceChar
-} from "@ark/util"
+} from "arkregex/internal/state.ts"
 
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
@@ -323,6 +323,16 @@ contextualize(() => {
 			attest<Regex<`abbcccddd${string}effff` | `abbcccddd${string}eeffff`, {}>>(
 				S
 			)
+		})
+
+		it("quantified charset", () => {
+			const S = regex("^[ab]{2}$")
+			attest<Regex<"aa" | "ab" | "ba" | "bb">>(S)
+		})
+
+		it("quantified union group", () => {
+			const S = regex("^(a|b){2}$")
+			attest<Regex<"aa" | "ab" | "ba" | "bb", { captures: ["a"] | ["b"] }>>(S)
 		})
 
 		it("unmatched", () => {

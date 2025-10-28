@@ -1,5 +1,20 @@
 # arktype
 
+## 2.1.24
+
+### bump regex inference to arkregex 0.0.1
+
+### duplicate key errors
+
+Definitions like the following now throw a descriptive error:
+
+```ts
+const T = type({
+	foo: "string",
+	foo?: "string"
+})
+```
+
 ## 2.1.23
 
 ### regex literals are now inferred (will be announced and documented as part of 2.2)

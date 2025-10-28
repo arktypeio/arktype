@@ -4,7 +4,9 @@
 </div>
 <div align="center">
 
-[ArkType](https://arktype.io) syntax highlighting and theme⛵
+[ArkType](https://arktype.io) syntax highlighting and inline errors ⛵
+
+[Install the extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark)
 
 </div>
 

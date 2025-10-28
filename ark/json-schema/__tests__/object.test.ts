@@ -4,6 +4,7 @@ import {
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "@ark/json-schema"
+import { writeDuplicateKeyMessage } from "@ark/schema"
 
 contextualize(() => {
 	it("type object", () => {
@@ -73,9 +74,7 @@ contextualize(() => {
 				properties: { foo: { type: "string" } },
 				required: ["foo", "foo"]
 			})
-		).throws(
-			`TraversalError: required must be an array of unique strings (was an array with the following duplicates: [{"element":"foo","indices":[0,1]}])`
-		)
+		).throws(writeDuplicateKeyMessage("foo"))
 	})
 
 	it("additionalProperties", () => {

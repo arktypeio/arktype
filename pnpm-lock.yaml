@@ -159,6 +159,9 @@ importers:
       arkdark:
         specifier: workspace:*
         version: link:../extension
+      arkregex:
+        specifier: workspace:*
+        version: link:../regex
       arkthemes:
         specifier: workspace:*
         version: link:../themes
@@ -351,15 +354,15 @@ importers:
 
   ark/type:
     dependencies:
-      '@ark/regex':
-        specifier: workspace:*
-        version: link:../regex
       '@ark/schema':
         specifier: workspace:*
         version: link:../schema
       '@ark/util':
         specifier: workspace:*
         version: link:../util
+      arkregex:
+        specifier: workspace:*
+        version: link:../regex
 
   ark/util: {}
 

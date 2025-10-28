@@ -1,6 +1,6 @@
 {
 	"name": "@ark/util",
-	"version": "0.51.0",
+	"version": "0.52.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -15,11 +15,15 @@
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
-		"./internal/*": {
-			"ark-ts": "./*",
-			"default": "./out/*"
+		"./tsconfig.base.json": "./tsconfig.base.json",
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
 		},
-		"./tsconfig.base.json": "./tsconfig.base.json"
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
 	},
 	"files": [
 		"out",

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { attestInternal } from "@ark/attest/internal/assert/attest.js"
+import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
 import { dirName, readJson, writeJson } from "@ark/fs"
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"

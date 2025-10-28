@@ -23,6 +23,7 @@
 		"@oramacloud/client": "2.1.4",
 		"@shikijs/transformers": "3.3.0",
 		"arkdark": "workspace:*",
+		"arkregex": "workspace:*",
 		"arkthemes": "workspace:*",
 		"arktype": "workspace:*",
 		"class-variance-authority": "0.7.1",

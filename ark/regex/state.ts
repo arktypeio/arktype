@@ -582,10 +582,8 @@ export declare namespace QuantifierTree {
 		self extends QuantifierTree,
 		ctx extends FinalizationContext
 	> =
-		finalizeTree<self["ast"], ctx> extends infer r ?
-			r extends FinalizationResult ?
-				finalizeQuantifierResult<self, ctx, r>
-			:	never
+		finalizeTree<self["ast"], ctx> extends infer r extends FinalizationResult ?
+			finalizeQuantifierResult<self, ctx, r>
 		:	never
 
 	type finalizeQuantifierResult<
@@ -747,7 +745,7 @@ type appendNonRedundant<base extends string, suffix extends string> =
 		string extends suffix ?
 			string
 		:	`${base}${suffix}`
-	: // this is not generalizable, but @ark/regex uses `${bigint}`
+	: // this is not generalizable, but arkregex uses `${bigint}`
 	// to represent digits without a `-`, so it is valid to merge them
 	`${bigint}` extends base ?
 		`${bigint}` extends suffix ?
@@ -760,7 +758,7 @@ type prependNonRedundant<base extends string, prefix extends string> =
 		string extends prefix ?
 			string
 		:	`${prefix}${base}`
-	: // this is not generalizable, but @ark/regex uses `${bigint}`
+	: // this is not generalizable, but arkregex uses `${bigint}`
 	// to represent digits without a `-`, so it is valid to merge them
 	`${bigint}` extends base ?
 		`${bigint}` extends prefix ?

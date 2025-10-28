@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { Completions } from "@ark/attest/internal/cache/writeAssertionCache.js"
+import type { Completions } from "@ark/attest/internal/cache/writeAssertionCache.ts"
 import type { autocomplete } from "@ark/util"
 
 contextualize(() => {

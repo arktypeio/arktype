@@ -45,8 +45,10 @@ const twoslash = transformerTwoslash({
 		},
 		extraFiles: {
 			"global.d.ts": `import type * as a from "arktype"
+import type * as r from "arkregex"
 
 declare global {
+	const regex: typeof r.regex
 	const type: typeof a.type
 	namespace type {
 		export type cast<t> = {
