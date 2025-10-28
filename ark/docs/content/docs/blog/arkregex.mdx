@@ -3,19 +3,55 @@ title: Announcing arkregex
 description: A drop-in replacement for new RegExp() with types
 ---
 
-As of today, `arktype@2.0.0` is generally available and fully stable.
+Regular expressions are ubiquitous in modern code.
 
-ArkType 2.0 brings types to runtime JS in a way that, until today, has been a pipedream.
+A few characters sprinkled into your JavaScript can validate and parse strings that would require dozens of lines of imperative logic.
 
-Whether you're a first-time TypeScript dev trying to validate a form or a library author introspecting relationships, ArkType offers fundamentally better tools for navigating the perils of JavaScript.
+However, that concision comes at a cost. Complex expressions can be hard to understand and type safety is a pipe dream- or at least, it was.
+
+Introducing `arkregex`, a type-safe wrapper of `new RegExp()`. The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax.
+
+```ts
+import { regex } from "arkregex"
+
+const ok = regex("^ok$", "i")
+// 	  ^ Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
+
+const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
+// 	  ^ Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
+
+const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
+// 	  ^ Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
+```
+
+### Features
+
+- **Types**: Infers string types for your existing regular expressions, including positional and named captures
+- **Parity**: Supports 100% of [features](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) allowed by `new RegExp()`
+- **Safety**: Syntax errors like referencing a group that doesn't exist are now type errors
+- **Zero Runtime**: Improves your type safety without impacting your bundle size
+
+### FAQ
+
+#### Why aren't some patterns like `[a-Z]` inferred more precisely?
+
+Constructing string literal types for these sorts of expressions is combinatorial and will explode very quickly if we infer character ranges like this as literal characters.
+
+We've tried to strike a balance between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
+
+#### Why doesn't it work with my massive RegExp?
+
+If your expression is especially long or complex, TypeScript won't be able to infer it.
+
+If your types start to slow down or you see the dreaded `Type is excessively deep...`, you can manually type your expression using `regex.cast`:
+
+```ts
+const complexPattern = regex.cast<`pattern-${string}`, { captures: [string] }>(
+	"very-long-complex-expression-here"
+)
+```
 
 <MainAutoplayDemo />
-
-### What next?
-
-ArkType doesn't require a special environment or build step to work- [our intro](/docs/intro/setup) will have you up and running in seconds.
-
-We have [big plans](https://github.com/orgs/arktypeio/projects/4) to ArkType 2.0 even further, but we're even more excited to see what you do with it!
 
 ⚡ [Starting coding](/docs/intro/setup)
 
