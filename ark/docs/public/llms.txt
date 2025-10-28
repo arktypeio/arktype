@@ -350,7 +350,7 @@ Discriminated({ name: "foo", id: 1 })
 
 
 ---
-title: Announcing arkregex
+title: Introducing arkregex
 description: A drop-in replacement for new RegExp() with types
 ---
 
@@ -360,7 +360,9 @@ A few characters sprinkled into your JavaScript can validate and parse strings t
 
 However, that concision comes at a cost. Complex expressions can be hard to understand and type safety is a pipe dream- or at least, it was.
 
-Introducing `arkregex`, a type-safe wrapper of `new RegExp()`. The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax.
+**Introducing `arkregex`, a type-safe wrapper of `new RegExp()`.**
+
+The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
 
 ```ts
 import { regex } from "arkregex"
