@@ -368,13 +368,13 @@ The `regex` function creates a `Regex` instance with types for `.test()`, `.exec
 import { regex } from "arkregex"
 
 const ok = regex("^ok$", "i")
-// 	  ^ Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
+// Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 
 const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
-// 	  ^ Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
+// Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
 
 const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
-// 	  ^ Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
+// Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
 ```
 
 ### Features
@@ -403,6 +403,16 @@ const complexPattern = regex.cast<`pattern-${string}`, { captures: [string] }>(
 	"very-long-complex-expression-here"
 )
 ```
+
+#### Is it robust?
+
+`arkregex` types are [extensively tested](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.test.ts) and [benchmarked](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.bench.ts) using [attest](https://github.com/arktypeio/arktype/tree/main/ark/attest#readme).
+
+If anything not covered by the other FAQs is not behaving how you'd expect, please don't hesitate to [create an issue](https://github.com/arktypeio/arktype/issues/new).
+
+#### How can I get syntax highlighting for `regex`?
+
+The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) can be installed to add syntax highlighting to `regex` calls.
 
 <MainAutoplayDemo />
 
