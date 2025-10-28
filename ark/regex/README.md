@@ -19,6 +19,8 @@ const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
 // Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
 ```
 
+All you need to get started is `pnpm install arkregex` (or the equivalent for your package manager of choice) 🎉
+
 ### Features
 
 - **Types**: Infers string types for your existing regular expressions, including positional and named captures
