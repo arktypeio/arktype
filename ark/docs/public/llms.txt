@@ -362,6 +362,16 @@ However, that concision comes at a cost. Complex expressions can be hard to unde
 
 **Introducing `arkregex`, a type-safe wrapper of `new RegExp()`.**
 
+<video
+	autoPlay
+	loop
+	controls
+	playsInline
+	muted
+	disablePictureInPicture
+	src="https://private-user-images.githubusercontent.com/10645823/506446535-73cf79b1-ef0e-4870-86ce-c57af490c8aa.mp4?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjE2NDE3NzksIm5iZiI6MTc2MTY0MTQ3OSwicGF0aCI6Ii8xMDY0NTgyMy81MDY0NDY1MzUtNzNjZjc5YjEtZWYwZS00ODcwLTg2Y2UtYzU3YWY0OTBjOGFhLm1wND9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTEwMjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUxMDI4VDA4NTExOVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJmYTgyN2NhZGQ4NGU5NTA3MDg0NWU4NDU1NjhiMGNkNjJkNmIzM2ZhZmQ0NTRjZTVhY2Q5MjEzZGY2MDQ3MDQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.pkDrLsKvjvxuMBk55GUBHiYX-q-rVP9CIZW7_Hs-_lo"
+/>
+
 The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
 
 ```ts
@@ -410,13 +420,11 @@ const complexPattern = regex.cast<`pattern-${string}`, { captures: [string] }>(
 
 If anything not covered by the other FAQs is not behaving how you'd expect, please don't hesitate to [create an issue](https://github.com/arktypeio/arktype/issues/new).
 
-#### How can I get syntax highlighting for `regex`?
+#### How can I get syntax highlighting for my expressions?
 
 The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) can be installed to add syntax highlighting to `regex` calls.
 
-<MainAutoplayDemo />
-
-⚡ [Starting coding](/docs/intro/setup)
+### Useful links
 
 ⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
 
@@ -432,10 +440,10 @@ title: Posts
 ---
 
 <LinkCard
-	title="Announcing arkregex"
-	description="Optimized pattern matching from type syntax"
+	title="Introducing arkregex"
+	description="A drop-in replacement for new RegExp() with types"
 	href="/docs/blog/arkregex"
-	date="October 27, 2025"
+	date="October 28, 2025"
 />
 
 <LinkCard
