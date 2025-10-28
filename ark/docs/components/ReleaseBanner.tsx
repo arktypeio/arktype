@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation.js"
 import { Banner } from "./Banner.tsx"
 
-const text = "🎉 Introducing arkregex 🎉"
+const text = "🎉 Introducing ArkRegex 🎉"
 
 export const ReleaseBanner = () => (
 	<Banner
