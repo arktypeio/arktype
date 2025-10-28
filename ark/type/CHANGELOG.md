@@ -1,5 +1,9 @@
 # arktype
 
+## 2.1.25
+
+### bump regex inference to arkregex 0.0.2
+
 ## 2.1.24
 
 ### bump regex inference to arkregex 0.0.1

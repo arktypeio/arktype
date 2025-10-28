@@ -40,10 +40,10 @@ We've tried to strike a balance between performance and precision while guarante
 
 If your expression is especially long or complex, TypeScript won't be able to infer it.
 
-If your types start to slow down or you see the dreaded `Type is excessively deep...`, you can manually type your expression using `regex.cast`:
+If your types start to slow down or you see the dreaded `Type is excessively deep...`, you can manually type your expression using `regex.as`:
 
 ```ts
-const complexPattern = regex.cast<`pattern-${string}`, { captures: [string] }>(
+const complexPattern = regex.as<`pattern-${string}`, { captures: [string] }>(
 	"very-long-complex-expression-here"
 )
 ```

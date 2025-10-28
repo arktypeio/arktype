@@ -12,7 +12,7 @@ export type AutoplayDemoProps = React.DetailedHTMLProps<
 > & { src: string }
 
 export const MainAutoplayDemo = () => (
-	<AutoplayDemo src="https://github.com/user-attachments/assets/eaace5f0-310e-4fc8-9a95-1c0afc6fd110" />
+	<AutoplayDemo src="https://github.com/arktypeio/arktype/releases/download/arktype%402.0.0/ArkType2Demo3To1.webm" />
 )
 
 export const AutoplayDemo = (props: AutoplayDemoProps) => {

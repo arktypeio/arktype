@@ -369,7 +369,8 @@ However, that concision comes at a cost. Complex expressions can be hard to unde
 	playsInline
 	muted
 	disablePictureInPicture
-	src="https://private-user-images.githubusercontent.com/10645823/506446535-73cf79b1-ef0e-4870-86ce-c57af490c8aa.mp4?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjE2NDE3NzksIm5iZiI6MTc2MTY0MTQ3OSwicGF0aCI6Ii8xMDY0NTgyMy81MDY0NDY1MzUtNzNjZjc5YjEtZWYwZS00ODcwLTg2Y2UtYzU3YWY0OTBjOGFhLm1wND9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTEwMjglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUxMDI4VDA4NTExOVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJmYTgyN2NhZGQ4NGU5NTA3MDg0NWU4NDU1NjhiMGNkNjJkNmIzM2ZhZmQ0NTRjZTVhY2Q5MjEzZGY2MDQ3MDQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.pkDrLsKvjvxuMBk55GUBHiYX-q-rVP9CIZW7_Hs-_lo"
+	src="https://github.com/arktypeio/arktype/releases/download/arkregex%400.0.1/arkregexDemo.webm"
+	style={{ marginTop: "-1rem" }}
 />
 
 The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
@@ -386,6 +387,8 @@ const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
 const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
 // Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
 ```
+
+All you need to get started is `pnpm install arkregex` (or the equivalent for your package manager of choice) 🎉
 
 ### Features
 

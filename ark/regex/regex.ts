@@ -48,7 +48,7 @@ export interface RegexParser {
 		flags?: flags
 	): regex.parse<src, flags>
 
-	cast: <pattern extends string = string, ctx extends RegexContext = {}>(
+	as: <pattern extends string = string, ctx extends RegexContext = {}>(
 		src: string,
 		flags?: Flags
 	) => Regex<pattern, ctx>
@@ -57,7 +57,7 @@ export interface RegexParser {
 export const regex: RegexParser = ((src, flags) =>
 	new RegExp(src, flags)) as RegexParser
 
-Object.assign(regex, { cast: regex })
+Object.assign(regex, { as: regex })
 
 export type regex<
 	pattern extends string = string,
