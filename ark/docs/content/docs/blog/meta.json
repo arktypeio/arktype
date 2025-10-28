@@ -2,7 +2,7 @@
 	"title": "Blog",
 	"defaultOpen": true,
 	"pages": [
-		"[arkregex Intro](/docs/blog/arkregex)",
+		"[ArkRegex Intro](/docs/blog/arkregex)",
 		"[2.1 Announcement](/docs/blog/2.1)",
 		"[2.0 Announcement](/docs/blog/2.0)"
 	]
