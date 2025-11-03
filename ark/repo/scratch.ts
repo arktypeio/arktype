@@ -1,8 +1,15 @@
-import { type } from "arktype"
+declare const input: string
 
-const t = type({
-	a: "string.date.parse",
-	"b?": "number > 5"
-})
+import { regex } from "arkregex"
 
-console.log(t.expression)
+const contact = regex(
+	"(?<email>\\w+@\\w+\\.\\w+)|(?<phone>\\d{3}-\\d{3}-\\d{4})"
+)
+
+const matches = contact.exec(input)
+
+if (matches) {
+	const groups = matches.groups
+
+	console.log(groups)
+}

@@ -318,6 +318,9 @@ importers:
       arkenv:
         specifier: 0.7.3
         version: 0.7.3(arktype@ark+type)
+      arkregex:
+        specifier: workspace:*
+        version: link:../regex
       arktype:
         specifier: workspace:*
         version: link:../type
