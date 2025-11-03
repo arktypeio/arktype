@@ -186,11 +186,10 @@ export type parseNonNegativeInteger<token extends string> =
 export type parseNaturalNumber<token extends string> =
 	token extends `0${infer remainder extends `${number}`}` ?
 		parseNaturalNumber<remainder>
-	: token extends `-${string}` | `${string}.${string}` ? never
 	: token extends `${infer n extends number}` ?
 		number extends n ?
 			never
-		:	n
+		:	parseNonNegativeInteger<token>
 	:	never
 
 export type NumericParseOptions<errorOnFail extends boolean | string> = {
