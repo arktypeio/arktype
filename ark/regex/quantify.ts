@@ -39,7 +39,9 @@ type skipPossibleQuestionMark<unscanned extends string> =
 
 type parsePossibleRangeString<unscanned extends string> =
 	// treat bound
-	unscanned extends `${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}` ?
+	unscanned extends (
+		`${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}`
+	) ?
 		parseNaturalNumber<l> extends never ? null
 		: parseNaturalNumber<r> extends never ? null
 		: ParsedRange.from<{
@@ -47,8 +49,8 @@ type parsePossibleRangeString<unscanned extends string> =
 				max: parseNaturalNumber<r>
 				unscanned: skipPossibleQuestionMark<next>
 			}>
-	// treat unbound
-	: unscanned extends `${infer l extends `${number}`},}${infer next}` ?
+	: // treat unbound
+	unscanned extends `${infer l extends `${number}`},}${infer next}` ?
 		parseNaturalNumber<l> extends never ?
 			null
 		:	ParsedRange.from<{
