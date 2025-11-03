@@ -38,17 +38,8 @@ type skipPossibleQuestionMark<unscanned extends string> =
 	unscanned extends `?${infer next}` ? next : unscanned
 
 type parsePossibleRangeString<unscanned extends string> =
-	// treat unbound
-	unscanned extends `${infer l},}${infer next}` ?
-		parseNaturalNumber<l> extends never ?
-			null
-		:	ParsedRange.from<{
-				min: parseNaturalNumber<l>
-				max: null
-				unscanned: skipPossibleQuestionMark<next>
-			}>
-	: // treat bound
-	unscanned extends `${infer l},${infer r}}${infer next}` ?
+	// treat bound
+	unscanned extends `${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}` ?
 		parseNaturalNumber<l> extends never ? null
 		: parseNaturalNumber<r> extends never ? null
 		: ParsedRange.from<{
@@ -56,8 +47,17 @@ type parsePossibleRangeString<unscanned extends string> =
 				max: parseNaturalNumber<r>
 				unscanned: skipPossibleQuestionMark<next>
 			}>
+	// treat unbound
+	: unscanned extends `${infer l extends `${number}`},}${infer next}` ?
+		parseNaturalNumber<l> extends never ?
+			null
+		:	ParsedRange.from<{
+				min: parseNaturalNumber<l>
+				max: null
+				unscanned: skipPossibleQuestionMark<next>
+			}>
 	: // treat exact
-	unscanned extends `${infer l}}${infer next}` ?
+	unscanned extends `${infer l extends `${number}`}}${infer next}` ?
 		parseNaturalNumber<l> extends never ?
 			null
 		:	ParsedRange.from<{
