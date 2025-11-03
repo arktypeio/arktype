@@ -335,6 +335,26 @@ contextualize(() => {
 			attest<Regex<"aa" | "ab" | "ba" | "bb", { captures: ["a"] | ["b"] }>>(S)
 		})
 
+		it("negative quantifier as literal", () => {
+			const S = regex("^a{-1}$")
+			attest<Regex<"a{-1}">>(S)
+		})
+
+		it("decimal quantifier as literal", () => {
+			const S = regex("^a{1.5}$")
+			attest<Regex<`a{1${string}5}`>>(S)
+		})
+
+		it("whitespace quantifier as literal", () => {
+			const S = regex("^a{ 1}$")
+			attest<Regex<"a{ 1}">>(S)
+		})
+
+		it("treated quantifier leading zeroes", () => {
+			const S = regex("^a{002}$")
+			attest<Regex<"aa">>(S)
+		})
+
 		it("unmatched", () => {
 			// @ts-expect-error
 			attest(() => regex("{2}")).type.errors(
