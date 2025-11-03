@@ -184,8 +184,7 @@ export type parseNonNegativeInteger<token extends string> =
 	token extends `-${string}` ? never : parseInteger<token>
 
 export type parseNaturalNumber<token extends string> =
-	token extends `0${infer remainder extends `${number}`}` ?
-		parseNaturalNumber<remainder>
+	token extends `0${infer t extends `${number}`}` ? parseNaturalNumber<t>
 	: token extends `${infer n extends number}` ?
 		number extends n ?
 			never
