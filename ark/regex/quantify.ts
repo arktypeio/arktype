@@ -1,4 +1,4 @@
-import type { Scanner } from "@ark/util"
+import type { parseNaturalNumber, Scanner } from "@ark/util"
 import type { s, State } from "./state.ts"
 
 export type parseBuiltinQuantifier<
@@ -38,26 +38,33 @@ type skipPossibleQuestionMark<unscanned extends string> =
 	unscanned extends `?${infer next}` ? next : unscanned
 
 type parsePossibleRangeString<unscanned extends string> =
-	unscanned extends (
-		`${infer l extends number},${infer r extends number}}${infer next}`
-	) ?
-		ParsedRange.from<{
-			min: l
-			max: r
-			unscanned: skipPossibleQuestionMark<next>
-		}>
-	: unscanned extends `${infer l extends number},}${infer next}` ?
-		ParsedRange.from<{
-			min: l
-			max: null
-			unscanned: skipPossibleQuestionMark<next>
-		}>
-	: unscanned extends `${infer l extends number}}${infer next}` ?
-		ParsedRange.from<{
-			min: l
-			max: l
-			unscanned: skipPossibleQuestionMark<next>
-		}>
+	// treat bound
+	unscanned extends `${infer l},${infer r}}${infer next}` ?
+		parseNaturalNumber<l> extends never ? null
+		: parseNaturalNumber<r> extends never ? null
+		: ParsedRange.from<{
+				min: parseNaturalNumber<l>
+				max: parseNaturalNumber<r>
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+	: // treat unbound
+	unscanned extends `${infer l},}${infer next}` ?
+		parseNaturalNumber<l> extends never ?
+			null
+		:	ParsedRange.from<{
+				min: parseNaturalNumber<l>
+				max: null
+				unscanned: skipPossibleQuestionMark<next>
+			}>
+	: // treat exact
+	unscanned extends `${infer l}}${infer next}` ?
+		parseNaturalNumber<l> extends never ?
+			null
+		:	ParsedRange.from<{
+				min: parseNaturalNumber<l>
+				max: parseNaturalNumber<l>
+				unscanned: skipPossibleQuestionMark<next>
+			}>
 	:	null
 
 export type parsePossibleRange<
