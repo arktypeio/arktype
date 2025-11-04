@@ -296,6 +296,11 @@ contextualize(() => {
 			attest<Regex<"" | "a", {}>>(S)
 		})
 
+		it("leading zeroes", () => {
+			const S = regex("^a{002}$")
+			attest<Regex<"aa">>(S)
+		})
+
 		it("falls back to literal for missing min", () => {
 			const r = regex("^a{,2}$")
 			attest<Regex<"a{,2}", {}>>(r).type.toString.snap('Regex<"a{,2}", {}>')
@@ -311,6 +316,21 @@ contextualize(() => {
 			attest<Regex<"a{1,foo}", {}>>(r).type.toString.snap(
 				'Regex<"a{1,foo}", {}>'
 			)
+		})
+
+		it("falls back to literal for negative number", () => {
+			const S = regex("^a{-1}$")
+			attest<Regex<"a{-1}">>(S)
+		})
+
+		it("falls back to literal for decimal number", () => {
+			const S = regex("^a{1.5}$")
+			attest<Regex<`a{1${string}5}`>>(S)
+		})
+
+		it("falls back to literal for spaced number", () => {
+			const S = regex("^a{ 1}$")
+			attest<Regex<"a{ 1}">>(S)
 		})
 
 		it("${string} does not duplicate when quantified", () => {
@@ -333,26 +353,6 @@ contextualize(() => {
 		it("quantified union group", () => {
 			const S = regex("^(a|b){2}$")
 			attest<Regex<"aa" | "ab" | "ba" | "bb", { captures: ["a"] | ["b"] }>>(S)
-		})
-
-		it("negative quantifier as literal", () => {
-			const S = regex("^a{-1}$")
-			attest<Regex<"a{-1}">>(S)
-		})
-
-		it("decimal quantifier as literal", () => {
-			const S = regex("^a{1.5}$")
-			attest<Regex<`a{1${string}5}`>>(S)
-		})
-
-		it("whitespace quantifier as literal", () => {
-			const S = regex("^a{ 1}$")
-			attest<Regex<"a{ 1}">>(S)
-		})
-
-		it("treated quantifier leading zeroes", () => {
-			const S = regex("^a{002}$")
-			attest<Regex<"aa">>(S)
 		})
 
 		it("unmatched", () => {
