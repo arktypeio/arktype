@@ -31,7 +31,10 @@ type ParsedRange = {
 }
 
 declare namespace ParsedRange {
-	export type from<r extends ParsedRange> = r
+	export type from<r extends ParsedRange> =
+		r["min"] extends never ? null
+		: r["max"] extends never ? null
+		: r
 }
 
 type skipPossibleQuestionMark<unscanned extends string> =
@@ -41,29 +44,23 @@ type parsePossibleRangeString<unscanned extends string> =
 	unscanned extends (
 		`${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}`
 	) ?
-		parseNaturalNumber<l> extends never ? null
-		: parseNaturalNumber<r> extends never ? null
-		: ParsedRange.from<{
-				min: parseNaturalNumber<l>
-				max: parseNaturalNumber<r>
-				unscanned: skipPossibleQuestionMark<next>
-			}>
+		ParsedRange.from<{
+			min: parseNaturalNumber<l>
+			max: parseNaturalNumber<r>
+			unscanned: skipPossibleQuestionMark<next>
+		}>
 	: unscanned extends `${infer l extends `${number}`},}${infer next}` ?
-		parseNaturalNumber<l> extends never ?
-			null
-		:	ParsedRange.from<{
-				min: parseNaturalNumber<l>
-				max: null
-				unscanned: skipPossibleQuestionMark<next>
-			}>
+		ParsedRange.from<{
+			min: parseNaturalNumber<l>
+			max: null
+			unscanned: skipPossibleQuestionMark<next>
+		}>
 	: unscanned extends `${infer l extends `${number}`}}${infer next}` ?
-		parseNaturalNumber<l> extends never ?
-			null
-		:	ParsedRange.from<{
-				min: parseNaturalNumber<l>
-				max: parseNaturalNumber<l>
-				unscanned: skipPossibleQuestionMark<next>
-			}>
+		ParsedRange.from<{
+			min: parseNaturalNumber<l>
+			max: parseNaturalNumber<l>
+			unscanned: skipPossibleQuestionMark<next>
+		}>
 	:	null
 
 export type parsePossibleRange<
