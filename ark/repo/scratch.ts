@@ -1,15 +1,12 @@
-declare const input: string
+declare const snippet: string
 
 import { regex } from "arkregex"
 
-const contact = regex(
-	"(?<email>\\w+@\\w+\\.\\w+)|(?<phone>\\d{3}-\\d{3}-\\d{4})"
-)
+const htmlTag = regex("^<(?<tag>[a-zA-Z]+)>.*?</\\k<tag>>$")
 
-const matches = contact.exec(input)
+// match opening and closing html tags
+const matches = htmlTag.exec(snippet)
 
 if (matches) {
-	const groups = matches.groups
-
-	console.log(groups)
+	console.log(matches.groups.tag)
 }
