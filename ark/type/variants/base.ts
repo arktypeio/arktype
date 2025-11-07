@@ -638,8 +638,8 @@ interface Type<out t = unknown, $ = {}>
 
 	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
 	"~standard": StandardSchemaV1.ArkTypeProps<
-		NoInfer<this["inferIn"]>,
-		NoInfer<this["inferOut"]>
+		this["inferIn"] extends infer _ ? _ : never,
+		this["inferOut"] extends infer _ ? _ : never
 	>
 
 	// deprecate Function methods so they are deprioritized as suggestions
