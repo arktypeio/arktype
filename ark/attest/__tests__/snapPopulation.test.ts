@@ -8,7 +8,7 @@ contextualize(() => {
 		const actual = runThenGetContents(fromHere("benchTemplate.ts"))
 		const expectedOutput = readFile(
 			fromHere("benchExpectedOutput.ts")
-		).replaceAll("\r\n", "\n")
+		).replace(/\r\n/g, "\n")
 		equal(actual, expectedOutput)
 	}).timeout(60000)
 
@@ -16,7 +16,7 @@ contextualize(() => {
 		const actual = runThenGetContents(fromHere("snapTemplate.ts"))
 		const expectedOutput = readFile(
 			fromHere("snapExpectedOutput.ts")
-		).replaceAll("\r\n", "\n")
+		).replace(/\r\n/g, "\n")
 		equal(actual, expectedOutput)
 	}).timeout(60000)
 })

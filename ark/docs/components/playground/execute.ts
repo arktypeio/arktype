@@ -16,8 +16,8 @@ if (!("type" in globalThis)) Object.assign(globalThis, arktypeExports)
 
 export const executeCode = (code: string): ExecutionResult => {
 	const isolatedUserCode = code
-		.replaceAll(/^\s*import .*\n/g, "")
-		.replaceAll(/^\s*export\s+const/gm, "const")
+		.replace(/^\s*import .*\n/g, "")
+		.replace(/^\s*export\s+const/gm, "const")
 
 	try {
 		const wrappedCode = `${isolatedUserCode}

@@ -179,7 +179,7 @@ const organizeDocParts = (
 	for (const part of allParts) {
 		if (part.kind === "noteStart") notes.push(part.value ? [part] : [])
 		else if (part.value === "") continue
-		else if (notes.length) notes.at(-1)!.push(part)
+		else if (notes.length) notes[notes.length - 1]!.push(part)
 		else summary.push(part)
 	}
 

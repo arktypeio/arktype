@@ -253,7 +253,7 @@ export class InternalTypeParser extends Callable<
 					args.length === 2 &&
 					typeof args[0] === "string" &&
 					args[0][0] === "<" &&
-					args[0].at(-1) === ">"
+					args[0][args[0].length - 1] === ">"
 				) {
 					// if there are exactly two args, the first of which looks like <${string}>,
 					// treat as a generic

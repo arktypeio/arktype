@@ -67,7 +67,6 @@ export default tseslint.config(
 			"unicorn/no-typeof-undefined": "warn",
 			"unicorn/prefer-node-protocol": "warn",
 			"unicorn/prefer-regexp-test": "warn",
-			"unicorn/prefer-string-replace-all": "warn",
 			"unicorn/prefer-ternary": "warn",
 			"@typescript-eslint/no-unused-vars": [
 				"warn",

@@ -290,16 +290,16 @@ export type IndexKey<def extends string = string> = `[${def}]`
 
 export const preparseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol" ? { kind: "required", normalized: key }
-	: key.at(-1) === "?" ?
-		key.at(-2) === Backslash ?
+	: key[key.length - 1] === "?" ?
+		key[key.length - 2] === Backslash ?
 			{ kind: "required", normalized: `${key.slice(0, -2)}?` }
 		:	{
 				kind: "optional",
 				normalized: key.slice(0, -1)
 			}
-	: key[0] === "[" && key.at(-1) === "]" ?
+	: key[0] === "[" && key[key.length - 1] === "]" ?
 		{ kind: "index", normalized: key.slice(1, -1) }
-	: key[0] === Backslash && key[1] === "[" && key.at(-1) === "]" ?
+	: key[0] === Backslash && key[1] === "[" && key[key.length - 1] === "]" ?
 		{ kind: "required", normalized: key.slice(1) }
 	: key === "..." ? { kind: "spread" }
 	: key === "+" ? { kind: "undeclared" }

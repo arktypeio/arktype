@@ -91,10 +91,10 @@ const JsDocParts = (parts: readonly ParsedJsDocPart[]) =>
 					key={i}
 					dangerouslySetInnerHTML={{
 						__html: part.value
-							.replaceAll(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
-							.replaceAll(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
-							.replaceAll(/`([^`]+)`/g, "<code>$1</code>")
-							.replaceAll(/^-(.*)/g, "• $1")
+						.replace(/(\*\*|__)([^*_]+)\1/g, "<strong>$2</strong>")
+						.replace(/(\*|_)([^*_]+)\1/g, "<em>$2</em>")
+						.replace(/`([^`]+)`/g, "<code>$1</code>")
+						.replace(/^-(.*)/g, "• $1")
 					}}
 				/>
 			}

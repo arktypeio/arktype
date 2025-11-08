@@ -34,7 +34,7 @@ export const tryCatch = <returns, onError = never>(
 export const DynamicFunction = class extends Function {
 	constructor(...args: [string, ...string[]]) {
 		const params = args.slice(0, -1)
-		const body = args.at(-1)!
+		const body = args[args.length - 1]!
 		try {
 			super(...params, body)
 		} catch (e) {
@@ -42,7 +42,7 @@ export const DynamicFunction = class extends Function {
 				`Encountered an unexpected error while compiling your definition:
                 Message: ${e} 
                 Source: (${args.slice(0, -1)}) => {
-                    ${args.at(-1)}
+                    ${args[args.length - 1]}
                 }`
 			)
 		}

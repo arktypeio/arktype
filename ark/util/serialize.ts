@@ -170,7 +170,7 @@ const _serialize = (
 		case "undefined":
 			return opts.onUndefined ?? "undefined"
 		case "string":
-			return (data as string).replaceAll("\\", "\\\\")
+			return (data as string).replace(/\\/g, "\\\\")
 		default:
 			return data
 	}

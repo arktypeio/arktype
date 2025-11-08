@@ -16,7 +16,7 @@ const formatHoverInfo = (
 		.join("")
 		// when bundling .d.ts, tsup creates synthetic aliases like Type$6
 		// for name collisions. remove them to reflect the actual editor experience
-		.replaceAll(/Type\$\d+/g, "Type")
+		.replace(/Type\$\d+/g, "Type")
 
 	const contents = [{ value: "```typescript\n" + displayText + "\n```" }]
 
