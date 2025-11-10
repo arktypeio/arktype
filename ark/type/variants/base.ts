@@ -637,7 +637,10 @@ interface Type<out t = unknown, $ = {}>
 	): reduceOut
 
 	/** The Type's [StandardSchema](https://github.com/standard-schema/standard-schema) properties */
-	"~standard": StandardSchemaV1.ArkTypeProps<this["inferIn"], this["inferOut"]>
+	"~standard": StandardSchemaV1.ArkTypeProps<
+		this["inferIn"] extends infer _ ? _ : never,
+		this["inferOut"] extends infer _ ? _ : never
+	>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
