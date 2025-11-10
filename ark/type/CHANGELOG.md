@@ -4,7 +4,7 @@
 
 ### es2020 compatibility
 
-We've removed usages of newer prototypes methods like `.at()` to better support legacy browsers
+Remove usages of newer prototypes methods like `.at()` to better support legacy browsers
 
 ## 2.1.25
 
