@@ -4,7 +4,7 @@ import {
 	type ArkErrors,
 	type StandardSchemaV1
 } from "@ark/schema"
-import { scope, type, type Module } from "arktype"
+import { scope, type, type Module, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 
 declare class TimeStub {
@@ -1365,5 +1365,37 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		attest(Skinish.expression).snap(
 			'{ masterItem: true, minPrice: number % 1 & >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", souvenir: boolean = false, stattrak: boolean = false, quality?: 1 | 2 | 3 | 4 | 5, weight?: number, + (undeclared): reject }'
 		)
+	})
+
+	it("allows inferring a schema's type argument in a generic wrapper function when the type uses Default", () => {
+		function someFunction<TSchema extends Record<string, any>>(
+			schema: Type<TSchema, {}>
+		): (typeof schema)["infer"] {
+			const someData = { hello: "world" }
+			return schema.assert(someData)
+		}
+
+		const schema = type({
+			hello: type("string").pipe(s => s === "world"),
+			goodbye: "string='blah'"
+		})
+
+		someFunction(schema)
+	})
+
+	it("allows inferring a schema in a generic wrapper function when the type uses Default", () => {
+		function someFunction<schema extends type.Any<Record<string, any>>>(
+			schema: schema
+		) {
+			const someData = { hello: "world" }
+			return schema.assert(someData)
+		}
+
+		const schema = type({
+			hello: type("string").pipe(s => s === "world"),
+			goodbye: "string='blah'"
+		})
+
+		someFunction(schema)
 	})
 })
