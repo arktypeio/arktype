@@ -26,6 +26,20 @@ contextualize(() => {
 		)
 	})
 
+	it("can infer generic parameter from standard schema", () => {
+		const acceptsStandardSchema = <T extends StandardSchemaV1>(
+			schema: T
+		): {
+			input: StandardSchemaV1.InferInput<T>
+			output: StandardSchemaV1.InferOutput<T>
+		} => ({}) as never
+
+		const result = acceptsStandardSchema(type({ foo: "string.numeric.parse" }))
+
+		attest<{ foo: string }>(result.input)
+		attest<{ foo: number }>(result.output)
+	})
+
 	it("toJSONSchema", () => {
 		const T = type({ foo: "string" })
 		const standard: StandardJSONSchemaSourceV1 = T
