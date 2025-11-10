@@ -6,6 +6,26 @@
 
 Remove usages of newer prototypes methods like `.at()` to better support legacy browsers
 
+### improve external generic inference
+
+Some inference scenarios like the following involving default values are now more cooperative (thanks @Andarist) 🎉
+
+```ts
+function someFunction<TSchema extends Record<string, any>>(
+	schema: Type<TSchema, {}>
+): (typeof schema)["infer"] {
+	const someData = { hello: "world" }
+	return schema.assert(someData)
+}
+
+const schema = type({
+	hello: type("string").pipe(s => s === "world"),
+	goodbye: "string='blah'"
+})
+
+someFunction(schema)
+```
+
 ## 2.1.25
 
 ### bump regex inference to arkregex 0.0.2
