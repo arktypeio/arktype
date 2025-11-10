@@ -1,5 +1,11 @@
 # arktype
 
+## 2.1.26
+
+### es2020 compatibility
+
+We've removed usages of newer prototypes methods like `.at()` to better support legacy browsers
+
 ## 2.1.25
 
 ### bump regex inference to arkregex 0.0.2
