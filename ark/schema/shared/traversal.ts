@@ -134,7 +134,7 @@ export class Traversal {
 	}
 
 	get currentBranch(): BranchTraversal | undefined {
-		return this.branches.at(-1)
+		return this.branches[this.branches.length - 1]
 	}
 
 	queueMorphs(morphs: array<Morph>): void {
@@ -233,7 +233,7 @@ export class Traversal {
 	}
 
 	private applyMorphsAtPath(path: ReadonlyPath, morphs: array<Morph>): void {
-		const key = path.at(-1)
+		const key = path[path.length - 1]
 
 		let parent: any
 

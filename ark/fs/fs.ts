@@ -209,7 +209,7 @@ export type Matcher = {
  */
 const findReplace: (matchers: Matchers) => (input: string) => string =
 	matchers => input =>
-		matchers.reduce((acc, m) => acc.replaceAll(m.pattern, m.replacement), input)
+		matchers.reduce((acc, m) => acc.replace(m.pattern, m.replacement), input)
 
 /**
  * Applies a set of {@link Matchers} to a list of files and rewrites

@@ -152,7 +152,8 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	serializedMorphs: string[] = this.morphs.map(registeredReference)
 	compiledMorphs = `[${this.serializedMorphs}]`
 
-	lastMorph = this.inner.morphs.at(-1)
+	lastMorph: Morph | BaseRoot | undefined =
+		this.inner.morphs[this.inner.morphs.length - 1]
 	lastMorphIfNode: BaseRoot | undefined =
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in

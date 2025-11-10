@@ -54,7 +54,7 @@ export const deanchoredSource = (regex: RegExp | string): string => {
 
 	return source.slice(
 		source[0] === "^" ? 1 : 0,
-		source.at(-1) === "$" ? -1 : undefined
+		source[source.length - 1] === "$" ? -1 : undefined
 	)
 }
 

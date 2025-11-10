@@ -154,14 +154,12 @@ const snapshotArgsToQueuedUpdate = ({
 	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
 	let newArgText =
 		typeof serializedValue === "string" && serializedValue.includes("\n") ?
-			"`" +
-			serializedValue.replaceAll("`", "\\`").replaceAll("${", "\\${") +
-			"`"
+			"`" + serializedValue.replace(/`/g, "\\`").replace(/\${/g, "\\${") + "`"
 		:	JSON.stringify(serializedValue)
 
 	newArgText = newArgText
-		.replaceAll(/"\$ark.bigint-(-?\d+)"/g, "$1n")
-		.replaceAll(/"\$ark.undefined"/g, "undefined")
+		.replace(/"\$ark.bigint-(-?\d+)"/g, "$1n")
+		.replace(/"\$ark.undefined"/g, "undefined")
 
 	return {
 		position,

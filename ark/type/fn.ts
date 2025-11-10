@@ -148,7 +148,10 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.returns = returns
 
 		let argsExpression = params.expression
-		if (argsExpression[0] === "[" && argsExpression.at(-1) === "]")
+		if (
+			argsExpression[0] === "[" &&
+			argsExpression[argsExpression.length - 1] === "]"
+		)
 			argsExpression = argsExpression.slice(1, -1)
 		else if (argsExpression.endsWith("[]"))
 			argsExpression = `...${argsExpression}`

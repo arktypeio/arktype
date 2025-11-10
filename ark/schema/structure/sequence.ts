@@ -196,7 +196,8 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			const postfix = raw.postfix?.slice() ?? []
 			if (raw.variadic) {
 				// optional elements equivalent to the variadic parameter are redundant
-				while (optionals.at(-1)?.equals(raw.variadic)) optionals.pop()
+				while (optionals[optionals.length - 1]?.equals(raw.variadic))
+					optionals.pop()
 
 				if (optionals.length === 0 && defaultables.length === 0) {
 					// If there are no optional, normalize prefix
@@ -204,7 +205,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					// 		{ variadic: number, prefix: [string, number] }
 					// reduces to:
 					// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
-					while (prefix.at(-1)?.equals(raw.variadic)) {
+					while (prefix[prefix.length - 1]?.equals(raw.variadic)) {
 						prefix.pop()
 						minVariadicLength++
 					}
@@ -666,8 +667,8 @@ const _intersectSequences = (
 
 	if (!lHead || !rHead) return s
 
-	const lHasPostfix = lTail.at(-1)?.kind === "postfix"
-	const rHasPostfix = rTail.at(-1)?.kind === "postfix"
+	const lHasPostfix = lTail[lTail.length - 1]?.kind === "postfix"
+	const rHasPostfix = rTail[rTail.length - 1]?.kind === "postfix"
 
 	const kind: SequenceElementKind =
 		lHead.kind === "prefix" || rHead.kind === "prefix" ? "prefix"

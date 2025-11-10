@@ -94,7 +94,7 @@ declare global {
 					// when `noErrorTruncation` is enabled, TS displays the type
 					// of an anonymous cyclic type as `any` instead of using
 					// `...`, so replace it to clarify the type is accurately inferred
-					node.text = node.text.replaceAll(" any", " ...")
+					node.text = node.text.replace(/ any/g, " ...")
 					if (node.text.startsWith("const")) {
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
@@ -114,7 +114,7 @@ declare global {
 						if (expression.startsWith("RuntimeErrors.summary") && node.docs) {
 							// this shows error summary in JSDoc
 							// re-add spaces stripped out during processing
-							node.docs = node.docs.replaceAll("•", "    •")
+							node.docs = node.docs.replace(/•/g, "    •")
 							return true
 						}
 						if (expression === `platform: "android" | "ios"`) {
@@ -139,7 +139,7 @@ declare global {
 								groupIndex < matchResult.length;
 								groupIndex++
 							) {
-								node.text = node.text.replaceAll(
+								node.text = node.text.replace(
 									new RegExp(`\\$${groupIndex}`, "gu"),
 									matchResult[Number(groupIndex)]
 								)

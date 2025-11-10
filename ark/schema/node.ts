@@ -795,7 +795,7 @@ export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 const referenceMatcher = /"(\$ark\.[^"]+)"/g
 
 const compileMeta = (metaJson: unknown) =>
-	JSON.stringify(metaJson).replaceAll(referenceMatcher, "$1")
+	JSON.stringify(metaJson).replace(referenceMatcher, "$1")
 
 export const flatRef = <node extends BaseRoot>(
 	path: array<KeyOrKeyNode>,

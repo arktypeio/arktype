@@ -229,7 +229,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			return [alias, def]
 		}
 
-		if (alias.at(-1) !== ">") {
+		if (alias[alias.length - 1] !== ">") {
 			throwParseError(
 				`'>' must be the last character of a generic declaration in a scope`
 			)
