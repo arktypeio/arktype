@@ -23,7 +23,7 @@ import {
 	writeInvalidModifierMessage
 } from "arkregex/internal/group.ts"
 import type { next } from "arkregex/internal/parse.ts"
-import { writeUnmatchedQuantifierError } from "arkregex/internal/quantify.ts"
+import { writeUnmatchedQuantifierError, writeUnnaturalNumberQuantifierError } from "arkregex/internal/quantify.ts"
 import {
 	writeIncompleteReferenceError,
 	writeMidAnchorError,
@@ -296,11 +296,6 @@ contextualize(() => {
 			attest<Regex<"" | "a", {}>>(S)
 		})
 
-		it("leading zeroes", () => {
-			const S = regex("^a{002}$")
-			attest<Regex<"aa">>(S)
-		})
-
 		it("falls back to literal for missing min", () => {
 			const r = regex("^a{,2}$")
 			attest<Regex<"a{,2}", {}>>(r).type.toString.snap('Regex<"a{,2}", {}>')
@@ -316,21 +311,6 @@ contextualize(() => {
 			attest<Regex<"a{1,foo}", {}>>(r).type.toString.snap(
 				'Regex<"a{1,foo}", {}>'
 			)
-		})
-
-		it("falls back to literal for negative number", () => {
-			const S = regex("^a{-1}$")
-			attest<Regex<"a{-1}">>(S)
-		})
-
-		it("falls back to literal for decimal number", () => {
-			const S = regex("^a{1.5}$")
-			attest<Regex<`a{1${string}5}`>>(S)
-		})
-
-		it("falls back to literal for spaced number", () => {
-			const S = regex("^a{ 1}$")
-			attest<Regex<"a{ 1}">>(S)
 		})
 
 		it("${string} does not duplicate when quantified", () => {
@@ -381,6 +361,26 @@ contextualize(() => {
 			attest(() => regex("{2,3}?")).type.errors(
 				writeUnmatchedQuantifierError("{2,3}?")
 			)
+		})
+
+		it("leading zeroes", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{002}$")).type.errors(writeUnnaturalNumberQuantifierError("{002}"))
+		})
+
+		it("negative number", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{-1}$")).type.errors(writeUnnaturalNumberQuantifierError("{-1}"))
+		})
+
+		it("decimal number", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{1.5}$")).type.errors(writeUnnaturalNumberQuantifierError("{1.5}"))
+		})
+
+		it("spaced number", () => {
+			// @ts-expect-error
+			attest(() => regex("^a{ 1}$")).type.errors(writeUnnaturalNumberQuantifierError("{ 1}"))
 		})
 	})
 
