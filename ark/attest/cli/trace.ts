@@ -782,6 +782,6 @@ const writeToCsv = (
 
 const escapeForCsv = (value: string): string => {
 	if (value.includes(",") || value.includes('"') || value.includes("\n"))
-		return `"${value.replaceAll('"', '""')}"`
+		return `"${value.replace(/"/g, '""')}"`
 	return value
 }

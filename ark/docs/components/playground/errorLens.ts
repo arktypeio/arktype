@@ -97,7 +97,7 @@ const applyReplacements = (message: string): string => {
 			message = transformation.message
 			// replace groups like $0 and $1 with groups from the match
 			for (let groupIndex = 0; groupIndex < matchResult.length; groupIndex++) {
-				message = message.replaceAll(
+				message = message.replace(
 					new RegExp(`\\$${groupIndex}`, "gu"),
 					matchResult[Number(groupIndex)]
 				)

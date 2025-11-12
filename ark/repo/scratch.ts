@@ -1,8 +1,12 @@
-import { type } from "arktype"
+declare const snippet: string
 
-const t = type({
-	a: "string.date.parse",
-	"b?": "number > 5"
-})
+import { regex } from "arkregex"
 
-console.log(t.expression)
+const htmlTag = regex("^<(?<tag>[a-zA-Z]+)>.*?</\\k<tag>>$")
+
+// match opening and closing html tags
+const matches = htmlTag.exec(snippet)
+
+if (matches) {
+	console.log(matches.groups.tag)
+}

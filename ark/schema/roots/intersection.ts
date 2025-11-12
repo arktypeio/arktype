@@ -242,8 +242,9 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 
 				if (node.prestructurals.length) {
 					const sortedRefinementDescriptions = node.prestructurals
+						.slice()
 						// override alphabetization to describe min before max
-						.toSorted((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
+						.sort((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
 						.map(r => r.description)
 					childDescriptions.push(...sortedRefinementDescriptions)
 				}
@@ -345,7 +346,10 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				this.prestructurals[i].traverseApply(data as never, ctx)
 				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 			}
-			this.prestructurals.at(-1)!.traverseApply(data as never, ctx)
+			this.prestructurals[this.prestructurals.length - 1]!.traverseApply(
+				data as never,
+				ctx
+			)
 			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.structure) {
@@ -357,7 +361,10 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				this.inner.predicate[i].traverseApply(data as never, ctx)
 				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 			}
-			this.inner.predicate.at(-1)!.traverseApply(data as never, ctx)
+			this.inner.predicate[this.inner.predicate.length - 1]!.traverseApply(
+				data as never,
+				ctx
+			)
 		}
 	}
 
@@ -380,7 +387,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				js.check(this.prestructurals[i])
 				js.returnIfFailFast()
 			}
-			js.check(this.prestructurals.at(-1)!)
+			js.check(this.prestructurals[this.prestructurals.length - 1]!)
 			if (this.structure || this.inner.predicate) js.returnIfFail()
 		}
 		if (this.structure) {
@@ -394,7 +401,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				// if one fails
 				js.returnIfFail()
 			}
-			js.check(this.inner.predicate.at(-1)!)
+			js.check(this.inner.predicate[this.inner.predicate.length - 1]!)
 		}
 	}
 }

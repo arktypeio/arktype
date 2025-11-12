@@ -5,7 +5,7 @@ export const isDateLiteral = (value: unknown): value is DateLiteral =>
 	typeof value === "string" &&
 	value[0] === "d" &&
 	(value[1] === "'" || value[1] === '"') &&
-	value.at(-1) === value[1]
+	value[value.length - 1] === value[1]
 
 export const isValidDate = (d: Date): boolean => d.toString() !== "Invalid Date"
 

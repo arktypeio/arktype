@@ -136,7 +136,7 @@ export declare namespace capitalize {
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
 export const isLuhnValid = (creditCardInput: string): boolean => {
-	const sanitized = creditCardInput.replaceAll(/[ -]+/g, "")
+	const sanitized = creditCardInput.replace(/[ -]+/g, "")
 	let sum = 0
 	let digit: string
 	let tmpNum: number

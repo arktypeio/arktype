@@ -37,7 +37,7 @@ export const dtsGen = () => {
 export const ${pkg.scope}Dts = ${JSON.stringify(rawDtsModule)}\n`
 
 	// fix some tsup confusion
-	const fileContents = rawFileContents.replaceAll(
+	const fileContents = rawFileContents.replace(
 		/(Omit|Exclude|Extract|Record)\$1/g,
 		"$1"
 	)

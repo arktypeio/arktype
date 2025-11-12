@@ -221,7 +221,7 @@ export class RuntimeState {
 		| undefined {
 		return (
 			this.branches.leftBound?.comparator ??
-			this.branches.prefixes.at(-1) ??
+			this.branches.prefixes[this.branches.prefixes.length - 1] ??
 			(this.branches.intersection ? "&"
 			: this.branches.union ? "|"
 			: this.branches.pipe ? "|>"
