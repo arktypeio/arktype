@@ -1,4 +1,4 @@
-import type { Scanner } from "@ark/util"
+import type { parseNonNegativeInteger, Scanner } from "@ark/util"
 import type { s, State } from "./state.ts"
 
 export type parseBuiltinQuantifier<
@@ -39,27 +39,29 @@ type skipPossibleQuestionMark<unscanned extends string> =
 
 type parsePossibleRangeString<unscanned extends string> =
 	unscanned extends (
-		`${infer l extends number},${infer r extends number}}${infer next}`
+		`${infer l extends `${number}`},${infer r extends `${number}`}}${infer next}`
 	) ?
 		ParsedRange.from<{
-			min: l
-			max: r
+			min: parseNonNegativeInteger<l>
+			max: parseNonNegativeInteger<r>
 			unscanned: skipPossibleQuestionMark<next>
 		}>
-	: unscanned extends `${infer l extends number},}${infer next}` ?
+	: unscanned extends `${infer l extends `${number}`},}${infer next}` ?
 		ParsedRange.from<{
-			min: l
+			min: parseNonNegativeInteger<l>
 			max: null
 			unscanned: skipPossibleQuestionMark<next>
 		}>
-	: unscanned extends `${infer l extends number}}${infer next}` ?
+	: unscanned extends `${infer l extends `${number}`}}${infer next}` ?
 		ParsedRange.from<{
-			min: l
-			max: l
+			min: parseNonNegativeInteger<l>
+			max: parseNonNegativeInteger<l>
 			unscanned: skipPossibleQuestionMark<next>
 		}>
 	:	null
 
+type parseQuantifier<unscanned extends string, parsed extends ParsedRange> =
+	unscanned extends `${infer range}${parsed["unscanned"]}` ? `{${range}` : never
 export type parsePossibleRange<
 	s extends State,
 	unscanned extends string,
@@ -67,11 +69,12 @@ export type parsePossibleRange<
 > =
 	parsed extends ParsedRange ?
 		s["root"] extends "" ?
+			s.error<writeUnmatchedQuantifierError<parseQuantifier<unscanned, parsed>>>
+		: [parsed["min"], parsed["max"]] extends (
+			[never, unknown] | [unknown, never]
+		) ?
 			s.error<
-				writeUnmatchedQuantifierError<
-					unscanned extends `${infer range}${parsed["unscanned"]}` ? `{${range}`
-					:	never
-				>
+				writeUnnaturalNumberQuantifierError<parseQuantifier<unscanned, parsed>>
 			>
 		:	s.pushQuantifier<
 				s,
@@ -149,3 +152,11 @@ export const writeUnmatchedQuantifierError = <quantifier extends string>(
 
 export type writeUnmatchedQuantifierError<quantifier extends string> =
 	`Quantifier ${quantifier} requires a preceding token`
+
+export const writeUnnaturalNumberQuantifierError = <quantifier extends string>(
+	quantifier: quantifier
+): writeUnnaturalNumberQuantifierError<quantifier> =>
+	`Quantifier ${quantifier} must use natural numbers`
+
+export type writeUnnaturalNumberQuantifierError<quantifier extends string> =
+	`Quantifier ${quantifier} must use natural numbers`
