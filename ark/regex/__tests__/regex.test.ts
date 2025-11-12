@@ -23,7 +23,10 @@ import {
 	writeInvalidModifierMessage
 } from "arkregex/internal/group.ts"
 import type { next } from "arkregex/internal/parse.ts"
-import { writeUnmatchedQuantifierError, writeUnnaturalNumberQuantifierError } from "arkregex/internal/quantify.ts"
+import {
+	writeUnmatchedQuantifierError,
+	writeUnnaturalNumberQuantifierError
+} from "arkregex/internal/quantify.ts"
 import {
 	writeIncompleteReferenceError,
 	writeMidAnchorError,
@@ -365,22 +368,30 @@ contextualize(() => {
 
 		it("leading zeroes", () => {
 			// @ts-expect-error
-			attest(() => regex("^a{002}$")).type.errors(writeUnnaturalNumberQuantifierError("{002}"))
+			attest(() => regex("^a{002}$")).type.errors(
+				writeUnnaturalNumberQuantifierError("{002}")
+			)
 		})
 
 		it("negative number", () => {
 			// @ts-expect-error
-			attest(() => regex("^a{-1}$")).type.errors(writeUnnaturalNumberQuantifierError("{-1}"))
+			attest(() => regex("^a{-1}$")).type.errors(
+				writeUnnaturalNumberQuantifierError("{-1}")
+			)
 		})
 
 		it("decimal number", () => {
 			// @ts-expect-error
-			attest(() => regex("^a{1.5}$")).type.errors(writeUnnaturalNumberQuantifierError("{1.5}"))
+			attest(() => regex("^a{1.5}$")).type.errors(
+				writeUnnaturalNumberQuantifierError("{1.5}")
+			)
 		})
 
 		it("spaced number", () => {
 			// @ts-expect-error
-			attest(() => regex("^a{ 1}$")).type.errors(writeUnnaturalNumberQuantifierError("{ 1}"))
+			attest(() => regex("^a{ 1}$")).type.errors(
+				writeUnnaturalNumberQuantifierError("{ 1}")
+			)
 		})
 	})
 
