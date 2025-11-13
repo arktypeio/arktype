@@ -184,14 +184,14 @@ export const InnerDynamicBase = class {} as new <t extends object>(base: t) => t
 /** @ts-ignore (needed to extend `t`) **/
 export interface DynamicBase<t extends object> extends t {
 	/**
-     * Patterns of the form `interface Example<T> extends T {}` don't count as using `T`.
-     * From tsc's point of view when calculating variance it may as well look like `interface Example<T> {}`.
+	 * Patterns of the form `interface Example<T> extends T {}` don't count as using `T`.
+	 * From tsc's point of view when calculating variance it may as well look like `interface Example<T> {}`.
 	 * Fundamentally this ordinarily means `Example<T>` will always be assignable to `Example<U>` and
 	 * vice versa.
 	 *
 	 * Obviously this is a problem, so `Uses` exists to add an unobtrusive covariant usage of the type
 	 * parameter, making `Example<T>` assignable to `Example<U>` only if `T` is a subtype of `U`.
-     */
+	 */
 	" uses"?: t
 }
 export class DynamicBase<t extends object> {

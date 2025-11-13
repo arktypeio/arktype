@@ -11,7 +11,7 @@ import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { Scope } from "../scope.ts"
 
-export const arkTsKeywords: arkTsKeywords = Scope.module({
+export const arkTsKeywords = Scope.module({
 	bigint: intrinsic.bigint,
 	boolean: intrinsic.boolean,
 	false: intrinsic.false,
@@ -24,7 +24,7 @@ export const arkTsKeywords: arkTsKeywords = Scope.module({
 	true: intrinsic.true,
 	unknown: intrinsic.unknown,
 	undefined: intrinsic.undefined
-})
+}) as never as arkTsKeywords
 
 export type arkTsKeywords = Module<arkTsKeywords.$>
 
@@ -197,7 +197,7 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-export const arkTsGenerics: arkTsGenerics.module = Scope.module({
+export const arkTsGenerics = Scope.module({
 	Exclude,
 	Extract,
 	Omit,
@@ -205,7 +205,7 @@ export const arkTsGenerics: arkTsGenerics.module = Scope.module({
 	Pick,
 	Record,
 	Required
-})
+}) as never as arkTsGenerics.module
 
 export declare namespace arkTsGenerics {
 	export type module = Module<arkTsGenerics.$>

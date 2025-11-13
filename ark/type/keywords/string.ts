@@ -46,7 +46,7 @@ const stringIntegerRoot = regexStringNode(
 	"a well-formed integer string"
 )
 
-export const stringInteger: stringInteger.module = Scope.module(
+export const stringInteger = Scope.module(
 	{
 		root: stringIntegerRoot,
 		parse: rootSchema({
@@ -65,7 +65,7 @@ export const stringInteger: stringInteger.module = Scope.module(
 	{
 		name: "string.integer"
 	}
-)
+) as never as stringInteger.module
 
 export declare namespace stringInteger {
 	export type module = Module<submodule>
@@ -109,7 +109,7 @@ declare namespace base64 {
 
 const preformattedCapitalize = regexStringNode(/^[A-Z].*$/, "capitalized")
 
-export const capitalize: capitalize.module = Scope.module(
+export const capitalize = Scope.module(
 	{
 		root: rootSchema({
 			in: "string",
@@ -121,7 +121,7 @@ export const capitalize: capitalize.module = Scope.module(
 	{
 		name: "string.capitalize"
 	}
-)
+) as never as capitalize.module
 
 export declare namespace capitalize {
 	export type module = Module<submodule>
@@ -329,7 +329,7 @@ const iso = Scope.module(
 	}
 )
 
-export const stringDate: stringDate.module = Scope.module(
+export const stringDate = Scope.module(
 	{
 		root: parsableDate,
 		parse: rootSchema({
@@ -348,7 +348,7 @@ export const stringDate: stringDate.module = Scope.module(
 	{
 		name: "string.date"
 	}
-)
+) as never as stringDate.module
 
 export declare namespace stringDate {
 	export type module = Module<stringDate.submodule>
@@ -411,7 +411,7 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z.]{1,})?$"
 )
 
-export const ip: ip.module = Scope.module(
+export const ip = Scope.module(
 	{
 		root: ["v4 | v6", "@", "an IP address"],
 		v4: regexStringNode(ipv4Matcher, "an IPv4 address", "ipv4"),
@@ -420,7 +420,7 @@ export const ip: ip.module = Scope.module(
 	{
 		name: "string.ip"
 	}
-)
+) as never as ip.module
 
 export declare namespace ip {
 	export type module = Module<submodule>
@@ -480,7 +480,7 @@ const parseJson: Morph<string> = (s: string, ctx: Traversal) => {
 	}
 }
 
-export const json: stringJson.module = Scope.module(
+export const json = Scope.module(
 	{
 		root: jsonRoot,
 		parse: rootSchema({
@@ -493,7 +493,7 @@ export const json: stringJson.module = Scope.module(
 	{
 		name: "string.json"
 	}
-)
+) as never as stringJson.module
 
 export declare namespace stringJson {
 	export type module = Module<submodule>
@@ -508,7 +508,7 @@ export declare namespace stringJson {
 
 const preformattedLower = regexStringNode(/^[a-z]*$/, "only lowercase letters")
 
-const lower: lower.module = Scope.module(
+const lower = Scope.module(
 	{
 		root: rootSchema({
 			in: "string",
@@ -520,7 +520,7 @@ const lower: lower.module = Scope.module(
 	{
 		name: "string.lower"
 	}
-)
+) as never as lower.module
 
 export declare namespace lower {
 	export type module = Module<submodule>
@@ -671,7 +671,7 @@ const numericRoot = regexStringNode(
 	"a well-formed numeric string"
 )
 
-export const stringNumeric: stringNumeric.module = Scope.module(
+export const stringNumeric = Scope.module(
 	{
 		root: numericRoot,
 		parse: rootSchema({
@@ -683,7 +683,7 @@ export const stringNumeric: stringNumeric.module = Scope.module(
 	{
 		name: "string.numeric"
 	}
-)
+) as never as stringNumeric.module
 
 export declare namespace stringNumeric {
 	export type module = Module<submodule>
@@ -731,7 +731,7 @@ const preformattedTrim = regexStringNode(
 	"trimmed"
 )
 
-const trim: trim.module = Scope.module(
+const trim = Scope.module(
 	{
 		root: rootSchema({
 			in: "string",
@@ -743,7 +743,7 @@ const trim: trim.module = Scope.module(
 	{
 		name: "string.trim"
 	}
-)
+) as never as trim.module
 
 export declare namespace trim {
 	export type module = Module<submodule>
@@ -758,7 +758,7 @@ export declare namespace trim {
 
 const preformattedUpper = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
 
-const upper: upper.module = Scope.module(
+const upper = Scope.module(
 	{
 		root: rootSchema({
 			in: "string",
@@ -770,7 +770,7 @@ const upper: upper.module = Scope.module(
 	{
 		name: "string.upper"
 	}
-)
+) as never as upper.module
 
 declare namespace upper {
 	export type module = Module<submodule>
@@ -796,7 +796,7 @@ const urlRoot = rootSchema({
 	meta: { format: "uri" }
 })
 
-export const url: url.module = Scope.module(
+export const url = Scope.module(
 	{
 		root: urlRoot,
 		parse: rootSchema({
@@ -815,7 +815,7 @@ export const url: url.module = Scope.module(
 	{
 		name: "string.url"
 	}
-)
+) as never as url.module
 
 export declare namespace url {
 	export type module = Module<submodule>

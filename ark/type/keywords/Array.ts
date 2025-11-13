@@ -22,7 +22,7 @@ const liftFrom = genericNode("element")(args => {
 		)
 }, liftFromHkt)
 
-export const arkArray: arkArray.module = Scope.module(
+export const arkArray = Scope.module(
 	{
 		root: intrinsic.Array,
 		readonly: "root",
@@ -32,7 +32,7 @@ export const arkArray: arkArray.module = Scope.module(
 	{
 		name: "Array"
 	}
-)
+) as never as arkArray.module
 
 export declare namespace arkArray {
 	export type module = Module<submodule>
