@@ -175,10 +175,10 @@ contextualize(() => {
 		let a = new CastableBase<{ foo: 123 }>()
 		let b = new CastableBase<{ bar: 456 }>()
 
-		// @ts-expect-error - Without `" uses"` this would succeed.
+		// @ts-expect-error - Without `#uses` this would succeed.
 		a = b
 
-		// @ts-expect-error - Without `" uses"` this would succeed.
+		// @ts-expect-error - Without `#uses` this would succeed.
 		b = a
 
 		const c = new CastableBase<{ foo: 123 }>()

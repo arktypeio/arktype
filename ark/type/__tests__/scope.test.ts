@@ -501,9 +501,9 @@ b.c.c must be an object (was missing)`)
 		}).export()
 		attest<
 			Module<{
-				string: string
+				string: unknown
 				foo: {
-					bar: string
+					bar: unknown
 				}
 			}>
 		>(types)
