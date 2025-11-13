@@ -3,7 +3,9 @@ import {
 	enumValues,
 	type merge,
 	type unionToPropwiseXor,
-	type withJsDoc
+	type withJsDoc,
+	type DynamicBase,
+	CastableBase
 } from "@ark/util"
 
 contextualize(() => {
@@ -153,5 +155,33 @@ contextualize(() => {
 			"bar",
 			"MAPPED"
 		])
+	})
+
+	it("DynamicBase assignability", () => {
+		let a: DynamicBase<{ foo: 123 }> = { foo: 123 }
+		let b: DynamicBase<{ bar: 456 }> = { bar: 456 }
+
+		// @ts-expect-error - Without `Uses` this would succeed.
+		a = b
+
+		// @ts-expect-error - Without `Uses` this would succeed.
+		b = a
+
+		const c: DynamicBase<{ foo: 123 }> = { foo: 123 }
+		const d: DynamicBase<{ foo: number }> = c
+	})
+
+	it("CastableBase assignability", () => {
+		let a = new CastableBase<{ foo: 123 }>()
+		let b = new CastableBase<{ bar: 456 }>()
+
+		// @ts-expect-error - Without `" uses"` this would succeed.
+		a = b
+
+		// @ts-expect-error - Without `" uses"` this would succeed.
+		b = a
+
+		const c = new CastableBase<{ foo: 123 }>()
+		const d: CastableBase<{ foo: number }> = c
 	})
 })
