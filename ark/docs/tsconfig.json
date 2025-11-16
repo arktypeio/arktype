@@ -10,6 +10,7 @@
 		// we don't need declarations for docs, and enabling it causes
 		// pnpm resolution errors
 		"declaration": false,
+		"baseUrl": ".",
 		"lib": ["ESNext", "DOM"],
 		"plugins": [
 			{
