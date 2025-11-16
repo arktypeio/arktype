@@ -17,7 +17,7 @@ const Class = <const def>(def: type.validate<def>) => {
 			super(out as never)
 		}
 
-		static and<cls extends typeof TypeConstructor<type.infer<def>>, andDef>(
+		static and<cls extends typeof TypeConstructor<any>, andDef>(
 			this: cls,
 			def: type.validate<andDef>
 		) {

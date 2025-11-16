@@ -1,7 +1,7 @@
 import type { Module, Submodule } from "../module.ts"
 import { Scope } from "../scope.ts"
 
-export const TypedArray = Scope.module(
+export const TypedArray: TypedArray.module = Scope.module(
 	{
 		Int8: ["instanceof", Int8Array],
 		Uint8: ["instanceof", Uint8Array],
@@ -18,7 +18,7 @@ export const TypedArray = Scope.module(
 	{
 		name: "TypedArray"
 	}
-) as never as TypedArray.module
+) as never
 
 export declare namespace TypedArray {
 	export type module = Module<TypedArray.$>

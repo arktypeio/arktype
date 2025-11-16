@@ -21,7 +21,7 @@ const parsed = rootSchema({
 	}
 })
 
-export const arkFormData = Scope.module(
+export const arkFormData: arkFormData.module = Scope.module(
 	{
 		root: ["instanceof", FormData],
 		value,
@@ -55,7 +55,7 @@ export const arkFormData = Scope.module(
 	{
 		name: "FormData"
 	}
-) as never as arkFormData.module
+) as never
 
 export declare namespace arkFormData {
 	export type module = Module<submodule>

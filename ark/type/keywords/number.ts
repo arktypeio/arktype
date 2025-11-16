@@ -34,7 +34,7 @@ export const integer = rootSchema({
 	divisor: 1
 })
 
-export const number = Scope.module(
+export const number: number.module = Scope.module(
 	{
 		root: intrinsic.number,
 		integer,
@@ -54,7 +54,7 @@ export const number = Scope.module(
 	{
 		name: "number"
 	}
-) as never as number.module
+) as never
 
 export declare namespace number {
 	export type module = Module<submodule>

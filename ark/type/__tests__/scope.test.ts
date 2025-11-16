@@ -497,18 +497,18 @@ b.c.c must be an object (was missing)`)
 			foo: {
 				bar: "string"
 			},
-			string: rootSchema({ domain: "string" }).constrain("minLength", 1)
+			string: type.number
 		}).export()
 		attest<
 			Module<{
-				string: unknown
+				string: number
 				foo: {
-					bar: unknown
+					bar: number
 				}
 			}>
 		>(types)
 		attest(types.foo.json).snap({
-			required: [{ key: "bar", value: { domain: "string", minLength: 1 } }],
+			required: [{ key: "bar", value: "number" }],
 			domain: "object"
 		})
 	})

@@ -18,7 +18,7 @@ const omittedPrototypes = {
 	String: 1
 } satisfies KeySet<keyof EcmascriptObjects>
 
-export const arkPrototypes = Scope.module({
+export const arkPrototypes: arkPrototypes.module = Scope.module({
 	...flatMorph(
 		{ ...ecmascriptConstructors, ...platformConstructors },
 		(k, v) => (k in omittedPrototypes ? [] : ([k, ["instanceof", v]] as const))
@@ -26,7 +26,7 @@ export const arkPrototypes = Scope.module({
 	Array: arkArray,
 	TypedArray,
 	FormData: arkFormData
-}) as never as arkPrototypes.module
+}) as never
 
 export declare namespace arkPrototypes {
 	export type module = Module<submodule>
