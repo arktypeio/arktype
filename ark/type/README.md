@@ -53,6 +53,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
         <th>get-convex</th>
         <th>inspatiallabs</th>
         <th>sam-goodwin</th>
+        <th>mintlify</th>
     </tr>
     <tr>
         <td>
@@ -74,6 +75,13 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
                 ><img
                     height="64px"
                     src="https://avatars.githubusercontent.com/sam-goodwin"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/mintlify"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/mintlify"
             /></a>
         </td>
     </tr>
