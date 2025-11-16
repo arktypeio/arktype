@@ -32,7 +32,7 @@ export const arkArray: arkArray.module = Scope.module(
 	{
 		name: "Array"
 	}
-)
+) as never
 
 export declare namespace arkArray {
 	export type module = Module<submodule>

@@ -54,7 +54,7 @@ export const number: number.module = Scope.module(
 	{
 		name: "number"
 	}
-)
+) as never
 
 export declare namespace number {
 	export type module = Module<submodule>

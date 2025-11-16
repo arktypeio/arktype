@@ -24,7 +24,7 @@ export const arkTsKeywords: arkTsKeywords = Scope.module({
 	true: intrinsic.true,
 	unknown: intrinsic.unknown,
 	undefined: intrinsic.undefined
-})
+}) as never
 
 export type arkTsKeywords = Module<arkTsKeywords.$>
 
@@ -205,7 +205,7 @@ export const arkTsGenerics: arkTsGenerics.module = Scope.module({
 	Pick,
 	Record,
 	Required
-})
+}) as never
 
 export declare namespace arkTsGenerics {
 	export type module = Module<arkTsGenerics.$>

@@ -19,7 +19,7 @@ const Merge = genericNode(
 export const arkBuiltins: arkBuiltins = Scope.module({
 	Key: intrinsic.key,
 	Merge
-})
+}) as never
 
 export type arkBuiltins = Module<arkBuiltins.$>
 

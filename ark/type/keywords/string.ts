@@ -65,7 +65,7 @@ export const stringInteger: stringInteger.module = Scope.module(
 	{
 		name: "string.integer"
 	}
-)
+) as never
 
 export declare namespace stringInteger {
 	export type module = Module<submodule>
@@ -121,7 +121,7 @@ export const capitalize: capitalize.module = Scope.module(
 	{
 		name: "string.capitalize"
 	}
-)
+) as never
 
 export declare namespace capitalize {
 	export type module = Module<submodule>
@@ -348,7 +348,7 @@ export const stringDate: stringDate.module = Scope.module(
 	{
 		name: "string.date"
 	}
-)
+) as never
 
 export declare namespace stringDate {
 	export type module = Module<stringDate.submodule>
@@ -420,7 +420,7 @@ export const ip: ip.module = Scope.module(
 	{
 		name: "string.ip"
 	}
-)
+) as never
 
 export declare namespace ip {
 	export type module = Module<submodule>
@@ -493,7 +493,7 @@ export const json: stringJson.module = Scope.module(
 	{
 		name: "string.json"
 	}
-)
+) as never
 
 export declare namespace stringJson {
 	export type module = Module<submodule>
@@ -520,7 +520,7 @@ const lower: lower.module = Scope.module(
 	{
 		name: "string.lower"
 	}
-)
+) as never
 
 export declare namespace lower {
 	export type module = Module<submodule>
@@ -683,7 +683,7 @@ export const stringNumeric: stringNumeric.module = Scope.module(
 	{
 		name: "string.numeric"
 	}
-)
+) as never
 
 export declare namespace stringNumeric {
 	export type module = Module<submodule>
@@ -743,7 +743,7 @@ const trim: trim.module = Scope.module(
 	{
 		name: "string.trim"
 	}
-)
+) as never
 
 export declare namespace trim {
 	export type module = Module<submodule>
@@ -770,7 +770,7 @@ const upper: upper.module = Scope.module(
 	{
 		name: "string.upper"
 	}
-)
+) as never
 
 declare namespace upper {
 	export type module = Module<submodule>
@@ -815,7 +815,7 @@ export const url: url.module = Scope.module(
 	{
 		name: "string.url"
 	}
-)
+) as never
 
 export declare namespace url {
 	export type module = Module<submodule>

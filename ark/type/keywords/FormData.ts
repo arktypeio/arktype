@@ -55,7 +55,7 @@ export const arkFormData: arkFormData.module = Scope.module(
 	{
 		name: "FormData"
 	}
-)
+) as never
 
 export declare namespace arkFormData {
 	export type module = Module<submodule>

@@ -181,8 +181,21 @@ export type propValueOf<o> = o[keyof o]
 
 export const InnerDynamicBase = class {} as new <t extends object>(base: t) => t
 
+export declare class Covariant<t> {
+	/**
+	 * Patterns of the form `interface Example<T> extends T {}` don't count as using `T`.
+	 * From tsc's point of view when calculating variance it may as well look like `interface Example<T> {}`.
+	 * Fundamentally this ordinarily means `Example<T>` will always be assignable to `Example<U>` and
+	 * vice versa.
+	 *
+	 * Obviously this is a problem, so `Covariant` exists to add an unobtrusive covariant usage of the type
+	 * parameter, making `Example<T>` assignable to `Example<U>` only if `T` is a subtype of `U`.
+	 */
+	private " covariant"?: t
+}
+
 /** @ts-ignore (needed to extend `t`) **/
-export interface DynamicBase<t extends object> extends t {}
+export interface DynamicBase<t extends object> extends t, Covariant<t> {}
 export class DynamicBase<t extends object> {
 	constructor(properties: t) {
 		Object.assign(this, properties)
@@ -192,7 +205,9 @@ export class DynamicBase<t extends object> {
 export const NoopBase = class {} as new <t extends object>() => t
 
 /** @ts-ignore (needed to extend `t`) **/
-export class CastableBase<t extends object> extends NoopBase<t> {}
+export class CastableBase<t extends object> extends NoopBase<t> {
+	declare private " covariant"?: t
+}
 
 export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	o: o,

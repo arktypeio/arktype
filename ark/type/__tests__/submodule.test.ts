@@ -29,7 +29,7 @@ contextualize.each(
 				Module<{
 					a: string
 					b: number
-					sub: Module<{
+					sub: Submodule<{
 						alias: number
 					}>
 				}>

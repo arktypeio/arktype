@@ -225,7 +225,6 @@ contextualize(() => {
 		attest<
 			Module<{
 				foo: boolean[]
-				"#bar": boolean
 			}>
 		>(types)
 	})

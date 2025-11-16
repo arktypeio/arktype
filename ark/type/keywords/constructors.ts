@@ -26,7 +26,7 @@ export const arkPrototypes: arkPrototypes.module = Scope.module({
 	Array: arkArray,
 	TypedArray,
 	FormData: arkFormData
-})
+}) as never
 
 export declare namespace arkPrototypes {
 	export type module = Module<submodule>

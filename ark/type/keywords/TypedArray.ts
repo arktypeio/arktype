@@ -18,7 +18,7 @@ export const TypedArray: TypedArray.module = Scope.module(
 	{
 		name: "TypedArray"
 	}
-)
+) as never
 
 export declare namespace TypedArray {
 	export type module = Module<TypedArray.$>
