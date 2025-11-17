@@ -1,3 +1,4 @@
+import { rootSchema } from "@ark/schema"
 import {
 	isKeyOf,
 	throwParseError,
@@ -21,6 +22,15 @@ export type DoubleQuotedStringLiteral<contents extends string = string> =
 export type SingleQuotedStringLiteral<contents extends string = string> =
 	`'${contents}'`
 
+const regexExecArray = rootSchema({
+	proto: "Array",
+	sequence: "string",
+	required: {
+		key: "groups",
+		value: ["object", { unit: undefined }]
+	}
+})
+
 export const parseEnclosed = (
 	s: RuntimeState,
 	enclosing: EnclosingStartToken
@@ -33,9 +43,11 @@ export const parseEnclosed = (
 
 	// Shift the scanner one additional time for the second enclosing token
 	s.scanner.shift()
-	if (enclosing === "/") {
+	if (enclosing in enclosingRegexTokens) {
+		let regex: RegExp
+
 		try {
-			new RegExp(enclosed)
+			regex = new RegExp(enclosed)
 		} catch (e) {
 			throwParseError(String(e))
 		}
@@ -48,6 +60,14 @@ export const parseEnclosed = (
 			},
 			{ prereduced: true }
 		)
+
+		if (enclosing === "x/") {
+			s.root = s.ctx.$.node("morph", {
+				in: s.root,
+				morphs: (s: string) => regex.exec(s),
+				declaredOut: regexExecArray
+			})
+		}
 	} else if (isKeyOf(enclosing, enclosingQuote))
 		s.root = s.ctx.$.node("unit", { unit: enclosed })
 	else {
@@ -66,45 +86,49 @@ export type parseEnclosed<
 		EnclosingTokens[enclosingStart],
 		""
 	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
-		nextUnscanned extends "" ?
-			s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
-		: enclosingStart extends EnclosingQuote ?
-			s.setRoot<
-				s,
-				InferredAst<
-					scanned,
-					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
-				>,
-				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
-				:	""
-			>
-		: enclosingStart extends EnclosingRegexToken ?
-			regex.parse<scanned> extends infer r ?
-				r extends Regex ?
-					s.setRoot<
-						s,
-						InferredAst<
-							enclosingStart extends "/" ? r["infer"]
-							:	(In: r["infer"]) => Out<r["inferExecArray"] | null>,
-							`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
-						>,
-						nextUnscanned extends Scanner.shift<string, infer unscanned> ?
-							unscanned
-						:	""
-					>
-				: r extends ErrorMessage<infer e> ? s.error<e>
-				: never
-			:	never
-		:	s.setRoot<
-				s,
-				InferredAst<
-					Date,
-					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
-				>,
-				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
-				:	""
-			>
+		_parseEnclosed<s, enclosingStart, scanned, nextUnscanned>
 	:	never
+
+type _parseEnclosed<
+	s extends StaticState,
+	enclosingStart extends EnclosingStartToken,
+	scanned extends string,
+	nextUnscanned extends string,
+	def extends
+		string = `${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+> =
+	nextUnscanned extends "" ?
+		s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+	: enclosingStart extends EnclosingQuote ?
+		s.setRoot<
+			s,
+			InferredAst<scanned, def>,
+			nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
+			:	""
+		>
+	: enclosingStart extends EnclosingRegexToken ?
+		regex.parse<scanned> extends infer r ?
+			r extends Regex ?
+				s.setRoot<
+					s,
+					InferredAst<
+						enclosingStart extends "/" ? r["infer"]
+						:	(In: r["infer"]) => Out<r["inferExecArray"]>,
+						def
+					>,
+					nextUnscanned extends Scanner.shift<string, infer unscanned> ?
+						unscanned
+					:	""
+				>
+			: r extends ErrorMessage<infer e> ? s.error<e>
+			: never
+		:	never
+	:	s.setRoot<
+			s,
+			InferredAst<Date, def>,
+			nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
+			:	""
+		>
 
 export const enclosingQuote = {
 	"'": 1,
@@ -131,7 +155,7 @@ export type EnclosingLiteralStartToken = keyof EnclosingLiteralTokens
 
 export const enclosingRegexTokens = {
 	"/": "/",
-	"z/": "/"
+	"x/": "/"
 } as const
 
 export type EnclosingRegexTokens = typeof enclosingRegexTokens

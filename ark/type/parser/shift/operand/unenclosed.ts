@@ -108,7 +108,7 @@ const unenclosedToNode = (s: RuntimeState, token: string): BaseRoot =>
 		token === "" ?
 			s.scanner.lookahead === "#" ?
 				writePrefixedPrivateReferenceMessage(
-					s.shiftedByOne().scanner.shiftUntilLookahead(terminatingChars)
+					s.shiftedBy(1).scanner.shiftUntilLookahead(terminatingChars)
 				)
 			:	writeMissingOperandMessage(s)
 		:	writeUnresolvableMessage(token)

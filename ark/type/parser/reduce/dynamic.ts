@@ -229,8 +229,8 @@ export class RuntimeState {
 		)
 	}
 
-	shiftedByOne(): this {
-		this.scanner.shift()
+	shiftedBy(count: number): this {
+		this.scanner.jumpForward(count)
 		return this
 	}
 }
