@@ -41,5 +41,14 @@ export type parseOperand<s extends StaticState, $, args> =
 			) ?
 				parseEnclosed<s, `d${enclosing}`, nextUnscanned>
 			:	parseUnenclosed<s, $, args>
+		: lookahead extends "z" ? 
+			unscanned extends (
+				Scanner.shift<
+					"/",
+					infer nextUnscanned
+				>
+			) ?
+				parseEnclosed<s, `z/`, nextUnscanned>
+			:	parseUnenclosed<s, $, args>
 		:	parseUnenclosed<s, $, args>
 	:	s.completion<`${s["scanned"]}${BaseCompletions<$, args>}`>

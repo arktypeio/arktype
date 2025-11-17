@@ -25,6 +25,11 @@ export interface Regex<
 	infer: pattern
 	inferCaptures: ctx["captures"] extends IndexedCaptures ? ctx["captures"] : []
 	inferNamedCaptures: ctx["names"] extends NamedCaptures ? ctx["names"] : {}
+	inferExecArray: RegexExecArray<
+		[pattern, ...this["inferCaptures"]],
+		this["inferNamedCaptures"],
+		this["flags"]
+	> 
 
 	flags: ctx["flags"] extends Flags ? ctx["flags"] : ""
 
@@ -32,11 +37,7 @@ export interface Regex<
 
 	exec(
 		s: string
-	): RegexExecArray<
-		[pattern, ...this["inferCaptures"]],
-		this["inferNamedCaptures"],
-		this["flags"]
-	> | null
+	): this["inferExecArray"] | null
 	// allow extension of base RegExp with more accurate types
 	// since parameters are identical, this overload will never be hit
 	exec(s: string): never

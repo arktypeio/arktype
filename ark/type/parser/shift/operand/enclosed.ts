@@ -1,5 +1,11 @@
-import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
-import type { regex } from "arkregex"
+import {
+	isKeyOf,
+	throwParseError,
+	type ErrorMessage,
+	type Scanner
+} from "@ark/util"
+import type { Regex, regex } from "arkregex"
+import type { Out } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
@@ -62,12 +68,37 @@ export type parseEnclosed<
 	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
 		nextUnscanned extends "" ?
 			s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+		: enclosingStart extends EnclosingQuote ?
+			s.setRoot<
+				s,
+				InferredAst<
+					scanned,
+					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+				>,
+				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
+				:	""
+			>
+		: enclosingStart extends "z/" | "/" ?
+			regex.parse<scanned> extends infer r ?
+				r extends Regex ?
+					s.setRoot<
+						s,
+						InferredAst<
+							enclosingStart extends "/" ? r["infer"]
+							:	(In: r["infer"]) => Out<r["inferExecArray"] | null>,
+							`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+						>,
+						nextUnscanned extends Scanner.shift<string, infer unscanned> ?
+							unscanned
+						:	""
+					>
+				: r extends ErrorMessage<infer e> ? s.error<e>
+				: never
+			:	never
 		:	s.setRoot<
 				s,
 				InferredAst<
-					enclosingStart extends EnclosingQuote ? scanned
-					: enclosingStart extends "/" ? regex.infer<scanned>
-					: Date,
+					Date,
 					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
 				>,
 				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
@@ -101,7 +132,8 @@ export type EnclosingLiteralStartToken = keyof EnclosingLiteralTokens
 
 export const enclosingTokens = {
 	...enclosingLiteralTokens,
-	"/": "/"
+	"/": "/",
+	"z/": "/"
 } as const
 
 export type EnclosingTokens = typeof enclosingTokens
