@@ -1,5 +1,19 @@
 # arktype
 
+## 2.1.27
+
+### fix assignability for certain objects like `Module`
+
+The following assignment will now correctly fail (thanks @LukeAbby)🔒
+
+```ts
+import { type } from "arktype"
+
+const types: Module<{ foo: string }> = type.module({ foo: "unknown" })
+```
+
+### bump regex inference to arkregex 0.0.3
+
 ## 2.1.26
 
 ### es2020 compatibility
