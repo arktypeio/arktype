@@ -78,7 +78,7 @@ export type parseEnclosed<
 				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
 				:	""
 			>
-		: enclosingStart extends "z/" | "/" ?
+		: enclosingStart extends EnclosingRegexToken ?
 			regex.parse<scanned> extends infer r ?
 				r extends Regex ?
 					s.setRoot<
@@ -127,13 +127,19 @@ export const enclosingLiteralTokens = {
 } as const
 
 export type EnclosingLiteralTokens = typeof enclosingLiteralTokens
-
 export type EnclosingLiteralStartToken = keyof EnclosingLiteralTokens
+
+export const enclosingRegexTokens = {
+	"/": "/",
+	"z/": "/"
+} as const
+
+export type EnclosingRegexTokens = typeof enclosingRegexTokens
+export type EnclosingRegexToken = keyof EnclosingRegexTokens
 
 export const enclosingTokens = {
 	...enclosingLiteralTokens,
-	"/": "/",
-	"z/": "/"
+	...enclosingRegexTokens
 } as const
 
 export type EnclosingTokens = typeof enclosingTokens
