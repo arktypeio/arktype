@@ -7,7 +7,7 @@ export const runThenGetContents = (templatePath: string): string => {
 	const tempPath = templatePath + ".temp.ts"
 	copyFileSync(templatePath, tempPath)
 	try {
-		shell(`node --import=tsx ${tempPath}`, {
+		shell("node", ["--import=tsx", tempPath], {
 			cwd: dirName(),
 			env: {
 				ATTEST_failOnMissingSnapshots: "0"
