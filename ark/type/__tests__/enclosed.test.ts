@@ -82,6 +82,38 @@ contextualize(() => {
 			.type.errors(writeUnclosedGroupMessage("]"))
 	})
 
+	it("nested regex exec literal", () => {
+		const User = type({
+			// x-prefix a regex literal to parse its type-safe capture groups
+			birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+		})
+
+		attest<
+			Type<{
+				birthday: (In: `${bigint}-${bigint}-${bigint}`) => Out<
+					RegexExecArray<
+						[
+							`${bigint}-${bigint}-${bigint}`,
+							`${bigint}`,
+							`${bigint}`,
+							`${bigint}`
+						],
+						{
+							month: `${bigint}`
+							day: `${bigint}`
+							year: `${bigint}`
+						},
+						""
+					>
+				>
+			}>
+		>(User)
+
+		const data = User.assert({ birthday: "05-21-1993" })
+
+		attest(data.birthday.groups).snap({ month: "05", day: "21", year: "1993" })
+	})
+
 	it("mixed quote types", () => {
 		const T = type(`"'single-quoted'"`)
 		attest<"'single-quoted'">(T.infer)
