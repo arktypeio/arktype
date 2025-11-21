@@ -486,7 +486,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	discriminate(): Discriminant | null {
-		if (this.branches.length < 2 || this.isCyclic) return null
+		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, n) => [
 				`${(n.rawIn as Unit.Node).serializedValue}`,
@@ -579,7 +579,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		if (!viableCandidates.length) return null
 
-		const ctx = createCaseResolutionContext(viableCandidates, this)
+		// If the union is cyclic, only allow property-based discrimination (path.length > 0).
+		// Structural discrimination (path.length === 0) would attempt to discriminate
+		// based on the entire recursive structure, which produces confusing error messages
+		// that reference irrelevant branches. Property-based discrimination (e.g., checking
+		// a 'type' field) avoids this by only examining specific field values.
+		const nonRootCandidates =
+			this.isCyclic ?
+				viableCandidates.filter(c => c.path.length > 0)
+			:	viableCandidates
+
+		if (!nonRootCandidates.length) return null
+
+		const ctx = createCaseResolutionContext(nonRootCandidates, this)
 
 		const cases: DiscriminatedCases = {}
 
