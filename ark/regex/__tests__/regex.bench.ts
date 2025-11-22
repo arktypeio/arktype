@@ -28,111 +28,111 @@ bench("repeat(513)", () => {
 
 bench("anchored union", () => {
 	const r = regex("typescript|^go$|brrr$")
-}).types([1737, "instantiations"])
+}).types([1670, "instantiations"])
 
 bench("?(1)", () => {
 	const r = regex("^a?$")
-}).types([480, "instantiations"])
+}).types([474, "instantiations"])
 
 bench("?(4)", () => {
 	const r = regex("^a?b?c?d?$")
-}).types([1378, "instantiations"])
+}).types([1366, "instantiations"])
 
 bench("?(7)", () => {
 	const r = regex("^a?b?c?d?e?f?g?$")
-}).types([3964, "instantiations"])
+}).types([3946, "instantiations"])
 
 bench("?(15)", () => {
 	const r = regex("^ab?c?d?e?f?g?h?i?j?k?l?m?n?o?$")
-}).types([282048, "instantiations"])
+}).types([282014, "instantiations"])
 
 bench("escape(6)", () => {
 	const r = regex("^\t\n\r\v\f\0$")
-}).types([509, "instantiations"])
+}).types([495, "instantiations"])
 
 bench("quantified char", () => {
 	const r = regex("^a{5}$")
-}).types([590, "instantiations"])
+}).types([625, "instantiations"])
 
 bench("quantified char min max", () => {
 	const r = regex("^a{5,10}$")
-}).types([679, "instantiations"])
+}).types([698, "instantiations"])
 
 bench("quantified string", () => {
 	const r = regex("^.{5,10}$")
-}).types([481, "instantiations"])
+}).types([499, "instantiations"])
 
 bench("semver", () => {
 	const r = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
-}).types([35631, "instantiations"])
+}).types([35650, "instantiations"])
 
 // Literals
 bench("literal basic", () => {
 	const r = regex("abcdef")
-}).types([426, "instantiations"])
+}).types([414, "instantiations"])
 
 bench("literal long", () => {
 	const r = regex("abcdefghijklmnopqrstuvwxyz")
-}).types([1580, "instantiations"])
+}).types([1528, "instantiations"])
 
 // Anchors
 bench("anchor start", () => {
 	const r = regex("^abc")
-}).types([294, "instantiations"])
+}).types([286, "instantiations"])
 
 bench("anchor end", () => {
 	const r = regex("abc$")
-}).types([305, "instantiations"])
+}).types([299, "instantiations"])
 bench("anchor both", () => {
 	const r = regex("^abc$")
-}).types([329, "instantiations"])
+}).types([321, "instantiations"])
 
 bench("anchor union(2)", () => {
 	const r = regex("^foo|bar$")
-}).types([951, "instantiations"])
+}).types([906, "instantiations"])
 
 bench("anchor union(5)", () => {
 	const r = regex("^foo|^bar|baz$|qux|^end")
-}).types([1964, "instantiations"])
+}).types([1899, "instantiations"])
 
 // Unions
 bench("union(2)", () => {
 	const r = regex("a|b")
-}).types([647, "instantiations"])
+}).types([610, "instantiations"])
 
 bench("union(5)", () => {
 	const r = regex("a|b|c|d|e")
-}).types([1235, "instantiations"])
+}).types([1192, "instantiations"])
 
 bench("union(10)", () => {
 	const r = regex("a|b|c|d|e|f|g|h|i|j")
-}).types([2247, "instantiations"])
+}).types([2194, "instantiations"])
 
 bench("union nested", () => {
 	const r = regex("(a|b)(c|d)(e|f)")
-}).types([6629, "instantiations"])
+}).types([6340, "instantiations"])
 
 // Quantifiers - ranges
 bench("range {1,3}", () => {
 	const r = regex("^a{1,3}$")
-}).types([569, "instantiations"])
+}).types([599, "instantiations"])
 
 bench("range {2,8}", () => {
 	const r = regex("^a{2,8}$")
-}).types([681, "instantiations"])
+}).types([711, "instantiations"])
 
 bench("range {0,5}", () => {
 	const r = regex("^a{0,5}$")
-}).types([660, "instantiations"])
+}).types([690, "instantiations"])
 
 bench("range complex", () => {
 	const r = regex("^a{1,2}b{2,3}c{0,2}$")
-}).types([1291, "instantiations"])
+}).types([1367, "instantiations"])
 
 // Character sets
 bench("charset simple", () => {
 	const r = regex("[abc]")
-}).types([674, "instantiations"])
+}).types([670, "instantiations"])
 
 bench("charset range", () => {
 	const r = regex("[a-z]")
@@ -149,72 +149,72 @@ bench("charset negated", () => {
 // Escapes
 bench("escape shorthand", () => {
 	const r = regex("\\d\\w\\s")
-}).types([529, "instantiations"])
+}).types([502, "instantiations"])
 
 bench("escape builtin", () => {
 	const r = regex("\t\n\r\v\f\0")
-}).types([436, "instantiations"])
+}).types([424, "instantiations"])
 
 // Groups - Captures
 bench("group single", () => {
 	const r = regex("(abc)")
-}).types([447, "instantiations"])
+}).types([441, "instantiations"])
 
 bench("group nested(2)", () => {
 	const r = regex("(a(b)c)")
-}).types([874, "instantiations"])
+}).types([866, "instantiations"])
 
 bench("group nested(3)", () => {
 	const r = regex("(a(b(c)d)e)")
-}).types([1544, "instantiations"])
+}).types([1530, "instantiations"])
 
 bench("group union", () => {
 	const r = regex("(a|b|c)")
-}).types([1193, "instantiations"])
+}).types([1154, "instantiations"])
 
 bench("group quantified", () => {
 	const r = regex("(ab){1,3}")
-}).types([723, "instantiations"])
+}).types([753, "instantiations"])
 
 // Non-capturing groups
 bench("group non-capturing", () => {
 	const r = regex("(?:abc)")
-}).types([403, "instantiations"])
+}).types([397, "instantiations"])
 
 bench("group mixed capturing", () => {
 	const r = regex("(a)(?:b)(c)")
-}).types([1092, "instantiations"])
+}).types([1084, "instantiations"])
 
 // Backreferences
 bench("backref simple", () => {
 	const r = regex("(a)\\1")
-}).types([749, "instantiations"])
+}).types([743, "instantiations"])
 
 bench("backref union", () => {
 	const r = regex("(a|b)\\1")
-}).types([1475, "instantiations"])
+}).types([1428, "instantiations"])
 
 bench("backref multiple", () => {
 	const r = regex("(a)(b)\\1\\2")
-}).types([1336, "instantiations"])
+}).types([1326, "instantiations"])
 
 // Named captures
 bench("named capture", () => {
 	const r = regex("(?<name>abc)")
-}).types([619, "instantiations"])
+}).types([613, "instantiations"])
 
 bench("named backref", () => {
 	const r = regex("(?<name>a|b)\\k<name>")
-}).types([1676, "instantiations"])
+}).types([1629, "instantiations"])
 
 // Complex patterns
 bench("email pattern", () => {
 	const r = regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
-}).types([3001, "instantiations"])
+}).types([3016, "instantiations"])
 
 bench("phone pattern", () => {
 	const r = regex("^\\(?([0-9]{3})\\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$")
-}).types([9557, "instantiations"])
+}).types([9488, "instantiations"])
 
 // Scaling tests
 bench("wildcard sequence(5)", () => {
@@ -227,10 +227,10 @@ bench("wildcard sequence(10)", () => {
 
 bench("nested groups(4)", () => {
 	const r = regex("((((a))))")
-}).types([1409, "instantiations"])
+}).types([1407, "instantiations"])
 
 bench("mixed complexity", () => {
 	const r = regex(
 		"^((?:https?://)?(?:www\\.)?([a-zA-Z0-9-]+)\\.(com|org|net))(/.*)?$"
 	)
-}).types([9721, "instantiations"])
+}).types([9597, "instantiations"])

@@ -1331,25 +1331,47 @@ contextualize(() => {
 	})
 
 	it("semver", () => {
-		const S = regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
-
-		type ExpectedPattern =
-			| `0.0.${bigint}`
-			| `0.${bigint}.0`
-			| `0.${bigint}.${bigint}`
-			| `${bigint}.0.0`
-			| `${bigint}.0.${bigint}`
-			| `${bigint}.${bigint}.0`
-			| `${bigint}.${bigint}.${bigint}`
+		const S = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
 
 		attest<
 			Regex<
-				ExpectedPattern,
+				`${bigint}${string}.${bigint}${string}.${bigint}${string}`,
 				{
-					captures: [`${bigint}`, `${bigint}`, `${bigint}`]
+					captures: [
+						`${bigint}${string}`,
+						`${bigint}${string}`,
+						`${bigint}${string}`
+					]
 				}
 			>
 		>(S)
+	})
+
+	// these tests will break if `${bigint}${bigint}` collapses to `${bigint}`
+	// the same way `${string}` does
+	it("repeated bigints allow 0 prefix", () => {
+		const S = regex("^\\d\\d$")
+		attest<Regex<`${bigint}${bigint}`, {}>>(S)
+		const value: typeof S.infer = "05"
+	})
+
+	// these tests will break if `${bigint}${bigint}` collapses to `${bigint}`
+	// the same way `${string}` does
+	it("repeated bigints allow 0 prefix", () => {
+		const S = regex("^\\d\\d$")
+		attest<Regex<`${bigint}${bigint}`, {}>>(S)
+		const value: typeof S.infer = "05"
+	})
+
+	it("quantified bigints allow 0 prefix", () => {
+		const S = regex("^\\d{2}$")
+		attest<Regex<`${bigint}${bigint}`, {}>>(S)
+		const value: typeof S.infer = "05"
+	})
+
+	it("many repeated bigint", () => {
+		const S = regex("^\\d{64}$")
+		attest(S).type.toString.snap()
 	})
 
 	describe("regex.as", () => {
