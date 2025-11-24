@@ -1,16 +1,19 @@
 import { type } from "arktype"
+import * as v from "valibot"
 import z from "zod"
 
-const Address = z.object({
-	streetNumber: z.number(),
-	streetName: z.string()
-})
+// const LegacyZodSchema = z.object({
+// 	streetNumber: z.number(),
+// 	streetName: z.string(),
+// 	city: z.string(),
+// 	state: z.string()
+// })
 
-const TFromZod = type({
-	name: "string",
-	age: "number",
-	address: Address
-})
+// const User = type({
+// 	name: "string",
+// 	age: v.number(),
+// 	address: LegacyZodSchema
+// })
 
-const valid = TFromZod({ foo: "foo" })
-const invalid = TFromZod({ foo: 5 })
+// const valid = User({ foo: "foo" })
+// const invalid = User({ foo: 5 })

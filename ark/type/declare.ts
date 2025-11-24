@@ -12,7 +12,12 @@ import type {
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
-import type { inferDefinition, ThunkCast } from "./parser/definition.ts"
+import type {
+	inferDefinition,
+	TerminalObjectDefinition,
+	ThunkCast
+} from "./parser/definition.ts"
+import type { OptionalPropertyDefinition } from "./parser/property.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import type { bindThis } from "./scope.ts"
 import type { Type } from "./type.ts"
@@ -47,31 +52,56 @@ export type validateDeclared<declared, def, $, ctx extends DeclareContext> =
 	:	type.validate<def, $>
 
 type validateInference<def, declared, $, args, ctx extends DeclareContext> =
-	def extends RegExp | type.cast<unknown> | ThunkCast | TupleExpression ?
-		validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
-	: def extends array ?
-		declared extends array ?
-			{
-				[i in keyof declared]: i extends keyof def ?
-					validateInference<def[i], declared[i], $, args, ctx>
-				:	declared[i]
-			}
-		:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
-	: def extends object ?
-		show<
-			{
-				[k in requiredKeyOf<declared>]: k extends keyof def ?
-					validateInference<def[k], declared[k], $, args, ctx>
-				:	declared[k]
-			} & {
-				[k in optionalKeyOf<declared> & string as `${k}?`]: `${k}?` extends (
-					keyof def
-				) ?
-					validateInference<def[`${k}?`], defined<declared[k]>, $, args, ctx>
-				:	declared[k]
-			}
-		>
-	:	validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+	def extends TerminalObjectDefinition | ThunkCast | TupleExpression ?
+		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
+		keyof def extends never ?
+			// special case it to pass through normal object validation
+			validateObjectInference<def, declared, $, args, ctx>
+		:	validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+	: def extends array ? validateArrayInference<def, declared, $, args, ctx>
+	: def extends object ? validateObjectInference<def, declared, $, args, ctx>
+	: validateShallowInference<inferDefinition<def, $, args>, declared, ctx>
+
+type validateArrayInference<
+	def extends array,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	declared extends array ?
+		{
+			[i in keyof declared]: i extends keyof def ?
+				validateInference<def[i], declared[i], $, args, ctx>
+			:	declared[i]
+		}
+	:	show<declarationMismatch<inferDefinition<def, $, args>, declared>>
+
+type validateObjectInference<
+	def extends object,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> = show<
+	{
+		[k in requiredKeyOf<declared>]: k extends keyof def ?
+			validateInference<def[k], declared[k], $, args, ctx>
+		:	declared[k]
+	} & {
+		[k in optionalKeyOf<declared> & string as k extends keyof def ?
+			def[k] extends OptionalPropertyDefinition ?
+				k
+			:	`${k}?`
+		:	`${k}?`]: k extends keyof def ?
+			def[k] extends OptionalPropertyDefinition ?
+				validateInference<def[k], defined<declared[k]>, $, args, ctx>
+			:	declared[k]
+		: `${k}?` extends keyof def ?
+			validateInference<def[`${k}?`], defined<declared[k]>, $, args, ctx>
+		:	declared[k]
+	}
+>
 
 type validateShallowInference<
 	t,

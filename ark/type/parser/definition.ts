@@ -178,7 +178,7 @@ export type validateDefinition<def, $, args> =
 //    represent an optional or defaultable
 // 2. we are validating the root of a property definition
 export type validateInnerDefinition<def, $, args> =
-	[def] extends [Terminal] ? def
+	[def] extends [TerminalObjectDefinition] ? def
 	: def extends string ? validateString<def, $, args>
 	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
@@ -205,7 +205,11 @@ export type inferTuple<def extends array, $, args> =
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = type.cast<unknown> | Fn | RegExp | StandardSchemaV1
+export type TerminalObjectDefinition =
+	| type.cast<unknown>
+	| Fn
+	| RegExp
+	| StandardSchemaV1
 
 export type ThunkCast<t = unknown> = () => type.cast<t>
 

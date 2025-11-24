@@ -126,6 +126,15 @@ contextualize(() => {
 		).type.errors(`'"b?"' is missing`)
 	})
 
+	it("empty object optional", () => {
+		type Expected = { f?: string }
+
+		// @ts-expect-error
+		attest(() => type.declare<Expected>().type({})).type.errors(
+			`'"f?"' is missing`
+		)
+	})
+
 	it("extraneous key", () => {
 		attest(() =>
 			declare<{ a: string }>().type({
@@ -229,5 +238,42 @@ contextualize(() => {
 				"b?": "number"
 			})
 		).type.errors("declared: string; inferred: number")
+	})
+
+	it("value-optional", () => {
+		type Expected = { f?: string }
+
+		const T = type.declare<Expected>().type({
+			f: "string?"
+		})
+
+		attest<Expected>(T.t)
+	})
+
+	it("invalid value-optional", () => {
+		type Expected = { f?: string }
+
+		attest(() =>
+			type.declare<Expected>().type({
+				// @ts-expect-error
+				f: "number?"
+			})
+		).type.errors("declared: string; inferred: number")
+	})
+
+	it("undefined", () => {
+		type Member = "a" | "b" | undefined // without undefined it works
+		const memberValidator = type.declare<Member>().type(`"a" | "b" | undefined`)
+
+		type Object = {
+			m: Member
+		}
+		const objectValidator = type.declare<Object>().type({
+			m: memberValidator
+		})
+
+		const output = objectValidator({ m: "a" })
+
+		console.log(output)
 	})
 })
