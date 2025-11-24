@@ -1,7 +1,6 @@
 import type {
 	anyOrNever,
 	array,
-	defined,
 	equals,
 	ErrorMessage,
 	ErrorType,
@@ -89,19 +88,36 @@ type validateObjectInference<
 			validateInference<def[k], declared[k], $, args, ctx>
 		:	declared[k]
 	} & {
-		[k in optionalKeyOf<declared> & string as k extends keyof def ?
-			def[k] extends OptionalPropertyDefinition ?
-				k
-			:	`${k}?`
-		:	`${k}?`]: k extends keyof def ?
-			def[k] extends OptionalPropertyDefinition ?
-				validateInference<def[k], defined<declared[k]>, $, args, ctx>
-			:	declared[k]
-		: `${k}?` extends keyof def ?
-			validateInference<def[`${k}?`], defined<declared[k]>, $, args, ctx>
-		:	declared[k]
+		[k in optionalKeyOf<declared> & string as declaredOptionalKeySuggestion<
+			k,
+			def
+		>]: declaredOptionalValueSuggestion<def, k, declared, $, args, ctx>
 	}
 >
+
+type declaredOptionalKeySuggestion<k extends string, def> =
+	k extends keyof def ?
+		def[k] extends OptionalPropertyDefinition ?
+			k
+		:	`${k}?`
+	:	`${k}?`
+
+type declaredOptionalValueSuggestion<
+	def,
+	k extends keyof declared & string,
+	declared,
+	$,
+	args,
+	ctx extends DeclareContext
+> =
+	k extends keyof def ?
+		def[k] extends OptionalPropertyDefinition ?
+			// Required<declared>[k] ensures that we can distinguish { foo?: true } from { foo?: true | undefined }
+			validateInference<def[k], Required<declared>[k], $, args, ctx>
+		:	declared[k]
+	: `${k}?` extends keyof def ?
+		validateInference<def[`${k}?`], Required<declared>[k], $, args, ctx>
+	:	declared[k]
 
 type validateShallowInference<
 	t,

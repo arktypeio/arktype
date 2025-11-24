@@ -135,6 +135,31 @@ contextualize(() => {
 		)
 	})
 
+	it("undefined as required value", () => {
+		type Expected = { f: string | undefined }
+
+		const T = declare<Expected>().type({ f: "string | undefined" })
+
+		attest<Expected>(T.t)
+	})
+
+	it("undefined as optional value", () => {
+		type Expected = { f?: string | undefined }
+
+		const T = declare<Expected>().type({ "f?": "string | undefined" })
+
+		attest<Expected>(T.t)
+	})
+
+	it("undefined as invalid optional value", () => {
+		type Expected = { f?: string }
+
+		attest(() =>
+			// @ts-expect-error
+			declare<Expected>().type({ "f?": "string | undefined" })
+		).type.errors("declared: string; inferred: string | undefined")
+	})
+
 	it("extraneous key", () => {
 		attest(() =>
 			declare<{ a: string }>().type({
@@ -261,7 +286,8 @@ contextualize(() => {
 		).type.errors("declared: string; inferred: number")
 	})
 
-	it("undefined", () => {
+	// https://github.com/arktypeio/arktype/issues/1537
+	it("github undefined issue", () => {
 		type Member = "a" | "b" | undefined // without undefined it works
 		const memberValidator = type.declare<Member>().type(`"a" | "b" | undefined`)
 
@@ -272,8 +298,6 @@ contextualize(() => {
 			m: memberValidator
 		})
 
-		const output = objectValidator({ m: "a" })
-
-		console.log(output)
+		attest<Object>(objectValidator.t)
 	})
 })
