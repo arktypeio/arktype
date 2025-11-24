@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { intrinsic, writeInvalidOperandMessage } from "@ark/schema"
-import { type } from "arktype"
+import { regex, type Type, type } from "arktype"
 
 contextualize(() => {
 	describe("intersection", () => {
@@ -92,5 +92,18 @@ contextualize(() => {
 		const T = type(/^a.*z$/)
 
 		attest(T.expression).snap("/^a.*z$/")
+	})
+
+	it("arkregex integration", () => {
+		const T = type({
+			email: regex("^.*@.*$")
+		})
+
+		attest(T.expression).snap()
+		attest<
+			Type<{
+				email: `${string}@${string}`
+			}>
+		>(T)
 	})
 })

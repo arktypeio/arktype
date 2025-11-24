@@ -1,4 +1,9 @@
-import { hasArkKind, type BaseParseContext, type BaseRoot } from "@ark/schema"
+import {
+	hasArkKind,
+	type BaseParseContext,
+	type BaseRoot,
+	type StandardSchemaV1
+} from "@ark/schema"
 import {
 	domainOf,
 	hasDomain,
@@ -6,6 +11,7 @@ import {
 	objectKindOf,
 	printable,
 	throwParseError,
+	uncapitalize,
 	type anyOrNever,
 	type array,
 	type Dict,
@@ -15,6 +21,7 @@ import {
 	type objectKindOrDomainOf,
 	type Primitive
 } from "@ark/util"
+import type { Out } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { InnerParseResult } from "../scope.ts"
 import type {
@@ -72,6 +79,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	switch (objectKind) {
 		case undefined:
 			if (hasArkKind(def, "root")) return def
+			if ("~standard" in def) return parseStandardSchema(def as never, ctx)
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as array, ctx)
@@ -96,6 +104,37 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	}
 }
 
+const parseStandardSchema = (
+	def: StandardSchemaV1,
+	ctx: BaseParseContext
+): BaseRoot =>
+	ctx.$.intrinsic.unknown.pipe((v, ctx) => {
+		const result = def["~standard"].validate(
+			v
+		) as StandardSchemaV1.Result<unknown>
+
+		if (!result.issues) return result.value
+
+		for (const { message, path } of result.issues) {
+			if (path) {
+				if (path.length) {
+					ctx.error({
+						problem: uncapitalize(message),
+						relativePath: path.map(k => (typeof k === "object" ? k.key : k))
+					})
+				} else {
+					ctx.error({
+						message
+					})
+				}
+			} else {
+				ctx.error({
+					message
+				})
+			}
+		}
+	})
+
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
@@ -107,8 +146,15 @@ export type inferDefinition<def, $, args> =
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
 	: def extends RegExp ? string
+	: def extends StandardSchemaV1 ? inferStandardSchema<def>
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
+
+type inferStandardSchema<
+	schema extends StandardSchemaV1,
+	i = StandardSchemaV1.InferInput<schema>,
+	o = StandardSchemaV1.InferOutput<schema>
+> = [i, o] extends [o, i] ? i : (In: i) => Out<o>
 
 // validates a shallow definition, ensuring it does not represent an optional or
 // defaultable before drilling down further. a definition is shallow if it is either...
@@ -159,7 +205,7 @@ export type inferTuple<def extends array, $, args> =
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = type.cast<unknown> | Fn | RegExp
+type Terminal = type.cast<unknown> | Fn | RegExp | StandardSchemaV1
 
 export type ThunkCast<t = unknown> = () => type.cast<t>
 
