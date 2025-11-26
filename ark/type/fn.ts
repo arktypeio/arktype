@@ -1,4 +1,4 @@
-import type { BaseRoot, IntersectionNode, TypeMeta } from "@ark/schema"
+import type { BaseRoot, IntersectionNode } from "@ark/schema"
 import {
 	Callable,
 	throwParseError,
@@ -8,7 +8,6 @@ import {
 	type get
 } from "@ark/util"
 import type { distill } from "./attributes.ts"
-import type { ArkConfig } from "./config.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { validateInnerDefinition } from "./parser/definition.ts"
 import type {
@@ -64,8 +63,6 @@ export interface FnParser<$ = {}> extends BaseFnParser<$> {
 	 * Useful when wrapping `fn` or using it to parse a dynamic definition.
 	 */
 	raw: RawFnParser
-
-	[key: string]: (meta: TypeMeta | string) => FnParser<$>
 }
 
 export type RawFnParser = (
