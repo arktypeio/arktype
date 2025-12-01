@@ -13,21 +13,4 @@ const User = type({
 	address: ZodAddress
 })
 
-const T = type({}).narrow((u, ctx) =>
-	ctx.reject({ code: "predicate", meta: { examples: [] } })
-)
-
-const out = T({})
-
-if (out instanceof ArkErrors) {
-	console.log(out[0].meta)
-}
-
-declare global {
-	interface ArkEnv {
-		meta(): {
-			// meta properties should always be optional
-			secretIngredient?: string
-		}
-	}
-}
+User
