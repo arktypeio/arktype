@@ -28,8 +28,7 @@ import { compileSerializedValue } from "./compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNodeDeclaration,
-	BaseNormalizedSchema,
-	NodeMeta
+	BaseNormalizedSchema
 } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
@@ -367,7 +366,7 @@ export interface UnknownAttachments {
 	readonly innerJson: object
 	readonly innerHash: string
 
-	readonly meta: NodeMeta
+	readonly meta: ArkEnv.meta
 	readonly metaJson: object
 
 	readonly json: object
