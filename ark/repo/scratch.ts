@@ -1,5 +1,5 @@
-import { ArkErrors, type } from "arktype"
-import * as v from "valibot"
-import z from "zod"
+import { regex } from "arkregex"
 
-const isParsableDate = (s: string) => !Number.isNaN(new Date(s).valueOf())
+const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
+
+S
