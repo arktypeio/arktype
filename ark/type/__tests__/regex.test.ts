@@ -99,7 +99,7 @@ contextualize(() => {
 			email: regex("^.*@.*$")
 		})
 
-		attest(T.expression).snap()
+		attest(T.expression).snap("{ email: /^.*@.*$/ }")
 		attest<
 			Type<{
 				email: `${string}@${string}`
