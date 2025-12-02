@@ -95,7 +95,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	compiledErrorContext = compileObjectLiteral(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.predicate(data, ctx.external))
+		const errorCount = ctx.currentErrorCount
+		if (
+			!this.predicate(data, ctx.external) &&
+			ctx.currentErrorCount === errorCount
+		)
 			ctx.errorFromNodeContext(this.errorContext)
 	}
 
