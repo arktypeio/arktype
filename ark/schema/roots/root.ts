@@ -47,7 +47,10 @@ import {
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { StandardSchemaV1 } from "../shared/standardSchema.ts"
+import type {
+	StandardJSONSchemaV1,
+	StandardSchemaV1
+} from "../shared/standardSchema.ts"
 import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
@@ -69,7 +72,7 @@ export abstract class BaseRoot<
 		out d extends InternalRootDeclaration = InternalRootDeclaration
 	>
 	extends BaseNode<d>
-	implements StandardSchemaV1.WithJSONSchemaSource
+	implements StandardSchemaV1, StandardJSONSchemaV1
 {
 	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
@@ -103,14 +106,17 @@ export abstract class BaseRoot<
 				if (out instanceof ArkErrors) return out
 				return { value: out }
 			},
-			toJSONSchema: opts => {
-				if (opts.target && opts.target !== "draft-2020-12") {
-					return throwParseError(
-						`JSONSchema target '${opts.target}' is not supported (must be "draft-2020-12")`
-					)
-				}
-				if (opts.io === "input") return this.rawIn.toJsonSchema() as never
-				return this.rawOut.toJsonSchema() as never
+			jsonSchema: {
+				input: opts =>
+					this.rawIn.toJsonSchema({
+						target: validateStandardJsonSchemaTarget(opts.target),
+						...opts.libraryOptions
+					}) as never,
+				output: opts =>
+					this.rawOut.toJsonSchema({
+						target: validateStandardJsonSchemaTarget(opts.target),
+						...opts.libraryOptions
+					}) as never
 			}
 		}
 	}
@@ -164,19 +170,26 @@ export abstract class BaseRoot<
 		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
 
 		if (ctx.useRefs) {
-			schema.$defs = flatMorph(this.references, (i, ref) =>
+			const defs = flatMorph(this.references, (i, ref) =>
 				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
 					[ref.id, ref.toResolvedJsonSchema(ctx)]
 				:	[]
 			)
+			// draft-2020-12 uses $defs, draft-07 uses definitions
+			if (ctx.target === "draft-07")
+				Object.assign(schema, { definitions: defs })
+			else schema.$defs = defs
 		}
 
 		return schema
 	}
 
 	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
-		if (ctx.useRefs && !this.alwaysExpandJsonSchema)
-			return { $ref: `#/$defs/${this.id}` }
+		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
+			// draft-2020-12 uses $defs, draft-07 uses definitions
+			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
+			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
+		}
 
 		return this.toResolvedJsonSchema(ctx)
 	}
@@ -661,6 +674,23 @@ export type UndeclaredKeyConfig = {
 export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 
 export type emptyBrandNameMessage = typeof emptyBrandNameMessage
+
+const supportedJsonSchemaTargets: ToJsonSchema.Target[] = [
+	"draft-2020-12",
+	"draft-07"
+]
+
+export const writeInvalidJsonSchemaTargetMessage = (target: string): string =>
+	`JSONSchema target '${target}' is not supported (must be ${supportedJsonSchemaTargets.map(t => `"${t}"`).join(" or ")})`
+
+const validateStandardJsonSchemaTarget = (
+	target: StandardJSONSchemaV1.Target
+): ToJsonSchema.Target => {
+	if (!includes(supportedJsonSchemaTargets, target))
+		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
+
+	return target
+}
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 	schema: schema

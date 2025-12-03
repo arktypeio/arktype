@@ -259,9 +259,8 @@ export class Traversal {
 				// if an ArkError was returned, ensure it has been added to errors
 				// (it may have already been added via ctx.error() within the morph)
 				// Only add if it's not already in the errors collection
-				if (!this.errors.includes(result)) {
-					this.errors.add(result)
-				}
+				if (!this.errors.includes(result)) this.errors.add(result)
+
 				// skip any remaining morphs at the current path
 				break
 			}

@@ -1371,7 +1371,10 @@ contextualize(() => {
 
 	it("many repeated bigint", () => {
 		const S = regex("^\\d{64}$")
-		attest(S).type.toString.snap()
+		attest(S).type.toString.snap(`Regex<
+	\`\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\`,
+	{}
+>`)
 	})
 
 	describe("regex.as", () => {

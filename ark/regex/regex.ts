@@ -29,15 +29,13 @@ export interface Regex<
 		[pattern, ...this["inferCaptures"]],
 		this["inferNamedCaptures"],
 		this["flags"]
-	> 
+	>
 
 	flags: ctx["flags"] extends Flags ? ctx["flags"] : ""
 
 	test(s: string): s is pattern
 
-	exec(
-		s: string
-	): this["inferExecArray"] | null
+	exec(s: string): this["inferExecArray"] | null
 	// allow extension of base RegExp with more accurate types
 	// since parameters are identical, this overload will never be hit
 	exec(s: string): never
