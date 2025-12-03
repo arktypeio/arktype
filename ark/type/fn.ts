@@ -17,42 +17,41 @@ import type {
 import type { InternalScope, Scope } from "./scope.ts"
 import type { Type } from "./type.ts"
 
-export interface FnParser<$ = {}> {
-	<
-		const args extends readonly unknown[],
-		paramsT extends readonly unknown[] = inferTupleLiteral<
-			args extends readonly [...infer params, ":", unknown] ? params : args,
-			$,
-			{}
-		>,
-		returnT = args extends readonly [...unknown[], ":", infer returnDef] ?
-			type.infer<returnDef, $>
-		:	unknown
-	>(
-		...args: {
-			[i in keyof args]: conform<args[i], get<validateFnArgs<args, $>, i>>
-		}
-	): <
-		internalSignature extends (
-			...args: distill.Out<paramsT>
-		) => distill.In<returnT>,
-		externalSignature extends Fn = (
-			...args: applyElementLabels<
-				distill.In<paramsT>,
-				Parameters<internalSignature>
-			>
-		) => args extends readonly [...unknown[], ":", unknown] ?
-			distill.Out<returnT>
-		:	ReturnType<internalSignature>
-	>(
-		implementation: internalSignature
-	) => TypedFn<
-		externalSignature,
+export type BaseFnParser<$ = {}> = <
+	const args extends readonly unknown[],
+	paramsT extends readonly unknown[] = inferTupleLiteral<
+		args extends readonly [...infer params, ":", unknown] ? params : args,
 		$,
-		args extends readonly [...unknown[], ":", unknown] ? Return.introspectable
-		:	{}
-	>
+		{}
+	>,
+	returnT = args extends readonly [...unknown[], ":", infer returnDef] ?
+		type.infer<returnDef, $>
+	:	unknown
+>(
+	...args: {
+		[i in keyof args]: conform<args[i], get<validateFnArgs<args, $>, i>>
+	}
+) => <
+	internalSignature extends (
+		...args: distill.Out<paramsT>
+	) => distill.In<returnT>,
+	externalSignature extends Fn = (
+		...args: applyElementLabels<
+			distill.In<paramsT>,
+			Parameters<internalSignature>
+		>
+	) => args extends readonly [...unknown[], ":", unknown] ? distill.Out<returnT>
+	:	ReturnType<internalSignature>
+>(
+	implementation: internalSignature
+) => TypedFn<
+	externalSignature,
+	$,
+	args extends readonly [...unknown[], ":", unknown] ? Return.introspectable
+	:	{}
+>
 
+export interface FnParser<$ = {}> extends BaseFnParser<$> {
 	/**
 	 * The {@link Scope} in which definitions passed to this function will be parsed.
 	 */

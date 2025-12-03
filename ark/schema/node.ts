@@ -40,7 +40,6 @@ import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
-	NodeMeta,
 	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
@@ -848,6 +847,6 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
-	innerWithMeta: Inner<kind> & { meta: NodeMeta },
+	innerWithMeta: Inner<kind> & { meta: ArkEnv.meta },
 	ctx: DeepNodeTransformContext
 ) => NormalizedSchema<kind> | null

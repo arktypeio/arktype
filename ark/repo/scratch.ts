@@ -1,12 +1,5 @@
-declare const snippet: string
-
 import { regex } from "arkregex"
 
-const htmlTag = regex("^<(?<tag>[a-zA-Z]+)>.*?</\\k<tag>>$")
+const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
 
-// match opening and closing html tags
-const matches = htmlTag.exec(snippet)
-
-if (matches) {
-	console.log(matches.groups.tag)
-}
+S

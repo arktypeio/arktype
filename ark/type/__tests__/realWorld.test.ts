@@ -6,6 +6,7 @@ import {
 } from "@ark/schema"
 import { scope, type, type Module, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
+import { AssertionError } from "node:assert"
 
 declare class TimeStub {
 	declare readonly isoString: string
@@ -1397,5 +1398,26 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		})
 
 		someFunction(schema)
+	})
+
+	it("reports all string.date errors", () => {
+		const Thing = type({
+			date1: "string.date",
+			date2: "string.date",
+			date3: "string.date"
+		})
+
+		const out = Thing({
+			date1: "",
+			date2: "",
+			date3: ""
+		})
+
+		if (!(out instanceof type.errors)) throw new AssertionError({})
+
+		attest(out.length).equals(3)
+		attest(out.summary).snap(`date1 must be a parsable date (was "")
+date2 must be a parsable date (was "")
+date3 must be a parsable date (was "")`)
 	})
 })

@@ -1,5 +1,17 @@
 # arkregex
 
+## 0.0.4
+
+### consecutive `${bigint}`s are no longer collapsed
+
+```ts
+// was: Regex<`${bigint}`>
+// now: Regex<`${bigint}${bigint}`>
+regex("^\\d\\d$")
+```
+
+Though the new representation will be longer for some expressions, it is required to correctly allow a zero-prefix like `"01"` in this case.
+
 ## 0.0.3
 
 ### fix quantifier behavior for non-natural numbers

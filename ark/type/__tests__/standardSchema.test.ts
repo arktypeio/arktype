@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import type { StandardJSONSchemaSourceV1, StandardSchemaV1 } from "@ark/schema"
+import {
+	writeInvalidJsonSchemaTargetMessage,
+	type StandardJSONSchemaV1,
+	type StandardSchemaV1
+} from "@ark/schema"
 import type { promisable } from "@ark/util"
 import { type } from "arktype"
 
@@ -40,15 +44,118 @@ contextualize(() => {
 		attest<{ foo: number }>(result.output)
 	})
 
-	it("toJSONSchema", () => {
-		const T = type({ foo: "string" })
-		const standard: StandardJSONSchemaSourceV1 = T
-		const jsonSchema = standard["~standard"].toJSONSchema({ io: "input" })
-		attest(jsonSchema).snap({
-			$schema: "https://json-schema.org/draft/2020-12/schema",
-			type: "object",
-			properties: { foo: { type: "string" } },
-			required: ["foo"]
+	describe("~standard.jsonSchema", () => {
+		it("generates input schema with draft-2020-12", () => {
+			const T = type({ foo: "string" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.input({
+				target: "draft-2020-12"
+			})
+			attest(jsonSchema).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { foo: { type: "string" } },
+				required: ["foo"]
+			})
+		})
+
+		it("generates output schema with draft-2020-12", () => {
+			const T = type({ foo: "string" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.output({
+				target: "draft-2020-12"
+			})
+			attest(jsonSchema).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { foo: { type: "string" } },
+				required: ["foo"]
+			})
+		})
+
+		it("generates input schema with draft-07", () => {
+			const T = type({ foo: "string" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.input({
+				target: "draft-07"
+			})
+			attest(jsonSchema).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "object",
+				properties: { foo: { type: "string" } },
+				required: ["foo"]
+			})
+		})
+
+		it("generates output schema with draft-07", () => {
+			const T = type({ foo: "string" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.output({
+				target: "draft-07"
+			})
+			attest(jsonSchema).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "object",
+				properties: { foo: { type: "string" } },
+				required: ["foo"]
+			})
+		})
+
+		it("passes libraryOptions to toJsonSchema", () => {
+			const T = type({ foo: "string" })
+			const standard: StandardJSONSchemaV1 = T
+			const jsonSchema = standard["~standard"].jsonSchema.input({
+				target: "draft-2020-12",
+				libraryOptions: {
+					dialect: null
+				}
+			})
+			attest(jsonSchema).snap({
+				type: "object",
+				properties: { foo: { type: "string" } },
+				required: ["foo"]
+			})
+		})
+
+		it("throws for unsupported target", () => {
+			const T = type({ foo: "string" })
+			const standard: StandardJSONSchemaV1 = T
+			attest(() =>
+				standard["~standard"].jsonSchema.input({
+					target: "openapi-3.0"
+				})
+			).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
+		})
+
+		it("generates different input/output schemas for morphs", () => {
+			const T = type({ foo: "string.numeric.parse" })
+			const standard: StandardJSONSchemaV1 = T
+
+			const inputSchema = standard["~standard"].jsonSchema.input({
+				target: "draft-2020-12"
+			})
+			attest(inputSchema).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					foo: {
+						type: "string",
+						pattern:
+							"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$"
+					}
+				},
+				required: ["foo"]
+			})
+
+			const outputSchema = standard["~standard"].jsonSchema.output({
+				target: "draft-2020-12"
+			})
+			attest(outputSchema).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { foo: { type: "number" } },
+				required: ["foo"]
+			})
 		})
 	})
 })

@@ -1,5 +1,12 @@
-import { isKeyOf, throwParseError, type Scanner } from "@ark/util"
-import type { regex } from "arkregex"
+import { rootSchema } from "@ark/schema"
+import {
+	isKeyOf,
+	throwParseError,
+	type ErrorMessage,
+	type Scanner
+} from "@ark/util"
+import type { Regex, regex } from "arkregex"
+import type { Out } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
@@ -15,6 +22,15 @@ export type DoubleQuotedStringLiteral<contents extends string = string> =
 export type SingleQuotedStringLiteral<contents extends string = string> =
 	`'${contents}'`
 
+const regexExecArray = rootSchema({
+	proto: "Array",
+	sequence: "string",
+	required: {
+		key: "groups",
+		value: ["object", { unit: undefined }]
+	}
+})
+
 export const parseEnclosed = (
 	s: RuntimeState,
 	enclosing: EnclosingStartToken
@@ -27,9 +43,11 @@ export const parseEnclosed = (
 
 	// Shift the scanner one additional time for the second enclosing token
 	s.scanner.shift()
-	if (enclosing === "/") {
+	if (enclosing in enclosingRegexTokens) {
+		let regex: RegExp
+
 		try {
-			new RegExp(enclosed)
+			regex = new RegExp(enclosed)
 		} catch (e) {
 			throwParseError(String(e))
 		}
@@ -42,6 +60,14 @@ export const parseEnclosed = (
 			},
 			{ prereduced: true }
 		)
+
+		if (enclosing === "x/") {
+			s.root = s.ctx.$.node("morph", {
+				in: s.root,
+				morphs: (s: string) => regex.exec(s),
+				declaredOut: regexExecArray
+			})
+		}
 	} else if (isKeyOf(enclosing, enclosingQuote))
 		s.root = s.ctx.$.node("unit", { unit: enclosed })
 	else {
@@ -60,20 +86,49 @@ export type parseEnclosed<
 		EnclosingTokens[enclosingStart],
 		""
 	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
-		nextUnscanned extends "" ?
-			s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
-		:	s.setRoot<
-				s,
-				InferredAst<
-					enclosingStart extends EnclosingQuote ? scanned
-					: enclosingStart extends "/" ? regex.infer<scanned>
-					: Date,
-					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
-				>,
-				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
-				:	""
-			>
+		_parseEnclosed<s, enclosingStart, scanned, nextUnscanned>
 	:	never
+
+type _parseEnclosed<
+	s extends StaticState,
+	enclosingStart extends EnclosingStartToken,
+	scanned extends string,
+	nextUnscanned extends string,
+	def extends
+		string = `${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+> =
+	nextUnscanned extends "" ?
+		s.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+	: enclosingStart extends EnclosingQuote ?
+		s.setRoot<
+			s,
+			InferredAst<scanned, def>,
+			nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
+			:	""
+		>
+	: enclosingStart extends EnclosingRegexToken ?
+		regex.parse<scanned> extends infer r ?
+			r extends Regex ?
+				s.setRoot<
+					s,
+					InferredAst<
+						enclosingStart extends "/" ? r["infer"]
+						:	(In: r["infer"]) => Out<r["inferExecArray"]>,
+						def
+					>,
+					nextUnscanned extends Scanner.shift<string, infer unscanned> ?
+						unscanned
+					:	""
+				>
+			: r extends ErrorMessage<infer e> ? s.error<e>
+			: never
+		:	never
+	:	s.setRoot<
+			s,
+			InferredAst<Date, def>,
+			nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
+			:	""
+		>
 
 export const enclosingQuote = {
 	"'": 1,
@@ -96,12 +151,19 @@ export const enclosingLiteralTokens = {
 } as const
 
 export type EnclosingLiteralTokens = typeof enclosingLiteralTokens
-
 export type EnclosingLiteralStartToken = keyof EnclosingLiteralTokens
+
+export const enclosingRegexTokens = {
+	"/": "/",
+	"x/": "/"
+} as const
+
+export type EnclosingRegexTokens = typeof enclosingRegexTokens
+export type EnclosingRegexToken = keyof EnclosingRegexTokens
 
 export const enclosingTokens = {
 	...enclosingLiteralTokens,
-	"/": "/"
+	...enclosingRegexTokens
 } as const
 
 export type EnclosingTokens = typeof enclosingTokens

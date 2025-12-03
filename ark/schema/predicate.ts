@@ -95,7 +95,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	compiledErrorContext = compileObjectLiteral(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.predicate(data, ctx.external) && !ctx.hasError())
+		const errorCount = ctx.currentErrorCount
+		if (
+			!this.predicate(data, ctx.external) &&
+			ctx.currentErrorCount === errorCount
+		)
 			ctx.errorFromNodeContext(this.errorContext)
 	}
 
@@ -104,8 +108,12 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			js.return(this.compiledCondition)
 			return
 		}
-		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
-			js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+
+		js.initializeErrorCount()
+		js.if(
+			// only add the default error if the predicate didn't add one itself
+			`${this.compiledNegation} && ctx.currentErrorCount === errorCount`,
+			() => js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
 		)
 	}
 

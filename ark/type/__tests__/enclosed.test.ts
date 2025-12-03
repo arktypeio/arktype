@@ -1,5 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { writeUnclosedGroupMessage } from "@ark/util"
+import type { RegexExecArray } from "arkregex/internal/execArray.ts"
+import { type, type Out, type Type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/shift/operand/enclosed.ts"
 
 contextualize(() => {
@@ -58,9 +60,60 @@ contextualize(() => {
 	})
 
 	it("invalid regex", () => {
-		attest(() => type("/[/")).throws(
-			"Invalid regular expression: /[/: Unterminated character class"
+		// @ts-expect-error
+		attest(() => type("/[/"))
+			.throws("Invalid regular expression: /[/: Unterminated character class")
+			.type.errors(writeUnclosedGroupMessage("]"))
+	})
+
+	it("regex exec literal", () => {
+		const T = type("x/^a(b)c$/")
+		attest<Type<(In: "abc") => Out<RegexExecArray<["abc", "b"], {}, "">>>>(T)
+		attest(T.expression).snap(
+			"(In: /^a(b)c$/) => Out<{ groups: object | undefined } & string[]>"
 		)
+		attest(T("abc")).snap(["abc", "b"])
+	})
+
+	it("invalid regex exec literal", () => {
+		// @ts-expect-error
+		attest(() => type("x/[/"))
+			.throws("Invalid regular expression: /[/: Unterminated character class")
+			.type.errors(writeUnclosedGroupMessage("]"))
+	})
+
+	it("nested regex exec literal", () => {
+		const User = type({
+			// x-prefix a regex literal to parse its type-safe capture groups
+			birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+		})
+
+		attest<
+			Type<{
+				birthday: (
+					In: `${bigint}${bigint}-${bigint}${bigint}-${bigint}${bigint}${bigint}${bigint}`
+				) => Out<
+					RegexExecArray<
+						[
+							`${bigint}${bigint}-${bigint}${bigint}-${bigint}${bigint}${bigint}${bigint}`,
+							`${bigint}${bigint}`,
+							`${bigint}${bigint}`,
+							`${bigint}${bigint}${bigint}${bigint}`
+						],
+						{
+							month: `${bigint}${bigint}`
+							day: `${bigint}${bigint}`
+							year: `${bigint}${bigint}${bigint}${bigint}`
+						},
+						""
+					>
+				>
+			}>
+		>(User)
+
+		const data = User.assert({ birthday: "05-21-1993" })
+
+		attest(data.birthday.groups).snap({ month: "05", day: "21", year: "1993" })
 	})
 
 	it("mixed quote types", () => {

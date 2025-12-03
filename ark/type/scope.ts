@@ -354,7 +354,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 }
 
 export const scope: ScopeParser = Object.assign(InternalScope.scope, {
-	define: def => def as never
+	define: (def: unknown) => def as never
 } satisfies ScopeParserAttachments)
 
 export declare namespace scope {

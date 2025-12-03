@@ -745,24 +745,12 @@ type appendNonRedundant<base extends string, suffix extends string> =
 		string extends suffix ?
 			string
 		:	`${base}${suffix}`
-	: // this is not generalizable, but arkregex uses `${bigint}`
-	// to represent digits without a `-`, so it is valid to merge them
-	`${bigint}` extends base ?
-		`${bigint}` extends suffix ?
-			`${bigint}`
-		:	`${base}${suffix}`
 	:	`${base}${suffix}`
 
 type prependNonRedundant<base extends string, prefix extends string> =
 	string extends base ?
 		string extends prefix ?
 			string
-		:	`${prefix}${base}`
-	: // this is not generalizable, but arkregex uses `${bigint}`
-	// to represent digits without a `-`, so it is valid to merge them
-	`${bigint}` extends base ?
-		`${bigint}` extends prefix ?
-			`${bigint}`
 		:	`${prefix}${base}`
 	:	`${prefix}${base}`
 

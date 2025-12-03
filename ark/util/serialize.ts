@@ -64,7 +64,7 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":
 			const o = data as dict
-			const ctorName = o.constructor.name
+			const ctorName = o.constructor?.name ?? "Object"
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
@@ -98,7 +98,7 @@ const stringifyUnquoted = (
 		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
 	}
 
-	const ctorName = value.constructor.name
+	const ctorName = value.constructor?.name ?? "Object"
 
 	if (ctorName === "Object") {
 		const keyValues = stringAndSymbolicEntriesOf(value).map(([key, val]) => {

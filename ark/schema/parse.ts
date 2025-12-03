@@ -23,7 +23,7 @@ import {
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import type { NodeMeta, TypeMeta } from "./shared/declare.ts"
+import type { TypeMeta } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
@@ -157,7 +157,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		meta?: TypeMeta.Collapsible
 	}
 
-	const meta: NodeMeta & dict =
+	const meta: ArkEnv.meta & dict =
 		metaSchema === undefined ? {}
 		: typeof metaSchema === "string" ? { description: metaSchema }
 		: (metaSchema as never)
@@ -221,7 +221,7 @@ export type CreateNodeInput = {
 	id: NodeId
 	kind: NodeKind
 	inner: dict
-	meta: NodeMeta
+	meta: ArkEnv.meta
 	$: BaseScope
 	ignoreCache?: true
 }
@@ -259,7 +259,7 @@ export const createNode = ({
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
 	let json = { ...innerJson }
-	let metaJson: NodeMeta & dict = {}
+	let metaJson: ArkEnv.meta & dict = {}
 
 	if (!isEmptyObject(meta)) {
 		metaJson = flatMorph(meta, (k, v) => [

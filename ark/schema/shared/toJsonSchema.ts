@@ -10,6 +10,7 @@ import {
 import type { Predicate } from "../predicate.ts"
 import type { ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
+import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
 
 class ToJsonSchemaError<
 	code extends ToJsonSchema.Code = ToJsonSchema.Code
@@ -32,6 +33,7 @@ class ToJsonSchemaError<
 }
 
 const defaultConfig: ToJsonSchema.Context = {
+	target: "draft-2020-12",
 	dialect: "https://json-schema.org/draft/2020-12/schema",
 	useRefs: false,
 	fallback: {
@@ -202,15 +204,31 @@ export declare namespace ToJsonSchema {
 
 	export type FallbackOption = UniversalFallback | FallbackObject
 
+	export type Target = satisfy<
+		StandardJSONSchemaV1.Target,
+		"draft-2020-12" | "draft-07"
+	>
+
 	export interface Options {
 		/** value to assign to the generated $schema key
 		 *
 		 *  - set to `null` to omit the `$schema` key
 		 *  - does not affect the contents of the generated schema
+		 *  - if `target` is also specified, `dialect` takes precedence
 		 *
 		 * @default "https://json-schema.org/draft/2020-12/schema"
 		 */
 		dialect?: string | null
+		/**
+		 * Shorthand for specifying the target JSON Schema version.
+		 * Maps to the appropriate `dialect` URL.
+		 *
+		 *  - "draft-2020-12" -> "https://json-schema.org/draft/2020-12/schema"
+		 *  - "draft-07" -> "http://json-schema.org/draft-07/schema#"
+		 *
+		 * If `dialect` is also specified, `dialect` takes precedence.
+		 */
+		target?: Target
 		useRefs?: boolean
 		fallback?: FallbackOption
 	}

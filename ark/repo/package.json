@@ -13,6 +13,7 @@
 		"ts-pattern": "5.8.0",
 		"type-fest": "5.1.0",
 		"typescript": "catalog:",
+		"valibot": "1.1.0",
 		"zod": "4.1.12"
 	},
 	"scripts": {

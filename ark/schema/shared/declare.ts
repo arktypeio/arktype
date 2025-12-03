@@ -15,9 +15,7 @@ export interface DefaultArkEnv {
 	onFail(errors: ArkErrors): ArkErrors
 }
 
-export interface NodeMeta
-	extends JsonSchema.UniversalMeta,
-		UnknownErrorConfigs {
+interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	alias?: string
 	onFail?: ArkErrors.Handler
 }
@@ -69,7 +67,7 @@ interface DeclarationInput {
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
 	readonly description?: string
 	readonly code: kind
-	readonly meta: NodeMeta
+	readonly meta: ArkEnv.meta
 }
 
 export type defaultErrorContext<d extends DeclarationInput> = show<

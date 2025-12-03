@@ -488,8 +488,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		schema: JsonSchema.Array,
 		ctx: ToJsonSchema.Context
 	): JsonSchema.Array {
+		const isDraft07 = ctx.target === "draft-07"
+
 		if (this.prevariadic.length) {
-			schema.prefixItems = this.prevariadic.map(el => {
+			const prefixSchemas = this.prevariadic.map(el => {
 				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
 				if (el.kind === "defaultables") {
 					const value =
@@ -505,6 +507,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				}
 				return valueSchema
 			})
+
+			// draft-07 uses items as array, draft-2020-12 uses prefixItems
+			if (isDraft07) schema.items = prefixSchemas as JsonSchema.Branch[]
+			else schema.prefixItems = prefixSchemas
 		}
 
 		// by default JSON schema prefixElements are optional
@@ -512,26 +518,32 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		if (this.minLength) schema.minItems = this.minLength
 
 		if (this.variadic) {
-			// alias schema for narrowing (Object.assign mutates anyways)
-			const variadicSchema = Object.assign(schema, {
-				items: this.variadic.toJsonSchemaRecurse(ctx)
-			})
+			const variadicItemSchema = this.variadic.toJsonSchemaRecurse(ctx)
+
+			// draft-07 uses additionalItems when items is an array (tuple),
+			// draft-2020-12 uses items
+			if (isDraft07 && this.prevariadic.length)
+				schema.additionalItems = variadicItemSchema
+			else schema.items = variadicItemSchema
 
 			// maxLength constraint will be enforced by items: false
 			// for non-variadic arrays
-			if (this.maxLength) variadicSchema.maxItems = this.maxLength
+			if (this.maxLength) schema.maxItems = this.maxLength
 
 			// postfix can only be present if variadic is present so nesting this is fine
 			if (this.postfix) {
 				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
 				schema = ctx.fallback.arrayPostfix({
 					code: "arrayPostfix",
-					base: variadicSchema,
+					base: schema as ToJsonSchema.VariadicArraySchema,
 					elements
 				})
 			}
 		} else {
-			schema.items = false
+			// For fixed-length tuples without variadic elements
+			// draft-07 uses additionalItems: false, draft-2020-12 uses items: false
+			if (isDraft07) schema.additionalItems = false
+			else schema.items = false
 			// delete maxItems constraint that will have been added by the
 			// base intersection node to enforce fixed length
 			delete schema.maxItems
