@@ -1,5 +1,81 @@
 # arktype
 
+## 2.1.28
+
+### JSON Schema improvements
+
+- Adds support for the new Standard JSON Schema interface (see standardschema.dev)
+- Now accepts a `target` option and can generate draft-07 in addition to draft-2020-12
+
+### Standard Schema is now a valid definition
+
+Any Standard Schema compliant validator can now be passed directly to `type`, either directly or nested in a structural ArkType definition, and will be fully inferred and validated.
+
+```ts
+import { type } from "arktype"
+import * as v from "valibot"
+import z from "zod"
+
+const ZodAddress = z.object({
+	street: z.string(),
+	city: z.string()
+})
+
+const User = type({
+	name: "string",
+	age: v.number(),
+	address: ZodAddress
+})
+```
+
+### e(x)ec mode for regex types
+
+```ts
+const User = type({
+	// x-prefix a regex literal to parse its type-safe capture groups
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+const data = User.assert({ birthday: "05-21-1993" })
+
+// fully type-safe via arkregex
+console.log(data.birthday.groups) // { month: "05", day: "21", year: "1993" }
+```
+
+### more flexible `type.declare`
+
+Optionality can now be expressed via a property value in addition to its key:
+
+```ts
+type Expected = { f?: string }
+
+const T = type.declare<Expected>().type({
+	// previously failed with `"f?" is missing`
+	f: "string?"
+})
+```
+
+### fixed a bug causing predicate errors after the first to not be reported
+
+```ts
+import { type } from "arktype"
+
+const Dates = type({
+	date1: "string.date",
+	date2: "string.date",
+	date3: "string.date"
+})
+
+// now correctly reports the errors on `date2` and `date3` in addition to `date1`
+Dates.assert({
+	date1: "",
+	date2: "",
+	date3: ""
+})
+```
+
+See https://github.com/arktypeio/arktype/issues/1557
+
 ## 2.1.27
 
 ### fix assignability for certain objects like `Module`
