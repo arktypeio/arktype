@@ -1,7 +1,7 @@
 {
 	"name": "arkregex",
 	"description": "A drop-in replacement for new RegExp() with types",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",

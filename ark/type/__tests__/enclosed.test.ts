@@ -90,20 +90,18 @@ contextualize(() => {
 
 		attest<
 			Type<{
-				birthday: (
-					In: `${bigint}${bigint}-${bigint}${bigint}-${bigint}${bigint}${bigint}${bigint}`
-				) => Out<
+				birthday: (In: `${number}-${number}-${number}`) => Out<
 					RegexExecArray<
 						[
-							`${bigint}${bigint}-${bigint}${bigint}-${bigint}${bigint}${bigint}${bigint}`,
-							`${bigint}${bigint}`,
-							`${bigint}${bigint}`,
-							`${bigint}${bigint}${bigint}${bigint}`
+							`${number}-${number}-${number}`,
+							`${number}`,
+							`${number}`,
+							`${number}`
 						],
 						{
-							month: `${bigint}${bigint}`
-							day: `${bigint}${bigint}`
-							year: `${bigint}${bigint}${bigint}${bigint}`
+							month: `${number}`
+							day: `${number}`
+							year: `${number}`
 						},
 						""
 					>

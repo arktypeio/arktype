@@ -13,7 +13,7 @@ const ok = regex("^ok$", "i")
 // Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 
 const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
-// Regex<`${bigint}.${bigint}.${bigint}`, { captures: [`${bigint}`, `${bigint}`, `${bigint}`] }>
+// Regex<`${number}.${number}.${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
 
 const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
 // Regex<`${string}@${string}.${string}`, { names: { name: string; domain: `${string}.${string}`; }; ...>
