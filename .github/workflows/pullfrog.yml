@@ -4,11 +4,11 @@ on:
     inputs:
       prompt:
         type: string
-        description: 'Agent prompt'
+        description: Agent prompt
   workflow_call:
     inputs:
       prompt:
-        description: 'Agent prompt'
+        description: Agent prompt
         type: string
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
       # optionally, setup your repo here
       # the agent can figure this out itself, but pre-setup is more efficient
       # - uses: actions/setup-node@v6
-      
+
       - name: Run agent
         uses: pullfrog/action@v0
         with:
@@ -39,4 +39,3 @@ jobs:
           google_api_key: ${{ secrets.GOOGLE_API_KEY }}
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           cursor_api_key: ${{ secrets.CURSOR_API_KEY }}
-          
