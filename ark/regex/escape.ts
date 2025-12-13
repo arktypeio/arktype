@@ -48,7 +48,7 @@ type parseSingleEscapedCharacter<
 
 export type parseEscapedChar<char extends string> =
 	char extends RegexClassChar ? string
-	: char extends "d" ? `${bigint}`
+	: char extends "d" ? `${number}`
 	: char extends "s" ? WhitespaceChar
 	: // does not consume tokens
 	char extends BoundaryChar ? ""

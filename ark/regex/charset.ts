@@ -56,7 +56,7 @@ type parseDash<
 // don't infer the full union of characters for ranges as it would blow up tsc
 // immediately, but handle cases like 0-9 better than just `string`
 type inferRange<start extends string, end extends string> =
-	start | end extends StringDigit ? `${bigint}` : string
+	start | end extends StringDigit ? `${number}` : string
 
 type UnescapedDashMarker = noSuggest<"dash">
 

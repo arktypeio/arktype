@@ -1,5 +1,17 @@
 # arktype
 
+## 2.1.29
+
+### Improve regex inference for certain numeric expressions
+
+```ts
+// was: Regex<`${bigint}${bigint}`>
+// now: Regex<`${number}`>
+regex("^\\d{2}$")
+```
+
+See arkregex CHANGELOG for full notes.
+
 ## 2.1.28
 
 ### JSON Schema improvements

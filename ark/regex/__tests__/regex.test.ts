@@ -42,7 +42,7 @@ import {
 type iterate<s extends State, until extends number, counter extends 1[] = []> =
 	counter["length"] extends until ? s : iterate<next<s>, until, [...counter, 1]>
 
-type _ParseResult = iterate<State.initialize<"^a..c$", "">, 4>
+type _ParseResult = iterate<State.initialize<"^\\d\\d$", "">, 4>
 type _AstResult = State.Group.finalize<_ParseResult>
 type _FinalizedResult = s.finalize<_ParseResult>
 
@@ -58,7 +58,7 @@ type _Tree = SequenceTree<
 							UnionTree<["1", string]>,
 							{
 								kind: "quantifier"
-								ast: `${bigint}`
+								ast: `${number}`
 								min: 0
 								max: null
 							}
@@ -413,7 +413,7 @@ contextualize(() => {
 			type Tree = State.Group.finalize<
 				iterate<State.initialize<"[1-9]", "">, 1>
 			>
-			attest<`${bigint}`, Tree>()
+			attest<`${number}`, Tree>()
 		})
 
 		it("literal dash start", () => {
@@ -430,7 +430,7 @@ contextualize(() => {
 			type Tree = State.Group.finalize<
 				iterate<State.initialize<"[0-9-Z]", "">, 1>
 			>
-			attest<"-" | "Z" | `${bigint}`, Tree>()
+			attest<"-" | "Z" | `${number}`, Tree>()
 
 			const S = regex("[a-z-Z]")
 			attest<Regex<string, {}>>(S)
@@ -466,8 +466,8 @@ contextualize(() => {
 
 		it("shorthand", () => {
 			const S = regex("^a[\\d]$")
-			attest<Regex<`a${bigint}`, {}>>(S).type.toString.snap(
-				"Regex<`a${bigint}`, {}>"
+			attest<Regex<`a${number}`, {}>>(S).type.toString.snap(
+				"Regex<`a${number}`, {}>"
 			)
 		})
 
@@ -497,8 +497,8 @@ contextualize(() => {
 
 		it("\\d", () => {
 			const S = regex("^a\\dc$")
-			attest<Regex<`a${bigint}c`, {}>>(S).type.toString.snap(
-				"Regex<`a${bigint}c`, {}>"
+			attest<Regex<`a${number}c`, {}>>(S).type.toString.snap(
+				"Regex<`a${number}c`, {}>"
 			)
 		})
 
@@ -1335,46 +1335,33 @@ contextualize(() => {
 
 		attest<
 			Regex<
-				`${bigint}${string}.${bigint}${string}.${bigint}${string}`,
+				`${number}.${number}.${number}`,
 				{
-					captures: [
-						`${bigint}${string}`,
-						`${bigint}${string}`,
-						`${bigint}${string}`
-					]
+					captures: [`${number}`, `${number}`, `${number}`]
 				}
 			>
 		>(S)
 	})
 
-	// these tests will break if `${bigint}${bigint}` collapses to `${bigint}`
-	// the same way `${string}` does
-	it("repeated bigints allow 0 prefix", () => {
+	// these tests will break if `${bigint}` is used instead of `${number}`
+	it("repeated digits allow 0 prefix", () => {
 		const S = regex("^\\d\\d$")
-		attest<Regex<`${bigint}${bigint}`, {}>>(S)
-		const value: typeof S.infer = "05"
-	})
-
-	// these tests will break if `${bigint}${bigint}` collapses to `${bigint}`
-	// the same way `${string}` does
-	it("repeated bigints allow 0 prefix", () => {
-		const S = regex("^\\d\\d$")
-		attest<Regex<`${bigint}${bigint}`, {}>>(S)
+		// we can't collapse this to a single `${number}` because of the performance cost
+		// of treating the StartAnchorMarker as an empty string every time we appendNonRedundant
+		attest<Regex<`${number}${number}`, {}>>(S)
 		const value: typeof S.infer = "05"
 	})
 
 	it("quantified bigints allow 0 prefix", () => {
 		const S = regex("^\\d{2}$")
-		attest<Regex<`${bigint}${bigint}`, {}>>(S)
+		attest<Regex<`${number}`, {}>>(S)
 		const value: typeof S.infer = "05"
 	})
 
-	it("many repeated bigint", () => {
+	it("many repeated digit", () => {
 		const S = regex("^\\d{64}$")
-		attest(S).type.toString.snap(`Regex<
-	\`\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\${bigint}\`,
-	{}
->`)
+		attest<Regex<`${number}`, {}>>(S)
+		attest(S).type.toString.snap("Regex<`${number}`, {}>")
 	})
 
 	describe("regex.as", () => {
