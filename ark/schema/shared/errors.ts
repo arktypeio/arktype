@@ -224,6 +224,7 @@ export class ArkErrors
 	add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
+			// only add if it's not already in the errors collection
 			if (error === existing) return
 			// If the existing error is an error for a value constrained to "never",
 			// then we don't want to intersect the error messages.
