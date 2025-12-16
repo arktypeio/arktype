@@ -140,6 +140,16 @@ contextualize(() => {
 		)
 	})
 
+	it("minItems (0)", () => {
+		const tMinItems = jsonSchemaToType({
+			type: "array",
+			minItems: 0,
+			items: { type: "string" }
+		})
+
+		attest(tMinItems.expression).snap("string[]")
+	})
+
 	it("uniqueItems", () => {
 		const tUniqueItems = jsonSchemaToType({
 			type: "array",
