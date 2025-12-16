@@ -80,4 +80,15 @@ contextualize(() => {
 		attest(() => jsonSchemaToType(schema))
 		attest(pattern.expression).snap("string")
 	})
+
+	it("string enums", () => {
+		const enumKeys = ["keyOne", "keyTwo"]
+
+		const stringEnums = jsonSchemaToType({
+			type: "string",
+			enum: enumKeys
+		})
+
+		attest(stringEnums.expression).snap('"keyOne" | "keyTwo"')
+	})
 })
