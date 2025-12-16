@@ -98,6 +98,11 @@ contextualize(() => {
 		)
 	})
 
+	it("minLength 0 reduces to unconstrained", () => {
+		const T = rootSchema({ domain: "string", minLength: 0 })
+		attest(T.expression).snap("string")
+	})
+
 	for (const [min, max] of entriesOf(boundKindPairsByLower)) {
 		describe(`${min}/${max}`, () => {
 			const basis =

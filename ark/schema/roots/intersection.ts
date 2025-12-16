@@ -426,7 +426,7 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 		.map(n => n.expression)
 		.join(" & ")
 
-	const fullExpression = `${basisExpression}${basisExpression ? " " : ""}${refinementsExpression}`
+	const fullExpression = `${basisExpression}${basisExpression && refinementsExpression ? " " : ""}${refinementsExpression}`
 
 	if (fullExpression === "Array == 0") return "[]"
 
