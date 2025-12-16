@@ -12,5 +12,5 @@ export const parseCommonJsonSchema = (
 		return type.unit(jsonSchema.const)
 	}
 
-	if ("enum" in jsonSchema) return type.enumerated(jsonSchema.enum)
+	if ("enum" in jsonSchema) return type.enumerated(...jsonSchema.enum)
 }

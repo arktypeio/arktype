@@ -57,4 +57,15 @@ contextualize(() => {
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
 		attest(tPatternString.allows("expression")).equals(true)
 	})
+
+	it("string enums", () => {
+		const enumKeys = ["keyOne", "keyTwo"]
+
+		const stringEnums = jsonSchemaToType({
+			type: "string",
+			enum: enumKeys
+		})
+
+		attest(stringEnums.expression).snap('"keyOne" | "keyTwo"')
+	})
 })
