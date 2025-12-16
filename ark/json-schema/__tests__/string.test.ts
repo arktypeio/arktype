@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
+import type { JsonSchemaOrBoolean } from "@ark/schema"
 
 contextualize(() => {
 	it("type string", () => {
@@ -67,5 +68,16 @@ contextualize(() => {
 		})
 
 		attest(stringEnums.expression).snap('"keyOne" | "keyTwo"')
+  })
+  
+	it("minLength (0)", () => {
+		const schema = {
+			type: "string",
+			minLength: 0
+		} satisfies JsonSchemaOrBoolean
+		const pattern = jsonSchemaToType(schema)
+
+		attest(() => jsonSchemaToType(schema))
+		attest(pattern.expression).snap("string")
 	})
 })
