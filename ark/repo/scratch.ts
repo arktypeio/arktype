@@ -1,5 +1,12 @@
-import { regex } from "arkregex"
+import { join } from "@ark/util"
+import { type } from "arktype"
 
-const S = regex("^a(?<foo>b(c)d)?e\\1\\2?$")
+const options = ["red", "blue"] as const
 
-S
+const color = type.enumerated(...options)
+
+const darkColorLiteral = type.enumerated(
+	...options.map(base => `${base}Dark` as const)
+)
+
+const darkColorRegex = type(`/^(${join(options, "|")})Dark$/`)
