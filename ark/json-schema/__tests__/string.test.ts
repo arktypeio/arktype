@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
+import type { JsonSchemaOrBoolean } from "@ark/schema"
 
 contextualize(() => {
 	it("type string", () => {
@@ -56,5 +57,16 @@ contextualize(() => {
 		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
 		attest(tPatternString.allows("expression")).equals(true)
+	})
+
+	it("minLength (0)", () => {
+		const schema = {
+			type: "string",
+			minLength: 0
+		} satisfies JsonSchemaOrBoolean
+		const pattern = jsonSchemaToType(schema)
+
+		attest(() => jsonSchemaToType(schema))
+		attest(pattern.expression).snap("string")
 	})
 })
