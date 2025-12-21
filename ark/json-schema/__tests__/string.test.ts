@@ -68,8 +68,8 @@ contextualize(() => {
 		})
 
 		attest(stringEnums.expression).snap('"keyOne" | "keyTwo"')
-  })
-  
+	})
+
 	it("minLength (0)", () => {
 		const schema = {
 			type: "string",
