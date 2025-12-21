@@ -579,17 +579,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		if (!viableCandidates.length) return null
 
-		// For cyclic unions, restrict to nested path discrimination (path.length > 0);
-		// root-level discrimination (path.length === 0) on recursive structures produces
-		// confusing errors referencing irrelevant branches. See issue #1547.
-		const applicableCandidates =
-			this.isCyclic ?
-				viableCandidates.filter(c => c.path.length > 0)
-			:	viableCandidates
-
-		if (!applicableCandidates.length) return null
-
-		const ctx = createCaseResolutionContext(applicableCandidates, this)
+		const ctx = createCaseResolutionContext(viableCandidates, this)
 
 		const cases: DiscriminatedCases = {}
 

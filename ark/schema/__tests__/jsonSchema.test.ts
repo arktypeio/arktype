@@ -250,6 +250,9 @@ contextualize(() => {
 						{ type: "boolean" },
 						{ type: "null" }
 					]
+				},
+				union7: {
+					anyOf: [{ $ref: "#/$defs/intersection11" }, { type: "boolean" }]
 				}
 			}
 		})

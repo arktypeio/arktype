@@ -26,7 +26,7 @@ contextualize(() => {
 			attest(Json([])).equals([])
 			attest(Json(5)?.toString()).snap("must be an object (was a number)")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be an object, a number, a string, false, null or true (was 5n) or foo must be a number, a string, false, null or true (was ["5n"])'
+				'foo["0"] must be an object (was a bigint)'
 			)
 		})
 
@@ -39,7 +39,7 @@ contextualize(() => {
 
 			// this error kind of sucks, would not be sad if it was discriminated and changed
 			attest(stringify({ foo: undefined }).toString()).snap(
-				"foo must be an object, a number, a string, false, null or true (was undefined)"
+				"foo must be an object (was undefined)"
 			)
 
 			// has declared out
