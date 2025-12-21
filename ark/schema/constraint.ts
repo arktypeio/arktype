@@ -145,6 +145,9 @@ export const constraintKeyParser =
 			return nodes.sort((l, r) => (l.hash < r.hash ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, schema)
+		// If the constraint was reduced to a root node (like unknown for minLength: 0),
+		// omit it from the schema since it's trivially satisfied
+		if (child.isRoot()) return
 		return (child.hasOpenIntersection() ? [child] : child) as never
 	}
 
