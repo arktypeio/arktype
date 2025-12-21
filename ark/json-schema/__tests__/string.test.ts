@@ -59,6 +59,17 @@ contextualize(() => {
 		attest(tPatternString.allows("expression")).equals(true)
 	})
 
+	it("string enums", () => {
+		const enumKeys = ["keyOne", "keyTwo"]
+
+		const stringEnums = jsonSchemaToType({
+			type: "string",
+			enum: enumKeys
+		})
+
+		attest(stringEnums.expression).snap('"keyOne" | "keyTwo"')
+	})
+
 	it("minLength (0)", () => {
 		const schema = {
 			type: "string",
