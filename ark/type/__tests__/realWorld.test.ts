@@ -1437,7 +1437,7 @@ date3 must be a parsable date (was "")`)
 			return type("string")
 		})
 
-		// preivously threw "TypeError: this.Foo1Apply is not a function"
+		// previously threw "TypeError: this.Foo1Apply is not a function"
 		const r = baz({ oneOf: [{}] })
 
 		attest(wasPiped).equals(true)

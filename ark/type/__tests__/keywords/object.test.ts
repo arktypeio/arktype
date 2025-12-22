@@ -37,7 +37,7 @@ contextualize(() => {
 
 			attest<string>(out).snap('{"foo":"bar"}')
 
-			// this error kind of sucks, would not be sad if it was discriminated and changed
+			// this error kind of sucks, should have more discriminant context
 			attest(stringify({ foo: undefined }).toString()).snap(
 				"foo must be an object (was undefined)"
 			)

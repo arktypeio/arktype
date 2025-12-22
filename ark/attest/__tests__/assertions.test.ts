@@ -1,6 +1,8 @@
 import { attest } from "@ark/attest"
 import { MissingSnapshotError } from "@ark/attest/internal/assert/assertions.ts"
 import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
+import { registeredReference } from "@ark/schema"
+import { register } from "@ark/util"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
 
@@ -168,11 +170,14 @@ describe("type assertions", () => {
 	})
 
 	it("does not boom on Type comparison", () => {
+		const expectedRef = register(type.number)
+		const actualRef = register(type.string)
+
 		// @ts-expect-error
 		attest(() => attest(type.string).equals(type.number)).throws
-			.snap(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference equal items
-Expected: Function(fn10)
-Actual: Function(fn11)`)
+			.equals(`AssertionError [ERR_ASSERTION]: Assertion including at least one function or object was not between reference equal items
+Expected: Function(${expectedRef})
+Actual: Function(${actualRef})`)
 	})
 
 	it("doesn't boom on ArkErrors vs plain object", () => {
