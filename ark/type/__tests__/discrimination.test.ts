@@ -490,4 +490,79 @@ contextualize(() => {
 
 		attest(T.assert([])).equals([])
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1547
+	it("discriminates cyclic union on nested path", () => {
+		const s = scope({
+			AChild: { type: "'AChild'", children: "(AParent)[] > 0" },
+			AParent: { type: "'AParent'", children: "(AChild)[] > 0" },
+			BChild: { type: "'BChild'", children: "unknown[]" },
+			BParent: {
+				type: "'BParent'",
+				layout: "number[]",
+				children: "(BChild)[] > 0"
+			}
+		})
+
+		const Thing = s.type("AParent | BParent")
+
+		attest(Thing.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: ["type"],
+			cases: {
+				'"BParent"': {
+					required: [
+						{
+							key: "children",
+							value: {
+								sequence: {
+									required: [
+										{ key: "children", value: "Array" },
+										{ key: "type", value: { unit: "BChild" } }
+									],
+									domain: "object"
+								},
+								proto: "Array",
+								minLength: 1
+							}
+						},
+						{ key: "layout", value: { sequence: "number", proto: "Array" } }
+					]
+				},
+				'"AParent"': {
+					required: [
+						{
+							key: "children",
+							value: {
+								sequence: {
+									required: [
+										{
+											key: "children",
+											value: {
+												sequence: "$AParent",
+												proto: "Array",
+												minLength: 1
+											}
+										},
+										{ key: "type", value: { unit: "AChild" } }
+									],
+									domain: "object"
+								},
+								proto: "Array",
+								minLength: 1
+							}
+						}
+					]
+				}
+			}
+		})
+
+		attest(
+			Thing({
+				type: "BParent",
+				layout: "",
+				children: [{ type: "BChild", children: [] }]
+			}).toString()
+		).snap("layout must be an array (was string)")
+	})
 })

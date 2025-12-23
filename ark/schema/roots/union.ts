@@ -486,7 +486,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	discriminate(): Discriminant | null {
-		if (this.branches.length < 2 || this.isCyclic) return null
+		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, n) => [
 				`${(n.rawIn as Unit.Node).serializedValue}`,

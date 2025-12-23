@@ -525,7 +525,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+			"box.box.box must be an object (was a string)"
 		)
 	})
 
@@ -1419,5 +1419,131 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 		attest(out.summary).snap(`date1 must be a parsable date (was "")
 date2 must be a parsable date (was "")
 date3 must be a parsable date (was "")`)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1188
+	it("cyclic discriminated union issue 1", () => {
+		let wasPiped = false
+
+		const $ = scope({
+			Foo: {
+				"oneOf?": "Bar[]" // NB: don't get the error if this is not an array
+			},
+			Bar: "Foo"
+		}).export()
+
+		const baz = $.Bar.pipe((_: object): type.Any | undefined => {
+			wasPiped = true
+			return type("string")
+		})
+
+		// previously threw "TypeError: this.Foo1Apply is not a function"
+		const r = baz({ oneOf: [{}] })
+
+		attest(wasPiped).equals(true)
+		attest(r?.toString()).snap("Type<string>")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1367
+	it("cyclic discriminated union issue 2", () => {
+		const componentModule = type.module({
+			container: {
+				type: "'container'",
+				content: "component"
+			},
+
+			flexbox: {
+				type: "'flexbox'",
+				items: "component"
+			},
+
+			tabsItem: {
+				id: "string",
+				title: "component",
+				content: "component"
+			},
+			tabs: {
+				type: "'tabs'",
+				items: "tabsItem[]"
+			},
+
+			singleComponent: "string | flexbox | tabs",
+			component: "singleComponent | singleComponent[]"
+		})
+		const componentSchema = componentModule.component
+
+		const component: typeof componentSchema.infer = {
+			type: "tabs",
+			items: [
+				{
+					id: "tab-id",
+					title: "tab-title",
+					content: []
+				}
+			]
+		}
+
+		const result = componentSchema(component)
+
+		attest(result).equals(component)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1209
+	it("cyclic discriminated union issue 3", () => {
+		const $ = scope({
+			literal: '"foo"',
+			record: {
+				"[string]": "value"
+			},
+			value: "literal|literal[]|record"
+		}).export()
+
+		const result = $.value({})
+
+		attest(result).equals({})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1284
+	it("cyclic discriminated union issue 4", () => {
+		const ruleset = scope({
+			TypeX: {
+				id: "string",
+				"+": "reject"
+			},
+			// always worked
+			TypeA: {
+				label: "string",
+				id: "string",
+				"result?": "TypeA | TypeX",
+				"+": "reject"
+			},
+			// previously did not work
+			TypeB: {
+				label: "string",
+				id: "string",
+				"result?": "TypeB | TypeX | null",
+				"+": "reject"
+			},
+			// always worked
+			TypeC: {
+				label: "string",
+				id: "string",
+				"result?": "TypeA | TypeX | null",
+				"+": "reject"
+			}
+		})
+		const types = ruleset.export()
+
+		const data = {
+			label: "hi",
+			id: "C",
+			result: { label: "A", id: "B" }
+		}
+
+		attest(types.TypeA(data)).equals(data)
+		// previously resulted in error:
+		// result.label must be removed
+		attest(types.TypeB(data)).equals(data)
+		attest(types.TypeC(data)).equals(data)
 	})
 })
