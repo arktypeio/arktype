@@ -27,9 +27,9 @@ export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 			)
 			// if we're in our own repo, we need to pnpm to use the root script to execute ts directly
 			if (fileName().endsWith("ts"))
-				shell(`pnpm attest precache ${precachePath}`)
+				shell("pnpm", ["attest", "precache", precachePath])
 			// otherwise, just use npm to run the CLI command from build output
-			else shell(`npm exec -c "attest precache ${precachePath}"`)
+			else shell("npm", ["exec", "-c", "attest", "precache", precachePath])
 		})
 	}
 	return teardown

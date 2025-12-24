@@ -196,6 +196,9 @@ const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 	const { formatCmd: formatter, shouldFormat } = getConfig()
 	if (!shouldFormat) return
 
+	if (formatter.length === 0)
+		throw new Error("config formatCmd must be at least length 1")
+
 	try {
 		const updatedPaths = [
 			...new Set(
@@ -204,7 +207,9 @@ const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 				)
 			)
 		]
-		shell(`${formatter} ${updatedPaths.join(" ")}`)
+		const command = formatter[0]
+		const args = formatter.slice(1)
+		shell(command, [...args, "--", ...updatedPaths])
 	} catch {
 		// If formatter is unavailable or skipped, do nothing.
 	}
