@@ -9,7 +9,7 @@ import type {
 	show,
 	unset
 } from "@ark/util"
-import type { distill } from "./attributes.ts"
+import type { distill, Out } from "./attributes.ts"
 import type { type } from "./keywords/keywords.ts"
 import type {
 	inferDefinition,
@@ -38,7 +38,7 @@ type finalizePreinferred<preinferred, def, $, ctx extends DeclareContext> =
 	ctx["side"] extends distill.Side ?
 		ctx["side"] extends "in" ?
 			(In: preinferred) => type.infer.Out<def, $>
-		:	(In: type.infer.In<def, $>) => preinferred
+		:	(In: type.infer.In<def, $>) => Out<preinferred>
 	:	preinferred
 
 export type DeclareContext = {
