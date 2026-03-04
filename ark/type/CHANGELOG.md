@@ -1,5 +1,69 @@
 # arktype
 
+## 2.2.0
+
+ArkType 2.2 is our biggest release since 2.0. Full announcement: https://arktype.io/docs/blog/2.2
+
+### `type.fn` - Validated functions
+
+Define functions with runtime-validated parameters and return types. Supports defaults, optionals, and variadics.
+
+```ts
+const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
+len("foo") // 3
+len([1, 2]) // 2
+```
+
+### Type-safe regex via arkregex
+
+Regex literals in definitions now carry full type inference. `x`-prefix parses capture groups at runtime.
+
+```ts
+const T = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+T.assert({ birthday: "05-21-1993" }).birthday.groups.month // "05"
+```
+
+### `@ark/json-schema` - Bidirectional JSON Schema
+
+Parse JSON Schema into ArkType Types with the new `@ark/json-schema` package, complementing `toJsonSchema()`. Thanks to @TizzySaurus.
+
+### Configurable `toJsonSchema`
+
+Handle incompatibilities between ArkType and JSON Schema with granular fallback codes. Supports `draft-07`/`draft-2020-12` targets and cyclic types.
+
+### Standard Schema as definitions
+
+Any Standard Schema compliant validator (Zod, Valibot, etc.) can be embedded directly in ArkType definitions.
+
+### `select` - Deep reference introspection
+
+Query the internal structure of a type by node kind and predicate. Use selectors to configure specific references.
+
+### Improved `type.declare`
+
+Now supports morph-aware declarations via a `side` context, and optionality via property values.
+
+### N-ary operators
+
+`type.or`, `type.and`, `type.merge`, and `type.pipe` accept variadic definitions.
+
+### Additional highlights
+
+- `|>` string-embeddable pipe operator
+- `type.valueOf` for TS enums
+- `string.hex` + `string.regex` keywords
+- Serializable `ArkErrors` (`flatByPath`, `flatProblemsByPath`, `toJSON`)
+- `TraversalError` replaces `AggregateError`
+- `exactOptionalPropertyTypes` config
+- ES2020 + Hermes compatibility
+- In-docs playground
+- Better JSDoc + go-to-definition
+- Cyclic unions can now discriminate on nested paths
+
 ## 2.1.29
 
 ### Improve regex inference for certain numeric expressions
@@ -243,7 +307,7 @@ This is the full list of configurable reasons `toJsonSchema()` can fail.
 | `proto`               | non-serializable `instanceof`                               |
 | `symbolKey`           | symbolic key on an object                                   |
 | `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
-| `date`                | a Date instance (supercedes `proto` for Dates )             |
+| `date`                | a Date instance (supersedes `proto` for Dates)              |
 
 ### cyclic types can now be converted to JSON Schema
 
@@ -461,10 +525,10 @@ const MyObj = type({
 })
 
 // valid data
-const validResult = myObj({})
+const validResult = MyObj({})
 
 // Error: key must be a number (was undefined)
-const errorResult = myObj({ key: undefined })
+const errorResult = MyObj({ key: undefined })
 ```
 
 This approach allows the most granular control over optionality, as `| undefined` can be added to properties that should accept it.
@@ -488,10 +552,10 @@ const MyObj = type({
 })
 
 // valid data
-const validResult = myObj({})
+const validResult = MyObj({})
 
 // now also valid data (would be an error by default)
-const secondResult = myObj({ key: undefined })
+const secondResult = MyObj({ key: undefined })
 ```
 
 **WARNING: exactOptionalPropertyTypes does not yet affect default values!**
@@ -502,10 +566,10 @@ const MyObj = type({
 })
 
 // { key: 5 }
-const omittedResult = myObj({})
+const omittedResult = MyObj({})
 
 // { key: undefined }
-const undefinedResult = myObj({ key: undefined })
+const undefinedResult = MyObj({ key: undefined })
 ```
 
 Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
@@ -546,10 +610,10 @@ const result = myType.configure(
 
 ```ts
 const NEvenAtLeast2 = type({
-	n: "number % 2 > 2"
+	n: "number % 2 >= 2"
 })
 
-const out = nEvenAtLeast2({ n: 1 })
+const out = NEvenAtLeast2({ n: 1 })
 
 if (out instanceof type.errors) {
 	console.log(out.flatByPath)
@@ -778,7 +842,7 @@ const User = type({
 	email: "string.email"
 })
 
-const out = user({
+const out = User({
 	// ArkErrors: name must be shorthand description (was a number)
 	name: 5,
 	// ArkErrors: email must be an email address (was definitely fake)
@@ -786,7 +850,7 @@ const out = user({
 })
 ```
 
-The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
+The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#metadata).
 
 ### Tuple and args expressions for `.to`
 
@@ -815,7 +879,7 @@ const CustomOne = type("1", "@", {
 })
 
 // ArkErrors: Yikes.
-customOne(2)
+CustomOne(2)
 ```
 
 Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#errors), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
@@ -871,7 +935,7 @@ const Discriminated = type({
 
 // will now hit the case discriminated for id: 1,
 // but still correctly be allowed via the { name: string } branch
-discriminated({ name: "foo", id: 1 })
+Discriminated({ name: "foo", id: 1 })
 ```
 
 ## 2.0.4

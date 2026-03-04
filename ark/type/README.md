@@ -50,11 +50,19 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 <table>
     <tr>
+        <th>mintlify</th>
         <th>get-convex</th>
         <th>inspatiallabs</th>
         <th>sam-goodwin</th>
     </tr>
     <tr>
+        <td>
+            <a href="https://github.com/mintlify"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/mintlify"
+            /></a>
+        </td>
         <td>
             <a href="https://github.com/get-convex"
                 ><img

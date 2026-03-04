@@ -72,7 +72,7 @@ const User = type({
 })
 
 // hover me!
-const basicUser = User.pick("name", "age")
+const BasicUser = User.pick("name", "age")
 ```
 
 #### Invoked
@@ -80,7 +80,7 @@ const basicUser = User.pick("name", "age")
 ```ts
 import { type } from "arktype"
 
-const unfalse = type.keywords.Exclude("boolean", "false")
+const Unfalse = type.keywords.Exclude("boolean", "false")
 ```
 
 ### HKT

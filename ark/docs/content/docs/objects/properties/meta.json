@@ -8,6 +8,11 @@
 		"[undeclared](/docs/objects#properties-undeclared)",
 		"[spread](/docs/objects#properties-spread)",
 		"[keyof](/docs/objects#properties-keyof)",
-		"[get](/docs/objects#properties-get)"
+		"[get](/docs/objects#properties-get)",
+		"[pick / omit](/docs/objects#properties-pick-omit)",
+		"[required / partial](/docs/objects#properties-required-partial)",
+		"[readonly](/docs/objects#properties-readonly)",
+		"[map](/docs/objects#properties-map)",
+		"[props](/docs/objects#properties-props)"
 	]
 }

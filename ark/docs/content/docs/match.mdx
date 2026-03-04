@@ -24,7 +24,7 @@ const sizeOf = match({
 sizeOf("abc") // 3
 sizeOf([1, 2, 3, 4]) // 4
 sizeOf(5n) // 5n
-// ArkErrors: must be an object, a string, a number or a bigint (was boolean)
+// TraversalError: must be a string or an object (was boolean)
 sizeOf(true)
 ```
 
