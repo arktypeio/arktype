@@ -2,7 +2,7 @@
 
 ## 2.2.0
 
-ArkType 2.2 is our biggest release since 2.0. Full announcement: https://arktype.io/docs/blog/2.2
+Full announcement: https://arktype.io/docs/blog/2.2
 
 ### `type.fn` - Validated functions
 
