@@ -1026,7 +1026,8 @@ const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
 		if (node.sequence?.defaultables) {
 			js.for(
 				`i < ${node.sequence.defaultables.length}`,
-				js => js.set(`data[i]`, 5),
+				js =>
+					js.line(`${node.sequence!.defaultValueMorphsReference}[i]${args}`),
 				`data.length - ${node.sequence.prefixLength}`
 			)
 		}
