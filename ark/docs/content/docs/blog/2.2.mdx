@@ -198,10 +198,7 @@ These selectors can also be used to [target specific references for configuratio
 const User = type({ name: "string", age: "number" })
 
 // add the description to all domain nodes
-const configured = User.configure(
-	{ description: "a special string" },
-	"domain"
-)
+const configured = User.configure({ description: "a special string" }, "domain")
 
 configured.get("name").description // "a special string"
 configured.get("age").description // "a special string"
