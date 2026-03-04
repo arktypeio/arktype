@@ -5,6 +5,7 @@ import type { JsonSchemaOrBoolean } from "@ark/schema"
 contextualize(() => {
 	it("type string", () => {
 		const t = jsonSchemaToType({ type: "string" })
+		attest<string>(t.infer)
 		attest(t.expression).snap("string")
 	})
 
@@ -13,16 +14,18 @@ contextualize(() => {
 			type: "string",
 			maxLength: 5
 		})
+		attest<string>(tMaxLength.infer)
 		attest(tMaxLength.expression).snap("string <= 5")
 	})
 
 	it("maxLength (negative)", () => {
 		const maxLength = -5
-		attest(() =>
-			jsonSchemaToType({
-				type: "string",
-				maxLength
-			})
+		attest(
+			() =>
+				jsonSchemaToType({
+					type: "string",
+					maxLength
+				}) as never
 		).throws(
 			`TraversalError: maxLength must be non-negative (was ${maxLength})`
 		)
@@ -33,16 +36,18 @@ contextualize(() => {
 			type: "string",
 			minLength: 5
 		})
+		attest<string>(tMinLength.infer)
 		attest(tMinLength.expression).snap("string >= 5")
 	})
 
 	it("minLength (negative)", () => {
 		const minLength = -1
-		attest(() =>
-			jsonSchemaToType({
-				type: "string",
-				minLength
-			})
+		attest(
+			() =>
+				jsonSchemaToType({
+					type: "string",
+					minLength
+				}) as never
 		).throws(
 			`TraversalError: minLength must be non-negative (was ${minLength})`
 		)
@@ -53,6 +58,7 @@ contextualize(() => {
 			type: "string",
 			pattern: "es"
 		})
+		attest<string>(tPatternString.infer)
 		attest(tPatternString.expression).snap("/es/")
 		// JSON Schema explicitly specifies that regexes MUST NOT be implicitly anchored
 		// https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.4.3
