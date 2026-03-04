@@ -1,4 +1,13 @@
 {
 	"title": "Type API",
-	"pages": ["[toJsonSchema](/docs/type-api#tojsonschema)"]
+	"pages": [
+		"[from](/docs/type-api#from)",
+		"[in / out](/docs/type-api#in--out)",
+		"[extends](/docs/type-api#extends)",
+		"[equals](/docs/type-api#equals)",
+		"[overlaps](/docs/type-api#overlaps)",
+		"[extract / exclude](/docs/type-api#extract--exclude)",
+		"[distribute](/docs/type-api#distribute)",
+		"[toJsonSchema](/docs/type-api#tojsonschema)"
+	]
 }

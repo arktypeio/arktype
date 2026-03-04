@@ -110,7 +110,7 @@ Otherwise, keywords will have already been parsed by the time your config applie
 
 ### Errors
 
-To allow custom errors to be integrated seemlessly with built-in logic for composite errors (i.e. `union` and `intersection`), ArkType supports a set of composable options:
+To allow custom errors to be integrated seamlessly with built-in logic for composite errors (i.e. `union` and `intersection`), ArkType supports a set of composable options:
 
 <table>
 <thead>
@@ -248,6 +248,30 @@ For use cases like i18n that fall outside the scope of this composable message c
 
 These `ArkError` instances can be arbitrarily transformed and composed with an internationalization library. This is still a topic we're working on investigating and documenting, so please reach out with any questions or feedback!
 
+#### Serialization
+
+`ArkErrors` and `ArkError` are JSON stringifiable via `JSON.stringify()` or `.toJSON()`.
+
+Two additional properties provide structured access to errors grouped by path:
+
+```ts
+const T = type({ n: "number % 2 >= 2" })
+
+const out = T({ n: 1 })
+
+if (out instanceof type.errors) {
+	out.flatByPath
+	// { n: [{ data: 1, path: ["n"], code: "divisor", ... }, { data: 1, path: ["n"], code: "min", ... }] }
+
+	out.flatProblemsByPath
+	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
+}
+```
+
+`flatByPath` maps each path string to an array of `ArkError` objects (decomposing union errors into their individual branches). `flatProblemsByPath` maps each path string to an array of human-readable problem strings.
+
+Unhandled validation errors (e.g. via `.assert()`) throw a `TraversalError`, which extends `Error` with cleaner multi-error formatting and a non-enumerable `arkErrors` property for programmatic access.
+
 ### Keywords
 
 Built-in keywords like `string.email` can be globally configured.
@@ -285,7 +309,7 @@ const out = User({
 })
 ```
 
-The options you can provide here are identical to those used to [configure a Type directly](/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](/docs/configuration#custom).
+The options you can provide here are identical to those used to [configure a Type directly](/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](/docs/configuration#metadata).
 
 ### Clone
 
@@ -591,7 +615,7 @@ This is the full list of configurable reasons `toJsonSchema()` can fail.
 | `proto`               | non-serializable `instanceof`                               |
 | `symbolKey`           | symbolic key on an object                                   |
 | `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
-| `date`                | a Date instance (supercedes `proto` for Dates )             |
+| `date`                | a Date instance (supersedes `proto` for Dates)              |
 
 ### prototypes
 

@@ -41,6 +41,35 @@ const Literals = type({
 })
 ```
 
+Regex literals now carry full type inference via [arkregex](/docs/blog/arkregex):
+
+```ts
+const Hex = type("/^[0-9a-fA-F]+$/")
+//    Type<string>
+
+const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
+//    Type<`${number}.${number}.${number}`>
+```
+
+#### e(x)ec mode
+
+Prefix a regex literal with `x` to parse capture groups at runtime, fully typed:
+
+```ts
+const User = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+const data = User.assert({ birthday: "05-21-1993" })
+
+// fully type-safe
+data.birthday.groups.month // "05"
+data.birthday.groups.day // "21"
+data.birthday.groups.year // "1993"
+```
+
+For the standalone package (no ArkType required), see the full [arkregex announcement](/docs/blog/arkregex).
+
 ### lengths [#string-lengths]
 
 Constrain a string with an inclusive or exclusive min or max length.

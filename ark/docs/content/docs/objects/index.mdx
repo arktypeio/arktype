@@ -205,7 +205,7 @@ TypeScript's structural type system explicitly allows assigning objects with add
 - Validation is much more efficient if you don't need to check for undeclared keys.
 - Extra properties don't usually matter as long as those you've declared are satisfied.
 
-However, sometimes the way you're using the object would make undeclared properties problematic. Even though they can't be reflected by TypeScript ([_yet_- please +1 the issue!](https://github.com/microsoft/TypeScript/issues/12936#issuecomment-1854411301)), ArkType _does_ support rejection or deletion of undeclared keys. This behavior can be defined for individual objects using the syntax below or [via configuration](/docs/configuration#undeclared) if you want to change the default across all objects.
+However, sometimes the way you're using the object would make undeclared properties problematic. Even though they can't be reflected by TypeScript ([_yet_- please +1 the issue!](https://github.com/microsoft/TypeScript/issues/12936#issuecomment-1854411301)), ArkType _does_ support rejection or deletion of undeclared keys. This behavior can be defined for individual objects using the syntax below or [via configuration](/docs/configuration#onundeclaredkey) if you want to change the default across all objects.
 
 <SyntaxTabs>
 	<SyntaxTab string>
@@ -536,7 +536,7 @@ const SnorfUses = Manatee.get("snorf", "uses")
 
 <Callout
 	type="warn"
-	title="Expressions like `get` and `omit` that extract a portion of an exising Type can be an antipattern!"
+	title="Expressions like `get` and `omit` that extract a portion of an existing Type can be an antipattern!"
 >
 	Before using `get` to extract the type of a property you've defined, consider
 	whether you may be able to define the property value directly as a standalone
@@ -546,7 +546,7 @@ const SnorfUses = Manatee.get("snorf", "uses")
 
 </Callout>
 
-Though cases like this are quite straightforward, there are number of more nuanced behaviors to consider when accessing an arbitrary key that could be a union, literal, or index signature on an object Type that could also be a union including optional keys or index signatures.
+Though cases like this are quite straightforward, there are a number of more nuanced behaviors to consider when accessing an arbitrary key that could be a union, literal, or index signature on an object Type that could also be a union including optional keys or index signatures.
 
 If you're interested in a deeper dive into this (or anything else in ArkType), [our unit tests](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/get.test.ts) are the closest thing we have to a comprehensive spec.
 
@@ -561,6 +561,102 @@ Not your cup of tea? No worries- the inferred types and errors you'll see in edi
 	you're interested in using- or even helping implement- type-level parsing for
 	string-embedded index access 🤓
 </Callout>
+
+### pick / omit [#properties-pick-omit]
+
+Extract or exclude specific properties from an object Type:
+
+```ts
+const User = type({
+	name: "string",
+	email: "string.email",
+	"age?": "number"
+})
+
+// Type<{ name: string; email: string }>
+const NameAndEmail = User.pick("name", "email")
+
+// Type<{ name: string; age?: number }>
+const WithoutEmail = User.omit("email")
+```
+
+These are also available as [generic keywords](/docs/generics): `Pick(User, "name | email")`, `Omit(User, "email")`.
+
+### required / partial [#properties-required-partial]
+
+Make all named properties required or optional:
+
+```ts
+const User = type({
+	name: "string",
+	"email?": "string.email",
+	"age?": "number"
+})
+
+// Type<{ name: string; email: string; age: number }>
+const RequiredUser = User.required()
+
+const Config = type({
+	host: "string",
+	port: "number"
+})
+
+// Type<{ host?: string; port?: number }>
+const PartialConfig = Config.partial()
+```
+
+These are also available as [generic keywords](/docs/generics): `Required(User)`, `Partial(Config)`.
+
+### readonly [#properties-readonly]
+
+Mark all properties as readonly (type-level only, no runtime effect):
+
+```ts
+const Frozen = type({
+	id: "number",
+	name: "string"
+}).readonly()
+
+// Type<{ readonly id: number; readonly name: string }>
+```
+
+### map [#properties-map]
+
+Transform the properties of an object Type using a mapping function. The mapper receives a prop entry with `key`, `value`, and `kind` (`"required"` or `"optional"`). Return a `{ key, value }` object (optionally with `kind`) to transform, or an empty array `[]` to remove the property.
+
+```ts
+// @noErrors
+const User = type({
+	name: "string",
+	"age?": "number"
+})
+
+// make all properties nullable by wrapping each value in a union with null
+const NullableUser = User.map(prop => {
+	return { key: prop.key, value: prop.value.or("null") }
+})
+// Type<{ name: string | null; age?: number | null }>
+```
+
+### props [#properties-props]
+
+The `props` getter returns an array of property descriptors for introspection:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number",
+	role: "'admin' | 'user' = 'user'"
+})
+
+for (const prop of User.props) {
+	console.log(prop.kind) // "required", "optional"
+	console.log(prop.key) // "name", "role", "age"
+	console.log(prop.value.expression) // "string", '"admin" | "user"', "number"
+	console.log(prop.meta) // metadata object
+	if ("default" in prop) console.log(prop.default) // "user" for role
+}
+```
 
 ## arrays
 
@@ -951,7 +1047,7 @@ Most built-in instance types like `Array` and `Date` are available directly as k
 ```ts
 class MyClass {}
 
-const instances = type.instanceOf(MyClass)
+const Instances = type.instanceOf(MyClass)
 ```
 
     </SyntaxTab>

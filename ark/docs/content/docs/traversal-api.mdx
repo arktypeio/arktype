@@ -3,3 +3,101 @@ title: Traversal API
 ---
 
 <ApiTable group="Traversal" />
+
+### assert
+
+Validate data, returning the output on success or throwing a `TraversalError` on failure:
+
+```ts
+const User = type({ name: "string", "age?": "number" })
+
+// returns { name: "David" }
+const valid = User.assert({ name: "David" })
+
+// throws TraversalError: name must be a string (was a number)
+User.assert({ name: 42 })
+```
+
+### allows
+
+Check if data satisfies the type's constraints without applying morphs or transformations. Returns a type guard:
+
+```ts
+const User = type({ name: "string" })
+
+const data: unknown = { name: "David" }
+
+if (User.allows(data)) {
+	// data is narrowed to { name: string }
+	console.log(data.name)
+}
+```
+
+This is useful when you want a pure type check without triggering any side effects from morphs like `string.numeric.parse`.
+
+### Invoking a Type directly
+
+Calling a Type as a function validates and transforms the input, returning either the output or `ArkErrors`:
+
+```ts
+const T = type("string.numeric.parse")
+
+const out = T("42")
+
+if (out instanceof type.errors) {
+	console.log(out.summary)
+} else {
+	// out is number
+	console.log(out + 1)
+}
+```
+
+### ArkErrors
+
+The `ArkErrors` array returned on validation failure contains `ArkError` instances with structured data:
+
+```ts
+const T = type({ n: "number % 2", m: "number >= 2" })
+
+const out = T({ n: 1, m: 0 })
+
+if (out instanceof type.errors) {
+	// discriminate by error code
+	for (const error of out) {
+		if (error.hasCode("divisor")) {
+			console.log(error.rule) // 2
+		}
+	}
+
+	// structured access by path
+	out.flatByPath // { m: [ArkError], n: [ArkError] }
+	out.flatProblemsByPath // { m: ["must be at least 2 (was 0)"], n: ["must be even (was 1)"] }
+
+	// JSON serializable
+	JSON.stringify(out) // [{ path: ["m"], code: "min", ... }, { path: ["n"], code: "divisor", ... }]
+}
+```
+
+### TraversalError
+
+When `.assert()` fails, it throws a `TraversalError` (extends `Error`) with:
+
+- A formatted `message` (single errors inline, multiple errors bulleted)
+- A non-enumerable `arkErrors` property for programmatic access
+
+```ts
+import { type, TraversalError } from "arktype"
+
+try {
+	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
+} catch (e) {
+	if (e instanceof TraversalError) {
+		console.log(e.message)
+		// • a must be a string (was a number)
+		// • b must be a number (was a string)
+
+		// access the underlying ArkErrors for structured data
+		console.log(e.arkErrors.flatProblemsByPath)
+	}
+}
+```
