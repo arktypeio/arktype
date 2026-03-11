@@ -336,7 +336,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		reduce: (inner, $) => {
 			if (!inner.required && !inner.optional) return
 
-			const seen: Record<Key, true | undefined> = {}
+			const seen: Record<Key, true | undefined> = Object.create(null)
 			let updated = false
 			const newOptionalProps: OptionalNode[] =
 				inner.optional ? [...inner.optional] : []
