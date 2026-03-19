@@ -49,8 +49,8 @@ type("number > 0")         // exclusive min
 type("number >= 0")        // inclusive min
 type("string <= 255")      // max length
 
-// defaults — only valid inside objects/tuples
-type({ "email?": "string.email = 'n/a'" })
+// defaults — valid inside objects (key becomes implicitly optional)
+type({ email: "string.email = 'n/a'" })
 ```
 
 ## Objects
@@ -58,8 +58,8 @@ type({ "email?": "string.email = 'n/a'" })
 ```ts
 const User = type({
 	name: "string",
-	"email?": "string.email",    // optional key — use '?' suffix in the key
-	"age?": "number >= 0 = 0"    // optional with default
+	"email?": "string.email",  // optional key — use '?' suffix in the key
+	age: "number >= 0 = 0"     // default value — implicitly optional
 })
 
 // index signatures (Record types)
