@@ -24,14 +24,17 @@ pnpm testTyped --skipTypes # run tests without type checking
 ## Key Patterns
 
 **String keywords** follow `typescriptType.constraint.subconstraint`:
+
 - `string.email`, `string.uuid`, `string.url`, `string.hex`
 - `number.integer`, `number.safe`, `number.epoch`
 - Morphs: `string.trim`, `string.json.parse`, `string.date.parse`
 
 **Adding a regex string validator:**
+
 ```ts
 const myValidator = regexStringNode(/^pattern$/, "description")
 ```
+
 Register in `Scope.module()` in `ark/type/keywords/string.ts` and add to the namespace `$` type.
 
 **Adding a number keyword:**
@@ -62,13 +65,13 @@ type User = typeof UserSchema.infer
 // error handling
 const out = Schema(data)
 if (out instanceof type.errors) {
-  console.error(out.summary)
+	console.error(out.summary)
 }
 
 // three syntax kinds (equivalent):
-type("string | number")            // string expression
-type(["string", "|", "number"])    // tuple expression
-type("string").or("number")        // chained
+type("string | number") // string expression
+type(["string", "|", "number"]) // tuple expression
+type("string").or("number") // chained
 ```
 
 ## Common Gotchas

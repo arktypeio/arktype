@@ -27,27 +27,27 @@ Keywords follow a `typescriptType.constraint.subconstraint` pattern:
 
 ```ts
 // string keywords
-type("string.email")       // email format
-type("string.uuid")        // UUID format
-type("string.url")         // parsable URL
-type("string.trim")        // morph: trims whitespace
-type("string.json.parse")  // morph: string → parsed JSON
-type("string.date.parse")  // morph: string → Date
+type("string.email") // email format
+type("string.uuid") // UUID format
+type("string.url") // parsable URL
+type("string.trim") // morph: trims whitespace
+type("string.json.parse") // morph: string → parsed JSON
+type("string.date.parse") // morph: string → Date
 
 // number keywords
-type("number.integer")     // whole numbers
-type("number.safe")        // within safe integer range
-type("number.epoch")       // valid Unix timestamp
+type("number.integer") // whole numbers
+type("number.safe") // within safe integer range
+type("number.epoch") // valid Unix timestamp
 ```
 
 ## Operators
 
 ```ts
-type("string | number")    // union
-type("string & /@foo/")    // intersection
-type("number > 0")         // exclusive min
-type("number >= 0")        // inclusive min
-type("string <= 255")      // max length
+type("string | number") // union
+type("string & /@foo/") // intersection
+type("number > 0") // exclusive min
+type("number >= 0") // inclusive min
+type("string <= 255") // max length
 
 // defaults — valid inside objects (key becomes implicitly optional)
 type({ email: "string.email = 'n/a'" })
@@ -58,13 +58,13 @@ type({ email: "string.email = 'n/a'" })
 ```ts
 const User = type({
 	name: "string",
-	"email?": "string.email",  // optional key — use '?' suffix in the key
-	age: "number >= 0 = 0"     // default value — implicitly optional
+	"email?": "string.email", // optional key — use '?' suffix in the key
+	age: "number >= 0 = 0" // default value — implicitly optional
 })
 
 // index signatures (Record types)
 const Env = type({
-	"[string]": "string"         // Record<string, string>
+	"[string]": "string" // Record<string, string>
 })
 
 // strip undeclared keys
@@ -74,7 +74,7 @@ const Strict = User.onUndeclaredKey("delete")
 ## Arrays and Tuples
 
 ```ts
-const Strings = type("string[]")    // string expression
+const Strings = type("string[]") // string expression
 const Numbers = type.number.array() // chained
 
 // tuples — fixed length and positional types
@@ -82,8 +82,8 @@ const Pair = type(["string", "number"])
 
 // GOTCHA: type([X]) is a 1-element tuple, NOT an array
 const Item = type({ id: "string" })
-const Wrong = type([Item])       // tuple of exactly [Item]
-const Right = Item.array()       // Item[]
+const Wrong = type([Item]) // tuple of exactly [Item]
+const Right = Item.array() // Item[]
 
 // readonly
 const Ids = type("string[]").readonly() // readonly string[]
@@ -118,9 +118,9 @@ const ParsedInt = type("string").to("number.integer")
 const ToUpper = type("string").pipe(s => s.toUpperCase())
 
 // built-in parse morphs
-const ParseDate = type("string.date.parse")     // string → Date
-const ParseJson = type("string.json.parse")      // string → object
-const Trimmed = type("string.trim")              // string → trimmed string
+const ParseDate = type("string.date.parse") // string → Date
+const ParseJson = type("string.json.parse") // string → object
+const Trimmed = type("string.trim") // string → trimmed string
 ```
 
 ## Type Inference
@@ -157,10 +157,10 @@ if (out instanceof type.errors) {
 
 ## Common Gotchas
 
-| Mistake | Fix |
-|---------|-----|
-| `name: "string \| undefined"` for optional | Use `"name?": "string"` — append `?` to the **key** |
-| `type([Schema])` for arrays | Use `Schema.array()` — brackets create tuples |
-| `"Record<string, T>"` for records | Use `type({ "[string]": T })` — index signature syntax |
-| Manually re-validating after `type()` | Trust ArkType's output — it already validated the structure |
-| `type User = typeof Schema.t` | Use `typeof Schema.infer` for the output type |
+| Mistake                                    | Fix                                                         |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| `name: "string \| undefined"` for optional | Use `"name?": "string"` — append `?` to the **key**         |
+| `type([Schema])` for arrays                | Use `Schema.array()` — brackets create tuples               |
+| `"Record<string, T>"` for records          | Use `type({ "[string]": T })` — index signature syntax      |
+| Manually re-validating after `type()`      | Trust ArkType's output — it already validated the structure |
+| `type User = typeof Schema.t`              | Use `typeof Schema.infer` for the output type               |
