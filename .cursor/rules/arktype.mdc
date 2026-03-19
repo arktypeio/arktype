@@ -1,0 +1,113 @@
+---
+description: When working with ArkType for schema validation. Covers common patterns, pitfalls, and idiomatic usage.
+globs:
+alwaysApply: false
+---
+
+# ArkType Usage Guidelines
+
+## Optional Keys
+
+```ts
+// ❌ WRONG
+type({ name: "string | undefined" })
+
+// ✅ CORRECT — append ? to the key
+type({ "name?": "string" })
+```
+
+## Schema References
+
+**In objects** — pass schemas directly:
+```ts
+const Inner = type({ foo: "string" })
+const Outer = type({ inner: Inner })
+```
+
+**In records** — use index signature syntax:
+```ts
+// ❌ WRONG: "Record<string, Schema>"
+// ✅ CORRECT:
+type({ "[string]": Schema })
+```
+
+**In arrays** — use `.array()`:
+```ts
+// ❌ WRONG: type([Schema]) — creates a 1-element tuple
+// ✅ CORRECT:
+Schema.array()
+```
+
+## Type Inference
+
+```ts
+type User = typeof UserSchema.infer
+```
+
+## Type Declaration
+
+Match a schema to an existing TypeScript type:
+```ts
+const Schema = type.declare<MyType>().type({
+  items: type.string.array().readonly()  // readonly string[]
+})
+```
+
+## Error Handling
+
+```ts
+const out = Schema(data)
+if (out instanceof type.errors) {
+  console.error(out.summary)
+}
+```
+
+## Syntax Kinds
+
+Three equivalent ways to define types:
+
+```ts
+// string expression
+type("string | number")
+
+// tuple expression
+type(["string", "|", "number"])
+
+// chained
+type("string").or("number")
+```
+
+## Keywords Pattern
+
+Keywords follow `typescriptType.constraint.subconstraint`:
+
+- `string.email`, `string.uuid`, `string.url`
+- `number.integer`, `number.finite`, `number.safe`
+- `string.trim`, `string.json.parse`, `string.date.parse` (morphs)
+
+## Operators
+
+```ts
+type("string | number")       // union
+type("string & /@pattern/")   // intersection
+type("number > 0")            // exclusive min
+type("number >= 0")           // inclusive min
+type("string <= 255")         // max length
+type("string = 'default'")    // default value
+```
+
+## Morphs
+
+```ts
+type("string").to("number.integer") // validated transform
+type("string").pipe(s => s.trim())  // custom transform
+type("string.json.parse")           // built-in parse morph
+```
+
+## Common Mistakes
+
+1. `type([X])` creates a tuple, not an array — use `X.array()`
+2. `"string | undefined"` for optional — use `"key?": "string"`
+3. `"Record<string, T>"` — use `type({ "[string]": T })`
+4. Re-validating after `type()` passes — trust ArkType's output
+5. `typeof Schema.t` — use `typeof Schema.infer` for output type
