@@ -86,6 +86,9 @@ configure({
 		"number.safe": {
 			description: "configured"
 		},
+		"number.finite": {
+			description: "configured"
+		},
 		"number.NaN": {
 			description: "configured"
 		},
