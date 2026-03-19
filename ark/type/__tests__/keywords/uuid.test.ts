@@ -27,11 +27,11 @@ contextualize(() => {
 
 	it("rejects partial matches", () => {
 		const Uuid = type("string.uuid")
-		attest(
-			Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()
-		).snap('must be a UUID (was "dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra")')
-		attest(
-			Uuid("prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b").toString()
-		).snap('must be a UUID (was "prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b")')
+		attest(Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()).snap(
+			'must be a UUID (was "dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra")'
+		)
+		attest(Uuid("prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b").toString()).snap(
+			'must be a UUID (was "prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b")'
+		)
 	})
 })
