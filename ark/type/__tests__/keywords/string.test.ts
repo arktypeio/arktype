@@ -43,9 +43,7 @@ contextualize(() => {
 		attest(Base58("invalid0OIl").toString()).snap(
 			'must be base58-encoded (was "invalid0OIl")'
 		)
-		attest(Base58("").toString()).snap(
-			'must be base58-encoded (was "")'
-		)
+		attest(Base58("").toString()).snap('must be base58-encoded (was "")')
 	})
 
 	it("base64", () => {
