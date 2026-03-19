@@ -39,9 +39,13 @@ const finite = rootSchema({
 		domain: "number",
 		numberAllowsNaN: false
 	},
-	predicate: {
-		meta: "a finite number",
-		predicate: (n: number) => Number.isFinite(n)
+	min: {
+		rule: -Number.MAX_VALUE,
+		meta: "a finite number"
+	},
+	max: {
+		rule: Number.MAX_VALUE,
+		meta: "a finite number"
 	}
 })
 

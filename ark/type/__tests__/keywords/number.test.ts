@@ -59,6 +59,8 @@ contextualize(() => {
 		attest(Finite(42)).snap(42)
 		attest(Finite(-3.14)).snap(-3.14)
 		attest(Finite(0)).snap(0)
+		attest(Finite.allows(Number.MAX_VALUE)).equals(true)
+		attest(Finite.allows(-Number.MAX_VALUE)).equals(true)
 		attest(Finite(Infinity).toString()).snap(
 			"must be a finite number (was Infinity)"
 		)
