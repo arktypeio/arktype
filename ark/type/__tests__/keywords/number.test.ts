@@ -65,9 +65,7 @@ contextualize(() => {
 		attest(Finite(-Infinity).toString()).snap(
 			"must be a finite number (was -Infinity)"
 		)
-		attest(Finite(NaN).toString()).snap(
-			"must be a number (was NaN)"
-		)
+		attest(Finite(NaN).toString()).snap("must be a number (was NaN)")
 	})
 
 	it("doesn't allow NaN by default", () => {
