@@ -40,9 +40,10 @@ contextualize(() => {
 			"5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ"
 		)
 		attest(Base58("abc123")).snap("abc123")
-		attest(Base58("invalid0OIl").toString()).snap(
-			'must be base58-encoded (was "invalid0OIl")'
-		)
+		attest(Base58("0").toString()).snap('must be base58-encoded (was "0")')
+		attest(Base58("O").toString()).snap('must be base58-encoded (was "O")')
+		attest(Base58("I").toString()).snap('must be base58-encoded (was "I")')
+		attest(Base58("l").toString()).snap('must be base58-encoded (was "l")')
 		attest(Base58("").toString()).snap('must be base58-encoded (was "")')
 	})
 
