@@ -43,12 +43,14 @@ type("number.epoch")       // valid Unix timestamp
 ## Operators
 
 ```ts
-type("string | number")      // union
-type("string & /@foo/")      // intersection
-type("number > 0")           // exclusive min
-type("number >= 0")          // inclusive min
-type("string <= 255")        // max length
-type("string.email = 'n/a'") // default value
+type("string | number")    // union
+type("string & /@foo/")    // intersection
+type("number > 0")         // exclusive min
+type("number >= 0")        // inclusive min
+type("string <= 255")      // max length
+
+// defaults — only valid inside objects/tuples
+type({ "email?": "string.email = 'n/a'" })
 ```
 
 ## Objects
