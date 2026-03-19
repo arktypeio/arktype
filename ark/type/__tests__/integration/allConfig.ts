@@ -83,6 +83,9 @@ configure({
 		"number.epoch": {
 			description: "configured"
 		},
+		"number.finite": {
+			description: "configured"
+		},
 		"number.safe": {
 			description: "configured"
 		},
