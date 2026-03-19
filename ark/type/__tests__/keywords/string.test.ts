@@ -34,6 +34,19 @@ contextualize(() => {
 		)
 	})
 
+	it("base58", () => {
+		const Base58 = type("string.base58")
+		attest(Base58("5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ")).snap(
+			"5HueCGU8rMjxEXxiPuD5BDku4MkFqeZyd4dZ1jvhTVqvbTLvyTJ"
+		)
+		attest(Base58("abc123")).snap("abc123")
+		attest(Base58("0").toString()).snap('must be base58-encoded (was "0")')
+		attest(Base58("O").toString()).snap('must be base58-encoded (was "O")')
+		attest(Base58("I").toString()).snap('must be base58-encoded (was "I")')
+		attest(Base58("l").toString()).snap('must be base58-encoded (was "l")')
+		attest(Base58("").toString()).snap('must be base58-encoded (was "")')
+	})
+
 	it("base64", () => {
 		const B64 = type("string.base64")
 		attest(B64("fn5+")).snap("fn5+")
