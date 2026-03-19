@@ -139,13 +139,18 @@ type User = typeof User.infer
 ## Error Handling
 
 ```ts
-const out = User(unknownData)
+const User = type({
+	name: "string",
+	"age?": "number"
+})
+
+const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
 	// ArkErrors — array-like with .summary
 	console.error(out.summary)
 } else {
-	// out is typed as User
+	// out is typed as { name: string; age?: number }
 	console.log(out.name)
 }
 ```
