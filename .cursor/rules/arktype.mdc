@@ -82,7 +82,7 @@ type("string").or("number")
 Keywords follow `typescriptType.constraint.subconstraint`:
 
 - `string.email`, `string.uuid`, `string.url`
-- `number.integer`, `number.finite`, `number.safe`
+- `number.integer`, `number.safe`, `number.epoch`
 - `string.trim`, `string.json.parse`, `string.date.parse` (morphs)
 
 ## Operators
