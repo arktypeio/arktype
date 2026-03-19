@@ -54,6 +54,22 @@ contextualize(() => {
 		attest(Safe(NaN).toString()).snap("must be a number (was NaN)")
 	})
 
+	it("finite", () => {
+		const Finite = type("number.finite")
+		attest(Finite(42)).snap(42)
+		attest(Finite(-3.14)).snap(-3.14)
+		attest(Finite(0)).snap(0)
+		attest(Finite(Infinity).toString()).snap(
+			"must be a finite number (was Infinity)"
+		)
+		attest(Finite(-Infinity).toString()).snap(
+			"must be a finite number (was -Infinity)"
+		)
+		attest(Finite(NaN).toString()).snap(
+			"must be a number (was NaN)"
+		)
+	})
+
 	it("doesn't allow NaN by default", () => {
 		attest(type.number.allows(Number.NaN)).equals(false)
 		attest(type.number(Number.NaN).toString()).snap(
