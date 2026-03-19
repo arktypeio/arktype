@@ -80,9 +80,10 @@ const Numbers = type.number.array() // chained
 // tuples — fixed length and positional types
 const Pair = type(["string", "number"])
 
-// GOTCHA: type([MyType]) is a 1-element tuple, NOT an array
-const Wrong = type([MyType])       // tuple of exactly [MyType]
-const Right = MyType.array()       // MyType[]
+// GOTCHA: type([X]) is a 1-element tuple, NOT an array
+const Item = type({ id: "string" })
+const Wrong = type([Item])       // tuple of exactly [Item]
+const Right = Item.array()       // Item[]
 
 // readonly
 const Ids = type("string[]").readonly() // readonly string[]
