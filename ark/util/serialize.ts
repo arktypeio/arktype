@@ -231,7 +231,5 @@ const months = [
 	"December"
 ]
 
-const timeWithUnnecessarySeconds = /:\d\d:00$/
-
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
