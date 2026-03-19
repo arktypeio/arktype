@@ -24,4 +24,14 @@ contextualize(() => {
 			'must be a UUIDv4 (was "f70b8242-dd57-5e6b-b0b7-649d997140a0")'
 		)
 	})
+
+	it("rejects partial matches", () => {
+		const Uuid = type("string.uuid")
+		attest(
+			Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()
+		).snap('must be a UUID (was "dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra")')
+		attest(
+			Uuid("prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b").toString()
+		).snap('must be a UUID (was "prefix dbb1e8e0-40fc-4c14-87eb-61b25d166a1b")')
+	})
 })
