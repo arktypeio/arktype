@@ -1,6 +1,6 @@
 ---
 description: When working with ArkType for schema validation. Covers common patterns, pitfalls, and idiomatic usage.
-globs:
+globs: "**/*.ts"
 alwaysApply: false
 ---
 
@@ -93,7 +93,7 @@ type("string & /@pattern/")   // intersection
 type("number > 0")            // exclusive min
 type("number >= 0")           // inclusive min
 type("string <= 255")         // max length
-type("string = 'default'")    // default value
+type({ name: "string = 'default'" })  // default value
 ```
 
 ## Morphs

@@ -80,5 +80,6 @@ type("string").or("number") // chained
 - `"string | undefined"` for optional — use `"key?": "string"` instead
 - `"Record<string, T>"` doesn't work — use `type({ "[string]": T })`
 - `safeParse()` doesn't exist — call the type directly: `const out = Schema(data)`
-- `auth-schema.ts` is generated — never edit it
 - `regexStringNode()` patterns must be anchored with `^`/`$`
+
+<!-- Keep in sync: .cursor/rules/arktype.mdc, ark/docs/content/docs/cheat-sheet.mdx -->
