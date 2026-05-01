@@ -38,7 +38,7 @@ export type BaseFnParser<$ = {}> = <
 	externalSignature extends Fn = (
 		...args: applyElementLabels<
 			distill.In<paramsT>,
-			Parameters<internalSignature>
+			Required<Parameters<internalSignature>>
 		>
 	) => args extends readonly [...unknown[], ":", unknown] ? distill.Out<returnT>
 	:	ReturnType<internalSignature>
