@@ -196,7 +196,7 @@ contextualize(() => {
 		// simulates userland / integration slots so JSON.stringify never assumes
 		// e.toJSON exists on every index (regression for TypeError on missing toJSON).
 		const mixed = nEvenAtLeast2({ n: 1 }) as ArkErrors
-		(mixed as unknown as { push(...items: unknown[]): number }).push({
+		;(mixed as unknown as { push(...items: unknown[]): number }).push({
 			message: "foreign issue",
 			path: ["_"]
 		})
