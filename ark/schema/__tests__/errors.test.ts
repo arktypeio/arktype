@@ -204,11 +204,9 @@ contextualize(() => {
 	})
 
 	it("serialization tolerates indexed entries without toJSON (e.g. HTTP JSON.stringify)", () => {
-		// Contract regression: ArkErrors is an Array subclass and Standard Schema
-		// FailureResult.issues is ReadonlyArray<Issue> (plain { message, path? }).
-		// We do not expose a public API that appends non-ArkError rows; the cast
-		// simulates userland / integration slots so JSON.stringify never assumes
-		// e.toJSON exists on every index (regression for TypeError on missing toJSON).
+		// Simulate an extra `issues` row shaped like Standard Schema `Issue` (`{ message, path? }`,
+		// no `toJSON`) — Ark has no public API for that, hence the cast — so `JSON.stringify`
+		// must tolerate mixed slots instead of assuming every index is an `ArkError`.
 		const mixed = nEvenAtLeast2({ n: 1 }) as ArkErrors
 		;(mixed as unknown as { push(...items: unknown[]): number }).push({
 			message: "foreign issue",

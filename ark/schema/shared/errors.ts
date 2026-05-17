@@ -167,11 +167,9 @@ export class ArkErrors
 	readonly [arkKind] = "errors"
 
 	/**
-	 * Without this, `Array.prototype.map` / `filter` / `slice` / … allocate another
-	 * `ArkErrors` via species, so callbacks that return primitives (e.g.
-	 * `issues.map(i => i.message)` in Standard Schema consumers such as Nest)
-	 * would fill numeric indices with strings — then `JSON.stringify` invokes
-	 * {@link ArkErrors.toJSON} and must not assume every slot is an {@link ArkError}.
+	 * Inherited array methods (`map`, `filter`, `slice`, …) return a plain
+	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
+	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
 	 */
 	static get [Symbol.species](): ArrayConstructor {
 		return Array
@@ -327,16 +325,10 @@ export class ArkErrors
 	}
 
 	/**
-	 * Serialize one indexed `issues` slot for `JSON.stringify`.
+	 * Serialize a single `issues[index]` for `JSON.stringify`.
 	 *
-	 * Ark only appends via {@link ArkErrors.add} (`ArkError`), but this value is
-	 * also {@link StandardSchemaV1.FailureResult.issues}, whose spec entries are
-	 * plain {@link StandardSchemaV1.Issue} shapes (message / optional path) with
-	 * no `toJSON` requirement. Consumers may stringify failure payloads; at
-	 * runtime the array remains an `Array` subclass, so userland or integrations
-	 * could theoretically append spec-shaped objects. Branching here keeps
-	 * `toJSON` aligned with that contract without assuming every slot is
-	 * {@link ArkError}.
+	 * Usually `ArkError` from `add`, but `issues` is also Standard Schema failure
+	 * issues: plain `{ message, path? }` values need not define `toJSON`.
 	 */
 	private static indexedIssueToJSON(issue: unknown): JsonObject {
 		if (issue === undefined) return { message: "undefined" }
