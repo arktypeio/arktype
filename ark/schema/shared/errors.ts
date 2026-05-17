@@ -7,6 +7,7 @@ import {
 	defineProperties,
 	flatMorph,
 	stringifyPath,
+	type Json,
 	type JsonArray,
 	type JsonObject,
 	type array,
@@ -315,28 +316,41 @@ export class ArkErrors
 	}
 
 	/**
-	 * Also Standard Schema `issues`; HTTP stacks may `JSON.stringify` this array,
-	 * so indexed entries must not assume {@link ArkError}.
+	 * Serialize one indexed `issues` slot for `JSON.stringify`.
+	 *
+	 * Ark only appends via {@link ArkErrors.add} (`ArkError`), but this value is
+	 * also {@link StandardSchemaV1.FailureResult.issues}, whose spec entries are
+	 * plain {@link StandardSchemaV1.Issue} shapes (message / optional path) with
+	 * no `toJSON` requirement. Consumers may stringify failure payloads; at
+	 * runtime the array remains an `Array` subclass, so userland or integrations
+	 * could theoretically append spec-shaped objects. Branching here keeps
+	 * `toJSON` aligned with that contract without assuming every slot is
+	 * {@link ArkError}.
 	 */
-	private static indexedIssueToJson(issue: unknown): JsonObject {
+	private static indexedIssueToJSON(issue: unknown): JsonObject {
 		if (issue === undefined) return { message: "undefined" }
 		if (issue === null) return { message: "null" }
 		if (typeof issue !== "object") return { message: String(issue) }
 
 		const toJSON = (issue as { toJSON?: unknown }).toJSON
-		if (typeof toJSON === "function") return toJSON.call(issue)
+		if (typeof toJSON === "function") {
+			// `ArkError#toJSON` returns a `JsonObject`. Exotic `toJSON` implementations
+			// that return non-records are out of scope here.
+			return toJSON.call(issue) as JsonObject
+		}
 
 		const { message, path } = issue as Record<string, unknown>
 		if (typeof message === "string") {
 			if (path === undefined) return { message }
-			return { message, path } as JsonObject
+			if (Array.isArray(path)) return { message, path: path as Json }
+			return { message }
 		}
 
 		return { message: String(issue) }
 	}
 
 	toJSON(): JsonArray {
-		return [...this.map(ArkErrors.indexedIssueToJson)]
+		return [...this.map(ArkErrors.indexedIssueToJSON)]
 	}
 
 	toString(): string {
