@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
-	type ArkErrors,
+	ArkErrors,
 	configureSchema,
 	rootSchema,
 	schemaScope
@@ -148,6 +148,20 @@ contextualize(() => {
 	})
 
 	const errors = nEvenAtLeast2({ n: 1 }) as ArkErrors
+
+	it("Array methods allocate plain Array (Symbol.species), not ArkErrors", () => {
+		const messages = errors.issues.map(e => e.message)
+		attest(messages instanceof Array).equals(true)
+		attest(messages.constructor).equals(Array)
+		attest(messages instanceof ArkErrors).equals(false)
+
+		const mapped = errors.map(() => 1)
+		attest(mapped.constructor).equals(Array)
+		attest(mapped instanceof ArkErrors).equals(false)
+
+		attest(errors.filter(() => true).constructor).equals(Array)
+		attest(errors.slice().constructor).equals(Array)
+	})
 
 	it("serialization", () => {
 		attest(errors.toJSON()).snap([

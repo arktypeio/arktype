@@ -166,6 +166,17 @@ export class ArkErrors
 {
 	readonly [arkKind] = "errors"
 
+	/**
+	 * Without this, `Array.prototype.map` / `filter` / `slice` / … allocate another
+	 * `ArkErrors` via species, so callbacks that return primitives (e.g.
+	 * `issues.map(i => i.message)` in Standard Schema consumers such as Nest)
+	 * would fill numeric indices with strings — then `JSON.stringify` invokes
+	 * {@link ArkErrors.toJSON} and must not assume every slot is an {@link ArkError}.
+	 */
+	static get [Symbol.species](): ArrayConstructor {
+		return Array
+	}
+
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {
