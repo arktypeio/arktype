@@ -189,6 +189,16 @@ contextualize(() => {
 		])
 	})
 
+	it("serialization tolerates indexed entries without toJSON (e.g. HTTP JSON.stringify)", () => {
+		;(errors as unknown as { push(...items: unknown[]): number }).push({
+			message: "foreign issue",
+			path: ["_"]
+		})
+		const parsed = JSON.parse(JSON.stringify(errors)) as unknown[]
+		attest(parsed.length).equals(2)
+		attest(parsed[1]).equals({ message: "foreign issue", path: ["_"] })
+	})
+
 	it("flatByPath", () => {
 		attest(errors.flatByPath).snap({
 			n: [

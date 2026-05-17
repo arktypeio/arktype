@@ -314,8 +314,29 @@ export class ArkErrors
 		return this
 	}
 
+	/**
+	 * Also Standard Schema `issues`; HTTP stacks may `JSON.stringify` this array,
+	 * so indexed entries must not assume {@link ArkError}.
+	 */
+	private static indexedIssueToJson(issue: unknown): JsonObject {
+		if (issue === undefined) return { message: "undefined" }
+		if (issue === null) return { message: "null" }
+		if (typeof issue !== "object") return { message: String(issue) }
+
+		const toJSON = (issue as { toJSON?: unknown }).toJSON
+		if (typeof toJSON === "function") return toJSON.call(issue)
+
+		const { message, path } = issue as Record<string, unknown>
+		if (typeof message === "string") {
+			if (path === undefined) return { message }
+			return { message, path } as JsonObject
+		}
+
+		return { message: String(issue) }
+	}
+
 	toJSON(): JsonArray {
-		return [...this.map(e => e.toJSON())]
+		return [...this.map(ArkErrors.indexedIssueToJson)]
 	}
 
 	toString(): string {
