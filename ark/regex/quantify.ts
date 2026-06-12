@@ -98,9 +98,13 @@ type tryFastPath<
 	max extends number | null
 > =
 	max extends 0 ? ""
-	: // repeating string or `${number}` any number of times will not change the type
+	: // repeating string or `${number}` any number of times will not change the
+	// type, but zero repetitions produce "", which `${number}` does not include
 	string extends pattern ? string
-	: `${number}` extends pattern ? `${number}`
+	: `${number}` extends pattern ?
+		min extends 0 ?
+			"" | `${number}`
+		:	`${number}`
 	: min extends 0 ?
 		max extends 1 ? "" | pattern
 		: max extends number ? loopFromZero<pattern, max, "", []>
