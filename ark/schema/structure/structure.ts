@@ -564,9 +564,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	optionalize(): StructureNode {
-		const { required, ...inner } = this.inner
+		const { required: _, sequence, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
+			...(sequence ? { sequence: sequence.optionalize() } : {}),
 			optional: this.props.map(prop =>
 				prop.hasKind("required") ? this.$.node("optional", prop.inner) : prop
 			)
@@ -574,9 +575,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	require(): StructureNode {
-		const { optional, ...inner } = this.inner
+		const { optional: _, sequence, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
+			...(sequence ? { sequence: sequence.require() } : {}),
 			required: this.props.map(prop =>
 				prop.hasKind("optional") ?
 					{

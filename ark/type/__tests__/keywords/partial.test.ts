@@ -35,4 +35,39 @@ contextualize(() => {
 
 		attest(T.expression).snap("{ [string]: number, bar?: 1, foo?: 1 }")
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1480
+	it("tuple literal", () => {
+		const T = type(["'foo'", "'bar'"]).partial()
+		const Expected = type(["'foo'?", "'bar'?"])
+
+		attest<typeof Expected.t>(T.t)
+		attest<["foo"?, "bar"?]>(T.infer)
+		attest(T([])).equals([])
+		attest(T(["foo"])).equals(["foo"])
+		attest(T(["foo", "bar"])).equals(["foo", "bar"])
+	})
+
+	it("string syntax tuple", () => {
+		const tupleScope = scope({
+			tuple: ["'foo'", "'bar'"]
+		})
+
+		const T = tupleScope.type("Partial<tuple>")
+		const Expected = type(["'foo'?", "'bar'?"])
+
+		attest<typeof Expected.t>(T.t)
+		attest<["foo"?, "bar"?]>(T.infer)
+		attest(T.expression).equals(Expected.expression)
+	})
+
+	it("tuple with defaultable", () => {
+		const T = type(["string", "number = 5"]).partial()
+		const Expected = type(["string?", "number?"])
+
+		// https://github.com/arktypeio/arktype/issues/1160
+		// attest<typeof Expected.t>(T.t)
+		attest(T.expression).equals(Expected.expression)
+		attest(T([])).equals([])
+	})
 })
