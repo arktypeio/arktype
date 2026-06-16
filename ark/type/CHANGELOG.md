@@ -1,5 +1,17 @@
 # arktype
 
+## 2.2.1
+
+### Improve regex inference for zero-min quantifiers on numeric patterns
+
+```ts
+// was: Regex<`${number}`>
+// now: Regex<"" | `${number}`>
+regex("^\\d*$")
+```
+
+See arkregex CHANGELOG for full notes.
+
 ## 2.2.0
 
 Full announcement: https://arktype.io/docs/blog/2.2
