@@ -709,6 +709,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {
+		// If this node contains an alias whose reference still points to an
+		// in-progress context node (e.g. `this[]` parsed before its enclosing
+		// type has finished), defer finalization. The enclosing parse will
+		// finalize once the context has been replaced with the resolved node.
+		// Gating on isCyclic skips the reference walk for non-cyclic roots,
+		// which are the overwhelming majority of finalize calls.
+		if (node.isCyclic && hasUnresolvedContextAlias(node)) return node
+
 		bootstrapAliasReferences(node)
 		if (!node.precompilation && !this.resolvedConfig.jitless)
 			precompile(node.references)
@@ -750,6 +758,19 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 		return v
 	}
 }
+
+// Invariant: scope-named aliases are normalized to `$name` references (see
+// alias.ts `serialize` and the `$`-prefix branch in `_resolve`), while
+// synthetic `this` aliases use a bare context NodeId (see unenclosed.ts
+// `maybeParseReference`). The `$`-prefix carve-out skips scope aliases so
+// only synthetic `this` references can defer finalization here.
+const hasUnresolvedContextAlias = (node: BaseRoot): boolean =>
+	node.references.some(
+		ref =>
+			ref.hasKind("alias") &&
+			ref.reference[0] !== "$" &&
+			hasArkKind(nodesByRegisteredId[ref.reference as NodeId], "context")
+	)
 
 const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 	const aliases = resolution.references.filter(node => node.hasKind("alias"))
