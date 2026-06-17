@@ -2,17 +2,84 @@ import {
 	describeBranches,
 	rootSchema,
 	type Intersection,
+	type makeRootAndArrayPropertiesMutable,
 	type Predicate,
 	type Traversal
 } from "@ark/schema"
-import { printable, throwParseError } from "@ark/util"
+import { printable, throwParseError, type array, type Json } from "@ark/util"
 import { type, type JsonSchema, type Out, type Type } from "arktype"
 import {
 	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
 	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
 } from "./errors.ts"
-import { jsonSchemaToType } from "./json.ts"
+import { jsonSchemaToType, type inferJsonSchema } from "./json.ts"
 import { JsonSchemaScope } from "./scope.ts"
+
+type inferArrayOfJsonSchema<tuple extends array<JsonSchema>> =
+	makeRootAndArrayPropertiesMutable<{
+		[index in keyof tuple]: inferJsonSchema<tuple[index]>
+	}>
+
+type inferJsonSchemaArrayItems<arrayItemsSchema> =
+	arrayItemsSchema extends array ?
+		arrayItemsSchema["length"] extends 0 ?
+			// JSON Schema explicitly states that {items: []} means "an array of anything"
+			// https://json-schema.org/understanding-json-schema/reference/array#items
+			Json[]
+		: arrayItemsSchema extends array<JsonSchema> ?
+			inferArrayOfJsonSchema<arrayItemsSchema>
+		:	never
+	:	inferJsonSchema<arrayItemsSchema>[]
+
+type inferJsonSchemaPrefixWithAdditionalItems<
+	arraySchema,
+	prefixKey,
+	additionalKey
+> =
+	arraySchema[prefixKey & keyof arraySchema] extends array ?
+		arraySchema[additionalKey & keyof arraySchema] extends false ?
+			inferJsonSchemaArrayItems<arraySchema[prefixKey & keyof arraySchema]>
+		:	inferJsonSchemaArrayItems<
+				[
+					...arraySchema[prefixKey & keyof arraySchema],
+					...(arraySchema[additionalKey & keyof arraySchema] extends array ?
+						arraySchema[additionalKey & keyof arraySchema]
+					:	arraySchema[additionalKey & keyof arraySchema][])
+				]
+			>
+	:	never
+export type inferJsonSchemaArray<arraySchema, T extends unknown[] = unknown[]> =
+	"prefixItems" extends keyof arraySchema ?
+		"additionalItems" extends keyof arraySchema ?
+			"items" extends keyof arraySchema ?
+				never
+			:	inferJsonSchemaPrefixWithAdditionalItems<
+					arraySchema,
+					"prefixItems",
+					"additionalItems"
+				>
+		: "items" extends keyof arraySchema ?
+			inferJsonSchemaPrefixWithAdditionalItems<
+				arraySchema,
+				"prefixItems",
+				"items"
+			>
+		:	// @ts-expect-error This type resolves despite giving a 'excessively deep and possibly infinite' error
+			[...inferJsonSchemaArrayItems<arraySchema["prefixItems"]>, ...unknown[]]
+	: "additionalItems" extends keyof arraySchema ?
+		"items" extends keyof arraySchema ?
+			inferJsonSchemaPrefixWithAdditionalItems<
+				arraySchema,
+				"items",
+				"additionalItems"
+			>
+		:	inferJsonSchemaArrayItems<arraySchema["additionalItems"]> // only has additionalItems
+	: "items" extends (
+		keyof arraySchema // only has items
+	) ?
+		inferJsonSchemaArrayItems<arraySchema["items"]>
+	: T extends array ? T
+	: unknown[]
 
 const deepNormalize = (data: unknown): unknown =>
 	typeof data === "object" ?
@@ -71,29 +138,47 @@ export const parseArrayJsonSchema: Type<
 	}
 
 	let itemsIsPrefixItems = false
+	let itemsHaveBeenPreProcessed = false
+
 	if ("prefixItems" in jsonSchema) {
 		if ("items" in jsonSchema) {
 			if ("additionalItems" in jsonSchema) {
 				throwParseError(
 					writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage()
 				)
-			} else jsonSchema.additionalItems = jsonSchema.items
+			}
+			if (Array.isArray(jsonSchema.items)) {
+				arktypeArraySchema.sequence = {
+					prefix: [...jsonSchema.prefixItems, ...jsonSchema.items].map(
+						item => jsonSchemaToType(item as never).internal
+					)
+				}
+				itemsHaveBeenPreProcessed = true
+			} else {
+				jsonSchema.additionalItems = jsonSchema.items
+				jsonSchema.items = jsonSchema.prefixItems
+				itemsIsPrefixItems = true
+			}
+		} else {
+			jsonSchema.items = jsonSchema.prefixItems
+			itemsIsPrefixItems = true
 		}
-		jsonSchema.items = jsonSchema.prefixItems
-		itemsIsPrefixItems = true
 	}
 
-	if ("items" in jsonSchema) {
+	if (!itemsHaveBeenPreProcessed && "items" in jsonSchema) {
 		if (Array.isArray(jsonSchema.items)) {
 			arktypeArraySchema.sequence = {
-				prefix: jsonSchema.items.map(item => jsonSchemaToType(item).internal)
+				prefix: jsonSchema.items.map(
+					item => jsonSchemaToType(item as never).internal
+				)
 			}
 
 			if ("additionalItems" in jsonSchema) {
 				if (jsonSchema.additionalItems !== false) {
 					arktypeArraySchema.sequence = {
 						...arktypeArraySchema.sequence,
-						variadic: jsonSchemaToType(jsonSchema.additionalItems).internal
+						variadic: jsonSchemaToType(jsonSchema.additionalItems as never)
+							.internal
 					}
 				}
 			} else if (itemsIsPrefixItems) {
@@ -109,12 +194,12 @@ export const parseArrayJsonSchema: Type<
 				)
 			}
 			arktypeArraySchema.sequence = {
-				variadic: jsonSchemaToType(jsonSchema.items).internal
+				variadic: jsonSchemaToType(jsonSchema.items as never).internal
 			}
 		}
 	} else if ("additionalItems" in jsonSchema) {
 		arktypeArraySchema.sequence = {
-			variadic: jsonSchemaToType(jsonSchema.additionalItems).internal
+			variadic: jsonSchemaToType(jsonSchema.additionalItems as never).internal
 		}
 	}
 
@@ -128,7 +213,9 @@ export const parseArrayJsonSchema: Type<
 		predicates.push(jsonSchemaArrayUniqueItemsValidator)
 
 	if ("contains" in jsonSchema) {
-		const parsedContainsJsonSchema = jsonSchemaToType(jsonSchema.contains)
+		const parsedContainsJsonSchema = jsonSchemaToType(
+			jsonSchema.contains as never
+		)
 		predicates.push(arrayContainsItemMatchingSchema(parsedContainsJsonSchema))
 	}
 

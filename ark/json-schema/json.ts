@@ -1,20 +1,56 @@
 import { describeBranches, type JsonSchemaOrBoolean } from "@ark/schema"
-import { printable, throwParseError } from "@ark/util"
+import {
+	printable,
+	throwParseError,
+	type array,
+	type ErrorMessage,
+	type Json
+} from "@ark/util"
 import { type, type JsonSchema } from "arktype"
-import { parseArrayJsonSchema } from "./array.ts"
+import { parseArrayJsonSchema, type inferJsonSchemaArray } from "./array.ts"
 import { parseCommonJsonSchema } from "./common.ts"
 import {
 	parseAnyOfJsonSchema,
-	parseCompositionJsonSchema
+	parseCompositionJsonSchema,
+	type inferJsonSchemaComposition
 } from "./composition.ts"
 import {
 	writeJsonSchemaInsufficientKeysMessage,
 	writeJsonSchemaUnsupportedTypeMessage
 } from "./errors.ts"
 import { parseNumberJsonSchema } from "./number.ts"
-import { parseObjectJsonSchema } from "./object.ts"
+import { parseObjectJsonSchema, type inferJsonSchemaObject } from "./object.ts"
 import { JsonSchemaScope } from "./scope.ts"
-import { parseStringJsonSchema } from "./string.ts"
+import { parseStringJsonSchema, type inferJsonSchemaString } from "./string.ts"
+
+type JsonSchemaConstraintKind = "const" | "enum"
+type JsonSchemaConst<t> = { const: t }
+type JsonSchemaEnum<t> = { enum: readonly t[] }
+
+type inferJsonSchemaConstraint<
+	schema,
+	t,
+	kind extends JsonSchemaConstraintKind
+> = t extends never ? never : t & inferJsonSchema<Omit<schema, kind>>
+
+export type inferJsonSchema<schema, t = unknown> =
+	schema extends true | Record<PropertyKey, never> ? Json
+	: schema extends false ? never
+	: schema extends array ? inferJsonSchema<schema[number], t>
+	: schema extends JsonSchema.Composition ?
+		inferJsonSchemaComposition<schema, t>
+	: schema extends JsonSchemaConst<infer c> ?
+		inferJsonSchemaConstraint<schema, t & c, "const">
+	: schema extends JsonSchemaEnum<infer e> ?
+		inferJsonSchemaConstraint<schema, t & e, "enum">
+	: schema extends { type: "boolean" } ? t & boolean
+	: schema extends { type: "null" } ? t & null
+	: schema extends JsonSchema.Numeric ? t & number
+	: schema extends JsonSchema.Array ? t & inferJsonSchemaArray<schema>
+	: schema extends JsonSchema.Object ? t & inferJsonSchemaObject<schema>
+	: schema extends JsonSchema.String ? t & inferJsonSchemaString
+	: t extends {} ? t
+	: ErrorMessage<"Failed to infer JSON Schema">
 
 const jsonSchemaTypeMatcher = type.match
 	.in<Extract<JsonSchema, { type?: unknown }>>()
@@ -89,6 +125,6 @@ export const innerParseJsonSchema = JsonSchemaScope.Schema.pipe(
 	}
 )
 
-export const jsonSchemaToType = (
-	jsonSchema: JsonSchemaOrBoolean
-): type<unknown> => innerParseJsonSchema.assert(jsonSchema) as never
+export const jsonSchemaToType = <const t extends JsonSchemaOrBoolean>(
+	jsonSchema: t
+): type<inferJsonSchema<t>> => innerParseJsonSchema.assert(jsonSchema) as never

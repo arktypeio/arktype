@@ -9,21 +9,24 @@ contextualize(() => {
 				{ type: "string", maxLength: 10 }
 			]
 		})
+		attest<string>(tAllOf.infer)
 		attest(tAllOf.expression).snap("string <= 10 & >= 1")
 	})
 
 	it("anyOf", () => {
 		const tAnyOf = jsonSchemaToType({
 			anyOf: [
-				{ type: "string", minLength: 1 },
-				{ type: "string", maxLength: 10 }
+				{ type: "string", minLength: 1, maxLength: 1 },
+				{ type: "number", maximum: 9 }
 			]
 		})
-		attest(tAnyOf.expression).snap("string <= 10 | string >= 1")
+		attest<string | number>(tAnyOf.infer)
+		attest(tAnyOf.expression).snap("number <= 9 | string == 1")
 	})
 
 	it("not", () => {
 		const tNot = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
+		attest<unknown>(tNot.infer)
 		attest(tNot.json).snap({
 			predicate: ["$ark.jsonSchemaNotValidator"]
 		})
@@ -39,6 +42,7 @@ contextualize(() => {
 		const tOneOf = jsonSchemaToType({
 			oneOf: [{ type: "string", minLength: 10 }, { const: "foo" }]
 		})
+		attest<string | "foo">(tOneOf.infer)
 		attest(tOneOf.json).snap({
 			predicate: ["$ark.jsonSchemaOneOfValidator"]
 		})
