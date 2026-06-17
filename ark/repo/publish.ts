@@ -3,7 +3,7 @@ import { packages, type ArkPackage } from "./shared.ts"
 
 const tagsToPublish: string[] = []
 
-const existingTags = getShellOutput("git tag").split("\n")
+const existingTags = getShellOutput("git", ["tag"]).split("\n")
 
 const publishPackage = (pkg: ArkPackage, alias?: string) => {
 	const tagName = `${alias ?? pkg.name}@${pkg.version}`
@@ -11,9 +11,9 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 	if (!existingTags.includes(tagName)) {
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, alias)
 
-		shell(`git tag ${tagName}`)
+		shell("git", ["tag", tagName])
 		tagsToPublish.push(tagName)
-		shell("pnpm publish --no-git-checks", { cwd: pkg.path })
+		shell("pnpm", ["publish", "--no-git-checks"], { cwd: pkg.path })
 
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, pkg.name)
 	}
@@ -34,7 +34,7 @@ for (const pkg of packages) {
 	publishPackage(pkg, `@arktype/${pkg.scope}`)
 }
 
-shell("git push --tags")
+shell("git", ["push", "--tags"])
 
 for (const tagName of tagsToPublish)
-	shell(`gh release create ${tagName} --latest`)
+	shell("gh", ["release", "create", tagName, "--latest"])

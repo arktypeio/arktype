@@ -14,7 +14,16 @@ export const dtsGen = () => {
 
 	console.log(`✍️ Generating DTS bundle for ${pkg.name}...`)
 
-	shell("pnpm tsup index.ts --dts-only --dts-resolve --format esm --out-dir .")
+	shell("pnpm", [
+		"tsup",
+		"index.ts",
+		"--dts-only",
+		"--dts-resolve",
+		"--format",
+		"esm",
+		"--out-dir",
+		"."
+	])
 
 	const expectedDtsBundlePath = join(pkg.path, "index.d.ts")
 

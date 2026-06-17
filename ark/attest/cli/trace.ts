@@ -266,7 +266,8 @@ const generateTraceData = (
 ): string => {
 	try {
 		const output = getShellOutput(
-			`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
+			baseDiagnosticTscCmd,
+			["--project", tsconfigPath, "--generateTrace", traceDir],
 			{ cwd: packageDir }
 		)
 		process.stdout.write(output) // Display tsc output directly

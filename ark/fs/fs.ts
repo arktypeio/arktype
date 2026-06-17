@@ -174,7 +174,12 @@ export const readPackageJson = (startDir = dirOfCaller()): any =>
 
 export const getSourceControlPaths = (): string[] =>
 	// include tracked and untracked files as long as they are not ignored
-	getShellOutput("git ls-files --exclude-standard --cached --others")
+	getShellOutput("git", [
+		"ls-files",
+		"--exclude-standard",
+		"--cached",
+		"--others"
+	])
 		.split("\n")
 		.filter(path => existsSync(path) && statSync(path).isFile())
 
