@@ -74,7 +74,6 @@
 		"mocha": "11.7.4",
 		"prettier": "3.6.2",
 		"tsup": "8.5.0",
-		"tsx": "4.20.6",
 		"typescript": "catalog:",
 		"typescript-eslint": "8.46.1"
 	},
@@ -85,8 +84,7 @@
 		],
 		"ignore": "**/node_modules/**/*",
 		"node-option": [
-			"conditions=ark-ts",
-			"import=tsx"
+			"conditions=ark-ts"
 		],
 		"require": "./ark/repo/mocha.globalSetup.ts",
 		"timeout": 10000
@@ -109,7 +107,7 @@
 		"arrowParens": "avoid"
 	},
 	"engines": {
-		"node": ">=18",
+		"node": ">=22.18.0",
 		"pnpm": ">=10"
 	},
 	"packageManager": "pnpm@10.19.0",
