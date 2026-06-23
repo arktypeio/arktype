@@ -1302,10 +1302,13 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 	it("described input of morph", () => {
 		class ValidatedUserID {
+			readonly data: string
 			static fromString(value: string): ValidatedUserID {
 				return new ValidatedUserID(value)
 			}
-			private constructor(readonly data: string) {}
+			private constructor(data: string) {
+				this.data = data
+			}
 		}
 
 		const UserID = type("string")
