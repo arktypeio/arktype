@@ -1488,6 +1488,31 @@ date3 must be a parsable date (was "")`)
 		attest(result).equals(component)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1362
+	it("cyclic discriminated union with private alias", () => {
+		const componentModule = type.module({
+			"#tabsItem": {
+				id: "string",
+				title: "component",
+				content: "component"
+			},
+			tabs: {
+				type: "'tabs'",
+				items: "tabsItem[]"
+			},
+			component: "string | tabs"
+		})
+		const componentSchema = componentModule.component
+
+		const component: typeof componentSchema.infer = {
+			type: "tabs",
+			items: []
+		}
+
+		// previously threw "TypeError: this.tabs1Apply is not a function"
+		attest(componentSchema(component)).equals(component)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1209
 	it("cyclic discriminated union issue 3", () => {
 		const $ = scope({
