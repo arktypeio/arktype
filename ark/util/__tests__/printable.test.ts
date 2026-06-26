@@ -23,6 +23,16 @@ contextualize(() => {
 		attest(printable(data)).snap('[1,"foo"]')
 	})
 
+	it("bigint in array", () => {
+		const data = [1n, 0n, 1n]
+		attest(printable(data)).snap("[1n,0n,1n]")
+	})
+
+	it("bigint in object", () => {
+		const data = { a: 1n, b: 2n }
+		attest(printable(data)).snap('{"a":1n,"b":2n}')
+	})
+
 	it("nested", () => {
 		const data = { a: [1, { b: "foo" }] }
 		attest(printable(data)).snap('{"a":[1,{"b":"foo"}]}')
