@@ -140,8 +140,9 @@ const _printableStringify = (
 ): string => {
 	if (typeof data === "function") return printableOpts.onFunction(data)
 	if (typeof data === "bigint") return `${data}n`
-	if (typeof data === "symbol") return JSON.stringify(printableOpts.onSymbol(data))
-	if (typeof data === "undefined") return JSON.stringify("undefined")
+	if (typeof data === "symbol")
+		return JSON.stringify(printableOpts.onSymbol(data))
+	if (data === undefined) return JSON.stringify("undefined")
 	if (typeof data !== "object" || data === null) return JSON.stringify(data)
 
 	const o = data as object
@@ -151,17 +152,24 @@ const _printableStringify = (
 	const nextSeen = [...seen, o]
 	const nextIndent = currentIndent + " ".repeat(indent)
 
-	if ("toJSON" in o && typeof (o as any).toJSON === "function")
-		return _printableStringify((o as any).toJSON(), opts, nextSeen, indent, nextIndent)
+	if ("toJSON" in o && typeof (o as any).toJSON === "function") {
+		return _printableStringify(
+			(o as any).toJSON(),
+			opts,
+			nextSeen,
+			indent,
+			nextIndent
+		)
+	}
 
 	if (Array.isArray(o)) {
 		if (o.length === 0) return "[]"
 		const items = o.map(item =>
 			_printableStringify(item, opts, nextSeen, indent, nextIndent)
 		)
-		if (indent) {
+		if (indent)
 			return `[\n${nextIndent}${items.join(",\n" + nextIndent)}\n${currentIndent}]`
-		}
+
 		return `[${items.join(",")}]`
 	}
 
@@ -177,11 +185,9 @@ const _printableStringify = (
 			nextIndent
 		)
 		const serializedKey = JSON.stringify(k)
-		if (indent) {
+		if (indent)
 			keyValues.push(`${nextIndent}${serializedKey}: ${serializedValue}`)
-		} else {
-			keyValues.push(`${serializedKey}:${serializedValue}`)
-		}
+		else keyValues.push(`${serializedKey}:${serializedValue}`)
 	}
 
 	for (const s of Object.getOwnPropertySymbols(o)) {
@@ -193,17 +199,14 @@ const _printableStringify = (
 			nextIndent
 		)
 		const serializedKey = JSON.stringify(printableOpts.onSymbol(s))
-		if (indent) {
+		if (indent)
 			keyValues.push(`${nextIndent}${serializedKey}: ${serializedValue}`)
-		} else {
-			keyValues.push(`${serializedKey}:${serializedValue}`)
-		}
+		else keyValues.push(`${serializedKey}:${serializedValue}`)
 	}
 
 	if (keyValues.length === 0) return "{}"
-	if (indent) {
-		return `{\n${keyValues.join(",\n")}\n${currentIndent}}`
-	}
+	if (indent) return `{\n${keyValues.join(",\n")}\n${currentIndent}}`
+
 	return `{${keyValues.join(",")}}`
 }
 
