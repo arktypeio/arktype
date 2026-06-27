@@ -207,7 +207,7 @@ contextualize(() => {
 		const result = nEvenAtLeast2["~standard"].validate({ n: 1 })
 		if (!("issues" in result)) throw new Error("expected validation failure")
 
-		const messages = result.issues.map(issue => issue.message)
+		const messages = result.issues?.map(issue => issue.message)
 		attest(messages).equals(errors.issues.map(issue => issue.message))
 		attest(messages instanceof ArkErrors).equals(false)
 
@@ -216,7 +216,7 @@ contextualize(() => {
 		) as { issues: unknown[]; messages: string[] }
 
 		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
-		attest(parsed.messages).equals(messages)
+		attest(parsed.messages).equals(messages!)
 	})
 
 	it("flatByPath", () => {
