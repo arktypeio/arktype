@@ -203,23 +203,20 @@ contextualize(() => {
 		])
 	})
 
-	it("serialization tolerates indexed entries without toJSON (e.g. HTTP JSON.stringify)", () => {
-		// Simulate an extra `issues` row shaped like Standard Schema `Issue` (`{ message, path? }`,
-		// no `toJSON`) — Ark has no public API for that, hence the cast — so `JSON.stringify`
-		// must tolerate mixed slots instead of assuming every index is an `ArkError`.
-		const mixed = nEvenAtLeast2({ n: 1 }) as ArkErrors
-		;(mixed as unknown as { push(...items: unknown[]): number }).push({
-			message: "foreign issue",
-			path: ["_"]
-		})
-		const parsed = JSON.parse(JSON.stringify(mixed)) as unknown[]
-		attest(parsed.length).equals(2)
-		const first = parsed[0] as Record<string, unknown>
-		attest(first.code).equals("intersection")
-		attest(first.path).equals(["n"])
-		attest(typeof first.message).equals("string")
-		attest(Array.isArray(first.errors)).equals(true)
-		attest(parsed[1]).equals({ message: "foreign issue", path: ["_"] })
+	it("JSON.stringify round-trip via Standard Schema failure (e.g. HTTP error payload)", () => {
+		const result = nEvenAtLeast2["~standard"].validate({ n: 1 })
+		if (!("issues" in result)) throw new Error("expected validation failure")
+
+		const messages = result.issues.map(issue => issue.message)
+		attest(messages).equals(errors.issues.map(issue => issue.message))
+		attest(messages instanceof ArkErrors).equals(false)
+
+		const parsed = JSON.parse(
+			JSON.stringify({ issues: result.issues, messages })
+		) as { issues: unknown[]; messages: string[] }
+
+		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
+		attest(parsed.messages).equals(messages)
 	})
 
 	it("flatByPath", () => {

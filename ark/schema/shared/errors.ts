@@ -324,36 +324,8 @@ export class ArkErrors
 		return this
 	}
 
-	/**
-	 * Serialize a single `issues[index]` for `JSON.stringify`.
-	 *
-	 * Usually `ArkError` from `add`, but `issues` is also Standard Schema failure
-	 * issues: plain `{ message, path? }` values need not define `toJSON`.
-	 */
-	private static indexedIssueToJSON(issue: unknown): JsonObject {
-		if (issue === undefined) return { message: "undefined" }
-		if (issue === null) return { message: "null" }
-		if (typeof issue !== "object") return { message: String(issue) }
-
-		const toJSON = (issue as { toJSON?: unknown }).toJSON
-		if (typeof toJSON === "function") {
-			// `ArkError#toJSON` returns a `JsonObject`. Exotic `toJSON` implementations
-			// that return non-records are out of scope here.
-			return toJSON.call(issue) as JsonObject
-		}
-
-		const { message, path } = issue as Record<string, unknown>
-		if (typeof message === "string") {
-			if (path === undefined) return { message }
-			if (Array.isArray(path)) return { message, path: path as Json }
-			return { message }
-		}
-
-		return { message: String(issue) }
-	}
-
 	toJSON(): JsonArray {
-		return [...this.map(ArkErrors.indexedIssueToJSON)]
+		return [...this.map(e => e.toJSON())]
 	}
 
 	toString(): string {
