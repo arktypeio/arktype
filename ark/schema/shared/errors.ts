@@ -7,7 +7,6 @@ import {
 	defineProperties,
 	flatMorph,
 	stringifyPath,
-	type Json,
 	type JsonArray,
 	type JsonObject,
 	type array,
