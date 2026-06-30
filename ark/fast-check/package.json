@@ -34,7 +34,7 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts"
+		"test": "node ../repo/testPackage.ts"
 	},
 	"dependencies": {
 		"arktype": "workspace:*",

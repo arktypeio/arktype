@@ -8,6 +8,6 @@
 {
 	"spec": ["__tests__/*.test.*"],
 	"ignore": "node_modules/**/*",
-	"node-option": ["conditions=ark-ts", "import=tsx"],
+	"node-option": ["conditions=ark-ts"],
 	"require": "../repo/mocha.globalSetup.ts"
 }
