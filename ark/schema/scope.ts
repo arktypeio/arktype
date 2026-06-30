@@ -181,13 +181,14 @@ const precompile = (references: readonly BaseNode[]): void =>
 
 const bindPrecompilation = (
 	references: readonly BaseNode[],
-	precompiler: CompiledFunction<() => PrecompiledReferences>
+	precompiler: CompiledFunction<() => PrecompiledReferences>,
+	owningScope?: BaseScope
 ): void => {
 	const precompilation = precompiler.write(rootScopeFnName, 4)
 	const compiledTraversals = precompiler.compile()()
 
 	for (const node of references) {
-		if (node.precompilation) {
+		if (node.precompilation && (!owningScope || node.$ !== owningScope)) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			continue
 		}
@@ -642,7 +643,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (!this.resolvedConfig.jitless) {
 				const precompiler = precompileReferences(this.references)
 				this.precompilation = precompiler.write(rootScopeFnName, 4)
-				bindPrecompilation(this.references, precompiler)
+				bindPrecompilation(this.references, precompiler, this)
 			}
 			this.resolved = true
 		}
