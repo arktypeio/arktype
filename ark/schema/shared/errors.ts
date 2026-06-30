@@ -165,6 +165,15 @@ export class ArkErrors
 {
 	readonly [arkKind] = "errors"
 
+	/**
+	 * Inherited array methods (`map`, `filter`, `slice`, …) return a plain
+	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
+	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
+	 */
+	static get [Symbol.species](): ArrayConstructor {
+		return Array
+	}
+
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {
