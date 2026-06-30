@@ -1,5 +1,15 @@
 # arktype
 
+## 2.2.2
+
+### Fix precompilation of private aliases
+
+A private alias referenced only within its own scope is no longer skipped during JIT precompilation, so its optimized traversal is bound correctly instead of falling back to the unbound reference.
+
+### Harden `ArkErrors` JSON serialization
+
+`ArkErrors` doubles as a Standard Schema `issues` array, so `JSON.stringify` no longer assumes every indexed entry is an `ArkError` with a `toJSON` method (e.g. plain issue-shaped entries from other validators). Inherited array methods (`map`, `filter`, `slice`, …) now return a plain `Array` via `Symbol.species`, preventing callbacks that return primitives from producing a malformed `ArkErrors`.
+
 ## 2.2.1
 
 ### Improve regex inference for zero-min quantifiers on numeric patterns
