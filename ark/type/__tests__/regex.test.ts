@@ -106,4 +106,39 @@ contextualize(() => {
 			}>
 		>(T)
 	})
+
+	describe("escaped backslash", () => {
+		// note: in a TS string, "\\\\d" is two literal backslashes followed by
+		// "d", i.e. the four characters `\`, `\`, `d` reach the parser, which is
+		// the regex source for a literal backslash + "d" (not the digit class)
+		it("string literal matches RegExp instance", () => {
+			const FromString = type("/^\\\\d$/")
+			const FromInstance = type(/^\\d$/)
+			attest(FromString.json).equals(FromInstance.json)
+		})
+
+		it("preserves literal backslash", () => {
+			const T = type("/^\\\\d$/")
+			attest(T.allows("\\d")).equals(true)
+			attest(T.allows("5")).equals(false)
+		})
+
+		it("lone escaped backslash", () => {
+			const T = type("/^\\\\$/")
+			attest(T.allows("\\")).equals(true)
+		})
+
+		it("single-backslash class still works", () => {
+			// "\\d" is a single backslash + "d", i.e. the digit-class metachar
+			const T = type("/^\\d+$/")
+			attest(T.allows("123")).equals(true)
+			attest(T.allows("abc")).equals(false)
+		})
+
+		it("escaped terminator preserved", () => {
+			const T = type("/^a\\/b$/")
+			attest(T.json).snap({ domain: "string", pattern: ["^a/b$"] })
+			attest(T.allows("a/b")).equals(true)
+		})
+	})
 })
