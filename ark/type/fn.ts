@@ -100,7 +100,7 @@ export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 		// constructed (and thus `undefined`) at this point.
 		const attach: FnParserAttachments = {
 			$: $ as never,
-			raw: parse
+			raw: parse as never
 		}
 
 		super(parse, { attach })
