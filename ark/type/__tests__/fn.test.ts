@@ -316,7 +316,10 @@ contextualize(() => {
 	})
 
 	it("raw", () => {
-		const len = type.fn.raw("string | unknown[]")((s: string) => s.length)
+		// raw has no type-level inference, so it's returned as an untyped parser
+		const len = type.fn.raw("string | unknown[]")((s: string) => s.length) as (
+			data: unknown
+		) => number
 
 		attest(len("foo")).equals(3)
 		attest(() => len(1)).throws.snap(
