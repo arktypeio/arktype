@@ -841,7 +841,7 @@ export const uuid = Scope.module(
 		"#nil": "'00000000-0000-0000-0000-000000000000'",
 		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
 		"#versioned":
-			/[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}/i,
+			/^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 		v1: regexStringNode(
 			/^[\da-f]{8}-[\da-f]{4}-1[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/i,
 			"a UUIDv1"
