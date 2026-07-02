@@ -315,6 +315,18 @@ contextualize(() => {
 		attest(f.name).snap("bound typed originalName")
 	})
 
+	it("raw", () => {
+		// raw has no type-level inference, so it's returned as an untyped parser
+		const len = type.fn.raw("string | unknown[]")((s: string) => s.length) as (
+			data: unknown
+		) => number
+
+		attest(len("foo")).equals(3)
+		attest(() => len(1)).throws.snap(
+			"TraversalError: value at [0] must be a string or an object (was a number)"
+		)
+	})
+
 	it("arg submodule completions", () => {
 		// @ts-expect-error
 		attest(() => type.fn("string.nu")).completions({
