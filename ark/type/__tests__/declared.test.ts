@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { declare, type } from "arktype"
+import { declare, type, type Out } from "arktype"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -249,9 +249,9 @@ contextualize(() => {
 			"b?": "number"
 		})
 
-		attest<(In: { a: string; b?: number }) => Expected>(T.t).type.toString.snap(
-			"(In: { a: string; b?: number }) => Expected"
-		)
+		attest<(In: { a: string; b?: number }) => Out<Expected>>(
+			T.t
+		).type.toString.snap("(In: { a: string; b?: number }) => Out<Expected>")
 	})
 
 	it("morph out mismatch", () => {
