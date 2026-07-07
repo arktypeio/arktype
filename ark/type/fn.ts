@@ -73,35 +73,37 @@ type FnParserAttachments = Omit<FnParser, never>
 
 export class InternalFnParser extends Callable<(...args: unknown[]) => Fn> {
 	constructor($: InternalScope) {
-		const attach: FnParserAttachments = {
-			$: $ as never,
-			raw: $.fn
+		const parse = (...signature: unknown[]) => {
+			const returnOperatorIndex = signature.indexOf(":")
+			const lastParamIndex =
+				returnOperatorIndex === -1 ?
+					signature.length - 1
+				:	returnOperatorIndex - 1
+
+			const paramDefs = signature.slice(0, lastParamIndex + 1)
+
+			const paramTuple = $.parse(paramDefs).assertHasKind("intersection")
+
+			let returnType: BaseRoot = $.intrinsic.unknown
+
+			if (returnOperatorIndex !== -1) {
+				if (returnOperatorIndex !== signature.length - 2)
+					return throwParseError(badFnReturnTypeMessage)
+				returnType = $.parse(signature[returnOperatorIndex + 1])
+			}
+
+			return (impl: Fn) => new InternalTypedFn(impl, paramTuple, returnType)
 		}
 
-		super(
-			(...signature) => {
-				const returnOperatorIndex = signature.indexOf(":")
-				const lastParamIndex =
-					returnOperatorIndex === -1 ?
-						signature.length - 1
-					:	returnOperatorIndex - 1
+		// `raw` is an alias of `fn` itself with no type-level validation. It must
+		// reference `parse` directly rather than `$.fn`, which is still being
+		// constructed (and thus `undefined`) at this point.
+		const attach: FnParserAttachments = {
+			$: $ as never,
+			raw: parse as never
+		}
 
-				const paramDefs = signature.slice(0, lastParamIndex + 1)
-
-				const paramTuple = $.parse(paramDefs).assertHasKind("intersection")
-
-				let returnType: BaseRoot = $.intrinsic.unknown
-
-				if (returnOperatorIndex !== -1) {
-					if (returnOperatorIndex !== signature.length - 2)
-						return throwParseError(badFnReturnTypeMessage)
-					returnType = $.parse(signature[returnOperatorIndex + 1])
-				}
-
-				return (impl: Fn) => new InternalTypedFn(impl, paramTuple, returnType)
-			},
-			{ attach }
-		)
+		super(parse, { attach })
 	}
 }
 
