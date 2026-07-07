@@ -1,5 +1,23 @@
 # arktype
 
+## 2.2.3
+
+### Fix `type.fn.raw` throwing at runtime
+
+`type.fn.raw` is documented as an untyped alias of `type.fn`, but was `undefined` at runtime and threw `type.fn.raw is not a function` when called. It now references the underlying parser directly, so it parses, runs, and validates like `type.fn` without type-level inference. Thanks to @aarsh767.
+
+### Anchor versioned UUID validation
+
+`string.uuid` no longer accepts strings that merely contain a UUID. The internal `#versioned` pattern is now anchored like the individual version keywords, so leading or trailing content is rejected. Thanks to @WolfieLeader.
+
+### Fix inferred output of `declare`d morphs
+
+The output side of a `declare`d definition now wraps its preinferred value in `Out<...>`, matching the inference of the equivalent definition without `declare`. Thanks to @eralmansouri.
+
+### Allow `Object.prototype` method names as keys
+
+Keys like `constructor`, `toString`, and `hasOwnProperty` are no longer incorrectly reported as duplicate keys, since duplicate detection now uses a prototype-free record. Thanks to @kaigritun.
+
 ## 2.2.2
 
 ### Fix precompilation of private aliases
