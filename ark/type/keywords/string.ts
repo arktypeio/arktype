@@ -80,6 +80,8 @@ export declare namespace stringInteger {
 
 const hex = regexStringNode(/^[\dA-Fa-f]+$/, "hex characters only")
 
+const base58 = regexStringNode(/^[1-9A-HJ-NP-Za-km-z]+$/, "base58-encoded")
+
 const base64 = Scope.module(
 	{
 		root: regexStringNode(
@@ -911,6 +913,7 @@ export const string = Scope.module(
 			"only letters and digits 0-9"
 		),
 		hex,
+		base58,
 		base64,
 		capitalize,
 		creditCard,
@@ -945,6 +948,7 @@ export declare namespace string {
 		alpha: string
 		alphanumeric: string
 		hex: string
+		base58: string
 		base64: base64.submodule
 		capitalize: capitalize.submodule
 		creditCard: string
