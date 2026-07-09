@@ -109,4 +109,42 @@ contextualize(() => {
 			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
 		)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1406
+	it("this[] (array of self)", () => {
+		const T = type({
+			name: "string",
+			"children?": "this[]"
+		})
+
+		attest(T).type.toString.snap(
+			"Type<{ name: string; children?: cyclic[] }, {}>"
+		)
+
+		attest(T({ name: "a" })).snap({ name: "a" })
+		attest(T({ name: "a", children: [{ name: "b" }] })).snap({
+			name: "a",
+			children: [{ name: "b" }]
+		})
+		attest(T({ name: "a", children: [{ name: 5 as never }] }).toString()).snap(
+			"children[0].name must be a string (was a number)"
+		)
+	})
+
+	it("this[] in unions of self", () => {
+		const T = type({
+			"AND?": "this[]",
+			"OR?": "this[]",
+			"name?": "string"
+		})
+
+		attest(T).type.toString.snap(`Type<
+	{ AND?: cyclic[]; OR?: cyclic[]; name?: string },
+	{}
+>`)
+
+		attest(T({ AND: [{ name: "a" }, { OR: [{ name: "b" }] }] })).snap({
+			AND: [{ name: "a" }, { OR: [{ name: "b" }] }]
+		})
+	})
 })
