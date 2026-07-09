@@ -2796,6 +2796,42 @@ const User = jsonSchemaToType({
 
 See the [`@ark/json-schema` README](https://github.com/arktypeio/arktype/tree/main/ark/json-schema) for more details and limitations.
 
+### fast-check
+
+The `@ark/fast-check` package converts ArkType schemas to [`fast-check`](https://fast-check.dev) arbitraries for property-based testing:
+
+```sh
+pnpm add @ark/fast-check fast-check
+```
+
+Import `arkToArbitrary` from `@ark/fast-check`, then pass any `Type` to your `fast-check` properties:
+
+```ts
+// @noErrors
+import { type } from "arktype"
+
+declare const arkToArbitrary: (schema: type.Any) => unknown
+declare const assert: (property: unknown) => void
+declare const property: (
+	arbitrary: unknown,
+	predicate: (value: unknown) => boolean
+) => unknown
+
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+assert(
+	property(arkToArbitrary(User), value => {
+		User.assert(value)
+		return true
+	})
+)
+```
+
+This lets tests generate inputs from the same schema they validate against. See the [`@ark/fast-check` README](https://github.com/arktypeio/arktype/tree/main/ark/fast-check) for supported schemas and limitations.
+
 ### tRPC
 
 ArkType can easily be used with tRPC:
