@@ -48,4 +48,37 @@ contextualize(() => {
 
 		attest(T.expression).equals(Expected.expression)
 	})
+
+	// reverse of https://github.com/arktypeio/arktype/issues/1480
+	it("tuple literal", () => {
+		const T = type(["'foo'?", "'bar'?"]).required()
+		const Expected = type(["'foo'", "'bar'"])
+
+		attest<typeof Expected.t>(T.t)
+		attest<["foo", "bar"]>(T.infer)
+		attest(T.expression).equals(Expected.expression)
+		attest(T(["foo", "bar"])).equals(["foo", "bar"])
+	})
+
+	it("string syntax tuple", () => {
+		const tupleScope = scope({
+			tuple: ["'foo'?", "'bar'?"]
+		})
+		const T = tupleScope.type("Required<tuple>")
+		const Expected = type(["'foo'", "'bar'"])
+
+		attest<typeof Expected.t>(T.t)
+		attest<["foo", "bar"]>(T.infer)
+		attest(T.expression).equals(Expected.expression)
+		attest(T(["foo", "bar"])).equals(["foo", "bar"])
+	})
+
+	it("tuple with defaultable", () => {
+		const T = type(["string", "number = 5"]).required()
+		const Expected = type(["string", "number"])
+
+		// https://github.com/arktypeio/arktype/issues/1160
+		// attest<typeof Expected.t>(T.t)
+		attest(T.expression).equals(Expected.expression)
+	})
 })

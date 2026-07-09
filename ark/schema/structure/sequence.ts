@@ -1,6 +1,7 @@
 import {
 	append,
 	conflatenate,
+	conflatenateAll,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -479,6 +480,36 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
+	}
+
+	optionalize(): SequenceNode {
+		if (this.postfix) return this
+		if (!this.prefix?.length && !this.defaultables?.length) return this
+
+		const { prefix, defaultables, ...inner } = this.inner
+		return this.$.node("sequence", {
+			...inner,
+			optionals: conflatenateAll(
+				prefix,
+				defaultables?.map(d => d[0]),
+				inner.optionals
+			)
+		})
+	}
+
+	require(): SequenceNode {
+		if (this.postfix) return this
+		if (!this.optionals?.length && !this.defaultables?.length) return this
+
+		const { optionals, defaultables, ...inner } = this.inner
+		return this.$.node("sequence", {
+			...inner,
+			prefix: conflatenateAll(
+				inner.prefix,
+				defaultables?.map(d => d[0]),
+				optionals
+			)
+		})
 	}
 
 	// this depends on tuple so needs to come after it
