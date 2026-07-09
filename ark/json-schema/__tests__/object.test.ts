@@ -5,10 +5,12 @@ import {
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "@ark/json-schema"
 import { writeDuplicateKeyMessage } from "@ark/schema"
+import type { Json } from "@ark/util"
 
 contextualize(() => {
 	it("type object", () => {
 		const t = jsonSchemaToType({ type: "object" })
+		attest<Record<string, Json>>(t.infer)
 		attest(t.expression).snap("{}")
 		attest(t.allows({ foo: 3 }))
 	})
@@ -18,6 +20,7 @@ contextualize(() => {
 			type: "object",
 			maxProperties: 1
 		})
+		attest<Record<string, Json>>(tMaxProperties.infer)
 		attest(tMaxProperties.json).snap({
 			domain: "object",
 			predicate: ["$ark.jsonSchemaObjectMaxPropertiesValidator"]
@@ -33,6 +36,7 @@ contextualize(() => {
 			type: "object",
 			minProperties: 2
 		})
+		attest<Record<string, Json>>(tMinProperties.infer)
 		attest(tMinProperties.json).snap({
 			domain: "object",
 			predicate: ["$ark.jsonSchemaObjectMinPropertiesValidator"]
@@ -52,28 +56,31 @@ contextualize(() => {
 			},
 			required: ["foo"]
 		})
+		attest<{ foo: string; bar?: number }>(tRequired.infer)
 		attest(tRequired.expression).snap("{ foo: string, bar?: number }")
 
-		attest(() =>
-			jsonSchemaToType({ type: "object", required: ["foo"] })
+		attest(
+			() => jsonSchemaToType({ type: "object", required: ["foo"] }) as never
 		).throws(
 			"TraversalError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
 		)
-		attest(() =>
-			jsonSchemaToType({
-				type: "object",
-				properties: { foo: { type: "string" } },
-				required: ["bar"]
-			})
+		attest(
+			() =>
+				jsonSchemaToType({
+					type: "object",
+					properties: { foo: { type: "string" } },
+					required: ["bar"]
+				}) as never
 		).throws(
 			`TraversalError: required must be a key from the 'properties' object, i.e. foo (was bar)`
 		)
-		attest(() =>
-			jsonSchemaToType({
-				type: "object",
-				properties: { foo: { type: "string" } },
-				required: ["foo", "foo"]
-			})
+		attest(
+			() =>
+				jsonSchemaToType({
+					type: "object",
+					properties: { foo: { type: "string" } },
+					required: ["foo", "foo"]
+				}) as never
 		).throws(writeDuplicateKeyMessage("foo"))
 	})
 
@@ -83,6 +90,7 @@ contextualize(() => {
 			additionalProperties: { type: "number" },
 			properties: { bar: { type: "string" } }
 		})
+		attest<{ bar?: string } & Record<string, Json>>(tAdditionalProperties.infer)
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
 			optional: [{ key: "bar", value: "string" }],
@@ -101,6 +109,7 @@ contextualize(() => {
 				"^[a-z]+$": { type: "string" }
 			}
 		})
+		attest<Record<string, Json>>(tPatternProperties.infer)
 		attest(tPatternProperties.expression).snap("{ [/^[a-z]+$/]: string }")
 		attest(tPatternProperties.allows({})).equals(true)
 		attest(tPatternProperties.allows({ foo: "bar" })).equals(true)
@@ -118,7 +127,6 @@ contextualize(() => {
 		)
 
 		attest(() =>
-			// @ts-expect-error
 			jsonSchemaToType({
 				type: "object",
 				propertyNames: { type: "number" }
