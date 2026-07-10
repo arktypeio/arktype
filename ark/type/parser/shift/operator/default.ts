@@ -6,6 +6,7 @@ import type {
 	Scanner,
 	trim
 } from "@ark/util"
+import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type {
@@ -25,6 +26,12 @@ export type UnenclosedUnitLiteral =
 
 export type EnclosedUnitLiteral = StringLiteral | DateLiteral
 
+// "[]" can't resolve via type.infer (it would be the empty-group type `never`,
+// not never[]), so it's special-cased. Unit literals are self-contained, so
+// unscoped type.infer is safe for them.
+export type inferDefaultLiteral<literal> =
+	literal extends "[]" ? never[] : type.infer<literal>
+
 export type ParsedDefaultableProperty = readonly [BaseRoot, "=", unknown]
 
 export const parseDefault = (
@@ -32,6 +39,13 @@ export const parseDefault = (
 ): ParsedDefaultableProperty => {
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
+	// "[]" is the only non-unit default currently supported and must be
+	// represented as a thunk so each traversal gets a fresh array
+	s.scanner.shiftUntilNonWhitespace()
+	if (s.scanner.unscanned.startsWith("[]")) {
+		s.scanner.jumpForward(2)
+		return [baseNode, "=", () => []]
+	}
 	s.parseOperand()
 	const defaultNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
@@ -49,7 +63,8 @@ export type parseDefault<root, unscanned extends string> =
 	// default values must always appear at the end of a string definition,
 	// so parse the rest of the string and ensure it is a valid unit literal
 	trim<unscanned> extends infer defaultExpression extends string ?
-		defaultExpression extends UnenclosedUnitLiteral ?
+		defaultExpression extends "[]" ? [root, "=", "[]"]
+		: defaultExpression extends UnenclosedUnitLiteral ?
 			[root, "=", defaultExpression]
 		: defaultExpression extends (
 			`${infer start extends EnclosingLiteralStartToken}${string}`

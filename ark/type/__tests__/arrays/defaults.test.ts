@@ -87,6 +87,13 @@ contextualize(() => {
 		)
 	})
 
+	it("empty array default in tuple literal", () => {
+		const T = type(["string[] = []"])
+		attest(T.t).type.toString.snap("[Default<string[], never[]>]")
+		attest(T([])).equals([[]]) // outer is the tuple, inner is the defaulted array
+		attest(T([["a"]])).equals([["a"]])
+	})
+
 	it("default after undefaulted optional", () => {
 		// @ts-expect-error
 		attest(() => type(["number?", "number = 5"])).throwsAndHasTypeError(
