@@ -590,9 +590,11 @@ contextualize(() => {
 		it("empty array default rejects non-array base", () => {
 			// [] is assignable only to array/tuple input types
 			// @ts-expect-error
-			attest(() => type({ foo: "number = []" })).type.errors(
-				"Default value [] must be assignable to number"
-			)
+			attest(() => type({ foo: "number = []" }))
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was an object)"
+				)
+				.type.errors("Default value [] must be assignable to number")
 		})
 	})
 
