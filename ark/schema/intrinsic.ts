@@ -1,3 +1,4 @@
+import { FileConstructor } from "@ark/util"
 import { node, schemaScope } from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
@@ -18,7 +19,8 @@ const intrinsicBases = schemaScope(
 		unknown: {},
 		undefined: { unit: undefined },
 		Array,
-		Date
+		Date,
+		File: FileConstructor
 	},
 	{ prereducedAliases: true }
 ).export()
