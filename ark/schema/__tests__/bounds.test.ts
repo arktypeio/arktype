@@ -3,7 +3,8 @@ import {
 	Disjoint,
 	boundKindPairsByLower,
 	rootSchema,
-	writeInvalidLengthBoundMessage
+	writeInvalidLengthBoundMessage,
+	writeInvalidSizeBoundMessage
 } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
@@ -18,6 +19,11 @@ const numericCases = {
 const dateCases = flatMorph(numericCases, (name, v) => [name, new Date(v)])
 
 const lengthCases = flatMorph(numericCases, (name, v) => [name, "1".repeat(v)])
+
+const fileCases = flatMorph(numericCases, (name, v) => [
+	name,
+	new File(["x".repeat(v)], "test.txt")
+])
 
 contextualize(() => {
 	it("numeric apply", () => {
@@ -86,6 +92,45 @@ contextualize(() => {
 		)
 	})
 
+	it("file apply", () => {
+		const T = rootSchema({
+			proto: File,
+			minSize: { rule: 5, exclusive: true },
+			maxSize: { rule: 10 }
+		})
+
+		attest(T.traverse(fileCases.lessThanMin)?.toString()).snap(
+			"must be more than 5 bytes (was 4 bytes)"
+		)
+		attest(T.traverse(fileCases.equalToExclusiveMin)?.toString()).snap(
+			"must be more than 5 bytes (was 5 bytes)"
+		)
+		attest(T.traverse(fileCases.between)).equals(fileCases.between)
+		attest(T.traverse(fileCases.equalToInclusiveMax)).equals(
+			fileCases.equalToInclusiveMax
+		)
+		attest(T.traverse(fileCases.greaterThanMax)?.toString()).snap(
+			"must be at most 10 bytes (was 11 bytes)"
+		)
+	})
+
+	it("errors on negative size bound", () => {
+		attest(() => rootSchema({ proto: File, maxSize: -1 })).throws(
+			writeInvalidSizeBoundMessage("maxSize", -1)
+		)
+	})
+
+	it("errors on non-integer size bound", () => {
+		attest(() => rootSchema({ proto: File, minSize: 1.5 })).throws(
+			writeInvalidSizeBoundMessage("minSize", 1.5)
+		)
+	})
+
+	it("minSize 0 reduces to unconstrained", () => {
+		const T = rootSchema({ proto: File, minSize: 0 })
+		attest(T.expression).snap("File")
+	})
+
 	it("errors on negative length bound", () => {
 		attest(() => rootSchema({ domain: "string", maxLength: -1 })).throws(
 			writeInvalidLengthBoundMessage("maxLength", -1)
@@ -108,10 +153,12 @@ contextualize(() => {
 			const basis =
 				min === "min" ? { domain: "number" }
 				: min === "minLength" ? { domain: "string" }
+				: min === "minSize" ? { proto: File }
 				: { proto: Date }
 			const cases =
 				min === "min" ? numericCases
 				: min === "minLength" ? lengthCases
+				: min === "minSize" ? fileCases
 				: dateCases
 
 			it("allows", () => {
@@ -150,6 +197,12 @@ contextualize(() => {
 						rootSchema({
 							...basis,
 							exactLength: 6
+						} as never)
+					: min === "minSize" ?
+						rootSchema({
+							...basis,
+							minSize: { rule: 6 },
+							maxSize: { rule: 6 }
 						} as never)
 					:	rootSchema({
 							unit: new Date(6)
