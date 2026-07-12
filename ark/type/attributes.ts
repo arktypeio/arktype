@@ -12,6 +12,7 @@ import {
 	type optionalKeyOf,
 	type Primitive,
 	type show,
+	type SizeLiteral,
 	type unionKeyOf,
 	type unionToTuple
 } from "@ark/util"
@@ -28,7 +29,9 @@ export type DateLiteral<source extends string = string> =
 	| `d"${source}"`
 	| `d'${source}'`
 
-export type LimitLiteral = number | DateLiteral
+export type { SizeLiteral } from "@ark/util"
+
+export type LimitLiteral = number | DateLiteral | SizeLiteral
 
 export type normalizeLimit<limit> =
 	limit extends DateLiteral<infer source> ? source
