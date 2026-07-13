@@ -48,6 +48,27 @@ contextualize(() => {
 		attest(T.json).equals(type("string|bigint|number|boolean").json)
 	})
 
+	it("union of object arrays doesn't throw on non-object element", () => {
+		// https://github.com/arktypeio/arktype/issues/1458
+		// checking a later element whose basis (object) fails must not attempt
+		// an `in` check against a primitive earlier collected element
+		const TypeAB = type.or("string", { objB: "string" })
+		const TypeC = type({ objC: "string" })
+		const TypeABC = type([TypeAB.array(), "|", TypeC.array()])
+
+		attest(
+			TypeABC([{ objB: "text b" }, "test a", { objC: "text c" }]).toString()
+		).snap(
+			"value at [2].objB must be a string (was missing) or [0].objC must be a string (was missing)"
+		)
+
+		attest(
+			TypeABC(["test a", { objB: "text b" }, { objC: "text c" }]).toString()
+		).snap(
+			"value at [2].objB must be a string (was missing) or [0] must be an object (was a string)"
+		)
+	})
+
 	it("length stress", () => {
 		// as of TS 5.1, can handle a max of 46 branches before an inifinitely
 		// deep error not the end of the world if this changes slightly, but
