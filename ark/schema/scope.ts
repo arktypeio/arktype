@@ -755,13 +755,20 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 	const aliases = resolution.references.filter(node => node.hasKind("alias"))
 	for (const aliasNode of aliases) {
-		Object.assign(aliasNode.referencesById, aliasNode.resolution.referencesById)
+		addReferences(aliasNode.referencesById, aliasNode.resolution.referencesById)
 		for (const ref of resolution.references) {
 			if (aliasNode.id in ref.referencesById)
-				Object.assign(ref.referencesById, aliasNode.referencesById)
+				addReferences(ref.referencesById, aliasNode.referencesById)
 		}
 	}
 	return resolution
+}
+
+const addReferences = (
+	base: BaseNode["referencesById"],
+	references: BaseNode["referencesById"]
+) => {
+	for (const id in references) base[id] ??= references[id]
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>
