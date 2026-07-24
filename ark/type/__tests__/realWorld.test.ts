@@ -1531,6 +1531,21 @@ date3 must be a parsable date (was "")`)
 		attest(result).equals({})
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1640
+	it("cyclic discriminated union with record reference", () => {
+		const Node = scope({
+			Number: { type: "'number'" },
+			Array: { type: "'array'", item: "Node" },
+			Unit: { type: "'unit'" },
+			Container: { things: "Record<string, Node>" },
+			Node: "Number | Array | Unit"
+		}).export().Node
+
+		const data = { type: "array", item: { type: "number" } } as const
+
+		attest(Node(data)).equals(data)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1284
 	it("cyclic discriminated union issue 4", () => {
 		const ruleset = scope({
