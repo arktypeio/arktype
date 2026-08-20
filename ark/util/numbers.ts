@@ -42,8 +42,7 @@ const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
 							RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
 							"?"
 					) +
-					(opts.allowDecimalOnly ? "|" + opts.decimalPattern : "") +
-					"?"
+					(opts.allowDecimalOnly ? "|" + opts.decimalPattern + "?" : "")
 			)
 	)
 
