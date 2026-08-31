@@ -270,5 +270,8 @@ contextualize(() => {
 		attest(() => User.partial()).throws(
 			"partial cannot be applied to a type with a predicate"
 		)
+		attest(() => User.required()).throws(
+			"required cannot be applied to a type with a predicate"
+		)
 	})
 })

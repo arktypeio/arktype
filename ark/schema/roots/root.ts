@@ -314,15 +314,15 @@ export abstract class BaseRoot<
 				// https://github.com/arktypeio/arktype/issues/1053
 				return branch
 
-			// Partial makes the original required properties optional, so a root
-			// predicate cannot be preserved safely and must not be silently dropped.
+			// Structural property transformations cannot safely preserve a root
+			// predicate and must not silently drop it.
 			if (
-				operation === "partial" &&
+				(operation === "partial" || operation === "required") &&
 				branch.hasKind("intersection") &&
 				branch.inner.predicate
 			) {
 				return throwParseError(
-					"partial cannot be applied to a type with a predicate"
+					`${operation} cannot be applied to a type with a predicate`
 				)
 			}
 
