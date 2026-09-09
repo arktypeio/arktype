@@ -155,6 +155,10 @@ type instantiableObjectKind<data extends object> = {
 export const objectKindOf = <data extends object>(
 	data: data
 ): objectKindOf<data> | undefined => {
+	// Realm-safe: cross-window/vm arrays fail `instanceof Array` but pass
+	// Array.isArray (https://github.com/arktypeio/arktype/issues/1597).
+	if (Array.isArray(data)) return "Array" as never
+
 	let prototype: Partial<Object> | null = Object.getPrototypeOf(data)
 	while (
 		prototype?.constructor &&

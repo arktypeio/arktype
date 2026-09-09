@@ -4,6 +4,7 @@ import {
 	domainOf,
 	getBuiltinNameOfConstructor,
 	hasKey,
+	isArray,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
 	throwParseError,
@@ -144,12 +145,20 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	private readonly requiresInvalidDateCheck =
 		this.proto === Date && !this.dateAllowsInvalid
 
+	// Array.isArray is realm-safe; `instanceof Array` rejects arrays from other
+	// windows/vm contexts (https://github.com/arktypeio/arktype/issues/1597).
+	private readonly isArrayProto = this.proto === Array
+
 	traverseAllows: TraverseAllows =
 		this.requiresInvalidDateCheck ?
 			data => data instanceof Date && data.toString() !== "Invalid Date"
-		:	data => data instanceof this.proto
+		: this.isArrayProto ? data => isArray(data)
+		: data => data instanceof this.proto
 
-	compiledCondition = `data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
+	compiledCondition =
+		this.isArrayProto ? `Array.isArray(data)` : (
+			`data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
+		)
 	compiledNegation = `!(${this.compiledCondition})`
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
