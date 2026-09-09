@@ -50,38 +50,14 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 <table>
     <tr>
-        <th>mintlify</th>
         <th>get-convex</th>
-        <th>inspatiallabs</th>
-        <th>sam-goodwin</th>
     </tr>
     <tr>
-        <td>
-            <a href="https://github.com/mintlify"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/mintlify"
-            /></a>
-        </td>
         <td>
             <a href="https://github.com/get-convex"
                 ><img
                     height="64px"
                     src="https://avatars.githubusercontent.com/get-convex"
-            /></a>
-        </td>
-        <td>
-            <a href="https://github.com/inspatiallabs"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/inspatiallabs"
-            /></a>
-        </td>
-        <td>
-            <a href="https://github.com/sam-goodwin"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/sam-goodwin"
             /></a>
         </td>
     </tr>
@@ -91,20 +67,13 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 <table>
     <tr>
-        <th>tmm</th>
         <th>mewhhaha</th>
         <th>jahands</th>
-        <th>drwpwrs</th>
         <th>Phalangers</th>
+        <th>WilliamConnatser</th>
+        <th>JameEnder</th>
     </tr>
     <tr>
-        <td>
-            <a href="https://github.com/tmm"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/tmm"
-            /></a>
-        </td>
         <td>
             <a href="https://github.com/mewhhaha"
                 ><img
@@ -120,26 +89,12 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
             /></a>
         </td>
         <td>
-            <a href="https://github.com/drwpwrs"
-                ><img
-                    height="64px"
-                    src="https://avatars.githubusercontent.com/drwpwrs"
-            /></a>
-        </td>
-        <td>
             <a href="https://github.com/Phalangers"
                 ><img
                     height="64px"
                     src="https://avatars.githubusercontent.com/Phalangers"
             /></a>
         </td>
-    </tr>
-    <tr>
-        <th>WilliamConnatser</th>
-        <th>JameEnder</th>
-        <th>tylim88</th>
-    </tr>
-    <tr>
         <td>
             <a href="https://github.com/WilliamConnatser"
                 ><img
@@ -154,11 +109,32 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
                     src="https://avatars.githubusercontent.com/JameEnder"
             /></a>
         </td>
+    </tr>
+    <tr>
+        <th>tylim88</th>
+        <th>tpetry</th>
+        <th>braden-w</th>
+    </tr>
+    <tr>
         <td>
             <a href="https://github.com/tylim88"
                 ><img
                     height="64px"
                     src="https://avatars.githubusercontent.com/tylim88"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/tpetry"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/tpetry"
+            /></a>
+        </td>
+        <td>
+            <a href="https://github.com/braden-w"
+                ><img
+                    height="64px"
+                    src="https://avatars.githubusercontent.com/braden-w"
             /></a>
         </td>
     </tr>
