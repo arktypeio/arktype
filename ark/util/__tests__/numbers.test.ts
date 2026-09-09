@@ -65,5 +65,15 @@ contextualize(() => {
 			attest(isWellFormedNumber("-123.456")).equals(true)
 			attest(isNumericString("-123.456")).equals(true)
 		})
+
+		it("wellFormedNumberMatcher requires an integer portion", () => {
+			attest(isWellFormedNumber("")).equals(false)
+			attest(isWellFormedNumber("-")).equals(false)
+		})
+
+		it("numericStringMatcher requires an integer or decimal portion", () => {
+			attest(isNumericString("")).equals(false)
+			attest(isNumericString("-")).equals(false)
+		})
 	})
 })

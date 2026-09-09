@@ -150,7 +150,9 @@ export type writeDuplicateAliasError<alias extends string> =
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
-const scopesByName: Record<string, BaseScope | undefined> = {}
+// Fallback counter for anonymous scopes; scopes are identified by instance
+// identity rather than names to support HMR and multi-bundle environments.
+let anonymousScopeCount = 0
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
@@ -274,11 +276,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
 
 		this.name =
-			this.resolvedConfig.name ??
-			`anonymousScope${Object.keys(scopesByName).length}`
-		if (this.name in scopesByName)
-			throwParseError(`A Scope already named ${this.name} already exists`)
-		scopesByName[this.name] = this
+			this.resolvedConfig.name ?? `anonymousScope${anonymousScopeCount++}`
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)

@@ -527,4 +527,17 @@ b.c.c must be an object (was missing)`)
 		attest(types.foo.json).snap({ domain: "string" })
 		attest(types.bar.json).snap({ domain: "number" })
 	})
+
+	it("allows multiple scopes with the same name without collision", () => {
+		const s1 = scope({ a: "string" }, { name: "Array" })
+		const s2 = scope({ a: "number" }, { name: "Array" })
+		attest((s1 as any).name).equals("Array")
+		attest((s2 as any).name).equals("Array")
+
+		// Verify parseCache does not cross-pollinate across scopes with the same name
+		const t1 = s1.type("a")
+		const t2 = s2.type("a")
+		attest(t1.expression).equals("string")
+		attest(t2.expression).equals("number")
+	})
 })
