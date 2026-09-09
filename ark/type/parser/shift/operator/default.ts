@@ -26,11 +26,34 @@ export type UnenclosedUnitLiteral =
 
 export type EnclosedUnitLiteral = StringLiteral | DateLiteral
 
-// "[]" can't resolve via type.infer (it would be the empty-group type `never`,
-// not never[]), so it's special-cased. Unit literals are self-contained, so
-// unscoped type.infer is safe for them.
+/**
+ * Unlike a unit literal, an empty collection can't be reused across traversals
+ * since mutating the defaulted value would leak into subsequent ones. These are
+ * parsed to a thunk instead, mirroring `["string[]", "=", () => []]`.
+ */
+export type EmptyCollectionLiteral = "[]" | "{}"
+
+export type DefaultLiteral = UnitLiteral | EmptyCollectionLiteral
+
+const emptyCollectionDefaults = {
+	"[]": () => [],
+	"{}": () => ({})
+} as const satisfies {
+	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
+}
+
+const emptyCollectionLiterals = Object.keys(
+	emptyCollectionDefaults
+) as EmptyCollectionLiteral[]
+
+// neither empty collection literal can resolve via type.infer- "[]" would be
+// the empty group type `never` rather than never[], and "{}" isn't parseable at
+// all- so both are special-cased. Unit literals are self-contained, so unscoped
+// type.infer is safe for them.
 export type inferDefaultLiteral<literal> =
-	literal extends "[]" ? never[] : type.infer<literal>
+	literal extends "[]" ? never[]
+	: literal extends "{}" ? Record<PropertyKey, never>
+	: type.infer<literal>
 
 export type ParsedDefaultableProperty = readonly [BaseRoot, "=", unknown]
 
@@ -39,12 +62,15 @@ export const parseDefault = (
 ): ParsedDefaultableProperty => {
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
-	// "[]" is the only non-unit default currently supported and must be
-	// represented as a thunk so each traversal gets a fresh array
+	// an empty collection is not a unit literal, so it must be short-circuited
+	// here and represented as a thunk to keep each traversal's default distinct
 	s.scanner.shiftUntilNonWhitespace()
-	if (s.scanner.unscanned.startsWith("[]")) {
-		s.scanner.jumpForward(2)
-		return [baseNode, "=", () => []]
+	const emptyCollection = emptyCollectionLiterals.find(literal =>
+		s.scanner.unscanned.startsWith(literal)
+	)
+	if (emptyCollection !== undefined) {
+		s.scanner.jumpForward(emptyCollection.length)
+		return [baseNode, "=", emptyCollectionDefaults[emptyCollection]]
 	}
 	s.parseOperand()
 	const defaultNode = s.unsetRoot()
@@ -63,8 +89,7 @@ export type parseDefault<root, unscanned extends string> =
 	// default values must always appear at the end of a string definition,
 	// so parse the rest of the string and ensure it is a valid unit literal
 	trim<unscanned> extends infer defaultExpression extends string ?
-		defaultExpression extends "[]" ? [root, "=", "[]"]
-		: defaultExpression extends UnenclosedUnitLiteral ?
+		defaultExpression extends UnenclosedUnitLiteral | EmptyCollectionLiteral ?
 			[root, "=", defaultExpression]
 		: defaultExpression extends (
 			`${infer start extends EnclosingLiteralStartToken}${string}`

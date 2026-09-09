@@ -7,15 +7,9 @@ import type { validateAst } from "./validate.ts"
 
 export type validateDefault<baseAst, defaultLiteral extends string, $, args> =
 	validateAst<baseAst, $, args> extends infer e extends ErrorMessage ? e
-	: [defaultLiteral] extends [never] ?
-		// "[]" is narrowed to never by r & UnitLiteral in validate.ts; [] is
-		// assignable only to array/tuple input types
-		never[] extends inferAstIn<baseAst, $, args> ?
-			undefined
-		:	ErrorMessage<
-				writeUnassignableDefaultValueMessage<astToString<baseAst>, "[]">
-			>
-	: inferDefaultLiteral<defaultLiteral> extends inferAstIn<baseAst, $, args> ?
+	: // check against the output of the type since morphs will not occur
+	//  ambient infer is safe since the default value is always a literal
+	inferDefaultLiteral<defaultLiteral> extends inferAstIn<baseAst, $, args> ?
 		undefined
 	:	ErrorMessage<
 			writeUnassignableDefaultValueMessage<astToString<baseAst>, defaultLiteral>

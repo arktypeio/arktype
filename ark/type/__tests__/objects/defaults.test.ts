@@ -596,6 +596,81 @@ contextualize(() => {
 				)
 				.type.errors("Default value [] must be assignable to number")
 		})
+
+		it("empty object default via string syntax", () => {
+			const O = type({ meta: "object = {}" })
+
+			attest(O.t).type.toString.snap(`{
+	meta: Default<object, Record<PropertyKey, never>>
+}`)
+			attest<{ meta?: object }>(O.inferIn)
+			attest<{ meta: object }>(O.infer)
+
+			attest(O({})).equals({ meta: {} })
+			attest(O({ meta: { a: 1 } })).equals({ meta: { a: 1 } })
+		})
+
+		it("empty object default returns a fresh object each call", () => {
+			const O = type({ meta: "object = {}" })
+			const a = O.assert({})
+			const b = O.assert({})
+			attest(a.meta !== b.meta) // different references
+			attest(a.meta).equals({})
+		})
+
+		it("empty object default equivalent to tuple thunk", () => {
+			const viaString = type({ meta: "object = {}" })
+			const viaTuple = type({ meta: ["object", "=", () => ({})] })
+			// the default thunks are distinct functions, so strip them before
+			// comparing the two schemas
+			const stripDefault = (json: typeof viaString.json) => {
+				const clone = JSON.parse(JSON.stringify(json)) as {
+					optional?: Record<string, unknown>[]
+				}
+				for (const prop of clone.optional ?? []) delete prop.default
+				return clone
+			}
+			attest(stripDefault(viaString.json)).equals(stripDefault(viaTuple.json))
+			attest(viaString.assert({}).meta).equals({})
+			attest(viaTuple.assert({}).meta).equals({})
+		})
+
+		it("empty object default satisfies a narrower object base", () => {
+			const O = type({ meta: "Record<string, string> = {}" })
+
+			attest(O({})).equals({ meta: {} })
+			attest(O({ meta: { a: "a" } })).equals({ meta: { a: "a" } })
+		})
+
+		it("empty object default rejects trailing junk", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					meta: "object = {}x"
+				})
+			)
+				.throws(writeUnexpectedCharacterMessage("x"))
+				.type.errors(writeNonLiteralDefaultMessage("{}x"))
+		})
+
+		it("empty object default rejects non-object base", () => {
+			// {} is assignable only to object input types
+			// @ts-expect-error
+			attest(() => type({ foo: "number = {}" }))
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was an object)"
+				)
+				.type.errors("Default value {} must be assignable to number")
+		})
+
+		it("empty object default rejects array base", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "string[] = {}" }))
+				.throws.snap(
+					"ParseError: Default for foo must be an array (was object)"
+				)
+				.type.errors("Default value {} must be assignable to string[]")
+		})
 	})
 
 	describe("works properly with types", () => {
