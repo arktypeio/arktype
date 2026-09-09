@@ -1,10 +1,11 @@
 import type { BaseRoot } from "@ark/schema"
-import type {
-	BigintLiteral,
-	ErrorMessage,
-	NumberLiteral,
-	Scanner,
-	trim
+import {
+	keysOf,
+	type BigintLiteral,
+	type ErrorMessage,
+	type NumberLiteral,
+	type Scanner,
+	type trim
 } from "@ark/util"
 import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
@@ -42,17 +43,15 @@ const emptyCollectionDefaults = {
 	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
 
-const emptyCollectionLiterals = Object.keys(
-	emptyCollectionDefaults
-) as EmptyCollectionLiteral[]
+const emptyCollectionLiterals = keysOf(emptyCollectionDefaults)
 
 // neither empty collection literal can resolve via type.infer- "[]" would be
-// the empty group type `never` rather than never[], and "{}" isn't parseable at
-// all- so both are special-cased. Unit literals are self-contained, so unscoped
-// type.infer is safe for them.
+// parsed as the empty group type `never` rather than a literal `[]`, and "{}"
+// isn't parseable at all- so each is special-cased here to its literal type.
+// Unit literals are self-contained, so unscoped type.infer is safe for them.
 export type inferDefaultLiteral<literal> =
-	literal extends "[]" ? never[]
-	: literal extends "{}" ? Record<PropertyKey, never>
+	literal extends "[]" ? []
+	: literal extends "{}" ? {}
 	: type.infer<literal>
 
 export type ParsedDefaultableProperty = readonly [BaseRoot, "=", unknown]

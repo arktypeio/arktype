@@ -539,7 +539,7 @@ contextualize(() => {
 		it("empty array default via string syntax", () => {
 			const O = type({ values: "string[] = []" })
 
-			attest(O.t).type.toString.snap("{ values: Default<string[], never[]> }")
+			attest(O.t).type.toString.snap("{ values: Default<string[], []> }")
 			attest<{ values?: string[] }>(O.inferIn)
 			attest<{ values: string[] }>(O.infer)
 
@@ -600,9 +600,7 @@ contextualize(() => {
 		it("empty object default via string syntax", () => {
 			const O = type({ meta: "object = {}" })
 
-			attest(O.t).type.toString.snap(`{
-	meta: Default<object, Record<PropertyKey, never>>
-}`)
+			attest(O.t).type.toString.snap("{ meta: Default<object, {}> }")
 			attest<{ meta?: object }>(O.inferIn)
 			attest<{ meta: object }>(O.infer)
 

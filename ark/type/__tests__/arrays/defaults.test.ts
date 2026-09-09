@@ -89,7 +89,7 @@ contextualize(() => {
 
 	it("empty array default in tuple literal", () => {
 		const T = type(["string[] = []"])
-		attest(T.t).type.toString.snap("[Default<string[], never[]>]")
+		attest(T.t).type.toString.snap("[Default<string[], []>]")
 		attest(T([])).equals([[]]) // outer is the tuple, inner is the defaulted array
 		attest(T([["a"]])).equals([["a"]])
 	})
