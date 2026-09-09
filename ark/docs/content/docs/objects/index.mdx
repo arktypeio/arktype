@@ -292,6 +292,8 @@ However, if a key appears in both the base and merged objects, the base value wi
 
 Spreading bypasses a lot of the behavioral complexity and computational overhead of an intersection and should be the preferred method of combining property sets.
 
+Like ArkType's other [structural transformations](/docs/objects#properties-structural), `merge` builds a new object from the extracted properties, so a root narrow, filter or metadata on the original will not be preserved.
+
 <SyntaxTabs>
     <SyntaxTab fluent>
 
@@ -562,6 +564,42 @@ Not your cup of tea? No worries- the inferred types and errors you'll see in edi
 	string-embedded index access 🤓
 </Callout>
 
+### structural transformations [#properties-structural]
+
+`merge`, `pick`, `omit`, `required`, `partial` and `map` are **transformations** rather than compositions. Instead of referencing the `Type` they're applied to, each extracts its properties and uses them to build a new object `Type` from scratch.
+
+<Callout type="warn" title="Structural transformations extract properties and discard everything else">
+
+    Because the result is constructed from the original's properties alone, anything attached to the object _itself_ is not carried over- most notably a root [narrow](/docs/expressions#narrow) or [filter](/docs/expressions#filter), but also [metadata](/docs/configuration#metadata) like `.describe(...)` and constraints like `.atLeastLength(...)`.
+
+    ```ts
+    const User = type({
+    	name: "string",
+    	email: "string"
+    }).narrow(user => user.email.includes("@"))
+
+    // Type<{ name?: string; email?: string }>- the narrow is gone
+    const PartialUser = User.partial()
+
+    // no error, though User itself would have rejected this
+    const out = PartialUser({ email: "not an email" })
+    ```
+
+    Constraints on individual properties are unaffected, since those are part of the properties being extracted. To preserve logic attached to the object, reapply it after the transformation:
+
+    ```ts
+    const PartialUser = type({
+    	name: "string",
+    	email: "string"
+    })
+    	.partial()
+    	.narrow(user => user.email?.includes("@") ?? true)
+    ```
+
+    A root [morph](/docs/expressions#pipe) is the exception. Because it can't be reduced to a set of properties, transforming a `Type` like `type({ name: "string" }).pipe(user => user)` throws a `ParseError` rather than silently dropping it.
+
+</Callout>
+
 ### pick / omit [#properties-pick-omit]
 
 Extract or exclude specific properties from an object Type:
@@ -581,6 +619,8 @@ const WithoutEmail = User.omit("email")
 ```
 
 These are also available as [generic keywords](/docs/generics): `Pick(User, "name | email")`, `Omit(User, "email")`.
+
+Like ArkType's other [structural transformations](/docs/objects#properties-structural), `pick` and `omit` build a new object from the extracted properties, so a root narrow, filter or metadata on the original will not be preserved.
 
 ### required / partial [#properties-required-partial]
 
@@ -607,6 +647,8 @@ const PartialConfig = Config.partial()
 
 These are also available as [generic keywords](/docs/generics): `Required(User)`, `Partial(Config)`.
 
+Like ArkType's other [structural transformations](/docs/objects#properties-structural), `required` and `partial` build a new object from the extracted properties, so a root narrow, filter or metadata on the original will not be preserved.
+
 ### readonly [#properties-readonly]
 
 Mark all properties as readonly (type-level only, no runtime effect):
@@ -623,6 +665,8 @@ const Frozen = type({
 ### map [#properties-map]
 
 Transform the properties of an object Type using a mapping function. The mapper receives a prop entry with `key`, `value`, and `kind` (`"required"` or `"optional"`). Return a `{ key, value }` object (optionally with `kind`) to transform, or an empty array `[]` to remove the property.
+
+Like ArkType's other [structural transformations](/docs/objects#properties-structural), `map` builds a new object from the extracted properties, so a root narrow, filter or metadata on the original will not be preserved.
 
 ```ts
 // @noErrors
