@@ -2,6 +2,7 @@ import {
 	hasArkKind,
 	type BaseParseContext,
 	type BaseRoot,
+	type BaseScope,
 	type StandardSchemaV1
 } from "@ark/schema"
 import {
@@ -52,9 +53,7 @@ import {
 	type validateTupleLiteral
 } from "./tupleLiteral.ts"
 
-const parseCache: {
-	[cacheId: string]: { [def: string]: InnerParseResult } | undefined
-} = {}
+const parseCache = new WeakMap<BaseScope, Record<string, InnerParseResult>>()
 
 export const parseInnerDefinition = (
 	def: unknown,
@@ -66,7 +65,11 @@ export const parseInnerDefinition = (
 			// resolutions like "this" or generic args
 			return parseString(def, ctx)
 		}
-		const scopeCache = (parseCache[ctx.$.name] ??= {})
+		let scopeCache = parseCache.get(ctx.$)
+		if (!scopeCache) {
+			scopeCache = {}
+			parseCache.set(ctx.$, scopeCache)
+		}
 		return (scopeCache[def] ??= parseString(def, ctx))
 	}
 	return hasDomain(def, "object") ?
