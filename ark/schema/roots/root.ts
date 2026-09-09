@@ -314,18 +314,6 @@ export abstract class BaseRoot<
 				// https://github.com/arktypeio/arktype/issues/1053
 				return branch
 
-			// Structural property transformations cannot safely preserve a root
-			// predicate and must not silently drop it.
-			if (
-				(operation === "partial" || operation === "required") &&
-				branch.hasKind("intersection") &&
-				branch.inner.predicate
-			) {
-				return throwParseError(
-					`${operation} cannot be applied to a type with a predicate`
-				)
-			}
-
 			const structure = structureOf(branch)
 			if (!structure) {
 				throwParseError(

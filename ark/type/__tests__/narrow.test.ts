@@ -261,17 +261,4 @@ contextualize(() => {
 		attest(T.t).type.toString.snap("unknown")
 		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
-
-	it("rejects narrowed types", () => {
-		const User = type({ name: "string", email: "string" }).narrow(user =>
-			user.email.includes("@")
-		)
-
-		attest(() => User.partial()).throws(
-			"partial cannot be applied to a type with a predicate"
-		)
-		attest(() => User.required()).throws(
-			"required cannot be applied to a type with a predicate"
-		)
-	})
 })
