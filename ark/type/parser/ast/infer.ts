@@ -10,6 +10,7 @@ import type { type } from "../../keywords/keywords.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator } from "../reduce/shared.ts"
 import type { InfixToken, PostfixToken } from "../shift/tokens.ts"
+import type { inferDefaultLiteral } from "../shift/operator/default.ts"
 import type {
 	GenericInstantiationAst,
 	inferGenericInstantiation
@@ -54,9 +55,8 @@ export type inferExpression<ast, $, args> =
 				inferExpression<ast[2], $, args>
 			>
 		: ast[1] extends "=" ?
-			// unscoped type.infer is safe since the default value is always a literal
 			// as of TS5.6, inlining defaultValue causes a bunch of extra types and instantiations
-			type.infer<ast[2]> extends infer defaultValue ?
+			inferDefaultLiteral<ast[2]> extends infer defaultValue ?
 				withDefault<inferExpression<ast[0], $, args>, defaultValue>
 			:	never
 		: ast[1] extends "#" ? type.brand<inferExpression<ast[0], $, args>, ast[2]>

@@ -1,11 +1,13 @@
 import type { BaseRoot } from "@ark/schema"
-import type {
-	BigintLiteral,
-	ErrorMessage,
-	NumberLiteral,
-	Scanner,
-	trim
+import {
+	keysOf,
+	type BigintLiteral,
+	type ErrorMessage,
+	type NumberLiteral,
+	type Scanner,
+	type trim
 } from "@ark/util"
+import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type {
@@ -25,6 +27,33 @@ export type UnenclosedUnitLiteral =
 
 export type EnclosedUnitLiteral = StringLiteral | DateLiteral
 
+/**
+ * Unlike a unit literal, an empty collection can't be reused across traversals
+ * since mutating the defaulted value would leak into subsequent ones. These are
+ * parsed to a thunk instead, mirroring `["string[]", "=", () => []]`.
+ */
+export type EmptyCollectionLiteral = "[]" | "{}"
+
+export type DefaultLiteral = UnitLiteral | EmptyCollectionLiteral
+
+const emptyCollectionDefaults = {
+	"[]": () => [],
+	"{}": () => ({})
+} as const satisfies {
+	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
+}
+
+const emptyCollectionLiterals = keysOf(emptyCollectionDefaults)
+
+// neither empty collection literal can resolve via type.infer- "[]" would be
+// parsed as the empty group type `never` rather than a literal `[]`, and "{}"
+// isn't parseable at all- so each is special-cased here to its literal type.
+// Unit literals are self-contained, so unscoped type.infer is safe for them.
+export type inferDefaultLiteral<literal> =
+	literal extends "[]" ? []
+	: literal extends "{}" ? {}
+	: type.infer<literal>
+
 export type ParsedDefaultableProperty = readonly [BaseRoot, "=", unknown]
 
 export const parseDefault = (
@@ -32,6 +61,16 @@ export const parseDefault = (
 ): ParsedDefaultableProperty => {
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
+	// an empty collection is not a unit literal, so it must be short-circuited
+	// here and represented as a thunk to keep each traversal's default distinct
+	s.scanner.shiftUntilNonWhitespace()
+	const emptyCollection = emptyCollectionLiterals.find(literal =>
+		s.scanner.unscanned.startsWith(literal)
+	)
+	if (emptyCollection !== undefined) {
+		s.scanner.jumpForward(emptyCollection.length)
+		return [baseNode, "=", emptyCollectionDefaults[emptyCollection]]
+	}
 	s.parseOperand()
 	const defaultNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
@@ -49,7 +88,7 @@ export type parseDefault<root, unscanned extends string> =
 	// default values must always appear at the end of a string definition,
 	// so parse the rest of the string and ensure it is a valid unit literal
 	trim<unscanned> extends infer defaultExpression extends string ?
-		defaultExpression extends UnenclosedUnitLiteral ?
+		defaultExpression extends UnenclosedUnitLiteral | EmptyCollectionLiteral ?
 			[root, "=", defaultExpression]
 		: defaultExpression extends (
 			`${infer start extends EnclosingLiteralStartToken}${string}`
