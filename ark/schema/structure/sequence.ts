@@ -393,6 +393,27 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			registeredReference(this.defaultValueMorphs)
 		:	undefined
 
+	optionalize(): SequenceNode {
+		const { prefix, defaultables, ...inner } = this.inner
+		// without a prefix, every element is already optional. bailing here
+		// preserves defaultables, which would otherwise have to be flattened
+		// into optionals to maintain their position relative to the prefix.
+		if (!prefix) return this
+
+		return this.$.node("sequence", {
+			...inner,
+			optionals: conflatenate(prefix, this.defaultablesAndOptionals)
+		})
+	}
+
+	require(): SequenceNode {
+		const { defaultables, optionals, ...inner } = this.inner
+		return this.$.node("sequence", {
+			...inner,
+			prefix: conflatenate(this.prefix, this.defaultablesAndOptionals)
+		})
+	}
+
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
 		const firstPostfixIndex = data.length - this.postfixLength

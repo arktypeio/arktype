@@ -1,5 +1,9 @@
 {
 	"title": "Ecosystem",
 	"icon": "New",
-	"pages": ["[ArkEnv](/docs/ecosystem#arkenv)", "[DRZL](/docs/ecosystem#drzl)", "[shorn](/docs/ecosystem#shorn)"]
+	"pages": [
+		"[ArkEnv](/docs/ecosystem#arkenv)",
+		"[DRZL](/docs/ecosystem#drzl)",
+		"[shorn](/docs/ecosystem#shorn)"
+	]
 }
