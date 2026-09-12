@@ -88,6 +88,44 @@ contextualize(() => {
 		).snap('must be a credit card number (was "5489582921773370")')
 	})
 
+	it("isbn", () => {
+		const Isbn = type("string.isbn")
+		// ISBN-10
+		attest(Isbn("4873118735")).equals("4873118735")
+		attest(Isbn("4-87311-873-5")).equals("4-87311-873-5")
+		attest(Isbn("4 87311 873 5")).equals("4 87311 873 5")
+		attest(Isbn("020530902X")).equals("020530902X")
+		attest(Isbn("0-205-30902-X")).equals("0-205-30902-X")
+		// ISBN-13
+		attest(Isbn("9784873118734")).equals("9784873118734")
+		attest(Isbn("978-4-87311-873-4")).equals("978-4-87311-873-4")
+		attest(Isbn("9790000000001")).equals("9790000000001")
+		// Invalid checksum
+		attest(Isbn("4873118736").toString()).equals(
+			'must be an ISBN (was "4873118736")'
+		)
+		attest(Isbn("9784873118735").toString()).equals(
+			'must be an ISBN (was "9784873118735")'
+		)
+		// Lowercase x is not accepted
+		attest(Isbn("020530902x").toString()).equals(
+			'must be an ISBN (was "020530902x")'
+		)
+		// X in wrong position
+		attest(Isbn("X234567890").toString()).equals(
+			'must be an ISBN (was "X234567890")'
+		)
+		// Wrong length
+		attest(Isbn("978487311873").toString()).equals(
+			'must be an ISBN (was "978487311873")'
+		)
+		// Non-digit characters
+		attest(Isbn("abc1234567890").toString()).equals(
+			'must be an ISBN (was "abc1234567890")'
+		)
+		attest(Isbn("").toString()).equals('must be an ISBN (was "")')
+	})
+
 	it("semver", () => {
 		attest(keywords.string.semver("1.0.0")).snap("1.0.0")
 		attest(keywords.string.semver("-1.0.0").toString()).snap(
