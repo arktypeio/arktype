@@ -1638,6 +1638,31 @@ export default defineConfig({
 
 > For more details, see the [Getting Started guide](https://use-drzl.github.io/drzl/guide/getting-started.html).
 
+### shorn
+
+[shorn](https://shorn.dev) turns an ArkType type into compact binary serialization. Field names and type tags stay out of the payload because the type already provides them, so there is no schema language to learn and nothing to generate.
+
+ArkType 2.1.28 and newer implements both [Standard Schema](https://standardschema.dev/schema) and [Standard JSON Schema](https://standardschema.dev/json-schema), so a type can be passed straight to `encode`. Validation runs on encode and again on decode.
+
+```ts
+// @noErrors
+import { type } from "arktype"
+import { decode, encode } from "@chichurita/shorn"
+
+const Person = type({
+	name: "string",
+	age: "number.integer >= 0",
+	sex: "'M' | 'F' | 'X'"
+})
+
+const bytes = encode(Person, { name: "Grace", age: 45, sex: "F" })
+bytes.length // 8, where the same record is 35 bytes of minified JSON
+
+decode(Person, bytes) // typed and validated
+```
+
+> ArkType objects are open by default, so shorn rejects undeclared properties during encoding rather than dropping data. Use `"+": "delete"` to strip expected extras. See the [ArkType guide](https://shorn.dev/validators/arktype/) for the details.
+
 
 ---
 title: Expressions
@@ -4185,6 +4210,16 @@ const MyObj = type({
     </SyntaxTab>
 
 </SyntaxTabs>
+
+An empty array or object can be defaulted directly in string syntax. A shared reference would leak mutations from one traversal into the next, so `= []` and `= {}` assign a new array or object each time the default is applied- exactly like the thunk form they replace.
+
+```ts
+const MyObj = type({
+	// each parsed value gets its own array
+	values: "string[] = []",
+	meta: "object = {}"
+})
+```
 
 <Callout type="warn" title="Optional and default only work within objects and tuples!">
     Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
