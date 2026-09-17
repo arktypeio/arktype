@@ -10,9 +10,11 @@ Define an ArkType schema, pull values from your environment or config source, va
 
 Inspired by tools like [T3 Env](https://env.t3.gg) but tailored specifically for ArkType, ArkEnv also adds keywords like `string.host` and `number.port` for env-specific use cases.
 
+Scaffold with `npx arkenv init` and import from `@arkenv/core` (`arkenv` on npm is the CLI).
+
 ```ts
 // @noErrors
-import arkenv from "arkenv"
+import arkenv from "@arkenv/core"
 
 const env = arkenv({
 	HOST: "string.host",
