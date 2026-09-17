@@ -164,6 +164,16 @@ const MyObj = type({
 
 </SyntaxTabs>
 
+An empty array or object can be defaulted directly in string syntax. A shared reference would leak mutations from one traversal into the next, so `= []` and `= {}` assign a new array or object each time the default is applied- exactly like the thunk form they replace.
+
+```ts
+const MyObj = type({
+	// each parsed value gets its own array
+	values: "string[] = []",
+	meta: "object = {}"
+})
+```
+
 <Callout type="warn" title="Optional and default only work within objects and tuples!">
     Unlike e.g. `number.array()`, `number.optional()` and `number.default(0)` don't return a new `Type`, but rather a tuple definition like `[Type<number>, "?"]` or `[Type<number>, "=", 0]`.
 

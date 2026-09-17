@@ -1,5 +1,47 @@
 # arktype
 
+## 2.2.4
+
+### Default a property to an empty array or object in string syntax
+
+`= []` and `= {}` are now valid string-embedded defaults, so an empty collection no longer requires the tuple-with-thunk form:
+
+```ts
+// previously ["string[]", "=", () => []]
+const T = type({
+	values: "string[] = []",
+	meta: "object = {}"
+})
+```
+
+Like the tuple form they replace, each traversal that falls back to the default gets a fresh reference rather than a shared one, so mutating the defaulted value cannot leak into the next traversal. Thanks to @SynthLuvr.
+
+### Apply `required` and `partial` to array and tuple elements
+
+Like the mapped types they're named for, `required` and `partial` are homomorphic: they now transform the elements of an array or tuple and preserve its base, where previously they reduced it to a plain object.
+
+```ts
+const T = type(["string", "number?"]).required() // [string, number]
+```
+
+`partial` preserves defaultable elements rather than flattening them, which would otherwise lose their position relative to the prefix. When the transformation is a no-op — an array with no fixed elements, an empty tuple — the original branch is preserved rather than rebuilt. Thanks to @lprnmns.
+
+### Document what structural methods discard
+
+`pick`, `omit`, `merge`, `required`, and `partial` return a new object built from the properties they extract, so a root `narrow`, `filter`, or metadata on the original `Type` is not carried over. This has always been the behavior; it is now called out in each method's JSDoc and in the [objects docs](https://arktype.io/docs/objects#properties-structural).
+
+### Allow multiple scopes to share a name
+
+Registering a scope with a name another scope already used no longer throws `A Scope already named ... already exists`. The parse cache is keyed by scope identity rather than by name, so two scopes sharing a name no longer collide in it. Thanks to @yamcodes.
+
+### Require an integer portion in well-formed number strings
+
+`isWellFormedNumber("")` and `isWellFormedNumber("-")` incorrectly returned `true`, because the integer-and-decimal body of the matcher was wrapped in a trailing `?` that made the whole pattern optional. Thanks to @zigzagdev.
+
+### Return an empty string from `capitalize`/`uncapitalize` on empty input
+
+Both threw on `""`, since indexing the first character gave `undefined`. They now return `""` unchanged. Thanks to @zigzagdev.
+
 ## 2.2.3
 
 ### Fix `type.fn.raw` throwing at runtime
