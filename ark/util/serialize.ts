@@ -203,18 +203,15 @@ export const describeCollapsibleDate = (date: Date): string => {
 	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
 		return datePortion
 
-	let timePortion = date.toLocaleTimeString()
+	const h = hours % 12 || 12
+	const suffix = hours < 12 ? " AM" : " PM"
 
-	const suffix =
-		timePortion.endsWith(" AM") || timePortion.endsWith(" PM") ?
-			timePortion.slice(-3)
-		:	""
-
-	if (suffix) timePortion = timePortion.slice(0, -suffix.length)
+	let timePortion =
+		seconds || milliseconds ?
+			`${h}:${pad(minutes, 2)}:${pad(seconds, 2)}`
+		:	`${h}:${pad(minutes, 2)}`
 
 	if (milliseconds) timePortion += `.${pad(milliseconds, 3)}`
-	else if (timeWithUnnecessarySeconds.test(timePortion))
-		timePortion = timePortion.slice(0, -3)
 
 	return `${timePortion + suffix}, ${datePortion}`
 }
@@ -233,8 +230,6 @@ const months = [
 	"November",
 	"December"
 ]
-
-const timeWithUnnecessarySeconds = /:\d\d:00$/
 
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
