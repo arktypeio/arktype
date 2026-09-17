@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import { createContext, runInContext } from "node:vm"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 import {
 	multipleVariadicMesage,
@@ -280,5 +281,20 @@ value at [1] must be a number (was boolean)`)
 		attest(StringArray([1, 2]).toString())
 			.snap(`value at [0] must be a string (was a number)
 value at [1] must be a string (was a number)`)
+	})
+
+	it("accepts arrays from another realm", () => {
+		const foreign = runInContext("[1, 2, 3]", createContext())
+		// Same value identity check would fail: foreign instanceof Array === false
+		attest(Array.isArray(foreign)).equals(true)
+		attest(foreign instanceof Array).equals(false)
+
+		const T = type("number[]")
+		attest(T.allows(foreign)).equals(true)
+		// Don't use .equals on the array itself — foreign-realm arrays have a
+		// different constructor, which attest treats as unequal.
+		const result = T(foreign)
+		attest(result === foreign).equals(true)
+		attest([...(result as number[])]).equals([1, 2, 3])
 	})
 })
