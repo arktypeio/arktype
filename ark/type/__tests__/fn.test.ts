@@ -402,6 +402,22 @@ contextualize(() => {
 		})
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1614
+	it("labels an implementation that annotates its optional parameter", () => {
+		// labels come from the implementation's parameter names, which are only
+		// cosmetic. contextually inferred parameters already labelled correctly;
+		// it is annotating the optional one that stopped applyElementLabels from
+		// matching, dropping every label rather than just that one:
+		// (args_0?: number | undefined) => number | undefined
+		const f = type.fn("number?")((n?: number) => n)
+
+		attest(f).type.toString.snap(`TypedFn<
+	(n?: number | undefined) => number | undefined,
+	{},
+	{}
+>`)
+	})
+
 	describe("scoped", () => {
 		it("scoped param and return", () => {
 			const $ = type.scope({
