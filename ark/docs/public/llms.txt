@@ -5021,6 +5021,14 @@ const Bounded = type({
 
 Most built-in instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
 
+<Callout type="info" title="Array is the only constructor that works cross-realm">
+
+    Constructors are compared by identity, so a value created in another realm (e.g. an `<iframe>` or a `node:vm` context) will not be an `instanceof` the constructor in your realm.
+
+    `Array` is special-cased to use `Array.isArray`, making it the only built-in constructor that will also match arrays from another realm.
+
+</Callout>
+
 <SyntaxTabs>
     <SyntaxTab fluent>
 
