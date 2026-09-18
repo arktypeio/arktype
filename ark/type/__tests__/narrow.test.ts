@@ -261,4 +261,25 @@ contextualize(() => {
 		attest(T.t).type.toString.snap("unknown")
 		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
+
+	it("preserves piped branch input narrows through an intersection", () => {
+		const PipedItem = type("string.numeric & string.numeric.parse").narrow(
+			(_data, ctx) => ctx.reject("always reject")
+		)
+		const UnpipedItem = type("string").narrow((_data, ctx) =>
+			ctx.reject("always reject")
+		)
+		const Variant = type({ kind: "'a'", value: PipedItem }).or({
+			kind: "'b'",
+			value: UnpipedItem
+		})
+		const Meta = type({ code: type("string.numeric.parse") }).narrow(() => true)
+		const Thing = Variant.and(Meta)
+
+		attest(
+			Thing({ kind: "a", code: "1", value: "1" })
+				.toString()
+				.includes("always reject")
+		).equals(true)
+	})
 })
