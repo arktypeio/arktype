@@ -4,10 +4,10 @@ import {
 	normalizeIndex,
 	type BaseScope,
 	type OptionalNode,
+	type Prop,
 	type Structure,
 	type nodeOfKind
 } from "@ark/schema"
-import { conflatenate } from "@ark/util"
 import { flattenConstraints, intersectConstraints } from "../constraint.ts"
 import type { setImplementationOf } from "../implement.ts"
 import { intersectNodesRoot } from "../intersections.ts"
@@ -42,6 +42,10 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			const lInner = { ...l.inner }
 			const rInner = { ...r.inner }
 			const disjointResult = new Disjoint()
+			// props an index signature narrows to once the other side's keys are
+			// known. they can't be added to the side they came from, where a prop
+			// with the same key would never be merged with them
+			const derived: nodeOfKind<Prop.Kind>[] = []
 			if (l.undeclared) {
 				const lKey = l.keyof()
 				for (const k of r.requiredKeys) {
@@ -65,18 +69,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						if (normalized.required) {
-							rInner.required = conflatenate(
-								rInner.required,
-								normalized.required
-							)
-						}
-						if (normalized.optional) {
-							rInner.optional = conflatenate(
-								rInner.optional,
-								normalized.optional
-							)
-						}
+						derived.push(...(normalized.required ?? []))
+						derived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
 				}
@@ -104,19 +98,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						if (normalized.required) {
-							lInner.required = conflatenate(
-								lInner.required,
-								normalized.required
-							)
-						}
-						if (normalized.optional) {
-							lInner.optional = conflatenate(
-								lInner.optional,
-								normalized.optional
-							)
-						}
-
+						derived.push(...(normalized.required ?? []))
+						derived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
 				}
@@ -135,7 +118,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 				kind: "structure",
 				baseInner,
 				l: flattenConstraints(lInner),
-				r: flattenConstraints(rInner),
+				r: [...flattenConstraints(rInner), ...derived],
 				roots: [],
 				ctx
 			})
