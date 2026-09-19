@@ -47,7 +47,8 @@ const defaultConfig: ToJsonSchema.Context = {
 		proto: ctx => ToJsonSchema.throw("proto", ctx),
 		symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
 		unit: ctx => ToJsonSchema.throw("unit", ctx),
-		date: ctx => ToJsonSchema.throw("date", ctx)
+		date: ctx => ToJsonSchema.throw("date", ctx),
+		size: ctx => ToJsonSchema.throw("size", ctx)
 	}
 }
 
@@ -152,6 +153,11 @@ export declare namespace ToJsonSchema {
 		after?: Date
 	}
 
+	export interface SizeContext extends BaseContext<"size", JsonSchema> {
+		minSize?: number
+		maxSize?: number
+	}
+
 	export interface ContextByCode {
 		arrayObject: ArrayObjectContext
 		arrayPostfix: ArrayPostfixContext
@@ -164,6 +170,7 @@ export declare namespace ToJsonSchema {
 		symbolKey: SymbolKeyContext
 		unit: UnitContext
 		date: DateContext
+		size: SizeContext
 	}
 
 	export type Code = keyof ContextByCode
@@ -186,6 +193,7 @@ export declare namespace ToJsonSchema {
 			symbolKey: (ctx: SymbolKeyContext) => JsonSchema.Object
 			unit: (ctx: UnitContext) => JsonSchema
 			date: (ctx: DateContext) => JsonSchema
+			size: (ctx: SizeContext) => JsonSchema
 		}
 	>
 

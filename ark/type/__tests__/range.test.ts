@@ -142,6 +142,252 @@ contextualize(() => {
 			attest(T.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
 
+		it("File > (minSize exclusive)", () => {
+			const T = type("File > 5MB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({
+				proto: "File",
+				minSize: { rule: 5000000, exclusive: true }
+			})
+
+			const smallFile = new File(["x".repeat(5000000)], "exact.txt")
+			const validFile = new File(["x".repeat(5000001)], "valid.txt")
+
+			attest(T(smallFile).toString()).snap(
+				"must be more than 5MB (was 5000000 bytes)"
+			)
+			attest(T(validFile)).equals(validFile)
+		})
+
+		it("File >= (minSize inclusive)", () => {
+			const T = type("File >= 5MB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({ proto: "File", minSize: 5000000 })
+
+			const smallFile = new File(["x".repeat(1000000)], "small.txt")
+			const validFile = new File(["x".repeat(5000000)], "valid.txt")
+
+			attest(T(smallFile).toString()).snap(
+				"must be at least 5MB (was 1000000 bytes)"
+			)
+			attest(T(validFile)).equals(validFile)
+		})
+
+		it("File < (maxSize exclusive)", () => {
+			const T = type("File < 10MB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({
+				proto: "File",
+				maxSize: { rule: 10000000, exclusive: true }
+			})
+
+			const validFile = new File(["x".repeat(5000000)], "valid.txt")
+			const exactFile = new File(["x".repeat(10000000)], "exact.txt")
+			const largeFile = new File(["x".repeat(15000000)], "large.txt")
+
+			attest(T(validFile)).equals(validFile)
+			attest(T(exactFile).toString()).snap(
+				"must be less than 10MB (was 10000000 bytes)"
+			)
+			attest(T(largeFile).toString()).snap(
+				"must be less than 10MB (was 15000000 bytes)"
+			)
+		})
+
+		it("File <= (maxSize inclusive)", () => {
+			const T = type("File <= 10MB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({ proto: "File", maxSize: 10000000 })
+
+			const validFile = new File(["x".repeat(10000000)], "valid.txt")
+			const tooLargeFile = new File(["x".repeat(20000000)], "large.txt")
+
+			attest(T(validFile)).equals(validFile)
+			attest(T(tooLargeFile).toString()).snap(
+				"must be at most 10MB (was 20000000 bytes)"
+			)
+		})
+
+		it("File == (exact size)", () => {
+			const T = type("File == 5MB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+
+			const exactFile = new File(["x".repeat(5000000)], "exact.txt")
+			const smallFile = new File(["x".repeat(4999999)], "small.txt")
+			const largeFile = new File(["x".repeat(5000001)], "large.txt")
+
+			attest(T(exactFile)).equals(exactFile)
+			attest(T(smallFile).toString()).snap(
+				"must be at least 5MB (was 4999999 bytes)"
+			)
+			attest(T(largeFile).toString()).snap(
+				"must be at most 5MB (was 5000001 bytes)"
+			)
+		})
+
+		it("File range with mixed bounds", () => {
+			const T = type("1MB < File <= 10MB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({
+				proto: "File",
+				maxSize: 10000000,
+				minSize: { rule: 1000000, exclusive: true }
+			})
+
+			const tooSmall = new File(["x".repeat(1000000)], "exact1MB.txt")
+			const validSmall = new File(["x".repeat(1000001)], "valid1.txt")
+			const validLarge = new File(["x".repeat(10000000)], "valid2.txt")
+			const tooLarge = new File(["x".repeat(10000001)], "large.txt")
+
+			attest(T(tooSmall).toString()).snap(
+				"must be more than 1MB (was 1000000 bytes)"
+			)
+			attest(T(validSmall)).equals(validSmall)
+			attest(T(validLarge)).equals(validLarge)
+			attest(T(tooLarge).toString()).snap(
+				"must be at most 10MB (was 10000001 bytes)"
+			)
+		})
+
+		it("File range inclusive both sides", () => {
+			const T = type("5KB <= File <= 20KB")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({
+				proto: "File",
+				maxSize: 20000,
+				minSize: 5000
+			})
+
+			const tooSmall = new File(["x".repeat(4999)], "small.txt")
+			const validMin = new File(["x".repeat(5000)], "min.txt")
+			const validMax = new File(["x".repeat(20000)], "max.txt")
+			const tooLarge = new File(["x".repeat(20001)], "large.txt")
+
+			attest(T(tooSmall).toString()).snap(
+				"must be at least 5KB (was 4999 bytes)"
+			)
+			attest(T(validMin)).equals(validMin)
+			attest(T(validMax)).equals(validMax)
+			attest(T(tooLarge).toString()).snap(
+				"must be at most 20KB (was 20001 bytes)"
+			)
+		})
+
+		it("File with bytes unit", () => {
+			const T = type("File >= 100B")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+
+			const validFile = new File(["x".repeat(100)], "valid.txt")
+			const smallFile = new File(["x".repeat(50)], "small.txt")
+
+			attest(T(validFile)).equals(validFile)
+			attest(T(smallFile).toString()).snap(
+				"must be at least 100 bytes (was 50 bytes)"
+			)
+		})
+
+		it("size units resolve to SI byte counts", () => {
+			// a size literal collapses to its canonical byte count, so equivalent
+			// literals produce identical (deduplicated) constraints
+			attest(type("File >= 10KB").json).snap({ proto: "File", minSize: 10000 })
+			attest(type("File <= 1GB").json).snap({
+				proto: "File",
+				maxSize: 1000000000
+			})
+			attest(type("File >= 5TB").json).snap({
+				proto: "File",
+				minSize: 5000000000000
+			})
+			attest(type("File >= 5MB").equals(type("File >= 5000KB"))).equals(true)
+			attest(type("File >= 5MB").equals(type("File >= 5000000"))).equals(true)
+		})
+
+		it("File with plain number (bytes)", () => {
+			const T = type("File >= 1000")
+			attest<File>(T.infer)
+			attest(T).type.toString.snap("Type<File, {}>")
+			attest(T.json).snap({ proto: "File", minSize: 1000 })
+
+			const validFile = new File(["x".repeat(1000)], "valid.txt")
+			const smallFile = new File(["x".repeat(500)], "small.txt")
+
+			attest(T(validFile)).equals(validFile)
+			// canonical byte count renders as the most compact unit
+			attest(T(smallFile).toString()).snap(
+				"must be at least 1KB (was 500 bytes)"
+			)
+		})
+
+		it("File > 0 rejects empty files (formerly reduced away)", () => {
+			const T = type("File > 0")
+			attest<File>(T.infer)
+			attest(T.json).snap({
+				proto: "File",
+				minSize: { rule: 0, exclusive: true }
+			})
+
+			const emptyFile = new File([], "empty.txt")
+			const nonEmptyFile = new File(["x"], "data.txt")
+
+			attest(T(emptyFile).toString()).snap(
+				"must be positive size (was 0 bytes)"
+			)
+			attest(T(nonEmptyFile)).equals(nonEmptyFile)
+		})
+
+		it("fractional size literal rounds to exact bytes", () => {
+			// 1.005 * 1000 === 1004.9999999999999 in IEEE-754; the bound must still
+			// accept a file of exactly 1005 bytes
+			const T = type("File <= 1.005KB")
+			attest(T.json).snap({ proto: "File", maxSize: 1005 })
+			attest(T(new File(["x".repeat(1005)], "f.txt")) instanceof File).equals(
+				true
+			)
+		})
+
+		it("File size bound must be a non-negative integer", () => {
+			attest(() => type("File > -1")).throws.snap(
+				"ParseError: minSize bound must be a non-negative integer (was -1)"
+			)
+			attest(() => type("File < 1.5")).throws.snap(
+				"ParseError: maxSize bound must be a non-negative integer (was 1.5)"
+			)
+		})
+
+		it("File with quoted string bound errors", () => {
+			// @ts-expect-error a quoted string is not a valid size limit
+			attest(() => type('File < "10MB"')).throws.snap(
+				'ParseError: Comparator < must be followed by a corresponding literal (was  "10MB")'
+			)
+		})
+
+		it("comparator whitespace is ignored", () => {
+			const T = type("File >= 5MB")
+			const TWithSpace = type("File >=5MB")
+			attest(T.expression).equals(TWithSpace.expression)
+		})
+
+		it("File with Date bound should error", () => {
+			// @ts-expect-error a date literal is not a valid size limit
+			attest(() => type("File > d'2023/01/01'")).throws.snap(
+				"ParseError: Comparator > must be followed by a corresponding literal (was  d'2023/01/01')"
+			)
+		})
+
+		it("File empty range", () => {
+			attest(() => type("10MB <= File < 5MB")).throws.snap(
+				"ParseError: Intersection of < 5MB and >= 10MB results in an unsatisfiable type"
+			)
+		})
+
 		it("exclusive length normalized", () => {
 			const T = type("string > 0")
 			const Expected = type("string >= 1")
