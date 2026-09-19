@@ -1,19 +1,14 @@
 import {
 	$ark,
 	Disjoint,
-	compileSerializedValue,
 	normalizeIndex,
+	writeDuplicateKeyMessage,
 	type BaseScope,
 	type OptionalNode,
 	type Structure,
 	type nodeOfKind
 } from "@ark/schema"
-import {
-	conflatenate,
-	throwParseError,
-	type describe,
-	type Key
-} from "@ark/util"
+import { conflatenate, throwParseError, type Key } from "@ark/util"
 import { flattenConstraints, intersectConstraints } from "../constraint.ts"
 import { implementSets, type setImplementationOf } from "../implement.ts"
 import { intersectNodesRoot } from "../intersections.ts"
@@ -218,11 +213,3 @@ export const structure: setImplementationOf<Structure.Declaration> =
 			}
 		}
 	})
-
-export const writeDuplicateKeyMessage = <key extends Key>(
-	key: key
-): writeDuplicateKeyMessage<key> =>
-	`Duplicate key ${compileSerializedValue(key) as never}`
-
-export type writeDuplicateKeyMessage<key extends Key> =
-	`Duplicate key '${describe<key>}'`

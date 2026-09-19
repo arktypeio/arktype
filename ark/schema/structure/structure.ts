@@ -6,6 +6,7 @@ import {
 	spliterate,
 	throwParseError,
 	type array,
+	type describe,
 	type dict,
 	type Key,
 	type listable
@@ -16,7 +17,7 @@ import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import type { NodeCompiler } from "../shared/compile.ts"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type {
 	attachmentsOf,
 	BaseNormalizedSchema,
@@ -729,6 +730,14 @@ const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {
 	if (typeof indexable === "number") indexable = `${indexable}`
 	return indexable
 }
+
+export const writeDuplicateKeyMessage = <key extends Key>(
+	key: key
+): writeDuplicateKeyMessage<key> =>
+	`Duplicate key ${compileSerializedValue(key) as never}`
+
+export type writeDuplicateKeyMessage<key extends Key> =
+	`Duplicate key '${describe<key>}'`
 
 export const writeNumberIndexMessage = (
 	indexExpression: string,

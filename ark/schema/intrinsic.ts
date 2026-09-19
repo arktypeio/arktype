@@ -89,9 +89,16 @@ let bootstrapped = false
  */
 export const bootstrap = (): void => {
 	if (bootstrapped) return
+	// set before the work so that parsing during it doesn't recurse, and
+	// unset if it fails so the next call reports the original error again
 	bootstrapped = true
-	bootstrapRootScope()
-	bootstrapIntrinsic()
+	try {
+		bootstrapRootScope()
+		bootstrapIntrinsic()
+	} catch (e) {
+		bootstrapped = false
+		throw e
+	}
 }
 
 export const intrinsic: ReturnType<typeof bootstrapIntrinsic> = lazily(() => {
