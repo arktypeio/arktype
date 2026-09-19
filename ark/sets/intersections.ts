@@ -1,18 +1,24 @@
-import type { PartialRecord, TypeGuard } from "@ark/util"
-import type { mutableNormalizedRootOfKind, nodeOfKind } from "../kinds.ts"
-import type { BaseNode } from "../node.ts"
-import type { Morph } from "../roots/morph.ts"
-import type { BaseRoot } from "../roots/root.ts"
-import type { Union } from "../roots/union.ts"
-import type { BaseScope } from "../scope.ts"
-import { Disjoint } from "./disjoint.ts"
 import {
+	Disjoint,
+	isNode,
 	rootKinds,
-	type IntersectionContext,
+	type BaseNode,
+	type BaseRoot,
+	type BaseScope,
+	type Morph,
 	type RootKind,
-	type UnknownIntersectionResult
+	type Union,
+	type mutableNormalizedRootOfKind,
+	type nodeOfKind
+} from "@ark/schema"
+import type { PartialRecord, TypeGuard } from "@ark/util"
+import type {
+	IntersectionContext,
+	UnknownIntersectionResult
 } from "./implement.ts"
-import { isNode } from "./utils.ts"
+// kinds → union → intersections → kinds is a cycle, but the table is only read
+// at call time so the import order is irrelevant
+import { setImplementationsByKind } from "./kinds.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
@@ -97,7 +103,8 @@ const _intersectNodes = (
 ) => {
 	const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 	const implementation =
-		l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
+		setImplementationsByKind[l.kind].intersections[r.kind] ??
+		setImplementationsByKind[r.kind].intersections[l.kind]
 	if (implementation === undefined) {
 		// should be two ConstraintNodes that have no relation
 		// this could also happen if a user directly intersects a Type and a ConstraintNode,

@@ -31,6 +31,7 @@ import {
 	LazyGenericBody,
 	type GenericRootParser
 } from "./generic.ts"
+import { bootstrap } from "./intrinsic.ts"
 import {
 	nodeImplementationsByKind,
 	type NodeSchema,
@@ -176,6 +177,38 @@ $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
 
+// reduce union of all possible values reduces to unknown
+const cacheUnknownUnion = ($: BaseScope): void => {
+	rawUnknownUnion ??= $.node(
+		"union",
+		{
+			branches: [
+				"string",
+				"number",
+				"object",
+				"bigint",
+				"symbol",
+				{ unit: true },
+				{ unit: false },
+				{ unit: undefined },
+				{ unit: null }
+			]
+		},
+		{ prereduced: true }
+	)
+
+	$.nodesByHash[rawUnknownUnion.hash] = $.node(
+		"intersection",
+		{},
+		{ prereduced: true }
+	)
+}
+
+// the root scope is constructed on import, when arksets (which itself imports
+// @ark/schema) cannot yet have installed an engine, so it alone defers its
+// shared nodes and precompilation to bootstrapRootScope
+let constructingRootSchemaScope = true
+
 const rootScopeFnName = "function $"
 
 const precompile = (references: readonly BaseNode[]): void =>
@@ -271,6 +304,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
+		if (!constructingRootSchemaScope) bootstrap()
+
 		this.config = mergeConfigs($ark.config, config)
 
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
@@ -307,30 +342,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 		}
 
-		// reduce union of all possible values reduces to unknown
-		rawUnknownUnion ??= this.node(
-			"union",
-			{
-				branches: [
-					"string",
-					"number",
-					"object",
-					"bigint",
-					"symbol",
-					{ unit: true },
-					{ unit: false },
-					{ unit: undefined },
-					{ unit: null }
-				]
-			},
-			{ prereduced: true }
-		)
-
-		this.nodesByHash[rawUnknownUnion.hash] = this.node(
-			"intersection",
-			{},
-			{ prereduced: true }
-		)
+		if (!constructingRootSchemaScope) cacheUnknownUnion(this)
 
 		this.intrinsic =
 			$ark.intrinsic ?
@@ -573,6 +585,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	protected createParseContext<input extends BaseParseContextInput>(
 		input: input
 	): input & AttachedParseContext {
+		// the root scope is constructed on import, so unlike every other scope
+		// it can reach its first parse unbootstrapped
+		bootstrap()
 		const id = input.id ?? registerNodeId(input.prefix)
 		return (nodesByRegisteredId[id] = Object.assign(input, {
 			[arkKind]: "context" as const,
@@ -867,6 +882,15 @@ export type InternalSchemaParser = (
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
+constructingRootSchemaScope = false
+
+/** The half of the root scope's construction that needs a set engine */
+export const bootstrapRootScope = (): void => {
+	cacheUnknownUnion(rootSchemaScope)
+	// ensure the scope is resolved so JIT will be applied to future types
+	rootSchemaScope.export()
+}
+
 export const parseAsSchema = (
 	def: unknown,
 	opts?: BaseParseOptions
@@ -923,9 +947,6 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
-
-// ensure the scope is resolved so JIT will be applied to future types
-rootSchemaScope.export()
 
 export const rootSchema: BaseScope["schema"] = rootSchemaScope.schema
 export const node: BaseScope["node"] = rootSchemaScope.node

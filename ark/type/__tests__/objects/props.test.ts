@@ -1,9 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	writeDuplicateKeyMessage,
-	writeLiteralUnionEntriesMessage
-} from "@ark/schema"
+import { writeLiteralUnionEntriesMessage } from "@ark/schema"
 import { register, type array } from "@ark/util"
+import { writeDuplicateKeyMessage } from "arksets"
 import { type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
 

@@ -2,11 +2,13 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	intrinsic,
-	writeIndiscriminableMorphMessage,
 	writeInvalidOperandMessage,
-	writeMorphIntersectionMessage,
 	type ArkErrors
 } from "@ark/schema"
+import {
+	writeIndiscriminableMorphMessage,
+	writeMorphIntersectionMessage
+} from "arksets"
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"

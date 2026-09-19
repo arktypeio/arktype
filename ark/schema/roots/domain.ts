@@ -10,7 +10,6 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -82,16 +81,6 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			description: node => domainDescriptions[node.domain],
 			actual: data =>
 				Number.isNaN(data) ? "NaN" : domainDescriptions[domainOf(data)]
-		},
-		intersections: {
-			domain: (l, r) =>
-				// since l === r is handled by default, remaining cases are disjoint
-				// outside those including options like numberAllowsNaN
-				l.domain === "number" && r.domain === "number" ?
-					l.numberAllowsNaN ?
-						r
-					:	l
-				:	Disjoint.init("domain", l, r)
 		}
 	})
 

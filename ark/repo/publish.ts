@@ -23,12 +23,13 @@ const rewritePackageJsonName = (path: string, alias: string) =>
 	rewriteJson(path, data => ({ ...data, name: alias }))
 
 for (const pkg of packages) {
-	// primary name (either arktype, arkregex or @ark/*)
+	// primary name (either arktype, arkregex, arksets or @ark/*)
 	publishPackage(pkg)
 
 	// scoped alias for primary entry point
 	if (pkg.scope === "type") publishPackage(pkg, "@ark/type")
 	if (pkg.scope === "regex") publishPackage(pkg, "@ark/regex")
+	if (pkg.scope === "sets") publishPackage(pkg, "@ark/sets")
 
 	// alias for original @arktype/ scope
 	publishPackage(pkg, `@arktype/${pkg.scope}`)

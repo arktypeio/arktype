@@ -1,6 +1,5 @@
 import {
 	builtinConstructors,
-	constructorExtends,
 	domainOf,
 	getBuiltinNameOfConstructor,
 	hasKey,
@@ -16,19 +15,16 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
 import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
-import type { Domain } from "./domain.ts"
 
 export declare namespace Proto {
 	export type Reference = Constructor | BuiltinObjectKind
@@ -113,26 +109,6 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				data instanceof Date && data.toString() === "Invalid Date" ?
 					"an invalid Date"
 				:	objectKindOrDomainOf(data)
-		},
-		intersections: {
-			proto: (l, r) =>
-				l.proto === Date && r.proto === Date ?
-					// since l === r is handled by default,
-					// exactly one of l or r must have allow invalid dates
-					l.dateAllowsInvalid ?
-						r
-					:	l
-				: constructorExtends(l.proto, r.proto) ? l
-				: constructorExtends(r.proto, l.proto) ? r
-				: Disjoint.init("proto", l, r),
-			domain: (proto, domain) =>
-				domain.domain === "object" ?
-					proto
-				:	Disjoint.init(
-						"domain",
-						$ark.intrinsic.object.internal as Domain.Node,
-						domain
-					)
 		}
 	})
 

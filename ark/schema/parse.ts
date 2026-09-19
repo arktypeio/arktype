@@ -195,8 +195,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 			inner[k] = v
 	}
 
-	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.$)
+	if (!ctx.prereduced && $ark.sets) {
+		const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
 

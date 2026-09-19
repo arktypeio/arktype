@@ -4,7 +4,7 @@ import {
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "@ark/json-schema"
-import { writeDuplicateKeyMessage } from "@ark/schema"
+import { writeDuplicateKeyMessage } from "arksets"
 
 contextualize(() => {
 	it("type object", () => {

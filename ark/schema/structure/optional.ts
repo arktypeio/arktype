@@ -6,7 +6,6 @@ import {
 	throwParseError,
 	type requireKeys
 } from "@ark/util"
-import { intrinsic } from "../intrinsic.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue } from "../shared/compile.ts"
@@ -19,7 +18,7 @@ import {
 } from "../shared/implement.ts"
 import { registeredReference } from "../shared/registry.ts"
 import { traverseKey } from "../shared/traversal.ts"
-import { BaseProp, intersectProps, type Prop } from "./prop.ts"
+import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
 	export interface Schema extends Prop.Schema {
@@ -64,22 +63,8 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			}
 		},
 		normalize: schema => schema,
-		reduce: (inner, $) => {
-			if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
-				if (!inner.value.allows(undefined)) {
-					return $.node(
-						"optional",
-						{ ...inner, value: inner.value.or(intrinsic.undefined) },
-						{ prereduced: true }
-					)
-				}
-			}
-		},
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
-		},
-		intersections: {
-			optional: intersectProps
 		}
 	})
 

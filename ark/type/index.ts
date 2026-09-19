@@ -1,3 +1,6 @@
+// installed ahead of every module that parses at load (the first is
+// parser/shift/operand/enclosed.ts) so that no node is built without algebra
+import "arksets"
 export {
 	ArkError,
 	ArkErrors,

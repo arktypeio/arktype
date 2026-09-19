@@ -114,6 +114,7 @@ export default tseslint.config(
 								"**/fs/**",
 								"**/attest/**",
 								"**/schema/**",
+								"**/sets/**",
 								"**/type/**",
 								"**/util/**"
 							],
@@ -153,7 +154,12 @@ export default tseslint.config(
 		}
 	},
 	{
-		files: ["**/ark/type/**", "**/ark/schema/**", "**/ark/util/**"],
+		files: [
+			"**/ark/type/**",
+			"**/ark/schema/**",
+			"**/ark/sets/**",
+			"**/ark/util/**"
+		],
 		rules: {
 			"import/no-nodejs-modules": "warn",
 			"import/no-extraneous-dependencies": "warn"
@@ -171,6 +177,7 @@ export default tseslint.config(
 								"**/fs/**",
 								"**/attest/**",
 								"**/schema/**",
+								"**/sets/**",
 								"**/type/**",
 								"**/util/**",
 								"arktype/internal/**"

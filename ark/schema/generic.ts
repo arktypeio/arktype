@@ -7,11 +7,11 @@ import {
 	type Hkt,
 	type JsonStructure
 } from "@ark/util"
+import { intrinsic } from "./intrinsic.ts"
 import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import { $ark } from "./shared/registry.ts"
 import { arkKind } from "./shared/utils.ts"
 
 export type GenericParamAst<
@@ -148,7 +148,9 @@ export class GenericRoot<
 			"params",
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
-					[param, $ark.intrinsic.unknown]
+					// read before anything is parsed when a generic is the root
+					// scope's first use, so go through the bootstrapping accessor
+					[param, intrinsic.unknown]
 				:	[param[0], this.$.parse(param[1])]
 			) as never
 		)

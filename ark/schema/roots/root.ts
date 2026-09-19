@@ -44,9 +44,9 @@ import {
 	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
-import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import { sets } from "../shared/sets.ts"
 import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
@@ -218,7 +218,7 @@ export abstract class BaseRoot<
 	}
 
 	rawIntersect(r: BaseRoot): BaseRoot {
-		return intersectNodesRoot(this, r, this.$) as never
+		return sets("intersect").intersect(this, r, this.$) as never
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
@@ -482,7 +482,7 @@ export abstract class BaseRoot<
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
-		const result = pipeNodesRoot(this, root, this.$)
+		const result = sets("pipe").pipe(this, root, this.$)
 		if (result instanceof Disjoint) return result.throw()
 		return result as BaseRoot
 	}
@@ -567,8 +567,8 @@ export abstract class BaseRoot<
 
 		const result =
 			io === "out" ?
-				pipeNodesRoot(this, partialIntersection, this.$)
-			:	intersectNodesRoot(this, partialIntersection, this.$)
+				sets("constrain").pipe(this, partialIntersection, this.$)
+			:	sets("constrain").intersect(this, partialIntersection, this.$)
 
 		if (result instanceof Disjoint) result.throw()
 

@@ -1,7 +1,5 @@
 import {
 	Disjoint,
-	intersectNodesRoot,
-	pipeNodesRoot,
 	type BaseParseContext,
 	type BaseRoot,
 	type Morph,
@@ -19,6 +17,7 @@ import {
 	type Domain,
 	type show
 } from "@ark/util"
+import { intersectNodesRoot, pipeNodesRoot } from "arksets"
 import type {
 	defaultFor,
 	distill,

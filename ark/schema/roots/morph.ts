@@ -1,21 +1,12 @@
-import {
-	arrayEquals,
-	liftArray,
-	throwParseError,
-	type array,
-	type listable,
-	type mutable
-} from "@ark/util"
+import { arrayEquals, liftArray, type array, type listable } from "@ark/util"
 import type { RootSchema } from "../kinds.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
 	type RootKind
 } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
@@ -26,7 +17,6 @@ import type {
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Morph {
 	export interface Inner {
@@ -93,58 +83,6 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		defaults: {
 			description: node =>
 				`a morph from ${node.rawIn.description} to ${node.rawOut?.description ?? "unknown"}`
-		},
-		intersections: {
-			morph: (l, r, ctx) => {
-				if (!l.hasEqualMorphs(r)) {
-					return throwParseError(
-						writeMorphIntersectionMessage(l.expression, r.expression)
-					)
-				}
-				const inTersection = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
-				if (inTersection instanceof Disjoint) return inTersection
-
-				const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
-					morphs: l.morphs
-				}
-
-				if (l.declaredIn || r.declaredIn) {
-					const declaredIn = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
-					// we can't treat this as a normal Disjoint since it's just declared
-					// it should only happen if someone's essentially trying to create a broken type
-					if (declaredIn instanceof Disjoint) return declaredIn.throw()
-					else baseInner.declaredIn = declaredIn as never
-				}
-
-				if (l.declaredOut || r.declaredOut) {
-					const declaredOut = intersectOrPipeNodes(l.rawOut, r.rawOut, ctx)
-					if (declaredOut instanceof Disjoint) return declaredOut.throw()
-					else baseInner.declaredOut = declaredOut
-				}
-
-				// in case from is a union, we need to distribute the branches
-				// to can be a union as any schema is allowed
-				return inTersection.distribute(
-					inBranch =>
-						ctx.$.node("morph", {
-							...baseInner,
-							in: inBranch
-						}),
-					ctx.$.parseSchema
-				)
-			},
-			...defineRightwardIntersections("morph", (l, r, ctx) => {
-				const inTersection =
-					l.inner.in ? intersectOrPipeNodes(l.inner.in, r, ctx) : r
-				return (
-					inTersection instanceof Disjoint ? inTersection
-					: inTersection.equals(l.inner.in) ? l
-					: ctx.$.node("morph", {
-							...l.inner,
-							in: inTersection
-						})
-				)
-			})
 		}
 	})
 
@@ -246,11 +184,3 @@ export const Morph = {
 	implementation,
 	Node: MorphNode
 }
-
-export const writeMorphIntersectionMessage = (
-	lDescription: string,
-	rDescription: string
-): string =>
-	`The intersection of distinct morphs at a single path is indeterminate:
-Left: ${lDescription}
-Right: ${rDescription}`

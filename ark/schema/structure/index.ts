@@ -14,13 +14,11 @@ import {
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import { $ark } from "../shared/registry.ts"
 import {
 	traverseKey,
@@ -67,7 +65,15 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.parseSchema(schema)
-					if (!key.extends($ark.intrinsic.key)) {
+					// string, symbol and their union are accepted without consulting
+					// the set engine so that the intrinsic json scope can be
+					// parsed with none installed
+					if (
+						!key.equals($ark.intrinsic.string) &&
+						!key.equals($ark.intrinsic.symbol) &&
+						!key.equals($ark.intrinsic.key) &&
+						!key.extends($ark.intrinsic.key)
+					) {
 						return throwParseError(
 							writeInvalidPropertyKeyMessage(key.expression)
 						)
@@ -92,28 +98,6 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 		defaults: {
 			description: node =>
 				`[${node.signature.expression}]: ${node.value.description}`
-		},
-		intersections: {
-			index: (l, r, ctx) => {
-				if (l.signature.equals(r.signature)) {
-					const valueIntersection = intersectOrPipeNodes(l.value, r.value, ctx)
-					const value =
-						valueIntersection instanceof Disjoint ?
-							$ark.intrinsic.never.internal
-						:	valueIntersection
-					return ctx.$.node("index", { signature: l.signature, value })
-				}
-
-				// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
-				if (l.signature.extends(r.signature) && l.value.subsumes(r.value))
-					return r
-				// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
-				if (r.signature.extends(l.signature) && r.value.subsumes(l.value))
-					return l
-
-				// other relationships between index signatures can't be generally reduced
-				return null
-			}
 		}
 	})
 

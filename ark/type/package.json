@@ -47,9 +47,10 @@
 		"testEoptConfig": "ts ./__tests__/integration/testEoptConfig.ts"
 	},
 	"dependencies": {
-		"@ark/util": "workspace:*",
 		"@ark/schema": "workspace:*",
-		"arkregex": "workspace:*"
+		"@ark/util": "workspace:*",
+		"arkregex": "workspace:*",
+		"arksets": "workspace:*"
 	},
 	"publishConfig": {
 		"access": "public"

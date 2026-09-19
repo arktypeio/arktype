@@ -5,7 +5,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { BaseProp, intersectProps, type Prop } from "./prop.ts"
+import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Required {
 	export interface ErrorContext extends BaseErrorContext<"required"> {
@@ -45,10 +45,6 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,
 			actual: () => "missing"
-		},
-		intersections: {
-			required: intersectProps,
-			optional: intersectProps
 		}
 	})
 

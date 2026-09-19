@@ -1,4 +1,3 @@
-import type { IntersectionNode } from "../roots/intersection.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
@@ -60,20 +59,12 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 				parse: createLengthRuleParser("minLength")
 			}
 		},
-		reduce: inner =>
-			inner.rule === 0 ?
-				// a minimum length of zero is trivially satisfied
-				($ark.intrinsic.unknown as IntersectionNode)
-			:	undefined,
 		normalize: createLengthSchemaNormalizer("minLength"),
 		defaults: {
 			description: node =>
 				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
 			// avoid default message like "must be non-empty (was 0)"
 			actual: data => (data.length === 0 ? "" : `${data.length}`)
-		},
-		intersections: {
-			minLength: (l, r) => (l.isStricterThan(r) ? l : r)
 		}
 	})
 

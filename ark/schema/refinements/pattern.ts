@@ -63,11 +63,6 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 		intersectionIsOpen: true,
 		defaults: {
 			description: node => `matched by ${node.rule}`
-		},
-		intersections: {
-			// for now, non-equal regex are naively intersected:
-			// https://github.com/arktypeio/arktype/issues/853
-			pattern: () => null
 		}
 	})
 

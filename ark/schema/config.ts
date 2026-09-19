@@ -16,6 +16,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
+import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
@@ -25,6 +26,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	defaultConfig: ResolvedConfig
 	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
+	sets?: SetEngine
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<

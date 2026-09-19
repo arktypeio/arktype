@@ -1,9 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	Disjoint,
-	rootSchema,
-	writeOrderedIntersectionMessage
-} from "@ark/schema"
+import { Disjoint, rootSchema } from "@ark/schema"
+import { writeOrderedIntersectionMessage } from "arksets"
 
 contextualize(() => {
 	it("binary", () => {

@@ -1,7 +1,6 @@
 import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -65,15 +64,6 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 		defaults: {
 			description: node => `${node.collapsibleLimitString} or earlier`,
 			actual: describeCollapsibleDate
-		},
-		intersections: {
-			before: (l, r) => (l.isStricterThan(r) ? l : r),
-			after: (before, after, ctx) =>
-				before.overlapsRange(after) ?
-					before.overlapIsUnit(after) ?
-						ctx.$.node("unit", { unit: before.rule })
-					:	null
-				:	Disjoint.init("range", before, after)
 		}
 	})
 

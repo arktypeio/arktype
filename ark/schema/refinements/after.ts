@@ -64,9 +64,6 @@ const implementation: nodeImplementationOf<After.Declaration> =
 		defaults: {
 			description: node => `${node.collapsibleLimitString} or later`,
 			actual: describeCollapsibleDate
-		},
-		intersections: {
-			after: (l, r) => (l.isStricterThan(r) ? l : r)
 		}
 	})
 

@@ -8,19 +8,15 @@ import {
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
 import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Alias {
 	export type Schema<alias extends string = string> =
@@ -52,9 +48,6 @@ export declare namespace Alias {
 export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
 	typeof schema === "string" ? { reference: schema } : schema
 
-const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
-	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
-
 const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
@@ -69,33 +62,6 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		normalize: normalizeAliasSchema,
 		defaults: {
 			description: node => node.reference
-		},
-		intersections: {
-			alias: (l, r, ctx) =>
-				ctx.$.lazilyResolve(
-					() =>
-						neverIfDisjoint(
-							intersectOrPipeNodes(l.resolution, r.resolution, ctx)
-						),
-					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.reference}`
-				),
-			...defineRightwardIntersections("alias", (l, r, ctx) => {
-				if (r.isUnknown()) return l
-				if (r.isNever()) return r
-				if (r.isBasis() && !r.overlaps($ark.intrinsic.object)) {
-					// can be more robust as part of https://github.com/arktypeio/arktype/issues/1026
-					return Disjoint.init(
-						"assignability",
-						$ark.intrinsic.object as never,
-						r
-					)
-				}
-
-				return ctx.$.lazilyResolve(
-					() => neverIfDisjoint(intersectOrPipeNodes(l.resolution, r, ctx)),
-					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
-				)
-			})
 		}
 	})
 

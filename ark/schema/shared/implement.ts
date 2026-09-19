@@ -10,18 +10,13 @@ import {
 	type entryOf,
 	type keySetOf,
 	type listable,
-	type requireKeys,
-	type show
+	type requireKeys
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
 import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { NodeId, NodeParseContext } from "../parse.ts"
-import type {
-	BaseRoot,
-	schemaKindOrRightOf,
-	schemaKindRightOf
-} from "../roots/root.ts"
+import type { schemaKindRightOf } from "../roots/root.ts"
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
@@ -30,7 +25,6 @@ import type {
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
 } from "./declare.ts"
-import type { Disjoint } from "./disjoint.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -129,59 +123,6 @@ type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
 	) ?
 		accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	:	result
-
-export interface InternalIntersectionOptions {
-	pipe: boolean
-}
-
-export interface IntersectionContext extends InternalIntersectionOptions {
-	$: BaseScope
-	invert: boolean
-}
-
-export type ConstraintIntersection<
-	lKind extends ConstraintKind,
-	rKind extends kindOrRightOf<lKind>
-> = (
-	l: nodeOfKind<lKind>,
-	r: nodeOfKind<rKind>,
-	ctx: IntersectionContext
-) => BaseNode | Disjoint | null
-
-export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
-	{
-		[_ in kind]: ConstraintIntersection<kind, kind>
-	} & {
-		[rKind in kindRightOf<kind>]?: ConstraintIntersection<kind, rKind>
-	}
->
-
-export type RootIntersection<
-	lKind extends RootKind,
-	rKind extends schemaKindOrRightOf<lKind>
-> = (
-	l: nodeOfKind<lKind>,
-	r: nodeOfKind<rKind>,
-	ctx: IntersectionContext
-) => BaseRoot | Disjoint
-
-export type TypeIntersectionMap<kind extends RootKind> = {
-	[rKind in schemaKindOrRightOf<kind>]: RootIntersection<kind, rKind>
-}
-
-export type IntersectionMap<kind extends NodeKind> =
-	kind extends RootKind ? TypeIntersectionMap<kind>
-	:	ConstraintIntersectionMap<kind & ConstraintKind>
-
-export type UnknownIntersectionMap = {
-	[k in NodeKind]?: (
-		l: BaseNode,
-		r: BaseNode,
-		ctx: IntersectionContext
-	) => UnknownIntersectionResult
-}
-
-export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in arrayIndexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -299,10 +240,6 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
 	collapsibleKey?: keyof d["inner"]
-	reduce?: (
-		inner: d["inner"],
-		$: BaseScope
-	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
 	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
@@ -311,7 +248,6 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
 	intersectionIsOpen: boolean
-	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
@@ -324,20 +260,14 @@ export const compileObjectLiteral = (ctx: object): string => {
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
-		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
-		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
-	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
-		:	{}) &
-		// if the node is declared as reducible to a kind other than its own,
-		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
+	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true } : {})
 
 type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

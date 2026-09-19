@@ -1,4 +1,4 @@
-import { append, printable, throwParseError, unset, type Key } from "@ark/util"
+import { append, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { nodeOfKind, RootSchema } from "../kinds.ts"
 import {
@@ -11,9 +11,7 @@ import {
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { IntersectionContext, RootKind } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
+import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
 	traverseKey,
@@ -44,52 +42,6 @@ export declare namespace Prop {
 		intersectionIsOpen: true
 		childKind: RootKind
 	}
-}
-
-export const intersectProps = (
-	l: nodeOfKind<Prop.Kind>,
-	r: nodeOfKind<Prop.Kind>,
-	ctx: IntersectionContext
-): nodeOfKind<Prop.Kind> | Disjoint | null => {
-	if (l.key !== r.key) return null
-
-	const key = l.key
-	let value = intersectOrPipeNodes(l.value, r.value, ctx)
-	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
-	if (value instanceof Disjoint) {
-		if (kind === "optional") value = $ark.intrinsic.never.internal
-		else {
-			// if either operand was optional, the Disjoint has to be treated as optional
-			return value.withPrefixKey(
-				l.key,
-				l.required && r.required ? "required" : "optional"
-			)
-		}
-	}
-
-	if (kind === "required") {
-		return ctx.$.node("required", {
-			key,
-			value
-		})
-	}
-
-	const defaultIntersection =
-		l.hasDefault() ?
-			r.hasDefault() ?
-				l.default === r.default ?
-					l.default
-				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
-			:	l.default
-		: r.hasDefault() ? r.default
-		: unset
-
-	return ctx.$.node("optional", {
-		key,
-		value,
-		// unset is stripped during parsing
-		default: defaultIntersection
-	})
 }
 
 export abstract class BaseProp<
@@ -162,9 +114,3 @@ export abstract class BaseProp<
 		if (js.traversalKind === "Allows") js.return(true)
 	}
 }
-
-export const writeDefaultIntersectionMessage = (
-	lValue: unknown,
-	rValue: unknown
-): string =>
-	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`
