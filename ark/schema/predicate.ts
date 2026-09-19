@@ -10,12 +10,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.ts"
-import type { JsonSchema } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
 } from "./shared/registry.ts"
-import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -113,17 +111,6 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			`${this.compiledNegation} && ctx.currentErrorCount === errorCount`,
 			() => js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
 		)
-	}
-
-	reduceJsonSchema(
-		base: JsonSchema.Constrainable,
-		ctx: ToJsonSchema.Context
-	): JsonSchema {
-		return ctx.fallback.predicate({
-			code: "predicate",
-			base,
-			predicate: this.predicate
-		})
 	}
 }
 

@@ -5,9 +5,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
@@ -73,10 +71,6 @@ export class AfterNode extends BaseRange<After.Declaration> {
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
 	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
-
-	reduceJsonSchema(base: JsonSchema, ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.date({ code: "date", base, after: this.rule })
-	}
 }
 
 export const After = {

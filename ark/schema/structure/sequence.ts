@@ -31,9 +31,7 @@ import {
 	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
@@ -423,74 +421,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
-
-	reduceJsonSchema(
-		schema: JsonSchema.Array,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Array {
-		const isDraft07 = ctx.target === "draft-07"
-
-		if (this.prevariadic.length) {
-			const prefixSchemas = this.prevariadic.map(el => {
-				const valueSchema = el.node.toJsonSchemaRecurse(ctx)
-				if (el.kind === "defaultables") {
-					const value =
-						typeof el.default === "function" ? el.default() : el.default
-					valueSchema.default =
-						$ark.intrinsic.jsonData.allows(value) ?
-							value
-						:	ctx.fallback.defaultValue({
-								code: "defaultValue",
-								base: valueSchema,
-								value
-							})
-				}
-				return valueSchema
-			})
-
-			// draft-07 uses items as array, draft-2020-12 uses prefixItems
-			if (isDraft07) schema.items = prefixSchemas as JsonSchema.Branch[]
-			else schema.prefixItems = prefixSchemas
-		}
-
-		// by default JSON schema prefixElements are optional
-		// add minLength here if there are any required prefix elements
-		if (this.minLength) schema.minItems = this.minLength
-
-		if (this.variadic) {
-			const variadicItemSchema = this.variadic.toJsonSchemaRecurse(ctx)
-
-			// draft-07 uses additionalItems when items is an array (tuple),
-			// draft-2020-12 uses items
-			if (isDraft07 && this.prevariadic.length)
-				schema.additionalItems = variadicItemSchema
-			else schema.items = variadicItemSchema
-
-			// maxLength constraint will be enforced by items: false
-			// for non-variadic arrays
-			if (this.maxLength) schema.maxItems = this.maxLength
-
-			// postfix can only be present if variadic is present so nesting this is fine
-			if (this.postfix) {
-				const elements = this.postfix.map(el => el.toJsonSchemaRecurse(ctx))
-				schema = ctx.fallback.arrayPostfix({
-					code: "arrayPostfix",
-					base: schema as ToJsonSchema.VariadicArraySchema,
-					elements
-				})
-			}
-		} else {
-			// For fixed-length tuples without variadic elements
-			// draft-07 uses additionalItems: false, draft-2020-12 uses items: false
-			if (isDraft07) schema.additionalItems = false
-			else schema.items = false
-			// delete maxItems constraint that will have been added by the
-			// base intersection node to enforce fixed length
-			delete schema.maxItems
-		}
-
-		return schema
-	}
 }
 
 const defaultableMorphsCache: Record<string, Morph[] | undefined> = {}

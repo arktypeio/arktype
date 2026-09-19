@@ -7,9 +7,7 @@ import {
 	type nodeImplementationOf,
 	type RootKind
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -140,14 +138,6 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	get defaultShortDescription(): string {
 		return this.rawIn.meta.description ?? this.rawIn.defaultShortDescription
-	}
-
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.morph({
-			code: "morph",
-			base: this.rawIn.toJsonSchemaRecurse(ctx),
-			out: this.introspectableOut?.toJsonSchemaRecurse(ctx) ?? null
-		})
 	}
 
 	compile(js: NodeCompiler): void {

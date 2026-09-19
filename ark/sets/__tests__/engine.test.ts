@@ -33,6 +33,14 @@ contextualize(() => {
 		)
 	})
 
+	it("json schema generation requires it", () => {
+		withoutEngine(() =>
+			attest(() => rootSchema("string").toJsonSchema()).throws(
+				writeMissingSetEngineMessage("toJsonSchema")
+			)
+		)
+	})
+
 	it("parsing does not", () => {
 		withoutEngine(() => {
 			const T = rootSchema(["number", { unit: 1 }])

@@ -12,8 +12,6 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
@@ -117,10 +115,6 @@ Resolution: ${printable(resolution)}`)
 
 	get defaultShortDescription(): string {
 		return domainDescriptions.object
-	}
-
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return this.resolution.toJsonSchemaRecurse(ctx)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

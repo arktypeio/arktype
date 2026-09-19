@@ -27,9 +27,7 @@ import {
 	type UnknownAttachments,
 	type kindLeftOf
 } from "./shared/implement.ts"
-import type { JsonSchema } from "./shared/jsonSchema.ts"
 import { sets } from "./shared/sets.ts"
-import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
 
@@ -80,11 +78,6 @@ export abstract class InternalPrimitiveConstraint<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
-
-	abstract reduceJsonSchema(
-		base: JsonSchema.Constrainable,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))

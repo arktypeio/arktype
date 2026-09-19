@@ -7,12 +7,15 @@ console.log(
 )
 
 // strings that only appear in code that moved to arksets. if one of these
-// survives into a bundle of @ark/schema, the algebra has become reachable
-// from the schema language again and the seam has been breached.
+// survives into a bundle of @ark/schema, the algebra (or JSON Schema
+// generation, which rides on the same seam) has become reachable from the
+// schema language again and the seam has been breached.
 const algebraMarkers = [
 	"The intersection of two ordered unions is indeterminate",
 	"An unordered union of a type including a morph",
-	"Unexpectedly encountered multiple distinct intersection results"
+	"Unexpectedly encountered multiple distinct intersection results",
+	// the $defs key is written only when generating a schema with refs
+	"$defs"
 ]
 
 const bundle = async (entry: string) => {

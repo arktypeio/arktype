@@ -4,7 +4,6 @@ import {
 	flatMorph,
 	printable,
 	spliterate,
-	throwInternalError,
 	throwParseError,
 	type array,
 	type dict,
@@ -28,13 +27,11 @@ import {
 	type nodeImplementationOf,
 	type StructuralKind
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	traverseKey,
 	type InternalTraversal,
@@ -599,138 +596,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		return js
-	}
-
-	reduceJsonSchema(
-		schema: JsonSchema.Structure,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Structure {
-		switch (schema.type) {
-			case "object":
-				return this.reduceObjectJsonSchema(schema, ctx)
-			case "array":
-				const arraySchema =
-					this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
-				if (this.props.length || this.index) {
-					return ctx.fallback.arrayObject({
-						code: "arrayObject",
-						base: arraySchema,
-						object: this.reduceObjectJsonSchema({ type: "object" }, ctx)
-					})
-				}
-
-				return arraySchema
-
-			default:
-				return ToJsonSchema.throwInternalOperandError("structure", schema)
-		}
-	}
-
-	reduceObjectJsonSchema(
-		schema: JsonSchema.Object,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Object {
-		if (this.props.length) {
-			schema.properties = {}
-			for (const prop of this.props) {
-				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
-
-				if (typeof prop.key === "symbol") {
-					ctx.fallback.symbolKey({
-						code: "symbolKey",
-						base: schema,
-						key: prop.key,
-						value: valueSchema,
-						optional: prop.optional
-					})
-					continue
-				}
-
-				if (prop.hasDefault()) {
-					const value =
-						typeof prop.default === "function" ? prop.default() : prop.default
-					valueSchema.default =
-						$ark.intrinsic.jsonData.allows(value) ?
-							value
-						:	ctx.fallback.defaultValue({
-								code: "defaultValue",
-								base: valueSchema,
-								value
-							})
-				}
-
-				schema.properties![prop.key] = valueSchema
-			}
-			if (this.requiredKeys.length && schema.properties) {
-				schema.required = this.requiredKeys.filter(
-					(k): k is string => typeof k === "string" && k in schema.properties!
-				)
-			}
-		}
-
-		if (this.index) {
-			for (const index of this.index) {
-				const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
-
-				if (index.signature.equals($ark.intrinsic.string)) {
-					schema.additionalProperties = valueJsonSchema
-					continue
-				}
-
-				for (const keyBranch of index.signature.branches) {
-					if (!keyBranch.extends($ark.intrinsic.string)) {
-						schema = ctx.fallback.symbolKey({
-							code: "symbolKey",
-							base: schema,
-							key: null,
-							value: valueJsonSchema,
-							optional: false
-						})
-
-						continue
-					}
-
-					let keySchema: JsonSchema.String = { type: "string" }
-					if (keyBranch.hasKind("morph")) {
-						keySchema = ctx.fallback.morph({
-							code: "morph",
-							base: keyBranch.rawIn.toJsonSchemaRecurse(ctx),
-							out: keyBranch.rawOut.toJsonSchemaRecurse(ctx)
-						}) as never
-					}
-					if (!keyBranch.hasKind("intersection")) {
-						return throwInternalError(
-							`Unexpected index branch kind ${keyBranch.kind}.`
-						)
-					}
-
-					const { pattern } = keyBranch.inner
-
-					if (pattern) {
-						const keySchemaWithPattern = Object.assign(keySchema, {
-							pattern: pattern[0].rule
-						})
-
-						for (let i = 1; i < pattern.length; i++) {
-							keySchema = ctx.fallback.patternIntersection({
-								code: "patternIntersection",
-								base: keySchemaWithPattern,
-								pattern: pattern[i].rule
-							})
-						}
-
-						schema.patternProperties ??= {}
-						schema.patternProperties[keySchemaWithPattern.pattern] =
-							valueJsonSchema
-					}
-				}
-			}
-		}
-
-		if (this.undeclared && !schema.additionalProperties)
-			schema.additionalProperties = false
-
-		return schema
 	}
 }
 

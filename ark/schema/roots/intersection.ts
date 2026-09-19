@@ -36,8 +36,6 @@ import {
 	type RefinementKind,
 	type StructuralKind
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -273,17 +271,6 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	get defaultShortDescription(): string {
 		return this.basis?.defaultShortDescription ?? "present"
-	}
-
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return this.children.reduce<JsonSchema>(
-			// cast is required since TS doesn't know children have compatible schema prerequisites
-			(schema, child) =>
-				child.isBasis() ?
-					child.toJsonSchemaRecurse(ctx)
-				:	child.reduceJsonSchema(schema as never, ctx),
-			{}
-		)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

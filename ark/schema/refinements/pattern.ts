@@ -9,9 +9,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 
 export declare namespace Pattern {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
@@ -76,21 +74,6 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
-
-	reduceJsonSchema(
-		base: JsonSchema.String,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.String {
-		if (base.pattern) {
-			return ctx.fallback.patternIntersection({
-				code: "patternIntersection",
-				base: base as ToJsonSchema.StringSchemaWithPattern,
-				pattern: this.rule
-			})
-		}
-		base.pattern = this.rule
-		return base
-	}
 }
 
 export const Pattern = {

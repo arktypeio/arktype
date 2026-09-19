@@ -3,7 +3,6 @@ import {
 	domainDescriptions,
 	flatMorph,
 	groupBy,
-	hasKey,
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
@@ -29,13 +28,11 @@ import {
 	type UnionChildKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import {
 	Traversal,
 	type TraverseAllows,
@@ -244,37 +241,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			branch => branch.defaultShortDescription,
 			describeBranches
 		)
-	}
-
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		// special case to simplify { const: true } | { const: false }
-		// to the canonical JSON Schema representation { type: "boolean" }
-		if (
-			this.branchGroups.length === 1 &&
-			this.branchGroups[0].equals($ark.intrinsic.boolean)
-		)
-			return { type: "boolean" }
-
-		const jsonSchemaBranches = this.branchGroups.map(group =>
-			group.toJsonSchemaRecurse(ctx)
-		)
-
-		if (
-			jsonSchemaBranches.every(
-				(branch): branch is JsonSchema.Const =>
-					// iff all branches are pure unit values with no metadata,
-					// we can simplify the representation to an enum
-					Object.keys(branch).length === 1 && hasKey(branch, "const")
-			)
-		) {
-			return {
-				enum: jsonSchemaBranches.map(branch => branch.const)
-			}
-		}
-
-		return {
-			anyOf: jsonSchemaBranches
-		}
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

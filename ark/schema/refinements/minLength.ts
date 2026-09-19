@@ -4,9 +4,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
@@ -73,21 +71,6 @@ export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length >= this.rule
-
-	reduceJsonSchema(
-		schema: JsonSchema.LengthBoundable
-	): JsonSchema.LengthBoundable {
-		switch (schema.type) {
-			case "string":
-				schema.minLength = this.rule
-				return schema
-			case "array":
-				schema.minItems = this.rule
-				return schema
-			default:
-				return ToJsonSchema.throwInternalOperandError("minLength", schema)
-		}
-	}
 }
 
 export const MinLength = {

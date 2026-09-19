@@ -4,7 +4,6 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
@@ -66,12 +65,6 @@ export class MaxNode extends BaseRange<Max.Declaration> {
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
-
-	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
-		if (this.exclusive) schema.exclusiveMaximum = this.rule
-		else schema.maximum = this.rule
-		return schema
-	}
 }
 
 export const Max = {

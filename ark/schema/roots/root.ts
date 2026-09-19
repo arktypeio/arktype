@@ -1,6 +1,5 @@
 import {
 	arrayEquals,
-	flatMorph,
 	includes,
 	inferred,
 	omit,
@@ -9,7 +8,6 @@ import {
 	type Fn,
 	type array
 } from "@ark/util"
-import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
@@ -156,59 +154,8 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
-		const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
-			this.$.resolvedConfig.toJsonSchema,
-			opts
-		)
-
-		ctx.useRefs ||= this.isCyclic
-
-		// ensure $schema is the first key if present
-		const schema: JsonSchema =
-			typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
-
-		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
-
-		if (ctx.useRefs) {
-			const defs = flatMorph(this.references, (i, ref) =>
-				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
-					[ref.id, ref.toResolvedJsonSchema(ctx)]
-				:	[]
-			)
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			if (ctx.target === "draft-07")
-				Object.assign(schema, { definitions: defs })
-			else schema.$defs = defs
-		}
-
-		return schema
+		return sets("toJsonSchema").toJsonSchema(this, opts)
 	}
-
-	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
-		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
-			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
-		}
-
-		return this.toResolvedJsonSchema(ctx)
-	}
-
-	get alwaysExpandJsonSchema(): boolean {
-		return (
-			this.isBasis() ||
-			this.kind === "alias" ||
-			(this.hasKind("union") && this.isBoolean)
-		)
-	}
-
-	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		const result = this.innerToJsonSchema(ctx)
-
-		return Object.assign(result, this.metaJson)
-	}
-
-	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
