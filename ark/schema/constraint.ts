@@ -68,7 +68,7 @@ export abstract class BaseConstraint<
 	intersect<r extends BaseConstraint>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
-		return sets("intersect").intersect(this, r, this.$) as never
+		return sets().intersect(this, r, this.$) as never
 	}
 }
 

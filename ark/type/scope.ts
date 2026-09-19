@@ -1,3 +1,6 @@
+// every keyword module builds its scope through this one, so a deep import
+// of any of them installs the engine first too
+import "arksets"
 import {
 	$ark,
 	BaseScope,

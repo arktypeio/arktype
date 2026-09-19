@@ -148,8 +148,7 @@ export class GenericRoot<
 			"params",
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
-					// read before anything is parsed when a generic is the root
-					// scope's first use, so go through the bootstrapping accessor
+					// may be read before anything has been parsed
 					[param, intrinsic.unknown]
 				:	[param[0], this.$.parse(param[1])]
 			) as never

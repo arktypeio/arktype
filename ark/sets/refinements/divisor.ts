@@ -1,17 +1,16 @@
 import type { Divisor } from "@ark/schema"
-import { implementSets, type setImplementationOf } from "../implement.ts"
+import type { setImplementationOf } from "../implement.ts"
 
-export const divisor: setImplementationOf<Divisor.Declaration> =
-	implementSets<Divisor.Declaration>({
-		intersections: {
-			divisor: (l, r, ctx) =>
-				ctx.$.node("divisor", {
-					rule: Math.abs(
-						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-					)
-				})
-		}
-	})
+export const divisor: setImplementationOf<Divisor.Declaration> = {
+	intersections: {
+		divisor: (l, r, ctx) =>
+			ctx.$.node("divisor", {
+				rule: Math.abs(
+					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+				)
+			})
+	}
+}
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

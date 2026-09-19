@@ -23,7 +23,7 @@ import type { ToJsonSchema } from "./toJsonSchema.ts"
  * - parsed nodes are left unreduced
  * - unions compile without a discriminant
  * - operations that require a relational answer, and JSON Schema generation,
- *   throw {@link writeMissingSetEngineMessage}
+ *   throw {@link missingSetEngineMessage}
  */
 export interface SetEngine {
 	/** `l & r`, or a {@link Disjoint} explaining why the result is empty */
@@ -41,26 +41,15 @@ export interface SetEngine {
 	): BaseNode | Disjoint | undefined
 	/** Find a path by which the union's branches can be told apart, if any */
 	discriminate(node: Union.Node): Discriminant | null
-	/**
-	 * Generate a JSON Schema for a root node.
-	 *
-	 * Interchange is not algebra, but it ships in the same package, so it
-	 * rides on the same engine rather than warranting a second one.
-	 */
+	/** Generate a JSON Schema for a root node (interchange ships with the algebra) */
 	toJsonSchema(node: BaseRoot, opts: ToJsonSchema.Options): JsonSchema
 }
 
-/**
- * The installed {@link SetEngine}, or throw naming the operation that
- * required it.
- */
-export const sets = (operation: string): SetEngine =>
-	$ark.sets ?? throwParseError(writeMissingSetEngineMessage(operation))
+/** The installed {@link SetEngine}, or throw naming the import that provides one */
+export const sets = (): SetEngine =>
+	$ark.sets ?? throwParseError(missingSetEngineMessage)
 
-export const writeMissingSetEngineMessage = <operation extends string>(
-	operation: operation
-): writeMissingSetEngineMessage<operation> =>
-	`${operation} requires set algebra (import "arksets" to install it)`
+export const missingSetEngineMessage =
+	'set algebra is not installed (import "arksets" to install it)'
 
-export type writeMissingSetEngineMessage<operation extends string> =
-	`${operation} requires set algebra (import "arksets" to install it)`
+export type missingSetEngineMessage = typeof missingSetEngineMessage

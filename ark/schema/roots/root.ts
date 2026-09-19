@@ -154,7 +154,7 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
-		return sets("toJsonSchema").toJsonSchema(this, opts)
+		return sets().toJsonSchema(this, opts)
 	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
@@ -165,7 +165,7 @@ export abstract class BaseRoot<
 	}
 
 	rawIntersect(r: BaseRoot): BaseRoot {
-		return sets("intersect").intersect(this, r, this.$) as never
+		return sets().intersect(this, r, this.$) as never
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
@@ -429,7 +429,7 @@ export abstract class BaseRoot<
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
-		const result = sets("pipe").pipe(this, root, this.$)
+		const result = sets().pipe(this, root, this.$)
 		if (result instanceof Disjoint) return result.throw()
 		return result as BaseRoot
 	}
@@ -514,8 +514,8 @@ export abstract class BaseRoot<
 
 		const result =
 			io === "out" ?
-				sets("constrain").pipe(this, partialIntersection, this.$)
-			:	sets("constrain").intersect(this, partialIntersection, this.$)
+				sets().pipe(this, partialIntersection, this.$)
+			:	sets().intersect(this, partialIntersection, this.$)
 
 		if (result instanceof Disjoint) result.throw()
 

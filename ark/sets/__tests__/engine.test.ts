@@ -2,8 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	bootstrap,
-	rootSchema,
-	writeMissingSetEngineMessage
+	missingSetEngineMessage,
+	rootSchema
 } from "@ark/schema"
 import { setEngine } from "arksets"
 
@@ -28,7 +28,7 @@ contextualize(() => {
 	it("relational operations require it", () => {
 		withoutEngine(() =>
 			attest(() => rootSchema("string").and("number")).throws(
-				writeMissingSetEngineMessage("intersect")
+				missingSetEngineMessage
 			)
 		)
 	})
@@ -36,7 +36,7 @@ contextualize(() => {
 	it("json schema generation requires it", () => {
 		withoutEngine(() =>
 			attest(() => rootSchema("string").toJsonSchema()).throws(
-				writeMissingSetEngineMessage("toJsonSchema")
+				missingSetEngineMessage
 			)
 		)
 	})
@@ -46,6 +46,9 @@ contextualize(() => {
 			const T = rootSchema(["number", { unit: 1 }])
 			attest(T.kind).equals("union")
 			attest(T.expression).snap("number | 1")
+			attest(T.assertHasKind("union").discriminant).equals(null)
+			attest(T.allows(1)).equals(true)
+			attest(T.allows("x")).equals(false)
 		})
 		attest(rootSchema(["number", { unit: 1 }]).expression).snap("number")
 	})

@@ -24,70 +24,68 @@ import {
 } from "@ark/util"
 import {
 	defineRightwardIntersections,
-	implementSets,
 	type IntersectionContext,
 	type setImplementationOf
 } from "../implement.ts"
 import { intersectNodesRoot, intersectOrPipeNodes } from "../intersections.ts"
 
-export const union: setImplementationOf<Union.Declaration> =
-	implementSets<Union.Declaration>({
-		reduce: (inner, $) => {
-			const reducedBranches = reduceBranches(inner)
-			if (reducedBranches.length === 1) return reducedBranches[0]
+export const union: setImplementationOf<Union.Declaration> = {
+	reduce: (inner, $) => {
+		const reducedBranches = reduceBranches(inner)
+		if (reducedBranches.length === 1) return reducedBranches[0]
 
-			if (reducedBranches.length === inner.branches.length) return
+		if (reducedBranches.length === inner.branches.length) return
 
-			return $.node(
-				"union",
-				{
-					...inner,
-					branches: reducedBranches
-				},
-				{ prereduced: true }
+		return $.node(
+			"union",
+			{
+				...inner,
+				branches: reducedBranches
+			},
+			{ prereduced: true }
+		)
+	},
+	intersections: {
+		union: (l, r, ctx) => {
+			if (l.isNever !== r.isNever) {
+				// if exactly one operand is never, we can use it to discriminate based on presence
+				return Disjoint.init("presence", l, r)
+			}
+			let resultBranches: readonly Union.ChildNode[] | Disjoint
+			if (l.ordered) {
+				if (r.ordered) {
+					throwParseError(
+						writeOrderedIntersectionMessage(l.expression, r.expression)
+					)
+				}
+
+				resultBranches = intersectBranches(r.branches, l.branches, ctx)
+				if (resultBranches instanceof Disjoint) resultBranches.invert()
+			} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
+
+			if (resultBranches instanceof Disjoint) return resultBranches
+
+			return ctx.$.parseSchema(
+				l.ordered || r.ordered ?
+					{
+						branches: resultBranches,
+						ordered: true as const
+					}
+				:	{ branches: resultBranches }
 			)
 		},
-		intersections: {
-			union: (l, r, ctx) => {
-				if (l.isNever !== r.isNever) {
-					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.init("presence", l, r)
-				}
-				let resultBranches: readonly Union.ChildNode[] | Disjoint
-				if (l.ordered) {
-					if (r.ordered) {
-						throwParseError(
-							writeOrderedIntersectionMessage(l.expression, r.expression)
-						)
-					}
+		...defineRightwardIntersections("union", (l, r, ctx) => {
+			const branches = intersectBranches(l.branches, [r], ctx)
+			if (branches instanceof Disjoint) return branches
 
-					resultBranches = intersectBranches(r.branches, l.branches, ctx)
-					if (resultBranches instanceof Disjoint) resultBranches.invert()
-				} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
+			if (branches.length === 1) return branches[0]
 
-				if (resultBranches instanceof Disjoint) return resultBranches
-
-				return ctx.$.parseSchema(
-					l.ordered || r.ordered ?
-						{
-							branches: resultBranches,
-							ordered: true as const
-						}
-					:	{ branches: resultBranches }
-				)
-			},
-			...defineRightwardIntersections("union", (l, r, ctx) => {
-				const branches = intersectBranches(l.branches, [r], ctx)
-				if (branches instanceof Disjoint) return branches
-
-				if (branches.length === 1) return branches[0]
-
-				return ctx.$.parseSchema(
-					l.ordered ? { branches, ordered: true } : { branches }
-				)
-			})
-		}
-	})
+			return ctx.$.parseSchema(
+				l.ordered ? { branches, ordered: true } : { branches }
+			)
+		})
+	}
+}
 
 export const discriminate = (node: Union.Node): Discriminant | null => {
 	if (node.branches.length < 2) return null

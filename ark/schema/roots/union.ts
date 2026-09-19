@@ -202,8 +202,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		$ark.sets ? $ark.sets.discriminate(this) : undefined
 
 	get discriminant(): Discriminant | null {
-		// without an engine the union is simply compiled indiscriminated, so
-		// nothing is cached until one is installed
+		// without an engine the union compiles indiscriminated. the null isn't
+		// cached, so one installed later can still discriminate whatever has
+		// not yet been compiled
 		if (this._discriminant === undefined && $ark.sets)
 			this._discriminant = $ark.sets.discriminate(this)
 		return this._discriminant ?? null

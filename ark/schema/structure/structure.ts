@@ -1,6 +1,7 @@
 import {
 	append,
 	conflatenate,
+	conflatenateAll,
 	flatMorph,
 	printable,
 	spliterate,
@@ -117,7 +118,17 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: schema => schema,
+		normalize: schema => {
+			// rejected here rather than during reduction so that it doesn't
+			// depend on a set engine being installed
+			const seen: Record<Key, true | undefined> = Object.create(null)
+			for (const prop of conflatenateAll(schema.required, schema.optional)) {
+				if (prop.key in seen)
+					throwParseError(writeDuplicateKeyMessage(prop.key))
+				seen[prop.key] = true
+			}
+			return schema
+		},
 		applyConfig: (schema, config) => {
 			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
 				return {

@@ -344,16 +344,10 @@ const reduceSequenceJsonSchema = (
 	return schema
 }
 
-// required, optional and index are never folded directly: an intersection
-// folds its refinements and a structure folds its sequence
-export type JsonSchemaReducibleKind = RefinementKind | "sequence"
-
-// each reducer keeps the operand type its node's method declared (a numeric
-// schema for divisor, a string schema for pattern...). the fold that calls it
-// can't know which it holds, so the table is checked per kind here and widened
-// once at its boundary
+// each reducer keeps its own operand type; the table is widened once at its
+// boundary since the fold that calls it can't know which one it holds
 export const reduceJsonSchemaByKind: {
-	[kind in JsonSchemaReducibleKind]: (
+	[kind in RefinementKind]: (
 		node: nodeOfKind<kind>,
 		base: JsonSchema,
 		ctx: ToJsonSchema.Context
@@ -472,10 +466,9 @@ export const reduceJsonSchemaByKind: {
 			code: "predicate",
 			base,
 			predicate: node.predicate
-		}),
-	sequence: reduceSequenceJsonSchema
+		})
 } satisfies {
-	[kind in JsonSchemaReducibleKind]: (
+	[kind in RefinementKind]: (
 		node: nodeOfKind<kind>,
 		base: never,
 		ctx: ToJsonSchema.Context

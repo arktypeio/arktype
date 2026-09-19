@@ -7,53 +7,50 @@ import {
 import { flattenConstraints, intersectConstraints } from "../constraint.ts"
 import {
 	defineRightwardIntersections,
-	implementSets,
 	type IntersectionContext,
 	type setImplementationOf
 } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
 
-export const intersection: setImplementationOf<Intersection.Declaration> =
-	implementSets<Intersection.Declaration>({
-		// leverage reduction logic from intersection and identity to ensure initial
-		// parse result is reduced
-		reduce: (inner, $) =>
-			// we cast union out of the result here since that only occurs when intersecting two sequences
-			// that cannot occur when reducing a single intersection schema using unknown
-			intersectIntersections({}, inner, {
-				$,
-				invert: false,
-				pipe: false
-			}) as nodeOfKind<"intersection" | Intersection.BasisKind>,
-		intersections: {
-			intersection: (l, r, ctx) =>
-				intersectIntersections(l.inner, r.inner, ctx),
-			...defineRightwardIntersections("intersection", (l, r, ctx) => {
-				// if l is unknown, return r
-				if (l.children.length === 0) return r
+export const intersection: setImplementationOf<Intersection.Declaration> = {
+	// leverage reduction logic from intersection and identity to ensure initial
+	// parse result is reduced
+	reduce: (inner, $) =>
+		// we cast union out of the result here since that only occurs when intersecting two sequences
+		// that cannot occur when reducing a single intersection schema using unknown
+		intersectIntersections({}, inner, {
+			$,
+			invert: false,
+			pipe: false
+		}) as nodeOfKind<"intersection" | Intersection.BasisKind>,
+	intersections: {
+		intersection: (l, r, ctx) => intersectIntersections(l.inner, r.inner, ctx),
+		...defineRightwardIntersections("intersection", (l, r, ctx) => {
+			// if l is unknown, return r
+			if (l.children.length === 0) return r
 
-				const { domain, proto, ...lInnerConstraints } = l.inner
+			const { domain, proto, ...lInnerConstraints } = l.inner
 
-				const lBasis = proto ?? domain
+			const lBasis = proto ?? domain
 
-				const basis = lBasis ? intersectOrPipeNodes(lBasis, r, ctx) : r
+			const basis = lBasis ? intersectOrPipeNodes(lBasis, r, ctx) : r
 
-				return (
-					basis instanceof Disjoint ? basis
-					: l?.basis?.equals(basis) ?
-						// if the basis doesn't change, return the original intesection
-						l
-						// given we've already precluded l being unknown, the result must
-						// be an intersection with the new basis result integrated
-					:	l.$.node(
-							"intersection",
-							{ ...lInnerConstraints, [basis.kind]: basis },
-							{ prereduced: true }
-						)
-				)
-			})
-		}
-	})
+			return (
+				basis instanceof Disjoint ? basis
+				: l?.basis?.equals(basis) ?
+					// if the basis doesn't change, return the original intesection
+					l
+					// given we've already precluded l being unknown, the result must
+					// be an intersection with the new basis result integrated
+				:	l.$.node(
+						"intersection",
+						{ ...lInnerConstraints, [basis.kind]: basis },
+						{ prereduced: true }
+					)
+			)
+		})
+	}
+}
 
 export const intersectIntersections = (
 	l: Intersection.Inner,

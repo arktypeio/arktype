@@ -8,112 +8,104 @@ import {
 	type mutableInnerOfKind
 } from "@ark/schema"
 import { append, throwInternalError, throwParseError } from "@ark/util"
-import {
-	implementSets,
-	type IntersectionContext,
-	type setImplementationOf
-} from "../implement.ts"
+import type { IntersectionContext, setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
 
-export const sequence: setImplementationOf<Sequence.Declaration> =
-	implementSets<Sequence.Declaration>({
-		reduce: (raw, $) => {
-			let minVariadicLength = raw.minVariadicLength ?? 0
-			const prefix = raw.prefix?.slice() ?? []
-			const defaultables = raw.defaultables?.slice() ?? []
-			const optionals = raw.optionals?.slice() ?? []
-			const postfix = raw.postfix?.slice() ?? []
-			if (raw.variadic) {
-				// optional elements equivalent to the variadic parameter are redundant
-				while (optionals[optionals.length - 1]?.equals(raw.variadic))
-					optionals.pop()
+export const sequence: setImplementationOf<Sequence.Declaration> = {
+	reduce: (raw, $) => {
+		let minVariadicLength = raw.minVariadicLength ?? 0
+		const prefix = raw.prefix?.slice() ?? []
+		const defaultables = raw.defaultables?.slice() ?? []
+		const optionals = raw.optionals?.slice() ?? []
+		const postfix = raw.postfix?.slice() ?? []
+		if (raw.variadic) {
+			// optional elements equivalent to the variadic parameter are redundant
+			while (optionals[optionals.length - 1]?.equals(raw.variadic))
+				optionals.pop()
 
-				if (optionals.length === 0 && defaultables.length === 0) {
-					// If there are no optional, normalize prefix
-					// elements adjacent and equivalent to variadic:
-					// 		{ variadic: number, prefix: [string, number] }
-					// reduces to:
-					// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
-					while (prefix[prefix.length - 1]?.equals(raw.variadic)) {
-						prefix.pop()
-						minVariadicLength++
-					}
-				}
-				// Normalize postfix elements adjacent and equivalent to variadic:
-				// 		{ variadic: number, postfix: [number, number, 5] }
+			if (optionals.length === 0 && defaultables.length === 0) {
+				// If there are no optional, normalize prefix
+				// elements adjacent and equivalent to variadic:
+				// 		{ variadic: number, prefix: [string, number] }
 				// reduces to:
-				// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
-				while (postfix[0]?.equals(raw.variadic)) {
-					postfix.shift()
+				// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
+				while (prefix[prefix.length - 1]?.equals(raw.variadic)) {
+					prefix.pop()
 					minVariadicLength++
 				}
-			} else if (optionals.length === 0 && defaultables.length === 0) {
-				// if there's no variadic, optional or defaultable elements,
-				// postfix can just be appended to prefix
-				prefix.push(...postfix.splice(0))
 			}
-			if (
-				// if any variadic adjacent elements were moved to minVariadicLength
-				minVariadicLength !== raw.minVariadicLength ||
-				// or any postfix elements were moved to prefix
-				(raw.prefix && raw.prefix.length !== prefix.length)
-			) {
-				// reparse the reduced def
-				return $.node(
-					"sequence",
-					{
-						...raw,
-						// empty lists will be omitted during parsing
-						prefix,
-						defaultables,
-						optionals,
-						postfix,
-						minVariadicLength
-					},
-					{ prereduced: true }
-				)
+			// Normalize postfix elements adjacent and equivalent to variadic:
+			// 		{ variadic: number, postfix: [number, number, 5] }
+			// reduces to:
+			// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
+			while (postfix[0]?.equals(raw.variadic)) {
+				postfix.shift()
+				minVariadicLength++
 			}
-		},
-		intersections: {
-			sequence: (l, r, ctx) => {
-				const rootState = _intersectSequences({
-					l: l.tuple,
-					r: r.tuple,
-					disjoint: new Disjoint(),
-					result: [],
-					fixedVariants: [],
-					ctx
-				})
-
-				const viableBranches =
-					rootState.disjoint.length === 0 ?
-						[rootState, ...rootState.fixedVariants]
-					:	rootState.fixedVariants
-
-				return (
-					viableBranches.length === 0 ? rootState.disjoint!
-					: viableBranches.length === 1 ?
-						ctx.$.node(
-							"sequence",
-							sequenceTupleToInner(viableBranches[0].result)
-						)
-					:	ctx.$.node(
-							"union",
-							viableBranches.map(state => ({
-								proto: Array,
-								sequence: sequenceTupleToInner(state.result)
-							}))
-						)
-				)
-			}
-
-			// exactLength, minLength, and maxLength don't need to be defined
-			// here since impliedSiblings guarantees they will be added
-			// directly to the IntersectionNode parent of the SequenceNode
-			// they exist on
+		} else if (optionals.length === 0 && defaultables.length === 0) {
+			// if there's no variadic, optional or defaultable elements,
+			// postfix can just be appended to prefix
+			prefix.push(...postfix.splice(0))
 		}
-	})
+		if (
+			// if any variadic adjacent elements were moved to minVariadicLength
+			minVariadicLength !== raw.minVariadicLength ||
+			// or any postfix elements were moved to prefix
+			(raw.prefix && raw.prefix.length !== prefix.length)
+		) {
+			// reparse the reduced def
+			return $.node(
+				"sequence",
+				{
+					...raw,
+					// empty lists will be omitted during parsing
+					prefix,
+					defaultables,
+					optionals,
+					postfix,
+					minVariadicLength
+				},
+				{ prereduced: true }
+			)
+		}
+	},
+	intersections: {
+		sequence: (l, r, ctx) => {
+			const rootState = _intersectSequences({
+				l: l.tuple,
+				r: r.tuple,
+				disjoint: new Disjoint(),
+				result: [],
+				fixedVariants: [],
+				ctx
+			})
+
+			const viableBranches =
+				rootState.disjoint.length === 0 ?
+					[rootState, ...rootState.fixedVariants]
+				:	rootState.fixedVariants
+
+			return (
+				viableBranches.length === 0 ? rootState.disjoint!
+				: viableBranches.length === 1 ?
+					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+				:	ctx.$.node(
+						"union",
+						viableBranches.map(state => ({
+							proto: Array,
+							sequence: sequenceTupleToInner(state.result)
+						}))
+					)
+			)
+		}
+
+		// exactLength, minLength, and maxLength don't need to be defined
+		// here since impliedSiblings guarantees they will be added
+		// directly to the IntersectionNode parent of the SequenceNode
+		// they exist on
+	}
+}
 
 const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
 	tuple.reduce<mutableInnerOfKind<"sequence">>((result, element) => {

@@ -95,10 +95,6 @@ export interface UnknownSetImplementation {
 	reduce?: (inner: any, $: BaseScope) => BaseNode | Disjoint | undefined
 }
 
-export const implementSets = <d extends BaseNodeDeclaration = never>(
-	_: setImplementationOf<d>
-): setImplementationOf<d> => _
-
 export const defineRightwardIntersections = <kind extends RootKind>(
 	kind: kind,
 	implementation: RootIntersection<kind, schemaKindRightOf<kind>>
