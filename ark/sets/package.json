@@ -1,6 +1,6 @@
 {
 	"name": "arksets",
-	"description": "Set algebra for arktype schemas: intersection, reduction and discrimination",
+	"description": "Set algebra for arktype schemas: intersection, reduction, discrimination and JSON Schema generation",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
