@@ -27,6 +27,15 @@ contextualize(() => {
 		})
 	})
 
+	it("merges a narrowed index signature with a declared key", () => {
+		const L = type({ a: "number", "[string]": "number" })
+		const R = type({ a: "number", b: "number", "+": "reject" })
+		attest(L.and(R).expression).snap(
+			"{ a: number, b: number, + (undeclared): reject }"
+		)
+		attest(R.and(L).expression).equals(L.and(R).expression)
+	})
+
 	describe("traversal", () => {
 		const getExtraneousB = () => ({ a: "ok", b: "why?" })
 
