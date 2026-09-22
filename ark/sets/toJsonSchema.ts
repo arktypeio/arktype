@@ -1,16 +1,17 @@
 import {
 	$ark,
-	ToJsonSchema,
 	mergeToJsonSchemaConfigs,
 	type BaseRoot,
+	type ConstraintKind,
 	type JsonSchema,
 	type RefinementKind,
 	type RootKind,
 	type Sequence,
 	type Structure,
+	type ToJsonSchema,
 	type nodeOfKind
 } from "@ark/schema"
-import { flatMorph, hasKey, throwInternalError } from "@ark/util"
+import { flatMorph, hasKey, printable, throwInternalError } from "@ark/util"
 
 export const toJsonSchema = (
 	node: BaseRoot,
@@ -61,7 +62,7 @@ export const alwaysExpandJsonSchema = (node: BaseRoot): boolean =>
 	node.kind === "alias" ||
 	(node.hasKind("union") && node.isBoolean)
 
-export const toResolvedJsonSchema = (
+const toResolvedJsonSchema = (
 	node: BaseRoot,
 	ctx: ToJsonSchema.Context
 ): JsonSchema => {
@@ -70,7 +71,24 @@ export const toResolvedJsonSchema = (
 	return Object.assign(result, node.metaJson)
 }
 
-export const innerToJsonSchemaByKind: {
+// boolean's two unit branches render as one { type: "boolean" }
+const branchGroups = (node: nodeOfKind<"union">): BaseRoot[] => {
+	const groups: BaseRoot[] = []
+	let firstBooleanIndex = -1
+	for (const branch of node.branches) {
+		if (branch.hasKind("unit") && branch.domain === "boolean") {
+			if (firstBooleanIndex === -1) {
+				firstBooleanIndex = groups.length
+				groups.push(branch)
+			} else groups[firstBooleanIndex] = $ark.intrinsic.boolean
+			continue
+		}
+		groups.push(branch)
+	}
+	return groups as never
+}
+
+const innerToJsonSchemaByKind: {
 	[kind in RootKind]: (
 		node: nodeOfKind<kind>,
 		ctx: ToJsonSchema.Context
@@ -78,15 +96,13 @@ export const innerToJsonSchemaByKind: {
 } = {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
+		const groups = branchGroups(node)
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
-		if (
-			node.branchGroups.length === 1 &&
-			node.branchGroups[0].equals($ark.intrinsic.boolean)
-		)
+		if (groups.length === 1 && groups[0].equals($ark.intrinsic.boolean))
 			return { type: "boolean" }
 
-		const jsonSchemaBranches = node.branchGroups.map(group =>
+		const jsonSchemaBranches = groups.map(group =>
 			toJsonSchemaRecurse(group, ctx)
 		)
 
@@ -344,16 +360,38 @@ const reduceSequenceJsonSchema = (
 	return schema
 }
 
-// each reducer keeps its own operand type; the table is widened once at its
-// boundary since the fold that calls it can't know which one it holds
-export const reduceJsonSchemaByKind: {
+// the schema each refinement folds into. only an intersection folds its
+// children, and it can't know which one it holds, so the cast stays at that call
+type JsonSchemaOperandByKind = {
+	pattern: JsonSchema.String
+	divisor: JsonSchema.Numeric
+	exactLength: JsonSchema.LengthBoundable
+	max: JsonSchema.Numeric
+	min: JsonSchema.Numeric
+	maxLength: JsonSchema.LengthBoundable
+	minLength: JsonSchema.LengthBoundable
+	before: JsonSchema
+	after: JsonSchema
+	structure: JsonSchema.Structure
+	predicate: JsonSchema.Constrainable
+}
+
+const throwInternalOperandError = (
+	kind: ConstraintKind,
+	schema: JsonSchema
+): never =>
+	throwInternalError(
+		`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
+	)
+
+const reduceJsonSchemaByKind: {
 	[kind in RefinementKind]: (
 		node: nodeOfKind<kind>,
-		base: JsonSchema,
+		schema: JsonSchemaOperandByKind[kind],
 		ctx: ToJsonSchema.Context
 	) => JsonSchema
 } = {
-	pattern: (node, base: JsonSchema.String, ctx): JsonSchema.String => {
+	pattern: (node, base, ctx) => {
 		if (base.pattern) {
 			return ctx.fallback.patternIntersection({
 				code: "patternIntersection",
@@ -364,7 +402,7 @@ export const reduceJsonSchemaByKind: {
 		base.pattern = node.rule
 		return base
 	},
-	divisor: (node, schema: JsonSchema.Numeric): JsonSchema.Numeric => {
+	divisor: (node, schema) => {
 		schema.type = "integer"
 
 		if (node.rule === 1) return schema
@@ -373,10 +411,7 @@ export const reduceJsonSchemaByKind: {
 
 		return schema
 	},
-	exactLength: (
-		node,
-		schema: JsonSchema.LengthBoundable
-	): JsonSchema.LengthBoundable => {
+	exactLength: (node, schema) => {
 		switch (schema.type) {
 			case "string":
 				schema.minLength = node.rule
@@ -387,23 +422,20 @@ export const reduceJsonSchemaByKind: {
 				schema.maxItems = node.rule
 				return schema
 			default:
-				return ToJsonSchema.throwInternalOperandError("exactLength", schema)
+				return throwInternalOperandError("exactLength", schema)
 		}
 	},
-	max: (node, schema: JsonSchema.Numeric): JsonSchema.Numeric => {
+	max: (node, schema) => {
 		if (node.exclusive) schema.exclusiveMaximum = node.rule
 		else schema.maximum = node.rule
 		return schema
 	},
-	min: (node, schema: JsonSchema.Numeric): JsonSchema.Numeric => {
+	min: (node, schema) => {
 		if (node.exclusive) schema.exclusiveMinimum = node.rule
 		else schema.minimum = node.rule
 		return schema
 	},
-	maxLength: (
-		node,
-		schema: JsonSchema.LengthBoundable
-	): JsonSchema.LengthBoundable => {
+	maxLength: (node, schema) => {
 		switch (schema.type) {
 			case "string":
 				schema.maxLength = node.rule
@@ -412,13 +444,10 @@ export const reduceJsonSchemaByKind: {
 				schema.maxItems = node.rule
 				return schema
 			default:
-				return ToJsonSchema.throwInternalOperandError("maxLength", schema)
+				return throwInternalOperandError("maxLength", schema)
 		}
 	},
-	minLength: (
-		node,
-		schema: JsonSchema.LengthBoundable
-	): JsonSchema.LengthBoundable => {
+	minLength: (node, schema) => {
 		switch (schema.type) {
 			case "string":
 				schema.minLength = node.rule
@@ -427,18 +456,14 @@ export const reduceJsonSchemaByKind: {
 				schema.minItems = node.rule
 				return schema
 			default:
-				return ToJsonSchema.throwInternalOperandError("minLength", schema)
+				return throwInternalOperandError("minLength", schema)
 		}
 	},
 	before: (node, base, ctx) =>
 		ctx.fallback.date({ code: "date", base, before: node.rule }),
 	after: (node, base, ctx) =>
 		ctx.fallback.date({ code: "date", base, after: node.rule }),
-	structure: (
-		node,
-		schema: JsonSchema.Structure,
-		ctx
-	): JsonSchema.Structure => {
+	structure: (node, schema, ctx) => {
 		switch (schema.type) {
 			case "object":
 				return reduceObjectJsonSchema(node, schema, ctx)
@@ -458,19 +483,13 @@ export const reduceJsonSchemaByKind: {
 				return arraySchema
 
 			default:
-				return ToJsonSchema.throwInternalOperandError("structure", schema)
+				return throwInternalOperandError("structure", schema)
 		}
 	},
-	predicate: (node, base: JsonSchema.Constrainable, ctx): JsonSchema =>
+	predicate: (node, base, ctx) =>
 		ctx.fallback.predicate({
 			code: "predicate",
 			base,
 			predicate: node.predicate
 		})
-} satisfies {
-	[kind in RefinementKind]: (
-		node: nodeOfKind<kind>,
-		base: never,
-		ctx: ToJsonSchema.Context
-	) => JsonSchema
-} as never
+}
