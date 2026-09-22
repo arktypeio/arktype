@@ -16,13 +16,10 @@ import {
 	type schemaKindRightOf
 } from "@ark/schema"
 
-export interface InternalIntersectionOptions {
-	pipe: boolean
-}
-
-export interface IntersectionContext extends InternalIntersectionOptions {
+export interface IntersectionContext {
 	$: BaseScope
 	invert: boolean
+	pipe: boolean
 }
 
 export type ConstraintIntersection<

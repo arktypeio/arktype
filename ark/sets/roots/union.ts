@@ -3,8 +3,6 @@ import {
 	compileLiteralPropAccess,
 	type BaseRoot,
 	type BaseScope,
-	type CaseContext,
-	type CaseDiscriminant,
 	type CaseKey,
 	type Discriminant,
 	type DiscriminantKind,
@@ -13,7 +11,8 @@ import {
 	type Domain,
 	type Morph,
 	type Union,
-	type Unit
+	type Unit,
+	type nodeOfKind
 } from "@ark/schema"
 import {
 	appendUnique,
@@ -549,6 +548,13 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 		)
 	}
 }
+
+export type CaseContext = {
+	branchIndices: number[]
+	condition: nodeOfKind<DiscriminantKind> | Domain.Enumerable
+}
+
+export type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
 
 type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: PropertyKey[]

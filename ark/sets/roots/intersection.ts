@@ -52,7 +52,7 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 	}
 }
 
-export const intersectIntersections = (
+const intersectIntersections = (
 	l: Intersection.Inner,
 	r: Intersection.Inner,
 	ctx: IntersectionContext
