@@ -1,7 +1,5 @@
 import type { merge, show } from "@ark/util"
 import type { UnknownErrorConfigs } from "../config.ts"
-import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
-import type { Disjoint } from "./disjoint.ts"
 import type { ArkErrors } from "./errors.ts"
 import type { NarrowedAttachments, NodeKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
@@ -112,7 +110,3 @@ export interface BaseNodeDeclaration {
 	childKind: NodeKind
 	errorContext: BaseErrorContext | null
 }
-
-export type ownIntersectionResult<d extends BaseNodeDeclaration> =
-	| nodeOfKind<reducibleKindOf<d["kind"]>>
-	| Disjoint

@@ -110,13 +110,6 @@ type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
 export type kindOrRightOf<kind extends NodeKind> = kind | kindRightOf<kind>
 
-export type kindLeftOf<kind extends NodeKind> = Exclude<
-	NodeKind,
-	kindOrRightOf<kind>
->
-
-export type kindOrLeftOf<kind extends NodeKind> = kind | kindLeftOf<kind>
-
 type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
 	remaining extends (
 		readonly [infer head extends NodeKind, ...infer tail extends NodeKind[]]

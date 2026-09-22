@@ -14,7 +14,6 @@ import type {
 } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
 import type { NodeParseContext } from "./parse.ts"
-import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -24,8 +23,7 @@ import {
 	compileObjectLiteral,
 	type ConstraintKind,
 	type StructuralKind,
-	type UnknownAttachments,
-	type kindLeftOf
+	type UnknownAttachments
 } from "./shared/implement.ts"
 import { sets } from "./shared/sets.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
@@ -35,8 +33,6 @@ export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {
 		kind: ConstraintKind
 	}
-
-	export type ReductionResult = BaseRoot | Disjoint | Intersection.Inner.mutable
 
 	export interface Attachments {
 		impliedBasis: BaseRoot | null
@@ -130,13 +126,6 @@ export const constraintKeyParser =
 		if (child.isRoot()) return
 		return (child.hasOpenIntersection() ? [child] : child) as never
 	}
-
-export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
-	kindLeftOf<kind>
-
-export type constraintKindOrLeftOf<kind extends ConstraintKind> =
-	| kind
-	| constraintKindLeftOf<kind>
 
 export type intersectConstraintKinds<
 	l extends ConstraintKind,
