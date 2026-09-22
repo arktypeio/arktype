@@ -179,23 +179,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		n.rawIn.hasKind("unit")
 	)
 
-	// eager when an engine is installed so that an indiscriminable morph union
-	// still throws at parse time; otherwise left for the getter
-	private _discriminant: Discriminant | null | undefined =
-		$ark.sets ? $ark.sets.discriminate(this) : undefined
-
-	get discriminant(): Discriminant | null {
-		// without an engine the union compiles indiscriminated. the null isn't
-		// cached, so one installed later can still discriminate whatever has
-		// not yet been compiled
-		if (this._discriminant === undefined && $ark.sets)
-			this._discriminant = $ark.sets.discriminate(this)
-		return this._discriminant ?? null
-	}
-
-	get discriminantJson(): JsonStructure | null {
-		return this.discriminant ? discriminantToJson(this.discriminant) : null
-	}
+	// without an engine the union compiles indiscriminated
+	discriminant: Discriminant | null = $ark.sets?.discriminate(this) ?? null
+	discriminantJson: JsonStructure | null =
+		this.discriminant ? discriminantToJson(this.discriminant) : null
 
 	expression: string = this.distribute(
 		n => n.nestableExpression,

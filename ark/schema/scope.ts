@@ -304,8 +304,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
-		if (!constructingRootSchemaScope) bootstrap()
-
 		this.config = mergeConfigs($ark.config, config)
 
 		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
@@ -342,7 +340,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 		}
 
-		if (!constructingRootSchemaScope) cacheUnknownUnion(this)
+		if (!constructingRootSchemaScope) {
+			bootstrap()
+			cacheUnknownUnion(this)
+		}
 
 		this.intrinsic =
 			$ark.intrinsic ?
