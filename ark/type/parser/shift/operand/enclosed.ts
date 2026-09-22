@@ -1,3 +1,5 @@
+// the parser parses at load, so a deep import of it installs the engine first too
+import "arksets"
 import { rootSchema } from "@ark/schema"
 import {
 	Backslash,
