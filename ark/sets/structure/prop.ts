@@ -1,6 +1,14 @@
-import { $ark, Disjoint, type Prop, type nodeOfKind } from "@ark/schema"
+import {
+	$ark,
+	Disjoint,
+	intrinsic,
+	type Optional,
+	type Prop,
+	type Required,
+	type nodeOfKind
+} from "@ark/schema"
 import { printable, throwParseError, unset } from "@ark/util"
-import type { IntersectionContext } from "../implement.ts"
+import type { IntersectionContext, setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
 
 export const intersectProps = (
@@ -54,3 +62,27 @@ export const writeDefaultIntersectionMessage = (
 	rValue: unknown
 ): string =>
 	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`
+
+export const required: setImplementationOf<Required.Declaration> = {
+	intersections: {
+		required: intersectProps,
+		optional: intersectProps
+	}
+}
+
+export const optional: setImplementationOf<Optional.Declaration> = {
+	reduce: (inner, $) => {
+		if ($.resolvedConfig.exactOptionalPropertyTypes === false) {
+			if (!inner.value.allows(undefined)) {
+				return $.node(
+					"optional",
+					{ ...inner, value: inner.value.or(intrinsic.undefined) },
+					{ prereduced: true }
+				)
+			}
+		}
+	},
+	intersections: {
+		optional: intersectProps
+	}
+}
