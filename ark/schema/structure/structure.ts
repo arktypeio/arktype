@@ -119,8 +119,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		kind: "structure",
 		hasAssociatedError: false,
 		normalize: schema => {
-			// rejected here rather than during reduction so that it doesn't
-			// depend on a set engine being installed
+			// duplicate keys are a normalization error, so the check holds with no
+			// set engine installed
 			const seen: Record<Key, true | undefined> = Object.create(null)
 			for (const prop of conflatenateAll(schema.required, schema.optional)) {
 				if (prop.key in seen)

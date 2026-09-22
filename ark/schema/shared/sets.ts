@@ -10,20 +10,14 @@ import { $ark } from "./registry.ts"
 import type { ToJsonSchema } from "./toJsonSchema.ts"
 
 /**
- * The relational half of the schema language.
+ * The relational half of the schema language: how two sets relate, rather
+ * than what one contains. Routed through this table instead of the nodes so
+ * that an artifact which never compares two types never ships the algebra.
  *
- * A node describes a set. Everything that reasons about the relationship
- * between two sets- intersection, reduction to canonical form, discrimination
- * of a union's branches- is routed through this interface rather than living
- * on the nodes themselves, so that an artifact which never compares two types
- * never ships the algebra.
- *
- * `arksets` installs an implementation on import. If it is absent:
- *
- * - parsed nodes are left unreduced
- * - unions compile without a discriminant
- * - operations that require a relational answer, and JSON Schema generation,
- *   throw {@link missingSetEngineMessage}
+ * `arksets` installs an implementation on import. Without one, parsed nodes
+ * stay unreduced, unions compile indiscriminated, and operations that need a
+ * relational answer (JSON Schema generation included) throw
+ * {@link missingSetEngineMessage}.
  */
 export interface SetEngine {
 	/** `l & r`, or a {@link Disjoint} explaining why the result is empty */
