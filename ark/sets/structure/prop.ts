@@ -1,7 +1,6 @@
 import {
 	$ark,
 	Disjoint,
-	intrinsic,
 	type Optional,
 	type Prop,
 	type Required,
@@ -76,7 +75,7 @@ export const optional: setImplementationOf<Optional.Declaration> = {
 			if (!inner.value.allows(undefined)) {
 				return $.node(
 					"optional",
-					{ ...inner, value: inner.value.or(intrinsic.undefined) },
+					{ ...inner, value: inner.value.or($ark.intrinsic.undefined) },
 					{ prereduced: true }
 				)
 			}

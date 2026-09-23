@@ -341,6 +341,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 
 		if (!constructingRootSchemaScope) {
+			// a scope with nothing to parse may still be unbootstrapped here, and
+			// doing it from inside the unknown union's parse would build the union
+			// twice
 			bootstrap()
 			cacheUnknownUnion(this)
 		}
@@ -586,8 +589,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 	protected createParseContext<input extends BaseParseContextInput>(
 		input: input
 	): input & AttachedParseContext {
-		// the root scope is constructed on import, so unlike every other scope
-		// it can reach its first parse unbootstrapped
+		// any parse may be the process's first, so the shared nodes and
+		// intrinsics take their ids ahead of the one registered here
 		bootstrap()
 		const id = input.id ?? registerNodeId(input.prefix)
 		return (nodesByRegisteredId[id] = Object.assign(input, {

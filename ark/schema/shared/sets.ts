@@ -16,7 +16,7 @@ import type { ToJsonSchema } from "./toJsonSchema.ts"
  *
  * `arksets` installs an implementation on import. Without one, parsed nodes
  * stay unreduced, unions compile indiscriminated, and operations that need a
- * relational answer (JSON Schema generation included) throw
+ * relational answer, and JSON Schema generation, which ships with it, throw
  * {@link missingSetEngineMessage}.
  */
 export interface SetEngine {

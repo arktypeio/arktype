@@ -85,7 +85,7 @@ const branchGroups = (node: nodeOfKind<"union">): BaseRoot[] => {
 		}
 		groups.push(branch)
 	}
-	return groups as never
+	return groups
 }
 
 const innerToJsonSchemaByKind: {

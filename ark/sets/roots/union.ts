@@ -549,12 +549,12 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	}
 }
 
-export type CaseContext = {
+type CaseContext = {
 	branchIndices: number[]
 	condition: nodeOfKind<DiscriminantKind> | Domain.Enumerable
 }
 
-export type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
+type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
 
 type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: PropertyKey[]
