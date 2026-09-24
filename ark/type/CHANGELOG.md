@@ -1,5 +1,46 @@
 # arktype
 
+## 2.2.5
+
+### Preserve escaped backslashes in regex literals
+
+Within a regex literal, `\\` is now kept verbatim as an escaped backslash rather than collapsed to a single `\`, which silently changed the meaning of the pattern:
+
+```ts
+// previously parsed as /\d/, matching a digit
+// now matches a literal backslash followed by "d"
+const T = type("/\\\\d/")
+```
+
+String literals are unaffected. If a definition relied on the old behavior, write the intended escape directly (e.g. `"/\\d/"` for a digit). Thanks to @spokodev.
+
+### Fix recursive discriminated unions referenced from a `Record`
+
+A cyclic alias referenced through `Record<string, ...>` could cause valid values to be rejected, e.g. an array branch failing with `must be an array (was object)`. Bootstrapping alias references no longer overwrites references that were already resolved. This was a regression introduced in 2.2.2. Thanks to @xianjianlf2.
+
+### Prevent a crash validating unions of object arrays
+
+Inside a union branch, array validation now stops at the first failing element instead of continuing to traverse elements whose basis has already failed, which could throw rather than return an error. Thanks to @xianjianlf2.
+
+### Merge index-derived props with a declared key of the same name
+
+Intersecting a structure with an index signature and one that rejects undeclared keys could produce a node with a duplicate key:
+
+```ts
+// previously { a: number, a: number, b: number, + (undeclared): reject }
+type({ a: "number", "[string]": "number" }).and({
+	a: "number",
+	b: "number",
+	"+": "reject"
+})
+```
+
+Props derived from the index signature are now intersected with any declared prop of the same key, and the result is the same in either operand order.
+
+### Preserve parameter labels when a `type.fn` implementation annotates an optional parameter
+
+Annotating an optional parameter, as in `type.fn("number?")((n?: number) => n)`, previously dropped every parameter label from the inferred signature. It now infers `(n?: number | undefined) => number | undefined`. Thanks to @aswinsvijay.
+
 ## 2.2.4
 
 ### Default a property to an empty array or object in string syntax
