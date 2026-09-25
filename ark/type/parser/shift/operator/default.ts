@@ -245,10 +245,7 @@ type inferUnenclosedElement<token extends string> =
 	: token extends "undefined" ? undefined
 	: token extends "true" ? true
 	: token extends "false" ? false
-	: token extends NumberLiteral<infer n> ?
-		number extends n ?
-			never
-		:	n
+	: token extends NumberLiteral<infer n> ? n
 	: token extends BigintLiteral<infer b> ?
 		bigint extends b ?
 			never
@@ -256,24 +253,12 @@ type inferUnenclosedElement<token extends string> =
 	:	never
 
 type parseUnitElement<unscanned extends string> =
-	unscanned extends (
-		`${infer start extends EnclosingLiteralStartToken}${infer next}`
-	) ?
-		Scanner.shiftUntilEscapable<
-			next,
-			EnclosingLiteralTokens[start],
-			""
-		> extends (
-			Scanner.shiftResult<infer scanned extends string, infer nextUnscanned>
-		) ?
-			nextUnscanned extends `${EnclosingLiteralTokens[start]}${infer rest}` ?
-				inferEnclosedElement<start, scanned> extends infer value ?
-					[value] extends [never] ?
-						FailedUnitParse
-					:	ParsedUnitElement<value, rest>
-				:	FailedUnitParse
-			:	FailedUnitParse
-		:	FailedUnitParse
+	// `d'`/`d"` must be matched before a single quote. A combined infer
+	// treats the leading `d` as its own token and drops the date.
+	unscanned extends `d'${infer next}` ? parseEnclosedUnitElement<"d'", next>
+	: unscanned extends `d"${infer next}` ? parseEnclosedUnitElement<'d"', next>
+	: unscanned extends `${infer start extends "'" | '"'}${infer next}` ?
+		parseEnclosedUnitElement<start, next>
 	: Scanner.shiftUntil<unscanned, "," | "]" | " " | "\n" | "\t"> extends (
 		Scanner.shiftResult<infer token extends string, infer rest>
 	) ?
@@ -281,6 +266,22 @@ type parseUnitElement<unscanned extends string> =
 			[value] extends [never] ?
 				FailedUnitParse
 			:	ParsedUnitElement<value, rest>
+		:	FailedUnitParse
+	:	FailedUnitParse
+
+type parseEnclosedUnitElement<
+	start extends EnclosingLiteralStartToken,
+	next extends string
+> =
+	Scanner.shiftUntilEscapable<next, EnclosingLiteralTokens[start], ""> extends (
+		Scanner.shiftResult<infer scanned extends string, infer nextUnscanned>
+	) ?
+		nextUnscanned extends `${EnclosingLiteralTokens[start]}${infer rest}` ?
+			inferEnclosedElement<start, scanned> extends infer value ?
+				[value] extends [never] ?
+					FailedUnitParse
+				:	ParsedUnitElement<value, rest>
+			:	FailedUnitParse
 		:	FailedUnitParse
 	:	FailedUnitParse
 

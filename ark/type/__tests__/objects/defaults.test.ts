@@ -723,6 +723,25 @@ contextualize(() => {
 				.type.errors(writeNonLiteralDefaultMessage("[1]x"))
 		})
 
+		it("array default accepts date elements", () => {
+			const single = type({ values: "Date[] = [d'2020-01-01']" })
+			const double = type({ values: 'Date[] = [d"2020-01-01"]' })
+			attest(single.t).type.toString.snap("{ values: Default<Date[], [Date]> }")
+			attest(double.t).type.toString.snap("{ values: Default<Date[], [Date]> }")
+			attest(single.assert({}).values[0].toISOString()).equals(
+				"2020-01-01T00:00:00.000Z"
+			)
+			attest(double.assert({}).values[0].toISOString()).equals(
+				"2020-01-01T00:00:00.000Z"
+			)
+		})
+
+		it("array default accepts a number that is not an exact literal", () => {
+			const T = type({ values: "number[] = [9007199254740993]" })
+			attest(T.t).type.toString.snap("{ values: Default<number[], [number]> }")
+			attest(T.assert({}).values).equals([9007199254740992])
+		})
+
 		it("empty object default via string syntax", () => {
 			const O = type({ meta: "object = {}" })
 
