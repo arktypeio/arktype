@@ -597,6 +597,111 @@ contextualize(() => {
 				.type.errors("Default value [] must be assignable to number")
 		})
 
+		it("non-empty array default via string syntax", () => {
+			const Hosts = type({
+				HOSTS: "string[] = ['localhost']"
+			})
+
+			attest(Hosts.t).type.toString.snap(
+				'{ HOSTS: Default<string[], ["localhost"]> }'
+			)
+			attest<{ HOSTS?: string[] }>(Hosts.inferIn)
+			attest<{ HOSTS: string[] }>(Hosts.infer)
+
+			attest(Hosts.assert({}).HOSTS).equals(["localhost"])
+			attest(Hosts({ HOSTS: ["127.0.0.1"] })).equals({
+				HOSTS: ["127.0.0.1"]
+			})
+		})
+
+		it("non-empty array default accepts either quote style", () => {
+			const single = type({ HOSTS: "string[] = ['localhost']" })
+			const double = type({ HOSTS: 'string[] = ["localhost"]' })
+
+			attest(single.assert({}).HOSTS).equals(["localhost"])
+			attest(double.assert({}).HOSTS).equals(["localhost"])
+			attest(double.t).type.toString.snap(
+				'{ HOSTS: Default<string[], ["localhost"]> }'
+			)
+		})
+
+		it("non-empty array default returns a fresh array each call", () => {
+			const O = type({ values: "string[] = ['localhost']" })
+			const a = O.assert({})
+			const b = O.assert({})
+			attest(a.values !== b.values)
+			a.values.push("example.com")
+			attest(b.values).equals(["localhost"])
+			attest(O.assert({}).values).equals(["localhost"])
+		})
+
+		it("non-empty array default of other unit literals", () => {
+			const Ports = type({ ports: "number[] = [3000, 8080]" })
+			attest(Ports.t).type.toString.snap(
+				"{ ports: Default<number[], [3000, 8080]> }"
+			)
+			attest(Ports.assert({}).ports).equals([3000, 8080])
+
+			const Flags = type({ flags: "boolean[] = [true, false]" })
+			attest(Flags.assert({}).flags).equals([true, false])
+		})
+
+		it("non-empty array default allows whitespace and a trailing comma", () => {
+			const O = type({ values: "string[] = [ 'localhost' , '127.0.0.1', ]" })
+			attest(O.assert({}).values).equals(["localhost", "127.0.0.1"])
+			attest(O.t).type.toString.snap(`{
+	values: Default<string[], ["localhost", "127.0.0.1"]>
+}`)
+		})
+
+		it("non-empty array default rejects a non-literal element", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					values: "string[] = [string]"
+				})
+			)
+				.throws(writeNonLiteralDefaultMessage("[string]"))
+				.type.errors(writeNonLiteralDefaultMessage("[string]"))
+		})
+
+		it("non-empty array default rejects an unassignable element", () => {
+			// @ts-expect-error
+			attest(() => type({ values: "string[] = [1]" }))
+				.throws.snap(
+					"ParseError: Default for values[0] must be a string (was a number)"
+				)
+				.type.errors("Default value [1] must be assignable to string[]")
+		})
+
+		it("non-empty array default rejects a non-array base", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "number = ['localhost']" }))
+				.throws.snap(
+					"ParseError: Default for foo must be a number (was an object)"
+				)
+				.type.errors("Default value ['localhost'] must be assignable to number")
+		})
+
+		it("non-empty array default keeps commas inside strings", () => {
+			const O = type({ values: "string[] = ['a,b', \"c\"]" })
+			attest(O.assert({}).values).equals(["a,b", "c"])
+			attest(O.t).type.toString.snap(
+				'{ values: Default<string[], ["a,b", "c"]> }'
+			)
+		})
+
+		it("non-empty array default rejects trailing junk", () => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					values: "string[] = [1]x"
+				})
+			)
+				.throws(writeUnexpectedCharacterMessage("x"))
+				.type.errors(writeNonLiteralDefaultMessage("[1]x"))
+		})
+
 		it("empty object default via string syntax", () => {
 			const O = type({ meta: "object = {}" })
 
