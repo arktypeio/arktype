@@ -171,24 +171,31 @@ const failUnitLiteralArray = (
 		writeNonLiteralDefaultMessage(s.scanner.sliceChars(arrayStart).trim())
 	)
 
+const enclosedUnit = (
+	s: RootedRuntimeState,
+	enclosing: EnclosingStartToken,
+	arrayStart: number
+): unknown => {
+	parseEnclosed(s, enclosing)
+	const node = s.unsetRoot()
+	if (!node?.hasKind("unit")) return failUnitLiteralArray(s, arrayStart)
+	return node.unit
+}
+
 const parseUnitLiteralElement = (
 	s: RootedRuntimeState,
 	arrayStart: number
 ): unknown => {
 	const lookahead = s.scanner.lookahead
 	if (lookahead === "'" || lookahead === '"') {
-		parseEnclosed(s, s.scanner.shift())
-		return s.unsetRoot()!.unit
+		s.scanner.shift()
+		return enclosedUnit(s, lookahead, arrayStart)
 	}
-	if (
-		lookahead === "d" &&
-		(s.scanner.nextLookahead === "'" || s.scanner.nextLookahead === '"')
-	) {
-		parseEnclosed(
-			s,
-			`${s.scanner.shift()}${s.scanner.shift()}` as EnclosingStartToken
-		)
-		return s.unsetRoot()!.unit
+	const quote = s.scanner.nextLookahead
+	if (lookahead === "d" && (quote === "'" || quote === '"')) {
+		s.scanner.shift()
+		s.scanner.shift()
+		return enclosedUnit(s, `d${quote}`, arrayStart)
 	}
 	const token = s.scanner.shiftUntil(
 		scanner =>
