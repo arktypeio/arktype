@@ -654,6 +654,27 @@ contextualize(() => {
 }`)
 		})
 
+		it("array default ignores trailing whitespace", () => {
+			const empty = type({ values: "string[] = [] " })
+			attest(empty.t).type.toString.snap("{ values: Default<string[], []> }")
+			attest(empty.assert({}).values).equals([])
+
+			const spaced = type({ values: "string[] = ['a'] " })
+			attest(spaced.t).type.toString.snap(
+				'{ values: Default<string[], ["a"]> }'
+			)
+			attest(spaced.assert({}).values).equals(["a"])
+
+			const newline = type({
+				values: `string[] = ['a']
+`
+			})
+			attest(newline.t).type.toString.snap(
+				'{ values: Default<string[], ["a"]> }'
+			)
+			attest(newline.assert({}).values).equals(["a"])
+		})
+
 		it("non-empty array default rejects a non-literal element", () => {
 			attest(() =>
 				type({

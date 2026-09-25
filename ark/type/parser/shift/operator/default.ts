@@ -116,9 +116,13 @@ export type parseDefault<root, unscanned extends string> =
 	// or a unit-literal array. skipWhitespace (not trim) so `[ 1 , 2 ]` is
 	// recognized even when more than one space precedes it.
 	Scanner.skipWhitespace<unscanned> extends `[${infer afterOpen}` ?
-		parseUnitLiteralArray<afterOpen> extends ParsedUnitLiteralArray ?
-			[root, "=", UnitLiteralArrayLiteral & `[${afterOpen}`]
-		:	ErrorMessage<writeNonLiteralDefaultMessage<`[${afterOpen}`>>
+		// trim trailing whitespace so the stored literal still ends in "]"
+		// (`['a'] ` would otherwise miss UnitLiteralArrayLiteral and become never)
+		trim<afterOpen> extends infer arrayBody extends string ?
+			parseUnitLiteralArray<arrayBody> extends ParsedUnitLiteralArray ?
+				[root, "=", UnitLiteralArrayLiteral & `[${arrayBody}`]
+			:	ErrorMessage<writeNonLiteralDefaultMessage<`[${arrayBody}`>>
+		:	never
 	: trim<unscanned> extends infer defaultExpression extends string ?
 		defaultExpression extends UnenclosedUnitLiteral | EmptyCollectionLiteral ?
 			[root, "=", defaultExpression]
