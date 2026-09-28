@@ -58,7 +58,7 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { $ark } from "./shared/registry.ts"
+import { $ark, registryName } from "./shared/registry.ts"
 import {
 	Traversal,
 	type TraverseAllows,
@@ -791,7 +791,7 @@ export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 		stringifyNonKey: node => node.expression
 	})
 
-const referenceMatcher = /"(\$ark\.[^"]+)"/g
+const referenceMatcher = new RegExp(`"(\\${registryName}\\.[^"]+)"`, "g")
 
 const compileMeta = (metaJson: unknown) =>
 	JSON.stringify(metaJson).replace(referenceMatcher, "$1")

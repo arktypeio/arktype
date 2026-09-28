@@ -32,6 +32,7 @@ import {
 import {
 	$ark,
 	registeredReference,
+	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
 import {
@@ -539,7 +540,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.sequence)
-			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
+			parts.push(`${registryName}.intrinsic.nonNegativeIntegerString.allows(k)`)
 
 		// if parts is empty, this is a structure like { "+": "reject" }
 		// that declares no keys, so return false
