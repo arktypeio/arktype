@@ -3,6 +3,11 @@
 	"description": "A drop-in replacement for new RegExp() with types",
 	"version": "0.0.10",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/regex"
+	},
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",

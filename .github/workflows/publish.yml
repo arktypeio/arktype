@@ -49,6 +49,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # npm trusted publishing: auth comes from the GitHub OIDC token, so no
+    # NPM_TOKEN secret is needed. contents: write covers tag pushes and releases.
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -58,9 +63,12 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      # pnpm 10 publish delegates to npm, which needs >=11.5.1 for OIDC.
+      # pnpm 11+ publishes natively, so re-verify OIDC when bumping pnpm.
+      - name: Update npm
+        run: npm install -g npm@^11.5.1
+
       - name: Create and publish versions
         run: pnpm ci:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
