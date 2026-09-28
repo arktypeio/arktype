@@ -460,7 +460,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			const keys: Key[] = Object.keys(data)
-			keys.push(...Object.getOwnPropertySymbols(data))
+			const symbols = Object.getOwnPropertySymbols(data)
+			if (symbols.length) keys.push(...symbols)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
@@ -529,7 +530,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
-		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
+		// bound by compilePropsByKey
+		if (this.props.length) parts.push("k in propsByKey")
 
 		if (this.index) {
 			for (const index of this.index)
@@ -566,7 +568,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			js.const("keys", "Object.keys(data)")
-			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
+			js.const("symbols", "Object.getOwnPropertySymbols(data)")
+			js.if("symbols.length", () => js.line("keys.push(...symbols)"))
+			if (this.undeclared === "reject") compilePropsByKey(js, this)
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
 		}
 
@@ -681,6 +685,12 @@ const getPossibleMorph = (
 	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
 }
 
+// binds the registered propsByKey once per function rather than reading it
+// from the registry once per key
+const compilePropsByKey = (js: NodeCompiler, node: Structure.Node) => {
+	if (node.props.length) js.const("propsByKey", node.propsByKeyReference)
+}
+
 const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
 	const requiresContext =
 		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
@@ -706,6 +716,7 @@ const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
 		}
 
 		if (node.undeclared === "delete") {
+			compilePropsByKey(js, node)
 			js.forIn("data", js =>
 				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
 					js.line(`delete data[k]`)
