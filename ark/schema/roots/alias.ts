@@ -133,11 +133,10 @@ Resolution: ${printable(resolution)}`)
 
 	compile(js: NodeCompiler): void {
 		const id = this.resolutionId
-		js.if(`ctx.seen.${id} && ctx.seen.${id}.includes(data)`, () =>
-			js.return(true)
-		)
-		js.if(`!ctx.seen.${id}`, () => js.line(`ctx.seen.${id} = []`))
-		js.line(`ctx.seen.${id}.push(data)`)
+		const seen = `ctx.seen.${js.referenceToId(id)}`
+		js.if(`${seen} && ${seen}.includes(data)`, () => js.return(true))
+		js.if(`!${seen}`, () => js.line(`${seen} = []`))
+		js.line(`${seen}.push(data)`)
 		js.return(js.invoke(id))
 	}
 }

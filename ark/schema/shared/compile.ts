@@ -178,16 +178,22 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		const requiresContext =
 			typeof node === "string" ? true : this.requiresContextFor(node)
 		const id = typeof node === "string" ? node : node.id
-		if (requiresContext)
-			return `${this.referenceToId(id, opts)}(${arg}, ${this.ctx})`
+		const reference = this.referenceToId(id, {
+			...opts,
+			kind: opts?.kind ?? this.traversalKind
+		})
+		if (requiresContext) return `${reference}(${arg}, ${this.ctx})`
 
-		return `${this.referenceToId(id, opts)}(${arg})`
+		return `${reference}(${arg})`
 	}
 
+	// the only way emitted code names a node: with a kind, its traversal of
+	// that kind, declared under this name by its unit; without one, the node
+	// itself, e.g. as its key in ctx.seen. Overriding it renames every
+	// reference to a node consistently.
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		const invokedKind = opts?.kind ?? this.traversalKind
-		const base = `${id}${invokedKind}`
-		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
+		const base = opts?.kind ? `${id}${opts.kind}` : id
+		return opts?.bind ? `${base}.bind(${opts.bind})` : base
 	}
 
 	requiresContextFor(node: BaseNode): boolean {

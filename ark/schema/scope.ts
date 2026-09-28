@@ -288,7 +288,7 @@ const declareTraversal = (
 		kind === "Optimistic" ? { kind: "Allows", optimistic: true } : { kind }
 	).indent()
 	node.compile(js)
-	const name = `${node.id}${kind}`
+	const name = js.referenceToId(node.id, { kind })
 	unit.const(name, `function ${js.write("")}`)
 	return name
 }
