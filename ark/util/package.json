@@ -2,6 +2,11 @@
 	"name": "@ark/util",
 	"version": "0.56.4",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/util"
+	},
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
