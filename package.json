@@ -42,6 +42,7 @@
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
 		"benchRuntime": "ts ./ark/type/__tests__/runtime.bench.ts",
 		"benchRegex": "ts ./ark/regex/__tests__/regex.bench.ts",
+		"perf": "ts ./ark/repo/perf/perf.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
 		"lint": "pnpm checkPrettier && pnpm checkEslint",
 		"checkPrettier": "prettier --ignore-path .gitignore --ignore-path ./ark/repo/.prettierignore --check .",
