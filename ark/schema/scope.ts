@@ -269,7 +269,10 @@ const precompileReferences = (references: readonly BaseNode[]) => {
 			declareTraversal(unit, node, "Allows"),
 			declareTraversal(unit, node, "Apply")
 		]
-		if (node.hasKind("union"))
+		// an Optimistic traversal runs only from a branchedOptimistic union's
+		// root apply, or from another Optimistic traversal for a discriminant
+		// case that is itself branchedOptimistic
+		if (node.rootApplyStrategy === "branchedOptimistic")
 			traversals.push(declareTraversal(unit, node, "Optimistic"))
 		return `[${traversals.join(", ")}]`
 	})
