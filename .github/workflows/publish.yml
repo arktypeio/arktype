@@ -63,7 +63,8 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      # pnpm publish delegates to npm, which needs >=11.5.1 for OIDC
+      # pnpm 10 publish delegates to npm, which needs >=11.5.1 for OIDC.
+      # pnpm 11+ publishes natively, so re-verify OIDC when bumping pnpm.
       - name: Update npm
         run: npm install -g npm@^11.5.1
 
