@@ -77,8 +77,9 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 
 	constructor(...items: array<PropertyKey>) {
 		super()
-		// avoid case where a single number will create empty slots
-		;(this as any).push(...items)
+		// avoid case where a single number will create empty slots, and push,
+		// which is slow on an Array subclass
+		for (let i = 0; i < items.length; i++) (this as any)[i] = items[i]
 	}
 
 	toJSON(): JsonArray {

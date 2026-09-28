@@ -4,7 +4,6 @@ import {
 	ReadonlyPath,
 	append,
 	conflatenateAll,
-	defineProperties,
 	flatMorph,
 	stringifyPath,
 	type JsonArray,
@@ -42,7 +41,16 @@ export class ArkError<
 		super()
 		this.input = input as never
 		this.ctx = ctx
-		defineProperties(this, input)
+		// input is a rest object, so its properties are all own, enumerable,
+		// writable, configurable data properties. Assigning one defines it
+		// unless this error already has or inherits the key (e.g. the message
+		// getter).
+		for (const k of Object.keys(input)) {
+			if (k in this) defineValue(this, k, input[k as never])
+			else (this as any)[k] = input[k as never]
+		}
+		for (const k of Object.getOwnPropertySymbols(input))
+			defineValue(this, k, input[k as never])
 		const data = ctx.data
 		if (input.code === "union") {
 			input.errors = input.errors.flatMap(innerError => {
@@ -149,6 +157,14 @@ export class ArkError<
 	}
 }
 
+const defineValue = (o: object, k: PropertyKey, value: unknown) =>
+	Object.defineProperty(o, k, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
+
 export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
@@ -231,7 +247,8 @@ export class ArkErrors
 	 * Append an ArkError to this array, ignoring duplicates.
 	 */
 	add(error: ArkError): void {
-		const existing = this.byPath[error.propString]
+		const propString = error.propString
+		const existing = this.byPath[propString]
 		if (existing) {
 			// only add if it's not already in the errors collection
 			if (error === existing) return
@@ -259,15 +276,15 @@ export class ArkErrors
 			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
 				errorIntersection
 
-			this.byPath[error.propString] = errorIntersection
+			this.byPath[propString] = errorIntersection
 			// add the original error here rather than the intersection
 			// since the intersection is reflected by the array of errors at
 			// this path
 			this.addAncestorPaths(error)
 		} else {
-			this.byPath[error.propString] = error
+			this.byPath[propString] = error
 			this.addAncestorPaths(error)
-			this.mutable.push(error)
+			this.mutable[this.length] = error
 		}
 		this.count++
 	}
