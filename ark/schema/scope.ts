@@ -70,6 +70,7 @@ import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
 	Traversal,
+	type TraversalKind,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.ts"
@@ -211,38 +212,38 @@ let constructingRootSchemaScope = true
 
 const rootScopeFnName = "function $"
 
-const precompile = (references: readonly BaseNode[]): void =>
-	bindPrecompilation(references, precompileReferences(references))
-
-const bindPrecompilation = (
+// compiles references into one unit and binds its traversals, returning the
+// unit's source. A node bound by an earlier unit keeps its traversals unless
+// it belongs to owningScope, the scope being exported.
+const precompile = (
 	references: readonly BaseNode[],
-	precompiler: CompiledFunction<() => PrecompiledReferences>,
 	owningScope?: BaseScope
-): void => {
-	const precompilation = precompiler.write(rootScopeFnName, 4)
-	const compiledTraversals = precompiler.compile()()
+): string => {
+	const unit = precompileReferences(references)
+	const precompilation = unit.write(rootScopeFnName)
+	const traversalsByReference = unit.compile()()
 
-	for (const node of references) {
+	for (let i = 0; i < references.length; i++) {
+		const node = references[i]
 		if (node.precompilation && (!owningScope || node.$ !== owningScope)) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			continue
 		}
-		node.traverseAllows =
-			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
+		const [traverseAllows, traverseApply, traverseOptimistic] =
+			traversalsByReference[i]
+		node.traverseAllows = traverseAllows
 		if (node.isRoot() && !node.allowsRequiresContext) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
-			node.allows = node.traverseAllows as never
+			node.allows = traverseAllows as never
 		}
-		node.traverseApply =
-			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
-
-		if (compiledTraversals[`${node.id}Optimistic`]) {
-			;(node as UnionNode).traverseOptimistic =
-				compiledTraversals[`${node.id}Optimistic`].bind(compiledTraversals)
-		}
+		node.traverseApply = traverseApply
+		if (traverseOptimistic)
+			(node as UnionNode).traverseOptimistic = traverseOptimistic
 		node.precompilation = precompilation
 	}
+
+	return precompilation
 }
 
 export type PrecompiledReferences = {
@@ -251,31 +252,43 @@ export type PrecompiledReferences = {
 	[k: `${string}Optimistic`]: (data: unknown) => unknown
 }
 
-const precompileReferences = (references: readonly BaseNode[]) =>
-	new CompiledFunction<() => PrecompiledReferences>().return(
-		references.reduce((js, node) => {
-			const allowsCompiler = new NodeCompiler({ kind: "Allows" }).indent()
-			node.compile(allowsCompiler)
-			const allowsJs = allowsCompiler.write(`${node.id}Allows`)
+type PrecompiledTraversals = [
+	allows: TraverseAllows,
+	apply: TraverseApply,
+	optimistic?: (data: unknown) => unknown
+]
 
-			const applyCompiler = new NodeCompiler({ kind: "Apply" }).indent()
-			node.compile(applyCompiler)
-			const applyJs = applyCompiler.write(`${node.id}Apply`)
+// a unit declares each traversal as a const-bound function expression, so
+// members call each other directly (function declarations delay TurboFan's
+// optimization of large units), then returns each reference's traversals in
+// the order of references
+const precompileReferences = (references: readonly BaseNode[]) => {
+	const unit = new CompiledFunction<() => PrecompiledTraversals[]>()
+	const traversalsByReference = references.map(node => {
+		const traversals = [
+			declareTraversal(unit, node, "Allows"),
+			declareTraversal(unit, node, "Apply")
+		]
+		if (node.hasKind("union"))
+			traversals.push(declareTraversal(unit, node, "Optimistic"))
+		return `[${traversals.join(", ")}]`
+	})
+	return unit.return(`[${traversalsByReference.join(", ")}]`)
+}
 
-			const result = `${js}${allowsJs},\n${applyJs},\n`
-
-			if (!node.hasKind("union")) return result
-
-			const optimisticCompiler = new NodeCompiler({
-				kind: "Allows",
-				optimistic: true
-			}).indent()
-			node.compile(optimisticCompiler)
-			const optimisticJs = optimisticCompiler.write(`${node.id}Optimistic`)
-
-			return `${result}${optimisticJs},\n`
-		}, "{\n") + "}"
-	)
+const declareTraversal = (
+	unit: CompiledFunction,
+	node: BaseNode,
+	kind: TraversalKind
+): string => {
+	const js = new NodeCompiler(
+		kind === "Optimistic" ? { kind: "Allows", optimistic: true } : { kind }
+	).indent()
+	node.compile(js)
+	const name = `${node.id}${kind}`
+	unit.const(name, `function ${js.write("")}`)
+	return name
+}
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkSchemaScopeConfig
@@ -657,11 +670,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) {
-				const precompiler = precompileReferences(this.references)
-				this.precompilation = precompiler.write(rootScopeFnName, 4)
-				bindPrecompilation(this.references, precompiler, this)
-			}
+			if (!this.resolvedConfig.jitless)
+				this.precompilation = precompile(this.references, this)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
