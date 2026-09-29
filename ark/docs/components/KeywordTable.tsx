@@ -1,6 +1,11 @@
-import { append, entriesOf, flatMorph } from "@ark/util"
+import {
+	append,
+	ecmascriptConstructors,
+	entriesOf,
+	flatMorph,
+	platformConstructors
+} from "@ark/util"
 import { ark, Generic } from "arktype"
-import { arkPrototypes } from "arktype/internal/keywords/constructors.ts"
 import type { JSX } from "react"
 
 const tableNames = [
@@ -54,8 +59,9 @@ for (const [alias, v] of entriesOf(ark.internal.resolutions)
 		: alias.startsWith("object") ? "object"
 		: alias.startsWith("TypedArray") ? "TypedArray"
 		: v instanceof Generic ? "generic"
-		: alias in arkPrototypes ? "instanceof"
-		: "other"
+		: alias in ecmascriptConstructors || alias in platformConstructors ?
+			"instanceof"
+		:	"other"
 
 	tableRowsByName[name] = append(
 		tableRowsByName[name],

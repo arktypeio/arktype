@@ -30,11 +30,13 @@
 		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/index.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/index.js"
 		}
 	},
 	"files": [

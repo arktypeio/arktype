@@ -9,6 +9,7 @@ import {
 	shell,
 	writeJson
 } from "../fs/index.ts"
+import { bundle } from "./bundle.ts"
 import { dtsGen } from "./dtsGen.ts"
 import { jsDocGen } from "./jsdocGen.ts"
 import { packagesByScope } from "./shared.ts"
@@ -17,6 +18,10 @@ const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
 const outDir = fromCwd("out")
 const packageName = readPackageJson(process.cwd()).name
+// the packages `import "arktype"` loads
+const isArktypeOrDependency =
+	packageName === "arktype" ||
+	packageName in packagesByScope.type.json.dependencies!
 
 const buildCurrentProject = () =>
 	shell(
@@ -33,10 +38,11 @@ try {
 	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
+	else if (isArktypeOrDependency) bundle()
 	if (packageName === "arktype") {
 		jsDocGen()
 		dtsGen()
-	} else if (packageName in packagesByScope.type.json.dependencies!) dtsGen()
+	} else if (isArktypeOrDependency) dtsGen()
 } finally {
 	rmRf("tsconfig.build.json")
 }
