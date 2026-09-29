@@ -34,6 +34,15 @@ contextualize(() => {
 		attest(n.rawOut.expression).snap("number")
 	})
 
+	it("unions declared morphs", () => {
+		const morph = (value: string) => value
+		const n = rootSchema([
+			{ declaredIn: intrinsic.string, morphs: morph },
+			{ declaredIn: intrinsic.string, morphs: morph }
+		])
+		attest(n.rawIn.expression).snap("string")
+	})
+
 	contextualize.each(
 		"declared",
 		() => {
