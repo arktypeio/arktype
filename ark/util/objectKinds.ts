@@ -1,6 +1,6 @@
 import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
-import type { Fn } from "./functions.ts"
+import { cached, type Fn } from "./functions.ts"
 import type { satisfy } from "./generics.ts"
 import { isKeyOf } from "./records.ts"
 
@@ -59,6 +59,15 @@ export type platformConstructors = {
 	URL: typeof URL
 }
 
+// Node loads undici (~40ms) the first time one of these globals is read, so
+// they're read together on first access rather than when this module loads
+const fetchConstructors = cached(() => ({
+	FormData,
+	Headers,
+	Request,
+	Response
+}))
+
 // Platform APIs
 // See https://developer.mozilla.org/en-US/docs/Web/API
 // Must be implemented in Node etc. as well as the browser to include here
@@ -66,10 +75,18 @@ export const platformConstructors: platformConstructors = {
 	ArrayBuffer,
 	Blob,
 	File: FileConstructor,
-	FormData,
-	Headers,
-	Request,
-	Response,
+	get FormData() {
+		return fetchConstructors().FormData
+	},
+	get Headers() {
+		return fetchConstructors().Headers
+	},
+	get Request() {
+		return fetchConstructors().Request
+	},
+	get Response() {
+		return fetchConstructors().Response
+	},
 	URL
 }
 
@@ -97,18 +114,21 @@ export type TypedArrayObjects = instantiateConstructors<
 	keyof typedArrayConstructors
 >
 
+export interface builtinConstructors
+	extends ecmascriptConstructors,
+		platformConstructors,
+		typedArrayConstructors {}
+
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors = {
-	...ecmascriptConstructors,
-	...platformConstructors,
-	...typedArrayConstructors,
-	String,
-	Number,
-	Boolean
-}
-
-export type builtinConstructors = typeof builtinConstructors
+// (from descriptors, so platformConstructors' getters are copied, not read)
+export const builtinConstructors: builtinConstructors = Object.defineProperties(
+	{ ...ecmascriptConstructors },
+	{
+		...Object.getOwnPropertyDescriptors(platformConstructors),
+		...Object.getOwnPropertyDescriptors(typedArrayConstructors)
+	}
+) as never
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
