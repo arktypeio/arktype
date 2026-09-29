@@ -2,7 +2,7 @@ import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
 import { stringAndSymbolicEntriesOf, type dict } from "./records.ts"
-import { isDotAccessible, register } from "./registry.ts"
+import { isDotAccessible, nameOf } from "./registry.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -131,8 +131,8 @@ const stringifyUnquoted = (
 
 const printableOpts = {
 	onCycle: () => "(cycle)",
-	onSymbol: v => `Symbol(${register(v)})`,
-	onFunction: v => `Function(${register(v)})`,
+	onSymbol: v => `Symbol(${nameOf(v)})`,
+	onFunction: v => `Function(${nameOf(v)})`,
 	// prefix bigints with a marker so printable can strip the quotes
 	// JSON.stringify adds, e.g. [1n] rather than ["1n"]
 	onBigInt: n => `${bigIntMarker}${n}n`
