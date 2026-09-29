@@ -324,7 +324,9 @@ const bindRootApply = (node: BaseRoot) => {
 // same order, with its bound traversals as constants. Named for the root, its
 // source is its own, so unlike the closures createRootApply builds from one
 // literal per strategy, it shares no V8 feedback with other roots' applies:
-// each call it makes has one target, which V8 can inline.
+// each call it makes has one target, which V8 can inline. The name is the
+// root's id with a suffix, as a unit names its traversals, so it is an
+// identifier wherever those are and never shadows what it closes over.
 const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 	const fallback = [
 		"const ctx = new Traversal(data, config)",
@@ -365,7 +367,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"clone",
 		"Traversal",
 		"config",
-		`return (function ${node.id}(data, onFail) {\n    ${body.join("\n    ")}\n})`
+		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
 	)(
 		node.traverseAllows,
 		node.traverseApply,

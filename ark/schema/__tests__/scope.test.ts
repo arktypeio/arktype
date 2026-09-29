@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, schemaScope } from "@ark/schema"
+import { rootSchema, schemaScope, type NodeId } from "@ark/schema"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -93,5 +93,34 @@ contextualize(() => {
 		const s2 = schemaScope({ b: { domain: "number" } }, { name: "Array" })
 		attest(s1.name).equals("Array")
 		attest(s2.name).equals("Array")
+	})
+
+	it("applies roots with ids that name what their compiled apply reads", () => {
+		// a root's compiled apply is named for its id, and whatever the id, that
+		// name must neither shadow a value the apply closes over nor be reserved
+		for (const id of [
+			"allows",
+			"apply",
+			"optimistic",
+			"node",
+			"clone",
+			"Traversal",
+			"config",
+			"in"
+		] as NodeId[]) {
+			const Obj = schemaScope({}).parse(
+				{ domain: "object", required: [{ key: "a", value: "string" }] },
+				{ id }
+			)
+			attest(Obj({ a: "s" })).equals({ a: "s" })
+			attest(String(Obj({ a: 1 }))).equals("a must be a string (was a number)")
+
+			const Morph = schemaScope({}).parse(
+				{ in: "string", morphs: [(s: string) => s.length] },
+				{ id }
+			)
+			attest(Morph("s")).equals(1)
+			attest(String(Morph(1))).equals("must be a string (was a number)")
+		}
 	})
 })
