@@ -513,7 +513,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
-	protected resolved = false
+	resolved = false
 	readonly nodesByHash: Record<string, BaseNode> = {}
 	readonly intrinsic: Omit<typeof $ark.intrinsic, `json${string}`>
 

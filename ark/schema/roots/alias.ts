@@ -66,9 +66,18 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.reference
 	readonly structure = undefined
+	private _resolution: BaseRoot | undefined
 
 	get resolution(): BaseRoot {
-		return this._resolve()
+		if (this._resolution) return this._resolution
+		const resolution = this._resolve()
+		// kept once the scope is resolved, before which resolving also binds
+		// references into it. a reference to an alias that is still being
+		// parsed resolves to an alias, and a thunk can read such references,
+		// so neither result is kept
+		if (this.$.resolved && !this.resolve && !resolution.hasKind("alias"))
+			this._resolution = resolution
+		return resolution
 	}
 
 	protected _resolve(): BaseRoot {
