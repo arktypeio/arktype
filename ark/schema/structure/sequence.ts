@@ -227,12 +227,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		this.postfix
 	)
 
-	// have to wait until prevariadic and variadicOrPostfix are set to calculate
-	flatRefs: FlatRef[] = this.addFlatRefs()
+	protected override initializeFlatRefs(): void {
+		const flatRefs: FlatRef[] = []
 
-	protected addFlatRefs(): FlatRef[] {
 		appendUniqueFlatRefs(
-			this.flatRefs,
+			flatRefs,
 			this.prevariadic.flatMap((element, i) =>
 				append(
 					element.node.flatRefs.map(ref =>
@@ -244,7 +243,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		)
 
 		appendUniqueFlatRefs(
-			this.flatRefs,
+			flatRefs,
 			this.variadicOrPostfix.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
@@ -260,7 +259,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			)
 		)
 
-		return this.flatRefs
+		this._flatRefs = flatRefs
+		this._flatMorphs = []
 	}
 
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfixLength === 0

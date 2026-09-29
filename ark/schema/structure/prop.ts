@@ -5,8 +5,7 @@ import {
 	flatRef,
 	type BaseNode,
 	type DeepNodeTransformation,
-	type DeepNodeTransformContext,
-	type FlatRef
+	type DeepNodeTransformContext
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
@@ -56,10 +55,15 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
-	flatRefs: FlatRef[] = append(
-		this.value.flatRefs.map(ref => flatRef([this.key, ...ref.path], ref.node)),
-		flatRef([this.key], this.value)
-	)
+	protected override initializeFlatRefs(): void {
+		this._flatRefs = append(
+			this.value.flatRefs.map(ref =>
+				flatRef([this.key, ...ref.path], ref.node)
+			),
+			flatRef([this.key], this.value)
+		)
+		this._flatMorphs = []
+	}
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,

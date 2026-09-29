@@ -96,9 +96,9 @@ export abstract class BaseNode<
 	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
 
 	referencesById: Record<string, BaseNode>
-	shallowReferences: BaseNode[]
-	flatRefs: FlatRef[]
-	flatMorphs: FlatRef<Morph.Node | Intersection.Node>[]
+	private _shallowReferences: BaseNode[] | undefined
+	protected _flatRefs: FlatRef[] | undefined
+	protected _flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
 	allows: (data: d["prerequisite"]) => boolean
 
 	get shallowMorphs(): array<Morph> {
@@ -141,68 +141,26 @@ export abstract class BaseNode<
 		this.isCyclic = this.kind === "alias"
 		this.referencesById = { [this.id]: this }
 
-		this.shallowReferences =
-			this.hasKind("structure") ?
-				[this as BaseNode, ...(this.children as never)]
-			:	this.children.reduce<BaseNode[]>(
-					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
-					[this]
-				)
-
-		const isStructural = this.isStructural()
-
-		this.flatRefs = []
-		this.flatMorphs = []
-
 		for (let i = 0; i < this.children.length; i++) {
 			this.includesTransform ||= this.children[i].includesTransform
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
 			this.isCyclic ||= this.children[i].isCyclic
-
-			if (!isStructural) {
-				const childFlatRefs = this.children[i].flatRefs
-				for (let j = 0; j < childFlatRefs.length; j++) {
-					const childRef = childFlatRefs[j]
-					if (
-						!this.flatRefs.some(existing =>
-							flatRefsAreEqual(existing, childRef)
-						)
-					) {
-						this.flatRefs.push(childRef)
-						for (const branch of childRef.node.branches) {
-							if (
-								branch.hasKind("morph") ||
-								(branch.hasKind("intersection") &&
-									branch.structure?.structuralMorph !== undefined)
-							) {
-								this.flatMorphs.push({
-									path: childRef.path,
-									propString: childRef.propString,
-									node: branch
-								})
-							}
-						}
-					}
-				}
-			}
-
 			Object.assign(this.referencesById, this.children[i].referencesById)
 		}
-
-		this.flatRefs.sort((l, r) =>
-			l.path.length > r.path.length ? 1
-			: l.path.length < r.path.length ? -1
-			: l.propString > r.propString ? 1
-			: l.propString < r.propString ? -1
-			: l.node.expression < r.node.expression ? -1
-			: 1
-		)
 
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
 		this.rootApplyStrategy =
-			!this.allowsRequiresContext && this.flatMorphs.length === 0 ?
+			(
+				!this.allowsRequiresContext &&
+				// only a node that includes a transform and isn't structural can
+				// have flat morphs, so no other computes them here (a structural
+				// node's refs read fields of its own, which aren't yet set)
+				(!this.includesTransform ||
+					this.isStructural() ||
+					this.flatMorphs.length === 0)
+			) ?
 				this.shallowMorphs.length === 0 ? "allows"
 				: (
 					this.shallowMorphs.every(
@@ -228,6 +186,67 @@ export abstract class BaseNode<
 						new Traversal(data, this.$.resolvedConfig)
 					)
 			:	data => (this.traverseAllows as any)(data)
+	}
+
+	get shallowReferences(): BaseNode[] {
+		return (this._shallowReferences ??=
+			this.hasKind("structure") ?
+				[this as BaseNode, ...(this.children as never)]
+			:	this.children.reduce<BaseNode[]>(
+					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
+					[this]
+				))
+	}
+
+	get flatRefs(): FlatRef[] {
+		if (!this._flatRefs) this.initializeFlatRefs()
+		return this._flatRefs!
+	}
+
+	get flatMorphs(): FlatRef<Morph.Node | Intersection.Node>[] {
+		if (!this._flatMorphs) this.initializeFlatRefs()
+		return this._flatMorphs!
+	}
+
+	// flat refs are a function of a node's children, so they are computed on
+	// first read, which for most nodes never comes. Structural kinds override
+	// this with the refs of their values or elements, and have no flat morphs.
+	protected initializeFlatRefs(): void {
+		const flatRefs: FlatRef[] = []
+		const flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] = []
+
+		for (let i = 0; i < this.children.length; i++) {
+			const childFlatRefs = this.children[i].flatRefs
+			for (let j = 0; j < childFlatRefs.length; j++) {
+				const childRef = childFlatRefs[j]
+				if (!flatRefs.some(existing => flatRefsAreEqual(existing, childRef))) {
+					flatRefs.push(childRef)
+					for (const branch of childRef.node.branches) {
+						if (
+							branch.hasKind("morph") ||
+							(branch.hasKind("intersection") &&
+								branch.structure?.structuralMorph !== undefined)
+						) {
+							flatMorphs.push({
+								path: childRef.path,
+								propString: childRef.propString,
+								node: branch
+							})
+						}
+					}
+				}
+			}
+		}
+
+		this._flatRefs = flatRefs.sort((l, r) =>
+			l.path.length > r.path.length ? 1
+			: l.path.length < r.path.length ? -1
+			: l.propString > r.propString ? 1
+			: l.propString < r.propString ? -1
+			: l.node.expression < r.node.expression ? -1
+			: 1
+		)
+		this._flatMorphs = flatMorphs
 	}
 
 	// a node's apply unless a unit binds it as a root, which compiles the same
@@ -285,7 +304,9 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly compiledMeta: string = compileMeta(this.metaJson)
+	get compiledMeta(): string {
+		return compileMeta(this.metaJson)
+	}
 
 	protected cacheGetter<name extends keyof this>(
 		name: name,

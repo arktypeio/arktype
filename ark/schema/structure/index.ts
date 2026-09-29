@@ -105,12 +105,15 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
-	flatRefs = append(
-		this.value.flatRefs.map(ref =>
-			flatRef([this.signature, ...ref.path], ref.node)
-		),
-		flatRef([this.signature], this.value)
-	)
+	protected override initializeFlatRefs(): void {
+		this._flatRefs = append(
+			this.value.flatRefs.map(ref =>
+				flatRef([this.signature, ...ref.path], ref.node)
+			),
+			flatRef([this.signature], this.value)
+		)
+		this._flatMorphs = []
+	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).every(entry => {
