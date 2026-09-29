@@ -1,4 +1,5 @@
 import {
+	defineLazily,
 	DynamicFunction,
 	flatMorph,
 	hasDomain,
@@ -563,15 +564,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 			cacheUnknownUnion(this)
 		}
 
-		this.intrinsic =
-			$ark.intrinsic ?
-				flatMorph($ark.intrinsic, (k, v) =>
-					// don't include cyclic aliases from JSON scope
-					k.startsWith("json") ? [] : [k, this.bindReference(v as never)]
-				)
-				// intrinsic won't be available during bootstrapping,  so we lie
-				// about the type here as an extrnal convenience
-			:	({} as never)
+		// intrinsic won't be available during bootstrapping,  so we lie
+		// about the type here as an extrnal convenience
+		this.intrinsic = {} as never
+		const intrinsic = $ark.intrinsic
+		for (const k in intrinsic) {
+			// don't include cyclic aliases from JSON scope
+			if (k.startsWith("json")) continue
+			// bound on first access, since a scope reads few of them
+			defineLazily(this.intrinsic, k, () =>
+				this.bindReference(intrinsic[k as keyof typeof intrinsic])
+			)
+		}
 	}
 
 	protected cacheGetter<name extends keyof this>(

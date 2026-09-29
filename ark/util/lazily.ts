@@ -1,3 +1,5 @@
+import { unset } from "./records.ts"
+
 export const lazily = <t extends object>(thunk: () => t): t => {
 	let cached: any
 	return new Proxy<t>({} as t, {
@@ -12,5 +14,32 @@ export const lazily = <t extends object>(thunk: () => t): t => {
 			cached[prop] = value
 			return true
 		}
+	})
+}
+
+/**
+ * Define `k` on `o` as computed on first read, after which the object it was
+ * read through holds the result as a plain property. Copies of the accessor
+ * (e.g. through Object.getOwnPropertyDescriptors) share that one result.
+ */
+export const defineLazily = (
+	o: object,
+	k: PropertyKey,
+	compute: () => unknown
+): void => {
+	let result: unknown = unset
+	Object.defineProperty(o, k, {
+		get() {
+			if (result === unset) result = compute()
+			Object.defineProperty(this, k, {
+				value: result,
+				enumerable: true,
+				writable: true,
+				configurable: true
+			})
+			return result
+		},
+		enumerable: true,
+		configurable: true
 	})
 }
