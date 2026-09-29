@@ -68,8 +68,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
-		const result = this._resolve()
-		return (nodesByRegisteredId[this.id] = result)
+		return this._resolve()
 	}
 
 	protected _resolve(): BaseRoot {

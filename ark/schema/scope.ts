@@ -491,6 +491,11 @@ const declareTraversal = (
 	return name
 }
 
+// only a root's context (through `this`) and a scope alias's (until the alias
+// is parsed) are ever resolved by id, so no other context is registered
+const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
+	(nodesByRegisteredId[ctx.id] = ctx)
+
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkSchemaScopeConfig
 	readonly resolvedConfig: ResolvedScopeConfig
@@ -550,7 +555,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this.resolutions[name] =
 					hasArkKind(preparsed, "root") ?
 						this.bindReference(preparsed)
-					:	this.createParseContext(preparsed).id
+					:	registerParseContext(this.createParseContext(preparsed)).id
 			}
 		}
 
@@ -773,8 +778,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 				v.phase = "resolving"
 				const node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
 				v.phase = "resolved"
-				nodesByRegisteredId[node.id] = node
-				nodesByRegisteredId[v.id] = node
+				// the alias resolves through this.resolutions from here on, so
+				// nothing can read its context by id
+				delete nodesByRegisteredId[v.id]
 				return (this.resolutions[name] = node)
 			}
 			return throwInternalError(
@@ -804,15 +810,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		// any parse may be the process's first, so the shared nodes and
-		// intrinsics take their ids ahead of the one registered here
+		// intrinsics take their ids ahead of the one allocated here
 		bootstrap()
 		const id = input.id ?? registerNodeId(input.prefix)
-		return (nodesByRegisteredId[id] = Object.assign(input, {
+		return Object.assign(input, {
 			[arkKind]: "context" as const,
 			$: this as never,
 			id,
 			phase: "unresolved" as const
-		}))
+		})
 	}
 
 	traversal(root: unknown): Traversal {
@@ -905,18 +911,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (isNode(ctxOrNode)) return this.bindReference(ctxOrNode) as never
 
-		const hasPreassignedId = ctxOrNode.id !== undefined
-
 		const ctx = this.createParseContext(ctxOrNode)
 
 		const node = parseNode(ctx)
 
-		const bound = this.bindReference(node)
-
-		if (!hasPreassignedId) releaseUnusedContextId(ctx.id, bound)
-		else nodesByRegisteredId[ctx.id] = bound
-
-		return bound as never
+		return this.bindReference(node) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -930,7 +929,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.bindReference(ctxInputOrNode)
 
 		const hasPreassignedId = ctxInputOrNode.id !== undefined
-		const ctx = this.createParseContext(ctxInputOrNode)
+		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
 		let node = this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
 
 		// if the node is recursive e.g. { box: "this" }, we need to make sure it
