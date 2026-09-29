@@ -183,6 +183,21 @@ contextualize(() => {
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
+	it("compiled leaf referenced from a scope with a description writer", () => {
+		// A compiles `number > 1234` first, but the scope names its own number
+		// by the id of the leaf's, so it compiles the leaf again rather than
+		// calling A's traversals, and reports its own description for number
+		const A = type({ a: "number > 1234" })
+		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
+		const types = scope(
+			{ b: "number", o: { a: A, b: "b" } },
+			{ domain: { description: () => "a custom number" } }
+		).export()
+		attest(types.o({ a: { a: "x" }, b: 1 }).toString()).snap(
+			"a.a must be a custom number (was a string)"
+		)
+	})
+
 	it("numberAllowsNaN", () => {
 		withConfig({ numberAllowsNaN: true }, () => {
 			const { nanable } = schemaScope({

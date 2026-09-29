@@ -65,7 +65,11 @@ import {
 import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
-import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
+import {
+	CompiledFunction,
+	NodeCompiler,
+	type InvokeOptions
+} from "./shared/compile.ts"
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
@@ -212,23 +216,70 @@ let constructingRootSchemaScope = true
 
 const rootScopeFnName = "function $"
 
+// roots bound by a closed unit, one that declares or is passed each traversal
+// it invokes, in which they were leaves (see isLeafIn). A unit calls a
+// reusable leaf's traversals rather than declaring its own.
+const reusableLeaves = new WeakSet<BaseNode>()
+
+// a leaf root reads no property of an object, since no structure or alias is
+// among its references, so units calling its traversals share no inline cache
+// that sees differently shaped data, as they would calling an object's. Those
+// traversals invoke only its references, by id, so they are the ones a unit
+// compiles for it wherever each of those ids names the same node.
+const isLeafIn = (
+	node: BaseNode,
+	referencesById: Map<string, BaseNode>
+): boolean => {
+	if (!node.isRoot()) return false
+	for (const id in node.referencesById) {
+		const reference = node.referencesById[id]
+		if (
+			reference !== referencesById.get(id) ||
+			reference.hasKind("structure") ||
+			reference.hasKind("alias")
+		)
+			return false
+	}
+	return true
+}
+
 // compiles references into one unit and binds its traversals, returning the
 // unit's source. A node bound by an earlier unit keeps its traversals unless
-// it belongs to owningScope, the scope being exported.
+// it belongs to owningScope, the scope being exported. A reusable leaf is not
+// declared again: the unit is passed those of its traversals it invokes.
 const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
 ): string => {
-	const refs: NodeCompiler.Refs = new Map()
-	const unit = precompileReferences(references, refs)
+	const linkage: UnitLinkage = {
+		referencesById: new Map(),
+		reused: new Set(),
+		dependencies: new Map(),
+		refs: new Map(),
+		closed: true
+	}
+	for (const node of references) linkage.referencesById.set(node.id, node)
+	const declared: BaseNode[] = []
+	for (const node of references) {
+		if (reusableLeaves.has(node) && isLeafIn(node, linkage.referencesById))
+			linkage.reused.add(node)
+		else declared.push(node)
+	}
+	const unit = precompileReferences(declared, linkage)
+	unit.argNames.push(...linkage.dependencies.values(), ...linkage.refs.values())
 	const precompilation = unit.write(rootScopeFnName)
-	const traversalsByReference = unit.compile()(...refs.keys())
+	const traversalsByReference = unit.compile()(
+		...linkage.dependencies.keys(),
+		...linkage.refs.keys()
+	)
 
-	for (let i = 0; i < references.length; i++) {
-		const node = references[i]
-		if (node.precompilation && (!owningScope || node.$ !== owningScope)) {
+	for (let i = 0; i < declared.length; i++) {
+		const node = declared[i]
+		if (node.precompilation) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
-			continue
+			if (!owningScope || node.$ !== owningScope) continue
+			// owningScope rebinds it, so it stays reusable only if its new traversals are
+			reusableLeaves.delete(node)
 		}
 		const [traverseAllows, traverseApply, traverseOptimistic] =
 			traversalsByReference[i]
@@ -242,6 +293,8 @@ const precompile = (
 		if (traverseOptimistic)
 			(node as UnionNode).traverseOptimistic = traverseOptimistic
 		node.precompilation = precompilation
+		if (linkage.closed && isLeafIn(node, linkage.referencesById))
+			reusableLeaves.add(node)
 	}
 
 	return precompilation
@@ -262,43 +315,82 @@ type PrecompiledTraversals = [
 // a unit declares each traversal as a const-bound function expression, so
 // members call each other directly (function declarations delay TurboFan's
 // optimization of large units), then returns each reference's traversals in
-// the order of references. Its parameters are the values its traversals read
-// through js.ref, passed in the order of refs.
+// the order of references
 const precompileReferences = (
 	references: readonly BaseNode[],
-	refs: NodeCompiler.Refs
+	linkage: UnitLinkage
 ) => {
 	const unit = new CompiledFunction<
-		(...refs: unknown[]) => PrecompiledTraversals[],
+		(...args: unknown[]) => PrecompiledTraversals[],
 		string[]
 	>()
 	const traversalsByReference = references.map(node => {
 		const traversals = [
-			declareTraversal(unit, refs, node, "Allows"),
-			declareTraversal(unit, refs, node, "Apply")
+			declareTraversal(unit, linkage, node, "Allows"),
+			declareTraversal(unit, linkage, node, "Apply")
 		]
 		// an Optimistic traversal runs only from a branchedOptimistic union's
 		// root apply, or from another Optimistic traversal for a discriminant
 		// case that is itself branchedOptimistic
 		if (node.rootApplyStrategy === "branchedOptimistic")
-			traversals.push(declareTraversal(unit, refs, node, "Optimistic"))
+			traversals.push(declareTraversal(unit, linkage, node, "Optimistic"))
 		return `[${traversals.join(", ")}]`
 	})
-	unit.argNames.push(...refs.values())
 	return unit.return(`[${traversalsByReference.join(", ")}]`)
 }
 
+// what a unit's members reach beyond its declarations, each passed to it as
+// a parameter: the traversals of reused nodes they invoke, named as invoked,
+// then the values they read through js.ref. An invoked traversal resolves by
+// id among the unit's references; one outside them leaves the unit open.
+type UnitLinkage = {
+	referencesById: Map<string, BaseNode>
+	reused: Set<BaseNode>
+	dependencies: Map<Fn, string>
+	refs: NodeCompiler.Refs
+	closed: boolean
+}
+
+// compiles a traversal of a unit, linking each traversal it invokes
+class TraversalCompiler extends NodeCompiler {
+	readonly linkage: UnitLinkage
+
+	constructor(kind: TraversalKind, linkage: UnitLinkage) {
+		super(
+			kind === "Optimistic" ?
+				{ kind: "Allows", optimistic: true, refs: linkage.refs }
+			:	{ kind, refs: linkage.refs }
+		)
+		this.linkage = linkage
+	}
+
+	override invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
+		const id = typeof node === "string" ? node : node.id
+		const reference = this.linkage.referencesById.get(id)
+		if (!reference) this.linkage.closed = false
+		else if (this.linkage.reused.has(reference)) {
+			const kind = opts?.kind ?? this.traversalKind
+			this.linkage.dependencies.set(
+				traversalOf(reference, kind),
+				this.referenceToId(id, { kind })
+			)
+		}
+		return super.invoke(node, opts)
+	}
+}
+
+const traversalOf = (node: BaseNode, kind: TraversalKind): Fn =>
+	kind === "Allows" ? node.traverseAllows
+	: kind === "Apply" ? node.traverseApply
+	: (node as UnionNode).traverseOptimistic
+
 const declareTraversal = (
 	unit: CompiledFunction,
-	refs: NodeCompiler.Refs,
+	linkage: UnitLinkage,
 	node: BaseNode,
 	kind: TraversalKind
 ): string => {
-	const js = new NodeCompiler(
-		kind === "Optimistic" ?
-			{ kind: "Allows", optimistic: true, refs }
-		:	{ kind, refs }
-	).indent()
+	const js = new TraversalCompiler(kind, linkage).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
 	unit.const(name, `function ${js.write("")}`)
