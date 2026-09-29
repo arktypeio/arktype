@@ -1,6 +1,7 @@
 {
 	"pages": [
 		"intro",
+		"cheat-sheet",
 		"primitives",
 		"objects",
 		"keywords",
