@@ -831,6 +831,18 @@ export const flatRef = <node extends BaseRoot>(
 export const flatRefsAreEqual = (l: FlatRef, r: FlatRef): boolean =>
 	l.propString === r.propString && l.node.equals(r.node)
 
+export const flatMorphsAreEqual = (
+	l: FlatRef<Morph.Node | Intersection.Node>,
+	r: FlatRef<Morph.Node | Intersection.Node>
+): boolean =>
+	l.propString === r.propString &&
+	(l.node.hasKind("morph") && r.node.hasKind("morph") ?
+		l.node.hasEqualMorphs(r.node)
+	: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
+		l.node.structure?.structuralMorphRef ===
+		r.node.structure?.structuralMorphRef
+	:	false)
+
 export const appendUniqueFlatRefs = <node extends BaseRoot>(
 	existing: FlatRef<node>[] | undefined,
 	refs: listable<FlatRef<node>>

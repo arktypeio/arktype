@@ -12,6 +12,7 @@ import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind } from "../kinds.ts"
 import {
 	BaseNode,
+	flatMorphsAreEqual,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -548,14 +549,7 @@ export abstract class BaseRoot<
 
 		if (
 			!arrayEquals(this.flatMorphs, r.flatMorphs, {
-				isEqual: (l, r) =>
-					l.propString === r.propString &&
-					(l.node.hasKind("morph") && r.node.hasKind("morph") ?
-						l.node.hasEqualMorphs(r.node)
-					: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
-						l.node.structure?.structuralMorphRef ===
-						r.node.structure?.structuralMorphRef
-					:	false)
+				isEqual: flatMorphsAreEqual
 			})
 		)
 			return false
