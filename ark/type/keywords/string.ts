@@ -170,6 +170,44 @@ export const creditCard = rootSchema({
 	}
 })
 
+// https://en.wikipedia.org/wiki/ISBN#ISBN-10_check_digits
+export const isIsbn10 = (input: string): boolean => {
+	let sum = 0
+	for (let i = 0; i < 10; i++) {
+		const char = input[i]
+		const value = char === "X" ? 10 : Number.parseInt(char, 10)
+		sum += value * (10 - i)
+	}
+	return sum % 11 === 0
+}
+
+// https://en.wikipedia.org/wiki/ISBN#ISBN-13_check_digit_calculation
+export const isIsbn13 = (input: string): boolean => {
+	let sum = 0
+	for (let i = 0; i < 13; i++) {
+		const value = Number.parseInt(input[i], 10)
+		sum += value * (i % 2 === 0 ? 1 : 3)
+	}
+	return sum % 10 === 0
+}
+
+const isbnSeparatorMatcher = /[ -]+/g
+const isbn10Matcher = /^\d{9}[\dX]$/
+const isbn13Matcher = /^\d{13}$/
+
+export const isbn = rootSchema({
+	domain: "string",
+	predicate: {
+		meta: "an ISBN",
+		predicate: (input: string) => {
+			const sanitized = input.replace(isbnSeparatorMatcher, "")
+			if (isbn10Matcher.test(sanitized)) return isIsbn10(sanitized)
+			if (isbn13Matcher.test(sanitized)) return isIsbn13(sanitized)
+			return false
+		}
+	}
+})
+
 type DayDelimiter = "." | "/" | "-"
 
 const dayDelimiterMatcher = /^[./-]$/
@@ -919,6 +957,7 @@ export const string = Scope.module(
 		email,
 		integer: stringInteger,
 		ip,
+		isbn,
 		json,
 		lower,
 		normalize,
@@ -953,6 +992,7 @@ export declare namespace string {
 		email: string
 		integer: stringInteger.submodule
 		ip: ip.submodule
+		isbn: string
 		json: stringJson.submodule
 		lower: lower.submodule
 		normalize: normalize.submodule
