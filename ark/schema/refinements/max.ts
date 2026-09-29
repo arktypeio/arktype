@@ -1,5 +1,6 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -44,19 +45,13 @@ const implementation: nodeImplementationOf<Max.Declaration> =
 	implementNode<Max.Declaration>({
 		kind: "max",
 		collapsibleKey: "rule",
-		hasAssociatedError: true,
 		keys: {
 			rule: {},
 			exclusive: parseExclusiveKey
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		defaults: {
-			description: node => {
-				if (node.rule === 0) return node.exclusive ? "negative" : "non-positive"
-				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
-			}
-		},
+		defaults: defaultErrorWriters.max,
 		obviatesBasisDescription: true
 	})
 

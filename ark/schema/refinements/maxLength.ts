@@ -1,5 +1,6 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -51,17 +52,13 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 	implementNode<MaxLength.Declaration>({
 		kind: "maxLength",
 		collapsibleKey: "rule",
-		hasAssociatedError: true,
 		keys: {
 			rule: {
 				parse: createLengthRuleParser("maxLength")
 			}
 		},
 		normalize: createLengthSchemaNormalizer("maxLength"),
-		defaults: {
-			description: node => `at most length ${node.rule}`,
-			actual: data => `${data.length}`
-		}
+		defaults: defaultErrorWriters.maxLength
 	})
 
 export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {

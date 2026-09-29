@@ -118,7 +118,6 @@ const structuralExpression = createStructuralWriter("expression")
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
-		hasAssociatedError: false,
 		normalize: schema => {
 			// duplicate keys are a normalization error, so the check holds with no
 			// set engine installed

@@ -50,7 +50,6 @@ export declare namespace Optional {
 const implementation: nodeImplementationOf<Optional.Declaration> =
 	implementNode<Optional.Declaration>({
 		kind: "optional",
-		hasAssociatedError: false,
 		intersectionIsOpen: true,
 		keys: {
 			key: {},

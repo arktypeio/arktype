@@ -228,7 +228,6 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		schema: d["normalizedSchema"],
 		config: ResolvedScopeConfig
 	) => d["normalizedSchema"]
-	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
@@ -310,25 +309,4 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
-): nodeImplementationOf<d> => {
-	const implementation: UnknownNodeImplementation = _ as never
-	if (implementation.hasAssociatedError) {
-		implementation.defaults.expected ??= ctx =>
-			"description" in ctx ?
-				(ctx.description as string)
-			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= data => printable(data)
-		implementation.defaults.problem ??= ctx =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= ctx => {
-			if (ctx.path.length === 0) return ctx.problem
-			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-			if (problemWithLocation[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problemWithLocation}`
-			}
-			return problemWithLocation
-		}
-	}
-	return implementation as never
-}
+): nodeImplementationOf<d> => _ as never

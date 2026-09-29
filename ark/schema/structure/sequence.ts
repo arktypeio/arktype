@@ -88,7 +88,6 @@ export declare namespace Sequence {
 const implementation: nodeImplementationOf<Sequence.Declaration> =
 	implementNode<Sequence.Declaration>({
 		kind: "sequence",
-		hasAssociatedError: false,
 		collapsibleKey: "variadic",
 		keys: {
 			prefix: {

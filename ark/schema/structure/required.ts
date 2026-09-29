@@ -1,5 +1,6 @@
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	compileObjectLiteral,
 	implementNode,
@@ -31,7 +32,6 @@ export declare namespace Required {
 const implementation: nodeImplementationOf<Required.Declaration> =
 	implementNode<Required.Declaration>({
 		kind: "required",
-		hasAssociatedError: true,
 		intersectionIsOpen: true,
 		keys: {
 			key: {},
@@ -41,11 +41,7 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			}
 		},
 		normalize: schema => schema,
-		defaults: {
-			description: node => `${node.compiledKey}: ${node.value.description}`,
-			expected: ctx => ctx.missingValueDescription,
-			actual: () => "missing"
-		}
+		defaults: defaultErrorWriters.required
 	})
 
 export class RequiredNode extends BaseProp<"required"> {

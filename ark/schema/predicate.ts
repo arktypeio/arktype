@@ -5,6 +5,7 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "./shared/declare.ts"
+import { defaultErrorWriters } from "./shared/errorWriters.ts"
 import {
 	compileObjectLiteral,
 	implementNode,
@@ -51,24 +52,16 @@ export declare namespace Predicate {
 	export type Node = PredicateNode
 }
 
-const describePredicate = (predicate: Predicate | undefined) =>
-	`valid according to ${predicate?.name || "an anonymous predicate"}`
-
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
 		kind: "predicate",
-		hasAssociatedError: true,
 		collapsibleKey: "predicate",
 		keys: {
 			predicate: {}
 		},
 		normalize: schema =>
 			typeof schema === "function" ? { predicate: schema } : schema,
-		defaults: {
-			description: node => describePredicate(node.predicate),
-			// error contexts from ctx.reject have neither a description nor a predicate
-			expected: ctx => ctx.description ?? describePredicate(ctx.predicate)
-		},
+		defaults: defaultErrorWriters.predicate,
 		intersectionIsOpen: true
 	})
 

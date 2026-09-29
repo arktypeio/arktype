@@ -10,6 +10,7 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -46,7 +47,6 @@ export declare namespace Unit {
 const implementation: nodeImplementationOf<Unit.Declaration> =
 	implementNode<Unit.Declaration>({
 		kind: "unit",
-		hasAssociatedError: true,
 		keys: {
 			unit: {
 				preserveUndefined: true,
@@ -57,11 +57,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 			}
 		},
 		normalize: schema => schema,
-		defaults: {
-			description: node => printable(node.unit),
-			problem: ({ expected, actual }) =>
-				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
-		}
+		defaults: defaultErrorWriters.unit
 	})
 
 export class UnitNode extends InternalBasis<Unit.Declaration> {

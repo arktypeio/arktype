@@ -49,7 +49,6 @@ export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
 const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
-		hasAssociatedError: false,
 		collapsibleKey: "reference",
 		keys: {
 			reference: {

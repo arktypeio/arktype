@@ -10,6 +10,7 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -56,7 +57,6 @@ export declare namespace Domain {
 const implementation: nodeImplementationOf<Domain.Declaration> =
 	implementNode<Domain.Declaration>({
 		kind: "domain",
-		hasAssociatedError: true,
 		collapsibleKey: "domain",
 		keys: {
 			domain: {},
@@ -75,11 +75,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			) ?
 				{ ...schema, numberAllowsNaN: true }
 			:	schema,
-		defaults: {
-			description: node => domainDescriptions[node.domain],
-			actual: data =>
-				Number.isNaN(data) ? "NaN" : domainDescriptions[domainOf(data)]
-		}
+		defaults: defaultErrorWriters.domain
 	})
 
 export class DomainNode extends InternalBasis<Domain.Declaration> {

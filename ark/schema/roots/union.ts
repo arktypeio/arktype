@@ -2,7 +2,6 @@ import {
 	appendUnique,
 	domainDescriptions,
 	flatMorph,
-	groupBy,
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
@@ -22,6 +21,11 @@ import type {
 	declareNode
 } from "../shared/declare.ts"
 import type { ArkError } from "../shared/errors.ts"
+import {
+	defaultErrorWriters,
+	describeBranches,
+	type DescribeBranchesOptions
+} from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type RootKind,
@@ -84,7 +88,6 @@ export declare namespace Union {
 const implementation: nodeImplementationOf<Union.Declaration> =
 	implementNode<Union.Declaration>({
 		kind: "union",
-		hasAssociatedError: true,
 		collapsibleKey: "branches",
 		keys: {
 			ordered: {},
@@ -129,44 +132,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 			}
 		},
 		normalize: schema => (isArray(schema) ? { branches: schema } : schema),
-		defaults: {
-			description: node =>
-				node.distribute(branch => branch.description, describeBranches),
-			expected: ctx => {
-				const byPath = groupBy(ctx.errors, "propString") as Record<
-					string,
-					ArkError[]
-				>
-				const pathDescriptions = Object.entries(byPath).map(
-					([path, errors]) => {
-						const branchesAtPath: string[] = []
-						for (const errorAtPath of errors)
-							appendUnique(branchesAtPath, errorAtPath.expected)
-
-						const expected = describeBranches(branchesAtPath)
-						// if there are multiple actual descriptions that differ,
-						// just fall back to printable, which is the most specific
-						const actual =
-							errors.every(e => e.actual === errors[0].actual) ?
-								errors[0].actual
-							:	printable(errors[0].data)
-						return `${path && `${path} `}must be ${expected}${
-							actual && ` (was ${actual})`
-						}`
-					}
-				)
-				return describeBranches(pathDescriptions)
-			},
-			problem: ctx => ctx.expected,
-			message: ctx => {
-				if (ctx.problem[0] === "[") {
-					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-					return `value at ${ctx.problem}`
-				}
-
-				return ctx.problem
-			}
-		}
+		defaults: defaultErrorWriters.union
 	})
 
 export class UnionNode extends BaseRoot<Union.Declaration> {
@@ -394,11 +360,6 @@ const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 	])
 })
 
-type DescribeBranchesOptions = {
-	delimiter?: string
-	finalDelimiter?: string
-}
-
 const describeExpressionOptions: DescribeBranchesOptions = {
 	delimiter: " | ",
 	finalDelimiter: " | "
@@ -406,32 +367,6 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 
 const expressBranches = (expressions: string[]) =>
 	describeBranches(expressions, describeExpressionOptions)
-
-export const describeBranches = (
-	descriptions: string[],
-	opts?: DescribeBranchesOptions
-): string => {
-	const delimiter = opts?.delimiter ?? ", "
-	const finalDelimiter = opts?.finalDelimiter ?? " or "
-
-	if (descriptions.length === 0) return "never"
-
-	if (descriptions.length === 1) return descriptions[0]
-	if (
-		(descriptions.length === 2 &&
-			descriptions[0] === "false" &&
-			descriptions[1] === "true") ||
-		(descriptions[0] === "true" && descriptions[1] === "false")
-	)
-		return "boolean"
-
-	// keep track of seen descriptions to avoid duplication
-	const seen: Record<string, true | undefined> = {}
-	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
-	const last = unique.pop()!
-
-	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
-}
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

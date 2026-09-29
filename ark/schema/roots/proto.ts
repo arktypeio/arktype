@@ -4,8 +4,6 @@ import {
 	getBuiltinNameOfConstructor,
 	hasKey,
 	isArray,
-	objectKindDescriptions,
-	objectKindOrDomainOf,
 	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor
@@ -16,6 +14,7 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -65,7 +64,6 @@ export declare namespace Proto {
 const implementation: nodeImplementationOf<Proto.Declaration> =
 	implementNode<Proto.Declaration>({
 		kind: "proto",
-		hasAssociatedError: true,
 		collapsibleKey: "proto",
 		keys: {
 			proto: {
@@ -99,16 +97,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				return { ...schema, dateAllowsInvalid: true }
 			return schema
 		},
-		defaults: {
-			description: node =>
-				node.builtinName ?
-					objectKindDescriptions[node.builtinName]
-				:	`an instance of ${node.proto.name}`,
-			actual: data =>
-				data instanceof Date && data.toString() === "Invalid Date" ?
-					"an invalid Date"
-				:	objectKindOrDomainOf(data)
-		}
+		defaults: defaultErrorWriters.proto
 	})
 
 export class ProtoNode extends InternalBasis<Proto.Declaration> {

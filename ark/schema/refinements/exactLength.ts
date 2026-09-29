@@ -5,6 +5,7 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
+import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -51,11 +52,7 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		hasAssociatedError: true,
-		defaults: {
-			description: node => `exactly length ${node.rule}`,
-			actual: data => `${data.length}`
-		}
+		defaults: defaultErrorWriters.exactLength
 	})
 
 export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Declaration> {

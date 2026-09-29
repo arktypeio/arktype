@@ -58,7 +58,6 @@ export declare namespace Index {
 const implementation: nodeImplementationOf<Index.Declaration> =
 	implementNode<Index.Declaration>({
 		kind: "index",
-		hasAssociatedError: false,
 		intersectionIsOpen: true,
 		keys: {
 			signature: {
