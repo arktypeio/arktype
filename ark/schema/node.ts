@@ -230,6 +230,8 @@ export abstract class BaseNode<
 			:	data => (this.traverseAllows as any)(data)
 	}
 
+	// a node's apply unless a unit binds it as a root, which compiles the same
+	// statements (compileRootApply in scope.ts), so the two change together
 	protected createRootApply(): this["rootApply"] {
 		switch (this.rootApplyStrategy) {
 			case "allows":

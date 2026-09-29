@@ -189,6 +189,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		expressBranches
 	)
 
+	// a unit binding this union compiles the same statements (compileRootApply
+	// in scope.ts), so the two change together
 	createBranchedOptimisticRootApply(): BaseNode["rootApply"] {
 		return (data, onFail) => {
 			const optimisticResult = this.traverseOptimistic(data)

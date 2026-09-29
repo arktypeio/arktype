@@ -1,4 +1,5 @@
 import {
+	DynamicFunction,
 	ParseError,
 	flatMorph,
 	hasDomain,
@@ -7,6 +8,7 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	unset,
 	type Dict,
 	type Fn,
 	type Hkt,
@@ -304,11 +306,77 @@ const precompile = (
 		if (traverseOptimistic)
 			(node as UnionNode).traverseOptimistic = traverseOptimistic
 		node.precompilation = precompilation
+		if (node.isRoot()) bindRootApply(node)
 		if (linkage.closed && isLeafIn(node, linkage.referencesById))
 			reusableLeaves.add(node)
 	}
 
 	return precompilation
+}
+
+// a root a unit binds applies its new traversals through code of its own,
+// compiled on its first call, since most roots a unit binds (nested objects,
+// union branches, the keywords of each scope) are never called directly
+const bindRootApply = (node: BaseRoot) => {
+	node.rootApply = (data, onFail) =>
+		(node.rootApply = compileRootApply(node))(data, onFail)
+}
+
+// the statements createRootApply runs for a root's rootApplyStrategy, in the
+// same order, with its bound traversals as constants. Named for the root, its
+// source is its own, so unlike the closures createRootApply builds from one
+// literal per strategy, it shares no V8 feedback with other roots' applies:
+// each call it makes has one target, which V8 can inline.
+const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
+	const fallback = [
+		"const ctx = new Traversal(data, config)",
+		"apply(data, ctx)",
+		"return ctx.finalize(onFail)"
+	]
+	// a valid result is returned last: V8 weighs a return by its offset in
+	// deciding when to optimize a function, and returned first, it would leave
+	// this one unoptimized for tens of thousands of calls after Maglev inlined
+	// the traversals it calls, running them slower than they run on their own
+	const unlessInvalid = (invalid: string, result: string) => [
+		`if (${invalid}) {`,
+		...fallback.map(line => `    ${line}`),
+		"}",
+		`return ${result}`
+	]
+	const body =
+		node.rootApplyStrategy === "allows" ? unlessInvalid("!allows(data)", "data")
+		: node.rootApplyStrategy === "optimistic" ?
+			unlessInvalid(
+				"!allows(data)",
+				// called on the root, as createRootApply calls it
+				`node.contextFreeMorph(clone && ((typeof data === "object" && data !== null) || typeof data === "function") ? clone(data) : data)`
+			)
+		: node.rootApplyStrategy === "branchedOptimistic" ?
+			[
+				"const optimisticResult = optimistic(data)",
+				...unlessInvalid(`optimisticResult === "${unset}"`, "optimisticResult")
+			]
+		:	fallback
+	// parenthesized so V8 compiles it along with the factory rather than
+	// again on its first call
+	return new DynamicFunction<(...args: unknown[]) => BaseRoot["rootApply"]>(
+		"allows",
+		"apply",
+		"optimistic",
+		"node",
+		"clone",
+		"Traversal",
+		"config",
+		`return (function ${node.id}(data, onFail) {\n    ${body.join("\n    ")}\n})`
+	)(
+		node.traverseAllows,
+		node.traverseApply,
+		(node as UnionNode).traverseOptimistic,
+		node,
+		node.$.resolvedConfig.clone,
+		Traversal,
+		node.$.resolvedConfig
+	)
 }
 
 export type PrecompiledReferences = {

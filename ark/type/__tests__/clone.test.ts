@@ -76,6 +76,34 @@ contextualize(() => {
 		attest(out).unknown.snap({ foo: "bar", customCloned: true })
 	})
 
+	it("clones as configured before a root's own morph", () => {
+		const increment = (o: { n: number }) => {
+			o.n++
+			return o
+		}
+
+		const cloned = type([{ n: "number" }, "=>", increment])
+		const mutated = type.module(
+			{ increment: [{ n: "number" }, "=>", increment] },
+			{ clone: false }
+		).increment
+		const customCloned = type.module(
+			{ increment: [{ n: "number" }, "=>", increment] },
+			{ clone: original => ({ ...original, customCloned: true }) }
+		).increment
+
+		// the first call to a root and later ones apply it the same way
+		for (let i = 0; i < 2; i++) {
+			const original = { n: 1 }
+			attest(cloned(original)).snap({ n: 2 })
+			attest(original).snap({ n: 1 })
+			attest(mutated(original)).is(original)
+			attest(original).snap({ n: 2 })
+			attest(customCloned(original)).unknown.snap({ n: 3, customCloned: true })
+			attest(original).snap({ n: 2 })
+		}
+	})
+
 	// process.env is an exotic object- ensure it is correctly cloned
 	// https://discord.com/channels/957797212103016458/1116551844710330458
 	it("can clone process.env", () => {
