@@ -84,4 +84,41 @@ contextualize(() => {
 		attest(o.foo).snap("foo3")
 		attest(cloned.foo).snap("foo4")
 	})
+
+	it("defines properties it could assign through a Proxy prototype", () => {
+		const traps: string[] = []
+		const proto = new Proxy(
+			{},
+			{
+				has: (target, k) => {
+					traps.push(`has ${String(k)}`)
+					return Reflect.has(target, k)
+				},
+				// stores nothing
+				set: (_, k) => {
+					traps.push(`set ${String(k)}`)
+					return true
+				}
+			}
+		)
+		const original = Object.create(proto)
+		Object.defineProperties(original, {
+			a: { value: 1, writable: true, enumerable: true, configurable: true },
+			b: {
+				value: { c: 2 },
+				writable: true,
+				enumerable: true,
+				configurable: true
+			}
+		})
+
+		const cloned = deepClone(original)
+
+		attest(Object.getPrototypeOf(cloned) === proto).equals(true)
+		attest(Object.getOwnPropertyDescriptors(cloned)).equals(
+			Object.getOwnPropertyDescriptors(original)
+		)
+		attest(cloned.b !== original.b).equals(true)
+		attest(traps).equals([])
+	})
 })

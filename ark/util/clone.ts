@@ -17,10 +17,14 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 	// are rebound in case they reference `this` (see https://x.com/colinhacks/status/1818422039210049985)
 	if (builtinConstructorName && builtinConstructorName !== "Array") return input
 
-	const cloned =
-		Array.isArray(input) ?
-			input.slice()
-		:	Object.create(Object.getPrototypeOf(input))
+	let cloned: any
+	let plainPrototype = false
+	if (Array.isArray(input)) cloned = input.slice()
+	else {
+		const proto = Object.getPrototypeOf(input)
+		cloned = Object.create(proto)
+		plainPrototype = proto === Object.prototype || proto === null
+	}
 
 	// behaves as defining Object.getOwnPropertyDescriptors(input) on cloned,
 	// after a deep clone has cloned their values in a for...in over them
@@ -48,14 +52,17 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 		if (!desc) continue
 		if (!("get" in desc || "set" in desc) && desc.writable) {
 			// assigning defines a writable, enumerable, configurable value if k
-			// is an element slice copied to a builtin array or is nowhere on
-			// cloned's prototype chain
+			// is an element slice copied to a builtin array, or if k is nowhere
+			// on cloned's prototype chain and its prototype is Object.prototype
+			// or null. Any other prototype could be exotic, like a Proxy, whose
+			// traps would see the `in` and decide what the assignment stores
 			if (
 				desc.enumerable &&
 				desc.configurable &&
-				((builtinConstructorName === "Array" &&
-					Object.prototype.hasOwnProperty.call(cloned, k)) ||
-					!(k in cloned))
+				(plainPrototype ?
+					!(k in cloned)
+				:	builtinConstructorName === "Array" &&
+					Object.prototype.hasOwnProperty.call(cloned, k))
 			) {
 				cloned[k] = desc.value
 				continue
