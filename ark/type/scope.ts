@@ -6,6 +6,8 @@ import {
 	BaseScope,
 	hasArkKind,
 	parseGeneric,
+	RootModule,
+	withFixedGlobalConfig,
 	type AliasDefEntry,
 	type ArkSchemaRegistry,
 	type ArkSchemaScopeConfig,
@@ -33,6 +35,7 @@ import {
 } from "@ark/schema"
 import {
 	Scanner,
+	defineLazily,
 	enumValues,
 	isArray,
 	isThunk,
@@ -214,7 +217,19 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 			const config = this.resolvedConfig.keywords?.[qualifiedName]
 
-			if (config) def = [def, "@", config] satisfies TupleExpression
+			if (config) {
+				// a thunk is configured as it resolves, so it stays unparsed until
+				// then
+				if (isThunk(def)) {
+					const thunk = def
+					def = () => {
+						const resolution = thunk()
+						return hasArkKind(resolution, "generic") ? resolution : (
+								([resolution, "@", config] satisfies TupleExpression)
+							)
+					}
+				} else def = [def, "@", config] satisfies TupleExpression
+			}
 
 			return [alias, def]
 		}
@@ -341,6 +356,31 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	static module: ModuleParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 		InternalScope.scope(def as never, config).export()) as never
+}
+
+/**
+ * A module of keywords, built on first reference: its scope is constructed
+ * with the global config fixed on import when any member is first read, and
+ * each member resolves when it is.
+ */
+export const keywordModule = (
+	def: Dict,
+	config: ArkScopeConfig
+): RootModule => {
+	const module = new RootModule({})
+	let exports: RootModule | undefined
+	for (const name in def) {
+		if (name[0] === "#") continue
+		defineLazily(
+			module,
+			name,
+			() =>
+				(exports ??= withFixedGlobalConfig(() =>
+					new InternalScope(def, config).exportLazily()
+				))[name as never]
+		)
+	}
+	return module
 }
 
 export const scope: ScopeParser = Object.assign(InternalScope.scope, {

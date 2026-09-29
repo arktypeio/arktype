@@ -1,13 +1,11 @@
 import {
 	ecmascriptConstructors,
-	flatMorph,
 	platformConstructors,
 	type EcmascriptObjects,
 	type KeySet,
 	type PlatformObjects
 } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-import { Scope } from "../scope.ts"
 import { arkArray } from "./Array.ts"
 import { arkFormData } from "./FormData.ts"
 import { TypedArray } from "./TypedArray.ts"
@@ -18,15 +16,27 @@ const omittedPrototypes = {
 	String: 1
 } satisfies KeySet<keyof EcmascriptObjects>
 
-export const arkPrototypes: arkPrototypes.module = Scope.module({
-	...flatMorph(
-		{ ...ecmascriptConstructors, ...platformConstructors },
-		(k, v) => (k in omittedPrototypes ? [] : ([k, ["instanceof", v]] as const))
-	),
+const instanceOfDefinitions: Record<string, unknown> = {}
+
+// each constructor is read on first reference, since reading some (e.g.
+// FormData) can load the platform's fetch implementation
+for (const constructors of [ecmascriptConstructors, platformConstructors]) {
+	for (const k of Object.keys(constructors)) {
+		if (!(k in omittedPrototypes)) {
+			instanceOfDefinitions[k] = () => [
+				"instanceof",
+				constructors[k as keyof typeof constructors]
+			]
+		}
+	}
+}
+
+export const arkPrototypes = {
+	...instanceOfDefinitions,
 	Array: arkArray,
 	TypedArray,
 	FormData: arkFormData
-}) as never
+}
 
 export declare namespace arkPrototypes {
 	export type module = Module<submodule>

@@ -25,6 +25,9 @@ const tableRowsByName = flatMorph(tableNames, (i, name) => [
 	[] as JSX.Element[]
 ])
 
+// keywords resolve on first reference, so resolve them all
+ark.export()
+
 const formatDescription = (description: string): JSX.Element => {
 	if (!description.includes("`")) return <>{description}</>
 

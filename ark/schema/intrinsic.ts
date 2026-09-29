@@ -1,5 +1,10 @@
 import { lazily } from "@ark/util"
-import { bootstrapRootScope, node, schemaScope } from "./scope.ts"
+import {
+	bootstrapRootScope,
+	node,
+	schemaScope,
+	withFixedGlobalConfig
+} from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
 
@@ -68,15 +73,31 @@ const bootstrapIntrinsic = () => {
 }
 
 let bootstrapped = false
+let bootstrappedIntrinsic: typeof $ark.intrinsic | undefined
+
+// reading $ark.intrinsic bootstraps, so the registry has the intrinsics
+// before anything is parsed
+Object.defineProperty($ark, "intrinsic", {
+	get: () => {
+		bootstrap()
+		return bootstrappedIntrinsic
+	},
+	set: v => {
+		bootstrappedIntrinsic = v
+	},
+	enumerable: true,
+	configurable: true
+})
 
 /**
  * Parse the nodes every scope shares, precompile the root scope and parse
  * the intrinsics.
  *
- * Deferred to first use- constructing a scope, parsing in the root scope or
- * reading an intrinsic- rather than run on import, so that a set engine
- * installed by a package that itself imports @ark/schema (i.e. arksets) is in
- * place before any node is reduced or discriminated.
+ * Deferred to first use- parsing or reading an intrinsic- rather than run on
+ * import, so that a set engine installed by a package that itself imports
+ * @ark/schema (i.e. arksets) is in place before any node is reduced or
+ * discriminated. Parsed with the global config fixed by fixGlobalConfig, if
+ * one is.
  */
 export const bootstrap = (): void => {
 	if (bootstrapped) return
@@ -84,12 +105,22 @@ export const bootstrap = (): void => {
 	// unset if it fails so the next call reports the original error again
 	bootstrapped = true
 	try {
-		bootstrapRootScope()
-		bootstrapIntrinsic()
+		withFixedGlobalConfig(() => {
+			bootstrapRootScope()
+			bootstrapIntrinsic()
+		})
 	} catch (e) {
 		bootstrapped = false
 		throw e
 	}
+	// nodes read it as they are constructed, so from here on it is a plain
+	// property
+	Object.defineProperty($ark, "intrinsic", {
+		value: bootstrappedIntrinsic,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
 }
 
 export const intrinsic: ReturnType<typeof bootstrapIntrinsic> = lazily(() => {

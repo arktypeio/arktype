@@ -1,5 +1,10 @@
-import type { ArkErrors, arkKind, flatResolutionsOf } from "@ark/schema"
-import type { Brand, inferred } from "@ark/util"
+import {
+	fixGlobalConfig,
+	type ArkErrors,
+	type arkKind,
+	type flatResolutionsOf
+} from "@ark/schema"
+import { defineLazily, type Brand, type inferred } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { DeclarationParser } from "../declare.ts"
 import type { FnParser } from "../fn.ts"
@@ -58,6 +63,10 @@ export declare namespace Ark {
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
 
+// keywords and the intrinsics are built on first reference, from the config
+// as it is now
+fixGlobalConfig()
+
 export const ark: Scope<Ark> = scope(
 	{
 		...arkTsKeywords,
@@ -68,40 +77,79 @@ export const ark: Scope<Ark> = scope(
 		number,
 		object,
 		unknown
-	},
+	} as never,
 	{ name: "ark" }
 ) as never
 
-export const keywords: Module<Ark> = ark.export()
+// exported keywords that stay interpreted until parsed by name, as an export
+// of the whole scope leaves them: each shares its id with a rebound copy that
+// displaces it from the references the export compiles. The interpreter and
+// the JIT describe some unions differently (e.g. FormData.value), so
+// compiling one would change its messages. A configured keyword is a node of
+// its own, and is compiled.
+const interpretedKeywords = [
+	"object.root",
+	"object.json.root",
+	"string.date.iso.root",
+	"string.date.epoch.root",
+	"string.integer.root",
+	"string.normalize.root",
+	"string.numeric.root",
+	"unknown.root",
+	"unknown.any",
+	"Array.root",
+	"Array.readonly",
+	"FormData.value"
+]
 
-Object.assign($arkTypeRegistry.ambient, keywords)
+export const keywords: Module<Ark> = ark.internal.exportLazily(
+	new Set(
+		interpretedKeywords.filter(
+			name =>
+				!ark.internal.resolvedConfig.keywords?.[
+					name.endsWith(".root") ? name.slice(0, -5) : name
+				]
+		)
+	)
+) as never
 
-$arkTypeRegistry.typeAttachments = {
-	string: keywords.string.root,
-	number: keywords.number.root,
-	bigint: keywords.bigint,
-	boolean: keywords.boolean,
-	symbol: keywords.symbol,
-	undefined: keywords.undefined,
-	null: keywords.null,
-	object: keywords.object.root,
-	unknown: keywords.unknown.root,
-	false: keywords.false,
-	true: keywords.true,
-	never: keywords.never,
-	arrayIndex: keywords.Array.index,
-	Key: keywords.Key,
-	Record: keywords.Record,
-	Array: keywords.Array.root,
-	Date: keywords.Date
-}
+// the keywords' own accessors, so that each resolves on first reference
+// through either
+Object.defineProperties(
+	$arkTypeRegistry.ambient,
+	Object.getOwnPropertyDescriptors(keywords)
+)
 
-export const type: TypeParser<{}> = Object.assign(
+const typeAttachments = {} as Ark.boundTypeAttachments<any>
+
+for (const [k, resolve] of Object.entries({
+	string: () => keywords.string.root,
+	number: () => keywords.number.root,
+	bigint: () => keywords.bigint,
+	boolean: () => keywords.boolean,
+	symbol: () => keywords.symbol,
+	undefined: () => keywords.undefined,
+	null: () => keywords.null,
+	object: () => keywords.object.root,
+	unknown: () => keywords.unknown.root,
+	false: () => keywords.false,
+	true: () => keywords.true,
+	never: () => keywords.never,
+	arrayIndex: () => keywords.Array.index,
+	Key: () => keywords.Key,
+	Record: () => keywords.Record,
+	Array: () => keywords.Array.root,
+	Date: () => keywords.Date
+}))
+	defineLazily(typeAttachments, k, resolve)
+
+$arkTypeRegistry.typeAttachments = typeAttachments
+
+export const type: TypeParser<{}> = Object.defineProperties(
 	ark.type,
-	// assign attachments newly parsed in keywords
-	// future scopes add these directly from the
-	// registry when their TypeParsers are instantiated
-	$arkTypeRegistry.typeAttachments
+	// define attachments on ark's parser, which predates them. future scopes
+	// bind these from the registry when their TypeParsers are instantiated
+	Object.getOwnPropertyDescriptors(typeAttachments)
 ) as never
 
 export declare namespace type {

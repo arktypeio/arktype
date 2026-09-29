@@ -1,8 +1,8 @@
 import { genericNode, intrinsic, rootSchema } from "@ark/schema"
-import { Hkt, liftArray, type Digit } from "@ark/util"
+import { cached, Hkt, liftArray, type Digit } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
-import { Scope } from "../scope.ts"
+import { keywordModule } from "../scope.ts"
 
 class liftFromHkt extends Hkt<[element: unknown]> {
 	declare body: liftArray<this[0]> extends infer lifted ?
@@ -10,23 +10,25 @@ class liftFromHkt extends Hkt<[element: unknown]> {
 	:	never
 }
 
-const liftFrom = genericNode("element")(args => {
-	const nonArrayElement = args.element.exclude(intrinsic.Array)
-	const lifted = nonArrayElement.array()
-	return nonArrayElement
-		.rawOr(lifted)
-		.pipe(liftArray)
-		.distribute(
-			branch => branch.assertHasKind("morph").declareOut(lifted),
-			rootSchema
-		)
-}, liftFromHkt)
+const liftFrom = cached(() =>
+	genericNode("element")(args => {
+		const nonArrayElement = args.element.exclude(intrinsic.Array)
+		const lifted = nonArrayElement.array()
+		return nonArrayElement
+			.rawOr(lifted)
+			.pipe(liftArray)
+			.distribute(
+				branch => branch.assertHasKind("morph").declareOut(lifted),
+				rootSchema
+			)
+	}, liftFromHkt)
+)
 
-export const arkArray: arkArray.module = Scope.module(
+export const arkArray: arkArray.module = keywordModule(
 	{
-		root: intrinsic.Array,
+		root: () => intrinsic.Array,
 		readonly: "root",
-		index: intrinsic.nonNegativeIntegerString,
+		index: () => intrinsic.nonNegativeIntegerString,
 		liftFrom
 	},
 	{
@@ -43,7 +45,7 @@ export declare namespace arkArray {
 		root: unknown[]
 		readonly: readonly unknown[]
 		index: NonNegativeIntegerString
-		liftFrom: typeof liftFrom.t
+		liftFrom: ReturnType<typeof liftFrom>["t"]
 	}
 }
 

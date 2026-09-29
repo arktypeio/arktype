@@ -179,6 +179,38 @@ export interface ResolvedScopeConfig
 	extends ResolvedConfig,
 		ScopeOnlyConfigOptions {}
 
+type GlobalConfig = {
+	config: ArkSchemaConfig
+	resolvedConfig: ResolvedConfig
+}
+
+let fixedGlobalConfig: GlobalConfig | undefined
+let constructingWithFixedConfig = false
+
+/**
+ * Fix the global config that the intrinsics, and scopes constructed through
+ * withFixedGlobalConfig, merge theirs onto as the current one, so that
+ * configuring later changes neither. arktype fixes it on import, since its
+ * keywords and the intrinsics are built on first reference.
+ */
+export const fixGlobalConfig = (): void => {
+	fixedGlobalConfig ??= {
+		config: { ...$ark.config },
+		resolvedConfig: $ark.resolvedConfig
+	}
+}
+
+/** Construct scopes merging their config onto the fixed global config, if any */
+export const withFixedGlobalConfig = <t>(construct: () => t): t => {
+	const outer = constructingWithFixedConfig
+	constructingWithFixedConfig = fixedGlobalConfig !== undefined
+	try {
+		return construct()
+	} finally {
+		constructingWithFixedConfig = outer
+	}
+}
+
 $ark.ambient ??= {} as never
 
 let rawUnknownUnion: UnionNode | undefined
@@ -512,7 +544,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly aliases: Record<string, unknown> = {}
 	resolved = false
 	readonly nodesByHash: Record<string, BaseNode> = {}
-	readonly intrinsic: Omit<typeof $ark.intrinsic, `json${string}`>
+	// the unknown union is cached on the scope's first parse, after the
+	// process's first parse has bootstrapped
+	private unknownUnionCached = constructingRootSchemaScope
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -520,9 +554,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
-		this.config = mergeConfigs($ark.config, config)
+		const globalConfig = constructingWithFixedConfig ? fixedGlobalConfig! : $ark
 
-		this.resolvedConfig = mergeConfigs($ark.resolvedConfig, config)
+		this.config = mergeConfigs(globalConfig.config, config)
+
+		this.resolvedConfig = mergeConfigs(globalConfig.resolvedConfig, config)
 
 		this.name =
 			this.resolvedConfig.name ?? `anonymousScope${anonymousScopeCount++}`
@@ -555,27 +591,22 @@ export abstract class BaseScope<$ extends {} = {}> {
 					:	registerParseContext(this.createParseContext(preparsed)).id
 			}
 		}
+	}
 
-		if (!constructingRootSchemaScope) {
-			// a scope with nothing to parse may still be unbootstrapped here, and
-			// doing it from inside the unknown union's parse would build the union
-			// twice
-			bootstrap()
-			cacheUnknownUnion(this)
-		}
-
+	get intrinsic(): Omit<typeof $ark.intrinsic, `json${string}`> {
 		// intrinsic won't be available during bootstrapping,  so we lie
 		// about the type here as an extrnal convenience
-		this.intrinsic = {} as never
+		const bound = {} as never
 		const intrinsic = $ark.intrinsic
 		for (const k in intrinsic) {
 			// don't include cyclic aliases from JSON scope
 			if (k.startsWith("json")) continue
 			// bound on first access, since a scope reads few of them
-			defineLazily(this.intrinsic, k, () =>
+			defineLazily(bound, k, () =>
 				this.bindReference(intrinsic[k as keyof typeof intrinsic])
 			)
 		}
+		return this.cacheGetter("intrinsic", bound)
 	}
 
 	protected cacheGetter<name extends keyof this>(
@@ -746,6 +777,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		name: string
 	): BaseRoot | GenericRoot | undefined {
 		return (
+			(this.lazyExports && maybeResolveExport(this.lazyExports, name)) ??
 			maybeResolveSubalias(this.aliases, name) ??
 			maybeResolveSubalias(this.ambient, name)
 		)
@@ -812,6 +844,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// any parse may be the process's first, so the shared nodes and
 		// intrinsics take their ids ahead of the one allocated here
 		bootstrap()
+		if (!this.unknownUnionCached) {
+			this.unknownUnionCached = true
+			cacheUnknownUnion(this)
+		}
 		const id = input.id ?? registerNodeId(input.prefix)
 		return Object.assign(input, {
 			[arkKind]: "context" as const,
@@ -862,9 +898,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			for (const name of this.exportedNames) {
 				const def = this.aliases[name]
 				this._exports[name] =
-					hasArkKind(def, "module") ?
-						bindModule(def, this)
-					:	bootstrapAliasReferences(this.maybeResolve(name)!)
+					this.lazyExports ? this.lazyExports[name]
+					: hasArkKind(def, "module") ? bindModule(def, this)
+					: bootstrapAliasReferences(this.maybeResolve(name)!)
 			}
 
 			// force node.resolution getter evaluation
@@ -876,10 +912,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this._json = resolutionsToJson(this._exportedResolutions)
 			Object.assign(this.resolutions, this._exportedResolutions)
 
-			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless)
-				this.precompilation = precompile(this.references, this)
-			this.resolved = true
+			// lazy exports are compiled as they resolve
+			if (!this.lazyExports) {
+				this.references = Object.values(this.referencesById)
+				if (!this.resolvedConfig.jitless)
+					this.precompilation = precompile(this.references, this)
+				this.resolved = true
+			}
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return new RootModule(
@@ -893,7 +932,40 @@ export abstract class BaseScope<$ extends {} = {}> {
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): instantiateRoot<$[name]> {
-		return this.export()[name as never]
+		return (this.lazyExports ?? this.export())[name as never]
+	}
+
+	private lazyExports: InternalModule | undefined
+
+	/**
+	 * Export as a module whose members resolve on first access, each bound as
+	 * export binds it and compiled, unless its flat name is among those
+	 * `interpreted` names given on the first call. export reads them.
+	 */
+	exportLazily(
+		interpreted: ReadonlySet<string> = new Set()
+	): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }> {
+		if (!this.lazyExports) {
+			const exports = new RootModule({})
+			for (const name of this.exportedNames) {
+				defineLazily(exports, name, () => {
+					const def = this.aliases[name]
+					return hasArkKind(def, "module") ?
+							bindModuleLazily(def, this, name, interpreted)
+						:	finalizeExport(
+								this,
+								bootstrapAliasReferences(this.maybeResolve(name)!),
+								name,
+								interpreted
+							)
+				})
+			}
+			this.lazyExports = exports as never
+			// its exports are compiled as they resolve, not with the scope's
+			// references, so resolving one adds none
+			this.resolved = true
+		}
+		return this.lazyExports as never
 	}
 
 	node = <
@@ -988,6 +1060,58 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 	protected normalizeRootScopeValue(v: unknown): unknown {
 		return v
 	}
+}
+
+// a module bound to $ as bindModule binds it, each member on first access,
+// and compiled unless interpreted names it
+const bindModuleLazily = (
+	module: InternalModule,
+	$: BaseScope,
+	prefix: string,
+	interpreted: ReadonlySet<string>
+): InternalModule => {
+	const bound = new RootModule({})
+	for (const k in module) {
+		const name = `${prefix}.${k}`
+		defineLazily(bound, k, () => {
+			const resolution = module[k]
+			return hasArkKind(resolution, "module") ?
+					bindModuleLazily(resolution, $, name, interpreted)
+				:	finalizeExport(
+						$,
+						$.bindReference(resolution as BaseRoot | GenericRoot),
+						name,
+						interpreted
+					)
+		})
+	}
+	return bound as never
+}
+
+const finalizeExport = (
+	$: BaseScope,
+	resolution: BaseRoot | GenericRoot,
+	name: string,
+	interpreted: ReadonlySet<string>
+) =>
+	hasArkKind(resolution, "root") && !interpreted.has(name) ?
+		$.finalize(resolution)
+	:	resolution
+
+// the root or generic a lazily exported scope's flat name refers to, if any
+const maybeResolveExport = (
+	exports: InternalModule,
+	name: string
+): BaseRoot | GenericRoot | undefined => {
+	if (!name.includes(".")) return
+	let resolution: unknown = exports
+	for (const k of name.split(".")) {
+		if (!hasArkKind(resolution, "module")) return
+		resolution = (resolution as Dict)[k]
+	}
+	return hasArkKind(resolution, "root") || hasArkKind(resolution, "generic") ?
+			resolution
+		:	undefined
 }
 
 // each parse context gets a new id, because a nested definition can refer to
