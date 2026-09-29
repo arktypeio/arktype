@@ -196,10 +196,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return `${reference}(${arg})`
 	}
 
-	// the only way emitted code names a node: with a kind, its traversal of
-	// that kind, declared under this name by its unit; without one, the node
-	// itself, e.g. as its key in ctx.seen. Overriding it renames every
-	// reference to a node consistently.
+	// how emitted code names a node: with a kind, its traversal of that kind,
+	// declared under this name by its unit; without one, the node itself, e.g.
+	// as its key in ctx.seen. Overriding it renames every traversal a unit
+	// declares or invokes and every seen key consistently. A node a morph
+	// pipes to is not named: ctx.queueMorphs is passed the node itself, as a
+	// value read through ref.
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		return opts?.kind ? `${id}${opts.kind}` : id
 	}
