@@ -1,68 +1,78 @@
 import { attest, contextualize } from "@ark/attest"
-import { describeCollapsibleDate, throwError } from "@ark/util"
+import { describeCollapsibleDate } from "@ark/util"
 
-const newYorkDate = (dateString: string) => {
-	const date = new Date(dateString)
-	if (date.getMonth() > 1 && date.getMonth() < 11) {
-		throwError(
-			`This test util only supports months not affected by Daylight Savings Time`
-		)
-	}
-	date.setHours(date.getHours() + 5)
-	return date
-}
+// tests run with TZ set to America/New_York (see mocha.globalSetup.ts),
+// so these also verify descriptions don't depend on the local timezone
 
 contextualize(() => {
 	it("returns year for date with only year precision", () => {
-		const date = newYorkDate("2023-01-01")
+		const date = new Date("2023-01-01")
 		const result = describeCollapsibleDate(date)
 		attest(result).snap("2023")
 	})
 
 	it("returns full date for date with day precision", () => {
-		const date = newYorkDate("2023-01-15")
+		const date = new Date("2023-01-15")
 		const result = describeCollapsibleDate(date)
 		attest(result).snap("January 15, 2023")
 	})
 
 	it("returns full date and time for date with minutes precision", () => {
-		const date = newYorkDate("2023-01-15T14:30:00.000Z")
+		const date = new Date("2023-01-15T14:30:00.000Z")
 		const result = describeCollapsibleDate(date)
-		attest(result).snap("2:30 PM, January 15, 2023")
+		attest(result).snap("January 15, 2023, 2:30 PM UTC")
 	})
 
 	it("returns full date and time for date with seconds", () => {
-		const date = newYorkDate("1993-02-15T14:30:31")
+		const date = new Date("1993-02-15T19:30:31Z")
 		const result = describeCollapsibleDate(date)
-		attest(result).snap("7:30:31 PM, February 15, 1993")
+		attest(result).snap("February 15, 1993, 7:30:31 PM UTC")
 	})
 
 	it("returns full date and time with milliseconds", () => {
-		const date = newYorkDate("2023-12-15T14:30:00.123Z")
+		const date = new Date("2023-12-15T14:30:00.123Z")
 		const result = describeCollapsibleDate(date)
-		attest(result).snap("2:30:00.123 PM, December 15, 2023")
+		attest(result).snap("December 15, 2023, 2:30:00.123 PM UTC")
 	})
 
 	it("handles midnight correctly", () => {
-		const date = newYorkDate("2023-01-15T00:00:00.000Z")
+		const date = new Date("2023-01-15T00:00:00.000Z")
 		const result = describeCollapsibleDate(date)
 		attest(result).snap("January 15, 2023")
 	})
 
 	it("handles noon correctly", () => {
-		const date = newYorkDate("2023-02-15T12:00:00.000Z")
+		const date = new Date("2023-02-15T12:00:00.000Z")
 		const result = describeCollapsibleDate(date)
-		attest(result).snap("12:00 PM, February 15, 2023")
+		attest(result).snap("February 15, 2023, 12:00 PM UTC")
 	})
 
 	it("handles AM/PM correctly", () => {
-		const dateAM = newYorkDate("2023-01-15T09:00:00.000Z")
+		const dateAM = new Date("2023-01-15T09:00:00.000Z")
 		const resultAM = describeCollapsibleDate(dateAM)
-		attest(resultAM).snap("9:00 AM, January 15, 2023")
+		attest(resultAM).snap("January 15, 2023, 9:00 AM UTC")
 
-		const datePM = newYorkDate("2023-01-15T21:00:00.000Z")
+		const datePM = new Date("2023-01-15T21:00:00.000Z")
 		const resultPM = describeCollapsibleDate(datePM)
-		attest(resultPM).snap("9:00 PM, January 15, 2023")
+		attest(resultPM).snap("January 15, 2023, 9:00 PM UTC")
+	})
+
+	it("collapses local midnight", () => {
+		attest(describeCollapsibleDate(new Date(2023, 0, 1))).snap("2023")
+		attest(describeCollapsibleDate(new Date(2023, 0, 15))).snap(
+			"January 15, 2023"
+		)
+	})
+
+	it("describes local times in UTC", () => {
+		// 9 AM in New York is 2 PM UTC
+		const date = new Date(2023, 0, 15, 9)
+		attest(describeCollapsibleDate(date)).snap("January 15, 2023, 2:00 PM UTC")
+	})
+
+	it("doesn't collapse year for a time on January 1", () => {
+		const date = new Date("2023-01-01T14:30:00.000Z")
+		attest(describeCollapsibleDate(date)).snap("January 1, 2023, 2:30 PM UTC")
 	})
 
 	it("doesn't depend on the default locale's time format", () => {
@@ -72,8 +82,10 @@ contextualize(() => {
 			return toLocaleTimeString.call(this, "de-DE")
 		}
 		try {
-			const date = newYorkDate("2023-01-15T14:30:00.000Z")
-			attest(describeCollapsibleDate(date)).snap("2:30 PM, January 15, 2023")
+			const date = new Date("2023-01-15T14:30:00.000Z")
+			attest(describeCollapsibleDate(date)).snap(
+				"January 15, 2023, 2:30 PM UTC"
+			)
 		} finally {
 			Date.prototype.toLocaleTimeString = toLocaleTimeString
 		}

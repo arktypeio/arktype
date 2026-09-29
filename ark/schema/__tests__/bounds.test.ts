@@ -72,17 +72,17 @@ contextualize(() => {
 		})
 
 		attest(T.traverse(dateCases.lessThanMin)?.toString()).snap(
-			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.004 PM, December 31, 1969)"
+			"must be January 1, 1970, 12:00:00.006 AM UTC or later (was January 1, 1970, 12:00:00.004 AM UTC)"
 		)
 		attest(T.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
-			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.005 PM, December 31, 1969)"
+			"must be January 1, 1970, 12:00:00.006 AM UTC or later (was January 1, 1970, 12:00:00.005 AM UTC)"
 		)
 		attest(T.traverse(dateCases.between)).equals(dateCases.between)
 		attest(T.traverse(dateCases.equalToInclusiveMax)).equals(
 			dateCases.equalToInclusiveMax
 		)
 		attest(T.traverse(dateCases.greaterThanMax)?.toString()).snap(
-			"must be 7:00:00.010 PM, December 31, 1969 or earlier (was 7:00:00.011 PM, December 31, 1969)"
+			"must be January 1, 1970, 12:00:00.010 AM UTC or earlier (was January 1, 1970, 12:00:00.011 AM UTC)"
 		)
 	})
 
