@@ -15,6 +15,7 @@
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"sideEffects": false,
 	"exports": {
 		".": {
 			"ark-ts": "./index.ts",
