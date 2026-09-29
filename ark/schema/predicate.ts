@@ -67,8 +67,6 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	serializedPredicate: RegisteredReference = registeredReference(this.predicate)
-	compiledCondition = `${this.serializedPredicate}(data, ctx)`
-	compiledNegation = `!${this.compiledCondition}`
 
 	impliedBasis = null
 

@@ -21,7 +21,6 @@ import {
 	type mutable,
 	type requireKeys
 } from "@ark/util"
-import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
 	NormalizedSchema,
@@ -46,7 +45,6 @@ import type {
 import type { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
-	constraintKinds,
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
@@ -431,20 +429,8 @@ export abstract class BaseNode<
 		return kinds.includes(this.kind)
 	}
 
-	assertHasKindIn<kinds extends NodeKind[]>(
-		...kinds: kinds
-	): nodeOfKind<kinds[number]> {
-		if (!includes(kinds, this.kind))
-			throwError(`${this.kind} node was not one of asserted kinds ${kinds}`)
-		return this as never
-	}
-
 	isBasis(): this is nodeOfKind<BasisKind> {
 		return includes(basisKinds, this.kind)
-	}
-
-	isConstraint(): this is BaseConstraint {
-		return includes(constraintKinds, this.kind)
 	}
 
 	isStructural(): this is nodeOfKind<StructuralKind> {

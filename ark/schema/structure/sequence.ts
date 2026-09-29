@@ -206,7 +206,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	prefixLength: number = this.prefix?.length ?? 0
 	defaultablesLength: number = this.defaultables?.length ?? 0
-	optionalsLength: number = this.optionals?.length ?? 0
 	postfixLength: number = this.postfix?.length ?? 0
 	defaultablesAndOptionals: BaseRoot[] = []
 	prevariadic: array<PrevariadicSequenceElement> = this.tuple.filter(

@@ -66,10 +66,6 @@ export class CompiledFunction<
 		return compileLiteralPropAccess(key, optional)
 	}
 
-	index(key: string | number, optional = false): string {
-		return indexPropAccess(`${key}`, optional)
-	}
-
 	line(statement: string): this {
 		;(this.body as any) += `${" ".repeat(this.indentation)}${statement}\n`
 		return this
@@ -80,20 +76,8 @@ export class CompiledFunction<
 		return this
 	}
 
-	let(identifier: string, expression: CoercibleValue): this {
-		return this.line(`let ${identifier} = ${expression}`)
-	}
-
-	set(identifier: string, expression: CoercibleValue): this {
-		return this.line(`${identifier} = ${expression}`)
-	}
-
 	if(condition: string, then: (self: this) => this): this {
 		return this.block(`if (${condition})`, then)
-	}
-
-	elseIf(condition: string, then: (self: this) => this): this {
-		return this.block(`else if (${condition})`, then)
 	}
 
 	else(then: (self: this) => this): this {
@@ -126,15 +110,8 @@ export class CompiledFunction<
 		return this.line(`return ${expression}`)
 	}
 
-	write(name = "anonymous", indent: number = 0): string {
-		return `${name}(${this.argNames.join(", ")}) { ${
-			indent ?
-				this.body
-					.split("\n")
-					.map(l => " ".repeat(indent) + `${l}`)
-					.join("\n")
-			:	this.body
-		} }`
+	write(name = "anonymous"): string {
+		return `${name}(${this.argNames.join(", ")}) { ${this.body} }`
 	}
 
 	compile(): compiledSignature {
@@ -169,7 +146,6 @@ export interface InvokeOptions extends ReferenceOptions {
 
 export interface ReferenceOptions {
 	kind?: TraversalKind
-	bind?: string
 }
 
 export declare namespace NodeCompiler {
@@ -225,8 +201,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	// itself, e.g. as its key in ctx.seen. Overriding it renames every
 	// reference to a node consistently.
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		const base = opts?.kind ? `${id}${opts.kind}` : id
-		return opts?.bind ? `${base}.bind(${opts.bind})` : base
+		return opts?.kind ? `${id}${opts.kind}` : id
 	}
 
 	// names a value emitted code reads. In a unit, the name is a parameter of

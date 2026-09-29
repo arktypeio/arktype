@@ -51,12 +51,6 @@ export abstract class BaseRange<
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
-	// we need to compute stringLimit before errorContext, which references it
-	// transitively through description for date bounds
-	readonly stringLimit: string =
-		this.boundOperandKind === "date" ?
-			dateLimitToString(this.numericLimit)
-		:	`${this.numericLimit}`
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
 
@@ -301,9 +295,6 @@ export type BoundOperandKind = "value" | "length" | "date"
 export type LengthBoundableData = string | array
 
 export type DateRangeKind = "before" | "after"
-
-export const dateLimitToString = (limit: LimitSchemaValue): string =>
-	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
 export const writeUnboundableMessage = <root extends string>(
 	root: root

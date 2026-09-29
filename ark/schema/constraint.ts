@@ -6,26 +6,19 @@ import {
 	type describe,
 	type listable
 } from "@ark/util"
-import type {
-	NodeSchema,
-	Prerequisite,
-	innerAttachedAs,
-	nodeOfKind
-} from "./kinds.ts"
+import type { NodeSchema, Prerequisite, innerAttachedAs } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
 import type { NodeParseContext } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
-import type { Disjoint } from "./shared/disjoint.ts"
 import {
 	compileObjectLiteral,
 	type ConstraintKind,
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { sets } from "./shared/sets.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
 
@@ -60,12 +53,6 @@ export abstract class BaseConstraint<
 
 	abstract readonly impliedBasis: BaseRoot | null
 	readonly impliedSiblings?: array<BaseConstraint>
-
-	intersect<r extends BaseConstraint>(
-		r: r
-	): intersectConstraintKinds<d["kind"], r["kind"]> {
-		return sets().intersect(this, r, this.$) as never
-	}
 }
 
 export abstract class InternalPrimitiveConstraint<
@@ -126,11 +113,6 @@ export const constraintKeyParser =
 		if (child.isRoot()) return
 		return (child.hasOpenIntersection() ? [child] : child) as never
 	}
-
-export type intersectConstraintKinds<
-	l extends ConstraintKind,
-	r extends ConstraintKind
-> = nodeOfKind<l | r | "unit" | "union"> | Disjoint | null
 
 export const throwInvalidOperandError = (
 	...args: Parameters<typeof writeInvalidOperandMessage>

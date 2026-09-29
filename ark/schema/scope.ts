@@ -1,6 +1,5 @@
 import {
 	DynamicFunction,
-	ParseError,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -377,12 +376,6 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		Traversal,
 		node.$.resolvedConfig
 	)
-}
-
-export type PrecompiledReferences = {
-	[k: `${string}Allows`]: TraverseAllows
-	[k: `${string}Apply`]: TraverseApply
-	[k: `${string}Optimistic`]: (data: unknown) => unknown
 }
 
 type PrecompiledTraversals = [
@@ -1103,18 +1096,6 @@ export const bootstrapRootScope = (): void => {
 	cacheUnknownUnion(rootSchemaScope)
 	// ensure the scope is resolved so JIT will be applied to future types
 	rootSchemaScope.export()
-}
-
-export const parseAsSchema = (
-	def: unknown,
-	opts?: BaseParseOptions
-): BaseRoot | ParseError => {
-	try {
-		return rootSchema(def as RootSchema, opts) as never
-	} catch (e) {
-		if (e instanceof ParseError) return e
-		throw e
-	}
 }
 
 export type RootExportCache = Record<
