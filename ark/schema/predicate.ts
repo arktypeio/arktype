@@ -100,15 +100,16 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
+		const condition = `${js.ref(this.predicate)}(data, ctx)`
 		if (js.traversalKind === "Allows") {
-			js.return(this.compiledCondition)
+			js.return(condition)
 			return
 		}
 
 		js.initializeErrorCount()
 		js.if(
 			// only add the default error if the predicate didn't add one itself
-			`${this.compiledNegation} && ctx.currentErrorCount === errorCount`,
+			`!${condition} && ctx.currentErrorCount === errorCount`,
 			() => js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
 		)
 	}

@@ -280,7 +280,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					if (v.rootApplyStrategy === "branchedOptimistic")
 						caseResult = js.invoke(v, { kind: "Optimistic" })
 					else if (v.contextFreeMorph)
-						caseResult = `${js.invoke(v)} ? ${registeredReference(v.contextFreeMorph)}(data) : "${unset}"`
+						caseResult = `${js.invoke(v)} ? ${js.ref(v.contextFreeMorph)}(data) : "${unset}"`
 					else caseResult = `${js.invoke(v)} ? data : "${unset}"`
 				} else caseResult = js.invoke(v)
 
@@ -352,7 +352,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					js.return(
 						optimistic ?
 							branch.contextFreeMorph ?
-								`${registeredReference(branch.contextFreeMorph)}(data)`
+								`${js.ref(branch.contextFreeMorph)}(data)`
 							:	"data"
 						:	true
 					)

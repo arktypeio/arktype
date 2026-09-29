@@ -219,9 +219,10 @@ const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
 ): string => {
-	const unit = precompileReferences(references)
+	const refs: NodeCompiler.Refs = new Map()
+	const unit = precompileReferences(references, refs)
 	const precompilation = unit.write(rootScopeFnName)
-	const traversalsByReference = unit.compile()()
+	const traversalsByReference = unit.compile()(...refs.keys())
 
 	for (let i = 0; i < references.length; i++) {
 		const node = references[i]
@@ -261,31 +262,42 @@ type PrecompiledTraversals = [
 // a unit declares each traversal as a const-bound function expression, so
 // members call each other directly (function declarations delay TurboFan's
 // optimization of large units), then returns each reference's traversals in
-// the order of references
-const precompileReferences = (references: readonly BaseNode[]) => {
-	const unit = new CompiledFunction<() => PrecompiledTraversals[]>()
+// the order of references. Its parameters are the values its traversals read
+// through js.ref, passed in the order of refs.
+const precompileReferences = (
+	references: readonly BaseNode[],
+	refs: NodeCompiler.Refs
+) => {
+	const unit = new CompiledFunction<
+		(...refs: unknown[]) => PrecompiledTraversals[],
+		string[]
+	>()
 	const traversalsByReference = references.map(node => {
 		const traversals = [
-			declareTraversal(unit, node, "Allows"),
-			declareTraversal(unit, node, "Apply")
+			declareTraversal(unit, refs, node, "Allows"),
+			declareTraversal(unit, refs, node, "Apply")
 		]
 		// an Optimistic traversal runs only from a branchedOptimistic union's
 		// root apply, or from another Optimistic traversal for a discriminant
 		// case that is itself branchedOptimistic
 		if (node.rootApplyStrategy === "branchedOptimistic")
-			traversals.push(declareTraversal(unit, node, "Optimistic"))
+			traversals.push(declareTraversal(unit, refs, node, "Optimistic"))
 		return `[${traversals.join(", ")}]`
 	})
+	unit.argNames.push(...refs.values())
 	return unit.return(`[${traversalsByReference.join(", ")}]`)
 }
 
 const declareTraversal = (
 	unit: CompiledFunction,
+	refs: NodeCompiler.Refs,
 	node: BaseNode,
 	kind: TraversalKind
 ): string => {
 	const js = new NodeCompiler(
-		kind === "Optimistic" ? { kind: "Allows", optimistic: true } : { kind }
+		kind === "Optimistic" ?
+			{ kind: "Allows", optimistic: true, refs }
+		:	{ kind, refs }
 	).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })

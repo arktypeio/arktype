@@ -147,7 +147,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			return
 		}
 		if (this.introspectableIn) js.line(js.invoke(this.introspectableIn))
-		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
+		js.line(`ctx.queueMorphs([${this.morphs.map(morph => js.ref(morph))}])`)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

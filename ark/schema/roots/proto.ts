@@ -10,6 +10,7 @@ import {
 	type BuiltinObjectKind,
 	type Constructor
 } from "@ark/util"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
@@ -134,6 +135,19 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 			`data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 		)
 	compiledNegation = `!(${this.compiledCondition})`
+
+	compile(js: NodeCompiler): void {
+		// compiledCondition reads a builtin constructor as a global
+		if (this.builtinName) return super.compile(js)
+
+		const condition = `data instanceof ${js.ref(this.proto)}`
+		if (js.traversalKind === "Allows") js.return(condition)
+		else {
+			js.if(`!(${condition})`, () =>
+				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+			)
+		}
+	}
 
 	expression: string =
 		this.dateAllowsInvalid ? "Date | InvalidDate" : this.proto.name

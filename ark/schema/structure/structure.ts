@@ -531,8 +531,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
-		// bound by compilePropsByKey
-		if (this.props.length) parts.push("k in propsByKey")
+		if (this.props.length) parts.push(`k in ${js.ref(this.propsByKey)}`)
 
 		if (this.index) {
 			for (const index of this.index)
@@ -571,7 +570,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.const("keys", "Object.keys(data)")
 			js.const("symbols", "Object.getOwnPropertySymbols(data)")
 			js.if("symbols.length", () => js.line("keys.push(...symbols)"))
-			if (this.undeclared === "reject") compilePropsByKey(js, this)
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
 		}
 
@@ -686,12 +684,6 @@ const getPossibleMorph = (
 	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
 }
 
-// binds the registered propsByKey once per function rather than reading it
-// from the registry once per key
-const compilePropsByKey = (js: NodeCompiler, node: Structure.Node) => {
-	if (node.props.length) js.const("propsByKey", node.propsByKeyReference)
-}
-
 const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
 	const requiresContext =
 		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
@@ -701,23 +693,21 @@ const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
 
 	return js.block(`${args} => `, js => {
 		for (let i = 0; i < node.defaultable.length; i++) {
-			const { serializedKey, defaultValueMorphRef } = node.defaultable[i]
+			const { serializedKey, defaultValueMorph } = node.defaultable[i]
 			js.if(`!(${serializedKey} in data)`, js =>
-				js.line(`${defaultValueMorphRef}${args}`)
+				js.line(`${js.ref(defaultValueMorph)}${args}`)
 			)
 		}
 
 		if (node.sequence?.defaultables) {
 			js.for(
 				`i < ${node.sequence.defaultables.length}`,
-				js =>
-					js.line(`${node.sequence!.defaultValueMorphsReference}[i]${args}`),
+				js => js.line(`${js.ref(node.sequence!.defaultValueMorphs)}[i]${args}`),
 				`data.length - ${node.sequence.prefixLength}`
 			)
 		}
 
 		if (node.undeclared === "delete") {
-			compilePropsByKey(js, node)
 			js.forIn("data", js =>
 				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
 					js.line(`delete data[k]`)

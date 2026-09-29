@@ -10,7 +10,7 @@
 //             and distinct precompilation strings reachable from them
 //   create    µs per type: 2,000 distinct objects (default and jitless), 200
 //             composites over a 40-type pool, 100 scopes of 20 aliases
-//   validate  ns per allows and apply at steady state, over 10 cases
+//   validate  ns per allows and apply at steady state, over 11 cases
 //   memory    registry ids and heap after gc, around 5,000 discarded types
 //   bundle    esbuild min and gzip bytes of arktype, @ark/schema, arksets and
 //             a minimal app

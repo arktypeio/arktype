@@ -160,17 +160,23 @@ export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
 		optimistic?: true
+		refs?: Refs
 	}
+
+	/** each value a unit's traversals read, by the unit parameter naming it */
+	export type Refs = Map<object | symbol, string>
 }
 
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	optimistic: boolean
+	readonly refs: NodeCompiler.Refs | undefined
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
 		this.optimistic = ctx.optimistic === true
+		this.refs = ctx.refs
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
@@ -194,6 +200,17 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const base = opts?.kind ? `${id}${opts.kind}` : id
 		return opts?.bind ? `${base}.bind(${opts.bind})` : base
+	}
+
+	// names a value emitted code reads. In a unit, the name is a parameter of
+	// the unit, shared by its traversals and numbered by first read, so a read
+	// is a closure variable rather than a lookup on the registry (which is in
+	// dictionary mode). Outside a unit, it is the value's registered reference.
+	ref(value: object | symbol): string {
+		if (!this.refs) return registeredReference(value)
+		let name = this.refs.get(value)
+		if (name === undefined) this.refs.set(value, (name = `r${this.refs.size}`))
+		return name
 	}
 
 	requiresContextFor(node: BaseNode): boolean {

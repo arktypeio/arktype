@@ -112,6 +112,7 @@ const cases = {
 		data: [{ a: "x" }, { b: 1 }, { c: true }, { d: ["x"] }]
 	},
 	"morph pipe": { T: type("string.numeric.parse"), data: ["12345"] },
+	narrow: { T: type("number").narrow(n => n % 2 === 0), data: [2] },
 	"defaults + optional": {
 		T: type({
 			a: "string",
