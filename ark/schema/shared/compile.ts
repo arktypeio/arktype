@@ -242,12 +242,15 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		// value Allows rejects once more, so gates nested along a failing path
 		// would each add a run. Apply gates only where what it skips scales: a
 		// key in a loop, traversed for each element or key of the data, or a
-		// union, whose Apply records an error for each branch that fails before
-		// one passes. A rejected value's checks then run once more per loop or
-		// union around it.
+		// union checking its branches in order, whose Apply records an error for
+		// each branch that fails before one passes. A union switching on its
+		// discriminant applies only the branch matching it, so like a nested
+		// object, it isn't gated. A rejected value's checks then run once more
+		// per loop or gated union around it.
 		if (
 			this.traversalKind === "Apply" &&
-			(writingLoop.has(this) || node.hasKind("union")) &&
+			(writingLoop.has(this) ||
+				(node.hasKind("union") && !node.compiledDiscriminant)) &&
 			isDecidedByAllows(node)
 		) {
 			return this.if(

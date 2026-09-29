@@ -213,23 +213,31 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return unset
 	}
 
+	// the discriminant compiled traversal switches on, or null if it checks
+	// the branches in order, when Apply records an error for each branch that
+	// fails before one passes
+	get compiledDiscriminant(): Discriminant | null {
+		// if we have a union of two units like `boolean`, the
+		// undiscriminated compilation will be just as fast
+		return (
+				this.unitBranches.length === this.branches.length &&
+					this.branches.length === 2
+			) ?
+				null
+			:	this.discriminant
+	}
+
 	compile(js: NodeCompiler): void {
-		if (
-			!this.discriminant ||
-			// if we have a union of two units like `boolean`, the
-			// undiscriminated compilation will be just as fast
-			(this.unitBranches.length === this.branches.length &&
-				this.branches.length === 2)
-		)
-			return this.compileIndiscriminable(js)
+		const discriminant = this.compiledDiscriminant
+		if (!discriminant) return this.compileIndiscriminable(js)
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		let condition = this.discriminant.optionallyChainedPropString
+		let condition = discriminant.optionallyChainedPropString
 
-		if (this.discriminant.kind === "domain")
+		if (discriminant.kind === "domain")
 			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
 
-		const cases = this.discriminant.cases
+		const cases = discriminant.cases
 
 		const caseKeys = Object.keys(cases)
 
@@ -263,7 +271,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}
 
 		const expected = describeBranches(
-			this.discriminant.kind === "domain" ?
+			discriminant.kind === "domain" ?
 				caseKeys.map(k => {
 					const jsTypeOf = k.slice(1, -1) as JsTypeOf
 					return jsTypeOf === "function" ?
@@ -273,13 +281,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			:	caseKeys
 		)
 
-		const serializedPathSegments = this.discriminant.path.map(k =>
+		const serializedPathSegments = discriminant.path.map(k =>
 			typeof k === "symbol" ? registeredReference(k) : JSON.stringify(k)
 		)
 
 		const serializedExpected = JSON.stringify(expected)
 		const serializedActual =
-			this.discriminant.kind === "domain" ?
+			discriminant.kind === "domain" ?
 				`${serializedTypeOfDescriptions}[${condition}]`
 			:	`${serializedPrintable}(${condition})`
 

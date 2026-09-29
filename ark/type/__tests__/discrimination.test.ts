@@ -565,4 +565,23 @@ contextualize(() => {
 			}).toString()
 		).snap("layout must be an array (was string)")
 	})
+
+	it("checks a rejected prop value no more when a discriminated union wraps it", () => {
+		const reads = (T: type.Any) => {
+			let count = 0
+			const v = Object.defineProperty({}, "a", {
+				get: () => {
+					count++
+					return 5
+				},
+				enumerable: true
+			})
+			attest(T({ v }).toString()).equals("v.a must be a string (was a number)")
+			return count
+		}
+		const A = type({ a: "string" })
+		// switching on the domain applies only the object branch, so Apply
+		// needn't check v with Allows first
+		attest(reads(type({ v: A.or("null") }))).equals(reads(type({ v: A })))
+	})
 })
