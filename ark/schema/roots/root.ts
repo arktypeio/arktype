@@ -94,8 +94,9 @@ export abstract class BaseRoot<
 		return this
 	}
 
+	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
-		return {
+		return (this._standard ??= {
 			vendor: "arktype",
 			version: 1,
 			validate: input => {
@@ -115,7 +116,7 @@ export abstract class BaseRoot<
 						...opts.libraryOptions
 					}) as never
 			}
-		}
+		})
 	}
 
 	as(): this {
