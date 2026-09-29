@@ -294,4 +294,21 @@ contextualize(() => {
 		)
 		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
 	})
+
+	it("calls a predicate once per value it applies, even a rejected one", () => {
+		let calls = 0
+		const Positive = type("number").narrow(n => {
+			calls++
+			return n > 0
+		})
+		// the morph makes the root apply its keys without checking allows first
+		const T = type({
+			values: Positive.array(),
+			parsed: "string.numeric.parse"
+		})
+		attest(T({ values: [1, -1, 2], parsed: "5" }).toString()).snap(
+			"values[1] must be valid according to an anonymous predicate (was -1)"
+		)
+		attest(calls).equals(3)
+	})
 })

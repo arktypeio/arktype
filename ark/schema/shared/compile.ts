@@ -13,6 +13,22 @@ import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
+// builders writing the body of a loop, which runs once for each element or
+// key of the data
+const writingLoop = new WeakSet<CompiledFunction<any, any>>()
+
+const loopBlock = <js extends CompiledFunction<any, any>>(
+	js: js,
+	prefix: string,
+	body: (self: js) => js
+): js => {
+	if (writingLoop.has(js)) return js.block(prefix, body)
+	writingLoop.add(js)
+	js.block(prefix, body)
+	writingLoop.delete(js)
+	return js
+}
+
 export class CompiledFunction<
 	compiledSignature = (...args: unknown[]) => unknown,
 	args extends readonly string[] = readonly string[]
@@ -90,12 +106,12 @@ export class CompiledFunction<
 		body: (self: this) => this,
 		initialValue: CoercibleValue = 0
 	): this {
-		return this.block(`for (let i = ${initialValue}; ${until}; i++)`, body)
+		return loopBlock(this, `for (let i = ${initialValue}; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */
 	forIn(object: string, body: (self: this) => this): this {
-		return this.block(`for (const k in ${object})`, body)
+		return loopBlock(this, `for (const k in ${object})`, body)
 	}
 
 	block(prefix: string, contents: (self: this) => this, suffix = ""): this {
@@ -167,6 +183,17 @@ export declare namespace NodeCompiler {
 	export type Refs = Map<object | symbol, string>
 }
 
+// the Apply of a node that can't transform a value or read context adds no
+// error to a value its Allows accepts and does nothing else, so such a value
+// can skip it. A node that calls a predicate is left out, so that a rejected
+// value doesn't call the predicate a second time.
+const isDecidedByAllows = (node: BaseNode): boolean => {
+	if (node.includesTransform || node.allowsRequiresContext) return false
+	for (const id in node.referencesById)
+		if (node.referencesById[id].hasKind("predicate")) return false
+	return true
+}
+
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	optimistic: boolean
@@ -236,6 +263,27 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		accessExpression: string,
 		node: BaseNode
 	): this {
+		// checking a child with Allows before applying it runs the checks of a
+		// value Allows rejects once more, so gates nested along a failing path
+		// would each add a run. Apply gates only where what it skips scales: a
+		// key in a loop, traversed for each element or key of the data, or a
+		// union, whose Apply records an error for each branch that fails before
+		// one passes. A rejected value's checks then run once more per loop or
+		// union around it.
+		if (
+			this.traversalKind === "Apply" &&
+			(writingLoop.has(this) || node.hasKind("union")) &&
+			isDecidedByAllows(node)
+		) {
+			return this.if(
+				`!${this.invoke(node, { arg: accessExpression, kind: "Allows" })}`,
+				() =>
+					this.line(`${this.ctx}.path.push(${keyExpression})`)
+						.check(node, { arg: accessExpression })
+						.line(`${this.ctx}.path.pop()`)
+			)
+		}
+
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
