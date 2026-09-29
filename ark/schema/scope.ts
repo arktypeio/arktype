@@ -168,7 +168,6 @@ export type GlobalOnlyConfigOptionName = satisfy<
 
 export interface ScopeOnlyConfigOptions {
 	name?: string
-	prereducedAliases?: boolean
 }
 
 export interface ArkSchemaScopeConfig

@@ -69,7 +69,7 @@ export const ark: Scope<Ark> = scope(
 		object,
 		unknown
 	},
-	{ prereducedAliases: true, name: "ark" }
+	{ name: "ark" }
 ) as never
 
 export const keywords: Module<Ark> = ark.export()
