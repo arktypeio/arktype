@@ -3,8 +3,10 @@
 // as documented, so if it loaded its own copy of the registry, the one arktype
 // loads would install as $ark2.
 import "arktype/config"
-import { type } from "arktype"
+import { scope, type } from "arktype"
+import { readdirSync, readFileSync } from "node:fs"
 import { createRequire } from "node:module"
+import ts from "typescript"
 
 console.log(
 	"📦 Checking that each built package's entries share one set of modules...\n"
@@ -52,8 +54,32 @@ const errors = type("string")(5)
 
 if (
 	errors.constructor.name !== "ArkErrors" ||
-	errors[0].constructor.name !== "ArkError"
+	errors[0].constructor.name !== "ArkError" ||
+	schema.Disjoint.name !== "Disjoint" ||
+	scope({}).constructor.name !== "InternalScope"
 )
 	throw new Error("⚠️  Bundling renamed a class.")
+
+// keepNames would name each of those classes in a static block, syntax that
+// needs Safari 16.4, newer than anything else shipped
+for (const pkg of ["util", "schema", "sets", "regex", "type"]) {
+	const dir = new URL(`../${pkg}/out/`, import.meta.url)
+	for (const name of readdirSync(dir).filter(name => name.endsWith(".js"))) {
+		const visit = node => {
+			if (ts.isClassStaticBlockDeclaration(node))
+				throw new Error(`⚠️  ${pkg}/out/${name} has a class static block.`)
+			ts.forEachChild(node, visit)
+		}
+		visit(
+			ts.createSourceFile(
+				name,
+				readFileSync(new URL(name, dir), "utf8"),
+				ts.ScriptTarget.Latest,
+				true,
+				ts.ScriptKind.JS
+			)
+		)
+	}
+}
 
 console.log("🧩 Every entry shares its package's modules and names!")

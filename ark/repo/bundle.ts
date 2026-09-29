@@ -43,8 +43,11 @@ export const bundle = (): void => {
 		logLevel: "warning"
 	})
 	for (const path of perModuleJs) rmRf(path)
-	for (const file of outputFiles)
-		writeFile(file.path, dropRedundantNames(file.text))
+	const bundles = outputFiles.map(file => dropRedundantNames(file.text))
+	const withoutHelper = bundles.map(withoutNameHelper)
+	const helperRead = withoutHelper.includes(undefined)
+	for (let i = 0; i < outputFiles.length; i++)
+		writeFile(outputFiles[i].path, helperRead ? bundles[i] : withoutHelper[i]!)
 }
 
 const publicEntryPoints = (): string[] => [
@@ -60,6 +63,26 @@ const publicEntryPoints = (): string[] => [
 	)
 ]
 
+type Edit = [start: number, end: number, replacement: string]
+
+const parse = (js: string) =>
+	ts.createSourceFile(
+		"bundle.js",
+		js,
+		ts.ScriptTarget.Latest,
+		true,
+		ts.ScriptKind.JS
+	)
+
+const applyEdits = (js: string, edits: Edit[]) =>
+	edits
+		.sort(([l], [r]) => r - l)
+		.reduce(
+			(result, [start, end, replacement]) =>
+				result.slice(0, start) + replacement + result.slice(end),
+			js
+		)
+
 /**
  * keepNames wraps each function or class bundling could rename in
  * __name(value, "name"), a defineProperty that also moves a function to
@@ -67,16 +90,16 @@ const publicEntryPoints = (): string[] => [
  * an anonymous function or class assigned to a variable, class field or
  * property of that name, or a declaration of that name. A class field's call
  * runs for every instance, so only calls that change a name are kept.
+ *
+ * A class that refers to itself is written `var X = class _X {...}`, its
+ * references inside bound to _X, and named in a static block. Static blocks
+ * need Safari 16.4, newer than any other syntax in the output, so the class
+ * is renamed X along with those references (see renamesTo), and the language
+ * names it X.
  */
 const dropRedundantNames = (js: string): string => {
-	const file = ts.createSourceFile(
-		"bundle.js",
-		js,
-		ts.ScriptTarget.Latest,
-		true,
-		ts.ScriptKind.JS
-	)
-	const edits: [start: number, end: number, replacement: string][] = []
+	const file = parse(js)
+	const edits: Edit[] = []
 	const drop = (node: ts.Node) =>
 		edits.push([node.getFullStart(), node.getEnd(), ""])
 	const visit = (node: ts.Node): void => {
@@ -95,10 +118,17 @@ const dropRedundantNames = (js: string): string => {
 				const block = statement.parent.parent
 				if (
 					ts.isClassStaticBlockDeclaration(block) &&
-					block.body.statements.length === 1 &&
-					classNameOf(block.parent) === name
-				)
-					drop(block)
+					block.body.statements.length === 1
+				) {
+					const renames =
+						classNameOf(block.parent) === name ?
+							[]
+						:	renamesTo(block.parent, name)
+					if (renames) {
+						drop(block)
+						edits.push(...renames)
+					}
+				}
 			} else if (
 				ts.isIdentifier(value) &&
 				value.text === name &&
@@ -118,13 +148,127 @@ const dropRedundantNames = (js: string): string => {
 		ts.forEachChild(node, visit)
 	}
 	visit(file)
-	return edits
-		.sort(([l], [r]) => r - l)
-		.reduce(
-			(result, [start, end, replacement]) =>
-				result.slice(0, start) + replacement + result.slice(end),
-			js
+	return applyEdits(js, edits)
+}
+
+/**
+ * edits renaming the inner binding of `var name = class _X {...}` to name, if
+ * every reference to _X in it then binds to the class's own name as it did to
+ * _X: name appears nowhere in the class, and no _X in it is a property or
+ * declaration name rather than a reference
+ */
+const renamesTo = (
+	node: ts.ClassLikeDeclaration,
+	name: string
+): Edit[] | undefined => {
+	if (
+		!ts.isClassExpression(node) ||
+		!node.name ||
+		inferredNameOf(node) !== name
+	)
+		return
+	const inner = node.name.text
+	const renames: Edit[] = [[node.name.getStart(), node.name.getEnd(), name]]
+	let renamable = true
+	const visit = (child: ts.Node): void => {
+		if (ts.isIdentifier(child)) {
+			const parent = child.parent as { name?: ts.Node; propertyName?: ts.Node }
+			if (child.text === name) renamable = false
+			else if (child.text === inner) {
+				if (parent.name === child || parent.propertyName === child)
+					renamable = false
+				else renames.push([child.getStart(), child.getEnd(), name])
+			}
+		}
+		ts.forEachChild(child, visit)
+	}
+	ts.forEachChild(node, child => {
+		if (child !== node.name) visit(child)
+	})
+	return renamable ? renames : undefined
+}
+
+/**
+ * the file without keepNames' helper, or undefined if it reads the helper.
+ * esbuild declares __name, and the __defProp it reads, in one file of the
+ * build, which exports it to each other file that wrapped anything. Once no
+ * file calls it, those declarations, imports and exports are all dead.
+ */
+const withoutNameHelper = (js: string): string | undefined => {
+	const file = parse(js)
+	const edits: Edit[] = []
+	let helper: ts.Node | undefined
+	let defProp: ts.Node | undefined
+	const defPropReads: ts.Node[] = []
+	let readsHelper = false
+	const visit = (node: ts.Node): void => {
+		if (ts.isIdentifier(node) && node.text === "__name") {
+			const { parent } = node
+			if (isTopLevelDeclaration(parent)) helper = parent.parent.parent
+			else if (
+				(ts.isImportSpecifier(parent) || ts.isExportSpecifier(parent)) &&
+				!parent.propertyName
+			)
+				edits.push(withoutSpecifier(parent))
+			else readsHelper = true
+		} else if (ts.isIdentifier(node) && node.text === "__defProp") {
+			if (isTopLevelDeclaration(node.parent))
+				defProp = node.parent.parent.parent
+			else defPropReads.push(node)
+		}
+		ts.forEachChild(node, visit)
+	}
+	visit(file)
+	if (readsHelper) return
+	// with the blank lines after it, since the helper leads the file
+	const drop = (statement: ts.Node) => {
+		let end = statement.getEnd()
+		while (js[end] === "\n") end++
+		edits.push([statement.getStart(), end, ""])
+	}
+	if (helper) drop(helper)
+	// __defProp goes too if the helper was all that read it
+	if (
+		defProp &&
+		defPropReads.every(
+			read =>
+				helper &&
+				read.getStart() >= helper.getStart() &&
+				read.getEnd() <= helper.getEnd()
 		)
+	)
+		drop(defProp)
+	return applyEdits(js, edits)
+}
+
+const isTopLevelDeclaration = (node: ts.Node) =>
+	ts.isVariableDeclaration(node) &&
+	ts.isVariableStatement(node.parent.parent) &&
+	ts.isSourceFile(node.parent.parent.parent)
+
+/** an edit removing specifier from its import or export */
+const withoutSpecifier = (
+	specifier: ts.ImportSpecifier | ts.ExportSpecifier
+): Edit => {
+	const { elements } = specifier.parent
+	const i = elements.indexOf(specifier as never)
+	if (elements.length > 1) {
+		// with the comma after it, or before it if it is last
+		return i < elements.length - 1 ?
+				[specifier.getFullStart(), elements[i + 1].getFullStart(), ""]
+			:	[elements[i - 1].getEnd(), specifier.getEnd(), ""]
+	}
+	if (ts.isExportSpecifier(specifier)) {
+		const statement = specifier.parent.parent
+		return [statement.getFullStart(), statement.getEnd(), ""]
+	}
+	// an import still loads its module, which evaluates in the same order
+	const statement = specifier.parent.parent.parent
+	return [
+		statement.getStart(),
+		statement.getEnd(),
+		`import ${statement.moduleSpecifier.getText()};`
+	]
 }
 
 const nameCallOf = (node: ts.Node) =>
