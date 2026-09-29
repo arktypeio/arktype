@@ -288,8 +288,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const serializedExpected = JSON.stringify(expected)
 		const serializedActual =
 			discriminant.kind === "domain" ?
-				`${serializedTypeOfDescriptions}[${condition}]`
-			:	`${serializedPrintable}(${condition})`
+				`${js.ref(jsTypeOfDescriptions)}[${condition}]`
+			:	`${js.ref(printable)}(${condition})`
 
 		js.line(`ctx.errorFromNodeContext({
 	code: "predicate",
@@ -345,10 +345,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.isBoolean ? "boolean" : `(${this.expression})`
 	}
 }
-
-const serializedTypeOfDescriptions = registeredReference(jsTypeOfDescriptions)
-
-const serializedPrintable = registeredReference(printable)
 
 export const Union = {
 	implementation,

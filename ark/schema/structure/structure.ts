@@ -3,6 +3,7 @@ import {
 	conflatenate,
 	conflatenateAll,
 	flatMorph,
+	nameOf,
 	printable,
 	spliterate,
 	throwParseError,
@@ -29,11 +30,7 @@ import {
 	type nodeImplementationOf,
 	type StructuralKind
 } from "../shared/implement.ts"
-import {
-	$ark,
-	registeredReference,
-	type RegisteredReference
-} from "../shared/registry.ts"
+import { $ark } from "../shared/registry.ts"
 import {
 	traverseKey,
 	type InternalTraversal,
@@ -214,10 +211,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
 		this.props,
 		(i, node) => [node.key, node] as const
-	)
-
-	propsByKeyReference: RegisteredReference = registeredReference(
-		this.propsByKey
 	)
 
 	expression: string = structuralExpression(this)
@@ -556,9 +549,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
 	}
 
-	structuralMorphRef: RegisteredReference | undefined =
-		this.structuralMorph && registeredReference(this.structuralMorph)
-
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
@@ -582,7 +572,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (js.traversalKind === "Allows") return js.return(true)
 
 		// always queue deleteUndeclared on valid traversal for "delete"
-		if (this.structuralMorphRef) {
+		if (this.structuralMorph) {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
 			js.if("ctx && !ctx.hasError()", () => {
@@ -630,11 +620,15 @@ const constructStructuralMorphCacheKey = (
 ): string => {
 	let cacheKey = ""
 
+	// default morphs are keyed by the names nameOf gives them, which are
+	// unique to each morph and don't register it
 	for (let i = 0; i < node.defaultable.length; i++)
-		cacheKey += node.defaultable[i].defaultValueMorphRef
+		cacheKey += `${nameOf(node.defaultable[i].defaultValueMorph)} `
 
-	if (node.sequence?.defaultValueMorphsReference)
-		cacheKey += node.sequence?.defaultValueMorphsReference
+	// a discriminated tuple case's structure has an array of sequence nodes as
+	// its sequence, which has no default morphs
+	if (node.sequence?.defaultValueMorphs?.length)
+		cacheKey += `${nameOf(node.sequence.defaultValueMorphs)} `
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("

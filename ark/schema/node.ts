@@ -825,8 +825,7 @@ export const flatMorphsAreEqual = (
 	(l.node.hasKind("morph") && r.node.hasKind("morph") ?
 		l.node.hasEqualMorphs(r.node)
 	: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
-		l.node.structure?.structuralMorphRef ===
-		r.node.structure?.structuralMorphRef
+		l.node.structure?.structuralMorph === r.node.structure?.structuralMorph
 	:	false)
 
 export const appendUniqueFlatRefs = <node extends BaseRoot>(

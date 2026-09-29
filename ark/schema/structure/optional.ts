@@ -16,7 +16,6 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { registeredReference } from "../shared/registry.ts"
 import { traverseKey } from "../shared/traversal.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
@@ -40,10 +39,7 @@ export declare namespace Optional {
 	export type Node = OptionalNode
 
 	export namespace Node {
-		export type withDefault = requireKeys<
-			Node,
-			"default" | "defaultValueMorph" | "defaultValueMorphRef"
-		>
+		export type withDefault = requireKeys<Node, "default" | "defaultValueMorph">
 	}
 }
 
@@ -103,9 +99,6 @@ export class OptionalNode extends BaseProp<"optional"> {
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
 	defaultValueMorph: Morph | undefined = getDefaultableMorph(this)
-
-	defaultValueMorphRef: string | undefined =
-		this.defaultValueMorph && registeredReference(this.defaultValueMorph)
 }
 
 export const Optional = {

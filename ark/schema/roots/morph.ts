@@ -84,7 +84,9 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 	})
 
 export class MorphNode extends BaseRoot<Morph.Declaration> {
-	serializedMorphs: string[] = this.morphs.map(registeredReference)
+	get serializedMorphs(): string[] {
+		return this.morphs.map(registeredReference)
+	}
 
 	lastMorph: Morph | BaseRoot | undefined =
 		this.inner.morphs[this.inner.morphs.length - 1]

@@ -30,7 +30,7 @@ import {
 	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { $ark, registeredReference } from "../shared/registry.ts"
+import { $ark } from "../shared/registry.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
@@ -283,11 +283,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: []
 
 	defaultValueMorphs: Morph[] = getDefaultableMorphs(this)
-
-	defaultValueMorphsReference =
-		this.defaultValueMorphs.length ?
-			registeredReference(this.defaultValueMorphs)
-		:	undefined
 
 	optionalize(): SequenceNode {
 		const { prefix, defaultables, ...inner } = this.inner
