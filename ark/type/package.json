@@ -25,6 +25,16 @@
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
+		"./internal/config.ts": {
+			"ark-ts": "./config.ts",
+			"types": "./out/config.d.ts",
+			"default": "./out/config.js"
+		},
+		"./internal/config.js": {
+			"ark-ts": "./config.ts",
+			"types": "./out/config.d.ts",
+			"default": "./out/config.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",

@@ -20,7 +20,9 @@ import {
  *
  * out/ keeps a .d.ts per module, which "./internal/*" resolves to for types.
  * At runtime it resolves to the main entry, whose modules a deep import then
- * shares instead of evaluating copies of them.
+ * shares instead of evaluating copies of them. "./internal/config.ts" (and
+ * .js) resolves to the config entry, so configuring through it still runs
+ * before the rest of the package evaluates, as keyword config must.
  */
 export const bundle = (): void => {
 	const perModuleJs = walkPaths(fromCwd("out"), {
@@ -45,13 +47,18 @@ export const bundle = (): void => {
 		writeFile(file.path, dropRedundantNames(file.text))
 }
 
-const publicEntryPoints = (): string[] =>
-	Object.entries<string | { default: string }>(
-		readPackageJson(process.cwd()).exports
-	).flatMap(([subpath, target]) => {
-		const file = typeof target === "string" ? target : target.default
-		return !subpath.includes("*") && file.endsWith(".js") ? [fromCwd(file)] : []
-	})
+const publicEntryPoints = (): string[] => [
+	...new Set(
+		Object.entries<string | { default: string }>(
+			readPackageJson(process.cwd()).exports
+		).flatMap(([subpath, target]) => {
+			const file = typeof target === "string" ? target : target.default
+			return !subpath.includes("*") && file.endsWith(".js") ?
+					[fromCwd(file)]
+				:	[]
+		})
+	)
+]
 
 /**
  * keepNames wraps each function or class bundling could rename in

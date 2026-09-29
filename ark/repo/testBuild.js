@@ -4,6 +4,7 @@
 // loads would install as $ark2.
 import "arktype/config"
 import { type } from "arktype"
+import { createRequire } from "node:module"
 
 console.log(
 	"📦 Checking that each built package's entries share one set of modules...\n"
@@ -33,6 +34,19 @@ if (
 	(await import("arktype"))
 )
 	throw new Error("⚠️  arktype/internal/* loads modules arktype does not.")
+
+// configuring through a deep import must run before the rest of the package
+// evaluates, as it does through ./config
+const resolve = createRequire(
+	new URL("../type/package.json", import.meta.url)
+).resolve
+
+for (const pkg of ["arktype", "@ark/schema"]) {
+	for (const path of ["internal/config.ts", "internal/config.js"]) {
+		if (resolve(`${pkg}/${path}`) !== resolve(`${pkg}/config`))
+			throw new Error(`⚠️  ${pkg}/${path} loads more than ${pkg}/config.`)
+	}
+}
 
 const errors = type("string")(5)
 
