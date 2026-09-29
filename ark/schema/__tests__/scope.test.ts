@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, schemaScope, type NodeId } from "@ark/schema"
+import {
+	$ark,
+	rootSchema,
+	schemaScope,
+	type ArkErrors,
+	type NodeId
+} from "@ark/schema"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -122,5 +128,49 @@ contextualize(() => {
 			attest(Morph("s")).equals(1)
 			attest(String(Morph(1))).equals("must be a string (was a number)")
 		}
+	})
+
+	it("registers nothing only compiled traversals read", () => {
+		const epoch = new Date(0)
+		// error contexts, key sets, default and structural morphs, the array
+		// index matcher and discriminated unions' error helpers
+		const make = (key: string) =>
+			rootSchema({
+				domain: "object",
+				required: [
+					{ key, value: "string" },
+					{ key: "n", value: { domain: "number", min: 0, max: 100 } },
+					{ key: "d", value: { proto: Date, after: epoch } },
+					{ key: "u", value: [{ unit: 1 }, { unit: "a" }] },
+					{ key: "v", value: ["string", "number"] },
+					{
+						key: "t",
+						value: {
+							proto: Array,
+							sequence: { prefix: ["string"], defaultables: [["number", 0]] },
+							undeclared: "delete"
+						}
+					}
+				],
+				optional: [{ key: "o", value: "number", default: 5 }],
+				undeclared: "reject"
+			})
+		const invalid = { n: 500, d: new Date(-1), u: 2, v: true, t: [1, 2], x: 1 }
+		make("warm")(invalid)
+		const registered = Object.keys($ark).length
+		const T = make("fresh")
+		attest(
+			T({ fresh: "s", n: 5, d: new Date(1), u: 1, v: 1, t: ["s"] })
+		).equals({
+			fresh: "s",
+			n: 5,
+			d: new Date(1),
+			u: 1,
+			v: 1,
+			t: ["s", 0],
+			o: 5
+		})
+		attest((T(invalid) as ArkErrors).count).equals(7)
+		attest(Object.keys($ark).length).equals(registered)
 	})
 })
