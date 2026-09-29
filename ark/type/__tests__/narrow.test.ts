@@ -270,14 +270,10 @@ contextualize(() => {
 			)
 		})
 			.or({ kind: "'b'" })
-			.and(type({ code: "string" }).pipe(o => o))
+			.and(type("object").pipe(o => o))
 
-		attest(T({ kind: "a", code: "x", value: "1" })).snap({
-			kind: "a",
-			code: "x",
-			value: 1
-		})
-		attest(T({ kind: "a", code: "x", value: "-1" }).toString()).snap(
+		attest(T({ kind: "a", value: "1" })).snap({ kind: "a", value: 1 })
+		attest(T({ kind: "a", value: "-1" }).toString()).snap(
 			"value must be positive (was -1)"
 		)
 	})
