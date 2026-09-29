@@ -1024,15 +1024,24 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node
 	}
 
-	finalize<node extends BaseRoot>(node: node): node {
+	// jit is false for a root that is only read, like an intersection a
+	// relation checks or a constraint the parser adds before it is done: it
+	// is compiled once finalized as, or referenced by, a root that validates.
+	// One referencing a union is compiled anyway, since compiled and
+	// interpreted unions word some errors differently, and a root that is
+	// never finalized (e.g. from type.enumerated) can be the same node. Its
+	// alias references are bootstrapped either way.
+	finalize<node extends BaseRoot>(node: node, jit = true): node {
 		// a node referencing a `this` whose enclosing type is still being parsed,
 		// e.g. Record<string, this>, can't be resolved yet. the enclosing parse
 		// finalizes it once the context has been replaced with the resolved node.
 		if (node.isCyclic && hasUnresolvedContextAlias(node)) return node
 
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.resolvedConfig.jitless)
-			precompile(node.references)
+		if (node.precompilation || this.resolvedConfig.jitless) return node
+		const references = node.references
+		if (jit || references.some(reference => reference.hasKind("union")))
+			precompile(references)
 		return node
 	}
 

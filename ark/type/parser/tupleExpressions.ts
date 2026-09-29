@@ -189,7 +189,7 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).constrain(
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).rawConstrain(
 		"predicate",
 		def[2] as Predicate
 	)

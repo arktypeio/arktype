@@ -75,7 +75,7 @@ export class RuntimeState {
 	}
 
 	constrainRoot(...args: Parameters<BaseRoot<any>["constrain"]>): void {
-		this.root = this.root!.constrain(args[0], args[1])
+		this.root = this.root!.rawConstrain(args[0], args[1])
 	}
 
 	finalize(finalizer: FinalizingLookahead): void {

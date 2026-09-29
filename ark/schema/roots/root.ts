@@ -152,11 +152,11 @@ export abstract class BaseRoot<
 		return sets().toJsonSchema(this, opts)
 	}
 
-	intersect(r: unknown): BaseRoot | Disjoint {
+	intersect(r: unknown, jit = true): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
 		const result = this.rawIntersect(rNode)
 		if (result instanceof Disjoint) return result
-		return this.$.finalize(result as BaseRoot)
+		return this.$.finalize(result as BaseRoot, jit)
 	}
 
 	rawIntersect(r: BaseRoot): BaseRoot {
@@ -331,14 +331,14 @@ export abstract class BaseRoot<
 	}
 
 	overlaps(r: unknown): boolean {
-		const intersection = this.intersect(r)
+		const intersection = this.intersect(r, false)
 		return !(intersection instanceof Disjoint)
 	}
 
 	extends(r: unknown): boolean {
 		if (this.isNever()) return true
 
-		const intersection = this.intersect(r)
+		const intersection = this.intersect(r, false)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
@@ -472,10 +472,20 @@ export abstract class BaseRoot<
 		return this._constrain("out", kind, schema)
 	}
 
+	// constrain without compiling the result, for a parser constraining a
+	// root it isn't done with
+	rawConstrain<kind extends Constraint.PrimitiveKind>(
+		kind: kind,
+		schema: NodeSchema<kind>
+	): BaseRoot {
+		return this._constrain("root", kind, schema, false)
+	}
+
 	private _constrain(
 		io: "root" | "in" | "out",
 		kind: Constraint.PrimitiveKind,
-		schema: any
+		schema: any,
+		jit = true
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema as never)
 
@@ -514,7 +524,7 @@ export abstract class BaseRoot<
 
 		if (result instanceof Disjoint) result.throw()
 
-		return this.$.finalize(result as never)
+		return this.$.finalize(result as never, jit)
 	}
 
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
