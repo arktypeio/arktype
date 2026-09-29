@@ -32,7 +32,6 @@ import {
 import {
 	$ark,
 	registeredReference,
-	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
 import {
@@ -52,6 +51,7 @@ import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required, RequiredNode } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
+import { arrayIndexMatcher } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
@@ -522,11 +522,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
+	// a sequence declares each key nonNegativeIntegerString allows: a string
+	// matching the pattern that keyword is built from, tested here directly so
+	// compiled code calls no node
 	declaresKey = (k: Key): boolean =>
 		k in this.propsByKey ||
 		this.index?.some(n => n.signature.allows(k)) ||
 		(this.sequence !== undefined &&
-			$ark.intrinsic.nonNegativeIntegerString.allows(k))
+			typeof k === "string" &&
+			arrayIndexMatcher.test(k))
 
 	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
@@ -537,8 +541,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
 		}
 
-		if (this.sequence)
-			parts.push(`${registryName}.intrinsic.nonNegativeIntegerString.allows(k)`)
+		if (this.sequence) {
+			parts.push(
+				`typeof k === "string" && ${js.ref(arrayIndexMatcher)}.test(k)`
+			)
+		}
 
 		// if parts is empty, this is a structure like { "+": "reject" }
 		// that declares no keys, so return false
