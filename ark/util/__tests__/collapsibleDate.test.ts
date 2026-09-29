@@ -64,4 +64,18 @@ contextualize(() => {
 		const resultPM = describeCollapsibleDate(datePM)
 		attest(resultPM).snap("9:00 PM, January 15, 2023")
 	})
+
+	it("doesn't depend on the default locale's time format", () => {
+		const toLocaleTimeString = Date.prototype.toLocaleTimeString
+		// simulate a system whose default locale uses a 24-hour clock
+		Date.prototype.toLocaleTimeString = function () {
+			return toLocaleTimeString.call(this, "de-DE")
+		}
+		try {
+			const date = newYorkDate("2023-01-15T14:30:00.000Z")
+			attest(describeCollapsibleDate(date)).snap("2:30 PM, January 15, 2023")
+		} finally {
+			Date.prototype.toLocaleTimeString = toLocaleTimeString
+		}
+	})
 })

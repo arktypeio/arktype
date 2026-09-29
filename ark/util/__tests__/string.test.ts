@@ -1,7 +1,28 @@
 import { attest, contextualize } from "@ark/attest"
-import { anchoredSource, deanchoredSource } from "@ark/util"
+import {
+	anchoredSource,
+	capitalize,
+	deanchoredSource,
+	uncapitalize
+} from "@ark/util"
 
 contextualize(() => {
+	it("capitalizes a non-empty string", () => {
+		attest(capitalize("foo")).equals("Foo")
+	})
+
+	it("capitalize on an empty string returns an empty string", () => {
+		attest(capitalize("")).equals("")
+	})
+
+	it("uncapitalizes a non-empty string", () => {
+		attest(uncapitalize("Foo")).equals("foo")
+	})
+
+	it("uncapitalize on an empty string returns an empty string", () => {
+		attest(uncapitalize("")).equals("")
+	})
+
 	it("anchors a simple source correctly", () => {
 		const source = "abc"
 		const anchored = anchoredSource(source)

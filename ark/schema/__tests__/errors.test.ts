@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
-	type ArkErrors,
+	ArkErrors,
 	configureSchema,
 	rootSchema,
 	schemaScope
@@ -149,6 +149,20 @@ contextualize(() => {
 
 	const errors = nEvenAtLeast2({ n: 1 }) as ArkErrors
 
+	it("Array methods allocate plain Array (Symbol.species), not ArkErrors", () => {
+		const messages = errors.issues.map(e => e.message)
+		attest(messages instanceof Array).equals(true)
+		attest(messages.constructor).equals(Array)
+		attest(messages instanceof ArkErrors).equals(false)
+
+		const mapped = errors.map(() => 1)
+		attest(mapped.constructor).equals(Array)
+		attest(mapped instanceof ArkErrors).equals(false)
+
+		attest(errors.filter(() => true).constructor).equals(Array)
+		attest(errors.slice().constructor).equals(Array)
+	})
+
 	it("serialization", () => {
 		attest(errors.toJSON()).snap([
 			{
@@ -187,6 +201,22 @@ contextualize(() => {
 				message: "n (1) must be...\n  ◦ even\n  ◦ at least 2"
 			}
 		])
+	})
+
+	it("JSON.stringify round-trip via Standard Schema failure (e.g. HTTP error payload)", () => {
+		const result = nEvenAtLeast2["~standard"].validate({ n: 1 })
+		if (!("issues" in result)) throw new Error("expected validation failure")
+
+		const messages = result.issues?.map(issue => issue.message)
+		attest(messages).equals(errors.issues.map(issue => issue.message))
+		attest(messages instanceof ArkErrors).equals(false)
+
+		const parsed = JSON.parse(
+			JSON.stringify({ issues: result.issues, messages })
+		) as { issues: unknown[]; messages: string[] }
+
+		attest(parsed.issues).equals(JSON.parse(JSON.stringify(errors)))
+		attest(parsed.messages).equals(messages!)
 	})
 
 	it("flatByPath", () => {

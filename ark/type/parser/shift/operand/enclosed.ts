@@ -1,5 +1,6 @@
 import { rootSchema } from "@ark/schema"
 import {
+	Backslash,
 	isKeyOf,
 	throwParseError,
 	type ErrorMessage,
@@ -36,7 +37,11 @@ export const parseEnclosed = (
 	enclosing: EnclosingStartToken
 ): void => {
 	const enclosed = s.scanner.shiftUntilEscapable(
-		untilLookaheadIsClosing[enclosingTokens[enclosing]]
+		untilLookaheadIsClosing[enclosingTokens[enclosing]],
+		// within a regex literal, `\\` is a literal backslash and must be
+		// preserved verbatim in the pattern source; collapsing it to a single
+		// backslash would corrupt the regex (e.g. `\\d` -> `\d` digit class)
+		enclosing in enclosingRegexTokens ? Backslash : ""
 	)
 	if (s.scanner.lookahead === "")
 		return s.error(writeUnterminatedEnclosedMessage(enclosed, enclosing))
@@ -84,7 +89,7 @@ export type parseEnclosed<
 	Scanner.shiftUntilEscapable<
 		unscanned,
 		EnclosingTokens[enclosingStart],
-		""
+		enclosingStart extends EnclosingRegexToken ? Backslash : ""
 	> extends Scanner.shiftResult<infer scanned, infer nextUnscanned> ?
 		_parseEnclosed<s, enclosingStart, scanned, nextUnscanned>
 	:	never

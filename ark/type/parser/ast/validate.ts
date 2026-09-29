@@ -14,7 +14,7 @@ import type {
 import type { Generic } from "../../generic.ts"
 import type { BranchOperator, Comparator } from "../reduce/shared.ts"
 import type { writeInvalidGenericArgCountMessage } from "../shift/operand/genericArgs.ts"
-import type { UnitLiteral } from "../shift/operator/default.ts"
+import type { DefaultLiteral } from "../shift/operator/default.ts"
 import type { parseString } from "../string.ts"
 import type { validateRange } from "./bounds.ts"
 import type { validateDefault } from "./default.ts"
@@ -53,7 +53,7 @@ export type validateAst<ast, $, args> =
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: // shallowDefaultableMessage is handled in type.validate
 		// invalidDefaultableKeyKindMessage is handled in property parsing
-		operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
+		operator extends "=" ? validateDefault<l, r & DefaultLiteral, $, args>
 		: operator extends "#" ? validateAst<l, $, args>
 		: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>>
 	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
