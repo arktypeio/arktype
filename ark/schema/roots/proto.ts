@@ -133,7 +133,9 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 		if (js.traversalKind === "Allows") js.return(condition)
 		else {
 			js.if(`!(${condition})`, () =>
-				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+				)
 			)
 		}
 	}

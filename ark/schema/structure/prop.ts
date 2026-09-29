@@ -110,7 +110,9 @@ export abstract class BaseProp<
 		if (this.hasKind("required")) {
 			js.else(() =>
 				js.traversalKind === "Apply" ?
-					js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+					js.line(
+						`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+					)
 				:	js.return(false)
 			)
 		}

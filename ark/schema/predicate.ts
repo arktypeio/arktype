@@ -6,11 +6,7 @@ import type {
 	declareNode
 } from "./shared/declare.ts"
 import { defaultErrorWriters } from "./shared/errorWriters.ts"
-import {
-	compileObjectLiteral,
-	implementNode,
-	type nodeImplementationOf
-} from "./shared/implement.ts"
+import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import {
 	type RegisteredReference,
 	registeredReference
@@ -79,8 +75,6 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		meta: this.meta
 	}
 
-	compiledErrorContext = compileObjectLiteral(this.errorContext)
-
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
 		if (
@@ -101,7 +95,10 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		js.if(
 			// only add the default error if the predicate didn't add one itself
 			`!${condition} && ctx.currentErrorCount === errorCount`,
-			() => js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+			() =>
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+				)
 		)
 	}
 }

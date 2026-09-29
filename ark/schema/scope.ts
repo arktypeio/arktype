@@ -296,6 +296,7 @@ const precompile = (
 		reached: [],
 		dependencies: new Map(),
 		refs: new Map(),
+		errorContexts: [],
 		closed: true
 	}
 	for (const node of references) linkage.referencesById.set(node.id, node)
@@ -313,10 +314,12 @@ const precompile = (
 	}
 	const unit = precompileReferences(declared, linkage)
 	unit.argNames.push(...linkage.dependencies.values(), ...linkage.refs.values())
+	if (linkage.errorContexts.length) unit.argNames.push("errorContexts")
 	const precompilation = unit.write(rootScopeFnName)
 	const traversalsByReference = unit.compile()(
 		...linkage.dependencies.keys(),
-		...linkage.refs.keys()
+		...linkage.refs.keys(),
+		linkage.errorContexts
 	)
 
 	for (let i = 0; i < declared.length; i++) {
@@ -460,9 +463,10 @@ const declareTraversals = (
 
 // what a unit's members reach beyond its declarations, each passed to it as
 // a parameter: the traversals of reused nodes they invoke, named as invoked,
-// then the values they read through js.ref. An invoked traversal resolves by
-// id among the unit's references; one outside them leaves the unit open. An
-// unreached node is reached, and so declared, once a member invokes it.
+// then the values they read through js.ref, then as one array the error
+// contexts they report. An invoked traversal resolves by id among the unit's
+// references; one outside them leaves the unit open. An unreached node is
+// reached, and so declared, once a member invokes it.
 type UnitLinkage = {
 	referencesById: Map<string, BaseNode>
 	reused: Set<BaseNode>
@@ -470,6 +474,7 @@ type UnitLinkage = {
 	reached: BaseNode[]
 	dependencies: Map<Fn, string>
 	refs: NodeCompiler.Refs
+	errorContexts: NodeCompiler.ErrorContexts
 	closed: boolean
 }
 
@@ -480,8 +485,13 @@ class TraversalCompiler extends NodeCompiler {
 	constructor(kind: TraversalKind, linkage: UnitLinkage) {
 		super(
 			kind === "Optimistic" ?
-				{ kind: "Allows", optimistic: true, refs: linkage.refs }
-			:	{ kind, refs: linkage.refs }
+				{
+					kind: "Allows",
+					optimistic: true,
+					refs: linkage.refs,
+					errorContexts: linkage.errorContexts
+				}
+			:	{ kind, refs: linkage.refs, errorContexts: linkage.errorContexts }
 		)
 		this.linkage = linkage
 	}

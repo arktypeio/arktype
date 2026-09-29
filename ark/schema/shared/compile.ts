@@ -4,7 +4,8 @@ import {
 	hasDomain,
 	isDotAccessible,
 	serializePrimitive,
-	type Fn
+	type Fn,
+	type dict
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
@@ -153,10 +154,14 @@ export declare namespace NodeCompiler {
 		kind: TraversalKind
 		optimistic?: true
 		refs?: Refs
+		errorContexts?: ErrorContexts
 	}
 
 	/** each value a unit's traversals read, by the unit parameter naming it */
 	export type Refs = Map<object | symbol, string>
+
+	/** each error context a unit's error paths report, by index */
+	export type ErrorContexts = object[]
 }
 
 // the Apply of a node that can't transform a value or read context adds no
@@ -174,12 +179,14 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	optimistic: boolean
 	readonly refs: NodeCompiler.Refs | undefined
+	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
 		this.optimistic = ctx.optimistic === true
 		this.refs = ctx.refs
+		this.errorContexts = ctx.errorContexts
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
@@ -215,6 +222,22 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		let name = this.refs.get(value)
 		if (name === undefined) this.refs.set(value, (name = `r${this.refs.size}`))
 		return name
+	}
+
+	// names an error context an error path reports. errorFromNodeContext
+	// copies a context's entries, so every error can be reported with one
+	// object. In a unit, it is an element of errorContexts, an array the unit
+	// is passed, rather than a ref: a unit reports errors for most nodes it
+	// declares, and V8 can't call a function with more than about 65,000
+	// arguments. Outside a unit, it is the context's registered reference.
+	// Compiled code reports a -0 in a context as 0 (interpreted code, as -0).
+	errorContext(errorContext: object): string {
+		for (const k in errorContext) {
+			if (Object.is((errorContext as dict)[k], -0))
+				errorContext = { ...errorContext, [k]: 0 }
+		}
+		if (!this.errorContexts) return registeredReference(errorContext)
+		return `errorContexts[${this.errorContexts.push(errorContext) - 1}]`
 	}
 
 	requiresContextFor(node: BaseNode): boolean {

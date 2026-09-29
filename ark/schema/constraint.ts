@@ -13,11 +13,10 @@ import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
-import {
-	compileObjectLiteral,
-	type ConstraintKind,
-	type StructuralKind,
-	type UnknownAttachments
+import type {
+	ConstraintKind,
+	StructuralKind,
+	UnknownAttachments
 } from "./shared/implement.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
@@ -71,7 +70,9 @@ export abstract class InternalPrimitiveConstraint<
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
 		else {
 			js.if(this.compiledNegation, () =>
-				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+				)
 			)
 		}
 	}
@@ -83,10 +84,6 @@ export abstract class InternalPrimitiveConstraint<
 			meta: this.meta,
 			...this.inner
 		}
-	}
-
-	get compiledErrorContext(): string {
-		return compileObjectLiteral(this.errorContext!)
 	}
 }
 

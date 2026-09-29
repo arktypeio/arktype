@@ -1,5 +1,4 @@
 import type { NodeCompiler } from "../shared/compile.ts"
-import { compileObjectLiteral } from "../shared/implement.ts"
 import type { TraverseApply } from "../shared/traversal.ts"
 import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 
@@ -24,15 +23,13 @@ export abstract class InternalBasis<
 		}
 	}
 
-	get compiledErrorContext(): string {
-		return compileObjectLiteral(this.errorContext!)
-	}
-
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
 		else {
 			js.if(this.compiledNegation, () =>
-				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+				)
 			)
 		}
 	}

@@ -2,7 +2,6 @@ import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
 import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
-	compileObjectLiteral,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -53,8 +52,6 @@ export class RequiredNode extends BaseProp<"required"> {
 		relativePath: [this.key],
 		meta: this.meta
 	})
-
-	compiledErrorContext: string = compileObjectLiteral(this.errorContext)
 }
 
 export const Required = {
