@@ -258,23 +258,30 @@ export const createNode = ({
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
-	let json = { ...innerJson }
+	const hasMeta = !isEmptyObject(meta)
+	let json = innerJson
 	let metaJson: ArkEnv.meta & dict = {}
 
-	if (!isEmptyObject(meta)) {
+	if (hasMeta) {
 		metaJson = flatMorph(meta, (k, v) => [
 			k,
 			k === "examples" ? v : defaultValueSerializer(v)
 		]) as never
-		json.meta = possiblyCollapse(metaJson, "description", true)
+		json = {
+			...innerJson,
+			meta: possiblyCollapse(metaJson, "description", true)
+		}
 	}
 
 	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
 	const innerHash = JSON.stringify({ kind, ...innerJson })
 
-	json = possiblyCollapse(json, impl.collapsibleKey, false)
+	// without meta, json has exactly innerJson's entries, so it is innerJson
+	// and hashes to innerHash
+	json =
+		hasMeta ? possiblyCollapse(json, impl.collapsibleKey, false) : innerJson
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
-	const hash = JSON.stringify({ kind, ...json })
+	const hash = hasMeta ? JSON.stringify({ kind, ...json }) : innerHash
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
