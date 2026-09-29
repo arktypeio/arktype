@@ -1,6 +1,6 @@
 {
 	"name": "@ark/fast-check",
-	"version": "0.0.11",
+	"version": "0.0.16",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -34,7 +34,7 @@
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts"
+		"test": "node ../repo/testPackage.ts"
 	},
 	"dependencies": {
 		"arktype": "workspace:*",

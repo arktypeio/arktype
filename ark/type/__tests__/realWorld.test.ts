@@ -1302,10 +1302,13 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 	it("described input of morph", () => {
 		class ValidatedUserID {
+			readonly data: string
 			static fromString(value: string): ValidatedUserID {
 				return new ValidatedUserID(value)
 			}
-			private constructor(readonly data: string) {}
+			private constructor(data: string) {
+				this.data = data
+			}
 		}
 
 		const UserID = type("string")
@@ -1488,6 +1491,31 @@ date3 must be a parsable date (was "")`)
 		attest(result).equals(component)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1362
+	it("cyclic discriminated union with private alias", () => {
+		const componentModule = type.module({
+			"#tabsItem": {
+				id: "string",
+				title: "component",
+				content: "component"
+			},
+			tabs: {
+				type: "'tabs'",
+				items: "tabsItem[]"
+			},
+			component: "string | tabs"
+		})
+		const componentSchema = componentModule.component
+
+		const component: typeof componentSchema.infer = {
+			type: "tabs",
+			items: []
+		}
+
+		// previously threw "TypeError: this.tabs1Apply is not a function"
+		attest(componentSchema(component)).equals(component)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1209
 	it("cyclic discriminated union issue 3", () => {
 		const $ = scope({
@@ -1501,6 +1529,21 @@ date3 must be a parsable date (was "")`)
 		const result = $.value({})
 
 		attest(result).equals({})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1640
+	it("cyclic discriminated union with record reference", () => {
+		const Node = scope({
+			Number: { type: "'number'" },
+			Array: { type: "'array'", item: "Node" },
+			Unit: { type: "'unit'" },
+			Container: { things: "Record<string, Node>" },
+			Node: "Number | Array | Unit"
+		}).export().Node
+
+		const data = { type: "array", item: { type: "number" } } as const
+
+		attest(Node(data)).equals(data)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1284

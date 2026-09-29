@@ -15,7 +15,7 @@ contextualize(() => {
 		attest(parseNumber.rawIn.json).snap({
 			domain: "string",
 			pattern: [
-				"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?)?))$"
+				"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?)))$"
 			],
 			meta: "a well-formed numeric string"
 		})
@@ -32,6 +32,15 @@ contextualize(() => {
 		])
 		attest(n.rawIn.expression).snap("number | string")
 		attest(n.rawOut.expression).snap("number")
+	})
+
+	it("unions declared morphs", () => {
+		const morph = (value: string) => value
+		const n = rootSchema([
+			{ declaredIn: intrinsic.string, morphs: morph },
+			{ declaredIn: intrinsic.string, morphs: morph }
+		])
+		attest(n.rawIn.expression).snap("string")
 	})
 
 	contextualize.each(

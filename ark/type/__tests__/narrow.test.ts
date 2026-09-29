@@ -261,4 +261,20 @@ contextualize(() => {
 		attest(T.t).type.toString.snap("unknown")
 		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
+
+	it("preserves piped union branch narrows through an intersection", () => {
+		const T = type({
+			kind: "'a'",
+			value: type("string.numeric.parse").narrow(
+				(n, ctx) => n > 0 || ctx.mustBe("positive")
+			)
+		})
+			.or({ kind: "'b'" })
+			.and(type("object").pipe(o => o))
+
+		attest(T({ kind: "a", value: "1" })).snap({ kind: "a", value: 1 })
+		attest(T({ kind: "a", value: "-1" }).toString()).snap(
+			"value must be positive (was -1)"
+		)
+	})
 })

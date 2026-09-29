@@ -330,9 +330,24 @@ export abstract class BaseRoot<
 				: operation === "partial" ? "optionalize"
 				: operation
 
+			const transformed = structure[structuralMethodName](
+				...(args as [never])
+			) as Structure.Node
+
+			// like the mapped types they're named for, `required` and `partial` are
+			// homomorphic, preserving an array or tuple base
+			const isHomomorphic = operation === "required" || operation === "partial"
+
+			// they are also the only operations that can be a no-op (e.g. on an
+			// array with no fixed elements), in which case the original branch is
+			// preserved rather than reduced to a new object
+			if (isHomomorphic && transformed.equals(structure)) return branch
+
 			return this.$.node("intersection", {
-				domain: "object",
-				structure: structure[structuralMethodName](...(args as [never]))
+				...(isHomomorphic && transformed.sequence ?
+					{ proto: Array }
+				:	{ domain: "object" }),
+				structure: transformed
 			})
 		})
 	}
