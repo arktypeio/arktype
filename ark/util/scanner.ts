@@ -38,13 +38,17 @@ export class Scanner<lookahead extends string = string> {
 		return shifted
 	}
 
-	shiftUntilEscapable(condition: Scanner.UntilCondition): string {
+	shiftUntilEscapable(
+		condition: Scanner.UntilCondition,
+		escapeEscape: typeof Backslash | "" = ""
+	): string {
 		let shifted = ""
 		while (this.lookahead) {
 			if (this.lookahead === Backslash) {
 				this.shift()
 				if (condition(this, shifted)) shifted += this.shift()
-				else if (this.lookahead === Backslash) shifted += this.shift()
+				else if (this.lookahead === Backslash)
+					shifted += `${escapeEscape}${this.shift()}`
 				else shifted += `${Backslash}${this.shift()}`
 			} else if (condition(this, shifted)) break
 			else shifted += this.shift()

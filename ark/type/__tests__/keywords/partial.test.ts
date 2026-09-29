@@ -36,38 +36,58 @@ contextualize(() => {
 		attest(T.expression).snap("{ [string]: number, bar?: 1, foo?: 1 }")
 	})
 
-	// https://github.com/arktypeio/arktype/issues/1480
-	it("tuple literal", () => {
-		const T = type(["'foo'", "'bar'"]).partial()
-		const Expected = type(["'foo'?", "'bar'?"])
+	it("tuple", () => {
+		const T = type(["string", "number"]).partial()
 
-		attest<typeof Expected.t>(T.t)
-		attest<["foo"?, "bar"?]>(T.infer)
+		attest<[string?, number?]>(T.t)
+		attest(T.expression).snap("[string?, number?]")
 		attest(T([])).equals([])
 		attest(T(["foo"])).equals(["foo"])
-		attest(T(["foo", "bar"])).equals(["foo", "bar"])
+		attest(T({}).toString()).snap("must be an array (was object)")
 	})
 
-	it("string syntax tuple", () => {
-		const tupleScope = scope({
-			tuple: ["'foo'", "'bar'"]
-		})
+	it("array is unaffected", () => {
+		// like the index signature above, TS unions a variadic element with
+		// undefined since it has no way to represent an optional one. in
+		// ArkType, optionality is about presence rather than the values an
+		// element allows, so the type is unchanged.
+		const T = type("string[]").partial()
 
-		const T = tupleScope.type("Partial<tuple>")
-		const Expected = type(["'foo'?", "'bar'?"])
+		attest<(string | undefined)[]>(T.t)
+		attest(T.expression).snap("string[]")
+		attest(T([undefined]).toString()).snap(
+			"value at [0] must be a string (was undefined)"
+		)
+	})
 
-		attest<typeof Expected.t>(T.t)
-		attest<["foo"?, "bar"?]>(T.infer)
-		attest(T.expression).equals(Expected.expression)
+	it("preserves defaultable elements", () => {
+		const T = type(["number = 5"]).partial()
+
+		attest(T.expression).snap("[number = 5]")
+	})
+
+	it("postfix element", () => {
+		// TS folds postfix elements into the variadic here, which would allow
+		// values the original tuple never did
+		attest(() =>
+			type(["string", "...", "number[]", "boolean"]).partial()
+		).throws.snap(
+			"ParseError: A postfix required element cannot follow an optional or defaultable element"
+		)
 	})
 
 	it("tuple with defaultable", () => {
+		// the prefix can only become optional if the defaultable after it does too
 		const T = type(["string", "number = 5"]).partial()
-		const Expected = type(["string?", "number?"])
 
-		// https://github.com/arktypeio/arktype/issues/1160
-		// attest<typeof Expected.t>(T.t)
-		attest(T.expression).equals(Expected.expression)
+		attest(T.expression).snap("[string?, number?]")
 		attest(T([])).equals([])
+	})
+
+	it("Partial generic on a tuple", () => {
+		const T = scope({ tuple: ["string", "number"] }).type("Partial<tuple>")
+
+		attest<[string?, number?]>(T.t)
+		attest(T.expression).snap("[string?, number?]")
 	})
 })

@@ -49,36 +49,31 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
-	// reverse of https://github.com/arktypeio/arktype/issues/1480
-	it("tuple literal", () => {
-		const T = type(["'foo'?", "'bar'?"]).required()
-		const Expected = type(["'foo'", "'bar'"])
+	it("tuple", () => {
+		const T = type(["string", "number?"]).required()
 
-		attest<typeof Expected.t>(T.t)
-		attest<["foo", "bar"]>(T.infer)
-		attest(T.expression).equals(Expected.expression)
-		attest(T(["foo", "bar"])).equals(["foo", "bar"])
+		attest<[string, number]>(T.t)
+		attest(T.expression).snap("[string, number]")
+		attest(T(["foo"]).toString()).snap("must be exactly length 2 (was 1)")
 	})
 
-	it("string syntax tuple", () => {
-		const tupleScope = scope({
-			tuple: ["'foo'?", "'bar'?"]
-		})
-		const T = tupleScope.type("Required<tuple>")
-		const Expected = type(["'foo'", "'bar'"])
+	it("empty tuple", () => {
+		const T = type([]).required()
 
-		attest<typeof Expected.t>(T.t)
-		attest<["foo", "bar"]>(T.infer)
-		attest(T.expression).equals(Expected.expression)
-		attest(T(["foo", "bar"])).equals(["foo", "bar"])
+		attest<[]>(T.t)
+		attest(T.expression).snap("[]")
 	})
 
 	it("tuple with defaultable", () => {
 		const T = type(["string", "number = 5"]).required()
-		const Expected = type(["string", "number"])
 
-		// https://github.com/arktypeio/arktype/issues/1160
-		// attest<typeof Expected.t>(T.t)
-		attest(T.expression).equals(Expected.expression)
+		attest(T.expression).snap("[string, number]")
+	})
+
+	it("Required generic on a tuple", () => {
+		const T = scope({ tuple: ["string", "number?"] }).type("Required<tuple>")
+
+		attest<[string, number]>(T.t)
+		attest(T.expression).snap("[string, number]")
 	})
 })

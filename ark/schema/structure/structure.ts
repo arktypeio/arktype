@@ -227,6 +227,10 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				const lInner = { ...l.inner }
 				const rInner = { ...r.inner }
 				const disjointResult = new Disjoint()
+				// props an index signature narrows to once the other side's keys
+				// are known. they can't be added to the side they came from, where
+				// a prop with the same key would never be merged with them
+				const derived: nodeOfKind<Prop.Kind>[] = []
 				if (l.undeclared) {
 					const lKey = l.keyof()
 					for (const k of r.requiredKeys) {
@@ -250,18 +254,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
 							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-							if (normalized.required) {
-								rInner.required = conflatenate(
-									rInner.required,
-									normalized.required
-								)
-							}
-							if (normalized.optional) {
-								rInner.optional = conflatenate(
-									rInner.optional,
-									normalized.optional
-								)
-							}
+							derived.push(...(normalized.required ?? []))
+							derived.push(...(normalized.optional ?? []))
 							return normalized.index ?? []
 						})
 					}
@@ -289,18 +283,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
 							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-							if (normalized.required) {
-								lInner.required = conflatenate(
-									lInner.required,
-									normalized.required
-								)
-							}
-							if (normalized.optional) {
-								lInner.optional = conflatenate(
-									lInner.optional,
-									normalized.optional
-								)
-							}
+							derived.push(...(normalized.required ?? []))
+							derived.push(...(normalized.optional ?? []))
 
 							return normalized.index ?? []
 						})
@@ -320,7 +304,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					kind: "structure",
 					baseInner,
 					l: flattenConstraints(lInner),
-					r: flattenConstraints(rInner),
+					r: [...flattenConstraints(rInner), ...derived],
 					roots: [],
 					ctx
 				})
@@ -336,7 +320,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		reduce: (inner, $) => {
 			if (!inner.required && !inner.optional) return
 
-			const seen: Record<Key, true | undefined> = {}
+			const seen: Record<Key, true | undefined> = Object.create(null)
 			let updated = false
 			const newOptionalProps: OptionalNode[] =
 				inner.optional ? [...inner.optional] : []
@@ -564,10 +548,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	optionalize(): StructureNode {
-		const { required: _, sequence, ...inner } = this.inner
+		const { required, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
-			...(sequence ? { sequence: sequence.optionalize() } : {}),
+			...(inner.sequence ? { sequence: inner.sequence.optionalize() } : {}),
 			optional: this.props.map(prop =>
 				prop.hasKind("required") ? this.$.node("optional", prop.inner) : prop
 			)
@@ -575,10 +559,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	require(): StructureNode {
-		const { optional: _, sequence, ...inner } = this.inner
+		const { optional, ...inner } = this.inner
 		return this.$.node("structure", {
 			...inner,
-			...(sequence ? { sequence: sequence.require() } : {}),
+			...(inner.sequence ? { sequence: inner.sequence.require() } : {}),
 			required: this.props.map(prop =>
 				prop.hasKind("optional") ?
 					{
@@ -1028,7 +1012,8 @@ const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
 		if (node.sequence?.defaultables) {
 			js.for(
 				`i < ${node.sequence.defaultables.length}`,
-				js => js.set(`data[i]`, 5),
+				js =>
+					js.line(`${node.sequence!.defaultValueMorphsReference}[i]${args}`),
 				`data.length - ${node.sequence.prefixLength}`
 			)
 		}

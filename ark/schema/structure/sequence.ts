@@ -1,7 +1,6 @@
 import {
 	append,
 	conflatenate,
-	conflatenateAll,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -394,6 +393,27 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			registeredReference(this.defaultValueMorphs)
 		:	undefined
 
+	optionalize(): SequenceNode {
+		const { prefix, defaultables, ...inner } = this.inner
+		// without a prefix, every element is already optional. bailing here
+		// preserves defaultables, which would otherwise have to be flattened
+		// into optionals to maintain their position relative to the prefix.
+		if (!prefix) return this
+
+		return this.$.node("sequence", {
+			...inner,
+			optionals: conflatenate(prefix, this.defaultablesAndOptionals)
+		})
+	}
+
+	require(): SequenceNode {
+		const { defaultables, optionals, ...inner } = this.inner
+		return this.$.node("sequence", {
+			...inner,
+			prefix: conflatenate(this.prefix, this.defaultablesAndOptionals)
+		})
+	}
+
 	protected elementAtIndex(data: array, index: number): SequenceElement {
 		if (index < this.prevariadic.length) return this.tuple[index]
 		const firstPostfixIndex = data.length - this.postfixLength
@@ -420,6 +440,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	traverseApply: TraverseApply<array> = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
 		let i = 0
 		for (; i < data.length; i++) {
 			traverseKey(
@@ -427,6 +448,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				() => this.elementAtIndex(data, i).node.traverseApply(data[i], ctx),
 				ctx
 			)
+			// bail out of subsequent elements in fail-fast mode (e.g. inside a
+			// union branch) so we don't traverse an element whose basis has
+			// already failed - see https://github.com/arktypeio/arktype/issues/1458
+			if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 		}
 	}
 
@@ -436,9 +461,17 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
+		// like Structure, bail out of subsequent elements in fail-fast mode
+		// (e.g. inside a union branch) so we don't traverse an element whose
+		// basis has already failed - see
+		// https://github.com/arktypeio/arktype/issues/1458
+		if (js.traversalKind === "Apply") js.initializeErrorCount()
+
 		if (this.prefix) {
-			for (const [i, node] of this.prefix.entries())
+			for (const [i, node] of this.prefix.entries()) {
 				js.traverseKey(`${i}`, `data[${i}]`, node)
+				if (js.traversalKind === "Apply") js.returnIfFailFast()
+			}
 		}
 
 		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
@@ -447,6 +480,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
 			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
+			if (js.traversalKind === "Apply") js.returnIfFailFast()
 		}
 
 		if (this.variadic) {
@@ -458,13 +492,17 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			}
 			js.for(
 				`i < ${this.postfix ? "firstPostfixIndex" : "data.length"}`,
-				() => js.traverseKey("i", "data[i]", this.variadic!),
+				() => {
+					js.traverseKey("i", "data[i]", this.variadic!)
+					return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
+				},
 				this.prevariadic.length
 			)
 			if (this.postfix) {
 				for (const [i, node] of this.postfix.entries()) {
 					const keyExpression = `firstPostfixIndex + ${i}`
 					js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+					if (js.traversalKind === "Apply") js.returnIfFailFast()
 				}
 			}
 		}
@@ -480,36 +518,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
-	}
-
-	optionalize(): SequenceNode {
-		if (this.postfix) return this
-		if (!this.prefix?.length && !this.defaultables?.length) return this
-
-		const { prefix, defaultables, ...inner } = this.inner
-		return this.$.node("sequence", {
-			...inner,
-			optionals: conflatenateAll(
-				prefix,
-				defaultables?.map(d => d[0]),
-				inner.optionals
-			)
-		})
-	}
-
-	require(): SequenceNode {
-		if (this.postfix) return this
-		if (!this.optionals?.length && !this.defaultables?.length) return this
-
-		const { optionals, defaultables, ...inner } = this.inner
-		return this.$.node("sequence", {
-			...inner,
-			prefix: conflatenateAll(
-				inner.prefix,
-				defaultables?.map(d => d[0]),
-				optionals
-			)
-		})
 	}
 
 	// this depends on tuple so needs to come after it

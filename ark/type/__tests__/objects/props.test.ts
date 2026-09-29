@@ -94,4 +94,20 @@ contextualize(() => {
 			})
 		).throws(writeDuplicateKeyMessage("a"))
 	})
+
+	it("allows prototype method names as keys", () => {
+		// constructor, hasOwnProperty, toString, etc. are valid object keys
+		// and should not be incorrectly flagged as duplicates
+		const T = type({
+			constructor: "string",
+			hasOwnProperty: "number",
+			toString: "boolean"
+		})
+
+		attest<{
+			constructor: string
+			hasOwnProperty: number
+			toString: boolean
+		}>(T.t)
+	})
 })

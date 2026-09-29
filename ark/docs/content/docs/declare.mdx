@@ -24,6 +24,18 @@ const Bad = type.declare<Expected>().type({
 })
 ```
 
+Optionality can also be expressed via the property value instead of the key:
+
+```ts
+type Expected = { a: string; b?: number }
+
+const T = type.declare<Expected>().type({
+	a: "string",
+	// equivalent to "b?": "number"
+	b: "number?"
+})
+```
+
 ### `side`
 
 If your Type contains morphs or default values, its input and output will be inferred differently.

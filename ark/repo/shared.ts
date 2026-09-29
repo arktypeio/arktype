@@ -33,6 +33,7 @@ export const repoDirs = {
 
 export const packageScopes = [
 	"attest",
+	"fast-check",
 	"fs",
 	"json-schema",
 	"regex",

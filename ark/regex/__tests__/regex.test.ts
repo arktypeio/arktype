@@ -223,6 +223,17 @@ contextualize(() => {
 			attest<Regex<"ac" | `ab${string}c`, {}>>(S)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1625
+		it("* over a digit class allows the empty string", () => {
+			const S = regex("^(\\d*)$")
+			attest<Regex<"" | `${number}`, { captures: ["" | `${number}`] }>>(S)
+		})
+
+		it("? over a digit class allows the empty string", () => {
+			const S = regex("^(\\d?)$")
+			attest<Regex<"" | `${number}`, { captures: ["" | `${number}`] }>>(S)
+		})
+
 		it("unmatched ?", () => {
 			// @ts-expect-error
 			attest(() => regex("?")).type.errors(writeUnmatchedQuantifierError("?"))

@@ -1,5 +1,192 @@
 # arktype
 
+## 2.2.5
+
+### Preserve escaped backslashes in regex literals
+
+Within a regex literal, `\\` is now kept verbatim as an escaped backslash rather than collapsed to a single `\`, which silently changed the meaning of the pattern:
+
+```ts
+// previously parsed as /\d/, matching a digit
+// now matches a literal backslash followed by "d"
+const T = type("/\\\\d/")
+```
+
+String literals are unaffected. If a definition relied on the old behavior, write the intended escape directly (e.g. `"/\\d/"` for a digit). Thanks to @spokodev.
+
+### Fix recursive discriminated unions referenced from a `Record`
+
+A cyclic alias referenced through `Record<string, ...>` could cause valid values to be rejected, e.g. an array branch failing with `must be an array (was object)`. Bootstrapping alias references no longer overwrites references that were already resolved. This was a regression introduced in 2.2.2. Thanks to @xianjianlf2.
+
+### Prevent a crash validating unions of object arrays
+
+Inside a union branch, array validation now stops at the first failing element instead of continuing to traverse elements whose basis has already failed, which could throw rather than return an error. Thanks to @xianjianlf2.
+
+### Merge index-derived props with a declared key of the same name
+
+Intersecting a structure with an index signature and one that rejects undeclared keys could produce a node with a duplicate key:
+
+```ts
+// previously { a: number, a: number, b: number, + (undeclared): reject }
+type({ a: "number", "[string]": "number" }).and({
+	a: "number",
+	b: "number",
+	"+": "reject"
+})
+```
+
+Props derived from the index signature are now intersected with any declared prop of the same key, and the result is the same in either operand order.
+
+### Preserve parameter labels when a `type.fn` implementation annotates an optional parameter
+
+Annotating an optional parameter, as in `type.fn("number?")((n?: number) => n)`, previously dropped every parameter label from the inferred signature. It now infers `(n?: number | undefined) => number | undefined`. Thanks to @aswinsvijay.
+
+## 2.2.4
+
+### Default a property to an empty array or object in string syntax
+
+`= []` and `= {}` are now valid string-embedded defaults, so an empty collection no longer requires the tuple-with-thunk form:
+
+```ts
+// previously ["string[]", "=", () => []]
+const T = type({
+	values: "string[] = []",
+	meta: "object = {}"
+})
+```
+
+Like the tuple form they replace, each traversal that falls back to the default gets a fresh reference rather than a shared one, so mutating the defaulted value cannot leak into the next traversal. Thanks to @SynthLuvr.
+
+### Apply `required` and `partial` to array and tuple elements
+
+Like the mapped types they're named for, `required` and `partial` are homomorphic: they now transform the elements of an array or tuple and preserve its base, where previously they reduced it to a plain object.
+
+```ts
+const T = type(["string", "number?"]).required() // [string, number]
+```
+
+`partial` preserves defaultable elements rather than flattening them, which would otherwise lose their position relative to the prefix. When the transformation is a no-op — an array with no fixed elements, an empty tuple — the original branch is preserved rather than rebuilt. Thanks to @lprnmns.
+
+### Document what structural methods discard
+
+`pick`, `omit`, `merge`, `required`, and `partial` return a new object built from the properties they extract, so a root `narrow`, `filter`, or metadata on the original `Type` is not carried over. This has always been the behavior; it is now called out in each method's JSDoc and in the [objects docs](https://arktype.io/docs/objects#properties-structural).
+
+### Allow multiple scopes to share a name
+
+Registering a scope with a name another scope already used no longer throws `A Scope already named ... already exists`. The parse cache is keyed by scope identity rather than by name, so two scopes sharing a name no longer collide in it. Thanks to @yamcodes.
+
+### Require an integer portion in well-formed number strings
+
+`isWellFormedNumber("")` and `isWellFormedNumber("-")` incorrectly returned `true`, because the integer-and-decimal body of the matcher was wrapped in a trailing `?` that made the whole pattern optional. Thanks to @zigzagdev.
+
+### Return an empty string from `capitalize`/`uncapitalize` on empty input
+
+Both threw on `""`, since indexing the first character gave `undefined`. They now return `""` unchanged. Thanks to @zigzagdev.
+
+## 2.2.3
+
+### Fix `type.fn.raw` throwing at runtime
+
+`type.fn.raw` is documented as an untyped alias of `type.fn`, but was `undefined` at runtime and threw `type.fn.raw is not a function` when called. It now references the underlying parser directly, so it parses, runs, and validates like `type.fn` without type-level inference. Thanks to @aarsh767.
+
+### Anchor versioned UUID validation
+
+`string.uuid` no longer accepts strings that merely contain a UUID. The internal `#versioned` pattern is now anchored like the individual version keywords, so leading or trailing content is rejected. Thanks to @WolfieLeader.
+
+### Fix inferred output of `declare`d morphs
+
+The output side of a `declare`d definition now wraps its preinferred value in `Out<...>`, matching the inference of the equivalent definition without `declare`. Thanks to @eralmansouri.
+
+### Allow `Object.prototype` method names as keys
+
+Keys like `constructor`, `toString`, and `hasOwnProperty` are no longer incorrectly reported as duplicate keys, since duplicate detection now uses a prototype-free record. Thanks to @kaigritun.
+
+## 2.2.2
+
+### Fix precompilation of private aliases
+
+A private alias referenced only within its own scope is no longer skipped during JIT precompilation, so its optimized traversal is bound correctly instead of falling back to the unbound reference.
+
+### Harden `ArkErrors` JSON serialization
+
+`ArkErrors` doubles as a Standard Schema `issues` array, so `JSON.stringify` no longer assumes every indexed entry is an `ArkError` with a `toJSON` method (e.g. plain issue-shaped entries from other validators). Inherited array methods (`map`, `filter`, `slice`, …) now return a plain `Array` via `Symbol.species`, preventing callbacks that return primitives from producing a malformed `ArkErrors`.
+
+## 2.2.1
+
+### Improve regex inference for zero-min quantifiers on numeric patterns
+
+```ts
+// was: Regex<`${number}`>
+// now: Regex<"" | `${number}`>
+regex("^\\d*$")
+```
+
+See arkregex CHANGELOG for full notes.
+
+## 2.2.0
+
+Full announcement: https://arktype.io/docs/blog/2.2
+
+### `type.fn` - Validated functions
+
+Define functions with runtime-validated parameters and return types. Supports defaults, optionals, and variadics.
+
+```ts
+const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
+len("foo") // 3
+len([1, 2]) // 2
+```
+
+### Type-safe regex via arkregex
+
+Regex literals in definitions now carry full type inference. `x`-prefix parses capture groups at runtime.
+
+```ts
+const T = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+T.assert({ birthday: "05-21-1993" }).birthday.groups.month // "05"
+```
+
+### `@ark/json-schema` - Bidirectional JSON Schema
+
+Parse JSON Schema into ArkType Types with the new `@ark/json-schema` package, complementing `toJsonSchema()`. Thanks to @TizzySaurus.
+
+### Configurable `toJsonSchema`
+
+Handle incompatibilities between ArkType and JSON Schema with granular fallback codes. Supports `draft-07`/`draft-2020-12` targets and cyclic types.
+
+### Standard Schema as definitions
+
+Any Standard Schema compliant validator (Zod, Valibot, etc.) can be embedded directly in ArkType definitions.
+
+### `select` - Deep reference introspection
+
+Query the internal structure of a type by node kind and predicate. Use selectors to configure specific references.
+
+### Improved `type.declare`
+
+Now supports morph-aware declarations via a `side` context, and optionality via property values.
+
+### N-ary operators
+
+`type.or`, `type.and`, `type.merge`, and `type.pipe` accept variadic definitions.
+
+### Additional highlights
+
+- `|>` string-embeddable pipe operator
+- `type.valueOf` for TS enums
+- `string.hex` + `string.regex` keywords
+- Serializable `ArkErrors` (`flatByPath`, `flatProblemsByPath`, `toJSON`)
+- `TraversalError` replaces `AggregateError`
+- `exactOptionalPropertyTypes` config
+- ES2020 + Hermes compatibility
+- In-docs playground
+- Better JSDoc + go-to-definition
+- Cyclic unions can now discriminate on nested paths
+
 ## 2.1.29
 
 ### Improve regex inference for certain numeric expressions
@@ -243,7 +430,7 @@ This is the full list of configurable reasons `toJsonSchema()` can fail.
 | `proto`               | non-serializable `instanceof`                               |
 | `symbolKey`           | symbolic key on an object                                   |
 | `unit`                | non-serializable `===` reference (e.g. `undefined`)         |
-| `date`                | a Date instance (supercedes `proto` for Dates )             |
+| `date`                | a Date instance (supersedes `proto` for Dates)              |
 
 ### cyclic types can now be converted to JSON Schema
 
@@ -461,10 +648,10 @@ const MyObj = type({
 })
 
 // valid data
-const validResult = myObj({})
+const validResult = MyObj({})
 
 // Error: key must be a number (was undefined)
-const errorResult = myObj({ key: undefined })
+const errorResult = MyObj({ key: undefined })
 ```
 
 This approach allows the most granular control over optionality, as `| undefined` can be added to properties that should accept it.
@@ -488,10 +675,10 @@ const MyObj = type({
 })
 
 // valid data
-const validResult = myObj({})
+const validResult = MyObj({})
 
 // now also valid data (would be an error by default)
-const secondResult = myObj({ key: undefined })
+const secondResult = MyObj({ key: undefined })
 ```
 
 **WARNING: exactOptionalPropertyTypes does not yet affect default values!**
@@ -502,10 +689,10 @@ const MyObj = type({
 })
 
 // { key: 5 }
-const omittedResult = myObj({})
+const omittedResult = MyObj({})
 
 // { key: undefined }
-const undefinedResult = myObj({ key: undefined })
+const undefinedResult = MyObj({ key: undefined })
 ```
 
 Support for this is tracked as part of [this broader configurable defaultability issue](https://github.com/arktypeio/arktype/issues/1390).
@@ -546,10 +733,10 @@ const result = myType.configure(
 
 ```ts
 const NEvenAtLeast2 = type({
-	n: "number % 2 > 2"
+	n: "number % 2 >= 2"
 })
 
-const out = nEvenAtLeast2({ n: 1 })
+const out = NEvenAtLeast2({ n: 1 })
 
 if (out instanceof type.errors) {
 	console.log(out.flatByPath)
@@ -778,7 +965,7 @@ const User = type({
 	email: "string.email"
 })
 
-const out = user({
+const out = User({
 	// ArkErrors: name must be shorthand description (was a number)
 	name: 5,
 	// ArkErrors: email must be an email address (was definitely fake)
@@ -786,7 +973,7 @@ const out = user({
 })
 ```
 
-The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#custom).
+The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#metadata).
 
 ### Tuple and args expressions for `.to`
 
@@ -815,7 +1002,7 @@ const CustomOne = type("1", "@", {
 })
 
 // ArkErrors: Yikes.
-customOne(2)
+CustomOne(2)
 ```
 
 Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#errors), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
@@ -871,7 +1058,7 @@ const Discriminated = type({
 
 // will now hit the case discriminated for id: 1,
 // but still correctly be allowed via the { name: string } branch
-discriminated({ name: "foo", id: 1 })
+Discriminated({ name: "foo", id: 1 })
 ```
 
 ## 2.0.4

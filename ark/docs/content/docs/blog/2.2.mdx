@@ -1,0 +1,378 @@
+---
+title: Announcing ArkType 2.2
+description: Type-safe regex, validated functions, and native Standard Schema definitions
+---
+
+As of today, 2.2.0 is generally available 🎉
+
+2.2 brings `type.fn` for runtime-validated functions, type-safe regex via `arkregex`, bidirectional JSON Schema with the new `@ark/json-schema` package, and universal schema interop- embed Zod, Valibot, or any Standard Schema validator directly in your definitions.
+
+For the first time, the type safety ArkType brings to data can extend to your entire function boundary- parameters in, return value out, validated and introspectable. Regex literals now carry full type inference including capture groups. And with configurable `toJsonSchema` and `@ark/json-schema`, ArkType speaks JSON Schema in both directions.
+
+```ts
+// @noErrors
+import { type } from "arktype"
+
+// runtime-validated functions
+const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
+len("foo") // 3
+len([1, 2, 3]) // 3
+
+// type-safe regex with inferred captures
+const Birthday = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+Birthday.assert({ birthday: "05-21-1993" }).birthday.groups.month // "05"
+
+// embed any Standard Schema validator
+const v = { number: () => "number" as const }
+const User = type({ name: "string", age: v.number() })
+```
+
+Below are the full notes for the 2.2.0 release. We can't wait to hear what you think! 🚀
+
+### `type.fn` - Validated functions
+
+Define functions with runtime-validated parameters and return types, all using the same syntax you already know. The result is a callable with `.expression`, `.params`, and `.returns` for introspection.
+
+```ts
+// @errors: 2345
+const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
+len("foo") // 3
+len([1, 2]) // 2
+
+len.expression // "(string | Array) => number"
+
+len(true) // TraversalError: value at [0] must be a string or an object (was boolean)
+```
+
+Since the types are defined as values rather than annotations, `type.fn` also works in plain `.js` files- no JSDoc or TypeScript required to get fully typed, validated function signatures.
+
+Supports all the tuple features you'd expect- defaults, optionals, variadics:
+
+```ts
+// "string = 'world'" means the second param defaults to "world" if omitted
+const greet = type.fn(
+	"string",
+	"string = 'world'"
+)((greeting, name) => `${greeting}, ${name}!`)
+
+greet("Hello") // "Hello, world!"
+greet("Hey", "David") // "Hey, David!"
+
+// "..." spreads a variadic array parameter, just like in tuple definitions
+const join = type.fn(
+	"...",
+	"string[]",
+	":",
+	"string"
+)((...parts) => parts.join(","))
+
+join.expression // "(...string[]) => string"
+```
+
+### Type-safe regex
+
+ArkType 2.2 integrates [arkregex](/docs/blog/arkregex), a type-safe wrapper for `new RegExp()`. Regex literals in your definitions now carry full type inference:
+
+```ts
+const Hex = type("/^[0-9a-fA-F]+$/")
+//    Type<string>
+
+const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
+//    Type<`${number}.${number}.${number}`>
+```
+
+#### e(x)ec mode
+
+Prefix a regex literal with `x` to parse capture groups at runtime, fully typed via arkregex:
+
+```ts
+const User = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+const data = User.assert({ birthday: "05-21-1993" })
+
+// fully type-safe
+data.birthday.groups.month // "05"
+data.birthday.groups.day // "21"
+data.birthday.groups.year // "1993"
+```
+
+For the standalone package (no ArkType required), see the full [arkregex announcement](/docs/blog/arkregex).
+
+### `@ark/json-schema` - Bidirectional JSON Schema
+
+The new `@ark/json-schema` package allows you to parse JSON Schema directly into ArkType Types, complementing the existing `toJsonSchema()` method on every Type. Together, they provide full bidirectional conversion.
+
+Special thanks to [@TizzySaurus](https://github.com/TizzySaurus) for the incredible work on this package 🙌
+
+```ts
+declare const jsonSchemaToType: (schema: unknown) => unknown
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+// Type<{ name: string; age?: number }>
+```
+
+### Configurable `toJsonSchema`
+
+Some ArkType features don't have JSON Schema equivalents. By default, `toJsonSchema()` throws in these cases. The new fallback config lets you handle incompatibilities granularly:
+
+```ts
+const T = type({
+	"[symbol]": "string",
+	birthday: "Date"
+})
+
+const schema = T.toJsonSchema({
+	fallback: {
+		date: ctx => ({
+			...ctx.base,
+			type: "string",
+			format: "date-time",
+			description: ctx.after ? `after ${ctx.after}` : "anytime"
+		}),
+		default: ctx => ctx.base
+	}
+})
+```
+
+`toJsonSchema()` now also accepts a `target` option and can generate `draft-07` in addition to the default `draft-2020-12`. Cyclic types are fully supported and generate `$ref`-based schemas.
+
+ArkType also implements the [Standard JSON Schema](https://standardschema.dev) interface, so libraries that consume Standard Schema can access JSON Schema directly via the `~standard` property.
+
+Full documentation including the complete table of fallback codes is available in the [configuration docs](/docs/configuration#tojsonschema).
+
+### Standard Schema as definitions
+
+Any [Standard Schema](https://standardschema.dev) compliant validator can now be passed directly to `type`, either at the top level or nested inside a structural definition, and will be fully inferred and validated.
+
+```ts
+import { type } from "arktype"
+const v = { number: () => "number" as const }
+const z = {
+	string: () => "string" as const,
+	object: <shape extends Record<string, unknown>>(shape: shape) => shape
+}
+
+const ZodAddress = z.object({
+	street: z.string(),
+	city: z.string()
+})
+
+const User = type({
+	name: "string",
+	age: v.number(),
+	address: ZodAddress
+})
+```
+
+This makes ArkType a universal composition layer- mix and match validators from any ecosystem in a single definition.
+
+### `select` - Deep reference introspection
+
+The new `select` method lets you query the internal structure of a type. Every Type is built from a tree of nodes (domains, constraints, morphs, etc.), and `select` extracts references by kind and predicate:
+
+```ts
+const T = type("1 < number < 10")
+
+// "min" is the node kind for lower bounds, "exclusive" means > (not >=)
+const minNodes = T.select("min")
+const exclusiveMins = minNodes.filter(node => node.exclusive)
+```
+
+These selectors can also be used to [target specific references for configuration](/docs/expressions#meta), avoiding the need to transform the entire type:
+
+```ts
+const User = type({ name: "string", age: "number" })
+
+// add the description to all domain nodes
+const configured = User.configure({ description: "a special string" }, "domain")
+
+configured.get("name").description // "a special string"
+configured.get("age").description // "a special string"
+```
+
+### Improved `type.declare`
+
+`type.declare` now supports morph-aware declarations via a `side` context, and optionality can be expressed via property values in addition to keys:
+
+```ts
+type Expected = { a: string; b?: number }
+
+const T = type.declare<Expected>().type({
+	a: "string",
+	// previously failed with `"b?" is missing`
+	b: "number?"
+})
+```
+
+If your type includes morphs like `string.numeric.parse`, you can declare just the input side or the output side. This is useful when your external type represents one half of a transformation:
+
+```ts
+type Input = { name: string }
+
+// { side: "in" } means we're declaring only the input shape
+const T = type.declare<Input, { side: "in" }>().type({
+	name: "string.numeric.parse"
+})
+// (In: Input) => { name: number }
+```
+
+When there's a mismatch, you get a clear error showing exactly what went wrong:
+
+```ts
+// type.declare<{ a: string }>().type({ a: "1" })
+// TypeScript: declared: string; inferred: 1
+```
+
+### Serializable `ArkErrors`
+
+`ArkErrors` are now JSON stringifiable, making it easy to send validation errors as API responses or store them in logs. Two new properties provide structured access:
+
+```ts
+const NEvenAtLeast2 = type({ n: "number % 2 >= 2" })
+
+const out = NEvenAtLeast2({ n: 1 })
+
+if (out instanceof type.errors) {
+	out.flatByPath
+	// { n: [{ code: "divisor", rule: 2, ... }, { code: "min", rule: 2, ... }] }
+
+	out.flatProblemsByPath
+	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
+}
+```
+
+Unhandled validation errors now throw a `TraversalError` (instead of `AggregateError`) with cleaner multi-error formatting (thanks @LukeAbby).
+
+### N-ary operators
+
+`type.or`, `type.and`, `type.merge`, and `type.pipe` are standalone functions that accept variadic definitions, avoiding the need to chain or compose binary expressions:
+
+```ts
+const Union = type.or(type.string, "number", { key: "unknown" })
+
+const Intersection = type.and(
+	{ foo: "string" },
+	{ bar: "number" },
+	{ baz: "string" }
+)
+
+const Merged = type.merge(
+	{ "[string]": "number", foo: "0" },
+	{ "[string]": "bigint", "foo?": "1n" }
+)
+
+const TrimToNonEmpty = type.pipe(
+	type.string,
+	s => s.trimStart(),
+	type.string.atLeastLength(1)
+)
+```
+
+### String-embeddable `|>` pipe operator
+
+The `to` operator (`|>`) can now be used directly inside string definitions:
+
+```ts
+const TrimToNonEmpty = type("string.trim |> string > 0")
+
+// equivalent to
+const Equivalent = type("string.trim").to("string > 0")
+```
+
+### `type.valueOf`
+
+Create a Type from a TypeScript `enum` or enum-like object:
+
+```ts
+enum Color {
+	Red,
+	Green,
+	Blue
+}
+
+// Type<Color.Red | Color.Green | Color.Blue>
+const ColorType = type.valueOf(Color)
+```
+
+### New keywords
+
+Two new built-in string keywords:
+
+```ts
+// validates hexadecimal strings (thanks @HoaX7)
+const Hex = type("string.hex")
+Hex.allows("deadbeef") // true
+
+// validates that a string is a syntactically valid regex pattern
+const Pattern = type("string.regex")
+Pattern.allows("^[a-z]+$") // true
+Pattern.allows("[invalid") // false
+```
+
+### `exactOptionalPropertyTypes` config
+
+ArkType now supports a global config for `exactOptionalPropertyTypes`, matching TypeScript's compiler option:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+// since the default in ArkType is `true`, this only has an effect if set to `false`
+configure({ exactOptionalPropertyTypes: false })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const MyObj = type({ "key?": "number" })
+
+// now valid (would be an error by default)
+MyObj({ key: undefined })
+```
+
+### Additional improvements
+
+- **`Type#distribute`**: Map and optionally reduce over union branches e.g. `T.distribute(branch => branch.expression)`. See [Type API docs](/docs/type-api#distribute).
+- **ES2020 / Hermes compatibility**: Removed usages of newer prototype methods like `.at()` to support legacy browsers and React Native's Hermes engine
+- **In-docs playground**: Try ArkType directly from the docs at [arktype.io/playground](https://arktype.io/playground) with full type checking and formatting
+- **Cyclic unions can now discriminate on nested paths**, improving performance and error messages for complex recursive types
+- **Faster shallow completions**: Near-instant autocomplete for `type("")`
+- **Better JSDoc and go-to-definition** for parsed object keys
+- **Improved `.expression` for regex constraints**: Now displays `/^pattern$/` instead of `string /^pattern$/`
+- **Generic descriptions** are now included for built-in generics like `Record`, `Pick`, `Omit`, `Partial`, `Required`, `Exclude`, `Extract`, and `Merge`
+- **`toJsonSchema()` format annotations**: Built-in string keywords like `string.email`, `string.ip.v4`, `string.ip.v6`, `string.url`, and `string.uuid` now emit proper JSON Schema `format` fields, improving OpenAPI compatibility
+- **Duplicate key detection**: Definitions with conflicting keys like `{ foo: "string", foo?: "string" }` now throw a descriptive error at parse time
+- **Unsatisfiable index signature intersections** now result in a `ParseError` instead of silently producing an unusable type
+- **Fixed predicate errors** after the first not being reported for multi-property constraints
+- **Fixed clone crash** when an object has a getter or setter as a non-prototype property
+- **Fixed custom `message` callbacks in JIT mode** that previously produced `"$ark.message"` instead of the expected string
+- **Fixed morph inference for environments** where global prototypes like `FormData` resolve to `{}` (e.g. `@types/bun`)
+- **Fixed metatype extraction from recursive definitions** where `Default` and `Out` were not properly inferred
+
+⚡ [Start coding](/docs/intro/setup)
+
+⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
+
+👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
+
+- Follow any of these accounts for updates:
+  - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
+  - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/ssalbdivad) on X/Twitter
+
+- Consider supporting my full-time work on ArkType...
+  - via [GitHub Sponsors](https://github.com/sponsors/arktypeio)
+  - by convincing your team to let me optimize your types and fix editor lag (reach out directly to one of the accounts listed or `david@arktype.io`)

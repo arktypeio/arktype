@@ -28,7 +28,7 @@ If you make a mistake, don't worry- every definition gets the autocomplete and v
 
 ## Compose
 
-Suppose we want to move `platform` and `version` from our original type to a new `device` property.
+Suppose we want to move `platform` and `versions` from our original type to a new `device` property.
 
 ```ts
 const User = type({
@@ -98,6 +98,6 @@ if (out instanceof type.errors) {
 }
 ```
 
-And that's it! You now know how to to define a `Type` use it to check your data at runtime.
+And that's it! You now know how to define a `Type` and use it to check your data at runtime.
 
 Next, we'll take a look at how ArkType extends TypeScript's type system to handle runtime constraints like `maxLength` and `pattern`.

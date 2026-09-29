@@ -315,6 +315,18 @@ contextualize(() => {
 		attest(f.name).snap("bound typed originalName")
 	})
 
+	it("raw", () => {
+		// raw has no type-level inference, so it's returned as an untyped parser
+		const len = type.fn.raw("string | unknown[]")((s: string) => s.length) as (
+			data: unknown
+		) => number
+
+		attest(len("foo")).equals(3)
+		attest(() => len(1)).throws.snap(
+			"TraversalError: value at [0] must be a string or an object (was a number)"
+		)
+	})
+
 	it("arg submodule completions", () => {
 		// @ts-expect-error
 		attest(() => type.fn("string.nu")).completions({
@@ -388,6 +400,22 @@ contextualize(() => {
 		).completions({
 			boo: ["boolean"]
 		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1614
+	it("labels an implementation that annotates its optional parameter", () => {
+		// labels come from the implementation's parameter names, which are only
+		// cosmetic. contextually inferred parameters already labelled correctly;
+		// it is annotating the optional one that stopped applyElementLabels from
+		// matching, dropping every label rather than just that one:
+		// (args_0?: number | undefined) => number | undefined
+		const f = type.fn("number?")((n?: number) => n)
+
+		attest(f).type.toString.snap(`TypedFn<
+	(n?: number | undefined) => number | undefined,
+	{},
+	{}
+>`)
 	})
 
 	describe("scoped", () => {

@@ -165,6 +165,15 @@ export class ArkErrors
 {
 	readonly [arkKind] = "errors"
 
+	/**
+	 * Inherited array methods (`map`, `filter`, `slice`, …) return a plain
+	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
+	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
+	 */
+	static get [Symbol.species](): ArrayConstructor {
+		return Array
+	}
+
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {
@@ -224,6 +233,7 @@ export class ArkErrors
 	add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
+			// only add if it's not already in the errors collection
 			if (error === existing) return
 			// If the existing error is an error for a value constrained to "never",
 			// then we don't want to intersect the error messages.

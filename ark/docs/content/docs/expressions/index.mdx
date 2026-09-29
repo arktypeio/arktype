@@ -11,9 +11,9 @@ Like its TypeScript counterpart, an intersection combines two existing `Type`s t
 	title="If you don't need to intersect overlapping props, spread instead!"
 >
 
-Computing an intersection is more expensive than [merging props](/docs/objects#), both at runtime and in-editor.
+Computing an intersection is more expensive than [merging props](/docs/objects#merge), both at runtime and in-editor.
 
-If you can get away with the latter, doing so will make your Types will be faster and cleaner.
+If you can get away with the latter, doing so will make your Types faster and cleaner.
 
 </Callout>
 
@@ -381,6 +381,27 @@ const ArkString = type(
 
 </SyntaxTabs>
 
+### Filter
+
+`filter` is similar to `narrow` but applies its predicate to the **input** of a type rather than the output. This distinction matters when your type includes morphs:
+
+- **`narrow`**: validates the **output** (after morphs have been applied)
+- **`filter`**: validates the **input** (before morphs run)
+
+```ts
+const ShortNumeric = type("string.numeric.parse").filter((s, ctx) => {
+	// s is a string here (the input), not a number (the output)
+	if (s.length > 10) return ctx.reject("at most 10 characters")
+	return true
+})
+
+// the filter runs on the input (string) before the morph parses it
+ShortNumeric("123") // 123
+ShortNumeric("12345678901") // ArkErrors: must be at most 10 characters
+```
+
+If the return type of a filter is a type predicate, that will be reflected in the inferred `Type`, just like with `narrow`.
+
 <AnchorAliases morph />
 ### Pipe
 
@@ -488,7 +509,7 @@ const trimStartToNonEmpty = type.pipe(
 
 ### Unit
 
-While embedded [literal syntax](/docs/primitives#number-literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serialiazable value like a `symbol` from your type.
+While embedded [literal syntax](/docs/primitives#number-literals) is usually ideal for defining exact primitive values, `===` and `type.unit` can be helpful for referencing a non-serializable value like a `symbol` from your type.
 
 <SyntaxTabs>
 
@@ -605,6 +626,54 @@ Notice `EquivalentObject` doesn't include `"numeric"` because it inverts a numer
 
 We recommend `type.enumerated` as the more transparent option for converting value references to a Type. However, if the described inverted entry pairs can't exist on your object, you can safely use `type.valueOf`.
 
+### fn
+
+`type.fn` defines a function with runtime-validated parameters and an optional return type. The result is a `TypedFn`- a callable with `.expression`, `.params`, and `.returns` for introspection.
+
+Parameters are defined using the same syntax as tuple types. A return type can optionally be specified after a `":"` separator.
+
+```ts
+// @errors: 2345
+const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
+
+len("foo") // 3
+len([1, 2]) // 2
+
+len.expression // "(string | Array) => number"
+
+len(true) // TraversalError: value at [0] must be a string or an object (was boolean)
+```
+
+Supports defaults, optionals, and variadic parameters:
+
+```ts
+const greet = type.fn(
+	"string",
+	"string = 'world'"
+)((greeting, name) => `${greeting}, ${name}!`)
+
+greet("Hello") // "Hello, world!"
+
+const maybeDouble = type.fn(
+	"number",
+	"boolean?"
+)((n, double) => (double ? n * 2 : n))
+
+maybeDouble(5) // 5
+maybeDouble(5, true) // 10
+
+const join = type.fn(
+	"...",
+	"string[]",
+	":",
+	"string"
+)((...parts) => parts.join(","))
+
+join.expression // "(...string[]) => string"
+```
+
+If no return type is specified, the return type is inferred from the implementation. If a return type is specified, it will be validated at runtime.
+
 ### Meta
 
 Metadata allows you to associate arbitrary metadata with your types.
@@ -675,15 +744,12 @@ const SelectivelyConfigured = type({
 	{
 		description: "a special string"
 	},
-	// only add the description to string keywords
-	{
-		kind: "domain",
-		where: d => d.domain === "string"
-	}
+	// add the description to all domain keywords
+	"domain"
 )
 
 SelectivelyConfigured.get("name").description // "a special string"
-SelectivelyConfigured.get("age").description // "a number"
+SelectivelyConfigured.get("age").description // "a special string"
 ```
 
     </SyntaxTab>
@@ -700,16 +766,12 @@ const SelectivelyConfigured = type([
 	{
 		description: "a special string"
 	},
-	// only add the description to string keywords
-	{
-		kind: "domain",
-		// tuple expression syntax doesn't support narrowing d from kind here
-		where: d => d.assertHasKind("domain").domain === "string"
-	}
+	// add the description to all domain keywords
+	"domain"
 ])
 
 SelectivelyConfigured.get("name").description // "a special string"
-SelectivelyConfigured.get("age").description // "a number"
+SelectivelyConfigured.get("age").description // "a special string"
 ```
 
     </SyntaxTab>
@@ -726,16 +788,12 @@ const SelectivelyConfigured = type(
 	{
 		description: "a special string"
 	},
-	// only add the description to string keywords
-	{
-		kind: "domain",
-		// args expression syntax doesn't support narrowing d from kind here
-		where: d => d.assertHasKind("domain").domain === "string"
-	}
+	// add the description to all domain keywords
+	"domain"
 )
 
 SelectivelyConfigured.get("name").description // "a special string"
-SelectivelyConfigured.get("age").description // "a number"
+SelectivelyConfigured.get("age").description // "a special string"
 ```
 
     </SyntaxTab>
