@@ -246,7 +246,10 @@ const isLeafIn = (
 // compiles references into one unit and binds its traversals, returning the
 // unit's source. A node bound by an earlier unit keeps its traversals unless
 // it belongs to owningScope, the scope being exported. A reusable leaf is not
-// declared again: the unit is passed those of its traversals it invokes.
+// declared again: the unit is passed those of its traversals it invokes. Any
+// other node bound by an earlier unit is declared only if a member invokes
+// it, except an alias: compiling one reads its resolution, which can create
+// nodes, so every unit compiles each alias among its references.
 const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
@@ -254,6 +257,8 @@ const precompile = (
 	const linkage: UnitLinkage = {
 		referencesById: new Map(),
 		reused: new Set(),
+		unreached: new Set(),
+		reached: [],
 		dependencies: new Map(),
 		refs: new Map(),
 		closed: true
@@ -263,6 +268,12 @@ const precompile = (
 	for (const node of references) {
 		if (reusableLeaves.has(node) && isLeafIn(node, linkage.referencesById))
 			linkage.reused.add(node)
+		else if (
+			node.precompilation &&
+			(!owningScope || node.$ !== owningScope) &&
+			!node.hasKind("alias")
+		)
+			linkage.unreached.add(node)
 		else declared.push(node)
 	}
 	const unit = precompileReferences(declared, linkage)
@@ -315,7 +326,8 @@ type PrecompiledTraversals = [
 // a unit declares each traversal as a const-bound function expression, so
 // members call each other directly (function declarations delay TurboFan's
 // optimization of large units), then returns each reference's traversals in
-// the order of references
+// the order of references. A node bound by an earlier unit is declared once
+// a member reaches it, after the references, and is not returned.
 const precompileReferences = (
 	references: readonly BaseNode[],
 	linkage: UnitLinkage
@@ -324,28 +336,41 @@ const precompileReferences = (
 		(...args: unknown[]) => PrecompiledTraversals[],
 		string[]
 	>()
-	const traversalsByReference = references.map(node => {
-		const traversals = [
-			declareTraversal(unit, linkage, node, "Allows"),
-			declareTraversal(unit, linkage, node, "Apply")
-		]
-		// an Optimistic traversal runs only from a branchedOptimistic union's
-		// root apply, or from another Optimistic traversal for a discriminant
-		// case that is itself branchedOptimistic
-		if (node.rootApplyStrategy === "branchedOptimistic")
-			traversals.push(declareTraversal(unit, linkage, node, "Optimistic"))
-		return `[${traversals.join(", ")}]`
-	})
+	const traversalsByReference = references.map(node =>
+		declareTraversals(unit, linkage, node)
+	)
+	for (let i = 0; i < linkage.reached.length; i++)
+		declareTraversals(unit, linkage, linkage.reached[i])
 	return unit.return(`[${traversalsByReference.join(", ")}]`)
+}
+
+const declareTraversals = (
+	unit: CompiledFunction,
+	linkage: UnitLinkage,
+	node: BaseNode
+): string => {
+	const traversals = [
+		declareTraversal(unit, linkage, node, "Allows"),
+		declareTraversal(unit, linkage, node, "Apply")
+	]
+	// an Optimistic traversal runs only from a branchedOptimistic union's
+	// root apply, or from another Optimistic traversal for a discriminant
+	// case that is itself branchedOptimistic
+	if (node.rootApplyStrategy === "branchedOptimistic")
+		traversals.push(declareTraversal(unit, linkage, node, "Optimistic"))
+	return `[${traversals.join(", ")}]`
 }
 
 // what a unit's members reach beyond its declarations, each passed to it as
 // a parameter: the traversals of reused nodes they invoke, named as invoked,
 // then the values they read through js.ref. An invoked traversal resolves by
-// id among the unit's references; one outside them leaves the unit open.
+// id among the unit's references; one outside them leaves the unit open. An
+// unreached node is reached, and so declared, once a member invokes it.
 type UnitLinkage = {
 	referencesById: Map<string, BaseNode>
 	reused: Set<BaseNode>
+	unreached: Set<BaseNode>
+	reached: BaseNode[]
 	dependencies: Map<Fn, string>
 	refs: NodeCompiler.Refs
 	closed: boolean
@@ -374,7 +399,8 @@ class TraversalCompiler extends NodeCompiler {
 				traversalOf(reference, kind),
 				this.referenceToId(id, { kind })
 			)
-		}
+		} else if (this.linkage.unreached.delete(reference))
+			this.linkage.reached.push(reference)
 		return super.invoke(node, opts)
 	}
 }
