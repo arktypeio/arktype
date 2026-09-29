@@ -24,6 +24,10 @@
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
+		"./runtime": {
+			"ark-ts": "./runtime.ts",
+			"default": "./out/runtime.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"
