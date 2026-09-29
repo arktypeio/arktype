@@ -277,4 +277,11 @@ contextualize(() => {
 			"value must be positive (was -1)"
 		)
 	})
+
+	it("prints nested bigints in errors", () => {
+		const T = type("bigint[]").narrow(
+			(arr, ctx) => new Set(arr).size === arr.length || ctx.mustBe("unique")
+		)
+		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
+	})
 })

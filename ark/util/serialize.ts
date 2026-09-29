@@ -69,7 +69,11 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
 						stringifyUnquoted(o, opts?.indent ?? 0, "")
-					:	_printableStringify(o, printableOpts, [], opts?.indent ?? 0, "")
+					:	JSON.stringify(
+							_serialize(o, printableOpts, []),
+							null,
+							opts?.indent
+						).replace(quotedBigIntMarker, "$1")
 				:	stringifyUnquoted(o, opts?.indent ?? 0, "")
 			)
 		case "symbol":
@@ -128,87 +132,16 @@ const stringifyUnquoted = (
 const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: v => `Symbol(${register(v)})`,
-	onFunction: v => `Function(${register(v)})`
+	onFunction: v => `Function(${register(v)})`,
+	// prefix bigints with a marker so printable can strip the quotes
+	// JSON.stringify adds, e.g. [1n] rather than ["1n"]
+	onBigInt: n => `${bigIntMarker}${n}n`
 } satisfies SerializationOptions
 
-const _printableStringify = (
-	data: unknown,
-	opts: SerializationOptions,
-	seen: unknown[],
-	indent: number,
-	currentIndent: string
-): string => {
-	if (typeof data === "function") return printableOpts.onFunction(data)
-	if (typeof data === "bigint") return `${data}n`
-	if (typeof data === "symbol")
-		return JSON.stringify(printableOpts.onSymbol(data))
-	if (data === undefined) return JSON.stringify("undefined")
-	if (typeof data !== "object" || data === null) return JSON.stringify(data)
+// private use character that JSON.stringify leaves unescaped
+const bigIntMarker = "\uE000"
 
-	const o = data as object
-
-	if (seen.includes(o)) return JSON.stringify("(cycle)")
-
-	const nextSeen = [...seen, o]
-	const nextIndent = currentIndent + " ".repeat(indent)
-
-	if ("toJSON" in o && typeof (o as any).toJSON === "function") {
-		return _printableStringify(
-			(o as any).toJSON(),
-			opts,
-			nextSeen,
-			indent,
-			nextIndent
-		)
-	}
-
-	if (Array.isArray(o)) {
-		if (o.length === 0) return "[]"
-		const items = o.map(item =>
-			_printableStringify(item, opts, nextSeen, indent, nextIndent)
-		)
-		if (indent)
-			return `[\n${nextIndent}${items.join(",\n" + nextIndent)}\n${currentIndent}]`
-
-		return `[${items.join(",")}]`
-	}
-
-	if (o instanceof Date) return JSON.stringify(o.toDateString())
-
-	const keyValues: string[] = []
-	for (const k in o) {
-		const serializedValue = _printableStringify(
-			(o as any)[k],
-			opts,
-			nextSeen,
-			indent,
-			nextIndent
-		)
-		const serializedKey = JSON.stringify(k)
-		if (indent)
-			keyValues.push(`${nextIndent}${serializedKey}: ${serializedValue}`)
-		else keyValues.push(`${serializedKey}:${serializedValue}`)
-	}
-
-	for (const s of Object.getOwnPropertySymbols(o)) {
-		const serializedValue = _printableStringify(
-			(o as any)[s],
-			opts,
-			nextSeen,
-			indent,
-			nextIndent
-		)
-		const serializedKey = JSON.stringify(printableOpts.onSymbol(s))
-		if (indent)
-			keyValues.push(`${nextIndent}${serializedKey}: ${serializedValue}`)
-		else keyValues.push(`${serializedKey}:${serializedValue}`)
-	}
-
-	if (keyValues.length === 0) return "{}"
-	if (indent) return `{\n${keyValues.join(",\n")}\n${currentIndent}}`
-
-	return `{${keyValues.join(",")}}`
-}
+const quotedBigIntMarker = new RegExp(`"${bigIntMarker}(-?\\d+n)"`, "g")
 
 const _serialize = (
 	data: unknown,

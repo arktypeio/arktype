@@ -24,8 +24,8 @@ contextualize(() => {
 	})
 
 	it("bigint in array", () => {
-		const data = [1n, 0n, 1n]
-		attest(printable(data)).snap("[1n,0n,1n]")
+		const data = [1n, 0n, -1n]
+		attest(printable(data)).snap("[1n,0n,-1n]")
 	})
 
 	it("bigint in object", () => {
