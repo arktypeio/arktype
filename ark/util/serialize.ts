@@ -178,30 +178,22 @@ const _serialize = (
 
 /**
  * Converts a Date instance to a human-readable description relative to its precision
+ *
+ * A Date can't tell us whether its author meant a calendar date in UTC or in
+ * local time: ISO date-only strings like "2023-01-01" parse as UTC midnight,
+ * while "2023/1/1" and `new Date(2023, 0, 1)` are local midnight. Dates at
+ * midnight in either are described as just a date, so both collapse as
+ * written. Anything with a time is described in UTC, labeled as such, so the
+ * result doesn't depend on the host's timezone.
  */
 export const describeCollapsibleDate = (date: Date): string => {
-	const year = date.getFullYear()
-	const month = date.getMonth()
-	const dayOfMonth = date.getDate()
-	const hours = date.getHours()
-	const minutes = date.getMinutes()
-	const seconds = date.getSeconds()
-	const milliseconds = date.getMilliseconds()
+	const utc = utcFields(date)
+	if (isMidnight(utc)) return describeCalendarDate(utc)
 
-	if (
-		month === 0 &&
-		dayOfMonth === 1 &&
-		hours === 0 &&
-		minutes === 0 &&
-		seconds === 0 &&
-		milliseconds === 0
-	)
-		return `${year}`
+	const local = localFields(date)
+	if (isMidnight(local)) return describeCalendarDate(local)
 
-	const datePortion = `${months[month]} ${dayOfMonth}, ${year}`
-
-	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
-		return datePortion
+	const { hours, minutes, seconds, milliseconds } = utc
 
 	const h = hours % 12 || 12
 	const suffix = hours < 12 ? " AM" : " PM"
@@ -213,8 +205,52 @@ export const describeCollapsibleDate = (date: Date): string => {
 
 	if (milliseconds) timePortion += `.${pad(milliseconds, 3)}`
 
-	return `${timePortion + suffix}, ${datePortion}`
+	return `${describeFullDate(utc)}, ${timePortion + suffix} UTC`
 }
+
+type DateFields = {
+	year: number
+	month: number
+	dayOfMonth: number
+	hours: number
+	minutes: number
+	seconds: number
+	milliseconds: number
+}
+
+const utcFields = (date: Date): DateFields => ({
+	year: date.getUTCFullYear(),
+	month: date.getUTCMonth(),
+	dayOfMonth: date.getUTCDate(),
+	hours: date.getUTCHours(),
+	minutes: date.getUTCMinutes(),
+	seconds: date.getUTCSeconds(),
+	milliseconds: date.getUTCMilliseconds()
+})
+
+const localFields = (date: Date): DateFields => ({
+	year: date.getFullYear(),
+	month: date.getMonth(),
+	dayOfMonth: date.getDate(),
+	hours: date.getHours(),
+	minutes: date.getMinutes(),
+	seconds: date.getSeconds(),
+	milliseconds: date.getMilliseconds()
+})
+
+const isMidnight = (fields: DateFields) =>
+	fields.hours === 0 &&
+	fields.minutes === 0 &&
+	fields.seconds === 0 &&
+	fields.milliseconds === 0
+
+const describeCalendarDate = (fields: DateFields) =>
+	fields.month === 0 && fields.dayOfMonth === 1 ?
+		`${fields.year}`
+	:	describeFullDate(fields)
+
+const describeFullDate = ({ year, month, dayOfMonth }: DateFields) =>
+	`${months[month]} ${dayOfMonth}, ${year}`
 
 const months = [
 	"January",

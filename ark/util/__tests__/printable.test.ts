@@ -101,17 +101,17 @@ contextualize(() => {
 
 	it("date", () => {
 		const d = new Date("2023-10-03T14:30:15.123Z")
-		attest(printable(d)).snap("10:30:15.123 AM, October 3, 2023")
+		attest(printable(d)).snap("October 3, 2023, 2:30:15.123 PM UTC")
 	})
 
 	it("date only year", () => {
 		const d = new Date("2023-01-01T00:00:00.000Z")
-		attest(printable(d)).snap("7:00 PM, December 31, 2022")
+		attest(printable(d)).snap("2023")
 	})
 
 	it("date only date", () => {
 		const d = new Date("2023-05-15T00:00:00.000Z")
-		attest(printable(d)).snap("8:00 PM, May 14, 2023")
+		attest(printable(d)).snap("May 15, 2023")
 	})
 
 	it("instance with expression", () => {
