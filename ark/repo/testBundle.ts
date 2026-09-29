@@ -60,14 +60,22 @@ if (breaches.length) {
 
 console.log("🪶 @ark/schema bundles without set algebra!")
 
-// @ark/schema/runtime runs emitted code without node code, so no module that
-// defines nodes or scopes or parses schemas, which is every @ark/schema module
-// outside shared/, may be reachable from it
+// @ark/schema/runtime runs emitted code without node code, so these are the
+// only @ark/schema modules it may reach. None defines nodes or scopes,
+// compiles or parses. shared/ also holds modules that do (compile.ts,
+// implement.ts, disjoint.ts...), so a module belongs here only if it does
+// none of those.
+const runtimeModules = new Set([
+	"schema/runtime.ts",
+	"schema/shared/errors.ts",
+	"schema/shared/errorWriters.ts",
+	"schema/shared/registry.ts",
+	"schema/shared/traversal.ts",
+	"schema/shared/utils.ts"
+])
+
 const nodeModules = runtime.modules.filter(
-	path =>
-		path.startsWith("schema/") &&
-		!path.startsWith("schema/shared/") &&
-		path !== "schema/runtime.ts"
+	path => path.startsWith("schema/") && !runtimeModules.has(path)
 )
 
 if (nodeModules.length) {
