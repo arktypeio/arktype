@@ -66,10 +66,6 @@ export class Scanner<lookahead extends string = string> {
 		return this.shiftUntil(() => !(this.lookahead in whitespaceChars))
 	}
 
-	jumpToIndex(i: number): void {
-		this.i = i < 0 ? this.length + i : i
-	}
-
 	jumpForward(count: number): void {
 		this.i += count
 	}

@@ -1,17 +1,12 @@
 import { getBuiltinNameOfConstructor } from "./objectKinds.ts"
 
-/** Shallowly copy the properties of the object. */
-export const shallowClone: <input extends object>(
-	input: input
-) => input = input => _clone(input, null)
-
 /** Deeply copy the properties of the a non-subclassed Object, Array or Date.*/
 export const deepClone = <input extends object>(input: input): input =>
 	_clone(input, new Map())
 
-const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
+const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 	if (typeof input !== "object" || input === null) return input
-	if (seen?.has(input)) return seen.get(input)
+	if (seen.has(input)) return seen.get(input)
 
 	const builtinConstructorName = getBuiltinNameOfConstructor(input.constructor)
 
@@ -34,19 +29,17 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	for (let i = 0; i < keys.length; i++)
 		descriptors.push(Object.getOwnPropertyDescriptor(input, keys[i]))
 
-	if (seen) {
-		seen.set(input, cloned)
-		for (let i = 0; i < keys.length; i++) {
-			const desc = descriptors[i]
-			if (desc && typeof keys[i] === "string") cloneValue(desc, seen)
-		}
-		// that for...in would also visit enumerable keys added to
-		// Object.prototype that input doesn't shadow
-		for (const k in withoutOwnKeys) {
-			const i = keys.indexOf(k)
-			if (i === -1 || !descriptors[i])
-				cloneValue((withoutOwnKeys as any)[k], seen)
-		}
+	seen.set(input, cloned)
+	for (let i = 0; i < keys.length; i++) {
+		const desc = descriptors[i]
+		if (desc && typeof keys[i] === "string") cloneValue(desc, seen)
+	}
+	// that for...in would also visit enumerable keys added to
+	// Object.prototype that input doesn't shadow
+	for (const k in withoutOwnKeys) {
+		const i = keys.indexOf(k)
+		if (i === -1 || !descriptors[i])
+			cloneValue((withoutOwnKeys as any)[k], seen)
 	}
 
 	for (let i = 0; i < keys.length; i++) {
