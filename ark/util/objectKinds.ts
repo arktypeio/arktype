@@ -59,8 +59,8 @@ export type platformConstructors = {
 	URL: typeof URL
 }
 
-// Node loads undici (~40ms) the first time one of these globals is read, so
-// they're read together on first access rather than when this module loads
+// Node loads undici the first time one of these globals is read, so they're
+// read together on first access rather than when this module loads
 const fetchConstructors = cached(() => ({
 	FormData,
 	Headers,

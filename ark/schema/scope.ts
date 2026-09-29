@@ -244,12 +244,14 @@ const isLeafIn = (
 }
 
 // compiles references into one unit and binds its traversals, returning the
-// unit's source. A node bound by an earlier unit keeps its traversals unless
-// it belongs to owningScope, the scope being exported. A reusable leaf is not
-// declared again: the unit is passed those of its traversals it invokes. Any
-// other node bound by an earlier unit is declared only if a member invokes
-// it, except an alias: compiling one reads its resolution, which can create
-// nodes, so every unit compiles each alias among its references.
+// unit's source. A reusable leaf that is also a leaf among these references
+// (see isLeafIn) keeps its traversals, even if it belongs to owningScope, and
+// is not declared again: the unit is passed those of them it invokes. Any
+// other node bound by an earlier unit keeps its traversals too, unless it
+// belongs to owningScope, the scope being exported, which rebinds it.
+// Otherwise, it is declared only if a member invokes it, except an alias:
+// compiling one reads its resolution, which can create nodes, so every unit
+// compiles each alias among its references.
 const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
