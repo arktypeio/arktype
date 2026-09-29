@@ -262,24 +262,23 @@ contextualize(() => {
 		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
 
-	it("preserves piped branch input narrows through an intersection", () => {
-		const PipedItem = type("string.numeric & string.numeric.parse").narrow(
-			(_data, ctx) => ctx.reject("always reject")
-		)
-		const UnpipedItem = type("string").narrow((_data, ctx) =>
-			ctx.reject("always reject")
-		)
-		const Variant = type({ kind: "'a'", value: PipedItem }).or({
-			kind: "'b'",
-			value: UnpipedItem
+	it("preserves piped union branch narrows through an intersection", () => {
+		const T = type({
+			kind: "'a'",
+			value: type("string.numeric.parse").narrow(
+				(n, ctx) => n > 0 || ctx.mustBe("positive")
+			)
 		})
-		const Meta = type({ code: type("string.numeric.parse") }).narrow(() => true)
-		const Thing = Variant.and(Meta)
+			.or({ kind: "'b'" })
+			.and(type({ code: "string" }).pipe(o => o))
 
-		attest(
-			Thing({ kind: "a", code: "1", value: "1" })
-				.toString()
-				.includes("always reject")
-		).equals(true)
+		attest(T({ kind: "a", code: "x", value: "1" })).snap({
+			kind: "a",
+			code: "x",
+			value: 1
+		})
+		attest(T({ kind: "a", code: "x", value: "-1" }).toString()).snap(
+			"value must be positive (was -1)"
+		)
 	})
 })

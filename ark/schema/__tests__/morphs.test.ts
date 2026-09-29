@@ -40,8 +40,7 @@ contextualize(() => {
 			{ declaredIn: intrinsic.string, morphs: morph },
 			{ declaredIn: intrinsic.string, morphs: morph }
 		])
-
-		attest(n.rawIn.expression).equals("string")
+		attest(n.rawIn.expression).snap("string")
 	})
 
 	contextualize.each(
