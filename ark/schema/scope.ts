@@ -967,6 +967,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			// lazy exports are compiled as they resolve
 			if (!this.lazyExports) {
+				// an export's alias references are bootstrapped after it is bound,
+				// so what they resolve to joins the scope's references here, as it
+				// joins a finalized root's
+				for (const name in this._exports) {
+					const resolution = this._exports[name]
+					if (isNode(resolution))
+						addReferences(this.referencesById, resolution.referencesById)
+				}
 				this.references = Object.values(this.referencesById)
 				if (!this.resolvedConfig.jitless)
 					this.precompilation = precompile(this.references, this)

@@ -470,6 +470,20 @@ b.c.c must be an object (was missing)`)
 			})
 		})
 
+		it("disjoint intersection with a cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "string.trim & a | number"
+				}
+			}).export()
+
+			attest(types.a({ b: 5 })).equals({ b: 5 })
+			attest(types.a.allows({ b: 5 })).equals(true)
+			attest(types.a({ b: "x" }).toString()).snap(
+				"b must be a number (was a string)"
+			)
+		})
+
 		// https://github.com/arktypeio/arktype/issues/1138
 		it("cyclic array", () => {
 			type Value = boolean | number | string | { [k: string]: Value } | Value[]
