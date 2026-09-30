@@ -25,6 +25,23 @@ contextualize(() => {
 		)
 	})
 
+	it("JSON Schema pattern accepts uppercase like the runtime check", () => {
+		const upper = validUuidV4.toUpperCase()
+
+		const Uuid = type("string.uuid")
+		attest(Uuid(upper)).equals(upper)
+		const uuidSchema = Uuid.toJsonSchema() as {
+			anyOf: { pattern?: string }[]
+		}
+		const versionedPattern = uuidSchema.anyOf[0].pattern!
+		attest(new RegExp(versionedPattern, "u").test(upper)).equals(true)
+
+		const Uuidv4 = type("string.uuid.v4")
+		attest(Uuidv4(upper)).equals(upper)
+		const v4Pattern = (Uuidv4.toJsonSchema() as { pattern: string }).pattern
+		attest(new RegExp(v4Pattern, "u").test(upper)).equals(true)
+	})
+
 	it("rejects partial matches", () => {
 		const Uuid = type("string.uuid")
 		attest(Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()).snap(
