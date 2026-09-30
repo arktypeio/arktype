@@ -3,6 +3,7 @@ import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
 import { jsTypeOfDescriptions, printable } from "@ark/util"
 import {
 	$ark,
+	intrinsic,
 	rootSchema,
 	schemaScope,
 	type ArkErrors,
@@ -26,6 +27,39 @@ contextualize(() => {
 		})
 
 		attest(node.precompilation).satisfies("string")
+	})
+
+	it("enumerates the intrinsics", () => {
+		attest(Object.keys(intrinsic)).snap([
+			"bigint",
+			"boolean",
+			"false",
+			"never",
+			"null",
+			"number",
+			"object",
+			"string",
+			"symbol",
+			"true",
+			"unknown",
+			"undefined",
+			"Array",
+			"Date",
+			"integer",
+			"lengthBoundable",
+			"key",
+			"nonNegativeIntegerString",
+			"jsonPrimitive",
+			"jsonObject",
+			"jsonData",
+			"emptyStructure"
+		])
+		attest("string" in intrinsic).equals(true)
+		attest(
+			Object.entries(intrinsic).every(
+				([k, v]) => v === $ark.intrinsic[k as keyof typeof intrinsic]
+			)
+		).equals(true)
 	})
 
 	it("reference", () => {

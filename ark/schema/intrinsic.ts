@@ -127,13 +127,20 @@ export const bootstrap = (): void => {
 	})
 }
 
-// each read is of the intrinsics as bootstrap last parsed them
+const currentIntrinsic = (): typeof $ark.intrinsic => {
+	bootstrap()
+	return $ark.intrinsic
+}
+
+// each read, including of its keys, is of the intrinsics as bootstrap last
+// parsed them
 export const intrinsic: ReturnType<typeof bootstrapIntrinsic> = new Proxy(
 	{} as never,
 	{
-		get: (_, k) => {
-			bootstrap()
-			return $ark.intrinsic[k as keyof typeof $ark.intrinsic]
-		}
+		get: (_, k) => Reflect.get(currentIntrinsic(), k),
+		has: (_, k) => Reflect.has(currentIntrinsic(), k),
+		ownKeys: () => Reflect.ownKeys(currentIntrinsic()),
+		getOwnPropertyDescriptor: (_, k) =>
+			Reflect.getOwnPropertyDescriptor(currentIntrinsic(), k)
 	}
 )
