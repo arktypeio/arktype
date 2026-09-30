@@ -202,7 +202,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			typeof node === "string" ? true : this.requiresContextFor(node)
 		const id = typeof node === "string" ? node : node.id
 		const reference = this.referenceToId(id, {
-			...opts,
 			kind: opts?.kind ?? this.traversalKind
 		})
 		if (requiresContext) return `${reference}(${arg}, ${this.ctx})`

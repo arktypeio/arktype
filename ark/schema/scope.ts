@@ -530,16 +530,12 @@ class TraversalCompiler extends NodeCompiler {
 	readonly linkage: UnitLinkage
 
 	constructor(kind: TraversalKind, linkage: UnitLinkage) {
-		super(
-			kind === "Optimistic" ?
-				{
-					kind: "Allows",
-					optimistic: true,
-					refs: linkage.refs,
-					errorContexts: linkage.errorContexts
-				}
-			:	{ kind, refs: linkage.refs, errorContexts: linkage.errorContexts }
-		)
+		super({
+			kind: kind === "Optimistic" ? "Allows" : kind,
+			...(kind === "Optimistic" && { optimistic: true }),
+			refs: linkage.refs,
+			errorContexts: linkage.errorContexts
+		})
 		this.linkage = linkage
 	}
 
