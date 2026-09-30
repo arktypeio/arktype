@@ -1,4 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
+import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
+import { jsTypeOfDescriptions, printable } from "@ark/util"
 import {
 	$ark,
 	rootSchema,
@@ -132,8 +134,8 @@ contextualize(() => {
 
 	it("registers nothing only compiled traversals read", () => {
 		const epoch = new Date(0)
-		// error contexts, key sets, default and structural morphs, the array
-		// index matcher and discriminated unions' error helpers
+		// the fresh type's own error contexts and key sets. Its morphs and
+		// arrays are those of the type compiled first (see the next test)
 		const make = (key: string) =>
 			rootSchema({
 				domain: "object",
@@ -172,5 +174,94 @@ contextualize(() => {
 		})
 		attest((T(invalid) as ArkErrors).count).equals(7)
 		attest(Object.keys($ark).length).equals(registered)
+	})
+
+	it("registers nothing for a type's own morphs, defaults and unions", () => {
+		const length = (s: string) => s.length
+		// each value a traversal of the fresh type reads is its own, so the
+		// type compiled first registering it could not hide its registration.
+		// The morph function is shared, since a morph's json names it
+		const make = (seed: number) => {
+			const key = `own${seed}`
+			return rootSchema({
+				domain: "object",
+				required: [
+					{ key, value: { domain: "number", max: seed * 10 } },
+					{ key: "u", value: [{ unit: seed }, { unit: "a" }, { unit: "b" }] },
+					{
+						key: "k",
+						value: [
+							{ domain: "object", required: [{ key, value: { unit: "x" } }] },
+							{ domain: "object", required: [{ key, value: { unit: "y" } }] }
+						]
+					},
+					{
+						key: "m",
+						value: {
+							in: "string",
+							morphs: [length, rootSchema({ domain: "number", max: seed * 10 })]
+						}
+					},
+					{
+						key: "w",
+						value: {
+							domain: "object",
+							required: [{ key, value: "number" }],
+							undeclared: "delete"
+						}
+					},
+					{
+						key: "t",
+						value: {
+							proto: Array,
+							sequence: {
+								prefix: ["string"],
+								defaultables: [["number", seed]]
+							},
+							undeclared: "delete"
+						}
+					}
+				],
+				optional: [{ key: "o", value: "number", default: seed }],
+				undeclared: "reject"
+			})
+		}
+		const valid = (seed: number) => ({
+			[`own${seed}`]: seed,
+			u: "a",
+			k: { [`own${seed}`]: "x" },
+			m: "abc",
+			w: { [`own${seed}`]: 1, extra: 1 },
+			t: ["s"]
+		})
+		const invalid = (seed: number) => ({
+			[`own${seed}`]: seed * 10 + 1,
+			u: 3,
+			k: { [`own${seed}`]: "z" },
+			m: 1,
+			w: {},
+			t: [1, "x"],
+			x: 1
+		})
+		const Warm = make(1)
+		Warm(valid(1))
+		Warm(invalid(1))
+		const registered = Object.keys($ark).length
+		const T = make(2)
+		attest(T(valid(2))).equals({
+			own2: 2,
+			u: "a",
+			k: { own2: "x" },
+			m: 3,
+			w: { own2: 1 },
+			t: ["s", 2],
+			o: 2
+		})
+		attest((T(invalid(2)) as ArkErrors).count).equals(8)
+		attest(Object.keys($ark).length).equals(registered)
+		// values emitted code reads through a unit's refs, never registered
+		const values = Object.values($ark)
+		for (const value of [printable, jsTypeOfDescriptions, arrayIndexMatcher])
+			attest(values.includes(value)).equals(false)
 	})
 })
