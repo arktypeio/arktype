@@ -301,7 +301,9 @@ const epoch = Scope.module(
 		root: epochRoot,
 		parse: rootSchema({
 			in: epochRoot,
-			morphs: (s: string) => new Date(s),
+			// parse as a number so the string is treated as milliseconds
+			// rather than passed to the Date string parser
+			morphs: (s: string) => new Date(Number.parseInt(s)),
 			declaredOut: intrinsic.Date
 		})
 	},

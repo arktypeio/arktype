@@ -32,4 +32,15 @@ contextualize(() => {
 			'must be an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date (was "05-21-1993")'
 		)
 	})
+
+	it("string.date.epoch.parse", () => {
+		const parseEpoch = type("string.date.epoch.parse")
+		const toIso = (s: string) => parseEpoch.assert(s).toISOString()
+		attest(toIso("0")).equals("1970-01-01T00:00:00.000Z")
+		attest(toIso("1700000000000")).equals("2023-11-14T22:13:20.000Z")
+		attest(toIso("-86400000")).equals("1969-12-31T00:00:00.000Z")
+		attest(parseEpoch("1.5").toString()).snap(
+			'must be a well-formed integer string (was "1.5")'
+		)
+	})
 })
