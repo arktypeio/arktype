@@ -250,6 +250,13 @@ contextualize(() => {
 		})
 	})
 
+	it("message", () => {
+		attest<string>(errors.message).equals(errors.summary)
+		attest(errors.message).snap(`n (1) must be...
+  ◦ even
+  ◦ at least 2`)
+	})
+
 	it("flatProblemsByPath", () => {
 		attest(errors.flatProblemsByPath).snap({
 			n: ["must be even (was 1)", "must be at least 2 (was 1)"]
