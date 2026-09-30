@@ -1,10 +1,4 @@
-import { lazily } from "@ark/util"
-import {
-	bootstrapRootScope,
-	node,
-	schemaScope,
-	withFixedGlobalConfig
-} from "./scope.ts"
+import { bootstrapRootScope, node, schemaScope } from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
 
@@ -73,21 +67,26 @@ const bootstrapIntrinsic = () => {
 }
 
 let bootstrapped = false
+// whether a set engine was installed when the intrinsics were parsed
+let bootstrappedWithEngine = false
 let bootstrappedIntrinsic: typeof $ark.intrinsic | undefined
 
 // reading $ark.intrinsic bootstraps, so the registry has the intrinsics
 // before anything is parsed
-Object.defineProperty($ark, "intrinsic", {
-	get: () => {
-		bootstrap()
-		return bootstrappedIntrinsic
-	},
-	set: v => {
-		bootstrappedIntrinsic = v
-	},
-	enumerable: true,
-	configurable: true
-})
+const bootstrapOnRead = () =>
+	Object.defineProperty($ark, "intrinsic", {
+		get: () => {
+			bootstrap()
+			return bootstrappedIntrinsic
+		},
+		set: v => {
+			bootstrappedIntrinsic = v
+		},
+		enumerable: true,
+		configurable: true
+	})
+
+bootstrapOnRead()
 
 /**
  * Parse the nodes every scope shares, precompile the root scope and parse
@@ -96,19 +95,24 @@ Object.defineProperty($ark, "intrinsic", {
  * Deferred to first use- parsing or reading an intrinsic- rather than run on
  * import, so that a set engine installed by a package that itself imports
  * @ark/schema (i.e. arksets) is in place before any node is reduced or
- * discriminated. Parsed with the global config fixed by fixGlobalConfig, if
- * one is.
+ * discriminated. A node parsed without one never is, so if one is installed
+ * after the intrinsics were parsed (e.g. arktype imported once @ark/schema
+ * has parsed), the next call parses them again. Parsed with the global config
+ * as it was on import (see bootstrapRootScope).
  */
 export const bootstrap = (): void => {
-	if (bootstrapped) return
+	if (bootstrapped && (bootstrappedWithEngine || !$ark.sets)) return
+	// parsed again as they were first parsed, from no intrinsics
+	if (bootstrapped) {
+		bootstrappedIntrinsic = undefined
+		bootstrapOnRead()
+	}
 	// set before the work so that parsing during it doesn't recurse, and
 	// unset if it fails so the next call reports the original error again
 	bootstrapped = true
+	bootstrappedWithEngine = $ark.sets !== undefined
 	try {
-		withFixedGlobalConfig(() => {
-			bootstrapRootScope()
-			bootstrapIntrinsic()
-		})
+		bootstrapRootScope(bootstrapIntrinsic)
 	} catch (e) {
 		bootstrapped = false
 		throw e
@@ -123,7 +127,13 @@ export const bootstrap = (): void => {
 	})
 }
 
-export const intrinsic: ReturnType<typeof bootstrapIntrinsic> = lazily(() => {
-	bootstrap()
-	return $ark.intrinsic
-})
+// each read is of the intrinsics as bootstrap last parsed them
+export const intrinsic: ReturnType<typeof bootstrapIntrinsic> = new Proxy(
+	{} as never,
+	{
+		get: (_, k) => {
+			bootstrap()
+			return $ark.intrinsic[k as keyof typeof $ark.intrinsic]
+		}
+	}
+)

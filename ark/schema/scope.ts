@@ -186,30 +186,41 @@ type GlobalConfig = {
 	resolvedConfig: ResolvedConfig
 }
 
+// configuring merges into $ark.config but replaces $ark.resolvedConfig
+const currentGlobalConfig = (): GlobalConfig => ({
+	config: { ...$ark.config },
+	resolvedConfig: $ark.resolvedConfig
+})
+
 let fixedGlobalConfig: GlobalConfig | undefined
-let constructingWithFixedConfig = false
+// what scopes being constructed merge their config onto, if not the current
+// global config
+let constructingWith: GlobalConfig | undefined
 
 /**
- * Fix the global config that the intrinsics, and scopes constructed through
- * withFixedGlobalConfig, merge theirs onto as the current one, so that
- * configuring later changes neither. arktype fixes it on import, since its
- * keywords and the intrinsics are built on first reference.
+ * Fix the global config that scopes constructed through withFixedGlobalConfig
+ * merge theirs onto as the current one, so that configuring later changes
+ * none of them. arktype fixes it on import, since its keywords are built on
+ * first reference.
  */
 export const fixGlobalConfig = (): void => {
-	fixedGlobalConfig ??= {
-		config: { ...$ark.config },
-		resolvedConfig: $ark.resolvedConfig
-	}
+	fixedGlobalConfig ??= currentGlobalConfig()
 }
 
 /** Construct scopes merging their config onto the fixed global config, if any */
-export const withFixedGlobalConfig = <t>(construct: () => t): t => {
-	const outer = constructingWithFixedConfig
-	constructingWithFixedConfig = fixedGlobalConfig !== undefined
+export const withFixedGlobalConfig = <t>(construct: () => t): t =>
+	constructWith(fixedGlobalConfig, construct)
+
+const constructWith = <t>(
+	globalConfig: GlobalConfig | undefined,
+	construct: () => t
+): t => {
+	const outer = constructingWith
+	constructingWith = globalConfig
 	try {
 		return construct()
 	} finally {
-		constructingWithFixedConfig = outer
+		constructingWith = outer
 	}
 }
 
@@ -603,7 +614,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// the root scope's unknown union is cached by bootstrapRootScope
 		if (constructingRootSchemaScope) cachedUnknownUnion.add(this)
 
-		const globalConfig = constructingWithFixedConfig ? fixedGlobalConfig! : $ark
+		const globalConfig = constructingWith ?? $ark
 
 		this.config = mergeConfigs(globalConfig.config, config)
 
@@ -1301,12 +1312,21 @@ export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
 constructingRootSchemaScope = false
 
-/** The half of the root scope's construction that needs a set engine */
-export const bootstrapRootScope = (): void => {
-	cacheUnknownUnion(rootSchemaScope)
-	// ensure the scope is resolved so JIT will be applied to future types
-	rootSchemaScope.export()
-}
+// the global config the root scope was constructed with
+const importedGlobalConfig = currentGlobalConfig()
+
+/**
+ * Complete the root scope with the half of its construction that needs a set
+ * engine, then run parseIntrinsics. Scopes either constructs merge their
+ * config onto the global config as it was on import, as the root scope did
+ */
+export const bootstrapRootScope = (parseIntrinsics: () => void): void =>
+	constructWith(importedGlobalConfig, () => {
+		cacheUnknownUnion(rootSchemaScope)
+		// ensure the scope is resolved so JIT will be applied to future types
+		rootSchemaScope.export()
+		parseIntrinsics()
+	})
 
 export type RootExportCache = Record<
 	string,

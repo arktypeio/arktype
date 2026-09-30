@@ -69,8 +69,7 @@ export declare namespace Ark {
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
 
-// keywords and the intrinsics are built on first reference, from the config
-// as it is now
+// keywords are built on first reference, from the config as it is now
 fixGlobalConfig()
 
 export const ark: Scope<Ark> = scope(
