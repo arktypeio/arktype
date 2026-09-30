@@ -87,9 +87,10 @@ const applyEdits = (js: string, edits: Edit[]) =>
  * keepNames wraps each function or class bundling could rename in
  * __name(value, "name"), a defineProperty that also moves a function to
  * dictionary mode. Most calls set the name the language already gives value:
- * an anonymous function or class assigned to a variable, class field or
- * property of that name, or a declaration of that name. A class field's call
- * runs for every instance, so only calls that change a name are kept.
+ * an anonymous function or class assigned to a variable (declared or not),
+ * class field or property of that name, or a declaration of that name. A
+ * class field's call runs for every instance, so only calls that change a
+ * name are kept.
  *
  * A class that refers to itself is written `var X = class _X {...}`, its
  * references inside bound to _X, and named in a static block. Static blocks
@@ -294,6 +295,15 @@ const isAnonymous = (node: ts.Expression): boolean => {
 /** the name an anonymous function or class gets from where it is assigned */
 const inferredNameOf = (node: ts.Node): string | undefined => {
 	const { parent } = node
+	if (ts.isBinaryExpression(parent)) {
+		return (
+				parent.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+					ts.isIdentifier(parent.left) &&
+					parent.right === node
+			) ?
+				parent.left.text
+			:	undefined
+	}
 	if (
 		!(
 			ts.isVariableDeclaration(parent) ||
