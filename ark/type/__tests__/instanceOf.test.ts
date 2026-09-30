@@ -26,6 +26,14 @@ contextualize(() => {
 			attest(T.expression).equals(Expected.expression)
 		})
 
+		it("fluent apart from its constructor's keyword", () => {
+			// the keyword is compiled once parsed, where type.instanceOf returns a
+			// node it doesn't finalize
+			const Keyword = type("WeakSet")
+			const T = type.instanceOf(WeakSet)
+			attest(T.internal === Keyword.internal).equals(false)
+		})
+
 		it("inherited", () => {
 			const T = type(["instanceof", TypeError])
 			const e = new TypeError()
