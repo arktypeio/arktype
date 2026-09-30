@@ -117,8 +117,10 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		normalize: schema => {
-			// duplicate keys are a normalization error, so the check holds with no
-			// set engine installed
+			// a set engine rejects duplicate keys as it reduces a structure, in
+			// turn with what else it finds there (e.g. a prop disjoint from an
+			// index signature), so only without one are they rejected here
+			if ($ark.sets) return schema
 			const seen: Record<Key, true | undefined> = Object.create(null)
 			for (const prop of conflatenateAll(schema.required, schema.optional)) {
 				if (prop.key in seen)

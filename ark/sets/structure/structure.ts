@@ -2,12 +2,14 @@ import {
 	$ark,
 	Disjoint,
 	normalizeIndex,
+	writeDuplicateKeyMessage,
 	type BaseScope,
 	type OptionalNode,
 	type Prop,
 	type Structure,
 	type nodeOfKind
 } from "@ark/schema"
+import { throwParseError, type Key } from "@ark/util"
 import { flattenConstraints, intersectConstraints } from "../constraint.ts"
 import type { setImplementationOf } from "../implement.ts"
 import { intersectNodesRoot } from "../intersections.ts"
@@ -134,13 +136,19 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 	reduce: (inner, $) => {
 		if (!inner.required && !inner.optional) return
 
+		const seen: Record<Key, true | undefined> = Object.create(null)
 		let updated = false
 		const newOptionalProps: OptionalNode[] =
 			inner.optional ? [...inner.optional] : []
 
+		// check required keys for duplicates and handle index intersections
 		if (inner.required) {
 			for (let i = 0; i < inner.required.length; i++) {
 				const requiredProp = inner.required[i]
+				if (requiredProp.key in seen)
+					throwParseError(writeDuplicateKeyMessage(requiredProp.key))
+				seen[requiredProp.key] = true
+
 				if (inner.index) {
 					for (const index of inner.index) {
 						const intersection = intersectPropsAndIndex(requiredProp, index, $)
@@ -150,9 +158,14 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			}
 		}
 
+		// check optional keys for duplicates and handle index intersections
 		if (inner.optional) {
 			for (let i = 0; i < inner.optional.length; i++) {
 				const optionalProp = inner.optional[i]
+				if (optionalProp.key in seen)
+					throwParseError(writeDuplicateKeyMessage(optionalProp.key))
+				seen[optionalProp.key] = true
+
 				if (inner.index) {
 					for (const index of inner.index) {
 						const intersection = intersectPropsAndIndex(optionalProp, index, $)
