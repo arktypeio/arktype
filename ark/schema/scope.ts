@@ -867,9 +867,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = this.bindReference(def.root))
 		}
 
-		return (this.resolutions[name] = this.parse(def, {
-			alias: name
-		}))
+		return (this.resolutions[name] = this.parseResolution(def, name))
+	}
+
+	// the root an alias whose definition is a thunk or ambient resolves to
+	protected parseResolution(def: unknown, alias: string): BaseRoot {
+		return this.parse(def, { alias })
 	}
 
 	protected createParseContext<input extends BaseParseContextInput>(

@@ -15,7 +15,13 @@ import type {
 	inferDefinition,
 	validateDefinition
 } from "../parser/definition.ts"
-import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
+import {
+	$arkTypeRegistry,
+	scope,
+	type bindThis,
+	type InternalScope,
+	type Scope
+} from "../scope.ts"
 import type {
 	DefinitionParser,
 	SchemaParser,
@@ -81,37 +87,31 @@ export const ark: Scope<Ark> = scope(
 	{ name: "ark" }
 ) as never
 
-// exported keywords that stay interpreted until parsed by name, as an export
-// of the whole scope leaves them: each shares its id with a rebound copy that
-// displaces it from the references the export compiles. The interpreter and
-// the JIT describe some unions differently (e.g. FormData.value), so
-// compiling one would change its messages. A configured keyword is a node of
-// its own, and is compiled.
-const interpretedKeywords = [
-	"object.root",
-	"object.json.root",
-	"string.date.iso.root",
-	"string.date.epoch.root",
-	"string.integer.root",
-	"string.normalize.root",
-	"string.numeric.root",
-	"unknown.root",
-	"unknown.any",
-	"Array.root",
-	"Array.readonly",
-	"FormData.value"
-]
-
-export const keywords: Module<Ark> = ark.internal.exportLazily(
-	new Set(
-		interpretedKeywords.filter(
-			name =>
-				!ark.internal.resolvedConfig.keywords?.[
-					name.endsWith(".root") ? name.slice(0, -5) : name
-				]
-		)
-	)
-) as never
+// see exportKeywords. A parse keyword's input shares its root's id and is
+// bound after it, unless either is configured. readonly aliases root, so it
+// is bound after a configured root unless it is configured itself
+export const keywords: Module<Ark> = (
+	ark.internal as {} as InternalScope
+).exportKeywords(unconfigured => ({
+	"object.root": unconfigured("object"),
+	"object.json.root": unconfigured("object.json"),
+	"string.date.iso.root": unconfigured(
+		"string.date.iso",
+		"string.date.iso.parse"
+	),
+	"string.date.epoch.root": unconfigured(
+		"string.date.epoch",
+		"string.date.epoch.parse"
+	),
+	"string.integer.root": unconfigured("string.integer", "string.integer.parse"),
+	"string.normalize.root": unconfigured("string.normalize"),
+	"string.numeric.root": unconfigured("string.numeric", "string.numeric.parse"),
+	"unknown.root": unconfigured("unknown"),
+	"unknown.any": unconfigured("unknown.any"),
+	"Array.root": unconfigured("Array") || unconfigured("Array.readonly"),
+	"Array.readonly": unconfigured("Array", "Array.readonly"),
+	"FormData.value": unconfigured("FormData.value")
+})) as never
 
 // the keywords' own accessors, so that each resolves on first reference
 // through either
