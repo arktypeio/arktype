@@ -35,15 +35,16 @@ const isNode = value =>
 	value[" arkKind"] === "root" || value[" arkKind"] === "constraint"
 
 /**
- * Walks everything reachable from $ark.nodesByRegisteredId through each
- * value's referencesById and its scope ($), collecting the distinct node
- * instances and precompilation strings found on nodes and scopes.
+ * Walks everything reachable from $ark.nodesByRegisteredId and seeds through
+ * each value's referencesById, its scope ($) and a module's members,
+ * collecting the distinct node instances and precompilation strings found on
+ * nodes and scopes.
  */
-export const reachable = () => {
+export const reachable = (seeds = []) => {
 	const nodes = new Set()
 	const precompilations = new Set()
 	const seen = new Set()
-	const pending = Object.values(registry().nodesByRegisteredId)
+	const pending = [...Object.values(registry().nodesByRegisteredId), ...seeds]
 	while (pending.length) {
 		const value = pending.pop()
 		if (
@@ -57,6 +58,7 @@ export const reachable = () => {
 		if (typeof value.precompilation === "string")
 			precompilations.add(value.precompilation)
 		if (value.$) pending.push(value.$)
+		if (value[" arkKind"] === "module") pending.push(...Object.values(value))
 		const references = value.referencesById
 		if (references) for (const id in references) pending.push(references[id])
 	}
@@ -72,13 +74,15 @@ export const totalLength = strings => {
 /**
  * Runs fn and returns its result along with the total length of precompilation
  * strings that became reachable while it ran, i.e. the JS source it emitted
- * and retained.
+ * and retained. A root is registered only if an alias references it by id, so
+ * the walk also starts from created, which should hold everything fn creates
+ * and anything created before it that fn's creations could share.
  */
-export const measureEmitted = fn => {
-	const before = reachable().precompilations
+export const measureEmitted = (fn, created) => {
+	const before = reachable(created).precompilations
 	const result = fn()
 	let emitted = 0
-	for (const source of reachable().precompilations)
+	for (const source of reachable(created).precompilations)
 		if (!before.has(source)) emitted += source.length
 	return { result, emitted }
 }

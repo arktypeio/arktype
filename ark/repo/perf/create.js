@@ -16,17 +16,20 @@ const { type, scope } = await importArktype(root, {
 	jitless: workload === "object jitless"
 })
 
+// every type and module a workload creates, for measureEmitted to walk
+const created = []
+
 const time = (inputs, create) => {
 	globalThis.gc?.()
 	const start = performance.now()
-	for (const input of inputs) create(input)
+	for (const input of inputs) created.push(create(input))
 	return performance.now() - start
 }
 
 const usPer = (ms, count) => (ms * 1000) / count
 
 const objectInputs = () => {
-	for (let i = 0; i < 100; i++) type(objectDefinition(`w${i}`))
+	for (let i = 0; i < 100; i++) created.push(type(objectDefinition(`w${i}`)))
 	return Array.from({ length: 2000 }, (_, i) => objectDefinition(`t${i}`))
 }
 
@@ -66,7 +69,10 @@ const scopeAliases = tag => {
 const workloads = {
 	object: () => {
 		const inputs = objectInputs()
-		const { result: ms, emitted } = measureEmitted(() => time(inputs, type))
+		const { result: ms, emitted } = measureEmitted(
+			() => time(inputs, type),
+			created
+		)
 		return {
 			"object (µs/type)": usPer(ms, inputs.length),
 			"object emitted (bytes/type)": emitted / inputs.length
@@ -83,22 +89,28 @@ const workloads = {
 			Array.from({ length: 40 }, (_, j) => type(poolMember(`${prefix}${j}`)))
 		const warmupPool = poolOf("wp")
 		for (let i = 0; i < 20; i++)
-			type(compositeDefinition(warmupPool, `w${i}`, i))
+			created.push(type(compositeDefinition(warmupPool, `w${i}`, i)))
 		const pool = poolOf("p")
+		created.push(...warmupPool, ...pool)
 		const inputs = Array.from({ length: 200 }, (_, i) =>
 			compositeDefinition(pool, `c${i}`, i)
 		)
-		const { result: ms, emitted } = measureEmitted(() => time(inputs, type))
+		const { result: ms, emitted } = measureEmitted(
+			() => time(inputs, type),
+			created
+		)
 		return {
 			"composite (µs/type)": usPer(ms, inputs.length),
 			"composite emitted (bytes)": emitted
 		}
 	},
 	scope: () => {
-		for (let i = 0; i < 5; i++) scope(scopeAliases(`w${i}`)).export()
+		for (let i = 0; i < 5; i++)
+			created.push(scope(scopeAliases(`w${i}`)).export())
 		const inputs = Array.from({ length: 100 }, (_, i) => scopeAliases(`s${i}`))
-		const { result: ms, emitted } = measureEmitted(() =>
-			time(inputs, aliases => scope(aliases).export())
+		const { result: ms, emitted } = measureEmitted(
+			() => time(inputs, aliases => scope(aliases).export()),
+			created
 		)
 		return {
 			"scope (µs/scope)": usPer(ms, inputs.length),
