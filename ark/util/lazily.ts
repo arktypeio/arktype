@@ -19,8 +19,9 @@ export const lazily = <t extends object>(thunk: () => t): t => {
 
 /**
  * Define `k` on `o` as computed on first read, after which the object it was
- * read through holds the result as a plain property. Copies of the accessor
- * (e.g. through Object.getOwnPropertyDescriptors) share that one result.
+ * read through holds the result as a plain property, unless it has been
+ * frozen or sealed. Copies of the accessor (e.g. through
+ * Object.getOwnPropertyDescriptors) share that one result.
  */
 export const defineLazily = (
 	o: object,
@@ -31,12 +32,15 @@ export const defineLazily = (
 	Object.defineProperty(o, k, {
 		get() {
 			if (result === unset) result = compute()
-			Object.defineProperty(this, k, {
-				value: result,
-				enumerable: true,
-				writable: true,
-				configurable: true
-			})
+			const own = Object.getOwnPropertyDescriptor(this, k)
+			if (own ? own.configurable : Object.isExtensible(this)) {
+				Object.defineProperty(this, k, {
+					value: result,
+					enumerable: true,
+					writable: true,
+					configurable: true
+				})
+			}
 			return result
 		},
 		enumerable: true,

@@ -249,6 +249,11 @@ const cacheUnknownUnion = ($: BaseScope): void => {
 // shared nodes and precompilation to bootstrapRootScope
 let constructingRootSchemaScope = true
 
+// the scopes that have cached the unknown union, each on its first parse,
+// after the process's first parse has bootstrapped. Held apart from each
+// scope, which may be frozen by then
+const cachedUnknownUnion = new WeakSet<BaseScope>()
+
 const rootScopeFnName = "function $"
 
 // roots bound by a closed unit, one that declares or is passed each traversal
@@ -566,9 +571,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly nodesByHash: WeakCache<BaseNode> = new WeakCache(
 		this.holdsNodesWeakly
 	)
-	// the unknown union is cached on the scope's first parse, after the
-	// process's first parse has bootstrapped
-	private unknownUnionCached = constructingRootSchemaScope
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -576,6 +578,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
+		// the root scope's unknown union is cached by bootstrapRootScope
+		if (constructingRootSchemaScope) cachedUnknownUnion.add(this)
+
 		const globalConfig = constructingWithFixedConfig ? fixedGlobalConfig! : $ark
 
 		this.config = mergeConfigs(globalConfig.config, config)
@@ -643,11 +648,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.cacheGetter("intrinsic", bound)
 	}
 
+	// a scope frozen or sealed before the getter is first read computes it on
+	// each read
 	protected cacheGetter<name extends keyof this>(
 		name: name,
 		value: this[name]
 	): this[name] {
-		Object.defineProperty(this, name, { value })
+		if (Object.isExtensible(this)) Object.defineProperty(this, name, { value })
 		return value
 	}
 
@@ -881,8 +888,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// any parse may be the process's first, so the shared nodes and
 		// intrinsics take their ids ahead of the one allocated here
 		bootstrap()
-		if (!this.unknownUnionCached) {
-			this.unknownUnionCached = true
+		if (!cachedUnknownUnion.has(this)) {
+			cachedUnknownUnion.add(this)
 			cacheUnknownUnion(this)
 		}
 		const id = input.id ?? registerNodeId(input.prefix)

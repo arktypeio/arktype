@@ -8,6 +8,7 @@ import {
 import { scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
+import { keywordModule } from "arktype/internal/scope.ts"
 
 contextualize(() => {
 	it("base definition", () => {
@@ -539,5 +540,29 @@ b.c.c must be an object (was missing)`)
 		const t2 = s2.type("a")
 		attest(t1.expression).equals("string")
 		attest(t2.expression).equals("number")
+	})
+
+	it("a scope frozen before its first parse parses", () => {
+		const $ = Object.freeze(scope({}))
+		attest($.type("string")(5).toString()).snap(
+			"must be a string (was a number)"
+		)
+		attest($.type.and({ a: "string" }, { b: "number" }).expression).snap(
+			"{ a: string, b: number }"
+		)
+		attest($.type.pipe((s: string) => s.length)("abc")).equals(3)
+	})
+
+	it("frozen keyword modules and type parsers read their members", () => {
+		const Frozen: Module<{ root: string }> = Object.freeze(
+			keywordModule({ root: () => ["string", "@", "a frozen root"] }, {})
+		) as never
+		attest(Frozen.root(5).toString()).snap(
+			"must be a frozen root (was a number)"
+		)
+		const parser = Object.freeze(scope({}).type)
+		attest(parser.number("x").toString()).snap(
+			"must be a number (was a string)"
+		)
 	})
 })

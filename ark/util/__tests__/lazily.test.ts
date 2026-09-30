@@ -1,0 +1,46 @@
+import { attest, contextualize } from "@ark/attest"
+import { defineLazily } from "@ark/util"
+
+const lazyCount = (o: object): (() => number) => {
+	let computed = 0
+	defineLazily(o, "k", () => ++computed)
+	return () => computed
+}
+
+contextualize(() => {
+	it("holds its result as a plain property once read", () => {
+		const o = {} as { k: number }
+		const computed = lazyCount(o)
+		attest(o.k).equals(1)
+		attest(o.k).equals(1)
+		attest(computed()).equals(1)
+		attest(Object.getOwnPropertyDescriptor(o, "k")?.value).equals(1)
+	})
+
+	it("reads through an object frozen before its first read", () => {
+		const o = {} as { k: number }
+		const computed = lazyCount(o)
+		Object.freeze(o)
+		attest(o.k).equals(1)
+		attest(o.k).equals(1)
+		attest(computed()).equals(1)
+	})
+
+	it("reads through an object sealed before its first read", () => {
+		const o = {} as { k: number }
+		const computed = lazyCount(o)
+		Object.seal(o)
+		attest(o.k).equals(1)
+		attest(o.k).equals(1)
+		attest(computed()).equals(1)
+	})
+
+	it("reads through an object that inherits it and can't be extended", () => {
+		const proto = {}
+		const computed = lazyCount(proto)
+		const o = Object.preventExtensions(Object.create(proto)) as { k: number }
+		attest(o.k).equals(1)
+		attest(o.k).equals(1)
+		attest(computed()).equals(1)
+	})
+})
