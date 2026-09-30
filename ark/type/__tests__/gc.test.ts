@@ -68,8 +68,10 @@ contextualize(() => {
 			"string | number | bigint | symbol | object | boolean | null | undefined"
 		)
 		attest(T.expression).equals("unknown")
-		// a scope caches the union on its first parse
+		// a scope caches the union on its first parse. One exported before
+		// then holds none of the nodes it parses besides
 		const $ = scope({})
+		$.export()
 		$.type("string")
 		await collect()
 		attest(
@@ -79,12 +81,43 @@ contextualize(() => {
 		).equals("unknown")
 	})
 
+	// the parses below return a node without finalizing it, and one equal
+	// to it was compiled by a type since dropped. Each is built from nodes
+	// rather than a string, which the ambient parse cache would hold
 	it("enumerated returns a union compiled and dropped as compiled", async () => {
-		const compiledMessage = type("'zeta' | 'alpha' | 7")(2).toString()
+		let U: type.Any | null = type({ k: "'gcZeta' | 'gcAlpha'" })
+			.get("k")
+			.or(type.unit(7007))
+		const compiledMessage = U(2).toString()
+		U = null
 		await collect()
-		attest(type.enumerated("zeta", "alpha", 7)(2).toString()).equals(
+		attest(type.enumerated("gcZeta", "gcAlpha", 7007)(2).toString()).equals(
 			compiledMessage
 		)
+	})
+
+	it("a scope's node returns a union compiled and dropped as compiled", async () => {
+		let U: type.Any | null = type({ a: "string" })
+			.get("a")
+			.or(type.instanceOf(WeakMap))
+		const compiledMessage = U(0).toString()
+		U = null
+		await collect()
+		const U2 = type.$.node("union", [{ domain: "string" }, { proto: WeakMap }])
+		attest(String(U2(0))).equals(compiledMessage)
+	})
+
+	it("configuring self returns a node compiled and dropped as compiled", async () => {
+		const configured = () =>
+			type({ a: "string" })
+				.get("a")
+				.or(type.instanceOf(WeakSet))
+				.configure({ examples: ["gc"] }, "self")
+		let T: type.Any | null = type(configured())
+		const compiledMessage = T(0).toString()
+		T = null
+		await collect()
+		attest(configured()(0).toString()).equals(compiledMessage)
 	})
 
 	it("an optional prop's input depends on the same reads after collecting", async () => {

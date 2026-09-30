@@ -308,9 +308,10 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	// arktype finalizes each node it returns except those of type.unit,
-	// enumerated, valueOf and instanceOf. Units and protos word their errors
-	// the same whether compiled or not, and a union of units is kept once
-	// compiled (see precompile)
+	// enumerated, valueOf and instanceOf, a scope's node and configuring
+	// "self". One of those can be a copy of a node an earlier finalize
+	// compiled and that was since collected, which runs interpreted, but
+	// reports errors as that node did (see holdsNodesWeakly)
 	protected override get holdsNodesWeakly(): boolean {
 		return true
 	}

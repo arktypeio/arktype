@@ -349,19 +349,27 @@ const precompile = (
 		if (traverseOptimistic)
 			(node as UnionNode).traverseOptimistic = traverseOptimistic
 		node.precompilation = precompilation
-		// type.enumerated returns a union of units without finalizing it, and
-		// such a union words its errors differently once compiled
-		if (
-			node.hasKind("union") &&
-			node.branches.every(branch => branch.hasKind("unit"))
-		)
-			node.keepInScope()
+		// a parse that doesn't finalize its result (type.enumerated, a scope's
+		// node, configuring "self") can return this node, so one that reports
+		// errors differently once compiled is kept compiled
+		if (reportsDifferentlyCompiled(node)) node.keepInScope()
 		if (node.isRoot()) bindRootApply(node)
 		if (linkage.closed && isLeafIn(node, linkage.referencesById))
 			reusableLeaves.add(node)
 	}
 
 	return precompilation
+}
+
+// compiled traversal describes a discriminated union by its cases, where
+// interpreted traversal describes each branch, and reports a -0 in an error
+// context as 0. Any other node reports errors alike either way, and so does
+// a node referencing one of these, which calls its traversals.
+const reportsDifferentlyCompiled = (node: BaseNode): boolean => {
+	if (node.hasKind("union")) return node.compiledDiscriminant !== null
+	for (const k in node.inner)
+		if (Object.is((node.inner as Dict)[k], -0)) return true
+	return false
 }
 
 // a root a unit binds applies its new traversals through code of its own,
@@ -622,11 +630,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	/**
 	 * Whether nodesByHash keeps a node only while something else does. A parse
-	 * that doesn't finalize its result can return a node an earlier finalize
-	 * compiled, where after that node is collected it would return an
-	 * uncompiled copy, which may word its errors differently. So a scope whose
-	 * API returns any node unfinalized, like @ark/schema's node, holds them
-	 * strongly.
+	 * that doesn't finalize its result (e.g. node) can return a node an
+	 * earlier finalize compiled, where after that node is collected it returns
+	 * an uncompiled copy. precompile keeps each node whose errors compiled
+	 * traversal reports differently, so the copy reports them alike, but it
+	 * runs interpreted. So @ark/schema's scopes, whose API returns most nodes
+	 * unfinalized, hold them strongly.
 	 */
 	protected get holdsNodesWeakly(): boolean {
 		return false
