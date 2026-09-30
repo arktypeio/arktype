@@ -4,6 +4,7 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	WeakCache,
 	type array,
 	type mutable
 } from "@ark/util"
@@ -38,7 +39,8 @@ import {
 } from "../shared/traversal.ts"
 import {
 	assertDefaultValueAssignability,
-	computeDefaultValueMorph
+	computeDefaultValueMorph,
+	keepsDefaultValueMorph
 } from "./optional.ts"
 
 export declare namespace Sequence {
@@ -416,7 +418,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	expression: string = this.description
 }
 
-const defaultableMorphsCache: Record<string, Morph[] | undefined> = {}
+// see keepsDefaultValueMorph
+const defaultableMorphsCache = new WeakCache<Morph[]>()
 
 const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
 	if (!node.defaultables) return []
@@ -434,7 +437,15 @@ const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
 
 	cacheKey += "]"
 
-	return (defaultableMorphsCache[cacheKey] ??= morphs)
+	const cached = defaultableMorphsCache.get(cacheKey)
+	if (cached) return cached
+
+	const keep = node.defaultables.some(([element]) =>
+		keepsDefaultValueMorph(element)
+	)
+	return keep ?
+			defaultableMorphsCache.pin(cacheKey, morphs)
+		:	defaultableMorphsCache.set(cacheKey, morphs)
 }
 
 export const Sequence = {

@@ -29,6 +29,17 @@ contextualize(() => {
 		)
 	})
 
+	it("collects a scope whose types have defaults", async () => {
+		const ref = new WeakRef(
+			scope({
+				a: { collectedDefault: "string = 'gc'" },
+				b: ["string", "number = 1234"]
+			}).export().a
+		)
+		await collect()
+		attest(ref.deref()).equals(undefined)
+	})
+
 	it("keeps a this-cyclic root another type references", async () => {
 		let Root: type.Any | null = type({ name: "string", "next?": "this" })
 		const Extended = Root.and({ "id?": "number" })

@@ -4,6 +4,7 @@ import {
 	omit,
 	printable,
 	throwParseError,
+	WeakCache,
 	type requireKeys
 } from "@ark/util"
 import type { Morph } from "../roots/morph.ts"
@@ -110,19 +111,32 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-const defaultableMorphCache: Record<string, Morph | undefined> = {}
+// see keepsDefaultValueMorph
+const defaultableMorphCache = new WeakCache<Morph>()
 
 const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
 	if (!node.hasDefault()) return
 
 	const cacheKey = `{${node.compiledKey}: ${node.value.id} = ${defaultValueSerializer(node.default)}}`
 
-	return (defaultableMorphCache[cacheKey] ??= computeDefaultValueMorph(
-		node.key,
-		node.value,
-		node.default
-	))
+	const cached = defaultableMorphCache.get(cacheKey)
+	if (cached) return cached
+
+	const morph = computeDefaultValueMorph(node.key, node.value, node.default)
+	return keepsDefaultValueMorph(node.value) ?
+			defaultableMorphCache.pin(cacheKey, morph)
+		:	defaultableMorphCache.set(cacheKey, morph)
 }
+
+/**
+ * Whether a default morph cache keeps the morph computeDefaultValueMorph
+ * made for value while no node holds it. Values with equal ids share a
+ * morph, and bound copies of a node, one per scope, share its id. A morph
+ * runs its value only if the value transforms, so only then does which
+ * copy it was made for, and whose config words its errors, matter.
+ */
+export const keepsDefaultValueMorph = (value: BaseRoot): boolean =>
+	value.includesTransform
 
 export const computeDefaultValueMorph = (
 	key: PropertyKey,
