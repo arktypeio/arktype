@@ -2,6 +2,7 @@
 // packages (ark/repo/bundle.ts) could break. arktype/config is imported first,
 // as documented, so if it loaded its own copy of the registry, the one arktype
 // loads would install as $ark2.
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import "arktype/config"
 import { scope, type } from "arktype"
 import { readdirSync, readFileSync } from "node:fs"
@@ -18,7 +19,8 @@ if ("$ark2" in globalThis) {
 	)
 }
 
-const fromBuild = path => import(new URL(`../${path}`, import.meta.url).href)
+const fromBuild = (path: string): Promise<Record<string, unknown>> =>
+	import(new URL(`../${path}`, import.meta.url).href)
 
 const schema = await fromBuild("schema/out/index.js")
 
@@ -31,10 +33,9 @@ for (const entry of ["config", "runtime"]) {
 	}
 }
 
-if (
-	(await import("arktype/internal/keywords/string.ts")) !==
-	(await import("arktype"))
-)
+const deepImported: object = await import("arktype/internal/keywords/string.ts")
+
+if (deepImported !== (await import("arktype")))
 	throw new Error("⚠️  arktype/internal/* loads modules arktype does not.")
 
 // configuring through a deep import must run before the rest of the package
@@ -55,7 +56,7 @@ const errors = type("string")(5)
 if (
 	errors.constructor.name !== "ArkErrors" ||
 	errors[0].constructor.name !== "ArkError" ||
-	schema.Disjoint.name !== "Disjoint" ||
+	(schema.Disjoint as Function).name !== "Disjoint" ||
 	scope({}).constructor.name !== "InternalScope"
 )
 	throw new Error("⚠️  Bundling renamed a class.")
@@ -67,7 +68,7 @@ if (
 for (const pkg of ["util", "schema", "sets", "regex", "type"]) {
 	const dir = new URL(`../${pkg}/out/`, import.meta.url)
 	for (const name of readdirSync(dir).filter(name => name.endsWith(".js"))) {
-		const visit = node => {
+		const visit = (node: ts.Node): void => {
 			if (ts.isClassStaticBlockDeclaration(node))
 				throw new Error(`⚠️  ${pkg}/out/${name} has a class static block.`)
 			if (ts.isIdentifier(node) && node.text === "__name")

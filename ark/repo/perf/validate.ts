@@ -6,7 +6,8 @@
 // so every sample sees the same fully warmed process and drift spreads evenly
 // across measurements. A loop cycles through its case's data.
 
-import { importArktype, options, report } from "./child.js"
+import type { Type } from "arktype"
+import { importArktype, options, report } from "./child.ts"
 
 const samples = 10
 const sampleMs = 100
@@ -34,10 +35,28 @@ const Flat = type({
 	deeplyNested: { foo: "string", num: "number", bool: "boolean" }
 })
 
-// data: the inputs a loop cycles through
-// valid: whether each input is valid (default true)
-// apply: the label and expression (over T and d) timed as apply
-const cases = {
+type Case = {
+	T: Type
+	/** the inputs a loop cycles through */
+	data: unknown[]
+	/** whether each input is valid (default true) */
+	valid?: boolean
+	/** the label and expression (over T and d) timed as apply */
+	apply?: [label: string, expression: string]
+}
+
+type Loop = (T: Type, data: unknown[], n: number) => unknown
+
+type Measurement = {
+	name: string
+	T: Type
+	data: unknown[]
+	loop: Loop
+	n?: number
+	samples?: number[]
+}
+
+const cases: Record<string, Case> = {
 	flat: { T: Flat, data: [flatData] },
 	nested: {
 		T: type({
@@ -141,7 +160,7 @@ const cases = {
 	}
 }
 
-const loopOf = expression =>
+const loopOf = (expression: string) =>
 	new Function(
 		"T",
 		"data",
@@ -153,12 +172,12 @@ for (let i = 0; i < n; i++) {
 	result = ${expression}
 }
 return result`
-	)
+	) as Loop
 
 // every loop's result is stored here, so none can be optimized away
-let sink
+export let sink: unknown
 
-const measurements = []
+const measurements: Measurement[] = []
 for (const [
 	name,
 	{ T, data, valid = true, apply = ["apply", "T(d)"] }
@@ -176,13 +195,14 @@ for (const [
 	)
 }
 
-const run = (m, n) => {
+const run = (m: Measurement, n: number) => {
 	const start = performance.now()
 	sink = m.loop(m.T, m.data, n)
 	return performance.now() - start
 }
 
-const iterationsFor = (n, ms) => Math.max(1, Math.round((n * sampleMs) / ms))
+const iterationsFor = (n: number, ms: number) =>
+	Math.max(1, Math.round((n * sampleMs) / ms))
 
 for (const m of measurements) {
 	let n = 1
@@ -197,6 +217,6 @@ for (const m of measurements) {
 globalThis.gc?.()
 
 for (let round = 0; round < samples; round++)
-	for (const m of measurements) m.samples.push((run(m, m.n) * 1e6) / m.n)
+	for (const m of measurements) m.samples!.push((run(m, m.n!) * 1e6) / m.n!)
 
-report(Object.fromEntries(measurements.map(m => [m.name, m.samples])))
+report(Object.fromEntries(measurements.map(m => [m.name, m.samples!])))

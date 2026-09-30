@@ -8,25 +8,31 @@ import {
 	measureEmitted,
 	objectDefinition,
 	options,
-	report
-} from "./child.js"
+	report,
+	type ObjectDefinition
+} from "./child.ts"
+import type { ProcessResult } from "./suites.ts"
+import type { Type } from "arktype"
 
 const { root, workload } = options
 const { type, scope } = await importArktype(root, {
 	jitless: workload === "object jitless"
 })
 
-// every type and module a workload creates, for measureEmitted to walk
-const created = []
+type CompositeDefinition = Record<string, string | Type>
+type ScopeAliases = Record<string, Record<string, string>>
 
-const time = (inputs, create) => {
+// every type and module a workload creates, for measureEmitted to walk
+const created: unknown[] = []
+
+const time = <input>(inputs: input[], create: (input: input) => unknown) => {
 	globalThis.gc?.()
 	const start = performance.now()
 	for (const input of inputs) created.push(create(input))
 	return performance.now() - start
 }
 
-const usPer = (ms, count) => (ms * 1000) / count
+const usPer = (ms: number, count: number) => (ms * 1000) / count
 
 const objectInputs = () => {
 	for (let i = 0; i < 100; i++) created.push(type(objectDefinition(`w${i}`)))
@@ -34,7 +40,7 @@ const objectInputs = () => {
 }
 
 // a pool member: six keys, including an optional one and a nested object
-const poolMember = tag => ({
+const poolMember = (tag: string): ObjectDefinition => ({
 	[`id${tag}`]: "string",
 	[`count${tag}`]: "number.integer >= 0",
 	[`kind${tag}`]: "'a' | 'b' | 'c'",
@@ -44,16 +50,16 @@ const poolMember = tag => ({
 })
 
 // references 5 distinct members of the pool, chosen by i
-const compositeDefinition = (pool, tag, i) => {
-	const def = { [`id${tag}`]: "string" }
+const compositeDefinition = (pool: Type[], tag: string, i: number) => {
+	const def: CompositeDefinition = { [`id${tag}`]: "string" }
 	for (let k = 0; k < 5; k++) def[`m${k}${tag}`] = pool[(i * 7 + k * 11) % 40]
 	return def
 }
 
 // 20 aliases, each referencing another as a binary tree would, plus one
 // self-referential alias that nothing else references
-const scopeAliases = tag => {
-	const def = {}
+const scopeAliases = (tag: string) => {
+	const def: ScopeAliases = {}
 	for (let k = 0; k < 20; k++) {
 		def[`a${k}`] = {
 			[`id${tag}`]: "string",
@@ -66,7 +72,7 @@ const scopeAliases = tag => {
 	return def
 }
 
-const workloads = {
+const workloads: Record<string, () => ProcessResult> = {
 	object: () => {
 		const inputs = objectInputs()
 		const { result: ms, emitted } = measureEmitted(
@@ -85,7 +91,7 @@ const workloads = {
 		}
 	},
 	composite: () => {
-		const poolOf = prefix =>
+		const poolOf = (prefix: string): Type[] =>
 			Array.from({ length: 40 }, (_, j) => type(poolMember(`${prefix}${j}`)))
 		const warmupPool = poolOf("wp")
 		for (let i = 0; i < 20; i++)
@@ -119,4 +125,4 @@ const workloads = {
 	}
 }
 
-report(workloads[workload]())
+report(workloads[workload!]())

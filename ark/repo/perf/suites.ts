@@ -67,7 +67,7 @@ export const suites = {
 	init: {
 		processes: { run: 15, compare: 15 },
 		warmup: true,
-		measure: root => inChild("init.js", { root })
+		measure: root => inChild("init.ts", { root })
 	},
 	create: {
 		processes: { run: 1, compare: 5 },
@@ -76,17 +76,17 @@ export const suites = {
 			Object.assign(
 				{},
 				...createWorkloads.map(workload =>
-					inChild("create.js", { root, workload }, ["--expose-gc"])
+					inChild("create.ts", { root, workload }, ["--expose-gc"])
 				)
 			)
 	},
 	validate: {
 		processes: { run: 1, compare: 5 },
-		measure: root => inChild("validate.js", { root }, ["--expose-gc"])
+		measure: root => inChild("validate.ts", { root }, ["--expose-gc"])
 	},
 	memory: {
 		processes: { run: 1, compare: 3 },
-		measure: root => inChild("memory.js", { root }, ["--expose-gc"])
+		measure: root => inChild("memory.ts", { root }, ["--expose-gc"])
 	},
 	bundle: {
 		processes: { run: 1, compare: 1 },

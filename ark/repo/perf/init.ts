@@ -7,7 +7,7 @@ import {
 	registeredIds,
 	report,
 	totalLength
-} from "./child.js"
+} from "./child.ts"
 
 const url = arktypeUrl(options.root)
 const start = performance.now()

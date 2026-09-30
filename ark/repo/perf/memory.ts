@@ -7,14 +7,14 @@ import {
 	options,
 	registeredIds,
 	report
-} from "./child.js"
+} from "./child.ts"
 
 const count = 5000
 const { type } = await importArktype(options.root)
 
 const heapAfterGc = () => {
-	globalThis.gc()
-	globalThis.gc()
+	globalThis.gc!()
+	globalThis.gc!()
 	return process.memoryUsage().heapUsed
 }
 
@@ -22,7 +22,7 @@ const heapAfterGc = () => {
 // memory runs short, which only a last-resort gc simulates
 const heapAfterLastResortGc = () => {
 	heapAfterGc()
-	globalThis.gc({ type: "major", execution: "sync", flavor: "last-resort" })
+	globalThis.gc!({ type: "major", execution: "sync", flavor: "last-resort" })
 	return process.memoryUsage().heapUsed
 }
 
