@@ -35,6 +35,16 @@
 			"types": "./out/config.d.ts",
 			"default": "./out/config.js"
 		},
+		"./internal/keywords/ts.ts": {
+			"ark-ts": "./keywords/ts.ts",
+			"types": "./out/keywords/ts.d.ts",
+			"default": "./out/keywords/ts.js"
+		},
+		"./internal/keywords/ts.js": {
+			"ark-ts": "./keywords/ts.ts",
+			"types": "./out/keywords/ts.d.ts",
+			"default": "./out/keywords/ts.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",

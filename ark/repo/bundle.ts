@@ -1,8 +1,10 @@
 import { buildSync } from "esbuild"
+import { dirname, relative, resolve } from "node:path"
 import ts from "typescript"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	fromCwd,
+	readFile,
 	readPackageJson,
 	rmRf,
 	walkPaths,
@@ -13,23 +15,33 @@ import {
  * Replaces the JS tsc wrote to out/, one file per module, with an ESM bundle
  * of the package, so importing it loads a few files instead.
  *
- * Every export without a * (".", "./config", "./runtime") is an entry of one
- * build, so a module more than one of them imports, like the one that
- * installs the registry, is evaluated once whichever is imported first. Other
- * packages stay imports, each resolving to its own bundle.
+ * Every export without a * outside "./internal/" (".", "./config",
+ * "./runtime") is an entry of one build, so a module more than one of them
+ * imports, like the one that installs the registry, is evaluated once
+ * whichever is imported first. Other packages stay imports, each resolving to
+ * its own bundle.
  *
  * out/ keeps a .d.ts per module, which "./internal/*" resolves to for types.
- * At runtime it resolves to the main entry, whose modules a deep import then
- * shares instead of evaluating copies of them. "./internal/config.ts" (and
- * .js) resolves to the config entry, so configuring through it still runs
- * before the rest of the package evaluates, as keyword config must.
+ * At runtime it resolves to the main entry, so a deep import shares its
+ * modules instead of evaluating copies of them, and the main entry exports
+ * every name any module exports, whether or not its .d.ts declares it. A name
+ * the main entry exports otherwise, or "default", it exports under an alias,
+ * and the module gets a file of its own that exports the main entry's names
+ * and that one under its own, which package.json must map the module's deep
+ * imports to. "./internal/config.ts" (and .js) resolves to the config entry,
+ * so configuring through it still runs before the rest of the package
+ * evaluates, as keyword config must.
  */
 export const bundle = (): void => {
+	// sorted, so which of two modules' like-named exports the main entry
+	// exports under that name is the same wherever it's built
 	const perModuleJs = walkPaths(fromCwd("out"), {
 		include: path => path.endsWith(".js")
-	})
+	}).sort()
+	const entryPoints = publicEntryPoints()
+	const ownFiles = flattenInto(entryPoints, perModuleJs)
 	const { outputFiles } = buildSync({
-		entryPoints: publicEntryPoints(),
+		entryPoints,
 		outdir: fromCwd("out"),
 		bundle: true,
 		splitting: true,
@@ -48,20 +60,316 @@ export const bundle = (): void => {
 	const helperRead = withoutHelper.includes(undefined)
 	for (let i = 0; i < outputFiles.length; i++)
 		writeFile(outputFiles[i].path, helperRead ? bundles[i] : withoutHelper[i]!)
+	for (const [path, js] of ownFiles) writeFile(path, js)
 }
 
-const publicEntryPoints = (): string[] => [
-	...new Set(
-		Object.entries<string | { default: string }>(
-			readPackageJson(process.cwd()).exports
-		).flatMap(([subpath, target]) => {
-			const file = typeof target === "string" ? target : target.default
-			return !subpath.includes("*") && file.endsWith(".js") ?
-					[fromCwd(file)]
-				:	[]
-		})
+const publicEntryPoints = (): string[] =>
+	Object.entries<string | { default: string }>(
+		readPackageJson(process.cwd()).exports
+	).flatMap(([subpath, target]) => {
+		const file = typeof target === "string" ? target : target.default
+		return (
+				!subpath.includes("*") &&
+					!subpath.startsWith("./internal/") &&
+					file.endsWith(".js")
+			) ?
+				[fromCwd(file)]
+			:	[]
+	})
+
+/**
+ * Appends to main's JS an export of each name a module exports and main
+ * doesn't, from a module main already evaluates where one exports it. Main
+ * then evaluates the modules it did in the same order, then any it didn't
+ * that export a name, then its own code. Returns the JS of each module's own
+ * file, for modules but entries exporting a name main binds otherwise.
+ */
+const flattenInto = (
+	entryPoints: string[],
+	perModuleJs: string[]
+): Map<string, string> => {
+	const main = fromCwd("out", "index.js")
+	const records = new Map(
+		perModuleJs.map(path => [path, moduleRecordOf(path, readFile(path))])
 	)
-]
+	const exports = new Map(
+		perModuleJs.map(path => [path, exportsOf(records, path)])
+	)
+	const evaluated = evaluatedBy(records, [main])
+	// modules main evaluates provide a name first
+	const byProvider = [
+		...perModuleJs.filter(path => evaluated.has(path)),
+		...perModuleJs.filter(path => !evaluated.has(path))
+	]
+	const taken = new Set(
+		perModuleJs.flatMap(path => [...exports.get(path)!.keys()])
+	)
+	const bound = new Map(exports.get(main))
+	// the name main exports each binding it can't export under its own as
+	const aliases = new Map<Binding, string>()
+	const reexports = new Map<string, string[]>()
+	const reexport = (path: string, specifier: string) =>
+		reexports.set(path, [...(reexports.get(path) ?? []), specifier])
+	const ownFiles = new Map<string, string>()
+	for (const path of byProvider) {
+		const overrides: string[] = []
+		for (const [name, binding] of exports.get(path)!) {
+			if (bound.get(name) === binding) continue
+			if (name !== "default" && !bound.has(name)) {
+				bound.set(name, binding)
+				reexport(path, name)
+				continue
+			}
+			let alias = aliases.get(binding)
+			if (!alias) {
+				alias = `${name}$${relative(fromCwd("out"), path)
+					.replace(/\.js$/, "")
+					.replace(/[^\w$]/g, "$")}`
+				if (taken.has(alias))
+					throw new Error(`${alias}, an alias for ${path}'s ${name}, is taken`)
+				taken.add(alias)
+				aliases.set(binding, alias)
+				reexport(path, `${name} as ${alias}`)
+			}
+			overrides.push(`${alias} as ${name}`)
+		}
+		if (overrides.length) {
+			assertMapsToOwnFile(path)
+			// an entry's output is its own file
+			if (!entryPoints.includes(path)) {
+				ownFiles.set(
+					path,
+					`export * from ${specifierOf(path, main)};\n` +
+						reexporting(overrides, path, main)
+				)
+			}
+		}
+	}
+	writeFile(
+		main,
+		readFile(main) +
+			[...reexports]
+				.map(([path, specifiers]) => reexporting(specifiers, main, path))
+				.join("")
+	)
+	return ownFiles
+}
+
+/** throws unless package.json maps path's deep imports to path */
+const assertMapsToOwnFile = (path: string) => {
+	const exports = readPackageJson(process.cwd()).exports
+	const file = `./${relative(process.cwd(), path).replace(/\\/g, "/")}`
+	const module = file.slice("./out/".length, -".js".length)
+	for (const subpath of [
+		`./internal/${module}.ts`,
+		`./internal/${module}.js`
+	]) {
+		if (exports[subpath]?.default !== file) {
+			throw new Error(
+				`${module} exports a name the main entry binds otherwise, so ${subpath} must be { "ark-ts": "./${module}.ts", "types": "./out/${module}.d.ts", "default": "${file}" } in package.json's exports`
+			)
+		}
+	}
+}
+
+/** the JS at from that re-exports specifiers of the module at path */
+const reexporting = (specifiers: string[], from: string, path: string) =>
+	`export { ${specifiers.join(", ")} } from ${specifierOf(from, path)};\n`
+
+/** a relative specifier for to, as imported from from */
+const specifierOf = (from: string, to: string) => {
+	const path = relative(dirname(from), to).replace(/\\/g, "/")
+	return JSON.stringify(path.startsWith(".") ? path : `./${path}`)
+}
+
+/**
+ * the names a module exports, sorted, and the binding each resolves to, as ES
+ * modules link them: a name two `export *` resolve to different bindings is
+ * ambiguous, so not exported, and a module's own exports shadow any
+ * `export *` of the same name
+ */
+const exportsOf = (
+	records: Map<string, ModuleRecord>,
+	path: string
+): Map<string, Binding> => {
+	const bindings = new Map<string, Binding>()
+	for (const name of exportedNames(records, path, new Set()).sort()) {
+		const binding = bindingOf(records, path, name, new Set())
+		if (binding && binding !== "ambiguous") bindings.set(name, binding)
+	}
+	return bindings
+}
+
+/** the modules of records that evaluating those at paths evaluates */
+const evaluatedBy = (
+	records: Map<string, ModuleRecord>,
+	paths: string[],
+	evaluated = new Set<string>()
+): Set<string> => {
+	for (const path of paths) {
+		if (evaluated.has(path) || !records.has(path)) continue
+		evaluated.add(path)
+		evaluatedBy(records, records.get(path)!.requests, evaluated)
+	}
+	return evaluated
+}
+
+/** where the value a module exports as a name is bound */
+type ExportEntry =
+	| { local: string }
+	/** "*" is the other module's namespace */
+	| { from: string; name: string }
+
+type ModuleRecord = {
+	/** the modules its imports and re-exports load */
+	requests: string[]
+	exports: Map<string, ExportEntry>
+	/** the modules `export *` re-exports */
+	starFrom: string[]
+}
+
+/** a module and a name bound in it ("*" for its namespace), as JSON */
+type Binding = string
+
+const moduleRecordOf = (path: string, js: string): ModuleRecord => {
+	const statements = parse(js).statements
+	const moduleOf = (specifier: ts.Expression) => {
+		const text = (specifier as ts.StringLiteral).text
+		return text.startsWith(".") ? resolve(dirname(path), text) : text
+	}
+	const requests: string[] = []
+	const imports = new Map<string, { from: string; name: string }>()
+	for (const statement of statements) {
+		if (
+			(ts.isImportDeclaration(statement) ||
+				ts.isExportDeclaration(statement)) &&
+			statement.moduleSpecifier
+		)
+			requests.push(moduleOf(statement.moduleSpecifier))
+		const clause = ts.isImportDeclaration(statement) && statement.importClause
+		if (!clause) continue
+		const from = moduleOf((statement as ts.ImportDeclaration).moduleSpecifier)
+		if (clause.name) imports.set(clause.name.text, { from, name: "default" })
+		const bindings = clause.namedBindings
+		if (bindings && ts.isNamespaceImport(bindings))
+			imports.set(bindings.name.text, { from, name: "*" })
+		else if (bindings) {
+			for (const { name, propertyName } of bindings.elements)
+				imports.set(name.text, { from, name: (propertyName ?? name).text })
+		}
+	}
+	const exports = new Map<string, ExportEntry>()
+	const starFrom: string[] = []
+	for (const statement of statements) {
+		if (ts.isExportDeclaration(statement)) {
+			const clause = statement.exportClause
+			if (statement.moduleSpecifier) {
+				const from = moduleOf(statement.moduleSpecifier)
+				if (!clause) starFrom.push(from)
+				else if (ts.isNamespaceExport(clause))
+					exports.set(clause.name.text, { from, name: "*" })
+				else {
+					for (const { name, propertyName } of clause.elements)
+						exports.set(name.text, { from, name: (propertyName ?? name).text })
+				}
+			} else if (clause && ts.isNamedExports(clause)) {
+				for (const { name, propertyName } of clause.elements) {
+					const local = (propertyName ?? name).text
+					const imported = imports.get(local)
+					// an imported namespace is re-exported as a local binding
+					exports.set(
+						name.text,
+						imported && imported.name !== "*" ? imported : { local }
+					)
+				}
+			}
+			continue
+		}
+		const modifiers =
+			ts.canHaveModifiers(statement) ? ts.getModifiers(statement) : undefined
+		const hasModifier = (kind: ts.SyntaxKind) =>
+			modifiers?.some(modifier => modifier.kind === kind)
+		if (
+			ts.isExportAssignment(statement) ||
+			hasModifier(ts.SyntaxKind.DefaultKeyword)
+		)
+			exports.set("default", { local: "*default*" })
+		else if (!hasModifier(ts.SyntaxKind.ExportKeyword)) continue
+		else if (ts.isVariableStatement(statement)) {
+			for (const { name } of statement.declarationList.declarations)
+				for (const local of boundNames(name)) exports.set(local, { local })
+		} else {
+			const local = (statement as ts.DeclarationStatement).name!.text
+			exports.set(local, { local })
+		}
+	}
+	return { requests, exports, starFrom }
+}
+
+const boundNames = (name: ts.BindingName): string[] =>
+	ts.isIdentifier(name) ?
+		[name.text]
+	:	name.elements.flatMap(element =>
+			ts.isOmittedExpression(element) ? [] : boundNames(element.name)
+		)
+
+/** GetExportedNames from the ECMAScript spec */
+const exportedNames = (
+	records: Map<string, ModuleRecord>,
+	module: string,
+	exportStarSet: Set<string>
+): string[] => {
+	if (exportStarSet.has(module)) return []
+	exportStarSet.add(module)
+	const record = records.get(module)
+	if (!record) {
+		throw new Error(
+			`${module} is star-exported, but only the package's modules' names are known`
+		)
+	}
+	const names = [...record.exports.keys()]
+	for (const from of record.starFrom) {
+		for (const name of exportedNames(records, from, exportStarSet))
+			if (name !== "default" && !names.includes(name)) names.push(name)
+	}
+	return names
+}
+
+/**
+ * ResolveExport from the ECMAScript spec: the binding a name a module exports
+ * resolves to, null if it doesn't, or "ambiguous". Another package binds
+ * every name it is asked for.
+ */
+const bindingOf = (
+	records: Map<string, ModuleRecord>,
+	module: string,
+	name: string,
+	resolveSet: Set<string>
+): Binding | null => {
+	const record = records.get(module)
+	if (!record) return JSON.stringify([module, name])
+	const request = JSON.stringify([module, name])
+	if (resolveSet.has(request)) return null
+	resolveSet.add(request)
+	const entry = record.exports.get(name)
+	if (entry) {
+		return (
+			"local" in entry ? JSON.stringify([module, entry.local])
+			: entry.name === "*" ? JSON.stringify([entry.from, "*"])
+			: bindingOf(records, entry.from, entry.name, resolveSet)
+		)
+	}
+	if (name === "default") return null
+	let starBinding: Binding | null = null
+	for (const from of record.starFrom) {
+		const binding = bindingOf(records, from, name, resolveSet)
+		if (binding === "ambiguous") return binding
+		if (!binding) continue
+		if (!starBinding) starBinding = binding
+		else if (binding !== starBinding) return "ambiguous"
+	}
+	return starBinding
+}
 
 type Edit = [start: number, end: number, replacement: string]
 
