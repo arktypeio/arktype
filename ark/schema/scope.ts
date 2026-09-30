@@ -9,6 +9,7 @@ import {
 	throwInternalError,
 	throwParseError,
 	unset,
+	WeakCache,
 	type Dict,
 	type Fn,
 	type Hkt,
@@ -236,10 +237,10 @@ const cacheUnknownUnion = ($: BaseScope): void => {
 		{ prereduced: true }
 	)
 
-	$.nodesByHash[rawUnknownUnion.hash] = $.node(
-		"intersection",
-		{},
-		{ prereduced: true }
+	// pinned, since this entry is what reduces the union, not a cached parse
+	$.nodesByHash.pin(
+		rawUnknownUnion.hash,
+		$.node("intersection", {}, { prereduced: true })
 	)
 }
 
@@ -343,6 +344,13 @@ const precompile = (
 		if (traverseOptimistic)
 			(node as UnionNode).traverseOptimistic = traverseOptimistic
 		node.precompilation = precompilation
+		// type.enumerated returns a union of units without finalizing it, and
+		// such a union words its errors differently once compiled
+		if (
+			node.hasKind("union") &&
+			node.branches.every(branch => branch.hasKind("unit"))
+		)
+			node.keepInScope()
 		if (node.isRoot()) bindRootApply(node)
 		if (linkage.closed && isLeafIn(node, linkage.referencesById))
 			reusableLeaves.add(node)
@@ -554,7 +562,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	resolved = false
-	readonly nodesByHash: Record<string, BaseNode> = {}
+	// each node by its hash, so that parsing an equal node returns it
+	readonly nodesByHash: WeakCache<BaseNode> = new WeakCache(
+		this.holdsNodesWeakly
+	)
 	// the unknown union is cached on the scope's first parse, after the
 	// process's first parse has bootstrapped
 	private unknownUnionCached = constructingRootSchemaScope
@@ -602,6 +613,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 					:	registerParseContext(this.createParseContext(preparsed)).id
 			}
 		}
+	}
+
+	/**
+	 * Whether nodesByHash keeps a node only while something else does. A parse
+	 * that doesn't finalize its result can return a node an earlier finalize
+	 * compiled, where after that node is collected it would return an
+	 * uncompiled copy, which may word its errors differently. So a scope whose
+	 * API returns any node unfinalized, like @ark/schema's node, holds them
+	 * strongly.
+	 */
+	protected get holdsNodesWeakly(): boolean {
+		return false
 	}
 
 	get intrinsic(): Omit<typeof $ark.intrinsic, `json${string}`> {

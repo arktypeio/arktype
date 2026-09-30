@@ -365,6 +365,16 @@ export abstract class BaseNode<
 		return (this._rawIn ??= this.getIo("in"))
 	}
 
+	/**
+	 * Keep this node in its scope's nodesByHash, if it is the node there, once
+	 * its state depends on what happened to it (e.g. OptionalNode.rawIn), so
+	 * that parsing it again returns it rather than a copy without that history
+	 */
+	keepInScope(): void {
+		if (this.$.nodesByHash.get(this.hash) === this)
+			this.$.nodesByHash.pin(this.hash, this)
+	}
+
 	private _out: unknown
 	/** rawOut should be used internally instead */
 	get out(): unknown {

@@ -272,6 +272,14 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
+	// arktype finalizes each node it returns except those of type.unit,
+	// enumerated, valueOf and instanceOf. Units and protos word their errors
+	// the same whether compiled or not, and a union of units is kept once
+	// compiled (see precompile)
+	protected override get holdsNodesWeakly(): boolean {
+		return true
+	}
+
 	protected normalizeRootScopeValue(resolution: unknown): unknown {
 		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
 			return resolution()

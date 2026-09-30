@@ -7,6 +7,7 @@ import {
 	printable,
 	spliterate,
 	throwParseError,
+	WeakCache,
 	type array,
 	type describe,
 	type dict,
@@ -15,7 +16,7 @@ import {
 } from "@ark/util"
 import { BaseConstraint, constraintKeyParser } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
-import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
@@ -201,6 +202,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
 		this.includesTransform ||= this.structuralMorph !== undefined
+	}
+
+	// its input reads those of its defaultable props, which depend on whether
+	// each was read before (see OptionalNode.rawIn)
+	override get rawIn(): BaseNode {
+		if (!this._rawIn && this.defaultable.length) this.keepInScope()
+		return super.rawIn
 	}
 
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
@@ -609,7 +617,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
-const defaultableMorphsCache: Record<string, Morph | undefined> = {}
+// structures with equal keys share a morph, which unions compare by identity.
+// A morph does what its key describes, whichever structure it closes over, so
+// one that no structure holds is not kept
+const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
 	Pick<Structure.Node, "defaultable" | "declaresKey">
@@ -657,7 +668,8 @@ const getPossibleMorph = (
 	const cacheKey = constructStructuralMorphCacheKey(node)
 	if (!cacheKey) return undefined
 
-	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
+	const cached = defaultableMorphsCache.get(cacheKey)
+	if (cached) return cached
 
 	const $arkStructuralMorph: Morph<any> = (data, ctx) => {
 		for (let i = 0; i < node.defaultable.length; i++) {
@@ -680,7 +692,7 @@ const getPossibleMorph = (
 		return data
 	}
 
-	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
+	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
 const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {

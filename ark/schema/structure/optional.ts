@@ -77,6 +77,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		const baseIn = super.rawIn
 		if (!this.hasDefault()) return baseIn as never
 
+		this.keepInScope()
 		return this.$.node(
 			"optional",
 			omit(baseIn.inner, { default: true }) as never,

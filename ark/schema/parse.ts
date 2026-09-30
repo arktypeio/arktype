@@ -292,7 +292,10 @@ export const createNode = ({
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
+	if (!ignoreCache) {
+		const cached = $.nodesByHash.get(hash)
+		if (cached) return cached
+	}
 
 	const attachments: UnknownAttachments = {
 		id,
@@ -312,7 +315,7 @@ export const createNode = ({
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	return ($.nodesByHash[hash] = node)
+	return $.nodesByHash.set(hash, node)
 }
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
