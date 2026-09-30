@@ -255,6 +255,16 @@ contextualize(() => {
 		attest(T.expression).equals("5")
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1667
+	it("reject without expected in non-discriminated union", () => {
+		const T = type("string[] | Function").narrow(
+			(v, ctx) => Array.isArray(v) || ctx.reject({ problem: "custom" })
+		)
+		attest(T(function foo() {}).toString()).snap(
+			"must be valid according to an anonymous predicate or an array (was Function(foo))"
+		)
+	})
+
 	it("unknown is narrowable", () => {
 		const unknownPredicate854 = () => true
 		const T = type("unknown").narrow(unknownPredicate854)

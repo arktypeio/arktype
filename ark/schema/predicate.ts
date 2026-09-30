@@ -65,7 +65,7 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 			typeof schema === "function" ? { predicate: schema } : schema,
 		defaults: {
 			description: node =>
-				`valid according to ${node.predicate.name || "an anonymous predicate"}`
+				`valid according to ${node.predicate?.name || "an anonymous predicate"}`
 		},
 		intersectionIsOpen: true,
 		intersections: {
