@@ -164,7 +164,7 @@ export declare namespace NodeCompiler {
 		errorContexts?: ErrorContexts
 	}
 
-	/** each value a unit's traversals read, by the unit parameter naming it */
+	/** each value a unit's traversals read, by the unit constant naming it */
 	export type Refs = Map<object | symbol, string>
 
 	/** each error context a unit's error paths report, by index */
