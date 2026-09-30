@@ -317,6 +317,13 @@ export class ArkErrors
 	}
 
 	/**
+	 * Alias of {@link summary} for consistency with `Error`.
+	 */
+	get message(): string {
+		return this.summary
+	}
+
+	/**
 	 * Alias of this ArkErrors instance for StandardSchema compatibility.
 	 */
 	get issues(): this {
@@ -405,7 +412,9 @@ export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 
 export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
-	{ code?: undefined } & DerivableErrorContextInput
+	// and that an ArkErrors instance (whose message getter would otherwise
+	// make it structurally assignable) is not mistaken for one
+	{ code?: undefined; [arkKind]?: undefined } & DerivableErrorContextInput
 >
 
 export type ArkErrorInput = string | ArkErrorContextInput | CustomErrorInput
