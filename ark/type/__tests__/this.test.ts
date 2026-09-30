@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
+import { $ark, writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -193,6 +193,27 @@ contextualize(() => {
 		attest(T.allows({ name: "a", child: { name: "b" } })).equals(true)
 		attest(T({ name: "a", child: { name: 5 } }).toString()).snap(
 			"child.name must be a string (was a number)"
+		)
+	})
+
+	it("registers a root by id only if an alias references it", () => {
+		const Plain = type({ unreferenced: "string" })
+		attest($ark.nodesByRegisteredId[Plain.internal.id]).equals(undefined)
+
+		const Cyclic = type({ referenced: "string", "next?": "this" })
+		attest(
+			$ark.nodesByRegisteredId[Cyclic.internal.id] === Cyclic.internal
+		).equals(true)
+
+		// a morph is not a child, so this root is not cyclic, but interpreted,
+		// its alias resolves through the root's id
+		const Piped = scope({}, { jitless: true }).type({
+			name: "string",
+			"next?": "string.json.parse |> this"
+		})
+		attest(Piped.internal.isCyclic).equals(false)
+		attest(Piped({ name: "a", next: '{"name":1}' }).toString()).snap(
+			"next.name must be a string (was a number)"
 		)
 	})
 })

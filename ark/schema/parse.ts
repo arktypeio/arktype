@@ -143,6 +143,10 @@ export const nodesByRegisteredId: Record<
 
 $ark.nodesByRegisteredId = nodesByRegisteredId
 
+// root contexts an alias references by id. Their roots, once parsed, are the
+// only ones nodesByRegisteredId keeps (see BaseScope.parseDefinition)
+export const contextsReferencedById: WeakSet<BaseParseContext> = new WeakSet()
+
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
