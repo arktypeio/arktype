@@ -1170,6 +1170,7 @@ const hasUnresolvedContextAlias = (node: BaseRoot): boolean =>
 	)
 
 const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
+	if (isNode(resolution) && !resolution.includesAlias) return resolution
 	const aliases = resolution.references.filter(node => node.hasKind("alias"))
 	for (const aliasNode of aliases) {
 		addReferences(aliasNode.referencesById, aliasNode.resolution.referencesById)

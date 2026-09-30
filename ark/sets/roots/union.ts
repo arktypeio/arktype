@@ -212,7 +212,7 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 					node.ordered ? { branches, ordered: true } : branches
 				)
 
-		Object.assign(node.referencesById, caseNode.referencesById)
+		node.caseNodes.push(caseNode)
 		cases[k] = caseNode
 	}
 
@@ -228,7 +228,7 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 			}
 		)
 
-		Object.assign(node.referencesById, cases.default.referencesById)
+		node.caseNodes.push(cases.default)
 	}
 
 	return Object.assign(ctx.location, {

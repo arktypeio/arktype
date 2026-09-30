@@ -145,8 +145,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		n.rawIn.hasKind("unit")
 	)
 
-	// without an engine the union compiles indiscriminated
-	discriminant: Discriminant | null = $ark.sets?.discriminate(this) ?? null
+	// each node discriminate creates for a case, in order, including those of
+	// a discriminant it abandons, all of which are among the union's
+	// references
+	readonly caseNodes: BaseRoot[] = []
+
+	discriminant: Discriminant | null = this.discriminate()
 	discriminantJson: JsonStructure | null =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
@@ -154,6 +158,20 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		n => n.nestableExpression,
 		expressBranches
 	)
+
+	private discriminate(): Discriminant | null {
+		// without an engine the union compiles indiscriminated
+		const discriminant = $ark.sets?.discriminate(this) ?? null
+		if (this._referencesById) {
+			for (const node of this.caseNodes)
+				Object.assign(this._referencesById, node.referencesById)
+		}
+		return discriminant
+	}
+
+	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+		return this.caseNodes
+	}
 
 	// a unit binding this union compiles the same statements (compileRootApply
 	// in scope.ts), so the two change together

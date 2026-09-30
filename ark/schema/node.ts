@@ -66,6 +66,12 @@ import {
 import { isNode } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
+const noReferences: readonly BaseNode[] = []
+
+// collected references in which a node replaced another with its id, so that
+// copying them can replace a node copied earlier
+const referencesWithReplacements = new WeakSet<object>()
+
 export abstract class BaseNode<
 	// uses -ignore rather than -expect-error because this is not an error in .d.ts
 	/** @ts-ignore allow instantiation assignment to the base type */
@@ -84,6 +90,11 @@ export abstract class BaseNode<
 
 	includesContextualPredicate: boolean
 	isCyclic: boolean
+	// whether an alias is among its references: through its children like
+	// isCyclic, or through what else it references, like the node a morph
+	// pipes to. Only such a node's referencesById changes after it is
+	// constructed, as its scope adds each alias's resolution.
+	includesAlias: boolean
 	allowsRequiresContext: boolean
 	rootApplyStrategy:
 		| "allows"
@@ -93,7 +104,7 @@ export abstract class BaseNode<
 	contextFreeMorph: ((data: unknown) => unknown) | undefined
 	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
 
-	referencesById: Record<string, BaseNode>
+	protected _referencesById: Record<string, BaseNode> | undefined
 	private _shallowReferences: BaseNode[] | undefined
 	protected _flatRefs: FlatRef[] | undefined
 	protected _flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
@@ -155,15 +166,19 @@ export abstract class BaseNode<
 			this.hasKind("predicate") && this.inner.predicate.length !== 1
 
 		this.isCyclic = this.kind === "alias"
-		this.referencesById = { [this.id]: this }
+		this.includesAlias = this.isCyclic
 
 		for (let i = 0; i < this.children.length; i++) {
 			this.includesTransform ||= this.children[i].includesTransform
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
 			this.isCyclic ||= this.children[i].isCyclic
-			Object.assign(this.referencesById, this.children[i].referencesById)
+			this.includesAlias ||= this.children[i].includesAlias
 		}
+
+		// references that will grow are copied from each child's as they are
+		// now, as are those of what else a subclass references, once it is set
+		if (this.includesAlias) this.copyReferences(false)
 
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
@@ -202,6 +217,71 @@ export abstract class BaseNode<
 						new Traversal(data, this.$.resolvedConfig)
 					)
 			:	data => (this.traverseAllows as any)(data)
+	}
+
+	// each node this node references, by id: itself, then those of each
+	// child, then those of each node it references besides its children, in
+	// the order copying each of their referencesById in turn gives, which
+	// keeps the last node copied for an id. A node that includes an alias
+	// copies them when it is constructed, since its scope adds to them as it
+	// resolves the alias. Any other's never change, so they are collected on
+	// first read, which for most nodes never comes.
+	get referencesById(): Record<string, BaseNode> {
+		return (this._referencesById ??= this.collectReferences())
+	}
+
+	// nodes a node references besides its children, like a union's
+	// discriminated cases
+	protected get referencedBesidesChildren(): readonly BaseNode[] {
+		return noReferences
+	}
+
+	protected copyReferences(
+		includeReferencedBesidesChildren: boolean
+	): Record<string, BaseNode> {
+		const referencesById: Record<string, BaseNode> = { [this.id]: this }
+		for (let i = 0; i < this.children.length; i++)
+			Object.assign(referencesById, this.children[i].referencesById)
+		if (includeReferencedBesidesChildren) {
+			for (const node of this.referencedBesidesChildren)
+				Object.assign(referencesById, node.referencesById)
+		}
+		return (this._referencesById = referencesById)
+	}
+
+	// what copyReferences(true) would give, in a walk that copies only
+	// references already collected and visits each other node once. Copying
+	// a visited node's references again changes nothing unless a node among
+	// them was replaced since by another with its id (e.g. a copy of it
+	// bound to a scope), so once one is, the walk copies the rest. It
+	// collects into a Map, which adds new ids faster than an object does.
+	private collectReferences(): Record<string, BaseNode> {
+		const collected = new Map<string, BaseNode>()
+		let replaced = false
+		const include = (node: BaseNode): void => {
+			if (replaced || node._referencesById) {
+				const references = node.referencesById
+				if (referencesWithReplacements.has(references)) replaced = true
+				for (const id in references) {
+					const included = collected.get(id)
+					if (included !== undefined && included !== references[id])
+						replaced = true
+					collected.set(id, references[id])
+				}
+				return
+			}
+			const included = collected.get(node.id)
+			if (included === node) return
+			if (included !== undefined) replaced = true
+			collected.set(node.id, node)
+			for (let i = 0; i < node.children.length; i++) include(node.children[i])
+			for (const referenced of node.referencedBesidesChildren)
+				include(referenced)
+		}
+		include(this)
+		const referencesById = Object.fromEntries(collected)
+		if (replaced) referencesWithReplacements.add(referencesById)
+		return referencesById
 	}
 
 	get shallowReferences(): BaseNode[] {

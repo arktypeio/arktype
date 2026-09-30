@@ -1,5 +1,6 @@
 import { arrayEquals, liftArray, type array, type listable } from "@ark/util"
 import type { RootSchema } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import {
@@ -94,10 +95,23 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in
 	introspectableOut: BaseRoot | undefined =
-		this.lastMorphIfNode ?
-			Object.assign(this.referencesById, this.lastMorphIfNode.referencesById) &&
-			this.lastMorphIfNode.rawOut
-		:	undefined
+		this.lastMorphIfNode && this.addPipedReferences(this.lastMorphIfNode).rawOut
+
+	// the node a morph pipes to is among its references, so an alias among
+	// that node's is among the morph's
+	private addPipedReferences(node: BaseRoot): BaseRoot {
+		if (this._referencesById)
+			Object.assign(this._referencesById, node.referencesById)
+		else if (node.includesAlias) {
+			this.includesAlias = true
+			this.copyReferences(true)
+		}
+		return node
+	}
+
+	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+		return this.lastMorphIfNode ? [this.lastMorphIfNode] : []
+	}
 
 	get shallowMorphs(): array<Morph> {
 		// if the morph input is a union, it should not contain any other shallow morphs

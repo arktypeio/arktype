@@ -33,7 +33,10 @@ export interface SetEngine {
 		inner: dict,
 		$: BaseScope
 	): BaseNode | Disjoint | undefined
-	/** Find a path by which the union's branches can be told apart, if any */
+	/**
+	 * Find a path by which the union's branches can be told apart, if any,
+	 * adding each node it creates for a case to the union's caseNodes
+	 */
 	discriminate(node: Union.Node): Discriminant | null
 	/** Generate a JSON Schema for a root node (interchange ships with the algebra) */
 	toJsonSchema(node: BaseRoot, opts: ToJsonSchema.Options): JsonSchema
