@@ -52,8 +52,8 @@ type Measurement = {
 	T: Type
 	data: unknown[]
 	loop: Loop
-	n?: number
-	samples?: number[]
+	n: number
+	samples: number[]
 }
 
 const cases: Record<string, Case> = {
@@ -189,9 +189,17 @@ for (const [
 		if (T.allows(d) !== valid || T(d) instanceof ArkErrors === valid)
 			throw new Error(`${name} does not validate as expected`)
 	}
+	const measure = (label: string, expression: string): Measurement => ({
+		name: `${name} ${label} (ns)`,
+		T,
+		data,
+		loop: loopOf(expression),
+		n: 1,
+		samples: []
+	})
 	measurements.push(
-		{ name: `${name} allows (ns)`, T, data, loop: loopOf("T.allows(d)") },
-		{ name: `${name} ${apply[0]} (ns)`, T, data, loop: loopOf(apply[1]) }
+		measure("allows", "T.allows(d)"),
+		measure(apply[0], apply[1])
 	)
 }
 
@@ -211,12 +219,11 @@ for (const m of measurements) {
 	// one full-length run to warm up, then recalibrate on the warmed code
 	n = iterationsFor(n, ms)
 	m.n = iterationsFor(n, run(m, n))
-	m.samples = []
 }
 
 globalThis.gc?.()
 
 for (let round = 0; round < samples; round++)
-	for (const m of measurements) m.samples!.push((run(m, m.n!) * 1e6) / m.n!)
+	for (const m of measurements) m.samples.push((run(m, m.n) * 1e6) / m.n)
 
-report(Object.fromEntries(measurements.map(m => [m.name, m.samples!])))
+report(Object.fromEntries(measurements.map(m => [m.name, m.samples])))
