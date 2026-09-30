@@ -20,8 +20,8 @@ const reachableFrom = (roots: BaseNode[]): BaseNode[] => {
 	return [...reached]
 }
 
-// what referencesById held when each node copied its children's on
-// construction, which a node whose references include no alias still does
+// the references copying each child's referencesById, then each other
+// referenced node's, in turn gives
 const copiedReferences = (node: BaseNode): Record<string, BaseNode> => {
 	const referencesById: Record<string, BaseNode> = { [node.id]: node }
 	for (const child of node.children)
@@ -90,7 +90,7 @@ contextualize(() => {
 					{ key: "b", value: "number" }
 				]
 			}
-		])
+		]).assertHasKind("union")
 		attest(U.caseNodes.length).equals(0)
 
 		// its cases are among its references

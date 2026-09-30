@@ -155,7 +155,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// read. A union that copies its references on construction needs its
 	// cases then, and one parsed without an engine never discriminates.
 	private _discriminant: Discriminant | null | undefined =
-		this.includesAlias || !$ark.sets ? this.discriminate() : undefined
+		this.includesAlias ? this.discriminate()
+		: $ark.sets ? undefined
+		: null
 
 	get discriminant(): Discriminant | null {
 		if (this._discriminant === undefined)
@@ -188,8 +190,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	protected override get referencedBesidesChildren(): readonly BaseNode[] {
-		if (this._discriminant === undefined)
-			this._discriminant = this.discriminate()
+		// discriminating creates the cases
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		this.discriminant
 		return this.caseNodes
 	}
 

@@ -236,9 +236,7 @@ export abstract class BaseNode<
 		return noReferences
 	}
 
-	protected copyReferences(
-		includeReferencedBesidesChildren: boolean
-	): Record<string, BaseNode> {
+	protected copyReferences(includeReferencedBesidesChildren: boolean): void {
 		const referencesById: Record<string, BaseNode> = { [this.id]: this }
 		for (let i = 0; i < this.children.length; i++)
 			Object.assign(referencesById, this.children[i].referencesById)
@@ -246,7 +244,7 @@ export abstract class BaseNode<
 			for (const node of this.referencedBesidesChildren)
 				Object.assign(referencesById, node.referencesById)
 		}
-		return (this._referencesById = referencesById)
+		this._referencesById = referencesById
 	}
 
 	// what copyReferences(true) would give, in a walk that copies only
