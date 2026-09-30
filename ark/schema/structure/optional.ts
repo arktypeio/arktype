@@ -71,6 +71,9 @@ export class OptionalNode extends BaseProp<"optional"> {
 	}
 
 	override get rawIn(): OptionalNode {
+		// once super.rawIn has cached this node's input, default included, that
+		// is what a read returns, so only the first read omits the default
+		if (this._rawIn) return this._rawIn as never
 		const baseIn = super.rawIn
 		if (!this.hasDefault()) return baseIn as never
 
@@ -83,14 +86,14 @@ export class OptionalNode extends BaseProp<"optional"> {
 		)
 	}
 
+	private _outProp: Prop.Node | undefined
 	get outProp(): Prop.Node {
 		if (!this.hasDefault()) return this
 		const { default: defaultValue, ...requiredInner } = this.inner
 
-		return this.cacheGetter(
-			"outProp",
-			this.$.node("required", requiredInner, { prereduced: true }) as never
-		)
+		return (this._outProp ??= this.$.node("required", requiredInner, {
+			prereduced: true
+		}) as never)
 	}
 
 	expression: string =

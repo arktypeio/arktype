@@ -290,7 +290,7 @@ export const createNode = ({
 	// since reduction can add impliedSiblings
 	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
 
-	const attachments: UnknownAttachments & dict = {
+	const attachments: UnknownAttachments = {
 		id,
 		kind,
 		impl,
@@ -304,11 +304,6 @@ export const createNode = ({
 		hash,
 		collapsibleJson: collapsibleJson as Json,
 		children
-	}
-
-	if (kind !== "intersection") {
-		for (const k in inner)
-			if (k !== "in" && k !== "out") attachments[k] = inner[k]
 	}
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)

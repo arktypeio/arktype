@@ -17,6 +17,7 @@ import {
 	type Key,
 	type array,
 	type conform,
+	type dict,
 	type listable,
 	type mutable,
 	type requireKeys
@@ -77,7 +78,6 @@ export abstract class BaseNode<
 	) => unknown,
 	attachmentsOf<d>
 > {
-	attachments: UnknownAttachments
 	$: BaseScope
 	onFail: ArkErrors.Handler | null
 	includesTransform: boolean
@@ -119,15 +119,33 @@ export abstract class BaseNode<
 
 				return this.rootApply(data, onFail)
 			},
-			{ attach: attachments as never }
+			{ attach: attachedInnerOf(attachments) as never }
 		)
-		this.attachments = attachments
+		// assigned as named stores in one order, so every node of a kind shares
+		// a V8 map. A function given 16 or more properties through
+		// Object.assign or keyed stores gets dictionary properties instead.
+		const self: mutable<UnknownAttachments> = this
+		self.id = attachments.id
+		self.kind = attachments.kind
+		self.impl = attachments.impl
+		self.inner = attachments.inner
+		self.innerEntries = attachments.innerEntries
+		self.innerJson = attachments.innerJson
+		self.innerHash = attachments.innerHash
+		self.meta = attachments.meta
+		self.metaJson = attachments.metaJson
+		self.json = attachments.json
+		self.hash = attachments.hash
+		self.collapsibleJson = attachments.collapsibleJson
+		self.children = attachments.children
+		this.precedence = precedenceOfKind(this.kind)
 		this.$ = $
 		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
 
+		// a structure adds its own transform, its structural morph, once its
+		// fields are set
 		this.includesTransform =
 			this.hasKind("morph") ||
-			(this.hasKind("structure") && this.structuralMorph !== undefined) ||
 			(this.hasKind("sequence") && this.inner.defaultables !== undefined)
 
 		// if a predicate accepts exactly one arg, we can safely skip passing context
@@ -306,20 +324,11 @@ export abstract class BaseNode<
 		return compileMeta(this.metaJson)
 	}
 
-	protected cacheGetter<name extends keyof this>(
-		name: name,
-		value: this[name]
-	): this[name] {
-		Object.defineProperty(this, name, { value })
-		return value
-	}
-
+	private _description: string | undefined
 	get description(): string {
-		return this.cacheGetter(
-			"description",
+		return (this._description ??=
 			this.meta?.description ??
-				this.$.resolvedConfig[this.kind].description(this as never)
-		)
+			this.$.resolvedConfig[this.kind].description(this as never))
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -328,7 +337,7 @@ export abstract class BaseNode<
 		return Object.values(this.referencesById)
 	}
 
-	readonly precedence: number = precedenceOfKind(this.kind)
+	declare readonly precedence: number
 	precompilation: string | undefined
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -343,30 +352,30 @@ export abstract class BaseNode<
 		return this(data, pipedFromCtx, null)
 	}
 
+	private _in: unknown;
 	/** rawIn should be used internally instead */
 	get in(): unknown {
 		// ensure the node has been finalized if in is being used externally
-		return this.cacheGetter(
-			"in",
-			this.rawIn.isRoot() ? this.$.finalize(this.rawIn) : this.rawIn
-		)
+		return (this._in ??=
+			this.rawIn.isRoot() ? this.$.finalize(this.rawIn) : this.rawIn)
 	}
 
+	protected _rawIn: BaseNode | undefined
 	get rawIn(): BaseNode {
-		return this.cacheGetter("rawIn", this.getIo("in")) as never
+		return (this._rawIn ??= this.getIo("in"))
 	}
 
+	private _out: unknown
 	/** rawOut should be used internally instead */
 	get out(): unknown {
 		// ensure the node has been finalized if out is being used externally
-		return this.cacheGetter(
-			"out",
-			this.rawOut.isRoot() ? this.$.finalize(this.rawOut) : this.rawOut
-		)
+		return (this._out ??=
+			this.rawOut.isRoot() ? this.$.finalize(this.rawOut) : this.rawOut)
 	}
 
+	private _rawOut: BaseNode | undefined
 	get rawOut(): BaseNode {
-		return this.cacheGetter("rawOut", this.getIo("out")) as never
+		return (this._rawOut ??= this.getIo("out"))
 	}
 
 	// Should be refactored to use transform
@@ -793,6 +802,18 @@ export declare namespace NodeSelector {
 			: never
 		:	// default is "filter"
 			t[]
+}
+
+// every node of a kind has each inner key its kind declares, absent ones as
+// undefined, attached in the order the kind declares them and before any
+// other property. An intersection's keys name its children's kinds, and in
+// and out are getters, so none of those are attached.
+const attachedInnerOf = (attachments: UnknownAttachments): dict | undefined => {
+	if (attachments.kind === "intersection") return
+	const attached: dict = {}
+	for (const k in attachments.impl.keys)
+		if (k !== "in" && k !== "out") attached[k] = attachments.inner[k]
+	return attached
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>

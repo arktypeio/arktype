@@ -27,7 +27,6 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
-import type { BaseScope } from "../scope.ts"
 import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -37,7 +36,6 @@ import { ArkErrors } from "../shared/errors.ts"
 import {
 	structuralKinds,
 	type RootKind,
-	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
@@ -70,13 +68,11 @@ export abstract class BaseRoot<
 	extends BaseNode<d>
 	implements StandardSchemaV1, StandardJSONSchemaV1
 {
-	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
 
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
-		super(attachments, $)
-		// define as a getter to avoid it being enumerable/spreadable
-		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+	// a getter, so it is neither enumerable nor spreadable
+	get [arkKind](): "root" {
+		return "root"
 	}
 
 	// doesn't seem possible to override this at a type-level (e.g. via declare)

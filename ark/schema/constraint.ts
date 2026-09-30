@@ -10,14 +10,9 @@ import type { NodeSchema, Prerequisite, innerAttachedAs } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
 import type { NodeParseContext } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
-import type {
-	ConstraintKind,
-	StructuralKind,
-	UnknownAttachments
-} from "./shared/implement.ts"
+import type { ConstraintKind, StructuralKind } from "./shared/implement.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
 
@@ -39,15 +34,9 @@ export abstract class BaseConstraint<
 	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
-	declare readonly [arkKind]: "constraint"
-
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
-		super(attachments, $)
-		// define as a getter to avoid it being enumerable/spreadable
-		Object.defineProperty(this, arkKind, {
-			value: "constraint",
-			enumerable: false
-		})
+	// a getter, so it is neither enumerable nor spreadable
+	get [arkKind](): "constraint" {
+		return "constraint"
 	}
 
 	abstract readonly impliedBasis: BaseRoot | null

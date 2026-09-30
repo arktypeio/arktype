@@ -198,6 +198,11 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	})
 
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
+	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
+		super(...args)
+		this.includesTransform ||= this.structuralMorph !== undefined
+	}
+
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
@@ -508,12 +513,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return true
 	}
 
-	get defaultable(): Optional.Node.withDefault[] {
-		return this.cacheGetter(
-			"defaultable",
-			this.optional?.filter(o => o.hasDefault()) ?? []
-		)
-	}
+	readonly defaultable: Optional.Node.withDefault[] =
+		this.optional?.filter(o => o.hasDefault()) ?? []
 
 	// a sequence declares each key nonNegativeIntegerString allows: a string
 	// matching the pattern that keyword is built from, tested here directly so
@@ -545,9 +546,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return parts.join(" || ") || "false"
 	}
 
-	get structuralMorph(): Morph | undefined {
-		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
-	}
+	readonly structuralMorph: Morph | undefined = getPossibleMorph(this)
 
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Apply") js.initializeErrorCount()

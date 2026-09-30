@@ -746,7 +746,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			bound =
 				reference.$ === this ?
 					reference
-				:	new (reference.constructor as any)(reference.attachments, this)
+				:	new (reference.constructor as any)(reference, this)
 		} else {
 			bound =
 				reference.$ === this ?

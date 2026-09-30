@@ -346,8 +346,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 	}
 
+	private _element: BaseRoot | undefined
 	get element(): BaseRoot {
-		return this.cacheGetter("element", this.$.node("union", this.children))
+		return (this._element ??= this.$.node("union", this.children))
 	}
 
 	// minLength/maxLength compilation should be handled by Intersection
