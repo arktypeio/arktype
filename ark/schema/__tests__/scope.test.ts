@@ -132,6 +132,20 @@ contextualize(() => {
 		}
 	})
 
+	it("compiles a unit reading more values than a function takes parameters", () => {
+		// each predicate is a value the unit reads, and V8 fails to compile a
+		// function with about 30,000 parameters. Prereduced, since reducing
+		// this many predicates would take minutes
+		const predicate = Array.from(
+			{ length: 36_000 },
+			(_, i) => (n: number) => n !== i
+		)
+		const T = rootSchema({ domain: "number", predicate }, { prereduced: true })
+		attest(T.precompilation).satisfies("string")
+		attest(T.allows(0.5)).equals(true)
+		attest(T.allows(35_999)).equals(false)
+	})
+
 	it("registers nothing only compiled traversals read", () => {
 		const epoch = new Date(0)
 		// the fresh type's own error contexts and key sets. Its morphs and

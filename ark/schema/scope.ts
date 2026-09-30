@@ -320,12 +320,10 @@ const precompile = (
 		else declared.push(node)
 	}
 	const unit = precompileReferences(declared, linkage)
-	unit.argNames.push(...linkage.dependencies.values(), ...linkage.refs.values())
-	if (linkage.errorContexts.length) unit.argNames.push("errorContexts")
 	const precompilation = unit.write(rootScopeFnName)
 	const traversalsByReference = unit.compile()(
-		...linkage.dependencies.keys(),
-		...linkage.refs.keys(),
+		[...linkage.dependencies.keys()],
+		[...linkage.refs.keys()],
 		linkage.errorContexts
 	)
 
@@ -445,50 +443,66 @@ type PrecompiledTraversals = [
 	optimistic?: (data: unknown) => unknown
 ]
 
-// a unit declares each traversal as a const-bound function expression, so
-// members call each other directly (function declarations delay TurboFan's
-// optimization of large units), then returns each reference's traversals in
-// the order of references. A node bound by an earlier unit is declared once
-// a member reaches it, after the references, and is not returned.
+// a unit binds what it is passed to constants, then declares each traversal
+// as a const-bound function expression, so members call each other directly
+// (function declarations delay TurboFan's optimization of large units), then
+// returns each reference's traversals in the order of references. A node
+// bound by an earlier unit is declared once a member reaches it, after the
+// references, and is not returned.
 const precompileReferences = (
 	references: readonly BaseNode[],
 	linkage: UnitLinkage
 ) => {
-	const unit = new CompiledFunction<
-		(...args: unknown[]) => PrecompiledTraversals[],
-		string[]
-	>()
+	const members: UnitMember[] = []
 	const traversalsByReference = references.map(node =>
-		declareTraversals(unit, linkage, node)
+		declareTraversals(members, linkage, node)
 	)
 	for (let i = 0; i < linkage.reached.length; i++)
-		declareTraversals(unit, linkage, linkage.reached[i])
+		declareTraversals(members, linkage, linkage.reached[i])
+	const unit = new CompiledFunction<
+		(
+			dependencies: Fn[],
+			refs: unknown[],
+			errorContexts: NodeCompiler.ErrorContexts
+		) => PrecompiledTraversals[],
+		["dependencies", "refs", "errorContexts"]
+	>("dependencies", "refs", "errorContexts")
+	let i = 0
+	for (const name of linkage.dependencies.values())
+		unit.const(name, `dependencies[${i++}]`)
+	i = 0
+	for (const name of linkage.refs.values()) unit.const(name, `refs[${i++}]`)
+	for (const [name, source] of members) unit.const(name, source)
 	return unit.return(`[${traversalsByReference.join(", ")}]`)
 }
 
+type UnitMember = [name: string, source: string]
+
 const declareTraversals = (
-	unit: CompiledFunction,
+	members: UnitMember[],
 	linkage: UnitLinkage,
 	node: BaseNode
 ): string => {
 	const traversals = [
-		declareTraversal(unit, linkage, node, "Allows"),
-		declareTraversal(unit, linkage, node, "Apply")
+		declareTraversal(members, linkage, node, "Allows"),
+		declareTraversal(members, linkage, node, "Apply")
 	]
 	// an Optimistic traversal runs only from a branchedOptimistic union's
 	// root apply, or from another Optimistic traversal for a discriminant
 	// case that is itself branchedOptimistic
 	if (node.rootApplyStrategy === "branchedOptimistic")
-		traversals.push(declareTraversal(unit, linkage, node, "Optimistic"))
+		traversals.push(declareTraversal(members, linkage, node, "Optimistic"))
 	return `[${traversals.join(", ")}]`
 }
 
-// what a unit's members reach beyond its declarations, each passed to it as
-// a parameter: the traversals of reused nodes they invoke, named as invoked,
-// then the values they read through js.ref, then as one array the error
-// contexts they report. An invoked traversal resolves by id among the unit's
-// references; one outside them leaves the unit open. An unreached node is
-// reached, and so declared, once a member invokes it.
+// what a unit's members reach beyond its declarations, each passed to it in
+// an array rather than as a parameter, since V8 fails to compile a function
+// with about 30,000 of them: the traversals of reused nodes they invoke and
+// the values they read through js.ref, each bound to a constant named as
+// members read it, and the error contexts they report, read by index. An
+// invoked traversal resolves by id among the unit's references; one outside
+// them leaves the unit open. An unreached node is reached, and so declared,
+// once a member invokes it.
 type UnitLinkage = {
 	referencesById: Map<string, BaseNode>
 	reused: Set<BaseNode>
@@ -540,7 +554,7 @@ const traversalOf = (node: BaseNode, kind: TraversalKind): Fn =>
 	: (node as UnionNode).traverseOptimistic
 
 const declareTraversal = (
-	unit: CompiledFunction,
+	members: UnitMember[],
 	linkage: UnitLinkage,
 	node: BaseNode,
 	kind: TraversalKind
@@ -548,7 +562,7 @@ const declareTraversal = (
 	const js = new TraversalCompiler(kind, linkage).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
-	unit.const(name, `function ${js.write("")}`)
+	members.push([name, `function ${js.write("")}`])
 	return name
 }
 

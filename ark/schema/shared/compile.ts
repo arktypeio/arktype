@@ -220,10 +220,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return opts?.kind ? `${id}${opts.kind}` : id
 	}
 
-	// names a value emitted code reads. In a unit, the name is a parameter of
-	// the unit, shared by its traversals and numbered by first read, so a read
-	// is a closure variable rather than a lookup on the registry (which is in
-	// dictionary mode). Outside a unit, it is the value's registered reference.
+	// names a value emitted code reads. In a unit, the name is a constant the
+	// unit binds from the refs it is passed, shared by its traversals and
+	// numbered by first read, so a read is a closure variable rather than a
+	// lookup on the registry (which is in dictionary mode). Outside a unit, it
+	// is the value's registered reference.
 	ref(value: object | symbol): string {
 		if (!this.refs) return registeredReference(value)
 		let name = this.refs.get(value)
@@ -234,9 +235,9 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	// names an error context an error path reports. errorFromNodeContext
 	// copies a context's entries, so every error can be reported with one
 	// object. In a unit, it is an element of errorContexts, an array the unit
-	// is passed, rather than a ref: a unit reports errors for most nodes it
-	// declares, and V8 can't call a function with more than about 65,000
-	// arguments. Outside a unit, it is the context's registered reference.
+	// is passed, rather than a ref, which the unit would bind to a constant:
+	// a unit reports errors for most nodes it declares, only on paths invalid
+	// data takes. Outside a unit, it is the context's registered reference.
 	// Compiled code reports a -0 in a context as 0 (interpreted code, as -0).
 	errorContext(errorContext: object): string {
 		for (const k in errorContext) {
