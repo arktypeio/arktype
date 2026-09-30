@@ -37,7 +37,10 @@ export class CompiledFunction<
 	[k in args[number]]: k
 }> {
 	readonly argNames: args
-	readonly body = ""
+	// joined into the body when it is read, which leaves it one flat string,
+	// where appending each line to it would leave a string per line, held by
+	// every node whose source it is
+	private readonly lines: string[] = []
 
 	constructor(...args: args) {
 		super()
@@ -67,8 +70,12 @@ export class CompiledFunction<
 		return compileLiteralPropAccess(key, optional)
 	}
 
+	get body(): string {
+		return this.lines.join("")
+	}
+
 	line(statement: string): this {
-		;(this.body as any) += `${" ".repeat(this.indentation)}${statement}\n`
+		this.lines.push(`${" ".repeat(this.indentation)}${statement}\n`)
 		return this
 	}
 
