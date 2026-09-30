@@ -74,7 +74,7 @@ contextualize(() => {
 		}
 	})
 
-	it("a union discriminates when first read", () => {
+	it("a union discriminates as it is constructed", () => {
 		const U = node("union", [
 			{
 				domain: "object",
@@ -91,11 +91,10 @@ contextualize(() => {
 				]
 			}
 		]).assertHasKind("union")
-		attest(U.caseNodes.length).equals(0)
+		attest(U.caseNodes.length).equals(2)
 
 		// its cases are among its references
 		const references = U.references
-		attest(U.caseNodes.length).equals(2)
 		for (const caseNode of U.caseNodes)
 			attest(references.includes(caseNode)).equals(true)
 		attest(U.discriminant?.path).equals(["firstReadKind"])

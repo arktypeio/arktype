@@ -150,20 +150,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// references
 	readonly caseNodes: BaseRoot[] = []
 
-	// discriminating relates the branches and creates the cases, which only
-	// compiled traversal and the union's references need, so it waits for a
-	// read. A union that copies its references on construction needs its
-	// cases then, and one parsed without an engine never discriminates.
-	private _discriminant: Discriminant | null | undefined =
-		this.includesAlias ? this.discriminate()
-		: $ark.sets ? undefined
-		: null
-
-	get discriminant(): Discriminant | null {
-		if (this._discriminant === undefined)
-			this._discriminant = this.discriminate()
-		return this._discriminant
-	}
+	// discriminating relates the branches and creates the cases. A union
+	// discriminates as it is constructed, since relating its branches can
+	// throw a ParseError parsing it reports (e.g. where one branch's index
+	// signature and another's prop have disjoint values)
+	readonly discriminant: Discriminant | null = this.discriminate()
 
 	private _discriminantJson: JsonStructure | null | undefined
 	get discriminantJson(): JsonStructure | null {
@@ -190,9 +181,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	protected override get referencedBesidesChildren(): readonly BaseNode[] {
-		// discriminating creates the cases
-		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		this.discriminant
 		return this.caseNodes
 	}
 

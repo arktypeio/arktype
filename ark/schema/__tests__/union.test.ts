@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { Disjoint, rootSchema } from "@ark/schema"
+import { Disjoint, node, rootSchema } from "@ark/schema"
 import { writeOrderedIntersectionMessage } from "arksets"
 
 contextualize(() => {
@@ -111,5 +111,29 @@ contextualize(() => {
 		} finally {
 			delete (Disjoint as any)[Symbol.species]
 		}
+	})
+
+	it("reports a disjoint relating its branches as it is constructed", () => {
+		// each branch is valid, but discriminating intersects the two, which
+		// throws even where nothing reads the discriminant (e.g. unfinalized,
+		// or traversed interpreted). Prereduced, as a relation's result is,
+		// since reducing intersects them too
+		const index = rootSchema({
+			domain: "object",
+			index: { signature: "string", value: "string" }
+		})
+		const branch = (kind: string) =>
+			rootSchema({
+				domain: "object",
+				required: [
+					{ key: "kind", value: { unit: kind } },
+					{ key: "x", value: "number" }
+				]
+			}).and(index)
+		attest(() =>
+			node("union", [branch("a"), branch("b")], { prereduced: true })
+		).throws(
+			"Intersection at x of number and string results in an unsatisfiable type"
+		)
 	})
 })
