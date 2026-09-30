@@ -4,6 +4,7 @@ import {
 	getBuiltinNameOfConstructor,
 	hasKey,
 	isArray,
+	isValidDate,
 	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor
@@ -115,21 +116,26 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 	traverseAllows: TraverseAllows =
 		this.requiresInvalidDateCheck ?
-			data => data instanceof Date && data.toString() !== "Invalid Date"
+			data => data instanceof Date && isValidDate(data)
 		: this.isArrayProto ? data => isArray(data)
 		: data => data instanceof this.proto
 
 	compiledCondition =
 		this.isArrayProto ? `Array.isArray(data)` : (
-			`data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
+			`data instanceof ${this.serializedConstructor}`
 		)
 	compiledNegation = `!(${this.compiledCondition})`
 
 	compile(js: NodeCompiler): void {
-		// compiledCondition reads a builtin constructor as a global
-		if (this.builtinName) return super.compile(js)
+		// compiledCondition reads a builtin constructor as a global, and not
+		// whether a Date is valid, which emitted code checks through a ref
+		if (this.builtinName && !this.requiresInvalidDateCheck)
+			return super.compile(js)
 
-		const condition = `data instanceof ${js.ref(this.proto)}`
+		const condition =
+			this.requiresInvalidDateCheck ?
+				`${this.compiledCondition} && ${js.ref(isValidDate)}(data)`
+			:	`data instanceof ${js.ref(this.proto)}`
 		if (js.traversalKind === "Allows") js.return(condition)
 		else {
 			js.if(`!(${condition})`, () =>

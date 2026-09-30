@@ -210,6 +210,25 @@ export type objectKindOrDomainOf<data> =
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	Array.isArray
 
+const dateToString = Date.prototype.toString
+const dateGetTime = Date.prototype.getTime
+
+/**
+ * @returns whether `date.toString() !== "Invalid Date"`, without formatting
+ * a string where the result doesn't depend on it: Date.prototype.toString
+ * returns "Invalid Date" exactly when a Date's time value is NaN
+ */
+export const isValidDate = (date: Date): boolean => {
+	if (date.toString === dateToString) {
+		try {
+			return !Number.isNaN(dateGetTime.call(date))
+		} catch {
+			// date has no time value, so toString throws its own error below
+		}
+	}
+	return date.toString() !== "Invalid Date"
+}
+
 export const ecmascriptDescriptions = {
 	Array: "an array",
 	Function: "a function",

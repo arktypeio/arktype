@@ -4,6 +4,7 @@ import {
 	domainDescriptions,
 	domainOf,
 	groupBy,
+	isValidDate,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
 	printable
@@ -169,7 +170,7 @@ export const defaultErrorWriters: {
 				objectKindDescriptions[node.builtinName]
 			:	`an instance of ${node.proto.name}`,
 		actual: data =>
-			data instanceof Date && data.toString() === "Invalid Date" ?
+			data instanceof Date && !isValidDate(data) ?
 				"an invalid Date"
 			:	objectKindOrDomainOf(data)
 	},
