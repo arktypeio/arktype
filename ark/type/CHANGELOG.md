@@ -1,5 +1,55 @@
 # arktype
 
+## 2.2.6
+
+### Add `ArkErrors.message`
+
+`ArkErrors` now has a `message` getter returning the same human-readable string as `summary`, so code that handles a failed result like an `Error` gets a useful message instead of `undefined`:
+
+```ts
+const out = T(data)
+if (out instanceof type.errors) console.error(out.message)
+```
+
+### Fix a crash when `ctx.reject` without `expected` fails in a union
+
+Rejecting from a narrow without an `expected` value could throw a `TypeError` instead of returning errors when the failure occurred in a union that could not be discriminated:
+
+```ts
+const T = type("string[] | Function").narrow(
+	(v, ctx) => Array.isArray(v) || ctx.reject({ problem: "custom" })
+)
+
+// previously threw "Cannot read properties of undefined (reading 'name')"
+T(() => {})
+```
+
+Predicate errors now have an explicit `expected` default that does not depend on the predicate being present in the error context.
+
+### Preserve narrows on piped union branches through an intersection
+
+Intersecting a union containing a piped and narrowed branch with another morph could drop that branch's narrow:
+
+```ts
+const T = type({
+	kind: "'a'",
+	value: type("string.numeric.parse").narrow(
+		(n, ctx) => n > 0 || ctx.mustBe("positive")
+	)
+})
+	.or({ kind: "'b'" })
+	.and(type("object").pipe(o => o))
+
+// previously passed, now fails with "value must be positive (was -1)"
+T({ kind: "a", value: "-1" })
+```
+
+Thanks to @ShuviSchwarze.
+
+### Format times in `Date` error messages independent of locale
+
+Times in `Date` descriptions (e.g. `must be after 2:30 PM, January 15, 2023`) are now consistently formatted in 12-hour time rather than depending on the runtime's default locale, which previously produced output like `14:30, January 15, 2023` in 24-hour locales. Thanks to @WolfieLeader.
+
 ## 2.2.5
 
 ### Preserve escaped backslashes in regex literals
