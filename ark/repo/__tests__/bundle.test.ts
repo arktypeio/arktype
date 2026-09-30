@@ -83,6 +83,16 @@ contextualize(() => {
 				})
 			)
 		const cwd = process.cwd()
+		// attest looks up a call's type data by its file's path from the
+		// working directory, so only bundle() runs from the package
+		const bundleInPackage = () => {
+			process.chdir(join(dir, "bundled"))
+			try {
+				bundle()
+			} finally {
+				process.chdir(cwd)
+			}
+		}
 		try {
 			for (const [path, js] of Object.entries(modules)) {
 				for (const copy of ["unbundled", "bundled"]) {
@@ -102,14 +112,12 @@ contextualize(() => {
 			)
 			const unbundledOrder = evaluated()
 
-			process.chdir(join(dir, "bundled"))
 			writePackageJson([])
-			attest(() => bundle()).throws(
+			attest(bundleInPackage).throws(
 				'a exports a name the main entry binds otherwise, so ./internal/a.ts must be { "ark-ts": "./a.ts", "types": "./out/a.d.ts", "default": "./out/a.js" }'
 			)
 			writePackageJson(ownFiles)
-			bundle()
-			process.chdir(cwd)
+			bundleInPackage()
 
 			const root: Namespace = await import(
 				pathToFileURL(fromOut("index.js")).href
@@ -155,7 +163,6 @@ contextualize(() => {
 			// each also exports the main entry's other names
 			attest(own.f.x).is(root.x)
 		} finally {
-			process.chdir(cwd)
 			rmSync(dir, { recursive: true })
 		}
 	})
