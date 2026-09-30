@@ -150,9 +150,27 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// references
 	readonly caseNodes: BaseRoot[] = []
 
-	discriminant: Discriminant | null = this.discriminate()
-	discriminantJson: JsonStructure | null =
-		this.discriminant ? discriminantToJson(this.discriminant) : null
+	// discriminating relates the branches and creates the cases, which only
+	// compiled traversal and the union's references need, so it waits for a
+	// read. A union that copies its references on construction needs its
+	// cases then, and one parsed without an engine never discriminates.
+	private _discriminant: Discriminant | null | undefined =
+		this.includesAlias || !$ark.sets ? this.discriminate() : undefined
+
+	get discriminant(): Discriminant | null {
+		if (this._discriminant === undefined)
+			this._discriminant = this.discriminate()
+		return this._discriminant
+	}
+
+	private _discriminantJson: JsonStructure | null | undefined
+	get discriminantJson(): JsonStructure | null {
+		if (this._discriminantJson === undefined) {
+			this._discriminantJson =
+				this.discriminant ? discriminantToJson(this.discriminant) : null
+		}
+		return this._discriminantJson
+	}
 
 	expression: string = this.distribute(
 		n => n.nestableExpression,
@@ -170,6 +188,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+		if (this._discriminant === undefined)
+			this._discriminant = this.discriminate()
 		return this.caseNodes
 	}
 
