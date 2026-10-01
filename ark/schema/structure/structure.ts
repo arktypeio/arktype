@@ -787,7 +787,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 			return js.return("data")
 		})
-		js.if("Object.getPrototypeOf(data) !== Object.prototype", () => {
+		const deleteFromCopy = () => {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const { key } = transformedProps[i]
 				js.if(`value${i} !== data${js.prop(key)}`, () =>
@@ -795,7 +795,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
-		})
+		}
+		if (this.sequence) {
+			deleteFromCopy()
+			return
+		}
 		const valueOf = (prop: Prop.Node) => {
 			const i = transformedProps.indexOf(prop)
 			return i === -1 ? `out${js.prop(prop.key)}` : `value${i}`
@@ -804,6 +808,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			.filter(prop => prop.required)
 			.map(prop => `${literalKeyOf(js, prop)}: ${valueOf(prop)}`)
 		js.const("result", `{ ${requiredEntries.join(", ")} }`)
+		// checked after the literal's reads, from which V8 can infer data's prototype
+		js.if("Object.getPrototypeOf(data) !== Object.prototype", deleteFromCopy)
 		for (const prop of this.props) {
 			if (prop.required) continue
 			const store = `result${js.prop(prop.key)} = ${valueOf(prop)}`
