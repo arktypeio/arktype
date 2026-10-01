@@ -1,5 +1,53 @@
 # arktype
 
+## 2.2.7
+
+### Fix `this[]` in self-referential object types
+
+Referencing an array of the enclosing type threw a spurious shallow resolution cycle error:
+
+```ts
+// previously threw, now parses
+const Node = type({
+	name: "string",
+	"children?": "this[]"
+})
+```
+
+Thanks to @yharaskrik.
+
+### Parse `string.date.epoch.parse` input as milliseconds
+
+The validated integer string was passed directly to `new Date()`, which runs the date string parser rather than reading it as a timestamp:
+
+```ts
+const parseEpoch = type("string.date.epoch.parse")
+
+// previously 2000-01-01 local time, now 1970-01-01T00:00:00.000Z
+parseEpoch("0")
+// previously Invalid Date, now 2023-11-14T22:13:20.000Z
+parseEpoch("1700000000000")
+```
+
+Thanks to @breken-ai.
+
+### Keep uppercase UUIDs valid in `string.uuid` JSON Schema
+
+`string.uuid` accepted uppercase hex digits via the `i` flag, which JSON Schema `pattern` cannot carry, so the exported schema rejected uppercase UUIDs the runtime check accepted. The patterns now list both cases explicitly. Thanks to @breken-ai.
+
+### Render nested bigints correctly in error messages
+
+Bigints inside arrays or objects were printed as quoted strings, e.g. `(was ["1n","0n","1n"])`. They now print as `(was [1n,0n,1n])`. Thanks to @chatman-media.
+
+### Release unused ids from the global registry
+
+Repeatedly creating an equivalent type (e.g. `type("string")` or `T.pick("a")` in a loop) registered a new id for each parse that nothing could reference, so memory grew without limit. Unused ids are now removed. Thanks to @isaacwasserman.
+
+### Fix crashes on Hermes and Turbopack
+
+- Unions of objects disjoint at a key no longer throw `undefined is not a function` on Hermes (Expo, React Native), which doesn't preserve `Array` subclasses through `map`.
+- `scope.module` no longer references `this` from a static arrow function, which Turbopack could compile to `undefined`.
+
 ## 2.2.6
 
 ### Add `ArkErrors.message`
