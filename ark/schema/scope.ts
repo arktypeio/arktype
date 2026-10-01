@@ -367,15 +367,19 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 	const body =
 		node.rootApplyStrategy === "allows" ? unlessInvalid(["return data"])
 		: node.rootApplyStrategy === "transform" ?
-			unlessInvalid([
-				"const result = transform(data)",
-				"if (result instanceof TransformErrors) {",
-				"    const ctx = new Traversal(data, config)",
-				"    ctx.addTransformErrors(result)",
-				"    return ctx.finalize(onFail)",
-				"}",
-				"return result"
-			])
+			unlessInvalid(
+				node.includesMorph ?
+					[
+						"const result = transform(data)",
+						"if (result instanceof TransformErrors) {",
+						"    const ctx = new Traversal(data, config)",
+						"    ctx.addTransformErrors(result)",
+						"    return ctx.finalize(onFail)",
+						"}",
+						"return result"
+					]
+				:	["return transform(data)"]
+			)
 		: node.rootApplyStrategy === "contextualTransform" ?
 			unlessInvalid([
 				"const ctx = new Traversal(data, config)",
