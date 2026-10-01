@@ -19,13 +19,12 @@ const omittedPrototypes = {
 const instanceOfDefinitions: Record<string, unknown> = {}
 
 for (const constructors of [ecmascriptConstructors, platformConstructors]) {
-	for (const k of Object.keys(constructors)) {
-		if (!(k in omittedPrototypes)) {
-			instanceOfDefinitions[k] = () => [
-				"instanceof",
-				constructors[k as keyof typeof constructors]
-			]
-		}
+	for (const k in constructors) {
+		if (k in omittedPrototypes) continue
+		instanceOfDefinitions[k] = () => [
+			"instanceof",
+			constructors[k as keyof typeof constructors]
+		]
 	}
 }
 
