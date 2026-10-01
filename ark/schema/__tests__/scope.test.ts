@@ -142,7 +142,6 @@ contextualize(() => {
 			"allows",
 			"apply",
 			"transform",
-			"node",
 			"TransformErrors",
 			"Traversal",
 			"config",

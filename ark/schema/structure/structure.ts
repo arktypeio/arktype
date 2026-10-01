@@ -466,9 +466,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			const keys: Key[] = Object.keys(data)
-			const symbols = Object.getOwnPropertySymbols(data)
-			if (symbols.length) keys.push(...symbols)
+			const keys = ownKeysOf(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
@@ -554,7 +552,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.applyStructuralMorph(data, out, ctx)
 	}
 
-	applyStructuralMorph(data: any, out: any, ctx: InternalTraversal): object {
+	applyStructuralMorph(
+		data: object,
+		out: object,
+		ctx: InternalTraversal
+	): object {
 		for (const node of this.defaultable) {
 			if (node.key in data) continue
 			if (out === data) out = this.copy(data)
@@ -563,34 +565,37 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const sequence = this.sequence
 		if (
 			sequence?.defaultables &&
-			data.length < sequence.prefixLength + sequence.defaultablesLength
+			(data as array).length <
+				sequence.prefixLength + sequence.defaultablesLength
 		) {
 			if (out === data) out = this.copy(data)
 			for (
-				let i = data.length - sequence.prefixLength;
+				let i = (data as array).length - sequence.prefixLength;
 				i < sequence.defaultables.length;
 				i++
 			)
 				sequence.defaultValueMorphs[i](out as never, ctx as never)
 		}
-		if (
-			this.undeclared !== "delete" ||
-			(out === data && !this.hasUndeclaredKey(data))
-		)
+		if (this.undeclared !== "delete") return out
+		const undeclaredKeys = this.undeclaredKeysOf(data)
+		if (out === data && !undeclaredKeys.length) return out
+		if (Object.getPrototypeOf(out) !== Object.prototype) {
+			if (out === data) out = this.copy(data)
+			for (const k of undeclaredKeys) delete out[k as never]
 			return out
-		if (Object.getPrototypeOf(out) !== Object.prototype)
-			return this.deleteUndeclared(out === data ? this.copy(data) : out)
-		const result: any = {}
+		}
+		const result: Record<Key, unknown> = {}
 		for (const prop of this.props)
-			if (prop.key in out) result[prop.key] = out[prop.key]
+			if (prop.key in out) result[prop.key] = out[prop.key as never]
 		if (this.index) {
-			for (const k of ownKeysOf(out))
-				if (!(k in this.propsByKey) && this.declaresKey(k)) result[k] = out[k]
+			for (const k of ownKeysOf(out)) {
+				if (!(k in this.propsByKey) && this.declaresKey(k))
+					result[k] = out[k as never]
+			}
 		}
 		return result
 	}
 
-	// a copied array drops its named props, so those this structure declares are kept
 	private copy(data: object, copy = copyOf(data)): object {
 		if (this.sequence) {
 			for (const prop of this.props)
@@ -599,18 +604,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return copy
 	}
 
-	private hasUndeclaredKey(data: object): boolean {
-		for (const k in data) if (!this.declaresKey(k)) return true
+	private undeclaredKeysOf(data: object): Key[] {
+		const keys: Key[] = []
+		for (const k in data) if (!this.declaresKey(k)) keys.push(k)
 		for (const k of Object.getOwnPropertySymbols(data))
-			if (!this.declaresKey(k)) return true
-		return false
-	}
-
-	private deleteUndeclared(copy: any): object {
-		for (const k in copy) if (!this.declaresKey(k)) delete copy[k]
-		for (const k of Object.getOwnPropertySymbols(copy))
-			if (!this.declaresKey(k)) delete copy[k]
-		return copy
+			if (!this.declaresKey(k)) keys.push(k)
+		return keys
 	}
 
 	readonly defaultable: Optional.Node.withDefault[] =
@@ -667,7 +666,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (js.traversalKind === "Allows") return js.return(true)
 
-		// always queue deleteUndeclared on valid traversal for "delete"
 		if (this.structuralMorph) {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
@@ -702,7 +700,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				{
 					keyExpression: serializedKey,
 					...(optional && { condition: `${serializedKey} in data` }),
-					// a deleting structure stores each value as it builds its output
 					...(!deletes && {
 						onChange: () =>
 							this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
@@ -782,7 +779,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// only a plain object is rebuilt as a literal, which can't keep a prototype
 	private compileDeleteTransform(
 		js: NodeCompiler,
 		transformedProps: Prop.Node[],
