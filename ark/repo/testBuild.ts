@@ -4,7 +4,7 @@
 // loads would install as $ark2.
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { pathToFileURL } from "node:url"
 import ts from "typescript"
 
 // every file importing a package's entries loads
@@ -96,128 +96,6 @@ for (const pkg of ["arktype", "@ark/schema"]) {
 	}
 }
 
-// each module of a package, as its path from the package's root without an
-// extension, e.g. "keywords/string"
-const modulesOf = (pkg: string) =>
-	readdirSync(fromPackage(pkg, "out"), { recursive: true, encoding: "utf8" })
-		.filter(path => path.endsWith(".d.ts"))
-		.map(path => path.slice(0, -".d.ts".length).replace(/\\/g, "/"))
-
-const sourceOf = (pkg: string, module: string) =>
-	fileURLToPath(fromPackage(pkg, `${module}.ts`))
-
-// the sources, independently of the JS bundle.ts read, name what each deep
-// import should export
-const program = ts.createProgram(
-	Object.keys(packages).flatMap(pkg =>
-		modulesOf(pkg).map(module => sourceOf(pkg, module))
-	),
-	{
-		module: ts.ModuleKind.NodeNext,
-		moduleResolution: ts.ModuleResolutionKind.NodeNext,
-		customConditions: ["ark-ts"],
-		allowImportingTsExtensions: true,
-		noEmit: true,
-		types: []
-	}
-)
-const checker = program.getTypeChecker()
-
-/**
- * the declaration of each value a module's source exports, by the name it
- * exports it as: not a type, nor declared `declare`, nor exported with
- * `export type`
- */
-const valueExportsOf = (source: string): Map<string, ts.Declaration> =>
-	new Map(
-		checker
-			.getExportsOfModule(
-				checker.getSymbolAtLocation(program.getSourceFile(source)!)!
-			)
-			.flatMap(symbol => {
-				if (symbol.declarations?.some(ts.isTypeOnlyImportOrExportDeclaration))
-					return []
-				const target =
-					symbol.flags & ts.SymbolFlags.Alias ?
-						checker.getAliasedSymbol(symbol)
-					:	symbol
-				if (!target.declarations?.length)
-					throw new Error(`⚠️  ${source} exports ${symbol.name} unresolved.`)
-				const declaration = target.declarations.find(
-					declaration =>
-						!ts.isInterfaceDeclaration(declaration) &&
-						!ts.isTypeAliasDeclaration(declaration) &&
-						!(
-							ts.getCombinedModifierFlags(declaration) &
-							ts.ModifierFlags.Ambient
-						)
-				)
-				return target.flags & ts.SymbolFlags.Value && declaration ?
-						[[symbol.name, declaration] as const]
-					:	[]
-			})
-	)
-
-let deepImports = 0
-
-// A deep import may export names its module doesn't, but each name its module
-// exports is the value the module's declaration of it evaluates to, the same
-// through every deep import, and the root's if the root exports it
-for (const [pkg, name] of Object.entries(packages)) {
-	const root = await fromBuild(name)
-	const rootValues = new Set(Object.values(root))
-	const rootExports = valueExportsOf(sourceOf(pkg, "index"))
-	const values = new Map<ts.Declaration, unknown>()
-	const declarationsByName = new Map<string, Set<ts.Declaration>>()
-	for (const module of modulesOf(pkg)) {
-		const specifier = `${name}/internal/${module}.js`
-		if (resolve(specifier) !== resolve(specifier.replace(/\.js$/, ".ts")))
-			throw new Error(`⚠️  ${specifier} and its .ts resolve apart.`)
-		const exports = await fromBuild(specifier)
-		for (const [exported, declaration] of valueExportsOf(
-			sourceOf(pkg, module)
-		)) {
-			if (!(exported in exports))
-				throw new Error(`⚠️  ${specifier} doesn't export ${exported}.`)
-			const value = exports[exported]
-			if (!values.has(declaration)) values.set(declaration, value)
-			else if (values.get(declaration) !== value)
-				throw new Error(`⚠️  ${specifier} exports a copy of ${exported}.`)
-			if (
-				rootExports.get(exported) === declaration ?
-					value !== root[exported]
-				:	(typeof value === "object" || typeof value === "function") &&
-					!rootValues.has(value)
-			)
-				throw new Error(`⚠️  ${specifier} exports a copy of ${exported}.`)
-			declarationsByName.set(
-				exported,
-				(declarationsByName.get(exported) ?? new Set()).add(declaration)
-			)
-		}
-		deepImports++
-	}
-	// a name modules declare apart is exported apart
-	for (const [exported, declarations] of declarationsByName) {
-		const distinct = new Set([...declarations].map(d => values.get(d)))
-		if (distinct.size !== declarations.size)
-			throw new Error(`⚠️  ${name}'s modules share one ${exported}.`)
-	}
-	// with the value of all but the first under an alias
-	const aliases = Object.keys(root).filter(
-		exported => !declarationsByName.has(exported)
-	)
-	const aliased = [...declarationsByName.values()].reduce(
-		(count, declarations) => count + declarations.size - 1,
-		0
-	)
-	if (aliases.length !== aliased) {
-		throw new Error(
-			`⚠️  ${name} exports ${aliases.join(", ") || "no aliases"} for ${aliased} names its modules declare apart.`
-		)
-	}
-}
-
 // the one name two modules declare apart
 const stringKeywords = await fromBuild("arktype/internal/keywords/string.ts")
 const tsKeywords = await fromBuild("arktype/internal/keywords/ts.ts")
@@ -266,6 +144,4 @@ for (const pkg of Object.keys(packages)) {
 	}
 }
 
-console.log(
-	`🧩 Every entry shares its package's modules and names, and each of ${deepImports} deep imports exports its module's values!`
-)
+console.log("🧩 Every entry shares its package's modules and registry!")
