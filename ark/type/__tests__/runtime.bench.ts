@@ -12,7 +12,7 @@ const invokedCases3 = match
 export const cases3Data = [31, 32, 33] as const
 
 bench("case(3, invoke)", () => cases3Data.map(n => invokedCases3(n))).median([
-	55.72,
+	23.28,
 	"ns"
 ])
 
@@ -33,13 +33,13 @@ export const cases10FirstData = [0n, 1n, 2n] as const
 
 bench("case(10, invoke first)", () =>
 	cases10FirstData.map(n => invokedCases10(n))
-).median([151.45, "ns"])
+).median([118.12, "ns"])
 
 export const cases10LastData = [7n, 8n, 9n] as const
 
 bench("case(10, invoke last)", () =>
 	cases10LastData.map(n => invokedCases10(n))
-).median([198.78, "ns"])
+).median([173.02, "ns"])
 
 type Data =
 	| {
@@ -67,4 +67,4 @@ export const discriminateData: Data[] = [
 
 bench("discriminate", () =>
 	discriminateData.map(o => discriminateValue(o))
-).median([68.36, "ns"])
+).median([48.97, "ns"])

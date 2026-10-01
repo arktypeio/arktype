@@ -19,13 +19,13 @@ const tsPatternMatch3 = (n: 31 | 32 | 33) =>
 export const cases3Data = [31, 32, 33] as const
 
 bench("case(3, invoke)", () => cases3Data.map(n => arkMatch3(n))).median([
-	832.71,
+	28.25,
 	"ns"
 ])
 
 bench("ts-pattern case(3, invoke)", () =>
 	cases3Data.map(n => tsPatternMatch3(n))
-).median([384.92, "ns"])
+).median([713.97, "ns"])
 
 const arkMatch10 = match
 	.case("0n", n => `${n}` as const)
@@ -58,18 +58,18 @@ export const cases10FirstData = [0n, 1n, 2n] as const
 
 bench("case(10, invoke first)", () =>
 	cases10FirstData.map(n => arkMatch10(n))
-).median([892.59, "ns"])
+).median([124.28, "ns"])
 
 bench("ts-pattern case(10, invoke first)", () =>
 	cases10FirstData.map(n => tsPatternMatch10(n))
-).median([796.69, "ns"])
+).median([1.23, "us"])
 
 export const cases10LastData = [7n, 8n, 9n] as const
 
 bench("case(10, invoke last)", () =>
 	cases10LastData.map(n => arkMatch10(n))
-).median([977.74, "ns"])
+).median([188.58, "ns"])
 
 bench("ts-pattern case(10, invoke last)", () =>
 	cases10LastData.map(n => tsPatternMatch10(n))
-).median([1.63, "us"])
+).median([2.89, "us"])
