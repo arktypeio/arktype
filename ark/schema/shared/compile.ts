@@ -329,10 +329,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		operator: "===" | "!==",
 		input: string
 	): string {
-		// a morph can change 0 to -0, which only Object.is tells apart
-		if (node.isRoot() && node.branches.some(n => !n.hasKind("intersection")))
-			return `${operator === "===" ? "" : "!"}Object.is(${transformed}, ${input})`
-		return `${transformed} ${operator} ${input}`
+		const canChangeSignOfZero =
+			node.isRoot() && node.branches.some(n => !n.hasKind("intersection"))
+		return canChangeSignOfZero ?
+				`${operator === "===" ? "" : "!"}Object.is(${transformed}, ${input})`
+			:	`${transformed} ${operator} ${input}`
 	}
 
 	returnIfTransformFailed(): this {

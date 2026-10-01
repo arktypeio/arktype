@@ -14,6 +14,7 @@ import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
+	isArkErrorResult,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput,
@@ -89,7 +90,7 @@ export class Traversal {
 	/**
 	 * #### the data being validated or morphed
 	 *
-	 * ✅ extracted from {@link root} at {@link path}
+	 * ✅ the value at {@link path}, as transformed by any morphs that have already run
 	 */
 	get data(): unknown {
 		let result: any = this.received
@@ -180,13 +181,11 @@ export class Traversal {
 		return this.morphedRoot
 	}
 
-	/** @internal */
 	receive(data: unknown): void {
 		this.received = data
 		this.receivedDepth = this.path.length
 	}
 
-	/** @internal */
 	transform(node: BaseNode, data: unknown): unknown {
 		const result = node.traverseTransform(data, this)
 		if (!(result instanceof TransformErrors)) return result
@@ -194,7 +193,6 @@ export class Traversal {
 		return data
 	}
 
-	/** @internal */
 	pipe(node: BaseNode, data: unknown): unknown {
 		if (node.allows(data)) {
 			if (!node.transforms) return data
@@ -212,13 +210,11 @@ export class Traversal {
 		return this.errors
 	}
 
-	/** @internal */
 	addMorphErrors(result: ArkErrorResult): void {
 		if (result instanceof ArkError) this.errors.add(result)
 		else this.errors.merge(result)
 	}
 
-	/** @internal */
 	addTransformErrors(errors: TransformErrors, key?: PropertyKey): void {
 		const path = this.path
 		for (const { reversedPath, result, data } of errors.entries) {
@@ -232,7 +228,6 @@ export class Traversal {
 		this.path = path
 	}
 
-	/** @internal */
 	transformResolution(
 		id: string,
 		data: unknown,
@@ -366,20 +361,10 @@ export class Traversal {
 
 			const result = morph(data as never, this)
 
-			if (result instanceof ArkError) {
-				// if an ArkError was returned, ensure it has been added to errors
-				this.errors.add(result)
-
-				// skip any remaining morphs at the current path
-				break
-			}
-			if (result instanceof ArkErrors) {
+			if (isArkErrorResult(result)) {
 				// if the morph was a direct reference to another node,
 				// errors will have been added directly via this piped context
-				if (!morphIsNode) {
-					// otherwise, we have to ensure each error has been added
-					this.errors.merge(result)
-				}
+				if (!morphIsNode) this.addMorphErrors(result)
 				// skip any remaining morphs at the current path
 				this.queuedMorphs = []
 				break
