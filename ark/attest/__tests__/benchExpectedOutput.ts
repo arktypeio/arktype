@@ -25,6 +25,16 @@ bench(
 	fakeCallOptions
 ).mark({ mean: [2, "ms"], median: [2, "ms"] })
 
+let resource: { value: number } | undefined
+
+bench("bench call with hooks", () => resource!.value, {
+	...fakeCallOptions,
+	hooks: {
+		beforeCall: () => (resource = { value: 1 }),
+		afterCall: () => (resource = undefined)
+	}
+}).median([2, "ms"])
+
 type makeComplexType<S extends string> =
 	S extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
 	:	S

@@ -301,13 +301,18 @@ export class BenchAssertions<
 		:	Measure<TimeUnit> | undefined
 	) {
 		let assertions = chainableNoOpProxy
+		const { hooks } = this.ctx.options
 		try {
+			hooks?.beforeCall?.()
 			// fn may return a Promise without being an async function
 			const firstResult = this.fn()
 			if (isThenable(firstResult)) {
 				return new Promise(resolve => {
 					Promise.resolve(firstResult)
-						.then(() => this.callTimesAsync())
+						.then(() => {
+							hooks?.afterCall?.()
+							return this.callTimesAsync()
+						})
 						.then(
 							callTimes => {
 								resolve(this.createAssertion(name, baseline, callTimes))
@@ -319,6 +324,7 @@ export class BenchAssertions<
 						)
 				})
 			}
+			hooks?.afterCall?.()
 			assertions = this.createAssertion(name, baseline, this.callTimesSync())
 		} catch (e) {
 			this.addUnhandledBenchException(e)
