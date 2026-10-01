@@ -1,8 +1,6 @@
 import { bench } from "@ark/attest"
 import { match } from "arktype"
 
-// inputs are exported so V8 can't fold a bench's work into a constant
-
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
 	.case("32", n => `${n}` as const)

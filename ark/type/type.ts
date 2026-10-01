@@ -273,13 +273,10 @@ export class InternalTypeParser extends Callable<
 				// part of the API as specified by the associated types
 				return $.parse(args)
 			},
-			// the rest of TypeParserAttachments is defined below
 			{ attach: attach as never }
 		)
-		// also won't be defined during bootstrapping. each is bound on first
-		// access, since a scope's parser reads few of them, and compiled then
-		// if its scope has exported, as the scope's export compiles those
-		// bound before it
+		// bound on first access since a parser reads few, then finalized if its
+		// scope has resolved, which compiled only nodes bound before
 		const typeAttachments = ($ark as ArkTypeRegistry).typeAttachments
 		for (const k in typeAttachments) {
 			defineLazily(this, k, () => {

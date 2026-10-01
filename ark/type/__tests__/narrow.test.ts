@@ -301,7 +301,6 @@ contextualize(() => {
 			calls++
 			return n > 0
 		})
-		// the morph makes the root apply its keys without checking allows first
 		const T = type({
 			values: Positive.array(),
 			parsed: "string.numeric.parse"

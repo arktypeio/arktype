@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { node, type BaseNode } from "@ark/schema"
 import { scope, type } from "arktype"
 
-// the nodes a node references besides its children
 const referencedBesidesChildren = (node: BaseNode): BaseNode[] =>
 	node.hasKind("union") ? node.caseNodes
 	: node.hasKind("morph") && node.lastMorphIfNode ? [node.lastMorphIfNode]
@@ -20,8 +19,6 @@ const reachableFrom = (roots: BaseNode[]): BaseNode[] => {
 	return [...reached]
 }
 
-// the references copying each child's referencesById, then each other
-// referenced node's, in turn gives
 const copiedReferences = (node: BaseNode): Record<string, BaseNode> => {
 	const referencesById: Record<string, BaseNode> = { [node.id]: node }
 	for (const child of node.children)
@@ -54,9 +51,7 @@ contextualize(() => {
 			type({ a: $.shared, b: $.shared }).internal
 		]).filter(node => !node.includesAlias)
 
-		// a scope binds a copy of a node from another scope each time it is
-		// referenced, so some node's references hold one copy of a node with
-		// its id and replace it with another
+		// a scope binds a copy of a foreign node, with its id, per reference
 		const ids = new Map<string, BaseNode>()
 		attest(
 			nodes.some(node => {
@@ -93,7 +88,6 @@ contextualize(() => {
 		]).assertHasKind("union")
 		attest(U.caseNodes.length).equals(2)
 
-		// its cases are among its references
 		const references = U.references
 		for (const caseNode of U.caseNodes)
 			attest(references.includes(caseNode)).equals(true)
@@ -107,8 +101,6 @@ contextualize(() => {
 
 		attest(morph.isCyclic).equals(false)
 		attest(morph.includesAlias).equals(true)
-		// so their references are copied on construction, before the scope
-		// can add an alias's resolution to the morph's
 		attest(T.internal.isCyclic).equals(false)
 		attest(T.internal.includesAlias).equals(true)
 	})

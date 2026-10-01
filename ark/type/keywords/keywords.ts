@@ -82,8 +82,6 @@ export const ark: Scope<Ark> = scope(
 
 export const keywords: Module<Ark> = ark.internal.exportLazily() as never
 
-// the keywords' own accessors, so that each resolves on first reference
-// through either
 Object.defineProperties(
 	$arkTypeRegistry.ambient,
 	Object.getOwnPropertyDescriptors(keywords)
@@ -116,8 +114,7 @@ $arkTypeRegistry.typeAttachments = typeAttachments
 
 export const type: TypeParser<{}> = Object.defineProperties(
 	ark.type,
-	// define attachments on ark's parser, which predates them. future scopes
-	// bind these from the registry when their TypeParsers are instantiated
+	// future scopes bind these from the registry when instantiating TypeParsers
 	Object.getOwnPropertyDescriptors(typeAttachments)
 ) as never
 

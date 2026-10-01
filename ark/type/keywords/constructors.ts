@@ -18,8 +18,6 @@ const omittedPrototypes = {
 
 const instanceOfDefinitions: Record<string, unknown> = {}
 
-// each constructor is read on first reference, since reading some (e.g.
-// FormData) can load the platform's fetch implementation
 for (const constructors of [ecmascriptConstructors, platformConstructors]) {
 	for (const k of Object.keys(constructors)) {
 		if (!(k in omittedPrototypes)) {

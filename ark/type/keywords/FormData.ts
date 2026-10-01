@@ -25,8 +25,6 @@ const parsed = cached(() =>
 
 export const arkFormData: arkFormData.module = keywordModule(
 	{
-		// FormData is read on first reference, since reading it can load the
-		// platform's fetch implementation
 		root: () => ["instanceof", FormData],
 		value,
 		parsed,

@@ -96,8 +96,6 @@ contextualize(() => {
 	})
 
 	it("duplicate optional key of a prop disjoint from an index signature", () => {
-		// a required prop is checked against each index signature before an
-		// optional prop is checked for duplicates
 		attest(() =>
 			type({
 				"a?": "string",

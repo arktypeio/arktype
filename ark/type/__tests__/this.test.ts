@@ -205,8 +205,6 @@ contextualize(() => {
 			$ark.nodesByRegisteredId[Cyclic.internal.id] === Cyclic.internal
 		).equals(true)
 
-		// a morph is not a child, so this root is not cyclic, but interpreted,
-		// its alias resolves through the root's id
 		const Piped = scope({}, { jitless: true }).type({
 			name: "string",
 			"next?": "string.json.parse |> this"

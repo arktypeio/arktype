@@ -1,5 +1,3 @@
-// installed ahead of every module that parses at load so that no node is
-// built without algebra
 import "arksets"
 export {
 	ArkError,

@@ -580,8 +580,6 @@ contextualize(() => {
 			return count
 		}
 		const A = type({ a: "string" })
-		// switching on the domain applies only the object branch, so Apply
-		// needn't check v with Allows first
 		attest(reads(type({ v: A.or("null") }))).equals(reads(type({ v: A })))
 	})
 })

@@ -2,8 +2,6 @@ import { configureSchema, intrinsic, rootSchema } from "@ark/schema"
 import { strictEqual } from "node:assert/strict"
 import { cases } from "./util.ts"
 
-// once imported, @ark/schema is configured, then parses, which parses the
-// intrinsics, all before arktype, and so arksets, is imported
 configureSchema({ domain: { description: () => "a configured domain" } })
 rootSchema({ domain: "number" })
 

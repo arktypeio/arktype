@@ -1,5 +1,4 @@
-// every keyword module builds its scope through this one, so a deep import
-// of any of them installs the engine first too
+// keyword modules build scopes here, so a deep import of one installs arksets
 import "arksets"
 import {
 	$ark,
@@ -218,8 +217,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			const config = this.resolvedConfig.keywords?.[qualifiedName]
 
 			if (config) {
-				// a thunk is configured as it resolves, so it stays unparsed until
-				// then
 				if (isThunk(def)) {
 					const thunk = def
 					def = () => {
@@ -272,11 +269,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	// arktype finalizes each node it returns except those of type.unit,
-	// enumerated, valueOf and instanceOf, a scope's node and configuring
-	// "self". One of those can be a copy of a node an earlier finalize
-	// compiled and that was since collected, which runs interpreted, but
-	// reports errors as that node did (see holdsNodesWeakly)
+	// arktype finalizes nearly every node it returns, so it can hold them weakly
 	protected override get holdsNodesWeakly(): boolean {
 		return true
 	}
@@ -367,11 +360,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		InternalScope.scope(def as never, config).export()) as never
 }
 
-/**
- * A module of keywords, built on first reference: its scope is constructed
- * with the global config fixed on import when any member is first read, and
- * each member resolves when it is.
- */
 export const keywordModule = (
 	def: Dict,
 	config: ArkScopeConfig

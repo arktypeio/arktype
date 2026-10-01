@@ -184,20 +184,13 @@ contextualize(() => {
 	})
 
 	it("compiled leaf referenced from a scope with a description writer", () => {
-		// A compiles `number > 1234` first. The scope's own number is a bound
-		// copy of the number that leaf references, with the same id, so the
-		// scope compiles the leaf again rather than calling A's traversals, and
-		// its unit resolves that id to its copy. Compiled, o reports the scope's
-		// description, as pinned here. Jitless, where each node traverses its
-		// own children, it reports "a.a must be a number (was a string)". This
-		// pins the compiled side of that divergence, not a choice between the
-		// two: if bound copies stop sharing ids, it should change to match
 		const A = type({ a: "number > 1234" })
 		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
 		const types = scope(
 			{ b: "number", o: { a: A, b: "b" } },
 			{ domain: { description: () => "a custom number" } }
 		).export()
+		// jitless, this reports "a.a must be a number (was a string)"
 		attest(types.o({ a: { a: "x" }, b: 1 }).toString()).snap(
 			"a.a must be a custom number (was a string)"
 		)

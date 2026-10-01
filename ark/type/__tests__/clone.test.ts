@@ -92,7 +92,7 @@ contextualize(() => {
 			{ clone: original => ({ ...original, customCloned: true }) }
 		).increment
 
-		// the first call to a root and later ones apply it the same way
+		// a root's first call and later ones clone alike
 		for (let i = 0; i < 2; i++) {
 			const original = { n: 1 }
 			attest(cloned(original)).snap({ n: 2 })

@@ -9,8 +9,7 @@ const gc: () => void = runInNewContext("gc")
 
 const nextJob = () => new Promise(resolve => setTimeout(resolve, 0))
 
-// a WeakRef's target is kept until the job that created or read it ends, and
-// a FinalizationRegistry calls back only between jobs
+// WeakRef targets live until their job ends, and finalizers run between jobs
 const collect = async () => {
 	await nextJob()
 	gc()
@@ -74,8 +73,6 @@ contextualize(() => {
 			"string | number | bigint | symbol | object | boolean | null | undefined"
 		)
 		attest(T.expression).equals("unknown")
-		// a scope caches the union on its first parse. One exported before
-		// then holds none of the nodes it parses besides
 		const $ = scope({})
 		$.export()
 		$.type("string")
@@ -87,9 +84,7 @@ contextualize(() => {
 		).equals("unknown")
 	})
 
-	// the parses below return a node without finalizing it, and one equal
-	// to it was compiled by a type since dropped. Each is built from nodes
-	// rather than a string, which the ambient parse cache would hold
+	// built from nodes rather than strings, whose results the ambient parse cache holds
 	it("enumerated returns a union compiled and dropped as compiled", async () => {
 		let U: type.Any | null = type({ k: "'gcZeta' | 'gcAlpha'" })
 			.get("k")
@@ -127,9 +122,6 @@ contextualize(() => {
 	})
 
 	it("an optional prop's input depends on the same reads after collecting", async () => {
-		// how often a defaultable prop's input was read decides whether it keeps
-		// its default, so reading one type's input and then another's gives
-		// the same result whether or not the first type was collected between
 		const inputAfterReading = async (collectBetween: boolean) => {
 			let First: type.Any | null =
 				collectBetween ?
