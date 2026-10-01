@@ -80,13 +80,11 @@ for (const url of loaded) {
 
 const schema = await fromBuild("@ark/schema")
 
-for (const entry of ["config", "runtime"]) {
-	for (const [name, value] of Object.entries(
-		await fromBuild(`@ark/schema/${entry}`)
-	)) {
-		if (value !== schema[name])
-			throw new Error(`⚠️  @ark/schema/${entry} has its own copy of ${name}.`)
-	}
+for (const [name, value] of Object.entries(
+	await fromBuild("@ark/schema/config")
+)) {
+	if (value !== schema[name])
+		throw new Error(`⚠️  @ark/schema/config has its own copy of ${name}.`)
 }
 
 // configuring through a deep import must run before the rest of the package

@@ -24,10 +24,6 @@
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
-		"./runtime": {
-			"ark-ts": "./runtime.ts",
-			"default": "./out/runtime.js"
-		},
 		"./internal/config.ts": {
 			"ark-ts": "./config.ts",
 			"types": "./out/config.d.ts",

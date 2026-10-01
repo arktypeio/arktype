@@ -15,11 +15,10 @@ import {
  * Replaces the JS tsc wrote to out/, one file per module, with an ESM bundle
  * of the package, so importing it loads a few files instead.
  *
- * Every export without a * outside "./internal/" (".", "./config",
- * "./runtime") is an entry of one build, so a module more than one of them
- * imports, like the one that installs the registry, is evaluated once
- * whichever is imported first. Other packages stay imports, each resolving to
- * its own bundle.
+ * Every export without a * outside "./internal/" (".", "./config") is an
+ * entry of one build, so a module more than one of them imports, like the one
+ * that installs the registry, is evaluated once whichever is imported first.
+ * Other packages stay imports, each resolving to its own bundle.
  *
  * out/ keeps a .d.ts per module, which "./internal/*" resolves to for types.
  * At runtime it resolves to the main entry, so a deep import shares its
