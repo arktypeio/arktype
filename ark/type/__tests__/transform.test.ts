@@ -178,6 +178,56 @@ contextualize(() => {
 		attest(original.value).equals(" a ")
 	})
 
+	it("transforms cyclic data to the class a morph returns", () => {
+		class Node {
+			value: string
+			next: unknown
+			constructor(o: { value: string; next?: unknown }) {
+				this.value = o.value
+				this.next = o.next
+			}
+		}
+		const $ = scope({
+			node: [{ value: "string", "next?": "node" }, "=>", o => new Node(o)]
+		})
+
+		const original: { value: string; next?: unknown } = { value: "a" }
+		original.next = original
+
+		const out: unknown = $.export().node(original)
+
+		attest(out instanceof Node).equals(true)
+		attest((out as Node).next).is(out)
+	})
+
+	it("transforms a primitive under a cyclic alias at each path", () => {
+		const $ = scope({
+			leaf: ["string", "=>", (s, ctx) => `${s}@${ctx.propString}`],
+			node: "leaf | node[]"
+		})
+
+		attest($.export().node(["a", "a", ["a"]])).snap([
+			"a@[0]",
+			"a@[1]",
+			["a@[2][0]"]
+		])
+	})
+
+	it("transforms a piped node's input in a pass of its own", () => {
+		const calls: string[] = []
+		const $ = scope({
+			node: {
+				value: ["string", "=>", s => (calls.push(s), s)],
+				"next?": "node"
+			}
+		})
+		const T = $.type("node").pipe(o => o, $.type("node"))
+
+		T({ value: "a", next: { value: "b" } })
+
+		attest(calls).equals(["a", "b", "a", "b"])
+	})
+
 	describe("undeclared keys", () => {
 		it("deletes them in declared order", () => {
 			const T = type({ "+": "delete", a: "string", b: "number" })
