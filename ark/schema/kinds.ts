@@ -1,5 +1,4 @@
 import {
-	deepClone,
 	envHasCsp,
 	flatMorph,
 	withAlphabetizedKeys,
@@ -90,7 +89,6 @@ $ark.defaultConfig = withAlphabetizedKeys(
 		]),
 		{
 			jitless: envHasCsp(),
-			clone: deepClone,
 			onUndeclaredKey: "ignore",
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,

@@ -192,13 +192,8 @@ const normalizeFallback = (
 ): ToJsonSchema.FallbackObject =>
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
-export type CloneImplementation = <original extends object>(
-	original: original
-) => original
-
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly jitless?: boolean
-	readonly clone?: boolean | CloneImplementation
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
 	readonly numberAllowsNaN?: boolean
 	readonly dateAllowsInvalid?: boolean
@@ -211,7 +206,6 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 export type resolveConfig<config extends ArkSchemaConfig> = show<
 	{
 		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
-		: k extends "clone" ? CloneImplementation | false
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
 		: config[k]

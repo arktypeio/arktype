@@ -1,5 +1,4 @@
 export * from "./arrays.ts"
-export * from "./clone.ts"
 export * from "./describe.ts"
 export * from "./domain.ts"
 export * from "./errors.ts"
