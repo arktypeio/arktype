@@ -35,7 +35,7 @@ contextualize(() => {
 		attest(computed()).equals(1)
 	})
 
-	it("reads through an object that inherits it and can't be extended", () => {
+	it("reads through a non-extensible object inheriting it", () => {
 		const proto = {}
 		const computed = lazyCount(proto)
 		const o = Object.preventExtensions(Object.create(proto)) as { k: number }

@@ -20,7 +20,7 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 	const isArray = Array.isArray(input)
 	const proto = isArray ? null : Object.getPrototypeOf(input)
 	const cloned = isArray ? input.slice() : Object.create(proto)
-	const plainPrototype =
+	const hasPlainPrototype =
 		!isArray && (proto === Object.prototype || proto === null)
 
 	seen.set(input, cloned)
@@ -35,7 +35,7 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 				desc.writable &&
 				desc.enumerable &&
 				desc.configurable &&
-				(plainPrototype ?
+				(hasPlainPrototype ?
 					!(k in cloned)
 				:	builtinConstructorName === "Array" &&
 					Object.prototype.hasOwnProperty.call(cloned, k))

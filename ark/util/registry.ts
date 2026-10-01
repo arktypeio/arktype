@@ -35,9 +35,9 @@ declare global {
 }
 
 const namesByResolution = new Map<object | symbol, string>()
-const unregisteredNames = new WeakMap<object, string>()
+const namesByUnregisteredObject = new WeakMap<object, string>()
 // symbols can't be WeakMap keys before ES2023
-const unregisteredSymbolNames = new Map<symbol, string>()
+const namesByUnregisteredSymbol = new Map<symbol, string>()
 const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
@@ -55,15 +55,15 @@ export const nameOf = (value: object | symbol): string => {
 	if (existingName) return existingName
 
 	const name = nextName(value)
-	if (typeof value === "symbol") unregisteredSymbolNames.set(value, name)
-	else unregisteredNames.set(value, name)
+	if (typeof value === "symbol") namesByUnregisteredSymbol.set(value, name)
+	else namesByUnregisteredObject.set(value, name)
 	return name
 }
 
 const unregisteredNameOf = (value: object | symbol) =>
 	typeof value === "symbol" ?
-		unregisteredSymbolNames.get(value)
-	:	unregisteredNames.get(value)
+		namesByUnregisteredSymbol.get(value)
+	:	namesByUnregisteredObject.get(value)
 
 const nextName = (value: object | symbol) => {
 	let name = baseNameFor(value)

@@ -26,8 +26,8 @@ export const defineLazily = (
 	Object.defineProperty(o, k, {
 		get() {
 			if (result === unset) result = compute()
-			const own = Object.getOwnPropertyDescriptor(this, k)
-			if (own ? own.configurable : Object.isExtensible(this)) {
+			const descriptor = Object.getOwnPropertyDescriptor(this, k)
+			if (descriptor ? descriptor.configurable : Object.isExtensible(this)) {
 				Object.defineProperty(this, k, {
 					value: result,
 					enumerable: true,
