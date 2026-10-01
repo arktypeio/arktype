@@ -81,20 +81,15 @@ export const stats = {
 	}
 }
 
-/** each sample times about this many ms of calls */
 const sampleMs = 0.2
 
 let loopCount = 0
 
-/** each loop's last result, so V8 can't eliminate a call whose result is unused */
 let benchSink: unknown
 
 const AsyncFunction = (async () => {}).constructor as FunctionConstructor
 
-/**
- * Each bench gets a loop compiled from source unique to it, so the loop's
- * call site sees only that bench's fn and can inline it.
- */
+// a loop compiled per bench gives its call site one fn to inline
 const createLoop = (
 	isAsync: boolean
 ): ((fn: () => unknown, n: number) => unknown) =>
@@ -109,7 +104,6 @@ return result`
 
 class ResultCollector {
 	results: number[] = []
-	/** doubled through warmup, then sized so a sample takes about sampleMs */
 	callsPerSample = 1
 	private bounds: Required<UntilOptions>
 	private isWarm = false
@@ -125,7 +119,6 @@ class ResultCollector {
 			count: 100_000,
 			...ctx.options.until
 		}
-		// warmup, which is not sampled, ends here
 		this.phaseEnd = performance.now() + Math.min(500, this.bounds.ms)
 		this.lastInvocationStart = -1
 	}
