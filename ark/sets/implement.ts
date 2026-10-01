@@ -80,7 +80,7 @@ export type setImplementationOf<d extends BaseNodeDeclaration> = {
 
 export interface UnknownSetImplementation {
 	intersections: UnknownIntersectionMap
-	reduce?: (inner: any, $: BaseScope) => BaseNode | Disjoint | undefined
+	reduce?: Reduction<BaseNodeDeclaration>
 }
 
 export const defineRightwardIntersections = <kind extends RootKind>(

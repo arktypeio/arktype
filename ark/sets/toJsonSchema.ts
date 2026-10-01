@@ -71,20 +71,20 @@ const toResolvedJsonSchema = (
 	return Object.assign(result, node.metaJson)
 }
 
-const branchGroups = (node: nodeOfKind<"union">): BaseRoot[] => {
-	const groups: BaseRoot[] = []
+const branchGroupsOf = (node: nodeOfKind<"union">): BaseRoot[] => {
+	const branchGroups: BaseRoot[] = []
 	let firstBooleanIndex = -1
 	for (const branch of node.branches) {
 		if (branch.hasKind("unit") && branch.domain === "boolean") {
 			if (firstBooleanIndex === -1) {
-				firstBooleanIndex = groups.length
-				groups.push(branch)
-			} else groups[firstBooleanIndex] = $ark.intrinsic.boolean
+				firstBooleanIndex = branchGroups.length
+				branchGroups.push(branch)
+			} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
 			continue
 		}
-		groups.push(branch)
+		branchGroups.push(branch)
 	}
-	return groups
+	return branchGroups
 }
 
 const innerToJsonSchemaByKind: {
@@ -95,13 +95,16 @@ const innerToJsonSchemaByKind: {
 } = {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
-		const groups = branchGroups(node)
+		const branchGroups = branchGroupsOf(node)
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
-		if (groups.length === 1 && groups[0].equals($ark.intrinsic.boolean))
+		if (
+			branchGroups.length === 1 &&
+			branchGroups[0].equals($ark.intrinsic.boolean)
+		)
 			return { type: "boolean" }
 
-		const jsonSchemaBranches = groups.map(group =>
+		const jsonSchemaBranches = branchGroups.map(group =>
 			toJsonSchemaRecurse(group, ctx)
 		)
 
