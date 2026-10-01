@@ -143,6 +143,15 @@ contextualize(() => {
 		).snap("value at [1] must be a string (was a number)")
 	})
 
+	it("calls a morph that takes one argument without ctx", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type({
+				a: ["string", "=>", (s: string, ctx: unknown = undefined) => !ctx]
+			})
+			attest(T.assert({ a: "x" }).a).equals(true)
+		}
+	})
+
 	it("reports a morph's error alike whether or not its input is valid", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],
