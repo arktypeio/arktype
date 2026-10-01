@@ -229,11 +229,18 @@ const applyEdits = (js: string, edits: Edit[]) =>
 
 /**
  * esbuild writes a class that refers to itself as `var X = class _X {...}`,
- * naming it _X, so rename it X along with its references to _X
+ * naming it _X, so rename it X along with its references to _X. Throws on a
+ * function or class esbuild renamed apart from a like-named binding, as X2,
+ * since that changes the name it has at runtime.
  */
 const nameSelfReferencingClasses = (js: string): string => {
 	const edits: Edit[] = []
+	const identifiers = new Set<string>()
+	const runtimeNames: string[] = []
 	const visit = (node: ts.Node): void => {
+		if (ts.isIdentifier(node)) identifiers.add(node.text)
+		const runtimeName = runtimeNameOf(node)
+		if (runtimeName) runtimeNames.push(runtimeName)
 		if (ts.isClassExpression(node) && node.name) {
 			const name = inferredNameOf(node)
 			if (name && name !== node.name.text) {
@@ -246,6 +253,14 @@ const nameSelfReferencingClasses = (js: string): string => {
 		ts.forEachChild(node, visit)
 	}
 	visit(parse(js))
+	for (const name of runtimeNames) {
+		const collided = collidedNameOf(name, identifiers)
+		if (collided) {
+			throw new Error(
+				`esbuild renamed ${collided} to ${name}, which changes its runtime name, so rename it or the ${collided} it collides with`
+			)
+		}
+	}
 	return applyEdits(js, edits)
 }
 
@@ -289,3 +304,18 @@ const inferredNameOf = (node: ts.Node): string | undefined =>
 	) ?
 		node.parent.name.text
 	:	undefined
+
+/** the name a function or class has at runtime, a class taking its variable's */
+const runtimeNameOf = (node: ts.Node): string | undefined =>
+	ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) ?
+		node.name?.text
+	: ts.isClassExpression(node) ? (inferredNameOf(node) ?? node.name?.text)
+	: ts.isFunctionExpression(node) ? (node.name?.text ?? inferredNameOf(node))
+	: ts.isArrowFunction(node) ? inferredNameOf(node)
+	: undefined
+
+/** the identifier esbuild suffixed with a number to rename name, if any */
+const collidedNameOf = (name: string, identifiers: Set<string>) => {
+	for (let end = name.length - 1; /\d/.test(name[end]); end--)
+		if (identifiers.has(name.slice(0, end))) return name.slice(0, end)
+}

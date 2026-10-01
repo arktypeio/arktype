@@ -176,6 +176,30 @@ contextualize(() => {
 		}
 	})
 
+	it("rejects a function or class esbuild renamed", () => {
+		for (const [name, declaration] of [
+			["isDate", "const isDate = () => true"],
+			["parse", "function parse() {}"],
+			["Foo", "class Foo { static self = Foo }"]
+		]) {
+			const colliding = packageOf({
+				"index.js": `export * from "./a.js"; export * from "./b.js";`,
+				"a.js": `${declaration}; export const a = ${name};`,
+				"b.js": `${declaration}; export const b = ${name};`
+			})
+			attest(() => bundling(colliding)).throws(
+				`esbuild renamed ${name} to ${name}2`
+			)
+		}
+		// esbuild also renames a binding that shadows a top-level one
+		const shadowing = packageOf({
+			"index.js": `export const isDate = {}; export const f = () => { const isDate = () => true; return isDate };`
+		})
+		attest(() => bundling(shadowing)).throws(
+			"esbuild renamed isDate to isDate2"
+		)
+	})
+
 	it("rejects a default export", () => {
 		const defaulting = packageOf({
 			"index.js": `export * from "./a.js";`,
