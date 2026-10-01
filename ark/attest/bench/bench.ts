@@ -6,9 +6,7 @@ import {
 	type ParsedAttestConfig
 } from "../config.ts"
 import { chainableNoOpProxy } from "../utils.ts"
-import { await1K } from "./await1k.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
-import { call1K } from "./call1k.ts"
 import {
 	createTimeComparison,
 	createTimeMeasure,
@@ -37,11 +35,7 @@ export interface Bench extends BenchFn {
 const benchFn: BenchFn = (name, fn, options) => {
 	const qualifiedPath = [...currentSuitePath, name]
 	console.log(`🏌️  ${qualifiedPath.join("/")}`)
-	const ctx = getBenchCtx(
-		qualifiedPath,
-		fn.constructor.name === "AsyncFunction",
-		options
-	)
+	const ctx = getBenchCtx(qualifiedPath, options)
 
 	if (!benchHasRun) {
 		rmRf(ctx.cfg.cacheDir)
@@ -51,14 +45,15 @@ const benchFn: BenchFn = (name, fn, options) => {
 
 	ctx.benchCallPosition = caller()
 
+	const { filter } = ctx.cfg
 	if (
-		typeof ctx.cfg.filter === "string" &&
-		!qualifiedPath.includes(ctx.cfg.filter)
+		typeof filter === "string" &&
+		!qualifiedPath.some(segment => segment.startsWith(filter))
 	)
 		return chainableNoOpProxy
 	else if (
-		Array.isArray(ctx.cfg.filter) &&
-		ctx.cfg.filter.some((segment, i) => segment !== qualifiedPath[i])
+		Array.isArray(filter) &&
+		filter.some((segment, i) => segment !== qualifiedPath[i])
 	)
 		return chainableNoOpProxy
 
@@ -86,21 +81,52 @@ export const stats = {
 	}
 }
 
+/** each sample times about this many ms of calls */
+const sampleMs = 0.2
+
+let loopCount = 0
+
+/** each loop's last result, so V8 can't eliminate a call whose result is unused */
+let benchSink: unknown
+
+const AsyncFunction = (async () => {}).constructor as FunctionConstructor
+
+/**
+ * Each bench gets a loop compiled from source unique to it, so the loop's
+ * call site sees only that bench's fn and can inline it.
+ */
+const createLoop = (
+	isAsync: boolean
+): ((fn: () => unknown, n: number) => unknown) =>
+	new (isAsync ? AsyncFunction : Function)(
+		"fn",
+		"n",
+		`// bench loop ${loopCount++}
+let result
+for (let i = 0; i < n; i++) result = ${isAsync ? "await " : ""}fn()
+return result`
+	) as never
+
 class ResultCollector {
 	results: number[] = []
-	private benchStart = performance.now()
+	/** doubled through warmup, then sized so a sample takes about sampleMs */
+	callsPerSample = 1
 	private bounds: Required<UntilOptions>
+	private isWarm = false
+	private phaseEnd: number
 	private lastInvocationStart: number
 	private ctx: BenchContext
 
 	constructor(ctx: BenchContext) {
 		this.ctx = ctx
-		// By default, will run for either 5 seconds or 100_000 call sets (of 1000 calls), whichever comes first
+		// By default, will sample for either 5 seconds or 100_000 samples, whichever comes first
 		this.bounds = {
 			ms: 5000,
 			count: 100_000,
 			...ctx.options.until
 		}
+		// warmup, which is not sampled, ends here
+		this.phaseEnd = performance.now() + Math.min(500, this.bounds.ms)
 		this.lastInvocationStart = -1
 	}
 
@@ -110,38 +136,65 @@ class ResultCollector {
 	}
 
 	stop() {
-		this.results.push((performance.now() - this.lastInvocationStart) / 1000)
+		const end = performance.now()
+		const ms = end - this.lastInvocationStart
 		this.ctx.options.hooks?.afterCall?.()
+		if (this.isWarm) this.results.push(ms / this.callsPerSample)
+		else if (end < this.phaseEnd) {
+			if (ms < sampleMs / 2) this.callsPerSample *= 2
+		} else {
+			this.callsPerSample = Math.max(
+				1,
+				Math.round((this.callsPerSample * sampleMs) / (ms || 1e-3))
+			)
+			this.isWarm = true
+			this.phaseEnd = end + this.bounds.ms
+		}
 	}
 
 	done() {
-		const metMsTarget = performance.now() - this.benchStart >= this.bounds.ms
-		const metCountTarget = this.results.length >= this.bounds.count
-		return metMsTarget || metCountTarget
+		return (
+			this.isWarm &&
+			(performance.now() >= this.phaseEnd ||
+				this.results.length >= this.bounds.count)
+		)
 	}
 }
 
-const loopCalls = (fn: () => void, ctx: BenchContext) => {
+const warnIfUnused = (ctx: BenchContext) => {
+	if (benchSink === undefined) {
+		console.warn(
+			`⚠️  ${ctx.qualifiedName} returned undefined. Return the result it computes so V8 can't optimize the work away.`
+		)
+	}
+}
+
+const loopCalls = (fn: () => unknown, ctx: BenchContext) => {
+	const loop = createLoop(false)
 	const collector = new ResultCollector(ctx)
 	while (!collector.done()) {
 		collector.start()
-		// we use a function like this to make 1k explicit calls to the function
-		// to avoid certain optimizations V8 makes when looping
-		call1K(fn)
+		benchSink = loop(fn, collector.callsPerSample)
 		collector.stop()
 	}
+	warnIfUnused(ctx)
 	return collector.results
 }
 
-const loopAsyncCalls = async (fn: () => Promise<void>, ctx: BenchContext) => {
+const loopAsyncCalls = async (fn: () => unknown, ctx: BenchContext) => {
+	const loop = createLoop(true)
 	const collector = new ResultCollector(ctx)
 	while (!collector.done()) {
 		collector.start()
-		await await1K(fn)
+		benchSink = await loop(fn, collector.callsPerSample)
 		collector.stop()
 	}
+	warnIfUnused(ctx)
 	return collector.results
 }
+
+const isThenable = (value: unknown): value is PromiseLike<unknown> =>
+	typeof (value as PromiseLike<unknown> | undefined)?.then === "function"
 
 export class BenchAssertions<
 	Fn extends BenchableFunction,
@@ -172,8 +225,8 @@ export class BenchAssertions<
 
 	private callTimesSync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = loopCalls(this.fn as never, this.ctx)
-			this.lastCallTimes.sort()
+			this.lastCallTimes = loopCalls(this.fn, this.ctx)
+			this.lastCallTimes.sort((l, r) => l - r)
 		}
 		this.applyCallTimeHooks()
 		return this.lastCallTimes
@@ -181,8 +234,8 @@ export class BenchAssertions<
 
 	private async callTimesAsync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = await loopAsyncCalls(this.fn as never, this.ctx)
-			this.lastCallTimes.sort()
+			this.lastCallTimes = await loopAsyncCalls(this.fn, this.ctx)
+			this.lastCallTimes.sort((l, r) => l - r)
 		}
 		this.applyCallTimeHooks()
 		return this.lastCallTimes
@@ -247,21 +300,25 @@ export class BenchAssertions<
 			Record<StatName, Measure<TimeUnit>> | undefined
 		:	Measure<TimeUnit> | undefined
 	) {
-		if (this.ctx.isAsync) {
-			return new Promise(resolve => {
-				this.callTimesAsync().then(
-					callTimes => {
-						resolve(this.createAssertion(name, baseline, callTimes))
-					},
-					e => {
-						this.addUnhandledBenchException(e)
-						resolve(chainableNoOpProxy)
-					}
-				)
-			})
-		}
 		let assertions = chainableNoOpProxy
 		try {
+			// fn may return a Promise without being an async function
+			const firstResult = this.fn()
+			if (isThenable(firstResult)) {
+				return new Promise(resolve => {
+					Promise.resolve(firstResult)
+						.then(() => this.callTimesAsync())
+						.then(
+							callTimes => {
+								resolve(this.createAssertion(name, baseline, callTimes))
+							},
+							e => {
+								this.addUnhandledBenchException(e)
+								resolve(chainableNoOpProxy)
+							}
+						)
+				})
+			}
 			assertions = this.createAssertion(name, baseline, this.callTimesSync())
 		} catch (e) {
 			this.addUnhandledBenchException(e)
@@ -325,7 +382,6 @@ export type BenchContext = {
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
 	lastSnapFunctionName: string | undefined
-	isAsync: boolean
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>
@@ -346,7 +402,6 @@ process.on("beforeExit", () => {
 
 export const getBenchCtx = (
 	qualifiedPath: string[],
-	isAsync: boolean = false,
 	options: BenchOptions = {}
 ): BenchContext => ({
 	qualifiedPath,
@@ -356,6 +411,5 @@ export const getBenchCtx = (
 	benchCallPosition: caller(),
 	lastSnapCallPosition: undefined,
 	lastSnapFunctionName: undefined,
-	isAsync,
 	assertionStack: getCallStack({ offset: 1 }).join("\n")
 })

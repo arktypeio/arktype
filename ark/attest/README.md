@@ -187,7 +187,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	skipInlineInstantiations: false,
 	tsVersions: "typescript",
 	benchPercentThreshold: 20,
-	benchErrorOnThresholdExceeded: true,
+	benchErrorOnThresholdExceeded: "types",
 	filter: undefined,
 	testDeclarationAliases: ["bench", "it", "test"],
 	formatter: `npm exec --no -- prettier --write`,
@@ -259,11 +259,18 @@ bench(
 	},
 	fakeCallOptions
 )
-	// Average time it takes the function execute
-	.mean([2, "ms"])
+	// Median time it takes the function to execute
+	.median([2, "ms"])
 	// Seems like our type is O(n) with respect to the length of the input- not bad!
 	.types([337, "instantiations"])
 ```
+
+A runtime bench should return the result it computes and assert its `.median`:
+
+- Each bench runs in a loop compiled for it alone, so V8 can inline it and drop any work whose result is unused. attest warns if a bench returns `undefined`.
+- V8 can also fold work on constant inputs, so read inputs from an export rather than from a literal or a local `const`. This matters most for small functions like a primitive check.
+- `.median` is robust to the GC pauses and preemption that skew `.mean`.
+- Benches in a process share the code of the library they call, so a bench can read faster or slower depending on which benches ran before it. Only compare runtime results between runs of the same file in the same order.
 
 If you're benchmarking an API, you'll need to include a "baseline expression" so that instantiations created when your API is initially invoked don't add noise to the individual tests.
 
@@ -290,11 +297,13 @@ bench("keyword", () => {
 > [!WARNING]  
 > Be sure your baseline expression is not identical to an expression you are using in any of your benchmarks. If it is, the individual benchmarks will reuse its cached types, leading to reduced (or 0) instantiations.
 
-If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+A type bench fails if it exceeds its baseline by more than `benchPercentThreshold` (20% by default). A runtime bench only logs it, since its timing varies too much between runs to fail CI on. To fail runtime benches as well, set `benchErrorOnThresholdExceeded` to `true` (or `"runtime"` for runtime benches only):
 
 ```
- tsx ./p99/within-limit/p99-tall-simple.bench.ts  --benchErrorOnThresholdExceeded --benchPercentThreshold 10
+ tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded true --benchPercentThreshold 10
 ```
+
+To run some of a file's benches, pass `filter` (e.g. `ATTEST_filter=moltar`). A bench runs if any segment of its path starts with it.
 
 ## CLI
 
