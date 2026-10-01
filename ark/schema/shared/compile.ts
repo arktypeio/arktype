@@ -14,20 +14,6 @@ import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
-const writingLoop = new WeakSet<CompiledFunction<any, any>>()
-
-const loopBlock = <js extends CompiledFunction<any, any>>(
-	js: js,
-	prefix: string,
-	body: (self: js) => js
-): js => {
-	if (writingLoop.has(js)) return js.block(prefix, body)
-	writingLoop.add(js)
-	js.block(prefix, body)
-	writingLoop.delete(js)
-	return js
-}
-
 export class CompiledFunction<
 	compiledSignature = (...args: unknown[]) => unknown,
 	args extends readonly string[] = readonly string[]
@@ -93,12 +79,20 @@ export class CompiledFunction<
 		body: (self: this) => this,
 		initialValue: CoercibleValue = 0
 	): this {
-		return loopBlock(this, `for (let i = ${initialValue}; ${until}; i++)`, body)
+		return this.loop(`for (let i = ${initialValue}; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */
 	forIn(object: string, body: (self: this) => this): this {
-		return loopBlock(this, `for (const k in ${object})`, body)
+		return this.loop(`for (const k in ${object})`, body)
+	}
+
+	loopDepth = 0
+	loop(prefix: string, body: (self: this) => this): this {
+		this.loopDepth++
+		this.block(prefix, body)
+		this.loopDepth--
+		return this
 	}
 
 	block(prefix: string, contents: (self: this) => this, suffix = ""): this {
@@ -243,7 +237,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	): this {
 		if (
 			this.traversalKind === "Apply" &&
-			(writingLoop.has(this) ||
+			(this.loopDepth > 0 ||
 				(node.hasKind("union") && !node.compiledDiscriminant)) &&
 			isDecidedByAllows(node)
 		) {
