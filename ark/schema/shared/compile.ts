@@ -300,8 +300,10 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			opts?.onChange?.()
 			return this
 		}
+		const checksErrors = node.includesMorph && !node.transformRequiresContext
+		if (!checksErrors && !opts?.onChange) return this
 		return this.if(`${name} !== ${accessExpression}`, () => {
-			if (node.transformRequiresContext) return onChange()
+			if (!checksErrors) return onChange()
 			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
 			this.if(
 				`typeof ${name} === "object" && ${name} instanceof ${this.ref(TransformErrors)}`,

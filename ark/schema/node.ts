@@ -85,6 +85,7 @@ export abstract class BaseNode<
 	$: BaseScope
 	onFail: ArkErrors.Handler | null
 	includesTransform: boolean
+	includesMorph: boolean
 
 	includesContextualPredicate: boolean
 	isCyclic: boolean
@@ -135,8 +136,9 @@ export abstract class BaseNode<
 		this.$ = $
 		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
 
+		this.includesMorph = this.hasKind("morph")
 		this.includesTransform =
-			this.hasKind("morph") ||
+			this.includesMorph ||
 			(this.hasKind("sequence") && this.inner.defaultables !== undefined)
 
 		// if a predicate accepts exactly one arg, we can safely skip passing context
@@ -154,6 +156,7 @@ export abstract class BaseNode<
 
 		for (let i = 0; i < this.children.length; i++) {
 			this.includesTransform ||= this.children[i].includesTransform
+			this.includesMorph ||= this.children[i].includesMorph
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
 			this.includesContextualMorph ||= this.children[i].includesContextualMorph
