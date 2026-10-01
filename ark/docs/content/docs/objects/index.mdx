@@ -164,12 +164,14 @@ const MyObj = type({
 
 </SyntaxTabs>
 
-An empty array or object can be defaulted directly in string syntax. A shared reference would leak mutations from one traversal into the next, so `= []` and `= {}` assign a new array or object each time the default is applied- exactly like the thunk form they replace.
+An empty array or object, or an array of unit literals, can be defaulted directly in string syntax. A shared reference would leak mutations from one traversal into the next, so `= []`, `= {}`, `= ['a']`, and `= [1, 2]` assign a new array or object each time the default is applied- exactly like the thunk form they replace.
 
 ```ts
 const MyObj = type({
-	// each parsed value gets its own array
+	// each parsed value gets its own array or object
 	values: "string[] = []",
+	hosts: "string[] = ['localhost']",
+	ports: "number[] = [3000, 8080]",
 	meta: "object = {}"
 })
 ```
