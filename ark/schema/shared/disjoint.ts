@@ -101,11 +101,17 @@ export class Disjoint extends Array<DisjointEntry> {
 	}
 
 	withPrefixKey(key: PropertyKey, kind: Prop.Kind): Disjoint {
-		return this.map(entry => ({
+		const result = this.map(entry => ({
 			...entry,
 			path: [key, ...entry.path],
 			optional: entry.optional || kind === "optional"
-		})) as Disjoint
+		})) as DisjointEntry[]
+
+		// same Hermes workaround as invert
+		// https://github.com/arktypeio/arktype/issues/1645
+		if (!(result instanceof Disjoint)) return new Disjoint(...result)
+
+		return result
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
