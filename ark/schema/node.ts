@@ -34,7 +34,6 @@ import type { BaseParseOptions } from "./parse.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { UnionNode } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -61,7 +60,8 @@ import { $ark, registryName } from "./shared/registry.ts"
 import {
 	Traversal,
 	type TraverseAllows,
-	type TraverseApply
+	type TraverseApply,
+	type TraverseTransform
 } from "./shared/traversal.ts"
 import { isNode } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -90,12 +90,7 @@ export abstract class BaseNode<
 	isCyclic: boolean
 	includesAlias: boolean
 	allowsRequiresContext: boolean
-	rootApplyStrategy:
-		| "allows"
-		| "contextual"
-		| "optimistic"
-		| "branchedOptimistic"
-	contextFreeMorph: ((data: unknown) => unknown) | undefined
+	includesContextualMorph: boolean
 	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
 
 	protected _referencesById: Record<string, BaseNode> | undefined
@@ -115,12 +110,7 @@ export abstract class BaseNode<
 				pipedFromCtx?: Traversal | undefined,
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
-				if (pipedFromCtx) {
-					this.traverseApply(data, pipedFromCtx)
-					return pipedFromCtx.hasError() ?
-							pipedFromCtx.errors
-						:	pipedFromCtx.data
-				}
+				if (pipedFromCtx) return pipedFromCtx.pipe(this, data)
 
 				return this.rootApply(data, onFail)
 			},
@@ -155,6 +145,11 @@ export abstract class BaseNode<
 		this.includesContextualPredicate =
 			this.hasKind("predicate") && this.inner.predicate.length !== 1
 
+		// optional and sequence nodes add contextual defaults once computed
+		this.includesContextualMorph =
+			this.hasKind("morph") &&
+			this.inner.morphs.some(morph => isNode(morph) || morph.length !== 1)
+
 		this.isCyclic = this.kind === "alias"
 		this.includesAlias = this.isCyclic
 
@@ -162,6 +157,7 @@ export abstract class BaseNode<
 			this.includesTransform ||= this.children[i].includesTransform
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
+			this.includesContextualMorph ||= this.children[i].includesContextualMorph
 			this.isCyclic ||= this.children[i].isCyclic
 			this.includesAlias ||= this.children[i].includesAlias
 		}
@@ -170,30 +166,8 @@ export abstract class BaseNode<
 
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
-		this.rootApplyStrategy =
-			(
-				!this.allowsRequiresContext &&
-				(!this.includesTransform ||
-					this.isStructural() ||
-					this.flatMorphs.length === 0)
-			) ?
-				this.shallowMorphs.length === 0 ? "allows"
-				: (
-					this.shallowMorphs.every(
-						morph => morph.length === 1 || morph.name === "$arkStructuralMorph"
-					)
-				) ?
-					this.hasKind("union") ?
-						// multiple morphs not yet supported for optimistic compilation
-						this.branches.some(branch => branch.shallowMorphs.length > 1) ?
-							"contextual"
-						:	"branchedOptimistic"
-					: this.shallowMorphs.length > 1 ? "contextual"
-					: "optimistic"
-				:	"contextual"
-			:	"contextual"
-
-		this.rootApply = this.createRootApply()
+		this.rootApply = (data, onFail) =>
+			(this.rootApply = this.createRootApply())(data, onFail)
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
@@ -202,6 +176,44 @@ export abstract class BaseNode<
 						new Traversal(data, this.$.resolvedConfig)
 					)
 			:	data => (this.traverseAllows as any)(data)
+	}
+
+	private _transforms: boolean | undefined
+	// includesTransform doesn't see through an alias, which may resolve to one
+	get transforms(): boolean {
+		if (this._transforms !== undefined) return this._transforms
+		let transforms = this.includesTransform
+		if (!transforms && this.includesAlias) {
+			const reached = new Set<BaseNode>([this])
+			for (const node of reached) {
+				for (const id in node.referencesById) {
+					const reference = node.referencesById[id]
+					if (reference.hasKind("alias")) reached.add(reference.resolution)
+					transforms ||= reference.includesTransform
+				}
+				if (transforms) break
+			}
+		}
+		// until its scope is resolved, an alias may resolve differently
+		return this.$.resolved ? (this._transforms = transforms) : transforms
+	}
+
+	// ctx carries the path a contextual morph reads and an alias's outputs
+	get transformRequiresContext(): boolean {
+		return (
+			this.transforms && (this.includesContextualMorph || this.includesAlias)
+		)
+	}
+
+	get rootApplyStrategy(): RootApplyStrategy {
+		return (
+			this.transforms ?
+				this.transformRequiresContext ?
+					"contextualTransform"
+				:	"transform"
+			: this.allowsRequiresContext ? "contextual"
+			: "allows"
+		)
 	}
 
 	get referencesById(): Record<string, BaseNode> {
@@ -329,28 +341,23 @@ export abstract class BaseNode<
 					return ctx.finalize(onFail)
 				}
 
-			case "optimistic":
-				this.contextFreeMorph = this.shallowMorphs[0] as never
-				const clone = this.$.resolvedConfig.clone
+			case "transform":
+			case "contextualTransform":
 				return (data, onFail) => {
+					const ctx = new Traversal(data, this.$.resolvedConfig)
 					if (this.allows(data)) {
-						return this.contextFreeMorph!(
-							(
-								clone &&
-									((typeof data === "object" && data !== null) ||
-										typeof data === "function")
-							) ?
-								clone(data)
-							:	data
-						)
+						const result =
+							this.includesAlias ?
+								ctx.transformResolution(this.id, data, data =>
+									ctx.transform(this, data)
+								)
+							:	ctx.transform(this, data)
+						return ctx.hasError() ? ctx.finalize(onFail) : result
 					}
 
-					const ctx = new Traversal(data, this.$.resolvedConfig)
 					this.traverseApply(data, ctx)
 					return ctx.finalize(onFail)
 				}
-			case "branchedOptimistic":
-				return (this as {} as UnionNode).createBranchedOptimisticRootApply()
 			default:
 				this.rootApplyStrategy satisfies never
 				return throwInternalError(
@@ -361,6 +368,8 @@ export abstract class BaseNode<
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	// declared, not abstract, since only kinds that can transform data have one
+	declare traverseTransform: TraverseTransform<d["prerequisite"]>
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
@@ -724,6 +733,12 @@ export abstract class BaseNode<
 export type KeyOrKeyNode = Key | BaseRoot
 
 export type GettableKeyOrNode = KeyOrKeyNode | number
+
+export type RootApplyStrategy =
+	| "allows"
+	| "contextual"
+	| "transform"
+	| "contextualTransform"
 
 export type FlatRef<root extends BaseRoot = BaseRoot> = {
 	path: array<KeyOrKeyNode>

@@ -141,9 +141,9 @@ contextualize(() => {
 		for (const id of [
 			"allows",
 			"apply",
-			"optimistic",
+			"transform",
 			"node",
-			"clone",
+			"TransformErrors",
 			"Traversal",
 			"config",
 			"in"

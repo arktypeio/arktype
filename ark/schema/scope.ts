@@ -4,11 +4,11 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
+	includes,
 	isThunk,
 	printable,
 	throwInternalError,
 	throwParseError,
-	unset,
 	WeakCache,
 	type Dict,
 	type Fn,
@@ -76,10 +76,12 @@ import {
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
+	TransformErrors,
 	Traversal,
 	type TraversalKind,
 	type TraverseAllows,
-	type TraverseApply
+	type TraverseApply,
+	type TraverseTransform
 } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
 
@@ -314,7 +316,7 @@ const precompile = (
 			if (!owningScope || node.$ !== owningScope) continue
 			reusableLeaves.delete(node)
 		}
-		const [traverseAllows, traverseApply, traverseOptimistic] =
+		const [traverseAllows, traverseApply, traverseTransform] =
 			traversalsByReference[i]
 		node.traverseAllows = traverseAllows
 		if (node.isRoot() && !node.allowsRequiresContext) {
@@ -323,8 +325,7 @@ const precompile = (
 			node.allows = traverseAllows as never
 		}
 		node.traverseApply = traverseApply
-		if (traverseOptimistic)
-			(node as UnionNode).traverseOptimistic = traverseOptimistic
+		if (traverseTransform) node.traverseTransform = traverseTransform
 		node.precompilation = precompilation
 		// kept so an unfinalized parse can't return an uncompiled copy reporting differently
 		if (reportsDifferentlyCompiled(node)) node.keepInScope()
@@ -357,41 +358,47 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"return ctx.finalize(onFail)"
 	]
 	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
-	const unlessInvalid = (invalid: string, result: string) => [
-		`if (${invalid}) {`,
+	const unlessInvalid = (result: string[]) => [
+		"if (!allows(data)) {",
 		...fallback.map(line => `    ${line}`),
 		"}",
-		`return ${result}`
+		...result
 	]
 	const body =
-		node.rootApplyStrategy === "allows" ? unlessInvalid("!allows(data)", "data")
-		: node.rootApplyStrategy === "optimistic" ?
-			unlessInvalid(
-				"!allows(data)",
-				`node.contextFreeMorph(clone && ((typeof data === "object" && data !== null) || typeof data === "function") ? clone(data) : data)`
-			)
-		: node.rootApplyStrategy === "branchedOptimistic" ?
-			[
-				"const optimisticResult = optimistic(data)",
-				...unlessInvalid(`optimisticResult === "${unset}"`, "optimisticResult")
-			]
+		node.rootApplyStrategy === "allows" ? unlessInvalid(["return data"])
+		: node.rootApplyStrategy === "transform" ?
+			unlessInvalid([
+				"const result = transform(data)",
+				"if (result instanceof TransformErrors) {",
+				"    const ctx = new Traversal(data, config)",
+				"    ctx.addTransformErrors(result)",
+				"    return ctx.finalize(onFail)",
+				"}",
+				"return result"
+			])
+		: node.rootApplyStrategy === "contextualTransform" ?
+			unlessInvalid([
+				"const ctx = new Traversal(data, config)",
+				node.includesAlias ?
+					`const result = ctx.transformResolution("${node.id}", data, data => transform(data, ctx))`
+				:	"const result = transform(data, ctx)",
+				"return ctx.hasError() ? ctx.finalize(onFail) : result"
+			])
 		:	fallback
 	return new DynamicFunction<(...args: unknown[]) => BaseRoot["rootApply"]>(
 		"allows",
 		"apply",
-		"optimistic",
-		"node",
-		"clone",
+		"transform",
 		"Traversal",
+		"TransformErrors",
 		"config",
 		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
 	)(
-		node.traverseAllows,
+		node.allows,
 		node.traverseApply,
-		(node as UnionNode).traverseOptimistic,
-		node,
-		node.$.resolvedConfig.clone,
+		node.traverseTransform,
 		Traversal,
+		TransformErrors,
 		node.$.resolvedConfig
 	)
 }
@@ -399,7 +406,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 type PrecompiledTraversals = [
 	allows: TraverseAllows,
 	apply: TraverseApply,
-	optimistic?: (data: unknown) => unknown
+	transform?: TraverseTransform
 ]
 
 const precompileReferences = (
@@ -441,8 +448,9 @@ const declareTraversals = (
 		declareTraversal(members, linkage, node, "Allows"),
 		declareTraversal(members, linkage, node, "Apply")
 	]
-	if (node.rootApplyStrategy === "branchedOptimistic")
-		traversals.push(declareTraversal(members, linkage, node, "Optimistic"))
+	// a prop or index signature is transformed by its structure
+	if (node.transforms && includes(transformedKinds, node.kind))
+		traversals.push(declareTraversal(members, linkage, node, "Transform"))
 	return `[${traversals.join(", ")}]`
 }
 
@@ -460,10 +468,14 @@ interface UnitLinkage {
 class TraversalCompiler extends NodeCompiler {
 	readonly linkage: UnitLinkage
 
-	constructor(kind: TraversalKind, linkage: UnitLinkage) {
+	constructor(
+		kind: TraversalKind,
+		linkage: UnitLinkage,
+		requiresContext: boolean
+	) {
 		super({
-			kind: kind === "Optimistic" ? "Allows" : kind,
-			...(kind === "Optimistic" && { optimistic: true }),
+			kind,
+			requiresContext,
 			refs: linkage.refs,
 			errorContexts: linkage.errorContexts
 		})
@@ -489,7 +501,16 @@ class TraversalCompiler extends NodeCompiler {
 const traversalOf = (node: BaseNode, kind: TraversalKind): Fn =>
 	kind === "Allows" ? node.traverseAllows
 	: kind === "Apply" ? node.traverseApply
-	: (node as UnionNode).traverseOptimistic
+	: node.traverseTransform
+
+const transformedKinds = [
+	"alias",
+	"intersection",
+	"morph",
+	"sequence",
+	"structure",
+	"union"
+] as const satisfies NodeKind[]
 
 const declareTraversal = (
 	members: UnitMember[],
@@ -497,7 +518,11 @@ const declareTraversal = (
 	node: BaseNode,
 	kind: TraversalKind
 ): string => {
-	const js = new TraversalCompiler(kind, linkage).indent()
+	const js = new TraversalCompiler(
+		kind,
+		linkage,
+		kind !== "Transform" || node.transformRequiresContext
+	).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
 	members.push([name, `function ${js.write("")}`])

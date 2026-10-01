@@ -5,7 +5,6 @@ import {
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
-	unset,
 	type JsTypeOf,
 	type JsonStructure,
 	type SerializedPrimitive,
@@ -37,10 +36,10 @@ import {
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import {
-	Traversal,
-	type TraverseAllows,
-	type TraverseApply
+import type {
+	TraverseAllows,
+	TraverseApply,
+	TraverseTransform
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
@@ -173,18 +172,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.caseNodes
 	}
 
-	// mirrors the statements compileRootApply emits for a unit binding this union
-	createBranchedOptimisticRootApply(): BaseNode["rootApply"] {
-		return (data, onFail) => {
-			const optimisticResult = this.traverseOptimistic(data)
-			if (optimisticResult !== unset) return optimisticResult
-
-			const ctx = new Traversal(data, this.$.resolvedConfig)
-			this.traverseApply(data, ctx)
-			return ctx.finalize(onFail)
-		}
-	}
-
 	get shallowMorphs(): array<Morph> {
 		return this.branches.reduce(
 			(morphs, branch) => appendUnique(morphs, branch.shallowMorphs),
@@ -217,17 +204,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}
 
-	traverseOptimistic = (data: unknown): unknown => {
+	// Apply also takes the first valid branch
+	traverseTransform: TraverseTransform = (data, ctx) => {
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
-			if ((branch.traverseAllows as any)(data)) {
-				if (branch.contextFreeMorph) return branch.contextFreeMorph(data)
-				// if we're calling this function and the matching branch didn't have
-				// a context-free morph, it shouldn't have morphs at all
-				return data
-			}
+			if (branch.allows(data))
+				return branch.transforms ? ctx.transform(branch, data) : data
 		}
-		return unset
+		return data
 	}
 
 	get compiledDiscriminant(): Discriminant | null {
@@ -255,32 +239,28 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		const caseKeys = Object.keys(cases)
 
-		const { optimistic } = js
-		// only the first layer can be optimistic
-		js.optimistic = false
-
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
 				const caseCondition = k === "default" ? k : `case ${k}`
-
-				let caseResult: string
-				if (v === true) caseResult = optimistic ? "data" : "true"
-				else if (optimistic) {
-					if (v.rootApplyStrategy === "branchedOptimistic")
-						caseResult = js.invoke(v, { kind: "Optimistic" })
-					else if (v.contextFreeMorph)
-						caseResult = `${js.invoke(v)} ? ${js.ref(v.contextFreeMorph)}(data) : "${unset}"`
-					else caseResult = `${js.invoke(v)} ? data : "${unset}"`
-				} else caseResult = js.invoke(v)
-
+				const caseResult =
+					js.traversalKind === "Transform" ?
+						v !== true && v.transforms ?
+							js.invoke(v)
+						:	"data"
+					: v === true ? "true"
+					: js.invoke(v)
 				js.line(`${caseCondition}: return ${caseResult}`)
 			}
 			return js
 		})
 
 		if (js.traversalKind === "Allows") {
-			js.return(optimistic ? `"${unset}"` : false)
+			js.return(false)
+			return
+		}
+		if (js.traversalKind === "Transform") {
+			js.return("data")
 			return
 		}
 
@@ -333,23 +313,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			js.line(
 				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
 			)
+		} else if (js.traversalKind === "Allows") {
+			for (const branch of this.branches)
+				js.if(`${js.invoke(branch)}`, () => js.return(true))
+			js.return(false)
 		} else {
-			const { optimistic } = js
-			// only the first layer can be optimistic
-			js.optimistic = false
 			for (const branch of this.branches) {
-				js.if(`${js.invoke(branch)}`, () =>
-					js.return(
-						optimistic ?
-							branch.contextFreeMorph ?
-								`${js.ref(branch.contextFreeMorph)}(data)`
-							:	"data"
-						:	true
-					)
+				js.if(js.invoke(branch, { kind: "Allows" }), () =>
+					js.return(branch.transforms ? js.invoke(branch) : "data")
 				)
 			}
-
-			js.return(optimistic ? `"${unset}"` : false)
+			js.return("data")
 		}
 	}
 

@@ -69,6 +69,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		super(...args)
 		if ("default" in this.inner)
 			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
+		this.includesContextualMorph ||= this.defaultValueMorph?.length === 2
 	}
 
 	override get rawIn(): OptionalNode {
@@ -140,7 +141,7 @@ export const computeDefaultValueMorph = (
 		// if the value has a morph, pipe context through it
 		return value.includesTransform ?
 				(data, ctx) => {
-					traverseKey(key, () => value((data[key] = defaultInput()), ctx), ctx)
+					data[key] = traverseKey(key, () => value(defaultInput(), ctx), ctx)
 					return data
 				}
 			:	data => {
@@ -157,7 +158,7 @@ export const computeDefaultValueMorph = (
 	return hasDomain(precomputedMorphedDefault, "object") ?
 			// the type signature only allows this if the value was morphed
 			(data, ctx) => {
-				traverseKey(key, () => value((data[key] = defaultInput), ctx), ctx)
+				data[key] = traverseKey(key, () => value(defaultInput, ctx), ctx)
 				return data
 			}
 		:	data => {

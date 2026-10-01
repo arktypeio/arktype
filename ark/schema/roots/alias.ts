@@ -12,7 +12,11 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import type {
+	TraverseAllows,
+	TraverseApply,
+	TraverseTransform
+} from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
@@ -142,8 +146,19 @@ Resolution: ${printable(resolution)}`)
 		this.resolution.traverseApply(data, ctx)
 	}
 
+	traverseTransform: TraverseTransform = (data, ctx) =>
+		ctx.transformResolution(this.resolutionId, data, resolved =>
+			ctx.transform(this.resolution, resolved)
+		)
+
 	compile(js: NodeCompiler): void {
 		const id = this.resolutionId
+		if (js.traversalKind === "Transform") {
+			js.return(
+				`ctx.transformResolution("${id}", data, resolved => ctx.transform(${js.ref(this.resolution)}, resolved))`
+			)
+			return
+		}
 		const seen = `ctx.seen.${js.referenceToId(id)}`
 		js.if(`${seen} && ${seen}.includes(data)`, () => js.return(true))
 		js.if(`!${seen}`, () => js.line(`${seen} = []`))

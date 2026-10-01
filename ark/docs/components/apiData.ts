@@ -277,7 +277,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "- `\"delete\"` - clone and remove extra properties from output"
+                        "value": "- `\"delete\"` - remove extra properties from output"
                     }
                 ]
             ]
@@ -308,7 +308,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "- `\"delete\"` - clone and remove extra properties from output"
+                        "value": "- `\"delete\"` - remove extra properties from output"
                     }
                 ]
             ]
