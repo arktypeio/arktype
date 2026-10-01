@@ -58,6 +58,24 @@ contextualize(() => {
 			attest(T(getExtraneousB())).snap({ a: "ok" })
 		})
 
+		it("delete keys keeping a prototype", () => {
+			class Tagged {
+				tag = "a"
+				extra = 1
+			}
+			const T = type({ "+": "delete", tag: "string" })
+
+			const tagged = T.assert(new Tagged())
+			attest(tagged instanceof Tagged).equals(true)
+			attest({ ...tagged }).snap({ tag: "a" })
+
+			const nullProto = T.assert(
+				Object.assign(Object.create(null), { tag: "a", extra: 1 })
+			)
+			attest(Object.getPrototypeOf(nullProto)).equals(null)
+			attest({ ...nullProto }).snap({ tag: "a" })
+		})
+
 		it("applies shallowly", () => {
 			const T = type({
 				a: "string",
