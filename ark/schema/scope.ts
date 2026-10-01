@@ -675,13 +675,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (isNode(ctxOrNode)) return this.bindReference(ctxOrNode) as never
 
+		const hasPreassignedId = ctxOrNode.id !== undefined
+
 		const ctx = this.createParseContext(ctxOrNode)
 
 		const node = parseNode(ctx)
 
 		const bound = this.bindReference(node)
 
-		return (nodesByRegisteredId[ctx.id] = bound) as never
+		if (!hasPreassignedId) releaseUnusedContextId(ctx.id, bound)
+		else nodesByRegisteredId[ctx.id] = bound
+
+		return bound as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -694,15 +699,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(ctxInputOrNode, "root"))
 			return this.bindReference(ctxInputOrNode)
 
+		const hasPreassignedId = ctxInputOrNode.id !== undefined
 		const ctx = this.createParseContext(ctxInputOrNode)
-		nodesByRegisteredId[ctx.id] = ctx
 		let node = this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
 
 		// if the node is recursive e.g. { box: "this" }, we need to make sure it
 		// has the original id from context so that its references compile correctly
 		if (node.isCyclic) node = withId(node, ctx.id)
 
-		nodesByRegisteredId[ctx.id] = node
+		if (!hasPreassignedId) releaseUnusedContextId(ctx.id, node)
+		else nodesByRegisteredId[ctx.id] = node
 
 		return node
 	}
@@ -753,6 +759,15 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 	protected normalizeRootScopeValue(v: unknown): unknown {
 		return v
 	}
+}
+
+// each parse context gets a new id, because a nested definition can refer to
+// it (e.g. with "this"). if the result node does not use that id (e.g. the
+// node came from a cache), no node can refer to the id. remove it, so that the
+// global registry does not grow each time an equivalent type is parsed.
+const releaseUnusedContextId = (id: NodeId, node: BaseNode) => {
+	if (node.id === id) nodesByRegisteredId[id] = node
+	else delete nodesByRegisteredId[id]
 }
 
 // scope aliases are `$name` references, so can be skipped without a lookup
