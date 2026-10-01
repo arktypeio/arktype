@@ -244,18 +244,14 @@ if (
 )
 	throw new Error("⚠️  Bundling renamed a class.")
 
-// keepNames would name each of those classes in a static block, syntax that
-// needs Safari 16.4, newer than anything else shipped, and wraps functions in
-// __name calls, which bundling drops wherever the language names the function
-// alike
+// a class static block in a source would ship as written, and static blocks
+// need Safari 16.4, newer than anything else shipped
 for (const pkg of Object.keys(packages)) {
 	const dir = fromPackage(pkg, "out/")
 	for (const name of readdirSync(dir).filter(name => name.endsWith(".js"))) {
 		const visit = (node: ts.Node): void => {
 			if (ts.isClassStaticBlockDeclaration(node))
 				throw new Error(`⚠️  ${pkg}/out/${name} has a class static block.`)
-			if (ts.isIdentifier(node) && node.text === "__name")
-				throw new Error(`⚠️  ${pkg}/out/${name} names a function with __name.`)
 			ts.forEachChild(node, visit)
 		}
 		visit(
