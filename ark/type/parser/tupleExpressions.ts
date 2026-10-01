@@ -149,7 +149,7 @@ const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 }
 
 const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) =>
-	ctx.$.parseOwnDefinitionFormat(def[0], ctx).array()
+	ctx.$.parseOwnDefinitionFormat(def[0], ctx).rawArray()
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

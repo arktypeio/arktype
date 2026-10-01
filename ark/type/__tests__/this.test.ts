@@ -147,4 +147,52 @@ contextualize(() => {
 			AND: [{ name: "a" }, { OR: [{ name: "b" }] }]
 		})
 	})
+
+	it("intersected this[]", () => {
+		const T = type({ name: "string", "children?": "(this & object)[]" })
+
+		attest(T({ name: "a", children: [{ name: "b" }] })).snap({
+			name: "a",
+			children: [{ name: "b" }]
+		})
+		attest(T({ name: "a", children: [{ name: 5 }] }).toString()).snap(
+			"children[0].name must be a string (was a number)"
+		)
+	})
+
+	it("this array tuple expression", () => {
+		const T = type({ name: "string", "children?": ["this", "[]"] })
+
+		attest(T.t).type.toString.snap("{ name: string; children?: cyclic[] }")
+		attest(T({ name: "a", children: [{ name: 5 }] }).toString()).snap(
+			"children[0].name must be a string (was a number)"
+		)
+	})
+
+	it("Record of this", () => {
+		const T = type({ name: "string", "children?": "Record<string, this>" })
+
+		attest(T.t).type.toString.snap(
+			"{ name: string; children?: Record<string, cyclic> }"
+		)
+		attest(T({ name: "a", children: { b: { name: "b" } } })).snap({
+			name: "a",
+			children: { b: { name: "b" } }
+		})
+		attest(T({ name: "a", children: { b: { name: 5 } } }).toString()).snap(
+			"children.b.name must be a string (was a number)"
+		)
+	})
+
+	it("piped this", () => {
+		const T = type({
+			name: "string",
+			"child?": ["this", "=>", child => child]
+		})
+
+		attest(T.allows({ name: "a", child: { name: "b" } })).equals(true)
+		attest(T({ name: "a", child: { name: 5 } }).toString()).snap(
+			"child.name must be a string (was a number)"
+		)
+	})
 })

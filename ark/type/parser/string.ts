@@ -27,7 +27,7 @@ export const parseString = (
 
 	if (def.endsWith("[]")) {
 		const possibleElementResolution = ctx.$.maybeResolveRoot(def.slice(0, -2))
-		if (possibleElementResolution) return possibleElementResolution.array()
+		if (possibleElementResolution) return possibleElementResolution.rawArray()
 	}
 
 	const s = new RuntimeState(new Scanner(def), ctx)

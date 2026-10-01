@@ -708,12 +708,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {
-		// If this node contains an alias whose reference still points to an
-		// in-progress context node (e.g. `this[]` parsed before its enclosing
-		// type has finished), defer finalization. The enclosing parse will
-		// finalize once the context has been replaced with the resolved node.
-		// Gating on isCyclic skips the reference walk for non-cyclic roots,
-		// which are the overwhelming majority of finalize calls.
+		// a node referencing a `this` whose enclosing type is still being parsed,
+		// e.g. Record<string, this>, can't be resolved yet. the enclosing parse
+		// finalizes it once the context has been replaced with the resolved node.
 		if (node.isCyclic && hasUnresolvedContextAlias(node)) return node
 
 		bootstrapAliasReferences(node)
@@ -758,11 +755,7 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 }
 
-// Invariant: scope-named aliases are normalized to `$name` references (see
-// alias.ts `serialize` and the `$`-prefix branch in `_resolve`), while
-// synthetic `this` aliases use a bare context NodeId (see unenclosed.ts
-// `maybeParseReference`). The `$`-prefix carve-out skips scope aliases so
-// only synthetic `this` references can defer finalization here.
+// scope aliases are `$name` references, so can be skipped without a lookup
 const hasUnresolvedContextAlias = (node: BaseRoot): boolean =>
 	node.references.some(
 		ref =>
