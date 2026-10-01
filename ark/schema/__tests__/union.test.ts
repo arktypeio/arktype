@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, writeOrderedIntersectionMessage } from "@ark/schema"
+import {
+	Disjoint,
+	rootSchema,
+	writeOrderedIntersectionMessage
+} from "@ark/schema"
 
 contextualize(() => {
 	it("binary", () => {
@@ -95,5 +99,20 @@ contextualize(() => {
 		attest(() => L.and(R)).throws(
 			writeOrderedIntersectionMessage("string | number", "number | string")
 		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1645
+	it("disjoints stay Disjoints when map ignores Symbol.species (Hermes)", () => {
+		Object.defineProperty(Disjoint, Symbol.species, {
+			get: () => Array,
+			configurable: true
+		})
+		try {
+			const d = Disjoint.init("domain", "null", "undefined")
+			attest(d.withPrefixKey("a", "required") instanceof Disjoint).equals(true)
+			attest(d.invert() instanceof Disjoint).equals(true)
+		} finally {
+			delete (Disjoint as any)[Symbol.species]
+		}
 	})
 })

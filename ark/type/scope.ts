@@ -350,7 +350,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		new InternalScope(def, config)) as never
 
 	static module: ModuleParser = ((def: Dict, config: ArkScopeConfig = {}) =>
-		this.scope(def as never, config).export()) as never
+		InternalScope.scope(def as never, config).export()) as never
 }
 
 export const scope: ScopeParser = Object.assign(InternalScope.scope, {
