@@ -17,46 +17,25 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 	// are rebound in case they reference `this` (see https://x.com/colinhacks/status/1818422039210049985)
 	if (builtinConstructorName && builtinConstructorName !== "Array") return input
 
-	let cloned: any
-	let plainPrototype = false
-	if (Array.isArray(input)) cloned = input.slice()
-	else {
-		const proto = Object.getPrototypeOf(input)
-		cloned = Object.create(proto)
-		plainPrototype = proto === Object.prototype || proto === null
-	}
-
-	// behaves as defining Object.getOwnPropertyDescriptors(input) on cloned,
-	// after a deep clone has cloned their values in a for...in over them
-	const keys = Reflect.ownKeys(input)
-	const descriptors: (PropertyDescriptor | undefined)[] = []
-	for (let i = 0; i < keys.length; i++)
-		descriptors.push(Object.getOwnPropertyDescriptor(input, keys[i]))
+	const isArray = Array.isArray(input)
+	const proto = isArray ? null : Object.getPrototypeOf(input)
+	const cloned = isArray ? input.slice() : Object.create(proto)
+	const plainPrototype =
+		!isArray && (proto === Object.prototype || proto === null)
 
 	seen.set(input, cloned)
-	for (let i = 0; i < keys.length; i++) {
-		const desc = descriptors[i]
-		if (desc && typeof keys[i] === "string") cloneValue(desc, seen)
-	}
-	// that for...in would also visit enumerable keys added to
-	// Object.prototype that input doesn't shadow
-	for (const k in withoutOwnKeys) {
-		const i = keys.indexOf(k)
-		if (i === -1 || !descriptors[i])
-			cloneValue((withoutOwnKeys as any)[k], seen)
-	}
-
-	for (let i = 0; i < keys.length; i++) {
-		const k = keys[i]
-		const desc = descriptors[i]
+	for (const k of Reflect.ownKeys(input)) {
+		const desc = Object.getOwnPropertyDescriptor(input, k)
 		if (!desc) continue
-		if (!("get" in desc || "set" in desc) && desc.writable) {
+		if (!("get" in desc || "set" in desc)) {
+			if (typeof k === "string") desc.value = _clone(desc.value, seen)
 			// assigning defines a writable, enumerable, configurable value if k
 			// is an element slice copied to a builtin array, or if k is nowhere
 			// on cloned's prototype chain and its prototype is Object.prototype
 			// or null. Any other prototype could be exotic, like a Proxy, whose
 			// traps would see the `in` and decide what the assignment stores
 			if (
+				desc.writable &&
 				desc.enumerable &&
 				desc.configurable &&
 				(plainPrototype ?
@@ -70,6 +49,7 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 			// slice already copied this writable length, so defining it is a no-op
 			if (
 				k === "length" &&
+				desc.writable &&
 				Array.isArray(cloned) &&
 				desc.value === cloned.length
 			)
@@ -79,14 +59,4 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 	}
 
 	return cloned
-}
-
-// for...in over it visits only enumerable keys inherited from Object.prototype
-const withoutOwnKeys = {}
-
-const cloneValue = (
-	desc: PropertyDescriptor,
-	seen: Map<unknown, unknown>
-): void => {
-	if (!("get" in desc || "set" in desc)) desc.value = _clone(desc.value, seen)
 }
