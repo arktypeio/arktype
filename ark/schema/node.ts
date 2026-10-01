@@ -145,7 +145,6 @@ export abstract class BaseNode<
 		this.includesContextualPredicate =
 			this.hasKind("predicate") && this.inner.predicate.length !== 1
 
-		// optional and sequence nodes add contextual defaults once computed
 		this.includesContextualMorph =
 			this.hasKind("morph") &&
 			this.inner.morphs.some(morph => isNode(morph) || morph.length !== 1)
@@ -179,7 +178,7 @@ export abstract class BaseNode<
 	}
 
 	private _transforms: boolean | undefined
-	// includesTransform doesn't see through an alias, which may resolve to one
+	// includesTransform doesn't see an alias's resolution, final once its scope resolves
 	get transforms(): boolean {
 		if (this._transforms !== undefined) return this._transforms
 		let transforms = this.includesTransform
@@ -194,11 +193,9 @@ export abstract class BaseNode<
 				if (transforms) break
 			}
 		}
-		// until its scope is resolved, an alias may resolve differently
 		return this.$.resolved ? (this._transforms = transforms) : transforms
 	}
 
-	// ctx carries the path a contextual morph reads and an alias's outputs
 	get transformRequiresContext(): boolean {
 		return (
 			this.transforms && (this.includesContextualMorph || this.includesAlias)
@@ -368,7 +365,6 @@ export abstract class BaseNode<
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
-	// declared, not abstract, since only kinds that can transform data have one
 	declare traverseTransform: TraverseTransform<d["prerequisite"]>
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void

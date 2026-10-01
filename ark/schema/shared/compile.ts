@@ -147,7 +147,6 @@ export interface ReferenceOptions {
 
 export interface TransformKeyOptions {
 	keyExpression?: string
-	// e.g. an optional key being present
 	condition?: string
 	onChange?: () => unknown
 }
@@ -273,7 +272,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return this
 	}
 
-	// without ctx, errors children return are gathered until all have run
 	initializeTransform(): this {
 		return this.requiresContext ?
 				this.initializeErrorCount()
