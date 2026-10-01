@@ -69,7 +69,11 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
 						stringifyUnquoted(o, opts?.indent ?? 0, "")
-					:	JSON.stringify(_serialize(o, printableOpts, []), null, opts?.indent)
+					:	JSON.stringify(
+							_serialize(o, printableOpts, []),
+							null,
+							opts?.indent
+						).replace(quotedBigIntMarker, "$1")
 				:	stringifyUnquoted(o, opts?.indent ?? 0, "")
 			)
 		case "symbol":
@@ -128,8 +132,16 @@ const stringifyUnquoted = (
 const printableOpts = {
 	onCycle: () => "(cycle)",
 	onSymbol: v => `Symbol(${register(v)})`,
-	onFunction: v => `Function(${register(v)})`
+	onFunction: v => `Function(${register(v)})`,
+	// prefix bigints with a marker so printable can strip the quotes
+	// JSON.stringify adds, e.g. [1n] rather than ["1n"]
+	onBigInt: n => `${bigIntMarker}${n}n`
 } satisfies SerializationOptions
+
+// private use character that JSON.stringify leaves unescaped
+const bigIntMarker = "\uE000"
+
+const quotedBigIntMarker = new RegExp(`"${bigIntMarker}(-?\\d+n)"`, "g")
 
 const _serialize = (
 	data: unknown,
