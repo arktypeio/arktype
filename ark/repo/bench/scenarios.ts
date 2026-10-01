@@ -23,8 +23,6 @@ import { scope, type } from "arktype"
 import * as v from "valibot"
 import { z } from "zod"
 
-export type Library = "arktype" | "zod" | "valibot"
-
 const code = /^[A-Z]{3}-\d{4}$/
 
 // https://github.com/moltar/typescript-runtime-type-benchmarks
