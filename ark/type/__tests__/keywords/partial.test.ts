@@ -75,4 +75,19 @@ contextualize(() => {
 			"ParseError: A postfix required element cannot follow an optional or defaultable element"
 		)
 	})
+
+	it("tuple with defaultable", () => {
+		// the prefix can only become optional if the defaultable after it does too
+		const T = type(["string", "number = 5"]).partial()
+
+		attest(T.expression).snap("[string?, number?]")
+		attest(T([])).equals([])
+	})
+
+	it("Partial generic on a tuple", () => {
+		const T = scope({ tuple: ["string", "number"] }).type("Partial<tuple>")
+
+		attest<[string?, number?]>(T.t)
+		attest(T.expression).snap("[string?, number?]")
+	})
 })

@@ -63,4 +63,17 @@ contextualize(() => {
 		attest<[]>(T.t)
 		attest(T.expression).snap("[]")
 	})
+
+	it("tuple with defaultable", () => {
+		const T = type(["string", "number = 5"]).required()
+
+		attest(T.expression).snap("[string, number]")
+	})
+
+	it("Required generic on a tuple", () => {
+		const T = scope({ tuple: ["string", "number?"] }).type("Required<tuple>")
+
+		attest<[string, number]>(T.t)
+		attest(T.expression).snap("[string, number]")
+	})
 })
