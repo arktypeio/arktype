@@ -3,16 +3,19 @@ import type { RootSchema } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { isArkErrorResult } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
 	type RootKind
 } from "../shared/implement.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
-import type {
-	Traversal,
-	TraverseAllows,
-	TraverseApply
+import {
+	TransformErrors,
+	type Traversal,
+	type TraverseAllows,
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
@@ -148,12 +151,47 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			if (!this.introspectableIn) return
-			js.return(js.invoke(this.introspectableIn))
+			js.return(this.introspectableIn ? js.invoke(this.introspectableIn) : true)
 			return
 		}
+		if (js.traversalKind === "Transform") return this.compileTransform(js)
 		if (this.introspectableIn) js.line(js.invoke(this.introspectableIn))
 		js.line(`ctx.queueMorphs([${this.morphs.map(morph => js.ref(morph))}])`)
+	}
+
+	private compileTransform(js: NodeCompiler): void {
+		let result = "data"
+		if (this.introspectableIn?.transforms) {
+			js.initializeTransform()
+				.transformKey("transformedIn", "data", this.introspectableIn)
+				.returnIfTransformFailed()
+			result = "transformedIn"
+		}
+		for (let i = 0; i < this.morphs.length; i++) {
+			const morph = this.morphs[i]
+			const morphed = `morphed${i}`
+			if (hasArkKind(morph, "root")) {
+				js.const(morphed, `ctx.pipe(${js.ref(morph)}, ${result})`).if(
+					`${morphed} === ctx.errors`,
+					() => js.return("data")
+				)
+			} else {
+				const args = morph.length === 1 ? result : `${result}, ctx`
+				if (morph.length !== 1) js.line(`ctx.receive(${result})`)
+				js.const(morphed, `${js.ref(morph)}(${args})`).if(
+					`${js.ref(isArkErrorResult)}(${morphed})`,
+					() =>
+						js.requiresContext ?
+							js
+								.line(`ctx.receive(${result})`)
+								.line(`ctx.addMorphErrors(${morphed})`)
+								.return("data")
+						:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
+				)
+			}
+			result = morphed
+		}
+		js.return(result)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
@@ -162,6 +200,30 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (this.introspectableIn) this.introspectableIn.traverseApply(data, ctx)
 		ctx.queueMorphs(this.morphs)
+	}
+
+	traverseTransform: TraverseTransform = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
+		let result =
+			this.introspectableIn?.transforms ?
+				ctx.transform(this.introspectableIn, data)
+			:	data
+		if (ctx.currentErrorCount > errorCount) return data
+		for (const morph of this.morphs) {
+			if (hasArkKind(morph, "root")) {
+				result = ctx.pipe(morph, result)
+				if (result === ctx.errors) return data
+				continue
+			}
+			ctx.receive(result)
+			const morphed = morph(result as never, ctx as never)
+			if (isArkErrorResult(morphed)) {
+				ctx.addMorphErrors(morphed)
+				return data
+			}
+			result = morphed
+		}
+		return result
 	}
 
 	/** Check if the morphs of r are equal to those of this node */

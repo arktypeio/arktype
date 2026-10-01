@@ -227,26 +227,6 @@ contextualize(() => {
 		})
 	})
 
-	it("clone", () => {
-		withConfig({ clone: false }, () => {
-			const { userForm } = type.module({
-				userForm: {
-					age: "string.numeric.parse"
-				}
-			})
-
-			const formData = {
-				age: "42"
-			}
-
-			const out = userForm(formData)
-
-			// the original object's age key is now a number
-			attest(formData.age).unknown.equals(42)
-			attest(formData).unknown.equals(out)
-		})
-	})
-
 	it("docs actual example", () => {
 		// avoid logging "was supersecret" for password
 		const Password = type("string >= 8", "@", { actual: () => "" })

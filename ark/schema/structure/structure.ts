@@ -10,7 +10,6 @@ import {
 	WeakCache,
 	type array,
 	type describe,
-	type dict,
 	type Key,
 	type listable
 } from "@ark/util"
@@ -33,11 +32,13 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	copyOf,
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,
 	type TraverseAllows,
-	type TraverseApply
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -54,7 +55,7 @@ import { arrayIndexMatcher } from "./shared.ts"
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
  * - `"reject"` - disallow extra properties
- * - `"delete"` - clone and remove extra properties from output
+ * - `"delete"` - remove extra properties from output
  */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
@@ -521,6 +522,84 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return true
 	}
 
+	traverseTransform: TraverseTransform<object> = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
+		let out: any =
+			this.sequence?.transforms ? ctx.transform(this.sequence, data) : data
+		const transformKey = (k: Key, node: BaseRoot) => {
+			const value = data[k as never]
+			const transformed = traverseKey(k, () => ctx.transform(node, value), ctx)
+			if (transformed === value) return
+			if (out === data) out = copyOf(data)
+			out[k] = transformed
+		}
+		for (let i = 0; i < this.props.length; i++) {
+			const { key, value } = this.props[i]
+			if (value.transforms && key in data) transformKey(key, value)
+		}
+		if (this.index) {
+			const keys = ownKeysOf(data)
+			for (let i = 0; i < keys.length; i++) {
+				for (const node of this.index) {
+					if (node.value.transforms && node.signature.allows(keys[i]))
+						transformKey(keys[i], node.value)
+				}
+			}
+		}
+		if (ctx.currentErrorCount > errorCount) return data
+		return this.applyStructuralMorph(data, out, ctx)
+	}
+
+	applyStructuralMorph(data: any, out: any, ctx: InternalTraversal): object {
+		for (const node of this.defaultable) {
+			if (node.key in data) continue
+			if (out === data) out = copyOf(data)
+			node.defaultValueMorph(out as never, ctx as never)
+		}
+		const sequence = this.sequence
+		if (
+			sequence?.defaultables &&
+			data.length < sequence.prefixLength + sequence.defaultablesLength
+		) {
+			if (out === data) out = copyOf(data)
+			for (
+				let i = data.length - sequence.prefixLength;
+				i < sequence.defaultables.length;
+				i++
+			)
+				sequence.defaultValueMorphs[i](out as never, ctx as never)
+		}
+		if (
+			this.undeclared !== "delete" ||
+			(out === data && !this.hasUndeclaredKey(data))
+		)
+			return out
+		if (Object.getPrototypeOf(out) !== Object.prototype)
+			return this.deleteUndeclared(out === data ? copyOf(data) : out)
+		const result: any = {}
+		for (const prop of this.props)
+			if (prop.key in out) result[prop.key] = out[prop.key]
+		if (this.index) {
+			for (const k of ownKeysOf(out))
+				if (!(k in this.propsByKey) && this.declaresKey(k)) result[k] = out[k]
+		}
+		return result
+	}
+
+	private hasUndeclaredKey(data: object): boolean {
+		for (const k in data) if (!this.declaresKey(k)) return true
+		for (const k of Object.getOwnPropertySymbols(data))
+			if (!this.declaresKey(k)) return true
+		return false
+	}
+
+	private deleteUndeclared(copy: any): object {
+		for (const k in copy) if (!this.declaresKey(k)) delete copy[k]
+		for (const k of Object.getOwnPropertySymbols(copy))
+			if (!this.declaresKey(k)) delete copy[k]
+		return copy
+	}
+
 	readonly defaultable: Optional.Node.withDefault[] =
 		this.optional?.filter(o => o.hasDefault()) ?? []
 
@@ -531,9 +610,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			typeof k === "string" &&
 			arrayIndexMatcher.test(k))
 
-	_compileDeclaresKey(js: NodeCompiler): string {
+	_compileDeclaresKey(js: NodeCompiler, includeProps = true): string {
 		const parts: string[] = []
-		if (this.props.length) parts.push(`k in ${js.ref(this.propsByKey)}`)
+		if (includeProps && this.props.length)
+			parts.push(`k in ${js.ref(this.propsByKey)}`)
 
 		if (this.index) {
 			for (const index of this.index)
@@ -554,6 +634,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	readonly structuralMorph: Morph | undefined = getPossibleMorph(this)
 
 	compile(js: NodeCompiler): unknown {
+		if (js.traversalKind === "Transform") return this.compileTransform(js)
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
 		for (const prop of this.props) {
@@ -567,9 +648,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			js.const("keys", "Object.keys(data)")
-			js.const("symbols", "Object.getOwnPropertySymbols(data)")
-			js.if("symbols.length", () => js.line("keys.push(...symbols)"))
+			compileOwnKeys(js, "data")
 			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
 		}
 
@@ -579,12 +658,172 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.structuralMorph) {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
-			js.if("ctx && !ctx.hasError()", () => {
-				js.line(`ctx.queueMorphs([`)
-				precompileMorphs(js, this)
-				return js.line("])")
+			js.if("ctx && !ctx.hasError()", () =>
+				js.line(`ctx.queueMorphs([${js.ref(this.structuralMorph!)}])`)
+			)
+		}
+	}
+
+	private compileTransform(js: NodeCompiler): void {
+		const transformedProps = this.props.filter(prop => prop.value.transforms)
+		const transformedIndex =
+			this.index?.filter(index => index.value.transforms) ?? []
+		const deletes = this.undeclared === "delete"
+		const transformsChildren =
+			transformedProps.length !== 0 ||
+			transformedIndex.length !== 0 ||
+			this.sequence?.transforms
+		if (transformsChildren) js.initializeTransform()
+		js.line("let out = data")
+		if (this.sequence?.transforms) {
+			js.transformKey("transformedSequence", "data", this.sequence, {
+				onChange: () => js.line("out = transformedSequence")
 			})
 		}
+		for (let i = 0; i < transformedProps.length; i++) {
+			const { key, serializedKey, optional, value } = transformedProps[i]
+			js.transformKey(`value${i}`, `data${js.prop(key)}`, value, {
+				keyExpression: serializedKey,
+				...(optional && { condition: `${serializedKey} in data` }),
+				// a deleting structure stores each value as it builds its output
+				...(!deletes && {
+					onChange: () =>
+						this.compileCopy(js).line(`out${js.prop(key)} = value${i}`)
+				})
+			})
+		}
+		if (transformedIndex.length) {
+			js.block("", () =>
+				compileOwnKeys(js, "data").for("i < keys.length", () => {
+					js.const("k", "keys[i]")
+					for (const index of transformedIndex) {
+						js.if(
+							js.invoke(index.signature, { arg: "k", kind: "Allows" }),
+							() =>
+								js.transformKey("value", "data[k]", index.value, {
+									keyExpression: "k",
+									onChange: () => this.compileCopy(js).line("out[k] = value")
+								})
+						)
+					}
+					return js
+				})
+			)
+		}
+		if (transformsChildren) js.returnIfTransformFailed()
+		if (deletes) return this.compileDeleteTransform(js, transformedProps)
+		for (const node of this.defaultable) {
+			js.if(`!(${node.serializedKey} in data)`, () =>
+				this.compileCopy(js).line(compileDefault(js, node, "out"))
+			)
+		}
+		this.compileSequenceDefaults(js)
+		js.return("out")
+	}
+
+	private compileCopy(js: NodeCompiler): NodeCompiler {
+		return js.if("out === data", () =>
+			js.line(
+				this.sequence ? "out = data.slice()" : (
+					`out = Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
+				)
+			)
+		)
+	}
+
+	private compileSequenceDefaults(js: NodeCompiler): void {
+		const sequence = this.sequence
+		if (!sequence?.defaultables) return
+		const args =
+			sequence.defaultValueMorphs.some(morph => morph.length !== 1) ?
+				"out, ctx"
+			:	"out"
+		js.if(
+			`data.length < ${sequence.prefixLength + sequence.defaultablesLength}`,
+			() =>
+				this.compileCopy(js).for(
+					`i < ${sequence.defaultables!.length}`,
+					() => js.line(`${js.ref(sequence.defaultValueMorphs)}[i](${args})`),
+					`data.length - ${sequence.prefixLength}`
+				)
+		)
+	}
+
+	// only a plain object is rebuilt as a literal, which can't keep a prototype
+	private compileDeleteTransform(
+		js: NodeCompiler,
+		transformedProps: Prop.Node[]
+	): void {
+		const unchanged = [
+			"out === data",
+			...transformedProps.map(
+				(prop, i) => `value${i} === data${js.prop(prop.key)}`
+			),
+			...this.defaultable.map(node => `${node.serializedKey} in data`)
+		]
+		if (this.sequence?.defaultables) {
+			unchanged.push(
+				`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
+			)
+		}
+		const stringKeys = this.props.filter(prop => typeof prop.key === "string")
+		js.block(`undeclared: if (${unchanged.join(" && ")})`, () => {
+			js.forIn("data", () => {
+				if (stringKeys.length) {
+					js.block("switch (k)", () =>
+						js.line(
+							`${stringKeys.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
+						)
+					)
+				}
+				return js.if(`!(${this._compileDeclaresKey(js, false)})`, () =>
+					js.line("break undeclared")
+				)
+			})
+			js.block("for (const k of Object.getOwnPropertySymbols(data))", () =>
+				js.if(`!(${this._compileDeclaresKey(js)})`, () =>
+					js.line("break undeclared")
+				)
+			)
+			return js.return("data")
+		})
+		js.if("Object.getPrototypeOf(data) !== Object.prototype", () => {
+			for (let i = 0; i < transformedProps.length; i++) {
+				const { key } = transformedProps[i]
+				js.if(`value${i} !== data${js.prop(key)}`, () =>
+					this.compileCopy(js).line(`out${js.prop(key)} = value${i}`)
+				)
+			}
+			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
+		})
+		const valueOf = (prop: Prop.Node) => {
+			const i = transformedProps.indexOf(prop)
+			return i === -1 ? `out${js.prop(prop.key)}` : `value${i}`
+		}
+		const requiredEntries = this.props
+			.filter(prop => prop.required)
+			.map(prop => `${literalKeyOf(js, prop)}: ${valueOf(prop)}`)
+		js.const("result", `{ ${requiredEntries.join(", ")} }`)
+		for (const prop of this.props) {
+			if (prop.required) continue
+			const store = `result${js.prop(prop.key)} = ${valueOf(prop)}`
+			if (prop.hasKind("optional") && prop.hasDefault()) {
+				js.if(`${prop.serializedKey} in data`, () => js.line(store)).else(() =>
+					js.line(compileDefault(js, prop, "result"))
+				)
+			} else js.if(`${prop.serializedKey} in data`, () => js.line(store))
+		}
+		if (this.index) {
+			compileOwnKeys(js, "out").for("i < keys.length", () =>
+				js
+					.const("k", "keys[i]")
+					.if(
+						`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js, false)})`,
+						() => js.line("result[k] = out[k]")
+					)
+			)
+		}
+		js.return("result")
 	}
 
 	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
@@ -662,63 +901,40 @@ const getPossibleMorph = (
 	const cached = defaultableMorphsCache.get(cacheKey)
 	if (cached) return cached
 
-	const $arkStructuralMorph: Morph<any> = (data, ctx) => {
-		for (let i = 0; i < node.defaultable.length; i++) {
-			if (!(node.defaultable[i].key in data))
-				node.defaultable[i].defaultValueMorph(data as never, ctx)
-		}
-
-		if (node.sequence?.defaultables) {
-			for (
-				let i = data.length - node.sequence.prefixLength;
-				i < node.sequence.defaultables.length;
-				i++
-			)
-				node.sequence.defaultValueMorphs[i](data as never, ctx)
-		}
-
-		if (node.undeclared === "delete")
-			for (const k in data) if (!node.declaresKey(k)) delete (data as dict)[k]
-
-		return data
-	}
+	const $arkStructuralMorph: Morph<any> = (data, ctx) =>
+		(node as Structure.Node).applyStructuralMorph(data, data, ctx)
 
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
-const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
-	const requiresContext =
-		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
-		node.sequence?.defaultValueMorphs.some(morph => morph.length === 2)
+const compileDefault = (
+	js: NodeCompiler,
+	node: Optional.Node.withDefault,
+	out: string
+): string =>
+	node.value.includesTransform ?
+		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 1 ? "" : ", ctx"})`
+	: typeof node.default === "function" ?
+		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
+	:	`${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
 
-	const args = `(data${requiresContext ? ", ctx" : ""})`
+// computed if __proto__, which would otherwise set the literal's prototype
+const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
+	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]`
+	: prop.key === "__proto__" ? `[${prop.serializedKey}]`
+	: prop.serializedKey
 
-	return js.block(`${args} => `, js => {
-		for (let i = 0; i < node.defaultable.length; i++) {
-			const { serializedKey, defaultValueMorph } = node.defaultable[i]
-			js.if(`!(${serializedKey} in data)`, js =>
-				js.line(`${js.ref(defaultValueMorph)}${args}`)
-			)
-		}
+const compileOwnKeys = (js: NodeCompiler, object: string): NodeCompiler =>
+	js
+		.const("keys", `Object.keys(${object})`)
+		.const("symbols", `Object.getOwnPropertySymbols(${object})`)
+		.if("symbols.length", () => js.line("keys.push(...symbols)"))
 
-		if (node.sequence?.defaultables) {
-			js.for(
-				`i < ${node.sequence.defaultables.length}`,
-				js => js.line(`${js.ref(node.sequence!.defaultValueMorphs)}[i]${args}`),
-				`data.length - ${node.sequence.prefixLength}`
-			)
-		}
-
-		if (node.undeclared === "delete") {
-			js.forIn("data", js =>
-				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
-					js.line(`delete data[k]`)
-				)
-			)
-		}
-
-		return js.return("data")
-	})
+const ownKeysOf = (data: object): Key[] => {
+	const keys: Key[] = Object.keys(data)
+	const symbols = Object.getOwnPropertySymbols(data)
+	if (symbols.length) keys.push(...symbols)
+	return keys
 }
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>

@@ -1,5 +1,12 @@
-import { ReadonlyPath, stringifyPath, type array } from "@ark/util"
+import {
+	ReadonlyPath,
+	isArray,
+	noSuggest,
+	stringifyPath,
+	type array
+} from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
+import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
@@ -7,6 +14,7 @@ import {
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput,
+	type ArkErrorResult,
 	type NodeErrorContextInput
 } from "./errors.ts"
 import { isNode } from "./utils.ts"
@@ -58,9 +66,17 @@ export class Traversal {
 	queuedMorphs: MorphsAtPath[] = []
 	branches: BranchTraversal[] = []
 	seen: { [id in string]?: unknown[] } = {}
+	transformedByResolutionId:
+		| { [id in string]?: Map<unknown, unknown> }
+		| undefined
+
+	// data is read from what a morph received, since root is the input
+	private received: unknown
+	private receivedDepth = 0
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.root = root
+		this.received = root
 		this.config = config
 	}
 
@@ -70,8 +86,9 @@ export class Traversal {
 	 * ✅ extracted from {@link root} at {@link path}
 	 */
 	get data(): unknown {
-		let result: any = this.root
-		for (const segment of this.path) result = result?.[segment]
+		let result: any = this.received
+		for (let i = this.receivedDepth; i < this.path.length; i++)
+			result = result?.[this.path[i]]
 
 		return result
 	}
@@ -165,6 +182,93 @@ export class Traversal {
 		return this.root
 	}
 
+	/** @internal */
+	receive(data: unknown): void {
+		this.received = data
+		this.receivedDepth = this.path.length
+	}
+
+	/** @internal */
+	transform(node: BaseNode, data: unknown): unknown {
+		const result = node.traverseTransform(data, this)
+		if (!(result instanceof TransformErrors)) return result
+		this.addTransformErrors(result)
+		return data
+	}
+
+	/** @internal */
+	pipe(node: BaseNode, data: unknown): unknown {
+		if (node.allows(data)) {
+			if (!node.transforms) return data
+			const errorCount = this.currentErrorCount
+			const result = this.transform(node, data)
+			return this.currentErrorCount > errorCount ? this.errors : result
+		}
+		this.receive(data)
+		node.traverseApply(data, this)
+		this.queuedMorphs = []
+		return this.errors
+	}
+
+	/** @internal */
+	addMorphErrors(result: ArkErrorResult): void {
+		if (result instanceof ArkError) this.errors.add(result)
+		else this.errors.merge(result)
+	}
+
+	/** @internal */
+	addTransformErrors(errors: TransformErrors, key?: PropertyKey): void {
+		const path = this.path
+		for (const { reversedPath, result, data } of errors.entries) {
+			this.path = [...path]
+			if (key !== undefined) this.path.push(key)
+			for (let i = reversedPath.length - 1; i >= 0; i--)
+				this.path.push(reversedPath[i])
+			this.receive(data)
+			this.addMorphErrors(result)
+		}
+		this.path = path
+	}
+
+	/** @internal */
+	transformResolution(
+		id: string,
+		data: unknown,
+		transform: (data: unknown) => unknown
+	): unknown {
+		const transformed = ((this.transformedByResolutionId ??= {})[id] ??=
+			new Map())
+		if (transformed.has(data)) {
+			const result = transformed.get(data)
+			if (result !== transforming) return result
+			// a cycle reached data, so its output will fill this placeholder
+			const placeholder =
+				isArray(data) ? [] : Object.create(Object.getPrototypeOf(data))
+			transformed.set(data, placeholder)
+			return placeholder
+		}
+		if (typeof data !== "object" || data === null) {
+			const result = transform(data)
+			transformed.set(data, result)
+			return result
+		}
+		transformed.set(data, transforming)
+		const result = transform(data)
+		const placeholder = transformed.get(data)
+		if (
+			placeholder === transforming ||
+			typeof result !== "object" ||
+			result === null
+		) {
+			transformed.set(data, result)
+			return result
+		}
+		return Object.defineProperties(
+			placeholder as object,
+			Object.getOwnPropertyDescriptors(result)
+		)
+	}
+
 	get currentErrorCount(): number {
 		return (
 			this.currentBranch ?
@@ -251,11 +355,10 @@ export class Traversal {
 			// in case previous operations modified this.path
 			this.path = [...path]
 			const morphIsNode = isNode(morph)
+			const data = parent === undefined ? this.root : parent[key!]
+			this.receive(data)
 
-			const result = morph(
-				(parent === undefined ? this.root : parent[key!]) as never,
-				this
-			)
+			const result = morph(data as never, this)
 
 			if (result instanceof ArkError) {
 				// if an ArkError was returned, ensure it has been added to errors
@@ -288,6 +391,41 @@ export class Traversal {
 	}
 }
 
+const transforming = noSuggest("transforming")
+
+// paths are reversed so each object an error passes through pushes its key
+export class TransformErrors {
+	entries: TransformErrors.Entry[]
+
+	constructor(result: ArkErrorResult, data: unknown) {
+		this.entries = [{ reversedPath: [], result, data }]
+	}
+
+	addTo(
+		gathered: TransformErrors | undefined,
+		key?: PropertyKey
+	): TransformErrors {
+		if (key !== undefined)
+			for (const entry of this.entries) entry.reversedPath.push(key)
+		if (!gathered) return this
+		gathered.entries.push(...this.entries)
+		return gathered
+	}
+}
+
+export declare namespace TransformErrors {
+	export interface Entry {
+		reversedPath: PropertyKey[]
+		result: ArkErrorResult
+		data: unknown
+	}
+}
+
+export const copyOf = (data: object): object =>
+	isArray(data) ?
+		data.slice()
+	:	Object.setPrototypeOf({ ...data }, Object.getPrototypeOf(data))
+
 export const traverseKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
@@ -305,7 +443,7 @@ export const traverseKey = <result>(
 export type TraversalMethodsByKind<input = unknown> = {
 	Allows: TraverseAllows<input>
 	Apply: TraverseApply<input>
-	Optimistic: TraverseApply<input>
+	Transform: TraverseTransform<input>
 }
 
 export type TraversalKind = keyof TraversalMethodsByKind & {}
@@ -319,3 +457,8 @@ export type TraverseApply<data = unknown> = (
 	data: data,
 	ctx: InternalTraversal
 ) => void
+
+export type TraverseTransform<data = unknown> = (
+	data: data,
+	ctx: InternalTraversal
+) => unknown

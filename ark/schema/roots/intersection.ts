@@ -37,7 +37,11 @@ import {
 	type RefinementKind,
 	type StructuralKind
 } from "../shared/implement.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import type {
+	TraverseAllows,
+	TraverseApply,
+	TraverseTransform
+} from "../shared/traversal.ts"
 import {
 	hasArkKind,
 	isNode,
@@ -276,10 +280,18 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		}
 	}
 
+	traverseTransform: TraverseTransform = (data, ctx) =>
+		ctx.transform(this.structure!, data)
+
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			for (const child of this.children) js.check(child)
 			js.return(true)
+			return
+		}
+		// only a structure can transform an intersection's data
+		if (js.traversalKind === "Transform") {
+			js.return(js.invoke(this.structure!))
 			return
 		}
 

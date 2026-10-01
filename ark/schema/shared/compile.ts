@@ -10,7 +10,7 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import { registeredReference } from "./registry.ts"
-import type { TraversalKind } from "./traversal.ts"
+import { TransformErrors, type TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
@@ -145,10 +145,17 @@ export interface ReferenceOptions {
 	kind?: TraversalKind
 }
 
+export interface TransformKeyOptions {
+	keyExpression?: string
+	// e.g. an optional key being present
+	condition?: string
+	onChange?: () => unknown
+}
+
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
-		optimistic?: true
+		requiresContext?: boolean
 		refs?: Refs
 		errorContexts?: ErrorContexts
 	}
@@ -160,26 +167,33 @@ export declare namespace NodeCompiler {
 
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
-	optimistic: boolean
+	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
 	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
-		this.optimistic = ctx.optimistic === true
+		this.requiresContext = ctx.requiresContext ?? true
 		this.refs = ctx.refs
 		this.errorContexts = ctx.errorContexts
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
+		const kind = opts?.kind ?? this.traversalKind
+		// its predicates' errors go to a Traversal of its own rather than ctx
+		if (
+			typeof node !== "string" &&
+			this.traversalKind === "Transform" &&
+			kind === "Allows" &&
+			node.allowsRequiresContext
+		)
+			return `${this.ref(node)}.allows(${arg})`
 		const requiresContext =
-			typeof node === "string" ? true : this.requiresContextFor(node)
+			typeof node === "string" ? true : this.requiresContextFor(node, kind)
 		const id = typeof node === "string" ? node : node.id
-		const reference = this.referenceToId(id, {
-			kind: opts?.kind ?? this.traversalKind
-		})
+		const reference = this.referenceToId(id, { kind })
 		if (requiresContext) return `${reference}(${arg}, ${this.ctx})`
 
 		return `${reference}(${arg})`
@@ -205,8 +219,13 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return `errorContexts[${this.errorContexts.push(errorContext) - 1}]`
 	}
 
-	requiresContextFor(node: BaseNode): boolean {
-		return this.traversalKind === "Apply" || node.allowsRequiresContext
+	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
+		return (
+			this.traversalKind === "Apply" ||
+			(kind === "Transform" ?
+				node.transformRequiresContext
+			:	node.allowsRequiresContext)
+		)
 	}
 
 	initializeErrorCount(): this {
@@ -252,6 +271,57 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (requiresContext) this.line(`${this.ctx}.path.pop()`)
 
 		return this
+	}
+
+	// without ctx, errors children return are gathered until all have run
+	initializeTransform(): this {
+		return this.requiresContext ?
+				this.initializeErrorCount()
+			:	this.line("let failed")
+	}
+
+	transformKey(
+		name: string,
+		accessExpression: string,
+		node: BaseNode,
+		opts?: TransformKeyOptions
+	): this {
+		const keyExpression = opts?.keyExpression
+		const pushesKey =
+			keyExpression !== undefined && node.transformRequiresContext
+		const assign = (assignee: string) => {
+			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
+			this.line(`${assignee} = ${this.invoke(node, { arg: accessExpression })}`)
+			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
+		}
+		if (opts?.condition) {
+			this.line(`let ${name} = ${accessExpression}`)
+			this.if(opts.condition, () => assign(name))
+		} else assign(`const ${name}`)
+		const onChange = (): this => {
+			opts?.onChange?.()
+			return this
+		}
+		return this.if(`${name} !== ${accessExpression}`, () => {
+			if (node.transformRequiresContext) return onChange()
+			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
+			this.if(
+				`typeof ${name} === "object" && ${name} instanceof ${this.ref(TransformErrors)}`,
+				() =>
+					this.line(
+						this.requiresContext ?
+							`${this.ctx}.addTransformErrors(${name}${key})`
+						:	`failed = ${name}.addTo(failed${key})`
+					)
+			)
+			return opts?.onChange ? this.else(onChange) : this
+		})
+	}
+
+	returnIfTransformFailed(): this {
+		return this.requiresContext ?
+				this.if("ctx.currentErrorCount > errorCount", () => this.return("data"))
+			:	this.if("failed", () => this.return("failed"))
 	}
 
 	check(node: BaseNode, opts?: InvokeOptions): this {

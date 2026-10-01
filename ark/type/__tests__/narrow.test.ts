@@ -303,9 +303,9 @@ contextualize(() => {
 		})
 		const T = type({
 			values: Positive.array(),
-			parsed: "string.numeric.parse"
+			other: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
 		})
-		attest(T({ values: [1, -1, 2], parsed: "5" }).toString()).snap(
+		attest(T({ values: [1, -1, 2], other: 5 }).toString()).snap(
 			"values[1] must be valid according to an anonymous predicate (was -1)"
 		)
 		attest(calls).equals(3)

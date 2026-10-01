@@ -35,7 +35,8 @@ import { $ark } from "../shared/registry.ts"
 import {
 	traverseKey,
 	type TraverseAllows,
-	type TraverseApply
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import {
 	assertDefaultValueAssignability,
@@ -202,6 +203,13 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 	})
 
 export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
+	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
+		super(...args)
+		this.includesContextualMorph ||= this.defaultValueMorphs.some(
+			morph => morph.length !== 1
+		)
+	}
+
 	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
 
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
@@ -353,8 +361,26 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return (this._element ??= this.$.node("union", this.children))
 	}
 
+	traverseTransform: TraverseTransform<array> = (data, ctx) => {
+		let out = data as unknown[]
+		for (let i = 0; i < data.length; i++) {
+			const node = this.elementAtIndex(data, i).node
+			if (!node.transforms) continue
+			const transformed = traverseKey(
+				i,
+				() => ctx.transform(node, data[i]),
+				ctx
+			)
+			if (transformed === data[i]) continue
+			if (out === data) out = data.slice()
+			out[i] = transformed
+		}
+		return out
+	}
+
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Transform") return this.compileTransform(js)
 		// like Structure, bail out of subsequent elements in fail-fast mode
 		// (e.g. inside a union branch) so we don't traverse an element whose
 		// basis has already failed - see
@@ -402,6 +428,58 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}
 
 		if (js.traversalKind === "Allows") js.return(true)
+	}
+
+	private compileTransform(js: NodeCompiler): void {
+		js.initializeTransform().line("let out = data")
+		const transformElement = (
+			name: string,
+			keyExpression: string,
+			node: BaseRoot
+		) =>
+			node.transforms ?
+				js.transformKey(name, `data[${keyExpression}]`, node, {
+					keyExpression,
+					onChange: () =>
+						js
+							.if("out === data", () => js.line("out = data.slice()"))
+							.line(`out[${keyExpression}] = ${name}`)
+				})
+			:	js
+
+		if (this.prefix) {
+			for (const [i, node] of this.prefix.entries())
+				transformElement(`element${i}`, `${i}`, node)
+		}
+
+		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
+			const dataIndex = i + this.prefixLength
+			if (node.transforms) {
+				js.if(`${dataIndex} < data.length`, () =>
+					transformElement(`element${dataIndex}`, `${dataIndex}`, node)
+				)
+			}
+		}
+
+		if (this.variadic) {
+			if (this.postfix)
+				js.const("firstPostfixIndex", `data.length - ${this.postfix.length}`)
+			if (this.variadic.transforms) {
+				js.for(
+					`i < ${this.postfix ? "firstPostfixIndex" : "data.length"}`,
+					() => transformElement("element", "i", this.variadic!),
+					this.prevariadic.length
+				)
+			}
+			if (this.postfix) {
+				for (const [i, node] of this.postfix.entries()) {
+					const keyExpression = `firstPostfixIndex + ${i}`
+					transformElement(`postfixElement${i}`, keyExpression, node)
+				}
+			}
+		}
+
+		js.returnIfTransformFailed().return("out")
 	}
 
 	protected override _transform(
