@@ -373,7 +373,11 @@ export abstract class BaseRoot<
 	}
 
 	array(): BaseRoot {
-		return this.$.schema(
+		return this.$.finalize(this.rawArray())
+	}
+
+	rawArray(): BaseRoot {
+		return this.$.parseSchema(
 			this.isUnknown() ?
 				{ proto: Array }
 			:	{

@@ -708,6 +708,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	finalize<node extends BaseRoot>(node: node): node {
+		// a node referencing a `this` whose enclosing type is still being parsed,
+		// e.g. Record<string, this>, can't be resolved yet. the enclosing parse
+		// finalizes it once the context has been replaced with the resolved node.
+		if (node.isCyclic && hasUnresolvedContextAlias(node)) return node
+
 		bootstrapAliasReferences(node)
 		if (!node.precompilation && !this.resolvedConfig.jitless)
 			precompile(node.references)
@@ -749,6 +754,15 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 		return v
 	}
 }
+
+// scope aliases are `$name` references, so can be skipped without a lookup
+const hasUnresolvedContextAlias = (node: BaseRoot): boolean =>
+	node.references.some(
+		ref =>
+			ref.hasKind("alias") &&
+			ref.reference[0] !== "$" &&
+			hasArkKind(nodesByRegisteredId[ref.reference as NodeId], "context")
+	)
 
 const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 	const aliases = resolution.references.filter(node => node.hasKind("alias"))

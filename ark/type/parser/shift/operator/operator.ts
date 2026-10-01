@@ -21,7 +21,7 @@ export const parseOperator = (s: RootedRuntimeState): void => {
 		lookahead === "" ? s.finalize("")
 		: lookahead === "[" ?
 			s.scanner.shift() === "]" ?
-				s.setRoot(s.root.array())
+				s.setRoot(s.root.rawArray())
 			:	s.error(incompleteArrayTokenMessage)
 		: lookahead === "|" ?
 			s.scanner.lookahead === ">" ?
