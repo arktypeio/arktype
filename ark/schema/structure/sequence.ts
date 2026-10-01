@@ -1,5 +1,6 @@
 import {
 	append,
+	capitalize,
 	conflatenate,
 	printable,
 	throwInternalError,
@@ -366,12 +367,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		for (let i = 0; i < data.length; i++) {
 			const node = this.elementAtIndex(data, i).node
 			if (!node.transforms) continue
+			const element = data[i]
 			const transformed = traverseKey(
 				i,
-				() => ctx.transform(node, data[i]),
+				() => ctx.transform(node, element),
 				ctx
 			)
-			if (transformed === data[i]) continue
+			if (Object.is(transformed, element)) continue
 			if (out === data) out = data.slice()
 			out[i] = transformed
 		}
@@ -397,15 +399,18 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private compileTransform(js: NodeCompiler): void {
 		js.initializeTransform(this.children).line("let out = data")
-		this.compileElements(js, (keyExpression, node, name) =>
-			js.transformKey(name, `data[${keyExpression}]`, node, {
-				keyExpression,
-				onChange: () =>
-					js
-						.if("out === data", () => js.line("out = data.slice()"))
-						.line(`out[${keyExpression}] = ${name}`)
-			})
-		)
+		this.compileElements(js, (keyExpression, node, name) => {
+			const transformed = `transformed${capitalize(name)}`
+			return js
+				.const(name, `data[${keyExpression}]`)
+				.transformKey(transformed, name, node, {
+					keyExpression,
+					onChange: () =>
+						js
+							.if("out === data", () => js.line("out = data.slice()"))
+							.line(`out[${keyExpression}] = ${transformed}`)
+				})
+		})
 		js.returnIfTransformFailed().return("out")
 	}
 

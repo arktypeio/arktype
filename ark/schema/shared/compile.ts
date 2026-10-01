@@ -285,7 +285,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 
 	transformKey(
 		name: string,
-		accessExpression: string,
+		input: string,
 		node: BaseNode,
 		opts?: TransformKeyOptions
 	): this {
@@ -294,11 +294,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			keyExpression !== undefined && node.transformRequiresContext
 		const assign = (assignee: string) => {
 			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
-			this.line(`${assignee} = ${this.invoke(node, { arg: accessExpression })}`)
+			this.line(`${assignee} = ${this.invoke(node, { arg: input })}`)
 			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
 		}
 		if (opts?.condition) {
-			this.line(`let ${name} = ${accessExpression}`)
+			this.line(`let ${name} = ${input}`)
 			this.if(opts.condition, () => assign(name))
 		} else assign(`const ${name}`)
 		const onChange = (): this => {
@@ -307,7 +307,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		}
 		const checksErrors = node.includesMorph && !node.transformRequiresContext
 		if (!checksErrors && !opts?.onChange) return this
-		return this.if(`${name} !== ${accessExpression}`, () => {
+		return this.if(this.compareTransformed(node, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
 			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
 			this.if(
@@ -321,6 +321,18 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			)
 			return opts?.onChange ? this.else(onChange) : this
 		})
+	}
+
+	compareTransformed(
+		node: BaseNode,
+		transformed: string,
+		operator: "===" | "!==",
+		input: string
+	): string {
+		// a morph can change 0 to -0, which only Object.is tells apart
+		if (node.isRoot() && node.branches.some(n => !n.hasKind("intersection")))
+			return `${operator === "===" ? "" : "!"}Object.is(${transformed}, ${input})`
+		return `${transformed} ${operator} ${input}`
 	}
 
 	returnIfTransformFailed(): this {
