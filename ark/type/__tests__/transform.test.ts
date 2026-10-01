@@ -51,6 +51,16 @@ contextualize(() => {
 		attest(out.b).is(original.b)
 	})
 
+	it("keeps a morph's output that differs only in its sign of zero", () => {
+		const Negated = type("number").pipe(n => -n)
+		const T = type({ a: Negated, b: Negated.array() })
+
+		const out = T.assert({ a: 0, b: [-0] })
+
+		attest(Object.is(out.a, -0)).equals(true)
+		attest(Object.is(out.b[0], 0)).equals(true)
+	})
+
 	it("transforms a frozen input", () => {
 		const T = type({ foo: "string.trim", bar: "number = 5" })
 
