@@ -104,6 +104,25 @@ contextualize(() => {
 		)
 	})
 
+	it("reports morph errors in a union branch it reaches through an alias", () => {
+		const $ = scope({
+			node: {
+				v: ["string", "=>", (s, ctx) => ctx.error("short")],
+				"next?": "node | null",
+				"z?": "number"
+			}
+		}).export()
+
+		attest($.node({ v: "a", next: { v: "b", next: null } }).toString()).snap(
+			'v must be short (was "a")\nnext.v must be short (was "b")'
+		)
+		attest(
+			$.node({ v: "a", next: { v: "b", next: null }, z: "1" }).toString()
+		).snap(
+			'z must be a number (was a string)\nv must be short (was "a")\nnext.v must be short (was "b")'
+		)
+	})
+
 	it("reports errors a nested morph returns", () => {
 		const Inner = type({ x: "number" })
 		const T = type({
