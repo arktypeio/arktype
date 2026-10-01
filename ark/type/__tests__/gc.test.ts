@@ -97,7 +97,7 @@ contextualize(() => {
 		)
 	})
 
-	it("a scope's node returns a union compiled and dropped as compiled", async () => {
+	it("$.node returns a union compiled and dropped as compiled", async () => {
 		let U: type.Any | null = type({ a: "string" })
 			.get("a")
 			.or(type.instanceOf(WeakMap))
@@ -121,7 +121,7 @@ contextualize(() => {
 		attest(configured()(0).toString()).equals(compiledMessage)
 	})
 
-	it("an optional prop's input depends on the same reads after collecting", async () => {
+	it("optional prop input is unchanged by collecting", async () => {
 		const inputAfterReading = async (collectBetween: boolean) => {
 			let First: type.Any | null =
 				collectBetween ?

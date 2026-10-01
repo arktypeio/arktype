@@ -196,7 +196,7 @@ contextualize(() => {
 		)
 	})
 
-	it("registers a root by id only if an alias references it", () => {
+	it("registers only roots an alias references", () => {
 		const Plain = type({ unreferenced: "string" })
 		attest($ark.nodesByRegisteredId[Plain.internal.id]).equals(undefined)
 

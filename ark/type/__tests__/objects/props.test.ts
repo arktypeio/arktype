@@ -95,7 +95,7 @@ contextualize(() => {
 		).throws(writeDuplicateKeyMessage("a"))
 	})
 
-	it("duplicate optional key of a prop disjoint from an index signature", () => {
+	it("duplicate optional key with an index disjoint", () => {
 		attest(() =>
 			type({
 				"a?": "string",

@@ -556,7 +556,7 @@ b.c.c must be an object (was missing)`)
 		attest(t2.expression).equals("number")
 	})
 
-	it("a scope frozen before its first parse parses", () => {
+	it("scope frozen before its first parse", () => {
 		const $ = Object.freeze(scope({}))
 		attest($.type("string")(5).toString()).snap(
 			"must be a string (was a number)"

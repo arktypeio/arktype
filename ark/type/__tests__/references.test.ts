@@ -29,9 +29,9 @@ const copiedReferences = (node: BaseNode): Record<string, BaseNode> => {
 }
 
 contextualize(() => {
-	it("collected references are those copying each child's gives", () => {
+	it("collected references match copied references", () => {
 		const Shared = type({ k: "'x'", v: "string" }).or({ k: "'y'" })
-		const $ = scope({
+		const types = scope({
 			shared: Shared,
 			holder: { a: "shared", b: Shared, c: [Shared, "|", "null"] }
 		}).export()
@@ -47,17 +47,17 @@ contextualize(() => {
 				.or({ kind: "'c'", c: "boolean" }).internal,
 			type(["string", "number = 5", "...", "boolean[]"]).internal,
 			type("string.json.parse").to({ a: "string" }).internal,
-			$.holder.internal,
-			type({ a: $.shared, b: $.shared }).internal
+			types.holder.internal,
+			type({ a: types.shared, b: types.shared }).internal
 		]).filter(node => !node.includesAlias)
 
 		// a scope binds a copy of a foreign node, with its id, per reference
-		const ids = new Map<string, BaseNode>()
+		const nodesById: Record<string, BaseNode> = {}
 		attest(
 			nodes.some(node => {
-				const copy = ids.get(node.id)
-				ids.set(node.id, node)
-				return copy !== undefined && copy !== node
+				const previous = nodesById[node.id]
+				nodesById[node.id] = node
+				return previous !== undefined && previous !== node
 			})
 		).equals(true)
 
@@ -94,9 +94,11 @@ contextualize(() => {
 		attest(U.discriminant?.path).equals(["firstReadKind"])
 	})
 
-	it("a node that pipes to a cyclic root includes an alias", () => {
-		const $ = scope({ node: { value: "string", next: "node | null" } }).export()
-		const T = type({ a: type("string.json.parse").to($.node), b: "number" })
+	it("piping to a cyclic root includes an alias", () => {
+		const types = scope({
+			node: { value: "string", next: "node | null" }
+		}).export()
+		const T = type({ a: type("string.json.parse").to(types.node), b: "number" })
 		const morph = T.internal.select({ kind: "morph", method: "assertFind" })
 
 		attest(morph.isCyclic).equals(false)

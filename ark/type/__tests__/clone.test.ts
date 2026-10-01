@@ -82,12 +82,12 @@ contextualize(() => {
 			return o
 		}
 
-		const cloned = type([{ n: "number" }, "=>", increment])
-		const mutated = type.module(
+		const Cloned = type([{ n: "number" }, "=>", increment])
+		const Mutated = type.module(
 			{ increment: [{ n: "number" }, "=>", increment] },
 			{ clone: false }
 		).increment
-		const customCloned = type.module(
+		const CustomCloned = type.module(
 			{ increment: [{ n: "number" }, "=>", increment] },
 			{ clone: original => ({ ...original, customCloned: true }) }
 		).increment
@@ -95,11 +95,11 @@ contextualize(() => {
 		// a root's first call and later ones clone alike
 		for (let i = 0; i < 2; i++) {
 			const original = { n: 1 }
-			attest(cloned(original)).snap({ n: 2 })
+			attest(Cloned(original)).snap({ n: 2 })
 			attest(original).snap({ n: 1 })
-			attest(mutated(original)).is(original)
+			attest(Mutated(original)).is(original)
 			attest(original).snap({ n: 2 })
-			attest(customCloned(original)).unknown.snap({ n: 3, customCloned: true })
+			attest(CustomCloned(original)).unknown.snap({ n: 3, customCloned: true })
 			attest(original).snap({ n: 2 })
 		}
 	})

@@ -295,7 +295,7 @@ contextualize(() => {
 		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
 	})
 
-	it("calls a predicate once per value it applies, even a rejected one", () => {
+	it("calls a predicate once per value", () => {
 		let calls = 0
 		const Positive = type("number").narrow(n => {
 			calls++

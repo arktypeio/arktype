@@ -566,7 +566,7 @@ contextualize(() => {
 		).snap("layout must be an array (was string)")
 	})
 
-	it("checks a rejected prop value no more when a discriminated union wraps it", () => {
+	it("discriminating adds no reads of a rejected prop", () => {
 		const reads = (T: type.Any) => {
 			let count = 0
 			const v = Object.defineProperty({}, "a", {
