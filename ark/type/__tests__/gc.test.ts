@@ -17,10 +17,16 @@ const collect = async () => {
 	await nextJob()
 }
 
+// a closure V8 is optimizing is kept until the compile ends, so a type can
+// outlive a collection
+const collectTarget = async (ref: WeakRef<object>) => {
+	for (let i = 0; i < 10 && ref.deref(); i++) await collect()
+}
+
 contextualize(() => {
 	it("collects a type nothing references", async () => {
 		const ref = new WeakRef(type({ collected: "string", n: "number > 5" }))
-		await collect()
+		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
 		const T = type({ collected: "string", n: "number > 5" })
 		attest(T({ collected: "a", n: 6 })).equals({ collected: "a", n: 6 })
@@ -36,7 +42,7 @@ contextualize(() => {
 				b: ["string", "number = 1234"]
 			}).export().a
 		)
-		await collect()
+		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
 	})
 
