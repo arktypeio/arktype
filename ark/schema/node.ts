@@ -346,6 +346,7 @@ export abstract class BaseNode<
 				return (data, onFail) => {
 					const ctx = new Traversal(data, this.$.resolvedConfig)
 					if (this.allows(data)) {
+						// keyed by id, so an alias resolving to this root reuses its output
 						const result =
 							this.includesAlias ?
 								ctx.transformResolution(this.id, data, data =>

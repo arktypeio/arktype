@@ -1,7 +1,9 @@
 import {
 	ReadonlyPath,
+	hasDomain,
 	isArray,
 	noSuggest,
+	objectKindOf,
 	stringifyPath,
 	type array
 } from "@ark/util"
@@ -196,7 +198,11 @@ export class Traversal {
 		if (node.allows(data)) {
 			if (!node.transforms) return data
 			const errorCount = this.currentErrorCount
+			// a piped node transforms a morph's output, which can share objects an earlier pass cached
+			const transformedByResolutionId = this.transformedByResolutionId
+			this.transformedByResolutionId = undefined
 			const result = this.transform(node, data)
+			this.transformedByResolutionId = transformedByResolutionId
 			return this.currentErrorCount > errorCount ? this.errors : result
 		}
 		this.receive(data)
@@ -231,37 +237,29 @@ export class Traversal {
 		data: unknown,
 		transform: (data: unknown) => unknown
 	): unknown {
+		if (!hasDomain(data, "object")) return transform(data)
 		const transformed = ((this.transformedByResolutionId ??= {})[id] ??=
 			new Map())
 		if (transformed.has(data)) {
 			const result = transformed.get(data)
 			if (result !== transforming) return result
 			// a cycle reached data, so its output will fill this placeholder
-			const placeholder =
-				isArray(data) ? [] : Object.create(Object.getPrototypeOf(data))
+			const placeholder = isArray(data) ? [] : {}
 			transformed.set(data, placeholder)
 			return placeholder
-		}
-		if (typeof data !== "object" || data === null) {
-			const result = transform(data)
-			transformed.set(data, result)
-			return result
 		}
 		transformed.set(data, transforming)
 		const result = transform(data)
 		const placeholder = transformed.get(data)
-		if (
-			placeholder === transforming ||
-			typeof result !== "object" ||
-			result === null
-		) {
+		if (placeholder === transforming || !canFill(placeholder, result)) {
 			transformed.set(data, result)
 			return result
 		}
-		return Object.defineProperties(
+		Object.defineProperties(
 			placeholder as object,
 			Object.getOwnPropertyDescriptors(result)
 		)
+		return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
 	}
 
 	get currentErrorCount(): number {
@@ -407,6 +405,12 @@ export class Traversal {
 }
 
 const transforming = noSuggest("transforming")
+
+// a builtin like Date keeps its state in internal slots a placeholder can't take
+const canFill = (placeholder: unknown, result: unknown): result is object =>
+	typeof result === "object" &&
+	result !== null &&
+	(isArray(placeholder) ? isArray(result) : objectKindOf(result) === undefined)
 
 // paths are reversed so each object an error passes through pushes its key
 export class TransformErrors {

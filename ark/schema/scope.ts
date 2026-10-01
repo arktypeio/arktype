@@ -383,6 +383,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		: node.rootApplyStrategy === "contextualTransform" ?
 			unlessInvalid([
 				"const ctx = new Traversal(data, config)",
+				// keyed by id, so an alias resolving to this root reuses its output
 				node.includesAlias ?
 					`const result = ctx.transformResolution("${node.id}", data, data => transform(data, ctx))`
 				:	"const result = transform(data, ctx)",
