@@ -6,8 +6,6 @@ import { scope, type } from "arktype"
 import * as v from "valibot"
 import { z } from "zod"
 
-const code = /^[A-Z]{3}-\d{4}$/
-
 // https://github.com/moltar/typescript-runtime-type-benchmarks
 export const moltarData = Object.freeze({
 	number: 1,
@@ -316,15 +314,15 @@ export const Strings = {
 	valibot: v.array(v.string())
 }
 
-const ab = /^[ab]+$/
+const abPattern = /^[ab]+$/
 
 // the last string fails the pattern only at its end
 export const patternsInvalidData = ["ab", "ba", `${"ab".repeat(5000)}c`]
 
 export const Patterns = {
-	arktype: type(ab).array(),
-	zod: z.array(z.string().regex(ab)),
-	valibot: v.array(v.pipe(v.string(), v.regex(ab)))
+	arktype: type(abPattern).array(),
+	zod: z.array(z.string().regex(abPattern)),
+	valibot: v.array(v.pipe(v.string(), v.regex(abPattern)))
 }
 
 export const unionItemsInvalidData = Array.from({ length: 10 }, (_, i) =>
@@ -405,6 +403,8 @@ export const constraintsData = {
 	code: "ABC-1234"
 }
 
+const codePattern = /^[A-Z]{3}-\d{4}$/
+
 // each library's own email format: the regexes differ
 export const Constraints = {
 	arktype: type({
@@ -412,21 +412,21 @@ export const Constraints = {
 		email: "string.email",
 		age: "0 <= number.integer < 150",
 		ratio: "0 < number <= 1",
-		code
+		code: codePattern
 	}),
 	zod: z.object({
 		name: z.string().min(1).max(50),
 		email: z.email(),
 		age: z.number().int().min(0).lt(150),
 		ratio: z.number().gt(0).max(1),
-		code: z.string().regex(code)
+		code: z.string().regex(codePattern)
 	}),
 	valibot: v.object({
 		name: v.pipe(v.string(), v.minLength(1), v.maxLength(50)),
 		email: v.pipe(v.string(), v.email()),
 		age: v.pipe(v.number(), v.integer(), v.minValue(0), v.ltValue(150)),
 		ratio: v.pipe(v.number(), v.gtValue(0), v.maxValue(1)),
-		code: v.pipe(v.string(), v.regex(code))
+		code: v.pipe(v.string(), v.regex(codePattern))
 	})
 }
 
@@ -580,7 +580,7 @@ type Schemas = {
 	valibot: v.GenericSchema
 }
 
-const results = (schemas: Schemas, data: unknown) => {
+const resultsOf = (schemas: Schemas, data: unknown) => {
 	const arktypeOut = schemas.arktype(data)
 	const zodResult = schemas.zod.safeParse(data)
 	const valibotResult = v.safeParse(schemas.valibot, data)
@@ -610,14 +610,14 @@ const accepts = (
 	expected: unknown = data
 ) => {
 	const before = structuredClone(data)
-	const { allows, out } = results(schemas, data)
+	const { allows, out } = resultsOf(schemas, data)
 	deepStrictEqual(allows, [true, true, true], `${name} allows`)
-	for (const o of out) deepStrictEqual(o, expected, `${name} output`)
+	for (const output of out) deepStrictEqual(output, expected, `${name} output`)
 	deepStrictEqual(data, before, `${name} mutated its input`)
 }
 
 const rejects = (name: string, schemas: Schemas, data: unknown) => {
-	const { allows, issues } = results(schemas, data)
+	const { allows, issues } = resultsOf(schemas, data)
 	deepStrictEqual(allows, [false, false, false], `${name} allows`)
 	ok(issues[0] > 0, `${name} issues`)
 	// abortEarly is off, so every library reports every issue

@@ -82,6 +82,7 @@ export const stats = {
 }
 
 const sampleMs = 0.2
+const warmupMs = 500
 
 let loopCount = 0
 
@@ -119,7 +120,7 @@ class ResultCollector {
 			count: 100_000,
 			...ctx.options.until
 		}
-		this.phaseEnd = performance.now() + Math.min(500, this.bounds.ms)
+		this.phaseEnd = performance.now() + Math.min(warmupMs, this.bounds.ms)
 		this.lastInvocationStart = -1
 	}
 

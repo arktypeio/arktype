@@ -17,7 +17,7 @@ export const bundle = (): void => {
 		include: path => path.endsWith(".js")
 	}).sort()
 	const entryPoints = publicEntryPoints()
-	const ownFiles = flattenInto(entryPoints, perModuleJs)
+	const ownFiles = flattenIntoMain(entryPoints, perModuleJs)
 	// one build for all entries, so a module several import evaluates once
 	const { outputFiles } = buildSync({
 		entryPoints,
@@ -34,7 +34,7 @@ export const bundle = (): void => {
 	for (const path of perModuleJs) rmRf(path)
 	for (const file of outputFiles)
 		writeFile(file.path, nameSelfReferencingClasses(file.text))
-	for (const [path, js] of ownFiles) writeFile(path, js)
+	for (const [path, js] of Object.entries(ownFiles)) writeFile(path, js)
 }
 
 const publicEntryPoints = (): string[] =>
@@ -52,10 +52,10 @@ const publicEntryPoints = (): string[] =>
 	})
 
 // deep imports resolve to main at runtime, so it exports every module's names
-const flattenInto = (
+const flattenIntoMain = (
 	entryPoints: string[],
 	perModuleJs: string[]
-): Map<string, string> => {
+): Record<string, string> => {
 	const main = fromCwd("out", "index.js")
 	const modules = perModuleJs.filter(path => !entryPoints.includes(path))
 	const starring = (paths: string[]) =>
@@ -78,25 +78,25 @@ const flattenInto = (
 		logLevel: "warning"
 	})
 	const outputs = Object.entries(metafile.outputs)
-	const namesOf = new Map(
+	const namesByPath = Object.fromEntries(
 		outputs.flatMap(([, { entryPoint, exports }]) =>
 			entryPoint ? [[fromCwd(entryPoint), exports]] : []
 		)
 	)
-	const [starredAll] = outputs.find(
+	const [stdinOutputPath] = outputs.find(
 		([, { entryPoint }]) => entryPoint === "<stdin>"
 	)!
-	const alike = exportedBy(
-		outputFiles.find(file => file.path === fromCwd(starredAll))!.text
+	const unambiguousNames = exportedBy(
+		outputFiles.find(file => file.path === fromCwd(stdinOutputPath))!.text
 	)
 	// starring a module without names would evaluate it
-	let js =
-		readFile(main) + starring(modules.filter(path => namesOf.get(path)!.length))
-	const ownFiles = new Map<string, string>()
-	for (const name of new Set(perModuleJs.flatMap(path => namesOf.get(path)!))) {
-		if (alike.has(name)) continue
+	let mainJs =
+		readFile(main) + starring(modules.filter(path => namesByPath[path].length))
+	const ownFiles: Record<string, string> = {}
+	for (const name of new Set(perModuleJs.flatMap(path => namesByPath[path]))) {
+		if (unambiguousNames.has(name)) continue
 		const exporting = perModuleJs.filter(path =>
-			namesOf.get(path)!.includes(name)
+			namesByPath[path].includes(name)
 		)
 		if (name === "default") {
 			throw new Error(
@@ -109,20 +109,17 @@ const flattenInto = (
 				`The main entry exports ${name}, which one of ${[first, ...others].map(moduleOf).join(", ")} binds otherwise (to esbuild, re-exporting another package's name binds it anew)`
 			)
 		}
-		js += reexporting([name], main, first)
+		mainJs += reexporting([name], main, first)
 		for (const path of others) {
 			const alias = `${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
-			js += reexporting([`${name} as ${alias}`], main, path)
+			mainJs += reexporting([`${name} as ${alias}`], main, path)
 			assertMapsToOwnFile(path)
 			if (entryPoints.includes(path)) continue
-			ownFiles.set(
-				path,
-				(ownFiles.get(path) ?? `export * from ${specifierOf(path, main)};\n`) +
-					reexporting([`${alias} as ${name}`], path, main)
-			)
+			ownFiles[path] ??= `export * from ${specifierOf(path, main)};\n`
+			ownFiles[path] += reexporting([`${alias} as ${name}`], path, main)
 		}
 	}
-	writeFile(main, js)
+	writeFile(main, mainJs)
 	return ownFiles
 }
 
@@ -223,16 +220,16 @@ const renamesTo = (
 	node: ts.ClassExpression,
 	name: string
 ): Edit[] | undefined => {
-	const inner = node.name!.text
+	const innerName = node.name!.text
 	const renames: Edit[] = [[node.name!.getStart(), node.name!.getEnd(), name]]
-	let renamable = true
+	let isRenamable = true
 	const visit = (child: ts.Node): void => {
 		if (ts.isIdentifier(child)) {
 			const parent = child.parent as { name?: ts.Node; propertyName?: ts.Node }
-			if (child.text === name) renamable = false
-			else if (child.text === inner) {
+			if (child.text === name) isRenamable = false
+			else if (child.text === innerName) {
 				if (parent.name === child || parent.propertyName === child)
-					renamable = false
+					isRenamable = false
 				else renames.push([child.getStart(), child.getEnd(), name])
 			}
 		}
@@ -241,7 +238,7 @@ const renamesTo = (
 	ts.forEachChild(node, child => {
 		if (child !== node.name) visit(child)
 	})
-	return renamable ? renames : undefined
+	return isRenamable ? renames : undefined
 }
 
 const inferredNameOf = (node: ts.Node): string | undefined =>

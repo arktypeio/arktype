@@ -12,32 +12,29 @@ import { pathToFileURL } from "node:url"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { bundle } from "../bundle.ts"
 
-const declaring = (module: string, js: string) =>
+const traced = (module: string, js: string) =>
 	`(globalThis.evaluated ??= []).push("${module}");\n${js.replace(/= {}/g, `= { from: "${module}" }`)}`
 
 const modules = {
-	"index.js": declaring(
+	"index.js": traced(
 		"index",
 		`export { x } from "./a.js"; export * from "./b.js"; export * from "./i.js"; import "./d.js"; import "./k.js"; import "./l.js"; import "./sub/f.js"; import "./sub/o.js";`
 	),
-	"a.js": declaring("a", `export const x = {}; export const apart = {};`),
-	"b.js": declaring("b", `export const y = {};`),
-	"d.js": declaring("d", `export * from "./b.js"; export * from "./e.js";`),
-	"e.js": declaring("e", `export { y } from "./b.js";`),
-	"h.js": declaring("h", `export {};`),
-	"i.js": declaring("i", `export * from "./j.js"; export const i = {};`),
-	"j.js": declaring("j", `export * from "./i.js"; export const j = {};`),
-	"k.js": declaring(
+	"a.js": traced("a", `export const x = {}; export const apart = {};`),
+	"b.js": traced("b", `export const y = {};`),
+	"d.js": traced("d", `export * from "./b.js"; export * from "./e.js";`),
+	"e.js": traced("e", `export { y } from "./b.js";`),
+	"h.js": traced("h", `export {};`),
+	"i.js": traced("i", `export * from "./j.js"; export const i = {};`),
+	"j.js": traced("j", `export * from "./i.js"; export const j = {};`),
+	"k.js": traced(
 		"k",
 		`export class K {} export let { p, q: [r] } = { p: 1, q: [2] };`
 	),
-	"l.js": declaring(
-		"l",
-		`import { x as local } from "./a.js"; export { local };`
-	),
-	"sub/f.js": declaring("f", `export const apart = {};`),
-	"sub/o.js": declaring("o", `export { y as renamed } from "../b.js";`),
-	"u.js": declaring("u", `export const unreached = {};`)
+	"l.js": traced("l", `import { x as local } from "./a.js"; export { local };`),
+	"sub/f.js": traced("f", `export const apart = {};`),
+	"sub/o.js": traced("o", `export { y as renamed } from "../b.js";`),
+	"u.js": traced("u", `export const unreached = {};`)
 }
 
 type Namespace = Record<string, { from?: string }>
@@ -76,7 +73,7 @@ const packageOf = (
 }
 
 // attest finds a call's type data by its path from the cwd, so only bundle() runs in dir
-const bundling = (dir: string) => {
+const bundleIn = (dir: string) => {
 	const cwd = process.cwd()
 	process.chdir(dir)
 	try {
@@ -105,11 +102,11 @@ contextualize(() => {
 		)
 		const unbundledOrder = evaluated()
 
-		attest(() => bundling(packageOf(modules))).throws(
+		attest(() => bundleIn(packageOf(modules))).throws(
 			'sub/f exports a name the main entry binds otherwise, so ./internal/sub/f.ts must be { "ark-ts": "./sub/f.ts", "types": "./out/sub/f.d.ts", "default": "./out/sub/f.js" }'
 		)
 		const dir = packageOf(modules, ["sub/f"])
-		const fromOut = bundling(dir)
+		const fromOut = bundleIn(dir)
 
 		const root: Namespace = await import(fromOut("index.js"))
 		attest(evaluated()).equals([...unbundledOrder!.slice(0, -1), "u", "index"])
@@ -140,7 +137,7 @@ contextualize(() => {
 		attest(f.x).is(root.x)
 	})
 
-	it("rejects a name a module binds otherwise than the main entry", () => {
+	it("rejects rebinding a main entry export", () => {
 		for (const [name, from] of [
 			["x", "a"],
 			["y", "b"]
@@ -151,7 +148,7 @@ contextualize(() => {
 				"b.js": `export const y = {};`,
 				"c.js": `export const ${name} = {};`
 			})
-			attest(() => bundling(shadowing)).throws(
+			attest(() => bundleIn(shadowing)).throws(
 				`The main entry exports ${name}, which one of ${from}, c binds otherwise`
 			)
 		}
@@ -168,14 +165,14 @@ contextualize(() => {
 				"a.js": `${declaration}; export const a = ${name};`,
 				"b.js": `${declaration}; export const b = ${name};`
 			})
-			attest(() => bundling(colliding)).throws(
+			attest(() => bundleIn(colliding)).throws(
 				`esbuild renamed ${name} to ${name}2`
 			)
 		}
 		const shadowing = packageOf({
 			"index.js": `export const isDate = {}; export const f = () => { const isDate = () => true; return isDate };`
 		})
-		attest(() => bundling(shadowing)).throws(
+		attest(() => bundleIn(shadowing)).throws(
 			"esbuild renamed isDate to isDate2"
 		)
 	})
@@ -185,7 +182,7 @@ contextualize(() => {
 			"index.js": `export * from "./a.js";`,
 			"a.js": `export const x = {}; export default {};`
 		})
-		attest(() => bundling(defaulting)).throws(
+		attest(() => bundleIn(defaulting)).throws(
 			"The main entry can't export default for a, which must export it by name"
 		)
 	})

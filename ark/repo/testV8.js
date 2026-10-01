@@ -27,7 +27,7 @@ console.log("🏎️  Type instance has fast properties!\n")
 
 console.log("⏱️  Checking that every node of a kind has one V8 map...\n")
 
-const haveSameMap = (a, b) => eval("%HaveSameMap(a, b)")
+const haveSameMap = (l, r) => eval("%HaveSameMap(l, r)")
 
 // each checked kind occurs with and without some inner key, e.g. a pattern's flags
 const definitions = [

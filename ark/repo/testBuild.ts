@@ -3,12 +3,12 @@ import { createRequire, registerHooks } from "node:module"
 import { pathToFileURL } from "node:url"
 import ts from "typescript"
 
-const loaded = new Set<string>()
+const loadedUrls = new Set<string>()
 
 registerHooks({
 	resolve: (specifier, context, nextResolve) => {
 		const resolution = nextResolve(specifier, context)
-		loaded.add(resolution.url)
+		loadedUrls.add(resolution.url)
 		return resolution
 	}
 })
@@ -27,20 +27,14 @@ if ("$ark2" in globalThis) {
 	)
 }
 
-const packages = {
-	util: "@ark/util",
-	schema: "@ark/schema",
-	sets: "arksets",
-	regex: "arkregex",
-	type: "arktype"
-}
+const packages = ["util", "schema", "sets", "regex", "type"]
 
 const fromPackage = (pkg: string, path = "") =>
 	new URL(`../${pkg}/${path}`, import.meta.url)
 
 const resolve = createRequire(fromPackage("type", "package.json")).resolve
 
-const fromBuild = (path: string): Promise<Record<string, unknown>> =>
+const importBuilt = (path: string): Promise<Record<string, unknown>> =>
 	import(pathToFileURL(resolve(path)).href)
 
 const entryFiles = (pkg: string) =>
@@ -57,13 +51,13 @@ const entryFiles = (pkg: string) =>
 			:	[]
 	})
 
-for (const pkg of Object.keys(packages)) {
+for (const pkg of packages) {
 	for (const file of entryFiles(pkg))
 		await import(fromPackage(pkg, `out/${file}`).href)
 }
 
-for (const url of loaded) {
-	for (const pkg of Object.keys(packages)) {
+for (const url of loadedUrls) {
+	for (const pkg of packages) {
 		const out = fromPackage(pkg, "out/").href
 		if (!url.startsWith(out)) continue
 		const file = url.slice(out.length)
@@ -72,12 +66,12 @@ for (const url of loaded) {
 	}
 }
 
-const schema = await fromBuild("@ark/schema")
+const arkSchema = await importBuilt("@ark/schema")
 
 for (const [name, value] of Object.entries(
-	await fromBuild("@ark/schema/config")
+	await importBuilt("@ark/schema/config")
 )) {
-	if (value !== schema[name])
+	if (value !== arkSchema[name])
 		throw new Error(`⚠️  @ark/schema/config has its own copy of ${name}.`)
 }
 
@@ -89,8 +83,8 @@ for (const pkg of ["arktype", "@ark/schema"]) {
 	}
 }
 
-const stringKeywords = await fromBuild("arktype/internal/keywords/string.ts")
-const tsKeywords = await fromBuild("arktype/internal/keywords/ts.ts")
+const stringKeywords = await importBuilt("arktype/internal/keywords/string.ts")
+const tsKeywords = await importBuilt("arktype/internal/keywords/ts.ts")
 
 if (
 	!("parse" in (stringKeywords.json as object)) ||
@@ -109,13 +103,13 @@ const errors = type("string")(5)
 if (
 	errors.constructor.name !== "ArkErrors" ||
 	errors[0].constructor.name !== "ArkError" ||
-	(schema.Disjoint as Function).name !== "Disjoint" ||
+	(arkSchema.Disjoint as Function).name !== "Disjoint" ||
 	scope({}).constructor.name !== "InternalScope"
 )
 	throw new Error("⚠️  Bundling renamed a class.")
 
 // class static blocks need Safari 16.4, newer than anything else shipped
-for (const pkg of Object.keys(packages)) {
+for (const pkg of packages) {
 	const dir = fromPackage(pkg, "out/")
 	for (const name of readdirSync(dir).filter(name => name.endsWith(".js"))) {
 		const visit = (node: ts.Node): void => {

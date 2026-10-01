@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process"
 
-const processes = 20
+const processesPerLibrary = 20
 
 const moltar = {
 	arktype: `const { type } = await import("arktype")
@@ -52,7 +52,7 @@ const samples = Object.fromEntries(
 	libraries.map(library => [library, [] as Sample[]])
 ) as Record<Library, Sample[]>
 
-for (let i = 0; i < processes; i++) {
+for (let i = 0; i < processesPerLibrary; i++) {
 	for (let j = 0; j < libraries.length; j++) {
 		const library = libraries[(i + j) % libraries.length]
 		samples[library].push(run(library))
@@ -60,11 +60,13 @@ for (let i = 0; i < processes; i++) {
 }
 
 const median = (values: number[]) => {
-	const sorted = [...values].sort((a, b) => a - b)
-	const mid = sorted.length >> 1
-	const m =
-		sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
-	return Number(m.toFixed(2))
+	const sorted = values.sort((l, r) => l - r)
+	const middleIndex = sorted.length >> 1
+	const result =
+		sorted.length % 2 ?
+			sorted[middleIndex]
+		:	(sorted[middleIndex - 1] + sorted[middleIndex]) / 2
+	return Number(result.toFixed(2))
 }
 
 console.table(
