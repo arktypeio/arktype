@@ -52,7 +52,6 @@ import {
 } from "./module.ts"
 import type { BaseNode } from "./node.ts"
 import {
-	contextsReferencedById,
 	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
@@ -983,7 +982,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// has the original id from context so that its references compile correctly
 		if (node.isCyclic) node = withId(node, ctx.id)
 
-		if (contextsReferencedById.has(ctx)) nodesByRegisteredId[ctx.id] = node
+		if (ctx.isReferencedById) nodesByRegisteredId[ctx.id] = node
 		else delete nodesByRegisteredId[ctx.id]
 
 		return node

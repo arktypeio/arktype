@@ -5,11 +5,7 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
-import {
-	contextsReferencedById,
-	nodesByRegisteredId,
-	type NodeId
-} from "../parse.ts"
+import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import {
@@ -59,7 +55,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 				parse: reference => {
 					const referenced = nodesByRegisteredId[reference as NodeId]
 					if (hasArkKind(referenced, "context"))
-						contextsReferencedById.add(referenced)
+						referenced.isReferencedById = true
 					return reference
 				},
 				serialize: s => (s.startsWith("$") ? s : `$ark.${s}`)

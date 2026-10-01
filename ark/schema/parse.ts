@@ -56,6 +56,7 @@ export interface AttachedParseContext {
 	$: BaseScope
 	id: NodeId
 	phase: "unresolved" | "resolving" | "resolved"
+	isReferencedById?: true
 }
 
 export interface BaseParseContext
@@ -142,8 +143,6 @@ export const nodesByRegisteredId: Record<
 > = {}
 
 $ark.nodesByRegisteredId = nodesByRegisteredId
-
-export const contextsReferencedById: WeakSet<BaseParseContext> = new WeakSet()
 
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
