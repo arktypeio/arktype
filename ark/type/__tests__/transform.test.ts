@@ -27,6 +27,19 @@ contextualize(() => {
 		attest(original).snap({ foo: "  bar  ", inner: { a: "a" } })
 	})
 
+	it("doesn't mutate an invalid input", () => {
+		const T = type({
+			foo: "string.trim",
+			inner: { a: "string", b: "number = 5" },
+			n: "number"
+		})
+
+		const original = { foo: "  bar  ", inner: { a: "a" }, n: "1" }
+
+		attest(T(original).toString()).snap("n must be a number (was a string)")
+		attest(original).snap({ foo: "  bar  ", inner: { a: "a" }, n: "1" })
+	})
+
 	it("shares values it doesn't transform", () => {
 		const T = type({ a: "string.trim", b: { c: "number[]" } })
 
@@ -89,6 +102,29 @@ contextualize(() => {
 		attest(T({ a: "x", b: "1" }).toString()).snap(
 			'b must be a number (was a string)\na must be short (was "x")'
 		)
+	})
+
+	it("applies only the morphs of the branches it takes", () => {
+		let calls = 0
+		const Negated = type("number < 0")
+			.pipe(n => (calls++, -n))
+			.or("number > 10")
+		const T = type({
+			o: type({ a: Negated, b: "number > 5" }).or({
+				a: "unknown",
+				b: "number < 3"
+			}),
+			s: "string"
+		})
+
+		attest(T({ o: { a: -5, b: 1 }, s: "s" })).snap({
+			o: { a: -5, b: 1 },
+			s: "s"
+		})
+		attest(T({ o: { a: -5, b: 1 }, s: 1 }).toString()).snap(
+			"s must be a string (was a number)"
+		)
+		attest(calls).equals(0)
 	})
 
 	it("transforms cyclic data through a cyclic alias once", () => {

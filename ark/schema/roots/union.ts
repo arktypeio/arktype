@@ -195,8 +195,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)
 			if (!ctx.hasError()) {
-				if (this.branches[i].includesTransform)
-					return ctx.queuedMorphs.push(...ctx.popBranch()!.queuedMorphs)
+				if (this.branches[i].includesTransform) return ctx.popTakenBranch()
 				return ctx.popBranch()
 			}
 			errors.push(ctx.popBranch()!.error!)
@@ -303,7 +302,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					.if("!ctx.hasError()", () =>
 						js.return(
 							branch.includesTransform ?
-								"ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)"
+								"ctx.popTakenBranch()"
 							:	"ctx.popBranch()"
 						)
 					)

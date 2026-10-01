@@ -73,6 +73,9 @@ export class Traversal {
 	// data is read from what a morph received, since root is the input
 	private received: unknown
 	private receivedDepth = 0
+	// each object is copied before its first write, so input is never mutated
+	private morphedRoot: unknown
+	private copied: Set<unknown> | undefined
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.root = root
@@ -166,20 +169,12 @@ export class Traversal {
 	}
 
 	finalize(onFail?: ArkErrors.Handler | null): unknown {
-		if (this.queuedMorphs.length) {
-			if (
-				typeof this.root === "object" &&
-				this.root !== null &&
-				this.config.clone
-			)
-				this.root = this.config.clone(this.root)
-
-			this.applyQueuedMorphs()
-		}
+		this.morphedRoot = this.root
+		if (this.queuedMorphs.length) this.applyQueuedMorphs()
 
 		if (this.hasError()) return onFail ? onFail(this.errors) : this.errors
 
-		return this.root
+		return this.morphedRoot
 	}
 
 	/** @internal */
@@ -294,6 +289,14 @@ export class Traversal {
 		return this.branches.pop()
 	}
 
+	// a taken branch's morphs apply only if each branch enclosing it is taken
+	popTakenBranch(): void {
+		const { queuedMorphs } = this.branches.pop()!
+		if (this.currentBranch)
+			this.currentBranch.queuedMorphs.push(...queuedMorphs)
+		else this.queuedMorphs.push(...queuedMorphs)
+	}
+
 	/**
 	 * @internal
 	 * Convenience for casting from InternalTraversal to Traversal
@@ -344,10 +347,14 @@ export class Traversal {
 		let parent: any
 
 		if (key !== undefined) {
-			// find the object on which the key to be morphed exists
-			parent = this.root
-			for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
-				parent = parent[path[pathIndex]]
+			// find the object on which the key to be morphed exists, copying
+			// each object along the way
+			this.copied ??= new Set()
+			parent = this.morphedRoot = this.copyOnce(this.morphedRoot)
+			for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++) {
+				const segment = path[pathIndex]
+				parent = parent[segment] = this.copyOnce(parent[segment])
+			}
 		}
 
 		for (const morph of morphs) {
@@ -355,7 +362,7 @@ export class Traversal {
 			// in case previous operations modified this.path
 			this.path = [...path]
 			const morphIsNode = isNode(morph)
-			const data = parent === undefined ? this.root : parent[key!]
+			const data = parent === undefined ? this.morphedRoot : parent[key!]
 			this.receive(data)
 
 			const result = morph(data as never, this)
@@ -381,13 +388,21 @@ export class Traversal {
 
 			// if the morph was successful, assign the result to the
 			// corresponding property, or to root if path is empty
-			if (parent === undefined) this.root = result
+			if (parent === undefined) this.morphedRoot = result
 			else parent[key!] = result
 
 			// if the current morph queued additional morphs,
 			// applying them before subsequent morphs
 			this.applyQueuedMorphs()
 		}
+	}
+
+	private copyOnce(data: unknown): unknown {
+		if (typeof data !== "object" || data === null || this.copied!.has(data))
+			return data
+		const copy = copyOf(data)
+		this.copied!.add(copy)
+		return copy
 	}
 }
 
