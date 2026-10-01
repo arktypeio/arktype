@@ -44,19 +44,13 @@ import {
 	unionItemsInvalidData
 } from "./scenarios.ts"
 
-// Each library's fastest API for each operation:
-// - allows: arktype's T.allows, valibot's v.is (which aborts early), zod's
-//   safeParse(data).success (zod has no cheaper boolean check)
-// - parse: arktype's T(data), zod's safeParse, valibot's v.safeParse
-// - errors: every issue's path and message (see scenarios.ts)
-// A bench over several inputs returns their combined result, which costs the
-// same few ns for each library.
-// pnpm test runs check(), which would slow zod's later benches here.
+// pnpm test runs check(), which would slow zod's later benches here
 
 bench("moltar allows (arktype)", () =>
 	Moltar.arktype.allows(moltarData)
 ).median([8.03, "ns"])
 
+// zod has no cheaper boolean check than safeParse(data).success
 bench(
 	"moltar allows (zod)",
 	() => Moltar.zod.safeParse(moltarData).success
@@ -118,6 +112,7 @@ bench("moltar strict invalid allows (valibot)", () =>
 	v.is(MoltarStrict.valibot, moltarExtraKeysData)
 ).median([1.18, "us"])
 
+// arktype computes each message when read, so its error benches read summary
 bench(
 	"moltar strict invalid errors (arktype)",
 	() => (MoltarStrict.arktype(moltarExtraKeysData) as ArkErrors).summary

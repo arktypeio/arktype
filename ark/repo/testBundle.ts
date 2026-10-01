@@ -6,14 +6,11 @@ console.log(
 	"📦 Checking that a bundle of @ark/schema alone contains no set algebra...\n"
 )
 
-// strings unique to arksets. if one survives into a bundle of @ark/schema
-// alone, the algebra (or JSON Schema generation, which ships with it) is
-// reachable from the schema language and the seam is breached.
 const algebraMarkers = [
 	"The intersection of two ordered unions is indeterminate",
 	"An unordered union of a type including a morph",
 	"Unexpectedly encountered multiple distinct intersection results",
-	// the $defs key is written only when generating a schema with refs
+	// written only by JSON Schema generation, which ships with the algebra
 	"$defs"
 ]
 

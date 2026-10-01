@@ -11,36 +11,14 @@ import {
 	writeFile
 } from "../fs/index.ts"
 
-/**
- * Replaces the JS tsc wrote to out/, one file per module, with an ESM bundle
- * of the package, so importing it loads a few files instead.
- *
- * Every export without a * outside "./internal/" (".", "./config") is an
- * entry of one build, so a module more than one of them imports, like the one
- * that installs the registry, is evaluated once whichever is imported first.
- * Other packages stay imports, each resolving to its own bundle.
- *
- * out/ keeps a .d.ts per module, which "./internal/*" resolves to for types.
- * At runtime it resolves to the main entry, so a deep import shares its
- * modules instead of evaluating copies of them, and the main entry exports
- * every name any module exports, whether or not its .d.ts declares it. A name
- * two modules bind apart it exports as the first binds it, and under an alias
- * as each other does, and each other module gets a file of its own that
- * exports the main entry's names and the alias under the name, which
- * package.json must map the module's deep imports to. No module may bind a
- * name the main entry binds otherwise, nor export "default".
- * "./internal/config.ts" (and .js) resolves to the config entry, so
- * configuring through it still runs before the rest of the package evaluates,
- * as keyword config must.
- */
 export const bundle = (): void => {
-	// sorted, so which of two modules' like-named exports the main entry
-	// exports under that name is the same wherever it's built
+	// sorted so every build gives an ambiguous name to the same module
 	const perModuleJs = walkPaths(fromCwd("out"), {
 		include: path => path.endsWith(".js")
 	}).sort()
 	const entryPoints = publicEntryPoints()
 	const ownFiles = flattenInto(entryPoints, perModuleJs)
+	// one build for all entries, so a module several import evaluates once
 	const { outputFiles } = buildSync({
 		entryPoints,
 		outdir: fromCwd("out"),
@@ -73,16 +51,7 @@ const publicEntryPoints = (): string[] =>
 			:	[]
 	})
 
-/**
- * Appends to main's JS an `export *` of each module but the entries that
- * exports a name, so main exports every name they bind alike, as ES modules
- * link them, and evaluates any module it didn't after those it did, before its
- * own code. A name modules bind apart, being ambiguous there, main exports
- * from the first module exporting it, and from each other under an alias,
- * which that module's own file exports under the name. Returns the JS of each
- * such file. To esbuild, modules re-exporting another package's name bind it
- * apart.
- */
+// deep imports resolve to main at runtime, so it exports every module's names
 const flattenInto = (
 	entryPoints: string[],
 	perModuleJs: string[]
@@ -91,8 +60,6 @@ const flattenInto = (
 	const modules = perModuleJs.filter(path => !entryPoints.includes(path))
 	const starring = (paths: string[]) =>
 		paths.map(path => `export * from ${specifierOf(main, path)};\n`).join("")
-	// each module's names, and the names main and every module bind alike,
-	// which a module star-exporting all of them exports
 	const { metafile, outputFiles } = buildSync({
 		entryPoints: perModuleJs,
 		stdin: {
@@ -107,7 +74,6 @@ const flattenInto = (
 		packages: "external",
 		write: false,
 		metafile: true,
-		// what the metafile's paths are relative to
 		absWorkingDir: process.cwd(),
 		logLevel: "warning"
 	})
@@ -123,8 +89,7 @@ const flattenInto = (
 	const alike = exportedBy(
 		outputFiles.find(file => file.path === fromCwd(starredAll))!.text
 	)
-	// starring a module without names would evaluate it, and starring an entry
-	// would move modules between the entries' chunks
+	// starring a module without names would evaluate it
 	let js =
 		readFile(main) + starring(modules.filter(path => namesOf.get(path)!.length))
 	const ownFiles = new Map<string, string>()
@@ -149,7 +114,6 @@ const flattenInto = (
 			const alias = `${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
 			js += reexporting([`${name} as ${alias}`], main, path)
 			assertMapsToOwnFile(path)
-			// an entry's output is its own file
 			if (entryPoints.includes(path)) continue
 			ownFiles.set(
 				path,
@@ -162,11 +126,10 @@ const flattenInto = (
 	return ownFiles
 }
 
-/** a module's path from out/ without an extension, e.g. "keywords/ts" */
 const moduleOf = (path: string) =>
 	relative(fromCwd("out"), path).replace(/\\/g, "/").replace(/\.js$/, "")
 
-/** the names a bundle exports (its metafile lists ambiguous ones too) */
+// the metafile lists ambiguous exports too, so read the names from the JS
 const exportedBy = (js: string) =>
 	new Set(
 		parse(js).statements.flatMap(statement =>
@@ -180,7 +143,6 @@ const exportedBy = (js: string) =>
 		)
 	)
 
-/** throws unless package.json maps path's deep imports to path */
 const assertMapsToOwnFile = (path: string) => {
 	const exports = readPackageJson(process.cwd()).exports
 	const file = `./${relative(process.cwd(), path).replace(/\\/g, "/")}`
@@ -197,11 +159,9 @@ const assertMapsToOwnFile = (path: string) => {
 	}
 }
 
-/** the JS at from that re-exports specifiers of the module at path */
 const reexporting = (specifiers: string[], from: string, path: string) =>
 	`export { ${specifiers.join(", ")} } from ${specifierOf(from, path)};\n`
 
-/** a relative specifier for to, as imported from from */
 const specifierOf = (from: string, to: string) => {
 	const path = relative(dirname(from), to).replace(/\\/g, "/")
 	return JSON.stringify(path.startsWith(".") ? path : `./${path}`)
@@ -227,12 +187,7 @@ const applyEdits = (js: string, edits: Edit[]) =>
 			js
 		)
 
-/**
- * esbuild writes a class that refers to itself as `var X = class _X {...}`,
- * naming it _X, so rename it X along with its references to _X. Throws on a
- * function or class esbuild renamed apart from a like-named binding, as X2,
- * since that changes the name it has at runtime.
- */
+// esbuild names a self-referencing class _X, as in `var X = class _X {...}`
 const nameSelfReferencingClasses = (js: string): string => {
 	const edits: Edit[] = []
 	const identifiers = new Set<string>()
@@ -264,12 +219,6 @@ const nameSelfReferencingClasses = (js: string): string => {
 	return applyEdits(js, edits)
 }
 
-/**
- * edits renaming the inner binding of `var name = class _X {...}` to name, if
- * every reference to _X in it then binds to the class's own name as it did to
- * _X: name appears nowhere in the class, and no _X in it is a property or
- * declaration name rather than a reference
- */
 const renamesTo = (
 	node: ts.ClassExpression,
 	name: string
@@ -295,7 +244,6 @@ const renamesTo = (
 	return renamable ? renames : undefined
 }
 
-/** the name of the variable node initializes, if any */
 const inferredNameOf = (node: ts.Node): string | undefined =>
 	(
 		ts.isVariableDeclaration(node.parent) &&
@@ -305,7 +253,6 @@ const inferredNameOf = (node: ts.Node): string | undefined =>
 		node.parent.name.text
 	:	undefined
 
-/** the name a function or class has at runtime, a class taking its variable's */
 const runtimeNameOf = (node: ts.Node): string | undefined =>
 	ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) ?
 		node.name?.text
@@ -314,7 +261,6 @@ const runtimeNameOf = (node: ts.Node): string | undefined =>
 	: ts.isArrowFunction(node) ? inferredNameOf(node)
 	: undefined
 
-/** the identifier esbuild suffixed with a number to rename name, if any */
 const collidedNameOf = (name: string, identifiers: Set<string>) => {
 	for (let end = name.length - 1; /\d/.test(name[end]); end--)
 		if (identifiers.has(name.slice(0, end))) return name.slice(0, end)

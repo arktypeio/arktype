@@ -2,9 +2,6 @@ import { bench } from "@ark/attest"
 import * as v from "valibot"
 import { moltar, moltarData, product, productData } from "./scenarios.ts"
 
-// Every call gets a bound no earlier call used, so arktype builds new nodes
-// instead of returning cached ones. "+ parse" includes the first validation,
-// when zod compiles its objects and arktype finishes any deferred work.
 let bound = 1e9
 
 // arktype retains every type it creates, so cap how many a bench makes

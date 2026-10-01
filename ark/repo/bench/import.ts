@@ -1,6 +1,4 @@
-// Fresh-process cost of importing each library, then of defining moltar's
-// schema and validating once, and the heap left after that. Imports arktype's
-// build, so run `pnpm build` first.
+// imports arktype's build, so run `pnpm build` first
 
 import { spawnSync } from "node:child_process"
 
@@ -54,7 +52,6 @@ const samples = Object.fromEntries(
 	libraries.map(library => [library, [] as Sample[]])
 ) as Record<Library, Sample[]>
 
-// rotate the order each round so no library always runs first
 for (let i = 0; i < processes; i++) {
 	for (let j = 0; j < libraries.length; j++) {
 		const library = libraries[(i + j) % libraries.length]

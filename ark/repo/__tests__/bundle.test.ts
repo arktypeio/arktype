@@ -12,12 +12,9 @@ import { pathToFileURL } from "node:url"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { bundle } from "../bundle.ts"
 
-// each module records that it evaluated, and tags the objects it declares
-// with its name
 const declaring = (module: string, js: string) =>
 	`(globalThis.evaluated ??= []).push("${module}");\n${js.replace(/= {}/g, `= { from: "${module}" }`)}`
 
-// a package's modules as tsc emits them, one export case each
 const modules = {
 	"index.js": declaring(
 		"index",
@@ -25,10 +22,8 @@ const modules = {
 	),
 	"a.js": declaring("a", `export const x = {}; export const apart = {};`),
 	"b.js": declaring("b", `export const y = {};`),
-	// stars that bind a name alike don't make it ambiguous
 	"d.js": declaring("d", `export * from "./b.js"; export * from "./e.js";`),
 	"e.js": declaring("e", `export { y } from "./b.js";`),
-	// without names, so the main entry doesn't evaluate it
 	"h.js": declaring("h", `export {};`),
 	"i.js": declaring("i", `export * from "./j.js"; export const i = {};`),
 	"j.js": declaring("j", `export * from "./i.js"; export const j = {};`),
@@ -40,10 +35,8 @@ const modules = {
 		"l",
 		`import { x as local } from "./a.js"; export { local };`
 	),
-	// binds apart from a's
 	"sub/f.js": declaring("f", `export const apart = {};`),
 	"sub/o.js": declaring("o", `export { y as renamed } from "../b.js";`),
-	// the main entry doesn't evaluate it until it exports its names
 	"u.js": declaring("u", `export const unreached = {};`)
 }
 
@@ -51,10 +44,6 @@ type Namespace = Record<string, { from?: string }>
 
 const packages: string[] = []
 
-/**
- * a package of modules in a new directory, whose package.json maps the deep
- * imports of each of ownFiles to its own file
- */
 const packageOf = (
 	modules: Record<string, string>,
 	ownFiles: string[] = []
@@ -86,11 +75,7 @@ const packageOf = (
 	return dir
 }
 
-/**
- * bundles the package in dir, and returns the URL of a path in its out/.
- * attest looks up a call's type data by its file's path from the working
- * directory, so only bundle() runs from the package.
- */
+// attest finds a call's type data by its path from the cwd, so only bundle() runs in dir
 const bundling = (dir: string) => {
 	const cwd = process.cwd()
 	process.chdir(dir)
@@ -102,7 +87,6 @@ const bundling = (dir: string) => {
 	return (path: string) => pathToFileURL(join(dir, "out", path)).href
 }
 
-// the modules that evaluated since last called, in order
 const evaluated = () => {
 	const global = globalThis as { evaluated?: string[] }
 	const order = global.evaluated
@@ -128,7 +112,6 @@ contextualize(() => {
 		const fromOut = bundling(dir)
 
 		const root: Namespace = await import(fromOut("index.js"))
-		// u evaluates last of the modules, before the main entry's own code
 		attest(evaluated()).equals([...unbundledOrder!.slice(0, -1), "u", "index"])
 		attest(Object.keys(root)).snap([
 			"K",
@@ -154,12 +137,10 @@ contextualize(() => {
 		)
 		const f: Namespace = await import(fromOut("sub/f.js"))
 		attest(f.apart.from).equals("f")
-		// it also exports the main entry's other names
 		attest(f.x).is(root.x)
 	})
 
 	it("rejects a name a module binds otherwise than the main entry", () => {
-		// x the main entry exports from a, and y from b through its `export *`
 		for (const [name, from] of [
 			["x", "a"],
 			["y", "b"]
@@ -191,7 +172,6 @@ contextualize(() => {
 				`esbuild renamed ${name} to ${name}2`
 			)
 		}
-		// esbuild also renames a binding that shadows a top-level one
 		const shadowing = packageOf({
 			"index.js": `export const isDate = {}; export const f = () => { const isDate = () => true; return isDate };`
 		})

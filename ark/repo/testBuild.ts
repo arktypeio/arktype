@@ -1,13 +1,8 @@
-// The suite runs on sources, so this checks what only bundling the built
-// packages (ark/repo/bundle.ts) could break. arktype/config is imported first,
-// as documented, so if it loaded its own copy of the registry, the one arktype
-// loads would install as $ark2.
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { pathToFileURL } from "node:url"
 import ts from "typescript"
 
-// every file importing a package's entries loads
 const loaded = new Set<string>()
 
 registerHooks({
@@ -18,6 +13,7 @@ registerHooks({
 	}
 })
 
+// imported first, as documented, so a second registry would install as $ark2
 await import("arktype/config")
 const { scope, type }: typeof import("arktype") = await import("arktype")
 
@@ -47,7 +43,6 @@ const resolve = createRequire(fromPackage("type", "package.json")).resolve
 const fromBuild = (path: string): Promise<Record<string, unknown>> =>
 	import(pathToFileURL(resolve(path)).href)
 
-// the outputs of each export without a * outside ./internal/, e.g. "index.js"
 const entryFiles = (pkg: string) =>
 	Object.entries<string | { default: string }>(
 		JSON.parse(readFileSync(fromPackage(pkg, "package.json"), "utf8")).exports
@@ -67,7 +62,6 @@ for (const pkg of Object.keys(packages)) {
 		await import(fromPackage(pkg, `out/${file}`).href)
 }
 
-// importing an entry loads no module's own file
 for (const url of loaded) {
 	for (const pkg of Object.keys(packages)) {
 		const out = fromPackage(pkg, "out/").href
@@ -87,8 +81,7 @@ for (const [name, value] of Object.entries(
 		throw new Error(`⚠️  @ark/schema/config has its own copy of ${name}.`)
 }
 
-// configuring through a deep import must run before the rest of the package
-// evaluates, as it does through ./config
+// configuring through a deep import must run before the package evaluates
 for (const pkg of ["arktype", "@ark/schema"]) {
 	for (const path of ["internal/config.ts", "internal/config.js"]) {
 		if (resolve(`${pkg}/${path}`) !== resolve(`${pkg}/config`))
@@ -96,7 +89,6 @@ for (const pkg of ["arktype", "@ark/schema"]) {
 	}
 }
 
-// the one name two modules declare apart
 const stringKeywords = await fromBuild("arktype/internal/keywords/string.ts")
 const tsKeywords = await fromBuild("arktype/internal/keywords/ts.ts")
 
@@ -122,8 +114,7 @@ if (
 )
 	throw new Error("⚠️  Bundling renamed a class.")
 
-// a class static block in a source would ship as written, and static blocks
-// need Safari 16.4, newer than anything else shipped
+// class static blocks need Safari 16.4, newer than anything else shipped
 for (const pkg of Object.keys(packages)) {
 	const dir = fromPackage(pkg, "out/")
 	for (const name of readdirSync(dir).filter(name => name.endsWith(".js"))) {

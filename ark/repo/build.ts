@@ -18,7 +18,6 @@ const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
 const outDir = fromCwd("out")
 const packageName = readPackageJson(process.cwd()).name
-// the packages `import "arktype"` loads
 const isArktypeOrDependency =
 	packageName === "arktype" ||
 	packageName in packagesByScope.type.json.dependencies!

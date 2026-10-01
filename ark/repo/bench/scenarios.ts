@@ -1,21 +1,4 @@
-// The schemas and data compared by validate.bench.ts and create.bench.ts.
-//
-// Each scenario defines one schema per library with the same accepted inputs
-// and the same output. Where a library's default differs, the scenario picks
-// the options that equalize it:
-//
-// - Undeclared keys: arktype ignores them and returns its input, while zod's
-//   and valibot's objects strip them into a new object. The valid data of
-//   every scenario but "strip" has no undeclared keys, so all three return
-//   equal values; "strip" and "strict" set the policy explicitly for each
-//   library.
-// - Morphs and defaults: arktype clones its input before transforming it (its
-//   default `clone` config), so like zod and valibot it leaves the input as is.
-// - Errors: zod and valibot compute each issue's message when they collect it,
-//   arktype when it is read, so the error benches read arktype's `summary`.
-//
-// check() asserts all of this, so a bench can never compare different work.
-// Every input is exported so V8 can't fold a bench's work into a constant.
+// each library's schema for a scenario accepts and returns the same values
 
 import { numericStringMatcher } from "@ark/util"
 import { deepStrictEqual, ok } from "node:assert/strict"
@@ -47,8 +30,7 @@ export const moltarInvalidData = {
 	deeplyNested: { ...moltarData.deeplyNested, bool: "false" }
 }
 
-// Each factory's bound is part of the schema, so a new bound per call defeats
-// arktype's node cache in create.bench.ts. The validate benches use MAX_VALUE.
+// a factory's bound is part of its schema, so a new bound defeats arktype's cache
 export const moltar = {
 	arktype: (numMax: number) =>
 		type({
@@ -166,7 +148,6 @@ export const productData = {
 	]
 }
 
-/** schema-benchmarks' errorData: 16 issues across every level */
 export const productInvalidData = {
 	...productData,
 	title: "",
@@ -337,7 +318,7 @@ export const Strings = {
 
 const ab = /^[ab]+$/
 
-/** the last string fails the pattern only at its end */
+// the last string fails the pattern only at its end
 export const patternsInvalidData = ["ab", "ba", `${"ab".repeat(5000)}c`]
 
 export const Patterns = {
@@ -565,7 +546,6 @@ const tree = (depth: number, id = 0): TreeNode => ({
 		:	[]
 })
 
-/** 40 nodes: depth 3, 3 children each */
 export const treeData = tree(3)
 
 const zodNode: z.ZodType<TreeNode> = z.object({
@@ -640,11 +620,10 @@ const rejects = (name: string, schemas: Schemas, data: unknown) => {
 	const { allows, issues } = results(schemas, data)
 	deepStrictEqual(allows, [false, false, false], `${name} allows`)
 	ok(issues[0] > 0, `${name} issues`)
-	// every library reports every issue (abortEarly is off)
+	// abortEarly is off, so every library reports every issue
 	deepStrictEqual(issues, [issues[0], issues[0], issues[0]], `${name} issues`)
 }
 
-/** throws unless every library agrees on every scenario */
 export const check = (): void => {
 	accepts("moltar", Moltar, moltarData)
 	accepts("moltar strict", MoltarStrict, moltarData)

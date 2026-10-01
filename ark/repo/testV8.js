@@ -29,9 +29,7 @@ console.log("⏱️  Checking that every node of a kind has one V8 map...\n")
 
 const haveSameMap = (a, b) => eval("%HaveSameMap(a, b)")
 
-// each kind listed in checkedKinds occurs with different inner keys across
-// these, e.g. a structure with and without optional or undeclared, an
-// optional with and without a default, a pattern with and without flags
+// each checked kind occurs with and without some inner key, e.g. a pattern's flags
 const definitions = [
 	T,
 	{ name: "string", "nickname?": "string", "+": "reject" },
@@ -102,8 +100,7 @@ const assertOneMapPerKind = when => {
 
 assertOneMapPerKind("after construction")
 
-// cached getters fill slots every node of a kind already has, so reading them
-// on all but the first node of each kind must leave its map shared
+// read on all but the first node, so a getter that adds a slot splits the map
 for (const nodes of Object.values(nodesByKind)) {
 	for (const node of [...nodes].slice(1)) {
 		node.description
