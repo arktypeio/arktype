@@ -220,9 +220,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
-		this.props,
-		(i, node) => [node.key, node] as const
+	// a null prototype, so a key like "toString" isn't declared
+	propsByKey: Record<Key, Prop.Node | undefined> = Object.assign(
+		Object.create(null),
+		flatMorph(this.props, (i, node) => [node.key, node] as const)
 	)
 
 	expression: string = structuralExpression(this)

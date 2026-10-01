@@ -138,6 +138,18 @@ Right: { b: boolean, + (undeclared): delete }`)
 b must be removed`)
 		})
 
+		it("doesn't declare keys Object.prototype has", () => {
+			const Deleted = type({ "+": "delete", a: "string", "b?": "number" })
+			attest(Deleted({ a: "x", toString: 1, constructor: 2, z: 3 })).snap({
+				a: "x"
+			})
+
+			const Rejected = type({ "+": "reject", a: "string" })
+			attest(Rejected({ a: "x", toString: 1 }).toString()).snap(
+				"toString must be removed"
+			)
+		})
+
 		it("reject key from union", () => {
 			const O = type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey(
 				"reject"
