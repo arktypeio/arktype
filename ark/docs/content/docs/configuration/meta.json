@@ -4,7 +4,6 @@
 		"[levels](/docs/configuration#levels)",
 		"[errors](/docs/configuration#errors)",
 		"[keywords](/docs/configuration#keywords)",
-		"[clone](/docs/configuration#clone)",
 		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
 		"[jitless](/docs/configuration#jitless)",
 		"[onFail](/docs/configuration#onfail)",

@@ -311,56 +311,6 @@ const out = User({
 
 The options you can provide here are identical to those used to [configure a Type directly](/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](/docs/configuration#metadata).
 
-### Clone
-
-By default, before a [morph](/docs/intro/morphs-and-more) is applied, ArkType will deeply clone the original input value with a built-in `deepClone` function that tries to make reasonable assumptions about preserving prototypes etc. The implementation of `deepClone` can be found [here](https://github.com/arktypeio/arktype/blob/main/ark/util/clone.ts).
-
-You can provide an alternate clone implementation to the `clone` config option.
-
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ clone: structuredClone })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-// will now create a new object using structuredClone
-const UserForm = type({
-	age: "string.numeric.parse"
-})
-```
-
-To mutate the input object directly, you can set the `clone` config option to `false`.
-
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ clone: false })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-const UserForm = type({
-	age: "string.numeric.parse"
-})
-
-const formData = {
-	age: "42"
-}
-
-const out = UserForm(formData)
-
-// the original object's age key is now a number
-console.log(formData.age)
-```
-
 ### onUndeclaredKey
 
 Like TypeScript, ArkType defaults to ignoring undeclared keys during validation. However, it also supports two additional behaviors:
