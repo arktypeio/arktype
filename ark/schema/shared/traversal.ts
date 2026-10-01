@@ -5,6 +5,7 @@ import {
 	noSuggest,
 	objectKindOf,
 	stringifyPath,
+	type BuiltinObjectKind,
 	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -398,7 +399,9 @@ export class Traversal {
 	private copyOnce(data: unknown): unknown {
 		if (typeof data !== "object" || data === null || this.copied!.has(data))
 			return data
-		const copy = copyOf(data)
+		// a morph at an array's named prop reads it from this copy
+		const copy =
+			isArray(data) ? Object.assign(data.slice(), data) : copyOf(data)
 		this.copied!.add(copy)
 		return copy
 	}
@@ -440,10 +443,32 @@ export declare namespace TransformErrors {
 	}
 }
 
-export const copyOf = (data: object): object =>
-	isArray(data) ?
-		data.slice()
-	:	Object.setPrototypeOf({ ...data }, Object.getPrototypeOf(data))
+export const copyOf = (data: object): object => {
+	if (isArray(data)) return data.slice()
+	const prototype = Object.getPrototypeOf(data)
+	if (prototype === Object.prototype) return { ...data }
+	const kind = objectKindOf(data)
+	if (kind === undefined) return Object.setPrototypeOf({ ...data }, prototype)
+	// a builtin's state includes non-enumerable own props, e.g. an Error's message
+	return Object.defineProperties(
+		Object.setPrototypeOf(
+			copyContentsOf[kind]?.(data as never) ?? {},
+			prototype
+		),
+		Object.getOwnPropertyDescriptors(data)
+	)
+}
+
+// a builtin's contents are in internal slots only its constructor can copy
+const copyContentsOf: {
+	[kind in BuiltinObjectKind]?: (data: never) => object
+} = {
+	Date: (data: Date) => new Date(data),
+	Error: () => new Error(),
+	Map: (data: Map<unknown, unknown>) => new Map(data),
+	RegExp: (data: RegExp) => new RegExp(data),
+	Set: (data: Set<unknown>) => new Set(data)
+}
 
 export const traverseKey = <result>(
 	key: PropertyKey,

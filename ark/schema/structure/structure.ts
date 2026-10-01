@@ -524,13 +524,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	traverseTransform: TraverseTransform<object> = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
-		let out: any =
-			this.sequence?.transforms ? ctx.transform(this.sequence, data) : data
+		let out: any = data
+		if (this.sequence?.transforms) {
+			const transformedSequence = ctx.transform(this.sequence, data)
+			if (transformedSequence !== data)
+				out = this.copy(data, transformedSequence as object)
+		}
 		const transformKey = (k: Key, node: BaseRoot) => {
 			const value = data[k as never]
 			const transformed = traverseKey(k, () => ctx.transform(node, value), ctx)
 			if (transformed === value) return
-			if (out === data) out = copyOf(data)
+			if (out === data) out = this.copy(data)
 			out[k] = transformed
 		}
 		for (let i = 0; i < this.props.length; i++) {
@@ -553,7 +557,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	applyStructuralMorph(data: any, out: any, ctx: InternalTraversal): object {
 		for (const node of this.defaultable) {
 			if (node.key in data) continue
-			if (out === data) out = copyOf(data)
+			if (out === data) out = this.copy(data)
 			node.defaultValueMorph(out as never, ctx as never)
 		}
 		const sequence = this.sequence
@@ -561,7 +565,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			sequence?.defaultables &&
 			data.length < sequence.prefixLength + sequence.defaultablesLength
 		) {
-			if (out === data) out = copyOf(data)
+			if (out === data) out = this.copy(data)
 			for (
 				let i = data.length - sequence.prefixLength;
 				i < sequence.defaultables.length;
@@ -575,7 +579,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 			return out
 		if (Object.getPrototypeOf(out) !== Object.prototype)
-			return this.deleteUndeclared(out === data ? copyOf(data) : out)
+			return this.deleteUndeclared(out === data ? this.copy(data) : out)
 		const result: any = {}
 		for (const prop of this.props)
 			if (prop.key in out) result[prop.key] = out[prop.key]
@@ -584,6 +588,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (!(k in this.propsByKey) && this.declaresKey(k)) result[k] = out[k]
 		}
 		return result
+	}
+
+	// a copied array drops its named props, so those this structure declares are kept
+	private copy(data: object, copy = copyOf(data)): object {
+		if (this.sequence) {
+			for (const prop of this.props)
+				if (prop.key in data) copy[prop.key as never] = data[prop.key as never]
+		}
+		return copy
 	}
 
 	private hasUndeclaredKey(data: object): boolean {
@@ -677,7 +690,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.line("let out = data")
 		if (this.sequence?.transforms) {
 			js.transformKey("transformedSequence", "data", this.sequence, {
-				onChange: () => js.line("out = transformedSequence")
+				onChange: () => this.compileArrayCopy(js, "transformedSequence")
 			})
 		}
 		for (let i = 0; i < transformedProps.length; i++) {
@@ -723,12 +736,22 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	private compileCopy(js: NodeCompiler): NodeCompiler {
 		return js.if("out === data", () =>
-			js.line(
-				this.sequence ? "out = data.slice()" : (
+			this.sequence ?
+				this.compileArrayCopy(js, "data.slice()")
+			:	js.line(
 					`out = Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
-			)
 		)
+	}
+
+	private compileArrayCopy(js: NodeCompiler, copy: string): NodeCompiler {
+		js.line(`out = ${copy}`)
+		for (const prop of this.props) {
+			const store = `out${js.prop(prop.key)} = data${js.prop(prop.key)}`
+			if (prop.required) js.line(store)
+			else js.if(`${prop.serializedKey} in data`, () => js.line(store))
+		}
+		return js
 	}
 
 	private compileSequenceDefaults(js: NodeCompiler): void {

@@ -88,8 +88,49 @@ contextualize(() => {
 	})
 
 	it("preserves prototypes", () => {
-		const T = type(["Date", "=>", d => d.toISOString()])
-		attest(T.from(new Date(2000, 1))).equals("2000-02-01T05:00:00.000Z")
+		class Box {
+			a = " a "
+		}
+		const T = type([type.instanceOf(Box), "&", { a: "string.trim" }])
+
+		const original = new Box()
+
+		const out = T.assert(original)
+
+		attest(out instanceof Box).equals(true)
+		attest(out.a).equals("a")
+		attest(original.a).equals(" a ")
+	})
+
+	it("copies a builtin with its contents", () => {
+		const T = type(["Date", "&", { b: "number = 1" }])
+
+		const original = new Date(5)
+
+		const out: unknown = T(original)
+
+		attest(out instanceof Date && out.getTime()).equals(5)
+		attest(Object.entries(out as never)).equals([["b", 1]])
+		attest("b" in original).equals(false)
+	})
+
+	it("copies an array with the props its type declares", () => {
+		const T = type([
+			"string.trim[]",
+			"&",
+			{ foo: "string.trim", bar: "string" }
+		])
+
+		const original = Object.assign([" a "], { foo: " x ", bar: "y" })
+
+		const out = T.assert(original)
+
+		attest([...out]).equals(["a"])
+		attest(out.foo).equals("x")
+		attest(out.bar).equals("y")
+		attest(
+			T(Object.assign([" a ", 1], { foo: " x ", bar: "y" })).toString()
+		).snap("value at [1] must be a string (was a number)")
 	})
 
 	it("reports a morph's error alike whether or not its input is valid", () => {
