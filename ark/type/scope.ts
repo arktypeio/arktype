@@ -269,7 +269,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	// arktype finalizes nearly every node it returns, so it can hold them weakly
 	protected override get holdsNodesWeakly(): boolean {
 		return true
 	}

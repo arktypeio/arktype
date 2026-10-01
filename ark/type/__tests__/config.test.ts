@@ -190,7 +190,6 @@ contextualize(() => {
 			{ b: "number", o: { a: A, b: "b" } },
 			{ domain: { description: () => "a custom number" } }
 		).export()
-		// jitless, this reports "a.a must be a number (was a string)"
 		attest(types.o({ a: { a: "x" }, b: 1 }).toString()).snap(
 			"a.a must be a custom number (was a string)"
 		)
