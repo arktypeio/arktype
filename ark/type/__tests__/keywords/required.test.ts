@@ -48,4 +48,19 @@ contextualize(() => {
 
 		attest(T.expression).equals(Expected.expression)
 	})
+
+	it("tuple", () => {
+		const T = type(["string", "number?"]).required()
+
+		attest<[string, number]>(T.t)
+		attest(T.expression).snap("[string, number]")
+		attest(T(["foo"]).toString()).snap("must be exactly length 2 (was 1)")
+	})
+
+	it("empty tuple", () => {
+		const T = type([]).required()
+
+		attest<[]>(T.t)
+		attest(T.expression).snap("[]")
+	})
 })

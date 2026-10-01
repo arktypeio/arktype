@@ -9,6 +9,7 @@
 		"[spread](/docs/objects#properties-spread)",
 		"[keyof](/docs/objects#properties-keyof)",
 		"[get](/docs/objects#properties-get)",
+		"[structural transformations](/docs/objects#properties-structural)",
 		"[pick / omit](/docs/objects#properties-pick-omit)",
 		"[required / partial](/docs/objects#properties-required-partial)",
 		"[readonly](/docs/objects#properties-readonly)",

@@ -1,10 +1,10 @@
 import type { KeySet } from "./records.ts"
 
 export const capitalize = <s extends string>(s: s): Capitalize<s> =>
-	(s[0].toUpperCase() + s.slice(1)) as never
+	(s.length === 0 ? s : s[0].toUpperCase() + s.slice(1)) as never
 
 export const uncapitalize = <s extends string>(s: s): Uncapitalize<s> =>
-	(s[0].toLowerCase() + s.slice(1)) as never
+	(s.length === 0 ? s : s[0].toLowerCase() + s.slice(1)) as never
 
 export type firstChar<s extends string> =
 	s extends `${infer head}${string}` ? head : ""

@@ -87,4 +87,11 @@ contextualize(() => {
 			"a.b.a.b must be an object (was a string)"
 		)
 	})
+
+	it("allows multiple scopes with the same name without collision", () => {
+		const s1 = schemaScope({ a: { domain: "string" } }, { name: "Array" })
+		const s2 = schemaScope({ b: { domain: "number" } }, { name: "Array" })
+		attest(s1.name).equals("Array")
+		attest(s2.name).equals("Array")
+	})
 })

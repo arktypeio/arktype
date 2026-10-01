@@ -1,5 +1,17 @@
 # arkregex
 
+## 0.0.6
+
+### include the empty string when a zero-min quantifier applies to a number pattern
+
+A quantifier with a minimum of `0` permits zero repetitions, which produce `""` — a string that `${number}` does not include on its own.
+
+```ts
+// was: Regex<`${number}`>
+// now: Regex<"" | `${number}`>
+regex("^\\d*$")
+```
+
 ## 0.0.5
 
 ### represent \d as `${number}` instead of `${bigint}`

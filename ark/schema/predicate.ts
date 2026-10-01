@@ -53,6 +53,9 @@ export declare namespace Predicate {
 	export type Node = PredicateNode
 }
 
+const describePredicate = (predicate: Predicate | undefined) =>
+	`valid according to ${predicate?.name || "an anonymous predicate"}`
+
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
 		kind: "predicate",
@@ -64,8 +67,9 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 		normalize: schema =>
 			typeof schema === "function" ? { predicate: schema } : schema,
 		defaults: {
-			description: node =>
-				`valid according to ${node.predicate.name || "an anonymous predicate"}`
+			description: node => describePredicate(node.predicate),
+			// error contexts from ctx.reject have neither a description nor a predicate
+			expected: ctx => ctx.description ?? describePredicate(ctx.predicate)
 		},
 		intersectionIsOpen: true,
 		intersections: {

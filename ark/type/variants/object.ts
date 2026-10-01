@@ -63,6 +63,11 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 
 	/**
 	 * Create a copy of this `Type` with only the specified properties.
+	 *
+	 * ⚠️ returns a new object built from the properties it extracts, so a root
+	 * narrow, filter or metadata on this `Type` is not carried over
+	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
+	 *
 	 * @example type({ foo: "string", bar: "number" }).pick("foo") // Type<{ foo: string }>
 	 */
 	pick<const key extends arkKeyOf<t> = never>(
@@ -76,6 +81,11 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 
 	/**
 	 * Create a copy of this `Type` with all properties except the specified ones.
+	 *
+	 * ⚠️ returns a new object built from the properties it extracts, so a root
+	 * narrow, filter or metadata on this `Type` is not carried over
+	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
+	 *
 	 * @example type({ foo: "string", bar: "number" }).omit("foo") // Type<{ bar: number }>
 	 */
 	omit<const key extends arkKeyOf<t> = never>(
@@ -89,6 +99,11 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 
 	/**
 	 * Merge another `Type` definition, overriding properties of this `Type` with the duplicate keys.
+	 *
+	 * ⚠️ returns a new object built from the properties it extracts, so a root
+	 * narrow, filter or metadata on this `Type` is not carried over
+	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
+	 *
 	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1, b: 3, c: 4 }>
 	 */
 	merge<
@@ -105,16 +120,42 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 
 	/**
 	 * Create a copy of this `Type` with all properties required.
+	 *
+	 * ⚠️ returns a new object built from the properties it extracts, so a root
+	 * narrow, filter or metadata on this `Type` is not carried over
+	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
+	 *
+	 * 🔗 like TS's `Required`, an array or tuple base is preserved and
+	 * applied to its elements, e.g. `type(["string", "number"]).required()`
+	 *
 	 * @example const T = type({ "foo?"": "string" }).required() // Type<{ foo: string }>
 	 */
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
 
 	/**
 	 * Create a copy of this `Type` with all properties optional.
+	 *
+	 * ⚠️ returns a new object built from the properties it extracts, so a root
+	 * narrow, filter or metadata on this `Type` is not carried over
+	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
+	 *
+	 * 🔗 like TS's `Partial`, an array or tuple base is preserved and
+	 * applied to its elements, e.g. `type(["string", "number"]).partial()`
+	 *
 	 * @example: const T = type({ foo: "string" }).optional() // Type<{ foo?: string }>
 	 */
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
+	/**
+	 * Create a copy of this `Type` with each of its properties transformed by
+	 * the provided function. Return `[]` to remove a property.
+	 *
+	 * ⚠️ returns a new object built from the properties it extracts, so a root
+	 * narrow, filter or metadata on this `Type` is not carried over
+	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
+	 *
+	 * @example type({ foo: "string" }).map(prop => ({ key: prop.key, value: prop.value.or("null") })) // Type<{ foo: string | null }>
+	 */
 	map<
 		transformed extends listable<MappedTypeProp>,
 		r = Type<constructMapped<t, transformed>, $>
