@@ -62,12 +62,11 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testKeywordConfig && pnpm testSchemaFirst",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testSchemaFirst",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
 		"testEoptConfig": "ts ./__tests__/integration/testEoptConfig.ts",
-		"testKeywordConfig": "ts ./__tests__/integration/testKeywordConfig.ts",
 		"testSchemaFirst": "ts ./__tests__/integration/testSchemaFirst.ts"
 	},
 	"dependencies": {

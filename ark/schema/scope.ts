@@ -904,12 +904,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = this.bindReference(def.root))
 		}
 
-		return (this.resolutions[name] = this.parseResolution(def, name))
-	}
-
-	// the root an alias whose definition is a thunk or ambient resolves to
-	protected parseResolution(def: unknown, alias: string): BaseRoot {
-		return this.parse(def, { alias })
+		return (this.resolutions[name] = this.parse(def, {
+			alias: name
+		}))
 	}
 
 	protected createParseContext<input extends BaseParseContextInput>(
@@ -1021,24 +1018,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	/**
 	 * Export as a module whose members resolve on first access, each bound as
-	 * export binds it and compiled, unless its flat name is among those
-	 * `interpreted` names given on the first call. export reads them.
+	 * export binds it and compiled. export reads them.
 	 */
-	exportLazily(
-		interpreted: ReadonlySet<string> = new Set()
-	): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }> {
+	exportLazily(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }> {
 		if (!this.lazyExports) {
 			const exports = new RootModule({})
 			for (const name of this.exportedNames) {
 				defineLazily(exports, name, () => {
 					const def = this.aliases[name]
 					return hasArkKind(def, "module") ?
-							bindModuleLazily(def, this, name, interpreted)
+							bindModuleLazily(def, this)
 						:	finalizeExport(
 								this,
-								bootstrapAliasReferences(this.maybeResolve(name)!),
-								name,
-								interpreted
+								bootstrapAliasReferences(this.maybeResolve(name)!)
 							)
 				})
 			}
@@ -1157,40 +1149,28 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 }
 
 // a module bound to $ as bindModule binds it, each member on first access,
-// and compiled unless interpreted names it
+// and compiled
 const bindModuleLazily = (
 	module: InternalModule,
-	$: BaseScope,
-	prefix: string,
-	interpreted: ReadonlySet<string>
+	$: BaseScope
 ): InternalModule => {
 	const bound = new RootModule({})
 	for (const k in module) {
-		const name = `${prefix}.${k}`
 		defineLazily(bound, k, () => {
 			const resolution = module[k]
 			return hasArkKind(resolution, "module") ?
-					bindModuleLazily(resolution, $, name, interpreted)
+					bindModuleLazily(resolution, $)
 				:	finalizeExport(
 						$,
-						$.bindReference(resolution as BaseRoot | GenericRoot),
-						name,
-						interpreted
+						$.bindReference(resolution as BaseRoot | GenericRoot)
 					)
 		})
 	}
 	return bound as never
 }
 
-const finalizeExport = (
-	$: BaseScope,
-	resolution: BaseRoot | GenericRoot,
-	name: string,
-	interpreted: ReadonlySet<string>
-) =>
-	hasArkKind(resolution, "root") && !interpreted.has(name) ?
-		$.finalize(resolution)
-	:	resolution
+const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
+	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
 
 // the root or generic a lazily exported scope's flat name refers to, if any
 const maybeResolveExport = (

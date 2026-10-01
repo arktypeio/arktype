@@ -15,13 +15,7 @@ import type {
 	inferDefinition,
 	validateDefinition
 } from "../parser/definition.ts"
-import {
-	$arkTypeRegistry,
-	scope,
-	type bindThis,
-	type InternalScope,
-	type Scope
-} from "../scope.ts"
+import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
 import type {
 	DefinitionParser,
 	SchemaParser,
@@ -86,31 +80,7 @@ export const ark: Scope<Ark> = scope(
 	{ name: "ark" }
 ) as never
 
-// see exportKeywords. A parse keyword's input shares its root's id and is
-// bound after it, unless either is configured. readonly aliases root, so it
-// is bound after a configured root unless it is configured itself
-export const keywords: Module<Ark> = (
-	ark.internal as {} as InternalScope
-).exportKeywords(unconfigured => ({
-	"object.root": unconfigured("object"),
-	"object.json.root": unconfigured("object.json"),
-	"string.date.iso.root": unconfigured(
-		"string.date.iso",
-		"string.date.iso.parse"
-	),
-	"string.date.epoch.root": unconfigured(
-		"string.date.epoch",
-		"string.date.epoch.parse"
-	),
-	"string.integer.root": unconfigured("string.integer", "string.integer.parse"),
-	"string.normalize.root": unconfigured("string.normalize"),
-	"string.numeric.root": unconfigured("string.numeric", "string.numeric.parse"),
-	"unknown.root": unconfigured("unknown"),
-	"unknown.any": unconfigured("unknown.any"),
-	"Array.root": unconfigured("Array") || unconfigured("Array.readonly"),
-	"Array.readonly": unconfigured("Array", "Array.readonly"),
-	"FormData.value": unconfigured("FormData.value")
-})) as never
+export const keywords: Module<Ark> = ark.internal.exportLazily() as never
 
 // the keywords' own accessors, so that each resolves on first reference
 // through either

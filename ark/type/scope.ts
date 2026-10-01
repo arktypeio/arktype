@@ -272,41 +272,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	/**
-	 * Export keywords as exportLazily does, leaving interpreted each flat name
-	 * `interpreted` maps to true. Those are the names an export of the whole
-	 * scope leaves interpreted: each shares its id with a copy bound after it,
-	 * which displaces it from the references that export compiles. The
-	 * interpreter and the JIT describe some unions differently (e.g.
-	 * FormData.value), so compiling one would change its messages. A
-	 * configured keyword is a node of its own, so which names stay
-	 * interpreted depends on which are unconfigured.
-	 */
-	exportKeywords(interpreted: InterpretedKeywords): RootModule {
-		const byName = interpreted((...names) =>
-			names.every(
-				name => !this.resolvedConfig.keywords?.[this.qualifyKeyword(name)]
-			)
-		)
-		return this.exportLazily(
-			new Set(Object.keys(byName).filter(name => byName[name]))
-		) as never
-	}
-
-	// the name a keyword is configured by, e.g. "string.integer" for string's
-	// "integer.root"
-	private qualifyKeyword(flatName: string): string {
-		const alias =
-			flatName === "root" ? ""
-			: flatName.endsWith(".root") ? flatName.slice(0, -5)
-			: flatName
-		return (
-			this.name === "ark" ? alias
-			: alias ? `${this.name}.${alias}`
-			: this.name
-		)
-	}
-
 	// arktype finalizes each node it returns except those of type.unit,
 	// enumerated, valueOf and instanceOf, a scope's node and configuring
 	// "self". One of those can be a copy of a node an earlier finalize
@@ -402,31 +367,14 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		InternalScope.scope(def as never, config).export()) as never
 }
 
-// a keyword defined by a thunk, which defers building its node, is bound as
-// a keyword defined by its node is, compiled once exported (see
-// exportKeywords) or referenced by a root that is
-class KeywordScope extends InternalScope {
-	protected override parseResolution(def: unknown, alias: string): BaseRoot {
-		return this.parseDefinition(def, { alias })
-	}
-}
-
-// which of a keyword scope's flat names stay interpreted (see
-// exportKeywords), given whether each of some names is unconfigured
-export type InterpretedKeywords = (
-	unconfigured: (...names: string[]) => boolean
-) => { [name: string]: boolean }
-
 /**
  * A module of keywords, built on first reference: its scope is constructed
  * with the global config fixed on import when any member is first read, and
- * each member resolves when it is, interpreted if `interpreted` says so (see
- * exportKeywords).
+ * each member resolves when it is.
  */
 export const keywordModule = (
 	def: Dict,
-	config: ArkScopeConfig,
-	interpreted: InterpretedKeywords = () => ({})
+	config: ArkScopeConfig
 ): RootModule => {
 	const module = new RootModule({})
 	let exports: RootModule | undefined
@@ -437,7 +385,7 @@ export const keywordModule = (
 			name,
 			() =>
 				(exports ??= withFixedGlobalConfig(() =>
-					new KeywordScope(def, config).exportKeywords(interpreted)
+					new InternalScope(def, config).exportLazily()
 				))[name as never]
 		)
 	}

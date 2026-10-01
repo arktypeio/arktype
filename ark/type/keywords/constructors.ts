@@ -1,13 +1,11 @@
 import {
 	ecmascriptConstructors,
-	flatMorph,
 	platformConstructors,
 	type EcmascriptObjects,
 	type KeySet,
 	type PlatformObjects
 } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-import { keywordModule } from "../scope.ts"
 import { arkArray } from "./Array.ts"
 import { arkFormData } from "./FormData.ts"
 import { TypedArray } from "./TypedArray.ts"
@@ -33,16 +31,8 @@ for (const constructors of [ecmascriptConstructors, platformConstructors]) {
 	}
 }
 
-// parsed in a scope of their own rather than ark's, so that type.instanceOf,
-// which ark parses without finalizing, builds a node of its own for a
-// constructor rather than returning its keyword's
-const instanceOfKeywords: Record<string, unknown> = keywordModule(
-	instanceOfDefinitions,
-	{}
-) as never
-
 export const arkPrototypes = {
-	...flatMorph(instanceOfDefinitions, k => [k, () => instanceOfKeywords[k]]),
+	...instanceOfDefinitions,
 	Array: arkArray,
 	TypedArray,
 	FormData: arkFormData

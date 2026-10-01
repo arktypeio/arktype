@@ -33,12 +33,7 @@ export const arkArray: arkArray.module = keywordModule(
 	},
 	{
 		name: "Array"
-	},
-	// readonly resolves to root's node unless it is configured itself
-	unconfigured => ({
-		root: unconfigured("root"),
-		readonly: unconfigured("root", "readonly")
-	})
+	}
 ) as never
 
 export declare namespace arkArray {

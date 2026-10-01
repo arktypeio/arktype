@@ -65,10 +65,7 @@ export const stringInteger: stringInteger.module = keywordModule(
 	},
 	{
 		name: "string.integer"
-	},
-	// parse's input shares root's id and is bound after it, unless either is
-	// configured
-	unconfigured => ({ root: unconfigured("root", "parse") })
+	}
 ) as never
 
 export declare namespace stringInteger {
@@ -279,13 +276,7 @@ export const stringDate: stringDate.module = keywordModule(
 	},
 	{
 		name: "string.date"
-	},
-	// each parse's input shares its root's id and is bound after it, unless
-	// either is configured
-	unconfigured => ({
-		"iso.root": unconfigured("iso", "iso.parse"),
-		"epoch.root": unconfigured("epoch", "epoch.parse")
-	})
+	}
 ) as never
 
 export declare namespace stringDate {
@@ -561,9 +552,7 @@ export const normalize: normalize.module = keywordModule(
 	},
 	{
 		name: "string.normalize"
-	},
-	// root resolves to NFC's, which is bound after it
-	unconfigured => ({ root: unconfigured("root") })
+	}
 ) as never
 
 export declare namespace normalize {
@@ -632,10 +621,7 @@ export const stringNumeric: stringNumeric.module = keywordModule(
 	},
 	{
 		name: "string.numeric"
-	},
-	// parse's input shares root's id and is bound after it, unless either is
-	// configured
-	unconfigured => ({ root: unconfigured("root", "parse") })
+	}
 ) as never
 
 export declare namespace stringNumeric {
@@ -899,17 +885,7 @@ export const string: string.module = keywordModule(
 	},
 	{
 		name: "string"
-	},
-	// each parse's input shares its root's id and is bound after it, unless
-	// either is configured. normalize's root resolves to NFC's, which is bound
-	// after it
-	unconfigured => ({
-		"date.iso.root": unconfigured("date.iso", "date.iso.parse"),
-		"date.epoch.root": unconfigured("date.epoch", "date.epoch.parse"),
-		"integer.root": unconfigured("integer", "integer.parse"),
-		"normalize.root": unconfigured("normalize"),
-		"numeric.root": unconfigured("numeric", "numeric.parse")
-	})
+	}
 ) as never
 
 export declare namespace string {

@@ -59,8 +59,7 @@ export const arkFormData: arkFormData.module = keywordModule(
 	},
 	{
 		name: "FormData"
-	},
-	unconfigured => ({ value: unconfigured("value") })
+	}
 ) as never
 
 export declare namespace arkFormData {

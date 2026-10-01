@@ -54,9 +54,7 @@ export const unknown: Module<unknown.$> = keywordModule(
 	},
 	{
 		name: "unknown"
-	},
-	// any shares root's id and is bound after it, unless either is configured
-	unconfigured => ({ root: unconfigured("root", "any") })
+	}
 ) as never
 
 export declare namespace unknown {
