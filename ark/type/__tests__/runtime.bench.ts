@@ -1,6 +1,7 @@
 import { bench } from "@ark/attest"
 import { match, type } from "arktype"
 
+// inputs are exported so V8 can't fold a bench's work into a constant
 export const validData = {
 	number: 1,
 	negNumber: -1,
@@ -30,9 +31,7 @@ const TReject = type({
 	}
 }).onDeepUndeclaredKey("reject")
 
-bench("moltar reject", () => {
-	TReject(validData)
-}).median([5.97, "us"])
+bench("moltar reject", () => TReject(validData)).median([5.97, "us"])
 
 export const T = type({
 	number: "number",
@@ -48,13 +47,9 @@ export const T = type({
 	}
 })
 
-bench("moltar allows", () => {
-	T.allows(validData)
-}).median([13.72, "ns"])
+bench("moltar allows", () => T.allows(validData)).median([13.72, "ns"])
 
-bench("moltar apply", () => {
-	T(validData)
-}).median([21.31, "ns"])
+bench("moltar apply", () => T(validData)).median([21.31, "ns"])
 
 const tDelete = type
 	.scope({}, { clone: false })
@@ -73,9 +68,7 @@ const tDelete = type
 	})
 	.onDeepUndeclaredKey("delete")
 
-bench("moltar delete", () => {
-	tDelete(validData)
-}).median([3.54, "us"])
+bench("moltar delete", () => tDelete(validData)).median([3.54, "us"])
 
 const tShallowDelete = type.scope({}, { clone: false }).type({
 	"+": "delete",
@@ -87,23 +80,25 @@ const tShallowDelete = type.scope({}, { clone: false }).type({
 	boolean: "boolean"
 })
 
-bench("shallow delete", () => {
-	tShallowDelete(validData)
-}).median([370, "ns"])
+bench("shallow delete", () => tShallowDelete(validData)).median([370, "ns"])
 
-bench("shallow primitive allows", () => {
-	type.string.allows("foo")
-}).median([10.01, "ns"])
+export const primitiveData = "foo"
 
-bench("shallow primitive apply", () => {
-	type.string("foo")
-}).median([25.01, "ns"])
+bench("shallow primitive allows", () =>
+	type.string.allows(primitiveData)
+).median([10.01, "ns"])
+
+bench("shallow primitive apply", () => type.string(primitiveData)).median([
+	25.01,
+	"ns"
+])
 
 const stringToLength = type.string.pipe(s => s.length)
 
-bench("shallow primitive morph", () => {
-	stringToLength("foo")
-}).median([9.02, "ns"])
+bench("shallow primitive morph", () => stringToLength(primitiveData)).median([
+	9.02,
+	"ns"
+])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
@@ -111,11 +106,12 @@ const invokedCases3 = match
 	.case("33", n => `${n}` as const)
 	.default("assert")
 
-bench("case(3, invoke)", () => {
-	invokedCases3(31)
-	invokedCases3(32)
-	invokedCases3(33)
-}).median([55.72, "ns"])
+export const cases3Data = [31, 32, 33] as const
+
+bench("case(3, invoke)", () => cases3Data.map(n => invokedCases3(n))).median([
+	55.72,
+	"ns"
+])
 
 const invokedCases10 = match
 	.case("0n", n => `${n}` as const)
@@ -130,17 +126,17 @@ const invokedCases10 = match
 	.case("9n", n => `${n}` as const)
 	.default("never")
 
-bench("case(10, invoke first)", () => {
-	invokedCases10(0n)
-	invokedCases10(1n)
-	invokedCases10(2n)
-}).median([151.45, "ns"])
+export const cases10FirstData = [0n, 1n, 2n] as const
 
-bench("case(10, invoke last)", () => {
-	invokedCases10(7n)
-	invokedCases10(8n)
-	invokedCases10(9n)
-}).median([198.78, "ns"])
+bench("case(10, invoke first)", () =>
+	cases10FirstData.map(n => invokedCases10(n))
+).median([151.45, "ns"])
+
+export const cases10LastData = [7n, 8n, 9n] as const
+
+bench("case(10, invoke last)", () =>
+	cases10LastData.map(n => invokedCases10(n))
+).median([198.78, "ns"])
 
 type Data =
 	| {
@@ -161,7 +157,11 @@ const discriminateValue = match
 		default: "assert"
 	})
 
-bench("discriminate", () => {
-	discriminateValue({ id: 1, oneValue: 1 })
-	discriminateValue({ id: 2, twoValue: "two" })
-}).median([68.36, "ns"])
+export const discriminateData: Data[] = [
+	{ id: 1, oneValue: 1 },
+	{ id: 2, twoValue: "two" }
+]
+
+bench("discriminate", () =>
+	discriminateData.map(o => discriminateValue(o))
+).median([68.36, "ns"])
