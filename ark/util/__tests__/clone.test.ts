@@ -94,7 +94,6 @@ contextualize(() => {
 					traps.push(`has ${String(k)}`)
 					return Reflect.has(target, k)
 				},
-				// stores nothing
 				set: (_, k) => {
 					traps.push(`set ${String(k)}`)
 					return true

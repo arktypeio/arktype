@@ -17,12 +17,6 @@ export const lazily = <t extends object>(thunk: () => t): t => {
 	})
 }
 
-/**
- * Define `k` on `o` as computed on first read, after which the object it was
- * read through holds the result as a plain property, unless it has been
- * frozen or sealed. Copies of the accessor (e.g. through
- * Object.getOwnPropertyDescriptors) share that one result.
- */
 export const defineLazily = (
 	o: object,
 	k: PropertyKey,

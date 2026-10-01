@@ -35,10 +35,8 @@ declare global {
 }
 
 const namesByResolution = new Map<object | symbol, string>()
-// names nameOf gave to values it didn't register. objects are held weakly, so
-// naming a value (e.g. data printed in an error message) never keeps it alive.
-// symbols can't be WeakMap keys before ES2023
 const unregisteredNames = new WeakMap<object, string>()
+// symbols can't be WeakMap keys before ES2023
 const unregisteredSymbolNames = new Map<symbol, string>()
 const nameCounts: Record<string, number | undefined> = Object.create(null)
 
@@ -52,7 +50,6 @@ export const register = (value: object | symbol): string => {
 	return name
 }
 
-/** The name register gives a value, without storing the value in the registry */
 export const nameOf = (value: object | symbol): string => {
 	const existingName = namesByResolution.get(value) ?? unregisteredNameOf(value)
 	if (existingName) return existingName

@@ -77,8 +77,7 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 
 	constructor(...items: array<PropertyKey>) {
 		super()
-		// avoid case where a single number will create empty slots, and push,
-		// which is slow on an Array subclass
+		// a single number would create empty slots, and push is slow on a subclass
 		for (let i = 0; i < items.length; i++) (this as any)[i] = items[i]
 	}
 

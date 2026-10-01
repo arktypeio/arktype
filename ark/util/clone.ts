@@ -29,11 +29,8 @@ const _clone = (input: unknown, seen: Map<unknown, unknown>): any => {
 		if (!desc) continue
 		if (!("get" in desc || "set" in desc)) {
 			if (typeof k === "string") desc.value = _clone(desc.value, seen)
-			// assigning defines a writable, enumerable, configurable value if k
-			// is an element slice copied to a builtin array, or if k is nowhere
-			// on cloned's prototype chain and its prototype is Object.prototype
-			// or null. Any other prototype could be exotic, like a Proxy, whose
-			// traps would see the `in` and decide what the assignment stores
+			// assigning k defines the same property only if slice copied it or it is
+			// absent from a plain prototype chain, which no Proxy can trap
 			if (
 				desc.writable &&
 				desc.enumerable &&

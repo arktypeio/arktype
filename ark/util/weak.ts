@@ -16,11 +16,6 @@ class Pinned<v> {
 	}
 }
 
-/**
- * A map from strings to objects that holds each value only while something
- * else does, unless the value was pinned or the map is not weak. A collected
- * value reads as absent, and its key is removed.
- */
 export class WeakCache<v extends object> {
 	private readonly refs = new Map<string, { deref(): v | undefined }>()
 	private readonly cleanup: FinalizationRegistry<string> | undefined
@@ -46,7 +41,6 @@ export class WeakCache<v extends object> {
 		return value
 	}
 
-	/** Set key to value, holding it strongly */
 	pin(key: string, value: v): v {
 		this.refs.set(key, new Pinned(value))
 		return value

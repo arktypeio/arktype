@@ -59,8 +59,7 @@ export type platformConstructors = {
 	URL: typeof URL
 }
 
-// Node loads undici the first time one of these globals is read, so they're
-// read together on first access rather than when this module loads
+// Node loads undici when any of these is read, so they're read on first access
 const fetchConstructors = cached(() => ({
 	FormData,
 	Headers,
@@ -121,7 +120,6 @@ export interface builtinConstructors
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-// (from descriptors, so platformConstructors' getters are copied, not read)
 export const builtinConstructors: builtinConstructors = Object.defineProperties(
 	{ ...ecmascriptConstructors },
 	{
@@ -213,11 +211,6 @@ export const isArray: (data: unknown) => data is readonly unknown[] =
 const dateToString = Date.prototype.toString
 const dateGetTime = Date.prototype.getTime
 
-/**
- * @returns whether `date.toString() !== "Invalid Date"`, without formatting
- * a string where the result doesn't depend on it: Date.prototype.toString
- * returns "Invalid Date" exactly when a Date's time value is NaN
- */
 export const isValidDate = (date: Date): boolean => {
 	if (date.toString === dateToString) {
 		try {
