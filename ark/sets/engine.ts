@@ -12,7 +12,5 @@ export const setEngine: SetEngine = {
 	toJsonSchema
 }
 
-// installed on import so that `import "arksets"` is the whole opt-in. it has
-// to precede scope construction: reduction and discrimination happen at parse
-// time, so a node parsed before this point is cached unreduced for good
+// must precede parsing, since nodes are reduced and discriminated when parsed
 $ark.sets = setEngine

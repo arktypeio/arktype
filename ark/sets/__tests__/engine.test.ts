@@ -8,8 +8,7 @@ import {
 import { setEngine } from "arksets"
 
 contextualize(() => {
-	// as in any process that imports arksets before it parses, the language
-	// is bootstrapped with the engine installed
+	// bootstrap with the engine installed, as when arksets is imported first
 	bootstrap()
 
 	const withoutEngine = (test: () => void) => {

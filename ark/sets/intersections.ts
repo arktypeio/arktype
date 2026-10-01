@@ -16,8 +16,6 @@ import type {
 	IntersectionContext,
 	UnknownIntersectionResult
 } from "./implement.ts"
-// kinds → union → intersections → kinds is a cycle, but the table is only read
-// at call time so the import order is irrelevant
 import { setImplementationsByKind } from "./kinds.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}

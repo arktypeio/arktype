@@ -71,15 +71,6 @@ export type Reduction<d extends BaseNodeDeclaration> = (
 	$: BaseScope
 ) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 
-/**
- * The relational half of a node kind's implementation: how it intersects with
- * each kind to its right in precedence order, and how a parsed inner reduces
- * to its canonical form.
- *
- * They live apart from `implementNode` so that the schema language is never
- * what makes them reachable: an artifact that never compares two types can
- * load the nodes without the algebra.
- */
 export type setImplementationOf<d extends BaseNodeDeclaration> = {
 	intersections: IntersectionMap<d["kind"]>
 } & (d["reducibleTo"] extends d["kind"] ? { reduce?: Reduction<d> }

@@ -15,8 +15,6 @@ import {
 } from "@ark/schema"
 import type { setImplementationOf } from "./implement.ts"
 
-// in precedence order, so each table's rightward entries point down the file
-
 export const pattern: setImplementationOf<Pattern.Declaration> = {
 	intersections: {
 		// for now, non-equal regex are naively intersected:

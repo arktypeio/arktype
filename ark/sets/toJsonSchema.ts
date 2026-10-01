@@ -71,7 +71,6 @@ const toResolvedJsonSchema = (
 	return Object.assign(result, node.metaJson)
 }
 
-// boolean's two unit branches render as one { type: "boolean" }
 const branchGroups = (node: nodeOfKind<"union">): BaseRoot[] => {
 	const groups: BaseRoot[] = []
 	let firstBooleanIndex = -1
@@ -360,8 +359,6 @@ const reduceSequenceJsonSchema = (
 	return schema
 }
 
-// the schema each refinement folds into. only an intersection folds its
-// children, and it can't know which one it holds, so the cast stays at that call
 type JsonSchemaOperandByKind = {
 	pattern: JsonSchema.String
 	divisor: JsonSchema.Numeric
