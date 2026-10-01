@@ -387,99 +387,77 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		// https://github.com/arktypeio/arktype/issues/1458
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
-		if (this.prefix) {
-			for (const [i, node] of this.prefix.entries()) {
-				js.traverseKey(`${i}`, `data[${i}]`, node)
-				if (js.traversalKind === "Apply") js.returnIfFailFast()
-			}
-		}
-
-		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
-			const dataIndex = `${i + this.prefixLength}`
-			js.if(`${dataIndex} >= data.length`, () =>
-				js.traversalKind === "Allows" ? js.return(true) : js.return()
-			)
-			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
-			if (js.traversalKind === "Apply") js.returnIfFailFast()
-		}
-
-		if (this.variadic) {
-			if (this.postfix) {
-				js.const(
-					"firstPostfixIndex",
-					`data.length${this.postfix ? `- ${this.postfix.length}` : ""}`
-				)
-			}
-			js.for(
-				`i < ${this.postfix ? "firstPostfixIndex" : "data.length"}`,
-				() => {
-					js.traverseKey("i", "data[i]", this.variadic!)
-					return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
-				},
-				this.prevariadic.length
-			)
-			if (this.postfix) {
-				for (const [i, node] of this.postfix.entries()) {
-					const keyExpression = `firstPostfixIndex + ${i}`
-					js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
-					if (js.traversalKind === "Apply") js.returnIfFailFast()
-				}
-			}
-		}
+		this.compileElements(js, (keyExpression, node) => {
+			js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+			return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
+		})
 
 		if (js.traversalKind === "Allows") js.return(true)
 	}
 
 	private compileTransform(js: NodeCompiler): void {
-		js.initializeTransform().line("let out = data")
-		const transformElement = (
-			name: string,
+		js.initializeTransform(this.children).line("let out = data")
+		this.compileElements(js, (keyExpression, node, name) =>
+			js.transformKey(name, `data[${keyExpression}]`, node, {
+				keyExpression,
+				onChange: () =>
+					js
+						.if("out === data", () => js.line("out = data.slice()"))
+						.line(`out[${keyExpression}] = ${name}`)
+			})
+		)
+		js.returnIfTransformFailed().return("out")
+	}
+
+	private compileElements(
+		js: NodeCompiler,
+		compileElement: (
 			keyExpression: string,
-			node: BaseRoot
-		) =>
-			node.transforms ?
-				js.transformKey(name, `data[${keyExpression}]`, node, {
-					keyExpression,
-					onChange: () =>
-						js
-							.if("out === data", () => js.line("out = data.slice()"))
-							.line(`out[${keyExpression}] = ${name}`)
-				})
-			:	js
+			node: BaseRoot,
+			name: string
+		) => NodeCompiler
+	): void {
+		// a transform skips each element that would return its input
+		const reaches = (node: BaseRoot) =>
+			js.traversalKind !== "Transform" || node.transforms
 
 		if (this.prefix) {
 			for (const [i, node] of this.prefix.entries())
-				transformElement(`element${i}`, `${i}`, node)
+				if (reaches(node)) compileElement(`${i}`, node, `element${i}`)
 		}
 
 		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
-			const dataIndex = i + this.prefixLength
-			if (node.transforms) {
-				js.if(`${dataIndex} < data.length`, () =>
-					transformElement(`element${dataIndex}`, `${dataIndex}`, node)
-				)
-			}
-		}
-
-		if (this.variadic) {
-			if (this.postfix)
-				js.const("firstPostfixIndex", `data.length - ${this.postfix.length}`)
-			if (this.variadic.transforms) {
-				js.for(
-					`i < ${this.postfix ? "firstPostfixIndex" : "data.length"}`,
-					() => transformElement("element", "i", this.variadic!),
-					this.prevariadic.length
-				)
-			}
-			if (this.postfix) {
-				for (const [i, node] of this.postfix.entries()) {
-					const keyExpression = `firstPostfixIndex + ${i}`
-					transformElement(`postfixElement${i}`, keyExpression, node)
+			const dataIndex = `${i + this.prefixLength}`
+			if (js.traversalKind === "Transform") {
+				if (node.transforms) {
+					js.if(`${dataIndex} < data.length`, () =>
+						compileElement(dataIndex, node, `element${dataIndex}`)
+					)
 				}
+				continue
 			}
+			js.if(`${dataIndex} >= data.length`, () =>
+				js.traversalKind === "Allows" ? js.return(true) : js.return()
+			)
+			compileElement(dataIndex, node, `element${dataIndex}`)
 		}
 
-		js.returnIfTransformFailed().return("out")
+		const variadic = this.variadic
+		const postfix = this.postfix ?? []
+		if (!variadic || (!reaches(variadic) && !postfix.some(reaches))) return
+		if (postfix.length)
+			js.const("firstPostfixIndex", `data.length - ${postfix.length}`)
+		if (reaches(variadic)) {
+			js.for(
+				`i < ${postfix.length ? "firstPostfixIndex" : "data.length"}`,
+				() => compileElement("i", variadic, "element"),
+				this.prevariadic.length
+			)
+		}
+		for (const [i, node] of postfix.entries()) {
+			if (reaches(node))
+				compileElement(`firstPostfixIndex + ${i}`, node, `postfixElement${i}`)
+		}
 	}
 
 	protected override _transform(
