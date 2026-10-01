@@ -46,7 +46,6 @@
 		"benchRuntimeUp": "ATTEST_updateSnapshots=1 pnpm benchRuntime",
 		"benchImport": "node ./ark/repo/bench/import.ts",
 		"benchRegex": "ts ./ark/regex/__tests__/regex.bench.ts",
-		"perf": "ts ./ark/repo/perf/perf.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
 		"lint": "pnpm checkPrettier && pnpm checkEslint",
 		"checkPrettier": "prettier --ignore-path .gitignore --ignore-path ./ark/repo/.prettierignore --check .",
