@@ -155,15 +155,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// throw a ParseError parsing it reports (e.g. where one branch's index
 	// signature and another's prop have disjoint values)
 	readonly discriminant: Discriminant | null = this.discriminate()
-
-	private _discriminantJson: JsonStructure | null | undefined
-	get discriminantJson(): JsonStructure | null {
-		if (this._discriminantJson === undefined) {
-			this._discriminantJson =
-				this.discriminant ? discriminantToJson(this.discriminant) : null
-		}
-		return this._discriminantJson
-	}
+	discriminantJson =
+		this.discriminant ? discriminantToJson(this.discriminant) : null
 
 	expression: string = this.distribute(
 		n => n.nestableExpression,
