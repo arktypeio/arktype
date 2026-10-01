@@ -72,8 +72,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 	}
 
 	override get rawIn(): OptionalNode {
-		// once super.rawIn has cached this node's input, default included, that
-		// is what a read returns, so only the first read omits the default
+		// super.rawIn caches the input with its default, which every later read returns
 		if (this._rawIn) return this._rawIn as never
 		const baseIn = super.rawIn
 		if (!this.hasDefault()) return baseIn as never
@@ -111,7 +110,6 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-// see keepsDefaultValueMorph
 const defaultableMorphCache = new WeakCache<Morph>()
 
 const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
@@ -128,13 +126,8 @@ const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
 		:	defaultableMorphCache.set(cacheKey, morph)
 }
 
-/**
- * Whether a default morph cache keeps the morph computeDefaultValueMorph
- * made for value while no node holds it. Values with equal ids share a
- * morph, and bound copies of a node, one per scope, share its id. A morph
- * runs its value only if the value transforms, so only then does which
- * copy it was made for, and whose config words its errors, matter.
- */
+// copies of a value bound to other scopes share its id, which matters only if
+// the morph calls the value, as it does when the value transforms
 export const keepsDefaultValueMorph = (value: BaseRoot): boolean =>
 	value.includesTransform
 

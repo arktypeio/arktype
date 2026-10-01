@@ -41,10 +41,7 @@ export class ArkError<
 		super()
 		this.input = input as never
 		this.ctx = ctx
-		// input is a rest object, so its properties are all own, enumerable,
-		// writable, configurable data properties. Assigning one defines it
-		// unless this error already has or inherits the key (e.g. the message
-		// getter).
+		// assigning defines the same property unless this has or inherits k, e.g. message
 		for (const k of Object.keys(input)) {
 			if (k in this) defineValue(this, k, input[k as never])
 			else (this as any)[k] = input[k as never]

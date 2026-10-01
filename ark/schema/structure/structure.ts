@@ -117,9 +117,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		normalize: schema => {
-			// a set engine rejects duplicate keys as it reduces a structure, in
-			// turn with what else it finds there (e.g. a prop disjoint from an
-			// index signature), so only without one are they rejected here
+			// a set engine rejects duplicate keys in order with its other reduce errors
 			if ($ark.sets) return schema
 			const seen: Record<Key, true | undefined> = Object.create(null)
 			for (const prop of conflatenateAll(schema.required, schema.optional)) {
@@ -206,8 +204,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.includesTransform ||= this.structuralMorph !== undefined
 	}
 
-	// its input reads those of its defaultable props, which depend on whether
-	// each was read before (see OptionalNode.rawIn)
+	// its input depends on whether each defaultable prop's rawIn was read before
 	override get rawIn(): BaseNode {
 		if (!this._rawIn && this.defaultable.length) this.keepInScope()
 		return super.rawIn
@@ -526,9 +523,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	readonly defaultable: Optional.Node.withDefault[] =
 		this.optional?.filter(o => o.hasDefault()) ?? []
 
-	// a sequence declares each key nonNegativeIntegerString allows: a string
-	// matching the pattern that keyword is built from, tested here directly so
-	// compiled code calls no node
 	declaresKey = (k: Key): boolean =>
 		k in this.propsByKey ||
 		this.index?.some(n => n.signature.allows(k)) ||
@@ -619,9 +613,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
-// structures with equal keys share a morph, which unions compare by identity.
-// A morph does what its key describes, whichever structure it closes over, so
-// one that no structure holds is not kept
+// a morph depends only on its key, not on the structure it closes over
 const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
@@ -632,13 +624,11 @@ const constructStructuralMorphCacheKey = (
 ): string => {
 	let cacheKey = ""
 
-	// default morphs are keyed by the names nameOf gives them, which are
-	// unique to each morph and don't register it
+	// nameOf names each morph uniquely without registering, which would keep it alive
 	for (let i = 0; i < node.defaultable.length; i++)
 		cacheKey += `${nameOf(node.defaultable[i].defaultValueMorph)} `
 
-	// a discriminated tuple case's structure has an array of sequence nodes as
-	// its sequence, which has no default morphs
+	// a discriminated tuple case's sequence is an array, with no default morphs
 	if (node.sequence?.defaultValueMorphs?.length)
 		cacheKey += `${nameOf(node.sequence.defaultValueMorphs)} `
 

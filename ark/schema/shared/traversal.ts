@@ -134,7 +134,6 @@ export class Traversal {
 	}
 
 	get currentBranch(): BranchTraversal | undefined {
-		// branches[-1] would be a named property lookup through the prototype chain
 		return this.branches.length === 0 ?
 				undefined
 			:	this.branches[this.branches.length - 1]

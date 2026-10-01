@@ -145,15 +145,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		n.rawIn.hasKind("unit")
 	)
 
-	// each node discriminate creates for a case, in order, including those of
-	// a discriminant it abandons, all of which are among the union's
-	// references
+	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	// discriminating relates the branches and creates the cases. A union
-	// discriminates as it is constructed, since relating its branches can
-	// throw a ParseError parsing it reports (e.g. where one branch's index
-	// signature and another's prop have disjoint values)
+	// discriminated on construction, since relating branches can throw a ParseError
+	// parsing must report (e.g. an index signature and prop with disjoint values)
 	readonly discriminant: Discriminant | null = this.discriminate()
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
@@ -177,8 +173,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.caseNodes
 	}
 
-	// a unit binding this union compiles the same statements (compileRootApply
-	// in scope.ts), so the two change together
+	// mirrors the statements compileRootApply emits for a unit binding this union
 	createBranchedOptimisticRootApply(): BaseNode["rootApply"] {
 		return (data, onFail) => {
 			const optimisticResult = this.traverseOptimistic(data)
@@ -235,9 +230,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return unset
 	}
 
-	// the discriminant compiled traversal switches on, or null if it checks
-	// the branches in order, when Apply records an error for each branch that
-	// fails before one passes
 	get compiledDiscriminant(): Discriminant | null {
 		// if we have a union of two units like `boolean`, the
 		// undiscriminated compilation will be just as fast

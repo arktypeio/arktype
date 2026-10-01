@@ -97,8 +97,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	introspectableOut: BaseRoot | undefined =
 		this.lastMorphIfNode && this.addPipedReferences(this.lastMorphIfNode).rawOut
 
-	// the node a morph pipes to is among its references, so an alias among
-	// that node's is among the morph's
+	// an alias the piped node references is among the morph's references too
 	private addPipedReferences(node: BaseRoot): BaseRoot {
 		if (this._referencesById)
 			Object.assign(this._referencesById, node.referencesById)

@@ -138,8 +138,6 @@ contextualize(() => {
 	})
 
 	it("applies roots with ids that name what their compiled apply reads", () => {
-		// a root's compiled apply is named for its id, and whatever the id, that
-		// name must neither shadow a value the apply closes over nor be reserved
 		for (const id of [
 			"allows",
 			"apply",
@@ -167,9 +165,6 @@ contextualize(() => {
 	})
 
 	it("compiles a unit reading more values than a function takes parameters", () => {
-		// each predicate is a value the unit reads, and V8 fails to compile a
-		// function with about 30,000 parameters. Prereduced, since reducing
-		// this many predicates would take minutes
 		const predicate = Array.from(
 			{ length: 36_000 },
 			(_, i) => (n: number) => n !== i
@@ -182,8 +177,6 @@ contextualize(() => {
 
 	it("registers nothing only compiled traversals read", () => {
 		const epoch = new Date(0)
-		// the fresh type's own error contexts and key sets. Its morphs and
-		// arrays are those of the type compiled first (see the next test)
 		const make = (key: string) =>
 			rootSchema({
 				domain: "object",
@@ -226,9 +219,6 @@ contextualize(() => {
 
 	it("registers nothing for a type's own morphs, defaults and unions", () => {
 		const length = (s: string) => s.length
-		// each value a traversal of the fresh type reads is its own, so the
-		// type compiled first registering it could not hide its registration.
-		// The morph function is shared, since a morph's json names it
 		const make = (seed: number) => {
 			const key = `own${seed}`
 			return rootSchema({
@@ -307,7 +297,6 @@ contextualize(() => {
 		})
 		attest((T(invalid(2)) as ArkErrors).count).equals(8)
 		attest(Object.keys($ark).length).equals(registered)
-		// values emitted code reads through a unit's refs, never registered
 		const values = Object.values($ark)
 		for (const value of [printable, jsTypeOfDescriptions, arrayIndexMatcher])
 			attest(values.includes(value)).equals(false)

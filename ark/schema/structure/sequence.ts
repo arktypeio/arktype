@@ -418,7 +418,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	expression: string = this.description
 }
 
-// see keepsDefaultValueMorph
 const defaultableMorphsCache = new WeakCache<Morph[]>()
 
 const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {

@@ -64,9 +64,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.parseSchema(schema)
-					// string, symbol and their union are accepted without consulting
-					// the set engine so that the intrinsic json scope can be
-					// parsed with none installed
+					// checked by equality first so intrinsic json parses without a set engine
 					if (
 						!key.equals($ark.intrinsic.string) &&
 						!key.equals($ark.intrinsic.symbol) &&

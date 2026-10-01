@@ -143,8 +143,6 @@ export const nodesByRegisteredId: Record<
 
 $ark.nodesByRegisteredId = nodesByRegisteredId
 
-// root contexts an alias references by id. Their roots, once parsed, are the
-// only ones nodesByRegisteredId keeps (see BaseScope.parseDefinition)
 export const contextsReferencedById: WeakSet<BaseParseContext> = new WeakSet()
 
 export const registerNodeId = (prefix: string): NodeId => {
@@ -266,8 +264,6 @@ export const createNode = ({
 	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
 	const innerHash = JSON.stringify({ kind, ...innerJson })
 
-	// without meta, json has exactly innerJson's entries, so it is innerJson
-	// and hashes to innerHash
 	let json = innerJson
 	let hash = innerHash
 	let metaJson: ArkEnv.meta & dict = {}

@@ -186,28 +186,19 @@ type GlobalConfig = {
 	resolvedConfig: ResolvedConfig
 }
 
-// configuring merges into $ark.config but replaces $ark.resolvedConfig
+// configure merges into $ark.config in place but replaces $ark.resolvedConfig
 const currentGlobalConfig = (): GlobalConfig => ({
 	config: { ...$ark.config },
 	resolvedConfig: $ark.resolvedConfig
 })
 
 let fixedGlobalConfig: GlobalConfig | undefined
-// what scopes being constructed merge their config onto, if not the current
-// global config
 let constructingWith: GlobalConfig | undefined
 
-/**
- * Fix the global config that scopes constructed through withFixedGlobalConfig
- * merge theirs onto as the current one, so that configuring later changes
- * none of them. arktype fixes it on import, since its keywords are built on
- * first reference.
- */
 export const fixGlobalConfig = (): void => {
 	fixedGlobalConfig ??= currentGlobalConfig()
 }
 
-/** Construct scopes merging their config onto the fixed global config, if any */
 export const withFixedGlobalConfig = <t>(construct: () => t): t =>
 	constructWith(fixedGlobalConfig, construct)
 
@@ -248,35 +239,22 @@ const cacheUnknownUnion = ($: BaseScope): void => {
 		{ prereduced: true }
 	)
 
-	// pinned, since this entry is what reduces the union, not a cached parse
 	$.nodesByHash.pin(
 		rawUnknownUnion.hash,
 		$.node("intersection", {}, { prereduced: true })
 	)
 }
 
-// the root scope is constructed on import, when arksets (which itself imports
-// @ark/schema) cannot yet have installed an engine, so it alone defers its
-// shared nodes and precompilation to bootstrapRootScope
 let constructingRootSchemaScope = true
 
-// the scopes that have cached the unknown union, each on its first parse,
-// after the process's first parse has bootstrapped. Held apart from each
-// scope, which may be frozen by then
+// held apart from each scope, which may be frozen before its first parse
 const cachedUnknownUnion = new WeakSet<BaseScope>()
 
 const rootScopeFnName = "function $"
 
-// roots bound by a closed unit, one that declares or is passed each traversal
-// it invokes, in which they were leaves (see isLeafIn). A unit calls a
-// reusable leaf's traversals rather than declaring its own.
 const reusableLeaves = new WeakSet<BaseNode>()
 
-// a leaf root reads no property of an object, since no structure or alias is
-// among its references, so units calling its traversals share no inline cache
-// that sees differently shaped data, as they would calling an object's. Those
-// traversals invoke only its references, by id, so they are the ones a unit
-// compiles for it wherever each of those ids names the same node.
+// leaves read no object property, so sharing them can't make an inline cache polymorphic
 const isLeafIn = (
 	node: BaseNode,
 	referencesById: Map<string, BaseNode>
@@ -294,15 +272,6 @@ const isLeafIn = (
 	return true
 }
 
-// compiles references into one unit and binds its traversals, returning the
-// unit's source. A reusable leaf that is also a leaf among these references
-// (see isLeafIn) keeps its traversals, even if it belongs to owningScope, and
-// is not declared again: the unit is passed those of them it invokes. Any
-// other node bound by an earlier unit keeps its traversals too, unless it
-// belongs to owningScope, the scope being exported, which rebinds it.
-// Otherwise, it is declared only if a member invokes it, except an alias:
-// compiling one reads its resolution, which can create nodes, so every unit
-// compiles each alias among its references.
 const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
@@ -325,6 +294,7 @@ const precompile = (
 		else if (
 			node.precompilation &&
 			(!owningScope || node.$ !== owningScope) &&
+			// compiling an alias can create nodes, so every unit declares its own
 			!node.hasKind("alias")
 		)
 			linkage.unreached.add(node)
@@ -343,7 +313,6 @@ const precompile = (
 		if (node.precompilation) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			if (!owningScope || node.$ !== owningScope) continue
-			// owningScope rebinds it, so it stays reusable only if its new traversals are
 			reusableLeaves.delete(node)
 		}
 		const [traverseAllows, traverseApply, traverseOptimistic] =
@@ -358,9 +327,7 @@ const precompile = (
 		if (traverseOptimistic)
 			(node as UnionNode).traverseOptimistic = traverseOptimistic
 		node.precompilation = precompilation
-		// a parse that doesn't finalize its result (type.enumerated, a scope's
-		// node, configuring "self") can return this node, so one that reports
-		// errors differently once compiled is kept compiled
+		// kept so an unfinalized parse can't return an uncompiled copy reporting differently
 		if (reportsDifferentlyCompiled(node)) node.keepInScope()
 		if (node.isRoot()) bindRootApply(node)
 		if (linkage.closed && isLeafIn(node, linkage.referencesById))
@@ -370,10 +337,7 @@ const precompile = (
 	return precompilation
 }
 
-// compiled traversal describes a discriminated union by its cases, where
-// interpreted traversal describes each branch, and reports a -0 in an error
-// context as 0. Any other node reports errors alike either way, and so does
-// a node referencing one of these, which calls its traversals.
+// compiled traversal describes a discriminated union by its cases and reports -0 as 0
 const reportsDifferentlyCompiled = (node: BaseNode): boolean => {
 	if (node.hasKind("union")) return node.compiledDiscriminant !== null
 	for (const k in node.inner)
@@ -381,31 +345,19 @@ const reportsDifferentlyCompiled = (node: BaseNode): boolean => {
 	return false
 }
 
-// a root a unit binds applies its new traversals through code of its own,
-// compiled on its first call, since most roots a unit binds (nested objects,
-// union branches, the keywords of each scope) are never called directly
 const bindRootApply = (node: BaseRoot) => {
 	node.rootApply = (data, onFail) =>
 		(node.rootApply = compileRootApply(node))(data, onFail)
 }
 
-// the statements createRootApply runs for a root's rootApplyStrategy, in the
-// same order, with its bound traversals as constants. Named for the root, its
-// source is its own, so unlike the closures createRootApply builds from one
-// literal per strategy, it shares no V8 feedback with other roots' applies:
-// each call it makes has one target, which V8 can inline. The name is the
-// root's id with a suffix, as a unit names its traversals, so it is an
-// identifier wherever those are and never shadows what it closes over.
+// createRootApply's statements, compiled per root so V8 can inline its calls
 const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 	const fallback = [
 		"const ctx = new Traversal(data, config)",
 		"apply(data, ctx)",
 		"return ctx.finalize(onFail)"
 	]
-	// a valid result is returned last: V8 weighs a return by its offset in
-	// deciding when to optimize a function, and returned first, it would leave
-	// this one unoptimized for tens of thousands of calls after Maglev inlined
-	// the traversals it calls, running them slower than they run on their own
+	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
 	const unlessInvalid = (invalid: string, result: string) => [
 		`if (${invalid}) {`,
 		...fallback.map(line => `    ${line}`),
@@ -417,7 +369,6 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		: node.rootApplyStrategy === "optimistic" ?
 			unlessInvalid(
 				"!allows(data)",
-				// called on the root, as createRootApply calls it
 				`node.contextFreeMorph(clone && ((typeof data === "object" && data !== null) || typeof data === "function") ? clone(data) : data)`
 			)
 		: node.rootApplyStrategy === "branchedOptimistic" ?
@@ -426,8 +377,6 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 				...unlessInvalid(`optimisticResult === "${unset}"`, "optimisticResult")
 			]
 		:	fallback
-	// parenthesized so V8 compiles it along with the factory rather than
-	// again on its first call
 	return new DynamicFunction<(...args: unknown[]) => BaseRoot["rootApply"]>(
 		"allows",
 		"apply",
@@ -454,12 +403,6 @@ type PrecompiledTraversals = [
 	optimistic?: (data: unknown) => unknown
 ]
 
-// a unit binds what it is passed to constants, then declares each traversal
-// as a const-bound function expression, so members call each other directly
-// (function declarations delay TurboFan's optimization of large units), then
-// returns each reference's traversals in the order of references. A node
-// bound by an earlier unit is declared once a member reaches it, after the
-// references, and is not returned.
 const precompileReferences = (
 	references: readonly BaseNode[],
 	linkage: UnitLinkage
@@ -470,6 +413,7 @@ const precompileReferences = (
 	)
 	for (let i = 0; i < linkage.reached.length; i++)
 		declareTraversals(members, linkage, linkage.reached[i])
+	// passed as arrays, since V8 can't compile a function with tens of thousands of parameters
 	const unit = new CompiledFunction<
 		(
 			dependencies: Fn[],
@@ -498,22 +442,11 @@ const declareTraversals = (
 		declareTraversal(members, linkage, node, "Allows"),
 		declareTraversal(members, linkage, node, "Apply")
 	]
-	// an Optimistic traversal runs only from a branchedOptimistic union's
-	// root apply, or from another Optimistic traversal for a discriminant
-	// case that is itself branchedOptimistic
 	if (node.rootApplyStrategy === "branchedOptimistic")
 		traversals.push(declareTraversal(members, linkage, node, "Optimistic"))
 	return `[${traversals.join(", ")}]`
 }
 
-// what a unit's members reach beyond its declarations, each passed to it in
-// an array rather than as a parameter, since V8 fails to compile a function
-// with about 30,000 of them: the traversals of reused nodes they invoke and
-// the values they read through js.ref, each bound to a constant named as
-// members read it, and the error contexts they report, read by index. An
-// invoked traversal resolves by id among the unit's references; one outside
-// them leaves the unit open. An unreached node is reached, and so declared,
-// once a member invokes it.
 type UnitLinkage = {
 	referencesById: Map<string, BaseNode>
 	reused: Set<BaseNode>
@@ -525,7 +458,6 @@ type UnitLinkage = {
 	closed: boolean
 }
 
-// compiles a traversal of a unit, linking each traversal it invokes
 class TraversalCompiler extends NodeCompiler {
 	readonly linkage: UnitLinkage
 
@@ -573,8 +505,6 @@ const declareTraversal = (
 	return name
 }
 
-// only a root's context (through `this`) and a scope alias's (until the alias
-// is parsed) are ever resolved by id, so no other context is registered
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 	(nodesByRegisteredId[ctx.id] = ctx)
 
@@ -596,7 +526,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	resolved = false
-	// each node by its hash, so that parsing an equal node returns it
 	readonly nodesByHash: WeakCache<BaseNode> = new WeakCache(
 		this.holdsNodesWeakly
 	)
@@ -607,7 +536,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
-		// the root scope's unknown union is cached by bootstrapRootScope
 		if (constructingRootSchemaScope) cachedUnknownUnion.add(this)
 
 		const globalConfig = constructingWith ?? $ark
@@ -649,15 +577,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 	}
 
-	/**
-	 * Whether nodesByHash keeps a node only while something else does. A parse
-	 * that doesn't finalize its result (e.g. node) can return a node an
-	 * earlier finalize compiled, where after that node is collected it returns
-	 * an uncompiled copy. precompile keeps each node whose errors compiled
-	 * traversal reports differently, so the copy reports them alike, but it
-	 * runs interpreted. So @ark/schema's scopes, whose API returns most nodes
-	 * unfinalized, hold them strongly.
-	 */
 	protected get holdsNodesWeakly(): boolean {
 		return false
 	}
@@ -670,7 +589,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		for (const k in intrinsic) {
 			// don't include cyclic aliases from JSON scope
 			if (k.startsWith("json")) continue
-			// bound on first access, since a scope reads few of them
 			defineLazily(bound, k, () =>
 				this.bindReference(intrinsic[k as keyof typeof intrinsic])
 			)
@@ -678,8 +596,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.cacheGetter("intrinsic", bound)
 	}
 
-	// a scope frozen or sealed before the getter is first read computes it on
-	// each read
 	protected cacheGetter<name extends keyof this>(
 		name: name,
 		value: this[name]
@@ -881,8 +797,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 				v.phase = "resolving"
 				const node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
 				v.phase = "resolved"
-				// the alias resolves through this.resolutions from here on, so
-				// nothing can read its context by id
 				delete nodesByRegisteredId[v.id]
 				return (this.resolutions[name] = node)
 			}
@@ -912,8 +826,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	protected createParseContext<input extends BaseParseContextInput>(
 		input: input
 	): input & AttachedParseContext {
-		// any parse may be the process's first, so the shared nodes and
-		// intrinsics take their ids ahead of the one allocated here
 		bootstrap()
 		if (!cachedUnknownUnion.has(this)) {
 			cachedUnknownUnion.add(this)
@@ -983,11 +895,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this._json = resolutionsToJson(this._exportedResolutions)
 			Object.assign(this.resolutions, this._exportedResolutions)
 
-			// lazy exports are compiled as they resolve
 			if (!this.lazyExports) {
-				// an export's alias references are bootstrapped after it is bound,
-				// so what they resolve to joins the scope's references here, as it
-				// joins a finalized root's
 				for (const name in this._exports) {
 					const resolution = this._exports[name]
 					if (isNode(resolution))
@@ -1016,10 +924,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	private lazyExports: InternalModule | undefined
 
-	/**
-	 * Export as a module whose members resolve on first access, each bound as
-	 * export binds it and compiled. export reads them.
-	 */
 	exportLazily(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }> {
 		if (!this.lazyExports) {
 			const exports = new RootModule({})
@@ -1035,8 +939,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 				})
 			}
 			this.lazyExports = exports as never
-			// its exports are compiled as they resolve, not with the scope's
-			// references, so resolving one adds none
 			this.resolved = true
 		}
 		return this.lazyExports as never
@@ -1081,23 +983,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// has the original id from context so that its references compile correctly
 		if (node.isCyclic) node = withId(node, ctx.id)
 
-		// an alias referencing ctx by id (e.g. `this`) is the only reader of its
-		// entry, and can outlive the root it resolves to (e.g. in the result of
-		// intersecting the root), so the entry holds the root if such an alias
-		// was parsed and is removed otherwise
 		if (contextsReferencedById.has(ctx)) nodesByRegisteredId[ctx.id] = node
 		else delete nodesByRegisteredId[ctx.id]
 
 		return node
 	}
 
-	// jit is false for a root that is only read, like an intersection a
-	// relation checks or a constraint the parser adds before it is done: it
-	// is compiled once finalized as, or referenced by, a root that validates.
-	// One referencing a union is compiled anyway, since compiled and
-	// interpreted unions word some errors differently, and a root that is
-	// never finalized (e.g. from type.enumerated) can be the same node. Its
-	// alias references are bootstrapped either way.
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
 		// a node referencing a `this` whose enclosing type is still being parsed,
 		// e.g. Record<string, this>, can't be resolved yet. the enclosing parse
@@ -1107,6 +998,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		bootstrapAliasReferences(node)
 		if (node.precompilation || this.resolvedConfig.jitless) return node
 		const references = node.references
+		// compiled and interpreted unions word some errors differently
 		if (jit || references.some(reference => reference.hasKind("union")))
 			precompile(references)
 		return node
@@ -1148,8 +1040,6 @@ export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 }
 
-// a module bound to $ as bindModule binds it, each member on first access,
-// and compiled
 const bindModuleLazily = (
 	module: InternalModule,
 	$: BaseScope
@@ -1172,7 +1062,6 @@ const bindModuleLazily = (
 const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
 	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
 
-// the root or generic a lazily exported scope's flat name refers to, if any
 const maybeResolveExport = (
 	exports: InternalModule,
 	name: string
@@ -1288,14 +1177,8 @@ export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
 constructingRootSchemaScope = false
 
-// the global config the root scope was constructed with
 const importedGlobalConfig = currentGlobalConfig()
 
-/**
- * Complete the root scope with the half of its construction that needs a set
- * engine, then run parseIntrinsics. Scopes either constructs merge their
- * config onto the global config as it was on import, as the root scope did
- */
 export const bootstrapRootScope = (parseIntrinsics: () => void): void =>
 	constructWith(importedGlobalConfig, () => {
 		cacheUnknownUnion(rootSchemaScope)

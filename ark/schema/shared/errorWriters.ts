@@ -53,7 +53,6 @@ type writersInputOf<code extends ArkErrorCode> = nodeImplementationInputOf<
 	Declaration<code>
 >["defaults"]
 
-// completes each code's writers in place, defining those it leaves out
 const implementErrorWriters = (writersByCode: {
 	[code in ArkErrorCode]: writersInputOf<code>
 }): { [code in ArkErrorCode]: Required<NodeConfig<code>> } => {
@@ -80,15 +79,6 @@ const implementErrorWriters = (writersByCode: {
 	return writersByCode as never
 }
 
-/**
- * The writers each error code is described with unless configured otherwise,
- * one object per code that its node kind's implementation also holds as its
- * defaults. Nothing here imports a node, so emitted code can describe its
- * errors without node, scope or parse code.
- *
- * A description writer is passed a node, or, from the default expected
- * writer, the context of an error created without a description.
- */
 export const defaultErrorWriters: {
 	[code in ArkErrorCode]: Required<NodeConfig<code>>
 } = implementErrorWriters({

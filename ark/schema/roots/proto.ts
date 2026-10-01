@@ -127,8 +127,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledNegation = `!(${this.compiledCondition})`
 
 	compile(js: NodeCompiler): void {
-		// compiledCondition reads a builtin constructor as a global, and not
-		// whether a Date is valid, which emitted code checks through a ref
+		// builtins compile as globals, but other constructors and isValidDate need refs
 		if (this.builtinName && !this.requiresInvalidDateCheck)
 			return super.compile(js)
 

@@ -14,8 +14,6 @@ import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
-// builders writing the body of a loop, which runs once for each element or
-// key of the data
 const writingLoop = new WeakSet<CompiledFunction<any, any>>()
 
 const loopBlock = <js extends CompiledFunction<any, any>>(
@@ -37,9 +35,6 @@ export class CompiledFunction<
 	[k in args[number]]: k
 }> {
 	readonly argNames: args
-	// joined into the body when it is read, which leaves it one flat string,
-	// where appending each line to it would leave a string per line, held by
-	// every node whose source it is
 	private readonly lines: string[] = []
 
 	constructor(...args: args) {
@@ -164,17 +159,11 @@ export declare namespace NodeCompiler {
 		errorContexts?: ErrorContexts
 	}
 
-	/** each value a unit's traversals read, by the unit constant naming it */
 	export type Refs = Map<object | symbol, string>
 
-	/** each error context a unit's error paths report, by index */
 	export type ErrorContexts = object[]
 }
 
-// the Apply of a node that can't transform a value or read context adds no
-// error to a value its Allows accepts and does nothing else, so such a value
-// can skip it. A node that calls a predicate is left out, so that a rejected
-// value doesn't call the predicate a second time.
 const isDecidedByAllows = (node: BaseNode): boolean => {
 	if (node.includesTransform || node.allowsRequiresContext) return false
 	for (const id in node.referencesById)
@@ -209,21 +198,10 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return `${reference}(${arg})`
 	}
 
-	// how emitted code names a node: with a kind, its traversal of that kind,
-	// declared under this name by its unit; without one, the node itself, e.g.
-	// as its key in ctx.seen. Overriding it renames every traversal a unit
-	// declares or invokes and every seen key consistently. A node a morph
-	// pipes to is not named: ctx.queueMorphs is passed the node itself, as a
-	// value read through ref.
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		return opts?.kind ? `${id}${opts.kind}` : id
 	}
 
-	// names a value emitted code reads. In a unit, the name is a constant the
-	// unit binds from the refs it is passed, shared by its traversals and
-	// numbered by first read, so a read is a closure variable rather than a
-	// lookup on the registry (which is in dictionary mode). Outside a unit, it
-	// is the value's registered reference.
 	ref(value: object | symbol): string {
 		if (!this.refs) return registeredReference(value)
 		let name = this.refs.get(value)
@@ -231,13 +209,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return name
 	}
 
-	// names an error context an error path reports. errorFromNodeContext
-	// copies a context's entries, so every error can be reported with one
-	// object. In a unit, it is an element of errorContexts, an array the unit
-	// is passed, rather than a ref, which the unit would bind to a constant:
-	// a unit reports errors for most nodes it declares, only on paths invalid
-	// data takes. Outside a unit, it is the context's registered reference.
-	// Compiled code reports a -0 in a context as 0 (interpreted code, as -0).
 	errorContext(errorContext: object): string {
 		for (const k in errorContext) {
 			if (Object.is((errorContext as dict)[k], -0))
@@ -270,15 +241,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		accessExpression: string,
 		node: BaseNode
 	): this {
-		// checking a child with Allows before applying it runs the checks of a
-		// value Allows rejects once more, so gates nested along a failing path
-		// would each add a run. Apply gates only where what it skips scales: a
-		// key in a loop, traversed for each element or key of the data, or a
-		// union checking its branches in order, whose Apply records an error for
-		// each branch that fails before one passes. A union switching on its
-		// discriminant applies only the branch matching it, so like a nested
-		// object, it isn't gated. A rejected value's checks then run once more
-		// per loop or gated union around it.
 		if (
 			this.traversalKind === "Apply" &&
 			(writingLoop.has(this) ||

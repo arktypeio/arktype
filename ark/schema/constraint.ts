@@ -34,7 +34,7 @@ export abstract class BaseConstraint<
 	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
-	// a getter, so it is neither enumerable nor spreadable
+	// define as a getter to avoid it being enumerable/spreadable
 	get [arkKind](): "constraint" {
 		return "constraint"
 	}

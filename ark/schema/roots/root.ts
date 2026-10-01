@@ -468,8 +468,6 @@ export abstract class BaseRoot<
 		return this._constrain("out", kind, schema)
 	}
 
-	// constrain without compiling the result, for a parser constraining a
-	// root it isn't done with
 	rawConstrain<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>

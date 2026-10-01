@@ -68,8 +68,6 @@ import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
 
-// collected references in which a node replaced another with its id, so that
-// copying them can replace a node copied earlier
 const referencesWithReplacements = new WeakSet<object>()
 
 export abstract class BaseNode<
@@ -90,10 +88,6 @@ export abstract class BaseNode<
 
 	includesContextualPredicate: boolean
 	isCyclic: boolean
-	// whether an alias is among its references: through its children like
-	// isCyclic, or through what else it references, like the node a morph
-	// pipes to. Only such a node's referencesById changes after it is
-	// constructed, as its scope adds each alias's resolution.
 	includesAlias: boolean
 	allowsRequiresContext: boolean
 	rootApplyStrategy:
@@ -132,9 +126,7 @@ export abstract class BaseNode<
 			},
 			{ attach: attachedInnerOf(attachments) as never }
 		)
-		// assigned as named stores in one order, so every node of a kind shares
-		// a V8 map. A function given 16 or more properties through
-		// Object.assign or keyed stores gets dictionary properties instead.
+		// assigned one at a time, so every node of a kind shares a V8 map
 		const self: mutable<UnknownAttachments> = this
 		self.id = attachments.id
 		self.kind = attachments.kind
@@ -153,8 +145,6 @@ export abstract class BaseNode<
 		this.$ = $
 		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
 
-		// a structure adds its own transform, its structural morph, once its
-		// fields are set
 		this.includesTransform =
 			this.hasKind("morph") ||
 			(this.hasKind("sequence") && this.inner.defaultables !== undefined)
@@ -176,8 +166,6 @@ export abstract class BaseNode<
 			this.includesAlias ||= this.children[i].includesAlias
 		}
 
-		// references that will grow are copied from each child's as they are
-		// now, as are those of what else a subclass references, once it is set
 		if (this.includesAlias) this.copyReferences(false)
 
 		this.allowsRequiresContext =
@@ -185,9 +173,6 @@ export abstract class BaseNode<
 		this.rootApplyStrategy =
 			(
 				!this.allowsRequiresContext &&
-				// only a node that includes a transform and isn't structural can
-				// have flat morphs, so no other computes them here (a structural
-				// node's refs read fields of its own, which aren't yet set)
 				(!this.includesTransform ||
 					this.isStructural() ||
 					this.flatMorphs.length === 0)
@@ -219,19 +204,10 @@ export abstract class BaseNode<
 			:	data => (this.traverseAllows as any)(data)
 	}
 
-	// each node this node references, by id: itself, then those of each
-	// child, then those of each node it references besides its children, in
-	// the order copying each of their referencesById in turn gives, which
-	// keeps the last node copied for an id. A node that includes an alias
-	// copies them when it is constructed, since its scope adds to them as it
-	// resolves the alias. Any other's never change, so they are collected on
-	// first read, which for most nodes never comes.
 	get referencesById(): Record<string, BaseNode> {
 		return (this._referencesById ??= this.collectReferences())
 	}
 
-	// nodes a node references besides its children, like a union's
-	// discriminated cases
 	protected get referencedBesidesChildren(): readonly BaseNode[] {
 		return noReferences
 	}
@@ -247,13 +223,8 @@ export abstract class BaseNode<
 		this._referencesById = referencesById
 	}
 
-	// what copyReferences(true) would give, in a walk that copies only
-	// references already collected and visits each other node once. Copying
-	// a visited node's references again changes nothing unless a node among
-	// them was replaced since by another with its id (e.g. a copy of it
-	// bound to a scope), so once one is, the walk copies the rest. It
-	// collects into a Map, which adds new ids faster than an object does.
 	private collectReferences(): Record<string, BaseNode> {
+		// adding each new id to an object is slower than to a Map
 		const collected = new Map<string, BaseNode>()
 		let replaced = false
 		const include = (node: BaseNode): void => {
@@ -302,9 +273,6 @@ export abstract class BaseNode<
 		return this._flatMorphs!
 	}
 
-	// flat refs are a function of a node's children, so they are computed on
-	// first read, which for most nodes never comes. Structural kinds override
-	// this with the refs of their values or elements, and have no flat morphs.
 	protected initializeFlatRefs(): void {
 		const flatRefs: FlatRef[] = []
 		const flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] = []
@@ -343,8 +311,6 @@ export abstract class BaseNode<
 		this._flatMorphs = flatMorphs
 	}
 
-	// a node's apply unless a unit binds it as a root, which compiles the same
-	// statements (compileRootApply in scope.ts), so the two change together
 	protected createRootApply(): this["rootApply"] {
 		switch (this.rootApplyStrategy) {
 			case "allows":
@@ -443,11 +409,6 @@ export abstract class BaseNode<
 		return (this._rawIn ??= this.getIo("in"))
 	}
 
-	/**
-	 * Keep this node in its scope's nodesByHash, if it is the node there, once
-	 * its state depends on what happened to it (e.g. OptionalNode.rawIn), so
-	 * that parsing it again returns it rather than a copy without that history
-	 */
 	keepInScope(): void {
 		if (this.$.nodesByHash.get(this.hash) === this)
 			this.$.nodesByHash.pin(this.hash, this)
@@ -892,10 +853,6 @@ export declare namespace NodeSelector {
 			t[]
 }
 
-// every node of a kind has each inner key its kind declares, absent ones as
-// undefined, attached in the order the kind declares them and before any
-// other property. An intersection's keys name its children's kinds, and in
-// and out are getters, so none of those are attached.
 const attachedInnerOf = (attachments: UnknownAttachments): dict | undefined => {
 	if (attachments.kind === "intersection") return
 	const attached: dict = {}

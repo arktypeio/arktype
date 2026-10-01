@@ -114,10 +114,6 @@ contextualize(() => {
 	})
 
 	it("reports a disjoint relating its branches as it is constructed", () => {
-		// each branch is valid, but discriminating intersects the two, which
-		// throws even where nothing reads the discriminant (e.g. unfinalized,
-		// or traversed interpreted). Prereduced, as a relation's result is,
-		// since reducing intersects them too
 		const index = rootSchema({
 			domain: "object",
 			index: { signature: "string", value: "string" }
