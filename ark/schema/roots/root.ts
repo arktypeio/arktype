@@ -70,7 +70,7 @@ export abstract class BaseRoot<
 {
 	declare readonly [inferred]: unknown
 
-	// a getter, so it is neither enumerable nor spreadable
+	// define as a getter to avoid it being enumerable/spreadable
 	get [arkKind](): "root" {
 		return "root"
 	}

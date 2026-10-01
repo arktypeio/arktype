@@ -204,7 +204,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.includesTransform ||= this.structuralMorph !== undefined
 	}
 
-	// its input depends on whether each defaultable prop's rawIn was read before
+	// a defaultable prop's rawIn depends on whether it was read before
 	override get rawIn(): BaseNode {
 		if (!this._rawIn && this.defaultable.length) this.keepInScope()
 		return super.rawIn
@@ -613,7 +613,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 }
 
-// a morph depends only on its key, not on the structure it closes over
 const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
@@ -628,7 +627,6 @@ const constructStructuralMorphCacheKey = (
 	for (let i = 0; i < node.defaultable.length; i++)
 		cacheKey += `${nameOf(node.defaultable[i].defaultValueMorph)} `
 
-	// a discriminated tuple case's sequence is an array, with no default morphs
 	if (node.sequence?.defaultValueMorphs?.length)
 		cacheKey += `${nameOf(node.sequence.defaultValueMorphs)} `
 
