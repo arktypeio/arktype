@@ -169,6 +169,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
 	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
+	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
@@ -272,7 +273,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return this
 	}
 
-	initializeTransform(): this {
+	initializeTransform(transformedChildren: readonly BaseNode[]): this {
+		this.checksTransformErrors = transformedChildren.some(
+			child => child.includesMorph || child.transformRequiresContext
+		)
+		if (!this.checksTransformErrors) return this
 		return this.requiresContext ?
 				this.initializeErrorCount()
 			:	this.line("let failed")
@@ -319,6 +324,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	returnIfTransformFailed(): this {
+		if (!this.checksTransformErrors) return this
 		return this.requiresContext ?
 				this.if("ctx.currentErrorCount > errorCount", () => this.return("data"))
 			:	this.if("failed", () => this.return("failed"))

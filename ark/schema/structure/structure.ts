@@ -682,11 +682,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const transformedIndex =
 			this.index?.filter(index => index.value.transforms) ?? []
 		const deletes = this.undeclared === "delete"
-		const transformsChildren =
-			transformedProps.length !== 0 ||
-			transformedIndex.length !== 0 ||
-			this.sequence?.transforms
-		if (transformsChildren) js.initializeTransform()
+		js.initializeTransform([
+			...(this.sequence?.transforms ? [this.sequence] : []),
+			...transformedProps.map(prop => prop.value),
+			...transformedIndex.map(index => index.value)
+		])
 		js.line("let out = data")
 		if (this.sequence?.transforms) {
 			js.transformKey("transformedSequence", "data", this.sequence, {
@@ -706,25 +706,27 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			})
 		}
 		if (transformedIndex.length) {
-			js.block("", () =>
-				compileOwnKeys(js, "data").for("i < keys.length", () => {
-					js.const("k", "keys[i]")
-					for (const index of transformedIndex) {
-						js.if(
-							js.invoke(index.signature, { arg: "k", kind: "Allows" }),
-							() =>
-								js.transformKey("value", "data[k]", index.value, {
-									keyExpression: "k",
-									onChange: () => this.compileCopy(js).line("out[k] = value")
-								})
-						)
-					}
-					return js
-				})
+			compileOwnKeys(js, "data").for("i < keys.length", () => {
+				js.const("k", "keys[i]")
+				for (const index of transformedIndex) {
+					js.if(js.invoke(index.signature, { arg: "k", kind: "Allows" }), () =>
+						js.transformKey("value", "data[k]", index.value, {
+							keyExpression: "k",
+							onChange: () => this.compileCopy(js).line("out[k] = value")
+						})
+					)
+				}
+				return js
+			})
+		}
+		js.returnIfTransformFailed()
+		if (deletes) {
+			return this.compileDeleteTransform(
+				js,
+				transformedProps,
+				this.sequence?.transforms || transformedIndex.length !== 0
 			)
 		}
-		if (transformsChildren) js.returnIfTransformFailed()
-		if (deletes) return this.compileDeleteTransform(js, transformedProps)
 		for (const node of this.defaultable) {
 			js.if(`!(${node.serializedKey} in data)`, () =>
 				this.compileCopy(js).line(compileDefault(js, node, "out"))
@@ -734,12 +736,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.return("out")
 	}
 
-	private compileCopy(js: NodeCompiler): NodeCompiler {
+	private compileCopy(js: NodeCompiler, objectCopy?: string): NodeCompiler {
 		return js.if("out === data", () =>
 			this.sequence ?
 				this.compileArrayCopy(js, "data.slice()")
 			:	js.line(
-					`out = Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
+					`out = ${objectCopy ?? `Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`}`
 				)
 		)
 	}
@@ -775,10 +777,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	// only a plain object is rebuilt as a literal, which can't keep a prototype
 	private compileDeleteTransform(
 		js: NodeCompiler,
-		transformedProps: Prop.Node[]
+		transformedProps: Prop.Node[],
+		outMayBeCopied: boolean
 	): void {
 		const unchanged = [
-			"out === data",
+			...(outMayBeCopied ? ["out === data"] : []),
 			...transformedProps.map(
 				(prop, i) => `value${i} === data${js.prop(prop.key)}`
 			),
@@ -790,7 +793,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		const stringKeys = this.props.filter(prop => typeof prop.key === "string")
-		js.block(`undeclared: if (${unchanged.join(" && ")})`, () => {
+		const breakIfUndeclared = (declaresKey: string) =>
+			declaresKey === "false" ?
+				js.line("break undeclared")
+			:	js.if(`!(${declaresKey})`, () => js.line("break undeclared"))
+		const label =
+			unchanged.length ?
+				`undeclared: if (${unchanged.join(" && ")})`
+			:	"undeclared:"
+		js.block(label, () => {
 			js.forIn("data", () => {
 				if (stringKeys.length) {
 					js.block("switch (k)", () =>
@@ -799,22 +810,20 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						)
 					)
 				}
-				return js.if(`!(${this._compileDeclaresKey(js, false)})`, () =>
-					js.line("break undeclared")
-				)
+				return breakIfUndeclared(this._compileDeclaresKey(js, false))
 			})
 			js.block("for (const k of Object.getOwnPropertySymbols(data))", () =>
-				js.if(`!(${this._compileDeclaresKey(js)})`, () =>
-					js.line("break undeclared")
-				)
+				breakIfUndeclared(this._compileDeclaresKey(js))
 			)
 			return js.return("data")
 		})
-		const deleteFromCopy = () => {
+		const deleteFromCopy = (objectCopy?: string) => {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const { key } = transformedProps[i]
 				js.if(`value${i} !== data${js.prop(key)}`, () =>
-					this.compileCopy(js).line(`out${js.prop(key)} = value${i}`)
+					this.compileCopy(js, objectCopy).line(
+						`out${js.prop(key)} = value${i}`
+					)
 				)
 			}
 			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
@@ -832,7 +841,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			.map(prop => `${literalKeyOf(js, prop)}: ${valueOf(prop)}`)
 		js.const("result", `{ ${requiredEntries.join(", ")} }`)
 		// checked after the literal's reads, from which V8 can infer data's prototype
-		js.if("Object.getPrototypeOf(data) !== Object.prototype", deleteFromCopy)
+		js.if("Object.getPrototypeOf(data) !== Object.prototype", () =>
+			deleteFromCopy(`${js.ref(copyOf)}(data)`)
+		)
 		for (const prop of this.props) {
 			if (prop.required) continue
 			const store = `result${js.prop(prop.key)} = ${valueOf(prop)}`
@@ -843,13 +854,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			} else js.if(`${prop.serializedKey} in data`, () => js.line(store))
 		}
 		if (this.index) {
-			compileOwnKeys(js, "out").for("i < keys.length", () =>
-				js
-					.const("k", "keys[i]")
-					.if(
-						`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js, false)})`,
-						() => js.line("result[k] = out[k]")
-					)
+			compileOwnKeys(js, "out", "outKeys", "outSymbols").for(
+				"i < outKeys.length",
+				() =>
+					js
+						.const("k", "outKeys[i]")
+						.if(
+							`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js, false)})`,
+							() => js.line("result[k] = out[k]")
+						)
 			)
 		}
 		js.return("result")
@@ -953,11 +966,16 @@ const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
 	: prop.key === "__proto__" ? `[${prop.serializedKey}]`
 	: prop.serializedKey
 
-const compileOwnKeys = (js: NodeCompiler, object: string): NodeCompiler =>
+const compileOwnKeys = (
+	js: NodeCompiler,
+	object: string,
+	keys = "keys",
+	symbols = "symbols"
+): NodeCompiler =>
 	js
-		.const("keys", `Object.keys(${object})`)
-		.const("symbols", `Object.getOwnPropertySymbols(${object})`)
-		.if("symbols.length", () => js.line("keys.push(...symbols)"))
+		.const(keys, `Object.keys(${object})`)
+		.const(symbols, `Object.getOwnPropertySymbols(${object})`)
+		.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
 
 const ownKeysOf = (data: object): Key[] => {
 	const keys: Key[] = Object.keys(data)

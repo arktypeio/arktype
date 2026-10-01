@@ -162,7 +162,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	private compileTransform(js: NodeCompiler): void {
 		let result = "data"
 		if (this.introspectableIn?.transforms) {
-			js.initializeTransform()
+			js.initializeTransform([this.introspectableIn])
 				.transformKey("transformedIn", "data", this.introspectableIn)
 				.returnIfTransformFailed()
 			result = "transformedIn"
