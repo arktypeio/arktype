@@ -158,13 +158,6 @@ export declare namespace NodeCompiler {
 	export type ErrorContexts = object[]
 }
 
-const isDecidedByAllows = (node: BaseNode): boolean => {
-	if (node.includesTransform || node.allowsRequiresContext) return false
-	for (const id in node.referencesById)
-		if (node.referencesById[id].hasKind("predicate")) return false
-	return true
-}
-
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	optimistic: boolean
@@ -266,4 +259,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			:	this.line(this.invoke(node, opts))
 	}
+}
+
+const isDecidedByAllows = (node: BaseNode): boolean => {
+	if (node.includesTransform || node.allowsRequiresContext) return false
+	for (const id in node.referencesById)
+		if (node.referencesById[id].hasKind("predicate")) return false
+	return true
 }

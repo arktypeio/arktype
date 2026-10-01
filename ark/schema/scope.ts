@@ -180,7 +180,7 @@ export interface ResolvedScopeConfig
 	extends ResolvedConfig,
 		ScopeOnlyConfigOptions {}
 
-type GlobalConfig = {
+interface GlobalConfig {
 	config: ArkSchemaConfig
 	resolvedConfig: ResolvedConfig
 }
@@ -205,12 +205,12 @@ const constructWith = <t>(
 	globalConfig: GlobalConfig | undefined,
 	construct: () => t
 ): t => {
-	const outer = constructingWith
+	const outerGlobalConfig = constructingWith
 	constructingWith = globalConfig
 	try {
 		return construct()
 	} finally {
-		constructingWith = outer
+		constructingWith = outerGlobalConfig
 	}
 }
 
@@ -247,7 +247,7 @@ const cacheUnknownUnion = ($: BaseScope): void => {
 let constructingRootSchemaScope = true
 
 // held apart from each scope, which may be frozen before its first parse
-const cachedUnknownUnion = new WeakSet<BaseScope>()
+const scopesWithUnknownUnion = new WeakSet<BaseScope>()
 
 const rootScopeFnName = "function $"
 
@@ -446,7 +446,7 @@ const declareTraversals = (
 	return `[${traversals.join(", ")}]`
 }
 
-type UnitLinkage = {
+interface UnitLinkage {
 	referencesById: Map<string, BaseNode>
 	reused: Set<BaseNode>
 	unreached: Set<BaseNode>
@@ -535,7 +535,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
-		if (constructingRootSchemaScope) cachedUnknownUnion.add(this)
+		if (constructingRootSchemaScope) scopesWithUnknownUnion.add(this)
 
 		const globalConfig = constructingWith ?? $ark
 
@@ -826,8 +826,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		bootstrap()
-		if (!cachedUnknownUnion.has(this)) {
-			cachedUnknownUnion.add(this)
+		if (!scopesWithUnknownUnion.has(this)) {
+			scopesWithUnknownUnion.add(this)
 			cacheUnknownUnion(this)
 		}
 		const id = input.id ?? registerNodeId(input.prefix)

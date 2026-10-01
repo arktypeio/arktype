@@ -1,6 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
-import { jsTypeOfDescriptions, printable } from "@ark/util"
 import {
 	$ark,
 	intrinsic,
@@ -9,6 +7,8 @@ import {
 	type ArkErrors,
 	type NodeId
 } from "@ark/schema"
+import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
+import { jsTypeOfDescriptions, printable } from "@ark/util"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -137,7 +137,7 @@ contextualize(() => {
 		attest(s2.name).equals("Array")
 	})
 
-	it("applies roots with ids that name what their compiled apply reads", () => {
+	it("applies roots with reserved or shadowing ids", () => {
 		for (const id of [
 			"allows",
 			"apply",
@@ -164,7 +164,7 @@ contextualize(() => {
 		}
 	})
 
-	it("compiles a unit reading more values than a function takes parameters", () => {
+	it("compiles a root with 36,000 predicates", () => {
 		const predicate = Array.from(
 			{ length: 36_000 },
 			(_, i) => (n: number) => n !== i
@@ -200,7 +200,7 @@ contextualize(() => {
 			})
 		const invalid = { n: 500, d: new Date(-1), u: 2, v: true, t: [1, 2], x: 1 }
 		make("warm")(invalid)
-		const registered = Object.keys($ark).length
+		const registeredCount = Object.keys($ark).length
 		const T = make("fresh")
 		attest(
 			T({ fresh: "s", n: 5, d: new Date(1), u: 1, v: 1, t: ["s"] })
@@ -214,10 +214,10 @@ contextualize(() => {
 			o: 5
 		})
 		attest((T(invalid) as ArkErrors).count).equals(7)
-		attest(Object.keys($ark).length).equals(registered)
+		attest(Object.keys($ark).length).equals(registeredCount)
 	})
 
-	it("registers nothing for a type's own morphs, defaults and unions", () => {
+	it("registers nothing for own morphs, defaults and unions", () => {
 		const length = (s: string) => s.length
 		const make = (seed: number) => {
 			const key = `own${seed}`
@@ -284,7 +284,7 @@ contextualize(() => {
 		const Warm = make(1)
 		Warm(valid(1))
 		Warm(invalid(1))
-		const registered = Object.keys($ark).length
+		const registeredCount = Object.keys($ark).length
 		const T = make(2)
 		attest(T(valid(2))).equals({
 			own2: 2,
@@ -296,7 +296,7 @@ contextualize(() => {
 			o: 2
 		})
 		attest((T(invalid(2)) as ArkErrors).count).equals(8)
-		attest(Object.keys($ark).length).equals(registered)
+		attest(Object.keys($ark).length).equals(registeredCount)
 		const values = Object.values($ark)
 		for (const value of [printable, jsTypeOfDescriptions, arrayIndexMatcher])
 			attest(values.includes(value)).equals(false)

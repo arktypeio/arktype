@@ -439,10 +439,10 @@ const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
 	const cached = defaultableMorphsCache.get(cacheKey)
 	if (cached) return cached
 
-	const keep = node.defaultables.some(([element]) =>
+	const keepsMorphs = node.defaultables.some(([element]) =>
 		keepsDefaultValueMorph(element)
 	)
-	return keep ?
+	return keepsMorphs ?
 			defaultableMorphsCache.pin(cacheKey, morphs)
 		:	defaultableMorphsCache.set(cacheKey, morphs)
 }
