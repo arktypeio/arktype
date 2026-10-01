@@ -104,6 +104,18 @@ contextualize(() => {
 		)
 	})
 
+	it("reports errors a nested morph returns", () => {
+		const Inner = type({ x: "number" })
+		const T = type({
+			outer: { a: type("object").pipe(o => Inner(o)) },
+			other: { b: "number = 5" }
+		})
+
+		attest(T({ outer: { a: { x: "no" } }, other: {} }).toString()).snap(
+			"outer.a.x must be a number (was a string)"
+		)
+	})
+
 	it("applies only the morphs of the branches it takes", () => {
 		let calls = 0
 		const Negated = type("number < 0")
