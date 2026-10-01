@@ -42,7 +42,7 @@ export class ArkError<
 		this.input = input as never
 		this.ctx = ctx
 		// assigning defines the same property unless this has or inherits k, e.g. message
-		for (const k of Object.keys(input)) {
+		for (const k in input) {
 			if (k in this) defineValue(this, k, input[k as never])
 			else (this as any)[k] = input[k as never]
 		}
