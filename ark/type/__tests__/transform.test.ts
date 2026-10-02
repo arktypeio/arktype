@@ -206,6 +206,22 @@ contextualize(() => {
 		)
 	})
 
+	it("skips the morphs after a piped node whose morph fails", () => {
+		const calls: string[] = []
+		const Inner = type("string").pipe((s, ctx) => {
+			calls.push("inner")
+			return ctx.error("valid inner")
+		})
+		const T = type("string").pipe(
+			s => (calls.push("before"), s),
+			Inner,
+			s => (calls.push("after"), s)
+		)
+
+		attest(T("x").toString()).snap('must be valid inner (was "x")')
+		attest(calls).equals(["before", "inner"])
+	})
+
 	it("reports errors a nested morph returns", () => {
 		const Inner = type({ x: "number" })
 		const T = type({
@@ -312,13 +328,25 @@ contextualize(() => {
 	})
 
 	describe("undeclared keys", () => {
-		it("deletes them in declared order", () => {
-			const T = type({ "+": "delete", a: "string", b: "number" })
+		it("deletes them, ordering keys as its expression does", () => {
+			const T = type({
+				"+": "delete",
+				z: "string",
+				b: "number",
+				"a?": "string"
+			})
 
-			const original = { a: "a", b: 1 }
+			const original = { z: "z", b: 1 }
 
 			attest(T(original)).is(original)
-			attest(Object.keys(T({ b: 1, c: true, a: "a" }))).equals(["a", "b"])
+			attest(T.expression).snap(
+				"{ b: number, z: string, a?: string, + (undeclared): delete }"
+			)
+			attest(Object.keys(T({ a: "a", z: "z", c: true, b: 1 }))).equals([
+				"b",
+				"z",
+				"a"
+			])
 		})
 
 		// process.env is an exotic object- ensure it is correctly copied
