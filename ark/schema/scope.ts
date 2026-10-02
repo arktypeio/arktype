@@ -384,7 +384,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 			unlessInvalid([
 				"const ctx = new Traversal(data, config)",
 				node.includesAlias ?
-					`const result = ctx.transformResolution("${node.id}", data, data => transform(data, ctx))`
+					`const result = ctx.transformResolution("${node.id}", data, transform)`
 				:	"const result = transform(data, ctx)",
 				"return ctx.hasError() ? ctx.finalize(onFail) : result"
 			])
@@ -489,8 +489,13 @@ class TraversalCompiler extends NodeCompiler {
 	override invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const id = typeof node === "string" ? node : node.id
 		const reference = this.linkage.referencesById.get(id)
-		if (!reference) this.linkage.closed = false
-		else if (this.linkage.reused.has(reference)) {
+		if (!reference) {
+			// an alias's resolution can be built after the unit's references were collected
+			if (isNode(node)) {
+				this.linkage.referencesById.set(id, node)
+				this.linkage.reached.push(node)
+			} else this.linkage.closed = false
+		} else if (this.linkage.reused.has(reference)) {
 			const kind = opts?.kind ?? this.traversalKind
 			this.linkage.dependencies.set(
 				traversalOf(reference, kind),
