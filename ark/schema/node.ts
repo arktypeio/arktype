@@ -349,9 +349,7 @@ export abstract class BaseNode<
 						// keyed by id, so an alias resolving to this root reuses its output
 						const result =
 							this.includesAlias ?
-								ctx.transformResolution(this.id, data, data =>
-									ctx.transform(this, data)
-								)
+								ctx.transformResolution(this.id, data, this.traverseTransform)
 							:	ctx.transform(this, data)
 						return ctx.hasError() ? ctx.finalize(onFail) : result
 					}

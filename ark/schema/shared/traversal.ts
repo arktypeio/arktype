@@ -187,7 +187,11 @@ export class Traversal {
 	}
 
 	transform(node: BaseNode, data: unknown): unknown {
-		const result = node.traverseTransform(data, this)
+		return this.transformed(node.traverseTransform(data, this), data)
+	}
+
+	// a transform that doesn't require ctx returns its errors
+	private transformed(result: unknown, data: unknown): unknown {
 		if (!(result instanceof TransformErrors)) return result
 		this.addTransformErrors(result)
 		return data
@@ -231,9 +235,10 @@ export class Traversal {
 	transformResolution(
 		id: string,
 		data: unknown,
-		transform: (data: unknown) => unknown
+		transform: TraverseTransform
 	): unknown {
-		if (!hasDomain(data, "object")) return transform(data)
+		if (!hasDomain(data, "object"))
+			return this.transformed(transform(data, this), data)
 		const transformed = ((this.transformedByResolutionId ??= {})[id] ??=
 			new Map())
 		if (transformed.has(data)) {
@@ -245,7 +250,7 @@ export class Traversal {
 			return placeholder
 		}
 		transformed.set(data, transforming)
-		const result = transform(data)
+		const result = this.transformed(transform(data, this), data)
 		const placeholder = transformed.get(data)
 		if (placeholder === transforming || !canFill(placeholder, result)) {
 			transformed.set(data, result)

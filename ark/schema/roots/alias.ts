@@ -147,23 +147,28 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) =>
-		ctx.transformResolution(this.resolutionId, data, resolved =>
-			ctx.transform(this.resolution, resolved)
+		ctx.transformResolution(
+			this.resolution.id,
+			data,
+			this.resolution.traverseTransform
 		)
 
 	compile(js: NodeCompiler): void {
-		const id = this.resolutionId
+		const resolution = this.resolution
+		// invoked first, so the unit declares the resolution's traversals
+		const traverse = js.invoke(resolution)
+		const id = js.referenceToId(resolution.id)
 		if (js.traversalKind === "Transform") {
 			js.return(
-				`ctx.transformResolution("${id}", data, resolved => ctx.transform(${js.ref(this.resolution)}, resolved))`
+				`ctx.transformResolution("${id}", data, ${js.referenceToId(resolution.id, { kind: "Transform" })})`
 			)
 			return
 		}
-		const seen = `ctx.seen.${js.referenceToId(id)}`
+		const seen = `ctx.seen.${id}`
 		js.if(`${seen} && ${seen}.includes(data)`, () => js.return(true))
 		js.if(`!${seen}`, () => js.line(`${seen} = []`))
 		js.line(`${seen}.push(data)`)
-		js.return(js.invoke(id))
+		js.return(traverse)
 	}
 }
 
