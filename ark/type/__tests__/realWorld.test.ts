@@ -1449,46 +1449,51 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1367
 	it("cyclic discriminated union issue 2", () => {
-		const componentModule = type.module({
-			container: {
-				type: "'container'",
-				content: "component"
-			},
-
-			flexbox: {
-				type: "'flexbox'",
-				items: "component"
-			},
-
-			tabsItem: {
-				id: "string",
-				title: "component",
-				content: "component"
-			},
-			tabs: {
-				type: "'tabs'",
-				items: "tabsItem[]"
-			},
-
-			singleComponent: "string | flexbox | tabs",
-			component: "singleComponent | singleComponent[]"
-		})
-		const componentSchema = componentModule.component
-
-		const component: typeof componentSchema.infer = {
-			type: "tabs",
-			items: [
+		for (const jitless of [false, true]) {
+			const componentModule = type.module(
 				{
-					id: "tab-id",
-					title: "tab-title",
-					content: []
-				}
-			]
+					container: {
+						type: "'container'",
+						content: "component"
+					},
+
+					flexbox: {
+						type: "'flexbox'",
+						items: "component"
+					},
+
+					tabsItem: {
+						id: "string",
+						title: "component",
+						content: "component"
+					},
+					tabs: {
+						type: "'tabs'",
+						items: "tabsItem[]"
+					},
+
+					singleComponent: "string | flexbox | tabs",
+					component: "singleComponent | singleComponent[]"
+				},
+				{ jitless }
+			)
+			const componentSchema = componentModule.component
+
+			const component: typeof componentSchema.infer = {
+				type: "tabs",
+				items: [
+					{
+						id: "tab-id",
+						title: "tab-title",
+						content: []
+					}
+				]
+			}
+
+			const result = componentSchema(component)
+
+			attest(result).equals(component)
 		}
-
-		const result = componentSchema(component)
-
-		attest(result).equals(component)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1362

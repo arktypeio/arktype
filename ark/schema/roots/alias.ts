@@ -1,5 +1,4 @@
 import {
-	append,
 	domainDescriptions,
 	printable,
 	throwInternalError,
@@ -141,17 +140,16 @@ Resolution: ${printable(resolution)}`)
 					this.resolution.traverseAllows(data, (ctx + 1) as never)
 				:	aliasVisits.exceed()
 		}
-		const seen = ctx.seen[this.reference]
-		if (seen?.includes(data)) return true
-		ctx.seen[this.reference] = append(seen, data)
-		return this.resolution.traverseAllows(data, ctx)
+		return (
+			ctx.enterResolution(this.resolution.id, data) ??
+			ctx.exitResolution(this.resolution.traverseAllows(data, ctx))
+		)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const seen = ctx.seen[this.reference]
-		if (seen?.includes(data)) return
-		ctx.seen[this.reference] = append(seen, data)
+		if (ctx.enterResolution(this.resolution.id, data) !== undefined) return
 		this.resolution.traverseApply(data, ctx)
+		ctx.exitResolution()
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) =>
@@ -172,20 +170,23 @@ Resolution: ${printable(resolution)}`)
 			)
 			return
 		}
-		if (js.traversalKind === "Allows") {
-			const allows = js.referenceToId(resolution.id, { kind: "Allows" })
-			const visits = js.ref(aliasVisits)
-			js.if(`typeof ctx === "number"`, () =>
-				js.return(
-					`ctx < ${maxAliasDepth} && ++${visits}.count <= ${maxAliasVisits} ? ${allows}(data, ctx + 1) : ${visits}.exceed()`
-				)
+		const enter = `ctx.enterResolution("${id}", data)`
+		if (js.traversalKind === "Apply") {
+			js.if(`${enter} === undefined`, () =>
+				js.line(traverse).line("ctx.exitResolution()")
 			)
+			return
 		}
-		const seen = `ctx.seen.${id}`
-		js.if(`${seen} && ${seen}.includes(data)`, () => js.return(true))
-		js.if(`!${seen}`, () => js.line(`${seen} = []`))
-		js.line(`${seen}.push(data)`)
-		js.return(traverse)
+		const allows = js.referenceToId(resolution.id, { kind: "Allows" })
+		const visits = js.ref(aliasVisits)
+		js.if(`typeof ctx === "number"`, () =>
+			js.return(
+				`ctx < ${maxAliasDepth} && ++${visits}.count <= ${maxAliasVisits} ? ${allows}(data, ctx + 1) : ${visits}.exceed()`
+			)
+		)
+		js.const("reached", enter)
+		js.if("reached !== undefined", () => js.return("reached"))
+		js.return(`ctx.exitResolution(${traverse})`)
 	}
 }
 

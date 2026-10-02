@@ -76,6 +76,7 @@ import {
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
+	applyCyclic,
 	TransformErrors,
 	Traversal,
 	type TraversalKind,
@@ -352,11 +353,14 @@ const bindRootApply = (node: BaseRoot) => {
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
 const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
-	const fallback = [
-		"const ctx = new Traversal(data, config)",
-		"apply(data, ctx)",
-		"return ctx.finalize(onFail)"
-	]
+	const fallback =
+		node.includesAlias ?
+			[`return applyCyclic("${node.id}", apply, data, config).finalize(onFail)`]
+		:	[
+				"const ctx = new Traversal(data, config)",
+				"apply(data, ctx)",
+				"return ctx.finalize(onFail)"
+			]
 	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
 	const unlessInvalid = (result: string[]) => [
 		"if (!allows(data)) {",
@@ -395,6 +399,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"transform",
 		"Traversal",
 		"TransformErrors",
+		"applyCyclic",
 		"config",
 		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
 	)(
@@ -403,6 +408,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		node.traverseTransform,
 		Traversal,
 		TransformErrors,
+		applyCyclic,
 		node.$.resolvedConfig
 	)
 }
