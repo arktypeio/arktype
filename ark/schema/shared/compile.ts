@@ -262,13 +262,17 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			)
 		}
 
-		const requiresContext = this.requiresContextFor(node)
-		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)
+		// in Allows, only a contextual predicate reads the path
+		const pushesPath =
+			this.traversalKind === "Allows" ?
+				node.allowsRequiresTraversal
+			:	this.requiresContextFor(node)
+		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
 		this.check(node, {
 			arg: accessExpression
 		})
-		if (requiresContext) this.line(`${this.ctx}.path.pop()`)
+		if (pushesPath) this.line(`${this.ctx}.path.pop()`)
 
 		return this
 	}

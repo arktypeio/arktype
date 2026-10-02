@@ -58,6 +58,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark, registryName } from "./shared/registry.ts"
 import {
+	allowsCyclic,
 	Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -173,10 +174,12 @@ export abstract class BaseNode<
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
-					this.traverseAllows(
-						data as never,
-						new Traversal(data, this.$.resolvedConfig)
-					)
+					this.allowsRequiresTraversal ?
+						this.traverseAllows(
+							data as never,
+							new Traversal(data, this.$.resolvedConfig)
+						)
+					:	allowsCyclic(this.traverseAllows, data, this.$.resolvedConfig)
 			:	data => (this.traverseAllows as any)(data)
 	}
 
@@ -184,19 +187,34 @@ export abstract class BaseNode<
 	// includesTransform doesn't see an alias's resolution, final once its scope resolves
 	get transforms(): boolean {
 		if (this._transforms !== undefined) return this._transforms
-		let transforms = this.includesTransform
-		if (!transforms && this.includesAlias) {
-			const reached = new Set<BaseNode>([this])
-			for (const node of reached) {
-				for (const id in node.referencesById) {
-					const reference = node.referencesById[id]
-					if (reference.hasKind("alias")) reached.add(reference.resolution)
-					transforms ||= reference.includesTransform
-				}
-				if (transforms) break
+		const transforms = this.reaches("includesTransform")
+		return this.$.resolved ? (this._transforms = transforms) : transforms
+	}
+
+	private _allowsRequiresTraversal: boolean | undefined
+	// a contextual predicate reads ctx, so its Allows can't be passed an alias depth
+	get allowsRequiresTraversal(): boolean {
+		if (this._allowsRequiresTraversal !== undefined)
+			return this._allowsRequiresTraversal
+		const requiresTraversal = this.reaches("includesContextualPredicate")
+		return this.$.resolved ?
+				(this._allowsRequiresTraversal = requiresTraversal)
+			:	requiresTraversal
+	}
+
+	private reaches(
+		flag: "includesTransform" | "includesContextualPredicate"
+	): boolean {
+		if (this[flag] || !this.includesAlias) return this[flag]
+		const reached = new Set<BaseNode>([this])
+		for (const node of reached) {
+			for (const id in node.referencesById) {
+				const reference = node.referencesById[id]
+				if (reference[flag]) return true
+				if (reference.hasKind("alias")) reached.add(reference.resolution)
 			}
 		}
-		return this.$.resolved ? (this._transforms = transforms) : transforms
+		return false
 	}
 
 	get transformRequiresContext(): boolean {
@@ -211,7 +229,7 @@ export abstract class BaseNode<
 				this.transformRequiresContext ?
 					"contextualTransform"
 				:	"transform"
-			: this.allowsRequiresContext ? "contextual"
+			: this.allowsRequiresTraversal ? "contextual"
 			: "allows"
 		)
 	}

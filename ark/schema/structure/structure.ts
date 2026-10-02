@@ -551,7 +551,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		// added additional ctx check here to address
 		// https://github.com/arktypeio/arktype/issues/1346
-		if (this.structuralMorph && ctx && !ctx.hasError())
+		if (this.structuralMorph && traversalKind === "Apply" && !ctx.hasError())
 			ctx.queueMorphs([this.structuralMorph])
 
 		return true
