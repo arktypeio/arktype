@@ -399,6 +399,33 @@ export class Traversal {
 
 const transforming = noSuggest("transforming")
 
+export const maxAliasDepth = 64
+
+export const maxAliasVisits = 1000
+
+// shared by every root's Allows, which passes an alias depth in place of ctx
+export const aliasVisits = {
+	count: 0,
+	exceed: (): false => {
+		aliasVisits.count = Number.POSITIVE_INFINITY
+		return false
+	}
+}
+
+// within the bounds, data is traversed as a tree; past them, it may be cyclic
+export const allowsCyclic = (
+	allows: TraverseAllows,
+	data: unknown,
+	config: ResolvedConfig
+): boolean => {
+	const outerVisits = aliasVisits.count
+	aliasVisits.count = 0
+	const allowed = allows(data, 0 as never)
+	const exceeded = aliasVisits.count > maxAliasVisits
+	aliasVisits.count = outerVisits
+	return exceeded ? allows(data, new Traversal(data, config)) : allowed
+}
+
 // a builtin like Date keeps its state in internal slots a placeholder can't take
 const canFill = (placeholder: unknown, result: unknown): result is object =>
 	typeof result === "object" &&
@@ -463,10 +490,10 @@ const copyContentsOf: {
 export const traverseKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
-	// ctx will be undefined if this node isn't context-dependent
+	// ctx will be undefined if this node isn't context-dependent, or an alias depth
 	ctx: InternalTraversal | undefined
 ): result => {
-	if (!ctx) return fn()
+	if (!ctx || typeof ctx === "number") return fn()
 
 	ctx.path.push(key)
 	const result = fn()
