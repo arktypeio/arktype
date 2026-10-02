@@ -61,6 +61,29 @@ contextualize(() => {
 		attest(Object.is(out.b[0], 0)).equals(true)
 	})
 
+	it("transforms a key a prop and an index signature share by both at once", () => {
+		const T = type({
+			a: { x: "string.trim" },
+			"[string]": { "y?": "string.trim" }
+		})
+
+		const original = { a: { x: " 1 ", y: " 2 " } }
+
+		const out: unknown = T(original)
+		const deleted: unknown = T.onUndeclaredKey("delete")(original)
+
+		attest(out).snap({ a: { x: "1", y: "2" } })
+		attest(deleted).snap({ a: { x: "1", y: "2" } })
+		attest(original).snap({ a: { x: " 1 ", y: " 2 " } })
+
+		let calls = 0
+		const Trimmed = type("string").pipe(s => (calls++, s.trim()))
+		const U = type({ a: Trimmed, "[string]": Trimmed })
+
+		attest(U({ a: " a ", b: " b " })).snap({ a: "a", b: "b" })
+		attest(calls).equals(2)
+	})
+
 	it("transforms a frozen input", () => {
 		const T = type({ foo: "string.trim", bar: "number = 5" })
 
