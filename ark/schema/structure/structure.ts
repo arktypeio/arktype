@@ -229,6 +229,43 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	expression: string = structuralExpression(this)
 
+	// a key both a prop and an index signature transform takes both transforms at once
+	readonly indexedValueByKey: Record<Key, BaseRoot> | undefined =
+		this.intersectIndexedValues()
+
+	private intersectIndexedValues(): Record<Key, BaseRoot> | undefined {
+		if (!this.index) return
+		let result: Record<Key, BaseRoot> | undefined
+		for (const prop of this.props) {
+			if (!prop.value.includesTransform) continue
+			let value = prop.value
+			for (const index of this.index) {
+				if (!index.value.includesTransform || !index.signature.allows(prop.key))
+					continue
+				const intersection = $ark.sets?.intersect(value, index.value, this.$)
+				if (!hasArkKind(intersection, "root")) return
+				value = intersection
+				;(result ??= Object.create(null))[prop.key] = value
+			}
+		}
+		if (result && this._referencesById) {
+			for (const k of Reflect.ownKeys(result))
+				Object.assign(this._referencesById, result[k].referencesById)
+		}
+		return result
+	}
+
+	private transformOf(prop: Prop.Node): BaseRoot {
+		return this.indexedValueByKey?.[prop.key] ?? prop.value
+	}
+
+	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+		const indexedValueByKey = this.indexedValueByKey
+		return indexedValueByKey ?
+				Reflect.ownKeys(indexedValueByKey).map(k => indexedValueByKey[k])
+			:	[]
+	}
+
 	requiredKeys: Key[] = this.required?.map(node => node.key) ?? []
 
 	optionalKeys: Key[] = this.optional?.map(node => node.key) ?? []
@@ -536,12 +573,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			out[k] = transformed
 		}
 		for (let i = 0; i < this.props.length; i++) {
-			const { key, value } = this.props[i]
-			if (value.transforms && key in data) transformKey(key, value)
+			const prop = this.props[i]
+			if (prop.value.transforms && prop.key in data)
+				transformKey(prop.key, this.transformOf(prop))
 		}
 		if (this.index) {
 			const keys = ownKeysOf(data)
 			for (let i = 0; i < keys.length; i++) {
+				if (this.indexedValueByKey && keys[i] in this.indexedValueByKey)
+					continue
 				for (const node of this.index) {
 					if (node.value.transforms && node.signature.allows(keys[i]))
 						transformKey(keys[i], node.value)
@@ -682,7 +722,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const deletes = this.undeclared === "delete"
 		js.initializeTransform([
 			...(this.sequence?.transforms ? [this.sequence] : []),
-			...transformedProps.map(prop => prop.value),
+			...transformedProps.map(prop => this.transformOf(prop)),
 			...transformedIndex.map(index => index.value)
 		])
 		js.line("let out = data")
@@ -692,11 +732,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			})
 		}
 		for (let i = 0; i < transformedProps.length; i++) {
-			const { key, serializedKey, optional, value } = transformedProps[i]
+			const { key, serializedKey, optional } = transformedProps[i]
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
 				`value${i}`,
-				value,
+				this.transformOf(transformedProps[i]),
 				{
 					keyExpression: serializedKey,
 					...(optional && { condition: `${serializedKey} in data` }),
@@ -710,6 +750,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (transformedIndex.length) {
 			compileOwnKeys(js, "data").for("i < keys.length", () => {
 				js.const("k", "keys[i]")
+				if (this.indexedValueByKey) {
+					js.if(`k in ${js.ref(this.indexedValueByKey)}`, () =>
+						js.line("continue")
+					)
+				}
 				for (const index of transformedIndex) {
 					js.if(js.invoke(index.signature, { arg: "k", kind: "Allows" }), () =>
 						js
@@ -787,7 +832,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const unchanged = [
 			...(outMayBeCopied ? ["out === data"] : []),
 			...transformedProps.map((prop, i) =>
-				js.compareTransformed(prop.value, `transformed${i}`, "===", `value${i}`)
+				js.compareTransformed(
+					this.transformOf(prop),
+					`transformed${i}`,
+					"===",
+					`value${i}`
+				)
 			),
 			...this.defaultable.map(node => `${node.serializedKey} in data`)
 		]
@@ -823,16 +873,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 		const deleteFromCopy = (objectCopy?: string) => {
 			for (let i = 0; i < transformedProps.length; i++) {
-				const { key, value } = transformedProps[i]
+				const prop = transformedProps[i]
 				const changed = js.compareTransformed(
-					value,
+					this.transformOf(prop),
 					`transformed${i}`,
 					"!==",
 					`value${i}`
 				)
 				js.if(changed, () =>
 					this.compileCopy(js, objectCopy).line(
-						`out${js.prop(key)} = transformed${i}`
+						`out${js.prop(prop.key)} = transformed${i}`
 					)
 				)
 			}
