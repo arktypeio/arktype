@@ -30,6 +30,7 @@ export type MorphsAtPath = {
 
 export type BranchTraversal = {
 	error: ArkError | undefined
+	errorCount: number
 	queuedMorphs: MorphsAtPath[]
 }
 
@@ -69,7 +70,18 @@ export class Traversal {
 
 	queuedMorphs: MorphsAtPath[] = []
 	branches: BranchTraversal[] = []
-	seen: { [id in string]?: unknown[] } = {}
+	seen: { [id in string]?: Map<unknown, ResolutionState> } = {}
+	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
+	tracksResolutions = true
+	private resolving: ResolvingFrame[] | undefined
+	private resolvingDepth = 0
+	private untrackedVisits = 0
+	private enteredCount = 0
+	// the earliest entered resolution still in progress that the current one assumed valid
+	private earliestAssumed = Number.POSITIVE_INFINITY
+	// states and data of each valid result that holds only if what it assumed does
+	private assumed: unknown[] | undefined
+	private reachedInvalid: InvalidResolution | undefined
 	transformedByResolutionId:
 		| { [id in string]?: Map<unknown, unknown> }
 		| undefined
@@ -209,7 +221,12 @@ export class Traversal {
 			return this.currentErrorCount > errorCount ? this.errors : result
 		}
 		this.receive(data)
-		node.traverseApply(data, this)
+		// a morph's output is new data, so a cyclic node tracks it from its own root
+		if (node.includesAlias) {
+			this.errors.merge(
+				applyCyclic(node.id, node.traverseApply, data, this.config).errors
+			)
+		} else node.traverseApply(data, this)
 		this.queuedMorphs = []
 		return this.errors
 	}
@@ -263,14 +280,105 @@ export class Traversal {
 		return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
 	}
 
+	// undefined once entered, else whether data is known or assumed valid
+	enterResolution(id: string, data: unknown): boolean | undefined {
+		const states = this.seen[id]
+		const state = states?.get(data)
+		if (state !== undefined) {
+			if (typeof state === "number") {
+				if (state < this.earliestAssumed) this.earliestAssumed = state
+				return true
+			}
+			if (typeof state === "boolean") return state
+			if (this.currentBranch) {
+				this.failBranch(state.error)
+				return false
+			}
+			if (state.reported) {
+				this.reachedInvalid ??= state
+				return false
+			}
+			// its errors were discarded with the branch it failed in, so it's traversed again
+		}
+		if (!this.tracksResolutions) {
+			if (
+				this.resolvingDepth >= maxAliasDepth ||
+				++this.untrackedVisits > maxAliasVisits
+			)
+				throw untrackedBound
+		} else
+			(states ?? (this.seen[id] = new Map())).set(data, ++this.enteredCount)
+		// frames are reused by depth, so entering doesn't allocate
+		const frame = ((this.resolving ??= [])[this.resolvingDepth++] ??=
+			{} as ResolvingFrame)
+		frame.id = id
+		frame.data = data
+		frame.entered = this.enteredCount
+		frame.errorCount = this.currentErrorCount
+		frame.outerReachedInvalid = this.reachedInvalid
+		this.reachedInvalid = undefined
+		if (this.tracksResolutions) {
+			frame.outerEarliestAssumed = this.earliestAssumed
+			frame.assumedLength = (this.assumed ??= []).length
+			this.earliestAssumed = Number.POSITIVE_INFINITY
+		}
+		return
+	}
+
+	// whether data is valid, given Allows' result or, in Apply, the errors since it was entered
+	exitResolution(allowed?: boolean): boolean {
+		const frame = this.resolving![--this.resolvingDepth]
+		const reachedInvalid = this.reachedInvalid
+		this.reachedInvalid = frame.outerReachedInvalid
+		const valid =
+			allowed ??
+			(reachedInvalid === undefined &&
+				this.currentErrorCount === frame.errorCount)
+		const states = this.seen[frame.id]
+		if (this.tracksResolutions) {
+			const earliestAssumed = this.earliestAssumed
+			this.earliestAssumed = frame.outerEarliestAssumed
+			const assumed = this.assumed!
+			if (valid && earliestAssumed < frame.entered) {
+				assumed.push(states, frame.data)
+				if (earliestAssumed < this.earliestAssumed)
+					this.earliestAssumed = earliestAssumed
+				return true
+			}
+			// nothing it assumed is in progress, so each result that assumed it settles with it
+			for (let i = frame.assumedLength; i < assumed.length; i += 2) {
+				const assumedStates = assumed[i] as Map<unknown, ResolutionState>
+				if (valid) assumedStates.set(assumed[i + 1], true)
+				else assumedStates.delete(assumed[i + 1])
+			}
+			assumed.length = frame.assumedLength
+		}
+		const data = frame.data
+		// a primitive has no identity, so each place it's reached reports its own errors
+		if (typeof data === "object" ? data === null : typeof data !== "function") {
+			if (this.tracksResolutions) states!.delete(data)
+			return valid
+		}
+		if (valid || allowed === false) {
+			if (this.tracksResolutions) states!.set(data, valid)
+			return valid
+		}
+		const invalid: InvalidResolution = {
+			error:
+				reachedInvalid?.error ??
+				this.currentBranch?.error ??
+				this.errors[this.errors.length - 1],
+			reported: !this.currentBranch
+		}
+		;(states ?? (this.seen[frame.id] = new Map())).set(data, invalid)
+		if (invalid.reported) this.reachedInvalid ??= invalid
+		return false
+	}
+
 	get currentErrorCount(): number {
-		return (
-			this.currentBranch ?
-				this.currentBranch.error ?
-					1
-				:	0
+		return this.currentBranch ?
+				this.currentBranch.errorCount
 			:	this.errors.count
-		)
 	}
 
 	get failFast(): boolean {
@@ -280,6 +388,7 @@ export class Traversal {
 	pushBranch(): void {
 		this.branches.push({
 			error: undefined,
+			errorCount: 0,
 			queuedMorphs: []
 		})
 	}
@@ -318,10 +427,15 @@ export class Traversal {
 
 	private errorFromContext(errCtx: ArkErrorContextInput): ArkError {
 		const error = new ArkError(errCtx, this)
-		if (this.currentBranch) this.currentBranch.error = error
+		if (this.currentBranch) this.failBranch(error)
 		else this.errors.add(error)
 
 		return error as never
+	}
+
+	private failBranch(error: ArkError): void {
+		this.currentBranch!.error = error
+		this.currentBranch!.errorCount++
 	}
 
 	private applyQueuedMorphs() {
@@ -412,6 +526,39 @@ export const aliasVisits = {
 	}
 }
 
+const untrackedBound = noSuggest("untrackedBound")
+
+// a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
+export const applyCyclic = (
+	id: string,
+	apply: TraverseApply,
+	data: unknown,
+	config: ResolvedConfig
+): Traversal => {
+	const ctx = new Traversal(data, config)
+	ctx.tracksResolutions = false
+	try {
+		applyResolution(id, apply, data, ctx)
+		return ctx
+	} catch (e) {
+		if (e !== untrackedBound) throw e
+	}
+	const tracked = new Traversal(data, config)
+	applyResolution(id, apply, data, tracked)
+	return tracked
+}
+
+const applyResolution = (
+	id: string,
+	apply: TraverseApply,
+	data: unknown,
+	ctx: Traversal
+) => {
+	if (ctx.enterResolution(id, data) !== undefined) return
+	apply(data, ctx)
+	ctx.exitResolution()
+}
+
 // within the bounds, data is traversed as a tree; past them, it may be cyclic
 export const allowsCyclic = (
 	allows: TraverseAllows,
@@ -424,6 +571,24 @@ export const allowsCyclic = (
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
 	return exceeded ? allows(data, new Traversal(data, config)) : allowed
+}
+
+// entered while in progress, then whether it is valid, or why Apply found it invalid
+type ResolutionState = number | boolean | InvalidResolution
+
+interface InvalidResolution {
+	error: ArkError
+	reported: boolean
+}
+
+interface ResolvingFrame {
+	id: string
+	data: unknown
+	entered: number
+	errorCount: number
+	outerReachedInvalid: InvalidResolution | undefined
+	outerEarliestAssumed: number
+	assumedLength: number
 }
 
 // a builtin like Date keeps its state in internal slots a placeholder can't take

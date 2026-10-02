@@ -59,6 +59,7 @@ import {
 import { $ark, registryName } from "./shared/registry.ts"
 import {
 	allowsCyclic,
+	applyCyclic,
 	Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -347,33 +348,23 @@ export abstract class BaseNode<
 				return (data, onFail) => {
 					if (this.allows(data)) return data
 
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
+					return this.applyRoot(data).finalize(onFail)
 				}
 
 			case "contextual":
-				return (data, onFail) => {
-					const ctx = new Traversal(data, this.$.resolvedConfig)
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
-				}
+				return (data, onFail) => this.applyRoot(data).finalize(onFail)
 
 			case "transform":
 			case "contextualTransform":
 				return (data, onFail) => {
+					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
 					const ctx = new Traversal(data, this.$.resolvedConfig)
-					if (this.allows(data)) {
-						// keyed by id, so an alias resolving to this root reuses its output
-						const result =
-							this.includesAlias ?
-								ctx.transformResolution(this.id, data, this.traverseTransform)
-							:	ctx.transform(this, data)
-						return ctx.hasError() ? ctx.finalize(onFail) : result
-					}
-
-					this.traverseApply(data, ctx)
-					return ctx.finalize(onFail)
+					// keyed by id, so an alias resolving to this root reuses its output
+					const result =
+						this.includesAlias ?
+							ctx.transformResolution(this.id, data, this.traverseTransform)
+						:	ctx.transform(this, data)
+					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
 			default:
 				this.rootApplyStrategy satisfies never
@@ -381,6 +372,20 @@ export abstract class BaseNode<
 					`Unexpected rootApplyStrategy ${this.rootApplyStrategy}`
 				)
 		}
+	}
+
+	private applyRoot(data: unknown): Traversal {
+		if (this.includesAlias) {
+			return applyCyclic(
+				this.id,
+				this.traverseApply,
+				data,
+				this.$.resolvedConfig
+			)
+		}
+		const ctx = new Traversal(data, this.$.resolvedConfig)
+		this.traverseApply(data, ctx)
+		return ctx
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
