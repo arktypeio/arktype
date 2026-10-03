@@ -1007,6 +1007,12 @@ swap.swap.order[1] must be "on" (was "off")`)
 		).throws(writeUnclosedGenericCycleMessage("h"))
 	})
 
+	it("rejects an expansive generic its constraint defers", () => {
+		attest(() =>
+			scope({ "g<p extends object>": { "n?": "g<g<p>>" } } as never).export()
+		).throws(writeUnclosedGenericCycleMessage("g"))
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1026
 	it("filters a definition in progress once it resolves", () => {
 		const types = scope({
