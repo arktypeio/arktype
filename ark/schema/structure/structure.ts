@@ -996,7 +996,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			for (const node of this.index) {
 				js.if(
 					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-					() => js.traverseKey("k", "data[k]", node.value)
+					() => {
+						js.traverseKey("k", "data[k]", node.value)
+						return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
+					}
 				)
 			}
 		}

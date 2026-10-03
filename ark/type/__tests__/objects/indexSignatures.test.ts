@@ -187,6 +187,19 @@ other must be a string (was a bigint)`)
 		).snap("{ [string]: object }")
 	})
 
+	it("stops a failed branch at its first index error", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ kind: "'c'", p0: "boolean" }).or({
+				"[string]": { p2: "object" }
+			})
+
+			attest(T({ kind: { bogus: true }, p0: true }).toString()).snap(
+				'kind.p2 must be an object (was missing) or kind must be "c" (was {"bogus":true})'
+			)
+		}
+	})
+
 	it("intersction with right required", () => {
 		const T = type({ "a?": "true" }).and({ a: "boolean" })
 		attest<{ a: true }>(T.infer)
