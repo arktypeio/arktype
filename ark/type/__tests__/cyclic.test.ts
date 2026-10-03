@@ -530,6 +530,25 @@ contextualize(() => {
 					)
 				})
 
+				it("describes each level of a recursive union with an index once", config => {
+					const { c } = scope(
+						{
+							c: { kind: "'c'", "p2?": "b" },
+							r: { "[string]": "c" },
+							b: "r | c"
+						},
+						config
+					).export()
+					const data = {
+						kind: "c",
+						p2: { kind: "c", p2: { kind: "c", p2: { kind: 0 } } }
+					}
+
+					attest(c(data).toString()).snap(
+						'p2.kind must be an object (was a string), p2.p2.kind must be an object (was a string) or p2.p2.p2.kind must be an object or "c" (was 0)'
+					)
+				})
+
 				it("stops checking a value once it fails as never", config => {
 					const types = scope(
 						{
