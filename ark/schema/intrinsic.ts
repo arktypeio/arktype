@@ -68,6 +68,7 @@ const bootstrapIntrinsic = () => {
 
 let bootstrapped = false
 let bootstrappedWithEngine = false
+const intrinsicTarget: typeof $ark.intrinsic = {} as never
 
 const bootstrapOnRead = () =>
 	Object.defineProperty($ark, "intrinsic", {
@@ -102,8 +103,6 @@ export const bootstrap = (): void => {
 		throw e
 	}
 }
-
-const intrinsicTarget: typeof $ark.intrinsic = {} as never
 
 const currentIntrinsic = (): typeof $ark.intrinsic => {
 	bootstrap()
