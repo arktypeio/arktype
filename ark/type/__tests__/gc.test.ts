@@ -23,7 +23,7 @@ const collectTarget = async (ref: WeakRef<object>) => {
 }
 
 contextualize(() => {
-	it("collects a type nothing references", async () => {
+	it("unreferenced type", async () => {
 		const ref = new WeakRef(type({ collected: "string", n: "number > 5" }))
 		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
@@ -34,7 +34,7 @@ contextualize(() => {
 		)
 	})
 
-	it("collects a scope whose types have defaults", async () => {
+	it("scope with defaults", async () => {
 		const ref = new WeakRef(
 			scope({
 				a: { collectedDefault: "string = 'gc'" },
@@ -45,7 +45,7 @@ contextualize(() => {
 		attest(ref.deref()).equals(undefined)
 	})
 
-	it("collects a schema nothing references", async () => {
+	it("unreferenced schema", async () => {
 		const ref = new WeakRef(
 			rootSchema({
 				domain: "object",
@@ -56,7 +56,7 @@ contextualize(() => {
 		attest(ref.deref()).equals(undefined)
 	})
 
-	it("keeps a this-cyclic root another type references", async () => {
+	it("referenced this-cyclic root", async () => {
 		let Root: type.Any | null = type({ name: "string", "next?": "this" })
 		const Extended = Root.and({ "id?": "number" })
 		Root = null
@@ -78,7 +78,7 @@ contextualize(() => {
 		])
 	})
 
-	it("reduces the union of every domain to unknown", async () => {
+	it("unknown union after collection", async () => {
 		await collect()
 		const T = type(
 			"string | number | bigint | symbol | object | boolean | null | undefined"
@@ -124,7 +124,7 @@ contextualize(() => {
 		}
 	})
 
-	it("optional prop input is unchanged by collecting", async () => {
+	it("optional prop input after collection", async () => {
 		const inputAfterReading = async (collectBetween: boolean) => {
 			let First: type.Any | null =
 				collectBetween ?

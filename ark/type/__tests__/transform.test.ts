@@ -40,7 +40,7 @@ contextualize(() => {
 		attest(original).snap({ foo: "  bar  ", inner: { a: "a" }, n: "1" })
 	})
 
-	it("shares values it doesn't transform", () => {
+	it("shares untransformed values", () => {
 		const T = type({ a: "string.trim", b: { c: "number[]" } })
 
 		const original = { a: " a ", b: { c: [1] } }
@@ -51,7 +51,7 @@ contextualize(() => {
 		attest(out.b).is(original.b)
 	})
 
-	it("keeps a morph's output that differs only in its sign of zero", () => {
+	it("morph to -0", () => {
 		const Negated = type("number").pipe(n => -n)
 		const T = type({ a: Negated, b: Negated.array() })
 
@@ -61,7 +61,7 @@ contextualize(() => {
 		attest(Object.is(out.b[0], 0)).equals(true)
 	})
 
-	it("transforms a key a prop and an index signature share by both at once", () => {
+	it("prop and index on one key", () => {
 		const T = type({
 			a: { x: "string.trim" },
 			"[string]": { "y?": "string.trim" }
@@ -82,7 +82,9 @@ contextualize(() => {
 		}).and({ "[string]": { "y?": "string.trim" } })
 
 		attest(WithDisjointProp(original)).snap({ a: { x: "1", y: "2" } })
+	})
 
+	it("index signature morph calls", () => {
 		let callCount = 0
 		const Trimmed = type("string").pipe(s => {
 			callCount++
@@ -94,7 +96,7 @@ contextualize(() => {
 		attest(callCount).equals(2)
 	})
 
-	it("transforms a key by each prop and index signature allowing it in turn", () => {
+	it("prop and index morphs in turn", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
 			const T = $.type({ a: "string.trim" }).and({ "[string]": "string.lower" })
@@ -125,7 +127,7 @@ contextualize(() => {
 		}
 	})
 
-	it("stops transforming a key at a transform that fails", () => {
+	it("failed key transform", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const A = $.type("string").pipe((s, ctx) => ctx.error("A"))
 			const B = $.type("string").pipe((s, ctx) => ctx.error("B"))
@@ -147,7 +149,7 @@ b must be A (was "y")`)
 		attest(T(original)).snap({ foo: "bar", bar: 5 })
 	})
 
-	it("transforms an object at two paths separately", () => {
+	it("shared object at two paths", () => {
 		const T = type({ a: { v: "string.trim" }, b: { v: "string.trim" } })
 
 		const shared = { v: " x " }
@@ -190,7 +192,7 @@ b must be A (was "y")`)
 		attest(original.a).equals(" a ")
 	})
 
-	it("copies an object whose prototype's constructor isn't a builtin", () => {
+	it("non-builtin prototype constructor", () => {
 		const T = type({ a: "number = 1" })
 		for (const constructor of [
 			function constructor() {},
@@ -202,7 +204,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("copies a builtin with its contents", () => {
+	it("builtin with contents", () => {
 		const T = type(["Date", "&", { b: "number = 1" }])
 
 		const original = new Date(5)
@@ -214,7 +216,7 @@ b must be A (was "y")`)
 		attest("b" in original).equals(false)
 	})
 
-	it("transforms a prop of a frozen builtin", () => {
+	it("frozen builtin prop", () => {
 		const T = type(["Date", "&", { "a?": "string.trim" }])
 		const original = Object.freeze(Object.assign(new Date(5), { a: " x " }))
 		const out: unknown = T(original)
@@ -222,7 +224,7 @@ b must be A (was "y")`)
 		attest(Object.entries(out as never)).equals([["a", "x"]])
 	})
 
-	it("copies a builtin whose contents are in internal slots", () => {
+	it("builtin with internal slots", () => {
 		const U = type([type.instanceOf(URL), "&", { "a?": "string.trim" }])
 		const url: unknown = U(
 			Object.assign(new URL("https://arktype.io"), { a: " x " })
@@ -246,7 +248,7 @@ b must be A (was "y")`)
 		attest(original.a).equals(" x ")
 	})
 
-	it("transforms a builtin it can't copy in place", () => {
+	it("uncopyable builtin in place", () => {
 		const T = type(["Function", "&", { "a?": "string.trim" }])
 		const original = Object.assign(() => 5, { a: " x " })
 		const out: unknown = T(original)
@@ -254,7 +256,7 @@ b must be A (was "y")`)
 		attest(original.a).equals("x")
 	})
 
-	it("copies a declared key data holds as a non-enumerable own prop", () => {
+	it("non-enumerable declared key", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({ e: "string", d: "string = 'd'" })
 			const original = Object.defineProperty({}, "e", { value: "e" })
@@ -264,7 +266,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("applies a morph at a non-enumerable declared key when a sibling fails", () => {
+	it("non-enumerable key with failing sibling", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({
 				a: "string.trim",
@@ -279,7 +281,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("drops undeclared non-enumerable props and reads accessors when it copies", () => {
+	it("hidden props and accessors", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({ a: "string.trim" })
 			const original = Object.defineProperties(
@@ -302,7 +304,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("copies an array with the props its type declares", () => {
+	it("array with declared props", () => {
 		const T = type([
 			"string.trim[]",
 			"&",
@@ -321,7 +323,7 @@ b must be A (was "y")`)
 		).snap("value at [1] must be a string (was a number)")
 	})
 
-	it("copies an array with its own props when another type shares its defaults", () => {
+	it("array props with shared defaults", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({
 				x: $.type({ a: "number = 5", b: "string" })
@@ -334,7 +336,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("calls a morph that takes one argument without ctx", () => {
+	it("unary morph without ctx", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({
 				a: ["string", "=>", (s: string, ctx: unknown = undefined) => !ctx]
@@ -343,7 +345,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("reports a branch's morph errors in a union that requires ctx", () => {
+	it("branch morph errors with ctx", () => {
 		const N = type("number")
 		for (const jitless of [false, true]) {
 			const types = scope(
@@ -373,7 +375,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("decides a piped contextual node at its own path", () => {
+	it("piped contextual node", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const paths: PropertyKey[][] = []
 			const T = $.type({
@@ -398,7 +400,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("takes a union branch whose predicate reads ctx", () => {
+	it("branch predicate reading ctx", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const Long = $.type([
 				"string > 5",
@@ -414,7 +416,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("reports an error a predicate adds while returning true", () => {
+	it("predicate error returning true", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const Positive = $.type("number").narrow((n, ctx) => {
 				if (n <= 0) ctx.error("positive")
@@ -429,7 +431,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("returns data shaped like an ArkError as a morph's output", () => {
+	it("ArkError-shaped morph output", () => {
 		const T = type({ payload: "string.json.parse", "n?": "number" })
 		const payload = { " arkKind": "errors" }
 
@@ -439,7 +441,7 @@ b must be A (was "y")`)
 		)
 	})
 
-	it("reports a morph's error alike whether or not its input is valid", () => {
+	it("morph error with other errors", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],
 			b: "number"
@@ -451,7 +453,7 @@ b must be A (was "y")`)
 		)
 	})
 
-	it("reports morph errors in a union branch it reaches through an alias", () => {
+	it("morph errors in aliased branch", () => {
 		const $ = scope({
 			node: {
 				v: ["string", "=>", (s, ctx) => ctx.error("short")],
@@ -470,7 +472,7 @@ b must be A (was "y")`)
 		)
 	})
 
-	it("skips the morphs after a piped node whose morph fails", () => {
+	it("skips morphs after failed pipe", () => {
 		const calls: string[] = []
 		const Inner = type("string").pipe((s, ctx) => {
 			calls.push("inner")
@@ -492,7 +494,7 @@ b must be A (was "y")`)
 		attest(calls).equals(["before", "inner"])
 	})
 
-	it("reports errors a nested morph returns", () => {
+	it("nested morph errors", () => {
 		const Inner = type({ x: "number" })
 		const T = type({
 			outer: { a: type("object").pipe(o => Inner(o)) },
@@ -504,7 +506,7 @@ b must be A (was "y")`)
 		)
 	})
 
-	it("applies only the morphs of the branches it takes", () => {
+	it("only taken branch morphs", () => {
 		let callCount = 0
 		const Negated = type("number < 0")
 			.pipe(n => {
@@ -530,7 +532,7 @@ b must be A (was "y")`)
 		attest(callCount).equals(0)
 	})
 
-	it("transforms a discriminated union's case without checking its branches", () => {
+	it("discriminated case checked once", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			let callCount = 0
 			const T = $.type([
@@ -549,7 +551,7 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("transforms cyclic data through a cyclic alias once", () => {
+	it("cyclic data", () => {
 		let callCount = 0
 		const $ = scope({
 			node: {
@@ -576,7 +578,7 @@ b must be A (was "y")`)
 		attest(original.value).equals(" a ")
 	})
 
-	it("transforms cyclic data to the class a morph returns", () => {
+	it("cyclic data to class", () => {
 		class Node {
 			value: string
 			next: unknown
@@ -598,7 +600,7 @@ b must be A (was "y")`)
 		attest((out as Node).next).is(out)
 	})
 
-	it("transforms a primitive under a cyclic alias at each path", () => {
+	it("cyclic primitive per path", () => {
 		const $ = scope({
 			leaf: ["string", "=>", (s, ctx) => `${s}@${ctx.propString}`],
 			node: "leaf | node[]"
@@ -611,7 +613,7 @@ b must be A (was "y")`)
 		])
 	})
 
-	it("transforms a piped node's input in a pass of its own", () => {
+	it("pipe to cyclic node", () => {
 		const calls: string[] = []
 		const $ = scope({
 			node: {
@@ -634,7 +636,7 @@ b must be A (was "y")`)
 	})
 
 	describe("undeclared keys", () => {
-		it("deletes them, ordering keys as its expression does", () => {
+		it("delete in expression order", () => {
 			const T = type({
 				"+": "delete",
 				z: "string",
@@ -655,7 +657,7 @@ b must be A (was "y")`)
 			])
 		})
 
-		it("leaves a declared key data inherits from Object.prototype inherited", () => {
+		it("inherited Object.prototype key", () => {
 			for (const $ of [scope({}), scope({}, { jitless: true })]) {
 				const T = $.type({ "+": "delete", a: "string", "toString?": "unknown" })
 				attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals(["a"])
@@ -666,7 +668,7 @@ b must be A (was "y")`)
 			}
 		})
 
-		it("deletes an undeclared symbol key", () => {
+		it("deletes symbols", () => {
 			for (const $ of [scope({}), scope({}, { jitless: true })]) {
 				const T = $.type({ "+": "delete", a: "string" })
 				const out = T.assert({ a: "a", [Symbol("s")]: 1 })
