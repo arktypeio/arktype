@@ -42,7 +42,7 @@ type Namespace = Record<string, { from?: string }>
 
 const packages: string[] = []
 
-const packageOf = (
+const writePackage = (
 	modules: Record<string, string>,
 	ownFiles: string[] = []
 ) => {
@@ -85,12 +85,8 @@ const bundleIn = (dir: string) => {
 	return (path: string) => pathToFileURL(join(dir, "out", path)).href
 }
 
-const evaluated = () => {
-	const global = globalThis as { evaluated?: string[] }
-	const order = global.evaluated
-	delete global.evaluated
-	return order
-}
+const evaluated = () =>
+	(globalThis as { evaluated?: string[] }).evaluated?.splice(0)
 
 contextualize(() => {
 	afterEach(() => {
@@ -99,14 +95,14 @@ contextualize(() => {
 
 	it("exports every module's names from the internal entry", async () => {
 		await import(
-			pathToFileURL(join(packageOf(modules), "out", "index.js")).href
+			pathToFileURL(join(writePackage(modules), "out", "index.js")).href
 		)
 		const unbundledOrder = evaluated()
 
-		attest(() => bundleIn(packageOf(modules))).throws(
+		attest(() => bundleIn(writePackage(modules))).throws(
 			'sub/f exports a name internal.js binds otherwise, so ./internal/sub/f.ts must be { "ark-ts": "./sub/f.ts", "default": "./out/sub/f.js" }'
 		)
-		const dir = packageOf(modules, ["sub/f"])
+		const dir = writePackage(modules, ["sub/f"])
 		const fromOut = bundleIn(dir)
 
 		const root: Namespace = await import(fromOut("index.js"))
@@ -127,7 +123,7 @@ contextualize(() => {
 		])
 
 		const internal: Namespace = await import(fromOut("internal.js"))
-		attest(evaluated()).equals(undefined)
+		attest(evaluated()).equals([])
 		attest(Object.keys(internal)).snap([
 			"K",
 			"K$k",
@@ -164,7 +160,7 @@ contextualize(() => {
 	})
 
 	it("leaves whole a main entry that exports every module's names", () => {
-		const dir = packageOf({
+		const dir = writePackage({
 			"index.js": `export * from "./a.js";`,
 			"a.js": `export const a = {};`
 		})
@@ -180,7 +176,7 @@ contextualize(() => {
 			["x", "a"],
 			["y", "b"]
 		]) {
-			const shadowing = packageOf({
+			const shadowing = writePackage({
 				"index.js": `export { x } from "./a.js"; export * from "./b.js";`,
 				"a.js": `export const x = {};`,
 				"b.js": `export const y = {};`,
@@ -198,7 +194,7 @@ contextualize(() => {
 			["parse", "function parse() {}"],
 			["Foo", "class Foo { static self = Foo }"]
 		]) {
-			const colliding = packageOf({
+			const colliding = writePackage({
 				"index.js": `export * from "./a.js"; export * from "./b.js";`,
 				"a.js": `${declaration}; export const a = ${name};`,
 				"b.js": `${declaration}; export const b = ${name};`
@@ -207,7 +203,7 @@ contextualize(() => {
 				`esbuild renamed ${name} to ${name}2`
 			)
 		}
-		const shadowing = packageOf({
+		const shadowing = writePackage({
 			"index.js": `export const isDate = {}; export const f = () => { const isDate = () => true; return isDate };`
 		})
 		attest(() => bundleIn(shadowing)).throws(
@@ -216,7 +212,7 @@ contextualize(() => {
 	})
 
 	it("rejects a default export", () => {
-		const defaulting = packageOf({
+		const defaulting = writePackage({
 			"index.js": `export * from "./a.js";`,
 			"a.js": `export const x = {}; export default {};`
 		})
