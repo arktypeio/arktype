@@ -8,6 +8,7 @@ import {
 	stringifyPath,
 	typedArrayConstructors,
 	type BuiltinObjectKind,
+	type Key,
 	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
@@ -746,9 +747,16 @@ export const copyOf = (data: object): object => {
 	// a builtin whose state can't be copied, e.g. a function, transforms in place
 	if (!copyContents) return data
 	// a builtin's state includes non-enumerable own props, e.g. an Error's message
+	const descriptors: { [k: Key]: PropertyDescriptor } =
+		Object.getOwnPropertyDescriptors(data)
+	// as in a spread copy, its props can be written even if data's can't
+	for (const k of Reflect.ownKeys(descriptors)) {
+		descriptors[k].configurable = true
+		if ("value" in descriptors[k]) descriptors[k].writable = true
+	}
 	return Object.defineProperties(
 		Object.setPrototypeOf(copyContents(data as never), prototype),
-		Object.getOwnPropertyDescriptors(data)
+		descriptors
 	)
 }
 
