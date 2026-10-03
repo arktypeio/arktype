@@ -401,15 +401,7 @@ export class Traversal {
 		const state: ResolutionState =
 			valid || allowed === false ?
 				valid
-			:	{
-					error:
-						reachedInvalid?.error ??
-						this.currentBranch?.error ??
-						this.errors[this.errors.length - 1],
-					reported: !this.currentBranch,
-					pathLength:
-						this.currentBranch ? Number.POSITIVE_INFINITY : this.path.length
-				}
+			:	this.invalidResolution(reachedInvalid?.error)
 		const earliestAssumed = this.earliestAssumed
 		this.earliestAssumed = frame.outerEarliestAssumed
 		const assumed = this.assumed!
@@ -436,14 +428,23 @@ export class Traversal {
 	private exitUntracked(frame: ResolvingFrame): boolean {
 		if (this.currentErrorCount === frame.errorCount) return true
 		if (!hasDomain(frame.data, "object")) return false
-		const branch = this.currentBranch
-		;(this.seen[frame.id] ??= new Map()).set(frame.data, {
-			error: branch ? branch.error! : this.errors[this.errors.length - 1],
-			reported: !branch,
-			pathLength: branch ? Number.POSITIVE_INFINITY : this.path.length
-		})
+		;(this.seen[frame.id] ??= new Map()).set(
+			frame.data,
+			this.invalidResolution()
+		)
 		this.recordedFailure = true
 		return false
+	}
+
+	private invalidResolution(
+		error = this.currentBranch?.error ?? this.errors[this.errors.length - 1]
+	): InvalidResolution {
+		const branch = this.currentBranch
+		return {
+			error,
+			reported: !branch,
+			pathLength: branch ? Number.POSITIVE_INFINITY : this.path.length
+		}
 	}
 
 	get currentErrorCount(): number {
