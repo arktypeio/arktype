@@ -604,6 +604,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (!(prop.key in out) && prop.key in data)
 					out[prop.key as never] = data[prop.key as never]
 			}
+			for (const prop of this.inheritableProps) {
+				if (
+					!Object.prototype.hasOwnProperty.call(out, prop.key) &&
+					Object.prototype.hasOwnProperty.call(data, prop.key)
+				)
+					out[prop.key as never] = data[prop.key as never]
+			}
 		}
 		if (this.undeclared !== "delete") return out
 		const undeclaredKeys = this.undeclaredKeysOf(data)
@@ -855,6 +862,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					prop.required ? missing : (
 						`${missing} && ${prop.serializedKey} in data`
 					),
+					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
+				)
+			}
+			for (const prop of this.inheritableProps) {
+				js.if(
+					`!Object.prototype.hasOwnProperty.call(out, ${prop.serializedKey}) && Object.prototype.hasOwnProperty.call(data, ${prop.serializedKey})`,
 					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
 				)
 			}
