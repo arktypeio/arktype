@@ -288,6 +288,7 @@ const precompile = (
 		dependencies: new Map(),
 		refs: new Map(),
 		errorContexts: [],
+		members: [],
 		closed: true
 	}
 	for (const node of references) linkage.referencesById.set(node.id, node)
@@ -445,12 +446,9 @@ const precompileReferences = (
 	references: readonly BaseNode[],
 	linkage: UnitLinkage
 ) => {
-	const members: UnitMember[] = []
-	const traversals = references.map(node =>
-		declareTraversals(members, linkage, node)
-	)
+	const traversals = references.map(node => declareTraversals(linkage, node))
 	for (let i = 0; i < linkage.reached.length; i++)
-		declareTraversals(members, linkage, linkage.reached[i])
+		declareTraversals(linkage, linkage.reached[i])
 	// passed as arrays, since V8 can't compile a function with tens of thousands of parameters
 	const unit = new CompiledFunction<
 		(
@@ -465,24 +463,20 @@ const precompileReferences = (
 		unit.const(name, `dependencies[${i++}]`)
 	i = 0
 	for (const name of linkage.refs.values()) unit.const(name, `refs[${i++}]`)
-	for (const [name, source] of members) unit.const(name, source)
+	for (const [name, source] of linkage.members) unit.const(name, source)
 	return unit.return(`[${traversals.join(", ")}]`)
 }
 
 type UnitMember = [name: string, source: string]
 
-const declareTraversals = (
-	members: UnitMember[],
-	linkage: UnitLinkage,
-	node: BaseNode
-): string => {
+const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string => {
 	const traversals = [
-		declareTraversal(members, linkage, node, "Allows"),
-		declareTraversal(members, linkage, node, "Apply")
+		declareTraversal(linkage, node, "Allows"),
+		declareTraversal(linkage, node, "Apply")
 	]
 	// a prop or index signature is transformed by its structure
 	if (node.transforms && includes(transformedKinds, node.kind))
-		traversals.push(declareTraversal(members, linkage, node, "Transform"))
+		traversals.push(declareTraversal(linkage, node, "Transform"))
 	return `[${traversals.join(", ")}]`
 }
 
@@ -494,6 +488,7 @@ interface UnitLinkage {
 	dependencies: Map<Fn, string>
 	refs: NodeCompiler.Refs
 	errorContexts: NodeCompiler.ErrorContexts
+	members: UnitMember[]
 	closed: boolean
 }
 
@@ -544,7 +539,6 @@ const transformedKinds = [
 ] as const satisfies NodeKind[]
 
 const declareTraversal = (
-	members: UnitMember[],
 	linkage: UnitLinkage,
 	node: BaseNode,
 	kind: TraversalKind
@@ -556,7 +550,7 @@ const declareTraversal = (
 	).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
-	members.push([name, js.write("function")])
+	linkage.members.push([name, js.write("function")])
 	return name
 }
 
