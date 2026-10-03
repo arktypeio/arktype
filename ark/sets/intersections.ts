@@ -49,21 +49,6 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		if (intersectionCache[lrCacheKey] !== undefined)
 			return intersectionCache[lrCacheKey]! as never
 
-		if (!ctx.pipe) {
-			// we can only use this for the commutative & operator
-			const rlCacheKey = `${r.hash}${operator}${l.hash}`
-			if (intersectionCache[rlCacheKey] !== undefined) {
-				// if the cached result was a Disjoint and the operands originally
-				// appeared in the opposite order, we need to invert it to match
-				const rlResult = intersectionCache[rlCacheKey]!
-				const lrResult =
-					rlResult instanceof Disjoint ? rlResult.invert() : rlResult
-				// add the lr result to the cache directly to bypass this check in the future
-				intersectionCache[lrCacheKey] = lrResult
-				return lrResult
-			}
-		}
-
 		const isPureIntersection =
 			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
 

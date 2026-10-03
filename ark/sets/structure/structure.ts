@@ -46,7 +46,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// props an index signature narrows to once the other side's keys are
 			// known. they can't be added to the side they came from, where a prop
 			// with the same key would never be merged with them
-			const derived: OptionalNode[] = []
+			const lDerived: OptionalNode[] = []
+			const rDerived: OptionalNode[] = []
 			if (l.undeclared) {
 				const lKey = l.keyof()
 				for (const k of r.requiredKeys) {
@@ -71,8 +72,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 						for (const prop of normalized.required ?? [])
-							derived.push(ctx.$.node("optional", prop.inner))
-						derived.push(...(normalized.optional ?? []))
+							rDerived.push(ctx.$.node("optional", prop.inner))
+						rDerived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
 				}
@@ -101,8 +102,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 						for (const prop of normalized.required ?? [])
-							derived.push(ctx.$.node("optional", prop.inner))
-						derived.push(...(normalized.optional ?? []))
+							lDerived.push(ctx.$.node("optional", prop.inner))
+						lDerived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
 				}
@@ -121,7 +122,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 				kind: "structure",
 				baseInner,
 				l: flattenConstraints(lInner),
-				r: [...flattenConstraints(rInner), ...derived],
+				// l's derived props precede r's constraints so r's meet them as l operands
+				r: [...lDerived, ...flattenConstraints(rInner), ...rDerived],
 				roots: [],
 				ctx
 			})

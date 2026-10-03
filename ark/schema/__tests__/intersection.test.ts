@@ -41,4 +41,22 @@ contextualize(() => {
 		attest(T.expression).snap("{ a?: number, + (undeclared): reject }")
 		attest(T.allows({})).equals(true)
 	})
+
+	it("orients a Disjoint by its operands in either order", () => {
+		const L = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }],
+			undeclared: "reject"
+		})
+		const R = rootSchema({
+			domain: "object",
+			index: [{ signature: "string", value: "number" }]
+		})
+		attest(() => R.and(L)).throws(
+			"Intersection at a of number and string results in an unsatisfiable type"
+		)
+		attest(() => L.and(R)).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
+	})
 })
