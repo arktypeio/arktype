@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registerNodeId, rootSchema } from "@ark/schema"
+import { registerNodeId, rootSchema, schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("keeps ids unique when a prefix ends in a digit", () => {
@@ -39,6 +39,15 @@ contextualize(() => {
 		attest(T.expression).snap("(number | string)[]")
 		attest(T.json).snap({ sequence: ["number", "string"], proto: "Array" })
 		attest(rootSchema(T.json as never).equals(T)).equals(true)
+	})
+
+	it("variadic element with minVariadicLength", () => {
+		const T = schemaScope({}).schema({
+			proto: Array,
+			sequence: { variadic: "number", minVariadicLength: 1 }
+		})
+		attest(T.allows([1])).equals(true)
+		attest(T.allows([])).equals(false)
 	})
 
 	it("throws on reduced minLength disjoint", () => {
