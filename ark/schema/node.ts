@@ -33,7 +33,7 @@ import type {
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
-import type { BaseParseOptions } from "./parse.ts"
+import type { BaseParseOptions, NodeId } from "./parse.ts"
 import type { AliasNode } from "./roots/alias.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
@@ -232,9 +232,13 @@ export abstract class BaseNode<
 				const reference = node.referencesById[id]
 				if (reference[flag]) return true
 				if (!reference.hasKind("alias")) continue
+				// a deferred value reaches what its registered node does, which resolving it would rebuild
+				const registered =
+					$ark.nodesByRegisteredId[reference.reference as NodeId]
 				// an input or output never transforms, and reaches what the alias it views does
 				const resolution =
-					!reference.isIo ? reference.resolution
+					isNode(registered) ? registered
+					: !reference.isIo ? reference.resolution
 					: flag !== "includesTransform" ?
 						(reference.operands![0] as AliasNode).resolution
 					:	undefined

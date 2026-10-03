@@ -487,6 +487,24 @@ contextualize(() => {
 					)
 				})
 
+				it("reads the output of a cyclic pipe into a union alias", config => {
+					const types = scope(
+						{
+							a: { "n?": "null | (string.json.parse |> b)" },
+							b: "null | a"
+						},
+						config
+					).export()
+					const out = types.a({ n: '{ "n": null }' })
+
+					attest(out).equals({ n: { n: null } })
+					attest(types.a.out.expression).snap("{ n?: Out<$b> | null }")
+					attest(types.a.out.allows(out)).equals(true)
+					attest(types.a.out({ n: { n: "{}" } }).toString()).snap(
+						"n.n must be an object or null (was a string)"
+					)
+				})
+
 				it("throws a cyclic intersection's error when it's exported", config => {
 					attest(() =>
 						scope(
