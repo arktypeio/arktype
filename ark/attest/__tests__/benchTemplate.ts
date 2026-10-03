@@ -54,4 +54,12 @@ bench(
 	.mean()
 	.types()
 
+bench(
+	"bench async call and type",
+	async () => ({}) as makeComplexType<"antidisestablishmentarianism">,
+	fakeCallOptions
+)
+	.mean()
+	.then(assertions => assertions.types())
+
 bench("empty", () => {}).types()
