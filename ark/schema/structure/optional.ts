@@ -52,7 +52,7 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseSchema(schema)
+				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
 			},
 			default: {
 				preserveUndefined: true

@@ -36,10 +36,11 @@ import {
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import type {
-	TraverseAllows,
-	TraverseApply,
-	TraverseTransform
+import {
+	applyResolution,
+	type TraverseAllows,
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
@@ -159,6 +160,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	)
 
 	private discriminate(): Discriminant | null {
+		// an alias branch is replaced by its resolution before the union is used
+		if (this.includesShallowAlias) return null
 		// without an engine the union compiles indiscriminated
 		const discriminant = $ark.sets?.discriminate(this) ?? null
 		if (this._referencesById) {
@@ -192,8 +195,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errors: ArkError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
+			const branch = this.branches[i]
 			ctx.pushBranch()
-			this.branches[i].traverseApply(data, ctx)
+			if (branch.includesAlias)
+				applyResolution(branch.id, branch.traverseApply, data, ctx)
+			else branch.traverseApply(data, ctx)
 			if (!ctx.hasError()) {
 				if (this.branches[i].transforms) return ctx.popTakenBranch()
 				return ctx.popBranch()
@@ -242,6 +248,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const k in cases) {
 				const v = cases[k]
 				const caseCondition = k === "default" ? k : `case ${k}`
+				const member = discriminant.members?.[k]
+				if (member && v !== true && js.traversalKind === "Apply") {
+					js.line(`${caseCondition}:`).invokeMember(v, member).return()
+					continue
+				}
 				const caseResult =
 					js.traversalKind === "Transform" ?
 						v !== true && v.transforms ?
@@ -298,7 +309,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			js.const("errors", "[]")
 			for (const branch of this.branches) {
 				js.line("ctx.pushBranch()")
-					.line(js.invoke(branch))
+					.invokeMember(branch)
 					.if("!ctx.hasError()", () =>
 						js.return(
 							branch.transforms ? "ctx.popTakenBranch()" : "ctx.popBranch()"
@@ -371,6 +382,8 @@ export type DiscriminantLocation<
 export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
 	extends DiscriminantLocation<kind> {
 	cases: DiscriminatedCases<kind>
+	// the cyclic branch a case was pruned from, entered in its place
+	members?: { [caseKey in CaseKey<kind>]?: BaseRoot }
 }
 
 export type DiscriminatedCases<

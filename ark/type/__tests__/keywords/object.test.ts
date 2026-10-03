@@ -51,7 +51,7 @@ contextualize(() => {
 			attest(Json([])).equals([])
 			attest(Json(5)?.toString()).snap("must be an object (was a number)")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be an object (was a bigint)'
+				'foo["0"] must be a number, a string, an object, boolean or null (was a bigint)'
 			)
 		})
 
@@ -64,7 +64,7 @@ contextualize(() => {
 
 			// this error kind of sucks, should have more discriminant context
 			attest(stringify({ foo: undefined }).toString()).snap(
-				"foo must be an object (was undefined)"
+				"foo must be a number, a string, an object, boolean or null (was undefined)"
 			)
 
 			// has declared out

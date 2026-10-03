@@ -184,6 +184,7 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 	const ctx = createCaseResolutionContext(viableCandidates, node)
 
 	const cases: DiscriminatedCases = {}
+	let members: Discriminant["members"]
 
 	for (const k in ctx.best.cases) {
 		const resolution = resolveCase(ctx, k)
@@ -214,6 +215,9 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 
 		node.caseNodes.push(caseNode)
 		cases[k] = caseNode
+		const branch = node.branches[resolution[0].originalIndex]
+		if (branches.length === 1 && branch.includesAlias)
+			(members ??= {})[k] = branch
 	}
 
 	if (ctx.defaultEntries.length) {
@@ -231,9 +235,7 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 		node.caseNodes.push(cases.default)
 	}
 
-	return Object.assign(ctx.location, {
-		cases
-	})
+	return Object.assign(ctx.location, members ? { cases, members } : { cases })
 }
 
 // New context object to carry discrimination state between functions.
@@ -315,16 +317,7 @@ const resolveCase = (
 					branch: pruned
 				})
 			}
-		} else if (
-			// we shouldn't need a special case for alias to avoid the below
-			// once alias resolution issues are improved:
-			// https://github.com/arktypeio/arktype/issues/1026
-			entry.branch.hasKind("alias") &&
-			discriminantNode.hasKind("domain") &&
-			discriminantNode.domain === "object"
-		)
-			resolvedEntries?.push(entry)
-		else {
+		} else {
 			if (entry.branch.rawIn.overlaps(discriminantNode)) {
 				// include cases where an object not including the
 				// discriminant path might have that value present as an undeclared key
@@ -504,6 +497,9 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 				continue
 			}
+			// an alias branch is reduced once the union is rebuilt from its resolution
+			if (branches[i].includesShallowAlias || branches[j].includesShallowAlias)
+				continue
 			const intersection = intersectNodesRoot(
 				branches[i].rawIn,
 				branches[j].rawIn,

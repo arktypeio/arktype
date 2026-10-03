@@ -639,18 +639,20 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			}
 		})
 
-		const reference = `$ark.${$.export().ArraySchema.internal.id}`
+		const arraySchema = {
+			optional: [
+				{
+					key: "additionalItems",
+					value: `$ark.${$.export().Schema.internal.id}`
+				}
+			],
+			domain: "object"
+		}
 
 		attest($.json).equals({
-			TypeWithKeywords: {
-				optional: [{ key: "additionalItems", value: [reference, "number"] }],
-				domain: "object"
-			},
-			Schema: [reference, "number"],
-			ArraySchema: {
-				optional: [{ key: "additionalItems", value: [reference, "number"] }],
-				domain: "object"
-			}
+			TypeWithKeywords: arraySchema,
+			Schema: ["number", arraySchema],
+			ArraySchema: arraySchema
 		})
 	})
 

@@ -53,7 +53,6 @@ import {
 import type { BaseNode } from "./node.ts"
 import {
 	nodesByRegisteredId,
-	openDefinitions,
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
@@ -66,7 +65,7 @@ import {
 	type NodeParseContext,
 	type NodeParseContextInput
 } from "./parse.ts"
-import { Alias } from "./roots/alias.ts"
+import { Alias, resolveShallowAliases } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import {
@@ -85,7 +84,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "./shared/traversal.ts"
-import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
+import { arkKind, hasArkKind, inProgress, isNode } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
@@ -701,6 +700,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 	parseSchema: InternalSchemaParser = (schema, opts) =>
 		this.node(schemaKindOf(schema), schema, opts)
 
+	// an alias belongs in a structural value, so a value holding one elsewhere is deferred to an alias of its own
+	parseStructuralValue(schema: RootSchema, opts?: BaseParseOptions): BaseRoot {
+		const node = this.parseSchema(schema, opts)
+		if (!node.includesShallowAlias || node.hasKind("alias")) return node
+		nodesByRegisteredId[node.id] = node
+		return this.node("alias", { reference: node.id }, { prereduced: true })
+	}
+
 	protected preparseNode(
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
@@ -812,10 +819,33 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return $ark.ambient as never
 	}
 
+	// a definition holding an alias outside a structural value is rebuilt from the alias's resolution once no definition is open
+	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
+		if (inProgress.definitions)
+			return this.node("alias", { reference: pending.id }, { prereduced: true })
+		const context = nodesByRegisteredId[pending.id] as BaseParseContext
+		inProgress.resolutions++
+		let node: BaseRoot
+		try {
+			node = resolveShallowAliases(pending)
+		} finally {
+			inProgress.resolutions--
+		}
+		if (context.isReferencedById) {
+			node = withId(node, pending.id)
+			nodesByRegisteredId[pending.id] = node
+		} else delete nodesByRegisteredId[pending.id]
+		return (this.resolutions[name] = node)
+	}
+
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
-			if (typeof cached !== "string") return this.bindReference(cached)
+			if (typeof cached !== "string") {
+				if (hasArkKind(cached, "root") && cached.includesShallowAlias)
+					return this.resolvePending(name, cached)
+				return this.bindReference(cached)
+			}
 
 			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
@@ -830,6 +860,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 				v.phase = "resolving"
 				let node = this.bindReference(this.parseOpenDefinition(v.def, v))
 				v.phase = "resolved"
+				if (node.includesShallowAlias) {
+					node = withId(node, v.id)
+					return this.resolvePending(name, (this.resolutions[name] = node))
+				}
 				// an alias references a cyclic definition by its context's id
 				if (v.isReferencedById) {
 					node = withId(node, v.id)
@@ -1011,6 +1045,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
 		let node = this.bindReference(this.parseOpenDefinition(def, ctx))
+		// a `this` outside a structural value would resolve to its own type
+		if (node.includesShallowAlias && !inProgress.definitions)
+			node = resolveShallowAliases(node)
 
 		// if the node is recursive e.g. { box: "this" }, we need to make sure it
 		// has the original id from context so that its references compile correctly
@@ -1023,18 +1060,22 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
-		openDefinitions.count++
+		inProgress.definitions++
 		try {
 			return this.parseOwnDefinitionFormat(def, ctx)
 		} finally {
-			openDefinitions.count--
+			inProgress.definitions--
 		}
 	}
 
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
 		// an alias may reference a definition that is still being parsed,
 		// e.g. Record<string, this>, so the outermost parse finalizes it
-		if (openDefinitions.count && node.includesAlias) return node
+		if (
+			(inProgress.definitions || inProgress.resolutions) &&
+			node.includesAlias
+		)
+			return node
 
 		bootstrapAliasReferences(node)
 		if (node.precompilation || this.resolvedConfig.jitless) return node

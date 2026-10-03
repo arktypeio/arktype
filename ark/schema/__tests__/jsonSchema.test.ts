@@ -244,15 +244,12 @@ contextualize(() => {
 				},
 				jsonData1: {
 					anyOf: [
-						{ $ref: "#/$defs/jsonObject1" },
 						{ type: "number" },
 						{ type: "string" },
+						{ $ref: "#/$defs/jsonObject1" },
 						{ type: "boolean" },
 						{ type: "null" }
 					]
-				},
-				union7: {
-					anyOf: [{ $ref: "#/$defs/jsonObject1" }, { type: "boolean" }]
 				}
 			}
 		})
