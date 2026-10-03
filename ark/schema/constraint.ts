@@ -18,7 +18,11 @@ import type { BaseRoot } from "./roots/root.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
 import type { Disjoint } from "./shared/disjoint.ts"
-import type { ConstraintKind, StructuralKind } from "./shared/implement.ts"
+import {
+	compileObjectLiteral,
+	type ConstraintKind,
+	type StructuralKind
+} from "./shared/implement.ts"
 import { sets } from "./shared/sets.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
@@ -86,6 +90,10 @@ export abstract class InternalPrimitiveConstraint<
 			meta: this.meta,
 			...this.inner
 		}
+	}
+
+	get compiledErrorContext(): string {
+		return compileObjectLiteral(this.errorContext!)
 	}
 }
 

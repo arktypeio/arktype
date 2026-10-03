@@ -1,4 +1,5 @@
 import type { NodeCompiler } from "../shared/compile.ts"
+import { compileObjectLiteral } from "../shared/implement.ts"
 import type { TraverseApply } from "../shared/traversal.ts"
 import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 
@@ -21,6 +22,10 @@ export abstract class InternalBasis<
 			meta: this.meta,
 			...this.inner
 		}
+	}
+
+	get compiledErrorContext(): string {
+		return compileObjectLiteral(this.errorContext!)
 	}
 
 	compile(js: NodeCompiler): void {
