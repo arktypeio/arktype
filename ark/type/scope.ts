@@ -1,5 +1,3 @@
-// keyword modules build scopes here, so a deep import of one installs arksets
-import "arksets"
 import {
 	$ark,
 	BaseScope,
@@ -50,6 +48,7 @@ import {
 	type flattenListable,
 	type noSuggest
 } from "@ark/util"
+import { setEngine } from "arksets"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
@@ -99,6 +98,10 @@ import {
 	type UnitTypeParser,
 	type ValueOfTypeParser
 } from "./type.ts"
+
+// installed where keyword modules build scopes, since a bundler
+// trusting sideEffects drops a bare import
+$ark.sets ??= setEngine
 
 /** The convenience properties attached to `scope` */
 export type ScopeParserAttachments =
