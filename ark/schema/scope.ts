@@ -1035,13 +1035,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this._json = resolutionsToJson(this._exportedResolutions)
 			Object.assign(this.resolutions, this._exportedResolutions)
 
+			for (const name in this._exportedResolutions) {
+				const resolution = this._exportedResolutions[name]
+				if (isNode(resolution))
+					addReferences(this.referencesById, resolution.referencesById)
+			}
+			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
-				for (const name in this._exportedResolutions) {
-					const resolution = this._exportedResolutions[name]
-					if (isNode(resolution))
-						addReferences(this.referencesById, resolution.referencesById)
-				}
-				this.references = Object.values(this.referencesById)
 				if (!this.resolvedConfig.jitless)
 					this.precompilation = precompile(this.references, this)
 				this.resolved = true
