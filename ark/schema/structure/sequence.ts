@@ -141,7 +141,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			},
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema, ctx)
+				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
 			},
 			minVariadicLength: {
 				// minVariadicLength is reflected in the id of this node,
