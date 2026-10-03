@@ -525,7 +525,7 @@ class TraversalCompiler extends NodeCompiler {
 		} else if (this.linkage.reused.has(reference)) {
 			const kind = opts?.kind ?? this.traversalKind
 			this.linkage.dependencies.set(
-				traversalOf(reference, kind),
+				reference[`traverse${kind}`],
 				this.referenceToId(id, { kind })
 			)
 		} else if (this.linkage.unreached.delete(reference))
@@ -533,11 +533,6 @@ class TraversalCompiler extends NodeCompiler {
 		return super.invoke(node, opts)
 	}
 }
-
-const traversalOf = (node: BaseNode, kind: TraversalKind): Fn =>
-	kind === "Allows" ? node.traverseAllows
-	: kind === "Apply" ? node.traverseApply
-	: node.traverseTransform
 
 const transformedKinds = [
 	"alias",
