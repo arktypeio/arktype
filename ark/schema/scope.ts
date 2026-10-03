@@ -348,63 +348,54 @@ const precompile = (
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
 const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
-	const fallback =
+	const js = new CompiledFunction("data", "onFail").indent()
+	const fallback = () =>
 		node.includesAlias ?
-			[`return applyCyclic("${node.id}", apply, data, config).finalize(onFail)`]
-		:	[
-				"const ctx = new Traversal(data, config)",
-				"apply(data, ctx)",
-				"return ctx.finalize(onFail)"
-			]
-	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
-	const unlessInvalid = (result: string[], allowed = "allows(data)") => [
-		`if (!${allowed}) {`,
-		...fallback.map(line => `    ${line}`),
-		"}",
-		...result
-	]
-	const transformed =
+			js.return(
+				`applyCyclic("${node.id}", apply, data, config).finalize(onFail)`
+			)
+		:	js
+				.const("ctx", "new Traversal(data, config)")
+				.line("apply(data, ctx)")
+				.return("ctx.finalize(onFail)")
+	const returnResult = () =>
 		node.includesMorph ?
-			[
-				"if (result instanceof TransformErrors) {",
-				"    const ctx = new Traversal(data, config)",
-				"    ctx.addTransformErrors(result)",
-				"    return ctx.finalize(onFail)",
-				"}",
-				"return result"
-			]
-		:	["return result"]
-	const body =
-		node.rootApplyStrategy === "allows" ? unlessInvalid(["return data"])
-		: node.rootApplyStrategy === "contextualTransform" && node.includesAlias ?
-			[
-				"const untracked = allowsUntracked(node, data)",
-				...unlessInvalid(
-					[
-						"const ctx = new Traversal(data, config)",
-						"ctx.tracksTransforms = untracked === undefined",
-						`const result = ctx.transformResolution("${node.id}", data, transform)`,
-						"return ctx.hasError() ? ctx.finalize(onFail) : result"
-					],
-					"(untracked ?? allowsInContext(node, data, config))"
+			js
+				.if("result instanceof TransformErrors", () =>
+					js
+						.const("ctx", "new Traversal(data, config)")
+						.line("ctx.addTransformErrors(result)")
+						.return("ctx.finalize(onFail)")
 				)
-			]
-		: node.rootApplyStrategy === "transform" ?
-			node.hasKind("union") && !node.compiledDiscriminant ?
-				[
-					"const result = transform(data)",
-					...unlessInvalid(transformed, "(result !== unset)")
-				]
-			: node.includesMorph ?
-				unlessInvalid(["const result = transform(data)", ...transformed])
-			:	unlessInvalid(["return transform(data)"])
-		: node.rootApplyStrategy === "contextualTransform" ?
-			unlessInvalid([
-				"const ctx = new Traversal(data, config)",
-				"const result = transform(data, ctx)",
-				"return ctx.hasError() ? ctx.finalize(onFail) : result"
-			])
-		:	fallback
+				.return("result")
+		:	js.return("result")
+	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
+	if (node.rootApplyStrategy === "contextual") fallback()
+	else if (node.rootApplyStrategy === "allows")
+		js.if("!allows(data)", fallback).return("data")
+	else if (node.rootApplyStrategy === "contextualTransform") {
+		if (node.includesAlias) {
+			js.const("untracked", "allowsUntracked(node, data)")
+				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
+				.const("ctx", "new Traversal(data, config)")
+				.set("ctx.tracksTransforms", "untracked === undefined")
+				.const(
+					"result",
+					`ctx.transformResolution("${node.id}", data, transform)`
+				)
+		} else {
+			js.if("!allows(data)", fallback)
+				.const("ctx", "new Traversal(data, config)")
+				.const("result", "transform(data, ctx)")
+		}
+		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
+	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
+		js.const("result", "transform(data)").if("result === unset", fallback)
+		returnResult()
+	} else if (node.includesMorph) {
+		js.if("!allows(data)", fallback).const("result", "transform(data)")
+		returnResult()
+	} else js.if("!allows(data)", fallback).return("transform(data)")
 	return new DynamicFunction<(...args: unknown[]) => BaseRoot["rootApply"]>(
 		"node",
 		"allows",
@@ -417,7 +408,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"allowsInContext",
 		"config",
 		"unset",
-		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
+		`return (function ${js.write(`${node.id}RootApply`)})`
 	)(
 		node,
 		node.allows,
