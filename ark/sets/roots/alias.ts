@@ -1,6 +1,7 @@
 import {
 	$ark,
 	Disjoint,
+	identityOf,
 	isResolvable,
 	type Alias,
 	type BaseRoot
@@ -18,12 +19,8 @@ const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
 const resolutionOf = (node: BaseRoot): BaseRoot =>
 	node.hasKind("alias") ? node.resolution : node
 
-// a definition's node has its context's id, so it shares the identity of an alias referencing it
-const identityOf = (node: BaseRoot): string =>
-	node.hasKind("alias") && !node.operands ? node.reference : node.id
-
 const intersectedOperandsOf = (node: BaseRoot): readonly BaseRoot[] =>
-	node.hasKind("alias") && node.operands && !node.reference.includes("=>") ?
+	node.hasKind("alias") && node.operands && node.operator === "&" ?
 		node.operands
 	:	[node]
 
@@ -40,6 +37,7 @@ const operate = (
 					intersectOrPipeNodes(resolutionOf(l), resolutionOf(r), ctx)
 				),
 			`${identityOf(l)}=>${identityOf(r)}`,
+			"=>",
 			[l, r]
 		)
 	}
@@ -63,6 +61,7 @@ const operate = (
 			return neverIfDisjoint(result)
 		},
 		identities.join("&"),
+		"&",
 		operands
 	)
 }

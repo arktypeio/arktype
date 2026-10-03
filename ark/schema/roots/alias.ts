@@ -31,13 +31,15 @@ export declare namespace Alias {
 		extends BaseNormalizedSchema {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
+		readonly operator?: string
 		readonly operands?: readonly BaseRoot[]
 	}
 
 	export interface Inner<alias extends string = string> {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
-		// an operation's operands, identified together by its reference
+		// an operation (`&`, `=>` or a generic's name) and its operands, identified together by its reference
+		readonly operator?: string
 		readonly operands?: readonly BaseRoot[]
 	}
 
@@ -77,6 +79,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 			resolve: {
 				serialize: () => null
 			},
+			operator: {},
 			operands: {
 				child: false,
 				serialize: () => null
@@ -250,9 +253,10 @@ Resolution: ${printable(resolution)}`)
 // a scope's alias is displayed by name and an operation by its operands, though each is referenced by id
 const expressionOf = (node: AliasNode): string => {
 	if (node.operands) {
-		return node.operands
-			.map(operand => operand.expression)
-			.join(node.reference.includes("=>") ? "=>" : "&")
+		const operands = node.operands.map(operand => operand.expression)
+		return node.operator === "&" || node.operator === "=>" ?
+				operands.join(node.operator)
+			:	`${node.operator}<${operands.join(", ")}>`
 	}
 	const referenced = nodesByRegisteredId[node.reference as NodeId]
 	if (hasArkKind(referenced, "root")) return referenced.expression
@@ -288,6 +292,10 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 		`Unexpected shallow alias in ${node.kind} node ${node.expression}`
 	)
 }
+
+// a definition's node has its context's id, so it shares the identity of an alias referencing it
+export const identityOf = (node: BaseRoot): string =>
+	node.hasKind("alias") && !node.operands ? node.reference : node.id
 
 // a node resolves without parsing once each alias it holds outside a structural value references a resolved definition
 export const isResolvable = (node: BaseRoot): boolean => {

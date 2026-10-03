@@ -1,7 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeShallowCycleErrorMessage } from "@ark/schema"
+import {
+	writeShallowCycleErrorMessage,
+	writeUnclosedGenericCycleMessage,
+	writeUnsatisfiedParameterConstraintMessage
+} from "@ark/schema"
 import { writeIndiscriminableMorphMessage } from "arksets"
 import { scope, type } from "arktype"
+import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 
 contextualize(() => {
 	for (const jitless of [false, true]) {
@@ -277,6 +282,37 @@ contextualize(() => {
 						"groups[0].members[0].groups[0].title must be a string (was a number)"
 					)
 				})
+
+				// https://github.com/arktypeio/arktype/issues/1237
+				it("validates a generic of a cyclic intersection", config => {
+					const node = scope(
+						{
+							AEditing: {
+								edits: { a: "number" },
+								nodes:
+									"(Omit<NodeA, 'editableA'> | Omit<NodeB, 'editableA' | 'edits'>)[]"
+							},
+							NonEditing: { edits: "undefined?", nodes: "(NodeA | NodeB)[]" },
+							NodeA: { type: "'a'", editableA: "number" },
+							BaseNodeB: { type: "'b'", editableA: "number" },
+							Editing: "AEditing | NonEditing",
+							NodeB: "BaseNodeB & Editing",
+							Node: "NodeA | NodeB"
+						},
+						config
+					).export().Node
+					const data = {
+						type: "b",
+						editableA: 12,
+						edits: { a: 23 },
+						nodes: [{ type: "b", nodes: [] }]
+					}
+
+					attest(node.allows(data)).equals(true)
+					attest(node({ ...data, nodes: [{ type: "b" }] }).toString()).snap(
+						"nodes[0].nodes must be an array (was missing) or nodes[0].editableA must be a number (was missing)"
+					)
+				})
 			}
 		)
 	}
@@ -371,6 +407,70 @@ contextualize(() => {
 		attest(node({ n: "a", kids: { b: { n: 1, kids: {} } } }).toString()).snap(
 			"kids.b.n must be a string (was a number)"
 		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1237
+	it("checks a cyclic generic argument once it resolves", () => {
+		const types = scope({
+			partial: { n: "string", "kids?": "Partial<partial>" },
+			omitted: { n: "string", "kids?": "Omit<omitted, 'n'>" }
+		}).export()
+
+		attest(types.partial.expression).snap(
+			"{ n: string, kids?: Partial<$partial> }"
+		)
+		attest(types.partial({ n: "a", kids: { kids: 5 } }).toString()).snap(
+			"kids.kids must be an object (was a number)"
+		)
+		attest(types.omitted.allows({ n: "a", kids: { n: 1, kids: {} } })).equals(
+			true
+		)
+		attest(() =>
+			scope({
+				a: { "kids?": "Partial<b>" },
+				b: "string | a[]"
+			} as never).export()
+		).throws(writeUnsatisfiedParameterConstraintMessage("T", "object", "$b"))
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1082
+	it("instantiates a recursive generic once per argument set", () => {
+		const types = scope({
+			"list<t>": { value: "t", "next?": "list<t>" },
+			"alternate<a, b>": { "swap?": "alternate<b, a>", order: ["a", "b"] },
+			strings: "list<string>"
+		}).export()
+		const alternate = types.alternate("'off'", "'on'")
+
+		attest(
+			types
+				.strings({ value: "a", next: { value: "b", next: { value: 1 } } })
+				.toString()
+		).snap("next.next.value must be a string (was a number)")
+		attest(types.alternate("'off'", "'on'") === alternate).equals(true)
+		attest(alternate.expression).equals(
+			`{ order: ["off", "on"], swap?: { order: ["on", "off"], swap?: ${alternate.internal.id} } }`
+		)
+		attest(
+			alternate({
+				order: ["off", "on"],
+				swap: { order: ["on", "off"], swap: { order: ["on", "off"] } }
+			}).toString()
+		).snap(`swap.swap.order[0] must be "off" (was "on")
+swap.swap.order[1] must be "on" (was "off")`)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1082
+	it("rejects a recursive generic that can't be instantiated", () => {
+		attest(() =>
+			scope({
+				"poly<t>": { v: "t", "next?": "poly<t[]>" },
+				p: "poly<string>"
+			} as never).export()
+		).throws(writeUnclosedGenericCycleMessage("poly"))
+		attest(() =>
+			scope({ "nest<t>": { nest: "nest" } } as never).export()
+		).throws(writeInvalidGenericArgCountMessage("nest", ["t"], []))
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1026

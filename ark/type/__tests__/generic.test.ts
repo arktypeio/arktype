@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { chainableNoOpProxy } from "@ark/attest/internal/utils.ts"
 import {
 	intrinsic,
 	writeIndivisibleMessage,
@@ -595,9 +594,8 @@ contextualize(() => {
 		})
 	})
 
-	// currently types only, runtime pending: https://github.com/arktypeio/arktype/issues/1082
+	// https://github.com/arktypeio/arktype/issues/1082
 	describe("cyclic", () => {
-		const enable = false
 		it("self-reference", () => {
 			const getTypes = () =>
 				scope({
@@ -609,11 +607,11 @@ contextualize(() => {
 					},
 					reference: "alternate<0, 1>"
 				}).export()
-			const types = enable ? getTypes() : (chainableNoOpProxy as never)
+			const types = getTypes()
 			attest<[0, 1]>(types.reference.infer.swap.swap.order)
 			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
 			const getFromCall = () => types.alternate("'off'", "'on'")
-			const fromCall = enable ? getFromCall() : (chainableNoOpProxy as never)
+			const fromCall = getFromCall()
 
 			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
 			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
