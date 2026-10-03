@@ -637,6 +637,31 @@ contextualize(() => {
 		attest(a.a1.expression).snap('{ kind: "a3", p0?: $a1 } | ($a2 | $a4)[]')
 	})
 
+	it("reads an alias of a closed cycle as its node", () => {
+		const first = scope({
+			a0: { p0: "a1" },
+			a1: "a2",
+			a2: "(string | a1)[]"
+		}).export()
+		const last = scope({
+			a2: "(string | a1)[]",
+			a1: "a2",
+			a0: { p0: "a1" }
+		}).export()
+
+		attest(first.a0({}).toString()).snap("p0 must be an array (was missing)")
+		attest(last.a0({}).toString()).snap("p0 must be an array (was missing)")
+		attest(() =>
+			scope({
+				a0: "a2 & string",
+				a1: { "p0?": "a2" },
+				a2: "a1"
+			} as never).export()
+		).throws(
+			"Intersection of object and string results in an unsatisfiable type"
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/930
 	it("distinguishes aliases of the same name in different scopes", () => {
 		const s1 = scope({

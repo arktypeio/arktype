@@ -66,7 +66,7 @@ import {
 	type NodeParseContext,
 	type NodeParseContextInput
 } from "./parse.ts"
-import { Alias, resolveShallowAliases } from "./roots/alias.ts"
+import { Alias, isResolvable, resolveShallowAliases } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import {
@@ -861,7 +861,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	// a definition holding an alias outside a structural value is rebuilt from the alias's resolution once no definition is open
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
-		if (inProgress.definitions)
+		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
 		const context = nodesByRegisteredId[pending.id] as BaseParseContext
 		inProgress.resolutions++
