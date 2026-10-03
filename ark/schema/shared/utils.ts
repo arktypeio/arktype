@@ -66,13 +66,22 @@ export const hasArkKind = <kind extends ArkKind>(
 export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "root") || hasArkKind(value, "constraint")
 
-export const inProgress: { definitions: number; resolutions: number } = {
+export const inProgress: {
+	definitions: number
+	resolutions: number
+	ioReads: number
+} = {
 	definitions: 0,
-	resolutions: 0
+	resolutions: 0,
+	ioReads: 0
 }
 
 export const isResolutionFinal = (): boolean =>
 	!inProgress.definitions && !inProgress.resolutions
+
+// an input or output alias is built once final, so reading it reads what it reaches as final
+export const isIoFinal = (): boolean =>
+	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
 
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue
