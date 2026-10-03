@@ -174,7 +174,9 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	get defaultShortDescription(): string {
-		return domainDescriptions.object
+		return isResolutionFinal() ?
+				this.resolution.defaultShortDescription
+			:	domainDescriptions.object
 	}
 
 	override getIo(ioKind: "in" | "out"): BaseRoot {
