@@ -125,22 +125,12 @@ contextualize(() => {
 	})
 
 	it("optional prop input after collection", async () => {
-		const inputAfterReading = async (collectBetween: boolean) => {
-			let First: type.Any | null =
-				collectBetween ?
-					type({ read: ["number", "=", 5] })
-				:	type({ unread: ["number", "=", 5] })
-			const firstIn = First.in.expression
-			First = null
-			if (collectBetween) await collect()
-			const Second =
-				collectBetween ?
-					type({ read: ["number", "=", 5], b: "string" })
-				:	type({ unread: ["number", "=", 5], b: "string" })
-			return [firstIn, Second.in.expression]
-				.join(", ")
-				.replace(/unread/g, "read")
-		}
-		attest(await inputAfterReading(true)).equals(await inputAfterReading(false))
+		let First: type.Any | null = type({ read: ["number", "=", 5] })
+		attest(First.in.expression).snap("{ read?: number }")
+		First = null
+		await collect()
+		attest(type({ read: ["number", "=", 5], b: "string" }).in.expression).snap(
+			"{ b: string, read?: number }"
+		)
 	})
 })
