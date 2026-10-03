@@ -195,9 +195,11 @@ export abstract class BaseNode<
 			:	data => (this.traverseAllows as any)(data)
 	}
 
+	private _isReferencedById: boolean | undefined
 	// an alias reaches what it references by id, so data reaching it otherwise is tracked under that id too
 	get isReferencedById(): boolean {
-		return this.isCyclic && isNode($ark.nodesByRegisteredId[this.id])
+		return (this._isReferencedById ??=
+			this.isCyclic && isNode($ark.nodesByRegisteredId[this.id]))
 	}
 
 	private _transforms: boolean | undefined
