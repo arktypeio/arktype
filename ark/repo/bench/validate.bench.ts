@@ -32,6 +32,10 @@ import {
 	Product,
 	productData,
 	productInvalidData,
+	RecursiveMorph,
+	recursiveMorphData,
+	RecursiveScope,
+	recursiveScopeData,
 	Str,
 	stringData,
 	Strings,
@@ -570,6 +574,56 @@ bench("tree parse (zod)", () => Tree.zod.safeParse(treeData)).median([
 bench("tree parse (valibot)", () => v.safeParse(Tree.valibot, treeData)).median(
 	[8.38, "us"]
 )
+
+bench("recursive scope allows (arktype)", () =>
+	RecursiveScope.arktype.allows(recursiveScopeData)
+).median([188.92, "ns"])
+
+bench(
+	"recursive scope allows (zod)",
+	() => RecursiveScope.zod.safeParse(recursiveScopeData).success
+).median([3.42, "us"])
+
+bench("recursive scope allows (valibot)", () =>
+	v.is(RecursiveScope.valibot, recursiveScopeData)
+).median([7.13, "us"])
+
+bench("recursive scope parse (arktype)", () =>
+	RecursiveScope.arktype(recursiveScopeData)
+).median([186.94, "ns"])
+
+bench("recursive scope parse (zod)", () =>
+	RecursiveScope.zod.safeParse(recursiveScopeData)
+).median([3.49, "us"])
+
+bench("recursive scope parse (valibot)", () =>
+	v.safeParse(RecursiveScope.valibot, recursiveScopeData)
+).median([7.17, "us"])
+
+bench("recursive morph allows (arktype)", () =>
+	RecursiveMorph.arktype.allows(recursiveMorphData)
+).median([391.99, "ns"])
+
+bench(
+	"recursive morph allows (zod)",
+	() => RecursiveMorph.zod.safeParse(recursiveMorphData).success
+).median([5.11, "us"])
+
+bench("recursive morph allows (valibot)", () =>
+	v.is(RecursiveMorph.valibot, recursiveMorphData)
+).median([14.41, "us"])
+
+bench("recursive morph parse (arktype)", () =>
+	RecursiveMorph.arktype(recursiveMorphData)
+).median([3.32, "us"])
+
+bench("recursive morph parse (zod)", () =>
+	RecursiveMorph.zod.safeParse(recursiveMorphData)
+).median([5.27, "us"])
+
+bench("recursive morph parse (valibot)", () =>
+	v.safeParse(RecursiveMorph.valibot, recursiveMorphData)
+).median([14.38, "us"])
 
 bench("string allows (arktype)", () => Str.arktype.allows(stringData)).median([
 	2.06,
