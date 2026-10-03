@@ -104,12 +104,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	// an alias the piped node references is among the morph's references too
 	private addPipedReferences(node: BaseRoot): BaseRoot {
+		if (!this._referencesById && node.includesAlias) {
+			this.includesAlias = true
+			this.copyReferences()
+		}
 		if (this._referencesById)
 			Object.assign(this._referencesById, node.referencesById)
-		else if (node.includesAlias) {
-			this.includesAlias = true
-			this.copyReferences(true)
-		}
 		return node
 	}
 
