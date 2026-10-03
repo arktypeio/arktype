@@ -12,6 +12,7 @@ import {
 	throwError,
 	throwInternalError,
 	type Dict,
+	type Fn,
 	type GuardablePredicate,
 	type JsonStructure,
 	type Key,
@@ -486,8 +487,12 @@ export abstract class BaseNode<
 	}
 
 	declare readonly precedence: number
-	precompilation: string | undefined
+	compiledUnit: Fn | undefined
 	isReusableLeaf = false
+
+	get precompilation(): string | undefined {
+		return this.compiledUnit?.toString()
+	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
 	// otherwise, would run into issues with this binding
