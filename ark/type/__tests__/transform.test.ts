@@ -261,6 +261,16 @@ contextualize(() => {
 		}
 	})
 
+	it("returns data shaped like an ArkError as a morph's output", () => {
+		const T = type({ payload: "string.json.parse", "n?": "number" })
+		const payload = { " arkKind": "errors" }
+
+		attest(T({ payload: JSON.stringify(payload) })).equals({ payload })
+		attest(T({ payload: JSON.stringify(payload), n: "1" }).toString()).snap(
+			"n must be a number (was a string)"
+		)
+	})
+
 	it("reports a morph's error alike whether or not its input is valid", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],

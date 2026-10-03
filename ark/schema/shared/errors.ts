@@ -18,13 +18,13 @@ import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
-import { arkKind, hasArkKind } from "./utils.ts"
+import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
 export const isArkErrorResult = (result: unknown): result is ArkErrorResult =>
 	typeof result === "object" &&
-	(hasArkKind(result, "error") || hasArkKind(result, "errors"))
+	(result instanceof ArkError || result instanceof ArkErrors)
 
 export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
