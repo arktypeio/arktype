@@ -1149,8 +1149,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return node
 
 		bootstrapAliasReferences(node)
-		if (node.precompilation || this.resolvedConfig.jitless) return node
-		if (jit) precompile(node.references)
+		if (!node.precompilation && !this.resolvedConfig.jitless && jit)
+			precompile(node.references)
 		return node
 	}
 
