@@ -288,6 +288,12 @@ b must be A (was "y")`)
 			const out = T.assert(original)
 			attest(out).equals({ e: "e", d: "d" })
 			attest(T(out)).equals(out)
+
+			const U = $.type({ toString: "number", d: "string = 'd'" })
+			const inherited = U.assert(
+				Object.defineProperty({}, "toString", { value: 5 })
+			)
+			attest(inherited.toString).equals(5)
 		}
 	})
 
