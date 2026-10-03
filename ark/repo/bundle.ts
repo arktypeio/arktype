@@ -223,12 +223,18 @@ const renamesTo = (node: ts.ClassExpression, name: string): Edit[] => {
 	const innerName = node.name!.text
 	const renames: Edit[] = [[node.name!.getStart(), node.name!.getEnd(), name]]
 	const visit = (child: ts.Node): void => {
-		if (ts.isIdentifier(child) && child.text === innerName) {
+		if (ts.isIdentifier(child)) {
 			const parent = child.parent as { name?: ts.Node; propertyName?: ts.Node }
-			// e.g. { _X } keeps its key as { _X: X }
-			if (ts.isShorthandPropertyAssignment(child.parent))
-				renames.push([child.getEnd(), child.getEnd(), `: ${name}`])
-			else if (parent.name !== child && parent.propertyName !== child)
+			const isShorthand = ts.isShorthandPropertyAssignment(child.parent)
+			const isReference =
+				isShorthand || (parent.name !== child && parent.propertyName !== child)
+			// only a class the source named itself refers to X or { _X } here
+			if (
+				isReference &&
+				(child.text === name || (isShorthand && child.text === innerName))
+			)
+				throw new Error(`Can't rename class ${innerName} to ${name}`)
+			if (isReference && child.text === innerName)
 				renames.push([child.getStart(), child.getEnd(), name])
 		}
 		ts.forEachChild(child, visit)

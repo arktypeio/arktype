@@ -173,13 +173,25 @@ contextualize(() => {
 
 	it("names a self-referencing class", async () => {
 		const dir = writePackage({
-			"index.js": `export class K { static self = { K }; m(o) { return o.K } _K() {} }; export const L = class _L { static self = { _L } };`
+			"index.js": `export class K { static self = { K }; m(o) { return o.K } _K() {} }`
 		})
-		const { K, L } = await import(bundleIn(dir)("index.js"))
+		const { K } = await import(bundleIn(dir)("index.js"))
 		attest(K.name).equals("K")
 		attest(K.self.K).is(K)
-		attest(L.name).equals("L")
-		attest(L.self._L).is(L)
+	})
+
+	it("rejects renaming a class its source named", () => {
+		for (const [innerName, body] of [
+			["Y", "m() { return L }"],
+			["_L", "static self = { _L }"]
+		]) {
+			const selfNamed = writePackage({
+				"index.js": `export let L = class ${innerName} { ${body} }`
+			})
+			attest(() => bundleIn(selfNamed)).throws(
+				`Can't rename class ${innerName} to L`
+			)
+		}
 	})
 
 	it("rejects rebinding a main entry export", () => {
