@@ -85,40 +85,32 @@ contextualize(() => {
 	})
 
 	// built from nodes rather than strings, whose results the ambient parse cache holds
-	it("enumerated returns a union compiled and dropped as compiled", async () => {
-		let U: type.Any | null = type({ k: "'gcZeta' | 'gcAlpha'" })
-			.get("k")
-			.or(type.unit(7007))
-		const compiledMessage = U(2).toString()
-		U = null
-		await collect()
-		attest(type.enumerated("gcZeta", "gcAlpha", 7007)(2).toString()).equals(
-			compiledMessage
-		)
-	})
-
-	it("$.node returns a union compiled and dropped as compiled", async () => {
-		let U: type.Any | null = type({ a: "string" })
-			.get("a")
-			.or(type.instanceOf(WeakMap))
-		const compiledMessage = U(0).toString()
-		U = null
-		await collect()
-		const U2 = type.$.node("union", [{ domain: "string" }, { proto: WeakMap }])
-		attest(String(U2(0))).equals(compiledMessage)
-	})
-
-	it("configuring self returns a node compiled and dropped as compiled", async () => {
+	it("unfinalized parse after collection", async () => {
 		const configured = () =>
 			type({ a: "string" })
 				.get("a")
 				.or(type.instanceOf(WeakSet))
 				.configure({ examples: ["gc"] }, "self")
-		let T: type.Any | null = type(configured())
-		const compiledMessage = T(0).toString()
-		T = null
-		await collect()
-		attest(configured()(0).toString()).equals(compiledMessage)
+		const cases = [
+			[
+				() => type({ k: "'gcZeta' | 'gcAlpha'" }).get("k").or(type.unit(7007)),
+				() => type.enumerated("gcZeta", "gcAlpha", 7007),
+				2
+			],
+			[
+				() => type({ a: "string" }).get("a").or(type.instanceOf(WeakMap)),
+				() => type.$.node("union", [{ domain: "string" }, { proto: WeakMap }]),
+				0
+			],
+			[() => type(configured()), configured, 0]
+		] as const
+		for (const [compiled, unfinalized, input] of cases) {
+			let T: type.Any | null = compiled()
+			const message = String(T(input))
+			T = null
+			await collect()
+			attest(String(unfinalized()(input))).equals(message)
+		}
 	})
 
 	it("optional prop input is unchanged by collecting", async () => {
