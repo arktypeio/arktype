@@ -501,6 +501,20 @@ contextualize(() => {
 					)
 				})
 
+				it("stops checking a value once it fails as never", config => {
+					const types = scope(
+						{
+							a: { p0: { p0: "string" }, "x?": "b" },
+							b: { p0: "a", "[string]": "string >= 1" }
+						},
+						config
+					).export()
+					const ab = types.b.and(types.a)
+
+					attest(ab.allows({ p0: null })).equals(false)
+					attest(ab({ p0: null }).toString()).snap("never")
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 

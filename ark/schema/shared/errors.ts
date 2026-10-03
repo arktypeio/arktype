@@ -255,7 +255,11 @@ export class ArkErrors
 			if (error === existing) return
 			// If the existing error is an error for a value constrained to "never",
 			// then we don't want to intersect the error messages.
-			if (existing.hasCode("union") && existing.errors.length === 0) return
+			if (existing.hasCode("union") && existing.errors.length === 0) {
+				// the error is still a failure, so traversal of the value it checked stops
+				this.count++
+				return
+			}
 
 			// If the new error is an error for a value constrained to "never",
 			// then we want to override any existing errors.
