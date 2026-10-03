@@ -396,7 +396,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	private compileTransform(js: NodeCompiler): void {
-		js.initializeTransform(this.children).line("let out = data")
+		js.initializeTransform(this.children).let("out", "data")
 		let i = 0
 		this.compileElements(js, (keyExpression, node) => {
 			const element = `element${i}`
@@ -407,7 +407,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 					keyExpression,
 					onChange: () =>
 						js
-							.if("out === data", () => js.line("out = data.slice()"))
+							.if("out === data", () => js.set("out", "data.slice()"))
 							.line(`out[${keyExpression}] = ${transformed}`)
 				})
 		})
