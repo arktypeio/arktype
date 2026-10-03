@@ -175,6 +175,36 @@ contextualize(() => {
 		}
 	})
 
+	it("reports a branch's morph errors in a union that requires ctx", () => {
+		const N = type("number")
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{
+					parsed: ["string", "=>", s => N(s)],
+					signed: [
+						"number",
+						"=>",
+						(n, ctx) => (n < 0 ? ctx.error("signed") : n)
+					],
+					tree: { "child?": "tree" },
+					contextual: "parsed | signed",
+					cyclic: { a: "parsed | tree" }
+				},
+				{ jitless }
+			).export()
+
+			attest(types.contextual("x").toString()).snap(
+				"must be a number (was a string)"
+			)
+			attest(types.contextual.array()(["x"]).toString()).snap(
+				"value at [0] must be a number (was a string)"
+			)
+			attest(types.cyclic({ a: "x" }).toString()).snap(
+				"a must be a number (was a string)"
+			)
+		}
+	})
+
 	it("reports a morph's error alike whether or not its input is valid", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],
