@@ -166,6 +166,14 @@ contextualize(() => {
 		attest("b" in original).equals(false)
 	})
 
+	it("transforms a prop of a frozen builtin", () => {
+		const T = type(["Date", "&", { "a?": "string.trim" }])
+		const original = Object.freeze(Object.assign(new Date(5), { a: " x " }))
+		const out: unknown = T(original)
+		attest(out instanceof Date && out.getTime()).equals(5)
+		attest(Object.entries(out as never)).equals([["a", "x"]])
+	})
+
 	it("copies a builtin whose contents are in internal slots", () => {
 		const U = type([type.instanceOf(URL), "&", { "a?": "string.trim" }])
 		const url: unknown = U(
