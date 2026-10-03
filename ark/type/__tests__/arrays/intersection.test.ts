@@ -134,6 +134,11 @@ contextualize(() => {
 		attest(T.json).equals(Expected.json)
 	})
 
+	it("intersects a length that narrows two others", () => {
+		const T = type("unknown[] >= 1").and("unknown[] <= 2").and("unknown[] <= 1")
+		attest(T.json).equals(type("unknown[] == 1").json)
+	})
+
 	it("array with props", () => {
 		const T = type("Array").and({ name: "string" })
 
