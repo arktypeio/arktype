@@ -193,7 +193,8 @@ const isThenable = (value: unknown): value is PromiseLike<unknown> =>
 export class BenchAssertions<
 	Fn extends BenchableFunction,
 	NextAssertions = BenchTypeAssertions,
-	ReturnedAssertions = Fn extends () => Promise<void> ? Promise<NextAssertions>
+	ReturnedAssertions = Fn extends () => PromiseLike<unknown> ?
+		Promise<NextAssertions>
 	:	NextAssertions
 > {
 	private label: string
