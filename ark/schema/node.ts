@@ -44,7 +44,7 @@ import type {
 	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
-import type { ArkErrors } from "./shared/errors.ts"
+import { isArkErrorResult, type ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -398,6 +398,15 @@ export abstract class BaseNode<
 						return ctx.hasError() ? ctx.finalize(onFail) : result
 					}
 				}
+				if (
+					!this.transformRequiresContext &&
+					(this as {} as BaseRoot).branches.every(
+						branch =>
+							!branch.transforms ||
+							(branch.hasKind("morph") && !branch.introspectableIn?.transforms)
+					)
+				)
+					return this.createOptimisticRootApply()
 				return (data, onFail) => {
 					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
 					const ctx = new Traversal(data, this.$.resolvedConfig)
@@ -409,6 +418,33 @@ export abstract class BaseNode<
 				return throwInternalError(
 					`Unexpected rootApplyStrategy ${this.rootApplyStrategy}`
 				)
+		}
+	}
+
+	// a root whose transform doesn't require ctx has only context-free morphs
+	private createOptimisticRootApply(): this["rootApply"] {
+		const branches = (this as {} as BaseRoot).branches
+		return (data, onFail) => {
+			for (let i = 0; i < branches.length; i++) {
+				const branch = branches[i]
+				if (!branch.allows(data)) continue
+				if (!branch.hasKind("morph")) return data
+				let result = data
+				for (let j = 0; j < branch.morphs.length; j++) {
+					const morphed = (branch.morphs[j] as Morph.ContextFree)(
+						result as never
+					)
+					if (isArkErrorResult(morphed)) {
+						const ctx = new Traversal(data, this.$.resolvedConfig)
+						ctx.receive(result)
+						ctx.addMorphErrors(morphed)
+						return ctx.finalize(onFail)
+					}
+					result = morphed
+				}
+				return result
+			}
+			return this.applyRoot(data).finalize(onFail)
 		}
 	}
 
