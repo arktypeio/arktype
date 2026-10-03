@@ -688,7 +688,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (!this.index) return transforms
 		for (const index of this.index) {
 			if (!index.value.transforms || index.value === prop.value) continue
-			// a signature reading ctx can only decide the key as data is transformed
 			if (index.signature.allowsRequiresContext)
 				transforms.push({ node: index.value, signature: index.signature })
 			else if (index.signature.allows(prop.key))

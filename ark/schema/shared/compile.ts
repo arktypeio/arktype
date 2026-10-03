@@ -177,7 +177,6 @@ export interface TransformKeyOptions {
 
 export interface TransformStep {
 	node: BaseNode
-	// a key signature that must allow the key for node to transform it
 	signature?: BaseNode
 }
 
