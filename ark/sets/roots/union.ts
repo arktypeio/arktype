@@ -4,16 +4,18 @@ import {
 	flatMorphsAreEqual,
 	type BaseRoot,
 	type BaseScope,
+	type CaseContext,
+	type CaseDiscriminant,
 	type CaseKey,
 	type Discriminant,
 	type DiscriminantKind,
 	type DiscriminantLocation,
 	type DiscriminatedCases,
 	type Domain,
+	type IntersectionContext,
 	type Morph,
 	type Union,
-	type Unit,
-	type nodeOfKind
+	type Unit
 } from "@ark/schema"
 import {
 	appendUnique,
@@ -25,7 +27,6 @@ import {
 } from "@ark/util"
 import {
 	defineRightwardIntersections,
-	type IntersectionContext,
 	type setImplementationOf
 } from "../implement.ts"
 import { intersectNodesRoot, intersectOrPipeNodes } from "../intersections.ts"
@@ -556,13 +557,6 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 		)
 	}
 }
-
-type CaseContext = {
-	branchIndices: number[]
-	condition: nodeOfKind<DiscriminantKind> | Domain.Enumerable
-}
-
-type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
 
 type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: PropertyKey[]

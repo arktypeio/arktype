@@ -6,6 +6,7 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type Intersection,
+	type IntersectionContext,
 	type NodeKind,
 	type RootKind,
 	type Structure,
@@ -19,7 +20,6 @@ import {
 	type listable,
 	type satisfy
 } from "@ark/util"
-import type { IntersectionContext } from "./implement.ts"
 import { intersectOrPipeNodes } from "./intersections.ts"
 
 type ConstraintGroupKind = satisfy<NodeKind, "intersection" | "structure">

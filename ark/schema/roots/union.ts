@@ -579,6 +579,13 @@ export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
 	members?: { [caseKey in CaseKey<kind>]?: BaseRoot }
 }
 
+export type CaseContext = {
+	branchIndices: number[]
+	condition: nodeOfKind<DiscriminantKind> | Domain.Enumerable
+}
+
+export type CaseDiscriminant = nodeOfKind<DiscriminantKind> | Domain.Enumerable
+
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind
 > = {

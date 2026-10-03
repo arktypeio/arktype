@@ -2,12 +2,12 @@ import {
 	Disjoint,
 	type BaseRoot,
 	type Intersection,
+	type IntersectionContext,
 	type nodeOfKind
 } from "@ark/schema"
 import { flattenConstraints, intersectConstraints } from "../constraint.ts"
 import {
 	defineRightwardIntersections,
-	type IntersectionContext,
 	type setImplementationOf
 } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"

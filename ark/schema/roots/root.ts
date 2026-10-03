@@ -10,7 +10,7 @@ import {
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	flatMorphsAreEqual,
@@ -38,6 +38,7 @@ import {
 import { ArkErrors } from "../shared/errors.ts"
 import {
 	structuralKinds,
+	type NodeKind,
 	type RootKind,
 	type kindRightOf
 } from "../shared/implement.ts"
@@ -680,6 +681,17 @@ export const typeOrTermExtends = (t: unknown, base: unknown): boolean =>
 		:	base.allows(t)
 	: hasArkKind(t, "root") ? t.hasUnit(base)
 	: base === t
+
+export type intersectRoot<l extends RootKind, r extends NodeKind> =
+	[l, r] extends [r, l] ? l
+	:	asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
+
+type asymmetricIntersectionOf<l extends NodeKind, r extends NodeKind> =
+	l extends unknown ?
+		r extends kindRightOf<l> ?
+			l | reducibleKindOf<l>
+		:	never
+	:	never
 
 export type schemaKindRightOf<kind extends RootKind> = Extract<
 	kindRightOf<kind>,
