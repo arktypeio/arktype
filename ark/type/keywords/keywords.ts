@@ -93,33 +93,35 @@ export const ark: Scope<Ark> = scope(
 	{ name: "ark" }
 ) as never
 
+const arkExports: Module<Ark> = ark.internal.exportLazily() as never
+
 export const keywords: Module<Ark> = defineProperties(
 	new RootModule({}),
-	ark.internal.exportLazily()
+	arkExports
 ) as never
 
-defineProperties($arkTypeRegistry.ambient, keywords)
+defineProperties($arkTypeRegistry.ambient, arkExports)
 
 const typeAttachments = {} as Ark.boundTypeAttachments<any>
 
 for (const [k, resolve] of Object.entries({
-	string: () => keywords.string.root,
-	number: () => keywords.number.root,
-	bigint: () => keywords.bigint,
-	boolean: () => keywords.boolean,
-	symbol: () => keywords.symbol,
-	undefined: () => keywords.undefined,
-	null: () => keywords.null,
-	object: () => keywords.object.root,
-	unknown: () => keywords.unknown.root,
-	false: () => keywords.false,
-	true: () => keywords.true,
-	never: () => keywords.never,
-	arrayIndex: () => keywords.Array.index,
-	Key: () => keywords.Key,
-	Record: () => keywords.Record,
-	Array: () => keywords.Array.root,
-	Date: () => keywords.Date
+	string: () => arkExports.string.root,
+	number: () => arkExports.number.root,
+	bigint: () => arkExports.bigint,
+	boolean: () => arkExports.boolean,
+	symbol: () => arkExports.symbol,
+	undefined: () => arkExports.undefined,
+	null: () => arkExports.null,
+	object: () => arkExports.object.root,
+	unknown: () => arkExports.unknown.root,
+	false: () => arkExports.false,
+	true: () => arkExports.true,
+	never: () => arkExports.never,
+	arrayIndex: () => arkExports.Array.index,
+	Key: () => arkExports.Key,
+	Record: () => arkExports.Record,
+	Array: () => arkExports.Array.root,
+	Date: () => arkExports.Date
 }))
 	defineLazily(typeAttachments, k, resolve)
 
