@@ -37,11 +37,16 @@ contextualize(() => {
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],
-			cases: { '"bigint"': true, '"number"': true, '"string"': true }
+			cases: {
+				'"bigint"': true,
+				'"number"': { domain: "number" },
+				'"string"': true
+			}
 		})
 		attest(T.allows("foo")).equals(true)
 		attest(T.allows(5n)).equals(true)
 		attest(T.allows(5)).equals(true)
+		attest(T.allows(Number.NaN)).equals(false)
 		attest(T.allows(true)).equals(false)
 	})
 
@@ -493,7 +498,7 @@ contextualize(() => {
 
 	// https://github.com/arktypeio/arktype/issues/1547
 	it("discriminates cyclic union on nested path", () => {
-		const s = scope({
+		const defs = {
 			AChild: { type: "'AChild'", children: "(AParent)[] > 0" },
 			AParent: { type: "'AParent'", children: "(AChild)[] > 0" },
 			BChild: { type: "'BChild'", children: "unknown[]" },
@@ -502,7 +507,8 @@ contextualize(() => {
 				layout: "number[]",
 				children: "(BChild)[] > 0"
 			}
-		})
+		} as const
+		const s = scope(defs)
 
 		const Thing = s.type("AParent | BParent")
 
@@ -557,13 +563,75 @@ contextualize(() => {
 			}
 		})
 
-		attest(
-			Thing({
-				type: "BParent",
-				layout: "",
-				children: [{ type: "BChild", children: [] }]
-			}).toString()
-		).snap("layout must be an array (was string)")
+		const data = {
+			type: "BParent",
+			layout: "",
+			children: [{ type: "BChild", children: [] }]
+		}
+		attest(Thing(data).toString()).snap("layout must be an array (was string)")
+		const JitlessThing = scope(defs, { jitless: true }).type(
+			"AParent | BParent"
+		)
+		attest(JitlessThing(data).toString()).snap(
+			"layout must be an array (was string)"
+		)
+	})
+
+	it("discriminates neither a date nor NaN", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: $.enumerated(new Date(0), Number.NaN, 1, 2) })
+			const epoch = { a: new Date(0) }
+
+			attest(T(epoch)).equals(epoch)
+			attest(T({ a: Number.NaN })).equals({ a: Number.NaN })
+			attest(T({ a: new Date(0).toISOString() }).toString()).snap(
+				'a must be 1970 or NaN (was "1970-01-01T00:00:00.000Z")'
+			)
+		}
+	})
+
+	it("doesn't discriminate undefined at a path", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ kind: "'c'", v: "undefined" }).or({
+				kind: "'c'",
+				v: "2"
+			})
+
+			attest(T({ kind: "c", v: undefined })).equals({ kind: "c", v: undefined })
+			attest(T({ kind: "c" }).toString()).snap(
+				"v must be undefined or 2 (was missing)"
+			)
+			attest(T(0).toString()).snap("must be an object (was a number)")
+		}
+	})
+
+	it("checks a primitive with the discriminant's key is an object", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ length: "3", x: "string" }).or({
+				length: "4",
+				y: "number"
+			})
+
+			attest(T({ length: 3, x: "" })).equals({ length: 3, x: "" })
+			attest(T("abc").toString()).snap("must be an object (was a string)")
+		}
+	})
+
+	it("describes an object or symbol case by its value", () => {
+		const o = {}
+		const sym = Symbol("sym")
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: $.enumerated(o, sym, 1) })
+
+			attest(T({ a: o })).equals({ a: o })
+			attest(T({ a: {} }).toString()).snap(
+				"a must be 1, {} or Symbol(sym) (was {})"
+			)
+		}
 	})
 
 	it("discriminating adds no reads of a rejected prop", () => {

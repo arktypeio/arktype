@@ -47,10 +47,8 @@ contextualize(() => {
 
 					nested(data)
 					attest(data).equals([[1], [2]])
-					attest(nested([[{}]]).toString()).equals(
-						config.jitless ?
-							"value at [0] must be a number (was an object) or [0][0] must be a number or an array (was {})"
-						:	"value at [0][0] must be an array (was object)"
+					attest(nested([[{}]]).toString()).snap(
+						"value at [0][0] must be an array (was object)"
 					)
 				})
 
@@ -237,6 +235,26 @@ contextualize(() => {
 						{ kind: "a", v: 1, next: { kind: "b" } }
 					)
 				})
+
+				// https://github.com/arktypeio/arktype/issues/924
+				it("reports an object reached through a union once", config => {
+					const node = scope(
+						{
+							node: { v: "number", "kids?": "node[]", "next?": "node | null" }
+						},
+						config
+					).export().node
+					const shared = { v: "x" }
+					const self: { v: string; next?: object } = { v: "x" }
+					self.next = self
+
+					attest(node({ v: 1, kids: [shared], next: shared }).toString()).snap(
+						"next.v must be a number (was a string)"
+					)
+					attest(node(self).toString()).snap(
+						"v must be a number (was a string)"
+					)
+				})
 			}
 		)
 	}
@@ -304,21 +322,6 @@ contextualize(() => {
 		attest(() => type("this | string" as never)).throws(
 			"has a shallow resolution cycle"
 		)
-	})
-
-	// https://github.com/arktypeio/arktype/issues/924
-	it("reports an object reached through a union once", () => {
-		const node = scope({
-			node: { v: "number", "kids?": "node[]", "next?": "node | null" }
-		}).export().node
-		const shared = { v: "x" }
-		const self: { v: string; next?: object } = { v: "x" }
-		self.next = self
-
-		attest(node({ v: 1, kids: [shared], next: shared }).toString()).snap(
-			"next.v must be a number (was a string)"
-		)
-		attest(node(self).toString()).snap("v must be a number (was a string)")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476

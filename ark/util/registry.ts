@@ -50,6 +50,9 @@ export const register = (value: object | symbol): string => {
 	return name
 }
 
+export const registeredNameOf = (value: object | symbol): string | undefined =>
+	namesByResolution.get(value)
+
 export const nameOf = (value: object | symbol): string => {
 	const existingName = namesByResolution.get(value) ?? unregisteredNameOf(value)
 	if (existingName) return existingName

@@ -1,12 +1,17 @@
 import {
 	appendUnique,
 	domainDescriptions,
+	domainOf,
 	flatMorph,
+	hasDomain,
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
+	registeredNameOf,
+	serializePrimitive,
 	type JsTypeOf,
 	type JsonStructure,
+	type SerializablePrimitive,
 	type SerializedPrimitive,
 	type array,
 	type show
@@ -33,7 +38,9 @@ import {
 } from "../shared/implement.ts"
 import {
 	$ark,
+	reference,
 	registeredReference,
+	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
 import {
@@ -189,10 +196,42 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.branches.some(b => b.traverseAllows(data, ctx))
+	traverseAllows: TraverseAllows = (data, ctx) => {
+		const discriminant = this.compiledDiscriminant
+		if (!discriminant)
+			return this.branches.some(b => b.traverseAllows(data, ctx))
+		const caseNode =
+			discriminant.cases[
+				caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+			]
+		return caseNode === true || !!caseNode?.traverseAllows(data, ctx)
+	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
+		const discriminant = this.compiledDiscriminant
+		if (discriminant) {
+			const value = valueAtPath(discriminant.path, data)
+			const k = caseKeyOf(discriminant, value)
+			const caseNode = discriminant.cases[k]
+			if (caseNode === true) return
+			if (caseNode === undefined) {
+				ctx.errorFromNodeContext({
+					code: "predicate",
+					expected: describeCases(discriminant),
+					actual:
+						discriminant.kind === "domain" ?
+							domainDescriptions[domainOf(value)]
+						:	printable(value),
+					relativePath: discriminant.path,
+					meta: this.meta
+				})
+				return
+			}
+			const member = discriminant.members?.[k]
+			if (member) applyResolution(member.id, caseNode.traverseApply, data, ctx)
+			else caseNode.traverseApply(data, ctx)
+			return
+		}
 		const errors: ArkError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
@@ -242,8 +281,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		const cases = discriminant.cases
 
-		const caseKeys = Object.keys(cases)
-
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
@@ -274,22 +311,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return
 		}
 
-		const expected = describeBranches(
-			discriminant.kind === "domain" ?
-				caseKeys.map(k => {
-					const jsTypeOf = k.slice(1, -1) as JsTypeOf
-					return jsTypeOf === "function" ?
-							domainDescriptions.object
-						:	domainDescriptions[jsTypeOf]
-				})
-			:	caseKeys
-		)
-
 		const serializedPathSegments = discriminant.path.map(k =>
 			typeof k === "symbol" ? registeredReference(k) : JSON.stringify(k)
 		)
 
-		const serializedExpected = JSON.stringify(expected)
+		const serializedExpected = JSON.stringify(describeCases(discriminant))
 		const serializedActual =
 			discriminant.kind === "domain" ?
 				`${js.ref(jsTypeOfDescriptions)}[${condition}]`
@@ -346,6 +372,44 @@ export const Union = {
 	implementation,
 	Node: UnionNode
 }
+
+const valueAtPath = (path: array<PropertyKey>, data: unknown): unknown => {
+	let value: any = data
+	for (let i = 0; i < path.length; i++) value = value?.[path[i]]
+	return value
+}
+
+// the case a compiled discriminant's switch takes for value
+const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
+	const k =
+		discriminant.kind === "domain" ? `"${domainOf(value)}"` : unitKeyOf(value)
+	return k !== undefined && discriminant.cases[k] !== undefined ? k : "default"
+}
+
+// an object or symbol unit was registered to compile it, so an unregistered value matches none
+const unitKeyOf = (value: unknown): string | undefined => {
+	if (!hasDomain(value, "object") && typeof value !== "symbol")
+		return serializePrimitive(value as SerializablePrimitive)
+	const name = registeredNameOf(value)
+	return name && reference(name)
+}
+
+const registeredPrefix = `${registryName}.`
+
+const describeCases = (discriminant: Discriminant): string =>
+	describeBranches(
+		Object.keys(discriminant.cases).map(k => {
+			if (discriminant.kind === "domain") {
+				const jsTypeOf = k.slice(1, -1) as JsTypeOf
+				return jsTypeOf === "function" ?
+						domainDescriptions.object
+					:	domainDescriptions[jsTypeOf]
+			}
+			return k.startsWith(registeredPrefix) ?
+					printable($ark[k.slice(registeredPrefix.length)])
+				:	k
+		})
+	)
 
 const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 	kind: discriminant.kind,
