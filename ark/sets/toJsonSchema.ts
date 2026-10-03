@@ -267,11 +267,21 @@ const reduceObjectJsonSchema = (
 
 				let keySchema: JsonSchema.String = { type: "string" }
 				if (keyBranch.hasKind("morph")) {
+					// a key's schema can't be a $ref
 					keySchema = ctx.fallback.morph({
 						code: "morph",
-						base: toJsonSchemaRecurse(keyBranch.rawIn, ctx),
-						out: toJsonSchemaRecurse(keyBranch.rawOut, ctx)
+						base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
+						out: toResolvedJsonSchema(keyBranch.rawOut, ctx)
 					}) as never
+					if (keySchema.pattern) {
+						schema.patternProperties ??= {}
+						schema.patternProperties[keySchema.pattern] = valueJsonSchema
+					} else if (
+						keySchema.type === "string" &&
+						Object.keys(keySchema).length === 1
+					)
+						schema.additionalProperties = valueJsonSchema
+					continue
 				}
 				if (!keyBranch.hasKind("intersection")) {
 					return throwInternalError(

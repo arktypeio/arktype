@@ -633,6 +633,39 @@ contextualize(() => {
 			})
 		})
 
+		it("morph index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: [
+					{
+						signature: {
+							in: { domain: "string", pattern: "^\\d+$" },
+							morphs: [(s: string) => Number.parseInt(s)]
+						},
+						value: "string"
+					},
+					{
+						signature: { in: "string", morphs: [(s: string) => s.trim()] },
+						value: "number"
+					}
+				]
+			})
+
+			const expected: JsonSchema = {
+				type: "object",
+				additionalProperties: { type: "number" },
+				patternProperties: { "^\\d+$": { type: "string" } }
+			}
+
+			attest(toJsonSchema(T, { fallback: { morph: ctx => ctx.base } })).equals(
+				expected
+			)
+			attest(
+				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
+					.$defs![T.id]
+			).equals(expected)
+		})
+
 		it("date supercedes proto", () => {
 			const T = rootSchema({
 				proto: "Date"
