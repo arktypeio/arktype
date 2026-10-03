@@ -505,6 +505,28 @@ contextualize(() => {
 					)
 				})
 
+				it("validates a cyclic morph union alike after reading its input", config => {
+					const types = () =>
+						scope(
+							{
+								a1: { "p0?": "a4" },
+								a3: ["a1", "|", { p0: ["number", "=>", (n: number) => n * 2] }],
+								a4: { "p0?": "a3 | null" }
+							},
+							config
+						).export()
+					const read = types()
+					const validated = types()
+
+					attest(read.a3.in.expression).snap(
+						"{ p0?: In<$a4> } | { p0: number }"
+					)
+					attest(read.a3({ p0: 1 })).equals({ p0: 2 })
+					attest(read.a4({ p0: { p0: 1 } })).equals({ p0: { p0: 2 } })
+					attest(validated.a3({ p0: 1 })).equals({ p0: 2 })
+					attest(validated.a3.in.expression).equals(read.a3.in.expression)
+				})
+
 				it("throws a cyclic intersection's error when it's exported", config => {
 					attest(() =>
 						scope(

@@ -347,6 +347,7 @@ export const isResolvable = (node: BaseRoot): boolean => {
 	if (node.hasKind("morph"))
 		return !node.inner.in || isResolvable(node.inner.in)
 	if (!node.hasKind("alias") || resolvingAliases.includes(node)) return false
+	if (node.isIo) return isResolvable(node.operands![0])
 	const referenced = nodesByRegisteredId[node.reference as NodeId]
 	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
