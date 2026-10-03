@@ -296,6 +296,9 @@ export type LengthBoundableData = string | array
 
 export type DateRangeKind = "before" | "after"
 
+export const dateLimitToString = (limit: LimitSchemaValue): string =>
+	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
+
 export const writeUnboundableMessage = <root extends string>(
 	root: root
 ): writeUnboundableMessage<root> =>

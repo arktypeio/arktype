@@ -1,4 +1,5 @@
 import {
+	arrayEquals,
 	chainableNoOpProxy,
 	includes,
 	inferred,
@@ -12,6 +13,7 @@ import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind } from "../kinds.ts"
 import {
 	BaseNode,
+	flatMorphsAreEqual,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -148,6 +150,10 @@ export abstract class BaseRoot<
 	}
 
 	abstract get defaultShortDescription(): string
+
+	get shortDescription(): string {
+		return this.meta.description ?? this.defaultShortDescription
+	}
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
 		return sets().toJsonSchema(this, opts)
@@ -542,6 +548,22 @@ export abstract class BaseRoot<
 				)
 			)
 		)
+	}
+
+	hasEqualMorphs(r: BaseRoot): boolean {
+		if (!this.includesTransform && !r.includesTransform) return true
+
+		if (!arrayEquals(this.shallowMorphs as Morph[], r.shallowMorphs as Morph[]))
+			return false
+
+		if (
+			!arrayEquals(this.flatMorphs, r.flatMorphs, {
+				isEqual: flatMorphsAreEqual
+			})
+		)
+			return false
+
+		return true
 	}
 
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {

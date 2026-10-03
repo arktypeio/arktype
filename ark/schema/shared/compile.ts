@@ -52,6 +52,10 @@ export class CompiledFunction<
 		return compileLiteralPropAccess(key, optional)
 	}
 
+	index(key: string | number, optional = false): string {
+		return indexPropAccess(`${key}`, optional)
+	}
+
 	get body(): string {
 		return this.lines.join("")
 	}
@@ -66,8 +70,20 @@ export class CompiledFunction<
 		return this
 	}
 
+	let(identifier: string, expression: CoercibleValue): this {
+		return this.line(`let ${identifier} = ${expression}`)
+	}
+
+	set(identifier: string, expression: CoercibleValue): this {
+		return this.line(`${identifier} = ${expression}`)
+	}
+
 	if(condition: string, then: (self: this) => this): this {
 		return this.block(`if (${condition})`, then)
+	}
+
+	elseIf(condition: string, then: (self: this) => this): this {
+		return this.block(`else if (${condition})`, then)
 	}
 
 	else(then: (self: this) => this): this {
@@ -108,8 +124,15 @@ export class CompiledFunction<
 		return this.line(`return ${expression}`)
 	}
 
-	write(name = "anonymous"): string {
-		return `${name}(${this.argNames.join(", ")}) { ${this.body} }`
+	write(name = "anonymous", indent: number = 0): string {
+		return `${name}(${this.argNames.join(", ")}) { ${
+			indent ?
+				this.body
+					.split("\n")
+					.map(l => " ".repeat(indent) + `${l}`)
+					.join("\n")
+			:	this.body
+		} }`
 	}
 
 	compile(): compiledSignature {
