@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { ArkErrors, scope, type Type } from "arktype"
+import { ArkErrors, scope, type, type Type } from "arktype"
 
 type Value = {
 	form:
@@ -16,6 +16,7 @@ type Value = {
 		| "and"
 		| "box"
 		| "alt"
+		| "nullDefault"
 	to: number
 	other: number
 }
@@ -54,7 +55,20 @@ const valueForms: [threshold: number, form: Value["form"]][] = [
 	[1, "default"]
 ]
 
-const generateAliases = (rand: () => number): Alias[] => {
+const relatedValueForms: [threshold: number, form: Value["form"]][] = [
+	[0.1, "number"],
+	[0.25, "ref"],
+	[0.4, "nullable"],
+	[0.55, "array"],
+	[0.65, "unionArray"],
+	[0.75, "record"],
+	[0.82, "orString"],
+	[0.9, "nullDefault"],
+	[0.95, "parse"],
+	[1, "default"]
+]
+
+const generateAliases = (rand: () => number, forms = valueForms): Alias[] => {
 	const count = 2 + Math.floor(rand() * 4)
 	const pick = () => Math.floor(rand() * count)
 	return Array.from({ length: count }, (_, i): Alias => {
@@ -67,11 +81,12 @@ const generateAliases = (rand: () => number): Alias[] => {
 		}
 		const props = Array.from({ length: 1 + Math.floor(rand() * 3) }, (_, j) => {
 			const r = rand()
-			const form = valueForms.find(([threshold]) => r < threshold)![1]
+			const form = forms.find(([threshold]) => r < threshold)![1]
 			const value: Value = { form, to: pick(), other: pick() }
 			// a required reference with no other way out would leave the type uninhabited
 			const optional =
 				form !== "default" &&
+				form !== "nullDefault" &&
 				(["ref", "and", "box", "alt"].includes(form) || rand() < 0.3)
 			return { key: `p${j}`, optional, value }
 		})
@@ -82,6 +97,7 @@ const generateAliases = (rand: () => number): Alias[] => {
 const valueDefOf = (value: Value): unknown =>
 	value.form === "number" || value.form === "string" ? value.form
 	: value.form === "default" ? "string = 'd'"
+	: value.form === "nullDefault" ? [`${nameOf(value.to)} | null`, "=", null]
 	: value.form === "parse" ? "string.numeric.parse"
 	: value.form === "ref" ? nameOf(value.to)
 	: value.form === "nullable" ? `${nameOf(value.to)} | null`
@@ -168,6 +184,12 @@ const generateData = (aliases: Alias[], rand: () => number) => {
 				: value.form === "nullable" ?
 					deep || rand() < 0.4 ?
 						null
+					:	generate(value.to, depth + 1, [])
+				: value.form === "nullDefault" ?
+					deep || rand() < 0.4 ?
+						rand() < 0.5 ?
+							null
+						:	undefined
 					:	generate(value.to, depth + 1, [])
 				: value.form === "array" ?
 					deep ? []
@@ -268,7 +290,7 @@ const oracleOf = (aliases: Alias[]) => {
 				alias.props.every(({ key, optional, value }) =>
 					key in data ?
 						valueAllows(value, data[key])
-					:	optional || value.form === "default"
+					:	optional || value.form === "default" || value.form === "nullDefault"
 				)
 		)
 	}
@@ -293,7 +315,8 @@ const oracleOf = (aliases: Alias[]) => {
 		: value.form === "parse" ?
 			typeof data === "string" && /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(data)
 		: value.form === "ref" ? allows(value.to, data)
-		: value.form === "nullable" ? data === null || allows(value.to, data)
+		: value.form === "nullable" || value.form === "nullDefault" ?
+			data === null || allows(value.to, data)
 		: value.form === "array" ?
 			Array.isArray(data) && data.every(e => allows(value.to, e))
 		: value.form === "unionArray" ?
@@ -389,6 +412,68 @@ contextualize(() => {
 						if (t[names[i]].allows(data()) !== expected)
 							failures.push(`${seed} ${names[i]}: allows isn't ${expected}`)
 					}
+				}
+			}
+		}
+		attest(failures).equals([])
+	})
+
+	it("relates generated cyclic scopes and their wrappers alike in any order", () => {
+		const failures: string[] = []
+		for (let seed = 1; seed <= 40; seed++) {
+			const rand = random(seed)
+			const aliases = generateAliases(rand, relatedValueForms)
+			if (isShallow(aliases)) continue
+			const names = aliases.map((_, i) => nameOf(i))
+			const defs = Object.fromEntries(
+				aliases.map((a, i) => [names[i], defOf(a, i)])
+			)
+			const [l, r] = [names, shuffle(names, rand)].map(order => {
+				try {
+					return scope(
+						Object.fromEntries(order.map(name => [name, defs[name]])) as never
+					).export() as never as Record<string, Type>
+				} catch (e) {
+					return String(e)
+				}
+			})
+			if (typeof l === "string" || typeof r === "string") {
+				if (l !== r) failures.push(`${seed}: ${l} || ${r}`)
+				continue
+			}
+			const allows = oracleOf(aliases)
+			const serializable = aliases.every(alias =>
+				alias.props.every(
+					({ value }) =>
+						!["parse", "default", "nullDefault"].includes(value.form)
+				)
+			)
+			for (let i = 0; i < aliases.length; i++) {
+				const [a, b] = [l[names[i]], r[names[i]]]
+				if (a.expression !== b.expression) {
+					failures.push(
+						`${seed} ${names[i]}: ${a.expression} || ${b.expression}`
+					)
+				}
+				if (!a.equals(b) || !a.extends(b) || !b.extends(a))
+					failures.push(`${seed} ${names[i]}: twins aren't related`)
+				if (!a.or(a).equals(a))
+					failures.push(`${seed} ${names[i]}: or isn't idempotent`)
+				if (serializable && !type.schema(a.json as never).equals(a))
+					failures.push(`${seed} ${names[i]}: json doesn't parse back`)
+				const wrapper = type({ w: a })
+				for (let variant = 0; variant < 4; variant++) {
+					const data = () => {
+						const r = random(seed * 1000 + i * 10 + variant)
+						const generated = generateData(aliases, r)(i)
+						return variant % 2 ? mutate(generated, r) : generated
+					}
+					const expected = allows(i, data())
+					if (a.in.allows(data()) !== expected)
+						failures.push(`${seed} ${names[i]}: in allows isn't ${expected}`)
+					const out = wrapper({ w: data() })
+					if (out instanceof ArkErrors === expected)
+						failures.push(`${seed} ${names[i]}: wrapper got ${out}`)
 				}
 			}
 		}
