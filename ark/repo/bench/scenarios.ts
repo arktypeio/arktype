@@ -566,6 +566,114 @@ export const Tree = {
 	valibot: valibotNode
 }
 
+type User = { name: string; groups: Group[] }
+
+type Group = { title: string; members: User[] }
+
+const user = (depth: number, id = 0): User => ({
+	name: `u${id}`,
+	groups:
+		depth ?
+			Array.from({ length: 3 }, (_, i) => group(depth - 1, id * 3 + i + 1))
+		:	[]
+})
+
+const group = (depth: number, id: number): Group => ({
+	title: `g${id}`,
+	members:
+		depth ?
+			Array.from({ length: 3 }, (_, i) => user(depth - 1, id * 3 + i + 1))
+		:	[]
+})
+
+export const recursiveScopeData = user(3)
+
+const zodUser: z.ZodType<User> = z.object({
+	name: z.string(),
+	get groups() {
+		return z.array(zodGroup)
+	}
+})
+
+const zodGroup: z.ZodType<Group> = z.object({
+	title: z.string(),
+	get members() {
+		return z.array(zodUser)
+	}
+})
+
+const valibotUser: v.GenericSchema<User> = v.object({
+	name: v.string(),
+	groups: v.array(v.lazy(() => valibotGroup))
+})
+
+const valibotGroup: v.GenericSchema<Group> = v.object({
+	title: v.string(),
+	members: v.array(v.lazy(() => valibotUser))
+})
+
+export const RecursiveScope = {
+	arktype: scope({
+		user: { name: "string", groups: "group[]" },
+		group: { title: "string", members: "user[]" }
+	}).export().user,
+	zod: zodUser,
+	valibot: valibotUser
+}
+
+type MorphNodeIn = {
+	id: string
+	label?: string | undefined
+	children: MorphNodeIn[]
+}
+
+type MorphNodeOut = { id: number; label: string; children: MorphNodeOut[] }
+
+const morphNode = (depth: number, id = 0): MorphNodeIn => ({
+	id: `${id}`,
+	...(id % 2 ? {} : { label: `l${id}` }),
+	children:
+		depth ?
+			Array.from({ length: 3 }, (_, i) => morphNode(depth - 1, id * 3 + i + 1))
+		:	[]
+})
+
+export const recursiveMorphData = morphNode(3)
+
+const parsedMorphNode = (node: MorphNodeIn): MorphNodeOut => ({
+	id: Number.parseInt(node.id),
+	label: node.label ?? "none",
+	children: node.children.map(parsedMorphNode)
+})
+
+const parseId = (s: string) => Number.parseInt(s)
+
+const zodMorphNode: z.ZodType<MorphNodeOut, MorphNodeIn> = z.object({
+	id: z.string().transform(parseId),
+	label: z.string().default("none"),
+	get children() {
+		return z.array(zodMorphNode)
+	}
+})
+
+const valibotMorphNode: v.GenericSchema<MorphNodeIn, MorphNodeOut> = v.object({
+	id: v.pipe(v.string(), v.transform(parseId)),
+	label: v.optional(v.string(), "none"),
+	children: v.array(v.lazy(() => valibotMorphNode))
+})
+
+export const RecursiveMorph = {
+	arktype: scope({
+		node: {
+			id: ["string", "=>", parseId],
+			label: "string = 'none'",
+			children: "node[]"
+		}
+	}).export().node,
+	zod: zodMorphNode,
+	valibot: valibotMorphNode
+}
+
 export const stringData = "foo"
 
 export const Str = {
@@ -653,5 +761,12 @@ export const check = (): void => {
 		inner: { a: "y", b: 5 }
 	})
 	accepts("tree", Tree, treeData)
+	accepts("recursive scope", RecursiveScope, recursiveScopeData)
+	accepts(
+		"recursive morph",
+		RecursiveMorph,
+		recursiveMorphData,
+		parsedMorphNode(recursiveMorphData)
+	)
 	accepts("string", Str, stringData)
 }
