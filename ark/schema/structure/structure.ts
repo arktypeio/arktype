@@ -750,11 +750,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const transformedIndex =
 			this.index?.filter(index => index.value.transforms) ?? []
 		const deletes = this.undeclared === "delete"
-		js.initializeTransform([
-			...(this.sequence?.transforms ? [this.sequence] : []),
-			...transformedProps.flatMap(prop => this.transformsOf(prop)),
-			...transformedIndex.map(index => index.value)
-		])
+		const transformedChildren: BaseNode[] = transformedProps.flatMap(prop =>
+			this.transformsOf(prop)
+		)
+		for (const index of transformedIndex) transformedChildren.push(index.value)
+		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
+		js.initializeTransform(transformedChildren)
 		js.line("let out = data")
 		if (this.sequence?.transforms) {
 			js.transformKey("transformedSequence", "data", this.sequence, {
@@ -763,17 +764,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		for (let i = 0; i < transformedProps.length; i++) {
 			const { key, serializedKey, optional } = transformedProps[i]
+			const onChange = () =>
+				this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
 				`value${i}`,
 				this.transformsOf(transformedProps[i]).map(node => ({ node })),
 				{
 					keyExpression: serializedKey,
-					...(optional && { condition: `${serializedKey} in data` }),
-					...(!deletes && {
-						onChange: () =>
-							this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
-					})
+					...(optional ? { condition: `${serializedKey} in data` } : {}),
+					...(deletes ? {} : { onChange })
 				}
 			)
 		}
@@ -881,18 +881,20 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedProps: Prop.Node[],
 		outMayBeCopied: boolean
 	): void {
-		const unchanged = [
-			...(outMayBeCopied ? ["out === data"] : []),
-			...transformedProps.map((prop, i) =>
+		const unchanged: string[] = []
+		if (outMayBeCopied) unchanged.push("out === data")
+		for (let i = 0; i < transformedProps.length; i++) {
+			unchanged.push(
 				js.compareTransformed(
-					this.transformsOf(prop),
+					this.transformsOf(transformedProps[i]),
 					`transformed${i}`,
 					"===",
 					`value${i}`
 				)
-			),
-			...this.defaultable.map(node => `${node.serializedKey} in data`)
-		]
+			)
+		}
+		for (const node of this.defaultable)
+			unchanged.push(`${node.serializedKey} in data`)
 		if (this.sequence?.defaultables) {
 			unchanged.push(
 				`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
