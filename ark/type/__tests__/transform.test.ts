@@ -83,12 +83,15 @@ contextualize(() => {
 
 		attest(WithDisjointProp(original)).snap({ a: { x: "1", y: "2" } })
 
-		let calls = 0
-		const Trimmed = type("string").pipe(s => (calls++, s.trim()))
+		let callCount = 0
+		const Trimmed = type("string").pipe(s => {
+			callCount++
+			return s.trim()
+		})
 		const U = type({ a: Trimmed, "[string]": Trimmed })
 
 		attest(U({ a: " a ", b: " b " })).snap({ a: "a", b: "b" })
-		attest(calls).equals(2)
+		attest(callCount).equals(2)
 	})
 
 	it("transforms a key by each prop and index signature allowing it in turn", () => {
@@ -474,9 +477,15 @@ b must be A (was "y")`)
 			return ctx.error("valid inner")
 		})
 		const T = type("string").pipe(
-			s => (calls.push("before"), s),
+			s => {
+				calls.push("before")
+				return s
+			},
 			Inner,
-			s => (calls.push("after"), s)
+			s => {
+				calls.push("after")
+				return s
+			}
 		)
 
 		attest(T("x").toString()).snap('must be valid inner (was "x")')
@@ -496,9 +505,12 @@ b must be A (was "y")`)
 	})
 
 	it("applies only the morphs of the branches it takes", () => {
-		let calls = 0
+		let callCount = 0
 		const Negated = type("number < 0")
-			.pipe(n => (calls++, -n))
+			.pipe(n => {
+				callCount++
+				return -n
+			})
 			.or("number > 10")
 		const T = type({
 			o: type({ a: Negated, b: "number > 5" }).or({
@@ -515,26 +527,40 @@ b must be A (was "y")`)
 		attest(T({ o: { a: -5, b: 1 }, s: 1 }).toString()).snap(
 			"s must be a string (was a number)"
 		)
-		attest(calls).equals(0)
+		attest(callCount).equals(0)
 	})
 
 	it("transforms a discriminated union's case without checking its branches", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
-			let calls = 0
-			const T = $.type(["string", ":", s => (calls++, s.length > 0)]).or({
+			let callCount = 0
+			const T = $.type([
+				"string",
+				":",
+				s => {
+					callCount++
+					return s.length > 0
+				}
+			]).or({
 				a: "string.trim"
 			})
 
 			attest(T("x")).equals("x")
-			attest(calls).equals(1)
+			attest(callCount).equals(1)
 		}
 	})
 
 	it("transforms cyclic data through a cyclic alias once", () => {
-		let calls = 0
+		let callCount = 0
 		const $ = scope({
 			node: {
-				value: ["string", "=>", s => (calls++, s.trim())],
+				value: [
+					"string",
+					"=>",
+					s => {
+						callCount++
+						return s.trim()
+					}
+				],
 				"next?": "node"
 			}
 		})
@@ -544,7 +570,7 @@ b must be A (was "y")`)
 
 		const out = $.export().node(original) as { value: string; next?: unknown }
 
-		attest(calls).equals(1)
+		attest(callCount).equals(1)
 		attest(out.value).equals("a")
 		attest(out.next).is(out)
 		attest(original.value).equals(" a ")
@@ -589,7 +615,14 @@ b must be A (was "y")`)
 		const calls: string[] = []
 		const $ = scope({
 			node: {
-				value: ["string", "=>", s => (calls.push(s), s)],
+				value: [
+					"string",
+					"=>",
+					s => {
+						calls.push(s)
+						return s
+					}
+				],
 				"next?": "node"
 			}
 		})
