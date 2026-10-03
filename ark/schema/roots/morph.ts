@@ -181,7 +181,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			const morphed = `morphed${i}`
 			if (hasArkKind(morph, "root")) {
 				js.const(morphed, `ctx.pipe(${js.ref(morph)}, ${result})`).if(
-					`${morphed} === ctx.errors`,
+					`ctx._errors !== undefined && ${morphed} === ctx._errors`,
 					() => js.return("data")
 				)
 			} else {
@@ -224,7 +224,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		for (const morph of this.morphs) {
 			if (hasArkKind(morph, "root")) {
 				result = ctx.pipe(morph, result)
-				if (result === ctx.errors) return data
+				if (ctx._errors !== undefined && result === ctx._errors) return data
 				continue
 			}
 			ctx.receive(result)

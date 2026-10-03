@@ -55,7 +55,11 @@ export class Traversal {
 	 *
 	 * ✅ will always be an empty array for a valid traversal
 	 */
-	errors: ArkErrors = new ArkErrors(this)
+	get errors(): ArkErrors {
+		return (this._errors ??= new ArkErrors(this))
+	}
+
+	_errors: ArkErrors | undefined
 
 	/**
 	 * #### the original value being traversed
@@ -445,7 +449,7 @@ export class Traversal {
 	get currentErrorCount(): number {
 		const branches = this.branches
 		return branches.length === 0 ?
-				this.errors.count
+				(this._errors?.count ?? 0)
 			:	branches[branches.length - 1].errorCount
 	}
 
