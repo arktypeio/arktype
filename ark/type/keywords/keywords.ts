@@ -30,11 +30,18 @@ import type {
 } from "../type.ts"
 import type { BaseType } from "../variants/base.ts"
 import type { instantiateType } from "../variants/instantiate.ts"
-import { arkBuiltins } from "./builtins.ts"
-import { arkPrototypes } from "./constructors.ts"
+import { builtinDefinitions, type arkBuiltins } from "./builtins.ts"
+import { prototypeDefinitions, type arkPrototypes } from "./constructors.ts"
 import { number } from "./number.ts"
 import { string } from "./string.ts"
-import { arkTsGenerics, arkTsKeywords, object, unknown } from "./ts.ts"
+import {
+	object,
+	tsGenericDefinitions,
+	tsKeywordDefinitions,
+	unknown,
+	type arkTsGenerics,
+	type arkTsKeywords
+} from "./ts.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.wrapped>,
@@ -74,10 +81,10 @@ fixGlobalConfig()
 
 export const ark: Scope<Ark> = scope(
 	{
-		...arkTsKeywords,
-		...arkTsGenerics,
-		...arkPrototypes,
-		...arkBuiltins,
+		...tsKeywordDefinitions,
+		...tsGenericDefinitions,
+		...prototypeDefinitions,
+		...builtinDefinitions,
 		string,
 		number,
 		object,
