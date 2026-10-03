@@ -184,9 +184,8 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				// a set engine adds the length bounds a tuple implies to its intersection
 				if (
 					!$ark.sets &&
-					(schema.prefix?.length ||
-						schema.optionals?.length ||
-						schema.defaultables?.length ||
+					(!schema.variadic ||
+						schema.prefix?.length ||
 						schema.postfix?.length ||
 						schema.minVariadicLength)
 				)

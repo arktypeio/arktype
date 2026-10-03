@@ -54,6 +54,23 @@ contextualize(() => {
 		attest(rootSchema(["number", { unit: 1 }]).expression).snap("number")
 	})
 
+	it("parsing a tuple with no length bound does not", () => {
+		withoutEngine(() => {
+			const T = rootSchema({
+				proto: Array,
+				sequence: {
+					defaultables: [["string", "a"]],
+					optionals: ["string"],
+					variadic: "number"
+				}
+			})
+			attest(T([])).equals(["a"])
+			attest(String(T(["b", 1]))).equals(
+				"value at [1] must be a string (was a number)"
+			)
+		})
+	})
+
 	it("parses again what was parsed before it", () => {
 		const def = [
 			{
