@@ -505,6 +505,25 @@ contextualize(() => {
 					)
 				})
 
+				it("reads the output of a pipe in a union into an alias reaching a cycle", config => {
+					const types = scope(
+						{
+							a0: { p2: "a3" },
+							a1: { p0: "string.numeric.parse", "p1?": "a0" },
+							a3: { x: "(string.json.parse |> a4) | null" },
+							a4: { "p1?": "a1" }
+						},
+						config
+					).export()
+					const out = types.a0({ p2: { x: '{ "p1": { "p0": "7" } }' } })
+
+					attest(out).equals({ p2: { x: { p1: { p0: 7 } } } })
+					attest(types.a0.out(out)).equals(out)
+					attest(
+						types.a0.out({ p2: { x: { p1: { p0: "7" } } } }).toString()
+					).snap("p2.x.p1.p0 must be a number (was a string)")
+				})
+
 				it("validates a cyclic morph union alike after reading its input", config => {
 					const types = () =>
 						scope(
