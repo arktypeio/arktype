@@ -225,10 +225,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	// a null prototype, so a key like "toString" isn't declared
+	// built from entries onto a null prototype, so it holds "__proto__" but not "toString"
 	propsByKey: Record<Key, Prop.Node | undefined> = Object.assign(
 		Object.create(null),
-		flatMorph(this.props, (i, node) => [node.key, node] as const)
+		Object.fromEntries(this.props.map(node => [node.key, node]))
 	)
 
 	expression: string = structuralExpression(this)
