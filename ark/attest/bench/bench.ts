@@ -85,8 +85,6 @@ const warmupMs = 500
 
 let loopCount = 0
 
-let benchSink: unknown
-
 const AsyncFunction = (async () => {}).constructor as FunctionConstructor
 
 // a loop compiled per bench gives its call site one fn to inline
@@ -154,8 +152,8 @@ class ResultCollector {
 	}
 }
 
-const warnIfUnused = (ctx: BenchContext) => {
-	if (benchSink === undefined) {
+const warnIfUnused = (result: unknown, ctx: BenchContext) => {
+	if (result === undefined) {
 		console.warn(
 			`⚠️  ${ctx.qualifiedName} returned undefined. Return the result it computes so V8 can't optimize the work away.`
 		)
@@ -165,24 +163,26 @@ const warnIfUnused = (ctx: BenchContext) => {
 const loopCalls = (fn: () => unknown, ctx: BenchContext) => {
 	const loop = createLoop(false)
 	const collector = new ResultCollector(ctx)
+	let result: unknown
 	while (!collector.done()) {
 		collector.start()
-		benchSink = loop(fn, collector.callsPerSample)
+		result = loop(fn, collector.callsPerSample)
 		collector.stop()
 	}
-	warnIfUnused(ctx)
+	warnIfUnused(result, ctx)
 	return collector.results
 }
 
 const loopAsyncCalls = async (fn: () => unknown, ctx: BenchContext) => {
 	const loop = createLoop(true)
 	const collector = new ResultCollector(ctx)
+	let result: unknown
 	while (!collector.done()) {
 		collector.start()
-		benchSink = await loop(fn, collector.callsPerSample)
+		result = await loop(fn, collector.callsPerSample)
 		collector.stop()
 	}
-	warnIfUnused(ctx)
+	warnIfUnused(result, ctx)
 	return collector.results
 }
 
