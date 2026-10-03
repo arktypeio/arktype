@@ -12,17 +12,26 @@ import {
 	type mutableNormalizedRootOfKind,
 	type nodeOfKind
 } from "@ark/schema"
-import type { PartialRecord, TypeGuard } from "@ark/util"
+import type { TypeGuard } from "@ark/util"
 import type {
 	IntersectionContext,
 	UnknownIntersectionResult
 } from "./implement.ts"
 import { setImplementationsByKind } from "./kinds.ts"
 
-const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
-let pendingIntersectionCache:
-	| PartialRecord<string, UnknownIntersectionResult>
-	| undefined
+type IntersectionCache = Record<
+	"&" | "|>",
+	WeakMap<BaseNode, WeakMap<BaseNode, UnknownIntersectionResult>>
+>
+
+const createIntersectionCache = (): IntersectionCache => ({
+	"&": new WeakMap(),
+	"|>": new WeakMap()
+})
+
+// keyed by identity, so one scope's operands never get another scope's result
+const intersectionCache = createIntersectionCache()
+let pendingIntersectionCache: IntersectionCache | undefined
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -52,11 +61,12 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		if (l.includesAlias || r.includesAlias) {
 			// relations between aliases are unknown until they're final, so a result reached before is reused only until then
 			if (isResolutionFinal()) pendingIntersectionCache = undefined
-			else cache = pendingIntersectionCache ??= {}
+			else cache = pendingIntersectionCache ??= createIntersectionCache()
 		}
-		const operator = ctx.pipe ? "|>" : "&"
-		const lrCacheKey = `${l.hash}${operator}${r.hash}`
-		if (cache[lrCacheKey] !== undefined) return cache[lrCacheKey]! as never
+		const cacheByL = cache[ctx.pipe ? "|>" : "&"]
+		let cacheByR = cacheByL.get(l)
+		const cached = cacheByR?.get(r)
+		if (cached !== undefined) return cached as never
 
 		const isPureIntersection =
 			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
@@ -77,7 +87,8 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 			else if (r.equals(result)) result = r
 		}
 
-		cache[lrCacheKey] = result
+		if (!cacheByR) cacheByL.set(l, (cacheByR = new WeakMap()))
+		cacheByR.set(r, result)
 		return result as never
 	}) as never
 
