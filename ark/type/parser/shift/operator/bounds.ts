@@ -96,6 +96,11 @@ type shiftComparator<
 	unscanned extends `=${infer nextUnscanned}` ? [`${start}=`, nextUnscanned]
 	:	[start & OneCharComparator, unscanned]
 
+export const writeIncompatibleRangeMessage = (
+	l: BoundKind,
+	r: BoundKind
+): string => `Bound kinds ${l} and ${r} are incompatible`
+
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: number | DateLiteral,
