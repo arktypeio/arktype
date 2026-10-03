@@ -366,6 +366,28 @@ contextualize(() => {
 					)
 				})
 
+				it("pipes to a cyclic type that reads ctx", config => {
+					const types = scope(
+						{
+							node: [
+								{ "next?": "node" },
+								":",
+								(data, ctx) => !("bad" in data) || ctx.mustBe("good")
+							],
+							box: { "inner?": "string.json.parse |> node" }
+						},
+						config
+					).export()
+
+					attest(types.box.allows({ inner: "{}" })).equals(true)
+					attest(types.box({ inner: '{ "next": {} }' })).equals({
+						inner: { next: {} }
+					})
+					attest(
+						types.box({ inner: '{ "next": { "bad": 1 } }' }).toString()
+					).snap('inner.next must be good (was {"bad":1})')
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 

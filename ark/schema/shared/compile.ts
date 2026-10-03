@@ -308,7 +308,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 
 		const pushesPath =
 			this.traversalKind === "Allows" ?
-				node.allowsRequiresTraversal
+				node.allowsRequiresContext && node.allowsRequiresTraversal
 			:	this.requiresContextFor(node)
 		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
