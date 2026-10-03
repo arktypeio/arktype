@@ -110,16 +110,16 @@ const flattenIntoInternal = (
 		}
 		const aliasOf = (path: string) =>
 			`${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
-		mainJs += reexporting([`${name} as ${aliasOf(first)}`], main, first)
-		internalJs += reexporting([`${aliasOf(first)} as ${name}`], internal, main)
+		mainJs += reexporting(`${name} as ${aliasOf(first)}`, main, first)
+		internalJs += reexporting(`${aliasOf(first)} as ${name}`, internal, main)
 		if (isUnambiguous) continue
 		for (const path of others) {
-			mainJs += reexporting([`${name} as ${aliasOf(path)}`], main, path)
+			mainJs += reexporting(`${name} as ${aliasOf(path)}`, main, path)
 			assertMapsToOwnFile(path)
 			if (entryPoints.includes(path)) continue
 			ownFiles[path] ??= `export * from ${specifierOf(path, internal)};\n`
 			ownFiles[path] += reexporting(
-				[`${aliasOf(path)} as ${name}`],
+				`${aliasOf(path)} as ${name}`,
 				path,
 				internal
 			)
@@ -163,8 +163,8 @@ const assertMapsToOwnFile = (path: string) => {
 	}
 }
 
-const reexporting = (specifiers: string[], from: string, path: string) =>
-	`export { ${specifiers.join(", ")} } from ${specifierOf(from, path)};\n`
+const reexporting = (specifier: string, from: string, path: string) =>
+	`export { ${specifier} } from ${specifierOf(from, path)};\n`
 
 const specifierOf = (from: string, to: string) => {
 	const path = relative(dirname(from), to).replace(/\\/g, "/")
