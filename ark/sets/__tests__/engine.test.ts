@@ -4,7 +4,8 @@ import {
 	bootstrap,
 	missingSetEngineMessage,
 	rootSchema,
-	schemaScope
+	schemaScope,
+	writeDuplicateKeyMessage
 } from "@ark/schema"
 import { setEngine } from "arksets"
 
@@ -90,5 +91,17 @@ contextualize(() => {
 				})
 			).throws(missingSetEngineMessage)
 		})
+	})
+
+	it("parsing rejects duplicate keys without it", () => {
+		withoutEngine(() =>
+			attest(() =>
+				rootSchema({
+					domain: "object",
+					required: [{ key: "a", value: "string" }],
+					optional: [{ key: "a", value: "number" }]
+				})
+			).throws(writeDuplicateKeyMessage("a"))
+		)
 	})
 })
