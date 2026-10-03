@@ -1,6 +1,5 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -45,13 +44,19 @@ const implementation: nodeImplementationOf<Min.Declaration> =
 	implementNode<Min.Declaration>({
 		kind: "min",
 		collapsibleKey: "rule",
+		hasAssociatedError: true,
 		keys: {
 			rule: {},
 			exclusive: parseExclusiveKey
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		defaults: defaultErrorWriters.min,
+		defaults: {
+			description: node => {
+				if (node.rule === 0) return node.exclusive ? "positive" : "non-negative"
+				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
+			}
+		},
 		obviatesBasisDescription: true
 	})
 
