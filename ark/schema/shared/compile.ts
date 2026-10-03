@@ -24,6 +24,10 @@ export class CompiledFunction<
 	readonly argNames: args
 	private readonly lines: string[] = []
 
+	get body(): string {
+		return this.lines.join("")
+	}
+
 	constructor(...args: args) {
 		super()
 		this.argNames = args
@@ -54,10 +58,6 @@ export class CompiledFunction<
 
 	index(key: string | number, optional = false): string {
 		return indexPropAccess(`${key}`, optional)
-	}
-
-	get body(): string {
-		return this.lines.join("")
 	}
 
 	line(statement: string): this {
