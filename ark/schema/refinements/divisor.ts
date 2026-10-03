@@ -9,7 +9,6 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -57,7 +56,13 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		defaults: defaultErrorWriters.divisor,
+		hasAssociatedError: true,
+		defaults: {
+			description: node =>
+				node.rule === 1 ? "an integer"
+				: node.rule === 2 ? "even"
+				: `a multiple of ${node.rule}`
+		},
 		obviatesBasisDescription: true
 	})
 

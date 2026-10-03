@@ -1,6 +1,5 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -52,13 +51,19 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 	implementNode<MinLength.Declaration>({
 		kind: "minLength",
 		collapsibleKey: "rule",
+		hasAssociatedError: true,
 		keys: {
 			rule: {
 				parse: createLengthRuleParser("minLength")
 			}
 		},
 		normalize: createLengthSchemaNormalizer("minLength"),
-		defaults: defaultErrorWriters.minLength
+		defaults: {
+			description: node =>
+				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
+			// avoid default message like "must be non-empty (was 0)"
+			actual: data => (data.length === 0 ? "" : `${data.length}`)
+		}
 	})
 
 export class MinLengthNode extends BaseRange<MinLength.Declaration> {

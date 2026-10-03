@@ -25,7 +25,6 @@ import type {
 	declareNode
 } from "../shared/declare.ts"
 import type { ArkError } from "../shared/errors.ts"
-import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	prestructuralKinds,
@@ -119,6 +118,7 @@ export declare namespace Intersection {
 const implementation: nodeImplementationOf<Intersection.Declaration> =
 	implementNode<Intersection.Declaration>({
 		kind: "intersection",
+		hasAssociatedError: true,
 		normalize: rawSchema => {
 			if (isNode(rawSchema)) return rawSchema
 
@@ -211,7 +211,40 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				parse: constraintKeyParser("predicate")
 			}
 		},
-		defaults: defaultErrorWriters.intersection
+		defaults: {
+			description: node => {
+				if (node.children.length === 0) return "unknown"
+				if (node.structure) return node.structure.description
+
+				const childDescriptions: string[] = []
+
+				if (
+					node.basis &&
+					!node.prestructurals.some(r => r.impl.obviatesBasisDescription)
+				)
+					childDescriptions.push(node.basis.description)
+
+				if (node.prestructurals.length) {
+					const sortedRefinementDescriptions = node.prestructurals
+						.slice()
+						// override alphabetization to describe min before max
+						.sort((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
+						.map(r => r.description)
+					childDescriptions.push(...sortedRefinementDescriptions)
+				}
+
+				if (node.inner.predicate) {
+					childDescriptions.push(
+						...node.inner.predicate.map(p => p.description)
+					)
+				}
+
+				return childDescriptions.join(" and ")
+			},
+			expected: source =>
+				`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
+			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
+		}
 	})
 
 export class IntersectionNode extends BaseRoot<Intersection.Declaration> {

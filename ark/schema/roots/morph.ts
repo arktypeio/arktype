@@ -60,6 +60,7 @@ export type Morph<i = never, o = unknown> = (In: i, ctx: Traversal) => o
 const implementation: nodeImplementationOf<Morph.Declaration> =
 	implementNode<Morph.Declaration>({
 		kind: "morph",
+		hasAssociatedError: false,
 		keys: {
 			in: {
 				child: true,

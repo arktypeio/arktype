@@ -1,7 +1,6 @@
 import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -52,6 +51,7 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 	implementNode<Before.Declaration>({
 		kind: "before",
 		collapsibleKey: "rule",
+		hasAssociatedError: true,
 		keys: {
 			rule: {
 				parse: parseDateLimit,
@@ -59,7 +59,10 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 			}
 		},
 		normalize: createDateSchemaNormalizer("before"),
-		defaults: defaultErrorWriters.before
+		defaults: {
+			description: node => `${node.collapsibleLimitString} or earlier`,
+			actual: describeCollapsibleDate
+		}
 	})
 
 export class BeforeNode extends BaseRange<Before.Declaration> {

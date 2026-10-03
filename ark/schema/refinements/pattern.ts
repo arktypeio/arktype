@@ -5,7 +5,6 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { defaultErrorWriters } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -58,8 +57,11 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 			:	schema,
 		obviatesBasisDescription: true,
 		obviatesBasisExpression: true,
+		hasAssociatedError: true,
 		intersectionIsOpen: true,
-		defaults: defaultErrorWriters.pattern
+		defaults: {
+			description: node => `matched by ${node.rule}`
+		}
 	})
 
 export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration> {

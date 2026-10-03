@@ -121,6 +121,7 @@ const structuralExpression = createStructuralWriter("expression")
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
+		hasAssociatedError: false,
 		normalize: schema => {
 			// a set engine rejects duplicate keys in order with its other reduce errors
 			if ($ark.sets) return schema
