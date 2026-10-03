@@ -438,7 +438,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 }
 
-const returnsTransformErrors = (node: BaseNode): boolean =>
+export const returnsTransformErrors = (node: BaseNode): boolean =>
 	node.includesMorph && !node.transformRequiresContext
 
 const isDecidedByAllows = (node: BaseNode): boolean => {

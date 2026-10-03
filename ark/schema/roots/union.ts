@@ -21,7 +21,11 @@ import {
 } from "@ark/util"
 import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
+import {
+	compileSerializedValue,
+	returnsTransformErrors,
+	type NodeCompiler
+} from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
@@ -488,11 +492,7 @@ const invokeTransform = (
 ): string =>
 	member ?
 		`ctx.transformResolution("${member.id}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
-	: (
-		js.requiresContext &&
-		branch.includesMorph &&
-		!branch.transformRequiresContext
-	) ?
+	: js.requiresContext && returnsTransformErrors(branch) ?
 		`ctx.transform(${js.ref(branch)}, data)`
 	:	js.invoke(branch)
 
