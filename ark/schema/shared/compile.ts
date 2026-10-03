@@ -199,7 +199,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return `${reference}(${arg})`
 	}
 
-	// in Apply, a cyclic member is entered as its own resolution, so its data has one state however it's reached
 	invokeMember(node: BaseNode, member: BaseNode = node): this {
 		if (this.traversalKind !== "Apply" || !member.includesAlias)
 			return this.line(this.invoke(node))
@@ -272,7 +271,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			)
 		}
 
-		// in Allows, only a contextual predicate reads the path
 		const pushesPath =
 			this.traversalKind === "Allows" ?
 				node.allowsRequiresTraversal

@@ -70,7 +70,6 @@ import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
 
-// an alias reached while a definition is open or an alias resolves may not resolve as it will
 const isReachFinal = () => !inProgress.definitions && !inProgress.resolutions
 
 const referencesWithReplacements = new WeakSet<object>()
@@ -184,7 +183,6 @@ export abstract class BaseNode<
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
-					// an alias may not resolve while a definition is open, so its reach isn't read
 					(
 						inProgress.definitions ||
 						inProgress.resolutions ||
@@ -207,7 +205,6 @@ export abstract class BaseNode<
 	}
 
 	private _allowsRequiresTraversal: boolean | undefined
-	// a contextual predicate reads ctx, so its Allows can't be passed an alias depth
 	get allowsRequiresTraversal(): boolean {
 		if (this._allowsRequiresTraversal !== undefined)
 			return this._allowsRequiresTraversal

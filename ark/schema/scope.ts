@@ -495,7 +495,6 @@ class TraversalCompiler extends NodeCompiler {
 		const id = typeof node === "string" ? node : node.id
 		const reference = this.linkage.referencesById.get(id)
 		if (!reference) {
-			// an alias's resolution can be built after the unit's references were collected
 			if (isNode(node)) {
 				this.linkage.referencesById.set(id, node)
 				this.linkage.reached.push(node)
@@ -767,7 +766,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		let bound: reference
 
 		if (isNode(reference)) {
-			// an alias resolves in the scope that defined it
 			bound =
 				reference.$ === this || reference.hasKind("alias") ?
 					reference
@@ -832,7 +830,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		context: BaseParseContext,
 		node: BaseRoot
 	): BaseRoot {
-		// an alias references a cyclic definition by its context's id
 		if (context.isReferencedById) {
 			node = withId(node, context.id)
 			nodesByRegisteredId[context.id] = node
@@ -1009,7 +1006,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			if (!this.lazyExports) {
-				// only what an export reaches is compiled, not intermediates of its parse
 				for (const name in this._exportedResolutions) {
 					const resolution = this._exportedResolutions[name]
 					if (isNode(resolution))
@@ -1092,7 +1088,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
 		let node = this.bindReference(this.parseOpenDefinition(def, ctx))
-		// a `this` outside a structural value would resolve to its own type
 		if (node.includesShallowAlias && !inProgress.definitions)
 			node = resolveShallowAliases(node)
 
@@ -1188,9 +1183,7 @@ const bindModuleLazily = (
 const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
 	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
 
-// scope definitions being parsed, outermost first, each at its index
 const openDefinitions: BaseParseContext[] = []
-// parsed members of components whose first definition is still open
 const openMembers: BaseParseContext[] = []
 
 // the definition being parsed reaches context, so it belongs to the component of the shallowest definition context reaches

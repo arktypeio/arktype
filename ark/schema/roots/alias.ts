@@ -38,7 +38,6 @@ export declare namespace Alias {
 	export interface Inner<alias extends string = string> {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
-		// an operation (`&`, `=>` or a generic's name) and its operands, identified together by its reference
 		readonly operator?: string
 		readonly operands?: readonly BaseRoot[]
 	}
@@ -71,7 +70,6 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 				},
 				serialize: s => {
 					const referenced = nodesByRegisteredId[s as NodeId]
-					// a deferred value is serialized as its definition
 					if (hasArkKind(referenced, "root")) return referenced.json
 					return s.startsWith("$") ? s : `$ark.${s}`
 				}
@@ -86,7 +84,6 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 			}
 		},
 		normalize: normalizeAliasSchema,
-		// an alias is identified by its reference alone
 		finalizeInnerJson: json => ({ reference: json.reference }),
 		defaults: {
 			description: node => node.expression
@@ -106,7 +103,6 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		if (this.resolving) {
 			const names = resolvingAliases.map(nameOf)
 			const cycle = names.slice(names.lastIndexOf(nameOf(this)))
-			// starting from the first name, the message doesn't depend on declaration order
 			const start = cycle.indexOf([...cycle].sort()[0])
 			const path = [...cycle.slice(start), ...cycle.slice(0, start)]
 			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
@@ -117,10 +113,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		inProgress.resolutions++
 		try {
 			let resolution = this._resolve()
-			// an alias read while its definition is parsed resolves to itself
 			if (resolution.hasKind("alias")) resolution = resolution.resolution
-			// not cached before the scope resolves, since resolving binds references,
-			// nor for a thunk until no definition is open, since it may reflect an alias mid-parse
 			if (this.resolve ? isFinal : this.$.resolved)
 				this._resolution = resolution
 			return resolution
@@ -139,7 +132,6 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		const id = this.reference as NodeId
 
 		let resolution = nodesByRegisteredId[id]
-		// a scope's definition resolves by name in the scope that defined it
 		if (hasArkKind(resolution, "context") && resolution.alias) {
 			return resolution.phase === "member" ?
 					resolution.resolution!
@@ -217,7 +209,6 @@ Resolution: ${printable(resolution)}`)
 
 	compile(js: NodeCompiler): void {
 		const resolution = this.resolution
-		// invoked first, so the unit declares the resolution's traversals
 		const traverse = js.invoke(resolution)
 		const id = js.referenceToId(resolution.id)
 		if (js.traversalKind === "Transform") {
@@ -250,7 +241,6 @@ Resolution: ${printable(resolution)}`)
 	}
 }
 
-// a scope's alias is displayed by name and an operation by its operands, though each is referenced by id
 const expressionOf = (node: AliasNode): string => {
 	if (node.operands) {
 		const operands = node.operands.map(operand => operand.expression)
@@ -270,7 +260,6 @@ const nameOf = (node: AliasNode): string =>
 
 const resolvingAliases: AliasNode[] = []
 
-// an alias only belongs in a structural value, so a node holding one elsewhere is rebuilt from its resolution
 export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	if (!node.includesShallowAlias) return node
 	if (node.hasKind("alias")) return node.resolution
@@ -293,11 +282,9 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	)
 }
 
-// a definition's node has its context's id, so it shares the identity of an alias referencing it
 export const identityOf = (node: BaseRoot): string =>
 	node.hasKind("alias") && !node.operands ? node.reference : node.id
 
-// a node resolves without parsing once each alias it holds outside a structural value references a resolved definition
 export const isResolvable = (node: BaseRoot): boolean => {
 	if (!node.includesShallowAlias) return true
 	if (node.hasKind("union")) return node.branches.every(isResolvable)

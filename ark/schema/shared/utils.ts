@@ -66,7 +66,6 @@ export const hasArkKind = <kind extends ArkKind>(
 export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "root") || hasArkKind(value, "constraint")
 
-// while a definition is parsed or an alias resolved, an alias may reference a definition that isn't resolved yet
 export const inProgress: { definitions: number; resolutions: number } = {
 	definitions: 0,
 	resolutions: 0
