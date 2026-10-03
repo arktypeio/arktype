@@ -226,16 +226,19 @@ export abstract class BaseNode<
 		flag: "includesTransform" | "includesContextualPredicate"
 	): boolean {
 		if (this[flag] || !this.includesAlias) return this[flag]
-		const reached = new Set<BaseNode>([this])
-		for (const node of reached) {
+		const reached = new Map<string, BaseNode>([[this.id, this]])
+		for (const node of reached.values()) {
 			for (const id in node.referencesById) {
 				const reference = node.referencesById[id]
 				if (reference[flag]) return true
 				if (!reference.hasKind("alias")) continue
 				// an input or output never transforms, and reaches what the alias it views does
-				if (!reference.isIo) reached.add(reference.resolution)
-				else if (flag !== "includesTransform")
-					reached.add((reference.operands![0] as AliasNode).resolution)
+				const resolution =
+					!reference.isIo ? reference.resolution
+					: flag !== "includesTransform" ?
+						(reference.operands![0] as AliasNode).resolution
+					:	undefined
+				if (resolution) reached.set(resolution.id, resolution)
 			}
 		}
 		return false

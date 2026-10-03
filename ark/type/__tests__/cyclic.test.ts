@@ -640,6 +640,20 @@ contextualize(() => {
 					attest(types.holder({})).equals({ a: { b: { v: "d" } } })
 					attest(types.tuple([])).equals([{ b: { v: "e" } }])
 				})
+
+				it("instantiates a submodule's generic through a generic of its own", config => {
+					const sub = scope({ "g<p>": "(p | g<p>)[]" }, config).export()
+					const { a } = scope(
+						{ sub, "h<q>": "sub.g<h<q>>", a: "h<string>" } as never,
+						config
+					).export() as never as Record<string, Type<unknown[]>>
+
+					attest(a.expression).snap("(g<h<string>> | h<string>)[]")
+					attest(a([[], [[]]])).equals([[], [[]]])
+					attest(a([[1]]).toString()).snap(
+						"value at [0][0] must be an array (was number)"
+					)
+				})
 			}
 		)
 	}
