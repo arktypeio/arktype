@@ -19,6 +19,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
+import { $ark } from "../shared/registry.ts"
 import { hasArkKind, inProgress, isResolutionFinal } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
@@ -177,7 +178,19 @@ Resolution: ${printable(resolution)}`)
 		if (!isResolutionFinal() || !this.transforms) return this
 		const operator = ioKind === "in" ? "In" : "Out"
 		return this.$.lazilyResolve(
-			() => (ioKind === "in" ? this.resolution.rawIn : this.resolution.rawOut),
+			() => {
+				const ioOf = (alias: AliasNode) =>
+					ioKind === "in" ? alias.resolution.rawIn : alias.resolution.rawOut
+				const aliases: AliasNode[] = [this]
+				let io = ioOf(this)
+				while (io.hasKind("alias") && io.operator === operator) {
+					const aliased = io.operands![0] as AliasNode
+					if (aliases.includes(aliased)) return $ark.intrinsic.never.internal
+					aliases.push(aliased)
+					io = ioOf(aliased)
+				}
+				return io
+			},
 			`${operator}<${identityOf(this)}>`,
 			operator,
 			[this]
