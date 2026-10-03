@@ -13,13 +13,17 @@ import {
 } from "@ark/schema"
 import { flatMorph, hasKey, printable, throwInternalError } from "@ark/util"
 
+interface JsonSchemaContext extends ToJsonSchema.Context {
+	refs: BaseRoot[]
+}
+
 export const toJsonSchema = (
 	node: BaseRoot,
 	opts: ToJsonSchema.Options
 ): JsonSchema => {
-	const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
-		node.$.resolvedConfig.toJsonSchema,
-		opts
+	const ctx: JsonSchemaContext = Object.assign(
+		mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, opts),
+		{ refs: [] }
 	)
 
 	ctx.useRefs ||= node.isCyclic
@@ -28,42 +32,33 @@ export const toJsonSchema = (
 	const schema: JsonSchema =
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
 
-	const outerRefs = refs
-	refs = []
-	try {
-		Object.assign(schema, toJsonSchemaRecurse(node, ctx))
+	Object.assign(schema, toJsonSchemaRecurse(node, ctx))
 
-		if (ctx.useRefs) {
-			const schemasById: Record<string, JsonSchema> = {}
-			for (let i = 0; i < refs.length; i++)
-				schemasById[refs[i].id] ??= toResolvedJsonSchema(refs[i], ctx)
-			// only nodes a $ref reaches are defined, so a discriminant's cases aren't
-			const defs = flatMorph(node.references, (i, ref) =>
-				ref.id in schemasById ? [ref.id, schemasById[ref.id]] : []
-			)
-			// an alias's resolution or a morph's out can be reached outside
-			// node.references
-			Object.assign(defs, schemasById)
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			if (ctx.target === "draft-07")
-				Object.assign(schema, { definitions: defs })
-			else schema.$defs = defs
-		}
-	} finally {
-		refs = outerRefs
+	if (ctx.useRefs) {
+		const schemasById: Record<string, JsonSchema> = {}
+		for (let i = 0; i < ctx.refs.length; i++)
+			schemasById[ctx.refs[i].id] ??= toResolvedJsonSchema(ctx.refs[i], ctx)
+		// only nodes a $ref reaches are defined, so a discriminant's cases aren't
+		const defs = flatMorph(node.references, (i, ref) =>
+			ref.id in schemasById ? [ref.id, schemasById[ref.id]] : []
+		)
+		// an alias's resolution or a morph's out can be reached outside
+		// node.references
+		Object.assign(defs, schemasById)
+		// draft-2020-12 uses $defs, draft-07 uses definitions
+		if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
+		else schema.$defs = defs
 	}
 
 	return schema
 }
 
-let refs: BaseRoot[] = []
-
 export const toJsonSchemaRecurse = (
 	node: BaseRoot,
-	ctx: ToJsonSchema.Context
+	ctx: JsonSchemaContext
 ): JsonSchema => {
 	if (ctx.useRefs && !alwaysExpandJsonSchema(node)) {
-		if (!refs.includes(node)) refs.push(node)
+		ctx.refs.push(node)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
 		return { $ref: `#/${defsKey}/${node.id}` } as JsonSchema.Ref
@@ -79,7 +74,7 @@ export const alwaysExpandJsonSchema = (node: BaseRoot): boolean =>
 
 const toResolvedJsonSchema = (
 	node: BaseRoot,
-	ctx: ToJsonSchema.Context
+	ctx: JsonSchemaContext
 ): JsonSchema => {
 	const result = innerToJsonSchemaByKind[node.kind](node as never, ctx)
 
@@ -105,7 +100,7 @@ const branchGroupsOf = (node: nodeOfKind<"union">): BaseRoot[] => {
 const innerToJsonSchemaByKind: {
 	[kind in RootKind]: (
 		node: nodeOfKind<kind>,
-		ctx: ToJsonSchema.Context
+		ctx: JsonSchemaContext
 	) => JsonSchema
 } = {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
@@ -203,7 +198,7 @@ const innerToJsonSchemaByKind: {
 const reduceObjectJsonSchema = (
 	node: Structure.Node,
 	schema: JsonSchema.Object,
-	ctx: ToJsonSchema.Context
+	ctx: JsonSchemaContext
 ): JsonSchema.Object => {
 	if (node.props.length) {
 		schema.properties = {}
@@ -321,7 +316,7 @@ const reduceObjectJsonSchema = (
 const reduceSequenceJsonSchema = (
 	node: Sequence.Node,
 	schema: JsonSchema.Array,
-	ctx: ToJsonSchema.Context
+	ctx: JsonSchemaContext
 ): JsonSchema.Array => {
 	const isDraft07 = ctx.target === "draft-07"
 
@@ -413,7 +408,7 @@ const reduceJsonSchemaByKind: {
 	[kind in RefinementKind]: (
 		node: nodeOfKind<kind>,
 		schema: JsonSchemaOperandByKind[kind],
-		ctx: ToJsonSchema.Context
+		ctx: JsonSchemaContext
 	) => JsonSchema
 } = {
 	pattern: (node, base, ctx) => {
