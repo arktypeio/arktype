@@ -97,6 +97,64 @@ contextualize(() => {
 					)
 				})
 
+				// https://github.com/arktypeio/arktype/issues/924
+				it("reports an invalid object at its shortest path", config => {
+					const types = scope(
+						{
+							package: {
+								name: "string",
+								"dependencies?": "package[]",
+								"contributors?": "contributor[]"
+							},
+							contributor: {
+								email: "string.email",
+								"packages?": "package[]"
+							},
+							tree: { id: "number", children: "tree[]" }
+						},
+						config
+					).export()
+					const shared = {
+						name: "shared",
+						contributors: [{ email: "david@sharktypeio" }]
+					}
+					const root = {
+						name: "root",
+						dependencies: [{ name: "a", dependencies: [shared] }, shared]
+					}
+					Object.assign(shared, { dependencies: [root] })
+
+					attest(types.package(root).toString()).snap(
+						'dependencies[1].contributors[0].email must be an email address (was "david@sharktypeio")'
+					)
+
+					const dag = {
+						name: "dag",
+						dependencies: [
+							{
+								name: "a",
+								dependencies: [{ name: "b", dependencies: [shared] }]
+							},
+							{ name: "c", dependencies: [shared] }
+						]
+					}
+
+					attest(types.package(dag).toString()).snap(
+						'dependencies[1].dependencies[0].contributors[0].email must be an email address (was "david@sharktypeio")'
+					)
+
+					const ring = [0, 1, 2].map(id => ({
+						id,
+						children: [] as object[]
+					}))
+					for (const node of ring) node.children.push(...ring)
+					ring[2].id = "x" as never
+
+					attest(types.tree(ring[0]).toString()).snap(
+						"children[2].id must be a number (was a string)"
+					)
+				})
+
 				it("agrees on either side of its bounds", config => {
 					const types = scope(
 						{

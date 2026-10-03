@@ -79,9 +79,11 @@ export class Traversal {
 	private enteredCount = 0
 	// the earliest entered resolution still in progress that the current one assumed valid
 	private earliestAssumed = Number.POSITIVE_INFINITY
-	// states and data of each valid result that holds only if what it assumed does
+	// states, data and path length of each valid result that holds only if what it assumed does
 	private assumed: unknown[] | undefined
 	private reachedInvalid: InvalidResolution | undefined
+	// an invalid object was reached by a path shorter than the one its errors were reported at
+	shortened = false
 	transformedByResolutionId:
 		| { [id in string]?: Map<unknown, unknown> }
 		| undefined
@@ -294,11 +296,16 @@ export class Traversal {
 				this.failBranch(state.error)
 				return false
 			}
-			if (state.reported) {
+			const pathLength = this.path.length
+			if (state.reported && pathLength < state.pathLength) {
+				state.pathLength = pathLength
+				this.shortened = true
+			}
+			if (state.reported || pathLength > state.pathLength) {
 				this.reachedInvalid ??= state
 				return false
 			}
-			// its errors were discarded with the branch it failed in, so it's traversed again
+			// its errors were discarded with a branch, or belong at this shortest path, so it's traversed again
 		}
 		if (!this.tracksResolutions) {
 			if (
@@ -309,8 +316,15 @@ export class Traversal {
 		} else
 			(states ?? (this.seen[id] = new Map())).set(data, ++this.enteredCount)
 		// frames are reused by depth, so entering doesn't allocate
-		const frame = ((this.resolving ??= [])[this.resolvingDepth++] ??=
-			{} as ResolvingFrame)
+		const frame = ((this.resolving ??= [])[this.resolvingDepth++] ??= {
+			id,
+			data,
+			entered: 0,
+			errorCount: 0,
+			outerReachedInvalid: undefined,
+			outerEarliestAssumed: 0,
+			assumedLength: 0
+		})
 		frame.id = id
 		frame.data = data
 		frame.entered = this.enteredCount
@@ -334,45 +348,59 @@ export class Traversal {
 			allowed ??
 			(reachedInvalid === undefined &&
 				this.currentErrorCount === frame.errorCount)
+		if (valid && !this.tracksResolutions) return true
+		const data = frame.data
 		const states = this.seen[frame.id]
+		// a primitive has no identity, so each place it's reached reports its own errors
+		if (typeof data === "object" ? data === null : typeof data !== "function") {
+			if (this.tracksResolutions) {
+				this.earliestAssumed = frame.outerEarliestAssumed
+				states!.delete(data)
+			}
+			return valid
+		}
+		const state: ResolutionState =
+			valid || allowed === false ?
+				valid
+			:	{
+					error:
+						reachedInvalid?.error ??
+						this.currentBranch?.error ??
+						this.errors[this.errors.length - 1],
+					reported: !this.currentBranch,
+					pathLength:
+						this.currentBranch ? Number.POSITIVE_INFINITY : this.path.length
+				}
 		if (this.tracksResolutions) {
 			const earliestAssumed = this.earliestAssumed
 			this.earliestAssumed = frame.outerEarliestAssumed
 			const assumed = this.assumed!
 			if (valid && earliestAssumed < frame.entered) {
-				assumed.push(states, frame.data)
+				assumed.push(states, data, this.path.length)
 				if (earliestAssumed < this.earliestAssumed)
 					this.earliestAssumed = earliestAssumed
 				return true
 			}
 			// nothing it assumed is in progress, so each result that assumed it settles with it
-			for (let i = frame.assumedLength; i < assumed.length; i += 2) {
-				const assumedStates = assumed[i] as Map<unknown, ResolutionState>
-				if (valid) assumedStates.set(assumed[i + 1], true)
-				else assumedStates.delete(assumed[i + 1])
+			for (let i = frame.assumedLength; i < assumed.length; i += 3) {
+				;(assumed[i] as Map<unknown, ResolutionState>).set(
+					assumed[i + 1],
+					typeof state === "boolean" || !state.reported ?
+						state
+					:	{
+							error: state.error,
+							reported: true,
+							pathLength: assumed[i + 2] as number
+						}
+				)
 			}
 			assumed.length = frame.assumedLength
-		}
-		const data = frame.data
-		// a primitive has no identity, so each place it's reached reports its own errors
-		if (typeof data === "object" ? data === null : typeof data !== "function") {
-			if (this.tracksResolutions) states!.delete(data)
-			return valid
-		}
-		if (valid || allowed === false) {
-			if (this.tracksResolutions) states!.set(data, valid)
-			return valid
-		}
-		const invalid: InvalidResolution = {
-			error:
-				reachedInvalid?.error ??
-				this.currentBranch?.error ??
-				this.errors[this.errors.length - 1],
-			reported: !this.currentBranch
-		}
-		;(states ?? (this.seen[frame.id] = new Map())).set(data, invalid)
-		if (invalid.reported) this.reachedInvalid ??= invalid
-		return false
+			states!.set(data, state)
+		} else if (typeof state === "object")
+			(states ?? (this.seen[frame.id] = new Map())).set(data, state)
+		if (typeof state === "object" && state.reported)
+			this.reachedInvalid ??= state
+		return valid
 	}
 
 	get currentErrorCount(): number {
@@ -528,24 +556,38 @@ export const aliasVisits = {
 
 const untrackedBound = noSuggest("untrackedBound")
 
-// a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
+// once tracked, a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
 export const applyCyclic = (
 	id: string,
 	apply: TraverseApply,
 	data: unknown,
 	config: ResolvedConfig
 ): Traversal => {
-	const ctx = new Traversal(data, config)
+	let ctx = new Traversal(data, config)
 	ctx.tracksResolutions = false
 	try {
-		applyResolution(id, apply, data, ctx)
-		return ctx
+		// data reaching its root again is cyclic, so untracked it exceeds the bounds
+		apply(data, ctx)
 	} catch (e) {
 		if (e !== untrackedBound) throw e
+		ctx = new Traversal(data, config)
+		applyResolution(id, apply, data, ctx)
 	}
-	const tracked = new Traversal(data, config)
-	applyResolution(id, apply, data, tracked)
-	return tracked
+	while (ctx.shortened) {
+		const seen = ctx.seen
+		// each invalid object is traversed again at the shortest path reaching it
+		for (const k in seen) {
+			const states = seen[k]!
+			for (const [value, state] of states) {
+				if (typeof state === "object" && state.reported) state.reported = false
+				else states.delete(value)
+			}
+		}
+		ctx = new Traversal(data, config)
+		ctx.seen = seen
+		applyResolution(id, apply, data, ctx)
+	}
+	return ctx
 }
 
 const applyResolution = (
@@ -579,6 +621,8 @@ type ResolutionState = number | boolean | InvalidResolution
 interface InvalidResolution {
 	error: ArkError
 	reported: boolean
+	// reported at this length, else traversed again at a path no longer than it
+	pathLength: number
 }
 
 interface ResolvingFrame {
