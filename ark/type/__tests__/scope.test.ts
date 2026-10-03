@@ -250,6 +250,16 @@ contextualize(() => {
 		attest(out).snap({ pear: { tasty: true } })
 	})
 
+	it("cross-scope intersection", () => {
+		const configured = scope({}, { required: { message: () => "configured" } })
+		configured.type({ x: "string" }).and({ y: "number" })
+		const T = scope({}).type({ x: "string" }).and({ y: "number" })
+		attest(T.internal.$ === configured.internal).equals(false)
+		attest(T({}).toString()).snap(
+			"x must be a string (was missing)\ny must be a number (was missing)"
+		)
+	})
+
 	describe("cyclic", () => {
 		it("base", () => {
 			const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()
