@@ -4,7 +4,12 @@ import {
 	type arkKind,
 	type flatResolutionsOf
 } from "@ark/schema"
-import { defineLazily, type Brand, type inferred } from "@ark/util"
+import {
+	defineLazily,
+	defineProperties,
+	type Brand,
+	type inferred
+} from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { DeclarationParser } from "../declare.ts"
 import type { FnParser } from "../fn.ts"
@@ -82,10 +87,7 @@ export const ark: Scope<Ark> = scope(
 
 export const keywords: Module<Ark> = ark.internal.exportLazily() as never
 
-Object.defineProperties(
-	$arkTypeRegistry.ambient,
-	Object.getOwnPropertyDescriptors(keywords)
-)
+defineProperties($arkTypeRegistry.ambient, keywords)
 
 const typeAttachments = {} as Ark.boundTypeAttachments<any>
 
@@ -112,10 +114,10 @@ for (const [k, resolve] of Object.entries({
 
 $arkTypeRegistry.typeAttachments = typeAttachments
 
-export const type: TypeParser<{}> = Object.defineProperties(
+export const type: TypeParser<{}> = defineProperties(
 	ark.type,
 	// future scopes bind these from the registry when instantiating TypeParsers
-	Object.getOwnPropertyDescriptors(typeAttachments)
+	typeAttachments
 ) as never
 
 export declare namespace type {

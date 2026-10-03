@@ -2,7 +2,7 @@ import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
 import { cached, type Fn } from "./functions.ts"
 import type { satisfy } from "./generics.ts"
-import { isKeyOf } from "./records.ts"
+import { defineProperties, isKeyOf } from "./records.ts"
 
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -120,13 +120,10 @@ export interface builtinConstructors
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors: builtinConstructors = Object.defineProperties(
-	{ ...ecmascriptConstructors },
-	{
-		...Object.getOwnPropertyDescriptors(platformConstructors),
-		...Object.getOwnPropertyDescriptors(typedArrayConstructors)
-	}
-) as never
+export const builtinConstructors: builtinConstructors = defineProperties(
+	defineProperties({ ...ecmascriptConstructors }, platformConstructors),
+	typedArrayConstructors
+)
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
