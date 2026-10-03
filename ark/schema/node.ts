@@ -482,11 +482,6 @@ export abstract class BaseNode<
 			:	(this._rawIn = rawIn)
 	}
 
-	keepInScope(): void {
-		if (this.$.nodesByHash.get(this.hash) === this)
-			this.$.nodesByHash.pin(this.hash, this)
-	}
-
 	private _out: unknown
 	/** rawOut should be used internally instead */
 	get out(): unknown {

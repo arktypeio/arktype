@@ -342,8 +342,6 @@ const precompile = (
 		node.traverseApply = traverseApply
 		if (traverseTransform) node.traverseTransform = traverseTransform
 		node.precompilation = precompilation
-		// kept so an unfinalized parse can't return an uncompiled copy reporting differently
-		if (reportsDifferentlyCompiled(node)) node.keepInScope()
 		if (node.isRoot()) {
 			node.rootApply = (data, onFail) =>
 				(node.rootApply = compileRootApply(node))(data, onFail)
@@ -352,13 +350,6 @@ const precompile = (
 	}
 
 	return precompilation
-}
-
-// compiled traversal reports -0 as 0
-const reportsDifferentlyCompiled = (node: BaseNode): boolean => {
-	for (const k in node.inner)
-		if (Object.is((node.inner as Dict)[k], -0)) return true
-	return false
 }
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
@@ -586,9 +577,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	resolved = false
-	readonly nodesByHash: WeakCache<BaseNode> = new WeakCache(
-		this.holdsNodesWeakly
-	)
+	readonly nodesByHash: WeakCache<BaseNode> = new WeakCache()
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -633,10 +622,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 					:	registerParseContext(this.createParseContext(preparsed)).id
 			}
 		}
-	}
-
-	protected get holdsNodesWeakly(): boolean {
-		return false
 	}
 
 	get intrinsic(): Omit<typeof $ark.intrinsic, `json${string}`> {
