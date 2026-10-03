@@ -48,8 +48,6 @@ import {
 	unionItemsInvalidData
 } from "./scenarios.ts"
 
-// pnpm test runs check(), which would slow zod's later benches here
-
 bench("moltar allows (arktype)", () =>
 	Moltar.arktype.allows(moltarData)
 ).median([8.03, "ns"])
