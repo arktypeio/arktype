@@ -378,11 +378,6 @@ contextualize(() => {
 				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
-			const expectedCyclicJson = types.bork.internal.select({
-				kind: "alias",
-				method: "assertFind"
-			}).json
-
 			attest(types.arf.json).equals({
 				domain: "object",
 				required: [{ key: "b", value: `$ark.${types.bork.internal.id}` }]
@@ -401,12 +396,12 @@ contextualize(() => {
 				.snap(`b.c.b must be an object (was missing)
 b.c.c must be an object (was missing)`)
 
-			attest(types.bork.json).snap({
+			attest(types.bork.json).equals({
 				domain: "object",
 				required: [
 					{
 						key: "c",
-						value: expectedCyclicJson
+						value: `$ark.${types.arf.internal.id}&${types.bork.internal.id}`
 					}
 				]
 			})

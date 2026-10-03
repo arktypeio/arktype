@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeShallowCycleErrorMessage } from "@ark/schema"
+import { writeIndiscriminableMorphMessage } from "arksets"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -398,6 +399,55 @@ contextualize(() => {
 		).throws(writeShallowCycleErrorMessage("a", ["a", "b"]))
 		attest(() => type("this | string" as never)).throws(
 			"has a shallow resolution cycle"
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1476
+	it("keys an intersection of cyclic types by its operands", () => {
+		const types = scope({
+			a: { x: "b & a", "z?": "a & b & a" },
+			b: { y: "a & b" }
+		}).export()
+
+		attest(types.a.expression).snap("{ x: $a&$b, z?: $a&$b }")
+		attest(types.b.json).equals({
+			domain: "object",
+			required: [
+				{
+					key: "y",
+					value: `$ark.${types.a.internal.id}&${types.b.internal.id}`
+				}
+			]
+		})
+	})
+
+	it("intersects a cyclic type with a primitive", () => {
+		const list = scope({ list: "string | list[]" }).export().list
+		const strings = list.and("string[]")
+
+		attest(strings.expression).snap("string[]")
+		attest(strings.allows([1])).equals(false)
+	})
+
+	it("relates a cyclic branch of a morph union by its resolution", () => {
+		const types = scope({
+			a: { v: "a | null" },
+			b: { v: "string", m: "string = 'x'" },
+			u: "a | b"
+		}).export()
+
+		attest(types.u({ v: "s" })).equals({ v: "s", m: "x" })
+		attest(() =>
+			scope({
+				a: { p: "string", d: "string = 'd'" },
+				b: { kind: "'b'", p: "c | string" },
+				c: "(a | b)[]"
+			}).export()
+		).throws(
+			writeIndiscriminableMorphMessage(
+				'{ kind: "b", p: $c | string }',
+				'{ p: string, d: string = "d" }'
+			)
 		)
 	})
 
