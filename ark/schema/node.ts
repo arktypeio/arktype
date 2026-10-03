@@ -58,6 +58,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark, registryName } from "./shared/registry.ts"
 import {
+	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
 	Traversal,
@@ -182,10 +183,7 @@ export abstract class BaseNode<
 			this.allowsRequiresContext ?
 				data =>
 					allowsUntracked(this, data) ??
-					this.traverseAllows(
-						data as never,
-						new Traversal(data, this.$.resolvedConfig)
-					)
+					allowsInContext(this, data, this.$.resolvedConfig)
 			:	data => (this.traverseAllows as any)(data)
 	}
 
@@ -372,11 +370,7 @@ export abstract class BaseNode<
 					return (data, onFail) => {
 						const untracked = allowsUntracked(this, data)
 						const allowed =
-							untracked ??
-							this.traverseAllows(
-								data as never,
-								new Traversal(data, this.$.resolvedConfig)
-							)
+							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
 						if (!allowed) return this.applyRoot(data).finalize(onFail)
 						const ctx = new Traversal(data, this.$.resolvedConfig)
 						ctx.tracksTransforms = untracked === undefined

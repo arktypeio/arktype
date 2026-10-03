@@ -246,6 +246,21 @@ contextualize(() => {
 		}
 	})
 
+	it("reports an error a predicate adds while returning true", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const Positive = $.type("number").narrow((n, ctx) => {
+				if (n <= 0) ctx.error("positive")
+				return true
+			})
+			const T = $.type({ n: Positive, s: "string.trim" })
+
+			attest(T({ n: -1, s: " x " }).toString()).snap(
+				"n must be positive (was -1)"
+			)
+			attest(Positive.allows(-1)).equals(false)
+		}
+	})
+
 	it("reports a morph's error alike whether or not its input is valid", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],
