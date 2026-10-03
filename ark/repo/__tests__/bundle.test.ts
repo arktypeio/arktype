@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
 	writeFileSync
@@ -96,21 +97,25 @@ contextualize(() => {
 		for (const dir of packages.splice(0)) rmSync(dir, { recursive: true })
 	})
 
-	it("exports every module's names from the main entry", async () => {
+	it("exports every module's names from the internal entry", async () => {
 		await import(
 			pathToFileURL(join(packageOf(modules), "out", "index.js")).href
 		)
 		const unbundledOrder = evaluated()
 
 		attest(() => bundleIn(packageOf(modules))).throws(
-			'sub/f exports a name the main entry binds otherwise, so ./internal/sub/f.ts must be { "ark-ts": "./sub/f.ts", "types": "./out/sub/f.d.ts", "default": "./out/sub/f.js" }'
+			'sub/f exports a name internal.js binds otherwise, so ./internal/sub/f.ts must be { "ark-ts": "./sub/f.ts", "types": "./out/sub/f.d.ts", "default": "./out/sub/f.js" }'
 		)
 		const dir = packageOf(modules, ["sub/f"])
 		const fromOut = bundleIn(dir)
 
 		const root: Namespace = await import(fromOut("index.js"))
-		attest(evaluated()).equals([...unbundledOrder!.slice(0, -1), "u", "index"])
-		attest(Object.keys(root)).snap([
+		attest(evaluated()).equals(unbundledOrder)
+		attest(Object.keys(root)).snap(["i", "j", "x", "y"])
+
+		const internal: Namespace = await import(fromOut("internal.js"))
+		attest(evaluated()).equals(["u"])
+		attest(Object.keys(internal)).snap([
 			"K",
 			"apart",
 			"apart$sub$f",
@@ -124,17 +129,30 @@ contextualize(() => {
 			"x",
 			"y"
 		])
-		attest(root.apart.from).equals("a")
-		attest(root.local).is(root.x)
-		attest(root.renamed).is(root.y)
-		attest(root.unreached.from).equals("u")
+		attest(internal.x).is(root.x)
+		attest(internal.apart.from).equals("a")
+		attest(internal.local).is(root.x)
+		attest(internal.renamed).is(root.y)
+		attest(internal.unreached.from).equals("u")
 
 		attest(readFileSync(join(dir, "out", "sub", "f.js"), "utf8")).snap(
-			'export * from "../index.js";\nexport { apart$sub$f as apart } from "../index.js";\n'
+			'export * from "../internal.js";\nexport { apart$sub$f as apart } from "../internal.js";\n'
 		)
 		const f: Namespace = await import(fromOut("sub/f.js"))
 		attest(f.apart.from).equals("f")
 		attest(f.x).is(root.x)
+	})
+
+	it("leaves whole a main entry that exports every module's names", () => {
+		const dir = packageOf({
+			"index.js": `export * from "./a.js";`,
+			"a.js": `export const a = {};`
+		})
+		bundleIn(dir)
+		attest(readdirSync(join(dir, "out"))).equals(["index.js", "internal.js"])
+		attest(readFileSync(join(dir, "out", "internal.js"), "utf8")).snap(
+			'export * from "./index.js";\n'
+		)
 	})
 
 	it("rejects rebinding a main entry export", () => {
@@ -183,7 +201,7 @@ contextualize(() => {
 			"a.js": `export const x = {}; export default {};`
 		})
 		attest(() => bundleIn(defaulting)).throws(
-			"The main entry can't export default for a, which must export it by name"
+			"internal.js can't export default for a, which must export it by name"
 		)
 	})
 })

@@ -95,6 +95,10 @@ if (
 	)
 }
 
+// a consumer's `export *` of arktype and another package drops any name both export
+if ("string" in (await importBuilt("arktype")))
+	throw new Error("⚠️  arktype's root exports its modules' names.")
+
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
 
