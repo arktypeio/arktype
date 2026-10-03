@@ -187,7 +187,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	skipInlineInstantiations: false,
 	tsVersions: "typescript",
 	benchPercentThreshold: 20,
-	benchErrorOnThresholdExceeded: "types",
+	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
 	testDeclarationAliases: ["bench", "it", "test"],
 	formatter: `npm exec --no -- prettier --write`,
@@ -297,10 +297,10 @@ bench("keyword", () => {
 > [!WARNING]  
 > Be sure your baseline expression is not identical to an expression you are using in any of your benchmarks. If it is, the individual benchmarks will reuse its cached types, leading to reduced (or 0) instantiations.
 
-A type bench fails if it exceeds its baseline by more than `benchPercentThreshold` (20% by default). A runtime bench only logs it, since its timing varies too much between runs to fail CI on. To fail runtime benches as well, set `benchErrorOnThresholdExceeded` to `true` (or `"runtime"` for runtime benches only):
+A bench fails if it exceeds its baseline by more than `benchPercentThreshold` (20% by default). Runtime timings vary between runs, so to fail only type benches, set `benchErrorOnThresholdExceeded` to `"types"`:
 
 ```
- tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded true --benchPercentThreshold 10
+ tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded types --benchPercentThreshold 10
 ```
 
 To run some of a file's benches, pass `filter` (e.g. `ATTEST_filter=moltar`). A bench runs if any segment of its path starts with it.
