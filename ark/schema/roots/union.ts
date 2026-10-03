@@ -48,6 +48,7 @@ import {
 import { missingSetEngineMessage } from "../shared/sets.ts"
 import {
 	applyResolution,
+	type Traversal,
 	type TraverseAllows,
 	type TraverseApply,
 	type TraverseTransform
@@ -258,8 +259,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
 		const discriminant = this.compiledDiscriminant
-		if (!discriminant)
-			return this.branches.some(b => b.traverseAllows(data, ctx))
+		if (!discriminant) {
+			return this.branches.some(b =>
+				b.allowsRequiresTraversal ?
+					(ctx as Traversal).allows(b, data)
+				:	b.traverseAllows(data, ctx)
+			)
+		}
 		const caseNode =
 			discriminant.cases[
 				caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
@@ -418,8 +424,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
 			)
 		} else if (js.traversalKind === "Allows") {
-			for (const branch of this.branches)
-				js.if(`${js.invoke(branch)}`, () => js.return(true))
+			for (const branch of this.branches) {
+				// an error a branch's predicate adds through ctx fails only that branch
+				js.if(
+					branch.allowsRequiresTraversal ?
+						`ctx.allows(${js.ref(branch)}, data)`
+					:	js.invoke(branch),
+					() => js.return(true)
+				)
+			}
 			js.return(false)
 		} else {
 			for (const branch of this.branches) {

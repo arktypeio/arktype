@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
+import { registeredReference, type Traversal } from "@ark/schema"
 import type { equals } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
@@ -309,5 +309,25 @@ contextualize(() => {
 			"values[1] must be valid according to an anonymous predicate (was -1)"
 		)
 		attest(callCount).equals(3)
+	})
+
+	it("allows a union whose other branch's predicate added an error", () => {
+		const notBad = (o: object, ctx: Traversal) =>
+			!("bad" in o) || ctx.mustBe("not bad")
+		const data = { x: { bad: 1 }, y: "s" }
+		const T = type({ x: type("object").narrow(notBad) }).or({ y: "string" })
+
+		attest(T.allows(data)).equals(true)
+		attest(T(data)).equals(data)
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{
+					c: [{ "p?": "c" }, ":", notBad],
+					u: [{ x: "c" }, "|", { y: "string" }]
+				},
+				{ jitless }
+			).export()
+			attest(types.u.allows(data)).equals(true)
+		}
 	})
 })
