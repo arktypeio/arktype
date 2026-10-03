@@ -152,6 +152,21 @@ contextualize(() => {
 		attest(T.allows([1])).equals(false)
 	})
 
+	it("intersects disjoint arrays with props as an empty array with them", () => {
+		const WithProp = type("string[]").and({ "p0?": "string" })
+		const T = type("number[]").and(WithProp)
+
+		attest(T.json).equals(type([]).and({ "p0?": "string" }).json)
+		attest(T.allows(Object.assign([], { p0: 5 }))).equals(false)
+		attest(type("number[]").or(WithProp).expression).snap(
+			"{ p0?: string } & string[] | number[]"
+		)
+		attest(WithProp.extends("number[]")).equals(false)
+		attest(type(["number[]", "&", { "x?": "1" }]).and("string[]").json).equals(
+			type([]).and({ "x?": "1" }).json
+		)
+	})
+
 	it("array with props", () => {
 		const T = type("Array").and({ name: "string" })
 
