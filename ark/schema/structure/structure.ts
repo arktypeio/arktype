@@ -615,12 +615,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		if (this.undeclared !== "delete") return out
 		const undeclaredKeys = this.undeclaredKeysOf(data)
-		if (out === data && !undeclaredKeys.length) return out
 		// assigning "__proto__" to a built result would set its prototype
 		if (
 			Object.getPrototypeOf(out) !== Object.prototype ||
 			Object.prototype.hasOwnProperty.call(out, "__proto__")
 		) {
+			if (!undeclaredKeys.length) return out
 			if (out === data) out = this.copy(data)
 			for (const k of undeclaredKeys) delete out[k as never]
 			return out
@@ -918,50 +918,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedProps: Prop.Node[],
 		outMayBeCopied: boolean
 	): void {
-		const unchanged: string[] = []
-		if (outMayBeCopied) unchanged.push("out === data")
-		for (let i = 0; i < transformedProps.length; i++) {
-			unchanged.push(
-				js.compareTransformed(
-					this.transformsOf(transformedProps[i]),
-					`transformed${i}`,
-					"===",
-					`value${i}`
-				)
-			)
-		}
-		for (const node of this.defaultable)
-			unchanged.push(`${node.serializedKey} in data`)
-		if (this.sequence?.defaultables) {
-			unchanged.push(
-				`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
-			)
-		}
-		const stringKeys = this.props.filter(prop => typeof prop.key === "string")
-		const breakIfUndeclared = (declaresKey: string) =>
-			declaresKey === "false" ?
-				js.line("break undeclared")
-			:	js.if(`!(${declaresKey})`, () => js.line("break undeclared"))
-		const label =
-			unchanged.length ?
-				`undeclared: if (${unchanged.join(" && ")})`
-			:	"undeclared:"
-		js.block(label, () => {
-			js.forIn("data", () => {
-				if (stringKeys.length) {
-					js.block("switch (k)", () =>
-						js.line(
-							`${stringKeys.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
-						)
-					)
-				}
-				return breakIfUndeclared(this._compileDeclaresKey(js, false))
-			})
-			js.block("for (const k of Object.getOwnPropertySymbols(data))", () =>
-				breakIfUndeclared(this._compileDeclaresKey(js))
-			)
-			return js.return("data")
-		})
 		const deleteFromCopy = (objectCopy?: string) => {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const prop = transformedProps[i]
@@ -980,6 +936,51 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
 		}
 		if (this.sequence) {
+			// an array is scanned either way, so it's returned as is if nothing is undeclared
+			const unchanged: string[] = []
+			if (outMayBeCopied) unchanged.push("out === data")
+			for (let i = 0; i < transformedProps.length; i++) {
+				unchanged.push(
+					js.compareTransformed(
+						this.transformsOf(transformedProps[i]),
+						`transformed${i}`,
+						"===",
+						`value${i}`
+					)
+				)
+			}
+			for (const node of this.defaultable)
+				unchanged.push(`${node.serializedKey} in data`)
+			if (this.sequence.defaultables) {
+				unchanged.push(
+					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
+				)
+			}
+			const stringKeys = this.props.filter(prop => typeof prop.key === "string")
+			const breakIfUndeclared = (declaresKey: string) =>
+				declaresKey === "false" ?
+					js.line("break undeclared")
+				:	js.if(`!(${declaresKey})`, () => js.line("break undeclared"))
+			const label =
+				unchanged.length ?
+					`undeclared: if (${unchanged.join(" && ")})`
+				:	"undeclared:"
+			js.block(label, () => {
+				js.forIn("data", () => {
+					if (stringKeys.length) {
+						js.block("switch (k)", () =>
+							js.line(
+								`${stringKeys.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
+							)
+						)
+					}
+					return breakIfUndeclared(this._compileDeclaresKey(js, false))
+				})
+				js.block("for (const k of Object.getOwnPropertySymbols(data))", () =>
+					breakIfUndeclared(this._compileDeclaresKey(js))
+				)
+				return js.return("data")
+			})
 			deleteFromCopy()
 			return
 		}
