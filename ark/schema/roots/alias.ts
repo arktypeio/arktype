@@ -254,7 +254,7 @@ Resolution: ${printable(resolution)}`)
 		const id = resolution.id
 		if (js.traversalKind === "Transform") {
 			js.return(
-				`ctx.transformResolution("${id}", data, ${js.referenceToId(resolution.id, { kind: "Transform" })})`
+				`ctx.transformResolution("${id}", data, ${js.referenceToId(id, { kind: "Transform" })})`
 			)
 			return
 		}
@@ -269,7 +269,7 @@ Resolution: ${printable(resolution)}`)
 			js.return(traverse)
 			return
 		}
-		const allows = js.referenceToId(resolution.id, { kind: "Allows" })
+		const allows = js.referenceToId(id, { kind: "Allows" })
 		const visits = js.ref(aliasVisits)
 		js.if(`typeof ctx === "number"`, () =>
 			js.return(
