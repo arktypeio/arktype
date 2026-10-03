@@ -544,7 +544,7 @@ export abstract class BaseNode<
 		return (
 			(this.includesAlias || rNode.includesAlias) &&
 			isResolutionFinal() &&
-			isBisimilar(this, rNode, { assumed: [], failed: new Set() })
+			isMutuallySimulated(this, rNode)
 		)
 	}
 
@@ -834,13 +834,13 @@ export abstract class BaseNode<
 	}
 }
 
-type Bisimulation = {
+type Simulation = {
 	assumed: string[]
 	failed: Set<string>
 }
 
-// cyclic nodes are equal if they unfold to the same tree, so a pair of aliases is assumed equal while it's compared
-const isBisimilar = (l: BaseNode, r: BaseNode, ctx: Bisimulation): boolean => {
+// a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related while it's compared
+const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 	if (l.innerHash === r.innerHash) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
 		const pair = `${l.id}|${r.id}`
@@ -848,7 +848,7 @@ const isBisimilar = (l: BaseNode, r: BaseNode, ctx: Bisimulation): boolean => {
 		if (ctx.assumed.includes(pair)) return true
 		const assumedCount = ctx.assumed.push(pair) - 1
 		if (
-			isBisimilar(
+			isSimulated(
 				l.hasKind("alias") ? l.resolution : l,
 				r.hasKind("alias") ? r.resolution : r,
 				ctx
@@ -858,6 +858,17 @@ const isBisimilar = (l: BaseNode, r: BaseNode, ctx: Bisimulation): boolean => {
 		ctx.assumed.length = assumedCount
 		ctx.failed.add(pair)
 		return false
+	}
+	// branches of an unreduced union may subsume each other, so each need only be within one on the other side
+	if (l.hasKind("union") && !l.inner.ordered)
+		return l.branches.every(branch => isSimulated(branch, r, ctx))
+	if (r.hasKind("union") && !r.inner.ordered) {
+		return r.branches.some(branch => {
+			const assumedCount = ctx.assumed.length
+			if (isSimulated(l, branch, ctx)) return true
+			ctx.assumed.length = assumedCount
+			return false
+		})
 	}
 	if (l.kind !== r.kind || l.innerEntries.length !== r.innerEntries.length)
 		return false
@@ -871,34 +882,30 @@ const isBisimilar = (l: BaseNode, r: BaseNode, ctx: Bisimulation): boolean => {
 				return false
 			continue
 		}
-		const lChildren = liftArray(v as listable<BaseNode>)
-		const rChildren = liftArray((r.inner as Dict)[k] as listable<BaseNode>)
-		if (lChildren.length !== rChildren.length) return false
-		if (l.hasKind("union") && !l.inner.ordered) {
+		// a broader index signature constrains more keys, so signatures must match exactly
+		if (k === "signature") {
 			if (
-				!lChildren.every(lChild => hasBisimilar(lChild, rChildren, ctx)) ||
-				!rChildren.every(rChild => hasBisimilar(rChild, lChildren, ctx))
+				(v as BaseNode).innerHash !==
+				((r.inner as Dict)[k] as BaseNode).innerHash
 			)
 				return false
-		} else if (
-			!lChildren.every((lChild, i) => isBisimilar(lChild, rChildren[i], ctx))
+			continue
+		}
+		const lChildren = liftArray(v as listable<BaseNode>)
+		const rChildren = liftArray((r.inner as Dict)[k] as listable<BaseNode>)
+		if (
+			lChildren.length !== rChildren.length ||
+			!lChildren.every((lChild, i) => isSimulated(lChild, rChildren[i], ctx))
 		)
 			return false
 	}
 	return true
 }
 
-const hasBisimilar = (
-	node: BaseNode,
-	candidates: readonly BaseNode[],
-	ctx: Bisimulation
-): boolean =>
-	candidates.some(candidate => {
-		const assumedCount = ctx.assumed.length
-		if (isBisimilar(node, candidate, ctx)) return true
-		ctx.assumed.length = assumedCount
-		return false
-	})
+const isMutuallySimulated = (l: BaseNode, r: BaseNode): boolean => {
+	const ctx: Simulation = { assumed: [], failed: new Set() }
+	return isSimulated(l, r, ctx) && isSimulated(r, l, ctx)
+}
 
 const referencesThroughAliases = (node: BaseNode): BaseNode[] => {
 	const references = new Set(node.references)

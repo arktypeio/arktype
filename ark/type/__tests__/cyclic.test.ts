@@ -738,6 +738,21 @@ contextualize(() => {
 		attest(types.group.extends(types.part)).equals(true)
 	})
 
+	it("equates a cyclic union with its reduction", () => {
+		const types = scope({
+			a: "b[] | a[]",
+			b: "a[]",
+			c: "d | e | string",
+			d: ["boolean", ["c", "?"]],
+			e: ["boolean", ["d", "?"]]
+		} as never).export() as never as Record<string, Type>
+
+		attest(types.a.or(types.a).expression).snap("$a[]")
+		attest(types.a.or(types.a).equals(types.a)).equals(true)
+		attest(types.c.or(types.c).equals(types.c)).equals(true)
+		attest(types.c.equals(types.d)).equals(false)
+	})
+
 	it("relates cyclic types whose props are disjoint from an index", () => {
 		const { b: l } = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },
