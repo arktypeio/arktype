@@ -50,12 +50,16 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
-	errorContext: NodeErrorContextInput<"required"> = Object.freeze({
-		code: "required",
-		missingValueDescription: this.value.defaultShortDescription,
-		relativePath: [this.key],
-		meta: this.meta
-	})
+	private _errorContext: NodeErrorContextInput<"required"> | undefined
+	// an alias is described by its resolution, which may not exist until the node is traversed
+	get errorContext(): NodeErrorContextInput<"required"> {
+		return (this._errorContext ??= Object.freeze({
+			code: "required",
+			missingValueDescription: this.value.defaultShortDescription,
+			relativePath: [this.key],
+			meta: this.meta
+		}))
+	}
 }
 
 export const Required = {

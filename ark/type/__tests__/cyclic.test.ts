@@ -427,6 +427,24 @@ contextualize(() => {
 					)
 				})
 
+				it("describes a missing cyclic value by its resolution", config => {
+					const types = scope(
+						{
+							nullable: { next: "nullable | null" },
+							list: { kids: "nested" },
+							nested: "(nested | number)[]"
+						},
+						config
+					).export()
+
+					attest(types.nullable({}).toString()).snap(
+						"next must be an object or null (was missing)"
+					)
+					attest(types.list({}).toString()).snap(
+						"kids must be an array (was missing)"
+					)
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 
