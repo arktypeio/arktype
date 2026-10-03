@@ -438,6 +438,7 @@ export abstract class BaseNode<
 
 	declare readonly precedence: number
 	precompilation: string | undefined
+	isReusableLeaf = false
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
 	// otherwise, would run into issues with this binding
