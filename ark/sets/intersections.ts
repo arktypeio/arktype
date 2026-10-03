@@ -3,8 +3,8 @@ import {
 	isNode,
 	rootKinds,
 	type BaseNode,
-	type BaseRoot,
 	type BaseScope,
+	type InternalNodeIntersection,
 	type Morph,
 	type RootKind,
 	type Union,
@@ -19,13 +19,6 @@ import type {
 import { setImplementationsByKind } from "./kinds.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
-
-type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
-	l: l,
-	r: r,
-	ctx: ctx
-) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
-:	BaseNode | Disjoint | null
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
