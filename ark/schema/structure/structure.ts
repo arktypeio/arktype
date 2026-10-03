@@ -747,8 +747,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			compileOwnKeys(js, "data")
-			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
+			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
+				this.compileExhaustiveEntry(
+					js.const("k", "keys[i]"),
+					this.props.filter(prop => typeof prop.key === "string")
+				)
+			)
+			js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
+				this.compileExhaustiveEntry(
+					js,
+					this.props.filter(prop => typeof prop.key === "symbol")
+				)
+			)
 		}
 
 		if (js.traversalKind === "Allows") return js.return(true)
@@ -967,13 +977,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				:	"undeclared:"
 			js.block(label, () => {
 				js.forIn("data", () => {
-					if (stringKeys.length) {
-						js.block("switch (k)", () =>
-							js.line(
-								`${stringKeys.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
-							)
-						)
-					}
+					if (stringKeys.length) compileDeclaredKeySwitch(js, stringKeys)
 					return breakIfUndeclared(this._compileDeclaresKey(js, false))
 				})
 				js.block("for (const k of Object.getOwnPropertySymbols(data))", () =>
@@ -1029,9 +1033,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.return("result")
 	}
 
-	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
-		js.const("k", "keys[i]")
-
+	protected compileExhaustiveEntry(
+		js: NodeCompiler,
+		props: Prop.Node[]
+	): NodeCompiler {
 		if (this.index) {
 			for (const node of this.index) {
 				js.if(
@@ -1045,14 +1050,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.undeclared === "reject") {
-			js.if(`!(${this._compileDeclaresKey(js)})`, () => {
-				if (js.traversalKind === "Allows") return js.return(false)
-				return js
-					.line(
-						`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
-					)
-					.if("ctx.failFast", () => js.return())
-			})
+			if (props.length) compileDeclaredKeySwitch(js, props)
+			const reject = () =>
+				js.traversalKind === "Allows" ?
+					js.return(false)
+				:	js
+						.line(
+							`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
+						)
+						.if("ctx.failFast", () => js.return())
+			const declaresKey = this._compileDeclaresKey(js, false)
+			if (declaresKey === "false") reject()
+			else js.if(`!(${declaresKey})`, reject)
 		}
 
 		return js
@@ -1138,6 +1147,17 @@ const compileDefault = (
 
 const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
 	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey
+
+// a switch compares keys by identity, faster than `in` on a null-prototype object
+const compileDeclaredKeySwitch = (
+	js: NodeCompiler,
+	props: Prop.Node[]
+): NodeCompiler =>
+	js.block("switch (k)", () =>
+		js.line(
+			`${props.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
+		)
+	)
 
 const compileOwnKeys = (
 	js: NodeCompiler,
