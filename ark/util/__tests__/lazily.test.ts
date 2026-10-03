@@ -8,7 +8,7 @@ const lazyCount = (o: object): (() => number) => {
 }
 
 contextualize(() => {
-	it("holds its result as a plain property once read", () => {
+	it("caches as own property", () => {
 		const o = {} as { k: number }
 		const computed = lazyCount(o)
 		attest(o.k).equals(1)
@@ -25,7 +25,7 @@ contextualize(() => {
 		attest(computed()).equals(0)
 	})
 
-	it("reads through an object frozen before its first read", () => {
+	it("frozen before read", () => {
 		const o = {} as { k: number }
 		const computed = lazyCount(o)
 		Object.freeze(o)
@@ -34,7 +34,7 @@ contextualize(() => {
 		attest(computed()).equals(1)
 	})
 
-	it("reads through a non-extensible object inheriting it", () => {
+	it("non-extensible inheritor", () => {
 		const proto = {}
 		const computed = lazyCount(proto)
 		const o = Object.preventExtensions(Object.create(proto)) as { k: number }
