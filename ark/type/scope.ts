@@ -16,6 +16,7 @@ import {
 	type GenericAst,
 	type GenericParamAst,
 	type GenericParamDef,
+	type GenericRoot,
 	type Morph,
 	type NodeKind,
 	type NodeSchema,
@@ -35,6 +36,7 @@ import {
 	Scanner,
 	defineLazily,
 	enumValues,
+	flatMorph,
 	isArray,
 	isThunk,
 	throwParseError,
@@ -209,6 +211,17 @@ export interface InternalScope {
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
+	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
+		if (!$arkTypeRegistry.typeAttachments) return
+		return this.cacheGetter(
+			"ambientAttachments",
+			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+				k,
+				this.bindReference(v as {} as BaseRoot | GenericRoot)
+			]) as never
+		)
+	}
+
 	protected preparseOwnAliasEntry(alias: string, def: unknown): AliasDefEntry {
 		const firstParamIndex = alias.indexOf("<")
 		if (firstParamIndex === -1) {
