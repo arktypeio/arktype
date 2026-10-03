@@ -33,6 +33,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	applyValue,
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply,
@@ -346,7 +347,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		for (; i < data.length; i++) {
 			traverseKey(
 				i,
-				() => this.elementAtIndex(data, i).node.traverseApply(data[i], ctx),
+				() => applyValue(this.elementAtIndex(data, i).node, data[i], ctx),
 				ctx
 			)
 			// bail out of subsequent elements in fail-fast mode (e.g. inside a

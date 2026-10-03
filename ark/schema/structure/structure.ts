@@ -37,6 +37,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 import {
 	copyOf,
+	applyValue,
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,
@@ -489,7 +490,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							} else {
 								traverseKey(
 									k,
-									() => node.value.traverseApply(data[k as never], ctx),
+									() => applyValue(node.value, data[k as never], ctx),
 									ctx
 								)
 								if (ctx.failFast && ctx.currentErrorCount > errorCount)

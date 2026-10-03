@@ -21,6 +21,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	applyValue,
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply
@@ -135,13 +136,8 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
-			if (this.signature.traverseAllows(entry[0], ctx)) {
-				traverseKey(
-					entry[0],
-					() => this.value.traverseApply(entry[1], ctx),
-					ctx
-				)
-			}
+			if (this.signature.traverseAllows(entry[0], ctx))
+				traverseKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
 		}
 	}
 

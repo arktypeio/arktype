@@ -232,12 +232,16 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return `${this.referenceToId(id, opts)}(${arg})`
 	}
 
-	invokeMember(node: BaseNode, member: BaseNode = node): this {
+	invokeMember(
+		node: BaseNode,
+		member: BaseNode = node,
+		arg: string = this.data
+	): this {
 		if (this.traversalKind !== "Apply" || !member.includesAlias)
-			return this.line(this.invoke(node))
+			return this.line(this.invoke(node, { arg }))
 		return this.if(
-			`ctx.enterResolution("${member.id}", ${this.data}) === undefined`,
-			() => this.line(this.invoke(node)).line("ctx.exitResolution()")
+			`ctx.enterResolution("${member.id}", ${arg}) === undefined`,
+			() => this.line(this.invoke(node, { arg })).line("ctx.exitResolution()")
 		)
 	}
 
@@ -312,9 +316,9 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	this.requiresContextFor(node)
 		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
-		this.check(node, {
-			arg: accessExpression
-		})
+		if (this.traversalKind === "Apply" && node.isReferencedById)
+			this.invokeMember(node, node, accessExpression)
+		else this.check(node, { arg: accessExpression })
 		if (pushesPath) this.line(`${this.ctx}.path.pop()`)
 
 		return this
