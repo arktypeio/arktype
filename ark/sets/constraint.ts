@@ -48,6 +48,9 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 					Object.assign(s.baseInner, unflattenConstraints(s.l)),
 					{ prereduced: true }
 				)
+		// a structure meets a root, e.g. an empty array two sequences intersect to, as the object it constrains
+		if (s.roots.length && result.hasKind("structure"))
+			result = s.ctx.$.node("intersection", { structure: result })
 
 		for (const root of s.roots) {
 			if (result instanceof Disjoint) return result
@@ -65,7 +68,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 
 		if (result.isRoot()) {
 			s.roots.push(result)
-			s.l.splice(i)
+			s.l.splice(i, 1)
 			return intersectConstraints(s)
 		}
 
