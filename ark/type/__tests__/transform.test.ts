@@ -154,6 +154,38 @@ contextualize(() => {
 		attest("b" in original).equals(false)
 	})
 
+	it("copies a builtin whose contents are in internal slots", () => {
+		const U = type([type.instanceOf(URL), "&", { "a?": "string.trim" }])
+		const url: unknown = U(
+			Object.assign(new URL("https://arktype.io"), { a: " x " })
+		)
+		attest(url instanceof URL && url.href).equals("https://arktype.io/")
+		attest(Object.entries(url as never)).equals([["a", "x"]])
+
+		const Bytes = type([
+			type.instanceOf(Uint8Array),
+			"&",
+			{ "a?": "string.trim" }
+		])
+		const original = Object.assign(new Uint8Array([1, 2]), { a: " x " })
+		const bytes: unknown = Bytes(original)
+		attest(bytes instanceof Uint8Array).equals(true)
+		attest(Object.entries(bytes as never)).equals([
+			["0", 1],
+			["1", 2],
+			["a", "x"]
+		])
+		attest(original.a).equals(" x ")
+	})
+
+	it("transforms a builtin it can't copy in place", () => {
+		const T = type(["Function", "&", { "a?": "string.trim" }])
+		const original = Object.assign(() => 5, { a: " x " })
+		const out: unknown = T(original)
+		attest(out === original).equals(true)
+		attest(original.a).equals("x")
+	})
+
 	it("copies an array with the props its type declares", () => {
 		const T = type([
 			"string.trim[]",
