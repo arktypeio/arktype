@@ -6,7 +6,6 @@ import {
 	appendUnique,
 	conflatenateAll,
 	flatMorph,
-	stringifyPath,
 	type JsonArray,
 	type JsonObject,
 	type array,
@@ -103,7 +102,7 @@ export class ArkError<
 	}
 
 	get propString(): string {
-		return stringifyPath(this.path)
+		return this.path.stringify()
 	}
 
 	get expected(): string {
