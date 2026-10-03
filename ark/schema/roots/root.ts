@@ -90,7 +90,6 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	// an inferred type is read statically, so reading it at runtime is a no-op
 	get infer(): unknown {
 		return chainableNoOpProxy
 	}
