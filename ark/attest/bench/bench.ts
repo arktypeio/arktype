@@ -45,15 +45,14 @@ const benchFn: BenchFn = (name, fn, options) => {
 
 	ctx.benchCallPosition = caller()
 
-	const { filter } = ctx.cfg
 	if (
-		typeof filter === "string" &&
-		!qualifiedPath.some(segment => segment.startsWith(filter))
+		typeof ctx.cfg.filter === "string" &&
+		!qualifiedPath.includes(ctx.cfg.filter)
 	)
 		return chainableNoOpProxy
 	else if (
-		Array.isArray(filter) &&
-		filter.some((segment, i) => segment !== qualifiedPath[i])
+		Array.isArray(ctx.cfg.filter) &&
+		ctx.cfg.filter.some((segment, i) => segment !== qualifiedPath[i])
 	)
 		return chainableNoOpProxy
 
