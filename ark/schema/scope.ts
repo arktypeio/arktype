@@ -556,7 +556,7 @@ const declareTraversal = (
 	).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
-	members.push([name, `function ${js.write("")}`])
+	members.push([name, js.write("function")])
 	return name
 }
 
