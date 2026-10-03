@@ -4,7 +4,7 @@ import { moltar, moltarData, product, productData } from "./scenarios.ts"
 
 let bound = 1e9
 
-// arktype retains every type it creates, so cap how many a bench makes
+// arktype retains every type it creates, so take few samples
 const options = { until: { count: 20 } }
 
 bench("moltar create (arktype)", () => moltar.arktype(bound++), options).median(
