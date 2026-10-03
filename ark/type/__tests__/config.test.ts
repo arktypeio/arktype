@@ -191,7 +191,7 @@ contextualize(() => {
 				{ b: "number", o: { a: A, b: "b" } },
 				{ jitless, domain: { description: () => "a custom number" } }
 			).export()
-			// JIT applies the scope's description to A, which was parsed outside it
+			// ideally JIT would also keep A's own description, since A was parsed outside the scope
 			attest(types.o({ a: { a: "x" }, b: 1 }).toString()).equals(
 				jitless ?
 					"a.a must be a number (was a string)"
