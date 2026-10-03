@@ -269,8 +269,6 @@ const cacheUnknownUnion = ($: BaseScope): void => {
 // held apart from each scope, which may be frozen before its first parse
 const scopesWithUnknownUnion = new WeakSet<BaseScope>()
 
-const rootScopeFnName = "function $"
-
 // leaves read no object property, so sharing them can't make an inline cache polymorphic
 const isLeafIn = (
 	node: BaseNode,
@@ -292,7 +290,7 @@ const isLeafIn = (
 const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
-): string => {
+): Fn => {
 	const linkage: UnitLinkage = {
 		referencesById: new Map(),
 		reused: new Set(),
@@ -309,7 +307,7 @@ const precompile = (
 		if (node.isReusableLeaf && isLeafIn(node, linkage.referencesById))
 			linkage.reused.add(node)
 		else if (
-			node.precompilation &&
+			node.compiledUnit &&
 			(!owningScope || node.$ !== owningScope) &&
 			// compiling an alias can create nodes, so every unit declares its own
 			!node.hasKind("alias")
@@ -317,9 +315,8 @@ const precompile = (
 			linkage.unreached.add(node)
 		else declared.push(node)
 	}
-	const unit = precompileReferences(declared, linkage)
-	const precompilation = unit.write(rootScopeFnName)
-	const compiledTraversals = unit.compile()(
+	const compiledUnit = precompileReferences(declared, linkage).compile()
+	const compiledTraversals = compiledUnit(
 		[...linkage.dependencies.keys()],
 		[...linkage.refs.keys()],
 		linkage.errorContexts
@@ -327,7 +324,7 @@ const precompile = (
 
 	for (let i = 0; i < declared.length; i++) {
 		const node = declared[i]
-		if (node.precompilation && (!owningScope || node.$ !== owningScope)) {
+		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			continue
 		}
@@ -341,7 +338,7 @@ const precompile = (
 		}
 		node.traverseApply = traverseApply
 		if (traverseTransform) node.traverseTransform = traverseTransform
-		node.precompilation = precompilation
+		node.compiledUnit = compiledUnit
 		if (node.isRoot()) {
 			node.rootApply = (data, onFail) =>
 				(node.rootApply = compileRootApply(node))(data, onFail)
@@ -349,7 +346,7 @@ const precompile = (
 		node.isReusableLeaf = isLeafIn(node, linkage.referencesById)
 	}
 
-	return precompilation
+	return compiledUnit
 }
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
@@ -1021,7 +1018,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		) as never
 	}
 
-	precompilation: string | undefined
+	compiledUnit: Fn | undefined
+
+	get precompilation(): string | undefined {
+		return this.compiledUnit?.toString()
+	}
 
 	private _exportedResolutions: InternalResolutions | undefined
 	private _exports: RootExportCache | undefined
@@ -1057,7 +1058,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
 				if (this.resolvedConfig.jitless) resolveReachedAliases(this.references)
-				else this.precompilation = precompile(this.references, this)
+				else this.compiledUnit = precompile(this.references, this)
 				this.resolved = true
 			}
 		}
@@ -1172,7 +1173,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		bootstrapAliasReferences(node)
 		if (this.resolvedConfig.jitless) resolveReachedAliases(node.references)
-		else if (!node.precompilation && jit) precompile(node.references)
+		else if (!node.compiledUnit && jit) precompile(node.references)
 		return node
 	}
 
