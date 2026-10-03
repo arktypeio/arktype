@@ -760,6 +760,9 @@ export const copyOf = (data: object): object => {
 	const copyContents = copyContentsOf[kind]
 	// a builtin whose state can't be copied, e.g. a function, transforms in place
 	if (!copyContents) return data
+	const copy = Object.setPrototypeOf(copyContents(data as never), prototype)
+	// a typed array has a descriptor per element, so like an array's, its copy takes only its elements
+	if (kind in typedArrayConstructors) return copy
 	// a builtin's state includes non-enumerable own props, e.g. an Error's message
 	const descriptors: { [k: Key]: PropertyDescriptor } =
 		Object.getOwnPropertyDescriptors(data)
@@ -768,10 +771,7 @@ export const copyOf = (data: object): object => {
 		descriptors[k].configurable = true
 		if ("value" in descriptors[k]) descriptors[k].writable = true
 	}
-	return Object.defineProperties(
-		Object.setPrototypeOf(copyContents(data as never), prototype),
-		descriptors
-	)
+	return Object.defineProperties(copy, descriptors)
 }
 
 // a builtin's contents are in internal slots only its constructor can copy
