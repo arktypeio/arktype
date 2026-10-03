@@ -512,7 +512,12 @@ export abstract class BaseNode<
 
 	equals(r: unknown): boolean {
 		const rNode: BaseNode = isNode(r) ? r : this.$.parseDefinition(r)
-		return this.innerHash === rNode.innerHash
+		if (this.innerHash === rNode.innerHash) return true
+		return (
+			(this.includesAlias || rNode.includesAlias) &&
+			isResolutionFinal() &&
+			isBisimilar(this, rNode, { assumed: [], failed: new Set() })
+		)
 	}
 
 	ifEquals(r: unknown): BaseNode | undefined {
@@ -788,6 +793,72 @@ export abstract class BaseNode<
 		)
 	}
 }
+
+type Bisimulation = {
+	assumed: string[]
+	failed: Set<string>
+}
+
+// cyclic nodes are equal if they unfold to the same tree, so a pair of aliases is assumed equal while it's compared
+const isBisimilar = (l: BaseNode, r: BaseNode, ctx: Bisimulation): boolean => {
+	if (l.innerHash === r.innerHash) return true
+	if (l.hasKind("alias") || r.hasKind("alias")) {
+		const pair = `${l.id}|${r.id}`
+		if (ctx.failed.has(pair)) return false
+		if (ctx.assumed.includes(pair)) return true
+		const assumedCount = ctx.assumed.push(pair) - 1
+		if (
+			isBisimilar(
+				l.hasKind("alias") ? l.resolution : l,
+				r.hasKind("alias") ? r.resolution : r,
+				ctx
+			)
+		)
+			return true
+		ctx.assumed.length = assumedCount
+		ctx.failed.add(pair)
+		return false
+	}
+	if (l.kind !== r.kind || l.innerEntries.length !== r.innerEntries.length)
+		return false
+	for (const [k, v] of l.innerEntries) {
+		if (!(k in r.inner)) return false
+		if (l.impl.keys[k].child !== true) {
+			if (
+				JSON.stringify((l.innerJson as Dict)[k]) !==
+				JSON.stringify((r.innerJson as Dict)[k])
+			)
+				return false
+			continue
+		}
+		const lChildren = liftArray(v as listable<BaseNode>)
+		const rChildren = liftArray((r.inner as Dict)[k] as listable<BaseNode>)
+		if (lChildren.length !== rChildren.length) return false
+		if (l.hasKind("union") && !l.inner.ordered) {
+			if (
+				!lChildren.every(lChild => hasBisimilar(lChild, rChildren, ctx)) ||
+				!rChildren.every(rChild => hasBisimilar(rChild, lChildren, ctx))
+			)
+				return false
+		} else if (
+			!lChildren.every((lChild, i) => isBisimilar(lChild, rChildren[i], ctx))
+		)
+			return false
+	}
+	return true
+}
+
+const hasBisimilar = (
+	node: BaseNode,
+	candidates: readonly BaseNode[],
+	ctx: Bisimulation
+): boolean =>
+	candidates.some(candidate => {
+		const assumedCount = ctx.assumed.length
+		if (isBisimilar(node, candidate, ctx)) return true
+		ctx.assumed.length = assumedCount
+		return false
+	})
 
 const referencesThroughAliases = (node: BaseNode): BaseNode[] => {
 	const references = new Set(node.references)
