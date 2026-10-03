@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
-import { pathToFileURL } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import ts from "typescript"
+import { publicEntryPoints } from "./bundle.ts"
 
 const loadedUrls = new Set<string>()
 
@@ -15,7 +16,7 @@ registerHooks({
 
 // imported first, as documented, so a second registry would install as $ark2
 await import("arktype/config")
-const { scope, type }: typeof import("arktype") = await import("arktype")
+const { scope, type } = await import("arktype")
 
 console.log(
 	"📦 Checking that each built package's entries share one set of modules...\n"
@@ -37,31 +38,19 @@ const resolve = createRequire(fromPackage("type", "package.json")).resolve
 const importBuilt = (path: string): Promise<Record<string, unknown>> =>
 	import(pathToFileURL(resolve(path)).href)
 
-const entryFiles = (pkg: string) =>
-	Object.entries<string | { default: string }>(
-		JSON.parse(readFileSync(fromPackage(pkg, "package.json"), "utf8")).exports
-	).flatMap(([subpath, target]) => {
-		const file = typeof target === "string" ? target : target.default
-		return (
-				!subpath.includes("*") &&
-					!subpath.startsWith("./internal/") &&
-					file.endsWith(".js")
-			) ?
-				[file.slice("./out/".length)]
-			:	[]
-	})
+const entryUrls = (pkg: string) =>
+	publicEntryPoints(fileURLToPath(fromPackage(pkg))).map(
+		path => pathToFileURL(path).href
+	)
 
-for (const pkg of packages) {
-	for (const file of entryFiles(pkg))
-		await import(fromPackage(pkg, `out/${file}`).href)
-}
+for (const url of packages.flatMap(entryUrls)) await import(url)
 
 for (const url of loadedUrls) {
 	for (const pkg of packages) {
 		const out = fromPackage(pkg, "out/").href
 		if (!url.startsWith(out)) continue
 		const file = url.slice(out.length)
-		if (!entryFiles(pkg).includes(file) && !/^chunk-\w+\.js$/.test(file))
+		if (!entryUrls(pkg).includes(url) && !/^chunk-\w+\.js$/.test(file))
 			throw new Error(`⚠️  Importing ${pkg}'s entries loads out/${file}.`)
 	}
 }
