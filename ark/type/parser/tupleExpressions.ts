@@ -1,6 +1,5 @@
 import {
 	Disjoint,
-	sets,
 	type BaseParseContext,
 	type BaseRoot,
 	type Morph,
@@ -18,6 +17,7 @@ import {
 	type Domain,
 	type show
 } from "@ark/util"
+import { intersectNodesRoot, pipeNodesRoot } from "arksets"
 import type {
 	defaultFor,
 	distill,
@@ -140,9 +140,11 @@ const parseBranchTuple: IndexOneParser<BranchOperator> = (def, ctx) => {
 	const r = ctx.$.parseOwnDefinitionFormat(def[2], ctx)
 	if (def[1] === "|") return ctx.$.node("union", { branches: [l, r] })
 	const result =
-		def[1] === "&" ? sets().intersect(l, r, ctx.$) : sets().pipe(l, r, ctx.$)
+		def[1] === "&" ?
+			intersectNodesRoot(l, r, ctx.$)
+		:	pipeNodesRoot(l, r, ctx.$)
 	if (result instanceof Disjoint) return result.throw()
-	return result as never
+	return result
 }
 
 const parseArrayTuple: IndexOneParser<"[]"> = (def, ctx) =>
