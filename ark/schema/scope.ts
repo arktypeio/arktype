@@ -940,9 +940,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (name in this.aliases && isThunk(def)) {
 			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
-			if (hasArkKind(preparsed, "root"))
-				return (this.resolutions[name] = this.bindReference(preparsed))
-			const context = registerParseContext(this.createParseContext(preparsed))
+			const context = registerParseContext(
+				this.createParseContext(preparsed as BaseParseContextInput)
+			)
 			this.resolutions[name] = context.id
 			// a thunk is open while it's called, so a reference to its alias is a cycle
 			context.phase = "resolving"
