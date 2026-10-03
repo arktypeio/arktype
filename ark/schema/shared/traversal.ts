@@ -21,7 +21,7 @@ import {
 	type ArkErrorResult,
 	type NodeErrorContextInput
 } from "./errors.ts"
-import { isNode } from "./utils.ts"
+import { inProgress, isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: ReadonlyPath
@@ -85,6 +85,8 @@ export class Traversal {
 	private reachedInvalid: InvalidResolution | undefined
 	// an invalid object was reached by a path shorter than the one its errors were reported at
 	shortened = false
+	// data a root allowed within the bounds is a tree, so each path is transformed
+	tracksTransforms = true
 	transformedByResolutionId:
 		| { [id in string]?: Map<unknown, unknown> }
 		| undefined
@@ -218,9 +220,12 @@ export class Traversal {
 			const errorCount = this.currentErrorCount
 			// a piped node transforms a morph's output, which can share objects an earlier pass cached
 			const transformedByResolutionId = this.transformedByResolutionId
+			const tracksTransforms = this.tracksTransforms
 			this.transformedByResolutionId = undefined
+			this.tracksTransforms = true
 			const result = this.transform(node, data)
 			this.transformedByResolutionId = transformedByResolutionId
+			this.tracksTransforms = tracksTransforms
 			return this.currentErrorCount > errorCount ? this.errors : result
 		}
 		this.receive(data)
@@ -257,7 +262,7 @@ export class Traversal {
 		data: unknown,
 		transform: TraverseTransform
 	): unknown {
-		if (!hasDomain(data, "object"))
+		if (!this.tracksTransforms || !hasDomain(data, "object"))
 			return this.transformed(transform(data, this), data)
 		const transformed = ((this.transformedByResolutionId ??= {})[id] ??=
 			new Map())
@@ -612,18 +617,23 @@ export const applyResolution = (
 	ctx.exitResolution()
 }
 
-// within the bounds, data is traversed as a tree; past them, it may be cyclic
-export const allowsCyclic = (
-	allows: TraverseAllows,
-	data: unknown,
-	config: ResolvedConfig
-): boolean => {
+// within the bounds, data is traversed as a tree; past them, it may be cyclic, so only a tracked traversal can tell
+export const allowsUntracked = (
+	node: BaseNode,
+	data: unknown
+): boolean | undefined => {
+	if (
+		inProgress.definitions ||
+		inProgress.resolutions ||
+		node.allowsRequiresTraversal
+	)
+		return
 	const outerVisits = aliasVisits.count
 	aliasVisits.count = 0
-	const allowed = allows(data, 0 as never)
+	const allowed = node.traverseAllows(data as never, 0 as never)
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
-	return exceeded ? allows(data, new Traversal(data, config)) : allowed
+	return exceeded ? undefined : allowed
 }
 
 // entered while in progress, then whether it is valid, or why Apply found it invalid

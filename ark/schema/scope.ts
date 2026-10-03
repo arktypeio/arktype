@@ -76,6 +76,7 @@ import {
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
+	allowsUntracked,
 	applyCyclic,
 	TransformErrors,
 	Traversal,
@@ -361,14 +362,27 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 				"return ctx.finalize(onFail)"
 			]
 	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
-	const unlessInvalid = (result: string[]) => [
-		"if (!allows(data)) {",
+	const unlessInvalid = (result: string[], allowed = "allows(data)") => [
+		`if (!${allowed}) {`,
 		...fallback.map(line => `    ${line}`),
 		"}",
 		...result
 	]
 	const body =
 		node.rootApplyStrategy === "allows" ? unlessInvalid(["return data"])
+		: node.rootApplyStrategy === "contextualTransform" && node.includesAlias ?
+			[
+				"const untracked = allowsUntracked(node, data)",
+				...unlessInvalid(
+					[
+						"const ctx = new Traversal(data, config)",
+						"ctx.tracksTransforms = untracked === undefined",
+						`const result = ctx.transformResolution("${node.id}", data, transform)`,
+						"return ctx.hasError() ? ctx.finalize(onFail) : result"
+					],
+					"(untracked ?? node.traverseAllows(data, new Traversal(data, config)))"
+				)
+			]
 		: node.rootApplyStrategy === "transform" ?
 			unlessInvalid(
 				node.includesMorph ?
@@ -386,28 +400,30 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		: node.rootApplyStrategy === "contextualTransform" ?
 			unlessInvalid([
 				"const ctx = new Traversal(data, config)",
-				node.includesAlias ?
-					`const result = ctx.transformResolution("${node.id}", data, transform)`
-				:	"const result = transform(data, ctx)",
+				"const result = transform(data, ctx)",
 				"return ctx.hasError() ? ctx.finalize(onFail) : result"
 			])
 		:	fallback
 	return new DynamicFunction<(...args: unknown[]) => BaseRoot["rootApply"]>(
+		"node",
 		"allows",
 		"apply",
 		"transform",
 		"Traversal",
 		"TransformErrors",
 		"applyCyclic",
+		"allowsUntracked",
 		"config",
 		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
 	)(
+		node,
 		node.allows,
 		node.traverseApply,
 		node.traverseTransform,
 		Traversal,
 		TransformErrors,
 		applyCyclic,
+		allowsUntracked,
 		node.$.resolvedConfig
 	)
 }

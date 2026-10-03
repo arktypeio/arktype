@@ -58,7 +58,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark, registryName } from "./shared/registry.ts"
 import {
-	allowsCyclic,
+	allowsUntracked,
 	applyCyclic,
 	Traversal,
 	type TraverseAllows,
@@ -181,16 +181,11 @@ export abstract class BaseNode<
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
-					(
-						inProgress.definitions ||
-						inProgress.resolutions ||
-						this.allowsRequiresTraversal
-					) ?
-						this.traverseAllows(
-							data as never,
-							new Traversal(data, this.$.resolvedConfig)
-						)
-					:	allowsCyclic(this.traverseAllows, data, this.$.resolvedConfig)
+					allowsUntracked(this, data) ??
+					this.traverseAllows(
+						data as never,
+						new Traversal(data, this.$.resolvedConfig)
+					)
 			:	data => (this.traverseAllows as any)(data)
 	}
 
@@ -365,14 +360,31 @@ export abstract class BaseNode<
 
 			case "transform":
 			case "contextualTransform":
+				if (this.includesAlias) {
+					return (data, onFail) => {
+						const untracked = allowsUntracked(this, data)
+						const allowed =
+							untracked ??
+							this.traverseAllows(
+								data as never,
+								new Traversal(data, this.$.resolvedConfig)
+							)
+						if (!allowed) return this.applyRoot(data).finalize(onFail)
+						const ctx = new Traversal(data, this.$.resolvedConfig)
+						ctx.tracksTransforms = untracked === undefined
+						// keyed by id, so an alias resolving to this root reuses its output
+						const result = ctx.transformResolution(
+							this.id,
+							data,
+							this.traverseTransform
+						)
+						return ctx.hasError() ? ctx.finalize(onFail) : result
+					}
+				}
 				return (data, onFail) => {
 					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
 					const ctx = new Traversal(data, this.$.resolvedConfig)
-					// keyed by id, so an alias resolving to this root reuses its output
-					const result =
-						this.includesAlias ?
-							ctx.transformResolution(this.id, data, this.traverseTransform)
-						:	ctx.transform(this, data)
+					const result = ctx.transform(this, data)
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
 			default:
