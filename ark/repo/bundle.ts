@@ -202,12 +202,7 @@ const nameSelfReferencingClasses = (js: string): string => {
 		if (runtimeName) runtimeNames.push(runtimeName)
 		if (ts.isClassExpression(node) && node.name) {
 			const name = inferredNameOf(node)
-			if (name && name !== node.name.text) {
-				const renames = renamesTo(node, name)
-				if (!renames)
-					throw new Error(`Can't rename class ${node.name.text} to ${name}`)
-				edits.push(...renames)
-			}
+			if (name && name !== node.name.text) edits.push(...renamesTo(node, name))
 		}
 		ts.forEachChild(node, visit)
 	}
@@ -223,29 +218,25 @@ const nameSelfReferencingClasses = (js: string): string => {
 	return applyEdits(js, edits)
 }
 
-const renamesTo = (
-	node: ts.ClassExpression,
-	name: string
-): Edit[] | undefined => {
+// esbuild renames any binding of X inside class _X, e.g. to X2
+const renamesTo = (node: ts.ClassExpression, name: string): Edit[] => {
 	const innerName = node.name!.text
 	const renames: Edit[] = [[node.name!.getStart(), node.name!.getEnd(), name]]
-	let isRenamable = true
 	const visit = (child: ts.Node): void => {
-		if (ts.isIdentifier(child)) {
+		if (ts.isIdentifier(child) && child.text === innerName) {
 			const parent = child.parent as { name?: ts.Node; propertyName?: ts.Node }
-			if (child.text === name) isRenamable = false
-			else if (child.text === innerName) {
-				if (parent.name === child || parent.propertyName === child)
-					isRenamable = false
-				else renames.push([child.getStart(), child.getEnd(), name])
-			}
+			// e.g. { _X } keeps its key as { _X: X }
+			if (ts.isShorthandPropertyAssignment(child.parent))
+				renames.push([child.getEnd(), child.getEnd(), `: ${name}`])
+			else if (parent.name !== child && parent.propertyName !== child)
+				renames.push([child.getStart(), child.getEnd(), name])
 		}
 		ts.forEachChild(child, visit)
 	}
 	ts.forEachChild(node, child => {
 		if (child !== node.name) visit(child)
 	})
-	return isRenamable ? renames : undefined
+	return renames
 }
 
 const inferredNameOf = (node: ts.Node): string | undefined =>

@@ -171,6 +171,17 @@ contextualize(() => {
 		)
 	})
 
+	it("names a self-referencing class", async () => {
+		const dir = writePackage({
+			"index.js": `export class K { static self = { K }; m(o) { return o.K } _K() {} }; export const L = class _L { static self = { _L } };`
+		})
+		const { K, L } = await import(bundleIn(dir)("index.js"))
+		attest(K.name).equals("K")
+		attest(K.self.K).is(K)
+		attest(L.name).equals("L")
+		attest(L.self._L).is(L)
+	})
+
 	it("rejects rebinding a main entry export", () => {
 		for (const [name, from] of [
 			["x", "a"],
