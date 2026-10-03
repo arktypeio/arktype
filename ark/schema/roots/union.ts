@@ -170,7 +170,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.caseNodes.length = 0
 		// an alias branch is replaced by its resolution before the union is used
 		if (this.includesShallowAlias) return null
-		// without an engine the union compiles indiscriminated
 		const discriminant = $ark.sets?.discriminate(this) ?? null
 		if (this._referencesById) {
 			for (const node of this.caseNodes)
