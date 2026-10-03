@@ -6,7 +6,8 @@ import {
 } from "@ark/schema"
 import type * as util from "@ark/util"
 import { cached, Hkt, type Key, type Thunk } from "@ark/util"
-import type { Submodule } from "../module.ts"
+import type { Module, Submodule } from "../module.ts"
+import { keywordModule } from "../scope.ts"
 
 class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
@@ -22,13 +23,20 @@ const Merge = cached(() =>
 	)
 )
 
-export const arkBuiltins: Record<
+export const builtinDefinitions: Record<
 	keyof arkBuiltins.$,
 	Thunk<BaseRoot | GenericRoot>
 > = {
 	Key: () => intrinsic.key,
 	Merge
 }
+
+export const arkBuiltins: arkBuiltins = keywordModule(
+	builtinDefinitions,
+	{}
+) as never
+
+export type arkBuiltins = Module<arkBuiltins.$>
 
 export declare namespace arkBuiltins {
 	export type submodule = Submodule<$>

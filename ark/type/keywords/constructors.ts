@@ -6,6 +6,7 @@ import {
 	type PlatformObjects
 } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
+import { keywordModule } from "../scope.ts"
 import { arkArray } from "./Array.ts"
 import { arkFormData } from "./FormData.ts"
 import { TypedArray } from "./TypedArray.ts"
@@ -28,12 +29,17 @@ for (const constructors of [ecmascriptConstructors, platformConstructors]) {
 	}
 }
 
-export const arkPrototypes = {
+export const prototypeDefinitions = {
 	...instanceOfDefinitions,
 	Array: arkArray,
 	TypedArray,
 	FormData: arkFormData
 }
+
+export const arkPrototypes: arkPrototypes.module = keywordModule(
+	prototypeDefinitions,
+	{}
+) as never
 
 export declare namespace arkPrototypes {
 	export type module = Module<submodule>

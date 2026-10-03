@@ -13,7 +13,10 @@ import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 
-export const arkTsKeywords: Record<keyof arkTsKeywords.$, Thunk<BaseRoot>> = {
+export const tsKeywordDefinitions: Record<
+	keyof arkTsKeywords.$,
+	Thunk<BaseRoot>
+> = {
 	bigint: () => intrinsic.bigint,
 	boolean: () => intrinsic.boolean,
 	false: () => intrinsic.false,
@@ -27,6 +30,13 @@ export const arkTsKeywords: Record<keyof arkTsKeywords.$, Thunk<BaseRoot>> = {
 	unknown: () => intrinsic.unknown,
 	undefined: () => intrinsic.undefined
 }
+
+export const arkTsKeywords: arkTsKeywords = keywordModule(
+	tsKeywordDefinitions,
+	{}
+) as never
+
+export type arkTsKeywords = Module<arkTsKeywords.$>
 
 export declare namespace arkTsKeywords {
 	export type submodule = Submodule<$>
@@ -200,7 +210,7 @@ const Extract = cached(() =>
 	genericNode("T", "U")(args => args.T.extract(args.U), ExtractHkt)
 )
 
-export const arkTsGenerics = {
+export const tsGenericDefinitions = {
 	Exclude,
 	Extract,
 	Omit,
@@ -209,6 +219,11 @@ export const arkTsGenerics = {
 	Record,
 	Required
 }
+
+export const arkTsGenerics: arkTsGenerics.module = keywordModule(
+	tsGenericDefinitions,
+	{}
+) as never
 
 export declare namespace arkTsGenerics {
 	export type module = Module<arkTsGenerics.$>
