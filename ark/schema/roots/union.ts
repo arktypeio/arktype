@@ -11,6 +11,7 @@ import {
 	registeredNameOf,
 	serializePrimitive,
 	throwParseError,
+	unset,
 	type JsTypeOf,
 	type JsonStructure,
 	type SerializablePrimitive,
@@ -320,7 +321,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (ctx.allows(branch, data))
 				return branch.transforms ? ctx.transform(branch, data) : data
 		}
-		return data
+		return this.transformRequiresContext ? data : unset
 	}
 
 	get compiledDiscriminant(): Discriminant | null {
@@ -422,7 +423,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					js.return(branch.transforms ? invokeTransform(js, branch) : "data")
 				)
 			}
-			js.return("data")
+			// a root not requiring ctx checks for this instead of calling its Allows
+			js.return(
+				this.transformRequiresContext ? "data" : compileSerializedValue(unset)
+			)
 		}
 	}
 
