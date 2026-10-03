@@ -1,5 +1,6 @@
 import {
 	fixGlobalConfig,
+	RootModule,
 	type ArkErrors,
 	type arkKind,
 	type flatResolutionsOf
@@ -85,7 +86,10 @@ export const ark: Scope<Ark> = scope(
 	{ name: "ark" }
 ) as never
 
-export const keywords: Module<Ark> = ark.internal.exportLazily() as never
+export const keywords: Module<Ark> = defineProperties(
+	new RootModule({}),
+	ark.internal.exportLazily()
+) as never
 
 defineProperties($arkTypeRegistry.ambient, keywords)
 
