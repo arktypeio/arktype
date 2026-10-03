@@ -110,22 +110,42 @@ contextualize(() => {
 		const fromOut = bundleIn(dir)
 
 		const root: Namespace = await import(fromOut("index.js"))
-		attest(evaluated()).equals(unbundledOrder)
-		attest(Object.keys(root)).snap(["i", "j", "x", "y"])
+		attest(evaluated()).equals([...unbundledOrder!.slice(0, -1), "u", "index"])
+		attest(Object.keys(root)).snap([
+			"K$k",
+			"apart$a",
+			"apart$sub$f",
+			"i",
+			"j",
+			"local$l",
+			"p$k",
+			"r$k",
+			"renamed$sub$o",
+			"unreached$u",
+			"x",
+			"y"
+		])
 
 		const internal: Namespace = await import(fromOut("internal.js"))
-		attest(evaluated()).equals(["u"])
+		attest(evaluated()).equals(undefined)
 		attest(Object.keys(internal)).snap([
 			"K",
+			"K$k",
 			"apart",
+			"apart$a",
 			"apart$sub$f",
 			"i",
 			"j",
 			"local",
+			"local$l",
 			"p",
+			"p$k",
 			"r",
+			"r$k",
 			"renamed",
+			"renamed$sub$o",
 			"unreached",
+			"unreached$u",
 			"x",
 			"y"
 		])
