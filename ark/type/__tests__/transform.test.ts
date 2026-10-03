@@ -328,6 +328,18 @@ contextualize(() => {
 		attest(calls).equals(0)
 	})
 
+	it("transforms a discriminated union's case without checking its branches", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			let calls = 0
+			const T = $.type(["string", ":", s => (calls++, s.length > 0)]).or({
+				a: "string.trim"
+			})
+
+			attest(T("x")).equals("x")
+			attest(calls).equals(1)
+		}
+	})
+
 	it("transforms cyclic data through a cyclic alias once", () => {
 		let calls = 0
 		const $ = scope({
