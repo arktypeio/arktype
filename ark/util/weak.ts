@@ -20,9 +20,9 @@ export class WeakCache<v extends object> {
 	private readonly refs = new Map<string, { deref(): v | undefined }>()
 	private readonly cleanup: FinalizationRegistry<string> | undefined
 
-	constructor(weak = true) {
+	constructor() {
 		this.cleanup =
-			weak && holdsWeakly ?
+			holdsWeakly ?
 				new FinalizationRegistry(key => {
 					// the key may have been set again before its old value was collected
 					if (!this.refs.get(key)?.deref()) this.refs.delete(key)
