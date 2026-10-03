@@ -524,7 +524,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	traverseTransform: TraverseTransform<object> = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
 		let out: any = data
-		const transformKey = (k: Key, value: unknown, node: BaseRoot) => {
+		const transformKey = (k: Key, value: unknown, node: BaseNode) => {
 			const transformed = traverseKey(k, () => ctx.transform(node, value), ctx)
 			if (Object.is(transformed, value)) return value
 			if (out === data) out = this.copy(data)
@@ -541,9 +541,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (!(prop.key in data)) continue
 			const keyErrorCount = ctx.currentErrorCount
 			let value: unknown = data[prop.key as never]
-			for (const node of this.transformsOf(prop)) {
+			for (const step of this.transformsOf(prop)) {
 				if (ctx.currentErrorCount > keyErrorCount) break
-				value = transformKey(prop.key, value, node)
+				if (step.signature && !ctx.allows(step.signature, prop.key)) continue
+				value = transformKey(prop.key, value, step.node)
 			}
 		}
 		if (this.sequence?.transforms) {
@@ -658,21 +659,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this._hasIndexedProp ??=
 			this.index !== undefined &&
 			this.props.some(prop =>
-				this.index!.some(index => index.signature.allows(prop.key))
+				this.index!.some(
+					index =>
+						index.signature.allowsRequiresContext ||
+						index.signature.allows(prop.key)
+				)
 			))
 	}
 
 	// a prop's own value transforms its key once, though an index signature shares it
-	private transformsOf(prop: Prop.Node): BaseRoot[] {
-		const transforms = prop.value.transforms ? [prop.value] : []
+	private transformsOf(prop: Prop.Node): TransformStep[] {
+		const transforms: TransformStep[] =
+			prop.value.transforms ? [{ node: prop.value }] : []
 		if (!this.index) return transforms
 		for (const index of this.index) {
-			if (
-				index.value.transforms &&
-				index.value !== prop.value &&
-				index.signature.allows(prop.key)
-			)
-				transforms.push(index.value)
+			if (!index.value.transforms || index.value === prop.value) continue
+			// a signature reading ctx can only decide the key as data is transformed
+			if (index.signature.allowsRequiresContext)
+				transforms.push({ node: index.value, signature: index.signature })
+			else if (index.signature.allows(prop.key))
+				transforms.push({ node: index.value })
 		}
 		return transforms
 	}
@@ -748,7 +754,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.index?.filter(index => index.value.transforms) ?? []
 		const deletes = this.undeclared === "delete"
 		const transformedChildren: BaseNode[] = transformedProps.flatMap(prop =>
-			this.transformsOf(prop)
+			this.transformsOf(prop).map(step => step.node)
 		)
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
@@ -761,7 +767,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
 				`value${i}`,
-				this.transformsOf(transformedProps[i]).map(node => ({ node })),
+				this.transformsOf(transformedProps[i]),
 				{
 					keyExpression: serializedKey,
 					...(optional ? { condition: `${serializedKey} in data` } : {}),
@@ -790,17 +796,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							keyExpression: "k",
 							onChange: () => this.compileCopy(js).line("out[k] = transformed")
 						})
-				const allowsKey = (index: Index.Node) =>
-					js.invoke(index.signature, { arg: "k", kind: "Allows" })
 				if (transformedIndex.length === 1) {
-					return js.if(allowsKey(transformedIndex[0]), () =>
-						transformKey(transformedIndex[0].value)
+					return js.if(
+						js.invoke(transformedIndex[0].signature, {
+							arg: "k",
+							kind: "Allows"
+						}),
+						() => transformKey(transformedIndex[0].value)
 					)
 				}
 				return transformKey(
 					transformedIndex.map(index => ({
 						node: index.value,
-						condition: allowsKey(index)
+						signature: index.signature
 					}))
 				)
 			})
