@@ -4,6 +4,7 @@ import ts from "typescript"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	fromCwd,
+	readFile,
 	readPackageJson,
 	rmRf,
 	walkPaths,
@@ -16,13 +17,10 @@ export const bundle = (): void => {
 		include: path => path.endsWith(".js")
 	}).sort()
 	const entryPoints = publicEntryPoints()
-	const internal = fromCwd("out", "internal.js")
 	const ownFiles = flattenIntoInternal(entryPoints, perModuleJs)
 	// one build for all entries, so a module several import evaluates once
 	const { outputFiles } = buildSync({
-		// an internal.js re-exporting only the main entry would split it into a chunk
-		entryPoints:
-			internal in ownFiles ? entryPoints : [...entryPoints, internal],
+		entryPoints,
 		outdir: fromCwd("out"),
 		bundle: true,
 		splitting: true,
@@ -94,16 +92,13 @@ const flattenIntoInternal = (
 	const unambiguousNames = exportedBy(
 		outputFiles.find(file => file.path === fromCwd(stdinOutputPath))!.text
 	)
-	// starring a module evaluates it, so star only those adding names
-	let internalJs = starring([
-		main,
-		...modules.filter(path =>
-			namesByPath[path].some(name => !namesByPath[main].includes(name))
-		)
-	])
+	// main exports a module's name by an alias, which a consumer's `export *` can't bind ambiguously
+	let mainJs = readFile(main)
+	let internalJs = starring([main])
 	const ownFiles: Record<string, string> = {}
 	for (const name of new Set(perModuleJs.flatMap(path => namesByPath[path]))) {
-		if (unambiguousNames.has(name)) continue
+		const isUnambiguous = unambiguousNames.has(name)
+		if (isUnambiguous && namesByPath[main].includes(name)) continue
 		const exporting = perModuleJs.filter(path =>
 			namesByPath[path].includes(name)
 		)
@@ -118,18 +113,25 @@ const flattenIntoInternal = (
 				`The main entry exports ${name}, which one of ${[first, ...others].map(moduleOf).join(", ")} binds otherwise (to esbuild, re-exporting another package's name binds it anew)`
 			)
 		}
-		internalJs += reexporting([name], internal, first)
+		const aliasOf = (path: string) =>
+			`${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
+		mainJs += reexporting([`${name} as ${aliasOf(first)}`], main, first)
+		internalJs += reexporting([`${aliasOf(first)} as ${name}`], internal, main)
+		if (isUnambiguous) continue
 		for (const path of others) {
-			const alias = `${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
-			internalJs += reexporting([`${name} as ${alias}`], internal, path)
+			mainJs += reexporting([`${name} as ${aliasOf(path)}`], main, path)
 			assertMapsToOwnFile(path)
 			if (entryPoints.includes(path)) continue
 			ownFiles[path] ??= `export * from ${specifierOf(path, internal)};\n`
-			ownFiles[path] += reexporting([`${alias} as ${name}`], path, internal)
+			ownFiles[path] += reexporting(
+				[`${aliasOf(path)} as ${name}`],
+				path,
+				internal
+			)
 		}
 	}
-	if (internalJs === starring([main])) ownFiles[internal] = internalJs
-	else writeFile(internal, internalJs)
+	writeFile(main, mainJs)
+	ownFiles[internal] = internalJs
 	return ownFiles
 }
 
