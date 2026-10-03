@@ -71,6 +71,17 @@ contextualize(() => {
 		})
 	})
 
+	it("parsing an index signature does not", () => {
+		withoutEngine(() => {
+			const T = rootSchema({
+				domain: "object",
+				index: { signature: "string", value: "bigint" }
+			})
+			attest(T.allows({ a: 1n })).equals(true)
+			attest(T.allows({ a: 1 })).equals(false)
+		})
+	})
+
 	it("parses again what was parsed before it", () => {
 		const def = [
 			{

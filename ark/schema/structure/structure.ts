@@ -1039,10 +1039,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.return("result")
 	}
 
-	// a signature extending string can't match a symbol key
+	// a signature extending string can't match a symbol key, but deciding that takes a set engine
 	private get indexMatchesSymbols(): boolean {
 		return !!this.index?.some(
-			node => !node.signature.extends($ark.intrinsic.string)
+			node => !$ark.sets || !node.signature.extends($ark.intrinsic.string)
 		)
 	}
 
