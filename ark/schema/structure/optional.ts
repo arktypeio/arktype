@@ -122,15 +122,12 @@ const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
 	if (cached) return cached
 
 	const morph = computeDefaultValueMorph(node.key, node.value, node.default)
-	return keepsDefaultValueMorph(node.value) ?
+	// copies of a value bound to other scopes share its id, which matters only if
+	// the morph calls the value, as it does when the value transforms
+	return node.value.includesTransform ?
 			defaultableMorphCache.pin(cacheKey, morph)
 		:	defaultableMorphCache.set(cacheKey, morph)
 }
-
-// copies of a value bound to other scopes share its id, which matters only if
-// the morph calls the value, as it does when the value transforms
-export const keepsDefaultValueMorph = (value: BaseRoot): boolean =>
-	value.includesTransform
 
 export const computeDefaultValueMorph = (
 	key: PropertyKey,
