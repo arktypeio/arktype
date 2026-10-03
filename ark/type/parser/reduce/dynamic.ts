@@ -74,7 +74,7 @@ export class RuntimeState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<BaseRoot<any>["constrain"]>): void {
+	constrainRoot(...args: Parameters<BaseRoot<any>["rawConstrain"]>): void {
 		this.root = this.root!.rawConstrain(args[0], args[1])
 	}
 
