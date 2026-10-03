@@ -264,7 +264,10 @@ age must be more than 18 (was 2)`)
 
 	it("leaves ctx as it was after a type is called with it", () => {
 		const calling = (t: Type, data: unknown) =>
-			type("unknown").narrow((_, ctx) => (t.internal(data, ctx), true))
+			type("unknown").narrow((_, ctx) => {
+				t.internal(data, ctx)
+				return true
+			})
 		const Unbanged = type("string").pipe((s, ctx) =>
 			s.startsWith("!") ? ctx.error("a string without !") : s
 		)
