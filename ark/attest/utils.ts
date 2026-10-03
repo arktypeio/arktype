@@ -2,14 +2,9 @@ import { caller } from "@ark/fs"
 import { throwError } from "@ark/util"
 import { basename, relative } from "node:path"
 
-export const getFileKey = (path: string): string => relative(".", path)
+export { chainableNoOpProxy } from "@ark/util"
 
-/**
- *  Can be used to allow arbitrarily chained property access and function calls.
- */
-export const chainableNoOpProxy: any = new Proxy(() => chainableNoOpProxy, {
-	get: () => chainableNoOpProxy
-})
+export const getFileKey = (path: string): string => relative(".", path)
 
 export type ContextualTests<ctx = unknown> = (
 	it: (name: string, test: (ctx: ctx) => void) => void

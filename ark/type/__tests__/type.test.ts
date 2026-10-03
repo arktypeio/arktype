@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { TraversalError, type JsonSchema, type UnitNode } from "@ark/schema"
-import { flatMorph } from "@ark/util"
+import { chainableNoOpProxy, flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import * as assert from "node:assert/strict"
 
@@ -21,6 +21,12 @@ contextualize(() => {
 		} else throw new Error()
 
 		attest(T.allows(5)).equals(false)
+	})
+
+	it("reads infer at runtime as a no-op", () => {
+		const T = type({ a: "string[]" })
+		attest<number>(T.infer.a.length)
+		attest(T.infer.a.length).equals(chainableNoOpProxy)
 	})
 
 	it("allows doc example", () => {
