@@ -1,10 +1,12 @@
 import {
 	ReadonlyPath,
+	flatMorph,
 	hasDomain,
 	isArray,
 	noSuggest,
 	objectKindOf,
 	stringifyPath,
+	typedArrayConstructors,
 	type BuiltinObjectKind,
 	type array
 } from "@ark/util"
@@ -740,12 +742,12 @@ export const copyOf = (data: object): object => {
 	if (prototype === Object.prototype) return { ...data }
 	const kind = objectKindOf(data)
 	if (kind === undefined) return Object.setPrototypeOf({ ...data }, prototype)
+	const copyContents = copyContentsOf[kind]
+	// a builtin whose state can't be copied, e.g. a function, transforms in place
+	if (!copyContents) return data
 	// a builtin's state includes non-enumerable own props, e.g. an Error's message
 	return Object.defineProperties(
-		Object.setPrototypeOf(
-			copyContentsOf[kind]?.(data as never) ?? {},
-			prototype
-		),
+		Object.setPrototypeOf(copyContents(data as never), prototype),
 		Object.getOwnPropertyDescriptors(data)
 	)
 }
@@ -754,11 +756,20 @@ export const copyOf = (data: object): object => {
 const copyContentsOf: {
 	[kind in BuiltinObjectKind]?: (data: never) => object
 } = {
+	...flatMorph(typedArrayConstructors, (kind, TypedArray) => [
+		kind,
+		(data: never) => new TypedArray(data)
+	]),
+	ArrayBuffer: (data: ArrayBuffer) => data.slice(0),
 	Date: (data: Date) => new Date(data),
 	Error: () => new Error(),
+	Headers: (data: Headers) => new Headers(data),
 	Map: (data: Map<unknown, unknown>) => new Map(data),
 	RegExp: (data: RegExp) => new RegExp(data),
-	Set: (data: Set<unknown>) => new Set(data)
+	Request: (data: Request) => data.clone(),
+	Response: (data: Response) => data.clone(),
+	Set: (data: Set<unknown>) => new Set(data),
+	URL: (data: URL) => new URL(data)
 }
 
 export const traverseKey = <result>(
