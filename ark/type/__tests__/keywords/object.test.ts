@@ -33,6 +33,7 @@ contextualize(() => {
 			)
 			attest(D.allows(new NaNTime(0))).equals(true)
 			attest(D.allows(new InvalidString(0))).equals(false)
+			// a non-Date inheriting Date.prototype crashes the check instead of failing it
 			attest(() => D(Object.create(Date.prototype))).throws(
 				"Method Date.prototype.toString called on incompatible receiver"
 			)
