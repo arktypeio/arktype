@@ -332,7 +332,10 @@ const precompile = (
 		node.precompilation = precompilation
 		// kept so an unfinalized parse can't return an uncompiled copy reporting differently
 		if (reportsDifferentlyCompiled(node)) node.keepInScope()
-		if (node.isRoot()) bindRootApply(node)
+		if (node.isRoot()) {
+			node.rootApply = (data, onFail) =>
+				(node.rootApply = compileRootApply(node))(data, onFail)
+		}
 		if (linkage.closed && isLeafIn(node, linkage.referencesById))
 			reusableLeaves.add(node)
 	}
@@ -345,11 +348,6 @@ const reportsDifferentlyCompiled = (node: BaseNode): boolean => {
 	for (const k in node.inner)
 		if (Object.is((node.inner as Dict)[k], -0)) return true
 	return false
-}
-
-const bindRootApply = (node: BaseRoot) => {
-	node.rootApply = (data, onFail) =>
-		(node.rootApply = compileRootApply(node))(data, onFail)
 }
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
