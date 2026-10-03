@@ -1,6 +1,6 @@
 import { flatMorph } from "@ark/util"
 import { buildSync } from "esbuild"
-import { dirname, relative } from "node:path"
+import { dirname, join, relative } from "node:path"
 import ts from "typescript"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
@@ -17,7 +17,7 @@ export const bundle = (): void => {
 	const perModuleJs = walkPaths(fromCwd("out"), {
 		include: path => path.endsWith(".js")
 	}).sort()
-	const entryPoints = publicEntryPoints()
+	const entryPoints = publicEntryPoints(process.cwd())
 	const ownFiles = flattenIntoInternal(entryPoints, perModuleJs)
 	// one build for all entries, so a module several import evaluates once
 	const { outputFiles } = buildSync({ ...buildOptions(), entryPoints })
@@ -41,9 +41,9 @@ const buildOptions = () =>
 		logLevel: "warning"
 	}) as const
 
-const publicEntryPoints = (): string[] =>
+export const publicEntryPoints = (dir: string): string[] =>
 	Object.entries<string | { default: string }>(
-		readPackageJson(process.cwd()).exports
+		readPackageJson(dir).exports
 	).flatMap(([subpath, target]) => {
 		const file = typeof target === "string" ? target : target.default
 		return (
@@ -51,7 +51,7 @@ const publicEntryPoints = (): string[] =>
 					!subpath.startsWith("./internal/") &&
 					file.endsWith(".js")
 			) ?
-				[fromCwd(file)]
+				[join(dir, file)]
 			:	[]
 	})
 
