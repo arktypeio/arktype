@@ -16,7 +16,7 @@ export const alias: setImplementationOf<Alias.Declaration> = {
 					neverIfDisjoint(
 						intersectOrPipeNodes(l.resolution, r.resolution, ctx)
 					),
-				`${l.reference}${ctx.pipe ? "=>" : "&"}${r.reference}`
+				`${l.expression}${ctx.pipe ? "=>" : "&"}${r.expression}`
 			),
 		...defineRightwardIntersections("alias", (l, r, ctx) => {
 			if (r.isUnknown()) return l
@@ -28,7 +28,7 @@ export const alias: setImplementationOf<Alias.Declaration> = {
 
 			return ctx.$.lazilyResolve(
 				() => neverIfDisjoint(intersectOrPipeNodes(l.resolution, r, ctx)),
-				`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
+				`${l.expression}${ctx.pipe ? "=>" : "&"}${r.id}`
 			)
 		})
 	}

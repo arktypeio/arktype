@@ -199,4 +199,40 @@ contextualize(() => {
 			}
 		)
 	}
+
+	// https://github.com/arktypeio/arktype/issues/930
+	it("distinguishes aliases of the same name in different scopes", () => {
+		const s1 = scope({
+			a: { v: "string", "next?": "a" },
+			box: { "inner?": "a" }
+		}).export()
+		const s2 = scope({
+			a: { v: "number", "next?": "a" },
+			box: { "inner?": "a" }
+		}).export()
+
+		attest(s1.box.equals(s2.box)).equals(false)
+		attest(s1.box.extends(s2.box)).equals(false)
+		attest(
+			(s1.box as type.Any).and(s2.box).allows({ inner: { v: "x" } })
+		).equals(false)
+		attest(
+			s2.box.and({ extra: "string" })({ extra: "e", inner: { v: 1 } })
+		).equals({ extra: "e", inner: { v: 1 } })
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1237
+	it("instantiates a generic with a cyclic alias", () => {
+		const node = scope({
+			node: { n: "string", kids: "Record<string, node>" }
+		}).export().node
+
+		attest(node({ n: "a", kids: { b: { n: "b", kids: {} } } })).equals({
+			n: "a",
+			kids: { b: { n: "b", kids: {} } }
+		})
+		attest(node({ n: "a", kids: { b: { n: 1, kids: {} } } }).toString()).snap(
+			"kids.b.n must be a string (was a number)"
+		)
+	})
 })

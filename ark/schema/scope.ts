@@ -759,8 +759,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 		let bound: reference
 
 		if (isNode(reference)) {
+			// an alias resolves in the scope that defined it
 			bound =
-				reference.$ === this ?
+				reference.$ === this || reference.hasKind("alias") ?
 					reference
 				:	new (reference.constructor as any)(reference, this)
 		} else {
@@ -821,22 +822,21 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
 			if (hasArkKind(v, "context")) {
-				if (v.phase === "resolving") {
-					return this.node(
-						"alias",
-						{ reference: `$${name}` },
-						{ prereduced: true }
-					)
-				}
+				if (v.phase === "resolving")
+					return this.node("alias", { reference: v.id }, { prereduced: true })
 				if (v.phase === "resolved") {
 					return throwInternalError(
 						`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
 					)
 				}
 				v.phase = "resolving"
-				const node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
+				let node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
 				v.phase = "resolved"
-				delete nodesByRegisteredId[v.id]
+				// an alias references a cyclic definition by its context's id
+				if (v.isReferencedById) {
+					node = withId(node, v.id)
+					nodesByRegisteredId[v.id] = node
+				} else delete nodesByRegisteredId[v.id]
 				return (this.resolutions[name] = node)
 			}
 			return throwInternalError(
@@ -1029,7 +1029,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
-		// a node referencing a `this` whose enclosing type is still being parsed,
+		// a node referencing a definition that is still being parsed,
 		// e.g. Record<string, this>, can't be resolved yet. the enclosing parse
 		// finalizes it once the context has been replaced with the resolved node.
 		if (node.isCyclic && hasUnresolvedContextAlias(node)) return node
@@ -1116,12 +1116,10 @@ const maybeResolveExport = (
 		:	undefined
 }
 
-// scope aliases are `$name` references, so can be skipped without a lookup
 const hasUnresolvedContextAlias = (node: BaseRoot): boolean =>
 	node.references.some(
 		ref =>
 			ref.hasKind("alias") &&
-			ref.reference[0] !== "$" &&
 			hasArkKind(nodesByRegisteredId[ref.reference as NodeId], "context")
 	)
 
