@@ -972,6 +972,20 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(types.S.expression).snap("{ s: $S }")
 	})
 
+	it("transforms a thunk's type of a definition in progress", () => {
+		const $ = scope({
+			a: { v: "string.numeric.parse", "w?": "w" },
+			w: (): type.Any => type({ x: $.type("a | null") })
+		})
+		const types = $.export()
+
+		attest(types.w({ x: { v: "1" } })).equals({ x: { v: 1 } })
+		attest(types.a({ v: "1", w: { x: { v: "2" } } })).equals({
+			v: 1,
+			w: { x: { v: 2 } }
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/579
 	it("rejects a shallow cycle", () => {
 		// @ts-expect-error
