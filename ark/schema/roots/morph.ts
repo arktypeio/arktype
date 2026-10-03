@@ -132,7 +132,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	override get rawOut(): BaseRoot {
 		return (
 			this.declaredOut ??
-			this.introspectableOut ??
+			this.lastMorphIfNode?.rawOut ??
 			$ark.intrinsic.unknown.internal
 		)
 	}

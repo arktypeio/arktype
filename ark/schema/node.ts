@@ -65,12 +65,10 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "./shared/traversal.ts"
-import { inProgress, isNode } from "./shared/utils.ts"
+import { inProgress, isNode, isResolutionFinal } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
-
-const isReachFinal = () => !inProgress.definitions && !inProgress.resolutions
 
 const referencesWithReplacements = new WeakSet<object>()
 
@@ -201,7 +199,7 @@ export abstract class BaseNode<
 	get transforms(): boolean {
 		if (this._transforms !== undefined) return this._transforms
 		const transforms = this.reaches("includesTransform")
-		return isReachFinal() ? (this._transforms = transforms) : transforms
+		return isResolutionFinal() ? (this._transforms = transforms) : transforms
 	}
 
 	private _allowsRequiresTraversal: boolean | undefined
@@ -209,7 +207,7 @@ export abstract class BaseNode<
 		if (this._allowsRequiresTraversal !== undefined)
 			return this._allowsRequiresTraversal
 		const requiresTraversal = this.reaches("includesContextualPredicate")
-		return isReachFinal() ?
+		return isResolutionFinal() ?
 				(this._allowsRequiresTraversal = requiresTraversal)
 			:	requiresTraversal
 	}
@@ -447,7 +445,11 @@ export abstract class BaseNode<
 
 	protected _rawIn: BaseNode | undefined
 	get rawIn(): BaseNode {
-		return (this._rawIn ??= this.getIo("in"))
+		if (this._rawIn) return this._rawIn
+		const rawIn = this.getIo("in")
+		return this.includesAlias && !isResolutionFinal() ?
+				rawIn
+			:	(this._rawIn = rawIn)
 	}
 
 	keepInScope(): void {
@@ -465,13 +467,18 @@ export abstract class BaseNode<
 
 	private _rawOut: BaseNode | undefined
 	get rawOut(): BaseNode {
-		return (this._rawOut ??= this.getIo("out"))
+		if (this._rawOut) return this._rawOut
+		const rawOut = this.getIo("out")
+		return this.includesAlias && !isResolutionFinal() ?
+				rawOut
+			:	(this._rawOut = rawOut)
 	}
 
 	// Should be refactored to use transform
 	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(ioKind: "in" | "out"): BaseNode {
-		if (!this.includesTransform) return this as never
+		if (!this.includesTransform && !(isResolutionFinal() && this.transforms))
+			return this as never
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.innerEntries) {
@@ -582,10 +589,10 @@ export abstract class BaseNode<
 		return this._select(normalized)
 	}
 
-	private _select(selector: NodeSelector.Normalized): NodeSelector.BaseResult {
-		let nodes =
-			NodeSelector.applyBoundary[selector.boundary ?? "references"](this)
-
+	private _select(
+		selector: NodeSelector.Normalized,
+		nodes = NodeSelector.applyBoundary[selector.boundary ?? "references"](this)
+	): NodeSelector.BaseResult {
 		if (selector.kind) nodes = nodes.filter(n => n.kind === selector.kind)
 		if (selector.where) nodes = nodes.filter(selector.where)
 
@@ -602,7 +609,15 @@ export abstract class BaseNode<
 	):
 		| nodeOfKind<reducibleKindOf<this["kind"]>>
 		| Extract<ReturnType<mapper>, null> {
-		return this._transform(mapper, this._createTransformContext(opts)) as never
+		const ctx = this._createTransformContext(opts)
+		if (!ctx.throughAliases) return this._transform(mapper, ctx) as never
+		// an alias to a resolution still being transformed can't be resolved until the transform returns
+		inProgress.resolutions++
+		try {
+			return this._transform(mapper, ctx) as never
+		} finally {
+			inProgress.resolutions--
+		}
 	}
 
 	protected _createTransformContext(
@@ -617,6 +632,7 @@ export abstract class BaseNode<
 				prereduced: opts?.prereduced ?? false
 			},
 			undeclaredKeyHandling: undefined,
+			throughAliases: isResolutionFinal(),
 			...opts
 		}
 	}
@@ -627,10 +643,17 @@ export abstract class BaseNode<
 	): BaseNode | null {
 		const $ = ctx.bindScope ?? this.$
 		if (ctx.seen[this.id])
-			// Cyclic handling needs to be made more robust
-			// https://github.com/arktypeio/arktype/issues/944
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
 		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
+		if (this.hasKind("alias") && ctx.throughAliases) {
+			const resolution = this.resolution
+			if (!ctx.seen[resolution.id]) {
+				const transformed = resolution._transform(mapper, ctx)
+				if (!transformed) return transformed
+				ctx.seen[resolution.id] = () => transformed
+			}
+			return this.$.lazilyResolve(ctx.seen[resolution.id]! as never)
+		}
 
 		let transformedNode: BaseRoot | undefined
 
@@ -743,7 +766,12 @@ export abstract class BaseNode<
 			) as never
 		}
 
-		const rawSelected = this._select(normalized)
+		const rawSelected = this._select(
+			normalized,
+			normalized.boundary === "references" && isResolutionFinal() ?
+				referencesThroughAliases(this)
+			:	undefined
+		)
 		const selected = rawSelected && liftArray(rawSelected)
 
 		const shouldTransform: ShouldTransformFn =
@@ -759,6 +787,16 @@ export abstract class BaseNode<
 			}) as never
 		)
 	}
+}
+
+const referencesThroughAliases = (node: BaseNode): BaseNode[] => {
+	const references = new Set(node.references)
+	for (const reference of references) {
+		if (!reference.hasKind("alias")) continue
+		for (const resolved of reference.resolution.references)
+			references.add(resolved)
+	}
+	return [...references]
 }
 
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
@@ -976,6 +1014,7 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: BaseParseOptions
 	undeclaredKeyHandling: UndeclaredKeyHandling | undefined
+	throughAliases: boolean
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(

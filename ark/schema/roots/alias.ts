@@ -19,7 +19,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
-import { hasArkKind, inProgress } from "../shared/utils.ts"
+import { hasArkKind, inProgress, isResolutionFinal } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
 export declare namespace Alias {
@@ -107,7 +107,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			const path = [...cycle.slice(start), ...cycle.slice(0, start)]
 			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
 		}
-		const isFinal = !inProgress.definitions && !inProgress.resolutions
+		const isFinal = isResolutionFinal()
 		this.resolving = true
 		resolvingAliases.push(this)
 		inProgress.resolutions++
@@ -157,8 +157,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	get resolutionId(): NodeId {
-		if (this.reference.includes("&") || this.reference.includes("=>"))
-			return this.resolution.id
+		if (this.resolve) return this.resolution.id
 		if (this.reference[0] !== "$") return this.reference as NodeId
 		const alias = this.reference.slice(1)
 		const resolution = this.$.resolutions[alias]
@@ -172,6 +171,17 @@ Resolution: ${printable(resolution)}`)
 
 	get defaultShortDescription(): string {
 		return domainDescriptions.object
+	}
+
+	override getIo(ioKind: "in" | "out"): BaseRoot {
+		if (!isResolutionFinal() || !this.transforms) return this
+		const operator = ioKind === "in" ? "In" : "Out"
+		return this.$.lazilyResolve(
+			() => (ioKind === "in" ? this.resolution.rawIn : this.resolution.rawOut),
+			`${operator}<${identityOf(this)}>`,
+			operator,
+			[this]
+		)
 	}
 
 	get nestableExpression(): string {
