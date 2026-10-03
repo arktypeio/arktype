@@ -41,8 +41,7 @@ import {
 } from "../shared/traversal.ts"
 import {
 	assertDefaultValueAssignability,
-	computeDefaultValueMorph,
-	keepsDefaultValueMorph
+	computeDefaultValueMorph
 } from "./optional.ts"
 
 export declare namespace Sequence {
@@ -500,10 +499,7 @@ const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
 	const cached = defaultableMorphsCache.get(cacheKey)
 	if (cached) return cached
 
-	const keepsMorphs = node.defaultables.some(([element]) =>
-		keepsDefaultValueMorph(element)
-	)
-	return keepsMorphs ?
+	return node.defaultables.some(([element]) => element.includesTransform) ?
 			defaultableMorphsCache.pin(cacheKey, morphs)
 		:	defaultableMorphsCache.set(cacheKey, morphs)
 }
