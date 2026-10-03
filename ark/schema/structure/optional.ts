@@ -18,6 +18,8 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
+import { $ark } from "../shared/registry.ts"
+import { missingSetEngineMessage } from "../shared/sets.ts"
 import { traverseKey } from "../shared/traversal.ts"
 import { inProgress, isResolutionFinal } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
@@ -61,7 +63,11 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 				preserveUndefined: true
 			}
 		},
-		normalize: schema => schema,
+		normalize: (schema, $) =>
+			// a set engine adds undefined to the value under exactOptionalPropertyTypes: false
+			!$ark.sets && $.resolvedConfig.exactOptionalPropertyTypes === false ?
+				throwParseError(missingSetEngineMessage)
+			:	schema,
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		}

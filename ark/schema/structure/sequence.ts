@@ -32,6 +32,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
+import { missingSetEngineMessage } from "../shared/sets.ts"
 import {
 	applyValue,
 	traverseKey,
@@ -180,6 +181,16 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 						"minVariadicLength may not be specified without a variadic element"
 					)
 				}
+				// a set engine adds the length bounds a tuple implies to its intersection
+				if (
+					!$ark.sets &&
+					(schema.prefix?.length ||
+						schema.optionals?.length ||
+						schema.defaultables?.length ||
+						schema.postfix?.length ||
+						schema.minVariadicLength)
+				)
+					return throwParseError(missingSetEngineMessage)
 				return schema
 			}
 			return { variadic: schema }
