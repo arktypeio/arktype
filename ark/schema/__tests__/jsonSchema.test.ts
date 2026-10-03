@@ -6,6 +6,7 @@ import {
 	rootSchemaScope,
 	schemaScope,
 	type BaseRoot,
+	type JsonSchema,
 	type ToJsonSchema
 } from "@ark/schema"
 import type { omit } from "@ark/util"
@@ -253,6 +254,43 @@ contextualize(() => {
 				}
 			}
 		})
+	})
+
+	it("defines nodes a $ref reaches in reference order", () => {
+		const node = rootSchema([
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "a" } },
+					{
+						key: "a",
+						value: {
+							domain: "object",
+							required: [{ key: "x", value: "string" }]
+						}
+					}
+				]
+			},
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "b" } },
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [{ key: "y", value: "number" }]
+						}
+					}
+				]
+			}
+		])
+		const defs = toJsonSchema(node, { useRefs: true }).$defs!
+		attest(
+			Object.values(defs).map(def =>
+				Object.keys((def as JsonSchema.Object).properties ?? def)
+			)
+		).snap([["anyOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
 	})
 
 	it("unions of literal values as enums", () => {

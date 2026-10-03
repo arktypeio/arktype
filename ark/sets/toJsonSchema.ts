@@ -11,7 +11,7 @@ import {
 	type ToJsonSchema,
 	type nodeOfKind
 } from "@ark/schema"
-import { hasKey, printable, throwInternalError } from "@ark/util"
+import { flatMorph, hasKey, printable, throwInternalError } from "@ark/util"
 
 export const toJsonSchema = (
 	node: BaseRoot,
@@ -34,10 +34,16 @@ export const toJsonSchema = (
 		Object.assign(schema, toJsonSchemaRecurse(node, ctx))
 
 		if (ctx.useRefs) {
-			// only nodes a $ref reaches are defined, so a discriminant's cases aren't
-			const defs: Record<string, JsonSchema> = {}
+			const schemasById: Record<string, JsonSchema> = {}
 			for (let i = 0; i < refs.length; i++)
-				defs[refs[i].id] ??= toResolvedJsonSchema(refs[i], ctx)
+				schemasById[refs[i].id] ??= toResolvedJsonSchema(refs[i], ctx)
+			// only nodes a $ref reaches are defined, so a discriminant's cases aren't
+			const defs = flatMorph(node.references, (i, ref) =>
+				ref.id in schemasById ? [ref.id, schemasById[ref.id]] : []
+			)
+			// an alias's resolution or a morph's out can be reached outside
+			// node.references
+			Object.assign(defs, schemasById)
 			// draft-2020-12 uses $defs, draft-07 uses definitions
 			if (ctx.target === "draft-07")
 				Object.assign(schema, { definitions: defs })
