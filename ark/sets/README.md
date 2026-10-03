@@ -10,4 +10,4 @@ Importing it installs a `SetEngine` on `$ark.sets`, which `@ark/schema` consults
 import "arksets"
 ```
 
-`arktype` imports it, so nothing changes for arktype users. Without it, `@ark/schema` still parses and validates- nodes are simply left unreduced, unions compile without a discriminant, and relational methods and `.toJsonSchema()` throw naming the missing import. The one exception is an index signature whose key is anything but `string`, `symbol` or their union, which needs the engine to be checked.
+`arktype` imports it, so nothing changes for arktype users. Without it, `@ark/schema` still parses and validates- nodes are simply left unreduced, unions compile without a discriminant, and relational methods and `.toJsonSchema()` throw naming the missing import. A schema whose validation depends on reduction throws the same way: a tuple, whose length bounds the engine adds; an unordered union with a branch that transforms, whose branches the engine checks don't overlap; an optional prop under `exactOptionalPropertyTypes: false`, whose value the engine extends with `undefined`; and an index signature whose key is anything but `string`, `symbol` or their union.

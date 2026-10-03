@@ -10,6 +10,7 @@ import {
 	printable,
 	registeredNameOf,
 	serializePrimitive,
+	throwParseError,
 	type JsTypeOf,
 	type JsonStructure,
 	type SerializablePrimitive,
@@ -39,6 +40,7 @@ import {
 	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
+import { missingSetEngineMessage } from "../shared/sets.ts"
 import {
 	applyResolution,
 	type TraverseAllows,
@@ -128,8 +130,16 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 						}
 					}
 
-					if (!ctx.def.ordered)
+					if (!ctx.def.ordered) {
+						// a set engine rejects overlapping branches that transform differently
+						if (
+							!$ark.sets &&
+							branches.length > 1 &&
+							branches.some(branch => branch.includesTransform)
+						)
+							throwParseError(missingSetEngineMessage)
 						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
+					}
 
 					return branches
 				}

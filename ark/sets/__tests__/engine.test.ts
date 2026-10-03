@@ -3,7 +3,8 @@ import {
 	$ark,
 	bootstrap,
 	missingSetEngineMessage,
-	rootSchema
+	rootSchema,
+	schemaScope
 } from "@ark/schema"
 import { setEngine } from "arksets"
 
@@ -50,5 +51,25 @@ contextualize(() => {
 			attest(T.allows("x")).equals(false)
 		})
 		attest(rootSchema(["number", { unit: 1 }]).expression).snap("number")
+	})
+
+	it("parsing what only it validates does", () => {
+		withoutEngine(() => {
+			attest(() =>
+				rootSchema({ proto: Array, sequence: { prefix: ["string"] } })
+			).throws(missingSetEngineMessage)
+			attest(() =>
+				rootSchema([
+					{ in: "string", morphs: [(s: string) => s.trim()] },
+					"string"
+				])
+			).throws(missingSetEngineMessage)
+			attest(() =>
+				schemaScope({}, { exactOptionalPropertyTypes: false }).schema({
+					domain: "object",
+					optional: [{ key: "a", value: "string" }]
+				})
+			).throws(missingSetEngineMessage)
+		})
 	})
 })
