@@ -274,10 +274,7 @@ const reduceObjectJsonSchema = (
 					if (keySchema.pattern) {
 						schema.patternProperties ??= {}
 						schema.patternProperties[keySchema.pattern] = valueJsonSchema
-					} else if (
-						keySchema.type === "string" &&
-						Object.keys(keySchema).length === 1
-					)
+					} else if (keyBranch.rawIn.equals($ark.intrinsic.string))
 						schema.additionalProperties = valueJsonSchema
 					continue
 				}

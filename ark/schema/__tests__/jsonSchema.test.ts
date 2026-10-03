@@ -645,7 +645,10 @@ contextualize(() => {
 						value: "string"
 					},
 					{
-						signature: { in: "string", morphs: [(s: string) => s.trim()] },
+						signature: {
+							in: { domain: "string", meta: "a key" },
+							morphs: [(s: string) => s.trim()]
+						},
 						value: "number"
 					}
 				]
