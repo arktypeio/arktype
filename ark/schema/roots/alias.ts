@@ -235,7 +235,7 @@ Resolution: ${printable(resolution)}`)
 	compile(js: NodeCompiler): void {
 		const resolution = this.resolution
 		const traverse = js.invoke(resolution)
-		const id = js.referenceToId(resolution.id)
+		const id = resolution.id
 		if (js.traversalKind === "Transform") {
 			js.return(
 				`ctx.transformResolution("${id}", data, ${js.referenceToId(resolution.id, { kind: "Transform" })})`

@@ -167,6 +167,7 @@ export interface InvokeOptions extends ReferenceOptions {
 
 export interface ReferenceOptions {
 	kind?: TraversalKind
+	bind?: string
 }
 
 export interface TransformKeyOptions {
@@ -225,10 +226,10 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		const requiresContext =
 			typeof node === "string" ? true : this.requiresContextFor(node, kind)
 		const id = typeof node === "string" ? node : node.id
-		const reference = this.referenceToId(id, { kind })
-		if (requiresContext) return `${reference}(${arg}, ${this.ctx})`
+		if (requiresContext)
+			return `${this.referenceToId(id, opts)}(${arg}, ${this.ctx})`
 
-		return `${reference}(${arg})`
+		return `${this.referenceToId(id, opts)}(${arg})`
 	}
 
 	invokeMember(node: BaseNode, member: BaseNode = node): this {
@@ -241,7 +242,9 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		return opts?.kind ? `${id}${opts.kind}` : id
+		const invokedKind = opts?.kind ?? this.traversalKind
+		const base = `${id}${invokedKind}`
+		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 
 	ref(value: object | symbol): string {
