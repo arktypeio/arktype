@@ -87,8 +87,12 @@ contextualize(() => {
 					let data: object = { kids: [], a: 1, b: "x" }
 					for (let i = 0; i < 24; i++) data = { kids: [data, data] }
 
+					const path = "kids[0].".repeat(24)
+
 					attest(types.union.allows(data)).equals(false)
-					attest(types.union(data) instanceof type.errors).equals(true)
+					attest(types.union(data).toString()).equals(
+						`${path}a must be a string (was a number) or ${path}b must be a number (was a string)`
+					)
 				})
 
 				it("reports a cyclic object once", config => {

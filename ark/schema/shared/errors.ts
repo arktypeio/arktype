@@ -3,6 +3,7 @@ import {
 	ReadonlyArray,
 	ReadonlyPath,
 	append,
+	appendUnique,
 	conflatenateAll,
 	flatMorph,
 	stringifyPath,
@@ -44,23 +45,27 @@ export class ArkError<
 	) {
 		super()
 		if (input.code === "union") {
-			input.errors = input.errors.flatMap(innerError => {
-				// flatten union errors to avoid repeating context like "foo must be foo must be"...
-				const flat =
-					innerError.hasCode("union") ? innerError.errors : [innerError]
-
-				if (!prefixPath && !relativePath) return flat
-
-				return flat.map(e =>
-					e.transform(
-						e =>
-							({
-								...e,
-								path: conflatenateAll(prefixPath, e.path, relativePath)
-							}) as never
-					)
+			// flatten union errors to avoid repeating context like "foo must be foo must be"...
+			// a branch error reached through shared data appears once
+			const flat: ArkError[] = []
+			for (const innerError of input.errors) {
+				appendUnique(
+					flat,
+					innerError.hasCode("union") ? innerError.errors : innerError
 				)
-			})
+			}
+			input.errors =
+				!prefixPath && !relativePath ?
+					flat
+				:	flat.map(e =>
+						e.transform(
+							e =>
+								({
+									...e,
+									path: conflatenateAll(prefixPath, e.path, relativePath)
+								}) as never
+						)
+					)
 		}
 		this.input = input as never
 		this.ctx = ctx
