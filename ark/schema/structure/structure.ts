@@ -804,23 +804,28 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		if (this.sequence?.transforms) {
-			js.transformKey("transformedSequence", "data", this.sequence, {
-				onChange: () =>
-					this.compileCopyProps(js, "out", "transformedSequence").set(
-						"out",
-						"transformedSequence"
-					)
-			})
+			js.transformKey(
+				"transformedSequence",
+				"data",
+				[{ node: this.sequence }],
+				{
+					onChange: () =>
+						this.compileCopyProps(js, "out", "transformedSequence").set(
+							"out",
+							"transformedSequence"
+						)
+				}
+			)
 		}
 		if (transformedIndex.length) {
 			this.compileOwnKeys(js, "data").for("i < keys.length", () => {
 				js.const("k", "keys[i]")
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.propsByKey)}`, () => js.line("continue"))
-				const transformKey = (node: BaseNode | TransformStep[]) =>
+				const transformKey = (steps: TransformStep[]) =>
 					js
 						.const("value", "data[k]")
-						.transformKey("transformed", "value", node, {
+						.transformKey("transformed", "value", steps, {
 							keyExpression: "k",
 							onChange: () => this.compileCopy(js).line("out[k] = transformed")
 						})
@@ -830,7 +835,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							arg: "k",
 							kind: "Allows"
 						}),
-						() => transformKey(transformedIndex[0].value)
+						() => transformKey([{ node: transformedIndex[0].value }])
 					)
 				}
 				return transformKey(

@@ -172,7 +172,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		let result = "data"
 		if (this.introspectableIn?.transforms) {
 			js.initializeTransform([this.introspectableIn])
-				.transformKey("transformedIn", "data", this.introspectableIn)
+				.transformKey("transformedIn", "data", [
+					{ node: this.introspectableIn }
+				])
 				.returnIfTransformFailed()
 			result = "transformedIn"
 		}

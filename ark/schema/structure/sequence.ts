@@ -416,7 +416,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			const transformed = `transformed${i++}`
 			return js
 				.const(element, `data[${keyExpression}]`)
-				.transformKey(transformed, element, node, {
+				.transformKey(transformed, element, [{ node }], {
 					keyExpression,
 					onChange: () =>
 						js
