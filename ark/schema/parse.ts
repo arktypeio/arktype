@@ -144,6 +144,9 @@ export const nodesByRegisteredId: Record<
 
 $ark.nodesByRegisteredId = nodesByRegisteredId
 
+// while a definition is being parsed, an alias in it may reference one that isn't resolved yet
+export const openDefinitions: { count: number } = { count: 0 }
+
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId

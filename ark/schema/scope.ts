@@ -53,6 +53,7 @@ import {
 import type { BaseNode } from "./node.ts"
 import {
 	nodesByRegisteredId,
+	openDefinitions,
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
@@ -683,9 +684,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		})
 	}
 
-	protected lazyResolutions: Alias.Node[] = []
 	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): Alias.Node {
-		const node = this.node(
+		return this.node(
 			"alias",
 			{
 				reference: syntheticAlias ?? "synthetic",
@@ -693,8 +693,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 			},
 			{ prereduced: true }
 		)
-		if (!this.resolved) this.lazyResolutions.push(node)
-		return node
 	}
 
 	schema: InternalSchemaParser = (schema, opts) =>
@@ -830,7 +828,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					)
 				}
 				v.phase = "resolving"
-				let node = this.bindReference(this.parseOwnDefinitionFormat(v.def, v))
+				let node = this.bindReference(this.parseOpenDefinition(v.def, v))
 				v.phase = "resolved"
 				// an alias references a cyclic definition by its context's id
 				if (v.isReferencedById) {
@@ -925,10 +923,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 					: bootstrapAliasReferences(this.maybeResolve(name)!)
 			}
 
-			// force node.resolution getter evaluation
-			// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-			for (const node of this.lazyResolutions) node.resolution
-
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
 			this._json = resolutionsToJson(this._exportedResolutions)
@@ -1016,7 +1010,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.bindReference(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
-		let node = this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
+		let node = this.bindReference(this.parseOpenDefinition(def, ctx))
 
 		// if the node is recursive e.g. { box: "this" }, we need to make sure it
 		// has the original id from context so that its references compile correctly
@@ -1028,11 +1022,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node
 	}
 
+	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
+		openDefinitions.count++
+		try {
+			return this.parseOwnDefinitionFormat(def, ctx)
+		} finally {
+			openDefinitions.count--
+		}
+	}
+
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
-		// a node referencing a definition that is still being parsed,
-		// e.g. Record<string, this>, can't be resolved yet. the enclosing parse
-		// finalizes it once the context has been replaced with the resolved node.
-		if (node.isCyclic && hasUnresolvedContextAlias(node)) return node
+		// an alias may reference a definition that is still being parsed,
+		// e.g. Record<string, this>, so the outermost parse finalizes it
+		if (openDefinitions.count && node.includesAlias) return node
 
 		bootstrapAliasReferences(node)
 		if (node.precompilation || this.resolvedConfig.jitless) return node
@@ -1115,13 +1117,6 @@ const maybeResolveExport = (
 			resolution
 		:	undefined
 }
-
-const hasUnresolvedContextAlias = (node: BaseRoot): boolean =>
-	node.references.some(
-		ref =>
-			ref.hasKind("alias") &&
-			hasArkKind(nodesByRegisteredId[ref.reference as NodeId], "context")
-	)
 
 const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 	if (isNode(resolution) && !resolution.includesAlias) return resolution
