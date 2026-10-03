@@ -169,50 +169,9 @@ contextualize(() => {
 		attest(T.allows(35_999)).equals(false)
 	})
 
-	it("registers nothing only compiled traversals read", () => {
-		const epoch = new Date(0)
-		const make = (key: string) =>
-			rootSchema({
-				domain: "object",
-				required: [
-					{ key, value: "string" },
-					{ key: "n", value: { domain: "number", min: 0, max: 100 } },
-					{ key: "d", value: { proto: Date, after: epoch } },
-					{ key: "u", value: [{ unit: 1 }, { unit: "a" }] },
-					{ key: "v", value: ["string", "number"] },
-					{
-						key: "t",
-						value: {
-							proto: Array,
-							sequence: { prefix: ["string"], defaultables: [["number", 0]] },
-							undeclared: "delete"
-						}
-					}
-				],
-				optional: [{ key: "o", value: "number", default: 5 }],
-				undeclared: "reject"
-			})
-		const invalid = { n: 500, d: new Date(-1), u: 2, v: true, t: [1, 2], x: 1 }
-		make("warm")(invalid)
-		const registeredCount = Object.keys($ark).length
-		const T = make("fresh")
-		attest(
-			T({ fresh: "s", n: 5, d: new Date(1), u: 1, v: 1, t: ["s"] })
-		).equals({
-			fresh: "s",
-			n: 5,
-			d: new Date(1),
-			u: 1,
-			v: 1,
-			t: ["s", 0],
-			o: 5
-		})
-		attest((T(invalid) as ArkErrors).count).equals(7)
-		attest(Object.keys($ark).length).equals(registeredCount)
-	})
-
-	it("registers nothing for own morphs, defaults and unions", () => {
+	it("compiling registers nothing", () => {
 		const length = (s: string) => s.length
+		const epoch = new Date(0)
 		const make = (seed: number) => {
 			const key = `own${seed}`
 			return rootSchema({
@@ -220,6 +179,8 @@ contextualize(() => {
 				required: [
 					{ key, value: { domain: "number", max: seed * 10 } },
 					{ key: "u", value: [{ unit: seed }, { unit: "a" }, { unit: "b" }] },
+					{ key: "d", value: { proto: Date, after: epoch } },
+					{ key: "v", value: ["string", "number"] },
 					{
 						key: "k",
 						value: [
@@ -261,6 +222,8 @@ contextualize(() => {
 		const valid = (seed: number) => ({
 			[`own${seed}`]: seed,
 			u: "a",
+			d: new Date(1),
+			v: 1,
 			k: { [`own${seed}`]: "x" },
 			m: "abc",
 			w: { [`own${seed}`]: 1, extra: 1 },
@@ -269,6 +232,8 @@ contextualize(() => {
 		const invalid = (seed: number) => ({
 			[`own${seed}`]: seed * 10 + 1,
 			u: 3,
+			d: new Date(-1),
+			v: true,
 			k: { [`own${seed}`]: "z" },
 			m: 1,
 			w: {},
@@ -283,13 +248,15 @@ contextualize(() => {
 		attest(T(valid(2))).equals({
 			own2: 2,
 			u: "a",
+			d: new Date(1),
+			v: 1,
 			k: { own2: "x" },
 			m: 3,
 			w: { own2: 1 },
 			t: ["s", 2],
 			o: 2
 		})
-		attest((T(invalid(2)) as ArkErrors).count).equals(8)
+		attest((T(invalid(2)) as ArkErrors).count).equals(10)
 		attest(Object.keys($ark).length).equals(registeredCount)
 		const values = Object.values($ark)
 		for (const value of [printable, jsTypeOfDescriptions, arrayIndexMatcher])
