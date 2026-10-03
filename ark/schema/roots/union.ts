@@ -259,8 +259,18 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
 	}
 
-	// Apply also takes the first valid branch
 	traverseTransform: TraverseTransform = (data, ctx) => {
+		const discriminant = this.compiledDiscriminant
+		if (discriminant) {
+			const caseNode =
+				discriminant.cases[
+					caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+				]
+			return caseNode !== true && caseNode?.transforms ?
+					ctx.transform(caseNode, data)
+				:	data
+		}
+		// Apply also takes the first valid branch
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
 			if (ctx.allows(branch, data))
