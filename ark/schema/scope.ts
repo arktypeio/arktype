@@ -286,8 +286,7 @@ const precompile = (
 		dependencies: new Map(),
 		refs: new Map(),
 		errorContexts: [],
-		members: [],
-		closed: true
+		members: []
 	}
 	for (const node of references) linkage.referencesById.set(node.id, node)
 	const declared: BaseNode[] = []
@@ -334,8 +333,7 @@ const precompile = (
 			node.rootApply = (data, onFail) =>
 				(node.rootApply = compileRootApply(node))(data, onFail)
 		}
-		node.isReusableLeaf =
-			linkage.closed && isLeafIn(node, linkage.referencesById)
+		node.isReusableLeaf = isLeafIn(node, linkage.referencesById)
 	}
 
 	return precompilation
@@ -486,7 +484,6 @@ interface UnitLinkage {
 	refs: NodeCompiler.Refs
 	errorContexts: NodeCompiler.ErrorContexts
 	members: UnitMember[]
-	closed: boolean
 }
 
 class TraversalCompiler extends NodeCompiler {
@@ -513,7 +510,7 @@ class TraversalCompiler extends NodeCompiler {
 			if (isNode(node)) {
 				this.linkage.referencesById.set(id, node)
 				this.linkage.reached.push(node)
-			} else this.linkage.closed = false
+			}
 		} else if (this.linkage.reused.has(reference)) {
 			const kind = opts?.kind ?? this.traversalKind
 			this.linkage.dependencies.set(
