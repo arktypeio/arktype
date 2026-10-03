@@ -1,6 +1,5 @@
 import {
 	append,
-	capitalize,
 	conflatenate,
 	printable,
 	throwInternalError,
@@ -398,11 +397,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private compileTransform(js: NodeCompiler): void {
 		js.initializeTransform(this.children).line("let out = data")
-		this.compileElements(js, (keyExpression, node, name) => {
-			const transformed = `transformed${capitalize(name)}`
+		let i = 0
+		this.compileElements(js, (keyExpression, node) => {
+			const element = `element${i}`
+			const transformed = `transformed${i++}`
 			return js
-				.const(name, `data[${keyExpression}]`)
-				.transformKey(transformed, name, node, {
+				.const(element, `data[${keyExpression}]`)
+				.transformKey(transformed, element, node, {
 					keyExpression,
 					onChange: () =>
 						js
@@ -415,11 +416,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private compileElements(
 		js: NodeCompiler,
-		compileElement: (
-			keyExpression: string,
-			node: BaseRoot,
-			name: string
-		) => NodeCompiler
+		compileElement: (keyExpression: string, node: BaseRoot) => NodeCompiler
 	): void {
 		// a transform skips each element that would return its input
 		const reaches = (node: BaseRoot) =>
@@ -427,7 +424,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 		if (this.prefix) {
 			for (const [i, node] of this.prefix.entries())
-				if (reaches(node)) compileElement(`${i}`, node, `element${i}`)
+				if (reaches(node)) compileElement(`${i}`, node)
 		}
 
 		for (const [i, node] of this.defaultablesAndOptionals.entries()) {
@@ -435,7 +432,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			if (js.traversalKind === "Transform") {
 				if (node.transforms) {
 					js.if(`${dataIndex} < data.length`, () =>
-						compileElement(dataIndex, node, `element${dataIndex}`)
+						compileElement(dataIndex, node)
 					)
 				}
 				continue
@@ -443,7 +440,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			js.if(`${dataIndex} >= data.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
-			compileElement(dataIndex, node, `element${dataIndex}`)
+			compileElement(dataIndex, node)
 		}
 
 		const variadic = this.variadic
@@ -454,14 +451,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		if (reaches(variadic)) {
 			js.for(
 				`i < ${postfix.length ? "firstPostfixIndex" : "data.length"}`,
-				() => compileElement("i", variadic, "element"),
+				() => compileElement("i", variadic),
 				this.prevariadic.length
 			)
 		}
-		for (const [i, node] of postfix.entries()) {
-			if (reaches(node))
-				compileElement(`firstPostfixIndex + ${i}`, node, `postfixElement${i}`)
-		}
+		for (const [i, node] of postfix.entries())
+			if (reaches(node)) compileElement(`firstPostfixIndex + ${i}`, node)
 	}
 
 	protected override _transform(
