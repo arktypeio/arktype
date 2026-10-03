@@ -247,7 +247,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			() => {
 				const params = this.parseGenericParams(paramString, { alias: name })
 
-				const generic = parseGeneric(params, def, this as never)
+				const generic = parseGeneric(params, def, this as never, name)
 
 				return generic
 			}

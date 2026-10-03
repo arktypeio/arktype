@@ -685,11 +685,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 	lazilyResolve(
 		resolve: () => BaseRoot,
 		reference: string = registerNodeId("synthetic"),
+		operator?: string,
 		operands?: readonly BaseRoot[]
 	): Alias.Node {
 		return this.node(
 			"alias",
-			operands ? { reference, resolve, operands } : { reference, resolve },
+			operator && operands ?
+				{ reference, resolve, operator, operands }
+			:	{ reference, resolve },
 			{ prereduced: true }
 		)
 	}
@@ -778,7 +781,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 						reference.bodyDef,
 						reference.$,
 						this as never,
-						reference.hkt
+						reference.hkt,
+						reference.alias
 					) as never)
 		}
 
@@ -918,8 +922,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		def = this.normalizeRootScopeValue(def)
 
-		if (hasArkKind(def, "generic"))
-			return (this.resolutions[name] = this.bindReference(def))
+		if (hasArkKind(def, "generic")) {
+			const generic = (this.resolutions[name] = this.bindReference(def))
+			generic.alias ??= name
+			// instantiated once cached, so its errors surface here and its body can reference it
+			void generic.baseInstantiation
+			return generic
+		}
 
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
