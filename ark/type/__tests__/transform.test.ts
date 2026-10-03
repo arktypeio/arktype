@@ -91,6 +91,51 @@ contextualize(() => {
 		attest(calls).equals(2)
 	})
 
+	it("transforms a key by each prop and index signature allowing it in turn", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "string.trim" }).and({ "[string]": "string.lower" })
+			const anded: unknown = T({ a: " AB ", b: " Q " })
+			attest(anded).snap({ a: "ab", b: " q " })
+
+			const U = $.type({ "[string]": "string.trim", "[/^a/]": "string.lower" })
+			attest(U({ ab: " X ", b: " Y " })).snap({ ab: "x", b: "Y" })
+
+			const types = scope(
+				{
+					node: {
+						"a?": "node",
+						"v?": "string.trim",
+						"[/^a/]": $.type({ "v?": "string" }).pipe(o => ({
+							...o,
+							tagged: true
+						}))
+					}
+				},
+				{ jitless }
+			).export()
+			const out: unknown = types.node({ v: " x ", a: { v: " y " } })
+			attest(out).snap({
+				v: "x",
+				a: { v: "y", tagged: true }
+			})
+		}
+	})
+
+	it("stops transforming a key at a transform that fails", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const A = $.type("string").pipe((s, ctx) => ctx.error("A"))
+			const B = $.type("string").pipe((s, ctx) => ctx.error("B"))
+
+			const T = $.type({ "[string]": A, "[/^a/]": B })
+			attest(T({ ab: "x", b: "y" }).toString()).snap(`ab must be A (was "x")
+b must be A (was "y")`)
+
+			const U = $.type({ a: A }).and({ "[string]": B })
+			attest(U({ a: "x" }).toString()).snap('a must be A (was "x")')
+		}
+	})
+
 	it("transforms a frozen input", () => {
 		const T = type({ foo: "string.trim", bar: "number = 5" })
 

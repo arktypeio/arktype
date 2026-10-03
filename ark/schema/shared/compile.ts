@@ -2,6 +2,7 @@ import {
 	CastableBase,
 	DynamicFunction,
 	hasDomain,
+	isArray,
 	isDotAccessible,
 	serializePrimitive,
 	type Fn,
@@ -149,6 +150,11 @@ export interface TransformKeyOptions {
 	keyExpression?: string
 	condition?: string
 	onChange?: () => unknown
+}
+
+export interface TransformStep {
+	node: BaseNode
+	condition?: string
 }
 
 export declare namespace NodeCompiler {
@@ -301,51 +307,76 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	transformKey(
 		name: string,
 		input: string,
-		node: BaseNode,
+		node: BaseNode | readonly TransformStep[],
 		opts?: TransformKeyOptions
 	): this {
+		const steps: readonly TransformStep[] = isArray(node) ? node : [{ node }]
+		const nodes = steps.map(step => step.node)
 		const keyExpression = opts?.keyExpression
-		const pushesKey =
-			keyExpression !== undefined && node.transformRequiresContext
-		const assign = (assignee: string) => {
+		const assign = (assignee: string, node: BaseNode, arg: string) => {
+			const pushesKey =
+				keyExpression !== undefined && node.transformRequiresContext
 			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
-			this.line(`${assignee} = ${this.invoke(node, { arg: input })}`)
+			this.line(`${assignee} = ${this.invoke(node, { arg })}`)
 			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
 		}
-		if (opts?.condition) {
+		const isTransformErrors = () =>
+			`typeof ${name} === "object" && ${name} instanceof ${this.ref(TransformErrors)}`
+		const assignSteps = () => {
+			const errorCount = `${name}ErrorCount`
+			if (nodes.slice(0, -1).some(node => node.transformRequiresContext))
+				this.const(errorCount, `${this.ctx}.currentErrorCount`)
+			for (let i = 0; i < steps.length; i++) {
+				const { node, condition } = steps[i]
+				const previous = nodes.slice(0, i)
+				const conditions = condition ? [condition] : []
+				if (previous.some(returnsTransformErrors))
+					conditions.push(`!(${isTransformErrors()})`)
+				if (previous.some(node => node.transformRequiresContext))
+					conditions.push(`${this.ctx}.currentErrorCount === ${errorCount}`)
+				const assignStep = () => assign(name, node, i === 0 ? input : name)
+				if (conditions.length) this.if(conditions.join(" && "), assignStep)
+				else assignStep()
+			}
+			return this
+		}
+		if (steps.length === 1 && !steps[0].condition && !opts?.condition)
+			assign(`const ${name}`, steps[0].node, input)
+		else {
 			this.line(`let ${name} = ${input}`)
-			this.if(opts.condition, () => assign(name))
-		} else assign(`const ${name}`)
+			if (opts?.condition) this.if(opts.condition, assignSteps)
+			else assignSteps()
+		}
 		const onChange = (): this => {
 			opts?.onChange?.()
 			return this
 		}
-		const checksErrors = node.includesMorph && !node.transformRequiresContext
+		const checksErrors = nodes.some(returnsTransformErrors)
 		if (!checksErrors && !opts?.onChange) return this
-		return this.if(this.compareTransformed(node, name, "!==", input), () => {
+		return this.if(this.compareTransformed(nodes, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
 			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
-			this.if(
-				`typeof ${name} === "object" && ${name} instanceof ${this.ref(TransformErrors)}`,
-				() =>
-					this.line(
-						this.requiresContext ?
-							`${this.ctx}.addTransformErrors(${name}${key})`
-						:	`failed = ${name}.addTo(failed${key})`
-					)
+			this.if(isTransformErrors(), () =>
+				this.line(
+					this.requiresContext ?
+						`${this.ctx}.addTransformErrors(${name}${key})`
+					:	`failed = ${name}.addTo(failed${key})`
+				)
 			)
 			return opts?.onChange ? this.else(onChange) : this
 		})
 	}
 
 	compareTransformed(
-		node: BaseNode,
+		nodes: readonly BaseNode[],
 		transformed: string,
 		operator: "===" | "!==",
 		input: string
 	): string {
-		const canChangeSignOfZero =
-			node.isRoot() && node.branches.some(n => !n.hasKind("intersection"))
+		const canChangeSignOfZero = nodes.some(
+			node =>
+				node.isRoot() && node.branches.some(n => !n.hasKind("intersection"))
+		)
 		return canChangeSignOfZero ?
 				`${operator === "===" ? "" : "!"}Object.is(${transformed}, ${input})`
 			:	`${transformed} ${operator} ${input}`
@@ -364,6 +395,9 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	this.line(this.invoke(node, opts))
 	}
 }
+
+const returnsTransformErrors = (node: BaseNode): boolean =>
+	node.includesMorph && !node.transformRequiresContext
 
 const isDecidedByAllows = (node: BaseNode): boolean => {
 	if (node.includesTransform || node.allowsRequiresContext) return false
