@@ -15,17 +15,17 @@ const tsPatternMatch3 = (n: 31 | 32 | 33) =>
 		.with(33, n => `${n}`)
 		.exhaustive()
 
-// inputs are exported so V8 can't fold a bench's work into a constant
-export const cases3Data = [31, 32, 33] as const
+bench("case(3, invoke)", () => {
+	arkMatch3(31)
+	arkMatch3(32)
+	return arkMatch3(33)
+}).median()
 
-bench("case(3, invoke)", () => cases3Data.map(n => arkMatch3(n))).median([
-	28.25,
-	"ns"
-])
-
-bench("ts-pattern case(3, invoke)", () =>
-	cases3Data.map(n => tsPatternMatch3(n))
-).median([713.97, "ns"])
+bench("ts-pattern case(3, invoke)", () => {
+	tsPatternMatch3(31)
+	tsPatternMatch3(32)
+	return tsPatternMatch3(33)
+}).median()
 
 const arkMatch10 = match
 	.case("0n", n => `${n}` as const)
@@ -54,22 +54,26 @@ const tsPatternMatch10 = (n: typeof arkMatch10.inferIn) =>
 		.with(9n, n => `${n}`)
 		.exhaustive()
 
-export const cases10FirstData = [0n, 1n, 2n] as const
+bench("case(10, invoke first)", () => {
+	arkMatch10(0n)
+	arkMatch10(1n)
+	return arkMatch10(2n)
+}).median()
 
-bench("case(10, invoke first)", () =>
-	cases10FirstData.map(n => arkMatch10(n))
-).median([124.28, "ns"])
+bench("ts-pattern case(10, invoke first)", () => {
+	tsPatternMatch10(0n)
+	tsPatternMatch10(1n)
+	return tsPatternMatch10(2n)
+}).median()
 
-bench("ts-pattern case(10, invoke first)", () =>
-	cases10FirstData.map(n => tsPatternMatch10(n))
-).median([1.23, "us"])
+bench("case(10, invoke last)", () => {
+	arkMatch10(7n)
+	arkMatch10(8n)
+	return arkMatch10(9n)
+}).median()
 
-export const cases10LastData = [7n, 8n, 9n] as const
-
-bench("case(10, invoke last)", () =>
-	cases10LastData.map(n => arkMatch10(n))
-).median([188.58, "ns"])
-
-bench("ts-pattern case(10, invoke last)", () =>
-	cases10LastData.map(n => tsPatternMatch10(n))
-).median([2.89, "us"])
+bench("ts-pattern case(10, invoke last)", () => {
+	tsPatternMatch10(7n)
+	tsPatternMatch10(8n)
+	return tsPatternMatch10(9n)
+}).median()
