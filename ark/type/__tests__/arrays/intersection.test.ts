@@ -139,6 +139,12 @@ contextualize(() => {
 		attest(T.json).equals(type("unknown[] == 1").json)
 	})
 
+	it("keeps a tuple's length once an optional element is never", () => {
+		const T = type("string[]").and(["string", "number?"])
+		attest(T.json).equals(type(["string"]).json)
+		attest(T.allows(["a", 5])).equals(false)
+	})
+
 	it("array with props", () => {
 		const T = type("Array").and({ name: "string" })
 
