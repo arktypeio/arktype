@@ -83,6 +83,8 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	// a scope's alias is displayed by name, though it references a context id
 	readonly expression: string = expressionOf(this.reference)
 	readonly structure = undefined
+	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those
+	closesCycle = true
 	private _resolution: BaseRoot | undefined
 	private resolving = false
 
@@ -123,8 +125,11 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 		let resolution = nodesByRegisteredId[id]
 		// a scope's definition resolves by name in the scope that defined it
-		if (hasArkKind(resolution, "context") && resolution.alias)
-			return resolution.$.resolveRoot(resolution.alias)
+		if (hasArkKind(resolution, "context") && resolution.alias) {
+			return resolution.phase === "member" ?
+					resolution.resolution!
+				:	resolution.$.resolveRoot(resolution.alias)
+		}
 		const seen: NodeId[] = []
 		while (hasArkKind(resolution, "context")) {
 			if (seen.includes(resolution.id)) {
@@ -170,6 +175,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
+		if (!this.closesCycle) return this.resolution.traverseAllows(data, ctx)
 		if (typeof ctx === "number") {
 			return ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits ?
 					this.resolution.traverseAllows(data, (ctx + 1) as never)
@@ -210,6 +216,10 @@ Resolution: ${printable(resolution)}`)
 			js.if(`${enter} === undefined`, () =>
 				js.line(traverse).line("ctx.exitResolution()")
 			)
+			return
+		}
+		if (!this.closesCycle) {
+			js.return(traverse)
 			return
 		}
 		const allows = js.referenceToId(resolution.id, { kind: "Allows" })

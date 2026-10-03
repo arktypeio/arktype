@@ -99,24 +99,14 @@ contextualize(() => {
 			}
 		}).export()
 
-		const reference = `$ark.${types.a.id}`
-
 		attest(types.a.json).equals({
 			domain: "object",
-			required: [
-				{
-					key: "b",
-					value: {
-						domain: "object",
-						required: [{ key: "a", value: reference }]
-					}
-				}
-			]
+			required: [{ key: "b", value: `$ark.${types.b.id}` }]
 		})
 
 		attest(types.b.json).equals({
 			domain: "object",
-			required: [{ key: "a", value: reference }]
+			required: [{ key: "a", value: `$ark.${types.a.id}` }]
 		})
 
 		const a = {} as { b: typeof b }

@@ -66,22 +66,7 @@ contextualize(() => {
 				{ key: "providerUserId", value: "string" },
 				{
 					key: "user",
-					value: [
-						{
-							required: [{ key: "name", value: "string" }],
-							optional: [
-								{
-									key: "accounts",
-									value: {
-										sequence: `$ark.${types.account.internal.id}`,
-										proto: "Array"
-									}
-								}
-							],
-							domain: "object"
-						},
-						"$ark.TimeStub"
-					]
+					value: [`$ark.${types.user.internal.id}`, "$ark.TimeStub"]
 				}
 			],
 			optional: [

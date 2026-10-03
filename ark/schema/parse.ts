@@ -55,8 +55,15 @@ export interface AttachedParseContext {
 	[arkKind]: "context"
 	$: BaseScope
 	id: NodeId
-	phase: "unresolved" | "resolving" | "resolved"
+	// a member is parsed, but reaches a definition still being parsed, so it's referenced by alias until that one is
+	phase: "unresolved" | "resolving" | "member" | "resolved"
 	isReferencedById?: true
+	// while open, its depth among open definitions and the shallowest one it reaches
+	index?: number
+	lowlink?: number
+	// referenced while it's parsed, so a reference to it may close a cycle
+	closesCycle?: true
+	resolution?: BaseRoot
 }
 
 export interface BaseParseContext
@@ -310,7 +317,8 @@ export const createNode = ({
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	return $.nodesByHash.set(hash, node)
+	// a copy with a definition's id is that definition's alone, so it isn't cached
+	return ignoreCache ? node : $.nodesByHash.set(hash, node)
 }
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {

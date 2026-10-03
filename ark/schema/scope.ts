@@ -781,12 +781,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 					) as never)
 		}
 
-		if (!this.resolved) {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesById, bound.referencesById)
-		}
-
 		return bound as never
 	}
 
@@ -816,6 +810,29 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	get ambient(): InternalModule {
 		return $ark.ambient as never
+	}
+
+	private aliasOf(context: BaseParseContext): Alias.Node {
+		const alias = this.node(
+			"alias",
+			{ reference: context.id },
+			{ prereduced: true }
+		)
+		if (!context.closesCycle) alias.closesCycle = false
+		return alias
+	}
+
+	private resolveContext(
+		name: string,
+		context: BaseParseContext,
+		node: BaseRoot
+	): BaseRoot {
+		// an alias references a cyclic definition by its context's id
+		if (context.isReferencedById) {
+			node = withId(node, context.id)
+			nodesByRegisteredId[context.id] = node
+		} else delete nodesByRegisteredId[context.id]
+		return (this.resolutions[name] = node)
 	}
 
 	// a definition holding an alias outside a structural value is rebuilt from the alias's resolution once no definition is open
@@ -849,26 +866,46 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const v = nodesByRegisteredId[cached]
 			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
 			if (hasArkKind(v, "context")) {
-				if (v.phase === "resolving")
-					return this.node("alias", { reference: v.id }, { prereduced: true })
+				if (v.phase === "resolving" || v.phase === "member") {
+					reach(v)
+					if (v.phase === "resolving") v.closesCycle = true
+					return this.aliasOf(v)
+				}
 				if (v.phase === "resolved") {
 					return throwInternalError(
 						`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
 					)
 				}
 				v.phase = "resolving"
-				let node = this.bindReference(this.parseOpenDefinition(v.def, v))
+				v.index = v.lowlink = openDefinitions.push(v) - 1
+				const membersStart = openMembers.length
+				let node: BaseRoot
+				try {
+					node = this.bindReference(this.parseOpenDefinition(v.def, v))
+				} finally {
+					openDefinitions.pop()
+				}
+				reach(v)
+				if (v.lowlink < v.index && !node.includesShallowAlias) {
+					v.phase = "member"
+					v.resolution = node
+					openMembers.push(v)
+					return this.aliasOf(v)
+				}
 				v.phase = "resolved"
+				// it reaches no definition still open, so its component closes with it
+				if (v.lowlink === v.index) {
+					for (const member of openMembers.splice(membersStart)) {
+						member.phase = "resolved"
+						member.$.resolveContext(member.alias!, member, member.resolution!)
+						delete member.resolution
+					}
+				}
 				if (node.includesShallowAlias) {
 					node = withId(node, v.id)
 					return this.resolvePending(name, (this.resolutions[name] = node))
 				}
-				// an alias references a cyclic definition by its context's id
-				if (v.isReferencedById) {
-					node = withId(node, v.id)
-					nodesByRegisteredId[v.id] = node
-				} else delete nodesByRegisteredId[v.id]
-				return (this.resolutions[name] = node)
+				return this.resolveContext(name, v, node)
 			}
 			return throwInternalError(
 				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
@@ -962,8 +999,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			if (!this.lazyExports) {
-				for (const name in this._exports) {
-					const resolution = this._exports[name]
+				// only what an export reaches is compiled, not intermediates of its parse
+				for (const name in this._exportedResolutions) {
+					const resolution = this._exportedResolutions[name]
 					if (isNode(resolution))
 						addReferences(this.referencesById, resolution.referencesById)
 				}
@@ -1139,6 +1177,18 @@ const bindModuleLazily = (
 
 const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
 	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
+
+// scope definitions being parsed, outermost first, each at its index
+const openDefinitions: BaseParseContext[] = []
+// parsed members of components whose first definition is still open
+const openMembers: BaseParseContext[] = []
+
+// the definition being parsed reaches context, so it belongs to the component of the shallowest definition context reaches
+const reach = (context: BaseParseContext) => {
+	const referencer = openDefinitions[openDefinitions.length - 1]
+	if (referencer && context.lowlink! < referencer.lowlink!)
+		referencer.lowlink = context.lowlink!
+}
 
 const maybeResolveExport = (
 	exports: InternalModule,

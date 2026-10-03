@@ -255,9 +255,86 @@ contextualize(() => {
 						"v must be a number (was a string)"
 					)
 				})
+
+				it("reports an object its component's members share once", config => {
+					const user = scope(
+						{
+							user: { name: "string", groups: "group[]" },
+							group: { title: "string", members: "user[]" }
+						},
+						config
+					).export().user
+					const shared = { title: 0, members: [] }
+					const members = [
+						{ name: "b", groups: [shared] },
+						{ name: "c", groups: [shared] }
+					]
+
+					attest(
+						user({ name: "a", groups: [{ title: "d", members }] }).toString()
+					).snap(
+						"groups[0].members[0].groups[0].title must be a string (was a number)"
+					)
+				})
 			}
 		)
 	}
+
+	it("references a component's members by alias", () => {
+		const types = scope({
+			a: { b: "b" },
+			b: { c: "c", "a?": "a" },
+			c: { a: "a" }
+		}).export()
+
+		attest(types.a.expression).snap("{ b: $b }")
+		attest(types.b.expression).snap("{ c: $c, a?: $a }")
+		attest(types.c.expression).snap("{ a: $a }")
+	})
+
+	it("parses a dense component in linear size", () => {
+		const def: Record<string, object> = {}
+		for (let i = 0; i < 16; i++) {
+			def[`a${i}`] = {
+				[`k${i}`]: "string",
+				"next?": `a${(i + 1) % 16} | a${(i + 3) % 16} | null`
+			}
+		}
+		const a0 = scope(def as never).resolve("a0" as never) as type.Any
+
+		attest(a0.expression).snap("{ k0: string, next?: $a1 | $a3 | null }")
+	})
+
+	it("parses a scope alike in any declaration order", () => {
+		const t = scope({
+			t0: { x: "t3", "y?": "t2 | t1" },
+			t1: { x: "t3", "y?": "t4 | t1" },
+			t2: { kind: "'t2'", "next?": "t1 | null" },
+			t3: "t2[]",
+			t4: { v: "string", "b?": "t2" }
+		}).export()
+		const reordered = scope({
+			t3: "t2[]",
+			t2: { kind: "'t2'", "next?": "t1 | null" },
+			t1: { x: "t3", "y?": "t4 | t1" },
+			t0: { x: "t3", "y?": "t2 | t1" },
+			t4: { v: "string", "b?": "t2" }
+		}).export()
+
+		attest(reordered.t0.expression).equals(t.t0.expression)
+		attest(reordered.t0({}).toString()).snap("x must be an array (was missing)")
+		attest(t.t0({}).toString()).snap("x must be an array (was missing)")
+
+		const a = scope({
+			a2: "(a4 | a2)[]",
+			a0: "Record<string, a3>",
+			a1: "a2 | a4",
+			a3: { kind: "'a3'", "p0?": "a1" },
+			a4: "a3"
+		}).export()
+
+		attest(a.a1.expression).snap('{ kind: "a3", p0?: $a1 } | ($a2 | $a4)[]')
+	})
 
 	// https://github.com/arktypeio/arktype/issues/930
 	it("distinguishes aliases of the same name in different scopes", () => {
