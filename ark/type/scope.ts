@@ -16,7 +16,6 @@ import {
 	type GenericAst,
 	type GenericParamAst,
 	type GenericParamDef,
-	type GenericRoot,
 	type Morph,
 	type NodeKind,
 	type NodeSchema,
@@ -216,9 +215,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(
 			"ambientAttachments",
-			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+			flatMorph(Object.keys($arkTypeRegistry.typeAttachments), (_, k) => [
 				k,
-				this.bindReference(v as {} as BaseRoot | GenericRoot)
+				this.type[k as never]
 			]) as never
 		)
 	}
