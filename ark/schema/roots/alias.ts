@@ -70,12 +70,13 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		},
 		normalize: normalizeAliasSchema,
 		defaults: {
-			description: node => node.reference
+			description: node => node.expression
 		}
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
-	readonly expression: string = this.reference
+	// a scope's alias is displayed by name, though it references a context id
+	readonly expression: string = expressionOf(this.reference)
 	readonly structure = undefined
 	private _resolution: BaseRoot | undefined
 
@@ -97,6 +98,9 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		const id = this.reference as NodeId
 
 		let resolution = nodesByRegisteredId[id]
+		// a scope's definition resolves by name in the scope that defined it
+		if (hasArkKind(resolution, "context") && resolution.alias)
+			return resolution.$.resolveRoot(resolution.alias)
 		const seen: NodeId[] = []
 		while (hasArkKind(resolution, "context")) {
 			if (seen.includes(resolution.id)) {
@@ -188,6 +192,13 @@ Resolution: ${printable(resolution)}`)
 		js.if("reached !== undefined", () => js.return("reached"))
 		js.return(`ctx.exitResolution(${traverse})`)
 	}
+}
+
+const expressionOf = (reference: string): string => {
+	const referenced = nodesByRegisteredId[reference as NodeId]
+	return hasArkKind(referenced, "context") && referenced.alias ?
+			`$${referenced.alias}`
+		:	reference
 }
 
 export const writeShallowCycleErrorMessage = (

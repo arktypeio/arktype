@@ -60,7 +60,7 @@ contextualize(() => {
 	provider: "GitHub" | "Google"
 	providerUserId: string
 }`)
-		attest(types.account.json).snap({
+		attest(types.account.json).equals({
 			required: [
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
 				{ key: "providerUserId", value: "string" },
@@ -72,7 +72,10 @@ contextualize(() => {
 							optional: [
 								{
 									key: "accounts",
-									value: { sequence: "$account", proto: "Array" }
+									value: {
+										sequence: `$ark.${types.account.internal.id}`,
+										proto: "Array"
+									}
 								}
 							],
 							domain: "object"
@@ -482,9 +485,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const standalone = types.JsonSchemaArray.describe("standalone")
 
-		attest(standalone.json).snap({
+		attest(standalone.json).equals({
 			required: [
-				{ key: "items", value: "$JsonSchema" },
+				{ key: "items", value: `$ark.${types.JsonSchema.internal.id}` },
 				{ key: "type", value: { unit: "array" } }
 			],
 			meta: "standalone",
@@ -636,20 +639,16 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			}
 		})
 
-		$.export()
+		const reference = `$ark.${$.export().ArraySchema.internal.id}`
 
-		attest($.json).snap({
+		attest($.json).equals({
 			TypeWithKeywords: {
-				optional: [
-					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
-				],
+				optional: [{ key: "additionalItems", value: [reference, "number"] }],
 				domain: "object"
 			},
-			Schema: ["$ArraySchema", "number"],
+			Schema: [reference, "number"],
 			ArraySchema: {
-				optional: [
-					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
-				],
+				optional: [{ key: "additionalItems", value: [reference, "number"] }],
 				domain: "object"
 			}
 		})

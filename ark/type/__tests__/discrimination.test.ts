@@ -506,7 +506,7 @@ contextualize(() => {
 
 		const Thing = s.type("AParent | BParent")
 
-		attest(Thing.internal.assertHasKind("union").discriminantJson).snap({
+		attest(Thing.internal.assertHasKind("union").discriminantJson).equals({
 			kind: "unit",
 			path: ["type"],
 			cases: {
@@ -539,7 +539,7 @@ contextualize(() => {
 										{
 											key: "children",
 											value: {
-												sequence: "$AParent",
+												sequence: `$ark.${s.export().AParent.internal.id}`,
 												proto: "Array",
 												minLength: 1
 											}

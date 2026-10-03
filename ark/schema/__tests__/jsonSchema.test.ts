@@ -236,15 +236,15 @@ contextualize(() => {
 		const schema = toJsonSchema($ark.intrinsic.jsonObject)
 
 		attest(schema).snap({
-			$ref: "#/$defs/intersection11",
+			$ref: "#/$defs/jsonObject1",
 			$defs: {
-				intersection11: {
+				jsonObject1: {
 					type: "object",
 					additionalProperties: { $ref: "#/$defs/jsonData1" }
 				},
 				jsonData1: {
 					anyOf: [
-						{ $ref: "#/$defs/intersection11" },
+						{ $ref: "#/$defs/jsonObject1" },
 						{ type: "number" },
 						{ type: "string" },
 						{ type: "boolean" },
@@ -252,7 +252,7 @@ contextualize(() => {
 					]
 				},
 				union7: {
-					anyOf: [{ $ref: "#/$defs/intersection11" }, { type: "boolean" }]
+					anyOf: [{ $ref: "#/$defs/jsonObject1" }, { type: "boolean" }]
 				}
 			}
 		})

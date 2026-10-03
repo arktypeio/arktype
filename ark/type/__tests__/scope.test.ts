@@ -436,14 +436,19 @@ b.c.c must be an object (was missing)`)
 			}).export()
 			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
-			attest(types.a.json).snap({
+			attest(types.a.json).equals({
 				domain: "object",
 				required: [
 					{
 						key: "b",
 						value: {
 							domain: "object",
-							required: [{ key: "a", value: ["$a", { unit: 3 }] }]
+							required: [
+								{
+									key: "a",
+									value: [`$ark.${types.a.internal.id}`, { unit: 3 }]
+								}
+							]
 						}
 					}
 				]
@@ -463,9 +468,11 @@ b.c.c must be an object (was missing)`)
 			)
 
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
-			attest(types.b.json).snap({
+			attest(types.b.json).equals({
 				domain: "object",
-				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
+				required: [
+					{ key: "a", value: [`$ark.${types.a.internal.id}`, { unit: 3 }] }
+				]
 			})
 		})
 
