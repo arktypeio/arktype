@@ -296,9 +296,9 @@ contextualize(() => {
 	})
 
 	it("calls a predicate once per value", () => {
-		let calls = 0
+		let callCount = 0
 		const Positive = type("number").narrow(n => {
-			calls++
+			callCount++
 			return n > 0
 		})
 		const T = type({
@@ -308,6 +308,6 @@ contextualize(() => {
 		attest(T({ values: [1, -1, 2], other: 5 }).toString()).snap(
 			"values[1] must be valid according to an anonymous predicate (was -1)"
 		)
-		attest(calls).equals(3)
+		attest(callCount).equals(3)
 	})
 })
