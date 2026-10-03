@@ -6,17 +6,15 @@ import {
 	type BaseNode,
 	type BaseScope,
 	type InternalNodeIntersection,
+	type IntersectionContext,
 	type Morph,
 	type RootKind,
 	type Union,
+	type UnknownIntersectionResult,
 	type mutableNormalizedRootOfKind,
 	type nodeOfKind
 } from "@ark/schema"
 import type { TypeGuard } from "@ark/util"
-import type {
-	IntersectionContext,
-	UnknownIntersectionResult
-} from "./implement.ts"
 import { setImplementationsByKind } from "./kinds.ts"
 
 type IntersectionCache = Record<

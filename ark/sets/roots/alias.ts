@@ -4,11 +4,11 @@ import {
 	identityOf,
 	isResolvable,
 	type Alias,
-	type BaseRoot
+	type BaseRoot,
+	type IntersectionContext
 } from "@ark/schema"
 import {
 	defineRightwardIntersections,
-	type IntersectionContext,
 	type setImplementationOf
 } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"

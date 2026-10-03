@@ -6,7 +6,8 @@ import {
 	throwParseError,
 	WeakCache,
 	type array,
-	type mutable
+	type mutable,
+	type satisfy
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { RootSchema } from "../kinds.ts"
@@ -551,6 +552,11 @@ export type SequenceElement =
 	| PrevariadicSequenceElement
 	| VariadicSequenceElement
 	| PostfixSequenceElement
+
+export type SequenceElementKind = satisfy<
+	keyof Sequence.Inner,
+	SequenceElement["kind"]
+>
 
 export type PrevariadicSequenceElement =
 	| PrefixSequenceElement

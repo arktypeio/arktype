@@ -1,13 +1,14 @@
 import {
 	$ark,
 	Disjoint,
+	type IntersectionContext,
 	type Optional,
 	type Prop,
 	type Required,
 	type nodeOfKind
 } from "@ark/schema"
 import { printable, throwParseError, unset } from "@ark/util"
-import type { IntersectionContext, setImplementationOf } from "../implement.ts"
+import type { setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
 
 export const intersectProps = (

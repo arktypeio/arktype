@@ -10,13 +10,18 @@ import {
 	type entryOf,
 	type keySetOf,
 	type listable,
-	type requireKeys
+	type requireKeys,
+	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
 import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { NodeId, NodeParseContext } from "../parse.ts"
-import type { schemaKindRightOf } from "../roots/root.ts"
+import type {
+	BaseRoot,
+	schemaKindOrRightOf,
+	schemaKindRightOf
+} from "../roots/root.ts"
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
@@ -25,6 +30,7 @@ import type {
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
 } from "./declare.ts"
+import type { Disjoint } from "./disjoint.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -110,12 +116,72 @@ type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
 export type kindOrRightOf<kind extends NodeKind> = kind | kindRightOf<kind>
 
+export type kindLeftOf<kind extends NodeKind> = Exclude<
+	NodeKind,
+	kindOrRightOf<kind>
+>
+
+export type kindOrLeftOf<kind extends NodeKind> = kind | kindLeftOf<kind>
+
 type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
 	remaining extends (
 		readonly [infer head extends NodeKind, ...infer tail extends NodeKind[]]
 	) ?
 		accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	:	result
+
+export interface InternalIntersectionOptions {
+	pipe: boolean
+}
+
+export interface IntersectionContext extends InternalIntersectionOptions {
+	$: BaseScope
+	invert: boolean
+}
+
+export type ConstraintIntersection<
+	lKind extends ConstraintKind,
+	rKind extends kindOrRightOf<lKind>
+> = (
+	l: nodeOfKind<lKind>,
+	r: nodeOfKind<rKind>,
+	ctx: IntersectionContext
+) => BaseNode | Disjoint | null
+
+export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
+	{
+		[_ in kind]: ConstraintIntersection<kind, kind>
+	} & {
+		[rKind in kindRightOf<kind>]?: ConstraintIntersection<kind, rKind>
+	}
+>
+
+export type RootIntersection<
+	lKind extends RootKind,
+	rKind extends schemaKindOrRightOf<lKind>
+> = (
+	l: nodeOfKind<lKind>,
+	r: nodeOfKind<rKind>,
+	ctx: IntersectionContext
+) => BaseRoot | Disjoint
+
+export type TypeIntersectionMap<kind extends RootKind> = {
+	[rKind in schemaKindOrRightOf<kind>]: RootIntersection<kind, rKind>
+}
+
+export type IntersectionMap<kind extends NodeKind> =
+	kind extends RootKind ? TypeIntersectionMap<kind>
+	:	ConstraintIntersectionMap<kind & ConstraintKind>
+
+export type UnknownIntersectionMap = {
+	[k in NodeKind]?: (
+		l: BaseNode,
+		r: BaseNode,
+		ctx: IntersectionContext
+	) => UnknownIntersectionResult
+}
+
+export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in arrayIndexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i

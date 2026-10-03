@@ -1,18 +1,15 @@
 import {
 	$ark,
 	Disjoint,
+	type IntersectionContext,
 	type Sequence,
 	type SequenceElement,
+	type SequenceElementKind,
 	type SequenceTuple,
 	type mutableInnerOfKind
 } from "@ark/schema"
-import {
-	append,
-	throwInternalError,
-	throwParseError,
-	type satisfy
-} from "@ark/util"
-import type { IntersectionContext, setImplementationOf } from "../implement.ts"
+import { append, throwInternalError, throwParseError } from "@ark/util"
+import type { setImplementationOf } from "../implement.ts"
 import { intersectOrPipeNodes } from "../intersections.ts"
 import { writeDefaultIntersectionMessage } from "./prop.ts"
 
@@ -134,11 +131,6 @@ type SequenceIntersectionState = {
 	fixedVariants: SequenceIntersectionState[]
 	ctx: IntersectionContext
 }
-
-type SequenceElementKind = satisfy<
-	keyof Sequence.Inner,
-	SequenceElement["kind"]
->
 
 const _intersectSequences = (
 	s: SequenceIntersectionState
