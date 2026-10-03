@@ -585,6 +585,21 @@ contextualize(() => {
 swap.swap.order[1] must be "on" (was "off")`)
 	})
 
+	it("instantiates a private recursive generic", () => {
+		const root = scope({
+			"#list<t>": { value: "t", "next?": "list<t>" },
+			root: "list<number>"
+		}).export().root
+
+		attest(root({ value: 0, next: { value: 1 } })).equals({
+			value: 0,
+			next: { value: 1 }
+		})
+		attest(root({ value: 0, next: { value: "1" } }).toString()).snap(
+			"next.value must be a number (was a string)"
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1082
 	it("rejects a recursive generic that can't be instantiated", () => {
 		attest(() =>

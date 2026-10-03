@@ -258,15 +258,18 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 		const name = alias.slice(0, firstParamIndex)
 		const paramString = alias.slice(firstParamIndex + 1, -1)
+		const genericName = name[0] === "#" ? name.slice(1) : name
 
 		return [
 			name,
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
 			() => {
-				const params = this.parseGenericParams(paramString, { alias: name })
+				const params = this.parseGenericParams(paramString, {
+					alias: genericName
+				})
 
-				const generic = parseGeneric(params, def, this as never, name)
+				const generic = parseGeneric(params, def, this as never, genericName)
 
 				return generic
 			}
