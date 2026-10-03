@@ -354,6 +354,15 @@ contextualize(() => {
 		)
 	})
 
+	it("calls a morph that takes one argument with one argument", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type({
+				a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
+			})
+			attest(T.assert({ a: "x" }).a).equals(0)
+		}
+	})
+
 	it("doesn't pipe on error", () => {
 		const A = type({ a: "number" }).pipe(function addOne(o) {
 			return o.a + 1

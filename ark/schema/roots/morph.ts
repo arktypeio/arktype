@@ -228,10 +228,10 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				continue
 			}
 			ctx.receive(result)
-			const morphed = morph(
-				result as never,
-				(morph.length === 1 ? undefined : ctx) as never
-			)
+			const morphed =
+				morph.length === 1 ?
+					(morph as Morph.ContextFree)(result as never)
+				:	morph(result as never, ctx as never)
 			if (isArkErrorResult(morphed)) {
 				ctx.addMorphErrors(morphed)
 				return data
