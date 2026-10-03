@@ -82,7 +82,7 @@ export class Traversal {
 	private enteredCount = 0
 	// the earliest entered resolution still in progress that the current one assumed valid
 	private earliestAssumed = Number.POSITIVE_INFINITY
-	// states, data and path length of each valid result that holds only if what it assumed does
+	// states and data of each valid result that holds only if what it assumed does
 	private assumed: unknown[] | undefined
 	private reachedInvalid: InvalidResolution | undefined
 	// an invalid object was reached by a path shorter than the one its errors were reported at
@@ -406,23 +406,16 @@ export class Traversal {
 		this.earliestAssumed = frame.outerEarliestAssumed
 		const assumed = this.assumed!
 		if (valid && earliestAssumed < frame.entered) {
-			assumed.push(states, data, this.path.length)
+			assumed.push(states, data)
 			if (earliestAssumed < this.earliestAssumed)
 				this.earliestAssumed = earliestAssumed
 			return true
 		}
-		// nothing it assumed is in progress, so each result that assumed it settles with it
-		for (let i = frame.assumedLength; i < assumed.length; i += 3) {
-			;(assumed[i] as Map<unknown, ResolutionState>).set(
-				assumed[i + 1],
-				typeof state === "boolean" || !state.reported ?
-					state
-				:	{
-						error: state.error,
-						reported: true,
-						pathLength: assumed[i + 2] as number
-					}
-			)
+		// nothing it assumed is in progress, so each result that assumed it is valid with it, or unknown without it
+		for (let i = frame.assumedLength; i < assumed.length; i += 2) {
+			const assumedStates = assumed[i] as Map<unknown, ResolutionState>
+			if (valid) assumedStates.set(assumed[i + 1], true)
+			else assumedStates.delete(assumed[i + 1])
 		}
 		assumed.length = frame.assumedLength
 		states.set(data, state)
