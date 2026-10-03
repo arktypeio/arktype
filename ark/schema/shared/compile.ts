@@ -182,14 +182,17 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
 		const kind = opts?.kind ?? this.traversalKind
-		// its predicates' errors go to a Traversal of its own rather than ctx
+		// Allows adds no errors to ctx, so a predicate reading it runs in a branch
 		if (
 			typeof node !== "string" &&
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
 			node.allowsRequiresContext
-		)
-			return `${this.ref(node)}.allows(${arg})`
+		) {
+			return node.allowsRequiresTraversal ?
+					`${this.ctx}.allows(${this.ref(node)}, ${arg})`
+				:	`${this.ref(node)}.allows(${arg})`
+		}
 		const requiresContext =
 			typeof node === "string" ? true : this.requiresContextFor(node, kind)
 		const id = typeof node === "string" ? node : node.id

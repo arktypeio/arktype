@@ -205,6 +205,47 @@ contextualize(() => {
 		}
 	})
 
+	it("decides a piped contextual node at its own path", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const paths: PropertyKey[][] = []
+			const T = $.type({
+				password: "string",
+				confirm: $.type("string.trim").narrow(
+					(s, ctx) => s === (ctx.root as { password: string }).password
+				),
+				length: $.type("string")
+					.pipe(s => s.length)
+					.narrow((n, ctx) => (paths.push([...ctx.path]), n > 0))
+			})
+
+			attest(T({ password: "pw", confirm: " pw ", length: "a" })).equals({
+				password: "pw",
+				confirm: "pw",
+				length: 1
+			})
+			attest(T({ password: "pw", confirm: "pw", length: "" }).toString()).snap(
+				"length must be valid according to an anonymous predicate (was 0)"
+			)
+			attest(paths).equals([["length"], ["length"]])
+		}
+	})
+
+	it("takes a union branch whose predicate reads ctx", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const Long = $.type([
+				"string > 5",
+				":",
+				(s, ctx) => (ctx.root as { allowLong: boolean }).allowLong
+			]).pipe(s => s.length)
+			const T = $.type({ v: Long.or("string < 3"), allowLong: "boolean" })
+
+			attest(T({ v: "abcdefg", allowLong: true })).equals({
+				v: 7,
+				allowLong: true
+			})
+		}
+	})
+
 	it("reports a morph's error alike whether or not its input is valid", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],
