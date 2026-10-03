@@ -873,8 +873,8 @@ contextualize(() => {
 				.toString()
 		).snap("next.next.value must be a string (was a number)")
 		attest(types.alternate("'off'", "'on'") === alternate).equals(true)
-		attest(alternate.expression).equals(
-			`{ order: ["off", "on"], swap?: { order: ["on", "off"], swap?: ${alternate.internal.id} } }`
+		attest(alternate.expression).snap(
+			'{ order: ["off", "on"], swap?: { order: ["on", "off"], swap?: alternate<"off", "on"> } }'
 		)
 		attest(
 			alternate({

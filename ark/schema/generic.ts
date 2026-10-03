@@ -148,9 +148,14 @@ export class GenericRoot<
 	): BaseRoot {
 		const instantiation = this.instantiations[key]
 		if (typeof instantiation === "string") {
+			// an instantiation still open is referenced by id, but described by its arguments
 			return this.$.node(
 				"alias",
-				{ reference: instantiation },
+				{
+					reference: instantiation,
+					operator: this.alias ?? "generic",
+					operands: this.names.map(name => argNodes[name])
+				},
 				{ prereduced: true }
 			)
 		}
