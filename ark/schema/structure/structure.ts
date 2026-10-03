@@ -1137,14 +1137,6 @@ const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {
 	return indexable
 }
 
-export const writeDuplicateKeyMessage = <key extends Key>(
-	key: key
-): writeDuplicateKeyMessage<key> =>
-	`Duplicate key ${compileSerializedValue(key) as never}`
-
-export type writeDuplicateKeyMessage<key extends Key> =
-	`Duplicate key '${describe<key>}'`
-
 export const writeNumberIndexMessage = (
 	indexExpression: string,
 	sequenceExpression: string
@@ -1202,3 +1194,11 @@ export const writeInvalidKeysMessage = <
 	keys: keys
 ): string =>
 	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}`
+
+export const writeDuplicateKeyMessage = <key extends Key>(
+	key: key
+): writeDuplicateKeyMessage<key> =>
+	`Duplicate key ${compileSerializedValue(key) as never}`
+
+export type writeDuplicateKeyMessage<key extends Key> =
+	`Duplicate key '${describe<key>}'`
