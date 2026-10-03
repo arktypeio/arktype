@@ -545,6 +545,8 @@ const declareTraversal = (
 		linkage,
 		kind !== "Transform" || node.transformRequiresContext
 	).indent()
+	// an input copyOf can't copy is transformed in place, so a write it refuses throws
+	if (kind === "Transform") js.line(`"use strict"`)
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
 	linkage.members.push([name, js.write("function")])
