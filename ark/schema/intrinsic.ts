@@ -68,16 +68,12 @@ const bootstrapIntrinsic = () => {
 
 let bootstrapped = false
 let bootstrappedWithEngine = false
-let bootstrappedIntrinsic: typeof $ark.intrinsic | undefined
 
 const bootstrapOnRead = () =>
 	Object.defineProperty($ark, "intrinsic", {
 		get: () => {
 			bootstrap()
-			return bootstrappedIntrinsic
-		},
-		set: v => {
-			bootstrappedIntrinsic = v
+			return $ark.intrinsic
 		},
 		enumerable: true,
 		configurable: true
@@ -88,26 +84,23 @@ bootstrapOnRead()
 // deferred to first use so arksets, which imports @ark/schema, can install its engine first
 export const bootstrap = (): void => {
 	if (bootstrapped && (bootstrappedWithEngine || !$ark.sets)) return
-	if (bootstrapped) {
-		bootstrappedIntrinsic = undefined
-		bootstrapOnRead()
-	}
 	bootstrapped = true
 	bootstrappedWithEngine = $ark.sets !== undefined
+	Object.defineProperty($ark, "intrinsic", {
+		value: undefined,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
 	try {
 		bootstrapRootScope(() =>
 			Object.assign(intrinsicTarget, bootstrapIntrinsic())
 		)
 	} catch (e) {
 		bootstrapped = false
+		bootstrapOnRead()
 		throw e
 	}
-	Object.defineProperty($ark, "intrinsic", {
-		value: bootstrappedIntrinsic,
-		writable: true,
-		enumerable: true,
-		configurable: true
-	})
 }
 
 const intrinsicTarget: typeof $ark.intrinsic = {} as never
