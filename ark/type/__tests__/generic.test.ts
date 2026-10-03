@@ -395,6 +395,20 @@ contextualize(() => {
 		}
 	)
 
+	// https://github.com/arktypeio/arktype/issues/1437
+	it("keeps a private alias of a generic exported twice", () => {
+		const $scope1 = scope({
+			"#private": "string",
+			"generic<t>": "private"
+		})
+		const $scope2 = scope({ ...$scope1.export() })
+		const $scope3 = scope({ ...$scope2.export() })
+		const Thing3 = $scope3.type("generic<string>")
+
+		attest(Thing3.t).type.toString.snap("string")
+		attest(Thing3("hello")).equals("hello")
+	})
+
 	it("args completions from type", () => {
 		const g = type("<t>", { box: "t" })
 

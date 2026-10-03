@@ -562,8 +562,11 @@ swap.swap.order[1] must be "on" (was "off")`)
 			} as never).export()
 		).throws(writeUnclosedGenericCycleMessage("poly"))
 		attest(() =>
-			scope({ "nest<t>": { nest: "nest" } } as never).export()
-		).throws(writeInvalidGenericArgCountMessage("nest", ["t"], []))
+			// @ts-expect-error
+			scope({ "nest<t>": { nest: "nest" } }).export()
+		).throwsAndHasTypeError(
+			writeInvalidGenericArgCountMessage("nest", ["t"], [])
+		)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1026
@@ -584,15 +587,40 @@ swap.swap.order[1] must be "on" (was "off")`)
 
 	// https://github.com/arktypeio/arktype/issues/579
 	it("rejects a shallow cycle", () => {
-		attest(() => scope({ a: "a" }).export()).throws(
+		// @ts-expect-error
+		attest(() => scope({ a: "a" }).export()).throwsAndHasTypeError(
 			writeShallowCycleErrorMessage("a", ["a"])
 		)
 		attest(() =>
-			scope({ a: "b | string", b: "a | number" } as never).export()
-		).throws(writeShallowCycleErrorMessage("a", ["a", "b"]))
+			// @ts-expect-error
+			scope({ a: "b | string", b: "a | number" }).export()
+		).throwsAndHasTypeError(writeShallowCycleErrorMessage("a", ["a", "b"]))
+		attest(() =>
+			// @ts-expect-error
+			scope({ "#a": "b", b: "c#x", c: "(a | string)" }).export()
+		).throwsAndHasTypeError(writeShallowCycleErrorMessage("a", ["a", "b", "c"]))
+		// @ts-expect-error
+		attest(() => scope({ a: "a & string" }).export())
+			.throws(writeShallowCycleErrorMessage("a", ["a", "a&string"]))
+			.type.errors(writeShallowCycleErrorMessage("a", ["a"]))
 		attest(() => type("this | string" as never)).throws(
 			"has a shallow resolution cycle"
 		)
+	})
+
+	it("references itself structurally without a shallow cycle", () => {
+		const types = scope({
+			nested: "(nested | number)[]",
+			a: "b",
+			b: { a: "a" },
+			x: "y | z",
+			y: "z",
+			z: "y[]"
+		}).export()
+
+		attest(types.nested.expression).snap("($nested | number)[]")
+		attest(types.a.expression).snap("{ a: $a }")
+		attest(types.x.expression).snap("$y[]")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476
