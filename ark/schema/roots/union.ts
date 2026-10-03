@@ -157,7 +157,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	// discriminated on construction, since relating branches can throw a ParseError
 	// parsing must report (e.g. an index signature and prop with disjoint values)
-	readonly discriminant: Discriminant | null = this.discriminate()
+	discriminant = this.discriminate()
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
@@ -166,7 +166,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		expressBranches
 	)
 
-	private discriminate(): Discriminant | null {
+	discriminate(): Discriminant | null {
+		this.caseNodes.length = 0
 		// an alias branch is replaced by its resolution before the union is used
 		if (this.includesShallowAlias) return null
 		// without an engine the union compiles indiscriminated
