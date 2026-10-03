@@ -885,6 +885,21 @@ contextualize(() => {
 swap.swap.order[1] must be "on" (was "off")`)
 	})
 
+	it("closes a recursive generic's instantiations", () => {
+		const types = scope({
+			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },
+			permuted: "p<'0', '1', '2', '3'>"
+		}).export()
+
+		attest(types.permuted({ v: "0", s: { v: "1", r: { v: "0" } } })).equals({
+			v: "0",
+			s: { v: "1", r: { v: "0" } }
+		})
+		attest(types.permuted({ v: "0", r: { s: { v: "1" } } }).toString()).snap(
+			'r.v must be "1" (was missing)\nr.s.v must be "2" (was "1")'
+		)
+	})
+
 	it("instantiates a private recursive generic", () => {
 		const root = scope({
 			"#list<t>": { value: "t", "next?": "list<t>" },
