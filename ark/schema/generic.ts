@@ -189,7 +189,8 @@ export class GenericRoot<
 				this.defIsLazy() ?
 					this.$.parse(this.bodyDef(argNodes))
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
-			if (inProgress.definitions && node.includesAlias)
+			// a transient instantiation is rebuilt once the definitions it references close
+			if (inProgress.definitions && node.includesShallowAlias)
 				delete this.instantiations[key]
 			else this.instantiations[key] = node
 			return node
