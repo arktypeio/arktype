@@ -1,6 +1,7 @@
 import {
 	Disjoint,
 	isNode,
+	isResolutionFinal,
 	rootKinds,
 	type BaseNode,
 	type BaseScope,
@@ -19,6 +20,9 @@ import type {
 import { setImplementationsByKind } from "./kinds.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
+let pendingIntersectionCache:
+	| PartialRecord<string, UnknownIntersectionResult>
+	| undefined
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -44,10 +48,15 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		r: BaseNode,
 		ctx: IntersectionContext
 	): BaseNode | Disjoint | null => {
+		let cache = intersectionCache
+		if (l.includesAlias || r.includesAlias) {
+			// relations between aliases are unknown until they're final, so a result reached before is reused only until then
+			if (isResolutionFinal()) pendingIntersectionCache = undefined
+			else cache = pendingIntersectionCache ??= {}
+		}
 		const operator = ctx.pipe ? "|>" : "&"
 		const lrCacheKey = `${l.hash}${operator}${r.hash}`
-		if (intersectionCache[lrCacheKey] !== undefined)
-			return intersectionCache[lrCacheKey]! as never
+		if (cache[lrCacheKey] !== undefined) return cache[lrCacheKey]! as never
 
 		const isPureIntersection =
 			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
@@ -68,7 +77,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 			else if (r.equals(result)) result = r
 		}
 
-		intersectionCache[lrCacheKey] = result
+		cache[lrCacheKey] = result
 		return result as never
 	}) as never
 
