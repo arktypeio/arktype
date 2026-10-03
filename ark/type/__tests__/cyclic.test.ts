@@ -685,6 +685,26 @@ contextualize(() => {
 		attest(l.and(r).allows({ kind: "b", p2: null })).equals(false)
 	})
 
+	it("relates cyclic types alike whatever was related before", () => {
+		const base = {
+			a: "(c | boolean)[]",
+			c: "(a | d)[]",
+			d: { kind: "'d'", "p0?": "c | 'x'" }
+		} as const
+		const l = scope({
+			...base,
+			b: { "p1?": "a | b | 'x'", "p2?": "(c | number)[]" }
+		}).export()
+		const r = scope({
+			...base,
+			b: { "p1?": "a | b | 'x'", "p2?": "(c | null)[]" }
+		}).export()
+
+		attest(l.b.extends(r.b)).equals(false)
+		attest(l.c.extends(r.c)).equals(true)
+		attest(r.c.extends(l.c)).equals(true)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1237
 	it("instantiates a generic with a cyclic alias", () => {
 		const node = scope({
