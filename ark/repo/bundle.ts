@@ -162,7 +162,7 @@ const assertMapsToOwnFile = (path: string) => {
 	]) {
 		if (exports[subpath]?.default !== file) {
 			throw new Error(
-				`${module} exports a name internal.js binds otherwise, so ${subpath} must be { "ark-ts": "./${module}.ts", "types": "./out/${module}.d.ts", "default": "${file}" } in package.json's exports`
+				`${module} exports a name internal.js binds otherwise, so ${subpath} must be { "ark-ts": "./${module}.ts", "default": "${file}" } in package.json's exports`
 			)
 		}
 	}

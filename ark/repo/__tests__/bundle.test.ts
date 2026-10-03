@@ -104,7 +104,7 @@ contextualize(() => {
 		const unbundledOrder = evaluated()
 
 		attest(() => bundleIn(packageOf(modules))).throws(
-			'sub/f exports a name internal.js binds otherwise, so ./internal/sub/f.ts must be { "ark-ts": "./sub/f.ts", "types": "./out/sub/f.d.ts", "default": "./out/sub/f.js" }'
+			'sub/f exports a name internal.js binds otherwise, so ./internal/sub/f.ts must be { "ark-ts": "./sub/f.ts", "default": "./out/sub/f.js" }'
 		)
 		const dir = packageOf(modules, ["sub/f"])
 		const fromOut = bundleIn(dir)
