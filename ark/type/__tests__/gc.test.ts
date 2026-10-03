@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
 import { setFlagsFromString } from "node:v8"
 import { runInNewContext } from "node:vm"
@@ -39,6 +40,17 @@ contextualize(() => {
 				a: { collectedDefault: "string = 'gc'" },
 				b: ["string", "number = 1234"]
 			}).export().a
+		)
+		await collectTarget(ref)
+		attest(ref.deref()).equals(undefined)
+	})
+
+	it("collects a schema nothing references", async () => {
+		const ref = new WeakRef(
+			rootSchema({
+				domain: "object",
+				required: [{ key: "collectedSchema", value: "string" }]
+			})
 		)
 		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)

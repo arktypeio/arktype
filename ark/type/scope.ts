@@ -292,10 +292,6 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
-	protected override get holdsNodesWeakly(): boolean {
-		return true
-	}
-
 	protected normalizeRootScopeValue(resolution: unknown): unknown {
 		if (isThunk(resolution) && !hasArkKind(resolution, "generic"))
 			return resolution()
