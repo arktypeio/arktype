@@ -293,7 +293,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				const caseResult =
 					js.traversalKind === "Transform" ?
 						v !== true && v.transforms ?
-							js.invoke(v)
+							invokeTransform(js, v)
 						:	"data"
 					: v === true ? "true"
 					: js.invoke(v)
@@ -354,7 +354,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		} else {
 			for (const branch of this.branches) {
 				js.if(js.invoke(branch, { kind: "Allows" }), () =>
-					js.return(branch.transforms ? js.invoke(branch) : "data")
+					js.return(branch.transforms ? invokeTransform(js, branch) : "data")
 				)
 			}
 			js.return("data")
@@ -410,6 +410,16 @@ const describeCases = (discriminant: Discriminant): string =>
 				:	k
 		})
 	)
+
+// a branch whose transform doesn't require ctx returns its errors rather than adding them
+const invokeTransform = (js: NodeCompiler, branch: BaseRoot): string =>
+	(
+		js.requiresContext &&
+		branch.includesMorph &&
+		!branch.transformRequiresContext
+	) ?
+		`ctx.transform(${js.ref(branch)}, data)`
+	:	js.invoke(branch)
 
 const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 	kind: discriminant.kind,
