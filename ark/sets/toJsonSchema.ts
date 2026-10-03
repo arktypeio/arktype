@@ -266,7 +266,10 @@ const reduceObjectJsonSchema = (
 					keySchema = ctx.fallback.morph({
 						code: "morph",
 						base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
-						out: toResolvedJsonSchema(keyBranch.rawOut, ctx)
+						out:
+							keyBranch.introspectableOut ?
+								toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
+							:	null
 					}) as never
 					if (keySchema.pattern) {
 						schema.patternProperties ??= {}

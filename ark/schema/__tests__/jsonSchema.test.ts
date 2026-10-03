@@ -661,6 +661,9 @@ contextualize(() => {
 				expected
 			)
 			attest(
+				toJsonSchema(T, { fallback: { morph: ctx => ctx.out ?? ctx.base } })
+			).equals(expected)
+			attest(
 				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
 					.$defs![T.id]
 			).equals(expected)
