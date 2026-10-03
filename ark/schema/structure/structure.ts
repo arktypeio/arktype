@@ -182,7 +182,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			},
 			sequence: {
 				child: true,
-				parse: constraintKeyParser("sequence")
+				// a sequence's json collapses to its variadic, so an array is a union of elements rather than a list
+				parse: (schema, ctx) => ctx.$.node("sequence", schema)
 			},
 			undeclared: {
 				parse: behavior => (behavior === "ignore" ? undefined : behavior),
