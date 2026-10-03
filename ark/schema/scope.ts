@@ -306,7 +306,7 @@ const precompile = (
 	}
 	const unit = precompileReferences(declared, linkage)
 	const precompilation = unit.write(rootScopeFnName)
-	const traversalsByReference = unit.compile()(
+	const compiledTraversals = unit.compile()(
 		[...linkage.dependencies.keys()],
 		[...linkage.refs.keys()],
 		linkage.errorContexts
@@ -320,7 +320,7 @@ const precompile = (
 			reusableLeaves.delete(node)
 		}
 		const [traverseAllows, traverseApply, traverseTransform] =
-			traversalsByReference[i]
+			compiledTraversals[i]
 		node.traverseAllows = traverseAllows
 		if (node.isRoot() && !node.allowsRequiresContext) {
 			// if the reference doesn't require context, we can assign over
@@ -446,7 +446,7 @@ const precompileReferences = (
 	linkage: UnitLinkage
 ) => {
 	const members: UnitMember[] = []
-	const traversalsByReference = references.map(node =>
+	const traversals = references.map(node =>
 		declareTraversals(members, linkage, node)
 	)
 	for (let i = 0; i < linkage.reached.length; i++)
@@ -466,7 +466,7 @@ const precompileReferences = (
 	i = 0
 	for (const name of linkage.refs.values()) unit.const(name, `refs[${i++}]`)
 	for (const [name, source] of members) unit.const(name, source)
-	return unit.return(`[${traversalsByReference.join(", ")}]`)
+	return unit.return(`[${traversals.join(", ")}]`)
 }
 
 type UnitMember = [name: string, source: string]
