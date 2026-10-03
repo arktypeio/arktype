@@ -160,6 +160,18 @@ export abstract class BaseRoot<
 		return sets().toJsonSchema(this, opts)
 	}
 
+	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
+		return sets().toJsonSchemaRecurse(this, ctx)
+	}
+
+	get alwaysExpandJsonSchema(): boolean {
+		return (
+			this.isBasis() ||
+			this.kind === "alias" ||
+			(this.hasKind("union") && this.isBoolean)
+		)
+	}
+
 	intersect(r: unknown, jit = true): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
 		const result = this.rawIntersect(rNode)

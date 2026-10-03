@@ -53,11 +53,11 @@ export const toJsonSchema = (
 	return schema
 }
 
-const toJsonSchemaRecurse = (
+export const toJsonSchemaRecurse = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
 ): JsonSchema => {
-	if (ctx.useRefs && !alwaysExpandJsonSchema(node)) {
+	if (ctx.useRefs && !node.alwaysExpandJsonSchema) {
 		ctx.refs.push(node)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
@@ -66,11 +66,6 @@ const toJsonSchemaRecurse = (
 
 	return toResolvedJsonSchema(node, ctx)
 }
-
-const alwaysExpandJsonSchema = (node: BaseRoot): boolean =>
-	node.isBasis() ||
-	node.kind === "alias" ||
-	(node.hasKind("union") && node.isBoolean)
 
 const toResolvedJsonSchema = (
 	node: BaseRoot,

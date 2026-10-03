@@ -20,6 +20,7 @@ export interface SetEngine {
 	): BaseNode | Disjoint | undefined
 	discriminate(node: Union.Node): Discriminant | null
 	toJsonSchema(node: BaseRoot, opts: ToJsonSchema.Options): JsonSchema
+	toJsonSchemaRecurse(node: BaseRoot, ctx: ToJsonSchema.Context): JsonSchema
 }
 
 export type InternalNodeIntersection<ctx> = <

@@ -256,6 +256,25 @@ contextualize(() => {
 		})
 	})
 
+	it("toJsonSchemaRecurse", () => {
+		const node = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }]
+		})
+		const ctx = node.$.resolvedConfig.toJsonSchema
+		attest(node.toJsonSchemaRecurse(ctx)).snap({
+			type: "object",
+			properties: { a: { type: "string" } },
+			required: ["a"]
+		})
+		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
+			$ref: `#/$defs/${node.id}`
+		})
+		attest(
+			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
+		).equals({ type: "string" })
+	})
+
 	it("defines nodes a $ref reaches in reference order", () => {
 		const node = rootSchema([
 			{
