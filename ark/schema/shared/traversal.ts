@@ -256,13 +256,12 @@ export class Traversal {
 		return this.currentErrorCount === errorCount
 	}
 
-	// a predicate reading ctx sees this path, and the errors it adds are discarded with the branch
+	// a predicate reading ctx sees this path, and an error it adds fails the branch
 	allows(node: BaseNode, data: unknown): boolean {
 		if (!node.allowsRequiresTraversal) return node.allows(data)
 		this.pushBranch()
 		const allowed = node.traverseAllows(data, this)
-		this.popBranch()
-		return allowed
+		return this.popBranch()!.errorCount === 0 && allowed
 	}
 
 	addMorphErrors(result: ArkErrorResult): void {
@@ -660,6 +659,16 @@ export const allowsUntracked = (
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
 	return exceeded ? undefined : allowed
+}
+
+// a contextual predicate can add an error and still return true
+export const allowsInContext = (
+	node: BaseNode,
+	data: unknown,
+	config: ResolvedConfig
+): boolean => {
+	const ctx = new Traversal(data, config)
+	return node.traverseAllows(data as never, ctx) && !ctx.hasError()
 }
 
 // entered while in progress, then whether it is valid, or why Apply found it invalid

@@ -76,6 +76,7 @@ import {
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
+	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
 	TransformErrors,
@@ -380,7 +381,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 						`const result = ctx.transformResolution("${node.id}", data, transform)`,
 						"return ctx.hasError() ? ctx.finalize(onFail) : result"
 					],
-					"(untracked ?? node.traverseAllows(data, new Traversal(data, config)))"
+					"(untracked ?? allowsInContext(node, data, config))"
 				)
 			]
 		: node.rootApplyStrategy === "transform" ?
@@ -413,6 +414,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"TransformErrors",
 		"applyCyclic",
 		"allowsUntracked",
+		"allowsInContext",
 		"config",
 		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
 	)(
@@ -424,6 +426,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		TransformErrors,
 		applyCyclic,
 		allowsUntracked,
+		allowsInContext,
 		node.$.resolvedConfig
 	)
 }
