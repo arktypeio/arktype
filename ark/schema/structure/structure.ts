@@ -991,6 +991,16 @@ const constructStructuralMorphCacheKey = (
 		cacheKey += ")"
 	}
 
+	// a copied array keeps the props its structure declares
+	if (cacheKey && node.sequence && node.undeclared !== "delete") {
+		cacheKey += "sequence ("
+		if (node.required)
+			for (const n of node.required) cacheKey += n.compiledKey + " | "
+		if (node.optional)
+			for (const n of node.optional) cacheKey += n.compiledKey + " | "
+		cacheKey += ")"
+	}
+
 	return cacheKey
 }
 

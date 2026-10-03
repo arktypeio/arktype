@@ -173,6 +173,19 @@ contextualize(() => {
 		).snap("value at [1] must be a string (was a number)")
 	})
 
+	it("copies an array with its own props when another type shares its defaults", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type({
+				x: $.type({ a: "number = 5", b: "string" })
+					.and("string[]")
+					.pipe((arr, ctx) => (arr.b === "kept" ? arr : ctx.error("kept"))),
+				y: "number"
+			})
+			const out = T({ x: Object.assign(["s"], { b: "kept" }), y: "bad" })
+			attest(out.toString()).snap("y must be a number (was a string)")
+		}
+	})
+
 	it("calls a morph that takes one argument without ctx", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({
