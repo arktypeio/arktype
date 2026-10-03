@@ -662,6 +662,15 @@ export const applyResolution = (
 	ctx.exitResolution()
 }
 
+export const applyValue = (
+	node: BaseNode,
+	data: unknown,
+	ctx: InternalTraversal
+): void =>
+	node.isReferencedById ?
+		applyResolution(node.id, node.traverseApply, data, ctx)
+	:	node.traverseApply(data, ctx)
+
 // within the bounds, data is traversed as a tree; past them, it may be cyclic, so only a tracked traversal can tell
 export const allowsUntracked = (
 	node: BaseNode,

@@ -445,6 +445,23 @@ contextualize(() => {
 					)
 				})
 
+				// https://github.com/arktypeio/arktype/issues/924
+				it("reports a cyclic object reached outside an alias once", config => {
+					const node = scope(
+						{ node: { kind: "'node'", "next?": "node" } },
+						config
+					).export().node
+					const data: { kind: string; next?: object } = { kind: "x" }
+					data.next = data
+
+					attest(type({ node })({ node: data }).toString()).snap(
+						'node.kind must be "node" (was "x")'
+					)
+					attest(node.array()([data]).toString()).snap(
+						'value at [0].kind must be "node" (was "x")'
+					)
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 

@@ -13,6 +13,7 @@ import type { BaseNormalizedSchema } from "../shared/declare.ts"
 import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	applyValue,
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply
@@ -95,7 +96,7 @@ export abstract class BaseProp<
 		if (this.key in data) {
 			traverseKey(
 				this.key,
-				() => this.value.traverseApply((data as any)[this.key], ctx),
+				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
 		} else if (this.hasKind("required"))
