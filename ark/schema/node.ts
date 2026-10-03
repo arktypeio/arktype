@@ -65,7 +65,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "./shared/traversal.ts"
-import { isNode } from "./shared/utils.ts"
+import { inProgress, isNode } from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
@@ -92,6 +92,7 @@ export abstract class BaseNode<
 	includesContextualPredicate: boolean
 	isCyclic: boolean
 	includesAlias: boolean
+	includesShallowAlias: boolean
 	allowsRequiresContext: boolean
 	includesContextualMorph: boolean
 	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
@@ -155,6 +156,9 @@ export abstract class BaseNode<
 
 		this.isCyclic = this.kind === "alias"
 		this.includesAlias = this.isCyclic
+		this.includesShallowAlias = this.isCyclic
+		// an alias belongs in a structural value, so one there doesn't make its parent shallow
+		const isStructural = this.isStructural()
 
 		for (let i = 0; i < this.children.length; i++) {
 			this.includesTransform ||= this.children[i].includesTransform
@@ -164,6 +168,8 @@ export abstract class BaseNode<
 			this.includesContextualMorph ||= this.children[i].includesContextualMorph
 			this.isCyclic ||= this.children[i].isCyclic
 			this.includesAlias ||= this.children[i].includesAlias
+			if (!isStructural)
+				this.includesShallowAlias ||= this.children[i].includesShallowAlias
 		}
 
 		if (this.includesAlias) this.copyReferences(false)
@@ -175,7 +181,12 @@ export abstract class BaseNode<
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
-					this.allowsRequiresTraversal ?
+					// an alias may not resolve while a definition is open, so its reach isn't read
+					(
+						inProgress.definitions ||
+						inProgress.resolutions ||
+						this.allowsRequiresTraversal
+					) ?
 						this.traverseAllows(
 							data as never,
 							new Traversal(data, this.$.resolvedConfig)

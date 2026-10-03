@@ -88,7 +88,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 			},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseSchema(schema)
+				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
 			}
 		},
 		normalize: schema => schema,

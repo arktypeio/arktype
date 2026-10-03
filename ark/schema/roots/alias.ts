@@ -19,7 +19,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
-import { hasArkKind } from "../shared/utils.ts"
+import { hasArkKind, inProgress } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
 export declare namespace Alias {
@@ -64,7 +64,12 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 						referenced.isReferencedById = true
 					return reference
 				},
-				serialize: s => (s.startsWith("$") ? s : `$ark.${s}`)
+				serialize: s => {
+					const referenced = nodesByRegisteredId[s as NodeId]
+					// a deferred value is serialized as its definition
+					if (hasArkKind(referenced, "root")) return referenced.json
+					return s.startsWith("$") ? s : `$ark.${s}`
+				}
 			},
 			resolve: {}
 		},
@@ -79,15 +84,34 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = expressionOf(this.reference)
 	readonly structure = undefined
 	private _resolution: BaseRoot | undefined
+	private resolving = false
 
 	get resolution(): BaseRoot {
 		if (this._resolution) return this._resolution
-		const resolution = this._resolve()
-		// not cached before the scope resolves, since resolving binds references,
-		// nor for a thunk or alias result, which may reflect an alias mid-parse
-		if (this.$.resolved && !this.resolve && !resolution.hasKind("alias"))
-			this._resolution = resolution
-		return resolution
+		if (this.resolving) {
+			const names = resolvingAliases.map(nameOf)
+			const cycle = names.slice(names.lastIndexOf(nameOf(this)))
+			// starting from the first name, the message doesn't depend on declaration order
+			const start = cycle.indexOf([...cycle].sort()[0])
+			const path = [...cycle.slice(start), ...cycle.slice(0, start)]
+			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
+		}
+		this.resolving = true
+		resolvingAliases.push(this)
+		inProgress.resolutions++
+		try {
+			let resolution = this._resolve()
+			// an alias read while its definition is parsed resolves to itself
+			if (resolution.hasKind("alias")) resolution = resolution.resolution
+			// not cached before the scope resolves, since resolving binds references,
+			// nor for a thunk, which may reflect an alias mid-parse
+			if (this.$.resolved && !this.resolve) this._resolution = resolution
+			return resolution
+		} finally {
+			this.resolving = false
+			resolvingAliases.pop()
+			inProgress.resolutions--
+		}
 	}
 
 	protected _resolve(): BaseRoot {
@@ -117,7 +141,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 Seen: [${seen.join("->")}] 
 Resolution: ${printable(resolution)}`)
 		}
-		return resolution
+		return resolveShallowAliases(resolution)
 	}
 
 	get resolutionId(): NodeId {
@@ -136,6 +160,13 @@ Resolution: ${printable(resolution)}`)
 
 	get defaultShortDescription(): string {
 		return domainDescriptions.object
+	}
+
+	get nestableExpression(): string {
+		const referenced = nodesByRegisteredId[this.reference as NodeId]
+		return hasArkKind(referenced, "root") ?
+				referenced.nestableExpression
+			:	this.expression
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
@@ -196,9 +227,38 @@ Resolution: ${printable(resolution)}`)
 
 const expressionOf = (reference: string): string => {
 	const referenced = nodesByRegisteredId[reference as NodeId]
+	if (hasArkKind(referenced, "root")) return referenced.expression
 	return hasArkKind(referenced, "context") && referenced.alias ?
 			`$${referenced.alias}`
 		:	reference
+}
+
+const nameOf = (node: AliasNode): string =>
+	node.expression[0] === "$" ? node.expression.slice(1) : node.expression
+
+const resolvingAliases: AliasNode[] = []
+
+// an alias only belongs in a structural value, so a node holding one elsewhere is rebuilt from its resolution
+export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
+	if (!node.includesShallowAlias) return node
+	if (node.hasKind("alias")) return node.resolution
+	if (node.hasKind("union")) {
+		return node.$.node("union", {
+			...node.inner,
+			branches: node.branches.map(resolveShallowAliases),
+			meta: node.meta
+		} as never)
+	}
+	if (node.hasKind("morph")) {
+		return node.$.node("morph", {
+			...node.inner,
+			in: node.inner.in && resolveShallowAliases(node.inner.in),
+			meta: node.meta
+		} as never)
+	}
+	return throwInternalError(
+		`Unexpected shallow alias in ${node.kind} node ${node.expression}`
+	)
 }
 
 export const writeShallowCycleErrorMessage = (

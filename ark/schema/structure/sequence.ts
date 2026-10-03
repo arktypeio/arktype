@@ -101,7 +101,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					// be specified as `{ proto: Array, length: 0 }`
 					if (schema.length === 0) return undefined
 
-					return schema.map(element => ctx.$.parseSchema(element))
+					return schema.map(element => ctx.$.parseStructuralValue(element))
 				}
 			},
 			optionals: {
@@ -109,7 +109,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				parse: (schema, ctx) => {
 					if (schema.length === 0) return undefined
 
-					return schema.map(element => ctx.$.parseSchema(element))
+					return schema.map(element => ctx.$.parseStructuralValue(element))
 				}
 			},
 			defaultables: {
@@ -118,7 +118,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					if (defaultables.length === 0) return undefined
 
 					return defaultables.map(element => {
-						const node = ctx.$.parseSchema(element[0])
+						const node = ctx.$.parseStructuralValue(element[0])
 						assertDefaultValueAssignability(node, element[1], null)
 						return [node, element[1]]
 					})
@@ -140,7 +140,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			},
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseSchema(schema, ctx)
+				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema, ctx)
 			},
 			minVariadicLength: {
 				// minVariadicLength is reflected in the id of this node,
@@ -153,7 +153,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				parse: (schema, ctx) => {
 					if (schema.length === 0) return undefined
 
-					return schema.map(element => ctx.$.parseSchema(element))
+					return schema.map(element => ctx.$.parseStructuralValue(element))
 				}
 			}
 		},

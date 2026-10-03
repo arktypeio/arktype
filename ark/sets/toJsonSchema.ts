@@ -11,7 +11,7 @@ import {
 	type ToJsonSchema,
 	type nodeOfKind
 } from "@ark/schema"
-import { flatMorph, hasKey, printable, throwInternalError } from "@ark/util"
+import { hasKey, printable, throwInternalError } from "@ark/util"
 
 export const toJsonSchema = (
 	node: BaseRoot,
@@ -28,27 +28,36 @@ export const toJsonSchema = (
 	const schema: JsonSchema =
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
 
-	Object.assign(schema, toJsonSchemaRecurse(node, ctx))
+	const outerRefs = refs
+	refs = []
+	try {
+		Object.assign(schema, toJsonSchemaRecurse(node, ctx))
 
-	if (ctx.useRefs) {
-		const defs = flatMorph(node.references, (i, ref) =>
-			ref.isRoot() && !alwaysExpandJsonSchema(ref) ?
-				[ref.id, toResolvedJsonSchema(ref, ctx)]
-			:	[]
-		)
-		// draft-2020-12 uses $defs, draft-07 uses definitions
-		if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
-		else schema.$defs = defs
+		if (ctx.useRefs) {
+			// only nodes a $ref reaches are defined, so a discriminant's cases aren't
+			const defs: Record<string, JsonSchema> = {}
+			for (let i = 0; i < refs.length; i++)
+				defs[refs[i].id] ??= toResolvedJsonSchema(refs[i], ctx)
+			// draft-2020-12 uses $defs, draft-07 uses definitions
+			if (ctx.target === "draft-07")
+				Object.assign(schema, { definitions: defs })
+			else schema.$defs = defs
+		}
+	} finally {
+		refs = outerRefs
 	}
 
 	return schema
 }
+
+let refs: BaseRoot[] = []
 
 export const toJsonSchemaRecurse = (
 	node: BaseRoot,
 	ctx: ToJsonSchema.Context
 ): JsonSchema => {
 	if (ctx.useRefs && !alwaysExpandJsonSchema(node)) {
+		if (!refs.includes(node)) refs.push(node)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
 		return { $ref: `#/${defsKey}/${node.id}` } as JsonSchema.Ref

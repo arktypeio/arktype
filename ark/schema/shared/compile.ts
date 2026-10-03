@@ -199,6 +199,16 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return `${reference}(${arg})`
 	}
 
+	// in Apply, a cyclic member is entered as its own resolution, so its data has one state however it's reached
+	invokeMember(node: BaseNode, member: BaseNode = node): this {
+		if (this.traversalKind !== "Apply" || !member.includesAlias)
+			return this.line(this.invoke(node))
+		return this.if(
+			`ctx.enterResolution("${member.id}", ${this.data}) === undefined`,
+			() => this.line(this.invoke(node)).line("ctx.exitResolution()")
+		)
+	}
+
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		return opts?.kind ? `${id}${opts.kind}` : id
 	}

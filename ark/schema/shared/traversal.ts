@@ -590,12 +590,12 @@ export const applyCyclic = (
 	return ctx
 }
 
-const applyResolution = (
+export const applyResolution = (
 	id: string,
 	apply: TraverseApply,
 	data: unknown,
-	ctx: Traversal
-) => {
+	ctx: InternalTraversal
+): void => {
 	if (ctx.enterResolution(id, data) !== undefined) return
 	apply(data, ctx)
 	ctx.exitResolution()

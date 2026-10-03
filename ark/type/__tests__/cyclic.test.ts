@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { writeShallowCycleErrorMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -46,8 +47,10 @@ contextualize(() => {
 
 					nested(data)
 					attest(data).equals([[1], [2]])
-					attest(nested([[{}]]).toString()).snap(
-						"value at [0][0] must be an array or a number (was {}) or [0] must be a number (was an object)"
+					attest(nested([[{}]]).toString()).equals(
+						config.jitless ?
+							"value at [0] must be a number (was an object) or [0][0] must be a number or an array (was {})"
+						:	"value at [0][0] must be an array (was object)"
 					)
 				})
 
@@ -196,6 +199,44 @@ contextualize(() => {
 					data.v = "x"
 					attest(T(null).toString()).snap("v must be a number (was a string)")
 				})
+
+				// https://github.com/arktypeio/arktype/issues/1630
+				it("reports a cyclic union's errors on its discriminated branch", config => {
+					const api = scope(
+						{
+							Field: { type: "'field'", value: "string >= 1" },
+							Group: { type: "'group'", parts: "Part[]" },
+							Part: "Field | Group"
+						},
+						config
+					).export()
+					const Thing = type({ parts: api.Part.array() })
+
+					attest(
+						Thing({ parts: [{ type: "field", value: "" }] }).toString()
+					).snap("parts[0].value must be non-empty")
+					attest(api.Part({ type: "field", value: "" }).toString()).snap(
+						"value must be non-empty"
+					)
+				})
+
+				it("builds a morph union of definitions in progress", config => {
+					const types = scope(
+						{
+							other: { kind: "'b'", "next?": "node | other" },
+							node: {
+								kind: "'a'",
+								v: "string.numeric.parse",
+								"next?": "node | other"
+							}
+						},
+						config
+					).export()
+
+					attest(types.node({ kind: "a", v: "1", next: { kind: "b" } })).equals(
+						{ kind: "a", v: 1, next: { kind: "b" } }
+					)
+				})
 			}
 		)
 	}
@@ -234,6 +275,50 @@ contextualize(() => {
 		attest(node({ n: "a", kids: { b: { n: 1, kids: {} } } }).toString()).snap(
 			"kids.b.n must be a string (was a number)"
 		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1026
+	it("references a definition in progress only as a structural value", () => {
+		const types = scope({
+			Field: { type: "'field'", value: "string >= 1" },
+			Group: { type: "'group'", parts: "Part[]" },
+			Part: "Field | Group",
+			N: { s: "S" },
+			S: "N"
+		}).export()
+
+		attest(types.Part({ type: "x" }).toString()).snap(
+			'type must be "group" or "field" (was "x")'
+		)
+		attest(types.S.expression).snap("{ s: $S }")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/579
+	it("rejects a shallow cycle", () => {
+		attest(() => scope({ a: "a" }).export()).throws(
+			writeShallowCycleErrorMessage("a", ["a"])
+		)
+		attest(() =>
+			scope({ a: "b | string", b: "a | number" } as never).export()
+		).throws(writeShallowCycleErrorMessage("a", ["a", "b"]))
+		attest(() => type("this | string" as never)).throws(
+			"has a shallow resolution cycle"
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/924
+	it("reports an object reached through a union once", () => {
+		const node = scope({
+			node: { v: "number", "kids?": "node[]", "next?": "node | null" }
+		}).export().node
+		const shared = { v: "x" }
+		const self: { v: string; next?: object } = { v: "x" }
+		self.next = self
+
+		attest(node({ v: 1, kids: [shared], next: shared }).toString()).snap(
+			"next.v must be a number (was a string)"
+		)
+		attest(node(self).toString()).snap("v must be a number (was a string)")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476
