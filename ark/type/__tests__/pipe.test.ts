@@ -363,6 +363,21 @@ contextualize(() => {
 		}
 	})
 
+	it("transforms an array's props before its elements", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const calls: string[] = []
+			const Trimmed = $.type("string").pipe(s => {
+				calls.push(s)
+				return s.trim()
+			})
+			const T = $.type(Trimmed.array()).and({ foo: Trimmed })
+			const out = T.assert(Object.assign([" a"], { foo: " f" }))
+			attest(calls).equals([" f", " a"])
+			attest(out.foo).equals("f")
+			attest([...out]).equals(["a"])
+		}
+	})
+
 	it("doesn't pipe on error", () => {
 		const A = type({ a: "number" }).pipe(function addOne(o) {
 			return o.a + 1

@@ -524,11 +524,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	traverseTransform: TraverseTransform<object> = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
 		let out: any = data
-		if (this.sequence?.transforms) {
-			const transformedSequence = ctx.transform(this.sequence, data)
-			if (transformedSequence !== data)
-				out = this.copy(data, transformedSequence as object)
-		}
 		const transformKey = (k: Key, value: unknown, node: BaseRoot) => {
 			const transformed = traverseKey(k, () => ctx.transform(node, value), ctx)
 			if (Object.is(transformed, value)) return value
@@ -550,6 +545,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (ctx.currentErrorCount > keyErrorCount) break
 				value = transformKey(prop.key, value, node)
 			}
+		}
+		if (this.sequence?.transforms) {
+			const transformedSequence = ctx.transform(this.sequence, data)
+			if (transformedSequence !== data)
+				out = this.copy(out, transformedSequence as object)
 		}
 		if (this.index) {
 			const keys = ownKeysOf(data)
@@ -754,11 +754,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
 		js.initializeTransform(transformedChildren)
 		js.let("out", "data")
-		if (this.sequence?.transforms) {
-			js.transformKey("transformedSequence", "data", this.sequence, {
-				onChange: () => this.compileArrayCopy(js, "transformedSequence")
-			})
-		}
 		for (let i = 0; i < transformedProps.length; i++) {
 			const { key, serializedKey, optional } = transformedProps[i]
 			const onChange = () =>
@@ -773,6 +768,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					...(deletes ? {} : { onChange })
 				}
 			)
+		}
+		if (this.sequence?.transforms) {
+			js.transformKey("transformedSequence", "data", this.sequence, {
+				onChange: () =>
+					this.compileCopyProps(js, "out", "transformedSequence").set(
+						"out",
+						"transformedSequence"
+					)
+			})
 		}
 		if (transformedIndex.length) {
 			compileOwnKeys(js, "data").for("i < keys.length", () => {
@@ -821,7 +825,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	private compileCopy(js: NodeCompiler, objectCopy?: string): NodeCompiler {
 		return js.if("out === data", () =>
 			this.sequence ?
-				this.compileArrayCopy(js, "data.slice()")
+				this.compileCopyProps(js.set("out", "data.slice()"), "data", "out")
 			:	js.set(
 					"out",
 					objectCopy ??
@@ -847,10 +851,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	private compileArrayCopy(js: NodeCompiler, copy: string): NodeCompiler {
-		js.set("out", copy)
+	// slicing an array drops its props
+	private compileCopyProps(
+		js: NodeCompiler,
+		from: string,
+		to: string
+	): NodeCompiler {
 		for (const prop of this.props) {
-			const store = `out${js.prop(prop.key)} = data${js.prop(prop.key)}`
+			const store = `${to}${js.prop(prop.key)} = ${from}${js.prop(prop.key)}`
 			if (prop.required) js.line(store)
 			else js.if(`${prop.serializedKey} in data`, () => js.line(store))
 		}
