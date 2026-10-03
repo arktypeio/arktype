@@ -226,6 +226,7 @@ let rawUnknownUnion: UnionNode | undefined
 
 // reduce union of all possible values reduces to unknown
 const cacheUnknownUnion = ($: BaseScope): void => {
+	scopesWithUnknownUnion.add($)
 	rawUnknownUnion ??= $.node(
 		"union",
 		{
@@ -249,8 +250,6 @@ const cacheUnknownUnion = ($: BaseScope): void => {
 		$.node("intersection", {}, { prereduced: true })
 	)
 }
-
-let constructingRootSchemaScope = true
 
 // held apart from each scope, which may be frozen before its first parse
 const scopesWithUnknownUnion = new WeakSet<BaseScope>()
@@ -599,8 +598,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
-		if (constructingRootSchemaScope) scopesWithUnknownUnion.add(this)
-
 		const globalConfig = constructingWith ?? $ark
 
 		this.config = mergeConfigs(globalConfig.config, config)
@@ -971,10 +968,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		bootstrap()
-		if (!scopesWithUnknownUnion.has(this)) {
-			scopesWithUnknownUnion.add(this)
-			cacheUnknownUnion(this)
-		}
+		if (!scopesWithUnknownUnion.has(this)) cacheUnknownUnion(this)
 		const id = input.id ?? registerNodeId(input.prefix)
 		return Object.assign(input, {
 			[arkKind]: "context" as const,
@@ -1331,8 +1325,6 @@ export type InternalSchemaParser = (
 ) => BaseRoot
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
-
-constructingRootSchemaScope = false
 
 const importedGlobalConfig = currentGlobalConfig()
 
