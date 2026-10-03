@@ -920,6 +920,17 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
+	it("unions a morph with a branch disjoint from its cyclic prop", () => {
+		const types = scope({
+			d: { p0: "boolean" },
+			e: { x: "string.numeric.parse", "p0?": "e" },
+			c: "e | d"
+		}).export()
+
+		attest(types.c({ x: "1", p0: { x: "2" } })).equals({ x: 1, p0: { x: 2 } })
+		attest(types.c({ p0: true })).equals({ p0: true })
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1476
 	it("exports unions whose cyclic branches intersect", () => {
 		const types = scope({
