@@ -250,7 +250,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	// a union or index signature picks what it transforms by an Allows that can read ctx
+	// a child that picks by ctx needs it passed down
 	protected get transformSelectsByContext(): boolean {
 		return this.children.some(child => child.transformRequiresContext)
 	}
