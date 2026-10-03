@@ -7,6 +7,7 @@ import {
 	WeakCache,
 	type requireKeys
 } from "@ark/util"
+import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue } from "../shared/compile.ts"
@@ -74,19 +75,12 @@ export class OptionalNode extends BaseProp<"optional"> {
 		this.includesContextualMorph ||= this.defaultValueMorph?.length === 2
 	}
 
-	override get rawIn(): OptionalNode {
-		// super.rawIn caches the input with its default, which every later read returns
-		if (this._rawIn) return this._rawIn as never
-		const baseIn = super.rawIn
-		if (!this.hasDefault()) return baseIn as never
-
-		this.keepInScope()
+	override getIo(ioKind: "in" | "out"): BaseNode {
+		if (ioKind === "out" || !this.hasDefault()) return super.getIo(ioKind)
 		return this.$.node(
 			"optional",
-			omit(baseIn.inner, { default: true }) as never,
-			{
-				prereduced: true
-			}
+			{ ...omit(this.inner, { default: 1 }), value: this.value.rawIn },
+			{ prereduced: true }
 		)
 	}
 

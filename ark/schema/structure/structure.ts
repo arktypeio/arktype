@@ -211,12 +211,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.includesTransform ||= this.structuralMorph !== undefined
 	}
 
-	// a defaultable prop's rawIn depends on whether it was read before
-	override get rawIn(): BaseNode {
-		if (!this._rawIn && this.defaultable.length) this.keepInScope()
-		return super.rawIn
-	}
-
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []

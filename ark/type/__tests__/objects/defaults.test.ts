@@ -516,6 +516,15 @@ contextualize(() => {
 			attest(T.in.expression).snap("{ foo?: number }")
 		})
 
+		it("defaultable input extracted as optional wherever it's shared", () => {
+			const A = type({ foo: "number = 0" })
+			const B = type({ foo: "number = 0", bar: "string" })
+
+			attest(A.in.expression).snap("{ foo?: number }")
+			attest(B.in.expression).snap("{ bar: string, foo?: number }")
+			attest(B.in({ bar: "" })).equals({ bar: "" })
+		})
+
 		it("defaultable output extracted as required", () => {
 			const T = type({ foo: "number = 0" })
 			attest<{ foo: number }>(T.out.t)
