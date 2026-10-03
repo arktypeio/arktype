@@ -34,6 +34,13 @@ contextualize(() => {
 		})
 	})
 
+	it("parses an array's union element from its json", () => {
+		const T = rootSchema({ proto: Array, sequence: ["string", "number"] })
+		attest(T.expression).snap("(number | string)[]")
+		attest(T.json).snap({ sequence: ["number", "string"], proto: "Array" })
+		attest(rootSchema(T.json as never).equals(T)).equals(true)
+	})
+
 	it("throws on reduced minLength disjoint", () => {
 		attest(() =>
 			rootSchema({
