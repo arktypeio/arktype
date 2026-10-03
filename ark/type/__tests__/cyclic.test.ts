@@ -888,7 +888,10 @@ swap.swap.order[1] must be "on" (was "off")`)
 	it("closes a recursive generic's instantiations", () => {
 		const types = scope({
 			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },
-			permuted: "p<'0', '1', '2', '3'>"
+			"g<t>": { "next?": "g<Record<string, a>>" },
+			a: { "n?": "a" },
+			permuted: "p<'0', '1', '2', '3'>",
+			nested: "g<1>"
 		}).export()
 
 		attest(types.permuted({ v: "0", s: { v: "1", r: { v: "0" } } })).equals({
@@ -897,6 +900,9 @@ swap.swap.order[1] must be "on" (was "off")`)
 		})
 		attest(types.permuted({ v: "0", r: { s: { v: "1" } } }).toString()).snap(
 			'r.v must be "1" (was missing)\nr.s.v must be "2" (was "1")'
+		)
+		attest(types.nested.expression).snap(
+			"{ next?: { next?: g<{ [string]: { n?: $a } }> } }"
 		)
 	})
 
