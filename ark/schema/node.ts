@@ -11,6 +11,7 @@ import {
 	stringifyPath,
 	throwError,
 	throwInternalError,
+	unset,
 	type Dict,
 	type Fn,
 	type GuardablePredicate,
@@ -399,15 +400,25 @@ export abstract class BaseNode<
 						return ctx.hasError() ? ctx.finalize(onFail) : result
 					}
 				}
-				if (
-					!this.transformRequiresContext &&
-					(this as {} as BaseRoot).branches.every(
-						branch =>
-							!branch.transforms ||
-							(branch.hasKind("morph") && !branch.introspectableIn?.transforms)
+				if (!this.transformRequiresContext) {
+					if (
+						(this as {} as BaseRoot).branches.every(
+							branch =>
+								!branch.transforms ||
+								(branch.hasKind("morph") &&
+									!branch.introspectableIn?.transforms)
+						)
 					)
-				)
-					return this.createOptimisticRootApply()
+						return this.createOptimisticRootApply()
+					if (this.hasKind("union") && !this.compiledDiscriminant) {
+						return (data, onFail) => {
+							const ctx = new Traversal(data, this.$.resolvedConfig)
+							const result = ctx.transform(this, data)
+							if (result === unset) return this.applyRoot(data).finalize(onFail)
+							return ctx.hasError() ? ctx.finalize(onFail) : result
+						}
+					}
+				}
 				return (data, onFail) => {
 					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
 					const ctx = new Traversal(data, this.$.resolvedConfig)

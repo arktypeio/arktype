@@ -10,6 +10,7 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	unset,
 	WeakCache,
 	type Dict,
 	type Fn,
@@ -366,6 +367,17 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"}",
 		...result
 	]
+	const transformed =
+		node.includesMorph ?
+			[
+				"if (result instanceof TransformErrors) {",
+				"    const ctx = new Traversal(data, config)",
+				"    ctx.addTransformErrors(result)",
+				"    return ctx.finalize(onFail)",
+				"}",
+				"return result"
+			]
+		:	["return result"]
 	const body =
 		node.rootApplyStrategy === "allows" ? unlessInvalid(["return data"])
 		: node.rootApplyStrategy === "contextualTransform" && node.includesAlias ?
@@ -382,19 +394,14 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 				)
 			]
 		: node.rootApplyStrategy === "transform" ?
-			unlessInvalid(
-				node.includesMorph ?
-					[
-						"const result = transform(data)",
-						"if (result instanceof TransformErrors) {",
-						"    const ctx = new Traversal(data, config)",
-						"    ctx.addTransformErrors(result)",
-						"    return ctx.finalize(onFail)",
-						"}",
-						"return result"
-					]
-				:	["return transform(data)"]
-			)
+			node.hasKind("union") && !node.compiledDiscriminant ?
+				[
+					"const result = transform(data)",
+					...unlessInvalid(transformed, "(result !== unset)")
+				]
+			: node.includesMorph ?
+				unlessInvalid(["const result = transform(data)", ...transformed])
+			:	unlessInvalid(["return transform(data)"])
 		: node.rootApplyStrategy === "contextualTransform" ?
 			unlessInvalid([
 				"const ctx = new Traversal(data, config)",
@@ -413,6 +420,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		"allowsUntracked",
 		"allowsInContext",
 		"config",
+		"unset",
 		`return (function ${node.id}RootApply(data, onFail) {\n    ${body.join("\n    ")}\n})`
 	)(
 		node,
@@ -424,7 +432,8 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		applyCyclic,
 		allowsUntracked,
 		allowsInContext,
-		node.$.resolvedConfig
+		node.$.resolvedConfig,
+		unset
 	)
 }
 
