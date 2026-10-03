@@ -53,6 +53,25 @@ contextualize(() => {
 		attest(rootSchema(["number", { unit: 1 }]).expression).snap("number")
 	})
 
+	it("parses again what was parsed before it", () => {
+		const def = [
+			{
+				domain: "object",
+				required: [{ key: "lateKind", value: { unit: "a" } }]
+			},
+			{
+				domain: "object",
+				required: [{ key: "lateKind", value: { unit: "b" } }]
+			}
+		] as const
+		withoutEngine(() =>
+			attest(rootSchema(def).assertHasKind("union").discriminant).equals(null)
+		)
+		attest(rootSchema(def).assertHasKind("union").discriminant?.path).equals([
+			"lateKind"
+		])
+	})
+
 	it("parsing what only it validates does", () => {
 		withoutEngine(() => {
 			attest(() =>
