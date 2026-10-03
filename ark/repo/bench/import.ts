@@ -1,5 +1,6 @@
 // imports arktype's build, so run `pnpm build` first
 
+import { flatMorph } from "@ark/util"
 import { spawnSync } from "node:child_process"
 
 const processesPerLibrary = 20
@@ -21,7 +22,7 @@ const moltar = {
 
 type Library = keyof typeof moltar
 
-type Sample = { import: number; first: number; heap: number }
+type Sample = { import: number; firstParse: number; heap: number }
 
 const child = (body: string) => `
 const data = { number: 1, negNumber: -1, maxNumber: Number.MAX_VALUE, string: "string", longString: "Lorem ipsum", boolean: true, deeplyNested: { foo: "bar", num: 1, bool: false } }
@@ -30,7 +31,7 @@ const mark = () => marks.push(performance.now())
 ${body}
 mark()
 globalThis.gc()
-console.log(JSON.stringify({ import: marks[1] - marks[0], first: marks[2] - marks[1], heap: process.memoryUsage().heapUsed / 2 ** 20 }))`
+console.log(JSON.stringify({ import: marks[1] - marks[0], firstParse: marks[2] - marks[1], heap: process.memoryUsage().heapUsed / 2 ** 20 }))`
 
 const env = { ...process.env }
 // the repo's ts runner resolves arktype to its sources through NODE_OPTIONS
@@ -48,9 +49,7 @@ const run = (library: Library): Sample => {
 }
 
 const libraries = Object.keys(moltar) as Library[]
-const samples = Object.fromEntries(
-	libraries.map(library => [library, [] as Sample[]])
-) as Record<Library, Sample[]>
+const samples = flatMorph(libraries, (i, library) => [library, [] as Sample[]])
 
 for (let i = 0; i < processesPerLibrary; i++) {
 	for (let j = 0; j < libraries.length; j++) {
@@ -70,14 +69,14 @@ const median = (values: number[]) => {
 }
 
 console.table(
-	Object.fromEntries(
-		libraries.map(library => [
-			library,
-			{
-				"import (ms)": median(samples[library].map(s => s.import)),
-				"define + first parse (ms)": median(samples[library].map(s => s.first)),
-				"heap (MiB)": median(samples[library].map(s => s.heap))
-			}
-		])
-	)
+	flatMorph(samples, (library, librarySamples) => [
+		library,
+		{
+			"import (ms)": median(librarySamples.map(s => s.import)),
+			"define + first parse (ms)": median(
+				librarySamples.map(s => s.firstParse)
+			),
+			"heap (MiB)": median(librarySamples.map(s => s.heap))
+		}
+	])
 )
