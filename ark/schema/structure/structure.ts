@@ -753,12 +753,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					this.props.filter(prop => typeof prop.key === "string")
 				)
 			)
-			js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-				this.compileExhaustiveEntry(
-					js,
-					this.props.filter(prop => typeof prop.key === "symbol")
+			if (this.undeclared === "reject" || this.indexMatchesSymbols) {
+				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
+					this.compileExhaustiveEntry(
+						js,
+						this.props.filter(prop => typeof prop.key === "symbol")
+					)
 				)
-			)
+			}
 		}
 
 		if (js.traversalKind === "Allows") return js.return(true)
@@ -811,7 +813,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			})
 		}
 		if (transformedIndex.length) {
-			compileOwnKeys(js, "data").for("i < keys.length", () => {
+			this.compileOwnKeys(js, "data").for("i < keys.length", () => {
 				js.const("k", "keys[i]")
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.propsByKey)}`, () => js.line("continue"))
@@ -1019,7 +1021,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		if (this.index) {
-			compileOwnKeys(js, "out", "outKeys", "outSymbols").for(
+			this.compileOwnKeys(js, "out", "outKeys", "outSymbols").for(
 				"i < outKeys.length",
 				() =>
 					js
@@ -1031,6 +1033,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		js.return("result")
+	}
+
+	// a signature extending string can't match a symbol key
+	private get indexMatchesSymbols(): boolean {
+		return !!this.index?.some(
+			node => !node.signature.extends($ark.intrinsic.string)
+		)
+	}
+
+	private compileOwnKeys(
+		js: NodeCompiler,
+		object: string,
+		keys = "keys",
+		symbols = "symbols"
+	): NodeCompiler {
+		js.const(keys, `Object.keys(${object})`)
+		if (!this.indexMatchesSymbols) return js
+		return js
+			.const(symbols, `Object.getOwnPropertySymbols(${object})`)
+			.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
 	}
 
 	protected compileExhaustiveEntry(
@@ -1158,17 +1180,6 @@ const compileDeclaredKeySwitch = (
 			`${props.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
 		)
 	)
-
-const compileOwnKeys = (
-	js: NodeCompiler,
-	object: string,
-	keys = "keys",
-	symbols = "symbols"
-): NodeCompiler =>
-	js
-		.const(keys, `Object.keys(${object})`)
-		.const(symbols, `Object.getOwnPropertySymbols(${object})`)
-		.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
 
 const ownKeysOf = (data: object): Key[] => {
 	const keys: Key[] = Object.keys(data)
