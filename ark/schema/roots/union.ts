@@ -296,13 +296,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	traverseTransform: TraverseTransform = (data, ctx) => {
 		const discriminant = this.compiledDiscriminant
 		if (discriminant) {
-			const caseNode =
-				discriminant.cases[
-					caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
-				]
-			return caseNode !== true && caseNode?.transforms ?
-					ctx.transform(caseNode, data)
-				:	data
+			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
+			const caseNode = discriminant.cases[k]
+			if (caseNode === true || !caseNode?.transforms) return data
+			const member = discriminant.members?.[k]
+			return member ?
+					ctx.transformResolution(member.id, data, caseNode.traverseTransform)
+				:	ctx.transform(caseNode, data)
 		}
 		// Apply also takes the first valid branch
 		for (let i = 0; i < this.branches.length; i++) {
@@ -348,7 +348,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				const caseResult =
 					js.traversalKind === "Transform" ?
 						v !== true && v.transforms ?
-							invokeTransform(js, v)
+							invokeTransform(js, v, member)
 						:	"data"
 					: v === true ? "true"
 					: js.invoke(v)
@@ -467,8 +467,14 @@ const describeCases = (discriminant: Discriminant): string =>
 	)
 
 // a branch whose transform doesn't require ctx returns its errors rather than adding them
-const invokeTransform = (js: NodeCompiler, branch: BaseRoot): string =>
-	(
+const invokeTransform = (
+	js: NodeCompiler,
+	branch: BaseRoot,
+	member?: BaseRoot
+): string =>
+	member ?
+		`ctx.transformResolution("${member.id}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
+	: (
 		js.requiresContext &&
 		branch.includesMorph &&
 		!branch.transformRequiresContext

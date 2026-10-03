@@ -596,6 +596,36 @@ contextualize(() => {
 					)
 				})
 
+				it("closes cyclic output where the data entered", config => {
+					const $ = scope(
+						{
+							node: { kind: "'n'", v: "string.trim", "next?": "node" },
+							leaf: { kind: "'l'" },
+							tree: "node | leaf"
+						},
+						config
+					)
+					const types = $.export()
+					const data: { kind: "n"; v: string; next?: object } = {
+						kind: "n",
+						v: " a "
+					}
+					data.next = data
+
+					const prop = $.type({ x: "node" }).assert({ x: data })
+					const element = types.node.array().assert([data])
+					const piped = $.type("object")
+						.pipe(o => o, types.node)
+						.assert(data)
+					const member = types.tree.assert(data)
+
+					attest(prop.x.next === prop.x).equals(true)
+					attest(element[0].next === element[0]).equals(true)
+					attest(piped.next === piped).equals(true)
+					attest(member.kind === "n" && member.next === member).equals(true)
+					attest(prop.x.v).equals("a")
+				})
+
 				it("transforms a default through an alias", config => {
 					const types = scope(
 						{
