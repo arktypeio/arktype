@@ -345,6 +345,15 @@ contextualize(() => {
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
 	})
 
+	it("prefixes a morph's union errors with its path", () => {
+		const Either = type({ a: "string" }).or({ b: "string" })
+		const T = type({ v: ["string", "=>", () => Either({})] })
+
+		attest(T({ v: "x" }).toString()).snap(
+			"v.a must be a string (was missing) or v.b must be a string (was missing)"
+		)
+	})
+
 	it("doesn't pipe on error", () => {
 		const A = type({ a: "number" }).pipe(function addOne(o) {
 			return o.a + 1

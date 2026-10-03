@@ -303,9 +303,8 @@ export class ArkErrors
 	merge(errors: ArkErrors): void {
 		for (const e of errors) {
 			this.add(
-				new ArkError(
-					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
-					this.ctx
+				e.transform(
+					input => ({ ...input, prefixPath: [...this.ctx.path] }) as never
 				)
 			)
 		}

@@ -412,6 +412,21 @@ contextualize(() => {
 					).throws("Default for next must be an object or null (was a number)")
 				})
 
+				it("prefixes a cyclic pipe's union errors with its path", config => {
+					const types = scope(
+						{
+							node: { "+": "reject", "next?": "string.json.parse |> either" },
+							either: "node | leaf",
+							leaf: { kind: "'leaf'" }
+						},
+						config
+					).export()
+
+					attest(types.node({ next: '{ "extra": 1 }' }).toString()).snap(
+						'next.kind must be "leaf" (was missing) or next.extra must be removed'
+					)
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 
