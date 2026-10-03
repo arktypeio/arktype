@@ -1427,25 +1427,30 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1188
 	it("cyclic discriminated union issue 1", () => {
-		let wasPiped = false
+		for (const jitless of [false, true]) {
+			let wasPiped = false
 
-		const $ = scope({
-			Foo: {
-				"oneOf?": "Bar[]" // NB: don't get the error if this is not an array
-			},
-			Bar: "Foo"
-		}).export()
+			const $ = scope(
+				{
+					Foo: {
+						"oneOf?": "Bar[]" // NB: don't get the error if this is not an array
+					},
+					Bar: "Foo"
+				},
+				{ jitless }
+			).export()
 
-		const baz = $.Bar.pipe((_: object): type.Any | undefined => {
-			wasPiped = true
-			return type("string")
-		})
+			const baz = $.Bar.pipe((_: object): type.Any | undefined => {
+				wasPiped = true
+				return type("string")
+			})
 
-		// previously threw "TypeError: this.Foo1Apply is not a function"
-		const r = baz({ oneOf: [{}] })
+			// previously threw "TypeError: this.Foo1Apply is not a function"
+			const r = baz({ oneOf: [{}] })
 
-		attest(wasPiped).equals(true)
-		attest(r?.toString()).snap("Type<string>")
+			attest(wasPiped).equals(true)
+			attest(r?.toString()).snap("Type<string>")
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1367
@@ -1524,75 +1529,93 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1209
 	it("cyclic discriminated union issue 3", () => {
-		const $ = scope({
-			literal: '"foo"',
-			record: {
-				"[string]": "value"
-			},
-			value: "literal|literal[]|record"
-		}).export()
+		for (const jitless of [false, true]) {
+			const $ = scope(
+				{
+					literal: '"foo"',
+					record: {
+						"[string]": "value"
+					},
+					value: "literal|literal[]|record"
+				},
+				{ jitless }
+			).export()
 
-		const result = $.value({})
+			const result = $.value({})
 
-		attest(result).equals({})
+			attest(result).equals({})
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1640
 	it("cyclic discriminated union with record reference", () => {
-		const Node = scope({
-			Number: { type: "'number'" },
-			Array: { type: "'array'", item: "Node" },
-			Unit: { type: "'unit'" },
-			Container: { things: "Record<string, Node>" },
-			Node: "Number | Array | Unit"
-		}).export().Node
+		for (const jitless of [false, true]) {
+			const Node = scope(
+				{
+					Number: { type: "'number'" },
+					Array: { type: "'array'", item: "Node" },
+					Unit: { type: "'unit'" },
+					Container: { things: "Record<string, Node>" },
+					Node: "Number | Array | Unit"
+				},
+				{ jitless }
+			).export().Node
 
-		const data = { type: "array", item: { type: "number" } } as const
+			const data = { type: "array", item: { type: "number" } } as const
 
-		attest(Node(data)).equals(data)
+			attest(Node(data)).equals(data)
+			attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
+				'item.type must be "array", "number" or "unit" (was "nope")'
+			)
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1284
 	it("cyclic discriminated union issue 4", () => {
-		const ruleset = scope({
-			TypeX: {
-				id: "string",
-				"+": "reject"
-			},
-			// always worked
-			TypeA: {
-				label: "string",
-				id: "string",
-				"result?": "TypeA | TypeX",
-				"+": "reject"
-			},
-			// previously did not work
-			TypeB: {
-				label: "string",
-				id: "string",
-				"result?": "TypeB | TypeX | null",
-				"+": "reject"
-			},
-			// always worked
-			TypeC: {
-				label: "string",
-				id: "string",
-				"result?": "TypeA | TypeX | null",
-				"+": "reject"
+		for (const jitless of [false, true]) {
+			const ruleset = scope(
+				{
+					TypeX: {
+						id: "string",
+						"+": "reject"
+					},
+					// always worked
+					TypeA: {
+						label: "string",
+						id: "string",
+						"result?": "TypeA | TypeX",
+						"+": "reject"
+					},
+					// previously did not work
+					TypeB: {
+						label: "string",
+						id: "string",
+						"result?": "TypeB | TypeX | null",
+						"+": "reject"
+					},
+					// always worked
+					TypeC: {
+						label: "string",
+						id: "string",
+						"result?": "TypeA | TypeX | null",
+						"+": "reject"
+					}
+				},
+				{ jitless }
+			)
+			const types = ruleset.export()
+
+			const data = {
+				label: "hi",
+				id: "C",
+				result: { label: "A", id: "B" }
 			}
-		})
-		const types = ruleset.export()
 
-		const data = {
-			label: "hi",
-			id: "C",
-			result: { label: "A", id: "B" }
+			attest(types.TypeA(data)).equals(data)
+			// previously resulted in error:
+			// result.label must be removed
+			attest(types.TypeB(data)).equals(data)
+			attest(types.TypeC(data)).equals(data)
 		}
-
-		attest(types.TypeA(data)).equals(data)
-		// previously resulted in error:
-		// result.label must be removed
-		attest(types.TypeB(data)).equals(data)
-		attest(types.TypeC(data)).equals(data)
 	})
 })

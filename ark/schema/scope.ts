@@ -338,9 +338,8 @@ const precompile = (
 	return precompilation
 }
 
-// compiled traversal describes a discriminated union by its cases and reports -0 as 0
+// compiled traversal reports -0 as 0
 const reportsDifferentlyCompiled = (node: BaseNode): boolean => {
-	if (node.hasKind("union")) return node.compiledDiscriminant !== null
 	for (const k in node.inner)
 		if (Object.is((node.inner as Dict)[k], -0)) return true
 	return false
@@ -1079,10 +1078,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		bootstrapAliasReferences(node)
 		if (node.precompilation || this.resolvedConfig.jitless) return node
-		const references = node.references
-		// compiled and interpreted unions word some errors differently
-		if (jit || references.some(reference => reference.hasKind("union")))
-			precompile(references)
+		if (jit) precompile(node.references)
 		return node
 	}
 

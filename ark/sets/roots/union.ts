@@ -19,6 +19,7 @@ import {
 	appendUnique,
 	arrayEquals,
 	flatMorph,
+	integerLikeMatcher,
 	range,
 	throwParseError
 } from "@ark/util"
@@ -87,9 +88,18 @@ export const union: setImplementationOf<Union.Declaration> = {
 	}
 }
 
+// a switch compares by ===, which never matches NaN and compares a Date by reference
+const isCaseUnit = (node: Unit.Node): boolean =>
+	!(node.unit instanceof Date) && !Number.isNaN(node.unit)
+
+const isUndefinedCase = (k: string) => k === "undefined" || k === '"undefined"'
+
 export const discriminate = (node: Union.Node): Discriminant | null => {
 	if (node.branches.length < 2) return null
-	if (node.unitBranches.length === node.branches.length) {
+	if (
+		node.unitBranches.length === node.branches.length &&
+		node.unitBranches.every(n => isCaseUnit(n.rawIn as Unit.Node))
+	) {
 		const cases = flatMorph(node.unitBranches, (i, n) => [
 			`${(n.rawIn as Unit.Node).serializedValue}`,
 			n.hasKind("morph") ? n : (true as const)
@@ -122,9 +132,19 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 					lSerialized = `"${typeof lValue === "string" ? lValue : lValue.domain}"`
 					rSerialized = `"${typeof rValue === "string" ? rValue : rValue.domain}"`
 				} else if (entry.kind === "unit") {
-					lSerialized = (entry.l as Unit.Node).serializedValue
-					rSerialized = (entry.r as Unit.Node).serializedValue
+					const lUnit = entry.l as Unit.Node
+					const rUnit = entry.r as Unit.Node
+					if (!isCaseUnit(lUnit) || !isCaseUnit(rUnit)) continue
+					lSerialized = lUnit.serializedValue
+					rSerialized = rUnit.serializedValue
 				} else continue
+
+				// an optional chain reads undefined at a missing key or below a non-object
+				if (
+					entry.path.length &&
+					(isUndefinedCase(lSerialized) || isUndefinedCase(rSerialized))
+				)
+					continue
 
 				const matching = candidates.find(
 					d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
@@ -560,8 +580,12 @@ export const pruneDiscriminant = (
 ): BaseRoot | null =>
 	discriminantBranch.transform(
 		(nodeKind, inner) => {
-			if (nodeKind === "domain" || nodeKind === "unit") return null
-
+			if (nodeKind === "unit") return null
+			// a number domain's discriminant checks typeof, so a number that excludes NaN still checks it
+			if (nodeKind === "domain") {
+				const { domain, numberAllowsNaN } = inner as Domain.Inner
+				return domain === "number" && !numberAllowsNaN ? inner : null
+			}
 			return inner
 		},
 		{
@@ -574,8 +598,8 @@ export const pruneDiscriminant = (
 
 				if (node.hasKind("domain") && node.domain === "object")
 					// if we've already checked a path at least as long as the current one,
-					// we don't need to revalidate that we're in an object
-					return true
+					// we don't need to revalidate that we're in an object unless a primitive has its next key
+					return !isReadableOnPrimitive(discriminantCtx.path[ctx.path.length])
 
 				if (
 					(node.hasKind("domain") || discriminantCtx.kind === "unit") &&
@@ -591,6 +615,21 @@ export const pruneDiscriminant = (
 			}
 		}
 	)
+
+const primitivePrototypes = [
+	String.prototype,
+	Number.prototype,
+	Boolean.prototype,
+	BigInt.prototype,
+	Symbol.prototype
+]
+
+// an optional chain reads a key a primitive has, like a string's length, as it would an object's
+const isReadableOnPrimitive = (key: PropertyKey | undefined): boolean =>
+	key !== undefined &&
+	(typeof key === "number" ||
+		(typeof key === "string" && integerLikeMatcher.test(key)) ||
+		primitivePrototypes.some(proto => key in proto))
 
 export const writeIndiscriminableMorphMessage = (
 	lDescription: string,
