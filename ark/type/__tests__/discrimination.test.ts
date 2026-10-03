@@ -540,20 +540,7 @@ contextualize(() => {
 						{
 							key: "children",
 							value: {
-								sequence: {
-									required: [
-										{
-											key: "children",
-											value: {
-												sequence: `$ark.${s.export().AParent.internal.id}`,
-												proto: "Array",
-												minLength: 1
-											}
-										},
-										{ key: "type", value: { unit: "AChild" } }
-									],
-									domain: "object"
-								},
+								sequence: `$ark.${s.export().AChild.internal.id}`,
 								proto: "Array",
 								minLength: 1
 							}

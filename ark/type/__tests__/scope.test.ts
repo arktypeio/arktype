@@ -378,27 +378,14 @@ contextualize(() => {
 				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
-			const expectedCyclicJson = types.arf.internal.select({
+			const expectedCyclicJson = types.bork.internal.select({
 				kind: "alias",
 				method: "assertFind"
 			}).json
 
-			attest(types.arf.json).snap({
+			attest(types.arf.json).equals({
 				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [
-								{
-									key: "c",
-									value: expectedCyclicJson
-								}
-							]
-						}
-					}
-				]
+				required: [{ key: "b", value: `$ark.${types.bork.internal.id}` }]
 			})
 			const a = {} as typeof types.arf.infer
 			const b = { c: {} } as typeof types.bork.infer
@@ -406,7 +393,7 @@ contextualize(() => {
 			b.c.b = b
 			b.c.c = b.c
 
-			attest(types.arf.expression).snap("{ b: { c: $arf&$bork } }")
+			attest(types.arf.expression).snap("{ b: $bork }")
 			attest(types.bork.expression).snap("{ c: $arf&$bork }")
 
 			attest(types.arf(a)).equals(a)
@@ -438,20 +425,7 @@ b.c.c must be an object (was missing)`)
 
 			attest(types.a.json).equals({
 				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [
-								{
-									key: "a",
-									value: [`$ark.${types.a.internal.id}`, { unit: 3 }]
-								}
-							]
-						}
-					}
-				]
+				required: [{ key: "b", value: `$ark.${types.b.internal.id}` }]
 			})
 
 			const valid: typeof types.a.infer = { b: { a: 3 } }

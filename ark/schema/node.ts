@@ -70,6 +70,9 @@ import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
 
+// an alias reached while a definition is open or an alias resolves may not resolve as it will
+const isReachFinal = () => !inProgress.definitions && !inProgress.resolutions
+
 const referencesWithReplacements = new WeakSet<object>()
 
 export abstract class BaseNode<
@@ -196,11 +199,11 @@ export abstract class BaseNode<
 	}
 
 	private _transforms: boolean | undefined
-	// includesTransform doesn't see an alias's resolution, final once its scope resolves
+	// includesTransform doesn't see an alias's resolution, final once no definition is open
 	get transforms(): boolean {
 		if (this._transforms !== undefined) return this._transforms
 		const transforms = this.reaches("includesTransform")
-		return this.$.resolved ? (this._transforms = transforms) : transforms
+		return isReachFinal() ? (this._transforms = transforms) : transforms
 	}
 
 	private _allowsRequiresTraversal: boolean | undefined
@@ -209,7 +212,7 @@ export abstract class BaseNode<
 		if (this._allowsRequiresTraversal !== undefined)
 			return this._allowsRequiresTraversal
 		const requiresTraversal = this.reaches("includesContextualPredicate")
-		return this.$.resolved ?
+		return isReachFinal() ?
 				(this._allowsRequiresTraversal = requiresTraversal)
 			:	requiresTraversal
 	}
