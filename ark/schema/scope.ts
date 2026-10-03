@@ -882,7 +882,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				const membersStart = openMembers.length
 				let node: BaseRoot
 				try {
-					node = this.bindReference(this.parseOpenDefinition(v.def, v))
+					node = this.parseOpenDefinition(v.def, v)
 				} finally {
 					openDefinitions.pop()
 				}
@@ -1091,7 +1091,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.bindReference(ctxInputOrNode)
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
-		let node = this.bindReference(this.parseOpenDefinition(def, ctx))
+		let node = this.parseOpenDefinition(def, ctx)
 		inProgress.resolutions++
 		try {
 			if (node.includesShallowAlias && !inProgress.definitions)
@@ -1113,7 +1113,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
 		inProgress.definitions++
 		try {
-			return this.parseOwnDefinitionFormat(def, ctx)
+			return this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
 		} finally {
 			inProgress.definitions--
 		}

@@ -334,6 +334,15 @@ contextualize(() => {
 					)
 				})
 
+				it("pipes a root to itself", config => {
+					const t = scope({}, config).type("string.json.parse |> this" as never)
+
+					attest(t(JSON.stringify(JSON.stringify([1]))).toString()).snap(
+						"must be a string (was an object)"
+					)
+					attest(t.out.allows("x")).equals(false)
+				})
+
 				// https://github.com/arktypeio/arktype/issues/944
 				it("transforms a cyclic type through its aliases", config => {
 					const node = scope(
