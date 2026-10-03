@@ -27,8 +27,6 @@ console.log("🏎️  Type instance has fast properties!\n")
 
 console.log("⏱️  Checking that every node of a kind has one V8 map...\n")
 
-const haveSameMap = (l, r) => eval("%HaveSameMap(l, r)")
-
 // each checked kind occurs with and without some inner key, e.g. a pattern's flags
 const definitions = [
 	T,
@@ -89,7 +87,7 @@ const assertOneMapPerKind = when => {
 				throw new Error(`⚠️  A ${kind} node has slow properties ${when}.`)
 		}
 		for (const node of rest) {
-			if (!haveSameMap(first, node)) {
+			if (!eval("%HaveSameMap(first, node)")) {
 				throw new Error(
 					`⚠️  ${kind} nodes ${first.expression} and ${node.expression} have different maps ${when}.`
 				)
