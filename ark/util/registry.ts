@@ -69,9 +69,13 @@ const unregisteredNameOf = (value: object | symbol) =>
 	:	namesByUnregisteredObject.get(value)
 
 const nextName = (value: object | symbol) => {
-	let name = baseNameFor(value)
-	if (nameCounts[name]) name = `${name}${nameCounts[name]!++}`
-	else nameCounts[name] = 1
+	const baseName = baseNameFor(value)
+	let name = baseName
+	let count = nameCounts[baseName] ?? 0
+	// a name can be taken by a registry key like sets, or by a function named e.g. fn1
+	while (name in nameCounts || name in registry) name = `${baseName}${++count}`
+	nameCounts[baseName] = count
+	nameCounts[name] ??= 0
 	return name
 }
 
