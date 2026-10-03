@@ -48,12 +48,12 @@
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",
-			"default": "./out/index.js"
+			"default": "./out/internal.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",
-			"default": "./out/index.js"
+			"default": "./out/internal.js"
 		}
 	},
 	"files": [

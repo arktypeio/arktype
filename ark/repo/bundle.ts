@@ -4,7 +4,6 @@ import ts from "typescript"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	fromCwd,
-	readFile,
 	readPackageJson,
 	rmRf,
 	walkPaths,
@@ -17,10 +16,13 @@ export const bundle = (): void => {
 		include: path => path.endsWith(".js")
 	}).sort()
 	const entryPoints = publicEntryPoints()
-	const ownFiles = flattenIntoMain(entryPoints, perModuleJs)
+	const internal = fromCwd("out", "internal.js")
+	const ownFiles = flattenIntoInternal(entryPoints, perModuleJs)
 	// one build for all entries, so a module several import evaluates once
 	const { outputFiles } = buildSync({
-		entryPoints,
+		// an internal.js re-exporting only the main entry would split it into a chunk
+		entryPoints:
+			internal in ownFiles ? entryPoints : [...entryPoints, internal],
 		outdir: fromCwd("out"),
 		bundle: true,
 		splitting: true,
@@ -51,15 +53,18 @@ const publicEntryPoints = (): string[] =>
 			:	[]
 	})
 
-// deep imports resolve to main at runtime, so it exports every module's names
-const flattenIntoMain = (
+// deep imports resolve to internal.js at runtime, so it exports every module's names
+const flattenIntoInternal = (
 	entryPoints: string[],
 	perModuleJs: string[]
 ): Record<string, string> => {
 	const main = fromCwd("out", "index.js")
+	const internal = fromCwd("out", "internal.js")
 	const modules = perModuleJs.filter(path => !entryPoints.includes(path))
 	const starring = (paths: string[]) =>
-		paths.map(path => `export * from ${specifierOf(main, path)};\n`).join("")
+		paths
+			.map(path => `export * from ${specifierOf(internal, path)};\n`)
+			.join("")
 	const { metafile, outputFiles } = buildSync({
 		entryPoints: perModuleJs,
 		stdin: {
@@ -89,9 +94,13 @@ const flattenIntoMain = (
 	const unambiguousNames = exportedBy(
 		outputFiles.find(file => file.path === fromCwd(stdinOutputPath))!.text
 	)
-	// starring a module without names would evaluate it
-	let mainJs =
-		readFile(main) + starring(modules.filter(path => namesByPath[path].length))
+	// starring a module evaluates it, so star only those adding names
+	let internalJs = starring([
+		main,
+		...modules.filter(path =>
+			namesByPath[path].some(name => !namesByPath[main].includes(name))
+		)
+	])
 	const ownFiles: Record<string, string> = {}
 	for (const name of new Set(perModuleJs.flatMap(path => namesByPath[path]))) {
 		if (unambiguousNames.has(name)) continue
@@ -100,7 +109,7 @@ const flattenIntoMain = (
 		)
 		if (name === "default") {
 			throw new Error(
-				`The main entry can't export default for ${exporting.map(moduleOf).join(", ")}, which must export it by name`
+				`internal.js can't export default for ${exporting.map(moduleOf).join(", ")}, which must export it by name`
 			)
 		}
 		const [first, ...others] = exporting.filter(path => path !== main)
@@ -109,17 +118,18 @@ const flattenIntoMain = (
 				`The main entry exports ${name}, which one of ${[first, ...others].map(moduleOf).join(", ")} binds otherwise (to esbuild, re-exporting another package's name binds it anew)`
 			)
 		}
-		mainJs += reexporting([name], main, first)
+		internalJs += reexporting([name], internal, first)
 		for (const path of others) {
 			const alias = `${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
-			mainJs += reexporting([`${name} as ${alias}`], main, path)
+			internalJs += reexporting([`${name} as ${alias}`], internal, path)
 			assertMapsToOwnFile(path)
 			if (entryPoints.includes(path)) continue
-			ownFiles[path] ??= `export * from ${specifierOf(path, main)};\n`
-			ownFiles[path] += reexporting([`${alias} as ${name}`], path, main)
+			ownFiles[path] ??= `export * from ${specifierOf(path, internal)};\n`
+			ownFiles[path] += reexporting([`${alias} as ${name}`], path, internal)
 		}
 	}
-	writeFile(main, mainJs)
+	if (internalJs === starring([main])) ownFiles[internal] = internalJs
+	else writeFile(internal, internalJs)
 	return ownFiles
 }
 
@@ -150,7 +160,7 @@ const assertMapsToOwnFile = (path: string) => {
 	]) {
 		if (exports[subpath]?.default !== file) {
 			throw new Error(
-				`${module} exports a name the main entry binds otherwise, so ${subpath} must be { "ark-ts": "./${module}.ts", "types": "./out/${module}.d.ts", "default": "${file}" } in package.json's exports`
+				`${module} exports a name internal.js binds otherwise, so ${subpath} must be { "ark-ts": "./${module}.ts", "types": "./out/${module}.d.ts", "default": "${file}" } in package.json's exports`
 			)
 		}
 	}
