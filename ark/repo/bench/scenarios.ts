@@ -1,5 +1,3 @@
-// each library's schema for a scenario accepts and returns the same values
-
 import { numericStringMatcher } from "@ark/util"
 import { deepStrictEqual, ok } from "node:assert/strict"
 import { scope, type } from "arktype"
@@ -674,9 +672,9 @@ export const RecursiveMorph = {
 	valibot: valibotMorphNode
 }
 
-export const stringData = "foo"
+export const primitiveData = "foo"
 
-export const Str = {
+export const Primitive = {
 	arktype: type.string,
 	zod: z.string(),
 	valibot: v.string()
@@ -768,5 +766,5 @@ export const check = (): void => {
 		recursiveMorphData,
 		parsedMorphNode(recursiveMorphData)
 	)
-	accepts("string", Str, stringData)
+	accepts("primitive", Primitive, primitiveData)
 }

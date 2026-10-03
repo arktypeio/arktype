@@ -29,6 +29,8 @@ import {
 	objectMorphData,
 	Patterns,
 	patternsInvalidData,
+	Primitive,
+	primitiveData,
 	Product,
 	productData,
 	productInvalidData,
@@ -36,8 +38,6 @@ import {
 	recursiveMorphData,
 	RecursiveScope,
 	recursiveScopeData,
-	Str,
-	stringData,
 	Strings,
 	stringsInvalidData,
 	Tree,
@@ -470,31 +470,32 @@ bench("index parse (valibot)", () =>
 	v.safeParse(Index.valibot, indexData)
 ).median([1.02, "us"])
 
-bench("date allows (arktype)", () => Dated.arktype.allows(datedData)).median([
+bench("dated allows (arktype)", () => Dated.arktype.allows(datedData)).median([
 	6.92,
 	"ns"
 ])
 
-bench("date allows (zod)", () => Dated.zod.safeParse(datedData).success).median(
-	[105.56, "ns"]
-)
+bench(
+	"dated allows (zod)",
+	() => Dated.zod.safeParse(datedData).success
+).median([105.56, "ns"])
 
-bench("date allows (valibot)", () => v.is(Dated.valibot, datedData)).median([
+bench("dated allows (valibot)", () => v.is(Dated.valibot, datedData)).median([
 	260.78,
 	"ns"
 ])
 
-bench("date parse (arktype)", () => Dated.arktype(datedData)).median([
+bench("dated parse (arktype)", () => Dated.arktype(datedData)).median([
 	9.56,
 	"ns"
 ])
 
-bench("date parse (zod)", () => Dated.zod.safeParse(datedData)).median([
+bench("dated parse (zod)", () => Dated.zod.safeParse(datedData)).median([
 	87.23,
 	"ns"
 ])
 
-bench("date parse (valibot)", () =>
+bench("dated parse (valibot)", () =>
 	v.safeParse(Dated.valibot, datedData)
 ).median([267.87, "ns"])
 
@@ -625,31 +626,27 @@ bench("recursive morph parse (valibot)", () =>
 	v.safeParse(RecursiveMorph.valibot, recursiveMorphData)
 ).median([14.38, "us"])
 
-bench("string allows (arktype)", () => Str.arktype.allows(stringData)).median([
-	2.06,
-	"ns"
-])
+bench("primitive allows (arktype)", () =>
+	Primitive.arktype.allows(primitiveData)
+).median([2.06, "ns"])
 
 bench(
-	"string allows (zod)",
-	() => Str.zod.safeParse(stringData).success
+	"primitive allows (zod)",
+	() => Primitive.zod.safeParse(primitiveData).success
 ).median([43.97, "ns"])
 
-bench("string allows (valibot)", () => v.is(Str.valibot, stringData)).median([
-	22.92,
-	"ns"
-])
+bench("primitive allows (valibot)", () =>
+	v.is(Primitive.valibot, primitiveData)
+).median([22.92, "ns"])
 
-bench("string parse (arktype)", () => Str.arktype(stringData)).median([
-	6.04,
-	"ns"
-])
+bench("primitive parse (arktype)", () =>
+	Primitive.arktype(primitiveData)
+).median([6.04, "ns"])
 
-bench("string parse (zod)", () => Str.zod.safeParse(stringData)).median([
-	46.91,
-	"ns"
-])
+bench("primitive parse (zod)", () =>
+	Primitive.zod.safeParse(primitiveData)
+).median([46.91, "ns"])
 
-bench("string parse (valibot)", () =>
-	v.safeParse(Str.valibot, stringData)
+bench("primitive parse (valibot)", () =>
+	v.safeParse(Primitive.valibot, primitiveData)
 ).median([37.26, "ns"])
