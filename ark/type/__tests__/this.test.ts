@@ -94,7 +94,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
+			"a must be a string (was missing), b.a must be a string (was missing), b.b.a must be a string (was missing) or b.b.b must be an object (was missing)"
 		)
 	})
 
@@ -106,7 +106,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
+			"a must be a string (was missing), b.a must be a string (was missing), b.b.a must be a string (was missing) or b.b.b must be an object (was missing)"
 		)
 	})
 
