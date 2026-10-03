@@ -366,7 +366,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (steps.length === 1 && !steps[0].condition && !opts?.condition)
 			assign(`const ${name}`, steps[0].node, input)
 		else {
-			this.line(`let ${name} = ${input}`)
+			this.let(name, input)
 			if (opts?.condition) this.if(opts.condition, assignSteps)
 			else assignSteps()
 		}

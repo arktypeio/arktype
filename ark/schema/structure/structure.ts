@@ -756,7 +756,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
 		js.initializeTransform(transformedChildren)
-		js.line("let out = data")
+		js.let("out", "data")
 		if (this.sequence?.transforms) {
 			js.transformKey("transformedSequence", "data", this.sequence, {
 				onChange: () => this.compileArrayCopy(js, "transformedSequence")
@@ -825,8 +825,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.if("out === data", () =>
 			this.sequence ?
 				this.compileArrayCopy(js, "data.slice()")
-			:	js.line(
-					`out = ${objectCopy ?? `Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`}`
+			:	js.set(
+					"out",
+					objectCopy ??
+						`Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
 		)
 	}
@@ -849,7 +851,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private compileArrayCopy(js: NodeCompiler, copy: string): NodeCompiler {
-		js.line(`out = ${copy}`)
+		js.set("out", copy)
 		for (const prop of this.props) {
 			const store = `out${js.prop(prop.key)} = data${js.prop(prop.key)}`
 			if (prop.required) js.line(store)
