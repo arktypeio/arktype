@@ -1,4 +1,12 @@
-import { genericNode, intrinsic, node, type BaseRoot } from "@ark/schema"
+import {
+	genericNode,
+	identityOf,
+	intrinsic,
+	isResolvable,
+	node,
+	resolveShallowAliases,
+	type BaseRoot
+} from "@ark/schema"
 import {
 	cached,
 	Hkt,
@@ -195,8 +203,28 @@ class ExcludeHkt extends Hkt<[unknown, unknown]> {
 	description = 'exclude branches of a union like `Exclude("boolean", "true")`'
 }
 
+// a branch still being defined can't be related, so filtering it waits as an alias until it resolves
+const filterBranches = (
+	operator: "Exclude" | "Extract",
+	t: BaseRoot,
+	u: BaseRoot
+): BaseRoot => {
+	const filter = (t: BaseRoot, u: BaseRoot) =>
+		operator === "Exclude" ? t.exclude(u) : t.extract(u)
+	if (isResolvable(t) && isResolvable(u)) return filter(t, u)
+	return t.$.lazilyResolve(
+		() => filter(resolveShallowAliases(t), resolveShallowAliases(u)),
+		`${operator}<${identityOf(t)},${identityOf(u)}>`,
+		operator,
+		[t, u]
+	)
+}
+
 const Exclude = cached(() =>
-	genericNode("T", "U")(args => args.T.exclude(args.U), ExcludeHkt)
+	genericNode("T", "U")(
+		args => filterBranches("Exclude", args.T, args.U),
+		ExcludeHkt
+	)
 )
 
 class ExtractHkt extends Hkt<[unknown, unknown]> {
@@ -207,7 +235,10 @@ class ExtractHkt extends Hkt<[unknown, unknown]> {
 }
 
 const Extract = cached(() =>
-	genericNode("T", "U")(args => args.T.extract(args.U), ExtractHkt)
+	genericNode("T", "U")(
+		args => filterBranches("Extract", args.T, args.U),
+		ExtractHkt
+	)
 )
 
 export const tsGenericDefinitions = {
