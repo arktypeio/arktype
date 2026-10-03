@@ -48,6 +48,7 @@ import {
 import {
 	hasArkKind,
 	isNode,
+	isResolutionFinal,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
@@ -677,8 +678,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			))
 	}
 
+	private _transformsByKey: Record<Key, TransformStep[]> | undefined
 	// a prop's own value transforms its key once, though an index signature shares it
 	private transformsOf(prop: Prop.Node): TransformStep[] {
+		const cached = this._transformsByKey?.[prop.key]
+		if (cached) return cached
 		const transforms: TransformStep[] =
 			prop.value.transforms ? [{ node: prop.value }] : []
 		if (!this.index) return transforms
@@ -690,7 +694,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			else if (index.signature.allows(prop.key))
 				transforms.push({ node: index.value })
 		}
-		return transforms
+		if (!isResolutionFinal()) return transforms
+		return ((this._transformsByKey ??= Object.create(null))[prop.key] =
+			transforms)
 	}
 
 	readonly defaultable: Optional.Node.withDefault[] =
