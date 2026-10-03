@@ -1089,7 +1089,7 @@ const compileDefault = (
 	node: Optional.Node.withDefault,
 	out: string
 ): string =>
-	node.value.includesTransform ?
+	node.value.transforms ?
 		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 1 ? "" : ", ctx"})`
 	: typeof node.default === "function" ?
 		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
