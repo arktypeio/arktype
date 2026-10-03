@@ -108,8 +108,9 @@ export class GenericRoot<
 					(arg, i) => !this.constraints[i].isUnknown() && !isResolvable(arg)
 				)
 			) {
+				const depth = this.openInstantiations
 				return this.arg$.lazilyResolve(
-					() => this.instantiate(key, argNodes),
+					() => this.instantiate(key, argNodes, depth),
 					`${this.id}<${key}>`,
 					this.alias ?? "generic",
 					argList
@@ -144,7 +145,8 @@ export class GenericRoot<
 
 	private instantiate(
 		key: string,
-		argNodes: GenericArgResolutions<any>
+		argNodes: GenericArgResolutions<any>,
+		depth = this.openInstantiations
 	): BaseRoot {
 		const instantiation = this.instantiations[key]
 		if (typeof instantiation === "string") {
@@ -176,14 +178,15 @@ export class GenericRoot<
 				)
 			}
 		}
-		if (this.openInstantiations === maxOpenInstantiations) {
+		const open = this.openInstantiations
+		if (Math.max(open, depth) === maxOpenInstantiations) {
 			throwParseError(
 				writeUnclosedGenericCycleMessage(this.alias ?? this.description)
 			)
 		}
 		const id = registerNodeId(this.alias ?? "generic")
 		this.instantiations[key] = id
-		this.openInstantiations++
+		this.openInstantiations = Math.max(open, depth) + 1
 		try {
 			const node =
 				this.defIsLazy() ?
@@ -198,7 +201,7 @@ export class GenericRoot<
 			delete this.instantiations[key]
 			throw e
 		} finally {
-			this.openInstantiations--
+			this.openInstantiations = open
 		}
 	}
 
