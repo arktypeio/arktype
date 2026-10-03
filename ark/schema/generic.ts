@@ -11,7 +11,11 @@ import { intrinsic } from "./intrinsic.ts"
 import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import { registerNodeId, type NodeId } from "./parse.ts"
-import { identityOf, isResolvable } from "./roots/alias.ts"
+import {
+	identityOf,
+	isResolvable,
+	resolveShallowAliases
+} from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { arkKind, inProgress } from "./shared/utils.ts"
@@ -156,7 +160,7 @@ export class GenericRoot<
 			if (constraint.isUnknown()) continue
 			const name = this.names[i]
 			const arg = argNodes[name]
-			if (arg.hasKind("alias")) argNodes[name] = arg.resolution
+			argNodes[name] = resolveShallowAliases(arg)
 			if (!argNodes[name].extends(constraint)) {
 				throwParseError(
 					writeUnsatisfiedParameterConstraintMessage(
