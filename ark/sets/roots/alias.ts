@@ -73,7 +73,7 @@ export const alias: setImplementationOf<Alias.Declaration> = {
 			if (r.isUnknown()) return l
 			if (r.isNever()) return r
 			// a primitive is often disjoint from a cyclic type, which discrimination and morph unions need to know
-			if (r.isBasis() && !r.overlaps($ark.intrinsic.object) && isResolvable(l))
+			if (!r.overlaps($ark.intrinsic.object) && isResolvable(l))
 				return intersectOrPipeNodes(l.resolution, r, ctx)
 			return operate(l, r, ctx)
 		})
