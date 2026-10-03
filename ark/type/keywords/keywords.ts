@@ -89,7 +89,7 @@ export const ark: Scope<Ark> = scope(
 		number,
 		object,
 		unknown
-	} as never,
+	},
 	{ name: "ark" }
 ) as never
 
@@ -127,7 +127,8 @@ $arkTypeRegistry.typeAttachments = typeAttachments
 
 export const type: TypeParser<{}> = defineProperties(
 	ark.type,
-	// future scopes bind these from the registry when instantiating TypeParsers
+	// future scopes add these directly from the
+	// registry when their TypeParsers are instantiated
 	typeAttachments
 ) as never
 
