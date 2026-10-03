@@ -15,7 +15,7 @@ import { flatMorph, hasKey, printable, throwInternalError } from "@ark/util"
 
 export const toJsonSchema = (
 	node: BaseRoot,
-	opts: ToJsonSchema.Options = {}
+	opts: ToJsonSchema.Options
 ): JsonSchema => {
 	const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
 		node.$.resolvedConfig.toJsonSchema,
