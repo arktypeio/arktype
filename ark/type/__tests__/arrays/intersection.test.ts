@@ -145,6 +145,13 @@ contextualize(() => {
 		attest(T.allows(["a", 5])).equals(false)
 	})
 
+	it("intersects disjoint arrays as an empty array", () => {
+		const T = type("string[] & number[]")
+		attest(T.json).equals(type([]).json)
+		attest(T.allows([])).equals(true)
+		attest(T.allows([1])).equals(false)
+	})
+
 	it("array with props", () => {
 		const T = type("Array").and({ name: "string" })
 
