@@ -609,7 +609,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.undeclared !== "delete") return out
 		const undeclaredKeys = this.undeclaredKeysOf(data)
 		if (out === data && !undeclaredKeys.length) return out
-		if (Object.getPrototypeOf(out) !== Object.prototype) {
+		// assigning "__proto__" to a built result would set its prototype
+		if (
+			Object.getPrototypeOf(out) !== Object.prototype ||
+			Object.prototype.hasOwnProperty.call(out, "__proto__")
+		) {
 			if (out === data) out = this.copy(data)
 			for (const k of undeclaredKeys) delete out[k as never]
 			return out
@@ -947,10 +951,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			.filter(prop => prop.required)
 			.map(prop => `${literalKeyOf(js, prop)}: ${valueOf(prop)}`)
 		js.const("result", `{ ${requiredEntries.join(", ")} }`)
+		const copies =
+			this.declaresKey("__proto__") ?
+				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
+			:	"Object.getPrototypeOf(data) !== Object.prototype"
 		// checked after the literal's reads, from which V8 can infer data's prototype
-		js.if("Object.getPrototypeOf(data) !== Object.prototype", () =>
-			deleteFromCopy(`${js.ref(copyOf)}(data)`)
-		)
+		js.if(copies, () => deleteFromCopy(`${js.ref(copyOf)}(data)`))
 		for (const prop of this.props) {
 			if (prop.required) continue
 			const store = `result${js.prop(prop.key)} = ${valueOf(prop)}`
@@ -1084,11 +1090,8 @@ const compileDefault = (
 		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
 	:	`${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
 
-// computed if __proto__, which would otherwise set the literal's prototype
 const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
-	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]`
-	: prop.key === "__proto__" ? `[${prop.serializedKey}]`
-	: prop.serializedKey
+	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey
 
 const compileOwnKeys = (
 	js: NodeCompiler,

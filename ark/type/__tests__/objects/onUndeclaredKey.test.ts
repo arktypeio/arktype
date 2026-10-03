@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeInvalidUndeclaredBehaviorMessage } from "arktype/internal/parser/objectLiteral.ts"
 
 contextualize(() => {
@@ -176,6 +176,15 @@ b must be removed`)
 			attest(T.or({ k: "1", "+": "reject" }).expression).snap(
 				"{ __proto__: string, + (undeclared): reject } | { k: 1, + (undeclared): reject }"
 			)
+		})
+
+		it("keeps a declared __proto__ key when it deletes", () => {
+			for (const $ of [scope({}), scope({}, { jitless: true })]) {
+				const T = $.type({ ["__proto__?"]: "object", "+": "delete" })
+				const out = T.assert(JSON.parse('{"__proto__":{"x":1},"z":2}'))
+				attest(Object.keys(out)).equals(["__proto__"])
+				attest(Object.getPrototypeOf(out) === Object.prototype).equals(true)
+			}
 		})
 
 		it("reject key from union", () => {
