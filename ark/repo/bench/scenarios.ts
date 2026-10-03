@@ -1,5 +1,4 @@
 import { numericStringMatcher } from "@ark/util"
-import { deepStrictEqual, ok } from "node:assert/strict"
 import { scope, type } from "arktype"
 import * as v from "valibot"
 import { z } from "zod"
@@ -638,7 +637,7 @@ const morphNode = (depth: number, id = 0): MorphNodeIn => ({
 
 export const recursiveMorphData = morphNode(3)
 
-const parsedMorphNode = (node: MorphNodeIn): MorphNodeOut => ({
+export const parsedMorphNode = (node: MorphNodeIn): MorphNodeOut => ({
 	id: Number.parseInt(node.id),
 	label: node.label ?? "none",
 	children: node.children.map(parsedMorphNode)
@@ -678,93 +677,4 @@ export const Primitive = {
 	arktype: type.string,
 	zod: z.string(),
 	valibot: v.string()
-}
-
-type Schemas = {
-	arktype: { (data: unknown): unknown; allows(data: unknown): boolean }
-	zod: z.ZodType
-	valibot: v.GenericSchema
-}
-
-const resultsOf = (schemas: Schemas, data: unknown) => {
-	const arktypeOut = schemas.arktype(data)
-	const zodResult = schemas.zod.safeParse(data)
-	const valibotResult = v.safeParse(schemas.valibot, data)
-	return {
-		allows: [
-			schemas.arktype.allows(data),
-			zodResult.success,
-			v.is(schemas.valibot, data)
-		],
-		out: [
-			arktypeOut instanceof type.errors ? undefined : arktypeOut,
-			zodResult.data,
-			valibotResult.success ? valibotResult.output : undefined
-		],
-		issues: [
-			arktypeOut instanceof type.errors ? arktypeOut.count : 0,
-			zodResult.error?.issues.length ?? 0,
-			valibotResult.issues?.length ?? 0
-		]
-	}
-}
-
-const accepts = (
-	name: string,
-	schemas: Schemas,
-	data: unknown,
-	expected: unknown = data
-) => {
-	const before = structuredClone(data)
-	const { allows, out } = resultsOf(schemas, data)
-	deepStrictEqual(allows, [true, true, true], `${name} allows`)
-	for (const output of out) deepStrictEqual(output, expected, `${name} output`)
-	deepStrictEqual(data, before, `${name} mutated its input`)
-}
-
-const rejects = (name: string, schemas: Schemas, data: unknown) => {
-	const { allows, issues } = resultsOf(schemas, data)
-	deepStrictEqual(allows, [false, false, false], `${name} allows`)
-	ok(issues[0] > 0, `${name} issues`)
-	// abortEarly is off, so every library reports every issue
-	deepStrictEqual(issues, [issues[0], issues[0], issues[0]], `${name} issues`)
-}
-
-export const check = (): void => {
-	accepts("moltar", Moltar, moltarData)
-	accepts("moltar strict", MoltarStrict, moltarData)
-	rejects("moltar strict invalid", MoltarStrict, moltarExtraKeysData)
-	accepts("moltar strip", MoltarStrip, moltarExtraKeysData, moltarData)
-	rejects("moltar invalid", Moltar, moltarInvalidData)
-	accepts("product", Product, productData)
-	rejects("product invalid", Product, productInvalidData)
-	accepts("items", Items, itemsData)
-	rejects("items invalid", Items, itemsInvalidData)
-	rejects("strings invalid", Strings, stringsInvalidData)
-	rejects("patterns invalid", Patterns, patternsInvalidData)
-	rejects("union items invalid", UnionItems, unionItemsInvalidData)
-	for (const d of discriminatedData) accepts("discriminated", Discriminated, d)
-	for (const d of unionData) accepts("union", Union, d)
-	accepts("constraints", Constraints, constraintsData)
-	accepts("index", Index, indexData)
-	accepts("dated", Dated, datedData)
-	accepts("morph", Morph, morphData, 12345)
-	accepts("object morph", ObjectMorph, objectMorphData, {
-		...objectMorphData,
-		a: "x"
-	})
-	accepts("defaults", Defaults, defaultsData, { a: "s", b: 5, c: true, d: "x" })
-	accepts("nested defaults", NestedDefaults, nestedDefaultsData, {
-		...nestedDefaultsData,
-		inner: { a: "y", b: 5 }
-	})
-	accepts("tree", Tree, treeData)
-	accepts("recursive scope", RecursiveScope, recursiveScopeData)
-	accepts(
-		"recursive morph",
-		RecursiveMorph,
-		recursiveMorphData,
-		parsedMorphNode(recursiveMorphData)
-	)
-	accepts("primitive", Primitive, primitiveData)
 }
