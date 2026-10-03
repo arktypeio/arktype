@@ -124,21 +124,12 @@ const getParamValue = (param: keyof AttestConfig) => {
 
 export const attestEnvPrefix = "ATTEST_"
 
-const parseEnvValue = (v: string): unknown => {
-	try {
-		return JSON.parse(v)
-	} catch {
-		// an unquoted string, e.g. ATTEST_filter=moltar
-		return v
-	}
-}
-
 const addEnvConfig = (config: BaseAttestConfig) => {
 	for (const [k, v] of Object.entries(process.env as Record<string, string>)) {
 		if (k.startsWith(attestEnvPrefix)) {
 			const optionName = k.slice(attestEnvPrefix.length)
 			if (optionName === "CONFIG") Object.assign(config, JSON.parse(v))
-			else (config as any)[optionName] = parseEnvValue(v)
+			else (config as any)[optionName] = JSON.parse(v)
 		}
 	}
 	let k: keyof BaseAttestConfig

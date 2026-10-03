@@ -303,8 +303,6 @@ A bench fails if it exceeds its baseline by more than `benchPercentThreshold` (2
  tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded types --benchPercentThreshold 10
 ```
 
-To run some of a file's benches, pass `filter` (e.g. `ATTEST_filter=moltar`). A bench runs if any segment of its path starts with it.
-
 ## CLI
 
 Attest also includes a built-in `attest` CLI including the following commands:
