@@ -243,7 +243,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (!index.value.includesTransform || !index.signature.allows(prop.key))
 					continue
 				const intersection = $ark.sets?.intersect(value, index.value, this.$)
-				if (!hasArkKind(intersection, "root")) return
+				if (!hasArkKind(intersection, "root")) continue
 				value = intersection
 				;(result ??= Object.create(null))[prop.key] = value
 			}

@@ -76,6 +76,13 @@ contextualize(() => {
 		attest(deleted).snap({ a: { x: "1", y: "2" } })
 		attest(original).snap({ a: { x: " 1 ", y: " 2 " } })
 
+		const WithDisjointProp = type({
+			a: { x: "string.trim" },
+			"b?": "string.trim"
+		}).and({ "[string]": { "y?": "string.trim" } })
+
+		attest(WithDisjointProp(original)).snap({ a: { x: "1", y: "2" } })
+
 		let calls = 0
 		const Trimmed = type("string").pipe(s => (calls++, s.trim()))
 		const U = type({ a: Trimmed, "[string]": Trimmed })
