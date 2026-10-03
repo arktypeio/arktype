@@ -5,7 +5,7 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { writeIndiscriminableMorphMessage } from "arksets"
-import { scope, type } from "arktype"
+import { scope, type, type Type } from "arktype"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 
 contextualize(() => {
@@ -668,6 +668,21 @@ contextualize(() => {
 			"{ v: number, next?: $list }"
 		)
 		attest(types.group.extends(types.part)).equals(true)
+	})
+
+	it("relates cyclic types whose props are disjoint from an index", () => {
+		const { b: l } = scope({
+			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },
+			d: "Record<string, d>"
+		} as never).export() as never as Record<string, Type>
+		const { b: r } = scope({
+			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "string" },
+			d: "Record<string, d>"
+		} as never).export() as never as Record<string, Type>
+
+		attest(l.extends(r)).equals(false)
+		attest(l.and(r).allows({ kind: "b", p1: { kind: "b" } })).equals(true)
+		attest(l.and(r).allows({ kind: "b", p2: null })).equals(false)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1237

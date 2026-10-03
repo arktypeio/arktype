@@ -170,10 +170,21 @@ other must be a string (was a bigint)`)
 			a?: never
 		}>(T.infer)
 		attest(T.json).snap({
-			optional: [{ key: "a", value: { unit: 1 } }],
+			optional: [{ key: "a", value: [] }],
 			index: [{ value: { unit: 4 }, signature: "string" }],
 			domain: "object"
 		})
+	})
+
+	it("intersects a prop with the other side's index", () => {
+		attest(() => type({ kind: "'b'" }).and({ "[string]": "object" })).throws(
+			"Intersection at kind of string and object results in an unsatisfiable type"
+		)
+		attest(
+			type({ kind: "'b'" })
+				.or({ "[string]": "object" })
+				.and({ "[string]": "object" }).expression
+		).snap("{ [string]: object }")
 	})
 
 	it("intersction with right required", () => {
