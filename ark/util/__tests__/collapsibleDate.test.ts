@@ -1,9 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { describeCollapsibleDate } from "@ark/util"
 
-// tests run with TZ set to America/New_York (see mocha.globalSetup.ts),
-// so these also verify descriptions don't depend on the local timezone
-
 contextualize(() => {
 	it("returns year for date with only year precision", () => {
 		const date = new Date("2023-01-01")
