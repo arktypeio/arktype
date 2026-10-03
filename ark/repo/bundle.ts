@@ -1,3 +1,4 @@
+import { flatMorph } from "@ark/util"
 import { buildSync } from "esbuild"
 import { dirname, relative } from "node:path"
 import ts from "typescript"
@@ -75,14 +76,13 @@ const flattenIntoInternal = (
 		},
 		metafile: true
 	})
-	const outputs = Object.entries(metafile.outputs)
-	const namesByPath = Object.fromEntries(
-		outputs.flatMap(([, { entryPoint, exports }]) =>
-			entryPoint ? [[fromCwd(entryPoint), exports]] : []
-		)
+	const namesByPath = flatMorph(
+		metafile.outputs,
+		(_, { entryPoint, exports }) =>
+			entryPoint ? [fromCwd(entryPoint), exports] : []
 	)
-	const [stdinOutputPath] = outputs.find(
-		([, { entryPoint }]) => entryPoint === "<stdin>"
+	const stdinOutputPath = Object.keys(metafile.outputs).find(
+		path => metafile.outputs[path].entryPoint === "<stdin>"
 	)!
 	const unambiguousNames = exportedBy(
 		outputFiles.find(file => file.path === fromCwd(stdinOutputPath))!.text
