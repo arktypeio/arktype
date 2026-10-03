@@ -43,9 +43,9 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			const lInner = { ...l.inner }
 			const rInner = { ...r.inner }
 			const disjointResult = new Disjoint()
-			// props an index signature narrows to once the other side's keys are
-			// known. they can't be added to the side they came from, where a prop
-			// with the same key would never be merged with them
+			// props an index signature narrows to once the other side's keys
+			// are known. they can't be added to the side they came from, where
+			// a prop with the same key would never be merged with them
 			const lDerived: OptionalNode[] = []
 			const rDerived: OptionalNode[] = []
 			if (l.undeclared) {
@@ -104,6 +104,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						for (const prop of normalized.required ?? [])
 							lDerived.push(ctx.$.node("optional", prop.inner))
 						lDerived.push(...(normalized.optional ?? []))
+
 						return normalized.index ?? []
 					})
 				}
