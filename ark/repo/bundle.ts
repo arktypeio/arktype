@@ -149,8 +149,8 @@ const exportedBy = (js: string) =>
 
 const assertMapsToOwnFile = (path: string) => {
 	const exports = readPackageJson(process.cwd()).exports
-	const file = `./${relative(process.cwd(), path).replace(/\\/g, "/")}`
-	const module = file.slice("./out/".length, -".js".length)
+	const module = moduleOf(path)
+	const file = `./out/${module}.js`
 	for (const subpath of [
 		`./internal/${module}.ts`,
 		`./internal/${module}.js`
