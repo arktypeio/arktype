@@ -23,6 +23,7 @@ import {
 	type ArkErrorResult,
 	type NodeErrorContextInput
 } from "./errors.ts"
+import { $ark } from "./registry.ts"
 import { inProgress, isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
@@ -206,6 +207,9 @@ export class Traversal {
 	}
 
 	transform(node: BaseNode, data: unknown): unknown {
+		// an alias resolving to node keys its output by id, so entering node directly does too
+		if (node.includesAlias && $ark.nodesByRegisteredId[node.id])
+			return this.transformResolution(node.id, data, node.traverseTransform)
 		return this.transformed(node.traverseTransform(data, this), data)
 	}
 
