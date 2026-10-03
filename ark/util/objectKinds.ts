@@ -1,6 +1,6 @@
 import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
-import { cached, type Fn } from "./functions.ts"
+import type { Fn } from "./functions.ts"
 import type { satisfy } from "./generics.ts"
 import { defineProperties, isKeyOf } from "./records.ts"
 
@@ -59,14 +59,6 @@ export type platformConstructors = {
 	URL: typeof URL
 }
 
-// Node loads undici when any of these is read, so they're read on first access
-const fetchConstructors = cached(() => ({
-	FormData,
-	Headers,
-	Request,
-	Response
-}))
-
 // Platform APIs
 // See https://developer.mozilla.org/en-US/docs/Web/API
 // Must be implemented in Node etc. as well as the browser to include here
@@ -74,17 +66,18 @@ export const platformConstructors: platformConstructors = {
 	ArrayBuffer,
 	Blob,
 	File: FileConstructor,
+	// Node loads undici on the first read of any of these
 	get FormData() {
-		return fetchConstructors().FormData
+		return FormData
 	},
 	get Headers() {
-		return fetchConstructors().Headers
+		return Headers
 	},
 	get Request() {
-		return fetchConstructors().Request
+		return Request
 	},
 	get Response() {
-		return fetchConstructors().Response
+		return Response
 	},
 	URL
 }
