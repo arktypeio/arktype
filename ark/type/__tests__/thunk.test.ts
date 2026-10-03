@@ -1,7 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
+import {
+	writeShallowCycleErrorMessage,
+	writeUnresolvableMessage
+} from "@ark/schema"
 import type { Brand } from "@ark/util"
-import { scope, type, type Scope } from "arktype"
+import { scope, type, type Scope, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
 
@@ -97,6 +100,19 @@ contextualize(() => {
 			a: () => $.type("bad")
 		})
 		attest(() => $.export()).throws(writeUnresolvableMessage("bad"))
+	})
+
+	it("self-referencing thunk in scope", () => {
+		const { a } = scope({
+			a: () => ({ "a?": "a" })
+		} as never).export() as never as Record<string, Type>
+
+		attest(a.expression).snap("{ a?: $a }")
+		attest(a.allows({ a: { a: {} } })).equals(true)
+		attest(a.allows({ a: 1 })).equals(false)
+
+		const $: Scope = scope({ a: () => $.type({ "a?": "a" } as never) } as never)
+		attest(() => $.export()).throws(writeShallowCycleErrorMessage("a", ["a"]))
 	})
 
 	it("docs example", () => {

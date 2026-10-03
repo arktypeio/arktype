@@ -66,7 +66,12 @@ import {
 	type NodeParseContext,
 	type NodeParseContextInput
 } from "./parse.ts"
-import { Alias, isResolvable, resolveShallowAliases } from "./roots/alias.ts"
+import {
+	Alias,
+	isResolvable,
+	resolveShallowAliases,
+	writeShallowCycleErrorMessage
+} from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import {
@@ -576,6 +581,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		[alias: string]: CachedResolution | undefined
 	} = {}
 	private readonly boundGenerics = new Map<GenericRoot, GenericRoot>()
+	private readonly evaluatingThunks: string[] = []
 
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
@@ -953,7 +959,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		def = this.normalizeRootScopeValue(def)
+		const isOwnThunk = name in this.aliases && isThunk(def)
+		if (isOwnThunk) {
+			// a thunk can't reference its own alias before it returns the definition
+			if (this.evaluatingThunks.includes(name))
+				throwParseError(writeShallowCycleErrorMessage(name, [name]))
+			this.evaluatingThunks.push(name)
+			try {
+				def = this.normalizeRootScopeValue(def)
+			} finally {
+				this.evaluatingThunks.pop()
+			}
+		} else def = this.normalizeRootScopeValue(def)
 
 		if (hasArkKind(def, "generic")) {
 			const generic = (this.resolutions[name] = this.bindReference(def))
@@ -966,6 +983,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
 			return (this.resolutions[name] = this.bindReference(def.root))
+		}
+
+		if (isOwnThunk) {
+			// a thunk's definition is known once it returns, so its context is created then
+			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
+			this.resolutions[name] =
+				hasArkKind(preparsed, "root") ?
+					this.bindReference(preparsed)
+				:	registerParseContext(this.createParseContext(preparsed)).id
+			return this.maybeResolve(name)
 		}
 
 		return (this.resolutions[name] = this.parse(def, {
