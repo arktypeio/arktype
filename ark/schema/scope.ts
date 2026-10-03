@@ -67,12 +67,7 @@ import {
 	type NodeParseContext,
 	type NodeParseContextInput
 } from "./parse.ts"
-import {
-	Alias,
-	isResolvable,
-	resolveShallowAliases,
-	writeShallowCycleErrorMessage
-} from "./roots/alias.ts"
+import { Alias, isResolvable, resolveShallowAliases } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import {
@@ -577,7 +572,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		[alias: string]: CachedResolution | undefined
 	} = {}
 	private readonly boundGenerics = new Map<GenericRoot, GenericRoot>()
-	private readonly evaluatingThunks: string[] = []
 
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
@@ -949,16 +943,30 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		const isOwnThunk = name in this.aliases && isThunk(def)
-		if (isOwnThunk) {
-			// a thunk can't reference its own alias before it returns the definition
-			if (this.evaluatingThunks.includes(name))
-				throwParseError(writeShallowCycleErrorMessage(name, [name]))
-			this.evaluatingThunks.push(name)
+		if (name in this.aliases && isThunk(def)) {
+			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
+			if (hasArkKind(preparsed, "root"))
+				return (this.resolutions[name] = this.bindReference(preparsed))
+			const context = registerParseContext(this.createParseContext(preparsed))
+			this.resolutions[name] = context.id
+			// a thunk is open while it's called, so a reference to its alias is a cycle
+			context.phase = "resolving"
+			if (isResolutionFinal()) discardUncheckedDefaults()
+			inProgress.definitions++
 			try {
-				def = this.normalizeRootScopeValue(def)
+				def = this.normalizeRootScopeValue(context.def)
 			} finally {
-				this.evaluatingThunks.pop()
+				inProgress.definitions--
+				delete nodesByRegisteredId[context.id]
+				delete this.resolutions[name]
+			}
+			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
+				context.def = def
+				context.phase = "unresolved"
+				this.resolutions[name] = registerParseContext(context).id
+				// parsing its definition discards checks still open, so they're made first
+				assertUncheckedDefaultsAssignable()
+				return this.maybeResolve(name)
 			}
 		} else def = this.normalizeRootScopeValue(def)
 
@@ -973,16 +981,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
 			return (this.resolutions[name] = this.bindReference(def.root))
-		}
-
-		if (isOwnThunk) {
-			// a thunk's definition is known once it returns, so its context is created then
-			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
-			this.resolutions[name] =
-				hasArkKind(preparsed, "root") ?
-					this.bindReference(preparsed)
-				:	registerParseContext(this.createParseContext(preparsed)).id
-			return this.maybeResolve(name)
 		}
 
 		return (this.resolutions[name] = this.parse(def, {
