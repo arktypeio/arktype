@@ -95,7 +95,9 @@ export const bootstrap = (): void => {
 	bootstrapped = true
 	bootstrappedWithEngine = $ark.sets !== undefined
 	try {
-		bootstrapRootScope(bootstrapIntrinsic)
+		bootstrapRootScope(() =>
+			Object.assign(intrinsicTarget, bootstrapIntrinsic())
+		)
 	} catch (e) {
 		bootstrapped = false
 		throw e
@@ -108,13 +110,15 @@ export const bootstrap = (): void => {
 	})
 }
 
+const intrinsicTarget: typeof $ark.intrinsic = {} as never
+
 const currentIntrinsic = (): typeof $ark.intrinsic => {
 	bootstrap()
-	return $ark.intrinsic
+	return intrinsicTarget
 }
 
 export const intrinsic: ReturnType<typeof bootstrapIntrinsic> = new Proxy(
-	{} as never,
+	intrinsicTarget,
 	{
 		get: (_, k) => Reflect.get(currentIntrinsic(), k),
 		has: (_, k) => Reflect.has(currentIntrinsic(), k),
