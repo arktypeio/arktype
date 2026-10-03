@@ -1,4 +1,3 @@
-/// <reference lib="es2021.weakref" />
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import { setFlagsFromString } from "node:v8"
