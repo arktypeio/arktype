@@ -43,16 +43,6 @@ export class ArkError<
 		ctx: Traversal
 	) {
 		super()
-		this.input = input as never
-		this.ctx = ctx
-		// assigning defines the same property unless this has or inherits k, e.g. message
-		for (const k in input) {
-			if (k in this) defineValue(this, k, input[k as never])
-			else (this as any)[k] = input[k as never]
-		}
-		for (const k of Object.getOwnPropertySymbols(input))
-			defineValue(this, k, input[k as never])
-		const data = ctx.data
 		if (input.code === "union") {
 			input.errors = input.errors.flatMap(innerError => {
 				// flatten union errors to avoid repeating context like "foo must be foo must be"...
@@ -72,6 +62,16 @@ export class ArkError<
 				)
 			})
 		}
+		this.input = input as never
+		this.ctx = ctx
+		// assigning defines the same property unless this has or inherits k, e.g. message
+		for (const k in input) {
+			if (k in this) defineValue(this, k, input[k as never])
+			else (this as any)[k] = input[k as never]
+		}
+		for (const k of Object.getOwnPropertySymbols(input))
+			defineValue(this, k, input[k as never])
+		const data = ctx.data
 		this.nodeConfig = ctx.config[this.code] as never
 		const basePath = [...(input.path ?? ctx.path)]
 		if (relativePath) basePath.push(...relativePath)

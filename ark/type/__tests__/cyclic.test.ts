@@ -515,6 +515,21 @@ contextualize(() => {
 					attest(a(data) === data).equals(true)
 				})
 
+				it("describes each branch of a nested union by its expectation", config => {
+					const types = scope(
+						{
+							a2: { p1: "string" },
+							a3: "string[] | a4",
+							a4: { p0: "(a2 | a3)[]" }
+						},
+						config
+					).export()
+
+					attest(types.a3({ p0: [{ p0: [null] }] }).toString()).snap(
+						"p0[0].p0[0] must be an object or an array (was null), p0[0].p1 must be a string (was missing), p0[0] must be an array (was object) or must be an array (was object)"
+					)
+				})
+
 				it("stops checking a value once it fails as never", config => {
 					const types = scope(
 						{
