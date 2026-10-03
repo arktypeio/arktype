@@ -680,7 +680,7 @@ b must be A (was "y")`)
 
 			const original = { z: "z", b: 1 }
 
-			attest(T(original)).is(original)
+			attest(T(original)).equals(original)
 			attest(T.expression).snap(
 				"{ b: number, z: string, a?: string, + (undeclared): delete }"
 			)
