@@ -1093,7 +1093,9 @@ const compileDefault = (
 		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 1 ? "" : ", ctx"})`
 	: typeof node.default === "function" ?
 		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
-	:	`${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
+		// -0 would serialize as 0
+	: Object.is(node.default, -0) ? `${out}${js.prop(node.key)} = -0`
+	: `${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
 
 const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
 	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey

@@ -74,6 +74,13 @@ contextualize(() => {
 			attest(types.foo({ test: "provided" })).equals({ test: "provided" })
 		})
 
+		it("-0", () => {
+			for (const $ of [scope({}), scope({}, { jitless: true })]) {
+				const T = $.type({ negativeZero: ["number", "=", -0] })
+				attest(Object.is(T.assert({}).negativeZero, -0)).equals(true)
+			}
+		})
+
 		it("unions are defaultable", () => {
 			const O = type({
 				boo: "boolean = false"
