@@ -149,6 +149,7 @@ export const nodesByRegisteredId: Record<
 $ark.nodesByRegisteredId = nodesByRegisteredId
 
 export const registerNodeId = (prefix: string): NodeId => {
+	if (/\d$/.test(prefix)) prefix += "_"
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
 }
