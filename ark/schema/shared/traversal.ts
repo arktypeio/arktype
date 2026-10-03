@@ -98,7 +98,7 @@ export class Traversal {
 	private receivedDepth = 0
 	// each object is copied before its first write, so input is never mutated
 	private morphedRoot: unknown
-	private copied: Set<unknown> | undefined
+	private copied: Map<object, object> | undefined
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.root = root
@@ -533,11 +533,11 @@ export class Traversal {
 		if (key !== undefined) {
 			// find the object on which the key to be morphed exists, copying
 			// each object along the way
-			this.copied ??= new Set()
+			this.copied ??= new Map()
 			parent = this.morphedRoot = this.copyOnce(this.morphedRoot)
 			for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++) {
 				const segment = path[pathIndex]
-				parent = parent[segment] = this.copyOnce(parent[segment])
+				parent = parent[segment] = this.copyOnce(this.readCopy(parent, segment))
 			}
 		}
 
@@ -546,7 +546,8 @@ export class Traversal {
 			// in case previous operations modified this.path
 			this.path = [...path]
 			const morphIsNode = isNode(morph)
-			const data = parent === undefined ? this.morphedRoot : parent[key!]
+			const data =
+				key === undefined ? this.morphedRoot : this.readCopy(parent, key)
 			this.receive(data)
 
 			const result = morph(data as never, this)
@@ -587,8 +588,15 @@ export class Traversal {
 		// a morph at an array's named prop reads it from this copy
 		const copy =
 			isArray(data) ? Object.assign(data.slice(), data) : copyOf(data)
-		this.copied!.add(copy)
+		this.copied!.set(copy, data)
 		return copy
+	}
+
+	// a copy lacks the non-enumerable props of the object it was copied from
+	private readCopy(copy: any, key: PropertyKey): unknown {
+		return typeof copy !== "object" || copy === null || key in copy ?
+				copy?.[key]
+			:	this.copied!.get(copy)?.[key as never]
 	}
 }
 

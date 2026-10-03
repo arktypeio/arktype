@@ -206,6 +206,54 @@ contextualize(() => {
 		attest(original.a).equals("x")
 	})
 
+	it("copies a declared key data holds as a non-enumerable own prop", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type({ e: "string", d: "string = 'd'" })
+			const original = Object.defineProperty({}, "e", { value: "e" })
+			const out = T.assert(original)
+			attest(out).equals({ e: "e", d: "d" })
+			attest(T(out)).equals(out)
+		}
+	})
+
+	it("applies a morph at a non-enumerable declared key when a sibling fails", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type({
+				a: "string.trim",
+				c: { d: "string.date.parse" },
+				b: "string"
+			})
+			const original = Object.defineProperties(
+				{ b: 1 },
+				{ a: { value: " a " }, c: { value: { d: "2020-01-01" } } }
+			)
+			attest(T(original).toString()).snap("b must be a string (was a number)")
+		}
+	})
+
+	it("drops undeclared non-enumerable props and reads accessors when it copies", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type({ a: "string.trim" })
+			const original = Object.defineProperties(
+				{ a: " a " },
+				{
+					hidden: { value: 1 },
+					computed: { get: () => 2, enumerable: true }
+				}
+			)
+			const out = T.assert(original)
+			attest(Object.getOwnPropertyDescriptors(out)).equals({
+				a: { value: "a", writable: true, enumerable: true, configurable: true },
+				computed: {
+					value: 2,
+					writable: true,
+					enumerable: true,
+					configurable: true
+				}
+			} as never)
+		}
+	})
+
 	it("copies an array with the props its type declares", () => {
 		const T = type([
 			"string.trim[]",
@@ -527,6 +575,14 @@ contextualize(() => {
 				"z",
 				"a"
 			])
+		})
+
+		it("deletes an undeclared symbol key", () => {
+			for (const $ of [scope({}), scope({}, { jitless: true })]) {
+				const T = $.type({ "+": "delete", a: "string" })
+				const out = T.assert({ a: "a", [Symbol("s")]: 1 })
+				attest(Reflect.ownKeys(out)).equals(["a"])
+			}
 		})
 
 		// process.env is an exotic object- ensure it is correctly copied

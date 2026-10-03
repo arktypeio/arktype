@@ -616,6 +616,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 				sequence.defaultValueMorphs[i](out as never, ctx as never)
 		}
+		// an object's copy drops a declared key data holds as a non-enumerable own prop
+		if (out !== data && !sequence) {
+			for (const prop of this.props) {
+				if (!(prop.key in out) && prop.key in data)
+					out[prop.key as never] = data[prop.key as never]
+			}
+		}
 		if (this.undeclared !== "delete") return out
 		const undeclaredKeys = this.undeclaredKeysOf(data)
 		if (out === data && !undeclaredKeys.length) return out
@@ -783,7 +790,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		this.compileSequenceDefaults(js)
-		js.return("out")
+		this.compileCopiedDeclaredKeys(js).return("out")
 	}
 
 	private compileCopy(js: NodeCompiler, objectCopy?: string): NodeCompiler {
@@ -794,6 +801,23 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`out = ${objectCopy ?? `Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`}`
 				)
 		)
+	}
+
+	// an object's copy drops a declared key data holds as a non-enumerable own prop
+	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
+		if (this.sequence) return js
+		return js.if("out !== data", () => {
+			for (const prop of this.props) {
+				const missing = `!(${prop.serializedKey} in out)`
+				js.if(
+					prop.required ? missing : (
+						`${missing} && ${prop.serializedKey} in data`
+					),
+					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
+				)
+			}
+			return js
+		})
 	}
 
 	private compileArrayCopy(js: NodeCompiler, copy: string): NodeCompiler {
