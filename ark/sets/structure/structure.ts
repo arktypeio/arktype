@@ -133,6 +133,20 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 
 			if (disjointResult.length) return disjointResult
 
+			// a prop must satisfy the other side's index signatures unless either side transforms, since then each applies in turn
+			if (
+				!l.includesTransform &&
+				!r.includesTransform &&
+				((l.index && r.props.length) || (r.index && l.props.length))
+			) {
+				return (
+					structure.reduce!(
+						(childIntersectionResult as Structure.Node).inner,
+						ctx.$
+					) ?? childIntersectionResult
+				)
+			}
+
 			return childIntersectionResult
 		}
 	},
