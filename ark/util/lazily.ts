@@ -37,6 +37,14 @@ export const defineLazily = (
 			}
 			return result
 		},
+		set(value) {
+			Object.defineProperty(this, k, {
+				value,
+				enumerable: true,
+				writable: true,
+				configurable: true
+			})
+		},
 		enumerable: true,
 		configurable: true
 	})
