@@ -182,6 +182,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.caseNodes
 	}
 
+	// an indiscriminable union picks the branch it transforms by its Allows
+	protected override get transformSelectsByContext(): boolean {
+		const discriminant = this.compiledDiscriminant
+		if (!discriminant) return true
+		for (const k in discriminant.cases) {
+			const caseNode = discriminant.cases[k]
+			if (caseNode !== true && caseNode.transformRequiresContext) return true
+		}
+		return false
+	}
+
 	get shallowMorphs(): array<Morph> {
 		return this.branches.reduce(
 			(morphs, branch) => appendUnique(morphs, branch.shallowMorphs),
@@ -252,7 +263,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	traverseTransform: TraverseTransform = (data, ctx) => {
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
-			if (branch.allows(data))
+			if (ctx.allows(branch, data))
 				return branch.transforms ? ctx.transform(branch, data) : data
 		}
 		return data

@@ -102,6 +102,14 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
+	// its structure picks the keys it transforms by the signature's Allows
+	protected override get transformSelectsByContext(): boolean {
+		return (
+			this.signature.includesContextualPredicate ||
+			super.transformSelectsByContext
+		)
+	}
+
 	protected override initializeFlatRefs(): void {
 		this._flatRefs = append(
 			this.value.flatRefs.map(ref =>

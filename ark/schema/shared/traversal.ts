@@ -215,7 +215,9 @@ export class Traversal {
 	}
 
 	pipe(node: BaseNode, data: unknown): unknown {
-		if (node.allows(data)) {
+		// Allows would detach a contextual node's predicates from this path, so Apply decides it
+		const decidedByApply = node.allowsRequiresContext && !node.includesAlias
+		if (decidedByApply ? this.applyPiped(node, data) : node.allows(data)) {
 			if (!node.transforms) return data
 			const { received, receivedDepth } = this
 			const errorCount = this.currentErrorCount
@@ -231,12 +233,13 @@ export class Traversal {
 			this.receivedDepth = receivedDepth
 			return this.currentErrorCount > errorCount ? this.errors : result
 		}
-		this.applyPiped(node, data)
+		if (!decidedByApply) this.applyPiped(node, data)
 		return this.errors
 	}
 
-	// only the piped node's own morphs are dropped
-	private applyPiped(node: BaseNode, data: unknown): void {
+	// whether it added no errors, dropping only the piped node's own morphs
+	private applyPiped(node: BaseNode, data: unknown): boolean {
+		const errorCount = this.currentErrorCount
 		const { received, receivedDepth } = this
 		const queuedMorphs = (this.currentBranch ?? this).queuedMorphs
 		const queuedCount = queuedMorphs.length
@@ -250,6 +253,16 @@ export class Traversal {
 		queuedMorphs.length = queuedCount
 		this.received = received
 		this.receivedDepth = receivedDepth
+		return this.currentErrorCount === errorCount
+	}
+
+	// a predicate reading ctx sees this path, and the errors it adds are discarded with the branch
+	allows(node: BaseNode, data: unknown): boolean {
+		if (!node.allowsRequiresTraversal) return node.allows(data)
+		this.pushBranch()
+		const allowed = node.traverseAllows(data, this)
+		this.popBranch()
+		return allowed
 	}
 
 	addMorphErrors(result: ArkErrorResult): void {

@@ -583,7 +583,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (this.indexedValueByKey && keys[i] in this.indexedValueByKey)
 					continue
 				for (const node of this.index) {
-					if (node.value.transforms && node.signature.allows(keys[i]))
+					if (node.value.transforms && ctx.allows(node.signature, keys[i]))
 						transformKey(keys[i], node.value)
 				}
 			}

@@ -224,8 +224,16 @@ export abstract class BaseNode<
 
 	get transformRequiresContext(): boolean {
 		return (
-			this.transforms && (this.includesContextualMorph || this.includesAlias)
+			this.transforms &&
+			(this.includesContextualMorph ||
+				this.includesAlias ||
+				(this.includesContextualPredicate && this.transformSelectsByContext))
 		)
+	}
+
+	// a union or index signature picks what it transforms by an Allows that can read ctx
+	protected get transformSelectsByContext(): boolean {
+		return this.children.some(child => child.transformRequiresContext)
 	}
 
 	get rootApplyStrategy(): RootApplyStrategy {
