@@ -1,5 +1,5 @@
 import { genericNode, intrinsic, rootSchema } from "@ark/schema"
-import { cached, Hkt, liftArray, type Digit } from "@ark/util"
+import { Hkt, liftArray, type Digit } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
@@ -10,7 +10,7 @@ class liftFromHkt extends Hkt<[element: unknown]> {
 	:	never
 }
 
-const liftFrom = cached(() =>
+const liftFrom = () =>
 	genericNode("element")(args => {
 		const nonArrayElement = args.element.exclude(intrinsic.Array)
 		const lifted = nonArrayElement.array()
@@ -22,7 +22,6 @@ const liftFrom = cached(() =>
 				rootSchema
 			)
 	}, liftFromHkt)
-)
 
 export const arkArray: arkArray.module = keywordModule(
 	{
