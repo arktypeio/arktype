@@ -205,6 +205,12 @@ export type objectKindOrDomainOf<data> =
 		:	objectKindOf<data>
 	:	domainOf<data>
 
+export const hasObjectKind = <kind extends keyof builtinConstructors>(
+	data: object,
+	kind: kind
+): data is InstanceType<builtinConstructors[kind]> =>
+	objectKindOf(data) === (kind as never)
+
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	Array.isArray
 

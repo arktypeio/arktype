@@ -3,6 +3,7 @@ import {
 	registeredReference,
 	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
+import { deepClone } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Default, Out, To } from "arktype/internal/attributes.ts"
 import { shallowDefaultableMessage } from "arktype/internal/parser/ast/validate.ts"
@@ -336,7 +337,7 @@ contextualize(() => {
 
 			attest(out).snap({ foo: { nest: "foo" } })
 
-			const originalOut = structuredClone(out)
+			const originalOut = deepClone(out)
 
 			out.foo.nest = "baz"
 

@@ -57,6 +57,9 @@ export type PrintableOptions = {
 	quoteKeys?: boolean
 }
 
+export const print = (data: unknown, opts?: PrintableOptions): void =>
+	console.log(printable(data, opts))
+
 export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":

@@ -1,6 +1,7 @@
 import type { array } from "./arrays.ts"
 import type { Primitive } from "./domain.ts"
 import { noSuggest, ZeroWidthSpace } from "./errors.ts"
+import { flatMorph } from "./flatMorph.ts"
 import type { Fn } from "./functions.ts"
 import type { defined, show } from "./generics.ts"
 import type { Key } from "./keys.ts"
@@ -99,6 +100,14 @@ export type Entry<
 	value = unknown
 > = readonly [key: key, value: value]
 
+export type fromEntries<entries extends readonly Entry[]> = show<{
+	[entry in entries[number] as entry[0]]: entry[1]
+}>
+
+export const fromEntries = <const entries extends readonly Entry[]>(
+	entries: entries
+): fromEntries<entries> => Object.fromEntries(entries) as never
+
 /** Mimics the result of Object.keys(...) */
 export type keyOf<o> =
 	o extends array ?
@@ -132,6 +141,17 @@ export const hasKey = <o extends object, k extends unionKeyOf<o>>(
 	k: k
 ): o is extractKeyed<o, k> => k in o
 
+export type extractDefinedKey<o extends object, k extends unionKeyOf<o>> = show<
+	extractKeyed<o, k> & { [_ in k]: {} | null }
+>
+
+// must be defined this way to avoid https://github.com/microsoft/TypeScript/issues/55049
+export const hasDefinedKey: <o extends object, k extends unionKeyOf<o>>(
+	o: o,
+	k: k
+) => o is extractDefinedKey<o, k> = (o, k): o is any =>
+	(o as any)[k] !== undefined
+
 export type requiredKeyOf<o> =
 	keyof o extends infer k ?
 		k extends keyof o ?
@@ -158,6 +178,8 @@ export type override<
 > = merge<base, merged>
 
 export type propValueOf<o> = o[keyof o]
+
+export const InnerDynamicBase = class {} as new <t extends object>(base: t) => t
 
 export declare class Covariant<t> {
 	/**
@@ -268,6 +290,17 @@ export const stringAndSymbolicEntriesOf = (o: object): Entry<Key>[] => [
 	...Object.getOwnPropertySymbols(o).map(k => [k, (o as any)[k]] as const)
 ]
 
+/** Like Object.assign, but it will preserve getters instead of evaluating them. */
+export const defineProperties: <base extends object, merged extends object>(
+	base: base,
+	merged: merged
+) => merge<base, merged> = (base, merged) =>
+	// declared like this to avoid https://github.com/microsoft/TypeScript/issues/55049
+	Object.defineProperties(
+		base,
+		Object.getOwnPropertyDescriptors(merged)
+	) as never
+
 /** Copies enumerable keys of o to a new object in alphabetical order */
 export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
 	const keys = Object.keys(o).sort()
@@ -277,6 +310,16 @@ export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
 
 	return result
 }
+
+export type invert<t extends Record<PropertyKey, PropertyKey>> = {
+	[k in t[keyof t]]: {
+		[k2 in keyof t]: t[k2] extends k ? k2 : never
+	}[keyof t]
+} & unknown
+
+export const invert = <t extends Record<PropertyKey, PropertyKey>>(
+	t: t
+): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
 
 export const unset = noSuggest(`unset${ZeroWidthSpace}`)
 
