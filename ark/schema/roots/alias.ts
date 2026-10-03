@@ -22,7 +22,12 @@ import {
 	type TraverseTransform
 } from "../shared/traversal.ts"
 import { $ark } from "../shared/registry.ts"
-import { hasArkKind, inProgress, isResolutionFinal } from "../shared/utils.ts"
+import {
+	hasArkKind,
+	inProgress,
+	isIoFinal,
+	isResolutionFinal
+} from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 
 export declare namespace Alias {
@@ -112,9 +117,11 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
 		}
 		const isFinal = isResolutionFinal()
+		const readsIo = isFinal && this.isIo
 		this.resolving = true
 		resolvingAliases.push(this)
 		inProgress.resolutions++
+		if (readsIo) inProgress.ioReads++
 		try {
 			let resolution = this._resolve()
 			if (resolution.hasKind("alias")) resolution = resolution.resolution
@@ -125,6 +132,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			this.resolving = false
 			resolvingAliases.pop()
 			inProgress.resolutions--
+			if (readsIo) inProgress.ioReads--
 		}
 	}
 
@@ -160,6 +168,11 @@ Resolution: ${printable(resolution)}`)
 		return resolveShallowAliases(resolution)
 	}
 
+	// an input or output, which never transforms
+	get isIo(): boolean {
+		return this.operator === "In" || this.operator === "Out"
+	}
+
 	get resolutionId(): NodeId {
 		if (this.resolve) return this.resolution.id
 		if (this.reference[0] !== "$") return this.reference as NodeId
@@ -180,7 +193,7 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	override getIo(ioKind: "in" | "out"): BaseRoot {
-		if (!isResolutionFinal() || !this.transforms) return this
+		if (!isIoFinal() || !this.transforms) return this
 		const operator = ioKind === "in" ? "In" : "Out"
 		return this.$.lazilyResolve(
 			() => {

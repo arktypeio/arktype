@@ -462,6 +462,27 @@ contextualize(() => {
 					)
 				})
 
+				// https://github.com/arktypeio/arktype/issues/944
+				it("reads the input and output of a mutually recursive morph", config => {
+					const types = scope(
+						{
+							a: { n: "string.numeric.parse", "b?": "b" },
+							b: { "a?": "a" }
+						},
+						config
+					).export()
+					const input = { n: "1", b: { a: { n: "2" } } }
+
+					attest(types.a.in(input)).equals(input)
+					attest(types.a.out({ n: 1, b: { a: { n: 2 } } })).equals({
+						n: 1,
+						b: { a: { n: 2 } }
+					})
+					attest(types.a.out({ n: 1, b: { a: { n: "2" } } }).toString()).snap(
+						"b.a.n must be a number (was a string)"
+					)
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 

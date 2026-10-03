@@ -32,6 +32,7 @@ import type {
 	reducibleKindOf
 } from "./kinds.ts"
 import type { BaseParseOptions } from "./parse.ts"
+import type { AliasNode } from "./roots/alias.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
@@ -68,7 +69,12 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "./shared/traversal.ts"
-import { inProgress, isNode, isResolutionFinal } from "./shared/utils.ts"
+import {
+	inProgress,
+	isIoFinal,
+	isNode,
+	isResolutionFinal
+} from "./shared/utils.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
@@ -221,7 +227,11 @@ export abstract class BaseNode<
 			for (const id in node.referencesById) {
 				const reference = node.referencesById[id]
 				if (reference[flag]) return true
-				if (reference.hasKind("alias")) reached.add(reference.resolution)
+				if (!reference.hasKind("alias")) continue
+				// an input or output never transforms, and reaches what the alias it views does
+				if (!reference.isIo) reached.add(reference.resolution)
+				else if (flag !== "includesTransform")
+					reached.add((reference.operands![0] as AliasNode).resolution)
 			}
 		}
 		return false
@@ -495,7 +505,7 @@ export abstract class BaseNode<
 	// Should be refactored to use transform
 	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(ioKind: "in" | "out"): BaseNode {
-		if (!this.includesTransform && !(isResolutionFinal() && this.transforms))
+		if (!this.includesTransform && !(isIoFinal() && this.transforms))
 			return this as never
 
 		const ioInner: Record<any, unknown> = {}
