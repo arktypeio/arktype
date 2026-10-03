@@ -2,7 +2,6 @@ import {
 	CastableBase,
 	DynamicFunction,
 	hasDomain,
-	isArray,
 	isDotAccessible,
 	serializePrimitive,
 	type Fn,
@@ -346,10 +345,9 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	transformKey(
 		name: string,
 		input: string,
-		node: BaseNode | readonly TransformStep[],
+		steps: readonly TransformStep[],
 		opts?: TransformKeyOptions
 	): this {
-		const steps: readonly TransformStep[] = isArray(node) ? node : [{ node }]
 		const nodes = steps.map(step => step.node)
 		const keyExpression = opts?.keyExpression
 		const assign = (assignee: string, node: BaseNode, arg: string) => {
