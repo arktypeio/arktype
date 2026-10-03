@@ -117,7 +117,10 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
 		}
 		const isFinal = isResolutionFinal()
-		const readsIo = isFinal && this.isIo
+		const readsIo =
+			isIoFinal() &&
+			(this.isIo ||
+				hasArkKind(nodesByRegisteredId[this.reference as NodeId], "root"))
 		this.resolving = true
 		resolvingAliases.push(this)
 		inProgress.resolutions++
