@@ -1127,6 +1127,17 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 		attest(out).instanceOf(TypeB)
 	})
 
+	it("assert with root morph errors", () => {
+		const N = type("number")
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const T = $.type("string").pipe(s => N(s))
+			attest(() => T.assert("x")).throws("must be a number (was a string)")
+			attest(() => T.or("boolean").assert("x")).throws(
+				"must be a number (was a string)"
+			)
+		}
+	})
+
 	// https://github.com/arktypeio/arktype/pull/1464
 	it("complex pipes", () => {
 		const inputData = [
