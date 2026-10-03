@@ -90,7 +90,7 @@ export const ark: Scope<Ark> = scope(
 		object,
 		unknown
 	},
-	{ name: "ark" }
+	{ prereducedAliases: true, name: "ark" }
 ) as never
 
 const arkExports: Module<Ark> = ark.internal.exportLazily() as never
