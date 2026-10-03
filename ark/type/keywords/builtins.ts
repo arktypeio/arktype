@@ -32,8 +32,7 @@ export const builtinDefinitions: Record<
 }
 
 export const arkBuiltins: arkBuiltins = keywordModule(
-	builtinDefinitions,
-	{}
+	builtinDefinitions
 ) as never
 
 export type arkBuiltins = Module<arkBuiltins.$>

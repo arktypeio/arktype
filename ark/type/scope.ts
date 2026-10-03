@@ -379,7 +379,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 export const keywordModule = (
 	def: Dict,
-	config: ArkScopeConfig
+	config: ArkScopeConfig = {}
 ): RootModule => {
 	const module = new RootModule({})
 	let exports: RootModule | undefined
