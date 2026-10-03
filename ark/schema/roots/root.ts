@@ -1,4 +1,5 @@
 import {
+	chainableNoOpProxy,
 	includes,
 	inferred,
 	omit,
@@ -87,6 +88,11 @@ export abstract class BaseRoot<
 
 	get internal(): this {
 		return this
+	}
+
+	// an inferred type is read statically, so reading it at runtime is a no-op
+	get infer(): unknown {
+		return chainableNoOpProxy
 	}
 
 	private _standard?: StandardSchemaV1.ArkTypeProps
