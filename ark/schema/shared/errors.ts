@@ -191,9 +191,8 @@ export class ArkErrors
 	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
 	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
 	 */
-	static get [Symbol.species](): ArrayConstructor {
-		return Array
-	}
+	// a static getter keyed by a symbol would make instanceof slow in V8
+	static readonly [Symbol.species] = Array
 
 	protected ctx: Traversal
 
