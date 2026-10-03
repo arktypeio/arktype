@@ -186,13 +186,18 @@ contextualize(() => {
 	it("compiled leaf with a scope's description writer", () => {
 		const A = type({ a: "number > 1234" })
 		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
-		const types = scope(
-			{ b: "number", o: { a: A, b: "b" } },
-			{ domain: { description: () => "a custom number" } }
-		).export()
-		attest(types.o({ a: { a: "x" }, b: 1 }).toString()).snap(
-			"a.a must be a custom number (was a string)"
-		)
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{ b: "number", o: { a: A, b: "b" } },
+				{ jitless, domain: { description: () => "a custom number" } }
+			).export()
+			// JIT applies the scope's description to A, which was parsed outside it
+			attest(types.o({ a: { a: "x" }, b: 1 }).toString()).equals(
+				jitless ?
+					"a.a must be a number (was a string)"
+				:	"a.a must be a custom number (was a string)"
+			)
+		}
 	})
 
 	it("numberAllowsNaN", () => {
