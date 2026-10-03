@@ -861,12 +861,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const context = nodesByRegisteredId[pending.id] as BaseParseContext
 		inProgress.resolutions++
 		try {
-			let node = resolveShallowAliases(pending)
-			if (context.isReferencedById) {
-				node = withId(node, pending.id)
-				nodesByRegisteredId[pending.id] = node
-			} else delete nodesByRegisteredId[pending.id]
-			return (this.resolutions[name] = node)
+			return this.resolveContext(name, context, resolveShallowAliases(pending))
 		} finally {
 			inProgress.resolutions--
 		}
