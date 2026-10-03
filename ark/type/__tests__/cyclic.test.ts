@@ -1004,10 +1004,14 @@ swap.swap.order[1] must be "on" (was "off")`)
 			y: "z",
 			z: "y[]"
 		}).export()
+		const { parsed } = scope({
+			parsed: "string.json.parse |> parsed"
+		}).export() as never as Record<string, Type>
 
 		attest(types.nested.expression).snap("($nested | number)[]")
 		attest(types.a.expression).snap("{ a: $a }")
 		attest(types.x.expression).snap("$y[]")
+		attest(parsed.expression).snap("(In: string) => To<$parsed>")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476

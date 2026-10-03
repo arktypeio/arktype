@@ -51,6 +51,7 @@ import {
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets"
+import type { InferredMorph } from "./attributes.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
@@ -445,7 +446,7 @@ type shallowCycleMessageOf<k, def, $> =
 	def extends string ?
 		aliasNameOf<k> extends infer name extends string ?
 			name extends (
-				shallowClosure<shallowReferencesOf<parseString<def, $, {}>>, $>
+				shallowClosure<shallowReferencesOf<parseString<def, $, {}>, $>, $>
 			) ?
 				shallowCycleOf<name, parseString<def, $, {}>, $, [name]> extends (
 					infer cycle extends string[]
@@ -469,20 +470,41 @@ type aliasAstOf<name, $> =
 		:	undefined
 	:	never
 
-type shallowReferencesOf<ast> =
+type shallowReferencesOf<ast, $> =
 	ast extends readonly [infer l, infer operator, infer r] ?
 		operator extends "def" ? r
 		: operator extends ShallowOperator ?
-			shallowReferencesOf<l> | shallowReferencesOf<r>
+			| shallowReferencesOf<l, $>
+			| (pipesFromMorph<l, operator, $> extends true ? never
+			  :	shallowReferencesOf<r, $>)
 		:	never
 	:	never
 
 type ShallowOperator = "|" | "&" | "|>" | "#"
 
+// a morph's piped node is a structural position, so what it pipes to isn't a shallow reference
+type pipesFromMorph<l, operator, $> =
+	operator extends "|>" ? isMorphAst<l, $, never> : false
+
+type isMorphAst<ast, $, seen> =
+	ast extends InferredAst<infer t> ?
+		t extends InferredMorph ?
+			true
+		:	false
+	: ast extends DefAst<unknown, infer alias> ?
+		alias extends seen ?
+			false
+		:	isMorphAst<aliasAstOf<alias, $>, $, seen | alias>
+	: ast extends readonly [infer l, "|>", unknown] ? isMorphAst<l, $, seen>
+	: false
+
 type shallowClosure<frontier, $, reached = never> =
 	[frontier] extends [never] ? reached
 	:	shallowClosure<
-			Exclude<shallowReferencesOf<aliasAstOf<frontier, $>>, frontier | reached>,
+			Exclude<
+				shallowReferencesOf<aliasAstOf<frontier, $>, $>,
+				frontier | reached
+			>,
 			$,
 			frontier | reached
 		>
@@ -497,7 +519,9 @@ type shallowCycleOf<name, ast, $, path extends unknown[]> =
 			:	never
 		: operator extends ShallowOperator ?
 			[shallowCycleOf<name, l, $, path>] extends [never] ?
-				shallowCycleOf<name, r, $, path>
+				pipesFromMorph<l, operator, $> extends true ?
+					never
+				:	shallowCycleOf<name, r, $, path>
 			:	shallowCycleOf<name, l, $, path>
 		:	never
 	:	never
