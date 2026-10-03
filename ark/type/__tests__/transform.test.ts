@@ -268,6 +268,9 @@ b must be A (was "y")`)
 		attest(out === original).equals(true)
 		attest(original.a).equals("x")
 
+		const frozen = Object.freeze(Object.assign(() => 5, { a: " x " }))
+		attest(() => T(frozen)).throws("Cannot assign to read only property 'a'")
+
 		const Received = type([
 			type.instanceOf(Response),
 			"&",
