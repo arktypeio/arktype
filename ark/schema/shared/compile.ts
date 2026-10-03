@@ -178,7 +178,8 @@ export interface TransformKeyOptions {
 
 export interface TransformStep {
 	node: BaseNode
-	condition?: string
+	// a key signature that must allow the key for node to transform it
+	signature?: BaseNode
 }
 
 export declare namespace NodeCompiler {
@@ -365,9 +366,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			if (nodes.slice(0, -1).some(node => node.transformRequiresContext))
 				this.const(errorCount, `${this.ctx}.currentErrorCount`)
 			for (let i = 0; i < steps.length; i++) {
-				const { node, condition } = steps[i]
+				const { node, signature } = steps[i]
 				const previous = nodes.slice(0, i)
-				const conditions = condition ? [condition] : []
+				const conditions =
+					signature ?
+						[this.invoke(signature, { arg: keyExpression!, kind: "Allows" })]
+					:	[]
 				if (previous.some(returnsTransformErrors))
 					conditions.push(`!(${isTransformErrors()})`)
 				if (previous.some(node => node.transformRequiresContext))
@@ -378,7 +382,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			}
 			return this
 		}
-		if (steps.length === 1 && !steps[0].condition && !opts?.condition)
+		if (steps.length === 1 && !steps[0].signature && !opts?.condition)
 			assign(`const ${name}`, steps[0].node, input)
 		else {
 			this.let(name, input)
@@ -391,7 +395,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		}
 		const checksErrors = nodes.some(returnsTransformErrors)
 		if (!checksErrors && !opts?.onChange) return this
-		return this.if(this.compareTransformed(nodes, name, "!==", input), () => {
+		return this.if(this.compareTransformed(steps, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
 			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
 			this.if(isTransformErrors(), () =>
@@ -406,13 +410,13 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	compareTransformed(
-		nodes: readonly BaseNode[],
+		steps: readonly TransformStep[],
 		transformed: string,
 		operator: "===" | "!==",
 		input: string
 	): string {
-		const canChangeSignOfZero = nodes.some(
-			node =>
+		const canChangeSignOfZero = steps.some(
+			({ node }) =>
 				node.isRoot() && node.branches.some(n => !n.hasKind("intersection"))
 		)
 		return canChangeSignOfZero ?

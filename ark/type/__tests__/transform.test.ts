@@ -127,6 +127,19 @@ contextualize(() => {
 		}
 	})
 
+	it("contextual index on declared key", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			const Listed = $.type("string").narrow((k, ctx) =>
+				(ctx.root as { trimmed: string[] }).trimmed.includes(k)
+			)
+			const T = $.type({ trimmed: "string[]", a: "string.lower" }).and(
+				$.type.Record(Listed, "string.trim")
+			)
+			const out: unknown = T({ trimmed: ["a"], a: " X " })
+			attest(out).snap({ trimmed: ["a"], a: "x" })
+		}
+	})
+
 	it("failed key transform", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const A = $.type("string").pipe((s, ctx) => ctx.error("A"))
