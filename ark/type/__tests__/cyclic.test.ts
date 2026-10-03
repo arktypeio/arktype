@@ -388,6 +388,30 @@ contextualize(() => {
 					).snap('inner.next must be good (was {"bad":1})')
 				})
 
+				it("checks a default on a cyclic value once it resolves", config => {
+					const types = scope(
+						{
+							list: {
+								v: "number",
+								next: "list | null = null",
+								kids: ["list[]", "=", (): never[] => []]
+							},
+							box: { inner: ["item", "=", () => ({ v: "x" })] },
+							item: { v: "string", "box?": "box" }
+						},
+						config
+					).export()
+
+					attest(types.list({ v: 0 })).equals({ v: 0, next: null, kids: [] })
+					attest(types.box({})).equals({ inner: { v: "x" } })
+					attest(() =>
+						scope(
+							{ list: { next: "list | null = 5" } } as never,
+							config
+						).export()
+					).throws("Default for next must be an object or null (was a number)")
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 

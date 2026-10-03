@@ -87,7 +87,17 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "./shared/traversal.ts"
-import { arkKind, hasArkKind, inProgress, isNode } from "./shared/utils.ts"
+import {
+	arkKind,
+	hasArkKind,
+	inProgress,
+	isNode,
+	isResolutionFinal
+} from "./shared/utils.ts"
+import {
+	assertUncheckedDefaultsAssignable,
+	discardUncheckedDefaults
+} from "./structure/optional.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
@@ -899,6 +909,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				}
 				v.phase = "resolved"
 				inProgress.resolutions++
+				let resolution: BaseRoot
 				try {
 					// it reaches no definition still open, so its component closes with it
 					if (v.lowlink === v.index) {
@@ -908,14 +919,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 							delete member.resolution
 						}
 					}
-					if (node.includesShallowAlias) {
-						node = withId(node, v.id)
-						return this.resolvePending(name, (this.resolutions[name] = node))
-					}
-					return this.resolveContext(name, v, node)
+					resolution =
+						node.includesShallowAlias ?
+							this.resolvePending(
+								name,
+								(this.resolutions[name] = withId(node, v.id))
+							)
+						:	this.resolveContext(name, v, node)
 				} finally {
 					inProgress.resolutions--
 				}
+				assertUncheckedDefaultsAssignable()
+				return resolution
 			}
 			return throwInternalError(
 				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
@@ -1107,11 +1122,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 		} finally {
 			inProgress.resolutions--
 		}
-
+		assertUncheckedDefaultsAssignable()
 		return node
 	}
 
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
+		// a check left from a parse that threw would read its unresolved aliases
+		if (isResolutionFinal()) discardUncheckedDefaults()
 		inProgress.definitions++
 		try {
 			return this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
