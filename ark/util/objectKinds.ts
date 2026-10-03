@@ -211,7 +211,8 @@ export const isValidDate = (date: Date): boolean => {
 		try {
 			return !Number.isNaN(dateGetTime.call(date))
 		} catch {
-			// date has no time value, so toString throws its own error below
+			// an object inheriting Date.prototype has no time value
+			return false
 		}
 	}
 	return date.toString() !== "Invalid Date"
