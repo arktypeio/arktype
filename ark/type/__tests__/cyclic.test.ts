@@ -986,6 +986,27 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
+	it("describes a recursive generic argument without repeating it", () => {
+		attest(
+			scope({
+				"list<t>": { value: "t", "next?": "list<t>" },
+				nested: "list<list<list<string>>>"
+			}).export().nested.expression
+		).snap(
+			"{ value: { value: { value: string, next?: list<string> }, next?: list<{ value: string, next?: list<string> }> }, next?: list<...> }"
+		)
+		attest(() =>
+			scope({ "g<p, q>": { "n?": "g<g<p, p>, q>" } } as never).export()
+		).throws(writeUnclosedGenericCycleMessage("g"))
+		attest(() =>
+			scope({
+				"g<t>": { v: "t", "n?": "g<t>" },
+				"h<u>": { "n?": "h<g<u>>" },
+				x: "h<string>"
+			} as never).export()
+		).throws(writeUnclosedGenericCycleMessage("h"))
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1026
 	it("filters a definition in progress once it resolves", () => {
 		const types = scope({

@@ -168,7 +168,6 @@ Resolution: ${printable(resolution)}`)
 		return resolveShallowAliases(resolution)
 	}
 
-	// an input or output, which never transforms
 	get isIo(): boolean {
 		return this.operator === "In" || this.operator === "Out"
 	}
@@ -284,8 +283,11 @@ Resolution: ${printable(resolution)}`)
 
 const expressionOf = (node: AliasNode): string => {
 	if (node.operands) {
-		const operands = node.operands.map(operand => operand.expression)
-		return node.operator === "&" || node.operator === "=>" ?
+		const joinsOperands = node.operator === "&" || node.operator === "=>"
+		const operands = node.operands.map(operand =>
+			!joinsOperands && nestsOperations(operand) ? "..." : operand.expression
+		)
+		return joinsOperands ?
 				operands.join(node.operator)
 			:	`${node.operator}<${operands.join(", ")}>`
 	}
@@ -295,6 +297,19 @@ const expressionOf = (node: AliasNode): string => {
 			`$${referenced.alias}`
 		:	node.reference
 }
+
+const operationsOf = (node: BaseRoot): AliasNode[] =>
+	node.includesAlias ?
+		(Object.values(node.referencesById).filter(
+			reference => reference.hasKind("alias") && reference.operands
+		) as never)
+	:	[]
+
+// an argument nesting operations is elided, since an expansive generic would repeat it at every level
+const nestsOperations = (arg: BaseRoot): boolean =>
+	operationsOf(arg).some(operation =>
+		operation.operands!.some(operand => operationsOf(operand).length !== 0)
+	)
 
 const nameOf = (node: AliasNode): string =>
 	node.expression[0] === "$" ? node.expression.slice(1) : node.expression
