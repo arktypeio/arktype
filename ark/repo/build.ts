@@ -18,9 +18,6 @@ const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
 const outDir = fromCwd("out")
 const packageName = readPackageJson(process.cwd()).name
-const isArktypeOrDependency =
-	packageName === "arktype" ||
-	packageName in packagesByScope.type.json.dependencies!
 
 const buildCurrentProject = () =>
 	shell(
@@ -37,11 +34,15 @@ try {
 	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
-	else if (isArktypeOrDependency) bundle()
+	else if (
+		packageName === "arktype" ||
+		packageName in packagesByScope.type.json.dependencies!
+	)
+		bundle()
 	if (packageName === "arktype") {
 		jsDocGen()
 		dtsGen()
-	} else if (isArktypeOrDependency) dtsGen()
+	} else if (packageName in packagesByScope.type.json.dependencies!) dtsGen()
 } finally {
 	rmRf("tsconfig.build.json")
 }
