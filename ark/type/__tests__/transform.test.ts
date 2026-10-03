@@ -577,6 +577,17 @@ contextualize(() => {
 			])
 		})
 
+		it("leaves a declared key data inherits from Object.prototype inherited", () => {
+			for (const $ of [scope({}), scope({}, { jitless: true })]) {
+				const T = $.type({ "+": "delete", a: "string", "toString?": "unknown" })
+				attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals(["a"])
+				attest(Object.keys(T.assert({ a: "a", toString: 1, z: 1 }))).equals([
+					"a",
+					"toString"
+				])
+			}
+		})
+
 		it("deletes an undeclared symbol key", () => {
 			for (const $ of [scope({}), scope({}, { jitless: true })]) {
 				const T = $.type({ "+": "delete", a: "string" })

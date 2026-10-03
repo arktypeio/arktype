@@ -634,6 +634,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const result: Record<Key, unknown> = {}
 		for (const prop of this.props)
 			if (prop.key in out) result[prop.key] = out[prop.key as never]
+		for (const prop of this.inheritableProps) {
+			if (!Object.prototype.hasOwnProperty.call(out, prop.key))
+				delete result[prop.key]
+		}
 		if (this.index) {
 			for (const k of ownKeysOf(out)) {
 				if (!(k in this.propsByKey) && this.declaresKey(k))
@@ -658,6 +662,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (!this.declaresKey(k)) keys.push(k)
 		return keys
 	}
+
+	// data can have a key like toString from Object.prototype without owning it
+	readonly inheritableProps: Prop.Node[] = this.props.filter(
+		prop => prop.key in Object.prototype
+	)
 
 	readonly defaultable: Optional.Node.withDefault[] =
 		this.optional?.filter(o => o.hasDefault()) ?? []
@@ -936,6 +945,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.line(compileDefault(js, prop, "result"))
 				)
 			} else js.if(`${prop.serializedKey} in data`, () => js.line(store))
+		}
+		for (const prop of this.inheritableProps) {
+			if (transformedProps.includes(prop)) continue
+			js.if(
+				`!Object.prototype.hasOwnProperty.call(data, ${prop.serializedKey})`,
+				() => js.line(`delete result${js.prop(prop.key)}`)
+			)
 		}
 		if (this.index) {
 			compileOwnKeys(js, "out", "outKeys", "outSymbols").for(
