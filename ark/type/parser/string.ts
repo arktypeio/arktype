@@ -1,8 +1,13 @@
-import type { BaseParseContext, resolvableReferenceIn } from "@ark/schema"
+import type {
+	BaseParseContext,
+	GenericAst,
+	resolvableReferenceIn
+} from "@ark/schema"
 import {
 	Scanner,
 	throwInternalError,
 	throwParseError,
+	type anyOrNever,
 	type ErrorMessage
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
@@ -11,6 +16,7 @@ import type { inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
 import type { s, StaticState } from "./reduce/static.ts"
+import type { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
 import { parseDefault } from "./shift/operator/default.ts"
 import {
@@ -45,9 +51,13 @@ export const parseString = (
  */
 export type parseString<def extends string, $, args> =
 	def extends keyof $ ?
-		// def could also be a generic reference here, in which case it will
-		// fail semantic validation because it has no args
-		resolutionToAst<def, $[def]>
+		$[def] extends GenericAst ?
+			[$[def]] extends [anyOrNever] ?
+				resolutionToAst<def, $[def]>
+			:	ErrorMessage<
+					writeInvalidGenericArgCountMessage<def, $[def]["names"], []>
+				>
+		:	resolutionToAst<def, $[def]>
 	: def extends `${infer child}[]` ?
 		child extends keyof $ ?
 			[resolutionToAst<child, $[child]>, "[]"]

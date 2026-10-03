@@ -2,7 +2,9 @@ import {
 	domainDescriptions,
 	printable,
 	throwInternalError,
-	throwParseError
+	throwParseError,
+	type array,
+	type join
 } from "@ark/util"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -318,11 +320,19 @@ export const isResolvable = (node: BaseRoot): boolean => {
 	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
 
-export const writeShallowCycleErrorMessage = (
-	name: string,
-	seen: string[]
-): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join("->")}`
+export const writeShallowCycleErrorMessage = <
+	name extends string,
+	seen extends array<string>
+>(
+	name: name,
+	seen: seen
+): writeShallowCycleErrorMessage<name, seen> =>
+	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join("->")}` as never
+
+export type writeShallowCycleErrorMessage<
+	name extends string,
+	seen extends array<string>
+> = `Alias '${name}' has a shallow resolution cycle: ${join<[...seen, name], "->">}`
 
 export const Alias = {
 	implementation,

@@ -30,7 +30,8 @@ import {
 	type nodeOfKind,
 	type reducibleKindOf,
 	type toInternalScope,
-	type writeDuplicateAliasError
+	type writeDuplicateAliasError,
+	type writeShallowCycleErrorMessage
 } from "@ark/schema"
 import {
 	Scanner,
@@ -41,6 +42,7 @@ import {
 	throwParseError,
 	type Brand,
 	type Dict,
+	type ErrorMessage,
 	type ErrorType,
 	type JsonStructure,
 	type anyOrNever,
@@ -85,6 +87,7 @@ import {
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
+import type { parseString } from "./parser/string.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
@@ -399,7 +402,8 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	type.validate<def[k], bootstrapAliases<def>, {}>
+					:	// inferring def through the shallow cycle check would expand it for every key
+						NoInfer<validateAlias<k, def[k], bootstrapAliases<def>>>
 				:	type.validate<
 						def[k],
 						bootstrapAliases<def>,
@@ -412,6 +416,72 @@ export declare namespace scope {
 
 	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
 }
+
+type validateAlias<k, def, $> =
+	shallowCycleMessageOf<k, def, $> extends infer message extends string ?
+		ErrorMessage<message>
+	:	type.validate<def, $, {}>
+
+type shallowCycleMessageOf<k, def, $> =
+	def extends string ?
+		aliasNameOf<k> extends infer name extends string ?
+			name extends (
+				shallowClosure<shallowReferencesOf<parseString<def, $, {}>>, $>
+			) ?
+				shallowCycleOf<name, parseString<def, $, {}>, $, [name]> extends (
+					infer cycle extends string[]
+				) ?
+					writeShallowCycleErrorMessage<name, cycle>
+				:	never
+			:	undefined
+		:	never
+	:	undefined
+
+type aliasNameOf<k> = k extends PrivateDeclaration<infer name> ? name : k
+
+type aliasAstOf<name, $> =
+	name extends string ?
+		(
+			name extends keyof $ ?
+				$[name]
+			:	$[PrivateDeclaration<name> & keyof $]
+		) extends Def<infer def extends string> ?
+			parseString<def, $, {}>
+		:	undefined
+	:	never
+
+type shallowReferencesOf<ast> =
+	ast extends readonly [infer l, infer operator, infer r] ?
+		operator extends "def" ? r
+		: operator extends ShallowOperator ?
+			shallowReferencesOf<l> | shallowReferencesOf<r>
+		:	never
+	:	never
+
+type ShallowOperator = "|" | "&" | "|>" | "#"
+
+type shallowClosure<frontier, $, reached = never> =
+	[frontier] extends [never] ? reached
+	:	shallowClosure<
+			Exclude<shallowReferencesOf<aliasAstOf<frontier, $>>, frontier | reached>,
+			$,
+			frontier | reached
+		>
+
+type shallowCycleOf<name, ast, $, path extends unknown[]> =
+	ast extends readonly [infer l, infer operator, infer r] ?
+		operator extends "def" ?
+			r extends name ? path
+			: r extends path[number] ? never
+			: name extends shallowClosure<r, $, Exclude<path[number], name>> ?
+				shallowCycleOf<name, aliasAstOf<r, $>, $, [...path, r]>
+			:	never
+		: operator extends ShallowOperator ?
+			[shallowCycleOf<name, l, $, path>] extends [never] ?
+				shallowCycleOf<name, r, $, path>
+			:	shallowCycleOf<name, l, $, path>
+		:	never
+	:	never
 
 export interface Scope<$ = {}> {
 	t: $
