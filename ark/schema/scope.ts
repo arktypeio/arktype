@@ -740,7 +740,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this
 			)
 			if (reference.startsWith("$")) {
-				const resolution = this.resolveRoot(reference.slice(1))
+				// an alias serializes as the registered id of its resolution, e.g. "$ark.node1"
+				const registered =
+					reference.startsWith("$ark.") ?
+						nodesByRegisteredId[reference.slice(5) as NodeId]
+					:	undefined
+				const resolution =
+					hasArkKind(registered, "root") ? registered : (
+						this.resolveRoot(reference.slice(1))
+					)
 				schema = resolution
 				kind = resolution.kind
 			}
