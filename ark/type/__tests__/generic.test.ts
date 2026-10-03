@@ -384,6 +384,23 @@ contextualize(() => {
 				attest(b.internal.json).equals(Expected.json)
 			})
 
+			it("infers an external generic's cyclic argument at every depth", () => {
+				const lib = scope({ "box<t>": { value: "t" } }).export()
+				const types = scope({
+					box: lib.box,
+					node: { n: "number", "kids?": "box<node>" }
+				}).export()
+				type Node = { n: number; kids?: { value: Node } }
+
+				const data: typeof types.node.infer = {
+					n: 1,
+					kids: { value: { n: 2, kids: { value: { n: 3 } } } }
+				}
+
+				attest<Node>(types.node.infer)
+				attest(types.node(data)).equals(data)
+			})
+
 			it("empty string in declaration", () => {
 				attest(() =>
 					scope({
