@@ -1,5 +1,36 @@
 # arktype
 
+## 3.0.0
+
+### Throw from `.assert` when a root morph fails
+
+When a type's root was a morph (or a union of morphs) that returned `ArkErrors`, `.assert` returned the errors instead of throwing, and a configured `onFail` was not called. A root morph's errors are now handled like any others, as they already were for a morph at a key:
+
+```ts
+const N = type("number")
+const T = type("string").pipe(s => N(s))
+
+// previously returned ArkErrors, now throws TraversalError: must be a number (was a string)
+T.assert("x")
+```
+
+### Return a type's output when it is called with `ctx` in a morph
+
+Calling a type with the morph's `ctx` returned the morph's own input rather than the type's output, and threw if the type transformed its input:
+
+```ts
+const T = type("string").pipe((s, ctx) =>
+	type({ a: "string.trim" })(JSON.parse(s), ctx)
+)
+
+// previously threw a TypeError, now { a: "x" }
+T('{"a":" x "}')
+```
+
+### Configure before importing anything else
+
+`arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
+
 ## 2.2.7
 
 ### Fix `this[]` in self-referential object types
