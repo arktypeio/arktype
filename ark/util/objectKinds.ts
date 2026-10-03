@@ -113,10 +113,9 @@ export type TypedArrayObjects = instantiateConstructors<
 	keyof typedArrayConstructors
 >
 
-export interface builtinConstructors
-	extends ecmascriptConstructors,
-		platformConstructors,
-		typedArrayConstructors {}
+export type builtinConstructors = ecmascriptConstructors &
+	platformConstructors &
+	typedArrayConstructors
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
