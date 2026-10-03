@@ -416,7 +416,10 @@ b must be A (was "y")`)
 				),
 				length: $.type("string")
 					.pipe(s => s.length)
-					.narrow((n, ctx) => (paths.push([...ctx.path]), n > 0))
+					.narrow((n, ctx) => {
+						paths.push([...ctx.path])
+						return n > 0
+					})
 			})
 
 			attest(T({ password: "pw", confirm: " pw ", length: "a" })).equals({
