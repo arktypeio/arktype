@@ -1,7 +1,15 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { registerNodeId, rootSchema } from "@ark/schema"
 
 contextualize(() => {
+	it("keeps ids unique when a prefix ends in a digit", () => {
+		const ids = new Set<string>()
+		for (let i = 0; i < 12; i++) ids.add(registerNodeId("unique1"))
+		for (let i = 0; i < 2; i++) ids.add(registerNodeId("unique11"))
+
+		attest(ids.size).equals(14)
+	})
+
 	it("single constraint", () => {
 		const T = rootSchema({ domain: "string", pattern: ".*" })
 		attest(T.json).snap({ domain: "string", pattern: [".*"] })
