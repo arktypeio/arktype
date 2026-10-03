@@ -501,6 +501,20 @@ contextualize(() => {
 					)
 				})
 
+				it("accepts data valid without an assumption that failed", config => {
+					const { a } = scope(
+						{ a: { p0: "(r | a)[]" }, r: { "p0?": "a[] | a" } },
+						config
+					).export()
+					const list: unknown[] = []
+					const inner = { p0: list }
+					list.push({ p0: [inner, {}] }, inner)
+					const data = { p0: list }
+
+					attest(a.allows(data)).equals(true)
+					attest(a(data) === data).equals(true)
+				})
+
 				it("stops checking a value once it fails as never", config => {
 					const types = scope(
 						{
