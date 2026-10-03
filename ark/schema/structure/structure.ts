@@ -621,7 +621,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const prop of this.props)
 			if (prop.key in out) result[prop.key] = out[prop.key as never]
 		for (const prop of this.inheritableProps) {
-			if (!Object.prototype.hasOwnProperty.call(out, prop.key))
+			if (
+				!this.transformsOf(prop).length &&
+				!Object.prototype.hasOwnProperty.call(data, prop.key)
+			)
 				delete result[prop.key]
 		}
 		if (this.index) {

@@ -693,6 +693,20 @@ b must be A (was "y")`)
 			}
 		})
 
+		it("transformed inherited key", () => {
+			for (const $ of [scope({}), scope({}, { jitless: true })]) {
+				const T = $.type({
+					"+": "delete",
+					a: "string",
+					"toString?": ["unknown", "=>", v => v]
+				})
+				attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals([
+					"a",
+					"toString"
+				])
+			}
+		})
+
 		it("deletes symbols", () => {
 			for (const $ of [scope({}), scope({}, { jitless: true })]) {
 				const T = $.type({ "+": "delete", a: "string" })
