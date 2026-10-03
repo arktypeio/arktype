@@ -218,6 +218,7 @@ export class GenericRoot<
 			"params",
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
+					// read through intrinsic, which bootstraps again once an engine is installed
 					[param, intrinsic.unknown]
 				:	[param[0], this.$.parse(param[1])]
 			) as never
