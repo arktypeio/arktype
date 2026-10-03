@@ -52,12 +52,6 @@ bench("moltar allows (arktype)", () =>
 	Moltar.arktype.allows(moltarData)
 ).median([8.03, "ns"])
 
-// zod has no cheaper boolean check than safeParse(data).success
-bench(
-	"moltar allows (zod)",
-	() => Moltar.zod.safeParse(moltarData).success
-).median([166.67, "ns"])
-
 bench("moltar allows (valibot)", () => v.is(Moltar.valibot, moltarData)).median(
 	[700.18, "ns"]
 )
@@ -80,11 +74,6 @@ bench("moltar strict allows (arktype)", () =>
 	MoltarStrict.arktype.allows(moltarData)
 ).median([150.27, "ns"])
 
-bench(
-	"moltar strict allows (zod)",
-	() => MoltarStrict.zod.safeParse(moltarData).success
-).median([289.08, "ns"])
-
 bench("moltar strict allows (valibot)", () =>
 	v.is(MoltarStrict.valibot, moltarData)
 ).median([771.32, "ns"])
@@ -104,11 +93,6 @@ bench("moltar strict parse (valibot)", () =>
 bench("moltar strict invalid allows (arktype)", () =>
 	MoltarStrict.arktype.allows(moltarExtraKeysData)
 ).median([74.41, "ns"])
-
-bench(
-	"moltar strict invalid allows (zod)",
-	() => MoltarStrict.zod.safeParse(moltarExtraKeysData).success
-).median([16.33, "us"])
 
 bench("moltar strict invalid allows (valibot)", () =>
 	v.is(MoltarStrict.valibot, moltarExtraKeysData)
@@ -146,11 +130,6 @@ bench("moltar invalid allows (arktype)", () =>
 	Moltar.arktype.allows(moltarInvalidData)
 ).median([5.26, "ns"])
 
-bench(
-	"moltar invalid allows (zod)",
-	() => Moltar.zod.safeParse(moltarInvalidData).success
-).median([11.8, "us"])
-
 bench("moltar invalid allows (valibot)", () =>
 	v.is(Moltar.valibot, moltarInvalidData)
 ).median([974.94, "ns"])
@@ -174,11 +153,6 @@ bench("product allows (arktype)", () =>
 	Product.arktype.allows(productData)
 ).median([1.05, "us"])
 
-bench(
-	"product allows (zod)",
-	() => Product.zod.safeParse(productData).success
-).median([7.49, "us"])
-
 bench("product allows (valibot)", () =>
 	v.is(Product.valibot, productData)
 ).median([11.54, "us"])
@@ -200,11 +174,6 @@ bench("product parse (valibot)", () =>
 bench("product invalid allows (arktype)", () =>
 	Product.arktype.allows(productInvalidData)
 ).median([25.54, "ns"])
-
-bench(
-	"product invalid allows (zod)",
-	() => Product.zod.safeParse(productInvalidData).success
-).median([101.39, "us"])
 
 bench("product invalid allows (valibot)", () =>
 	v.is(Product.valibot, productInvalidData)
@@ -230,11 +199,6 @@ bench("items allows (arktype)", () => Items.arktype.allows(itemsData)).median([
 	"ns"
 ])
 
-bench(
-	"items allows (zod)",
-	() => Items.zod.safeParse(itemsData).success
-).median([8.58, "us"])
-
 bench("items allows (valibot)", () => v.is(Items.valibot, itemsData)).median([
 	25.12,
 	"us"
@@ -257,11 +221,6 @@ bench("items parse (valibot)", () =>
 bench("items invalid allows (arktype)", () =>
 	Items.arktype.allows(itemsInvalidData)
 ).median([151.61, "ns"])
-
-bench(
-	"items invalid allows (zod)",
-	() => Items.zod.safeParse(itemsInvalidData).success
-).median([21.5, "us"])
 
 bench("items invalid allows (valibot)", () =>
 	v.is(Items.valibot, itemsInvalidData)
@@ -286,11 +245,6 @@ bench("strings invalid allows (arktype)", () =>
 	Strings.arktype.allows(stringsInvalidData)
 ).median([280.62, "ns"])
 
-bench(
-	"strings invalid allows (zod)",
-	() => Strings.zod.safeParse(stringsInvalidData).success
-).median([50.33, "us"])
-
 bench("strings invalid allows (valibot)", () =>
 	v.is(Strings.valibot, stringsInvalidData)
 ).median([14.28, "us"])
@@ -313,11 +267,6 @@ bench(
 bench("patterns invalid allows (arktype)", () =>
 	Patterns.arktype.allows(patternsInvalidData)
 ).median([8.34, "us"])
-
-bench(
-	"patterns invalid allows (zod)",
-	() => Patterns.zod.safeParse(patternsInvalidData).success
-).median([27.73, "us"])
 
 bench("patterns invalid allows (valibot)", () =>
 	v.is(Patterns.valibot, patternsInvalidData)
@@ -342,11 +291,6 @@ bench("union items invalid allows (arktype)", () =>
 	UnionItems.arktype.allows(unionItemsInvalidData)
 ).median([22.83, "ns"])
 
-bench(
-	"union items invalid allows (zod)",
-	() => UnionItems.zod.safeParse(unionItemsInvalidData).success
-).median([22.26, "us"])
-
 bench("union items invalid allows (valibot)", () =>
 	v.is(UnionItems.valibot, unionItemsInvalidData)
 ).median([2.68, "us"])
@@ -370,10 +314,6 @@ bench("discriminated allows (arktype)", () =>
 	discriminatedData.every(d => Discriminated.arktype.allows(d))
 ).median([26.03, "ns"])
 
-bench("discriminated allows (zod)", () =>
-	discriminatedData.every(d => Discriminated.zod.safeParse(d).success)
-).median([648.96, "ns"])
-
 bench("discriminated allows (valibot)", () =>
 	discriminatedData.every(d => v.is(Discriminated.valibot, d))
 ).median([3.07, "us"])
@@ -393,10 +333,6 @@ bench("discriminated parse (valibot)", () =>
 bench("union allows (arktype)", () =>
 	unionData.every(d => Union.arktype.allows(d))
 ).median([27.06, "ns"])
-
-bench("union allows (zod)", () =>
-	unionData.every(d => Union.zod.safeParse(d).success)
-).median([1.61, "us"])
 
 bench("union allows (valibot)", () =>
 	unionData.every(d => v.is(Union.valibot, d))
@@ -418,11 +354,6 @@ bench("constraints allows (arktype)", () =>
 	Constraints.arktype.allows(constraintsData)
 ).median([81.17, "ns"])
 
-bench(
-	"constraints allows (zod)",
-	() => Constraints.zod.safeParse(constraintsData).success
-).median([816.54, "ns"])
-
 bench("constraints allows (valibot)", () =>
 	v.is(Constraints.valibot, constraintsData)
 ).median([813.2, "ns"])
@@ -443,11 +374,6 @@ bench("index allows (arktype)", () => Index.arktype.allows(indexData)).median([
 	107.08,
 	"ns"
 ])
-
-bench(
-	"index allows (zod)",
-	() => Index.zod.safeParse(indexData).success
-).median([625.1, "ns"])
 
 bench("index allows (valibot)", () => v.is(Index.valibot, indexData)).median([
 	773.36,
@@ -472,11 +398,6 @@ bench("dated allows (arktype)", () => Dated.arktype.allows(datedData)).median([
 	6.92,
 	"ns"
 ])
-
-bench(
-	"dated allows (zod)",
-	() => Dated.zod.safeParse(datedData).success
-).median([105.56, "ns"])
 
 bench("dated allows (valibot)", () => v.is(Dated.valibot, datedData)).median([
 	260.78,
@@ -553,11 +474,6 @@ bench("tree allows (arktype)", () => Tree.arktype.allows(treeData)).median([
 	"us"
 ])
 
-bench("tree allows (zod)", () => Tree.zod.safeParse(treeData).success).median([
-	4.92,
-	"us"
-])
-
 bench("tree allows (valibot)", () => v.is(Tree.valibot, treeData)).median([
 	9.55,
 	"us"
@@ -577,11 +493,6 @@ bench("tree parse (valibot)", () => v.safeParse(Tree.valibot, treeData)).median(
 bench("recursive scope allows (arktype)", () =>
 	RecursiveScope.arktype.allows(recursiveScopeData)
 ).median([188.92, "ns"])
-
-bench(
-	"recursive scope allows (zod)",
-	() => RecursiveScope.zod.safeParse(recursiveScopeData).success
-).median([3.42, "us"])
 
 bench("recursive scope allows (valibot)", () =>
 	v.is(RecursiveScope.valibot, recursiveScopeData)
@@ -603,11 +514,6 @@ bench("recursive morph allows (arktype)", () =>
 	RecursiveMorph.arktype.allows(recursiveMorphData)
 ).median([391.99, "ns"])
 
-bench(
-	"recursive morph allows (zod)",
-	() => RecursiveMorph.zod.safeParse(recursiveMorphData).success
-).median([5.11, "us"])
-
 bench("recursive morph allows (valibot)", () =>
 	v.is(RecursiveMorph.valibot, recursiveMorphData)
 ).median([14.41, "us"])
@@ -627,11 +533,6 @@ bench("recursive morph parse (valibot)", () =>
 bench("primitive allows (arktype)", () =>
 	Primitive.arktype.allows(primitiveData)
 ).median([2.06, "ns"])
-
-bench(
-	"primitive allows (zod)",
-	() => Primitive.zod.safeParse(primitiveData).success
-).median([43.97, "ns"])
 
 bench("primitive allows (valibot)", () =>
 	v.is(Primitive.valibot, primitiveData)
