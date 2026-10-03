@@ -146,6 +146,12 @@ contextualize(() => {
 		attest(types.fast.precompilation).equals(undefined)
 	})
 
+	it("prereducedAliases", () => {
+		const $ = scope({ a: "string" }, { prereducedAliases: true })
+		attest($.config.prereducedAliases).equals(true)
+		attest(type.$.config.prereducedAliases).equals(true)
+	})
+
 	it("jit by default", () => {
 		const T = type("/^foo.*$/")
 		attest(T.precompilation).satisfies("string")
