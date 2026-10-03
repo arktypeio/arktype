@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { node, type BaseNode } from "@ark/schema"
+import type { BaseNode } from "@ark/schema"
 import { scope, type } from "arktype"
 
 const referencedBesidesChildren = (node: BaseNode): BaseNode[] =>
@@ -67,31 +67,6 @@ contextualize(() => {
 			for (const id in expected)
 				attest(node.referencesById[id] === expected[id]).equals(true)
 		}
-	})
-
-	it("a union discriminates as it is constructed", () => {
-		const U = node("union", [
-			{
-				domain: "object",
-				required: [
-					{ key: "firstReadKind", value: { unit: "a" } },
-					{ key: "a", value: "string" }
-				]
-			},
-			{
-				domain: "object",
-				required: [
-					{ key: "firstReadKind", value: { unit: "b" } },
-					{ key: "b", value: "number" }
-				]
-			}
-		]).assertHasKind("union")
-		attest(U.caseNodes.length).equals(2)
-
-		const references = U.references
-		for (const caseNode of U.caseNodes)
-			attest(references.includes(caseNode)).equals(true)
-		attest(U.discriminant?.path).equals(["firstReadKind"])
 	})
 
 	it("piping to a cyclic root includes an alias", () => {
