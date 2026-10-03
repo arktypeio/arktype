@@ -217,6 +217,7 @@ export class Traversal {
 	pipe(node: BaseNode, data: unknown): unknown {
 		if (node.allows(data)) {
 			if (!node.transforms) return data
+			const { received, receivedDepth } = this
 			const errorCount = this.currentErrorCount
 			// a piped node transforms a morph's output, which can share objects an earlier pass cached
 			const transformedByResolutionId = this.transformedByResolutionId
@@ -226,8 +227,19 @@ export class Traversal {
 			const result = this.transform(node, data)
 			this.transformedByResolutionId = transformedByResolutionId
 			this.tracksTransforms = tracksTransforms
+			this.received = received
+			this.receivedDepth = receivedDepth
 			return this.currentErrorCount > errorCount ? this.errors : result
 		}
+		this.applyPiped(node, data)
+		return this.errors
+	}
+
+	// only the piped node's own morphs are dropped
+	private applyPiped(node: BaseNode, data: unknown): void {
+		const { received, receivedDepth } = this
+		const queuedMorphs = (this.currentBranch ?? this).queuedMorphs
+		const queuedCount = queuedMorphs.length
 		this.receive(data)
 		// a morph's output is new data, so a cyclic node tracks it from its own root
 		if (node.includesAlias) {
@@ -235,8 +247,9 @@ export class Traversal {
 				applyCyclic(node.id, node.traverseApply, data, this.config).errors
 			)
 		} else node.traverseApply(data, this)
-		this.queuedMorphs = []
-		return this.errors
+		queuedMorphs.length = queuedCount
+		this.received = received
+		this.receivedDepth = receivedDepth
 	}
 
 	addMorphErrors(result: ArkErrorResult): void {

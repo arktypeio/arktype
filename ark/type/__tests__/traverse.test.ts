@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { ArkErrors, TraversalError } from "@ark/schema"
-import { scope, type } from "arktype"
+import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
 	it("divisible", () => {
@@ -260,6 +260,28 @@ age must be more than 18 (was 2)`)
 
 		attest(out.toString()).snap('must be valid (was {"foo":1})')
 		attest(callCount).equals(0)
+	})
+
+	it("leaves ctx as it was after a type is called with it", () => {
+		const calling = (t: Type, data: unknown) =>
+			type("unknown").narrow((_, ctx) => (t.internal(data, ctx), true))
+		const Unbanged = type("string").pipe((s, ctx) =>
+			s.startsWith("!") ? ctx.error("a string without !") : s
+		)
+		const T = type({
+			a: Unbanged,
+			b: calling(type("string"), 42),
+			c: calling(
+				type("object").pipe((o, ctx) => o),
+				{}
+			),
+			d: "number"
+		})
+
+		attest(T({ a: "!a", b: 1, c: 1, d: "x" }).toString())
+			.snap(`b must be a string (was a number)
+d must be a number (was a string)
+a must be a string without ! (was "!a")`)
 	})
 
 	it("ctx.path docs example", () => {
