@@ -509,19 +509,16 @@ class TraversalCompiler extends NodeCompiler {
 		this.linkage = linkage
 	}
 
-	override invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
-		const id = typeof node === "string" ? node : node.id
-		const reference = this.linkage.referencesById.get(id)
+	override invoke(node: BaseNode, opts?: InvokeOptions): string {
+		const reference = this.linkage.referencesById.get(node.id)
 		if (!reference) {
-			if (isNode(node)) {
-				this.linkage.referencesById.set(id, node)
-				this.linkage.reached.push(node)
-			}
+			this.linkage.referencesById.set(node.id, node)
+			this.linkage.reached.push(node)
 		} else if (this.linkage.reused.has(reference)) {
 			const kind = opts?.kind ?? this.traversalKind
 			this.linkage.dependencies.set(
 				reference[`traverse${kind}`],
-				this.referenceToId(id, { kind })
+				this.referenceToId(node.id, { kind })
 			)
 		} else if (this.linkage.unreached.delete(reference))
 			this.linkage.reached.push(reference)
