@@ -318,8 +318,8 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
 		implementation.defaults.actual ??= data => printable(data)
-		implementation.defaults.problem ??= ctx =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+		implementation.defaults.problem ??= ({ expected, actual }) =>
+			`must be ${expected}${actual ? ` (was ${actual})` : ""}`
 		implementation.defaults.message ??= ctx => {
 			if (ctx.path.length === 0) return ctx.problem
 			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
