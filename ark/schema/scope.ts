@@ -575,6 +575,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
+	private readonly boundGenerics = new Map<GenericRoot, GenericRoot>()
 
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
@@ -792,18 +793,22 @@ export abstract class BaseScope<$ extends {} = {}> {
 				reference.$ === this || reference.hasKind("alias") ?
 					reference
 				:	new (reference.constructor as any)(reference, this)
-		} else {
-			bound =
-				reference.$ === this ?
-					reference
-				:	(new GenericRoot(
-						reference.params as never,
-						reference.bodyDef,
-						reference.$,
-						this as never,
-						reference.hkt,
-						reference.alias
-					) as never)
+		} else if (reference.$ === this) bound = reference
+		else {
+			// a generic is bound once per scope, so its instantiations are memoized across references
+			let generic = this.boundGenerics.get(reference)
+			if (!generic) {
+				generic = new GenericRoot(
+					reference.params as never,
+					reference.bodyDef,
+					reference.$,
+					this as never,
+					reference.hkt,
+					reference.alias
+				)
+				this.boundGenerics.set(reference, generic)
+			}
+			bound = generic as never
 		}
 
 		return bound as never
