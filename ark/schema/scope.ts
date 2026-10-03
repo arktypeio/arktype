@@ -256,8 +256,6 @@ const scopesWithUnknownUnion = new WeakSet<BaseScope>()
 
 const rootScopeFnName = "function $"
 
-const reusableLeaves = new WeakSet<BaseNode>()
-
 // leaves read no object property, so sharing them can't make an inline cache polymorphic
 const isLeafIn = (
 	node: BaseNode,
@@ -294,7 +292,7 @@ const precompile = (
 	for (const node of references) linkage.referencesById.set(node.id, node)
 	const declared: BaseNode[] = []
 	for (const node of references) {
-		if (reusableLeaves.has(node) && isLeafIn(node, linkage.referencesById))
+		if (node.isReusableLeaf && isLeafIn(node, linkage.referencesById))
 			linkage.reused.add(node)
 		else if (
 			node.precompilation &&
@@ -315,10 +313,9 @@ const precompile = (
 
 	for (let i = 0; i < declared.length; i++) {
 		const node = declared[i]
-		if (node.precompilation) {
+		if (node.precompilation && (!owningScope || node.$ !== owningScope)) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
-			if (!owningScope || node.$ !== owningScope) continue
-			reusableLeaves.delete(node)
+			continue
 		}
 		const [traverseAllows, traverseApply, traverseTransform] =
 			compiledTraversals[i]
@@ -337,8 +334,8 @@ const precompile = (
 			node.rootApply = (data, onFail) =>
 				(node.rootApply = compileRootApply(node))(data, onFail)
 		}
-		if (linkage.closed && isLeafIn(node, linkage.referencesById))
-			reusableLeaves.add(node)
+		node.isReusableLeaf =
+			linkage.closed && isLeafIn(node, linkage.referencesById)
 	}
 
 	return precompilation
