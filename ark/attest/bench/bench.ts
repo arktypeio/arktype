@@ -87,7 +87,7 @@ let loopCount = 0
 
 const AsyncFunction = (async () => {}).constructor as FunctionConstructor
 
-// a loop compiled per bench gives its call site one fn to inline
+// each loop's source is unique, so V8 shares no feedback between benches
 const createLoop = (
 	isAsync: boolean
 ): ((fn: () => unknown, n: number) => unknown) =>
