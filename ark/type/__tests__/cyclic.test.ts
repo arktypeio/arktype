@@ -193,6 +193,38 @@ contextualize(() => {
 					}
 				})
 
+				it("transforms each path within its bounds", config => {
+					const node = scope(
+						{
+							node: {
+								v: "string.numeric.parse",
+								"left?": "node",
+								"right?": "node"
+							}
+						},
+						config
+					).export().node
+					const leaf = { v: "1" }
+					const tree = node.assert({ v: "0", left: leaf, right: leaf })
+
+					attest(tree.right).equals({ v: 1 })
+					attest(tree.left === tree.right).equals(false)
+
+					let deep: typeof node.inferIn = { v: "0", left: leaf, right: leaf }
+					for (let i = 0; i < 64; i++) deep = { v: "0", left: deep }
+					let last = node.assert(deep)
+					while (!last.right) last = last.left!
+
+					attest(last.right).equals({ v: 1 })
+					attest(last.left === last.right).equals(true)
+
+					const ring: typeof node.inferIn = { v: "0" }
+					ring.left = ring
+					const out = node.assert(ring)
+
+					attest(out.left === out).equals(true)
+				})
+
 				it("pipes cyclic output to a cyclic type", config => {
 					const $ = scope({ node: { v: "number", "next?": "node" } }, config)
 					const data: { v: unknown; next?: object } = { v: 0 }
