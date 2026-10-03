@@ -70,7 +70,6 @@ export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
 	private cache: {
-		stringify?: string
 		stringifyAncestors?: readonly string[]
 		json?: JsonArray
 	} = {}
@@ -93,9 +92,9 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		return this.cache.json
 	}
 
+	// the last ancestor is the path itself
 	stringify(): string {
-		if (this.cache.stringify) return this.cache.stringify
-		return (this.cache.stringify = stringifyPath(this))
+		return this.stringifyAncestors()[this.length]
 	}
 
 	stringifyAncestors(): readonly string[] {
