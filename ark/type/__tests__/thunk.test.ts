@@ -112,7 +112,35 @@ contextualize(() => {
 		attest(a.allows({ a: 1 })).equals(false)
 
 		const $: Scope = scope({ a: () => $.type({ "a?": "a" } as never) } as never)
-		attest(() => $.export()).throws(writeShallowCycleErrorMessage("a", ["a"]))
+		const types = $.export() as never as Record<string, Type>
+		attest(types.a.expression).snap("{ a?: $a }")
+
+		const shallow: Scope = scope({
+			a: () => shallow.type("a | string" as never)
+		} as never)
+		attest(() => shallow.export()).throws(
+			writeShallowCycleErrorMessage("a", ["a"])
+		)
+	})
+
+	it("thunk referenced by a definition it parses", () => {
+		const $: Scope = scope({
+			w: () => $.type("a | string" as never),
+			a: { v: "string", "w?": "w" }
+		} as never)
+		const { w } = $.export() as never as Record<string, Type>
+		attest(w.expression).snap("string | { v: string, w?: $w }")
+		attest(String(w({ v: "x", w: { v: 1 } }))).snap(
+			"w.v must be a string (was a number)"
+		)
+
+		const withDefault: Scope = scope({
+			w: () => withDefault.type({ x: ["a", "=", () => ({ n: 5 })] } as never),
+			a: { "n?": "a", "w?": "w" }
+		} as never)
+		attest(() => withDefault.export()).throws(
+			"Default for x.n must be an object (was a number)"
+		)
 	})
 
 	it("docs example", () => {
