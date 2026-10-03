@@ -168,6 +168,16 @@ b must be removed`)
 			)
 		})
 
+		it("declares a __proto__ key", () => {
+			const T = type({ ["__proto__"]: "string", "+": "reject" })
+			const data = JSON.parse('{"__proto__":"x"}')
+			attest(T(data)).equals(data)
+			attest(T.get("__proto__").expression).snap("string")
+			attest(T.or({ k: "1", "+": "reject" }).expression).snap(
+				"{ __proto__: string, + (undeclared): reject } | { k: 1, + (undeclared): reject }"
+			)
+		})
+
 		it("reject key from union", () => {
 			const O = type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey(
 				"reject"
