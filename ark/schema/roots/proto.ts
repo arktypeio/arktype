@@ -122,19 +122,16 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 	compiledCondition =
 		this.isArrayProto ? `Array.isArray(data)` : (
-			`data instanceof ${this.serializedConstructor}`
+			`data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
 		)
 	compiledNegation = `!(${this.compiledCondition})`
 
 	compile(js: NodeCompiler): void {
-		// builtins compile as globals, but other constructors and isValidDate need refs
-		if (this.builtinName && !this.requiresInvalidDateCheck)
-			return super.compile(js)
-
 		const condition =
 			this.requiresInvalidDateCheck ?
-				`${this.compiledCondition} && ${js.ref(isValidDate)}(data)`
-			:	`data instanceof ${js.ref(this.proto)}`
+				`data instanceof Date && ${js.ref(isValidDate)}(data)`
+			: this.builtinName ? this.compiledCondition
+			: `data instanceof ${js.ref(this.proto)}`
 		if (js.traversalKind === "Allows") js.return(condition)
 		else {
 			js.if(`!(${condition})`, () =>
