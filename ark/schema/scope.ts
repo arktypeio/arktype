@@ -1032,8 +1032,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
-				if (!this.resolvedConfig.jitless)
-					this.precompilation = precompile(this.references, this)
+				if (this.resolvedConfig.jitless) resolveReachedAliases(this.references)
+				else this.precompilation = precompile(this.references, this)
 				this.resolved = true
 			}
 		}
@@ -1147,8 +1147,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return node
 
 		bootstrapAliasReferences(node)
-		if (!node.precompilation && !this.resolvedConfig.jitless && jit)
-			precompile(node.references)
+		if (this.resolvedConfig.jitless) resolveReachedAliases(node.references)
+		else if (!node.precompilation && jit) precompile(node.references)
 		return node
 	}
 
@@ -1246,6 +1246,15 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 		}
 	}
 	return resolution
+}
+
+// compiling resolves every alias a node reaches, so jitless resolves them too, surfacing their errors at once
+const resolveReachedAliases = (references: readonly BaseNode[]) => {
+	const reached = new Set(references)
+	for (const node of reached) {
+		if (node.hasKind("alias"))
+			for (const reference of node.resolution.references) reached.add(reference)
+	}
 }
 
 const addReferences = (

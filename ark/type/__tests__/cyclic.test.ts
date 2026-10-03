@@ -483,6 +483,24 @@ contextualize(() => {
 					)
 				})
 
+				it("throws a cyclic intersection's error when it's exported", config => {
+					attest(() =>
+						scope(
+							{
+								a: { "next?": "b" },
+								d: { "+": "delete" },
+								b: { "next?": ["a", "&", { "either?": "d | b" }] }
+							},
+							config
+						).export()
+					).throws(
+						writeIndiscriminableMorphMessage(
+							"{ next?: $a&{ either?: $b | {} } }",
+							"{}"
+						)
+					)
+				})
+
 				it("pipes a root to itself", config => {
 					const t = scope({}, config).type("string.json.parse |> this" as never)
 
