@@ -267,6 +267,15 @@ b must be A (was "y")`)
 		const out: unknown = T(original)
 		attest(out === original).equals(true)
 		attest(original.a).equals("x")
+
+		const Received = type([
+			type.instanceOf(Response),
+			"&",
+			{ "a?": "string.trim" }
+		])
+		const response = Object.assign(new Response(), { a: " x " })
+		const received: unknown = Received(response)
+		attest(received === response).equals(true)
 	})
 
 	it("non-enumerable declared key", () => {

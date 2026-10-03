@@ -788,8 +788,6 @@ const copyContentsOf: {
 	Headers: (data: Headers) => new Headers(data),
 	Map: (data: Map<unknown, unknown>) => new Map(data),
 	RegExp: (data: RegExp) => new RegExp(data),
-	Request: (data: Request) => data.clone(),
-	Response: (data: Response) => data.clone(),
 	Set: (data: Set<unknown>) => new Set(data),
 	URL: (data: URL) => new URL(data)
 }
