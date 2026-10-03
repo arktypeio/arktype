@@ -6,6 +6,7 @@ import {
 	includes,
 	isArray,
 	isThunk,
+	ParseError,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -429,6 +430,12 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 		allowsInContext,
 		node.$.resolvedConfig
 	)
+}
+
+export type PrecompiledReferences = {
+	[k: `${string}Allows`]: TraverseAllows
+	[k: `${string}Apply`]: TraverseApply
+	[k: `${string}Optimistic`]: (data: unknown) => unknown
 }
 
 type PrecompiledTraversals = [
@@ -1336,6 +1343,18 @@ export const bootstrapRootScope = (parseIntrinsics: () => void): void =>
 		rootSchemaScope.export()
 		parseIntrinsics()
 	})
+
+export const parseAsSchema = (
+	def: unknown,
+	opts?: BaseParseOptions
+): BaseRoot | ParseError => {
+	try {
+		return rootSchema(def as RootSchema, opts) as never
+	} catch (e) {
+		if (e instanceof ParseError) return e
+		throw e
+	}
+}
 
 export type RootExportCache = Record<
 	string,
