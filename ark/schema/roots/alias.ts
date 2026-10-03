@@ -31,11 +31,14 @@ export declare namespace Alias {
 		extends BaseNormalizedSchema {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
+		readonly operands?: readonly BaseRoot[]
 	}
 
 	export interface Inner<alias extends string = string> {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
+		// an operation's operands, identified together by its reference
+		readonly operands?: readonly BaseRoot[]
 	}
 
 	export interface Declaration
@@ -71,17 +74,24 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 					return s.startsWith("$") ? s : `$ark.${s}`
 				}
 			},
-			resolve: {}
+			resolve: {
+				serialize: () => null
+			},
+			operands: {
+				child: false,
+				serialize: () => null
+			}
 		},
 		normalize: normalizeAliasSchema,
+		// an alias is identified by its reference alone
+		finalizeInnerJson: json => ({ reference: json.reference }),
 		defaults: {
 			description: node => node.expression
 		}
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
-	// a scope's alias is displayed by name, though it references a context id
-	readonly expression: string = expressionOf(this.reference)
+	readonly expression: string = expressionOf(this)
 	readonly structure = undefined
 	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those
 	closesCycle = true
@@ -98,6 +108,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			const path = [...cycle.slice(start), ...cycle.slice(0, start)]
 			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
 		}
+		const isFinal = !inProgress.definitions && !inProgress.resolutions
 		this.resolving = true
 		resolvingAliases.push(this)
 		inProgress.resolutions++
@@ -106,8 +117,9 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			// an alias read while its definition is parsed resolves to itself
 			if (resolution.hasKind("alias")) resolution = resolution.resolution
 			// not cached before the scope resolves, since resolving binds references,
-			// nor for a thunk, which may reflect an alias mid-parse
-			if (this.$.resolved && !this.resolve) this._resolution = resolution
+			// nor for a thunk until no definition is open, since it may reflect an alias mid-parse
+			if (this.resolve ? isFinal : this.$.resolved)
+				this._resolution = resolution
 			return resolution
 		} finally {
 			this.resolving = false
@@ -235,12 +247,18 @@ Resolution: ${printable(resolution)}`)
 	}
 }
 
-const expressionOf = (reference: string): string => {
-	const referenced = nodesByRegisteredId[reference as NodeId]
+// a scope's alias is displayed by name and an operation by its operands, though each is referenced by id
+const expressionOf = (node: AliasNode): string => {
+	if (node.operands) {
+		return node.operands
+			.map(operand => operand.expression)
+			.join(node.reference.includes("=>") ? "=>" : "&")
+	}
+	const referenced = nodesByRegisteredId[node.reference as NodeId]
 	if (hasArkKind(referenced, "root")) return referenced.expression
 	return hasArkKind(referenced, "context") && referenced.alias ?
 			`$${referenced.alias}`
-		:	reference
+		:	node.reference
 }
 
 const nameOf = (node: AliasNode): string =>
@@ -269,6 +287,17 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	return throwInternalError(
 		`Unexpected shallow alias in ${node.kind} node ${node.expression}`
 	)
+}
+
+// a node resolves without parsing once each alias it holds outside a structural value references a resolved definition
+export const isResolvable = (node: BaseRoot): boolean => {
+	if (!node.includesShallowAlias) return true
+	if (node.hasKind("union")) return node.branches.every(isResolvable)
+	if (node.hasKind("morph"))
+		return !node.inner.in || isResolvable(node.inner.in)
+	if (!node.hasKind("alias") || resolvingAliases.includes(node)) return false
+	const referenced = nodesByRegisteredId[node.reference as NodeId]
+	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
 
 export const writeShallowCycleErrorMessage = (

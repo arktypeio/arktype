@@ -682,13 +682,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		})
 	}
 
-	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): Alias.Node {
+	lazilyResolve(
+		resolve: () => BaseRoot,
+		reference: string = registerNodeId("synthetic"),
+		operands?: readonly BaseRoot[]
+	): Alias.Node {
 		return this.node(
 			"alias",
-			{
-				reference: syntheticAlias ?? "synthetic",
-				resolve
-			},
+			operands ? { reference, resolve, operands } : { reference, resolve },
 			{ prereduced: true }
 		)
 	}
