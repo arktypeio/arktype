@@ -56,12 +56,6 @@ export const intersectProps = (
 	})
 }
 
-export const writeDefaultIntersectionMessage = (
-	lValue: unknown,
-	rValue: unknown
-): string =>
-	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`
-
 export const required: setImplementationOf<Required.Declaration> = {
 	intersections: {
 		required: intersectProps,
@@ -85,3 +79,9 @@ export const optional: setImplementationOf<Optional.Declaration> = {
 		optional: intersectProps
 	}
 }
+
+export const writeDefaultIntersectionMessage = (
+	lValue: unknown,
+	rValue: unknown
+): string =>
+	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`
