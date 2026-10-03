@@ -235,4 +235,22 @@ contextualize(() => {
 			"kids.b.n must be a string (was a number)"
 		)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1476
+	it("exports unions whose cyclic branches intersect", () => {
+		const types = scope({
+			leaf: { kind: "'leaf'" },
+			tt: { kind: "'and'", left: "t", right: "t" },
+			tf: { kind: "'and'", left: "t", right: "f" },
+			ff: { kind: "'and'", left: "f", right: "f" },
+			ft: { kind: "'and'", left: "f", right: "t" },
+			t: "leaf | tt | tf",
+			f: "leaf | ff | ft"
+		}).export()
+		const leaf = { kind: "leaf" } as const
+		const data = { kind: "and", left: leaf, right: leaf } as const
+
+		attest(types.t(data)).equals(data)
+		attest(types.f.allows({ ...data, right: { kind: "or" } })).equals(false)
+	})
 })
