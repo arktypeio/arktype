@@ -76,6 +76,7 @@ export class Traversal {
 	private resolving: ResolvingFrame[] | undefined
 	private resolvingDepth = 0
 	private untrackedVisits = 0
+	private recordedFailure = false
 	private enteredCount = 0
 	// the earliest entered resolution still in progress that the current one assumed valid
 	private earliestAssumed = Number.POSITIVE_INFINITY
@@ -284,7 +285,9 @@ export class Traversal {
 
 	// undefined once entered, else whether data is known or assumed valid
 	enterResolution(id: string, data: unknown): boolean | undefined {
-		const states = this.seen[id]
+		// untracked, every state is a failure, so none is looked up before the first
+		const states =
+			this.tracksResolutions || this.recordedFailure ? this.seen[id] : undefined
 		const state = states?.get(data)
 		if (state !== undefined) {
 			if (typeof state === "number") {
@@ -307,14 +310,12 @@ export class Traversal {
 			}
 			// its errors were discarded with a branch, or belong at this shortest path, so it's traversed again
 		}
-		if (!this.tracksResolutions) {
-			if (
-				this.resolvingDepth >= maxAliasDepth ||
-				++this.untrackedVisits > maxAliasVisits
-			)
-				throw untrackedBound
-		} else
-			(states ?? (this.seen[id] = new Map())).set(data, ++this.enteredCount)
+		if (
+			!this.tracksResolutions &&
+			(this.resolvingDepth >= maxAliasDepth ||
+				++this.untrackedVisits > maxAliasVisits)
+		)
+			throw untrackedBound
 		// frames are reused by depth, so entering doesn't allocate
 		const frame = ((this.resolving ??= [])[this.resolvingDepth++] ??= {
 			id,
@@ -327,36 +328,34 @@ export class Traversal {
 		})
 		frame.id = id
 		frame.data = data
-		frame.entered = this.enteredCount
 		frame.errorCount = this.currentErrorCount
+		if (!this.tracksResolutions) return
+		;(states ?? (this.seen[id] = new Map())).set(data, ++this.enteredCount)
+		frame.entered = this.enteredCount
 		frame.outerReachedInvalid = this.reachedInvalid
 		this.reachedInvalid = undefined
-		if (this.tracksResolutions) {
-			frame.outerEarliestAssumed = this.earliestAssumed
-			frame.assumedLength = (this.assumed ??= []).length
-			this.earliestAssumed = Number.POSITIVE_INFINITY
-		}
+		frame.outerEarliestAssumed = this.earliestAssumed
+		frame.assumedLength = (this.assumed ??= []).length
+		this.earliestAssumed = Number.POSITIVE_INFINITY
 		return
 	}
 
 	// whether data is valid, given Allows' result or, in Apply, the errors since it was entered
 	exitResolution(allowed?: boolean): boolean {
 		const frame = this.resolving![--this.resolvingDepth]
+		if (!this.tracksResolutions) return allowed ?? this.exitUntracked(frame)
 		const reachedInvalid = this.reachedInvalid
 		this.reachedInvalid = frame.outerReachedInvalid
 		const valid =
 			allowed ??
 			(reachedInvalid === undefined &&
 				this.currentErrorCount === frame.errorCount)
-		if (valid && !this.tracksResolutions) return true
 		const data = frame.data
-		const states = this.seen[frame.id]
+		const states = this.seen[frame.id]!
 		// a primitive has no identity, so each place it's reached reports its own errors
 		if (typeof data === "object" ? data === null : typeof data !== "function") {
-			if (this.tracksResolutions) {
-				this.earliestAssumed = frame.outerEarliestAssumed
-				states!.delete(data)
-			}
+			this.earliestAssumed = frame.outerEarliestAssumed
+			states.delete(data)
 			return valid
 		}
 		const state: ResolutionState =
@@ -371,42 +370,54 @@ export class Traversal {
 					pathLength:
 						this.currentBranch ? Number.POSITIVE_INFINITY : this.path.length
 				}
-		if (this.tracksResolutions) {
-			const earliestAssumed = this.earliestAssumed
-			this.earliestAssumed = frame.outerEarliestAssumed
-			const assumed = this.assumed!
-			if (valid && earliestAssumed < frame.entered) {
-				assumed.push(states, data, this.path.length)
-				if (earliestAssumed < this.earliestAssumed)
-					this.earliestAssumed = earliestAssumed
-				return true
-			}
-			// nothing it assumed is in progress, so each result that assumed it settles with it
-			for (let i = frame.assumedLength; i < assumed.length; i += 3) {
-				;(assumed[i] as Map<unknown, ResolutionState>).set(
-					assumed[i + 1],
-					typeof state === "boolean" || !state.reported ?
-						state
-					:	{
-							error: state.error,
-							reported: true,
-							pathLength: assumed[i + 2] as number
-						}
-				)
-			}
-			assumed.length = frame.assumedLength
-			states!.set(data, state)
-		} else if (typeof state === "object")
-			(states ?? (this.seen[frame.id] = new Map())).set(data, state)
+		const earliestAssumed = this.earliestAssumed
+		this.earliestAssumed = frame.outerEarliestAssumed
+		const assumed = this.assumed!
+		if (valid && earliestAssumed < frame.entered) {
+			assumed.push(states, data, this.path.length)
+			if (earliestAssumed < this.earliestAssumed)
+				this.earliestAssumed = earliestAssumed
+			return true
+		}
+		// nothing it assumed is in progress, so each result that assumed it settles with it
+		for (let i = frame.assumedLength; i < assumed.length; i += 3) {
+			;(assumed[i] as Map<unknown, ResolutionState>).set(
+				assumed[i + 1],
+				typeof state === "boolean" || !state.reported ?
+					state
+				:	{
+						error: state.error,
+						reported: true,
+						pathLength: assumed[i + 2] as number
+					}
+			)
+		}
+		assumed.length = frame.assumedLength
+		states.set(data, state)
 		if (typeof state === "object" && state.reported)
 			this.reachedInvalid ??= state
 		return valid
 	}
 
+	// untracked, a failed object is recorded so that reaching it again doesn't report it twice
+	private exitUntracked(frame: ResolvingFrame): boolean {
+		if (this.currentErrorCount === frame.errorCount) return true
+		if (!hasDomain(frame.data, "object")) return false
+		const branch = this.currentBranch
+		;(this.seen[frame.id] ??= new Map()).set(frame.data, {
+			error: branch ? branch.error! : this.errors[this.errors.length - 1],
+			reported: !branch,
+			pathLength: branch ? Number.POSITIVE_INFINITY : this.path.length
+		})
+		this.recordedFailure = true
+		return false
+	}
+
 	get currentErrorCount(): number {
-		return this.currentBranch ?
-				this.currentBranch.errorCount
-			:	this.errors.count
+		const branches = this.branches
+		return branches.length === 0 ?
+				this.errors.count
+			:	branches[branches.length - 1].errorCount
 	}
 
 	get failFast(): boolean {
