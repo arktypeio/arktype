@@ -19,8 +19,15 @@ export const bundle = (): void => {
 	const entryPoints = publicEntryPoints()
 	const ownFiles = flattenIntoInternal(entryPoints, perModuleJs)
 	// one build for all entries, so a module several import evaluates once
-	const { outputFiles } = buildSync({
-		entryPoints,
+	const { outputFiles } = buildSync({ ...buildOptions(), entryPoints })
+	for (const path of perModuleJs) rmRf(path)
+	for (const file of outputFiles)
+		writeFile(file.path, nameSelfReferencingClasses(file.text))
+	for (const [path, js] of Object.entries(ownFiles)) writeFile(path, js)
+}
+
+const buildOptions = () =>
+	({
 		outdir: fromCwd("out"),
 		bundle: true,
 		splitting: true,
@@ -28,14 +35,10 @@ export const bundle = (): void => {
 		platform: "neutral",
 		packages: "external",
 		charset: "utf8",
+		absWorkingDir: process.cwd(),
 		write: false,
 		logLevel: "warning"
-	})
-	for (const path of perModuleJs) rmRf(path)
-	for (const file of outputFiles)
-		writeFile(file.path, nameSelfReferencingClasses(file.text))
-	for (const [path, js] of Object.entries(ownFiles)) writeFile(path, js)
-}
+	}) as const
 
 const publicEntryPoints = (): string[] =>
 	Object.entries<string | { default: string }>(
@@ -64,21 +67,13 @@ const flattenIntoInternal = (
 			.map(path => `export * from ${specifierOf(internal, path)};\n`)
 			.join("")
 	const { metafile, outputFiles } = buildSync({
+		...buildOptions(),
 		entryPoints: perModuleJs,
 		stdin: {
 			contents: starring([main, ...modules]),
 			resolveDir: fromCwd("out")
 		},
-		outdir: fromCwd("out"),
-		bundle: true,
-		splitting: true,
-		format: "esm",
-		platform: "neutral",
-		packages: "external",
-		write: false,
-		metafile: true,
-		absWorkingDir: process.cwd(),
-		logLevel: "warning"
+		metafile: true
 	})
 	const outputs = Object.entries(metafile.outputs)
 	const namesByPath = Object.fromEntries(
