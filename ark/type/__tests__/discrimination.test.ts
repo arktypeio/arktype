@@ -637,4 +637,17 @@ contextualize(() => {
 		const A = type({ a: "string" })
 		attest(reads(type({ v: A.or("null") }))).equals(reads(type({ v: A })))
 	})
+
+	it("doesn't discriminate on a key only an index signature constrains", () => {
+		const T = type({ a: "'x'", "[string]": "'x'" }).or({
+			kind: "'a'",
+			a: "string"
+		})
+
+		attest(T.allows({ a: "x" })).equals(true)
+		attest(T({ a: "x" })).equals({ a: "x" })
+		attest(T({ kind: "b", a: "y" }).toString()).snap(
+			'kind must be "a" (was "b") or a must be "x" (was "y")'
+		)
+	})
 })
