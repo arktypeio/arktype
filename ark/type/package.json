@@ -70,8 +70,8 @@
 		"testSchemaFirst": "ts ./__tests__/integration/testSchemaFirst.ts"
 	},
 	"dependencies": {
-		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",
+		"@ark/schema": "workspace:*",
 		"arkregex": "workspace:*",
 		"arksets": "workspace:*"
 	},
