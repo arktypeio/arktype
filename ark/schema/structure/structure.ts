@@ -580,10 +580,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		out: object,
 		ctx: InternalTraversal
 	): object {
-		for (const node of this.defaultable) {
-			if (node.key in data) continue
-			if (out === data) out = this.copy(data)
-			node.defaultValueMorph(out as never, ctx as never)
+		for (let i = 0; i < this.defaultable.length; i++) {
+			if (!(this.defaultable[i].key in data)) {
+				if (out === data) out = this.copy(data)
+				this.defaultable[i].defaultValueMorph(out as never, ctx as never)
+			}
 		}
 		const sequence = this.sequence
 		if (
