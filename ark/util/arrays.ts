@@ -81,6 +81,26 @@ export type join<
 		>
 	:	result
 
+export const getPath = (root: unknown, path: string[]): unknown => {
+	let result: any = root
+	for (const segment of path) {
+		if (typeof result !== "object" || result === null) return undefined
+
+		result = result[segment]
+	}
+	return result
+}
+
+export const intersectUniqueLists = <item>(
+	l: readonly item[],
+	r: readonly item[]
+): item[] => {
+	const intersection = [...l]
+	for (const item of r) if (!l.includes(item)) intersection.push(item)
+
+	return intersection
+}
+
 export type filter<t extends array, constraint, result extends unknown[] = []> =
 	t extends readonly [infer head, ...infer tail] ?
 		filter<

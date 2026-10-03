@@ -102,6 +102,8 @@ export type narrow<t> =
 	: t extends readonly unknown[] ? narrowTuple<t>
 	: { [k in keyof t]: narrow<t[k]> }
 
+export const narrow = <t>(t: narrow<t>): t => t as t
+
 /** primitive key used to represent an inferred type at compile-time */
 export const inferred = noSuggest("arkInferred")
 
