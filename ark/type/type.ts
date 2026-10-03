@@ -1,5 +1,4 @@
 import {
-	$ark,
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
@@ -43,12 +42,12 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tupleExpressions.ts"
-import type {
-	ArkTypeRegistry,
-	InternalScope,
-	ModuleParser,
-	Scope,
-	ScopeParser
+import {
+	$arkTypeRegistry,
+	type InternalScope,
+	type ModuleParser,
+	type Scope,
+	type ScopeParser
 } from "./scope.ts"
 import type { BaseType } from "./variants/base.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
@@ -275,16 +274,14 @@ export class InternalTypeParser extends Callable<
 			},
 			{ attach: attach as never }
 		)
-		// bound on first access since a parser reads few, then finalized if its
-		// scope has resolved, which compiled only nodes bound before
-		const typeAttachments = ($ark as ArkTypeRegistry).typeAttachments
+		// also won't be defined during bootstrapping
+		const typeAttachments = $arkTypeRegistry.typeAttachments
 		for (const k in typeAttachments) {
 			defineLazily(this, k, () => {
 				const bound = $.bindReference(
-					typeAttachments[k as keyof typeof typeAttachments] as {} as
-						| BaseRoot
-						| GenericRoot
+					typeAttachments[k as never] as BaseRoot | GenericRoot
 				)
+				// a resolved scope has already compiled the nodes bound before it
 				return $.resolved && hasArkKind(bound, "root") ?
 						$.finalize(bound)
 					:	bound
