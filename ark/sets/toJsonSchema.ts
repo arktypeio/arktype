@@ -53,7 +53,7 @@ export const toJsonSchema = (
 	return schema
 }
 
-export const toJsonSchemaRecurse = (
+const toJsonSchemaRecurse = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
 ): JsonSchema => {
@@ -67,7 +67,7 @@ export const toJsonSchemaRecurse = (
 	return toResolvedJsonSchema(node, ctx)
 }
 
-export const alwaysExpandJsonSchema = (node: BaseRoot): boolean =>
+const alwaysExpandJsonSchema = (node: BaseRoot): boolean =>
 	node.isBasis() ||
 	node.kind === "alias" ||
 	(node.hasKind("union") && node.isBoolean)
