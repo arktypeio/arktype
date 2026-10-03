@@ -142,6 +142,18 @@ contextualize(() => {
 		attest(original.a).equals(" a ")
 	})
 
+	it("copies an object whose prototype's constructor isn't a builtin", () => {
+		const T = type({ a: "number = 1" })
+		for (const constructor of [
+			function constructor() {},
+			Object.prototype.toString
+		]) {
+			const original = Object.create({ constructor })
+			attest(T.assert(original).a).equals(1)
+			attest(Object.keys(original)).equals([])
+		}
+	})
+
 	it("copies a builtin with its contents", () => {
 		const T = type(["Date", "&", { b: "number = 1" }])
 

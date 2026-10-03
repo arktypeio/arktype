@@ -181,7 +181,7 @@ export const objectKindOf = <data extends object>(
 	while (
 		prototype?.constructor &&
 		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
-			!(data instanceof builtinConstructors[prototype.constructor.name]))
+			builtinConstructors[prototype.constructor.name].prototype !== prototype)
 	)
 		prototype = Object.getPrototypeOf(prototype)
 
