@@ -630,6 +630,22 @@ contextualize(() => {
 		).equals({ extra: "e", inner: { v: 1 } })
 	})
 
+	// https://github.com/arktypeio/arktype/issues/930
+	it("parses a cyclic type's json back", () => {
+		const types = scope({
+			node: { v: "number", "next?": "node | null" },
+			user: { friends: "group[]" },
+			group: { members: "user[]" }
+		}).export()
+
+		attest(type.schema(types.node.json as never).equals(types.node)).equals(
+			true
+		)
+		attest(type.schema(types.user.json as never).equals(types.user)).equals(
+			true
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/928
 	it("compares cyclic types by their unfolding", () => {
 		const types = scope({
