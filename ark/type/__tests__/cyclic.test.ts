@@ -454,6 +454,30 @@ contextualize(() => {
 		).equals({ extra: "e", inner: { v: 1 } })
 	})
 
+	// https://github.com/arktypeio/arktype/issues/928
+	it("compares cyclic types by their unfolding", () => {
+		const types = scope({
+			user: { friends: "user[]", name: "string" },
+			peer: { friends: "peer[]", name: "string" },
+			list: { v: "number", "next?": "list" },
+			listPos: { v: "number > 0", "next?": "listPos" },
+			field: { type: "'field'", value: "string" },
+			group: { type: "'group'", parts: "part[]" },
+			part: "field | group"
+		}).export()
+
+		attest(types.user.equals(types.peer)).equals(true)
+		attest(types.list.equals(type({ v: "number", "next?": "this" }))).equals(
+			true
+		)
+		attest(types.listPos.extends(types.list)).equals(true)
+		attest(types.list.extends(types.listPos)).equals(false)
+		attest(types.list.or(types.listPos).expression).snap(
+			"{ v: number, next?: $list }"
+		)
+		attest(types.group.extends(types.part)).equals(true)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1237
 	it("instantiates a generic with a cyclic alias", () => {
 		const node = scope({
