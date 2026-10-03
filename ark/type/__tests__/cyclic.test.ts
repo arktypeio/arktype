@@ -803,6 +803,21 @@ swap.swap.order[1] must be "on" (was "off")`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1026
+	it("filters a definition in progress once it resolves", () => {
+		const types = scope({
+			a: { v: "number", "n?": "Extract<a | string, object>" },
+			b: { "a?": "Exclude<a | string, object>" }
+		}).export()
+
+		attest(types.a.expression).snap(
+			"{ v: number, n?: Extract<$a | string, object> }"
+		)
+		attest(types.a.allows({ v: 1, n: { v: 2 } })).equals(true)
+		attest(types.a.allows({ v: 1, n: "s" })).equals(false)
+		attest(types.b.allows({ a: "s" })).equals(true)
+		attest(types.b.allows({ a: { v: 1 } })).equals(false)
+	})
+
 	it("references a definition in progress only as a structural value", () => {
 		const types = scope({
 			Field: { type: "'field'", value: "string >= 1" },
