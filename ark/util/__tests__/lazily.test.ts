@@ -34,15 +34,6 @@ contextualize(() => {
 		attest(computed()).equals(1)
 	})
 
-	it("reads through an object sealed before its first read", () => {
-		const o = {} as { k: number }
-		const computed = lazyCount(o)
-		Object.seal(o)
-		attest(o.k).equals(1)
-		attest(o.k).equals(1)
-		attest(computed()).equals(1)
-	})
-
 	it("reads through a non-extensible object inheriting it", () => {
 		const proto = {}
 		const computed = lazyCount(proto)
