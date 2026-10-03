@@ -313,9 +313,69 @@ contextualize(() => {
 						"nodes[0].nodes must be an array (was missing) or nodes[0].editableA must be a number (was missing)"
 					)
 				})
+
+				// https://github.com/arktypeio/arktype/issues/944
+				it("reads the input and output of a cyclic morph", config => {
+					const node = scope(
+						{ node: { n: "string.numeric.parse", "next?": "node" } },
+						config
+					).export().node
+
+					attest(node.in({ n: "1", next: { n: "2" } })).equals({
+						n: "1",
+						next: { n: "2" }
+					})
+					attest(node.out({ n: 1, next: { n: 2 } })).equals({
+						n: 1,
+						next: { n: 2 }
+					})
+					attest(node.out({ n: 1, next: { n: "2" } }).toString()).snap(
+						"next.n must be a number (was a string)"
+					)
+				})
+
+				// https://github.com/arktypeio/arktype/issues/944
+				it("transforms a cyclic type through its aliases", config => {
+					const node = scope(
+						{ node: { v: "string", "next?": "node" } },
+						config
+					).export().node
+					const strict = node.onDeepUndeclaredKey("reject")
+					const described = node.configure(
+						{ description: "a described node" },
+						"references"
+					)
+
+					attest(
+						strict({ v: "a", next: { v: "b", extra: true } }).toString()
+					).snap("next.extra must be removed")
+					attest(described({ v: "a", next: 5 }).toString()).snap(
+						"next must be a described node (was a number)"
+					)
+				})
 			}
 		)
 	}
+
+	// https://github.com/arktypeio/arktype/issues/944
+	it("references the input and output of a cyclic morph by alias", () => {
+		const types = scope({
+			user: { id: "string.numeric.parse", groups: "group[]" },
+			group: { title: "string", members: "user[]" }
+		}).export()
+		const data = { id: "1", groups: [{ title: "t", members: [] }] }
+
+		attest(types.user.out.expression).snap(
+			"{ groups: Out<$group>[], id: number }"
+		)
+		attest(types.group.in.expression).snap(
+			"{ members: In<$user>[], title: string }"
+		)
+		attest(types.group.in({ title: "t", members: [data] })).equals({
+			title: "t",
+			members: [data]
+		})
+	})
 
 	it("references a component's members by alias", () => {
 		const types = scope({

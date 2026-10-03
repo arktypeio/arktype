@@ -71,5 +71,8 @@ export const inProgress: { definitions: number; resolutions: number } = {
 	resolutions: 0
 }
 
+export const isResolutionFinal = (): boolean =>
+	!inProgress.definitions && !inProgress.resolutions
+
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue

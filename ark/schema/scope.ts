@@ -843,17 +843,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
 		const context = nodesByRegisteredId[pending.id] as BaseParseContext
 		inProgress.resolutions++
-		let node: BaseRoot
 		try {
-			node = resolveShallowAliases(pending)
+			let node = resolveShallowAliases(pending)
+			if (context.isReferencedById) {
+				node = withId(node, pending.id)
+				nodesByRegisteredId[pending.id] = node
+			} else delete nodesByRegisteredId[pending.id]
+			return (this.resolutions[name] = node)
 		} finally {
 			inProgress.resolutions--
 		}
-		if (context.isReferencedById) {
-			node = withId(node, pending.id)
-			nodesByRegisteredId[pending.id] = node
-		} else delete nodesByRegisteredId[pending.id]
-		return (this.resolutions[name] = node)
 	}
 
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
@@ -895,19 +894,24 @@ export abstract class BaseScope<$ extends {} = {}> {
 					return this.aliasOf(v)
 				}
 				v.phase = "resolved"
-				// it reaches no definition still open, so its component closes with it
-				if (v.lowlink === v.index) {
-					for (const member of openMembers.splice(membersStart)) {
-						member.phase = "resolved"
-						member.$.resolveContext(member.alias!, member, member.resolution!)
-						delete member.resolution
+				inProgress.resolutions++
+				try {
+					// it reaches no definition still open, so its component closes with it
+					if (v.lowlink === v.index) {
+						for (const member of openMembers.splice(membersStart)) {
+							member.phase = "resolved"
+							member.$.resolveContext(member.alias!, member, member.resolution!)
+							delete member.resolution
+						}
 					}
+					if (node.includesShallowAlias) {
+						node = withId(node, v.id)
+						return this.resolvePending(name, (this.resolutions[name] = node))
+					}
+					return this.resolveContext(name, v, node)
+				} finally {
+					inProgress.resolutions--
 				}
-				if (node.includesShallowAlias) {
-					node = withId(node, v.id)
-					return this.resolvePending(name, (this.resolutions[name] = node))
-				}
-				return this.resolveContext(name, v, node)
 			}
 			return throwInternalError(
 				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
@@ -1088,15 +1092,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
 		let node = this.bindReference(this.parseOpenDefinition(def, ctx))
-		if (node.includesShallowAlias && !inProgress.definitions)
-			node = resolveShallowAliases(node)
+		inProgress.resolutions++
+		try {
+			if (node.includesShallowAlias && !inProgress.definitions)
+				node = resolveShallowAliases(node)
 
-		// if the node is recursive e.g. { box: "this" }, we need to make sure it
-		// has the original id from context so that its references compile correctly
-		if (node.isCyclic) node = withId(node, ctx.id)
+			// if the node is recursive e.g. { box: "this" }, we need to make sure it
+			// has the original id from context so that its references compile correctly
+			if (node.isCyclic) node = withId(node, ctx.id)
 
-		if (ctx.isReferencedById) nodesByRegisteredId[ctx.id] = node
-		else delete nodesByRegisteredId[ctx.id]
+			if (ctx.isReferencedById) nodesByRegisteredId[ctx.id] = node
+			else delete nodesByRegisteredId[ctx.id]
+		} finally {
+			inProgress.resolutions--
+		}
 
 		return node
 	}
