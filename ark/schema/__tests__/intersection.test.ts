@@ -26,4 +26,19 @@ contextualize(() => {
 		attest(n.allows(4)).snap(false)
 		attest(n.allows(7)).snap(false)
 	})
+
+	it("narrows an index signature to optional props", () => {
+		const L = rootSchema({
+			domain: "object",
+			optional: [{ key: "a", value: "number" }],
+			undeclared: "reject"
+		})
+		const R = rootSchema({
+			domain: "object",
+			index: [{ signature: "string", value: "number" }]
+		})
+		const T = L.and(R)
+		attest(T.expression).snap("{ a?: number, + (undeclared): reject }")
+		attest(T.allows({})).equals(true)
+	})
 })

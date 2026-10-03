@@ -5,7 +5,6 @@ import {
 	writeDuplicateKeyMessage,
 	type BaseScope,
 	type OptionalNode,
-	type Prop,
 	type Structure,
 	type nodeOfKind
 } from "@ark/schema"
@@ -47,7 +46,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// props an index signature narrows to once the other side's keys are
 			// known. they can't be added to the side they came from, where a prop
 			// with the same key would never be merged with them
-			const derived: nodeOfKind<Prop.Kind>[] = []
+			const derived: OptionalNode[] = []
 			if (l.undeclared) {
 				const lKey = l.keyof()
 				for (const k of r.requiredKeys) {
@@ -71,7 +70,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						derived.push(...(normalized.required ?? []))
+						for (const prop of normalized.required ?? [])
+							derived.push(ctx.$.node("optional", prop.inner))
 						derived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
@@ -100,7 +100,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						derived.push(...(normalized.required ?? []))
+						for (const prop of normalized.required ?? [])
+							derived.push(ctx.$.node("optional", prop.inner))
 						derived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
