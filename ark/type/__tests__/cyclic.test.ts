@@ -772,6 +772,18 @@ contextualize(() => {
 		).throws(writeUnsatisfiedParameterConstraintMessage("T", "object", "$b"))
 	})
 
+	it("checks a union generic argument once it resolves", () => {
+		const types = scope({
+			"box<t extends object | null>": { "v?": "t" },
+			a: { "next?": "box<a | null>" }
+		}).export()
+
+		attest(types.a.expression).snap("{ next?: box<$a | null> }")
+		attest(types.a({ next: { v: { next: { v: 1 } } } }).toString()).snap(
+			"next.v.next.v must be an object or null (was a number)"
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1082
 	it("instantiates a recursive generic once per argument set", () => {
 		const types = scope({
