@@ -119,7 +119,7 @@ const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
 
 	const morph = computeDefaultValueMorph(node.key, node.value, node.default)
 	// a value's copies in other scopes share its id, so a morph calling it is pinned
-	return node.value.includesTransform ?
+	return node.value.includesTransform || node.value.includesAlias ?
 			defaultableMorphCache.pin(cacheKey, morph)
 		:	defaultableMorphCache.set(cacheKey, morph)
 }
@@ -131,9 +131,13 @@ export const computeDefaultValueMorph = (
 ): Morph<any> => {
 	if (typeof defaultInput === "function") {
 		// if the value has a morph, pipe context through it
-		return value.includesTransform ?
+		return value.includesTransform || value.includesAlias ?
 				(data, ctx) => {
-					data[key] = traverseKey(key, () => value(defaultInput(), ctx), ctx)
+					// whether an alias transforms is known once its scope resolves
+					data[key] =
+						value.transforms ?
+							traverseKey(key, () => value(defaultInput(), ctx), ctx)
+						:	defaultInput()
 					return data
 				}
 			:	data => {

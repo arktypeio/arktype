@@ -595,6 +595,21 @@ contextualize(() => {
 						"next must be a described node (was a number)"
 					)
 				})
+
+				it("transforms a default through an alias", config => {
+					const types = scope(
+						{
+							a: { "b?": "b" },
+							b: { v: "string.trim", "a?": "a" },
+							holder: { a: ["a", "=", () => ({ b: { v: " d " } })] },
+							tuple: [["a", "=", () => ({ b: { v: " e " } })]]
+						},
+						config
+					).export()
+
+					attest(types.holder({})).equals({ a: { b: { v: "d" } } })
+					attest(types.tuple([])).equals([{ b: { v: "e" } }])
+				})
 			}
 		)
 	}
