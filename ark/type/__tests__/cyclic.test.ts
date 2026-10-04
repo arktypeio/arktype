@@ -915,6 +915,24 @@ contextualize(() => {
 					).snap("n.z must be removed")
 				})
 
+				it("deep config of a disjoint cyclic morph union", config => {
+					const { a0 }: Record<string, Type> = scope(
+						{
+							a0: "Record<string, a1 | a2>",
+							a1: { p0: "string = 'd'", "p1?": "string" },
+							a2: { kind: "'a2'", "p0?": "a0", p1: "a2 | null" }
+						} as never,
+						config
+					).export() as never
+
+					attest(
+						a0.configure({ description: "x" }, "references")({ k: { p1: "s" } })
+					).equals({ k: { p0: "d", p1: "s" } })
+					attest(
+						a0.onDeepUndeclaredKey("delete")({ k: { p1: "s", z: 1 } })
+					).equals({ k: { p0: "d", p1: "s" } })
+				})
+
 				it("deep config of a cyclic default", config => {
 					const { list }: Record<string, Type> = scope(
 						{ list: { p: ["list[]", "=", () => []] } } as never,

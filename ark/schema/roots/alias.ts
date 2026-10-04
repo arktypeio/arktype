@@ -378,6 +378,8 @@ export const isResolvable = (node: BaseRoot): boolean => {
 		return !node.inner.in || isResolvable(node.inner.in)
 	if (!node.hasKind("alias") || resolvingAliases.includes(node)) return false
 	if (node.isIo) return isResolvable(node.operands![0])
+	// a transform's alias resolves to what it transformed once the transform returns
+	if (node.resolve && !node.operator) return isResolutionFinal()
 	const referenced = nodesByRegisteredId[node.reference as NodeId]
 	return hasArkKind(referenced, "root") && isResolvable(referenced)
 }
