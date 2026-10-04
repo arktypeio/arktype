@@ -812,6 +812,25 @@ contextualize(() => {
 		attest(reordered.a3({ p0: "s" })).equals({ p0: "s" })
 	})
 
+	it("rejects a cyclic union overlapping a branch that transforms through an alias", () => {
+		const pipe = { "p0?": "string.json.parse |> a2" } as const
+		const message = writeIndiscriminableMorphMessage("{}", "{ p0?: $b }")
+
+		attest(() =>
+			scope({ a0: {}, b: pipe, a2: ["a0", "|", { "p0?": "b" }] }).export()
+		).throws(message)
+		attest(() =>
+			scope({ a2: ["a0", "|", { "p0?": "b" }], b: pipe, a0: {} }).export()
+		).throws(message)
+		attest(() =>
+			scope({
+				"g<t extends string>": pipe,
+				a2: ["a0", "|", { "p0?": "g<string>" }],
+				a0: {}
+			}).export()
+		).throws(writeIndiscriminableMorphMessage("{}", "{ p0?: g<string> }"))
+	})
+
 	it("reads an alias of a closed cycle as its node", () => {
 		const first = scope({
 			a0: { p0: "a1" },
