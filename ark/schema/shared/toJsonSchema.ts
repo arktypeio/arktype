@@ -1,5 +1,6 @@
 import {
 	printable,
+	throwInternalError,
 	type Constructor,
 	type Domain,
 	type Json,
@@ -7,6 +8,7 @@ import {
 	type satisfy
 } from "@ark/util"
 import type { Predicate } from "../predicate.ts"
+import type { ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
 
@@ -54,6 +56,13 @@ export const ToJsonSchema = {
 	throw: (...args: ConstructorParameters<typeof ToJsonSchemaError>): never => {
 		throw new ToJsonSchema.Error(...args)
 	},
+	throwInternalOperandError: (
+		kind: ConstraintKind,
+		schema: JsonSchema
+	): never =>
+		throwInternalError(
+			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
+		),
 	defaultConfig
 }
 

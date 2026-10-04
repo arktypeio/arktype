@@ -1,17 +1,16 @@
 import {
 	$ark,
 	mergeToJsonSchemaConfigs,
+	ToJsonSchema,
 	type BaseRoot,
-	type ConstraintKind,
 	type JsonSchema,
 	type RefinementKind,
 	type RootKind,
 	type Sequence,
 	type Structure,
-	type ToJsonSchema,
 	type nodeOfKind
 } from "@ark/schema"
-import { flatMorph, hasKey, printable, throwInternalError } from "@ark/util"
+import { flatMorph, hasKey, throwInternalError } from "@ark/util"
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	refs: BaseRoot[]
@@ -396,14 +395,6 @@ type JsonSchemaOperandByKind = {
 	predicate: JsonSchema.Constrainable
 }
 
-const throwInternalOperandError = (
-	kind: ConstraintKind,
-	schema: JsonSchema
-): never =>
-	throwInternalError(
-		`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
-	)
-
 const reduceJsonSchemaByKind: {
 	[kind in RefinementKind]: (
 		node: nodeOfKind<kind>,
@@ -442,7 +433,7 @@ const reduceJsonSchemaByKind: {
 				schema.maxItems = node.rule
 				return schema
 			default:
-				return throwInternalOperandError("exactLength", schema)
+				return ToJsonSchema.throwInternalOperandError("exactLength", schema)
 		}
 	},
 	max: (node, schema) => {
@@ -464,7 +455,7 @@ const reduceJsonSchemaByKind: {
 				schema.maxItems = node.rule
 				return schema
 			default:
-				return throwInternalOperandError("maxLength", schema)
+				return ToJsonSchema.throwInternalOperandError("maxLength", schema)
 		}
 	},
 	minLength: (node, schema) => {
@@ -476,7 +467,7 @@ const reduceJsonSchemaByKind: {
 				schema.minItems = node.rule
 				return schema
 			default:
-				return throwInternalOperandError("minLength", schema)
+				return ToJsonSchema.throwInternalOperandError("minLength", schema)
 		}
 	},
 	before: (node, base, ctx) =>
@@ -503,7 +494,7 @@ const reduceJsonSchemaByKind: {
 				return arraySchema
 
 			default:
-				return throwInternalOperandError("structure", schema)
+				return ToJsonSchema.throwInternalOperandError("structure", schema)
 		}
 	},
 	predicate: (node, base, ctx) =>
