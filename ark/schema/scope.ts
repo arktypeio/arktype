@@ -351,7 +351,7 @@ const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
 	const fallback = () =>
 		node.includesAlias ?
 			js.return(
-				`applyCyclic("${node.id}", apply, data, config).finalize(onFail)`
+				`applyCyclic("${node.trackedId}", apply, data, config).finalize(onFail)`
 			)
 		:	js
 				.const("ctx", "new Traversal(data, config)")

@@ -136,6 +136,38 @@ contextualize(() => {
 					)
 				})
 
+				it("cyclic object once through an equivalent root", config => {
+					const { node } = scope(
+						{ node: { "next?": "node", v: "number" } },
+						config
+					).export()
+					const data: { v?: unknown; next?: unknown } = {}
+					data.next = data
+					const { u }: Record<string, Type> = scope(
+						{
+							n0: { v: "number", "e0?": "n0[]" },
+							n1: { v: "number", "e0?": "n0[]" },
+							u: "n0 | n1"
+						} as never,
+						config
+					).export() as never
+					const r: { v: unknown; e0?: unknown[] } = { v: "x" }
+					r.e0 = [r]
+
+					attest(
+						[
+							node.describe("x"),
+							node.configure({ description: "x" }),
+							node.onUndeclaredKey("ignore")
+						].map(t => String(t(data)))
+					).equals([
+						"v must be a number (was missing)",
+						"v must be a number (was missing)",
+						"v must be a number (was missing)"
+					])
+					attest(String(u(r))).snap("v must be a number (was a string)")
+				})
+
 				// https://github.com/arktypeio/arktype/issues/924
 				it("invalid object at shortest path", config => {
 					const types = scope(
