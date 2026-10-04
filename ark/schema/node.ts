@@ -930,6 +930,19 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 		return false
 	for (const [k, v] of l.innerEntries) {
 		if (!(k in r.inner)) return false
+		if (k === "morphs") {
+			const rMorphs = (r as Morph.Node).inner.morphs
+			if (
+				(v as Morph.Inner["morphs"]).length !== rMorphs.length ||
+				!(v as Morph.Inner["morphs"]).every((morph, i) =>
+					isNode(morph) && isNode(rMorphs[i]) ?
+						isSimulated(morph, rMorphs[i] as BaseNode, ctx)
+					:	morph === rMorphs[i]
+				)
+			)
+				return false
+			continue
+		}
 		if (l.impl.keys[k].child !== true) {
 			if (
 				JSON.stringify((l.innerJson as Dict)[k]) !==

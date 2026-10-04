@@ -917,6 +917,18 @@ contextualize(() => {
 		attest(types.group.extends(types.part)).equals(true)
 	})
 
+	it("compares cyclic types piping to themselves by their unfolding", () => {
+		const parsed = () =>
+			scope({ a: { "n?": "string.json.parse |> a" } }).export().a
+		const l = parsed()
+		const r = parsed()
+
+		attest(l.equals(r)).equals(true)
+		attest(l.extends(r)).equals(true)
+		attest(l.and(r).expression).snap("{ n?: (In: string) => To<$a> }")
+		attest(l.or(r).expression).snap("{ n?: (In: string) => To<$a> }")
+	})
+
 	it("equates a cyclic union with its reduction", () => {
 		const types = scope({
 			a: "b[] | a[]",
