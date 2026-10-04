@@ -1145,9 +1145,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			// if the node is recursive e.g. { box: "this" }, we need to make sure it
 			// has the original id from context so that its references compile correctly
-			if (node.isCyclic) node = withId(node, ctx.id)
-
-			if (ctx.isReferencedById) nodesByRegisteredId[ctx.id] = node
+			if (ctx.isReferencedById)
+				nodesByRegisteredId[ctx.id] = node = withId(node, ctx.id)
 			else delete nodesByRegisteredId[ctx.id]
 		} finally {
 			inProgress.resolutions--

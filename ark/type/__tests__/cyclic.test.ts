@@ -108,6 +108,34 @@ contextualize(() => {
 					)
 				})
 
+				it("cyclic object once through a parsed alias", config => {
+					const data: { v?: unknown; next?: unknown } = {}
+					data.next = data
+					const types = scope(
+						{
+							node: { "next?": "node", v: "number" },
+							thunk: (): unknown => types.type("node" as never)
+						} as never,
+						config
+					)
+					const { thunk }: Record<string, Type> = types.export() as never
+					const generics = scope(
+						{ "g<p>": "(p | g<p>)[]", a1: "g<string>" } as never,
+						config
+					)
+					generics.export()
+					const list: unknown[] = []
+					list.push(list, 5)
+
+					attest(String(types.type("node" as never)(data))).snap(
+						"v must be a number (was missing)"
+					)
+					attest(String(thunk(data))).snap("v must be a number (was missing)")
+					attest(String(generics.type("g<string>" as never)(list))).snap(
+						"value at [1] must be a string or an object (was a number)"
+					)
+				})
+
 				// https://github.com/arktypeio/arktype/issues/924
 				it("invalid object at shortest path", config => {
 					const types = scope(
