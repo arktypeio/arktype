@@ -624,7 +624,10 @@ export abstract class BaseNode<
 			} else ioInner[k] = v
 		}
 
-		return this.$.node(this.kind, ioInner)
+		// an alias read while definitions are open stands for its input and output alike, so a union of them is reduced once final
+		return this.$.node(this.kind, ioInner, {
+			prereduced: this.hasKind("union") && this.includesAlias && !isIoFinal()
+		})
 	}
 
 	toJSON(): JsonStructure {
