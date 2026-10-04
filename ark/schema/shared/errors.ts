@@ -48,12 +48,12 @@ export class ArkError<
 		else input = { ...input }
 		if (input.code === "union") {
 			// flatten union errors to avoid repeating context like "foo must be foo must be"...
-			const flat: ArkError[] = []
+			let flat: ArkError[] = []
 			for (const innerError of input.errors) {
-				appendUnique(
-					flat,
-					innerError.hasCode("union") ? innerError.errors : innerError
-				)
+				const innerFlat =
+					innerError.hasCode("union") ? innerError.errors : [innerError]
+				// a union's errors are already unique, so only those of later branches are compared
+				flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
 			}
 			input.errors =
 				!prefixPath && !relativePath ?
