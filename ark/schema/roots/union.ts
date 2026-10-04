@@ -46,7 +46,7 @@ import {
 } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
 import {
-	applyResolution,
+	applyMember,
 	type Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -297,7 +297,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				return
 			}
 			const member = discriminant.members?.[k]
-			if (member) applyResolution(member.id, caseNode.traverseApply, data, ctx)
+			if (member) applyMember(caseNode, data, ctx, member)
 			else caseNode.traverseApply(data, ctx)
 			return
 		}
@@ -305,9 +305,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
 			ctx.pushBranch()
-			if (branch.includesAlias)
-				applyResolution(branch.id, branch.traverseApply, data, ctx)
-			else branch.traverseApply(data, ctx)
+			applyMember(branch, data, ctx)
 			if (!ctx.hasError()) {
 				if (branch.transforms) return ctx.popTakenBranch()
 				return ctx.popBranch()

@@ -11,7 +11,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
 import {
-	applyResolution,
+	applyMember,
 	TransformErrors,
 	type Traversal,
 	type TraverseAllows,
@@ -208,10 +208,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const input = this.introspectableIn
-		if (input?.includesAlias)
-			applyResolution(input.id, input.traverseApply, data, ctx)
-		else input?.traverseApply(data, ctx)
+		if (this.introspectableIn) applyMember(this.introspectableIn, data, ctx)
 		ctx.queueMorphs(this.morphs)
 	}
 
