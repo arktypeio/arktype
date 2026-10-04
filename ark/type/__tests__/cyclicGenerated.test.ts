@@ -395,9 +395,10 @@ contextualize(() => {
 					const ordered = Object.fromEntries(
 						order.map(name => [name, defs[name]])
 					)
-					const types = scope({ ...generics, ...ordered } as never, {
-						jitless: k === orders.length
-					}).export() as never as Record<string, Type>
+					const types: Record<string, Type> = scope(
+						{ ...generics, ...ordered } as never,
+						{ jitless: k === orders.length }
+					).export() as never
 					// reading an input or output first mustn't change what validates
 					if (k === 1) {
 						for (const name of names) {
@@ -465,15 +466,17 @@ contextualize(() => {
 			const defs = Object.fromEntries(
 				aliases.map((a, i) => [names[i], defOf(a, i)])
 			)
-			const [l, r] = [names, shuffle(names, rand)].map(order => {
-				try {
-					return scope(
-						Object.fromEntries(order.map(name => [name, defs[name]])) as never
-					).export() as never as Record<string, Type>
-				} catch (e) {
-					return String(e)
+			const [l, r] = [names, shuffle(names, rand)].map(
+				(order): Record<string, Type> | string => {
+					try {
+						return scope(
+							Object.fromEntries(order.map(name => [name, defs[name]])) as never
+						).export() as never
+					} catch (e) {
+						return String(e)
+					}
 				}
-			})
+			)
 			if (typeof l === "string" || typeof r === "string") {
 				if (l !== r) failures.push(`${seed}: ${l} || ${r}`)
 				continue
