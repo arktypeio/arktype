@@ -108,11 +108,10 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those
 	closesCycle = true
 	private _resolution: BaseRoot | undefined
-	private resolving = false
 
 	get resolution(): BaseRoot {
 		if (this._resolution) return this._resolution
-		if (this.resolving) {
+		if (resolvingAliases.includes(this)) {
 			const names = resolvingAliases.map(aliasNameOf)
 			const cycle = names.slice(names.lastIndexOf(aliasNameOf(this)))
 			const start = cycle.indexOf([...cycle].sort()[0])
@@ -124,7 +123,6 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			isIoFinal() &&
 			(this.isIo ||
 				hasArkKind(nodesByRegisteredId[this.reference as NodeId], "root"))
-		this.resolving = true
 		resolvingAliases.push(this)
 		inProgress.resolutions++
 		if (readsIo) inProgress.ioReads++
@@ -136,7 +134,6 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 			if (this.resolve ? isFinal : this.$.resolved)
 				this._resolution = resolution
 		} finally {
-			this.resolving = false
 			resolvingAliases.pop()
 			inProgress.resolutions--
 			if (readsIo) inProgress.ioReads--

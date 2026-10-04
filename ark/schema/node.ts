@@ -211,11 +211,15 @@ export abstract class BaseNode<
 	private _entersResolution: boolean | undefined
 	// data reaching a node an alias references by id is tracked under that id, as is an object whose props a cyclic value checks
 	get entersResolution(): boolean {
-		return (this._entersResolution ??=
+		if (this._entersResolution !== undefined) return this._entersResolution
+		const entersResolution =
 			this.isCyclic &&
 			(this.isAliasResolution ||
 				isNode($ark.nodesByRegisteredId[this.id]) ||
-				(this.hasKind("intersection") && !!this.structure?.props.length)))
+				(this.hasKind("intersection") && !!this.structure?.props.length))
+		return isResolutionFinal() ?
+				(this._entersResolution = entersResolution)
+			:	entersResolution
 	}
 
 	private _trackedId: string | undefined
