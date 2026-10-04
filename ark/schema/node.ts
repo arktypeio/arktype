@@ -917,9 +917,14 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 		ctx.failed.add(pair)
 		return false
 	}
-	// branches of an unreduced union may subsume each other, so each need only be within one on the other side
-	if (l.hasKind("union") && !l.inner.ordered)
-		return l.branches.every(branch => isSimulated(branch, r, ctx))
+	// branches of an unreduced union may subsume each other, so each need only be within one on the other side or extend it
+	if (l.hasKind("union") && !l.inner.ordered) {
+		return l.branches.every(
+			branch =>
+				isSimulated(branch, r, ctx) ||
+				(ctx.unfoldsAliases && isSubsumed(branch, r as never))
+		)
+	}
 	if (r.hasKind("union") && !r.inner.ordered) {
 		return r.branches.some(branch => {
 			const assumedCount = ctx.assumed.length
@@ -971,6 +976,18 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 			return false
 	}
 	return true
+}
+
+let isSubsuming = false
+
+const isSubsumed = (branch: BaseRoot, r: BaseRoot): boolean => {
+	if (isSubsuming) return false
+	isSubsuming = true
+	try {
+		return branch.extends(r)
+	} finally {
+		isSubsuming = false
+	}
 }
 
 export const isMutuallySimulated = (
