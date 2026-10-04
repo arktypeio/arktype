@@ -1982,6 +1982,25 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
+	it("jit and jitless errors through an intersection's resolution", () => {
+		const def = {
+			a0: [["Record<string, null>", "...", "a0[]"], "[]"],
+			c0: [["Record<string, null>", "...", "c0[]"], "[]"],
+			c1: ["c0", "...", "c1[]"],
+			x: "a0 & c1"
+		}
+		const [jit, jitless] = [false, true].map(jitless => {
+			const { x }: Record<string, Type> = scope(def as never, {
+				jitless
+			}).export() as never
+			const data: unknown[] = []
+			data.push(data, data)
+			return String(x(data))
+		})
+
+		attest(jit).equals(jitless)
+	})
+
 	it("intersection of definitions piping into their cycle", () => {
 		const { n }: Record<string, Type> = scope({
 			n: { "p?": ["a", "&", "n"], "q?": "a | (string.json.parse |> a)" },
