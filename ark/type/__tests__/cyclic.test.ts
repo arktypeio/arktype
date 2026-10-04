@@ -1499,6 +1499,55 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(parsed.expression).snap("(In: string) => To<$parsed>")
 	})
 
+	it("union prop intersected through its own alias", () => {
+		const { a } = scope({
+			a: { p: "string | a", "q?": ["a", "&", { p: "string" }] }
+		}).export()
+		const { b }: Record<string, Type> = scope({
+			a: { p: "string | b" },
+			b: ["a", "&", { p: "b[]" }]
+		} as never).export() as never
+		const self = type({
+			p: "string | this",
+			"q?": ["this", "&", { p: "string" }]
+		})
+
+		attest(a({ p: "x", q: { p: "y" } })).equals({ p: "x", q: { p: "y" } })
+		attest(a({ p: "x", q: { p: { p: "z" } } }).toString()).snap(
+			"q.p must be a string (was an object)"
+		)
+		attest(b.allows({ p: "x" })).equals(false)
+		attest(self({ p: "x", q: { p: 1 } }).toString()).snap(
+			"q.p must be a string (was a number)"
+		)
+	})
+
+	it("intersection cycle in any declaration order", () => {
+		const first: Record<string, Type> = scope({
+			a0: ["a2", "&", { "p0?": "a0 | null" }],
+			a2: { "p0?": ["a0 | null"] }
+		} as never).export() as never
+		const last: Record<string, Type> = scope({
+			a2: { "p0?": ["a0 | null"] },
+			a0: ["a2", "&", { "p0?": "a0 | null" }]
+		} as never).export() as never
+		const data = { p0: [{ p0: [null] }] }
+
+		attest(first.a0(data)).equals(data)
+		attest(last.a0(data)).equals(data)
+		attest(last.a0.expression).equals(first.a0.expression)
+		attest(() =>
+			scope({
+				"g1<p1, q1>": ["p1", "|", { "p0?": "g1<q1, p1>" }],
+				a1: { "p0?": "string", p1: ["string", "=", "d"] },
+				a2: "g1<string, number>",
+				zp: "g1<a2, a1>"
+			} as never).export()
+		).throws(
+			"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1476
 	it("cyclic intersection keyed by operands", () => {
 		const types = scope({
