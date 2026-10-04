@@ -93,7 +93,12 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
 				:	ctx.$.node(
 						"union",
-						viableBranches.map(state => arraySchemaOf(state.result))
+						viableBranches.map(state =>
+							// a sequence has at least one element, so an empty tuple is an array of length 0
+							state.result.length ?
+								{ proto: Array, sequence: sequenceTupleToInner(state.result) }
+							:	{ proto: Array, exactLength: 0 }
+						)
 					)
 			)
 		}
@@ -104,12 +109,6 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 		// they exist on
 	}
 }
-
-// a sequence has at least one element, so an empty tuple is an array of length 0
-const arraySchemaOf = (tuple: SequenceTuple) =>
-	tuple.length ?
-		{ proto: Array, sequence: sequenceTupleToInner(tuple) }
-	:	{ proto: Array, exactLength: 0 }
 
 const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
 	tuple.reduce<mutableInnerOfKind<"sequence">>((result, element) => {

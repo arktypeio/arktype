@@ -1002,7 +1002,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		const requiredEntries = this.props
 			.filter(prop => prop.required)
-			.map(prop => `${literalKeyOf(js, prop)}: ${valueOf(prop)}`)
+			.map(
+				prop =>
+					`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${valueOf(prop)}`
+			)
 		js.const("result", `{ ${requiredEntries.join(", ")} }`)
 		const copies =
 			this.declaresKey("__proto__") ?
@@ -1172,9 +1175,6 @@ const compileDefault = (
 		// -0 would serialize as 0
 	: Object.is(node.default, -0) ? `${out}${js.prop(node.key)} = -0`
 	: `${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
-
-const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
-	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey
 
 const compileDeclaredKeySwitch = (
 	js: NodeCompiler,
