@@ -1736,6 +1736,37 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(parsed.expression).snap("(In: string) => To<$parsed>")
 	})
 
+	it("pipes a composite morph into its own alias", () => {
+		const modules: Record<string, Type>[] = [
+			scope({
+				m: ["string", "=>", (s: string) => s.length],
+				x: "(m |> x) | number"
+			}).export() as never,
+			scope({
+				m: type("string.trim"),
+				x: "(m |> x) | number"
+			}).export() as never,
+			scope({
+				m: { a: "string.trim" },
+				x: "(m |> x) | number"
+			}).export() as never,
+			scope({
+				m: "string.trim | null",
+				x: "(m |> x) | number"
+			}).export() as never,
+			scope({ m: "string.trim[]", x: "(m |> x) | number" }).export() as never
+		]
+		const expressions = modules.map(types => types.x.expression)
+
+		attest(expressions).snap([
+			"number | (In: string) => To<$x>",
+			"number | (In: string) => To<$x>",
+			"number | (In: { a: string }) => To<$x>",
+			"number | (In: string) => To<$x> | (In: null) => To<$x>",
+			"number | (In: string[]) => To<$x>"
+		])
+	})
+
 	it("union prop intersected through its own alias", () => {
 		const { a } = scope({
 			a: { p: "string | a", "q?": ["a", "&", { p: "string" }] }
