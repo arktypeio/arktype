@@ -51,7 +51,7 @@ import {
 	type SchemaModule,
 	type instantiateRoot
 } from "./module.ts"
-import type { BaseNode } from "./node.ts"
+import { referencesThroughAliases, type BaseNode } from "./node.ts"
 import {
 	nodesByRegisteredId,
 	parseNode,
@@ -975,7 +975,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
-				resolveReachedAliases(this.references)
+				referencesThroughAliases(this.references)
 				if (!this.resolvedConfig.jitless)
 					this.compiledUnit = precompile(this.references, this)
 				this.resolved = true
@@ -1090,7 +1090,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return node
 
 		bootstrapAliasReferences(node)
-		resolveReachedAliases(node.references)
+		if (node.includesAlias) referencesThroughAliases(node.references)
 		if (!this.resolvedConfig.jitless && !node.compiledUnit && jit)
 			precompile(node.references)
 		return node
@@ -1190,19 +1190,6 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 		}
 	}
 	return resolution
-}
-
-// compiling resolves every alias a node reaches, so jitless resolves them too, surfacing their errors at once
-// a node's traversal reads whether an alias resolves to it, so every alias it reaches resolves before it's compiled or traversed
-const resolveReachedAliases = (references: readonly BaseNode[]) => {
-	// a Map visits the ids added while it's iterated
-	const reached = new Map<string, Alias.Node>()
-	for (const node of references)
-		if (node.hasKind("alias")) reached.set(node.id, node)
-	for (const node of reached.values()) {
-		for (const reference of node.resolution.references)
-			if (reference.hasKind("alias")) reached.set(reference.id, reference)
-	}
 }
 
 const addReferences = (

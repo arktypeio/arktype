@@ -922,7 +922,7 @@ export abstract class BaseNode<
 		const rawSelected = this._select(
 			normalized,
 			normalized.boundary === "references" && isResolutionFinal() ?
-				referencesThroughAliases(this)
+				referencesThroughAliases(this.references)
 			:	undefined
 		)
 		const selected = rawSelected && liftArray(rawSelected)
@@ -1179,14 +1179,17 @@ const _isMutuallySimulated = (
 	return true
 }
 
-const referencesThroughAliases = (node: BaseNode): BaseNode[] => {
-	const references = new Set(node.references)
-	for (const reference of references) {
+// a traversal reads whether an alias resolves to it, so every alias a node reaches resolves before it's compiled
+export const referencesThroughAliases = (
+	references: readonly BaseNode[]
+): BaseNode[] => {
+	const reached = new Set(references)
+	for (const reference of reached) {
 		if (!reference.hasKind("alias")) continue
 		for (const resolved of reference.resolution.references)
-			references.add(resolved)
+			reached.add(resolved)
 	}
-	return [...references]
+	return [...reached]
 }
 
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
