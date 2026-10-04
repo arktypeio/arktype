@@ -968,6 +968,24 @@ contextualize(() => {
 		).throws(writeUnsatisfiedParameterConstraintMessage("T", "object", "$b"))
 	})
 
+	it("checks a generic argument once its constraint resolves", () => {
+		const types = scope({
+			a: { "y?": "g<a>" },
+			"g<t extends a>": { x: "t" }
+		} as never).export() as never as Record<string, Type>
+
+		attest(types.a.expression).snap("{ y?: g<$a> }")
+		attest(String(types.a({ y: { x: 5 } }))).snap(
+			"y.x must be an object (was a number)"
+		)
+		attest(() =>
+			scope({
+				a: { "y?": "g<string>" },
+				"g<t extends a>": { x: "t" }
+			} as never).export()
+		).throws(writeUnsatisfiedParameterConstraintMessage("t", "$a", "string"))
+	})
+
 	it("checks a union generic argument once it resolves", () => {
 		const types = scope({
 			"box<t extends object | null>": { "v?": "t" },
