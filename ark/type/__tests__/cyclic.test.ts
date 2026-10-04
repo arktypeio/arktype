@@ -855,6 +855,23 @@ contextualize(() => {
 					).snap("n.z must be removed")
 				})
 
+				it("deep config of a cyclic default", config => {
+					const { list }: Record<string, Type> = scope(
+						{ list: { p: ["list[]", "=", () => []] } } as never,
+						config
+					).export() as never
+					const { node }: Record<string, Type> = scope(
+						{ node: { p: ["node | null", "=", null] } } as never,
+						config
+					).export() as never
+
+					attest(list.onDeepUndeclaredKey("reject")({})).equals({ p: [] })
+					attest(list.configure({ description: "x" }, "references")({})).equals(
+						{ p: [] }
+					)
+					attest(node.onDeepUndeclaredKey("reject")({})).equals({ p: null })
+				})
+
 				it("cyclic output closes at entry", config => {
 					const $ = scope(
 						{
