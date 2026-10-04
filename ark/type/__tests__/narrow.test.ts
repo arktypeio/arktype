@@ -311,7 +311,7 @@ contextualize(() => {
 		attest(callCount).equals(3)
 	})
 
-	it("allows a union whose other branch's predicate added an error", () => {
+	it("union after failed branch predicate", () => {
 		const notBad = (o: object, ctx: Traversal) =>
 			!("bad" in o) || ctx.mustBe("not bad")
 		const data = { x: { bad: 1 }, y: "s" }

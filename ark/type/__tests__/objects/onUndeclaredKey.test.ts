@@ -178,7 +178,7 @@ b must be removed`)
 			)
 		})
 
-		it("keeps a declared __proto__ key when it deletes", () => {
+		it("delete keeps declared __proto__", () => {
 			for (const $ of [scope({}), scope({}, { jitless: true })]) {
 				const T = $.type({ ["__proto__?"]: "object", "+": "delete" })
 				const out = T.assert(JSON.parse('{"__proto__":{"x":1},"z":2}'))

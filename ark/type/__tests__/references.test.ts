@@ -69,7 +69,7 @@ contextualize(() => {
 		}
 	})
 
-	it("piping to a cyclic root includes an alias", () => {
+	it("pipe to cyclic root alias", () => {
 		const types = scope({
 			node: { value: "string", next: "node | null" }
 		}).export()

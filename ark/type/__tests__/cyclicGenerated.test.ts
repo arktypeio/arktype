@@ -461,7 +461,7 @@ contextualize(() => {
 		it("seeds 41-60", () => assertGeneratedScopesAlike(41, 60))
 	})
 
-	it("relates generated cyclic scopes and their wrappers alike in any order", () => {
+	it("generated scope relations", () => {
 		const failures: string[] = []
 		for (let seed = 1; seed <= 40; seed++) {
 			const rand = random(seed)

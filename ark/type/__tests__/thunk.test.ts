@@ -123,7 +123,7 @@ contextualize(() => {
 		)
 	})
 
-	it("thunk referenced by a definition it parses", () => {
+	it("thunk referenced while parsing", () => {
 		const $: Scope = scope({
 			w: () => $.type("a | string" as never),
 			a: { v: "string", "w?": "w" }

@@ -523,7 +523,7 @@ contextualize(() => {
 			attest(T.in.expression).snap("{ foo?: number }")
 		})
 
-		it("defaultable input extracted as optional wherever it's shared", () => {
+		it("shared defaultable input optional", () => {
 			const A = type({ foo: "number = 0" })
 			const B = type({ foo: "number = 0", bar: "string" })
 

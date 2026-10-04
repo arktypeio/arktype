@@ -552,7 +552,7 @@ b.c.c must be an object (was missing)`)
 		attest($.type.pipe((s: string) => s.length)("abc")).equals(3)
 	})
 
-	it("frozen keyword modules and type parsers read their members", () => {
+	it("frozen modules and parsers", () => {
 		const Frozen: Module<{ root: string }> = Object.freeze(
 			keywordModule({ root: () => ["string", "@", "a frozen root"] }, {})
 		) as never

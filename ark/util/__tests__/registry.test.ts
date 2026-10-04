@@ -8,7 +8,7 @@ contextualize(() => {
 		attest(arkUtilVersion).equals(version)
 	})
 
-	it("gives a value a name no registry key or other value has", () => {
+	it("registered names never collide", () => {
 		const anonymous = [() => {}][0]
 		const name = register(anonymous)
 		const named = { [name]: () => {} }[name]

@@ -113,7 +113,7 @@ contextualize(() => {
 		}
 	})
 
-	it("throws a disjoint between branches on construction", () => {
+	it("disjoint branches on construction", () => {
 		const index = rootSchema({
 			domain: "object",
 			index: { signature: "string", value: "string" }

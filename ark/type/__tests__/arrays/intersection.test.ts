@@ -134,25 +134,25 @@ contextualize(() => {
 		attest(T.json).equals(Expected.json)
 	})
 
-	it("intersects a length that narrows two others", () => {
+	it("length narrowing two others", () => {
 		const T = type("unknown[] >= 1").and("unknown[] <= 2").and("unknown[] <= 1")
 		attest(T.json).equals(type("unknown[] == 1").json)
 	})
 
-	it("keeps a tuple's length once an optional element is never", () => {
+	it("never optional element keeps length", () => {
 		const T = type("string[]").and(["string", "number?"])
 		attest(T.json).equals(type(["string"]).json)
 		attest(T.allows(["a", 5])).equals(false)
 	})
 
-	it("intersects disjoint arrays as an empty array", () => {
+	it("disjoint arrays", () => {
 		const T = type("string[] & number[]")
 		attest(T.json).equals(type([]).json)
 		attest(T.allows([])).equals(true)
 		attest(T.allows([1])).equals(false)
 	})
 
-	it("intersects disjoint arrays with props as an empty array with them", () => {
+	it("disjoint arrays with props", () => {
 		const WithProp = type("string[]").and({ "p0?": "string" })
 		const T = type("number[]").and(WithProp)
 

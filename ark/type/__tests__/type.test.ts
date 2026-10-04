@@ -23,7 +23,7 @@ contextualize(() => {
 		attest(T.allows(5)).equals(false)
 	})
 
-	it("reads infer at runtime as a no-op", () => {
+	it("runtime infer no-op", () => {
 		const T = type({ a: "string[]" })
 		attest<number>(T.infer.a.length)
 		attest(T.infer.a.length).equals(chainableNoOpProxy)

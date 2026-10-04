@@ -176,7 +176,7 @@ other must be a string (was a bigint)`)
 		})
 	})
 
-	it("intersects a prop with the other side's index", () => {
+	it("prop and opposing index", () => {
 		attest(() => type({ kind: "'b'" }).and({ "[string]": "object" })).throws(
 			"Intersection at kind of string and object results in an unsatisfiable type"
 		)
@@ -187,7 +187,7 @@ other must be a string (was a bigint)`)
 		).snap("{ [string]: object }")
 	})
 
-	it("stops a failed branch at its first index error", () => {
+	it("fail-fast index branch", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
 			const T = $.type({ kind: "'c'", p0: "boolean" }).or({

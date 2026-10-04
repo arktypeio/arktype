@@ -54,7 +54,7 @@ contextualize(() => {
 		attest(rootSchema(["number", { unit: 1 }]).expression).snap("number")
 	})
 
-	it("parsing a tuple with no length bound does not", () => {
+	it("parsing an unbounded tuple does not", () => {
 		withoutEngine(() => {
 			const T = rootSchema({
 				proto: Array,
@@ -82,7 +82,7 @@ contextualize(() => {
 		})
 	})
 
-	it("parses again what was parsed before it", () => {
+	it("reparses nodes built before it", () => {
 		const def = [
 			{
 				domain: "object",

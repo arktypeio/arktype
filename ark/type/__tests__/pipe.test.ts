@@ -345,7 +345,7 @@ contextualize(() => {
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
 	})
 
-	it("prefixes a morph's union errors with its path", () => {
+	it("morph union error paths", () => {
 		const Either = type({ a: "string" }).or({ b: "string" })
 		const T = type({ v: ["string", "=>", () => Either({})] })
 
@@ -354,7 +354,7 @@ contextualize(() => {
 		)
 	})
 
-	it("calls a morph that takes one argument with one argument", () => {
+	it("unary morph arity", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({
 				a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
@@ -363,7 +363,7 @@ contextualize(() => {
 		}
 	})
 
-	it("transforms an array's props before its elements", () => {
+	it("array props before elements", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const calls: string[] = []
 			const Trimmed = $.type("string").pipe(s => {

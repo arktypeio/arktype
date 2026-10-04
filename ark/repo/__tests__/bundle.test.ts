@@ -93,7 +93,7 @@ contextualize(() => {
 		for (const dir of packages.splice(0)) rmSync(dir, { recursive: true })
 	})
 
-	it("exports every module's names from the internal entry", async () => {
+	it("internal entry exports every name", async () => {
 		await import(
 			pathToFileURL(join(writePackage(modules), "out", "index.js")).href
 		)
@@ -159,7 +159,7 @@ contextualize(() => {
 		attest(f.x).is(root.x)
 	})
 
-	it("leaves whole a main entry that exports every module's names", () => {
+	it("main entry exporting every name", () => {
 		const dir = writePackage({
 			"index.js": `export * from "./a.js";`,
 			"a.js": `export const a = {};`
@@ -180,7 +180,7 @@ contextualize(() => {
 		attest(K.self.K).is(K)
 	})
 
-	it("rejects renaming a class its source named", () => {
+	it("rejects renaming a named class", () => {
 		for (const [innerName, body] of [
 			["Y", "m() { return L }"],
 			["_L", "static self = { _L }"]
@@ -211,7 +211,7 @@ contextualize(() => {
 		}
 	})
 
-	it("rejects a function or class esbuild renamed", () => {
+	it("rejects esbuild renames", () => {
 		for (const [name, declaration] of [
 			["isDate", "const isDate = () => true"],
 			["parse", "function parse() {}"],
