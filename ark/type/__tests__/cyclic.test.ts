@@ -4,7 +4,10 @@ import {
 	writeUnclosedGenericCycleMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { writeIndiscriminableMorphMessage } from "arksets"
+import {
+	writeIndiscriminableMorphMessage,
+	writeMorphIntersectionMessage
+} from "arksets"
 import { scope, type, type Type } from "arktype"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 
@@ -1146,6 +1149,42 @@ p1[0].p0 must be x (was a number)`)
 				a0: {}
 			}).export()
 		).throws(writeIndiscriminableMorphMessage("{}", "{ p0?: g<string> }"))
+	})
+
+	it("identical definitions of a closed cycle", () => {
+		const { x }: Record<string, Type> = scope({
+			x: { "y?": ["c", "&", "d"] },
+			b: { "n?": "c" },
+			c: { "p?": "string.json.parse |> b" },
+			d: { "p?": "string.json.parse |> b" }
+		} as never).export() as never
+		const types = scope({
+			a0: { p1: "string.numeric.parse", "p2?": "a0" },
+			n2: { p1: "string.numeric.parse", "p2?": "a0" },
+			a1: "a0 | n2"
+		}).export()
+
+		attest(x({ y: { p: '{ "n": { "p": "{}" } }' } })).equals({
+			y: { p: { n: { p: {} } } }
+		})
+		attest(types.a1({ p1: "1", p2: { p1: "2" } })).equals({
+			p1: 1,
+			p2: { p1: 2 }
+		})
+		attest(() =>
+			scope({
+				x: { "y?": ["c", "&", "d"] },
+				b: { "n?": "c" },
+				c: { "p?": "string.json.parse |> b" },
+				d: { "p?": "string.json.parse |> e" },
+				e: { "n?": "d", m: "1" }
+			} as never).export()
+		).throws(
+			writeMorphIntersectionMessage(
+				"(In: string) => To<$b>",
+				"(In: string) => To<$e>"
+			)
+		)
 	})
 
 	it("morph union independent of unreferenced aliases", () => {
