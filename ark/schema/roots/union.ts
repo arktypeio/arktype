@@ -306,7 +306,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				applyResolution(branch.id, branch.traverseApply, data, ctx)
 			else branch.traverseApply(data, ctx)
 			if (!ctx.hasError()) {
-				if (this.branches[i].transforms) return ctx.popTakenBranch()
+				if (branch.transforms) return ctx.popTakenBranch()
 				return ctx.popBranch()
 			}
 			errors.push(ctx.popBranch()!.error!)
