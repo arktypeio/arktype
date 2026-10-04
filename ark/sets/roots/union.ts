@@ -545,19 +545,20 @@ export const reduceBranches = ({
 }
 
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
-	if (!l.includesAlias && !r.includesAlias) {
-		if (!l.includesTransform && !r.includesTransform) return
-	} else if (!isResolutionFinal()) {
-		// what an alias transforms, and whether branches holding a definition still open overlap, is known once it closes
-		uncheckedAssertions.push(() => {
-			if (
-				(l.transforms || r.transforms) &&
-				!(intersectNodesRoot(l.rawIn, r.rawIn, l.$) instanceof Disjoint)
-			)
-				assertDeterminateOverlap(l, r)
-		})
-		return
-	} else if (!l.transforms && !r.transforms) return
+	if (l.includesAlias || r.includesAlias) {
+		if (!isResolutionFinal()) {
+			// what an alias transforms, and whether branches holding a definition still open overlap, is known once it closes
+			uncheckedAssertions.push(() => {
+				if (
+					(l.transforms || r.transforms) &&
+					!(intersectNodesRoot(l.rawIn, r.rawIn, l.$) instanceof Disjoint)
+				)
+					assertDeterminateOverlap(l, r)
+			})
+			return
+		}
+		if (!l.transforms && !r.transforms) return
+	} else if (!l.includesTransform && !r.includesTransform) return
 
 	if (
 		!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[]) ||
