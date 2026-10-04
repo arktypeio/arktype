@@ -617,12 +617,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 		if (this.undeclared !== "delete") return out
-		const undeclaredKeys = this.undeclaredKeysOf(data)
 		// assigning "__proto__" to a built result would set its prototype
 		if (
 			Object.getPrototypeOf(out) !== Object.prototype ||
 			Object.prototype.hasOwnProperty.call(out, "__proto__")
 		) {
+			const undeclaredKeys = this.undeclaredKeysOf(data)
 			if (!undeclaredKeys.length) return out
 			if (out === data) out = this.copy(data)
 			for (const k of undeclaredKeys) delete out[k as never]
