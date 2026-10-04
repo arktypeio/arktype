@@ -933,9 +933,10 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 			return false
 		})
 	}
-	if (l.kind !== r.kind || l.innerEntries.length !== r.innerEntries.length)
+	const lEntries = simulatedEntriesOf(l)
+	if (l.kind !== r.kind || lEntries.length !== simulatedEntriesOf(r).length)
 		return false
-	for (const [k, v] of l.innerEntries) {
+	for (const [k, v] of lEntries) {
 		if (!(k in r.inner)) return false
 		if (k === "morphs") {
 			const rMorphs = (r as Morph.Node).inner.morphs
@@ -977,6 +978,12 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 	}
 	return true
 }
+
+// an intersection serializes without its sequence's minVariadicLength, since the minLength it implies bounds it
+const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
+	node.hasKind("sequence") && node.inner.minVariadicLength ?
+		node.innerEntries.filter(([k]) => k !== "minVariadicLength")
+	:	node.innerEntries
 
 let isSubsuming = false
 

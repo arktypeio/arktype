@@ -893,6 +893,15 @@ contextualize(() => {
 		)
 	})
 
+	it("parses a cyclic non-empty array's json back", () => {
+		const { a } = scope({
+			a: { "p?": ["b", "...", "b[]"] },
+			b: { "n?": "b" }
+		}).export()
+
+		attest(type.schema(a.json as never).equals(a)).equals(true)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/928
 	it("compares cyclic types by their unfolding", () => {
 		const types = scope({
