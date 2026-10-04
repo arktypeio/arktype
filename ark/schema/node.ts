@@ -81,8 +81,6 @@ import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
 
-const referencesWithReplacements = new WeakSet<object>()
-
 export abstract class BaseNode<
 	// uses -ignore rather than -expect-error because this is not an error in .d.ts
 	/** @ts-ignore allow instantiation assignment to the base type */
@@ -109,6 +107,7 @@ export abstract class BaseNode<
 	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
 
 	protected _referencesById: Record<string, BaseNode> | undefined
+	private hasReplacedReferences = false
 	private _shallowReferences: BaseNode[] | undefined
 	protected _flatRefs: FlatRef[] | undefined
 	protected _flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
@@ -295,7 +294,7 @@ export abstract class BaseNode<
 		const include = (node: BaseNode): void => {
 			if (replaced || node._referencesById) {
 				const references = node.referencesById
-				if (referencesWithReplacements.has(references)) replaced = true
+				if (node.hasReplacedReferences) replaced = true
 				for (const id in references) {
 					const included = collected.get(id)
 					if (included !== undefined && included !== references[id])
@@ -313,9 +312,8 @@ export abstract class BaseNode<
 				include(referenced)
 		}
 		include(this)
-		const referencesById = Object.fromEntries(collected)
-		if (replaced) referencesWithReplacements.add(referencesById)
-		return referencesById
+		this.hasReplacedReferences = replaced
+		return Object.fromEntries(collected)
 	}
 
 	get shallowReferences(): BaseNode[] {
