@@ -973,6 +973,22 @@ p1[0].p0 must be x (was a number)`)
 					attest(node.onDeepUndeclaredKey("reject")({})).equals({ p: null })
 				})
 
+				it("cyclic data through an indexed prop", config => {
+					const types = scope(
+						{
+							a: { "p?": "a", "q?": "b" },
+							b: { "p?": "a", "[string]": "b", "m?": "string.numeric.parse" }
+						},
+						config
+					).export()
+					const data: { q: object; p?: object } = { q: {} }
+					data.p = data
+					const out: { q: object; p: { p: object } } = types.b(data) as never
+
+					attest(out.q).equals({})
+					attest(out.p.p === out.p).equals(true)
+				})
+
 				it("cyclic output closes at entry", config => {
 					const $ = scope(
 						{
