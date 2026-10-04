@@ -779,6 +779,82 @@ contextualize(() => {
 					)
 				})
 
+				it("deep config through shared cyclic nodes", config => {
+					const chain = scope(
+						{
+							a: { "p?": "c" },
+							c: { q: "b" },
+							b: { "r?": "d" },
+							d: { q: "b", "s?": "a" }
+						},
+						config
+					).export()
+					const { pair }: Record<string, Type> = scope(
+						{
+							node: { v: "number", "next?": "node" },
+							pair: ["node", "&", { w: "string" }]
+						} as never,
+						config
+					).export() as never
+					const { a0 }: Record<string, Type> = scope(
+						{
+							a1: "a1[]",
+							a3: { "p1?": "a1" },
+							a0: [
+								"a3",
+								"&",
+								{ "p1?": { "p0?": "string" }, "p2?": { "p0?": "a1" } }
+							]
+						} as never,
+						config
+					).export() as never
+					const { x }: Record<string, Type> = scope(
+						{
+							a: { p0: ["number", "...", "a[]"] },
+							x: ["a", "&", { p0: "Record<string, number>" }]
+						} as never,
+						config
+					).export() as never
+					const tagged = scope(
+						{
+							a: { kind: "'a'", "n?": "b" },
+							b: { kind: "'b'", "n?": "a" },
+							u: "a | b"
+						},
+						config
+					).export()
+					const invalid = { p1: {}, p2: { p0: [null] } }
+
+					attest(
+						chain.a
+							.onDeepUndeclaredKey("reject")({ p: { q: {}, z: 1 } })
+							.toString()
+					).snap("p.z must be removed")
+					attest(
+						String(
+							pair.onDeepUndeclaredKey("reject")({
+								v: 1,
+								w: "x",
+								next: { v: 2, z: 1 }
+							})
+						)
+					).snap("next.z must be removed")
+					attest(String(a0.onDeepUndeclaredKey("reject")(invalid))).equals(
+						String(a0(invalid))
+					)
+					attest(
+						String(x.onDeepUndeclaredKey("reject")({ p0: [1, { p0: [2] }] }))
+					).snap('p0["1"] must be a number (was an object)')
+					attest(
+						tagged.u
+							.onDeepUndeclaredKey("reject")({
+								kind: "a",
+								n: { kind: "b", z: 1 }
+							})
+							.toString()
+					).snap("n.z must be removed")
+				})
+
 				it("cyclic output closes at entry", config => {
 					const $ = scope(
 						{
