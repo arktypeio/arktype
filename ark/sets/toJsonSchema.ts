@@ -255,6 +255,11 @@ const reduceObjectJsonSchema = (
 					continue
 				}
 
+				if (keyBranch.hasKind("domain")) {
+					schema.additionalProperties = valueJsonSchema
+					continue
+				}
+
 				let keySchema: JsonSchema.String = { type: "string" }
 				if (keyBranch.hasKind("morph")) {
 					// a key's schema can't be a $ref

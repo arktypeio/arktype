@@ -143,6 +143,16 @@ contextualize(() => {
 		})
 	})
 
+	it("string or symbol index", () => {
+		const node = rootSchema({
+			domain: "object",
+			index: { signature: ["string", "symbol"], value: "number" }
+		})
+		attest(
+			toJsonSchema(node, { fallback: { symbolKey: ctx => ctx.base } })
+		).snap({ type: "object", additionalProperties: { type: "number" } })
+	})
+
 	it("variadic array", () => {
 		const node = rootSchema({
 			proto: Array,
