@@ -194,7 +194,15 @@ export class GenericRoot<
 			)
 		}
 		const open = this.openInstantiations
-		if (Math.max(open, depth) === maxOpenInstantiations) {
+		if (
+			Math.max(open, depth) === maxOpenInstantiations ||
+			// arguments that double each level would exhaust memory long before the depth bound
+			((open || depth) &&
+				this.names.reduce(
+					(length, name) => length + argNodes[name].hash.length,
+					0
+				) > maxOpenArgumentsLength)
+		) {
 			throwParseError(
 				writeUnclosedGenericCycleMessage(this.alias ?? this.description)
 			)
@@ -304,6 +312,8 @@ export type GenericRootBodyParser<params extends array<GenericParamAst>> = {
 }
 
 const maxOpenInstantiations = 100
+
+const maxOpenArgumentsLength = 1_000_000
 
 const mayExtend = (l: BaseRoot, r: BaseRoot): boolean => {
 	if (!l.includesAlias && !r.includesAlias) return false
