@@ -823,25 +823,25 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return $ark.ambient as never
 	}
 
-	private aliasOf(context: BaseParseContext): Alias.Node {
+	private aliasOf(ctx: BaseParseContext): Alias.Node {
 		const alias = this.node(
 			"alias",
-			{ reference: context.id },
+			{ reference: ctx.id },
 			{ prereduced: true }
 		)
-		if (!context.closesCycle) alias.closesCycle = false
+		if (!ctx.closesCycle) alias.closesCycle = false
 		return alias
 	}
 
 	private resolveContext(
 		name: string,
-		context: BaseParseContext,
+		ctx: BaseParseContext,
 		node: BaseRoot
 	): BaseRoot {
-		if (context.isReferencedById) {
-			node = withId(node, context.id)
-			nodesByRegisteredId[context.id] = node
-		} else delete nodesByRegisteredId[context.id]
+		if (ctx.isReferencedById) {
+			node = withId(node, ctx.id)
+			nodesByRegisteredId[ctx.id] = node
+		} else delete nodesByRegisteredId[ctx.id]
 		return (this.resolutions[name] = node)
 	}
 
@@ -849,13 +849,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
-		const context = nodesByRegisteredId[pending.id] as BaseParseContext
+		const ctx = nodesByRegisteredId[pending.id] as BaseParseContext
 		inProgress.resolutions++
 		let resolution: BaseRoot
 		try {
 			resolution = this.resolveContext(
 				name,
-				context,
+				ctx,
 				resolveShallowAliases(pending)
 			)
 		} finally {
@@ -943,29 +943,29 @@ export abstract class BaseScope<$ extends {} = {}> {
 			!(def instanceof LazyGenericRoot)
 		) {
 			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
-			const context = registerParseContext(
+			const ctx = registerParseContext(
 				this.createParseContext(preparsed as BaseParseContextInput)
 			)
-			this.resolutions[name] = context.id
-			context.phase = "resolving"
+			this.resolutions[name] = ctx.id
+			ctx.phase = "resolving"
 			if (isResolutionFinal()) discardUnchecked()
 			inProgress.definitions++
 			try {
-				def = this.normalizeRootScopeValue(context.def)
+				def = this.normalizeRootScopeValue(ctx.def)
 			} finally {
 				inProgress.definitions--
 				// if the call throws, its context stays registered so an alias parsed during it resolves by name
 				delete this.resolutions[name]
 			}
 			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
-				context.def = def
-				context.phase = "unresolved"
-				this.resolutions[name] = context.id
+				ctx.def = def
+				ctx.phase = "unresolved"
+				this.resolutions[name] = ctx.id
 				// parsing its definition discards checks still open, so they're made first
 				assertUnchecked()
 				return this.maybeResolve(name)
 			}
-			delete nodesByRegisteredId[context.id]
+			delete nodesByRegisteredId[ctx.id]
 		} else def = this.normalizeRootScopeValue(def)
 
 		if (hasArkKind(def, "generic")) {
@@ -1243,11 +1243,11 @@ const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
 const openDefinitions: BaseParseContext[] = []
 const openMembers: BaseParseContext[] = []
 
-// the definition being parsed reaches context, so it belongs to the component of the shallowest definition context reaches
-const reach = (context: BaseParseContext) => {
+// the definition being parsed reaches ctx, so it belongs to the component of the shallowest definition ctx reaches
+const reach = (ctx: BaseParseContext) => {
 	const referencer = openDefinitions[openDefinitions.length - 1]
-	if (referencer && context.lowlink! < referencer.lowlink!)
-		referencer.lowlink = context.lowlink!
+	if (referencer && ctx.lowlink! < referencer.lowlink!)
+		referencer.lowlink = ctx.lowlink!
 }
 
 const maybeResolveExport = (
