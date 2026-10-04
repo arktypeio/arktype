@@ -573,7 +573,10 @@ contextualize(() => {
 			attest(T(epoch)).equals(epoch)
 			attest(T({ a: Number.NaN })).equals({ a: Number.NaN })
 			attest(T({ a: new Date(0).toISOString() }).toString()).snap(
-				'a must be 1970 or NaN (was "1970-01-01T00:00:00.000Z")'
+				'a must be 1970, NaN, 1 or 2 (was "1970-01-01T00:00:00.000Z")'
+			)
+			attest($.type.enumerated(Number.NaN, "a", true)("c").toString()).snap(
+				'must be NaN, "a" or true (was "c")'
 			)
 		}
 	})
