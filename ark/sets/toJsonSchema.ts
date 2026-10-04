@@ -25,7 +25,7 @@ export const toJsonSchema = (
 		{ refs: [] }
 	)
 
-	ctx.useRefs ||= node.isCyclic
+	ctx.useRefs ||= node.includesAlias
 
 	// ensure $schema is the first key if present
 	const schema: JsonSchema =

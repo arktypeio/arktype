@@ -954,6 +954,20 @@ contextualize(() => {
 		)
 	})
 
+	it("describes a cyclic pipe in JSON Schema by reference", () => {
+		const { a } = scope({ a: { "n?": "string.json.parse |> a" } }).export()
+
+		const { $ref, $defs } = a.toJsonSchema({
+			fallback: { morph: ctx => ctx.base }
+		}) as { $ref: string; $defs: Record<string, any> }
+		const definitionOf = (ref: string) => $defs[ref.slice("#/$defs/".length)]
+
+		attest(definitionOf($ref).type).equals("object")
+		attest(definitionOf(definitionOf($ref).properties.n.$ref)).equals({
+			type: "string"
+		})
+	})
+
 	it("parses a cyclic non-empty array's json back", () => {
 		const { a } = scope({
 			a: { "p?": ["b", "...", "b[]"] },
