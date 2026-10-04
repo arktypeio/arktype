@@ -1410,6 +1410,11 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(() =>
 			scope({ "g<p extends object>": { "n?": "g<g<p>>" } } as never).export()
 		).throws(writeUnclosedGenericCycleMessage("g"))
+		attest(() =>
+			scope({
+				"g<p extends object>": { "p1?": "p", p2: "g<g<p>> | null" }
+			} as never).export()
+		).throws(writeUnclosedGenericCycleMessage("g"))
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1026

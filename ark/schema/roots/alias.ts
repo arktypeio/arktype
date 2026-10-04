@@ -309,12 +309,22 @@ const expressionOf = (node: AliasNode): string => {
 		:	node.reference
 }
 
-const operationsOf = (node: BaseRoot): AliasNode[] =>
-	node.includesAlias ?
-		(Object.values(node.referencesById).filter(
-			reference => reference.hasKind("alias") && reference.operands
-		) as never)
-	:	[]
+// a deferred value prints as its definition, so it holds the operations its definition does
+const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
+	if (!node.includesAlias || seen.includes(node)) return []
+	seen.push(node)
+	const operations: AliasNode[] = []
+	for (const reference of node.references) {
+		if (!reference.hasKind("alias")) continue
+		if (reference.operands) operations.push(reference)
+		else {
+			const referenced = nodesByRegisteredId[reference.reference as NodeId]
+			if (hasArkKind(referenced, "root"))
+				operations.push(...operationsOf(referenced, seen))
+		}
+	}
+	return operations
+}
 
 // an argument nesting operations is elided, since an expansive generic would repeat it at every level
 const nestsOperations = (arg: BaseRoot): boolean =>
