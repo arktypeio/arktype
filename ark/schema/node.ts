@@ -948,12 +948,12 @@ interface SimulationState {
 	comparing: string
 	unfoldsAliases: boolean
 	subsumes: boolean
-	subsumed: Record<string, boolean>
 }
 
 interface SimulatedPair {
 	l: BaseNode
 	r: BaseNode
+	within: boolean
 	assumedBy: Record<string, true>
 }
 
@@ -962,14 +962,13 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (l.innerHash === r.innerHash) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
 		if (!s.unfoldsAliases) return true
-		const pair = `${l.id}|${r.id}`
-		if (s.failed[pair]) return false
-		if (s.pairs[pair]) s.pairs[pair].assumedBy[s.comparing] = true
-		else {
-			s.pairs[pair] = { l, r, assumedBy: { [s.comparing]: true } }
-			s.pending.push(pair)
+		if (s.subsumes) {
+			// an intersection is within its operands, and an operand is within it if it's within the others
+			if (l.hasKind("alias") && l.operandsBesides(r)) return true
+			const others = r.hasKind("alias") && r.operandsBesides(l)
+			if (others) return others.every(other => isAssumed(l, other, s, true))
 		}
-		return true
+		return isAssumed(l, r, s, false)
 	}
 	// branches of an unreduced union may subsume each other, so each need only be within one on the other side or another branch that is
 	if (l.hasKind("union") && !l.inner.ordered) {
@@ -1041,6 +1040,22 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	return true
 }
 
+const isAssumed = (
+	l: BaseNode,
+	r: BaseNode,
+	s: SimulationState,
+	within: boolean
+): boolean => {
+	const pair = `${l.id}${within ? "<" : "|"}${r.id}`
+	if (s.failed[pair]) return false
+	if (s.pairs[pair]) s.pairs[pair].assumedBy[s.comparing] = true
+	else {
+		s.pairs[pair] = { l, r, within, assumedBy: { [s.comparing]: true } }
+		s.pending.push(pair)
+	}
+	return true
+}
+
 // a variadic absorbs a prefix, optional or postfix element it equals, which an alias for either hides, so each index is compared at each length
 const isSequenceSimulated = (
 	l: Sequence.Node,
@@ -1083,24 +1098,34 @@ const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
 
 let isSubsuming = false
 
+// a branch is within another it equals the intersection of, related under the same assumptions so a cycle through both closes
 const isSubsumed = (
 	branch: BaseRoot,
 	other: BaseRoot,
 	s: SimulationState
 ): boolean => {
-	if (isSubsuming) return false
-	const pair = `${branch.id}|${other.id}`
-	if (pair in s.subsumed) return s.subsumed[pair]
+	let intersection: BaseRoot | Disjoint
 	isSubsuming = true
 	try {
 		// relating them reads resolutions directly, so the intersection isn't finalized
-		const intersection = branch.rawIntersect(other)
-		return (s.subsumed[pair] =
-			!(intersection instanceof Disjoint) && branch.equals(intersection))
+		intersection = branch.rawIntersect(other)
 	} finally {
 		isSubsuming = false
 	}
+	return (
+		!(intersection instanceof Disjoint) &&
+		isSimulated(branch, intersection, s) &&
+		isSimulated(intersection, branch, s)
+	)
 }
+
+// a branch that unfolds like one of the other's is within it without intersecting them
+const isWithin = (l: BaseRoot, r: BaseRoot, s: SimulationState): boolean =>
+	l.branches.every(
+		lBranch =>
+			r.branches.some(rBranch => isSimulated(lBranch, rBranch, s)) ||
+			r.branches.some(rBranch => isSubsumed(lBranch, rBranch, s))
+	)
 
 export const isMutuallySimulated = (
 	l: BaseNode,
@@ -1123,8 +1148,7 @@ const _isMutuallySimulated = (
 		failed: {},
 		comparing: "",
 		unfoldsAliases,
-		subsumes,
-		subsumed: {}
+		subsumes
 	}
 	const simulates = () => isSimulated(l, r, s) && isSimulated(r, l, s)
 	if (!simulates()) return false
@@ -1134,12 +1158,12 @@ const _isMutuallySimulated = (
 		if (s.failed[pair]) continue
 		const compared = s.pairs[pair]
 		s.comparing = pair
+		const l = compared.l.hasKind("alias") ? compared.l.resolution : compared.l
+		const r = compared.r.hasKind("alias") ? compared.r.resolution : compared.r
 		if (
-			isSimulated(
-				compared.l.hasKind("alias") ? compared.l.resolution : compared.l,
-				compared.r.hasKind("alias") ? compared.r.resolution : compared.r,
-				s
-			)
+			compared.within ?
+				isWithin(l as BaseRoot, r as BaseRoot, s)
+			:	isSimulated(l, r, s)
 		)
 			continue
 		s.failed[pair] = true
