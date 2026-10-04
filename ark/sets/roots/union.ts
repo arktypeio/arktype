@@ -4,7 +4,7 @@ import {
 	flatMorphsAreEqual,
 	flatRefsAreEqual,
 	isResolutionFinal,
-	uncheckedAssertions,
+	queueUnchecked,
 	type BaseRoot,
 	type BaseScope,
 	type CaseContext,
@@ -548,13 +548,13 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (l.includesAlias || r.includesAlias) {
 		if (!isResolutionFinal()) {
 			// what an alias transforms, and whether branches holding a definition still open overlap, is known once it closes
-			uncheckedAssertions.push(() => {
+			queueUnchecked(() => {
 				if (
 					(l.transforms || r.transforms) &&
 					!(intersectNodesRoot(l.rawIn, r.rawIn, l.$) instanceof Disjoint)
 				)
 					assertDeterminateOverlap(l, r)
-			})
+			}, `${l.id}|${r.id}`)
 			return
 		}
 		if (!l.transforms && !r.transforms) return
