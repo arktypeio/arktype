@@ -1406,6 +1406,15 @@ swap.swap.order[1] must be "on" (was "off")`)
 		).throws(writeUnclosedGenericCycleMessage("h"))
 	})
 
+	it("generic argument doubling each level", () => {
+		attest(() =>
+			scope({
+				"g<p>": { "a?": "g<pair<p>>" },
+				"pair<t>": { l: "t", r: "t" }
+			} as never).export()
+		).throws(writeUnclosedGenericCycleMessage("g"))
+	})
+
 	it("expansive generic deferred by constraint", () => {
 		attest(() =>
 			scope({ "g<p extends object>": { "n?": "g<g<p>>" } } as never).export()
