@@ -661,19 +661,23 @@ export const maxAliasDepth = 64
 
 export const maxAliasVisits = 1000
 
+let continuation: Traversal | undefined
+
 // shared by every root's Allows, which passes an alias depth in place of ctx
 export const aliasVisits = {
 	count: 0,
 	tracked: false,
-	// data past the depth bound may be cyclic, so the rest of it is traversed tracked rather than all of it again
+	// data past the depth bound may be cyclic, so every path past it continues one tracked traversal
 	exceed: (data: unknown): Traversal | false => {
+		// a path past the bound costs the visits it took to reach it, so cyclic data reruns tracked from its root
+		aliasVisits.count += maxAliasDepth
 		if (aliasVisits.count > maxAliasVisits) {
 			aliasVisits.count = Number.POSITIVE_INFINITY
 			return false
 		}
 		aliasVisits.tracked = true
 		// a root traversed untracked has no contextual predicate, so its Allows reads no config
-		return new Traversal(data, $ark.resolvedConfig)
+		return (continuation ??= new Traversal(data, $ark.resolvedConfig))
 	}
 }
 
@@ -740,10 +744,13 @@ export const allowsUntracked = (
 	)
 		return
 	const outerVisits = aliasVisits.count
+	const outerContinuation = continuation
 	aliasVisits.count = 0
+	continuation = undefined
 	const allowed = node.traverseAllows(data as never, 0 as never)
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
+	continuation = outerContinuation
 	return exceeded ? undefined : allowed
 }
 
