@@ -105,7 +105,9 @@ export class GenericRoot<
 			const key = argList.map(identityOf).join(",")
 			if (
 				argList.some(
-					(arg, i) => !this.constraints[i].isUnknown() && !isResolvable(arg)
+					(arg, i) =>
+						!this.constraints[i].isUnknown() &&
+						!(isResolvable(arg) && isResolvable(this.constraints[i]))
 				)
 			) {
 				const depth = this.openInstantiations
@@ -168,7 +170,7 @@ export class GenericRoot<
 			const name = this.names[i]
 			const arg = argNodes[name]
 			argNodes[name] = resolveShallowAliases(arg)
-			if (!argNodes[name].extends(constraint)) {
+			if (!argNodes[name].extends(resolveShallowAliases(constraint))) {
 				throwParseError(
 					writeUnsatisfiedParameterConstraintMessage(
 						name,
