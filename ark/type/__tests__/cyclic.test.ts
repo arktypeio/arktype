@@ -1148,6 +1148,26 @@ p1[0].p0 must be x (was a number)`)
 		).throws(writeIndiscriminableMorphMessage("{}", "{ p0?: g<string> }"))
 	})
 
+	it("morph union independent of unreferenced aliases", () => {
+		const { c }: Record<string, Type> = scope({
+			a: ["b", "|", { p: "number[]" }],
+			b: { "p?": "string.json.parse |> a" },
+			c: "string.json.parse |> a"
+		} as never).export() as never
+		const doubled = scope({
+			a0: {
+				p0: ["number", "=>", (n: number) => n * 2],
+				"p1?": "string.json.parse |> a0"
+			},
+			a1: ["a0", "|", { "p0?": "a1" }],
+			n: "string.json.parse |> a1"
+		}).export()
+
+		attest(c('{ "p": [1] }')).equals({ p: [1] })
+		attest(c('{ "p": "{}" }')).equals({ p: {} })
+		attest(doubled.n('{ "p0": 1 }')).equals({ p0: 2 })
+	})
+
 	it("unassignable default in cyclic intersection", () => {
 		attest(() =>
 			scope({
