@@ -331,6 +331,39 @@ contextualize(() => {
 					attest(last.next === last).equals(true)
 				})
 
+				it("traverses cyclic data with fan-out in linear work", config => {
+					let checks = 0
+					const node = scope(
+						{
+							node: {
+								v: ["number", ":", (v: number) => ++checks > 0 && v >= 0],
+								e: "node[]"
+							}
+						},
+						config
+					).export().node
+					const clique: (typeof node.infer)[] = Array.from(
+						{ length: 100 },
+						(_, v) => ({ v, e: [] })
+					)
+					for (const n of clique) n.e.push(...clique)
+					const ring: (typeof node.infer)[] = Array.from(
+						{ length: 200 },
+						(_, v) => ({ v, e: [] })
+					)
+					for (let i = 0; i < ring.length; i++)
+						ring[i].e.push(ring[(i + 1) % 200], ring[(i + 199) % 200])
+
+					for (const graph of [clique, ring]) {
+						checks = 0
+						attest(node.allows(graph[0])).equals(true)
+						attest(checks < 3 * graph.length).equals(true)
+						checks = 0
+						attest(node(graph[0])).equals(graph[0])
+						attest(checks < 3 * graph.length).equals(true)
+					}
+				})
+
 				it("transforms each path within its bounds", config => {
 					const node = scope(
 						{
