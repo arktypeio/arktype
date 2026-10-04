@@ -466,6 +466,40 @@ contextualize(() => {
 					)
 				})
 
+				it("reports a cyclic object its instantiation reaches once", config => {
+					const { a } = scope(
+						{
+							"g<p>": { kind: "'g'", "p0?": "g<a>", p2: "g<p> | null" },
+							a: "g<string>"
+						} as never,
+						config
+					).export() as never as Record<string, Type>
+					const data: { p2?: object } = {}
+					data.p2 = data
+
+					attest(String(a(data))).snap('kind must be "g" (was missing)')
+
+					const defs = {
+						"g<p>": { "p0?": "g<p> | null", p1: "Record<string, p>" },
+						a: "g<b>",
+						b: { "p0?": "null | a" }
+					}
+					const reversed = Object.fromEntries(Object.entries(defs).reverse())
+					const shared = { p0: null, p1: {} as Record<string, object> }
+					const invalid = { p0: shared, p1: { zz: "x" } }
+					shared.p1.r = { p0: invalid }
+
+					for (const def of [defs, reversed]) {
+						const types = scope(
+							def as never,
+							config
+						).export() as never as Record<string, Type>
+						attest(String(types.a(invalid))).snap(
+							"p1.zz must be an object (was a string)"
+						)
+					}
+				})
+
 				// https://github.com/arktypeio/arktype/issues/944
 				it("reads the input and output of a mutually recursive morph", config => {
 					const types = scope(

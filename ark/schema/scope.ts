@@ -839,7 +839,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		node: BaseRoot
 	): BaseRoot {
 		if (ctx.isReferencedById) {
-			node = withId(node, ctx.id)
+			if (nodesByRegisteredId[node.id] !== node) node = withId(node, ctx.id)
 			nodesByRegisteredId[ctx.id] = node
 		} else delete nodesByRegisteredId[ctx.id]
 		return (this.resolutions[name] = node)
