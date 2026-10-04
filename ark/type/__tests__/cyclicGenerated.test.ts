@@ -379,81 +379,86 @@ const generics = {
 	"alt<a, b>": { v: "a", "swap?": "alt<b, a>" }
 }
 
-contextualize(() => {
-	it("validates generated cyclic scopes alike in any order and mode", () => {
-		const failures: string[] = []
-		for (let seed = 1; seed <= 60; seed++) {
-			const rand = random(seed)
-			const aliases = generateAliases(rand)
-			const names = aliases.map((_, i) => nameOf(i))
-			const defs = Object.fromEntries(
-				aliases.map((a, i) => [names[i], defOf(a, i)])
-			)
-			const orders = [names, ...[0, 1, 2].map(() => shuffle(names, rand))]
-			const builds = [...orders, names].map((order, k) => {
-				try {
-					const ordered = Object.fromEntries(
-						order.map(name => [name, defs[name]])
-					)
-					const types: Record<string, Type> = scope(
-						{ ...generics, ...ordered } as never,
-						{ jitless: k === orders.length }
-					).export() as never
-					// reading an input or output first mustn't change what validates
-					if (k === 1) {
-						for (const name of names) {
-							void types[name].in
-							void types[name].out
-						}
+const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
+	const failures: string[] = []
+	for (let seed = firstSeed; seed <= lastSeed; seed++) {
+		const rand = random(seed)
+		const aliases = generateAliases(rand)
+		const names = aliases.map((_, i) => nameOf(i))
+		const defs = Object.fromEntries(
+			aliases.map((a, i) => [names[i], defOf(a, i)])
+		)
+		const orders = [names, ...[0, 1, 2].map(() => shuffle(names, rand))]
+		const builds = [...orders, names].map((order, k) => {
+			try {
+				const ordered = Object.fromEntries(
+					order.map(name => [name, defs[name]])
+				)
+				const types: Record<string, Type> = scope(
+					{ ...generics, ...ordered } as never,
+					{ jitless: k === orders.length }
+				).export() as never
+				// reading an input or output first mustn't change what validates
+				if (k === 1) {
+					for (const name of names) {
+						void types[name].in
+						void types[name].out
 					}
-					return types
-				} catch (e) {
-					return String(e)
 				}
-			})
-			const rejections = builds.filter(b => typeof b === "string")
-			if (rejections.length) {
-				if (rejections.length !== builds.length)
-					failures.push(`${seed}: built in some orders only`)
-				else if (isShallow(aliases) && !rejections[0].includes("shallow"))
-					failures.push(`${seed}: ${rejections[0]}`)
-				continue
+				return types
+			} catch (e) {
+				return String(e)
 			}
-			if (isShallow(aliases)) failures.push(`${seed}: shallow cycle built`)
-			const types = builds as Record<string, Type>[]
-			const allows = oracleOf(aliases)
-			for (let i = 0; i < aliases.length; i++) {
-				for (let variant = 0; variant < 6; variant++) {
-					const data = () => {
-						const r = random(seed * 1000 + i * 10 + variant)
-						const generated = generateData(aliases, r)(i)
-						return (
-							variant % 3 === 1 ? mutate(generated, r)
-							: variant % 3 === 2 ? linkCycle(generated, r)
-							: generated
+		})
+		const rejections = builds.filter(b => typeof b === "string")
+		if (rejections.length) {
+			if (rejections.length !== builds.length)
+				failures.push(`${seed}: built in some orders only`)
+			else if (isShallow(aliases) && !rejections[0].includes("shallow"))
+				failures.push(`${seed}: ${rejections[0]}`)
+			continue
+		}
+		if (isShallow(aliases)) failures.push(`${seed}: shallow cycle built`)
+		const types = builds as Record<string, Type>[]
+		const allows = oracleOf(aliases)
+		for (let i = 0; i < aliases.length; i++) {
+			for (let variant = 0; variant < 6; variant++) {
+				const data = () => {
+					const r = random(seed * 1000 + i * 10 + variant)
+					const generated = generateData(aliases, r)(i)
+					return (
+						variant % 3 === 1 ? mutate(generated, r)
+						: variant % 3 === 2 ? linkCycle(generated, r)
+						: generated
+					)
+				}
+				const expected = allows(i, data())
+				const outcomes = types.map(t => outcomeOf(t[names[i]], data()))
+				const jit = outcomes.slice(0, -1)
+				if (new Set(jit).size > 1) failures.push(`${seed} ${names[i]}: ${jit}`)
+				for (const [k, t] of types.entries()) {
+					if ((outcomes[k] === "ok") !== expected) {
+						failures.push(
+							`${seed} ${names[i]}: expected ${expected}, got ${outcomes[k]}`
 						)
 					}
-					const expected = allows(i, data())
-					const outcomes = types.map(t => outcomeOf(t[names[i]], data()))
-					const jit = outcomes.slice(0, -1)
-					if (new Set(jit).size > 1)
-						failures.push(`${seed} ${names[i]}: ${jit}`)
-					for (const [k, t] of types.entries()) {
-						if ((outcomes[k] === "ok") !== expected) {
-							failures.push(
-								`${seed} ${names[i]}: expected ${expected}, got ${outcomes[k]}`
-							)
-						}
-						if (t[names[i]].allows(data()) !== expected)
-							failures.push(`${seed} ${names[i]}: allows isn't ${expected}`)
-						const out = t[names[i]](data())
-						if (expected && !t[names[i]].out.allows(out))
-							failures.push(`${seed} ${names[i]}: out rejects its output`)
-					}
+					if (t[names[i]].allows(data()) !== expected)
+						failures.push(`${seed} ${names[i]}: allows isn't ${expected}`)
+					const out = t[names[i]](data())
+					if (expected && !t[names[i]].out.allows(out))
+						failures.push(`${seed} ${names[i]}: out rejects its output`)
 				}
 			}
 		}
-		attest(failures).equals([])
+	}
+	attest(failures).equals([])
+}
+
+contextualize(() => {
+	describe("generated scopes", () => {
+		it("seeds 1-20", () => assertGeneratedScopesAlike(1, 20))
+		it("seeds 21-40", () => assertGeneratedScopesAlike(21, 40))
+		it("seeds 41-60", () => assertGeneratedScopesAlike(41, 60))
 	})
 
 	it("relates generated cyclic scopes and their wrappers alike in any order", () => {
