@@ -268,13 +268,13 @@ const scopesWithUnknownUnion = new WeakSet<BaseScope>()
 // leaves read no object property, so sharing them can't make an inline cache polymorphic
 const isLeafIn = (
 	node: BaseNode,
-	referencesById: Map<string, BaseNode>
+	referencesById: Record<string, BaseNode>
 ): boolean => {
 	if (!node.isRoot()) return false
 	for (const id in node.referencesById) {
 		const reference = node.referencesById[id]
 		if (
-			reference !== referencesById.get(id) ||
+			reference !== referencesById[id] ||
 			reference.hasKind("structure") ||
 			reference.hasKind("alias")
 		)
@@ -288,7 +288,7 @@ const precompile = (
 	owningScope?: BaseScope
 ): Fn => {
 	const linkage: UnitLinkage = {
-		referencesById: new Map(),
+		referencesById: {},
 		reused: new Set(),
 		unreached: new Set(),
 		reached: [],
@@ -297,7 +297,7 @@ const precompile = (
 		errorContexts: [],
 		members: []
 	}
-	for (const node of references) linkage.referencesById.set(node.id, node)
+	for (const node of references) linkage.referencesById[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
 		if (node.isReusableLeaf && isLeafIn(node, linkage.referencesById))
@@ -474,7 +474,7 @@ const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string => {
 }
 
 interface UnitLinkage {
-	referencesById: Map<string, BaseNode>
+	referencesById: Record<string, BaseNode>
 	reused: Set<BaseNode>
 	unreached: Set<BaseNode>
 	reached: BaseNode[]
@@ -502,9 +502,9 @@ class TraversalCompiler extends NodeCompiler {
 	}
 
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
-		const reference = this.linkage.referencesById.get(node.id)
+		const reference = this.linkage.referencesById[node.id]
 		if (!reference) {
-			this.linkage.referencesById.set(node.id, node)
+			this.linkage.referencesById[node.id] = node
 			this.linkage.reached.push(node)
 		} else if (this.linkage.reused.has(reference)) {
 			const kind = opts?.kind ?? this.traversalKind
