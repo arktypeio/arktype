@@ -359,8 +359,9 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	)
 }
 
+// a node built from an alias keeps its reference under a new id, e.g. an instantiation whose body is one
 export const identityOf = (node: BaseRoot): string =>
-	node.hasKind("alias") && !node.operands ? node.reference : node.id
+	node.hasKind("alias") ? node.reference : node.id
 
 export const isResolvable = (node: BaseRoot): boolean => {
 	if (!node.includesShallowAlias) return true

@@ -1333,6 +1333,28 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(types.a0.allows([1])).equals(false)
 	})
 
+	it("generic instantiated as another in any order", () => {
+		const generics = {
+			"g0<p>": "g1<string>",
+			"g1<p>": { "p0?": "a3", "p1?": "g1<g0<string>>" }
+		} as const
+		const first: Record<string, Type> = scope({
+			...generics,
+			a3: "g0<number>"
+		} as never).export() as never
+		const last: Record<string, Type> = scope({
+			a3: "g0<number>",
+			...generics
+		} as never).export() as never
+		const data = { p1: { p1: { p0: 1 } } }
+
+		attest(first.a3.equals(last.a3)).equals(true)
+		attest(String(first.a3(data))).snap(
+			"p1.p1.p0 must be an object (was a number)"
+		)
+		attest(String(last.a3(data))).equals(String(first.a3(data)))
+	})
+
 	it("closes a recursive generic's instantiations", () => {
 		const types = scope({
 			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },
