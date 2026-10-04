@@ -893,12 +893,14 @@ export abstract class BaseNode<
 type Simulation = {
 	assumed: string[]
 	failed: Set<string>
+	unfoldsAliases: boolean
 }
 
-// a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related while it's compared
+// a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related while it's compared or left folded
 const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 	if (l.innerHash === r.innerHash) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
+		if (!ctx.unfoldsAliases) return true
 		const pair = `${l.id}|${r.id}`
 		if (ctx.failed.has(pair)) return false
 		if (ctx.assumed.includes(pair)) return true
@@ -971,8 +973,12 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 	return true
 }
 
-const isMutuallySimulated = (l: BaseNode, r: BaseNode): boolean => {
-	const ctx: Simulation = { assumed: [], failed: new Set() }
+export const isMutuallySimulated = (
+	l: BaseNode,
+	r: BaseNode,
+	unfoldsAliases = true
+): boolean => {
+	const ctx: Simulation = { assumed: [], failed: new Set(), unfoldsAliases }
 	return isSimulated(l, r, ctx) && isSimulated(r, l, ctx)
 }
 
