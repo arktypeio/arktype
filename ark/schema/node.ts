@@ -225,6 +225,7 @@ export abstract class BaseNode<
 		flag: "includesTransform" | "includesContextualPredicate"
 	): boolean {
 		if (this[flag] || !this.includesAlias) return this[flag]
+		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
 		for (const node of reached.values()) {
 			for (const id in node.referencesById) {
@@ -256,7 +257,6 @@ export abstract class BaseNode<
 		)
 	}
 
-	// a child that picks by ctx needs it passed down
 	protected get transformSelectsByContext(): boolean {
 		return this.children.some(child => child.transformRequiresContext)
 	}

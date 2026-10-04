@@ -1280,6 +1280,7 @@ const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
 
 // compiling resolves every alias a node reaches, so jitless resolves them too, surfacing their errors at once
 const resolveReachedAliases = (references: readonly BaseNode[]) => {
+	// a Map visits the ids added while it's iterated
 	const reached = new Map(references.map(node => [node.id, node]))
 	for (const node of reached.values()) {
 		if (node.hasKind("alias")) {
