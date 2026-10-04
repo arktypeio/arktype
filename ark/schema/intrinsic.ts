@@ -1,3 +1,4 @@
+import { defineValue } from "@ark/util"
 import { bootstrapRootScope, node, schemaScope } from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
@@ -96,12 +97,7 @@ export const bootstrap = (): void => {
 	if (bootstrapped && (bootstrappedWithEngine || !$ark.sets)) return
 	bootstrapped = true
 	bootstrappedWithEngine = $ark.sets !== undefined
-	Object.defineProperty($ark, "intrinsic", {
-		value: undefined,
-		writable: true,
-		enumerable: true,
-		configurable: true
-	})
+	defineValue($ark, "intrinsic", undefined)
 	try {
 		bootstrapRootScope(() =>
 			Object.assign(intrinsicTarget, bootstrapIntrinsic())

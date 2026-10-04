@@ -5,6 +5,7 @@ import {
 	append,
 	appendUnique,
 	conflatenateAll,
+	defineValue,
 	flatMorph,
 	type JsonArray,
 	type JsonObject,
@@ -164,14 +165,6 @@ export class ArkError<
 		throw this
 	}
 }
-
-const defineValue = (o: object, k: PropertyKey, value: unknown) =>
-	Object.defineProperty(o, k, {
-		value,
-		writable: true,
-		enumerable: true,
-		configurable: true
-	})
 
 export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns

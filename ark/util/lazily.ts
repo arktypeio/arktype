@@ -1,4 +1,5 @@
 import { cached } from "./functions.ts"
+import { defineValue } from "./records.ts"
 
 export const lazily = <t extends object>(thunk: () => t): t => {
 	let cached: any
@@ -27,23 +28,12 @@ export const defineLazily = (
 		get() {
 			const result = resolve()
 			const descriptor = Object.getOwnPropertyDescriptor(this, k)
-			if (descriptor ? descriptor.configurable : Object.isExtensible(this)) {
-				Object.defineProperty(this, k, {
-					value: result,
-					enumerable: true,
-					writable: true,
-					configurable: true
-				})
-			}
+			if (descriptor ? descriptor.configurable : Object.isExtensible(this))
+				defineValue(this, k, result)
 			return result
 		},
 		set(value) {
-			Object.defineProperty(this, k, {
-				value,
-				enumerable: true,
-				writable: true,
-				configurable: true
-			})
+			defineValue(this, k, value)
 		},
 		enumerable: true,
 		configurable: true
