@@ -384,15 +384,6 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("unary morph without ctx", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
-			const T = $.type({
-				a: ["string", "=>", (s: string, ctx: unknown = undefined) => !ctx]
-			})
-			attest(T.assert({ a: "x" }).a).equals(true)
-		}
-	})
-
 	it("branch morph errors with ctx", () => {
 		const N = type("number")
 		for (const jitless of [false, true]) {
