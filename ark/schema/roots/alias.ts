@@ -179,6 +179,10 @@ Resolution: ${printable(resolution)}`)
 		return this.operator === "In" || this.operator === "Out"
 	}
 
+	get hasResolvableOperands(): boolean {
+		return this.operands!.every(isResolvable)
+	}
+
 	get resolutionId(): NodeId {
 		if (this.resolve) return this.resolution.id
 		if (this.reference[0] !== "$") return this.reference as NodeId
