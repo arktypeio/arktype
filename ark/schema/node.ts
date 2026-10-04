@@ -65,6 +65,7 @@ import {
 } from "./shared/implement.ts"
 import { $ark, registryName } from "./shared/registry.ts"
 import {
+	allowsAcyclic,
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
@@ -440,7 +441,7 @@ export abstract class BaseNode<
 			case "contextualTransform":
 				if (this.includesAlias) {
 					return (data, onFail) => {
-						const untracked = allowsUntracked(this, data)
+						const untracked = allowsAcyclic(this, data)
 						const allowed =
 							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
 						if (!allowed) return this.applyRoot(data).finalize(onFail)
@@ -1446,7 +1447,7 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		js.if("!allows(data)", fallback).return("data")
 	else if (node.rootApplyStrategy === "contextualTransform") {
 		if (node.includesAlias) {
-			js.const("untracked", "allowsUntracked(node, data)")
+			js.const("untracked", "allowsAcyclic(node, data)")
 				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
 				.const("ctx", "new Traversal(data, config)")
 				.set("ctx.tracksTransforms", "untracked === undefined")
@@ -1475,7 +1476,7 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		"Traversal",
 		"TransformErrors",
 		"applyCyclic",
-		"allowsUntracked",
+		"allowsAcyclic",
 		"allowsInContext",
 		"config",
 		"unset",
@@ -1488,7 +1489,7 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		Traversal,
 		TransformErrors,
 		applyCyclic,
-		allowsUntracked,
+		allowsAcyclic,
 		allowsInContext,
 		node.$.resolvedConfig,
 		unset

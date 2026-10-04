@@ -303,6 +303,34 @@ contextualize(() => {
 					}
 				})
 
+				it("traverses data past the depth bound once", config => {
+					let checks = 0
+					const types = scope(
+						{
+							list: {
+								v: ["number", ":", (v: number) => ++checks > v],
+								"next?": "list"
+							},
+							parsed: { v: "string.numeric.parse", "next?": "parsed" }
+						},
+						config
+					).export()
+					let data: typeof types.list.infer = { v: 0 }
+					for (let i = 1; i < 100; i++) data = { v: -i, next: data }
+
+					attest(types.list.allows(data)).equals(true)
+					attest(checks).equals(100)
+
+					const ring: typeof types.parsed.inferIn = { v: "0" }
+					ring.next = ring
+					let deep = ring
+					for (let i = 1; i < 100; i++) deep = { v: `${i}`, next: deep }
+					let last = types.parsed.assert(deep)
+					for (let i = 1; i < 100; i++) last = last.next!
+
+					attest(last.next === last).equals(true)
+				})
+
 				it("transforms each path within its bounds", config => {
 					const node = scope(
 						{
