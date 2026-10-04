@@ -1797,6 +1797,27 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(String(last.a3(data))).equals(String(first.a3(data)))
 	})
 
+	it("instantiations related in any declaration order", () => {
+		const box = { "box<t>": { v: "t", "next?": "box<t>" } } as const
+		const first: Record<string, Type> = scope({
+			...box,
+			n0: [["string"], "[]"],
+			n1: { "a?": "box<n0>" },
+			c0: [["string", "null?"], "[]"],
+			c1: { "a?": "box<c0>" }
+		} as never).export() as never
+		const last: Record<string, Type> = scope({
+			...box,
+			c1: { "a?": "box<c0>" },
+			c0: [["string", "null?"], "[]"],
+			n1: { "a?": "box<n0>" },
+			n0: [["string"], "[]"]
+		} as never).export() as never
+
+		attest(first.n1.extends(first.c1)).equals(true)
+		attest(last.n1.extends(last.c1)).equals(true)
+	})
+
 	it("closes a recursive generic's instantiations", () => {
 		const types = scope({
 			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },
