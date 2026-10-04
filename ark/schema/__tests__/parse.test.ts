@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { registerNodeId, rootSchema, schemaScope } from "@ark/schema"
 
 contextualize(() => {
-	it("keeps ids unique when a prefix ends in a digit", () => {
+	it("unique ids for digit-ending prefixes", () => {
 		const ids = new Set<string>()
 		for (let i = 0; i < 12; i++) ids.add(registerNodeId("unique1"))
 		for (let i = 0; i < 2; i++) ids.add(registerNodeId("unique11"))
@@ -34,7 +34,7 @@ contextualize(() => {
 		})
 	})
 
-	it("parses an array's union element from its json", () => {
+	it("array union element from json", () => {
 		const T = rootSchema({ proto: Array, sequence: ["string", "number"] })
 		attest(T.expression).snap("(number | string)[]")
 		attest(T.json).snap({ sequence: ["number", "string"], proto: "Array" })

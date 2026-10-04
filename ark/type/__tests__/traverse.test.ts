@@ -262,7 +262,7 @@ age must be more than 18 (was 2)`)
 		attest(callCount).equals(0)
 	})
 
-	it("leaves ctx as it was after a type is called with it", () => {
+	it("ctx after nested call", () => {
 		const calling = (t: Type, data: unknown) =>
 			type("unknown").narrow((_, ctx) => {
 				t.internal(data, ctx)

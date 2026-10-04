@@ -189,7 +189,7 @@ contextualize(() => {
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
-	it("compiled leaf with a scope's description writer", () => {
+	it("leaf with scope description writer", () => {
 		const A = type({ a: "number > 1234" })
 		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
 		for (const jitless of [false, true]) {

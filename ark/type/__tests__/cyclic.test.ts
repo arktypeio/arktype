@@ -14,7 +14,7 @@ contextualize(() => {
 			jitless ? "jitless" : "jit",
 			() => ({ jitless }),
 			it => {
-				it("rejects an object a failed branch reached", config => {
+				it("object reached by failed branch", config => {
 					const types = scope(
 						{
 							x: { v: "string", "self?": "x" },
@@ -75,7 +75,7 @@ contextualize(() => {
 					)
 				})
 
-				it("rejects an object an undiscriminated union shares", config => {
+				it("object shared by undiscriminated union", config => {
 					const types = scope(
 						{
 							a: { kids: "union[]", "a?": "string" },
@@ -109,7 +109,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/924
-				it("reports an invalid object at its shortest path", config => {
+				it("invalid object at shortest path", config => {
 					const types = scope(
 						{
 							package: {
@@ -166,7 +166,7 @@ contextualize(() => {
 					)
 				})
 
-				it("agrees on either side of its bounds", config => {
+				it("depth and width bounds", config => {
 					const types = scope(
 						{
 							list: { v: "number", "next?": "list" },
@@ -229,7 +229,7 @@ contextualize(() => {
 					attest(out.left === out).equals(true)
 				})
 
-				it("pipes cyclic output to a cyclic type", config => {
+				it("cyclic output to cyclic type", config => {
 					const $ = scope({ node: { v: "number", "next?": "node" } }, config)
 					const data: { v: unknown; next?: object } = { v: 0 }
 					data.next = data
@@ -241,7 +241,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/1630
-				it("reports a cyclic union's errors on its discriminated branch", config => {
+				it("cyclic union discriminated branch errors", config => {
 					const api = scope(
 						{
 							Field: { type: "'field'", value: "string >= 1" },
@@ -260,7 +260,7 @@ contextualize(() => {
 					)
 				})
 
-				it("builds a morph union of definitions in progress", config => {
+				it("morph union of open definitions", config => {
 					const types = scope(
 						{
 							other: { kind: "'b'", "next?": "node | other" },
@@ -279,7 +279,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/924
-				it("reports an object reached through a union once", config => {
+				it("object through union reported once", config => {
 					const node = scope(
 						{
 							node: { v: "number", "kids?": "node[]", "next?": "node | null" }
@@ -298,7 +298,7 @@ contextualize(() => {
 					)
 				})
 
-				it("reports an object its component's members share once", config => {
+				it("shared component object reported once", config => {
 					const user = scope(
 						{
 							user: { name: "string", groups: "group[]" },
@@ -320,7 +320,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/1237
-				it("validates a generic of a cyclic intersection", config => {
+				it("generic of cyclic intersection", config => {
 					const node = scope(
 						{
 							AEditing: {
@@ -351,7 +351,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/944
-				it("reads the input and output of a cyclic morph", config => {
+				it("cyclic morph in and out", config => {
 					const node = scope(
 						{ node: { n: "string.numeric.parse", "next?": "node" } },
 						config
@@ -370,7 +370,7 @@ contextualize(() => {
 					)
 				})
 
-				it("pipes to a cyclic type that reads ctx", config => {
+				it("pipe to contextual cyclic type", config => {
 					const types = scope(
 						{
 							node: [
@@ -392,7 +392,7 @@ contextualize(() => {
 					).snap('inner.next must be good (was {"bad":1})')
 				})
 
-				it("checks a default on a cyclic value once it resolves", config => {
+				it("cyclic default", config => {
 					const types = scope(
 						{
 							list: {
@@ -416,7 +416,7 @@ contextualize(() => {
 					).throws("Default for next must be an object or null (was a number)")
 				})
 
-				it("prefixes a cyclic pipe's union errors with its path", config => {
+				it("cyclic pipe union error paths", config => {
 					const types = scope(
 						{
 							node: { "+": "reject", "next?": "string.json.parse |> either" },
@@ -431,7 +431,7 @@ contextualize(() => {
 					)
 				})
 
-				it("describes a missing cyclic value by its resolution", config => {
+				it("missing cyclic value description", config => {
 					const types = scope(
 						{
 							nullable: { next: "nullable | null" },
@@ -450,7 +450,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/924
-				it("reports a cyclic object reached outside an alias once", config => {
+				it("cyclic object outside alias", config => {
 					const node = scope(
 						{ node: { kind: "'node'", "next?": "node" } },
 						config
@@ -466,7 +466,7 @@ contextualize(() => {
 					)
 				})
 
-				it("reports an object a cyclic value reaches twice once", config => {
+				it("doubly reached cyclic object", config => {
 					const { a } = scope(
 						{ a: { v: { p0: "string[] | null", "p1?": "a" } } },
 						config
@@ -493,7 +493,7 @@ contextualize(() => {
 					)
 				})
 
-				it("reports a cyclic object its instantiation reaches once", config => {
+				it("cyclic object reached by instantiation", config => {
 					const { a }: Record<string, Type> = scope(
 						{
 							"g<p>": { kind: "'g'", "p0?": "g<a>", p2: "g<p> | null" },
@@ -528,7 +528,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/944
-				it("reads the input and output of a mutually recursive morph", config => {
+				it("mutually recursive morph in and out", config => {
 					const types = scope(
 						{
 							a: { n: "string.numeric.parse", "b?": "b" },
@@ -548,7 +548,7 @@ contextualize(() => {
 					)
 				})
 
-				it("reads the output of a cyclic pipe into a union alias", config => {
+				it("cyclic pipe to union alias out", config => {
 					const types = scope(
 						{
 							a: { "n?": "null | (string.json.parse |> b)" },
@@ -566,7 +566,7 @@ contextualize(() => {
 					)
 				})
 
-				it("reads the output of a pipe in a union into an alias reaching a cycle", config => {
+				it("union pipe to cyclic alias out", config => {
 					const types = scope(
 						{
 							a0: { p2: "a3" },
@@ -585,7 +585,7 @@ contextualize(() => {
 					).snap("p2.x.p1.p0 must be a number (was a string)")
 				})
 
-				it("validates a cyclic morph union alike after reading its input", config => {
+				it("cyclic morph union after in", config => {
 					const types = () =>
 						scope(
 							{
@@ -607,7 +607,7 @@ contextualize(() => {
 					attest(validated.a3.in.expression).equals(read.a3.in.expression)
 				})
 
-				it("throws a cyclic intersection's error when it's exported", config => {
+				it("cyclic intersection error on export", config => {
 					attest(() =>
 						scope(
 							{
@@ -625,7 +625,7 @@ contextualize(() => {
 					)
 				})
 
-				it("accepts data valid without an assumption that failed", config => {
+				it("valid without failed assumption", config => {
 					const { a } = scope(
 						{ a: { p0: "(r | a)[]" }, r: { "p0?": "a[] | a" } },
 						config
@@ -639,7 +639,7 @@ contextualize(() => {
 					attest(a(data) === data).equals(true)
 				})
 
-				it("describes each branch of a nested union by its expectation", config => {
+				it("nested union branch messages", config => {
 					const types = scope(
 						{
 							a2: { p1: "string" },
@@ -654,7 +654,7 @@ contextualize(() => {
 					)
 				})
 
-				it("describes each level of a recursive union with an index once", config => {
+				it("recursive union index message", config => {
 					const { c } = scope(
 						{
 							c: { kind: "'c'", "p2?": "b" },
@@ -673,7 +673,7 @@ contextualize(() => {
 					)
 				})
 
-				it("stops checking a value once it fails as never", config => {
+				it("stops at never failure", config => {
 					const types = scope(
 						{
 							a: { p0: { p0: "string" }, "x?": "b" },
@@ -697,7 +697,7 @@ contextualize(() => {
 				})
 
 				// https://github.com/arktypeio/arktype/issues/944
-				it("transforms a cyclic type through its aliases", config => {
+				it("cyclic transform through aliases", config => {
 					const node = scope(
 						{ node: { v: "string", "next?": "node" } },
 						config
@@ -716,7 +716,7 @@ contextualize(() => {
 					)
 				})
 
-				it("closes cyclic output where the data entered", config => {
+				it("cyclic output closes at entry", config => {
 					const $ = scope(
 						{
 							node: { kind: "'n'", v: "string.trim", "next?": "node" },
@@ -761,7 +761,7 @@ contextualize(() => {
 					attest(types.tuple([])).equals([{ b: { v: "e" } }])
 				})
 
-				it("instantiates a submodule's generic through a generic of its own", config => {
+				it("submodule generic via own generic", config => {
 					const sub = scope({ "g<p>": "(p | g<p>)[]" }, config).export()
 					const {
 						a
@@ -781,7 +781,7 @@ contextualize(() => {
 	}
 
 	// https://github.com/arktypeio/arktype/issues/944
-	it("references the input and output of a cyclic morph by alias", () => {
+	it("cyclic morph in and out aliases", () => {
 		const types = scope({
 			user: { id: "string.numeric.parse", groups: "group[]" },
 			group: { title: "string", members: "user[]" }
@@ -812,7 +812,7 @@ contextualize(() => {
 		attest(types.c.expression).snap("{ a: $a }")
 	})
 
-	it("parses a dense component in linear size", () => {
+	it("dense component in linear size", () => {
 		const def: Record<string, object> = {}
 		for (let i = 0; i < 16; i++) {
 			def[`a${i}`] = {
@@ -825,7 +825,7 @@ contextualize(() => {
 		attest(a0.expression).snap("{ k0: string, next?: $a1 | $a3 | null }")
 	})
 
-	it("parses a scope alike in any declaration order", () => {
+	it("any declaration order", () => {
 		const t = scope({
 			t0: { x: "t3", "y?": "t2 | t1" },
 			t1: { x: "t3", "y?": "t4 | t1" },
@@ -856,7 +856,7 @@ contextualize(() => {
 		attest(a.a1.expression).snap('{ kind: "a3", p0?: $a1 } | ($a2 | $a4)[]')
 	})
 
-	it("builds a cyclic morph union disjoint once its definitions close", () => {
+	it("disjoint cyclic morph union", () => {
 		const def = {
 			a0: { p0: "string" },
 			a1: "a2",
@@ -875,7 +875,7 @@ contextualize(() => {
 		attest(reordered.a3({ p0: "s" })).equals({ p0: "s" })
 	})
 
-	it("rejects a cyclic union overlapping a branch that transforms through an alias", () => {
+	it("indiscriminable cyclic morph union", () => {
 		const pipe = { "p0?": "string.json.parse |> a2" } as const
 		const message = writeIndiscriminableMorphMessage("{}", "{ p0?: $b }")
 
@@ -894,7 +894,7 @@ contextualize(() => {
 		).throws(writeIndiscriminableMorphMessage("{}", "{ p0?: g<string> }"))
 	})
 
-	it("reads an alias of a closed cycle as its node", () => {
+	it("closed cycle alias", () => {
 		const first = scope({
 			a0: { p0: "a1" },
 			a1: "a2",
@@ -920,7 +920,7 @@ contextualize(() => {
 	})
 
 	// https://github.com/arktypeio/arktype/issues/930
-	it("distinguishes aliases of the same name in different scopes", () => {
+	it("same alias name in different scopes", () => {
 		const s1 = scope({
 			a: { v: "string", "next?": "a" },
 			box: { "inner?": "a" }
@@ -956,7 +956,7 @@ contextualize(() => {
 		)
 	})
 
-	it("describes a cyclic pipe in JSON Schema by reference", () => {
+	it("cyclic pipe JSON Schema reference", () => {
 		const { a } = scope({ a: { "n?": "string.json.parse |> a" } }).export()
 
 		const { $ref, $defs } = a.toJsonSchema({
@@ -970,7 +970,7 @@ contextualize(() => {
 		})
 	})
 
-	it("parses a cyclic non-empty array's json back", () => {
+	it("non-empty cyclic array json", () => {
 		const { a } = scope({
 			a: { "p?": ["b", "...", "b[]"] },
 			b: { "n?": "b" }
@@ -1003,7 +1003,7 @@ contextualize(() => {
 		attest(types.group.extends(types.part)).equals(true)
 	})
 
-	it("compares cyclic types piping to themselves by their unfolding", () => {
+	it("self-piping cyclic equality", () => {
 		const parsed = () =>
 			scope({ a: { "n?": "string.json.parse |> a" } }).export().a
 		const l = parsed()
@@ -1015,7 +1015,7 @@ contextualize(() => {
 		attest(l.or(r).expression).snap("{ n?: (In: string) => To<$a> }")
 	})
 
-	it("equates a cyclic union with its reduction", () => {
+	it("cyclic union equals its reduction", () => {
 		const types: Record<string, Type> = scope({
 			a: "b[] | a[]",
 			b: "a[]",
@@ -1030,7 +1030,7 @@ contextualize(() => {
 		attest(types.c.equals(types.d)).equals(false)
 	})
 
-	it("relates cyclic types whose props are disjoint from an index", () => {
+	it("cyclic props disjoint from index", () => {
 		const { b: l }: Record<string, Type> = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },
 			d: "Record<string, d>"
@@ -1045,7 +1045,7 @@ contextualize(() => {
 		attest(l.and(r).allows({ kind: "b", p2: null })).equals(false)
 	})
 
-	it("compares a cyclic union with a subsumed branch to its reduction", () => {
+	it("cyclic union with subsumed branch", () => {
 		const { u }: Record<string, Type> = scope({
 			g: { "p0?": "g" },
 			u: ["g", "|", { "p0?": "g", "p1?": "string" }]
@@ -1065,7 +1065,7 @@ contextualize(() => {
 		attest(b.or(b).equals(b)).equals(true)
 	})
 
-	it("relates cyclic types alike whatever was related before", () => {
+	it("relations independent of history", () => {
 		const base = {
 			a: "(c | boolean)[]",
 			c: "(a | d)[]",
@@ -1086,7 +1086,7 @@ contextualize(() => {
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1237
-	it("instantiates a generic with a cyclic alias", () => {
+	it("generic with cyclic alias", () => {
 		const node = scope({
 			node: { n: "string", kids: "Record<string, node>" }
 		}).export().node
@@ -1101,7 +1101,7 @@ contextualize(() => {
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1237
-	it("checks a cyclic generic argument once it resolves", () => {
+	it("deferred cyclic generic argument", () => {
 		const types = scope({
 			partial: { n: "string", "kids?": "Partial<partial>" },
 			omitted: { n: "string", "kids?": "Omit<omitted, 'n'>" }
@@ -1124,7 +1124,7 @@ contextualize(() => {
 		).throws(writeUnsatisfiedParameterConstraintMessage("T", "object", "$b"))
 	})
 
-	it("checks a generic argument once its constraint resolves", () => {
+	it("deferred generic constraint", () => {
 		const types: Record<string, Type> = scope({
 			a: { "y?": "g<a>" },
 			"g<t extends a>": { x: "t" }
@@ -1142,7 +1142,7 @@ contextualize(() => {
 		).throws(writeUnsatisfiedParameterConstraintMessage("t", "$a", "string"))
 	})
 
-	it("instantiates a generic its own constraint references", () => {
+	it("generic referenced by own constraint", () => {
 		const types: Record<string, Type> = scope({
 			"g<t extends a>": { x: "t" },
 			a: { "y?": "g<a>" }
@@ -1160,7 +1160,7 @@ contextualize(() => {
 		).snap("parent.value.id must be a string (was a number)")
 	})
 
-	it("accepts a cyclic subtype of a generic's constraint", () => {
+	it("cyclic subtype of generic constraint", () => {
 		const types: Record<string, Type> = scope({
 			"g<t extends base>": { v: "t" },
 			base: { "n?": "base" },
@@ -1186,7 +1186,7 @@ contextualize(() => {
 		)
 	})
 
-	it("checks a union generic argument once it resolves", () => {
+	it("deferred union generic argument", () => {
 		const types = scope({
 			"box<t extends object | null>": { "v?": "t" },
 			a: { "next?": "box<a | null>" }
@@ -1199,7 +1199,7 @@ contextualize(() => {
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1082
-	it("instantiates a recursive generic once per argument set", () => {
+	it("recursive generic instantiated once", () => {
 		const types = scope({
 			"list<t>": { value: "t", "next?": "list<t>" },
 			"alternate<a, b>": { "swap?": "alternate<b, a>", order: ["a", "b"] },
@@ -1225,7 +1225,7 @@ contextualize(() => {
 swap.swap.order[1] must be "on" (was "off")`)
 	})
 
-	it("builds a recursive generic defaulting its recursive prop", () => {
+	it("recursive generic with recursive default", () => {
 		const types = scope({
 			"g<p, q>": {
 				p0: ["g<q, p> | null", "=", null],
@@ -1283,7 +1283,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1082
-	it("rejects a recursive generic that can't be instantiated", () => {
+	it("uninstantiable recursive generic", () => {
 		attest(() =>
 			scope({
 				"poly<t>": { v: "t", "next?": "poly<t[]>" },
@@ -1298,7 +1298,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
-	it("describes a recursive generic argument without repeating it", () => {
+	it("recursive generic argument description", () => {
 		attest(
 			scope({
 				"list<t>": { value: "t", "next?": "list<t>" },
@@ -1319,14 +1319,14 @@ swap.swap.order[1] must be "on" (was "off")`)
 		).throws(writeUnclosedGenericCycleMessage("h"))
 	})
 
-	it("rejects an expansive generic its constraint defers", () => {
+	it("expansive generic deferred by constraint", () => {
 		attest(() =>
 			scope({ "g<p extends object>": { "n?": "g<g<p>>" } } as never).export()
 		).throws(writeUnclosedGenericCycleMessage("g"))
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1026
-	it("filters a definition in progress once it resolves", () => {
+	it("filtered open definition", () => {
 		const types = scope({
 			a: { v: "number", "n?": "Extract<a | string, object>" },
 			b: { "a?": "Exclude<a | string, object>" }
@@ -1341,7 +1341,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(types.b.allows({ a: { v: 1 } })).equals(false)
 	})
 
-	it("references a definition in progress only as a structural value", () => {
+	it("structural reference in progress", () => {
 		const types = scope({
 			Field: { type: "'field'", value: "string >= 1" },
 			Group: { type: "'group'", parts: "Part[]" },
@@ -1356,7 +1356,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(types.S.expression).snap("{ s: $S }")
 	})
 
-	it("transforms a thunk's type of a definition in progress", () => {
+	it("thunk of open definition transforms", () => {
 		const $ = scope({
 			a: { v: "string.numeric.parse", "w?": "w" },
 			w: (): type.Any => type({ x: $.type("a | null") })
@@ -1393,7 +1393,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
-	it("references itself structurally without a shallow cycle", () => {
+	it("structural self-reference", () => {
 		const types = scope({
 			nested: "(nested | number)[]",
 			a: "b",
@@ -1413,7 +1413,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476
-	it("keys an intersection of cyclic types by its operands", () => {
+	it("cyclic intersection keyed by operands", () => {
 		const types = scope({
 			a: { x: "b & a", "z?": "a & b & a" },
 			b: { y: "a & b" }
@@ -1431,7 +1431,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		})
 	})
 
-	it("intersects a cyclic type with a primitive", () => {
+	it("cyclic type and primitive", () => {
 		const list = scope({ list: "string | list[]" }).export().list
 		const strings = list.and("string[]")
 
@@ -1439,7 +1439,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(strings.allows([1])).equals(false)
 	})
 
-	it("relates a cyclic branch of a morph union by its resolution", () => {
+	it("morph union cyclic branch", () => {
 		const types = scope({
 			a: { v: "a | null" },
 			b: { v: "string", m: "string = 'x'" },
@@ -1461,7 +1461,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
-	it("unions a morph with a branch disjoint from its cyclic prop", () => {
+	it("morph union disjoint cyclic prop", () => {
 		const types = scope({
 			d: { p0: "boolean" },
 			e: { x: "string.numeric.parse", "p0?": "e" },

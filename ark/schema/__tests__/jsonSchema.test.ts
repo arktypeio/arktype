@@ -285,7 +285,7 @@ contextualize(() => {
 		).equals({ type: "string" })
 	})
 
-	it("defines nodes a $ref reaches in reference order", () => {
+	it("$defs in reference order", () => {
 		const node = rootSchema([
 			{
 				domain: "object",

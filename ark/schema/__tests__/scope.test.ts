@@ -132,7 +132,7 @@ contextualize(() => {
 		attest(s2.name).equals("Array")
 	})
 
-	it("applies roots with reserved or shadowing ids", () => {
+	it("reserved or shadowing ids", () => {
 		for (const id of [
 			"allows",
 			"apply",

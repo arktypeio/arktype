@@ -384,7 +384,7 @@ contextualize(() => {
 				attest(b.internal.json).equals(Expected.json)
 			})
 
-			it("infers an external generic's cyclic argument at every depth", () => {
+			it("external generic cyclic argument depth", () => {
 				const lib = scope({ "box<t>": { value: "t" } }).export()
 				const types = scope({
 					box: lib.box,
@@ -413,7 +413,7 @@ contextualize(() => {
 	)
 
 	// https://github.com/arktypeio/arktype/issues/1437
-	it("keeps a private alias of a generic exported twice", () => {
+	it("private alias exported twice", () => {
 		const $scope1 = scope({
 			"#private": "string",
 			"generic<t>": "private"

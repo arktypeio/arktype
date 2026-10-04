@@ -14,7 +14,7 @@ contextualize(() => {
 		attest(type("Date").infer).type.toString.snap("Date")
 	})
 
-	it("Date is valid unless its toString is Invalid Date", () => {
+	it("invalid Date", () => {
 		class NaNTime extends Date {
 			override getTime() {
 				return Number.NaN

@@ -594,7 +594,7 @@ contextualize(() => {
 		}
 	})
 
-	it("checks a primitive with the discriminant's key is an object", () => {
+	it("primitive with discriminant key", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
 			const T = $.type({ length: "3", x: "string" }).or({
@@ -607,7 +607,7 @@ contextualize(() => {
 		}
 	})
 
-	it("describes an object or symbol case by its value", () => {
+	it("object and symbol cases", () => {
 		const o = {}
 		const sym = Symbol("sym")
 		for (const jitless of [false, true]) {
@@ -621,7 +621,7 @@ contextualize(() => {
 		}
 	})
 
-	it("discriminating adds no reads of a rejected prop", () => {
+	it("rejected prop reads", () => {
 		const reads = (T: type.Any) => {
 			let count = 0
 			const v = Object.defineProperty({}, "a", {
@@ -638,7 +638,7 @@ contextualize(() => {
 		attest(reads(type({ v: A.or("null") }))).equals(reads(type({ v: A })))
 	})
 
-	it("doesn't discriminate on a key only an index signature constrains", () => {
+	it("no discriminant from index signature", () => {
 		const T = type({ a: "'x'", "[string]": "'x'" }).or({
 			kind: "'a'",
 			a: "string"

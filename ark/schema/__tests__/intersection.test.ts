@@ -27,7 +27,7 @@ contextualize(() => {
 		attest(n.allows(7)).snap(false)
 	})
 
-	it("narrows an index signature to optional props", () => {
+	it("index narrowed to optional props", () => {
 		const L = rootSchema({
 			domain: "object",
 			optional: [{ key: "a", value: "number" }],
@@ -42,7 +42,7 @@ contextualize(() => {
 		attest(T.allows({})).equals(true)
 	})
 
-	it("orients a Disjoint by its operands in either order", () => {
+	it("Disjoint orientation", () => {
 		const L = rootSchema({
 			domain: "object",
 			required: [{ key: "a", value: "string" }],
