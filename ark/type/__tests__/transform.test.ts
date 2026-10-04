@@ -367,6 +367,23 @@ b must be A (was "y")`)
 		}
 	})
 
+	it("non-enumerable key with shared defaults", () => {
+		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+			$.type({ a: "number = 5", b: "string" })
+			const T = $.type({
+				x: $.type({ a: "number = 5", c: "string" }).pipe((o, ctx) =>
+					o.c === "s" ? o : ctx.error("c kept")
+				),
+				y: "number"
+			})
+			const out = T({
+				x: Object.defineProperty({}, "c", { value: "s" }),
+				y: "bad"
+			})
+			attest(out.toString()).snap("y must be a number (was a string)")
+		}
+	})
+
 	it("unary morph without ctx", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const T = $.type({

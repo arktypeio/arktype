@@ -516,8 +516,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		// added additional ctx check here to address
 		// https://github.com/arktypeio/arktype/issues/1346
-		if (this.structuralMorph && traversalKind === "Apply" && !ctx.hasError())
-			ctx.queueMorphs([this.structuralMorph])
+		if (this.structuralMorph && traversalKind === "Apply" && !ctx.hasError()) {
+			ctx.queueMorphs([
+				(data, ctx) => this.applyStructuralMorph(data, data, ctx)
+			])
+		}
 
 		return true
 	}
@@ -768,7 +771,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
 			js.if("ctx && !ctx.hasError()", () =>
-				js.line(`ctx.queueMorphs([${js.ref(this.structuralMorph!)}])`)
+				js.line(
+					`ctx.queueMorphs([(data, ctx) => ${js.ref(this)}.applyStructuralMorph(data, data, ctx)])`
+				)
 			)
 		}
 	}
