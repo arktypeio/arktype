@@ -79,10 +79,10 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			const impliedSiblings = (result as BaseConstraint).impliedSiblings
 			if (s.kind === "intersection" && impliedSiblings)
 				for (const node of impliedSiblings) appendUnique(s.r, node)
-		} else if (!s.l.includes(result as never)) {
-			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2, so the second result is intersected again
+		} else {
+			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2, so the second's result replaces it, intersected again unless already held
 			s.l.splice(i--, 1)
-			s.r.push(result as BaseConstraint)
+			if (!s.l.includes(result as never)) s.r.push(result as BaseConstraint)
 		}
 	}
 	if (!matched) s.l.push(head)
