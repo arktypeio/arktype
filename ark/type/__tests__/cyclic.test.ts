@@ -989,6 +989,23 @@ contextualize(() => {
 		).throws(writeIndiscriminableMorphMessage("string[]", "($a0 | g0<$a0>)[]"))
 	})
 
+	it("describes a cyclic union", () => {
+		const types = scope({
+			a: { kind: "'a'", "n?": "b" },
+			b: { kind: "'b'", "n?": "a" },
+			u: "a | b",
+			list: "list[] | string"
+		}).export()
+		const described = types.u.describe("x")
+		const self = type({ v: "string", "n?": "this" }).or("null")
+
+		attest(described.expression).equals(types.u.expression)
+		attest(described.description).equals("x")
+		attest(types.list.describe("x").description).equals("x")
+		attest(self.describe("x").description).equals("x")
+		attest(types.u.select({ boundary: "shallow" }).length).equals(10)
+	})
+
 	it("closed cycle alias", () => {
 		const first = scope({
 			a0: { p0: "a1" },
