@@ -205,11 +205,11 @@ export abstract class BaseNode<
 	}
 
 	private _transforms: boolean | undefined
-	// includesTransform doesn't see an alias's resolution, final once no definition is open
+	// includesTransform doesn't see an alias's resolution, final once nothing but inputs and outputs is open
 	get transforms(): boolean {
 		if (this._transforms !== undefined) return this._transforms
 		const transforms = this.reaches("includesTransform")
-		return isResolutionFinal() ? (this._transforms = transforms) : transforms
+		return isIoFinal() ? (this._transforms = transforms) : transforms
 	}
 
 	private _allowsRequiresTraversal: boolean | undefined
@@ -217,7 +217,7 @@ export abstract class BaseNode<
 		if (this._allowsRequiresTraversal !== undefined)
 			return this._allowsRequiresTraversal
 		const requiresTraversal = this.reaches("includesContextualPredicate")
-		return isResolutionFinal() ?
+		return isIoFinal() ?
 				(this._allowsRequiresTraversal = requiresTraversal)
 			:	requiresTraversal
 	}
@@ -536,9 +536,7 @@ export abstract class BaseNode<
 	get rawIn(): BaseNode {
 		if (this._rawIn) return this._rawIn
 		const rawIn = this.getIo("in")
-		return this.includesAlias && !isResolutionFinal() ?
-				rawIn
-			:	(this._rawIn = rawIn)
+		return this.includesAlias && !isIoFinal() ? rawIn : (this._rawIn = rawIn)
 	}
 
 	private _out: unknown
@@ -553,9 +551,7 @@ export abstract class BaseNode<
 	get rawOut(): BaseNode {
 		if (this._rawOut) return this._rawOut
 		const rawOut = this.getIo("out")
-		return this.includesAlias && !isResolutionFinal() ?
-				rawOut
-			:	(this._rawOut = rawOut)
+		return this.includesAlias && !isIoFinal() ? rawOut : (this._rawOut = rawOut)
 	}
 
 	// Should be refactored to use transform

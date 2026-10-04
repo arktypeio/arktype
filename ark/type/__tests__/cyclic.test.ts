@@ -1148,6 +1148,27 @@ contextualize(() => {
 swap.swap.order[1] must be "on" (was "off")`)
 	})
 
+	it("builds a recursive generic defaulting its recursive prop", () => {
+		const types = scope({
+			"g<p, q>": {
+				p0: ["g<q, p> | null", "=", null],
+				"p1?": "g<null | q, null | p>",
+				"c0?": "g<x0, q>",
+				"c1?": "g<x1, q>",
+				"c2?": "g<x2, q>"
+			},
+			x0: {},
+			x1: {},
+			x2: {}
+		}).export()
+		const g = types.g("string", "number")
+
+		attest(g({})).equals({ p0: null })
+		attest(g({ p0: { p0: 5 } }).toString()).snap(
+			"p0.p0 must be an object or null (was a number)"
+		)
+	})
+
 	it("closes a recursive generic's instantiations", () => {
 		const types = scope({
 			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },
