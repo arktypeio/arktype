@@ -85,9 +85,19 @@ export const isIoFinal = (): boolean =>
 
 export const uncheckedAssertions: (() => void)[] = []
 
+let assertingUnchecked = false
+
 export const assertUnchecked = (): void => {
-	if (!isResolutionFinal()) return
-	for (const assert of uncheckedAssertions.splice(0)) assert()
+	// an assertion can resolve an alias, which asserts again, so what it queues runs in the outer loop
+	if (!isResolutionFinal() || assertingUnchecked) return
+	assertingUnchecked = true
+	try {
+		for (let i = 0; i < uncheckedAssertions.length; i++)
+			uncheckedAssertions[i]()
+	} finally {
+		assertingUnchecked = false
+		uncheckedAssertions.length = 0
+	}
 }
 
 export const discardUnchecked = (): void => {

@@ -946,6 +946,29 @@ contextualize(() => {
 		).throws("Default for never")
 	})
 
+	it("deferred checks resolving aliases", () => {
+		attest(() =>
+			scope({
+				x: "(a3[] | x)[]",
+				a3: { "p0?": "string.json.parse |> a4" },
+				a4: { "p1?": "x" }
+			}).export()
+		).throws(writeIndiscriminableMorphMessage("$a3[]", "($x | $a3[])[]"))
+		attest(() =>
+			scope({
+				i1: [{ p2: ["a1", "=", null] }, "|", "a1"],
+				a1: { "p0?": "null | i1", "p2?": "null" }
+			} as never).export()
+		).throws("Default for p2 must be an object (was null)")
+		attest(() =>
+			scope({
+				"g0<p0>": "(p0 | g0<a0>)[]",
+				a0: ["g0<string[]>", "...", "a1[]"],
+				a1: { p1: ["string", "=", "d"] }
+			} as never).export()
+		).throws(writeIndiscriminableMorphMessage("string[]", "($a0 | g0<$a0>)[]"))
+	})
+
 	it("closed cycle alias", () => {
 		const first = scope({
 			a0: { p0: "a1" },
