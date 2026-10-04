@@ -1,6 +1,5 @@
 import {
 	defineLazily,
-	DynamicFunction,
 	flatMorph,
 	hasDomain,
 	includes,
@@ -10,7 +9,6 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	unset,
 	WeakCache,
 	type Dict,
 	type Fn,
@@ -79,10 +77,6 @@ import {
 import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
-	allowsInContext,
-	allowsUntracked,
-	applyCyclic,
-	TransformErrors,
 	Traversal,
 	type TraversalKind,
 	type TraverseAllows,
@@ -335,92 +329,11 @@ const precompile = (
 		node.traverseApply = traverseApply
 		if (traverseTransform) node.traverseTransform = traverseTransform
 		node.compiledUnit = compiledUnit
-		if (node.isRoot()) {
-			node.rootApply = (data, onFail) =>
-				(node.rootApply = compileRootApply(node))(data, onFail)
-		}
+		delete node.cache.rootApply
 		node.isReusableLeaf = isLeafIn(node, linkage.referencesById)
 	}
 
 	return compiledUnit
-}
-
-// createRootApply's statements, compiled per root so V8 can inline its calls
-const compileRootApply = (node: BaseRoot): BaseRoot["rootApply"] => {
-	const js = new CompiledFunction("data", "onFail").indent()
-	const fallback = () =>
-		node.includesAlias ?
-			js.return(
-				`applyCyclic("${node.trackedId}", apply, data, config).finalize(onFail)`
-			)
-		:	js
-				.const("ctx", "new Traversal(data, config)")
-				.line("apply(data, ctx)")
-				.return("ctx.finalize(onFail)")
-	const returnResult = () =>
-		node.includesMorph ?
-			js
-				.if("result instanceof TransformErrors", () =>
-					js
-						.const("ctx", "new Traversal(data, config)")
-						.line("ctx.addTransformErrors(result)")
-						.return("ctx.finalize(onFail)")
-				)
-				.return("result")
-		:	js.return("result")
-	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
-	if (node.rootApplyStrategy === "contextual") fallback()
-	else if (node.rootApplyStrategy === "allows")
-		js.if("!allows(data)", fallback).return("data")
-	else if (node.rootApplyStrategy === "contextualTransform") {
-		if (node.includesAlias) {
-			js.const("untracked", "allowsUntracked(node, data)")
-				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
-				.const("ctx", "new Traversal(data, config)")
-				.set("ctx.tracksTransforms", "untracked === undefined")
-				.const(
-					"result",
-					`ctx.transformResolution("${node.id}", data, transform)`
-				)
-		} else {
-			js.if("!allows(data)", fallback)
-				.const("ctx", "new Traversal(data, config)")
-				.const("result", "transform(data, ctx)")
-		}
-		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
-	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
-		js.const("result", "transform(data)").if("result === unset", fallback)
-		returnResult()
-	} else if (node.includesMorph) {
-		js.if("!allows(data)", fallback).const("result", "transform(data)")
-		returnResult()
-	} else js.if("!allows(data)", fallback).return("transform(data)")
-	return new DynamicFunction<(...args: unknown[]) => BaseRoot["rootApply"]>(
-		"node",
-		"allows",
-		"apply",
-		"transform",
-		"Traversal",
-		"TransformErrors",
-		"applyCyclic",
-		"allowsUntracked",
-		"allowsInContext",
-		"config",
-		"unset",
-		`return (function ${js.write(`${node.id}RootApply`)})`
-	)(
-		node,
-		node.allows,
-		node.traverseApply,
-		node.traverseTransform,
-		Traversal,
-		TransformErrors,
-		applyCyclic,
-		allowsUntracked,
-		allowsInContext,
-		node.$.resolvedConfig,
-		unset
-	)
 }
 
 export type PrecompiledReferences = {
