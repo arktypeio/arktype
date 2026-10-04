@@ -90,9 +90,11 @@ export class Traversal {
 	private reachedInvalid: InvalidResolution | undefined
 	// data reaching an object by a shorter path than it first did is applied in order of path length
 	private deferredByLength: DeferredResolution[][] | undefined
-	private deferredLength = 0
+	private applyingLength = 0
 	// the length of the shortest path an object was deferred at, or -1 once applied
-	private deferredLengths: { [id in string]?: Map<unknown, number> } = {}
+	private shortestPathLengths:
+		| { [id in string]?: Map<unknown, number> }
+		| undefined
 	// data a root allowed within the bounds is a tree, so each path is transformed
 	tracksTransforms = true
 	transformedByResolutionId:
@@ -343,11 +345,11 @@ export class Traversal {
 			!this.currentBranch &&
 			(typeof data === "object" ? data !== null : typeof data === "function")
 		) {
-			const lengths = (this.deferredLengths[id] ??= new Map())
+			const lengths = (this.shortestPathLengths![id] ??= new Map())
 			const length = this.path.length
-			const deferredLength = lengths.get(data)
-			if (deferredLength !== undefined && deferredLength <= length) return true
-			if (length === this.deferredLength) {
+			const shortestLength = lengths.get(data)
+			if (shortestLength !== undefined && shortestLength <= length) return true
+			if (length === this.applyingLength) {
 				lengths.set(data, -1)
 				apply(data, this)
 			} else {
@@ -473,12 +475,13 @@ export class Traversal {
 	applyByPathLength(id: string, apply: TraverseApply, data: unknown): void {
 		const deferredByLength: DeferredResolution[][] = (this.deferredByLength =
 			[])
+		this.shortestPathLengths = {}
 		this.enterResolution(id, data, apply)
 		for (let length = 1; length < deferredByLength.length; length++) {
 			if (!deferredByLength[length]) continue
-			this.deferredLength = length
+			this.applyingLength = length
 			for (const deferred of deferredByLength[length]) {
-				const lengths = this.deferredLengths[deferred.id]!
+				const lengths = this.shortestPathLengths[deferred.id]!
 				// it was deferred again at a shorter path, so it's been applied there
 				if (lengths.get(deferred.data) !== length) continue
 				lengths.set(deferred.data, -1)
