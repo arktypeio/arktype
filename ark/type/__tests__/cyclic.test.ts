@@ -959,6 +959,26 @@ contextualize(() => {
 		attest(l.and(r).allows({ kind: "b", p2: null })).equals(false)
 	})
 
+	it("compares a cyclic union with a subsumed branch to its reduction", () => {
+		const { u } = scope({
+			g: { "p0?": "g" },
+			u: ["g", "|", { "p0?": "g", "p1?": "string" }]
+		} as never).export() as never as Record<string, Type>
+
+		attest(u.or(u).expression).snap("{ p0?: $g }")
+		attest(u.extends(u.or(u))).equals(true)
+		attest(u.equals(u.or(u))).equals(true)
+
+		const { b } = scope({
+			a: { "p0?": "a", "p1?": "a | string", "[/^k\\d$/]": "string" },
+			b: "d | c",
+			c: { "p0?": "b | number > 0" },
+			d: "c | a | string"
+		} as never).export() as never as Record<string, Type>
+
+		attest(b.or(b).equals(b)).equals(true)
+	})
+
 	it("relates cyclic types alike whatever was related before", () => {
 		const base = {
 			a: "(c | boolean)[]",
