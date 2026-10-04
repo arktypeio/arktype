@@ -251,7 +251,7 @@ Resolution: ${printable(resolution)}`)
 		if (!this.closesCycle) return this.resolution.traverseAllows(data, ctx)
 		if (typeof ctx === "number") {
 			if (ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits)
-				return this.resolution.traverseAllows(data, (ctx + 1) as never)
+				return this.resolution.traverseAllows(data, ctx + 1)
 			const tracked = aliasVisits.exceed(data)
 			if (!tracked) return false
 			ctx = tracked

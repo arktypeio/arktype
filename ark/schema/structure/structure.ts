@@ -439,7 +439,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		this._traverse("Allows", data, ctx)
+		this._traverse("Allows", data, ctx as never)
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		this._traverse("Apply", data, ctx)

@@ -750,7 +750,7 @@ export const allowsUntracked = (
 	const outerContinuation = continuation
 	aliasVisits.count = 0
 	continuation = undefined
-	const allowed = node.traverseAllows(data as never, 0 as never)
+	const allowed = node.traverseAllows(data as never, 0)
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
 	continuation = outerContinuation
@@ -908,7 +908,7 @@ export const traverseKey = <result>(
 	key: PropertyKey,
 	fn: () => result,
 	// ctx will be undefined if this node isn't context-dependent, or an alias depth
-	ctx: InternalTraversal | undefined
+	ctx: InternalTraversal | AliasDepth | undefined
 ): result => {
 	if (!ctx || typeof ctx === "number") return fn()
 
@@ -926,9 +926,11 @@ export type TraversalMethodsByKind<input = unknown> = {
 
 export type TraversalKind = keyof TraversalMethodsByKind & {}
 
+export type AliasDepth = number
+
 export type TraverseAllows<data = unknown> = (
 	data: data,
-	ctx: InternalTraversal
+	ctx: InternalTraversal | AliasDepth
 ) => boolean
 
 export type TraverseApply<data = unknown> = (
