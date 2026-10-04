@@ -937,6 +937,15 @@ contextualize(() => {
 		).throws(writeIndiscriminableMorphMessage("{}", "{ p0?: g<string> }"))
 	})
 
+	it("unassignable default in cyclic intersection", () => {
+		attest(() =>
+			scope({
+				a2: ["a4", "&", { "p0?": { p0: ["null", "=", null] } }],
+				a4: { "p0?": "a2" }
+			}).export()
+		).throws("Default for never")
+	})
+
 	it("closed cycle alias", () => {
 		const first = scope({
 			a0: { p0: "a1" },
