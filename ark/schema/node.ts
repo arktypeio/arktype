@@ -78,6 +78,7 @@ import {
 	isNode,
 	isResolutionFinal
 } from "./shared/utils.ts"
+import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
@@ -949,6 +950,26 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	}
 	if (r.hasKind("union") && !r.inner.ordered)
 		return r.branches.some(branch => isSimulated(l, branch, s))
+	// a prefix element folds into a variadic it equals, which an alias for it hides, so each index's element is compared
+	if (
+		l.hasKind("sequence") &&
+		r.hasKind("sequence") &&
+		l.prefixLength !== r.prefixLength &&
+		isPrefixedVariadic(l) &&
+		isPrefixedVariadic(r)
+	) {
+		for (let i = 0; i < Math.max(l.prefixLength, r.prefixLength); i++) {
+			if (
+				!isSimulated(
+					l.prefix?.[i] ?? l.variadic!,
+					r.prefix?.[i] ?? r.variadic!,
+					s
+				)
+			)
+				return false
+		}
+		return isSimulated(l.variadic!, r.variadic!, s)
+	}
 	const lEntries = simulatedEntriesOf(l)
 	if (l.kind !== r.kind || lEntries.length !== simulatedEntriesOf(r).length)
 		return false
@@ -995,6 +1016,11 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	}
 	return true
 }
+
+const isPrefixedVariadic = (node: Sequence.Node): boolean =>
+	!!node.variadic &&
+	node.prevariadic.length === node.prefixLength &&
+	node.postfixLength === 0
 
 // an intersection serializes without its sequence's minVariadicLength, since the minLength it implies bounds it
 const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
