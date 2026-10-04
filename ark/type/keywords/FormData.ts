@@ -10,7 +10,7 @@ export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
 
 const value = cached(() => rootSchema(["string", registry.FileConstructor]))
 
-const parsedFormDataValue = cached(() => value().rawOr(value().array()))
+const parsedFormDataValue = () => value().rawOr(value().array())
 
 const parsed = cached(() =>
 	rootSchema({

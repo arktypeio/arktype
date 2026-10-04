@@ -582,13 +582,12 @@ const normalizeNodes = flatMorph(
 	(i, form) =>
 		[
 			form,
-			cached(() =>
+			() =>
 				rootSchema({
 					in: "string",
 					morphs: (s: string) => s.normalize(form),
 					declaredOut: preformattedNodes[form]()
 				})
-			)
 		] as const
 )
 
