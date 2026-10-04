@@ -1451,6 +1451,31 @@ p1[0].p0 must be x (was a number)`)
 		attest(types.y.extends(types.x)).equals(true)
 	})
 
+	it("relates cyclic tuples whose variadic hides an equal element", () => {
+		const relate = (elements: (as: string, bs: string) => unknown[]) => {
+			const { a: l }: Record<string, Type> = scope({
+				a: { "p?": elements("a", "a") }
+			} as never).export() as never
+			const { a: r }: Record<string, Type> = scope({
+				a: { "p?": elements("a", "b") },
+				b: { "p?": elements("a", "a") }
+			} as never).export() as never
+			return [l.equals(r), l.extends(r), r.extends(l)]
+		}
+
+		attest(relate((a, b) => [[a, "?"], "...", [b, "[]"]])).equals([
+			true,
+			true,
+			true
+		])
+		attest(relate((a, b) => ["...", [a, "[]"], b])).equals([true, true, true])
+		attest(relate((a, b) => [a, "...", [b, "[]"], a])).equals([
+			true,
+			true,
+			true
+		])
+	})
+
 	it("cyclic props disjoint from index", () => {
 		const { b: l }: Record<string, Type> = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },

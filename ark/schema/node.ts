@@ -987,26 +987,13 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	}
 	if (r.hasKind("union") && !r.inner.ordered)
 		return r.branches.some(branch => isSimulated(l, branch, s))
-	// a prefix element folds into a variadic it equals, which an alias for it hides, so each index's element is compared
 	if (
 		l.hasKind("sequence") &&
 		r.hasKind("sequence") &&
-		l.prefixLength !== r.prefixLength &&
-		isPrefixedVariadic(l) &&
-		isPrefixedVariadic(r)
-	) {
-		for (let i = 0; i < Math.max(l.prefixLength, r.prefixLength); i++) {
-			if (
-				!isSimulated(
-					l.prefix?.[i] ?? l.variadic!,
-					r.prefix?.[i] ?? r.variadic!,
-					s
-				)
-			)
-				return false
-		}
-		return isSimulated(l.variadic!, r.variadic!, s)
-	}
+		!l.defaultablesLength &&
+		!r.defaultablesLength
+	)
+		return isSequenceSimulated(l, r, s)
 	const lEntries = simulatedEntriesOf(l)
 	if (l.kind !== r.kind || lEntries.length !== simulatedEntriesOf(r).length)
 		return false
@@ -1054,10 +1041,39 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	return true
 }
 
-const isPrefixedVariadic = (node: Sequence.Node): boolean =>
-	!!node.variadic &&
-	node.prevariadic.length === node.prefixLength &&
-	node.postfixLength === 0
+// a variadic absorbs a prefix, optional or postfix element it equals, which an alias for either hides, so each index is compared at each length
+const isSequenceSimulated = (
+	l: Sequence.Node,
+	r: Sequence.Node,
+	s: SimulationState
+): boolean => {
+	// the lengths each allows are bounded by its intersection, which compares them
+	const minLength = Math.max(
+		l.prefixLength + l.postfixLength,
+		r.prefixLength + r.postfixLength
+	)
+	// past every prevariadic and postfix element, each index is the variadic's
+	const maxLength = Math.min(
+		l.maxLength ?? Number.POSITIVE_INFINITY,
+		r.maxLength ?? Number.POSITIVE_INFINITY,
+		Math.max(l.prevariadic.length, r.prevariadic.length) +
+			Math.max(l.postfixLength, r.postfixLength) +
+			1
+	)
+	for (let length = minLength; length <= maxLength; length++) {
+		for (let i = 0; i < length; i++) {
+			if (!isSimulated(elementAt(l, length, i), elementAt(r, length, i), s))
+				return false
+		}
+	}
+	return true
+}
+
+const elementAt = (node: Sequence.Node, length: number, i: number): BaseNode =>
+	i < node.prevariadic.length ? node.prevariadic[i].node
+	: i >= length - node.postfixLength ?
+		node.postfix![i - length + node.postfixLength]
+	:	node.variadic!
 
 // an intersection serializes without its sequence's minVariadicLength, since the minLength it implies bounds it
 const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
