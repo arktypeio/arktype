@@ -664,9 +664,16 @@ export const maxAliasVisits = 1000
 // shared by every root's Allows, which passes an alias depth in place of ctx
 export const aliasVisits = {
 	count: 0,
-	exceed: (): false => {
-		aliasVisits.count = Number.POSITIVE_INFINITY
-		return false
+	tracked: false,
+	// data past the depth bound may be cyclic, so the rest of it is traversed tracked rather than all of it again
+	exceed: (data: unknown): Traversal | false => {
+		if (aliasVisits.count > maxAliasVisits) {
+			aliasVisits.count = Number.POSITIVE_INFINITY
+			return false
+		}
+		aliasVisits.tracked = true
+		// a root traversed untracked has no contextual predicate, so its Allows reads no config
+		return new Traversal(data, $ark.resolvedConfig)
 	}
 }
 
@@ -721,7 +728,7 @@ export const applyValue = (
 		applyResolution(node.id, node.traverseApply, data, ctx)
 	:	node.traverseApply(data, ctx)
 
-// within the bounds, data is traversed as a tree; past them, it may be cyclic, so only a tracked traversal can tell
+// within the bounds, data is traversed as a tree; past the visit bound it may be cyclic, so only a tracked traversal can tell
 export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
@@ -738,6 +745,19 @@ export const allowsUntracked = (
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
 	return exceeded ? undefined : allowed
+}
+
+// a transform relies on data being acyclic, which data tracked past the depth bound isn't shown to be
+export const allowsAcyclic = (
+	node: BaseNode,
+	data: unknown
+): boolean | undefined => {
+	const outerTracked = aliasVisits.tracked
+	aliasVisits.tracked = false
+	const allowed = allowsUntracked(node, data)
+	const tracked = aliasVisits.tracked
+	aliasVisits.tracked ||= outerTracked
+	return tracked ? undefined : allowed
 }
 
 // a contextual predicate can add an error and still return true

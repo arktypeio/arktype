@@ -250,9 +250,11 @@ Resolution: ${printable(resolution)}`)
 	traverseAllows: TraverseAllows = (data, ctx) => {
 		if (!this.closesCycle) return this.resolution.traverseAllows(data, ctx)
 		if (typeof ctx === "number") {
-			return ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits ?
-					this.resolution.traverseAllows(data, (ctx + 1) as never)
-				:	aliasVisits.exceed()
+			if (ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits)
+				return this.resolution.traverseAllows(data, (ctx + 1) as never)
+			const tracked = aliasVisits.exceed(data)
+			if (!tracked) return false
+			ctx = tracked
 		}
 		return (
 			ctx.enterResolution(this.resolution.id, data) ??
@@ -302,9 +304,13 @@ Resolution: ${printable(resolution)}`)
 		const allows = js.referenceToId(id, { kind: "Allows" })
 		const visits = js.ref(aliasVisits)
 		js.if(`typeof ctx === "number"`, () =>
-			js.return(
-				`ctx < ${maxAliasDepth} && ++${visits}.count <= ${maxAliasVisits} ? ${allows}(data, ctx + 1) : ${visits}.exceed()`
-			)
+			js
+				.if(
+					`ctx < ${maxAliasDepth} && ++${visits}.count <= ${maxAliasVisits}`,
+					() => js.return(`${allows}(data, ctx + 1)`)
+				)
+				.set("ctx", `${visits}.exceed(data)`)
+				.if("!ctx", () => js.return("false"))
 		)
 		js.const("reached", `ctx.enterResolution("${id}", data)`)
 		js.if("reached !== undefined", () => js.return("reached"))
