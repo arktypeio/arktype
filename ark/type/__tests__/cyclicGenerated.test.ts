@@ -17,6 +17,7 @@ type Value = {
 		| "box"
 		| "bounded"
 		| "alt"
+		| "wraps"
 		| "nullDefault"
 		| "nonEmpty"
 		| "pipe"
@@ -54,6 +55,7 @@ const valueForms: [threshold: number, form: Value["form"]][] = [
 	[0.89, "and"],
 	[0.92, "parse"],
 	[0.95, "box"],
+	[0.96, "wraps"],
 	[0.97, "alt"],
 	[0.98, "bounded"],
 	[1, "default"]
@@ -120,7 +122,9 @@ const valueDefOf = (value: Value): unknown =>
 	: value.form === "box" ? `box<${nameOf(value.to)}>`
 	: value.form === "bounded" ? `bounded<${nameOf(value.to)}>`
 	: value.form === "alt" ? `alt<${nameOf(value.to)}, ${nameOf(value.other)}>`
-	: `(${nameOf(value.to)} | ${nameOf(value.other)})[]`
+	: value.form === "wraps" ?
+		`wrap<${nameOf(value.to)}> | wrap<${nameOf(value.other)}>`
+	:	`(${nameOf(value.to)} | ${nameOf(value.other)})[]`
 
 const defOf = (alias: Alias, i: number): unknown => {
 	if (alias.form === "union") return alias.of.map(nameOf).join(" | ")
@@ -220,6 +224,10 @@ const generateData = (aliases: Alias[], rand: () => number) => {
 				: value.form === "box" || value.form === "bounded" ?
 					box(value.to, value.to, depth + 1, false)
 				: value.form === "alt" ? box(value.to, value.other, depth + 1, true)
+				: value.form === "wraps" ?
+					deep ? []
+					: rand() < 0.5 ? [generate(value.to, depth + 1, [])]
+					: [[generate(value.other, depth + 1, [])]]
 				: deep || rand() < 0.4 ? "s"
 				: generate(value.to, depth + 1, [])
 			if (v !== undefined) data[key] = v
@@ -264,19 +272,20 @@ const mutate = (data: unknown, rand: () => number) => {
 	return data
 }
 
-// points a nested property at the root, which the type may or may not allow
-const linkCycle = (data: unknown, rand: () => number) => {
+// points a nested property at the root, or at any object so it's shared, which the type may or may not allow
+const link = (data: unknown, rand: () => number, shares: boolean) => {
 	const objects = objectsOf(data)
 	const inner =
 		objects[1 + Math.floor(rand() * Math.max(objects.length - 1, 1))]
 	if (!inner) return data
+	const target = shares ? objects[Math.floor(rand() * objects.length)] : data
 	for (const k of Object.keys(inner)) {
 		if (isPlainObject(inner[k])) {
-			inner[k] = data
+			inner[k] = target
 			break
 		}
 		if (Array.isArray(inner[k])) {
-			inner[k].push(data)
+			inner[k].push(target)
 			break
 		}
 	}
@@ -325,6 +334,11 @@ const oracleOf = (aliases: Alias[]) => {
 				(!(key in data) || boxAllows(nextL, nextR, data[key], key))
 			)
 		})
+	const wrapAllows = (i: number, data: unknown): boolean =>
+		Array.isArray(data) &&
+		assuming(`wrap${i}`, data, () =>
+			data.every(e => allows(i, e) || wrapAllows(i, e))
+		)
 	const valueAllows = (value: Value, data: unknown): boolean =>
 		value.form === "number" ? typeof data === "number"
 		: value.form === "string" || value.form === "default" ?
@@ -354,13 +368,20 @@ const oracleOf = (aliases: Alias[]) => {
 		: value.form === "box" || value.form === "bounded" ?
 			boxAllows(value.to, value.to, data, "next")
 		: value.form === "alt" ? boxAllows(value.to, value.other, data, "swap")
-		: typeof data === "string" || allows(value.to, data)
+		: value.form === "wraps" ?
+			wrapAllows(value.to, data) || wrapAllows(value.other, data)
+		:	typeof data === "string" || allows(value.to, data)
 	return allows
 }
 
 const outcomeOf = (t: Type, data: unknown) => {
 	const out = t(data)
 	return out instanceof ArkErrors ? out.summary : "ok"
+}
+
+const pathsOf = (t: Type, data: unknown) => {
+	const out = t(data)
+	return out instanceof ArkErrors ? out.map(e => e.propString).join() : "ok"
 }
 
 const shuffle = <t>(items: readonly t[], rand: () => number) => {
@@ -376,7 +397,8 @@ const generics = {
 	"box<t>": { v: "t", "next?": "box<t>" },
 	// a constraint holding a definition is checked once it closes, in any order
 	"bounded<t extends a0>": { v: "t", "next?": "bounded<t>" },
-	"alt<a, b>": { v: "a", "swap?": "alt<b, a>" }
+	"alt<a, b>": { v: "a", "swap?": "alt<b, a>" },
+	"wrap<t>": "(t | wrap<t>)[]"
 }
 
 const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
@@ -422,13 +444,22 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 		const types = builds as Record<string, Type>[]
 		const allows = oracleOf(aliases)
 		for (let i = 0; i < aliases.length; i++) {
+			let derived: Type[] = []
+			try {
+				derived = [
+					types[0][names[i]].describe("x"),
+					types[0][names[i]].configure({ description: "x" }, "references")
+				]
+			} catch (e) {
+				failures.push(`${seed} ${names[i]}: ${e}`)
+			}
 			for (let variant = 0; variant < 6; variant++) {
 				const getData = () => {
 					const variantRand = random(seed * 1000 + i * 10 + variant)
 					const generated = generateData(aliases, variantRand)(i)
 					return (
 						variant % 3 === 1 ? mutate(generated, variantRand)
-						: variant % 3 === 2 ? linkCycle(generated, variantRand)
+						: variant % 3 === 2 ? link(generated, variantRand, variant === 5)
 						: generated
 					)
 				}
@@ -447,6 +478,15 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 					const out = t[names[i]](getData())
 					if (expected && !t[names[i]].out.allows(out))
 						failures.push(`${seed} ${names[i]}: out rejects its output`)
+				}
+				// a derived type reports each invalid object at the paths its type does
+				const paths = pathsOf(types[0][names[i]], getData())
+				for (const t of derived) {
+					if (pathsOf(t, getData()) !== paths) {
+						failures.push(
+							`${seed} ${names[i]}: ${t.expression} got ${pathsOf(t, getData())}`
+						)
+					}
 				}
 			}
 		}
