@@ -423,17 +423,17 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 		const allows = oracleOf(aliases)
 		for (let i = 0; i < aliases.length; i++) {
 			for (let variant = 0; variant < 6; variant++) {
-				const data = () => {
-					const r = random(seed * 1000 + i * 10 + variant)
-					const generated = generateData(aliases, r)(i)
+				const getData = () => {
+					const variantRand = random(seed * 1000 + i * 10 + variant)
+					const generated = generateData(aliases, variantRand)(i)
 					return (
-						variant % 3 === 1 ? mutate(generated, r)
-						: variant % 3 === 2 ? linkCycle(generated, r)
+						variant % 3 === 1 ? mutate(generated, variantRand)
+						: variant % 3 === 2 ? linkCycle(generated, variantRand)
 						: generated
 					)
 				}
-				const expected = allows(i, data())
-				const outcomes = types.map(t => outcomeOf(t[names[i]], data()))
+				const expected = allows(i, getData())
+				const outcomes = types.map(t => outcomeOf(t[names[i]], getData()))
 				const jit = outcomes.slice(0, -1)
 				if (new Set(jit).size > 1) failures.push(`${seed} ${names[i]}: ${jit}`)
 				for (const [k, t] of types.entries()) {
@@ -442,9 +442,9 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 							`${seed} ${names[i]}: expected ${expected}, got ${outcomes[k]}`
 						)
 					}
-					if (t[names[i]].allows(data()) !== expected)
+					if (t[names[i]].allows(getData()) !== expected)
 						failures.push(`${seed} ${names[i]}: allows isn't ${expected}`)
-					const out = t[names[i]](data())
+					const out = t[names[i]](getData())
 					if (expected && !t[names[i]].out.allows(out))
 						failures.push(`${seed} ${names[i]}: out rejects its output`)
 				}
@@ -513,15 +513,15 @@ contextualize(() => {
 				}
 				const wrapper = type({ w: a })
 				for (let variant = 0; variant < 4; variant++) {
-					const data = () => {
-						const r = random(seed * 1000 + i * 10 + variant)
-						const generated = generateData(aliases, r)(i)
-						return variant % 2 ? mutate(generated, r) : generated
+					const getData = () => {
+						const variantRand = random(seed * 1000 + i * 10 + variant)
+						const generated = generateData(aliases, variantRand)(i)
+						return variant % 2 ? mutate(generated, variantRand) : generated
 					}
-					const expected = allows(i, data())
-					if (a.in.allows(data()) !== expected)
+					const expected = allows(i, getData())
+					if (a.in.allows(getData()) !== expected)
 						failures.push(`${seed} ${names[i]}: in allows isn't ${expected}`)
-					const out = wrapper({ w: data() })
+					const out = wrapper({ w: getData() })
 					if (out instanceof ArkErrors === expected)
 						failures.push(`${seed} ${names[i]}: wrapper got ${out}`)
 				}
