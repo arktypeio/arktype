@@ -21,7 +21,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
 import { traverseKey } from "../shared/traversal.ts"
-import { inProgress, uncheckedAssertions } from "../shared/utils.ts"
+import { isResolutionFinal, uncheckedAssertions } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -175,7 +175,7 @@ export const assertDefaultValueAssignability = (
 	if (hasDomain(value, "object") && !wrapped)
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	if (inProgress.definitions && node.includesAlias) {
+	if (!isResolutionFinal() && node.includesAlias) {
 		uncheckedAssertions.push(() =>
 			assertDefaultValueAssignability(node, value, key)
 		)
