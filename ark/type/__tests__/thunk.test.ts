@@ -141,6 +141,17 @@ contextualize(() => {
 		attest(() => withDefault.export()).throws(
 			"Default for x.n must be an object (was a number)"
 		)
+
+		const throwing: Scope = scope({
+			w: () => throwing.type({ a: "a", b: "bad" } as never),
+			a: { "w?": "w" }
+		} as never)
+		attest(() => throwing.type("w" as never)).throws(
+			writeUnresolvableMessage("bad")
+		)
+		attest(() => throwing.type("a" as never)).throws(
+			writeUnresolvableMessage("bad")
+		)
 	})
 
 	it("docs example", () => {

@@ -944,17 +944,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 				def = this.normalizeRootScopeValue(context.def)
 			} finally {
 				inProgress.definitions--
-				delete nodesByRegisteredId[context.id]
+				// if the call throws, its context stays registered so an alias parsed during it resolves by name
 				delete this.resolutions[name]
 			}
 			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
 				context.def = def
 				context.phase = "unresolved"
-				this.resolutions[name] = registerParseContext(context).id
+				this.resolutions[name] = context.id
 				// parsing its definition discards checks still open, so they're made first
 				assertUncheckedDefaultsAssignable()
 				return this.maybeResolve(name)
 			}
+			delete nodesByRegisteredId[context.id]
 		} else def = this.normalizeRootScopeValue(def)
 
 		if (hasArkKind(def, "generic")) {
