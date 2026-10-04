@@ -169,10 +169,11 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 						const expected = describeBranches(branchesAtPath)
 						// if there are multiple actual descriptions that differ,
 						// just fall back to printable, which is the most specific
+						const firstActual = errors[0].actual
 						const actual =
-							errors.every(e => e.actual === errors[0].actual) ?
-								errors[0].actual
-							:	printable(errors[0].data)
+							errors.every(e => e.actual === firstActual) ? firstActual : (
+								printable(errors[0].data)
+							)
 						return `${path && `${path} `}must be ${expected}${
 							actual && ` (was ${actual})`
 						}`
