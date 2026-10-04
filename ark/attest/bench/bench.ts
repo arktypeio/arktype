@@ -186,9 +186,6 @@ const loopAsyncCalls = async (fn: () => unknown, ctx: BenchContext) => {
 	return collector.results
 }
 
-const isThenable = (value: unknown): value is PromiseLike<unknown> =>
-	typeof (value as PromiseLike<unknown> | undefined)?.then === "function"
-
 export class BenchAssertions<
 	Fn extends BenchableFunction,
 	NextAssertions = BenchTypeAssertions,
@@ -299,8 +296,8 @@ export class BenchAssertions<
 		try {
 			hooks?.beforeCall?.()
 			// fn may return a Promise without being an async function
-			const firstResult = this.fn()
-			if (isThenable(firstResult)) {
+			const firstResult = this.fn() as PromiseLike<unknown> | undefined
+			if (typeof firstResult?.then === "function") {
 				return new Promise(resolve => {
 					Promise.resolve(firstResult)
 						.then(() => {
