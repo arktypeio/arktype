@@ -930,7 +930,7 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 		return l.branches.every(
 			branch =>
 				isSimulated(branch, r, s) ||
-				(s.unfoldsAliases && isSubsumed(branch, r as never))
+				(s.unfoldsAliases && r.isRoot() && isSubsumed(branch, r))
 		)
 	}
 	if (r.hasKind("union") && !r.inner.ordered) {
