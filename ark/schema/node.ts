@@ -200,12 +200,16 @@ export abstract class BaseNode<
 			:	data => (this.traverseAllows as any)(data)
 	}
 
+	// set by an alias resolving to it through a thunk, which references it without registering its id
+	isAliasResolution = false
+
 	private _entersResolution: boolean | undefined
 	// data reaching a node an alias references by id is tracked under that id, as is an object whose props a cyclic value checks
 	get entersResolution(): boolean {
 		return (this._entersResolution ??=
 			this.isCyclic &&
-			(isNode($ark.nodesByRegisteredId[this.id]) ||
+			(this.isAliasResolution ||
+				isNode($ark.nodesByRegisteredId[this.id]) ||
 				(this.hasKind("intersection") && !!this.structure?.props.length)))
 	}
 
