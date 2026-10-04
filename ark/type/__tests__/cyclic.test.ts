@@ -1982,6 +1982,36 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(types.c({ p0: true })).equals({ p0: true })
 	})
 
+	it("morph union of equivalent cyclic types", () => {
+		const parsed = scope({
+			a: { "m?": "string.numeric.parse", "p?": "a" },
+			b: { "m?": "string.numeric.parse", "p?": "a | b" }
+		}).export()
+		const defaulted = scope({
+			a: { m: "string = 'x'", "p?": "a" },
+			b: { m: "string = 'x'", "p?": "a | b" }
+		}).export()
+		const deleted = scope({
+			a: { "m?": "d", "p?": "a" },
+			b: { "m?": "d", "p?": "a | b" },
+			d: { "+": "delete" }
+		}).export()
+		const a = scope({ a: { "m?": "string.numeric.parse", "p?": "a" } }).export()
+			.a
+		const crossScope = scope({
+			b: { "m?": "string.numeric.parse", "p?": [a, "|", "b"] }
+		}).export()
+		const nested = scope({
+			c: "(c | string.numeric.parse | (c | string.numeric.parse)[])[]"
+		}).export()
+
+		attest(parsed.b({ m: "1", p: { m: "2" } })).equals({ m: 1, p: { m: 2 } })
+		attest(defaulted.b({ p: {} })).equals({ m: "x", p: { m: "x" } })
+		attest(deleted.b({ m: { x: 1 }, p: {} })).equals({ m: {}, p: {} })
+		attest(crossScope.b({ p: { m: "2" } })).equals({ p: { m: 2 } })
+		attest(nested.c([["1", ["2"]], "3"])).equals([[1, [2]], 3])
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1476
 	it("exports unions whose cyclic branches intersect", () => {
 		const types = scope({

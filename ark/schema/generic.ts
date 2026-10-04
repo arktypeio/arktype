@@ -23,7 +23,7 @@ import {
 	arkKind,
 	inProgress,
 	isResolutionFinal,
-	uncheckedAssertions
+	queueUnchecked
 } from "./shared/utils.ts"
 
 export type GenericParamAst<
@@ -189,7 +189,7 @@ export class GenericRoot<
 				)
 			if (isResolutionFinal() || !mayExtend(resolvedArg, resolvedConstraint))
 				unsatisfied()
-			uncheckedAssertions.push(
+			queueUnchecked(
 				() => resolvedArg.extends(resolvedConstraint) || unsatisfied()
 			)
 		}

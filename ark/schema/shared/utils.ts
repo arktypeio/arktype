@@ -83,7 +83,18 @@ export const isResolutionFinal = (): boolean =>
 export const isIoFinal = (): boolean =>
 	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
 
-export const uncheckedAssertions: (() => void)[] = []
+const uncheckedAssertions: (() => void)[] = []
+
+let uncheckedKeys: Record<string, true> = {}
+
+// a check can resolve the alias whose union queued it, so a keyed check is queued once until the queue drains
+export const queueUnchecked = (assert: () => void, key?: string): void => {
+	if (key !== undefined) {
+		if (uncheckedKeys[key]) return
+		uncheckedKeys[key] = true
+	}
+	uncheckedAssertions.push(assert)
+}
 
 let assertingUnchecked = false
 
@@ -96,12 +107,13 @@ export const assertUnchecked = (): void => {
 			uncheckedAssertions[i]()
 	} finally {
 		assertingUnchecked = false
-		uncheckedAssertions.length = 0
+		discardUnchecked()
 	}
 }
 
 export const discardUnchecked = (): void => {
 	uncheckedAssertions.length = 0
+	uncheckedKeys = {}
 }
 
 export type unwrapDefault<thunkableValue> =
