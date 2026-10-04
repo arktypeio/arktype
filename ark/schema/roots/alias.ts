@@ -6,6 +6,7 @@ import {
 	type array,
 	type join
 } from "@ark/util"
+import type { BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
@@ -181,6 +182,14 @@ Resolution: ${printable(resolution)}`)
 
 	get hasResolvableOperands(): boolean {
 		return this.operands!.every(isResolvable)
+	}
+
+	operandsBesides(node: BaseNode): BaseRoot[] | undefined {
+		if (this.operator !== "&") return
+		const others = this.operands!.filter(
+			operand => identityOf(operand) !== identityOf(node)
+		)
+		return others.length < this.operands!.length ? others : undefined
 	}
 
 	get resolutionId(): NodeId {
@@ -373,7 +382,7 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 }
 
 // a node built from an alias keeps its reference under a new id, e.g. an instantiation whose body is one
-export const identityOf = (node: BaseRoot): string =>
+export const identityOf = (node: BaseNode): string =>
 	node.hasKind("alias") ? node.reference : node.id
 
 export const isResolvable = (node: BaseRoot): boolean => {

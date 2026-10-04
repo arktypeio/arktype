@@ -1511,6 +1511,77 @@ p1[0].p0 must be x (was a number)`)
 		attest(b.or(b).equals(b)).equals(true)
 	})
 
+	it("cyclic union equal to its unfolding", () => {
+		const { a: l }: Record<string, Type> = scope({
+			a: { "p?": [["a", "&", { q: "'a'" }], "|", "a"] }
+		} as never).export() as never
+		const { a: r }: Record<string, Type> = scope({
+			a: {
+				"p?": [
+					["a", "&", { q: "'a'" }],
+					"|",
+					{ "p?": [["a", "&", { q: "'a'" }], "|", "a"] }
+				]
+			}
+		} as never).export() as never
+
+		attest([l.equals(r), r.equals(l), l.extends(r), r.extends(l)]).equals([
+			true,
+			true,
+			true,
+			true
+		])
+	})
+
+	it("cyclic branch within another through its cycle", () => {
+		const types = scope({
+			c0: ["c2", "|", { "b?": "string", "d?": "c0" }],
+			c2: { "d?": "c2" },
+			n2: { "d?": "n2" }
+		}).export()
+
+		attest(types.c0.equals(types.c2)).equals(true)
+		attest(types.c0.extends(types.c2)).equals(true)
+		attest(types.c0.extends(types.c0.or(types.n2))).equals(true)
+	})
+
+	it("cyclic subtype of a union with its array", () => {
+		const def = {
+			a: { x: "string", "next?": "a | a[]" },
+			w: { "next?": "w | w[]" }
+		} as const
+		const types = scope(def).export()
+
+		attest(types.a.extends(types.w)).equals(true)
+		attest(types.w.extends(types.a)).equals(false)
+		attest(
+			scope({ ...def, "g<t extends w>": { v: "t" }, x: "g<a>" }).export().x
+				.expression
+		).snap("{ v: { x: string, next?: $a | $a[] } }")
+	})
+
+	it("cyclic extends whatever the declaration order", () => {
+		const shape = (self: string, rest: string) => ({
+			[self]: [rest, "&", { b: "string" }],
+			[rest]: { "a?": `(${self} | ${self}[])[]` }
+		})
+		const last: Record<string, Type> = scope({
+			...shape("n0", "n1"),
+			...shape("w0", "w1"),
+			n3: { a: "n0" },
+			w3: { a: "w0 | 'x'" }
+		} as never).export() as never
+		const first: Record<string, Type> = scope({
+			n3: { a: "n0" },
+			w3: { a: "w0 | 'x'" },
+			...shape("n0", "n1"),
+			...shape("w0", "w1")
+		} as never).export() as never
+
+		attest(last.n3.extends(last.w3)).equals(true)
+		attest(first.n3.extends(first.w3)).equals(true)
+	})
+
 	it("relations independent of history", () => {
 		const base = {
 			a: "(c | boolean)[]",
