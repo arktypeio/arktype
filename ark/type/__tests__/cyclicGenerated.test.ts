@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import type { BaseNode } from "@ark/schema"
 import { ArkErrors, scope, type, type Type } from "arktype"
 
 type Value = {
@@ -415,6 +416,31 @@ const oracleOf = (aliases: Alias[]) => {
 	return allows
 }
 
+// a copy of data built again from its seed has the same values, shared objects and cycles
+const isCopyOf = (
+	l: unknown,
+	r: unknown,
+	copies = new Map<object, unknown>()
+): boolean => {
+	if (!isObject(l) || !isObject(r)) return Object.is(l, r)
+	if (copies.has(l)) return copies.get(l) === r
+	copies.set(l, r)
+	const keys = Object.keys(l)
+	return (
+		Array.isArray(l) === Array.isArray(r) &&
+		keys.length === Object.keys(r).length &&
+		keys.every(k => k in r && isCopyOf(l[k], r[k], copies))
+	)
+}
+
+// an alias is only a prop's value, a sequence element or a morph's piped node
+const placesAliasesStructurally = (node: BaseNode): boolean =>
+	node.children.every(child =>
+		child.hasKind("alias") ?
+			node.isStructural() || (node.hasKind("morph") && node.inner.in !== child)
+		:	placesAliasesStructurally(child)
+	)
+
 const outcomeOf = (t: Type, data: unknown) => {
 	const out = t(data)
 	return out instanceof ArkErrors ? out.summary : "ok"
@@ -533,7 +559,11 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 		if (rejections.length) {
 			if (rejections.length !== builds.length)
 				failures.push(`${seed}: built in some orders only`)
-			else if (isShallow(aliases) && !rejections[0].includes("shallow"))
+			// a generic's constraint can be checked before the shallow cycle is found
+			else if (
+				isShallow(aliases) &&
+				!/shallow|must be assignable/.test(rejections[0])
+			)
 				failures.push(`${seed}: ${rejections[0]}`)
 			continue
 		}
@@ -550,8 +580,10 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 			} catch (e) {
 				failures.push(`${seed} ${names[i]}: ${e}`)
 			}
+			if (!placesAliasesStructurally(types[0][names[i]].internal))
+				failures.push(`${seed} ${names[i]}: alias outside a structural value`)
 			for (let variant = 0; variant < 6; variant++) {
-				const getData = () => {
+				const generateVariant = () => {
 					const variantRand = random(seed * 1000 + i * 10 + variant)
 					const generated = generateData(aliases, variantRand)(i)
 					return (
@@ -560,8 +592,9 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 						: generated
 					)
 				}
-				const expected = allows(i, getData())
-				const outcomes = types.map(t => outcomeOf(t[names[i]], getData()))
+				const data = generateVariant()
+				const expected = allows(i, data)
+				const outcomes = types.map(t => outcomeOf(t[names[i]], data))
 				if (new Set(outcomes).size > 1)
 					failures.push(`${seed} ${names[i]}: ${outcomes}`)
 				for (const [k, t] of types.entries()) {
@@ -570,176 +603,191 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 							`${seed} ${names[i]}: expected ${expected}, got ${outcomes[k]}`
 						)
 					}
-					if (t[names[i]].allows(getData()) !== expected)
+					if (t[names[i]].allows(data) !== expected)
 						failures.push(`${seed} ${names[i]}: allows isn't ${expected}`)
-					const out = t[names[i]](getData())
+					const out = t[names[i]](data)
 					if (expected && !t[names[i]].out.allows(out))
 						failures.push(`${seed} ${names[i]}: out rejects its output`)
 				}
 				// a derived type reports each invalid object at the paths its type does
-				const paths = pathsOf(types[0][names[i]], getData())
+				const paths = pathsOf(types[0][names[i]], data)
 				for (const t of derived) {
-					if (pathsOf(t, getData()) !== paths) {
+					if (pathsOf(t, data) !== paths) {
 						failures.push(
-							`${seed} ${names[i]}: ${t.expression} got ${pathsOf(t, getData())}`
+							`${seed} ${names[i]}: ${t.expression} got ${pathsOf(t, data)}`
 						)
 					}
 				}
+				if (!isCopyOf(data, generateVariant()))
+					failures.push(`${seed} ${names[i]}: input mutated`)
 			}
 		}
 	}
 	attest(failures).equals([])
 }
 
-contextualize(() => {
-	describe("generated scopes", () => {
-		it("seeds 1-20", () => assertGeneratedScopesAlike(1, 20))
-		it("seeds 21-40", () => assertGeneratedScopesAlike(21, 40))
-		it("seeds 41-60", () => assertGeneratedScopesAlike(41, 60))
-	})
-
-	it("generated scope relations", () => {
-		const failures: string[] = []
-		for (let seed = 1; seed <= 40; seed++) {
-			const rand = random(seed)
-			const aliases = generateAliases(rand, relatedValueForms)
-			if (isShallow(aliases)) continue
-			const names = aliases.map((_, i) => nameOf(i))
-			const defs = defsOf(aliases)
-			const build = (
-				unordered: Record<string, unknown>
-			): Record<string, Type> | string => {
+const assertGeneratedRelations = (firstSeed: number, lastSeed: number) => {
+	const failures: string[] = []
+	for (let seed = firstSeed; seed <= lastSeed; seed++) {
+		const rand = random(seed)
+		const aliases = generateAliases(rand, relatedValueForms)
+		if (isShallow(aliases)) continue
+		const names = aliases.map((_, i) => nameOf(i))
+		const defs = defsOf(aliases)
+		const build = (
+			unordered: Record<string, unknown>
+		): Record<string, Type> | string => {
+			try {
+				return scope(
+					Object.fromEntries(
+						shuffle(Object.keys(unordered), rand).map(name => [
+							name,
+							unordered[name]
+						])
+					) as never
+				).export() as never
+			} catch (e) {
+				return String(e)
+			}
+		}
+		const [l, r] = [defs, defs].map(build)
+		if (typeof l === "string" || typeof r === "string") {
+			if (l !== r) failures.push(`${seed}: ${l} || ${r}`)
+			continue
+		}
+		for (const [variant, variantDefs] of Object.entries(
+			variantsOf(aliases, rand)
+		)) {
+			const types = build(variantDefs)
+			if (typeof types === "string") {
+				failures.push(`${seed} ${variant}: ${types}`)
+				continue
+			}
+			if (
+				variant === "duplicated" &&
+				!types.u.equals(types[nameOf(names.length)])
+			)
+				failures.push(`${seed}: union of twins isn't either`)
+			for (const name of names) {
+				if (!types[name].equals(l[name]))
+					failures.push(`${seed} ${name}: ${variant} isn't equal`)
+				if (
+					variant === "unused" &&
+					types[name].expression !== l[name].expression
+				)
+					failures.push(`${seed} ${name}: ${variant} ${types[name].expression}`)
+			}
+		}
+		const allows = oracleOf(aliases)
+		const serializable = aliases.every(alias =>
+			alias.props.every(
+				({ value }) =>
+					!["parse", "default", "nullDefault", "pipe"].includes(value.form)
+			)
+		)
+		// a required prop on each object narrows every alias reaching one
+		const narrowed =
+			serializable &&
+			build(
+				Object.fromEntries(
+					Object.entries(defs).map(([name, def]) => [
+						name,
+						isPlainObject(def) ? { ...def, s: "true" } : def
+					])
+				)
+			)
+		if (typeof narrowed === "string")
+			failures.push(`${seed} narrowed: ${narrowed}`)
+		else if (narrowed) {
+			for (const [i, name] of names.entries()) {
+				if (!narrowed[name].extends(l[name]))
+					failures.push(`${seed} ${name}: narrowed doesn't extend`)
+				const sample = generateData(aliases, random(seed * 1000 + i * 10))(i)
+				if (
+					aliases[i].form === "object" &&
+					allows(i, sample) &&
+					l[name].extends(narrowed[name])
+				)
+					failures.push(`${seed} ${name}: extends narrowed`)
+			}
+		}
+		for (let i = 0; i < aliases.length; i++) {
+			const [a, b] = [l[names[i]], r[names[i]]]
+			if (a.expression !== b.expression)
+				failures.push(`${seed} ${names[i]}: ${a.expression} || ${b.expression}`)
+			if (!a.equals(b) || !a.extends(b) || !b.extends(a))
+				failures.push(`${seed} ${names[i]}: twins aren't related`)
+			const other = names[Math.floor(rand() * names.length)]
+			const [lUnion, rUnion] = [
+				[a, l[other]],
+				[b, r[other]]
+			].map(([t, u]) => {
 				try {
-					return scope(
-						Object.fromEntries(
-							shuffle(Object.keys(unordered), rand).map(name => [
-								name,
-								unordered[name]
-							])
-						) as never
-					).export() as never
+					return t.or(u)
 				} catch (e) {
 					return String(e)
 				}
+			})
+			if (typeof lUnion === "string" || typeof rUnion === "string") {
+				if (lUnion !== rUnion)
+					failures.push(`${seed} ${names[i]}: ${lUnion} || ${rUnion}`)
+			} else {
+				if (lUnion.expression !== rUnion.expression)
+					failures.push(`${seed} ${names[i]}: or ${other} differs by build`)
+				if (!a.extends(lUnion))
+					failures.push(`${seed} ${names[i]}: or ${other} doesn't absorb`)
 			}
-			const [l, r] = [defs, defs].map(build)
-			if (typeof l === "string" || typeof r === "string") {
-				if (l !== r) failures.push(`${seed}: ${l} || ${r}`)
-				continue
+			if (!a.or(a).equals(a))
+				failures.push(`${seed} ${names[i]}: or isn't idempotent`)
+			if (serializable && !type.schema(a.json as never).equals(a))
+				failures.push(`${seed} ${names[i]}: json doesn't parse back`)
+			try {
+				a.toJsonSchema({ fallback: ctx => ctx.base })
+			} catch (e) {
+				failures.push(`${seed} ${names[i]}: ${e}`)
 			}
-			for (const [variant, variantDefs] of Object.entries(
-				variantsOf(aliases, rand)
-			)) {
-				const types = build(variantDefs)
-				if (typeof types === "string") {
-					failures.push(`${seed} ${variant}: ${types}`)
-					continue
+			const wrapper = type({ w: a })
+			for (let variant = 0; variant < 4; variant++) {
+				const generateVariant = () => {
+					const variantRand = random(seed * 1000 + i * 10 + variant)
+					const generated = generateData(aliases, variantRand)(i)
+					return variant % 2 ? mutate(generated, variantRand) : generated
 				}
-				if (
-					variant === "duplicated" &&
-					!types.u.equals(types[nameOf(names.length)])
-				)
-					failures.push(`${seed}: union of twins isn't either`)
-				for (const name of names) {
-					if (!types[name].equals(l[name]))
-						failures.push(`${seed} ${name}: ${variant} isn't equal`)
-					if (
-						variant === "unused" &&
-						types[name].expression !== l[name].expression
-					) {
-						failures.push(
-							`${seed} ${name}: ${variant} ${types[name].expression}`
-						)
-					}
-				}
-			}
-			const allows = oracleOf(aliases)
-			const serializable = aliases.every(alias =>
-				alias.props.every(
-					({ value }) =>
-						!["parse", "default", "nullDefault", "pipe"].includes(value.form)
-				)
-			)
-			// a required prop on each object narrows every alias reaching one
-			const narrowed =
-				serializable &&
-				build(
-					Object.fromEntries(
-						Object.entries(defs).map(([name, def]) => [
-							name,
-							isPlainObject(def) ? { ...def, s: "true" } : def
-						])
-					)
-				)
-			if (typeof narrowed === "string")
-				failures.push(`${seed} narrowed: ${narrowed}`)
-			else if (narrowed) {
-				for (const [i, name] of names.entries()) {
-					if (!narrowed[name].extends(l[name]))
-						failures.push(`${seed} ${name}: narrowed doesn't extend`)
-					const sample = generateData(aliases, random(seed * 1000 + i * 10))(i)
-					if (
-						aliases[i].form === "object" &&
-						allows(i, sample) &&
-						l[name].extends(narrowed[name])
-					)
-						failures.push(`${seed} ${name}: extends narrowed`)
-				}
-			}
-			for (let i = 0; i < aliases.length; i++) {
-				const [a, b] = [l[names[i]], r[names[i]]]
-				if (a.expression !== b.expression) {
-					failures.push(
-						`${seed} ${names[i]}: ${a.expression} || ${b.expression}`
-					)
-				}
-				if (!a.equals(b) || !a.extends(b) || !b.extends(a))
-					failures.push(`${seed} ${names[i]}: twins aren't related`)
-				const other = names[Math.floor(rand() * names.length)]
-				const [lUnion, rUnion] = [
-					[a, l[other]],
-					[b, r[other]]
-				].map(([t, u]) => {
-					try {
-						return t.or(u)
-					} catch (e) {
-						return String(e)
-					}
-				})
-				if (typeof lUnion === "string" || typeof rUnion === "string") {
-					if (lUnion !== rUnion)
-						failures.push(`${seed} ${names[i]}: ${lUnion} || ${rUnion}`)
-				} else {
-					if (lUnion.expression !== rUnion.expression)
-						failures.push(`${seed} ${names[i]}: or ${other} differs by build`)
-					if (!a.extends(lUnion))
-						failures.push(`${seed} ${names[i]}: or ${other} doesn't absorb`)
-				}
-				if (!a.or(a).equals(a))
-					failures.push(`${seed} ${names[i]}: or isn't idempotent`)
-				if (serializable && !type.schema(a.json as never).equals(a))
-					failures.push(`${seed} ${names[i]}: json doesn't parse back`)
-				try {
-					a.toJsonSchema({ fallback: ctx => ctx.base })
-				} catch (e) {
-					failures.push(`${seed} ${names[i]}: ${e}`)
-				}
-				const wrapper = type({ w: a })
-				for (let variant = 0; variant < 4; variant++) {
-					const getData = () => {
-						const variantRand = random(seed * 1000 + i * 10 + variant)
-						const generated = generateData(aliases, variantRand)(i)
-						return variant % 2 ? mutate(generated, variantRand) : generated
-					}
-					const expected = allows(i, getData())
-					if (a.in.allows(getData()) !== expected)
-						failures.push(`${seed} ${names[i]}: in allows isn't ${expected}`)
-					const out = wrapper({ w: getData() })
-					if (out instanceof ArkErrors === expected)
-						failures.push(`${seed} ${names[i]}: wrapper got ${out}`)
-				}
+				const data = generateVariant()
+				const expected = allows(i, data)
+				if (a.in.allows(data) !== expected)
+					failures.push(`${seed} ${names[i]}: in allows isn't ${expected}`)
+				const out = wrapper({ w: data })
+				if (out instanceof ArkErrors === expected)
+					failures.push(`${seed} ${names[i]}: wrapper got ${out}`)
+				if (!isCopyOf(data, generateVariant()))
+					failures.push(`${seed} ${names[i]}: input mutated`)
 			}
 		}
-		attest(failures).equals([])
+	}
+	attest(failures).equals([])
+}
+
+// ARK_CYCLE_FUZZ=<count>[:<first seed>] checks that many seeds from the first, of which 65, 92, 114, 126, 157, 186 and 193 fail for now
+const [fuzzCount, fuzzFirstSeed = 1] =
+	process.env.ARK_CYCLE_FUZZ?.split(":").map(Number) ?? []
+
+const seedRanges = (count: number) =>
+	Array.from({ length: Math.ceil(count / 20) }, (_, k) => {
+		const first = fuzzFirstSeed + k * 20
+		return [first, Math.min(first + 19, fuzzFirstSeed + count - 1)] as const
+	})
+
+contextualize(() => {
+	describe("generated scopes", () => {
+		for (const [first, last] of seedRanges(fuzzCount ?? 60)) {
+			it(`seeds ${first}-${last}`, () =>
+				assertGeneratedScopesAlike(first, last))
+		}
+	})
+
+	describe("generated scope relations", () => {
+		for (const [first, last] of seedRanges(fuzzCount ?? 40))
+			it(`seeds ${first}-${last}`, () => assertGeneratedRelations(first, last))
 	})
 })
