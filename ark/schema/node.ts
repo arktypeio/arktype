@@ -1,5 +1,6 @@
 import {
 	Callable,
+	DynamicFunction,
 	appendUnique,
 	flatMorph,
 	includes,
@@ -40,7 +41,7 @@ import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
-import type { NodeCompiler } from "./shared/compile.ts"
+import { CompiledFunction, type NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
 	TypeMeta,
@@ -67,6 +68,7 @@ import {
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
+	TransformErrors,
 	Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -108,7 +110,7 @@ export abstract class BaseNode<
 	includesShallowAlias: boolean
 	allowsRequiresContext: boolean
 	includesContextualMorph: boolean
-	rootApply: (data: unknown, onFail: ArkErrors.Handler | null) => unknown
+	readonly cache: { rootApply?: RootApply } = {}
 
 	protected _referencesById: Record<string, BaseNode> | undefined
 	private hasReplacedReferences = false
@@ -130,7 +132,11 @@ export abstract class BaseNode<
 			) => {
 				if (pipedFromCtx) return pipedFromCtx.pipe(this, data)
 
-				return this.rootApply(data, onFail)
+				// set once and called apart from its initializer, so V8 can inline it
+				const rootApply = this.cache.rootApply
+				return rootApply ?
+						rootApply(data, onFail)
+					:	this.initRootApply()(data, onFail)
 			},
 			{ attach: attachedInnerOf(attachments) as never }
 		)
@@ -190,8 +196,6 @@ export abstract class BaseNode<
 
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
-		this.rootApply = (data, onFail) =>
-			(this.rootApply = this.createRootApply())(data, onFail)
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
@@ -410,7 +414,14 @@ export abstract class BaseNode<
 		this._flatMorphs = flatMorphs
 	}
 
-	protected createRootApply(): this["rootApply"] {
+	private initRootApply(): RootApply {
+		return (this.cache.rootApply =
+			this.compiledUnit && this.isRoot() ?
+				compileRootApply(this)
+			:	this.createRootApply())
+	}
+
+	protected createRootApply(): RootApply {
 		switch (this.rootApplyStrategy) {
 			case "allows":
 				return (data, onFail) => {
@@ -475,7 +486,7 @@ export abstract class BaseNode<
 	}
 
 	// a root whose transform doesn't require ctx has only context-free morphs
-	private createOptimisticRootApply(): this["rootApply"] {
+	private createOptimisticRootApply(): RootApply {
 		const branches = (this as {} as BaseRoot).branches
 		return (data, onFail) => {
 			for (let i = 0; i < branches.length; i++) {
@@ -1136,6 +1147,11 @@ export type KeyOrKeyNode = Key | BaseRoot
 
 export type GettableKeyOrNode = KeyOrKeyNode | number
 
+export type RootApply = (
+	data: unknown,
+	onFail: ArkErrors.Handler | null
+) => unknown
+
 export type RootApplyStrategy =
 	| "allows"
 	| "contextual"
@@ -1354,3 +1370,81 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	innerWithMeta: Inner<kind> & { meta: ArkEnv.meta },
 	ctx: DeepNodeTransformContext
 ) => NormalizedSchema<kind> | null
+
+// createRootApply's statements, compiled per root so V8 can inline its calls
+const compileRootApply = (node: BaseRoot): RootApply => {
+	const js = new CompiledFunction("data", "onFail").indent()
+	const fallback = () =>
+		node.includesAlias ?
+			js.return(
+				`applyCyclic("${node.trackedId}", apply, data, config).finalize(onFail)`
+			)
+		:	js
+				.const("ctx", "new Traversal(data, config)")
+				.line("apply(data, ctx)")
+				.return("ctx.finalize(onFail)")
+	const returnResult = () =>
+		node.includesMorph ?
+			js
+				.if("result instanceof TransformErrors", () =>
+					js
+						.const("ctx", "new Traversal(data, config)")
+						.line("ctx.addTransformErrors(result)")
+						.return("ctx.finalize(onFail)")
+				)
+				.return("result")
+		:	js.return("result")
+	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
+	if (node.rootApplyStrategy === "contextual") fallback()
+	else if (node.rootApplyStrategy === "allows")
+		js.if("!allows(data)", fallback).return("data")
+	else if (node.rootApplyStrategy === "contextualTransform") {
+		if (node.includesAlias) {
+			js.const("untracked", "allowsUntracked(node, data)")
+				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
+				.const("ctx", "new Traversal(data, config)")
+				.set("ctx.tracksTransforms", "untracked === undefined")
+				.const(
+					"result",
+					`ctx.transformResolution("${node.id}", data, transform)`
+				)
+		} else {
+			js.if("!allows(data)", fallback)
+				.const("ctx", "new Traversal(data, config)")
+				.const("result", "transform(data, ctx)")
+		}
+		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
+	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
+		js.const("result", "transform(data)").if("result === unset", fallback)
+		returnResult()
+	} else if (node.includesMorph) {
+		js.if("!allows(data)", fallback).const("result", "transform(data)")
+		returnResult()
+	} else js.if("!allows(data)", fallback).return("transform(data)")
+	return new DynamicFunction<(...args: unknown[]) => RootApply>(
+		"node",
+		"allows",
+		"apply",
+		"transform",
+		"Traversal",
+		"TransformErrors",
+		"applyCyclic",
+		"allowsUntracked",
+		"allowsInContext",
+		"config",
+		"unset",
+		`return (function ${js.write(`${node.id}RootApply`)})`
+	)(
+		node,
+		node.allows,
+		node.traverseApply,
+		node.traverseTransform,
+		Traversal,
+		TransformErrors,
+		applyCyclic,
+		allowsUntracked,
+		allowsInContext,
+		node.$.resolvedConfig,
+		unset
+	)
+}
