@@ -139,6 +139,14 @@ contextualize(() => {
 		attest(T.json).equals(type("unknown[] == 1").json)
 	})
 
+	it("length narrowing two others to one held", () => {
+		const L = type(["null", "null?"])
+		const R = type(["null"])
+
+		attest(L.and(R).json).equals(R.json)
+		attest(R.and(L).json).equals(R.json)
+	})
+
 	it("never optional element keeps length", () => {
 		const T = type("string[]").and(["string", "number?"])
 		attest(T.json).equals(type(["string"]).json)
