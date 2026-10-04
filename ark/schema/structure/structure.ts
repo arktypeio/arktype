@@ -663,7 +663,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return keys
 	}
 
-	// data can have a key like toString from Object.prototype without owning it
 	readonly inheritableProps: Prop.Node[] = this.props.filter(
 		prop => prop.key in Object.prototype
 	)
@@ -682,7 +681,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private _transformsByKey: Record<Key, TransformStep[]> | undefined
-	// a prop's own value transforms its key once, though an index signature shares it
 	private transformsOf(prop: Prop.Node): TransformStep[] {
 		const cached = this._transformsByKey?.[prop.key]
 		if (cached) return cached
@@ -879,7 +877,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// an object's copy drops a declared key data holds as a non-enumerable own prop
 	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
 		if (this.sequence) return js
 		return js.if("out !== data", () => {
@@ -1179,7 +1176,6 @@ const compileDefault = (
 const literalKeyOf = (js: NodeCompiler, prop: Prop.Node): string =>
 	typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey
 
-// a switch compares keys by identity, faster than `in` on a null-prototype object
 const compileDeclaredKeySwitch = (
 	js: NodeCompiler,
 	props: Prop.Node[]

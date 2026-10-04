@@ -43,13 +43,11 @@ export class ArkError<
 		super()
 		let prefixPath: array<PropertyKey> | undefined
 		let relativePath: array<PropertyKey> | undefined
-		// a spread copies faster than a rest that omits keys
 		if ("prefixPath" in input || "relativePath" in input)
 			({ prefixPath, relativePath, ...input } = input)
 		else input = { ...input }
 		if (input.code === "union") {
 			// flatten union errors to avoid repeating context like "foo must be foo must be"...
-			// a branch error reached through shared data appears once
 			const flat: ArkError[] = []
 			for (const innerError of input.errors) {
 				appendUnique(

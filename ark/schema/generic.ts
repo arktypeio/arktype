@@ -160,7 +160,6 @@ export class GenericRoot<
 	): BaseRoot {
 		const instantiation = this.instantiations[key]
 		if (typeof instantiation === "string") {
-			// an instantiation still open is referenced by id, but described by its arguments
 			return this.$.node(
 				"alias",
 				{
@@ -208,7 +207,6 @@ export class GenericRoot<
 				this.defIsLazy() ?
 					this.$.parse(this.bodyDef(argNodes))
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
-			// a transient instantiation is rebuilt once the definitions it references close
 			if (inProgress.definitions && node.includesShallowAlias)
 				delete this.instantiations[key]
 			else this.instantiations[key] = node
@@ -247,9 +245,7 @@ export class GenericRoot<
 			"params",
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
-					// read through intrinsic, which bootstraps again once an engine is installed
 					[param, intrinsic.unknown]
-					// finalizing a constraint can instantiate this generic, which reads its params
 				:	[param[0], this.$.parseDefinition(param[1])]
 			) as never
 		)

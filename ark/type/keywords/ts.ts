@@ -202,7 +202,6 @@ class ExcludeHkt extends Hkt<[unknown, unknown]> {
 	description = 'exclude branches of a union like `Exclude("boolean", "true")`'
 }
 
-// a branch still being defined can't be related, so filtering it waits as an alias until it resolves
 const filterBranches = (
 	operator: "Exclude" | "Extract",
 	t: BaseRoot,

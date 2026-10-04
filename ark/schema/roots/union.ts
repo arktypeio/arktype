@@ -465,7 +465,6 @@ const valueAtPath = (path: array<PropertyKey>, data: unknown): unknown => {
 	return value
 }
 
-// the case a compiled discriminant's switch takes for value
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
 	const k =
 		discriminant.kind === "domain" ? `"${domainOf(value)}"` : unitKeyOf(value)

@@ -92,7 +92,6 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		return this.cache.json
 	}
 
-	// the last ancestor is the path itself
 	stringify(): string {
 		return this.stringifyAncestors()[this.length]
 	}

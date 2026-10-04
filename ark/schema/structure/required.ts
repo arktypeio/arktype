@@ -51,7 +51,6 @@ export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
 	private _errorContext: NodeErrorContextInput<"required"> | undefined
-	// an alias is described by its resolution, which may not exist until the node is traversed
 	get errorContext(): NodeErrorContextInput<"required"> {
 		return (this._errorContext ??= Object.freeze({
 			code: "required",

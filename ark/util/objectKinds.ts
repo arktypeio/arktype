@@ -211,7 +211,6 @@ export const isValidDate = (date: Date): boolean => {
 		try {
 			return !Number.isNaN(dateGetTime.call(date))
 		} catch {
-			// an object inheriting Date.prototype has no time value
 			return false
 		}
 	}
