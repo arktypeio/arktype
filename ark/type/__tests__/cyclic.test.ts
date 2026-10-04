@@ -1699,6 +1699,27 @@ swap.swap.order[1] must be "on" (was "off")`)
 		).throws(writeUnclosedGenericCycleMessage("h"))
 	})
 
+	// their types hit TS2589 or TS2615, as on 2.2.7
+	it("aliases instantiating a generic over themselves", () => {
+		const { json }: Record<string, Type> = scope({
+			json: "string | number | boolean | null | json[] | Record<string, json>"
+		} as never).export() as never
+		const { a }: Record<string, Type> = scope({
+			a: "Record<string, a>"
+		} as never).export() as never
+		const list: Record<string, Type> = scope({
+			"g<t>": "t[]",
+			a: "g<a>"
+		} as never).export() as never
+
+		attest(json.allows({ a: [1, "x", { b: null }] })).equals(true)
+		attest(json.allows({ a: [1, { b: undefined }] })).equals(false)
+		attest(a.expression).snap("{ [string]: $a }")
+		attest(String(a({ x: 1 }))).snap("x must be an object (was a number)")
+		attest(list.a.expression).snap("$a[]")
+		attest(list.a.allows([[[]]])).equals(true)
+	})
+
 	it("generic argument doubling each level", () => {
 		attest(() =>
 			scope({
