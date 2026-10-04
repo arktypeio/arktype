@@ -2,6 +2,7 @@ import {
 	Disjoint,
 	compileLiteralPropAccess,
 	flatMorphsAreEqual,
+	flatRefsAreEqual,
 	isResolutionFinal,
 	uncheckedAssertions,
 	type BaseRoot,
@@ -14,6 +15,7 @@ import {
 	type DiscriminantLocation,
 	type DiscriminatedCases,
 	type Domain,
+	type FlatRef,
 	type IntersectionContext,
 	type Morph,
 	type Union,
@@ -530,8 +532,7 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (!ordered)
-				assertDeterminateOverlap(branches[i], branches[j], intersection)
+			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
 
 			if (intersection.equals(branches[i].rawIn)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
@@ -543,37 +544,36 @@ export const reduceBranches = ({
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
-const assertDeterminateOverlap = (
-	l: Union.ChildNode,
-	r: Union.ChildNode,
-	intersection: BaseRoot
-): void => {
-	if (!l.includesTransform && !r.includesTransform) return
-
-	// branches holding a definition still open may be disjoint once it closes
-	if (!isResolutionFinal() && intersection.includesAlias) {
+const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
+	if (!l.includesAlias && !r.includesAlias) {
+		if (!l.includesTransform && !r.includesTransform) return
+	} else if (!isResolutionFinal()) {
+		// what an alias transforms, and whether branches holding a definition still open overlap, is known once it closes
 		uncheckedAssertions.push(() => {
-			const resolved = intersectNodesRoot(l.rawIn, r.rawIn, l.$)
-			if (!(resolved instanceof Disjoint))
-				assertDeterminateOverlap(l, r, resolved)
+			if (
+				(l.transforms || r.transforms) &&
+				!(intersectNodesRoot(l.rawIn, r.rawIn, l.$) instanceof Disjoint)
+			)
+				assertDeterminateOverlap(l, r)
 		})
 		return
-	}
-
-	if (!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[])) {
-		throwParseError(
-			writeIndiscriminableMorphMessage(l.expression, r.expression)
-		)
-	}
+	} else if (!l.transforms && !r.transforms) return
 
 	if (
-		!arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual })
+		!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[]) ||
+		!arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) ||
+		!arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
+			isEqual: flatRefsAreEqual
+		})
 	) {
 		throwParseError(
 			writeIndiscriminableMorphMessage(l.expression, r.expression)
 		)
 	}
 }
+
+const transformingAliasRefsOf = (node: BaseRoot): FlatRef[] =>
+	node.flatRefs.filter(ref => ref.node.hasKind("alias") && ref.node.transforms)
 
 type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: PropertyKey[]
