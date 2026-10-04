@@ -726,6 +726,16 @@ export const applyResolution = (
 	ctx.exitResolution()
 }
 
+export const applyMember = (
+	node: BaseNode,
+	data: unknown,
+	ctx: InternalTraversal,
+	member: BaseNode = node
+): void =>
+	member.includesAlias ?
+		applyResolution(member.id, node.traverseApply, data, ctx)
+	:	node.traverseApply(data, ctx)
+
 export const applyValue = (
 	node: BaseNode,
 	data: unknown,

@@ -250,9 +250,13 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	): this {
 		if (this.traversalKind !== "Apply" || !member.includesAlias)
 			return this.line(this.invoke(node, { arg }))
+		return this.invokeResolution(node, member.id, arg)
+	}
+
+	invokeResolution(node: BaseNode, id: string, arg: string = this.data): this {
 		const apply = this.referenceToId(node.id, { kind: "Apply" })
 		return this.if(
-			`ctx.enterResolution("${member.id}", ${arg}, ${apply}) === undefined`,
+			`ctx.enterResolution("${id}", ${arg}, ${apply}) === undefined`,
 			() => this.line(this.invoke(node, { arg })).line("ctx.exitResolution()")
 		)
 	}

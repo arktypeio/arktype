@@ -16,6 +16,7 @@ import {
 } from "../shared/implement.ts"
 import {
 	aliasVisits,
+	applyResolution,
 	maxAliasDepth,
 	maxAliasVisits,
 	type TraverseAllows,
@@ -264,13 +265,7 @@ Resolution: ${printable(resolution)}`)
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		const resolution = this.resolution
-		if (
-			ctx.enterResolution(resolution.id, data, resolution.traverseApply) !==
-			undefined
-		)
-			return
-		resolution.traverseApply(data, ctx)
-		ctx.exitResolution()
+		applyResolution(resolution.id, resolution.traverseApply, data, ctx)
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) =>
@@ -282,7 +277,6 @@ Resolution: ${printable(resolution)}`)
 
 	compile(js: NodeCompiler): void {
 		const resolution = this.resolution
-		const traverse = js.invoke(resolution)
 		const id = resolution.id
 		if (js.traversalKind === "Transform") {
 			js.return(
@@ -291,12 +285,10 @@ Resolution: ${printable(resolution)}`)
 			return
 		}
 		if (js.traversalKind === "Apply") {
-			const apply = js.referenceToId(id, { kind: "Apply" })
-			js.if(`ctx.enterResolution("${id}", data, ${apply}) === undefined`, () =>
-				js.line(traverse).line("ctx.exitResolution()")
-			)
+			js.invokeResolution(resolution, id)
 			return
 		}
+		const traverse = js.invoke(resolution)
 		if (!this.closesCycle) {
 			js.return(traverse)
 			return
