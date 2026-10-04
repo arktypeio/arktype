@@ -101,10 +101,10 @@ const isUndefinedCase = (k: string) => k === "undefined" || k === '"undefined"'
 
 export const discriminate = (node: Union.Node): Discriminant | null => {
 	if (node.branches.length < 2) return null
-	if (
-		node.unitBranches.length === node.branches.length &&
-		node.unitBranches.every(n => isCaseUnit(n.rawIn as Unit.Node))
-	) {
+	if (node.unitBranches.length === node.branches.length) {
+		// a union of units lists each of them if any can't be a case
+		if (!node.unitBranches.every(n => isCaseUnit(n.rawIn as Unit.Node)))
+			return null
 		const cases = flatMorph(node.unitBranches, (i, n) => [
 			`${(n.rawIn as Unit.Node).serializedValue}`,
 			n.hasKind("morph") ? n : (true as const)
