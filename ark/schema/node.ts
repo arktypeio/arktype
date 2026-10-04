@@ -209,6 +209,22 @@ export abstract class BaseNode<
 				(this.hasKind("intersection") && !!this.structure?.props.length)))
 	}
 
+	private _trackedId: string | undefined
+	// a root no alias references is tracked under an equal resolution its aliases reach, so an object reached again through them isn't traversed twice
+	get trackedId(): string {
+		if (this._trackedId) return this._trackedId
+		if (!isResolutionFinal()) return this.id
+		if (this.hasKind("alias") || isNode($ark.nodesByRegisteredId[this.id]))
+			return (this._trackedId = this.id)
+		const alias = this.references.find(
+			reference =>
+				reference.hasKind("alias") &&
+				reference.resolution.kind === this.kind &&
+				_isMutuallySimulated(this, reference.resolution, true, false)
+		) as AliasNode | undefined
+		return (this._trackedId = alias ? alias.resolution.id : this.id)
+	}
+
 	private _transforms: boolean | undefined
 	// includesTransform doesn't see an alias's resolution, final once nothing but inputs and outputs is open
 	get transforms(): boolean {
@@ -484,7 +500,7 @@ export abstract class BaseNode<
 	private applyRoot(data: unknown): Traversal {
 		if (this.includesAlias) {
 			return applyCyclic(
-				this.id,
+				this.trackedId,
 				this.traverseApply,
 				data,
 				this.$.resolvedConfig

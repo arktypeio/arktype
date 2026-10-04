@@ -261,7 +261,8 @@ export class Traversal {
 		// a morph's output is new data, so a cyclic node tracks it from its own root
 		if (node.includesAlias) {
 			this.errors.merge(
-				applyCyclic(node.id, node.traverseApply, data, this.config).errors
+				applyCyclic(node.trackedId, node.traverseApply, data, this.config)
+					.errors
 			)
 		} else node.traverseApply(data, this)
 		queuedMorphs.length = queuedCount
