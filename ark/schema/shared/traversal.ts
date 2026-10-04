@@ -666,7 +666,7 @@ export const applyValue = (
 	data: unknown,
 	ctx: InternalTraversal
 ): void =>
-	node.isCyclic && node.isReferencedById ?
+	node.entersResolution ?
 		applyResolution(node.id, node.traverseApply, data, ctx)
 	:	node.traverseApply(data, ctx)
 
