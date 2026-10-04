@@ -61,8 +61,7 @@ contextualize(() => {
 		)
 	})
 
-	it("describes local times in UTC", () => {
-		// 9 AM in New York is 2 PM UTC
+	it("describes New York time in UTC", () => {
 		const date = new Date(2023, 0, 15, 9)
 		attest(describeCollapsibleDate(date)).snap("January 15, 2023, 2:00 PM UTC")
 	})

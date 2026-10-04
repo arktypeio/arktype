@@ -133,11 +133,9 @@ contextualize(() => {
 		})
 
 		it("Date bound descriptions", () => {
-			// ISO date-only strings parse as UTC midnight and collapse
 			attest(type("Date >= d'2023-01-01'").description).snap(
 				"a Date and 2023 or later"
 			)
-			// other formats parse as local midnight, which also collapses
 			attest(type("Date >= d'2023/1/1'").description).snap(
 				"a Date and 2023 or later"
 			)
