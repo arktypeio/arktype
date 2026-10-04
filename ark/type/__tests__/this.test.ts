@@ -196,6 +196,23 @@ contextualize(() => {
 		)
 	})
 
+	it("prop piped to this", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
+				name: "string",
+				"next?": "string.json.parse |> this"
+			})
+
+			attest(T({ name: "a", next: '{"name":"b"}' })).equals({
+				name: "a",
+				next: { name: "b" }
+			})
+			attest(T({ name: "a", next: '{"name":1}' }).toString()).snap(
+				"next.name must be a string (was a number)"
+			)
+		}
+	})
+
 	it("registers only roots an alias references", () => {
 		const Plain = type({ unreferenced: "string" })
 		attest($ark.nodesByRegisteredId[Plain.internal.id]).equals(undefined)

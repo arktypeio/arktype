@@ -123,6 +123,24 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/813
+	it("cyclic thunks in scope", () => {
+		const $: Scope = scope({
+			a: () => $.type({ b: "b" } as never),
+			b: () => $.type({ a: "a" } as never)
+		} as never)
+		const types: Record<string, Type> = $.export() as never
+		const data: Record<string, unknown> = {}
+		data.b = { a: data }
+
+		attest(types.a.expression).snap("{ b: { a: $a } }")
+		attest(types.b.expression).snap("{ a: $a }")
+		attest(types.a(data)).equals(data)
+		attest(String(types.a({ b: { a: 5 } }))).snap(
+			"b.a must be an object (was a number)"
+		)
+	})
+
 	it("thunk referenced while parsing", () => {
 		const $: Scope = scope({
 			w: () => $.type("a | string" as never),

@@ -495,7 +495,7 @@ b.c.c must be an object (was missing)`)
 			// TS type display blows up but it's equivalent to Value
 			const out = types.value(5)
 			// casting to Value also works
-			const castOut = types.value(5)
+			const castOut = types.castValue(5)
 
 			attest<Value | ArkErrors>(out).equals(5)
 			attest<Value | ArkErrors>(castOut).equals(5)
