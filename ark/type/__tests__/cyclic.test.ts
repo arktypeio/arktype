@@ -1110,6 +1110,163 @@ p1[0].p0 must be x (was a number)`)
 						"value at [0][0] must be an array (was number)"
 					)
 				})
+
+				// https://github.com/arktypeio/arktype/issues/1476
+				it("recursive conjunction of instances", config => {
+					class Expr {}
+					class And extends Expr {
+						left: Expr
+						right: Expr
+						constructor(left: Expr, right: Expr) {
+							super()
+							this.left = left
+							this.right = right
+						}
+					}
+					class Or extends Expr {
+						left: Expr
+						right: Expr
+						constructor(left: Expr, right: Expr) {
+							super()
+							this.left = left
+							this.right = right
+						}
+					}
+					class Not extends Expr {
+						operand: Expr
+						constructor(operand: Expr) {
+							super()
+							this.operand = operand
+						}
+					}
+					class True extends Expr {}
+					class False extends Expr {}
+					const types: Record<string, Type> = scope(
+						{
+							Truthy: [
+								type.instanceOf(True),
+								"|",
+								[
+									[
+										type.instanceOf(And),
+										"&",
+										{ left: "Truthy", right: "Truthy" }
+									],
+									"|",
+									[
+										[
+											type.instanceOf(Or),
+											"&",
+											{ left: "Truthy", right: "Truthy" }
+										],
+										"|",
+										[
+											[
+												type.instanceOf(Or),
+												"&",
+												{ left: "Truthy", right: "Falsy" }
+											],
+											"|",
+											[
+												[
+													type.instanceOf(Or),
+													"&",
+													{ left: "Falsy", right: "Truthy" }
+												],
+												"|",
+												[type.instanceOf(Not), "&", { operand: "Falsy" }]
+											]
+										]
+									]
+								]
+							],
+							Falsy: [
+								type.instanceOf(False),
+								"|",
+								[
+									[
+										type.instanceOf(And),
+										"&",
+										{ left: "Falsy", right: "Falsy" }
+									],
+									"|",
+									[
+										[
+											type.instanceOf(And),
+											"&",
+											{ left: "Falsy", right: "Truthy" }
+										],
+										"|",
+										[
+											[
+												type.instanceOf(And),
+												"&",
+												{ left: "Truthy", right: "Falsy" }
+											],
+											"|",
+											[
+												[
+													type.instanceOf(Or),
+													"&",
+													{ left: "Falsy", right: "Falsy" }
+												],
+												"|",
+												[type.instanceOf(Not), "&", { operand: "Truthy" }]
+											]
+										]
+									]
+								]
+							]
+						} as never,
+						config
+					).export() as never
+					const t = new True()
+					const f = new False()
+					const tt = new And(t, t)
+					const tf = new And(t, f)
+
+					attest(types.Truthy(tt)).equals(tt)
+					attest(types.Truthy.allows(tf)).equals(false)
+					attest(types.Falsy(tf)).equals(tf)
+					attest(types.Truthy.allows(new Or(f, new Not(f)))).equals(true)
+				})
+
+				// https://github.com/arktypeio/arktype/issues/1486
+				it("parses a date on each nullable cyclic object", config => {
+					const types = scope(
+						{
+							User: {
+								"id?": "number | null",
+								"supervisor?": "User | null",
+								"lastUpdate?": "string.date.parse"
+							}
+						},
+						config
+					).export()
+
+					attest(
+						types.User({
+							id: 7,
+							supervisor: { id: 7, lastUpdate: "1" },
+							lastUpdate: "0"
+						})
+					).equals({
+						id: 7,
+						supervisor: { id: 7, lastUpdate: new Date("1") },
+						lastUpdate: new Date("0")
+					})
+					attest(
+						types.User({ supervisor: { supervisor: { lastUpdate: "2" } } })
+					).equals({
+						supervisor: { supervisor: { lastUpdate: new Date("2") } }
+					})
+					const self: typeof types.User.inferIn = { lastUpdate: "3" }
+					self.supervisor = self
+					const out = types.User.assert(self)
+
+					attest(out.lastUpdate).equals(new Date("3"))
+					attest(out.supervisor === out).equals(true)
+				})
 			}
 		)
 	}
