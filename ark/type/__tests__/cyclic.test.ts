@@ -933,6 +933,26 @@ contextualize(() => {
 					).equals({ k: { p0: "d", p1: "s" } })
 				})
 
+				it("deep config of a cyclic object reached directly", config => {
+					const { a3 }: Record<string, Type> = scope(
+						{
+							a1: "Record<string, a1>",
+							a3: { kind: "'a3'", p0: "number", p1: "a1[]" }
+						} as never,
+						config
+					).export() as never
+					const data: { kind: string; p0: number; p1: object[] } = {
+						kind: "a3",
+						p0: 1,
+						p1: []
+					}
+					data.p1.push(data)
+
+					attest(String(a3.configure({ description: "x" }, "references")(data)))
+						.snap(`p1[0].kind must be x (was a string)
+p1[0].p0 must be x (was a number)`)
+				})
+
 				it("deep config of a cyclic default", config => {
 					const { list }: Record<string, Type> = scope(
 						{ list: { p: ["list[]", "=", () => []] } } as never,
