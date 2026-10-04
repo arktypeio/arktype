@@ -21,6 +21,9 @@ type Value = {
 		| "nullDefault"
 		| "nonEmpty"
 		| "pipe"
+		| "indexed"
+		| "tuple"
+		| "orArray"
 	to: number
 	other: number
 }
@@ -50,9 +53,11 @@ const valueForms: [threshold: number, form: Value["form"]][] = [
 	[0.48, "nullable"],
 	[0.62, "array"],
 	[0.72, "unionArray"],
-	[0.82, "record"],
+	[0.8, "record"],
+	[0.83, "indexed"],
 	[0.86, "orString"],
-	[0.89, "and"],
+	[0.88, "tuple"],
+	[0.9, "and"],
 	[0.92, "parse"],
 	[0.95, "box"],
 	[0.96, "wraps"],
@@ -65,14 +70,17 @@ const relatedValueForms: [threshold: number, form: Value["form"]][] = [
 	[0.1, "number"],
 	[0.25, "ref"],
 	[0.4, "nullable"],
-	[0.5, "array"],
-	[0.58, "nonEmpty"],
-	[0.65, "unionArray"],
-	[0.75, "record"],
-	[0.82, "orString"],
-	[0.88, "nullDefault"],
-	[0.92, "parse"],
-	[0.96, "pipe"],
+	[0.48, "array"],
+	[0.54, "nonEmpty"],
+	[0.6, "unionArray"],
+	[0.66, "orArray"],
+	[0.72, "record"],
+	[0.76, "indexed"],
+	[0.8, "tuple"],
+	[0.85, "orString"],
+	[0.9, "nullDefault"],
+	[0.93, "parse"],
+	[0.97, "pipe"],
 	[1, "default"]
 ]
 
@@ -90,7 +98,11 @@ const generateAliases = (rand: () => number, forms = valueForms): Alias[] => {
 		const props = Array.from({ length: 1 + Math.floor(rand() * 3) }, (_, j) => {
 			const r = rand()
 			const form = forms.find(([threshold]) => r < threshold)![1]
-			const value: Value = { form, to: pick(), other: pick() }
+			const to = pick()
+			// a tuple's variadic absorbs an optional element it equals, and a key both declared and indexed takes each step
+			const other =
+				form === "tuple" || (form === "indexed" && rand() < 0.5) ? to : pick()
+			const value: Value = { form, to, other }
 			// a required reference with no other way out would leave the type uninhabited
 			const optional =
 				form !== "default" &&
@@ -117,6 +129,11 @@ const valueDefOf = (value: Value): unknown =>
 		[nameOf(value.to), "...", `${nameOf(value.to)}[]`]
 	: value.form === "pipe" ? `string.json.parse |> ${nameOf(value.to)}`
 	: value.form === "record" ? `Record<string, ${nameOf(value.to)}>`
+	: value.form === "indexed" ?
+		{ "q?": nameOf(value.to), "[string]": nameOf(value.other) }
+	: value.form === "tuple" ?
+		[[nameOf(value.to), "?"], "...", `${nameOf(value.other)}[]`]
+	: value.form === "orArray" ? `${nameOf(value.to)} | ${nameOf(value.to)}[]`
 	: value.form === "orString" ? `${nameOf(value.to)} | string`
 	: value.form === "and" ? [nameOf(value.to), "&", { "x?": "number" }]
 	: value.form === "box" ? `box<${nameOf(value.to)}>`
@@ -220,6 +237,19 @@ const generateData = (aliases: Alias[], rand: () => number) => {
 				: value.form === "record" ?
 					deep ? {}
 					:	{ k: generate(value.to, depth + 1, []) }
+				: value.form === "indexed" ?
+					deep ? {}
+					:	{ q: generate(value.to, depth + 1, []) }
+				: value.form === "tuple" ?
+					deep ? []
+					:	[
+							generate(value.to, depth + 1, []),
+							generate(value.other, depth + 1, [])
+						]
+				: value.form === "orArray" ?
+					deep ? []
+					: rand() < 0.5 ? generate(value.to, depth + 1, [])
+					: [generate(value.to, depth + 1, [])]
 				: value.form === "and" ? withX(generate(value.to, depth + 1, []), rand)
 				: value.form === "box" || value.form === "bounded" ?
 					box(value.to, value.to, depth + 1, false)
@@ -361,6 +391,17 @@ const oracleOf = (aliases: Alias[]) => {
 			data.every(e => allows(value.to, e) || allows(value.other, e))
 		: value.form === "record" ?
 			isObject(data) && Object.values(data).every(v => allows(value.to, v))
+		: value.form === "indexed" ?
+			isObject(data) &&
+			Object.values(data).every(v => allows(value.other, v)) &&
+			(!("q" in data) || allows(value.to, data.q))
+		: value.form === "tuple" ?
+			Array.isArray(data) &&
+			(data.length === 0 || allows(value.to, data[0])) &&
+			data.slice(1).every(e => allows(value.other, e))
+		: value.form === "orArray" ?
+			allows(value.to, data) ||
+			(Array.isArray(data) && data.every(e => allows(value.to, e)))
 		: value.form === "and" ?
 			isObject(data) &&
 			(!("x" in data) || typeof data.x === "number") &&
@@ -391,6 +432,62 @@ const shuffle = <t>(items: readonly t[], rand: () => number) => {
 		;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
 	}
 	return shuffled
+}
+
+const defsOf = (aliases: Alias[]): Record<string, unknown> =>
+	Object.fromEntries(aliases.map((a, i) => [nameOf(i), defOf(a, i)]))
+
+// each variant is the same scope written differently, so every alias it shares means the same type
+const variantsOf = (
+	aliases: Alias[],
+	rand: () => number
+): Record<string, Record<string, unknown>> => {
+	const pick = () => Math.floor(rand() * aliases.length)
+	const copied = pick()
+	const redirect = (to: number) =>
+		to === copied && rand() < 0.5 ? aliases.length : to
+	const redirected = aliases.map(
+		(alias): Alias => ({
+			...alias,
+			of: alias.of.map(redirect),
+			props: alias.props.map(prop => ({
+				...prop,
+				value: {
+					...prop.value,
+					to: redirect(prop.value.to),
+					other: redirect(prop.value.other)
+				}
+			}))
+		})
+	)
+	const unfolded = defsOf(aliases)
+	const refs = aliases.flatMap((alias, i) =>
+		alias.props
+			.filter(prop =>
+				["ref", "nullable", "orString", "tuple"].includes(prop.value.form)
+			)
+			.map(prop => ({ i, prop }))
+	)
+	if (refs.length) {
+		const { i, prop } = refs[Math.floor(rand() * refs.length)]
+		const inlined = defOf(aliases[prop.value.to], prop.value.to)
+		;(unfolded[nameOf(i)] as Record<string, unknown>)[
+			prop.optional ? `${prop.key}?` : prop.key
+		] =
+			prop.value.form === "ref" ? inlined
+			: prop.value.form === "nullable" ? [inlined, "|", "null"]
+			: prop.value.form === "orString" ? [inlined, "|", "string"]
+			: [[inlined, "?"], "...", `${nameOf(prop.value.other)}[]`]
+	}
+	return {
+		duplicated: {
+			...defsOf(redirected),
+			[nameOf(aliases.length)]: defOf(redirected[copied], copied),
+			u: `${nameOf(copied)} | ${nameOf(aliases.length)}`
+		},
+		unfolded,
+		unused: { ...defsOf(aliases), u: `string.json.parse |> ${nameOf(pick())}` }
+	}
 }
 
 const generics = {
@@ -465,8 +562,8 @@ const assertGeneratedScopesAlike = (firstSeed: number, lastSeed: number) => {
 				}
 				const expected = allows(i, getData())
 				const outcomes = types.map(t => outcomeOf(t[names[i]], getData()))
-				const jit = outcomes.slice(0, -1)
-				if (new Set(jit).size > 1) failures.push(`${seed} ${names[i]}: ${jit}`)
+				if (new Set(outcomes).size > 1)
+					failures.push(`${seed} ${names[i]}: ${outcomes}`)
 				for (const [k, t] of types.entries()) {
 					if ((outcomes[k] === "ok") !== expected) {
 						failures.push(
@@ -508,23 +605,53 @@ contextualize(() => {
 			const aliases = generateAliases(rand, relatedValueForms)
 			if (isShallow(aliases)) continue
 			const names = aliases.map((_, i) => nameOf(i))
-			const defs = Object.fromEntries(
-				aliases.map((a, i) => [names[i], defOf(a, i)])
-			)
-			const [l, r] = [names, shuffle(names, rand)].map(
-				(order): Record<string, Type> | string => {
-					try {
-						return scope(
-							Object.fromEntries(order.map(name => [name, defs[name]])) as never
-						).export() as never
-					} catch (e) {
-						return String(e)
-					}
+			const defs = defsOf(aliases)
+			const build = (
+				unordered: Record<string, unknown>
+			): Record<string, Type> | string => {
+				try {
+					return scope(
+						Object.fromEntries(
+							shuffle(Object.keys(unordered), rand).map(name => [
+								name,
+								unordered[name]
+							])
+						) as never
+					).export() as never
+				} catch (e) {
+					return String(e)
 				}
-			)
+			}
+			const [l, r] = [defs, defs].map(build)
 			if (typeof l === "string" || typeof r === "string") {
 				if (l !== r) failures.push(`${seed}: ${l} || ${r}`)
 				continue
+			}
+			for (const [variant, variantDefs] of Object.entries(
+				variantsOf(aliases, rand)
+			)) {
+				const types = build(variantDefs)
+				if (typeof types === "string") {
+					failures.push(`${seed} ${variant}: ${types}`)
+					continue
+				}
+				if (
+					variant === "duplicated" &&
+					!types.u.equals(types[nameOf(names.length)])
+				)
+					failures.push(`${seed}: union of twins isn't either`)
+				for (const name of names) {
+					if (!types[name].equals(l[name]))
+						failures.push(`${seed} ${name}: ${variant} isn't equal`)
+					if (
+						variant === "unused" &&
+						types[name].expression !== l[name].expression
+					) {
+						failures.push(
+							`${seed} ${name}: ${variant} ${types[name].expression}`
+						)
+					}
+				}
 			}
 			const allows = oracleOf(aliases)
 			const serializable = aliases.every(alias =>
@@ -533,6 +660,32 @@ contextualize(() => {
 						!["parse", "default", "nullDefault", "pipe"].includes(value.form)
 				)
 			)
+			// a required prop on each object narrows every alias reaching one
+			const narrowed =
+				serializable &&
+				build(
+					Object.fromEntries(
+						Object.entries(defs).map(([name, def]) => [
+							name,
+							isPlainObject(def) ? { ...def, s: "true" } : def
+						])
+					)
+				)
+			if (typeof narrowed === "string")
+				failures.push(`${seed} narrowed: ${narrowed}`)
+			else if (narrowed) {
+				for (const [i, name] of names.entries()) {
+					if (!narrowed[name].extends(l[name]))
+						failures.push(`${seed} ${name}: narrowed doesn't extend`)
+					const sample = generateData(aliases, random(seed * 1000 + i * 10))(i)
+					if (
+						aliases[i].form === "object" &&
+						allows(i, sample) &&
+						l[name].extends(narrowed[name])
+					)
+						failures.push(`${seed} ${name}: extends narrowed`)
+				}
+			}
 			for (let i = 0; i < aliases.length; i++) {
 				const [a, b] = [l[names[i]], r[names[i]]]
 				if (a.expression !== b.expression) {
@@ -542,6 +695,26 @@ contextualize(() => {
 				}
 				if (!a.equals(b) || !a.extends(b) || !b.extends(a))
 					failures.push(`${seed} ${names[i]}: twins aren't related`)
+				const other = names[Math.floor(rand() * names.length)]
+				const [lUnion, rUnion] = [
+					[a, l[other]],
+					[b, r[other]]
+				].map(([t, u]) => {
+					try {
+						return t.or(u)
+					} catch (e) {
+						return String(e)
+					}
+				})
+				if (typeof lUnion === "string" || typeof rUnion === "string") {
+					if (lUnion !== rUnion)
+						failures.push(`${seed} ${names[i]}: ${lUnion} || ${rUnion}`)
+				} else {
+					if (lUnion.expression !== rUnion.expression)
+						failures.push(`${seed} ${names[i]}: or ${other} differs by build`)
+					if (!a.extends(lUnion))
+						failures.push(`${seed} ${names[i]}: or ${other} doesn't absorb`)
+				}
 				if (!a.or(a).equals(a))
 					failures.push(`${seed} ${names[i]}: or isn't idempotent`)
 				if (serializable && !type.schema(a.json as never).equals(a))
