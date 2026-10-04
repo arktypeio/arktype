@@ -265,9 +265,12 @@ export abstract class BaseNode<
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.hasKind("alias")) continue
-				// an intersection reaches nothing its operands don't, and resolving one can create others
-				if (reference.operator === "&" && !resolvesIntersections) {
-					reachesOperands = true
+				// an intersection reaches nothing its operands don't, and resolving one can create others or reenter an operand still resolving
+				if (
+					reference.operator === "&" &&
+					!(resolvesIntersections && reference.hasResolvableOperands)
+				) {
+					reachesOperands ||= !resolvesIntersections
 					for (const operand of reference.operands!)
 						reached.set(operand.id, operand)
 					continue

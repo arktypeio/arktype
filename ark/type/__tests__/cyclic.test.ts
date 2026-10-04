@@ -1982,6 +1982,19 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
+	it("intersection of definitions piping into their cycle", () => {
+		const { n }: Record<string, Type> = scope({
+			n: { "p?": ["a", "&", "n"], "q?": "a | (string.json.parse |> a)" },
+			a: { "q?": "n | (string.json.parse |> a)" }
+		} as never).export() as never
+
+		attest(n({ p: { q: "{}" }, q: '{ "q": {} }' })).equals({
+			p: { q: {} },
+			q: { q: {} }
+		})
+		attest(String(n({ p: 5 }))).snap("p must be an object (was a number)")
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1476
 	it("cyclic intersection keyed by operands", () => {
 		const types = scope({
