@@ -46,6 +46,7 @@ import type {
 	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
+import { Disjoint } from "./shared/disjoint.ts"
 import { isArkErrorResult, type ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
@@ -903,48 +904,51 @@ export abstract class BaseNode<
 }
 
 interface SimulationState {
-	assumed: string[]
+	pairs: Record<string, SimulatedPair>
+	pending: string[]
 	failed: Record<string, true>
+	comparing: string
 	unfoldsAliases: boolean
+	subsumes: boolean
+	subsumed: Record<string, boolean>
 }
 
-// a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related while it's compared or left folded
+interface SimulatedPair {
+	l: BaseNode
+	r: BaseNode
+	assumedBy: Record<string, true>
+}
+
+// a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related until its unfoldings are compared
 const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (l.innerHash === r.innerHash) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
 		if (!s.unfoldsAliases) return true
 		const pair = `${l.id}|${r.id}`
 		if (s.failed[pair]) return false
-		if (s.assumed.includes(pair)) return true
-		const assumedCount = s.assumed.push(pair) - 1
-		if (
-			isSimulated(
-				l.hasKind("alias") ? l.resolution : l,
-				r.hasKind("alias") ? r.resolution : r,
-				s
-			)
-		)
-			return true
-		s.assumed.length = assumedCount
-		s.failed[pair] = true
-		return false
+		if (s.pairs[pair]) s.pairs[pair].assumedBy[s.comparing] = true
+		else {
+			s.pairs[pair] = { l, r, assumedBy: { [s.comparing]: true } }
+			s.pending.push(pair)
+		}
+		return true
 	}
-	// branches of an unreduced union may subsume each other, so each need only be within one on the other side or extend it
+	// branches of an unreduced union may subsume each other, so each need only be within one on the other side or another branch that is
 	if (l.hasKind("union") && !l.inner.ordered) {
 		return l.branches.every(
 			branch =>
 				isSimulated(branch, r, s) ||
-				(s.unfoldsAliases && r.isRoot() && isSubsumed(branch, r))
+				(s.subsumes &&
+					l.branches.some(
+						other =>
+							other !== branch &&
+							isSimulated(other, r, s) &&
+							isSubsumed(branch, other, s)
+					))
 		)
 	}
-	if (r.hasKind("union") && !r.inner.ordered) {
-		return r.branches.some(branch => {
-			const assumedCount = s.assumed.length
-			if (isSimulated(l, branch, s)) return true
-			s.assumed.length = assumedCount
-			return false
-		})
-	}
+	if (r.hasKind("union") && !r.inner.ordered)
+		return r.branches.some(branch => isSimulated(l, branch, s))
 	const lEntries = simulatedEntriesOf(l)
 	if (l.kind !== r.kind || lEntries.length !== simulatedEntriesOf(r).length)
 		return false
@@ -1000,11 +1004,20 @@ const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
 
 let isSubsuming = false
 
-const isSubsumed = (branch: BaseRoot, r: BaseRoot): boolean => {
+const isSubsumed = (
+	branch: BaseRoot,
+	other: BaseRoot,
+	s: SimulationState
+): boolean => {
 	if (isSubsuming) return false
+	const pair = `${branch.id}|${other.id}`
+	if (pair in s.subsumed) return s.subsumed[pair]
 	isSubsuming = true
 	try {
-		return branch.extends(r)
+		// relating them reads resolutions directly, so the intersection isn't finalized
+		const intersection = branch.rawIntersect(other)
+		return (s.subsumed[pair] =
+			!(intersection instanceof Disjoint) && branch.equals(intersection))
 	} finally {
 		isSubsuming = false
 	}
@@ -1014,9 +1027,52 @@ export const isMutuallySimulated = (
 	l: BaseNode,
 	r: BaseNode,
 	unfoldsAliases = true
+): boolean =>
+	_isMutuallySimulated(l, r, unfoldsAliases, false) ||
+	// relating a branch by extension is costly, so it's tried only once unfolding alone fails
+	(unfoldsAliases && !isSubsuming && _isMutuallySimulated(l, r, true, true))
+
+const _isMutuallySimulated = (
+	l: BaseNode,
+	r: BaseNode,
+	unfoldsAliases: boolean,
+	subsumes: boolean
 ): boolean => {
-	const s: SimulationState = { assumed: [], failed: {}, unfoldsAliases }
-	return isSimulated(l, r, s) && isSimulated(r, l, s)
+	const s: SimulationState = {
+		pairs: {},
+		pending: [],
+		failed: {},
+		comparing: "",
+		unfoldsAliases,
+		subsumes,
+		subsumed: {}
+	}
+	const simulates = () => isSimulated(l, r, s) && isSimulated(r, l, s)
+	if (!simulates()) return false
+	// a pair whose unfoldings aren't related fails each comparison that assumed it, so each is compared again
+	while (s.pending.length) {
+		const pair = s.pending.pop()!
+		if (s.failed[pair]) continue
+		const compared = s.pairs[pair]
+		s.comparing = pair
+		if (
+			isSimulated(
+				compared.l.hasKind("alias") ? compared.l.resolution : compared.l,
+				compared.r.hasKind("alias") ? compared.r.resolution : compared.r,
+				s
+			)
+		)
+			continue
+		s.failed[pair] = true
+		for (const comparison in compared.assumedBy) {
+			if (comparison) s.pending.push(comparison)
+			else {
+				s.comparing = comparison
+				if (!simulates()) return false
+			}
+		}
+	}
+	return true
 }
 
 const referencesThroughAliases = (node: BaseNode): BaseNode[] => {

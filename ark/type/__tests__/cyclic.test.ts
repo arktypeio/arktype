@@ -1263,6 +1263,36 @@ contextualize(() => {
 		attest(types.c.equals(types.d)).equals(false)
 	})
 
+	it("relates twin cyclic array unions", () => {
+		const chain = (): Record<string, Type> => {
+			const def: Record<string, string> = { z: "(x6 | z)[]", x0: "string" }
+			for (let i = 1; i <= 6; i++) def[`x${i}`] = `(x${i - 1} | z)[]`
+			return scope(def as never).export() as never
+		}
+		const l = chain().x6
+		const r = chain()
+
+		attest(l.equals(r.x6)).equals(true)
+		attest(l.extends(r.x6)).equals(true)
+		attest(l.or(r.x6).expression).snap("($x5 | $z)[]")
+		attest(l.and(r.x6).expression).snap("($x5 | $z)[]")
+		attest(l.equals(r.x5)).equals(false)
+
+		const tuple = () =>
+			scope({
+				Gb: "(b2 | Gb)[]",
+				Ga2: "(a2 | Gb)[]",
+				a2: ["Ga2", "...", "string[]"],
+				b0: "Ga2[]",
+				Gx0: "(b0 | Gb)[]",
+				b1: "Gx0[]",
+				Gx1: "(b1 | Gb)[]",
+				b2: "Gx1[]"
+			}).export().a2
+
+		attest(tuple().equals(tuple())).equals(true)
+	})
+
 	it("cyclic props disjoint from index", () => {
 		const { b: l }: Record<string, Type> = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },
