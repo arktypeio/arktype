@@ -103,16 +103,16 @@ contextualize(() => {
 	})
 
 	it("self-referencing thunk in scope", () => {
-		const { a } = scope({
+		const { a }: Record<string, Type> = scope({
 			a: () => ({ "a?": "a" })
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(a.expression).snap("{ a?: $a }")
 		attest(a.allows({ a: { a: {} } })).equals(true)
 		attest(a.allows({ a: 1 })).equals(false)
 
 		const $: Scope = scope({ a: () => $.type({ "a?": "a" } as never) } as never)
-		const types = $.export() as never as Record<string, Type>
+		const types: Record<string, Type> = $.export() as never
 		attest(types.a.expression).snap("{ a?: $a }")
 
 		const shallow: Scope = scope({
@@ -128,7 +128,7 @@ contextualize(() => {
 			w: () => $.type("a | string" as never),
 			a: { v: "string", "w?": "w" }
 		} as never)
-		const { w } = $.export() as never as Record<string, Type>
+		const { w }: Record<string, Type> = $.export() as never
 		attest(w.expression).snap("string | { v: string, w?: $w }")
 		attest(String(w({ v: "x", w: { v: 1 } }))).snap(
 			"w.v must be a string (was a number)"

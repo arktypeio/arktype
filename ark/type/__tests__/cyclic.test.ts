@@ -478,13 +478,13 @@ contextualize(() => {
 						"v.p0 must be an object or null (was boolean)"
 					)
 
-					const { list } = scope(
+					const { list }: Record<string, Type> = scope(
 						{
 							"g<q>": { p0: "string[] | null", "p1?": "q" },
 							list: "g<list>[]"
 						} as never,
 						config
-					).export() as never as Record<string, Type>
+					).export() as never
 					const element: { p0: unknown; p1?: object[] } = { p0: true }
 					element.p1 = [element]
 
@@ -494,13 +494,13 @@ contextualize(() => {
 				})
 
 				it("reports a cyclic object its instantiation reaches once", config => {
-					const { a } = scope(
+					const { a }: Record<string, Type> = scope(
 						{
 							"g<p>": { kind: "'g'", "p0?": "g<a>", p2: "g<p> | null" },
 							a: "g<string>"
 						} as never,
 						config
-					).export() as never as Record<string, Type>
+					).export() as never
 					const data: { p2?: object } = {}
 					data.p2 = data
 
@@ -517,10 +517,10 @@ contextualize(() => {
 					shared.p1.r = { p0: invalid }
 
 					for (const def of [defs, reversed]) {
-						const types = scope(
+						const types: Record<string, Type> = scope(
 							def as never,
 							config
-						).export() as never as Record<string, Type>
+						).export() as never
 						attest(String(types.a(invalid))).snap(
 							"p1.zz must be an object (was a string)"
 						)
@@ -763,10 +763,12 @@ contextualize(() => {
 
 				it("instantiates a submodule's generic through a generic of its own", config => {
 					const sub = scope({ "g<p>": "(p | g<p>)[]" }, config).export()
-					const { a } = scope(
+					const {
+						a
+					}: Record<string, Type<unknown[]>> = scope(
 						{ sub, "h<q>": "sub.g<h<q>>", a: "h<string>" } as never,
 						config
-					).export() as never as Record<string, Type<unknown[]>>
+					).export() as never
 
 					attest(a.expression).snap("(g<h<string>> | h<string>)[]")
 					attest(a([[], [[]]])).equals([[], [[]]])
@@ -1014,13 +1016,13 @@ contextualize(() => {
 	})
 
 	it("equates a cyclic union with its reduction", () => {
-		const types = scope({
+		const types: Record<string, Type> = scope({
 			a: "b[] | a[]",
 			b: "a[]",
 			c: "d | e | string",
 			d: ["boolean", ["c", "?"]],
 			e: ["boolean", ["d", "?"]]
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(types.a.or(types.a).expression).snap("$a[]")
 		attest(types.a.or(types.a).equals(types.a)).equals(true)
@@ -1029,14 +1031,14 @@ contextualize(() => {
 	})
 
 	it("relates cyclic types whose props are disjoint from an index", () => {
-		const { b: l } = scope({
+		const { b: l }: Record<string, Type> = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },
 			d: "Record<string, d>"
-		} as never).export() as never as Record<string, Type>
-		const { b: r } = scope({
+		} as never).export() as never
+		const { b: r }: Record<string, Type> = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "string" },
 			d: "Record<string, d>"
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(l.extends(r)).equals(false)
 		attest(l.and(r).allows({ kind: "b", p1: { kind: "b" } })).equals(true)
@@ -1044,21 +1046,21 @@ contextualize(() => {
 	})
 
 	it("compares a cyclic union with a subsumed branch to its reduction", () => {
-		const { u } = scope({
+		const { u }: Record<string, Type> = scope({
 			g: { "p0?": "g" },
 			u: ["g", "|", { "p0?": "g", "p1?": "string" }]
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(u.or(u).expression).snap("{ p0?: $g }")
 		attest(u.extends(u.or(u))).equals(true)
 		attest(u.equals(u.or(u))).equals(true)
 
-		const { b } = scope({
+		const { b }: Record<string, Type> = scope({
 			a: { "p0?": "a", "p1?": "a | string", "[/^k\\d$/]": "string" },
 			b: "d | c",
 			c: { "p0?": "b | number > 0" },
 			d: "c | a | string"
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(b.or(b).equals(b)).equals(true)
 	})
@@ -1123,10 +1125,10 @@ contextualize(() => {
 	})
 
 	it("checks a generic argument once its constraint resolves", () => {
-		const types = scope({
+		const types: Record<string, Type> = scope({
 			a: { "y?": "g<a>" },
 			"g<t extends a>": { x: "t" }
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(types.a.expression).snap("{ y?: g<$a> }")
 		attest(String(types.a({ y: { x: 5 } }))).snap(
@@ -1141,17 +1143,17 @@ contextualize(() => {
 	})
 
 	it("instantiates a generic its own constraint references", () => {
-		const types = scope({
+		const types: Record<string, Type> = scope({
 			"g<t extends a>": { x: "t" },
 			a: { "y?": "g<a>" }
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(types.a.expression).snap("{ y?: g<$a> }")
 
-		const { node } = scope({
+		const { node }: Record<string, Type> = scope({
 			"tree<t extends node>": { value: "t", children: "tree<t>[]" },
 			node: { id: "string", "parent?": "tree<node>" }
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(
 			String(node({ id: "a", parent: { value: { id: 1 }, children: [] } }))
@@ -1159,12 +1161,12 @@ contextualize(() => {
 	})
 
 	it("accepts a cyclic subtype of a generic's constraint", () => {
-		const types = scope({
+		const types: Record<string, Type> = scope({
 			"g<t extends base>": { v: "t" },
 			base: { "n?": "base" },
 			derived: { "n?": "derived", x: "string" },
 			use: "g<derived>"
-		} as never).export() as never as Record<string, Type>
+		} as never).export() as never
 
 		attest(types.use.expression).snap("{ v: { x: string, n?: $derived } }")
 		attest(() =>
@@ -1400,9 +1402,9 @@ swap.swap.order[1] must be "on" (was "off")`)
 			y: "z",
 			z: "y[]"
 		}).export()
-		const { parsed } = scope({
+		const { parsed }: Record<string, Type> = scope({
 			parsed: "string.json.parse |> parsed"
-		}).export() as never as Record<string, Type>
+		}).export() as never
 
 		attest(types.nested.expression).snap("($nested | number)[]")
 		attest(types.a.expression).snap("{ a: $a }")
