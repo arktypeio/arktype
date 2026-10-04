@@ -111,8 +111,8 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	get resolution(): BaseRoot {
 		if (this._resolution) return this._resolution
 		if (this.resolving) {
-			const names = resolvingAliases.map(nameOf)
-			const cycle = names.slice(names.lastIndexOf(nameOf(this)))
+			const names = resolvingAliases.map(aliasNameOf)
+			const cycle = names.slice(names.lastIndexOf(aliasNameOf(this)))
 			const start = cycle.indexOf([...cycle].sort()[0])
 			const path = [...cycle.slice(start), ...cycle.slice(0, start)]
 			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
@@ -317,7 +317,7 @@ const nestsOperations = (arg: BaseRoot): boolean =>
 		operation.operands!.some(operand => operationsOf(operand).length !== 0)
 	)
 
-const nameOf = (node: AliasNode): string =>
+const aliasNameOf = (node: AliasNode): string =>
 	node.expression[0] === "$" ? node.expression.slice(1) : node.expression
 
 const resolvingAliases: AliasNode[] = []
