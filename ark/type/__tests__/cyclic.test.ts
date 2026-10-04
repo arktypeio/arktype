@@ -1054,6 +1054,32 @@ contextualize(() => {
 		).snap("parent.value.id must be a string (was a number)")
 	})
 
+	it("accepts a cyclic subtype of a generic's constraint", () => {
+		const types = scope({
+			"g<t extends base>": { v: "t" },
+			base: { "n?": "base" },
+			derived: { "n?": "derived", x: "string" },
+			use: "g<derived>"
+		} as never).export() as never as Record<string, Type>
+
+		attest(types.use.expression).snap("{ v: { x: string, n?: $derived } }")
+		attest(() =>
+			scope({
+				use: "g<other>",
+				"g<t extends base>": { v: "t" },
+				base: { "n?": "base" },
+				other: { "n?": "other2" },
+				other2: { s: "string", "o?": "other" }
+			} as never).export()
+		).throws(
+			writeUnsatisfiedParameterConstraintMessage(
+				"t",
+				"{ n?: $base }",
+				"{ n?: $other2 }"
+			)
+		)
+	})
+
 	it("checks a union generic argument once it resolves", () => {
 		const types = scope({
 			"box<t extends object | null>": { "v?": "t" },

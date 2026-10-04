@@ -9,7 +9,7 @@ import {
 } from "@ark/util"
 import { intrinsic } from "./intrinsic.ts"
 import type { RootSchema } from "./kinds.ts"
-import type { BaseNode } from "./node.ts"
+import { isMutuallySimulated, type BaseNode } from "./node.ts"
 import { registerNodeId, type NodeId } from "./parse.ts"
 import {
 	identityOf,
@@ -18,7 +18,13 @@ import {
 } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import { arkKind, inProgress } from "./shared/utils.ts"
+import { Disjoint } from "./shared/disjoint.ts"
+import {
+	arkKind,
+	inProgress,
+	isResolutionFinal,
+	uncheckedAssertions
+} from "./shared/utils.ts"
 
 export type GenericParamAst<
 	name extends string = string,
@@ -171,8 +177,10 @@ export class GenericRoot<
 			if (constraint.isUnknown()) continue
 			const name = this.names[i]
 			const arg = argNodes[name]
-			argNodes[name] = resolveShallowAliases(arg)
-			if (!argNodes[name].extends(resolveShallowAliases(constraint))) {
+			const resolvedArg = (argNodes[name] = resolveShallowAliases(arg))
+			const resolvedConstraint = resolveShallowAliases(constraint)
+			if (resolvedArg.extends(resolvedConstraint)) continue
+			const unsatisfied = () =>
 				throwParseError(
 					writeUnsatisfiedParameterConstraintMessage(
 						name,
@@ -180,7 +188,11 @@ export class GenericRoot<
 						arg.expression
 					)
 				)
-			}
+			if (isResolutionFinal() || !mayExtend(resolvedArg, resolvedConstraint))
+				unsatisfied()
+			uncheckedAssertions.push(
+				() => resolvedArg.extends(resolvedConstraint) || unsatisfied()
+			)
 		}
 		const open = this.openInstantiations
 		if (Math.max(open, depth) === maxOpenInstantiations) {
@@ -296,6 +308,15 @@ export type GenericRootBodyParser<params extends array<GenericParamAst>> = {
 }
 
 const maxOpenInstantiations = 100
+
+const mayExtend = (l: BaseRoot, r: BaseRoot): boolean => {
+	if (!l.includesAlias && !r.includesAlias) return false
+	const intersection = l.intersect(r, false)
+	return (
+		!(intersection instanceof Disjoint) &&
+		isMutuallySimulated(l, intersection, false)
+	)
+}
 
 export const writeUnclosedGenericCycleMessage = (name: string): string =>
 	`Instantiating ${name} recursed with new arguments more than ${maxOpenInstantiations} times`
