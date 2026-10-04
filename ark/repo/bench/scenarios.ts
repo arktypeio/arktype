@@ -9,9 +9,10 @@ export const moltarData = Object.freeze({
 	negNumber: -1,
 	maxNumber: Number.MAX_VALUE,
 	string: "string",
-	longString: "Lorem ipsum dolor sit amet, ".repeat(40),
+	longString:
+		"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Vivendum intellegat et qui, ei denique consequuntur vix. Semper aeterno percipit ut his, sea ex utinam referrentur repudiandae. No epicuri hendrerit consetetur sit, sit dicta adipiscing ex, in facete detracto deterruisset duo. Quot populo ad qui. Sit fugit nostrum et. Ad per diam dicant interesset, lorem iusto sensibus ut sed. No dicam aperiam vis. Pri posse graeco definitiones cu, id eam populo quaestio adipiscing, usu quod malorum te. Ex nam agam veri, dicunt efficiantur ad qui, ad legere adversarium sit. Commune platonem mel id, brute adipiscing duo an. Vivendum intellegat et qui, ei denique consequuntur vix. Offendit eleifend moderatius ex vix, quem odio mazim et qui, purto expetendis cotidieque quo cu, veri persius vituperata ei nec. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
 	boolean: true,
-	deeplyNested: Object.freeze({ foo: "bar", num: 1, bool: false })
+	deeplyNested: { foo: "bar", num: 1, bool: false }
 })
 
 export const moltarExtraKeysData = {
@@ -27,7 +28,7 @@ export const moltarInvalidData = {
 
 // a factory's bound is part of its schema, so a new bound defeats arktype's cache
 export const moltar = {
-	arktype: (numMax: number) =>
+	arktype: (numMax?: number) =>
 		type({
 			number: "number",
 			negNumber: "number",
@@ -37,11 +38,11 @@ export const moltar = {
 			boolean: "boolean",
 			deeplyNested: {
 				foo: "string",
-				num: type.number.atMost(numMax),
+				num: numMax === undefined ? type.number : type.number.atMost(numMax),
 				bool: "boolean"
 			}
 		}),
-	zod: (numMax: number) =>
+	zod: (numMax?: number) =>
 		z.object({
 			number: z.number(),
 			negNumber: z.number(),
@@ -51,11 +52,11 @@ export const moltar = {
 			boolean: z.boolean(),
 			deeplyNested: z.object({
 				foo: z.string(),
-				num: z.number().max(numMax),
+				num: numMax === undefined ? z.number() : z.number().max(numMax),
 				bool: z.boolean()
 			})
 		}),
-	valibot: (numMax: number) =>
+	valibot: (numMax?: number) =>
 		v.object({
 			number: v.number(),
 			negNumber: v.number(),
@@ -65,16 +66,19 @@ export const moltar = {
 			boolean: v.boolean(),
 			deeplyNested: v.object({
 				foo: v.string(),
-				num: v.pipe(v.number(), v.maxValue(numMax)),
+				num:
+					numMax === undefined ?
+						v.number()
+					:	v.pipe(v.number(), v.maxValue(numMax)),
 				bool: v.boolean()
 			})
 		})
 }
 
 export const Moltar = {
-	arktype: moltar.arktype(Number.MAX_VALUE),
-	zod: moltar.zod(Number.MAX_VALUE),
-	valibot: moltar.valibot(Number.MAX_VALUE)
+	arktype: moltar.arktype(),
+	zod: moltar.zod(),
+	valibot: moltar.valibot()
 }
 
 export const MoltarStrict = {
@@ -183,13 +187,13 @@ export const productInvalidData = {
 }
 
 export const product = {
-	arktype: (sizeMax: number) => {
+	arktype: (sizeMax?: number) => {
 		const Image = type({
 			id: "number",
 			created: "Date",
 			title: "1 <= string <= 100",
 			type: "'jpg' | 'png'",
-			size: type.number.atMost(sizeMax),
+			size: sizeMax === undefined ? type.number : type.number.atMost(sizeMax),
 			url: "string.url"
 		})
 		const Rating = type({
@@ -213,13 +217,13 @@ export const product = {
 			ratings: Rating.array()
 		})
 	},
-	zod: (sizeMax: number) => {
+	zod: (sizeMax?: number) => {
 		const Image = z.object({
 			id: z.number(),
 			created: z.date(),
 			title: z.string().min(1).max(100),
 			type: z.enum(["jpg", "png"]),
-			size: z.number().max(sizeMax),
+			size: sizeMax === undefined ? z.number() : z.number().max(sizeMax),
 			url: z.url()
 		})
 		const Rating = z.object({
@@ -243,13 +247,16 @@ export const product = {
 			ratings: z.array(Rating)
 		})
 	},
-	valibot: (sizeMax: number) => {
+	valibot: (sizeMax?: number) => {
 		const Image = v.object({
 			id: v.number(),
 			created: v.date(),
 			title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
 			type: v.picklist(["jpg", "png"]),
-			size: v.pipe(v.number(), v.maxValue(sizeMax)),
+			size:
+				sizeMax === undefined ?
+					v.number()
+				:	v.pipe(v.number(), v.maxValue(sizeMax)),
 			url: v.pipe(v.string(), v.url())
 		})
 		const Rating = v.object({
@@ -276,9 +283,9 @@ export const product = {
 }
 
 export const Product = {
-	arktype: product.arktype(Number.MAX_VALUE),
-	zod: product.zod(Number.MAX_VALUE),
-	valibot: product.valibot(Number.MAX_VALUE)
+	arktype: product.arktype(),
+	zod: product.zod(),
+	valibot: product.valibot()
 }
 
 export const itemsData = Array.from({ length: 100 }, (_, i) => ({
