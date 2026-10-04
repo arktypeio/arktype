@@ -886,46 +886,46 @@ export abstract class BaseNode<
 	}
 }
 
-type Simulation = {
+interface SimulationState {
 	assumed: string[]
-	failed: Set<string>
+	failed: Record<string, true>
 	unfoldsAliases: boolean
 }
 
 // a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related while it's compared or left folded
-const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
+const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (l.innerHash === r.innerHash) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
-		if (!ctx.unfoldsAliases) return true
+		if (!s.unfoldsAliases) return true
 		const pair = `${l.id}|${r.id}`
-		if (ctx.failed.has(pair)) return false
-		if (ctx.assumed.includes(pair)) return true
-		const assumedCount = ctx.assumed.push(pair) - 1
+		if (s.failed[pair]) return false
+		if (s.assumed.includes(pair)) return true
+		const assumedCount = s.assumed.push(pair) - 1
 		if (
 			isSimulated(
 				l.hasKind("alias") ? l.resolution : l,
 				r.hasKind("alias") ? r.resolution : r,
-				ctx
+				s
 			)
 		)
 			return true
-		ctx.assumed.length = assumedCount
-		ctx.failed.add(pair)
+		s.assumed.length = assumedCount
+		s.failed[pair] = true
 		return false
 	}
 	// branches of an unreduced union may subsume each other, so each need only be within one on the other side or extend it
 	if (l.hasKind("union") && !l.inner.ordered) {
 		return l.branches.every(
 			branch =>
-				isSimulated(branch, r, ctx) ||
-				(ctx.unfoldsAliases && isSubsumed(branch, r as never))
+				isSimulated(branch, r, s) ||
+				(s.unfoldsAliases && isSubsumed(branch, r as never))
 		)
 	}
 	if (r.hasKind("union") && !r.inner.ordered) {
 		return r.branches.some(branch => {
-			const assumedCount = ctx.assumed.length
-			if (isSimulated(l, branch, ctx)) return true
-			ctx.assumed.length = assumedCount
+			const assumedCount = s.assumed.length
+			if (isSimulated(l, branch, s)) return true
+			s.assumed.length = assumedCount
 			return false
 		})
 	}
@@ -935,12 +935,13 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 	for (const [k, v] of lEntries) {
 		if (!(k in r.inner)) return false
 		if (k === "morphs") {
+			const lMorphs = v as Morph.Inner["morphs"]
 			const rMorphs = (r as Morph.Node).inner.morphs
 			if (
-				(v as Morph.Inner["morphs"]).length !== rMorphs.length ||
-				!(v as Morph.Inner["morphs"]).every((morph, i) =>
+				lMorphs.length !== rMorphs.length ||
+				!lMorphs.every((morph, i) =>
 					isNode(morph) && isNode(rMorphs[i]) ?
-						isSimulated(morph, rMorphs[i] as BaseNode, ctx)
+						isSimulated(morph, rMorphs[i] as BaseNode, s)
 					:	morph === rMorphs[i]
 				)
 			)
@@ -968,7 +969,7 @@ const isSimulated = (l: BaseNode, r: BaseNode, ctx: Simulation): boolean => {
 		const rChildren = liftArray((r.inner as Dict)[k] as listable<BaseNode>)
 		if (
 			lChildren.length !== rChildren.length ||
-			!lChildren.every((lChild, i) => isSimulated(lChild, rChildren[i], ctx))
+			!lChildren.every((lChild, i) => isSimulated(lChild, rChildren[i], s))
 		)
 			return false
 	}
@@ -998,8 +999,8 @@ export const isMutuallySimulated = (
 	r: BaseNode,
 	unfoldsAliases = true
 ): boolean => {
-	const ctx: Simulation = { assumed: [], failed: new Set(), unfoldsAliases }
-	return isSimulated(l, r, ctx) && isSimulated(r, l, ctx)
+	const s: SimulationState = { assumed: [], failed: {}, unfoldsAliases }
+	return isSimulated(l, r, s) && isSimulated(r, l, s)
 }
 
 const referencesThroughAliases = (node: BaseNode): BaseNode[] => {
