@@ -78,6 +78,7 @@ import type {
 	NaryPipeParser,
 	NaryUnionParser
 } from "./nary.ts"
+import type { GenericInstantiationAst } from "./parser/ast/generic.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	shallowDefaultableMessage,
@@ -481,19 +482,26 @@ type ShallowOperator = BranchOperator | "#"
 
 // a morph's piped node is a structural position, so what it pipes to isn't a shallow reference
 type pipesFromMorph<l, operator, $> =
-	operator extends "|>" ? isMorphAst<l, $, never> : false
+	operator extends "|>" ? includesMorphAst<l, $, never> : false
 
-type isMorphAst<ast, $, seen> =
+type includesMorphAst<ast, $, seen> =
 	ast extends InferredAst<infer t> ?
-		t extends InferredMorph ?
+		[Extract<t, InferredMorph>] extends [never] ?
+			false
+		:	true
+	: ast extends DefAst<infer def, infer alias> ?
+		def extends string ?
+			alias extends seen ?
+				false
+			:	includesMorphAst<aliasAstOf<alias, $>, $, seen | alias>
+		:	// a tuple, object or Type definition may hold a morph only inferring it would show
+			true
+	: ast extends GenericInstantiationAst ? true
+	: ast extends readonly unknown[] ?
+		true extends includesMorphAst<ast[number], $, seen> ?
 			true
 		:	false
-	: ast extends DefAst<unknown, infer alias> ?
-		alias extends seen ?
-			false
-		:	isMorphAst<aliasAstOf<alias, $>, $, seen | alias>
-	: ast extends readonly [infer l, "|>", unknown] ? isMorphAst<l, $, seen>
-	: false
+	:	false
 
 type shallowClosure<frontier, $, reached = never> =
 	[frontier] extends [never] ? reached
