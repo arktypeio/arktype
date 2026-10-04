@@ -1,4 +1,9 @@
-import { Disjoint, type Morph } from "@ark/schema"
+import {
+	Disjoint,
+	isResolutionFinal,
+	queueUnchecked,
+	type Morph
+} from "@ark/schema"
 import { throwParseError, type mutable } from "@ark/util"
 import {
 	defineRightwardIntersections,
@@ -9,11 +14,7 @@ import { intersectOrPipeNodes } from "../intersections.ts"
 export const morph: setImplementationOf<Morph.Declaration> = {
 	intersections: {
 		morph: (l, r, ctx) => {
-			if (!l.hasEqualMorphs(r)) {
-				return throwParseError(
-					writeMorphIntersectionMessage(l.expression, r.expression)
-				)
-			}
+			assertEqualMorphs(l, r)
 			const inTersection = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
 			if (inTersection instanceof Disjoint) return inTersection
 
@@ -59,6 +60,15 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 			)
 		})
 	}
+}
+
+const assertEqualMorphs = (l: Morph.Node, r: Morph.Node): void => {
+	if (l.hasEqualMorphs(r)) return
+	// whether morphs piping to an alias are equal is known once its definition closes
+	if (!isResolutionFinal() && (l.includesAlias || r.includesAlias))
+		queueUnchecked(() => assertEqualMorphs(l, r), `${l.id}&${r.id}`)
+	else
+		throwParseError(writeMorphIntersectionMessage(l.expression, r.expression))
 }
 
 export const writeMorphIntersectionMessage = (

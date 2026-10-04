@@ -551,6 +551,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 			queueUnchecked(() => {
 				if (
 					(l.transforms || r.transforms) &&
+					!l.equals(r) &&
 					!(intersectNodesRoot(l.rawIn, r.rawIn, l.$) instanceof Disjoint)
 				)
 					assertDeterminateOverlap(l, r)
