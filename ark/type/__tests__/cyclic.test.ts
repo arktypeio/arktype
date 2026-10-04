@@ -1293,6 +1293,19 @@ contextualize(() => {
 		attest(tuple().equals(tuple())).equals(true)
 	})
 
+	it("relates a cyclic tuple through an alias of an alias", () => {
+		const types = scope({
+			u: "null | x",
+			v: "u",
+			x: { "p?": ["u", "...", "v[]"] },
+			y: { "p?": ["u", "...", "u[]"] }
+		}).export()
+
+		attest(types.x.equals(types.y)).equals(true)
+		attest(types.x.extends(types.y)).equals(true)
+		attest(types.y.extends(types.x)).equals(true)
+	})
+
 	it("cyclic props disjoint from index", () => {
 		const { b: l }: Record<string, Type> = scope({
 			b: { kind: "'b'", "p1?": "b | d | null", "p2?": "null" },
