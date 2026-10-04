@@ -459,6 +459,26 @@ contextualize(() => {
 					).throws("Default for next must be an object or null (was a number)")
 				})
 
+				it("default completed by its own default", config => {
+					const { a }: Record<string, Type> = scope(
+						{
+							"g<t extends object>": [
+								"t",
+								"&",
+								{ p1: ["string[]", "=", () => []] }
+							],
+							a: { "p1?": "g<a>" }
+						} as never,
+						config
+					).export() as never
+
+					attest(a.allows({ p1: {} })).equals(true)
+					attest(a({ p1: {} })).equals({ p1: { p1: [] } })
+					attest(a({ p1: { p1: [] } })).equals({
+						p1: { p1: Object.assign([], { p1: [] }) }
+					})
+				})
+
 				it("cyclic pipe union error paths", config => {
 					const types = scope(
 						{

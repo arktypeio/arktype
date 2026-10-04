@@ -134,18 +134,28 @@ export const computeDefaultValueMorph = (
 	defaultInput: unknown
 ): Morph<any> => {
 	if (typeof defaultInput === "function") {
-		return value.includesTransform || value.includesAlias ?
-				(data, ctx) => {
-					data[key] =
-						value.transforms ?
-							traverseKey(key, () => value(defaultInput(), ctx), ctx)
-						:	defaultInput()
-					return data
-				}
-			:	data => {
-					data[key] = defaultInput()
-					return data
-				}
+		if (!value.includesTransform && !value.includesAlias) {
+			return data => {
+				data[key] = defaultInput()
+				return data
+			}
+		}
+		let transformingDefault = false
+		return (data, ctx) => {
+			// a default of a cyclic value can reach this morph again, which would complete it without end
+			if (transformingDefault) return data
+			if (!value.transforms) {
+				data[key] = defaultInput()
+				return data
+			}
+			transformingDefault = true
+			try {
+				data[key] = traverseKey(key, () => value(defaultInput(), ctx), ctx)
+			} finally {
+				transformingDefault = false
+			}
+			return data
+		}
 	}
 
 	// non-functional defaults can be safely cached as long as the morph is
