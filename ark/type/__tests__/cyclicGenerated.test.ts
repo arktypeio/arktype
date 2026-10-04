@@ -15,8 +15,11 @@ type Value = {
 		| "orString"
 		| "and"
 		| "box"
+		| "bounded"
 		| "alt"
 		| "nullDefault"
+		| "nonEmpty"
+		| "pipe"
 	to: number
 	other: number
 }
@@ -52,6 +55,7 @@ const valueForms: [threshold: number, form: Value["form"]][] = [
 	[0.92, "parse"],
 	[0.95, "box"],
 	[0.97, "alt"],
+	[0.98, "bounded"],
 	[1, "default"]
 ]
 
@@ -59,12 +63,14 @@ const relatedValueForms: [threshold: number, form: Value["form"]][] = [
 	[0.1, "number"],
 	[0.25, "ref"],
 	[0.4, "nullable"],
-	[0.55, "array"],
+	[0.5, "array"],
+	[0.58, "nonEmpty"],
 	[0.65, "unionArray"],
 	[0.75, "record"],
 	[0.82, "orString"],
-	[0.9, "nullDefault"],
-	[0.95, "parse"],
+	[0.88, "nullDefault"],
+	[0.92, "parse"],
+	[0.96, "pipe"],
 	[1, "default"]
 ]
 
@@ -87,7 +93,10 @@ const generateAliases = (rand: () => number, forms = valueForms): Alias[] => {
 			const optional =
 				form !== "default" &&
 				form !== "nullDefault" &&
-				(["ref", "and", "box", "alt"].includes(form) || rand() < 0.3)
+				(["ref", "and", "box", "bounded", "alt", "nonEmpty", "pipe"].includes(
+					form
+				) ||
+					rand() < 0.3)
 			return { key: `p${j}`, optional, value }
 		})
 		return { form: "object", tagged: rand() < 0.7, props, of: [] }
@@ -102,10 +111,14 @@ const valueDefOf = (value: Value): unknown =>
 	: value.form === "ref" ? nameOf(value.to)
 	: value.form === "nullable" ? `${nameOf(value.to)} | null`
 	: value.form === "array" ? `${nameOf(value.to)}[]`
+	: value.form === "nonEmpty" ?
+		[nameOf(value.to), "...", `${nameOf(value.to)}[]`]
+	: value.form === "pipe" ? `string.json.parse |> ${nameOf(value.to)}`
 	: value.form === "record" ? `Record<string, ${nameOf(value.to)}>`
 	: value.form === "orString" ? `${nameOf(value.to)} | string`
 	: value.form === "and" ? [nameOf(value.to), "&", { "x?": "number" }]
 	: value.form === "box" ? `box<${nameOf(value.to)}>`
+	: value.form === "bounded" ? `bounded<${nameOf(value.to)}>`
 	: value.form === "alt" ? `alt<${nameOf(value.to)}, ${nameOf(value.other)}>`
 	: `(${nameOf(value.to)} | ${nameOf(value.other)})[]`
 
@@ -194,6 +207,9 @@ const generateData = (aliases: Alias[], rand: () => number) => {
 				: value.form === "array" ?
 					deep ? []
 					:	[generate(value.to, depth + 1, [])]
+				: value.form === "nonEmpty" ? [generate(value.to, depth + 1, [])]
+				: value.form === "pipe" ?
+					JSON.stringify(generate(value.to, depth + 1, []))
 				: value.form === "unionArray" ?
 					deep ? []
 					:	[generate(rand() < 0.5 ? value.to : value.other, depth + 1, [])]
@@ -201,7 +217,8 @@ const generateData = (aliases: Alias[], rand: () => number) => {
 					deep ? {}
 					:	{ k: generate(value.to, depth + 1, []) }
 				: value.form === "and" ? withX(generate(value.to, depth + 1, []), rand)
-				: value.form === "box" ? box(value.to, value.to, depth + 1, false)
+				: value.form === "box" || value.form === "bounded" ?
+					box(value.to, value.to, depth + 1, false)
 				: value.form === "alt" ? box(value.to, value.other, depth + 1, true)
 				: deep || rand() < 0.4 ? "s"
 				: generate(value.to, depth + 1, [])
@@ -319,6 +336,12 @@ const oracleOf = (aliases: Alias[]) => {
 			data === null || allows(value.to, data)
 		: value.form === "array" ?
 			Array.isArray(data) && data.every(e => allows(value.to, e))
+		: value.form === "nonEmpty" ?
+			Array.isArray(data) &&
+			data.length !== 0 &&
+			data.every(e => allows(value.to, e))
+		: value.form === "pipe" ?
+			typeof data === "string" && allows(value.to, JSON.parse(data))
 		: value.form === "unionArray" ?
 			Array.isArray(data) &&
 			data.every(e => allows(value.to, e) || allows(value.other, e))
@@ -328,7 +351,8 @@ const oracleOf = (aliases: Alias[]) => {
 			isObject(data) &&
 			(!("x" in data) || typeof data.x === "number") &&
 			allows(value.to, data)
-		: value.form === "box" ? boxAllows(value.to, value.to, data, "next")
+		: value.form === "box" || value.form === "bounded" ?
+			boxAllows(value.to, value.to, data, "next")
 		: value.form === "alt" ? boxAllows(value.to, value.other, data, "swap")
 		: typeof data === "string" || allows(value.to, data)
 	return allows
@@ -350,6 +374,8 @@ const shuffle = <t>(items: readonly t[], rand: () => number) => {
 
 const generics = {
 	"box<t>": { v: "t", "next?": "box<t>" },
+	// a constraint holding a definition is checked once it closes, in any order
+	"bounded<t extends a0>": { v: "t", "next?": "bounded<t>" },
 	"alt<a, b>": { v: "a", "swap?": "alt<b, a>" }
 }
 
@@ -369,9 +395,17 @@ contextualize(() => {
 					const ordered = Object.fromEntries(
 						order.map(name => [name, defs[name]])
 					)
-					return scope({ ...generics, ...ordered } as never, {
+					const types = scope({ ...generics, ...ordered } as never, {
 						jitless: k === orders.length
 					}).export() as never as Record<string, Type>
+					// reading an input or output first mustn't change what validates
+					if (k === 1) {
+						for (const name of names) {
+							void types[name].in
+							void types[name].out
+						}
+					}
+					return types
 				} catch (e) {
 					return String(e)
 				}
@@ -411,6 +445,9 @@ contextualize(() => {
 						}
 						if (t[names[i]].allows(data()) !== expected)
 							failures.push(`${seed} ${names[i]}: allows isn't ${expected}`)
+						const out = t[names[i]](data())
+						if (expected && !t[names[i]].out.allows(out))
+							failures.push(`${seed} ${names[i]}: out rejects its output`)
 					}
 				}
 			}
@@ -445,7 +482,7 @@ contextualize(() => {
 			const serializable = aliases.every(alias =>
 				alias.props.every(
 					({ value }) =>
-						!["parse", "default", "nullDefault"].includes(value.form)
+						!["parse", "default", "nullDefault", "pipe"].includes(value.form)
 				)
 			)
 			for (let i = 0; i < aliases.length; i++) {
@@ -461,6 +498,11 @@ contextualize(() => {
 					failures.push(`${seed} ${names[i]}: or isn't idempotent`)
 				if (serializable && !type.schema(a.json as never).equals(a))
 					failures.push(`${seed} ${names[i]}: json doesn't parse back`)
+				try {
+					a.toJsonSchema({ fallback: ctx => ctx.base })
+				} catch (e) {
+					failures.push(`${seed} ${names[i]}: ${e}`)
+				}
 				const wrapper = type({ w: a })
 				for (let variant = 0; variant < 4; variant++) {
 					const data = () => {
