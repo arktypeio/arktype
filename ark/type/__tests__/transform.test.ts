@@ -140,6 +140,25 @@ contextualize(() => {
 		}
 	})
 
+	it("index transform of a prop with a default", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({
+				"p?": ["object", ["string", "=", "d"]],
+				"[string]": { "[string]": { x: "string.numeric.parse" } }
+			})
+			const types = scope(
+				{ a: { "p?": ["object", ["string", "=", "d"]], "[string]": "a" } },
+				{ jitless }
+			).export()
+
+			const out: unknown = T({ p: [{ x: "1" }] })
+			const cyclicOut: unknown = types.a({ p: [{}] })
+			attest(out).equals({ p: [{ x: 1 }, "d"] })
+			attest(cyclicOut).equals({ p: [{}, "d"] })
+		}
+	})
+
 	it("failed key transform", () => {
 		for (const $ of [scope({}), scope({}, { jitless: true })]) {
 			const A = $.type("string").pipe((s, ctx) => ctx.error("A"))

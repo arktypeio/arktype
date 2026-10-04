@@ -830,6 +830,29 @@ export const copyOf = (data: object): object => {
 	return Object.defineProperties(copy, descriptors)
 }
 
+// a key's later transform that rejects an earlier one's output transforms the input instead, and the later output wins a key both changed
+export const mergeTransformed = (
+	input: unknown,
+	l: unknown,
+	r: unknown
+): unknown => {
+	if (Object.is(r, input)) return l
+	if (
+		!hasDomain(input, "object") ||
+		!hasDomain(l, "object") ||
+		!hasDomain(r, "object") ||
+		r instanceof TransformErrors
+	)
+		return r
+	const merged: any = copyOf(l)
+	for (const k in input) if (!(k in r)) delete merged[k]
+	for (const k in r) {
+		if (!(k in input) || !Object.is(r[k as never], input[k as never]))
+			merged[k] = r[k as never]
+	}
+	return merged
+}
+
 // a builtin's contents are in internal slots only its constructor can copy
 const copyContentsOf: {
 	[kind in BuiltinObjectKind]?: (data: never) => object
