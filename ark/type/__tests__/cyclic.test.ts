@@ -1289,6 +1289,18 @@ swap.swap.order[1] must be "on" (was "off")`)
 		)
 	})
 
+	it("union of recursive generic instantiations", () => {
+		const types: Record<string, Type> = scope({
+			"g1<p1, q1>": ["p1", "g2<p1, null, q1>?"],
+			"g2<p2, q2, r2>": "(p2 | g1<r2[], q2[]>)[]",
+			a0: "g1<a0[], a0> | g2<string, string, string>"
+		} as never).export() as never
+
+		attest(types.a0.allows([[]])).equals(true)
+		attest(types.a0.allows(["x", [["y"]]])).equals(true)
+		attest(types.a0.allows([1])).equals(false)
+	})
+
 	it("closes a recursive generic's instantiations", () => {
 		const types = scope({
 			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },

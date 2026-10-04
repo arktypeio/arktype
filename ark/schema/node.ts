@@ -226,16 +226,26 @@ export abstract class BaseNode<
 	}
 
 	private reaches(
-		flag: "includesTransform" | "includesContextualPredicate"
+		flag: "includesTransform" | "includesContextualPredicate",
+		resolvesIntersections = false
 	): boolean {
 		if (this[flag] || !this.includesAlias) return this[flag]
+		let reachesOperands = false
 		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
 		for (const node of reached.values()) {
 			for (const id in node.referencesById) {
 				const reference = node.referencesById[id]
-				if (reference[flag]) return true
+				// an intersection can drop what its operands reach, so only resolving it decides
+				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.hasKind("alias")) continue
+				// an intersection reaches nothing its operands don't, and resolving one can create others
+				if (reference.operator === "&" && !resolvesIntersections) {
+					reachesOperands = true
+					for (const operand of reference.operands!)
+						reached.set(operand.id, operand)
+					continue
+				}
 				// a deferred value reaches what its registered node does, which resolving it would rebuild
 				const registered =
 					$ark.nodesByRegisteredId[reference.reference as NodeId]
