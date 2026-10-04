@@ -196,11 +196,13 @@ export abstract class BaseNode<
 			:	data => (this.traverseAllows as any)(data)
 	}
 
-	private _isReferencedById: boolean | undefined
-	// an alias reaches what it references by id, so data reaching it otherwise is tracked under that id too
-	get isReferencedById(): boolean {
-		return (this._isReferencedById ??=
-			this.isCyclic && isNode($ark.nodesByRegisteredId[this.id]))
+	private _entersResolution: boolean | undefined
+	// data reaching a node an alias references by id is tracked under that id, as is an object whose props a cyclic value checks
+	get entersResolution(): boolean {
+		return (this._entersResolution ??=
+			this.isCyclic &&
+			(isNode($ark.nodesByRegisteredId[this.id]) ||
+				(this.hasKind("intersection") && !!this.structure?.props.length)))
 	}
 
 	private _transforms: boolean | undefined

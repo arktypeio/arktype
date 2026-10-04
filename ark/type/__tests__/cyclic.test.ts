@@ -466,6 +466,33 @@ contextualize(() => {
 					)
 				})
 
+				it("reports an object a cyclic value reaches twice once", config => {
+					const { a } = scope(
+						{ a: { v: { p0: "string[] | null", "p1?": "a" } } },
+						config
+					).export()
+					const shared: { p0: unknown; p1?: object } = { p0: true }
+					shared.p1 = { v: shared }
+
+					attest(String(a({ v: shared } as never))).snap(
+						"v.p0 must be an object or null (was boolean)"
+					)
+
+					const { list } = scope(
+						{
+							"g<q>": { p0: "string[] | null", "p1?": "q" },
+							list: "g<list>[]"
+						} as never,
+						config
+					).export() as never as Record<string, Type>
+					const element: { p0: unknown; p1?: object[] } = { p0: true }
+					element.p1 = [element]
+
+					attest(String(list([element]))).snap(
+						"value at [0].p0 must be an object or null (was boolean)"
+					)
+				})
+
 				it("reports a cyclic object its instantiation reaches once", config => {
 					const { a } = scope(
 						{

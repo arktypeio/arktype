@@ -323,7 +323,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	this.requiresContextFor(node)
 		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
-		if (this.traversalKind === "Apply" && node.isReferencedById)
+		if (this.traversalKind === "Apply" && node.entersResolution)
 			this.invokeMember(node, node, accessExpression)
 		else this.check(node, { arg: accessExpression })
 		if (pushesPath) this.line(`${this.ctx}.path.pop()`)
