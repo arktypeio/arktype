@@ -751,8 +751,10 @@ export abstract class BaseNode<
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
 		const $ = ctx.bindScope ?? this.$
-		if (ctx.seen[this.id])
-			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
+		const seen = ctx.seen[this.id]
+		// a resolution an alias transformed is the same node where it's reached directly
+		const transformedResolution = seen?.()
+		if (transformedResolution) return transformedResolution
 		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
 		if (this.hasKind("alias") && ctx.throughAliases) {
 			const resolution = this.resolution
@@ -766,6 +768,7 @@ export abstract class BaseNode<
 
 		let transformedNode: BaseRoot | undefined
 
+		// reached again while it's transformed, it's reached through an alias, which ends the cycle, so it's transformed again
 		ctx.seen[this.id] = () => transformedNode
 
 		if (
@@ -798,7 +801,8 @@ export abstract class BaseNode<
 			}
 		)
 
-		delete ctx.seen[this.id]
+		if (seen) ctx.seen[this.id] = seen
+		else delete ctx.seen[this.id]
 
 		const innerWithMeta = Object.assign(innerWithTransformedChildren, {
 			meta: this.meta
