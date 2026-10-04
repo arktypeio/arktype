@@ -2,6 +2,7 @@ import {
 	$ark,
 	BaseScope,
 	hasArkKind,
+	LazyGenericRoot,
 	parseGeneric,
 	RootModule,
 	withFixedGlobalConfig,
@@ -264,7 +265,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			name,
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
-			() => {
+			new LazyGenericRoot(() => {
 				const params = this.parseGenericParams(paramString, {
 					alias: genericName
 				})
@@ -272,7 +273,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				const generic = parseGeneric(params, def, this as never, genericName)
 
 				return generic
-			}
+			})
 		]
 	}
 

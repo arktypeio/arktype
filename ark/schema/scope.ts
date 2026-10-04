@@ -34,6 +34,7 @@ import {
 import {
 	GenericRoot,
 	LazyGenericBody,
+	LazyGenericRoot,
 	type GenericRootParser
 } from "./generic.ts"
 import { bootstrap } from "./intrinsic.ts"
@@ -930,13 +931,17 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		if (name in this.aliases && isThunk(def)) {
+		// a reference to a thunk's alias while it's called is a cycle, but a generic's declaration is called again
+		if (
+			name in this.aliases &&
+			isThunk(def) &&
+			!(def instanceof LazyGenericRoot)
+		) {
 			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
 			const context = registerParseContext(
 				this.createParseContext(preparsed as BaseParseContextInput)
 			)
 			this.resolutions[name] = context.id
-			// a thunk is open while it's called, so a reference to its alias is a cycle
 			context.phase = "resolving"
 			if (isResolutionFinal()) discardUncheckedDefaults()
 			inProgress.definitions++

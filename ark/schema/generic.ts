@@ -55,6 +55,8 @@ export class LazyGenericBody<
 	returns = unknown
 > extends Callable<(args: argResolutions) => returns> {}
 
+export class LazyGenericRoot extends Callable<() => GenericRoot> {}
+
 export interface GenericAst<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown,
@@ -235,7 +237,8 @@ export class GenericRoot<
 				typeof param === "string" ?
 					// read through intrinsic, which bootstraps again once an engine is installed
 					[param, intrinsic.unknown]
-				:	[param[0], this.$.parse(param[1])]
+					// finalizing a constraint can instantiate this generic, which reads its params
+				:	[param[0], this.$.parseDefinition(param[1])]
 			) as never
 		)
 	}

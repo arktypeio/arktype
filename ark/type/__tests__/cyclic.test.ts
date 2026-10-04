@@ -986,6 +986,24 @@ contextualize(() => {
 		).throws(writeUnsatisfiedParameterConstraintMessage("t", "$a", "string"))
 	})
 
+	it("instantiates a generic its own constraint references", () => {
+		const types = scope({
+			"g<t extends a>": { x: "t" },
+			a: { "y?": "g<a>" }
+		} as never).export() as never as Record<string, Type>
+
+		attest(types.a.expression).snap("{ y?: g<$a> }")
+
+		const { node } = scope({
+			"tree<t extends node>": { value: "t", children: "tree<t>[]" },
+			node: { id: "string", "parent?": "tree<node>" }
+		} as never).export() as never as Record<string, Type>
+
+		attest(
+			String(node({ id: "a", parent: { value: { id: 1 }, children: [] } }))
+		).snap("parent.value.id must be a string (was a number)")
+	})
+
 	it("checks a union generic argument once it resolves", () => {
 		const types = scope({
 			"box<t extends object | null>": { "v?": "t" },
