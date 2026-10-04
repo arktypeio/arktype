@@ -353,7 +353,10 @@ export class ArkErrors
 	}
 
 	toString(): string {
-		return this.join("\n")
+		// join would convert each error through V8's slower generic ToPrimitive
+		let result = this.length === 0 ? "" : this[0].toString()
+		for (let i = 1; i < this.length; i++) result += `\n${this[i].toString()}`
+		return result
 	}
 
 	private addAncestorPaths(error: ArkError): void {
