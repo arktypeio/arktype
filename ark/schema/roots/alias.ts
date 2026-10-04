@@ -221,8 +221,14 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	get nestableExpression(): string {
+		if (this.operator === "&" || this.operator === "=>")
+			return `(${this.expression})`
 		const referenced = nodesByRegisteredId[this.reference as NodeId]
-		return hasArkKind(referenced, "root") ?
+		// a deferred value prints as its definition, but a named alias as its name even once its definition closes
+		return (
+				hasArkKind(referenced, "root") &&
+					referenced.expression === this.expression
+			) ?
 				referenced.nestableExpression
 			:	this.expression
 	}
@@ -296,7 +302,9 @@ const expressionOf = (node: AliasNode): string => {
 	if (node.operands) {
 		const joinsOperands = node.operator === "&" || node.operator === "=>"
 		const operands = node.operands.map(operand =>
-			!joinsOperands && nestsOperations(operand) ? "..." : operand.expression
+			joinsOperands ? operand.nestableExpression
+			: nestsOperations(operand) ? "..."
+			: operand.expression
 		)
 		return joinsOperands ?
 				operands.join(node.operator)
