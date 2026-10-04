@@ -100,6 +100,13 @@ contextualize(() => {
 		)
 	})
 
+	it("branches at a key named like an Object.prototype member", () => {
+		const T = type({ constructor: "string.email | string.uuid" })
+		attest(T({ constructor: "x" }).toString()).snap(
+			'constructor must be an email address or a UUID (was "x")'
+		)
+	})
+
 	it("switch", () => {
 		const T = type({ a: "string" }).or({ a: "null" }).or({ a: "number" })
 		attest(T({ a: "ok" })).snap({ a: "ok" })

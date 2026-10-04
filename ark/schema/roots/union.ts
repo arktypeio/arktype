@@ -3,7 +3,6 @@ import {
 	domainDescriptions,
 	domainOf,
 	flatMorph,
-	groupBy,
 	hasDomain,
 	isArray,
 	jsTypeOfDescriptions,
@@ -156,29 +155,32 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 			description: node =>
 				node.distribute(branch => branch.description, describeBranches),
 			expected: ctx => {
-				const byPath = groupBy(ctx.errors, "propString") as Record<
-					string,
-					ArkError[]
-				>
-				const pathDescriptions = Object.entries(byPath).map(
-					([path, errors]) => {
-						const branchesAtPath: string[] = []
-						for (const errorAtPath of errors)
-							appendUnique(branchesAtPath, errorAtPath.expected)
+				const errorsAtPaths: ArkError[][] = []
+				for (const error of ctx.errors) {
+					const errorsAtPath = errorsAtPaths.find(
+						errors => errors[0].propString === error.propString
+					)
+					if (errorsAtPath) errorsAtPath.push(error)
+					else errorsAtPaths.push([error])
+				}
+				const pathDescriptions = errorsAtPaths.map(errors => {
+					const path = errors[0].propString
+					const branchesAtPath: string[] = []
+					for (const errorAtPath of errors)
+						appendUnique(branchesAtPath, errorAtPath.expected)
 
-						const expected = describeBranches(branchesAtPath)
-						// if there are multiple actual descriptions that differ,
-						// just fall back to printable, which is the most specific
-						const firstActual = errors[0].actual
-						const actual =
-							errors.every(e => e.actual === firstActual) ? firstActual : (
-								printable(errors[0].data)
-							)
-						return `${path && `${path} `}must be ${expected}${
-							actual && ` (was ${actual})`
-						}`
-					}
-				)
+					const expected = describeBranches(branchesAtPath)
+					// if there are multiple actual descriptions that differ,
+					// just fall back to printable, which is the most specific
+					const firstActual = errors[0].actual
+					const actual =
+						errors.every(e => e.actual === firstActual) ? firstActual : (
+							printable(errors[0].data)
+						)
+					return `${path && `${path} `}must be ${expected}${
+						actual && ` (was ${actual})`
+					}`
+				})
 				return describeBranches(pathDescriptions)
 			},
 			problem: ctx => ctx.expected,
