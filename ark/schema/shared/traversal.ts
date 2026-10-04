@@ -319,12 +319,15 @@ export class Traversal {
 		const placeholder = transformed.get(data)
 		if (placeholder === transforming || !canFill(placeholder, result)) {
 			transformed.set(data, result)
+			// a key's later step can pass this output back, and a morph never runs on its own output
+			if (hasDomain(result, "object")) transformed.set(result, result)
 			return result
 		}
 		Object.defineProperties(
 			placeholder as object,
 			Object.getOwnPropertyDescriptors(result)
 		)
+		transformed.set(placeholder, placeholder)
 		return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
 	}
 
