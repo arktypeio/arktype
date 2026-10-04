@@ -64,7 +64,6 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			}
 		},
 		normalize: (schema, $) =>
-			// a set engine adds undefined to the value under exactOptionalPropertyTypes: false
 			!$ark.sets && $.resolvedConfig.exactOptionalPropertyTypes === false ?
 				throwParseError(missingSetEngineMessage)
 			:	schema,
@@ -124,7 +123,6 @@ const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
 	if (cached) return cached
 
 	const morph = computeDefaultValueMorph(node.key, node.value, node.default)
-	// a value's copies in other scopes share its id, so a morph calling it is pinned
 	return node.value.includesTransform || node.value.includesAlias ?
 			defaultableMorphCache.pin(cacheKey, morph)
 		:	defaultableMorphCache.set(cacheKey, morph)
@@ -136,10 +134,8 @@ export const computeDefaultValueMorph = (
 	defaultInput: unknown
 ): Morph<any> => {
 	if (typeof defaultInput === "function") {
-		// if the value has a morph, pipe context through it
 		return value.includesTransform || value.includesAlias ?
 				(data, ctx) => {
-					// whether an alias transforms is known once its scope resolves
 					data[key] =
 						value.transforms ?
 							traverseKey(key, () => value(defaultInput(), ctx), ctx)
@@ -179,7 +175,6 @@ export const assertDefaultValueAssignability = (
 	if (hasDomain(value, "object") && !wrapped)
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	// a value referencing a definition still open can't be traversed until it closes
 	if (inProgress.definitions && node.includesAlias) {
 		uncheckedAssertions.push(() =>
 			assertDefaultValueAssignability(node, value, key)

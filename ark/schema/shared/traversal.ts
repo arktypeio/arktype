@@ -85,12 +85,9 @@ export class Traversal {
 	private untrackedVisits = 0
 	private recordedFailure = false
 	private enteredCount = 0
-	// the earliest entered resolution still in progress that the current one assumed valid
 	private earliestAssumed = Number.POSITIVE_INFINITY
-	// states and data of each valid result that holds only if what it assumed does
 	private assumed: unknown[] | undefined
 	private reachedInvalid: InvalidResolution | undefined
-	// an invalid object was reached by a path shorter than the one its errors were reported at
 	shortened = false
 	// data a root allowed within the bounds is a tree, so each path is transformed
 	tracksTransforms = true

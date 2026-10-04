@@ -315,7 +315,6 @@ export const createNode = ({
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	// a node built without a set engine is unreduced, so it's never returned once one is installed
 	return ignoreCache || !$ark.sets ? node : $.nodesByHash.set(hash, node)
 }
 

@@ -31,7 +31,6 @@ export type inferGenericInstantiation<
 			resolveScope<g["$"], $>,
 			{
 				// intersect `${number}` to ensure that only array indices are mapped
-				// arguments are parsed where the generic is referenced, as a generic is rebound to that scope
 				[i in keyof g["names"] & `${number}` as g["names"][i]]: inferExpression<
 					argAsts[i & keyof argAsts],
 					$,
