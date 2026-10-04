@@ -81,6 +81,8 @@ import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
 
+const throwOnFail: ArkErrors.Handler = errors => errors.throw()
+
 export abstract class BaseNode<
 	// uses -ignore rather than -expect-error because this is not an error in .d.ts
 	/** @ts-ignore allow instantiation assignment to the base type */
@@ -515,7 +517,7 @@ export abstract class BaseNode<
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
 	// otherwise, would run into issues with this binding
 	assert = (data: d["prerequisite"], pipedFromCtx?: Traversal): unknown =>
-		this(data, pipedFromCtx, errors => errors.throw())
+		this(data, pipedFromCtx, throwOnFail)
 
 	traverse(
 		data: d["prerequisite"],
