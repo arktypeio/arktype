@@ -86,11 +86,11 @@ import {
 import {
 	arkKind,
 	assertUnchecked,
-	discardUnchecked,
+	defining,
 	hasArkKind,
 	inProgress,
 	isNode,
-	isResolutionFinal
+	resolving
 } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
@@ -763,19 +763,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
 		const ctx = nodesByRegisteredId[pending.id] as BaseParseContext
-		inProgress.resolutions++
-		let resolution: BaseRoot
-		try {
-			resolution = this.resolveContext(
-				name,
-				ctx,
-				resolveShallowAliases(pending)
-			)
-		} finally {
-			inProgress.resolutions--
-		}
-		assertUnchecked()
-		return resolution
+		return resolving(() =>
+			this.resolveContext(name, ctx, resolveShallowAliases(pending))
+		)
 	}
 
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
@@ -817,9 +807,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					return this.aliasOf(v)
 				}
 				v.phase = "resolved"
-				inProgress.resolutions++
-				let resolution: BaseRoot
-				try {
+				return resolving(() => {
 					// it reaches no definition still open, so its component closes with it
 					if (v.lowlink === v.index) {
 						for (const member of openMembers.splice(membersStart)) {
@@ -828,18 +816,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 							delete member.resolution
 						}
 					}
-					resolution =
-						node.includesShallowAlias ?
+					return node.includesShallowAlias ?
 							this.resolvePending(
 								name,
 								(this.resolutions[name] = withId(node, v.id))
 							)
 						:	this.resolveContext(name, v, node)
-				} finally {
-					inProgress.resolutions--
-				}
-				assertUnchecked()
-				return resolution
+				})
 			}
 			return throwInternalError(
 				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
@@ -861,12 +844,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			)
 			this.resolutions[name] = ctx.id
 			ctx.phase = "resolving"
-			if (isResolutionFinal()) discardUnchecked()
-			inProgress.definitions++
 			try {
-				def = this.normalizeRootScopeValue(ctx.def)
+				def = defining(() => this.normalizeRootScopeValue(ctx.def))
 			} finally {
-				inProgress.definitions--
 				// if the call throws, its context stays registered so an alias parsed during it resolves by name
 				delete this.resolutions[name]
 			}
@@ -1052,8 +1032,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
 		let node = this.parseOpenDefinition(def, ctx)
-		inProgress.resolutions++
-		try {
+		return resolving(() => {
 			if (node.includesShallowAlias && !inProgress.definitions)
 				node = resolveShallowAliases(node)
 
@@ -1062,22 +1041,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (ctx.isReferencedById)
 				nodesByRegisteredId[ctx.id] = node = withId(node, ctx.id)
 			else delete nodesByRegisteredId[ctx.id]
-		} finally {
-			inProgress.resolutions--
-		}
-		assertUnchecked()
-		return node
+			return node
+		})
 	}
 
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
-		// a check left from a parse that threw would read its unresolved aliases
-		if (isResolutionFinal()) discardUnchecked()
-		inProgress.definitions++
-		try {
-			return this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
-		} finally {
-			inProgress.definitions--
-		}
+		return defining(() =>
+			this.bindReference(this.parseOwnDefinitionFormat(def, ctx))
+		)
 	}
 
 	finalize<node extends BaseRoot>(node: node, jit = true): node {
