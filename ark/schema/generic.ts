@@ -196,7 +196,6 @@ export class GenericRoot<
 		const open = this.openInstantiations
 		if (
 			Math.max(open, depth) === maxOpenInstantiations ||
-			// arguments that double each level would exhaust memory long before the depth bound
 			((open || depth) &&
 				this.names.reduce(
 					(length, name) => length + argNodes[name].hash.length,

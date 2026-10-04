@@ -209,7 +209,6 @@ export abstract class BaseNode<
 	isAliasResolution = false
 
 	private _entersResolution: boolean | undefined
-	// data reaching a node an alias references by id is tracked under that id, as is an object whose props a cyclic value checks
 	get entersResolution(): boolean {
 		if (this._entersResolution !== undefined) return this._entersResolution
 		const entersResolution =
@@ -280,10 +279,8 @@ export abstract class BaseNode<
 						reached.set(operand.id, operand)
 					continue
 				}
-				// a deferred value reaches what its registered node does, which resolving it would rebuild
 				const registered =
 					$ark.nodesByRegisteredId[reference.reference as NodeId]
-				// an input or output never transforms, and reaches what the alias it views does
 				const resolution =
 					isNode(registered) ? registered
 					: !reference.isIo ? reference.resolution
@@ -796,7 +793,6 @@ export abstract class BaseNode<
 	): BaseNode | null {
 		const $ = ctx.bindScope ?? this.$
 		const seen = ctx.seen[this.id]
-		// a resolution an alias transformed is the same node where it's reached directly
 		const transformedResolution = seen?.()
 		if (transformedResolution) return transformedResolution
 		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
@@ -812,7 +808,6 @@ export abstract class BaseNode<
 
 		let transformedNode: BaseRoot | undefined
 
-		// reached again while it's transformed, it's reached through an alias, which ends the cycle, so it's transformed again
 		ctx.seen[this.id] = () => transformedNode
 
 		if (
@@ -968,7 +963,6 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (l.hasKind("alias") || r.hasKind("alias")) {
 		if (!s.unfoldsAliases) return true
 		if (s.subsumes) {
-			// an intersection is within its operands, and an operand is within it if it's within the others
 			if (l.hasKind("alias") && l.operandsBesides(r)) return true
 			const others = r.hasKind("alias") && r.operandsBesides(l)
 			if (others) return others.every(other => isAssumed(l, other, s, true))
@@ -1061,18 +1055,15 @@ const isAssumed = (
 	return true
 }
 
-// a variadic absorbs a prefix, optional or postfix element it equals, which an alias for either hides, so each index is compared at each length
 const isSequenceSimulated = (
 	l: Sequence.Node,
 	r: Sequence.Node,
 	s: SimulationState
 ): boolean => {
-	// the lengths each allows are bounded by its intersection, which compares them
 	const minLength = Math.max(
 		l.prefixLength + l.postfixLength,
 		r.prefixLength + r.postfixLength
 	)
-	// past every prevariadic and postfix element, each index is the variadic's
 	const maxLength = Math.min(
 		l.maxLength ?? Number.POSITIVE_INFINITY,
 		r.maxLength ?? Number.POSITIVE_INFINITY,
@@ -1095,7 +1086,6 @@ const elementAt = (node: Sequence.Node, length: number, i: number): BaseNode =>
 		node.postfix![i - length + node.postfixLength]
 	:	node.variadic!
 
-// an intersection serializes without its sequence's minVariadicLength, since the minLength it implies bounds it
 const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
 	node.hasKind("sequence") && node.inner.minVariadicLength ?
 		node.innerEntries.filter(([k]) => k !== "minVariadicLength")
@@ -1103,7 +1093,6 @@ const simulatedEntriesOf = (node: BaseNode): BaseNode["innerEntries"] =>
 
 let isSubsuming = false
 
-// a branch is within another it equals the intersection of, related under the same assumptions so a cycle through both closes
 const isSubsumed = (
 	branch: BaseRoot,
 	other: BaseRoot,
@@ -1124,7 +1113,6 @@ const isSubsumed = (
 	)
 }
 
-// a branch that unfolds like one of the other's is within it without intersecting them
 const isWithin = (l: BaseRoot, r: BaseRoot, s: SimulationState): boolean =>
 	l.branches.every(
 		lBranch =>

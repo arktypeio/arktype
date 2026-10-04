@@ -79,7 +79,6 @@ export const inProgress: {
 export const isResolutionFinal = (): boolean =>
 	!inProgress.definitions && !inProgress.resolutions
 
-// an input or output alias is built once final, so reading it reads what it reaches as final
 export const isIoFinal = (): boolean =>
 	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
 
