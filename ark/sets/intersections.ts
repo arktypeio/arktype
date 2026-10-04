@@ -17,18 +17,16 @@ import {
 import type { TypeGuard } from "@ark/util"
 import { setImplementationsByKind } from "./kinds.ts"
 
-type IntersectionCache = Record<
-	"&" | "|>",
-	WeakMap<BaseNode, WeakMap<BaseNode, UnknownIntersectionResult>>
+type IntersectionCache = WeakMap<
+	BaseScope,
+	Record<
+		"&" | "|>",
+		WeakMap<BaseNode, WeakMap<BaseNode, UnknownIntersectionResult>>
+	>
 >
 
-const createIntersectionCache = (): IntersectionCache => ({
-	"&": new WeakMap(),
-	"|>": new WeakMap()
-})
-
-// keyed by identity, so one scope's operands never get another scope's result
-const intersectionCache = createIntersectionCache()
+// a result is parsed in its scope, so equal operands intersected in another scope don't share it
+const intersectionCache: IntersectionCache = new WeakMap()
 let pendingIntersectionCache: IntersectionCache | undefined
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
@@ -59,9 +57,16 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		if (l.includesAlias || r.includesAlias) {
 			// relations between aliases are unknown until they're final, so a result reached before is reused only until then
 			if (isResolutionFinal()) pendingIntersectionCache = undefined
-			else cache = pendingIntersectionCache ??= createIntersectionCache()
+			else cache = pendingIntersectionCache ??= new WeakMap()
 		}
-		const cacheByL = cache[ctx.pipe ? "|>" : "&"]
+		let cacheByOperator = cache.get(ctx.$)
+		if (!cacheByOperator) {
+			cache.set(
+				ctx.$,
+				(cacheByOperator = { "&": new WeakMap(), "|>": new WeakMap() })
+			)
+		}
+		const cacheByL = cacheByOperator[ctx.pipe ? "|>" : "&"]
 		let cacheByR = cacheByL.get(l)
 		const cached = cacheByR?.get(r)
 		if (cached !== undefined) return cached as never
