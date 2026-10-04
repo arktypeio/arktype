@@ -38,6 +38,7 @@ import { $ark } from "../shared/registry.ts"
 import {
 	copyOf,
 	applyValue,
+	mergeTransformed,
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,
@@ -528,8 +529,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	traverseTransform: TraverseTransform<object> = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
 		let out: any = data
-		const transformKey = (k: Key, value: unknown, node: BaseNode) => {
-			const transformed = traverseKey(k, () => ctx.transform(node, value), ctx)
+		const transformKey = (
+			k: Key,
+			value: unknown,
+			node: BaseNode,
+			input = value
+		) => {
+			let transformed = traverseKey(k, () => ctx.transform(node, input), ctx)
+			if (input !== value)
+				transformed = mergeTransformed(input, value, transformed)
 			if (Object.is(transformed, value)) return value
 			if (out === data) out = this.copy(data)
 			return (out[k] = transformed)
@@ -544,11 +552,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 			if (!(prop.key in data)) continue
 			const keyErrorCount = ctx.currentErrorCount
-			let value: unknown = data[prop.key as never]
+			const input: unknown = data[prop.key as never]
+			let value = input
 			for (const step of this.transformsOf(prop)) {
 				if (ctx.currentErrorCount > keyErrorCount) break
 				if (step.signature && !ctx.allows(step.signature, prop.key)) continue
-				value = transformKey(prop.key, value, step.node)
+				value = transformKey(
+					prop.key,
+					value,
+					step.node,
+					value === input || (step.node as BaseRoot).allows(value) ?
+						value
+					:	input
+				)
 			}
 		}
 		if (this.sequence?.transforms) {
@@ -561,15 +577,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
 				if (hasIndexedProp && k in this.propsByKey) continue
+				let input: unknown
 				let value: unknown
 				let keyErrorCount: number | undefined
 				for (const node of this.index) {
 					if (!node.value.transforms || !ctx.allows(node.signature, k)) continue
 					if (keyErrorCount === undefined) {
 						keyErrorCount = ctx.currentErrorCount
-						value = data[k as never]
+						value = input = data[k as never]
 					} else if (ctx.currentErrorCount > keyErrorCount) break
-					value = transformKey(k, value, node.value)
+					value = transformKey(
+						k,
+						value,
+						node.value,
+						value === input || node.value.allows(value) ? value : input
+					)
 				}
 			}
 		}

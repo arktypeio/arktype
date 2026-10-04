@@ -10,7 +10,11 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import { $ark, registeredReference } from "./registry.ts"
-import { TransformErrors, type TraversalKind } from "./traversal.ts"
+import {
+	mergeTransformed,
+	TransformErrors,
+	type TraversalKind
+} from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
@@ -354,7 +358,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			const pushesKey =
 				keyExpression !== undefined && node.transformRequiresContext
 			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
-			this.line(`${assignee} = ${this.invoke(node, { arg })}`)
+			// a step after another plans its transforms from the input, so where it rejects the other's output it transforms the input
+			const transformed =
+				arg === input ?
+					this.invoke(node, { arg })
+				:	`${arg} === ${input} || ${this.ref(node)}.allows(${arg}) ? ${this.invoke(node, { arg })} : ${this.ref(mergeTransformed)}(${input}, ${arg}, ${this.invoke(node, { arg: input })})`
+			this.line(`${assignee} = ${transformed}`)
 			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
 		}
 		const isTransformErrors = () =>
