@@ -1761,6 +1761,21 @@ swap.swap.order[1] must be "on" (was "off")`)
 		})
 	})
 
+	it("cyclic intersection of a union", () => {
+		const $ = scope({
+			a: { p: "(b | null)[]" },
+			b: "a[]",
+			c: ["a", "&", { p: "b" }]
+		})
+		const p = $.export().c.get("p")
+
+		attest(p.expression).snap("($a&($b | null))[]")
+		attest(p.allows([null])).equals(false)
+		attest($.type(p.expression.replace(/\$/g, "") as never).equals(p)).equals(
+			true
+		)
+	})
+
 	it("cyclic type and primitive", () => {
 		const list = scope({ list: "string | list[]" }).export().list
 		const strings = list.and("string[]")
