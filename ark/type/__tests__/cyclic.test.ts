@@ -793,6 +793,25 @@ contextualize(() => {
 		attest(a.a1.expression).snap('{ kind: "a3", p0?: $a1 } | ($a2 | $a4)[]')
 	})
 
+	it("builds a cyclic morph union disjoint once its definitions close", () => {
+		const def = {
+			a0: { p0: "string" },
+			a1: "a2",
+			a2: { p0: "a1", "p1?": "string.numeric.parse", "p2?": "a3" },
+			a3: "a0 | a2"
+		} as const
+		const types = scope(def).export()
+		const reordered = scope({
+			a3: def.a3,
+			a2: def.a2,
+			a1: def.a1,
+			a0: def.a0
+		}).export()
+
+		attest(reordered.a3.expression).equals(types.a3.expression)
+		attest(reordered.a3({ p0: "s" })).equals({ p0: "s" })
+	})
+
 	it("reads an alias of a closed cycle as its node", () => {
 		const first = scope({
 			a0: { p0: "a1" },
