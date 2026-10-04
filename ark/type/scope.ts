@@ -88,6 +88,7 @@ import {
 	type inferDefinition
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
+import type { BranchOperator } from "./parser/reduce/shared.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
 import type { parseString } from "./parser/string.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
@@ -476,7 +477,7 @@ type shallowReferencesOf<ast, $> =
 		:	never
 	:	never
 
-type ShallowOperator = "|" | "&" | "|>" | "#"
+type ShallowOperator = BranchOperator | "#"
 
 // a morph's piped node is a structural position, so what it pipes to isn't a shallow reference
 type pipesFromMorph<l, operator, $> =
