@@ -116,5 +116,28 @@ export const discardUnchecked = (): void => {
 	uncheckedKeys = {}
 }
 
+export const resolving = <t>(resolve: () => t): t => {
+	inProgress.resolutions++
+	let result: t
+	try {
+		result = resolve()
+	} finally {
+		inProgress.resolutions--
+	}
+	assertUnchecked()
+	return result
+}
+
+// a check left from a parse that threw would read its unresolved aliases
+export const defining = <t>(define: () => t): t => {
+	if (isResolutionFinal()) discardUnchecked()
+	inProgress.definitions++
+	try {
+		return define()
+	} finally {
+		inProgress.definitions--
+	}
+}
+
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue
