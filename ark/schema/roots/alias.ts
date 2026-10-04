@@ -23,6 +23,7 @@ import {
 } from "../shared/traversal.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	assertUnchecked,
 	hasArkKind,
 	inProgress,
 	isIoFinal,
@@ -125,18 +126,20 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		resolvingAliases.push(this)
 		inProgress.resolutions++
 		if (readsIo) inProgress.ioReads++
+		let resolution: BaseRoot
 		try {
-			let resolution = this._resolve()
+			resolution = this._resolve()
 			if (resolution.hasKind("alias")) resolution = resolution.resolution
 			if (this.resolve ? isFinal : this.$.resolved)
 				this._resolution = resolution
-			return resolution
 		} finally {
 			this.resolving = false
 			resolvingAliases.pop()
 			inProgress.resolutions--
 			if (readsIo) inProgress.ioReads--
 		}
+		assertUnchecked()
+		return resolution
 	}
 
 	protected _resolve(): BaseRoot {

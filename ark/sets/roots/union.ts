@@ -2,6 +2,8 @@ import {
 	Disjoint,
 	compileLiteralPropAccess,
 	flatMorphsAreEqual,
+	isResolutionFinal,
+	uncheckedAssertions,
 	type BaseRoot,
 	type BaseScope,
 	type CaseContext,
@@ -528,7 +530,8 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
+			if (!ordered)
+				assertDeterminateOverlap(branches[i], branches[j], intersection)
 
 			if (intersection.equals(branches[i].rawIn)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
@@ -540,8 +543,22 @@ export const reduceBranches = ({
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
-const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
+const assertDeterminateOverlap = (
+	l: Union.ChildNode,
+	r: Union.ChildNode,
+	intersection: BaseRoot
+): void => {
 	if (!l.includesTransform && !r.includesTransform) return
+
+	// branches holding a definition still open may be disjoint once it closes
+	if (!isResolutionFinal() && intersection.includesAlias) {
+		uncheckedAssertions.push(() => {
+			const resolved = intersectNodesRoot(l.rawIn, r.rawIn, l.$)
+			if (!(resolved instanceof Disjoint))
+				assertDeterminateOverlap(l, r, resolved)
+		})
+		return
+	}
 
 	if (!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[])) {
 		throwParseError(

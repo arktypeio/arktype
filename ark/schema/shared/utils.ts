@@ -83,5 +83,16 @@ export const isResolutionFinal = (): boolean =>
 export const isIoFinal = (): boolean =>
 	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
 
+export const uncheckedAssertions: (() => void)[] = []
+
+export const assertUnchecked = (): void => {
+	if (!isResolutionFinal()) return
+	for (const assert of uncheckedAssertions.splice(0)) assert()
+}
+
+export const discardUnchecked = (): void => {
+	uncheckedAssertions.length = 0
+}
+
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue

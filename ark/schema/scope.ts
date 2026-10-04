@@ -91,15 +91,13 @@ import {
 } from "./shared/traversal.ts"
 import {
 	arkKind,
+	assertUnchecked,
+	discardUnchecked,
 	hasArkKind,
 	inProgress,
 	isNode,
 	isResolutionFinal
 } from "./shared/utils.ts"
-import {
-	assertUncheckedDefaultsAssignable,
-	discardUncheckedDefaults
-} from "./structure/optional.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
@@ -853,11 +851,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
 		const context = nodesByRegisteredId[pending.id] as BaseParseContext
 		inProgress.resolutions++
+		let resolution: BaseRoot
 		try {
-			return this.resolveContext(name, context, resolveShallowAliases(pending))
+			resolution = this.resolveContext(
+				name,
+				context,
+				resolveShallowAliases(pending)
+			)
 		} finally {
 			inProgress.resolutions--
 		}
+		assertUnchecked()
+		return resolution
 	}
 
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
@@ -920,7 +925,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				} finally {
 					inProgress.resolutions--
 				}
-				assertUncheckedDefaultsAssignable()
+				assertUnchecked()
 				return resolution
 			}
 			return throwInternalError(
@@ -943,7 +948,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			)
 			this.resolutions[name] = context.id
 			context.phase = "resolving"
-			if (isResolutionFinal()) discardUncheckedDefaults()
+			if (isResolutionFinal()) discardUnchecked()
 			inProgress.definitions++
 			try {
 				def = this.normalizeRootScopeValue(context.def)
@@ -957,7 +962,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				context.phase = "unresolved"
 				this.resolutions[name] = context.id
 				// parsing its definition discards checks still open, so they're made first
-				assertUncheckedDefaultsAssignable()
+				assertUnchecked()
 				return this.maybeResolve(name)
 			}
 			delete nodesByRegisteredId[context.id]
@@ -1147,13 +1152,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 		} finally {
 			inProgress.resolutions--
 		}
-		assertUncheckedDefaultsAssignable()
+		assertUnchecked()
 		return node
 	}
 
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {
 		// a check left from a parse that threw would read its unresolved aliases
-		if (isResolutionFinal()) discardUncheckedDefaults()
+		if (isResolutionFinal()) discardUnchecked()
 		inProgress.definitions++
 		try {
 			return this.bindReference(this.parseOwnDefinitionFormat(def, ctx))

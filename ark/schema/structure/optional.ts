@@ -21,7 +21,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
 import { traverseKey } from "../shared/traversal.ts"
-import { inProgress, isResolutionFinal } from "../shared/utils.ts"
+import { inProgress, uncheckedAssertions } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
@@ -181,7 +181,9 @@ export const assertDefaultValueAssignability = (
 
 	// a value referencing a definition still open can't be traversed until it closes
 	if (inProgress.definitions && node.includesAlias) {
-		uncheckedDefaults.push([node, value, key])
+		uncheckedAssertions.push(() =>
+			assertDefaultValueAssignability(node, value, key)
+		)
 		return value
 	}
 
@@ -206,22 +208,6 @@ export const assertDefaultValueAssignability = (
 	}
 
 	return value
-}
-
-const uncheckedDefaults: [
-	node: BaseRoot,
-	value: unknown,
-	key: PropertyKey | null
-][] = []
-
-export const assertUncheckedDefaultsAssignable = (): void => {
-	if (!isResolutionFinal()) return
-	for (const [node, value, key] of uncheckedDefaults.splice(0))
-		assertDefaultValueAssignability(node, value, key)
-}
-
-export const discardUncheckedDefaults = (): void => {
-	uncheckedDefaults.length = 0
 }
 
 export type writeUnassignableDefaultValueMessage<
