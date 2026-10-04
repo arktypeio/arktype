@@ -13,7 +13,9 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 
 		shell(`git tag ${tagName}`)
 		tagsToPublish.push(tagName)
-		shell("pnpm publish --no-git-checks", { cwd: pkg.path })
+		shell(`pnpm publish --no-git-checks --tag ${distTagOf(pkg.version)}`, {
+			cwd: pkg.path
+		})
 
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, pkg.name)
 	}
@@ -21,6 +23,10 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 
 const rewritePackageJsonName = (path: string, alias: string) =>
 	rewriteJson(path, data => ({ ...data, name: alias }))
+
+// npm rejects a prerelease published without a dist-tag
+const distTagOf = (version: string) =>
+	/-([a-z]+)/.exec(version)?.[1] ?? "latest"
 
 for (const pkg of packages) {
 	// primary name (either arktype, arkregex, arksets or @ark/*)
@@ -37,5 +43,9 @@ for (const pkg of packages) {
 
 shell("git push --tags")
 
-for (const tagName of tagsToPublish)
-	shell(`gh release create ${tagName} --latest`)
+for (const tagName of tagsToPublish) {
+	const version = tagName.slice(tagName.lastIndexOf("@") + 1)
+	shell(
+		`gh release create ${tagName} ${distTagOf(version) === "latest" ? "--latest" : "--prerelease"}`
+	)
+}
