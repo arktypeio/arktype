@@ -635,7 +635,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this
 			)
 			if (reference.startsWith("$")) {
-				// an alias serializes as the registered id of its resolution, e.g. "$ark.node1"
 				const registered =
 					reference.startsWith("$ark.") ?
 						nodesByRegisteredId[reference.slice(5) as NodeId]
@@ -689,7 +688,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 				:	new (reference.constructor as any)(reference, this)
 		} else if (reference.$ === this) bound = reference
 		else {
-			// a generic is bound once per scope, so its instantiations are memoized across references
 			let generic = this.boundGenerics.get(reference)
 			if (!generic) {
 				generic = new GenericRoot(
@@ -758,7 +756,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return (this.resolutions[name] = node)
 	}
 
-	// a definition holding an alias outside a structural value is rebuilt from the alias's resolution once no definition is open
 	private resolvePending(name: string, pending: BaseRoot): BaseRoot {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
@@ -1128,7 +1125,6 @@ const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
 const openDefinitions: BaseParseContext[] = []
 const openMembers: BaseParseContext[] = []
 
-// the definition being parsed reaches ctx, so it belongs to the component of the shallowest definition ctx reaches
 const reach = (ctx: BaseParseContext) => {
 	const referencer = openDefinitions[openDefinitions.length - 1]
 	if (referencer && ctx.lowlink! < referencer.lowlink!)

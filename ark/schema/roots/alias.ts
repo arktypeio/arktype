@@ -236,7 +236,6 @@ Resolution: ${printable(resolution)}`)
 		if (this.operator === "&" || this.operator === "=>")
 			return `(${this.expression})`
 		const referenced = nodesByRegisteredId[this.reference as NodeId]
-		// a deferred value prints as its definition, but a named alias as its name even once its definition closes
 		return (
 				hasArkKind(referenced, "root") &&
 					referenced.expression === this.expression
@@ -326,7 +325,6 @@ const expressionOf = (node: AliasNode): string => {
 		:	node.reference
 }
 
-// a deferred value prints as its definition, so it holds the operations its definition does
 const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
 	if (!node.includesAlias || seen.includes(node)) return []
 	seen.push(node)
@@ -343,7 +341,6 @@ const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
 	return operations
 }
 
-// an argument nesting operations is elided, since an expansive generic would repeat it at every level
 const nestsOperations = (arg: BaseRoot): boolean =>
 	operationsOf(arg).some(operation =>
 		operation.operands!.some(operand => operationsOf(operand).length !== 0)
@@ -376,7 +373,6 @@ export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
 	)
 }
 
-// a node built from an alias keeps its reference under a new id, e.g. an instantiation whose body is one
 export const identityOf = (node: BaseNode): string =>
 	node.hasKind("alias") ? node.reference : node.id
 
