@@ -166,6 +166,49 @@ contextualize(() => {
 					)
 				})
 
+				it("cyclic graph at shortest path", config => {
+					const node = scope(
+						{ node: { v: "number", "e0?": "node[]" } },
+						config
+					).export().node
+					const graph = Array.from(
+						{ length: 9 },
+						(_, v): typeof node.infer => ({ v })
+					)
+					graph[8].v = "x" as never
+					for (const [from, to] of [
+						[0, 1],
+						[1, 6],
+						[1, 2],
+						[2, 3],
+						[3, 4],
+						[3, 8],
+						[4, 5],
+						[4, 7],
+						[5, 7],
+						[7, 6],
+						[6, 2],
+						[6, 7]
+					])
+						(graph[from].e0 ??= []).push(graph[to])
+
+					attest(node(graph[0]).toString()).snap(
+						"e0[0].e0[1].e0[0].e0[1].v must be a number (was a string)"
+					)
+
+					const dag = Array.from(
+						{ length: 400 },
+						(_, v): typeof node.infer => ({ v })
+					)
+					for (let i = 0; i < dag.length; i++)
+						dag[i].e0 = dag.slice(i + 1, i + 3)
+					dag[399].v = "x" as never
+
+					attest(node(dag[0]).toString()).equals(
+						`e0[0].${"e0[1].".repeat(199)}v must be a number (was a string)`
+					)
+				})
+
 				it("depth and width bounds", config => {
 					const types = scope(
 						{

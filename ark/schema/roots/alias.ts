@@ -241,8 +241,13 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (ctx.enterResolution(this.resolution.id, data) !== undefined) return
-		this.resolution.traverseApply(data, ctx)
+		const resolution = this.resolution
+		if (
+			ctx.enterResolution(resolution.id, data, resolution.traverseApply) !==
+			undefined
+		)
+			return
+		resolution.traverseApply(data, ctx)
 		ctx.exitResolution()
 	}
 
@@ -263,9 +268,9 @@ Resolution: ${printable(resolution)}`)
 			)
 			return
 		}
-		const enter = `ctx.enterResolution("${id}", data)`
 		if (js.traversalKind === "Apply") {
-			js.if(`${enter} === undefined`, () =>
+			const apply = js.referenceToId(id, { kind: "Apply" })
+			js.if(`ctx.enterResolution("${id}", data, ${apply}) === undefined`, () =>
 				js.line(traverse).line("ctx.exitResolution()")
 			)
 			return
@@ -281,7 +286,7 @@ Resolution: ${printable(resolution)}`)
 				`ctx < ${maxAliasDepth} && ++${visits}.count <= ${maxAliasVisits} ? ${allows}(data, ctx + 1) : ${visits}.exceed()`
 			)
 		)
-		js.const("reached", enter)
+		js.const("reached", `ctx.enterResolution("${id}", data)`)
 		js.if("reached !== undefined", () => js.return("reached"))
 		js.return(`ctx.exitResolution(${traverse})`)
 	}
