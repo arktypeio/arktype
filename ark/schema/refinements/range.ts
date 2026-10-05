@@ -50,9 +50,14 @@ export abstract class BaseRange<
 	readonly compiledNegation: string = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
-
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
+
+	get stringLimit(): string {
+		return this.boundOperandKind === "date" ?
+				dateLimitToString(this.numericLimit)
+			:	`${this.numericLimit}`
+	}
 
 	isStricterThan(
 		r: nodeOfKind<d["kind"] | pairedRangeKind<d["kind"]>>

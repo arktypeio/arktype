@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	Disjoint,
 	boundKindPairsByLower,
+	node,
 	rootSchema,
 	writeInvalidLengthBoundMessage
 } from "@ark/schema"
@@ -96,6 +97,10 @@ contextualize(() => {
 		attest(() => rootSchema({ domain: "string", exactLength: 1.5 })).throws(
 			writeInvalidLengthBoundMessage("exactLength", 1.5)
 		)
+	})
+
+	it("stringLimit", () => {
+		attest(node("min", 5).stringLimit).equals("5")
 	})
 
 	it("minLength 0 reduces to unconstrained", () => {
