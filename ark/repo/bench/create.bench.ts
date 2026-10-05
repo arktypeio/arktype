@@ -1,6 +1,6 @@
 import { bench } from "@ark/attest"
 import * as v from "valibot"
-import { moltar, moltarData, product, productData } from "./scenarios.ts"
+import { moltar, moltarData } from "./scenarios.ts"
 
 let bound = 1e9
 
@@ -37,38 +37,3 @@ bench(
 	() => v.safeParse(moltar.valibot(bound++), moltarData),
 	options
 ).median([9.07, "us"])
-
-bench(
-	"product create (arktype)",
-	() => product.arktype(bound++),
-	options
-).median([4.57, "ms"])
-
-bench("product create (zod)", () => product.zod(bound++), options).median([
-	795.99,
-	"us"
-])
-
-bench(
-	"product create (valibot)",
-	() => product.valibot(bound++),
-	options
-).median([58.06, "us"])
-
-bench(
-	"product create + parse (arktype)",
-	() => product.arktype(bound++)(productData),
-	options
-).median([5.11, "ms"])
-
-bench(
-	"product create + parse (zod)",
-	() => product.zod(bound++).safeParse(productData),
-	options
-).median([814.79, "us"])
-
-bench(
-	"product create + parse (valibot)",
-	() => v.safeParse(product.valibot(bound++), productData),
-	options
-).median([67.87, "us"])
