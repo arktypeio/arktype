@@ -3,6 +3,8 @@ import { rmSync } from "node:fs"
 import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.ts"
 import { analyzeProjectAssertions } from "./cache/writeAssertionCache.ts"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.ts"
+import { analyzeProjectAssertions as analyzeProjectAssertionsTs7 } from "./ts7/analyze.ts"
+import { isTs7 } from "./utils.ts"
 
 export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 	const { ...config } = getConfig()
@@ -20,7 +22,10 @@ export const writeAssertionData = (toPath: string): void => {
 	console.log(
 		"⏳ Waiting for TypeScript to check your project (this may take a while)..."
 	)
-	writeJson(toPath, analyzeProjectAssertions())
+	writeJson(
+		toPath,
+		isTs7 ? analyzeProjectAssertionsTs7() : analyzeProjectAssertions()
+	)
 }
 
 export const cleanup = (): void => writeSnapshotUpdatesOnExit()

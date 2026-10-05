@@ -25,10 +25,10 @@ const getCachedAssertions = (): AssertionsByFile => {
 	return cachedAssertions
 }
 
-const isPositionWithinRange = (
+export const isPositionWithinRange = (
 	{ line, char }: LinePosition,
 	{ start, end }: LinePositionRange
-) => {
+): boolean => {
 	if (line < start.line || line > end.line) return false
 
 	if (line === start.line) return char >= start.char

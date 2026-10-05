@@ -75,8 +75,29 @@ jobs:
       - name: Typecheck consumer usage with TypeScript ${{ matrix.typescript }}
         run: npx --yes --package typescript@${{ matrix.typescript }} -- tsc --project ark/repo/tsCompat
 
+  attest-ts7:
+    needs: core
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Install TypeScript 7
+        run: |
+          sed -i "s/^  typescript: .*/  typescript: 7.0.2/" pnpm-workspace.yaml
+          pnpm install --no-frozen-lockfile
+
+      # snap population tests compare exact instantiation counts, which are compiler-specific
+      - name: Test attest
+        working-directory: ark/attest
+        run: pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert
+
   prChecks:
-    needs: [compatibility, typescript]
+    needs: [compatibility, typescript, attest-ts7]
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:

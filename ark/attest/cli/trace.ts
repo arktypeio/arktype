@@ -5,11 +5,19 @@ import { basename, join, relative, resolve } from "node:path"
 import ts from "typescript"
 import {
 	TsServer,
-	getDescendants,
+	getDescendants as getDescendantsTs5,
 	getStringifiableType,
-	nearestBoundingCallExpression
+	nearestBoundingCallExpression as nearestBoundingCallExpressionTs5
 } from "../cache/ts.ts"
 import { getConfig } from "../config.ts"
+import { stringifyTypeAtLocation } from "../ts7/analyze.ts"
+import {
+	TsgoServer,
+	ast,
+	getDescendants as getDescendantsTs7
+} from "../ts7/server.ts"
+import { nearestBoundingCallExpression as nearestBoundingCallExpressionTs7 } from "../ts7/snapshots.ts"
+import { isTs7 } from "../utils.ts"
 import { baseDiagnosticTscCmd } from "./shared.ts"
 
 interface TraceEntry {
@@ -60,9 +68,40 @@ interface FunctionStats {
 	detailedCallSites: CallSiteDetail[]
 }
 
+// TS 7's AST matches TS 5's shape for everything used here
+const syntax: typeof ts = isTs7 ? (ast as never) : ts
+
+const getSourceFile = (path: string): ts.SourceFile =>
+	isTs7 ?
+		(TsgoServer.instance.getSourceFileOrThrow(path) as never)
+	:	TsServer.instance.getSourceFileOrThrow(path)
+
+const getDescendants = (node: ts.Node): ts.Node[] =>
+	isTs7 ? (getDescendantsTs7(node as never) as never) : getDescendantsTs5(node)
+
+const nearestBoundingCallExpression = (
+	node: ts.Node,
+	position: number
+): ts.CallExpression | undefined =>
+	isTs7 ?
+		(nearestBoundingCallExpressionTs7(node as never, position) as never)
+	:	nearestBoundingCallExpressionTs5(node, position)
+
+const describeType = (node: ts.Node): { name: string; id: string } => {
+	if (isTs7) {
+		const { type, string } = stringifyTypeAtLocation(node as never)
+		return { name: string, id: `${type.id}` }
+	}
+	const type = getStringifiableType(node)
+	const name = type.toString()
+	return {
+		name,
+		id: `${(type as { id?: number }).id ?? name.substring(0, 20)}`
+	}
+}
+
 interface AnalysisContext {
 	traceDir: string
-	tsServer: TsServer
 	traceEntries: TraceEntry[]
 	durationEntries: TraceEntry[] // Filtered entries with duration
 	callRanges: CallRange[]
@@ -284,7 +323,6 @@ const generateTraceData = (
 }
 
 const initializeAnalysisContext = (traceDir: string): AnalysisContext => {
-	const tsServer = TsServer.instance
 	const tracePath = join(traceDir, "trace.json")
 
 	if (!existsSync(tracePath)) {
@@ -297,7 +335,6 @@ const initializeAnalysisContext = (traceDir: string): AnalysisContext => {
 
 	return {
 		traceDir,
-		tsServer,
 		traceEntries,
 		durationEntries: [],
 		callRanges: [],
@@ -334,7 +371,7 @@ const processDurationEntry = (
 	const entryEnd = entry.args.end as number
 	const entryDur = entry.dur as number
 
-	const sourceFile = ctx.tsServer.getSourceFileOrThrow(entryPath)
+	const sourceFile = getSourceFile(entryPath)
 	let callRangeData: { typeId: string; functionName: string } | undefined
 
 	const callExpr = findCallExpressionInRange(sourceFile, entryPos, entryEnd)
@@ -351,13 +388,11 @@ const processDurationEntry = (
 			entryEnd
 		)
 		if (relevantNode) {
-			const nodeType = getStringifiableType(relevantNode)
-			const nodeKind = ts.SyntaxKind[relevantNode.kind]
-			const typeName = `${nodeKind}: ${nodeType.toString().substring(0, 25)}`
-			const typeNodeIdPart =
-				(nodeType as any).id ?? nodeType.toString().substring(0, 20)
+			const nodeType = describeType(relevantNode)
+			const nodeKind = syntax.SyntaxKind[relevantNode.kind]
+			const typeName = `${nodeKind}: ${nodeType.name.substring(0, 25)}`
 			callRangeData = {
-				typeId: `node-${relevantNode.kind}-${typeNodeIdPart}`,
+				typeId: `node-${relevantNode.kind}-${nodeType.id}`,
 				functionName: typeName
 			}
 		}
@@ -397,21 +432,22 @@ const findCallExpressionInRange = (
 	)
 
 	const callExpressions = nodesInRange.filter(node =>
-		ts.isCallExpression(node)
+		syntax.isCallExpression(node)
 	) as ts.CallExpression[]
 
 	if (callExpressions.length === 0) return undefined
 
 	const methodCalls = callExpressions.filter(call =>
-		ts.isPropertyAccessExpression(call.expression)
+		syntax.isPropertyAccessExpression(call.expression)
 	)
 	return methodCalls.length > 0 ? methodCalls[0] : callExpressions[0]
 }
 
 const extractFunctionName = (callExpr: ts.CallExpression): string => {
-	if (ts.isPropertyAccessExpression(callExpr.expression))
+	if (syntax.isPropertyAccessExpression(callExpr.expression))
 		return callExpr.expression.name.getText()
-	if (ts.isIdentifier(callExpr.expression)) return callExpr.expression.getText()
+	if (syntax.isIdentifier(callExpr.expression))
+		return callExpr.expression.getText()
 	return "anonymousFunction"
 }
 
@@ -714,7 +750,7 @@ const formatLocation = (location: string): string => {
 	const [posStr] = positionRange.split("-")
 	const pos = parseInt(posStr, 10)
 	if (isNaN(pos)) return `${relativePath}:${positionRange}`
-	const sourceFile = TsServer.instance.getSourceFileOrThrow(filePath)
+	const sourceFile = getSourceFile(filePath)
 	const lineAndChar = sourceFile.getLineAndCharacterOfPosition(pos)
 	return `${relativePath}:${lineAndChar.line + 1}:${lineAndChar.character + 1}`
 }
@@ -742,27 +778,29 @@ const findMostSpecificNodeInRange = (
 const findNodeByPreference = (nodes: ts.Node[]): ts.Node | undefined => {
 	if (nodes.length === 0) return undefined
 	const typeReference = nodes.find(
-		node => ts.isTypeReferenceNode(node) || ts.isTypeQueryNode(node)
+		node => syntax.isTypeReferenceNode(node) || syntax.isTypeQueryNode(node)
 	)
 	if (typeReference) return typeReference
 	const declaration = nodes.find(
 		node =>
-			ts.isVariableDeclaration(node) ||
-			ts.isFunctionDeclaration(node) ||
-			ts.isClassDeclaration(node) ||
-			ts.isInterfaceDeclaration(node)
+			syntax.isVariableDeclaration(node) ||
+			syntax.isFunctionDeclaration(node) ||
+			syntax.isClassDeclaration(node) ||
+			syntax.isInterfaceDeclaration(node)
 	)
 	if (declaration) return declaration
-	const propertyAccess = nodes.find(node => ts.isPropertyAccessExpression(node))
+	const propertyAccess = nodes.find(node =>
+		syntax.isPropertyAccessExpression(node)
+	)
 	if (propertyAccess) return propertyAccess
 	const assignment = nodes.find(
 		node =>
-			ts.isBinaryExpression(node) &&
-			node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+			syntax.isBinaryExpression(node) &&
+			node.operatorToken.kind === syntax.SyntaxKind.EqualsToken
 	)
 	if (assignment) return assignment
 	const expression = nodes.find(
-		node => ts.isExpressionStatement(node) || ts.isExpression(node)
+		node => syntax.isExpressionStatement(node) || syntax.isExpression(node)
 	)
 	if (expression) return expression
 	return nodes.sort((a, b) => a.end - a.pos - (b.end - b.pos))[0]

@@ -14,6 +14,8 @@ import {
 	getInstantiationsContributedByNode
 } from "../cache/utils.ts"
 import { getConfig } from "../config.ts"
+import { getBenchInstantiations } from "../ts7/instantiations.ts"
+import { isTs7 } from "../utils.ts"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
 import type { BenchContext } from "./bench.ts"
 import {
@@ -73,7 +75,8 @@ export const instantiationDataHandler = (
 ): void => {
 	const instantiationsContributed =
 		isBenchFunction ?
-			getContributedInstantiations(ctx)
+			isTs7 ? getBenchInstantiations(ctx.benchCallPosition)
+			:	getContributedInstantiations(ctx)
 		:	getBenchAssertionAtPosition(ctx.benchCallPosition).count
 
 	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(

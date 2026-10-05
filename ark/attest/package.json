@@ -41,16 +41,17 @@
 	},
 	"dependencies": {
 		"@ark/fs": "workspace:*",
+		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@prettier/sync": "0.6.1",
 		"@typescript/analyze-trace": "0.10.1",
 		"@typescript/vfs": "1.6.1",
 		"arktype": "workspace:*",
-		"@ark/schema": "workspace:*",
 		"prettier": "3.6.2"
 	},
 	"devDependencies": {
-		"typescript": "catalog:"
+		"typescript": "catalog:",
+		"typescript-7": "npm:typescript@7.0.2"
 	},
 	"peerDependencies": {
 		"typescript": "*"
