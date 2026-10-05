@@ -4,7 +4,7 @@
 
 ### Remove the `clone` option
 
-Transforming no longer clones the input first, and never writes to it. A transformed object is a new object sharing every untransformed value with the input, and input nothing transforms is returned as is:
+Transforming no longer clones the input first, and never writes to it. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
@@ -27,7 +27,7 @@ scope({ a: "a" }).export()
 
 ### Describe dates in UTC
 
-Dates in descriptions and error messages no longer depend on the host's timezone. A date at UTC or local midnight is written as its calendar date, collapsing to its year on January 1, and any other date is written in UTC:
+Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC or local midnight is written as its calendar date, collapsing to its year on January 1:
 
 ```ts
 const T = type("Date < d'2000-01-01T12:30:00Z'")
