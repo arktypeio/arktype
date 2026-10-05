@@ -204,8 +204,24 @@ export abstract class BaseRoot<
 
 	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
 		const result = this.innerToJsonSchema(ctx)
+		Object.assign(result, this.metaJson)
 
-		return Object.assign(result, this.metaJson)
+		// metaJson serializes an object default like [5] as a registered
+		// reference (e.g. "$ark.array1"), so read it from meta directly
+		if (typeof this.meta.default === "object" && this.meta.default !== null) {
+			delete result.default
+			const value = this.meta.default
+			result.default =
+				$ark.intrinsic.jsonData.allows(value) ?
+					value
+				:	ctx.fallback.defaultValue({
+						code: "defaultValue",
+						base: result,
+						value
+					})
+		}
+
+		return result
 	}
 
 	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
