@@ -64,12 +64,12 @@ import {
 	type UnknownAttachments
 } from "./shared/implement.ts"
 import { $ark, registryName } from "./shared/registry.ts"
+import { TransformErrors } from "./shared/transform.ts"
 import {
 	allowsAcyclic,
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
-	TransformErrors,
 	Traversal,
 	type TraverseAllows,
 	type TraverseApply,
