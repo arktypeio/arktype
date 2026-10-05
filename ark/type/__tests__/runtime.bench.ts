@@ -16,6 +16,40 @@ export const validData = {
 	}
 }
 
+const TReject = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: {
+		foo: "string",
+		num: "number",
+		bool: "boolean"
+	}
+}).onDeepUndeclaredKey("reject")
+
+bench("moltar reject", () => TReject(validData)).median()
+
+export const T = type({
+	number: "number",
+	negNumber: "number",
+	maxNumber: "number",
+	string: "string",
+	longString: "string",
+	boolean: "boolean",
+	deeplyNested: {
+		foo: "string",
+		num: "number",
+		bool: "boolean"
+	}
+})
+
+bench("moltar allows", () => T.allows(validData)).median()
+
+bench("moltar apply", () => T(validData)).median()
+
 const tDelete = type({
 	number: "number",
 	negNumber: "number",
@@ -43,6 +77,18 @@ const tShallowDelete = type({
 })
 
 bench("shallow delete", () => tShallowDelete(validData)).median()
+
+export const primitiveData = "foo"
+
+bench("shallow primitive allows", () =>
+	type.string.allows(primitiveData)
+).median()
+
+bench("shallow primitive apply", () => type.string(primitiveData)).median()
+
+const stringToLength = type.string.pipe(s => s.length)
+
+bench("shallow primitive morph", () => stringToLength(primitiveData)).median()
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)
