@@ -644,7 +644,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			Object.getPrototypeOf(out) !== Object.prototype ||
 			Object.prototype.hasOwnProperty.call(out, "__proto__")
 		) {
-			const undeclaredKeys = this.undeclaredKeysOf(data)
+			const undeclaredKeys = ownKeysOf(data).filter(k => !this.declaresKey(k))
 			if (!undeclaredKeys.length) return out
 			if (out === data) out = this.copy(data)
 			for (const k of undeclaredKeys) delete out[k as never]
@@ -675,14 +675,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (prop.key in data) copy[prop.key as never] = data[prop.key as never]
 		}
 		return copy
-	}
-
-	private undeclaredKeysOf(data: object): Key[] {
-		const keys: Key[] = []
-		for (const k in data) if (!this.declaresKey(k)) keys.push(k)
-		for (const k of Object.getOwnPropertySymbols(data))
-			if (!this.declaresKey(k)) keys.push(k)
-		return keys
 	}
 
 	readonly inheritableProps: Prop.Node[] = this.props.filter(
@@ -731,11 +723,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			typeof k === "string" &&
 			arrayIndexMatcher.test(k))
 
-	_compileDeclaresKey(js: NodeCompiler, includeProps = true): string {
+	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
-		if (includeProps && this.props.length)
-			parts.push(`k in ${js.ref(this.propsByKey)}`)
-
 		if (this.index) {
 			for (const index of this.index)
 				parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
@@ -748,7 +737,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		// if parts is empty, this is a structure like { "+": "reject" }
-		// that declares no keys, so return false
+		// that declares no keys other than its props, so return false
 		return parts.join(" || ") || "false"
 	}
 
@@ -887,14 +876,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.compileCopiedDeclaredKeys(js).return("out")
 	}
 
-	private compileCopy(js: NodeCompiler, objectCopy?: string): NodeCompiler {
+	private compileCopy(js: NodeCompiler): NodeCompiler {
 		return js.if("out === data", () =>
 			this.sequence ?
 				this.compileCopyProps(js.set("out", "data.slice()"), "data", "out")
 			:	js.set(
 					"out",
-					objectCopy ??
-						`Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
+					`Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
 		)
 	}
@@ -958,7 +946,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedProps: Prop.Node[],
 		outMayBeCopied: boolean
 	): void {
-		const deleteFromCopy = (objectCopy?: string) => {
+		const deleteFromCopy = () => {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const prop = transformedProps[i]
 				const changed = js.compareTransformed(
@@ -968,9 +956,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`value${i}`
 				)
 				js.if(changed, () =>
-					this.compileCopy(js, objectCopy).line(
-						`out${js.prop(prop.key)} = transformed${i}`
-					)
+					this.compileCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
 				)
 			}
 			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
@@ -996,22 +982,21 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
 				)
 			}
-			const stringKeys = this.props.filter(prop => typeof prop.key === "string")
-			const breakIfUndeclared = (declaresKey: string) =>
-				declaresKey === "false" ?
+			const breakIfUndeclared = (keyKind: "string" | "symbol") => {
+				const props = this.props.filter(prop => typeof prop.key === keyKind)
+				if (props.length) compileDeclaredKeySwitch(js, props)
+				return js.if(`!(${this._compileDeclaresKey(js)})`, () =>
 					js.line("break undeclared")
-				:	js.if(`!(${declaresKey})`, () => js.line("break undeclared"))
+				)
+			}
 			const label =
 				unchanged.length ?
 					`undeclared: if (${unchanged.join(" && ")})`
 				:	"undeclared:"
 			js.block(label, () => {
-				js.forIn("data", () => {
-					if (stringKeys.length) compileDeclaredKeySwitch(js, stringKeys)
-					return breakIfUndeclared(this._compileDeclaresKey(js, false))
-				})
-				js.block("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					breakIfUndeclared(this._compileDeclaresKey(js))
+				js.forIn("data", () => breakIfUndeclared("string"))
+				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
+					breakIfUndeclared("symbol")
 				)
 				return js.return("data")
 			})
@@ -1034,7 +1019,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
 			:	"Object.getPrototypeOf(data) !== Object.prototype"
 		// checked after the literal's reads, from which V8 can infer data's prototype
-		js.if(copies, () => deleteFromCopy(`${js.ref(copyOf)}(data)`))
+		js.if(copies, deleteFromCopy)
 		for (const prop of this.props) {
 			if (prop.required) continue
 			const store = `result${js.prop(prop.key)} = ${valueOf(prop)}`
@@ -1058,7 +1043,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js
 						.const("k", "outKeys[i]")
 						.if(
-							`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js, false)})`,
+							`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js)})`,
 							() => js.line("result[k] = out[k]")
 						)
 			)
@@ -1112,7 +1097,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
 						)
 						.if("ctx.failFast", () => js.return())
-			const declaresKey = this._compileDeclaresKey(js, false)
+			const declaresKey = this._compileDeclaresKey(js)
 			if (declaresKey === "false") reject()
 			else js.if(`!(${declaresKey})`, reject)
 		}
