@@ -14,14 +14,14 @@ import {
 
 export const bundle = (): void => {
 	// sorted so every build gives an ambiguous name to the same module
-	const perModuleJs = walkPaths(fromCwd("out"), {
+	const modulePaths = walkPaths(fromCwd("out"), {
 		include: path => path.endsWith(".js")
 	}).sort()
 	const entryPoints = publicEntryPoints(process.cwd())
-	const ownFiles = flattenIntoInternal(entryPoints, perModuleJs)
+	const ownFiles = flattenIntoInternal(entryPoints, modulePaths)
 	// one build for all entries, so a module several import evaluates once
 	const { outputFiles } = buildSync({ ...buildOptions(), entryPoints })
-	for (const path of perModuleJs) rmRf(path)
+	for (const path of modulePaths) rmRf(path)
 	for (const file of outputFiles)
 		writeFile(file.path, nameSelfReferencingClasses(file.text))
 	for (const [path, js] of Object.entries(ownFiles)) writeFile(path, js)
@@ -58,20 +58,22 @@ export const publicEntryPoints = (dir: string): string[] =>
 // deep imports resolve to internal.js at runtime, so it exports every module's names
 const flattenIntoInternal = (
 	entryPoints: string[],
-	perModuleJs: string[]
+	modulePaths: string[]
 ): Record<string, string> => {
 	const main = fromCwd("out", "index.js")
 	const internal = fromCwd("out", "internal.js")
-	const modules = perModuleJs.filter(path => !entryPoints.includes(path))
-	const starring = (paths: string[]) =>
+	const writeStarExports = (paths: string[]) =>
 		paths
 			.map(path => `export * from ${specifierOf(internal, path)};\n`)
 			.join("")
 	const { metafile, outputFiles } = buildSync({
 		...buildOptions(),
-		entryPoints: perModuleJs,
+		entryPoints: modulePaths,
 		stdin: {
-			contents: starring([main, ...modules]),
+			contents: writeStarExports([
+				main,
+				...modulePaths.filter(path => !entryPoints.includes(path))
+			]),
 			resolveDir: fromCwd("out")
 		},
 		metafile: true
@@ -84,41 +86,41 @@ const flattenIntoInternal = (
 	const stdinOutputPath = Object.keys(metafile.outputs).find(
 		path => metafile.outputs[path].entryPoint === "<stdin>"
 	)!
-	const unambiguousNames = exportedBy(
+	const unambiguousNames = exportedNamesOf(
 		outputFiles.find(file => file.path === fromCwd(stdinOutputPath))!.text
 	)
 	// main exports a module's name by an alias, which a consumer's `export *` can't bind ambiguously
 	let mainJs = readFile(main)
-	let internalJs = starring([main])
+	let internalJs = writeStarExports([main])
 	const ownFiles: Record<string, string> = {}
-	for (const name of new Set(perModuleJs.flatMap(path => namesByPath[path]))) {
+	for (const name of new Set(modulePaths.flatMap(path => namesByPath[path]))) {
 		const isUnambiguous = unambiguousNames.has(name)
 		if (isUnambiguous && namesByPath[main].includes(name)) continue
-		const exporting = perModuleJs.filter(path =>
+		const exportingPaths = modulePaths.filter(path =>
 			namesByPath[path].includes(name)
 		)
 		if (name === "default") {
 			throw new Error(
-				`internal.js can't export default for ${exporting.map(moduleOf).join(", ")}, which must export it by name`
+				`internal.js can't export default for ${exportingPaths.map(moduleOf).join(", ")}, which must export it by name`
 			)
 		}
-		const [first, ...others] = exporting.filter(path => path !== main)
-		if (exporting.includes(main)) {
+		const [first, ...others] = exportingPaths.filter(path => path !== main)
+		if (exportingPaths.includes(main)) {
 			throw new Error(
 				`The main entry exports ${name}, which one of ${[first, ...others].map(moduleOf).join(", ")} binds otherwise (to esbuild, re-exporting another package's name binds it anew)`
 			)
 		}
 		const aliasOf = (path: string) =>
 			`${name}$${moduleOf(path).replace(/[^\w$]/g, "$")}`
-		mainJs += reexporting(`${name} as ${aliasOf(first)}`, main, first)
-		internalJs += reexporting(`${aliasOf(first)} as ${name}`, internal, main)
+		mainJs += writeReexport(`${name} as ${aliasOf(first)}`, main, first)
+		internalJs += writeReexport(`${aliasOf(first)} as ${name}`, internal, main)
 		if (isUnambiguous) continue
 		for (const path of others) {
-			mainJs += reexporting(`${name} as ${aliasOf(path)}`, main, path)
+			mainJs += writeReexport(`${name} as ${aliasOf(path)}`, main, path)
 			assertMapsToOwnFile(path)
 			if (entryPoints.includes(path)) continue
 			ownFiles[path] ??= `export * from ${specifierOf(path, internal)};\n`
-			ownFiles[path] += reexporting(
+			ownFiles[path] += writeReexport(
 				`${aliasOf(path)} as ${name}`,
 				path,
 				internal
@@ -134,7 +136,7 @@ const moduleOf = (path: string) =>
 	relative(fromCwd("out"), path).replace(/\\/g, "/").replace(/\.js$/, "")
 
 // the metafile lists ambiguous exports too, so read the names from the JS
-const exportedBy = (js: string) =>
+const exportedNamesOf = (js: string) =>
 	new Set(
 		parse(js).statements.flatMap(statement =>
 			(
@@ -163,8 +165,8 @@ const assertMapsToOwnFile = (path: string) => {
 	}
 }
 
-const reexporting = (specifier: string, from: string, path: string) =>
-	`export { ${specifier} } from ${specifierOf(from, path)};\n`
+const writeReexport = (clause: string, from: string, to: string) =>
+	`export { ${clause} } from ${specifierOf(from, to)};\n`
 
 const specifierOf = (from: string, to: string) => {
 	const path = relative(dirname(from), to).replace(/\\/g, "/")
