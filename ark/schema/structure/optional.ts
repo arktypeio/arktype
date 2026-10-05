@@ -141,7 +141,7 @@ export const computeDefaultValueMorph = (
 		}
 		let transformingDefault = false
 		return (data, ctx) => {
-			// a default of a cyclic value can reach this morph again, which would complete it without end
+			// a cyclic default's transform can reach this morph again before it completes
 			if (transformingDefault) return data
 			if (!value.transforms) {
 				data[key] = defaultInput()
