@@ -26,23 +26,18 @@ contextualize(() => {
 		attest($ark.sets === setEngine).equals(true)
 	})
 
-	it("relational operations require it", () => {
-		withoutEngine(() =>
+	it("throws on relations and json schema without an engine", () => {
+		withoutEngine(() => {
 			attest(() => rootSchema("string").and("number")).throws(
 				missingSetEngineMessage
 			)
-		)
-	})
-
-	it("json schema generation requires it", () => {
-		withoutEngine(() =>
 			attest(() => rootSchema("string").toJsonSchema()).throws(
 				missingSetEngineMessage
 			)
-		)
+		})
 	})
 
-	it("parsing does not", () => {
+	it("parses a union unreduced without an engine", () => {
 		withoutEngine(() => {
 			const T = rootSchema(["number", { unit: 1 }])
 			attest(T.kind).equals("union")
@@ -54,7 +49,7 @@ contextualize(() => {
 		attest(rootSchema(["number", { unit: 1 }]).expression).snap("number")
 	})
 
-	it("parsing an unbounded tuple does not", () => {
+	it("parses an unbounded tuple without an engine", () => {
 		withoutEngine(() => {
 			const T = rootSchema({
 				proto: Array,
@@ -71,7 +66,7 @@ contextualize(() => {
 		})
 	})
 
-	it("parsing an index signature does not", () => {
+	it("parses an index signature without an engine", () => {
 		withoutEngine(() => {
 			const T = rootSchema({
 				domain: "object",
@@ -82,7 +77,7 @@ contextualize(() => {
 		})
 	})
 
-	it("reparses nodes built before it", () => {
+	it("reparses nodes built without an engine", () => {
 		const def = [
 			{
 				domain: "object",
@@ -101,7 +96,7 @@ contextualize(() => {
 		])
 	})
 
-	it("parsing what only it validates does", () => {
+	it("throws on schemas that need reduction without an engine", () => {
 		withoutEngine(() => {
 			attest(() =>
 				rootSchema({ proto: Array, sequence: { prefix: ["string"] } })
@@ -121,7 +116,7 @@ contextualize(() => {
 		})
 	})
 
-	it("parsing rejects duplicate keys without it", () => {
+	it("rejects duplicate keys without an engine", () => {
 		withoutEngine(() =>
 			attest(() =>
 				rootSchema({
