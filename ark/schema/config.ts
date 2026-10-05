@@ -1,4 +1,9 @@
-import type { ArkRegistry, requireKeys, show } from "@ark/util"
+import {
+	throwParseError,
+	type ArkRegistry,
+	type requireKeys,
+	type show
+} from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { TypeMeta } from "./shared/declare.ts"
@@ -85,6 +90,7 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	merged: ArkSchemaConfig | undefined
 ): base => {
 	if (!merged) return base
+	if ("clone" in merged) throwParseError(unsupportedCloneConfigMessage)
 	const result: any = { ...base }
 	let k: keyof ArkSchemaConfig
 	for (k in merged) {
@@ -213,3 +219,8 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 >
 
 export type ResolvedConfig = resolveConfig<ArkSchemaConfig>
+
+export const unsupportedCloneConfigMessage =
+	"The clone option is no longer supported, since input is not cloned before morphs"
+
+export type unsupportedCloneConfigMessage = typeof unsupportedCloneConfigMessage

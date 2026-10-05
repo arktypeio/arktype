@@ -3,6 +3,7 @@ import {
 	$ark,
 	rootSchema,
 	schemaScope,
+	unsupportedCloneConfigMessage,
 	type ArkSchemaConfig
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
@@ -236,6 +237,17 @@ contextualize(() => {
 
 			attest(uninvalidable.allows(new Date("!"))).equals(false)
 		})
+	})
+
+	it("clone", () => {
+		// @ts-expect-error
+		attest(() => configure({ clone: false })).throws(
+			unsupportedCloneConfigMessage
+		)
+		// @ts-expect-error
+		attest(() => scope({}, { clone: false })).throws(
+			unsupportedCloneConfigMessage
+		)
 	})
 
 	it("docs actual example", () => {
