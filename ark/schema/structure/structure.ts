@@ -184,7 +184,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			},
 			sequence: {
 				child: true,
-				// a sequence's json collapses to its variadic, so an array is a union of elements rather than a list
+				// an array here is the json of a union element, never a list of sequences
 				parse: (schema, ctx) => ctx.$.node("sequence", schema)
 			},
 			undeclared: {
@@ -224,7 +224,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	// built from entries onto a null prototype, so it holds "__proto__" but not "toString"
+	// on a null prototype, "__proto__" is a key and "toString" isn't
 	propsByKey: Record<Key, Prop.Node | undefined> = Object.assign(
 		Object.create(null),
 		Object.fromEntries(this.props.map(node => [node.key, node]))
@@ -1050,7 +1050,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.return("result")
 	}
 
-	// a signature extending string can't match a symbol key, but deciding that takes a set engine
+	// without a set engine, any signature may match a symbol key
 	private get indexMatchesSymbols(): boolean {
 		return !!this.index?.some(
 			node => !$ark.sets || !node.signature.extends($ark.intrinsic.string)

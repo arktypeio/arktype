@@ -225,8 +225,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	// discriminated on construction, since relating branches can throw a ParseError
-	// parsing must report (e.g. an index signature and prop with disjoint values)
+	// discriminated on construction, since relating branches can throw a ParseError,
+	// e.g. for an index signature and a prop with disjoint values
 	discriminant = this.discriminate()
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
@@ -458,7 +458,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					js.return(branch.transforms ? invokeTransform(js, branch) : "data")
 				)
 			}
-			// a root not requiring ctx checks for this instead of calling its Allows
+			// unless it requires ctx, a root checks for unset instead of calling its Allows
 			js.return(
 				this.transformRequiresContext ? "data" : compileSerializedValue(unset)
 			)
@@ -489,7 +489,7 @@ const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
 	return k !== undefined && discriminant.cases[k] !== undefined ? k : "default"
 }
 
-// an object or symbol unit was registered to compile it, so an unregistered value matches none
+// object and symbol units are registered, so an unregistered value matches none
 const unitKeyOf = (value: unknown): string | undefined => {
 	if (!hasDomain(value, "object") && typeof value !== "symbol")
 		return serializePrimitive(value as SerializablePrimitive)
