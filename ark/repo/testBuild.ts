@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { publicEntryPoints } from "./bundle.ts"
@@ -98,5 +99,26 @@ if (
 	scope({}).constructor.name !== "InternalScope"
 )
 	throw new Error("⚠️  Bundling renamed a class.")
+
+const algebraMarkers = [
+	"The intersection of two ordered unions is indeterminate",
+	"An unordered union of a type including a morph",
+	// written only by JSON Schema generation, which ships with the algebra
+	"$defs"
+]
+
+const schemaOut = fromPackage("schema", "out/")
+
+for (const name of readdirSync(schemaOut)) {
+	if (!name.endsWith(".js")) continue
+	const js = readFileSync(new URL(name, schemaOut), "utf8")
+	for (const marker of algebraMarkers) {
+		if (js.includes(marker)) {
+			throw new Error(
+				`⚠️  @ark/schema's out/${name} includes set algebra: ${marker}`
+			)
+		}
+	}
+}
 
 console.log("🧩 Every entry shares its package's modules and registry!")
