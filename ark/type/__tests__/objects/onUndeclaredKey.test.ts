@@ -179,8 +179,11 @@ b must be removed`)
 		})
 
 		it("delete keeps declared __proto__", () => {
-			for (const $ of [scope({}), scope({}, { jitless: true })]) {
-				const T = $.type({ ["__proto__?"]: "object", "+": "delete" })
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({
+					["__proto__?"]: "object",
+					"+": "delete"
+				})
 				const out = T.assert(JSON.parse('{"__proto__":{"x":1},"z":2}'))
 				attest(Object.keys(out)).equals(["__proto__"])
 				attest(Object.getPrototypeOf(out) === Object.prototype).equals(true)

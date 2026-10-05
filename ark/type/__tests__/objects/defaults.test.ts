@@ -75,8 +75,10 @@ contextualize(() => {
 		})
 
 		it("-0", () => {
-			for (const $ of [scope({}), scope({}, { jitless: true })]) {
-				const T = $.type({ negativeZero: ["number", "=", -0] })
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({
+					negativeZero: ["number", "=", -0]
+				})
 				attest(Object.is(T.assert({}).negativeZero, -0)).equals(true)
 			}
 		})

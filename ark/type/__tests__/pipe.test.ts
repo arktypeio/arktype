@@ -355,8 +355,8 @@ contextualize(() => {
 	})
 
 	it("unary morph arity", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
-			const T = $.type({
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
 				a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
 			})
 			attest(T.assert({ a: "x" }).a).equals(0)
@@ -364,7 +364,8 @@ contextualize(() => {
 	})
 
 	it("array props before elements", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const calls: string[] = []
 			const Trimmed = $.type("string").pipe(s => {
 				calls.push(s)
@@ -1162,7 +1163,8 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 
 	it("assert with root morph errors", () => {
 		const N = type("number")
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const T = $.type("string").pipe(s => N(s))
 			attest(() => T.assert("x")).throws("must be a number (was a string)")
 			attest(() => T.or("boolean").assert("x")).throws(
