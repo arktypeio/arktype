@@ -31,7 +31,7 @@ const intersectPropsAndIndex = <
 					key: l.key,
 					value: $ark.intrinsic.never.internal
 				}) as l)
-				// an index signature doesn't require the key, so it can't discriminate
+				// optional, since an index signature doesn't require the key
 			:	value.withPrefixKey(l.key, "optional")
 	}
 
@@ -44,7 +44,9 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			const lInner = { ...l.inner }
 			const rInner = { ...r.inner }
 			const disjointResult = new Disjoint()
-			// an index signature's props once the other side's keys are known, kept apart from its side, where a prop with the same key would never merge with them
+			// props an index signature narrows to once the other side's keys
+			// are known. they can't be added to the side they came from, where
+			// a prop with the same key would never be merged with them
 			const lDerived: OptionalNode[] = []
 			const rDerived: OptionalNode[] = []
 			if (l.undeclared) {
@@ -133,7 +135,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 
 			if (disjointResult.length) return disjointResult
 
-			// a prop must satisfy the other side's index signatures unless either side transforms, since then each applies in turn
+			// a transform applies each prop and index signature to the key in turn
 			if (
 				!l.includesTransform &&
 				!r.includesTransform &&

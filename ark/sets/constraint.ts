@@ -48,7 +48,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 					Object.assign(s.baseInner, unflattenConstraints(s.l)),
 					{ prereduced: true }
 				)
-		// a structure meets a root, e.g. an empty array two sequences intersect to, as the object it constrains
+		// a root, e.g. an empty array, can only meet the object a structure constrains
 		if (s.roots.length && result.hasKind("structure"))
 			result = s.ctx.$.node("intersection", { structure: result })
 
@@ -79,7 +79,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			if (s.kind === "intersection")
 				for (const node of s.l[i].impliedSiblings ?? []) appendUnique(s.r, node)
 		} else {
-			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2, so the second's result replaces it, intersected again unless already held
+			// a head can narrow two constraints, e.g. <= 1 meeting >= 1 and <= 2
 			s.l.splice(i--, 1)
 			if (!s.l.includes(result as never)) s.r.push(result as BaseConstraint)
 		}

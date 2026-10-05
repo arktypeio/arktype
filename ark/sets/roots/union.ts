@@ -547,7 +547,7 @@ export const reduceBranches = ({
 const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 	if (l.includesAlias || r.includesAlias) {
 		if (!isResolutionFinal()) {
-			// what an alias transforms, and whether branches holding a definition still open overlap, is known once it closes
+			// aliased branches' transforms and overlap are known once definitions close
 			queueUnchecked(() => {
 				if (
 					(l.transforms || r.transforms) &&
@@ -594,7 +594,7 @@ export const pruneDiscriminant = (
 	discriminantBranch.transform(
 		(nodeKind, inner) => {
 			if (nodeKind === "unit") return null
-			// a number domain's discriminant checks typeof, so a number that excludes NaN still checks it
+			// a discriminant's typeof check doesn't exclude NaN
 			if (nodeKind === "domain") {
 				const { domain, numberAllowsNaN } = inner as Domain.Inner
 				return domain === "number" && !numberAllowsNaN ? inner : null
@@ -611,7 +611,8 @@ export const pruneDiscriminant = (
 
 				if (node.hasKind("domain") && node.domain === "object")
 					// if we've already checked a path at least as long as the current one,
-					// we don't need to revalidate that we're in an object unless a primitive has its next key
+					// we don't need to revalidate that we're in an object
+					// unless a primitive has its next key
 					return !isReadableOnPrimitive(discriminantCtx.path[ctx.path.length])
 
 				if (
@@ -637,7 +638,7 @@ const primitivePrototypes = [
 	Symbol.prototype
 ]
 
-// an optional chain reads a key a primitive has, like a string's length, as it would an object's
+// an optional chain reads a primitive's keys, e.g. a string's length
 const isReadableOnPrimitive = (key: PropertyKey | undefined): boolean =>
 	key !== undefined &&
 	(typeof key === "number" ||
