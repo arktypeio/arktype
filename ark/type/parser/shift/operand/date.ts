@@ -1,4 +1,4 @@
-import { throwParseError, tryParseNumber } from "@ark/util"
+import { isValidDate, throwParseError, tryParseNumber } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
 
 export const isDateLiteral = (value: unknown): value is DateLiteral =>
@@ -6,8 +6,6 @@ export const isDateLiteral = (value: unknown): value is DateLiteral =>
 	value[0] === "d" &&
 	(value[1] === "'" || value[1] === '"') &&
 	value[value.length - 1] === value[1]
-
-export const isValidDate = (d: Date): boolean => d.toString() !== "Invalid Date"
 
 export const extractDateLiteralSource = <literal extends DateLiteral>(
 	literal: literal

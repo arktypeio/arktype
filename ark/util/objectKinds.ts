@@ -207,14 +207,12 @@ const dateToString = Date.prototype.toString
 const dateGetTime = Date.prototype.getTime
 
 export const isValidDate = (date: Date): boolean => {
-	if (date.toString === dateToString) {
-		try {
-			return !Number.isNaN(dateGetTime.call(date))
-		} catch {
-			return false
-		}
+	if (date.toString !== dateToString) return date.toString() !== "Invalid Date"
+	try {
+		return !Number.isNaN(dateGetTime.call(date))
+	} catch {
+		return false
 	}
-	return date.toString() !== "Invalid Date"
 }
 
 export const ecmascriptDescriptions = {
