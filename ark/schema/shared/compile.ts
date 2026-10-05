@@ -4,8 +4,7 @@ import {
 	hasDomain,
 	isDotAccessible,
 	serializePrimitive,
-	type Fn,
-	type dict
+	type Fn
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
@@ -272,10 +271,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	errorContext(errorContext: object): string {
-		for (const k in errorContext) {
-			if (Object.is((errorContext as dict)[k], -0))
-				errorContext = { ...errorContext, [k]: 0 }
-		}
 		if (!this.errorContexts) return registeredReference(errorContext)
 		return `errorContexts[${this.errorContexts.push(errorContext) - 1}]`
 	}

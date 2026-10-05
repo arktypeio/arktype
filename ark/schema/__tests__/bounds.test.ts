@@ -4,7 +4,8 @@ import {
 	boundKindPairsByLower,
 	node,
 	rootSchema,
-	writeInvalidLengthBoundMessage
+	writeInvalidLengthBoundMessage,
+	type ArkErrors
 } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
@@ -97,6 +98,15 @@ contextualize(() => {
 		attest(() => rootSchema({ domain: "string", exactLength: 1.5 })).throws(
 			writeInvalidLengthBoundMessage("exactLength", 1.5)
 		)
+	})
+
+	it("-0 rule", () => {
+		const T = rootSchema({
+			domain: "number",
+			min: { rule: -0, exclusive: true }
+		})
+		const error = (T.traverse(-1) as ArkErrors)[0]
+		attest(error.hasCode("min") && Object.is(error.rule, -0)).equals(true)
 	})
 
 	it("stringLimit", () => {
