@@ -6,7 +6,7 @@ import { ark } from "arktype"
 import { AssertionError } from "node:assert"
 import { cases } from "./util.ts"
 
-// keywords resolve on first reference, so resolve them all
+// keywords resolve on first reference
 ark.export()
 
 cases({

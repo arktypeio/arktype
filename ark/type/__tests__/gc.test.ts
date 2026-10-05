@@ -16,8 +16,7 @@ const collect = async () => {
 	await nextJob()
 }
 
-// a closure V8 is optimizing is kept until the compile ends, so a type can
-// outlive a collection
+// a closure V8 is still optimizing can keep a type alive past a collection
 const collectTarget = async (ref: WeakRef<object>) => {
 	for (let i = 0; i < 10 && ref.deref(); i++) await collect()
 }
@@ -95,7 +94,7 @@ contextualize(() => {
 		).equals("unknown")
 	})
 
-	// built from nodes rather than strings, whose results the ambient parse cache holds
+	// built from nodes, which the parse cache doesn't hold
 	it("unfinalized parse after collection", async () => {
 		const configured = () =>
 			type({ a: "string" })
