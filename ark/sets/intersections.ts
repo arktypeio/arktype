@@ -25,7 +25,7 @@ type IntersectionCache = WeakMap<
 	>
 >
 
-// a result is parsed in its scope, so equal operands intersected in another scope don't share it
+// a result belongs to the scope that parsed it
 const intersectionCache: IntersectionCache = new WeakMap()
 let pendingIntersectionCache: IntersectionCache | undefined
 
@@ -55,7 +55,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 	): BaseNode | Disjoint | null => {
 		let cache = intersectionCache
 		if (l.includesAlias || r.includesAlias) {
-			// relations between aliases are unknown until they're final, so a result reached before is reused only until then
+			// a result involving an alias can change until resolution is final
 			if (isResolutionFinal()) pendingIntersectionCache = undefined
 			else cache = pendingIntersectionCache ??= new WeakMap()
 		}

@@ -94,7 +94,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 				:	ctx.$.node(
 						"union",
 						viableBranches.map(state =>
-							// a sequence has at least one element, so an empty tuple is an array of length 0
+							// an empty tuple has no sequence, only an exact length of 0
 							state.result.length ?
 								{ proto: Array, sequence: sequenceTupleToInner(state.result) }
 							:	{ proto: Array, exactLength: 0 }

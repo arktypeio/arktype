@@ -37,12 +37,11 @@ export const toJsonSchema = (
 		const schemasById: Record<string, JsonSchema> = {}
 		for (let i = 0; i < ctx.refs.length; i++)
 			schemasById[ctx.refs[i].id] ??= toResolvedJsonSchema(ctx.refs[i], ctx)
-		// only nodes a $ref reaches are defined, so a discriminant's cases aren't
+		// only nodes a $ref reaches are defined, not e.g. a discriminant's cases
 		const defs = flatMorph(node.references, (i, ref) =>
 			ref.id in schemasById ? [ref.id, schemasById[ref.id]] : []
 		)
-		// an alias's resolution or a morph's out can be reached outside
-		// node.references
+		// an alias's resolution or a morph's out can be reached outside node.references
 		Object.assign(defs, schemasById)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
