@@ -34,12 +34,13 @@ contextualize(() => {
 		attest(computed()).equals(1)
 	})
 
-	it("non-extensible inheritor", () => {
+	it("inheritor", () => {
 		const proto = {}
 		const computed = lazyCount(proto)
-		const o = Object.preventExtensions(Object.create(proto)) as { k: number }
+		const o = Object.create(proto) as { k: number }
 		attest(o.k).equals(1)
 		attest(o.k).equals(1)
 		attest(computed()).equals(1)
+		attest(Object.keys(o)).equals([])
 	})
 })
