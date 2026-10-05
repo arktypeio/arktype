@@ -69,11 +69,11 @@ contextualize(() => {
 
 		const original = { a: { x: " 1 ", y: " 2 " } }
 
-		const out: unknown = T(original)
-		const deleted: unknown = T.onUndeclaredKey("delete")(original)
+		const out = T(original)
+		const deleted = T.onUndeclaredKey("delete")(original)
 
-		attest(out).snap({ a: { x: "1", y: "2" } })
-		attest(deleted).snap({ a: { x: "1", y: "2" } })
+		attest(out).unknown.snap({ a: { x: "1", y: "2" } })
+		attest(deleted).unknown.snap({ a: { x: "1", y: "2" } })
 		attest(original).snap({ a: { x: " 1 ", y: " 2 " } })
 
 		const WithDisjointProp = type({
@@ -100,8 +100,8 @@ contextualize(() => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
 			const T = $.type({ a: "string.trim" }).and({ "[string]": "string.lower" })
-			const anded: unknown = T({ a: " AB ", b: " Q " })
-			attest(anded).snap({ a: "ab", b: " q " })
+			const anded = T({ a: " AB ", b: " Q " })
+			attest(anded).unknown.snap({ a: "ab", b: " q " })
 
 			const U = $.type({ "[string]": "string.trim", "[/^a/]": "string.lower" })
 			attest(U({ ab: " X ", b: " Y " })).snap({ ab: "x", b: "Y" })
@@ -119,8 +119,8 @@ contextualize(() => {
 				},
 				{ jitless }
 			).export()
-			const out: unknown = types.node({ v: " x ", a: { v: " y " } })
-			attest(out).snap({
+			const out = types.node({ v: " x ", a: { v: " y " } })
+			attest(out).unknown.snap({
 				v: "x",
 				a: { v: "y", tagged: true }
 			})
@@ -136,8 +136,8 @@ contextualize(() => {
 			const T = $.type({ trimmed: "string[]", a: "string.lower" }).and(
 				$.type.Record(Listed, "string.trim")
 			)
-			const out: unknown = T({ trimmed: ["a"], a: " X " })
-			attest(out).snap({ trimmed: ["a"], a: "x" })
+			const out = T({ trimmed: ["a"], a: " X " })
+			attest(out).unknown.snap({ trimmed: ["a"], a: "x" })
 		}
 	})
 
@@ -152,10 +152,10 @@ contextualize(() => {
 				{ jitless }
 			).export()
 
-			const out: unknown = T({ p: [{ x: "1" }] })
-			const cyclicOut: unknown = types.a({ p: [{}] })
-			attest(out).equals({ p: [{ x: 1 }, "d"] })
-			attest(cyclicOut).equals({ p: [{}, "d"] })
+			const out = T({ p: [{ x: "1" }] })
+			const cyclicOut = types.a({ p: [{}] })
+			attest(out).unknown.equals({ p: [{ x: 1 }, "d"] })
+			attest(cyclicOut).unknown.equals({ p: [{}, "d"] })
 		}
 	})
 
@@ -242,28 +242,26 @@ b must be A (was "y")`)
 
 		const original = new Date(5)
 
-		const out: unknown = T(original)
+		const out = T(original)
 
 		attest(out instanceof Date && out.getTime()).equals(5)
-		attest(Object.entries(out as never)).equals([["b", 1]])
+		attest(Object.entries(out)).equals([["b", 1]])
 		attest("b" in original).equals(false)
 	})
 
 	it("frozen builtin prop", () => {
 		const T = type(["Date", "&", { "a?": "string.trim" }])
 		const original = Object.freeze(Object.assign(new Date(5), { a: " x " }))
-		const out: unknown = T(original)
+		const out = T(original)
 		attest(out instanceof Date && out.getTime()).equals(5)
-		attest(Object.entries(out as never)).equals([["a", "x"]])
+		attest(Object.entries(out)).equals([["a", "x"]])
 	})
 
 	it("builtin with internal slots", () => {
 		const U = type([type.instanceOf(URL), "&", { "a?": "string.trim" }])
-		const url: unknown = U(
-			Object.assign(new URL("https://arktype.io"), { a: " x " })
-		)
+		const url = U(Object.assign(new URL("https://arktype.io"), { a: " x " }))
 		attest(url instanceof URL && url.href).equals("https://arktype.io/")
-		attest(Object.entries(url as never)).equals([["a", "x"]])
+		attest(Object.entries(url)).equals([["a", "x"]])
 
 		const Bytes = type([
 			type.instanceOf(Uint8Array),
@@ -271,9 +269,9 @@ b must be A (was "y")`)
 			{ "a?": "string.trim" }
 		])
 		const original = Object.assign(new Uint8Array([1, 2]), { a: " x " })
-		const bytes: unknown = Bytes(original)
+		const bytes = Bytes(original)
 		attest(bytes instanceof Uint8Array).equals(true)
-		attest(Object.entries(bytes as never)).equals([
+		attest(Object.entries(bytes)).equals([
 			["0", 1],
 			["1", 2],
 			["a", "x"]
@@ -284,8 +282,8 @@ b must be A (was "y")`)
 	it("uncopyable builtin in place", () => {
 		const T = type(["Function", "&", { "a?": "string.trim" }])
 		const original = Object.assign(() => 5, { a: " x " })
-		const out: unknown = T(original)
-		attest(out === original).equals(true)
+		const out = T(original)
+		attest(out).unknown.is(original)
 		attest(original.a).equals("x")
 
 		const frozen = Object.freeze(Object.assign(() => 5, { a: " x " }))
@@ -297,8 +295,8 @@ b must be A (was "y")`)
 			{ "a?": "string.trim" }
 		])
 		const response = Object.assign(new Response(), { a: " x " })
-		const received: unknown = Received(response)
-		attest(received === response).equals(true)
+		const received = Received(response)
+		attest(received).unknown.is(response)
 	})
 
 	it("non-enumerable declared key", () => {
@@ -344,7 +342,7 @@ b must be A (was "y")`)
 				}
 			)
 			const out = T.assert(original)
-			attest(Object.getOwnPropertyDescriptors(out)).equals({
+			attest(Object.getOwnPropertyDescriptors(out)).unknown.equals({
 				a: { value: "a", writable: true, enumerable: true, configurable: true },
 				computed: {
 					value: 2,
@@ -352,7 +350,7 @@ b must be A (was "y")`)
 					enumerable: true,
 					configurable: true
 				}
-			} as never)
+			})
 		}
 	})
 
@@ -639,7 +637,7 @@ b must be A (was "y")`)
 		const original: { value: string; next?: unknown } = { value: " a " }
 		original.next = original
 
-		const out = $.export().node(original) as { value: string; next?: unknown }
+		const out = $.export().node.assert(original)
 
 		attest(callCount).equals(1)
 		attest(out.value).equals("a")
@@ -663,10 +661,10 @@ b must be A (was "y")`)
 		const original: { value: string; next?: unknown } = { value: "a" }
 		original.next = original
 
-		const out: unknown = $.export().node(original)
+		const out: Node = $.export().node.assert(original)
 
-		attest(out instanceof Node).equals(true)
-		attest((out as Node).next).is(out)
+		attest(out).instanceOf(Node)
+		attest(out.next).is(out)
 	})
 
 	it("cyclic primitive per path", () => {
