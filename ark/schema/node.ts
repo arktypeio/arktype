@@ -453,7 +453,6 @@ export abstract class BaseNode<
 						if (!allowed) return this.applyRoot(data).finalize(onFail)
 						const ctx = new Traversal(data, this.$.resolvedConfig)
 						ctx.tracksTransforms = untracked === undefined
-						// keyed by id, so an alias resolving to this root reuses its output
 						const result = ctx.transformResolution(
 							this.id,
 							data,

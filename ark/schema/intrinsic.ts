@@ -92,7 +92,7 @@ const bootstrapOnRead = () =>
 
 bootstrapOnRead()
 
-// deferred to first use so arksets, which imports @ark/schema, can install its engine first
+// deferred so arksets, which imports @ark/schema, can install its engine first
 export const bootstrap = (): void => {
 	if (bootstrapped && (bootstrappedWithEngine || !$ark.sets)) return
 	bootstrapped = true

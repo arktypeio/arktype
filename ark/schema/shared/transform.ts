@@ -9,7 +9,6 @@ import {
 } from "@ark/util"
 import type { ArkErrorResult } from "./errors.ts"
 
-// paths are reversed so each object an error passes through pushes its key
 export class TransformErrors {
 	entries: TransformErrors.Entry[]
 
@@ -47,12 +46,11 @@ export const copyOf = (data: object): object => {
 	// a builtin whose state can't be copied, e.g. a function, transforms in place
 	if (!copyContents) return data
 	const copy = Object.setPrototypeOf(copyContents(data as never), prototype)
-	// a typed array has a descriptor per element, so like an array's, its copy takes only its elements
+	// a typed array's own props are its elements
 	if (kind in typedArrayConstructors) return copy
-	// a builtin's state includes non-enumerable own props, e.g. an Error's message
+	// state like an Error's message is copied, writable as in a spread
 	const descriptors: { [k: Key]: PropertyDescriptor } =
 		Object.getOwnPropertyDescriptors(data)
-	// as in a spread copy, its props can be written even if data's can't
 	for (const k of Reflect.ownKeys(descriptors)) {
 		descriptors[k].configurable = true
 		if ("value" in descriptors[k]) descriptors[k].writable = true
@@ -60,7 +58,7 @@ export const copyOf = (data: object): object => {
 	return Object.defineProperties(copy, descriptors)
 }
 
-// a key's later transform that rejects an earlier one's output transforms the input instead, and the later output wins a key both changed
+// the later output wins a key both changed
 export const mergeTransformed = (
 	input: unknown,
 	l: unknown,
@@ -83,7 +81,6 @@ export const mergeTransformed = (
 	return merged
 }
 
-// a builtin's contents are in internal slots only its constructor can copy
 const copyContentsOf: {
 	[kind in BuiltinObjectKind]?: (data: never) => object
 } = {
