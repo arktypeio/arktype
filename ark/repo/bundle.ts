@@ -19,7 +19,7 @@ export const bundle = (): void => {
 	}).sort()
 	const entryPoints = publicEntryPoints(process.cwd())
 	const ownFiles = flattenIntoInternal(entryPoints, modulePaths)
-	// one build for all entries, so a module several import evaluates once
+	// one build for every entry evaluates a module they share once
 	const { outputFiles } = buildSync({ ...buildOptions(), entryPoints })
 	for (const path of modulePaths) rmRf(path)
 	for (const file of outputFiles)
@@ -55,7 +55,7 @@ export const publicEntryPoints = (dir: string): string[] =>
 			:	[]
 	})
 
-// deep imports resolve to internal.js at runtime, so it exports every module's names
+// every deep import resolves to internal.js at runtime
 const flattenIntoInternal = (
 	entryPoints: string[],
 	modulePaths: string[]
@@ -89,7 +89,7 @@ const flattenIntoInternal = (
 	const unambiguousNames = exportedNamesOf(
 		outputFiles.find(file => file.path === fromCwd(stdinOutputPath))!.text
 	)
-	// main exports a module's name by an alias, which a consumer's `export *` can't bind ambiguously
+	// main exports module names under aliases no consumer's `export *` can clash with
 	let mainJs = readFile(main)
 	let internalJs = writeStarExports([main])
 	const ownFiles: Record<string, string> = {}
@@ -135,7 +135,7 @@ const flattenIntoInternal = (
 const moduleOf = (path: string) =>
 	relative(fromCwd("out"), path).replace(/\\/g, "/").replace(/\.js$/, "")
 
-// the metafile lists ambiguous exports too, so read the names from the JS
+// unlike the metafile, the JS omits ambiguous exports
 const exportedNamesOf = (js: string) =>
 	new Set(
 		parse(js).statements.flatMap(statement =>

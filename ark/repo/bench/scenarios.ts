@@ -26,7 +26,7 @@ export const moltarInvalidData = {
 	deeplyNested: { ...moltarData.deeplyNested, bool: "false" }
 }
 
-// a factory's bound is part of its schema, so a new bound defeats arktype's cache
+// a new bound makes a new schema, which arktype can't return from its cache
 export const moltar = {
 	arktype: (numMax?: number) =>
 		type({

@@ -70,7 +70,7 @@ const accepts = (schemas: Schemas, data: unknown, expected: unknown = data) => {
 const rejects = (schemas: Schemas, data: unknown) => {
 	const { allows, issues } = resultsOf(schemas, data)
 	attest(allows).equals([false, false, false])
-	// abortEarly is off, so every library reports every issue
+	// with abortEarly off, every library reports every issue
 	attest(issues).equals([issues[0], issues[0], issues[0]])
 }
 

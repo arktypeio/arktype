@@ -98,7 +98,7 @@ const assertOneMapPerKind = when => {
 
 assertOneMapPerKind("after construction")
 
-// read on all but the first node, so a getter that adds a slot splits the map
+// a getter that adds a slot splits the read nodes' map from the first node's
 for (const nodes of Object.values(nodesByKind)) {
 	for (const node of [...nodes].slice(1)) {
 		node.description

@@ -2,8 +2,7 @@ import { bench } from "@ark/attest"
 import { scope, type } from "arktype"
 import { z } from "zod"
 
-// every bench assigns its inferred output here, so each library resolves the
-// whole type rather than deferring it
+// each bench assigns its output here to make its library resolve the whole type
 type Derived = {
 	id: string
 	authenticatorAttachment?: "cross-platform" | "platform" | undefined
