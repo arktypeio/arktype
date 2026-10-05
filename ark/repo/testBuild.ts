@@ -13,7 +13,7 @@ registerHooks({
 	}
 })
 
-// imported first, as documented, so a second registry would install as $ark2
+// imported first as documented, making any second registry install as $ark2
 await import("arktype/config")
 const { scope, type } = await import("arktype")
 

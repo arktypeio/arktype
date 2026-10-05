@@ -1,4 +1,4 @@
-// imports arktype's build, so run `pnpm build` first
+// run `pnpm build` first to import arktype's build
 
 import { flatMorph } from "@ark/util"
 import { spawnSync } from "node:child_process"

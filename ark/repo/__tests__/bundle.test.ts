@@ -73,7 +73,7 @@ const writePackage = (
 	return dir
 }
 
-// attest finds a call's type data by its path from the cwd, so only bundle() runs in dir
+// attest finds a call's type data by its path from the cwd, which must stay the repo
 const bundleIn = (dir: string) => {
 	const cwd = process.cwd()
 	process.chdir(dir)

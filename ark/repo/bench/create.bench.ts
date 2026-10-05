@@ -4,7 +4,7 @@ import { moltar, moltarData } from "./scenarios.ts"
 
 let bound = 1e9
 
-// arktype retains every type it creates, so take few samples
+// arktype retains every type it creates
 const options = { until: { count: 20 } }
 
 bench("moltar create (arktype)", () => moltar.arktype(bound++), options).median(

@@ -78,7 +78,7 @@ bench("moltar strict invalid allows (valibot)", () =>
 	v.is(MoltarStrict.valibot, moltarExtraKeysData)
 ).median([1.18, "us"])
 
-// arktype computes each message when read, so its error benches read summary
+// summary makes arktype compute the messages zod and valibot build eagerly
 bench(
 	"moltar strict invalid errors (arktype)",
 	() => (MoltarStrict.arktype(moltarExtraKeysData) as ArkErrors).summary

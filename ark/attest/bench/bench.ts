@@ -87,7 +87,7 @@ let loopCount = 0
 
 const AsyncFunction = (async () => {}).constructor as FunctionConstructor
 
-// each loop's source is unique, so V8 shares no feedback between benches
+// a unique source per loop keeps V8 from sharing feedback between benches
 const createLoop = (
 	isAsync: boolean
 ): ((fn: () => unknown, n: number) => unknown) =>
