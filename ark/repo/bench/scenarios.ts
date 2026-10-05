@@ -186,106 +186,97 @@ export const productInvalidData = {
 	]
 }
 
-export const product = {
-	arktype: (sizeMax?: number) => {
-		const Image = type({
-			id: "number",
-			created: "Date",
-			title: "1 <= string <= 100",
-			type: "'jpg' | 'png'",
-			size: sizeMax === undefined ? type.number : type.number.atMost(sizeMax),
-			url: "string.url"
-		})
-		const Rating = type({
-			id: "number",
-			stars: "1 <= number <= 5",
-			title: "1 <= string <= 100",
-			text: "1 <= string <= 1000",
-			images: Image.array()
-		})
-		return type({
-			id: "number",
-			created: "Date",
-			title: "1 <= string <= 100",
-			brand: "1 <= string <= 30",
-			description: "1 <= string <= 500",
-			price: "1 <= number <= 10000",
-			discount: "1 <= number <= 100 | null",
-			quantity: "0 <= number <= 10",
-			tags: "(1 <= string <= 30)[]",
-			images: Image.array(),
-			ratings: Rating.array()
-		})
-	},
-	zod: (sizeMax?: number) => {
-		const Image = z.object({
-			id: z.number(),
-			created: z.date(),
-			title: z.string().min(1).max(100),
-			type: z.enum(["jpg", "png"]),
-			size: sizeMax === undefined ? z.number() : z.number().max(sizeMax),
-			url: z.url()
-		})
-		const Rating = z.object({
-			id: z.number(),
-			stars: z.number().min(1).max(5),
-			title: z.string().min(1).max(100),
-			text: z.string().min(1).max(1000),
-			images: z.array(Image)
-		})
-		return z.object({
-			id: z.number(),
-			created: z.date(),
-			title: z.string().min(1).max(100),
-			brand: z.string().min(1).max(30),
-			description: z.string().min(1).max(500),
-			price: z.number().min(1).max(10000),
-			discount: z.number().min(1).max(100).nullable(),
-			quantity: z.number().min(0).max(10),
-			tags: z.array(z.string().min(1).max(30)),
-			images: z.array(Image),
-			ratings: z.array(Rating)
-		})
-	},
-	valibot: (sizeMax?: number) => {
-		const Image = v.object({
-			id: v.number(),
-			created: v.date(),
-			title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
-			type: v.picklist(["jpg", "png"]),
-			size:
-				sizeMax === undefined ?
-					v.number()
-				:	v.pipe(v.number(), v.maxValue(sizeMax)),
-			url: v.pipe(v.string(), v.url())
-		})
-		const Rating = v.object({
-			id: v.number(),
-			stars: v.pipe(v.number(), v.minValue(1), v.maxValue(5)),
-			title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
-			text: v.pipe(v.string(), v.minLength(1), v.maxLength(1000)),
-			images: v.array(Image)
-		})
-		return v.object({
-			id: v.number(),
-			created: v.date(),
-			title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
-			brand: v.pipe(v.string(), v.minLength(1), v.maxLength(30)),
-			description: v.pipe(v.string(), v.minLength(1), v.maxLength(500)),
-			price: v.pipe(v.number(), v.minValue(1), v.maxValue(10000)),
-			discount: v.nullable(v.pipe(v.number(), v.minValue(1), v.maxValue(100))),
-			quantity: v.pipe(v.number(), v.minValue(0), v.maxValue(10)),
-			tags: v.array(v.pipe(v.string(), v.minLength(1), v.maxLength(30))),
-			images: v.array(Image),
-			ratings: v.array(Rating)
-		})
-	}
+const Image = {
+	arktype: type({
+		id: "number",
+		created: "Date",
+		title: "1 <= string <= 100",
+		type: "'jpg' | 'png'",
+		size: "number",
+		url: "string.url"
+	}),
+	zod: z.object({
+		id: z.number(),
+		created: z.date(),
+		title: z.string().min(1).max(100),
+		type: z.enum(["jpg", "png"]),
+		size: z.number(),
+		url: z.url()
+	}),
+	valibot: v.object({
+		id: v.number(),
+		created: v.date(),
+		title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+		type: v.picklist(["jpg", "png"]),
+		size: v.number(),
+		url: v.pipe(v.string(), v.url())
+	})
+}
+
+const Rating = {
+	arktype: type({
+		id: "number",
+		stars: "1 <= number <= 5",
+		title: "1 <= string <= 100",
+		text: "1 <= string <= 1000",
+		images: Image.arktype.array()
+	}),
+	zod: z.object({
+		id: z.number(),
+		stars: z.number().min(1).max(5),
+		title: z.string().min(1).max(100),
+		text: z.string().min(1).max(1000),
+		images: z.array(Image.zod)
+	}),
+	valibot: v.object({
+		id: v.number(),
+		stars: v.pipe(v.number(), v.minValue(1), v.maxValue(5)),
+		title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+		text: v.pipe(v.string(), v.minLength(1), v.maxLength(1000)),
+		images: v.array(Image.valibot)
+	})
 }
 
 export const Product = {
-	arktype: product.arktype(),
-	zod: product.zod(),
-	valibot: product.valibot()
+	arktype: type({
+		id: "number",
+		created: "Date",
+		title: "1 <= string <= 100",
+		brand: "1 <= string <= 30",
+		description: "1 <= string <= 500",
+		price: "1 <= number <= 10000",
+		discount: "1 <= number <= 100 | null",
+		quantity: "0 <= number <= 10",
+		tags: "(1 <= string <= 30)[]",
+		images: Image.arktype.array(),
+		ratings: Rating.arktype.array()
+	}),
+	zod: z.object({
+		id: z.number(),
+		created: z.date(),
+		title: z.string().min(1).max(100),
+		brand: z.string().min(1).max(30),
+		description: z.string().min(1).max(500),
+		price: z.number().min(1).max(10000),
+		discount: z.number().min(1).max(100).nullable(),
+		quantity: z.number().min(0).max(10),
+		tags: z.array(z.string().min(1).max(30)),
+		images: z.array(Image.zod),
+		ratings: z.array(Rating.zod)
+	}),
+	valibot: v.object({
+		id: v.number(),
+		created: v.date(),
+		title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+		brand: v.pipe(v.string(), v.minLength(1), v.maxLength(30)),
+		description: v.pipe(v.string(), v.minLength(1), v.maxLength(500)),
+		price: v.pipe(v.number(), v.minValue(1), v.maxValue(10000)),
+		discount: v.nullable(v.pipe(v.number(), v.minValue(1), v.maxValue(100))),
+		quantity: v.pipe(v.number(), v.minValue(0), v.maxValue(10)),
+		tags: v.array(v.pipe(v.string(), v.minLength(1), v.maxLength(30))),
+		images: v.array(Image.valibot),
+		ratings: v.array(Rating.valibot)
+	})
 }
 
 export const itemsData = Array.from({ length: 100 }, (_, i) => ({
@@ -308,16 +299,6 @@ export const itemsInvalidData = itemsData.map((item, i) =>
 	i === 50 ? { ...item, active: "no" } : item
 )
 
-export const stringsInvalidData = Array.from({ length: 1000 }, (_, i) =>
-	i === 500 ? 5 : `s${i}`
-)
-
-export const Strings = {
-	arktype: type("string[]"),
-	zod: z.array(z.string()),
-	valibot: v.array(v.string())
-}
-
 const abPattern = /^[ab]+$/
 
 // the last string fails the pattern only at its end
@@ -327,29 +308,6 @@ export const Patterns = {
 	arktype: type(abPattern).array(),
 	zod: z.array(z.string().regex(abPattern)),
 	valibot: v.array(v.pipe(v.string(), v.regex(abPattern)))
-}
-
-export const unionItemsInvalidData = Array.from({ length: 10 }, (_, i) =>
-	i === 5 ? { v: { a: 1 }, w: "x" } : { v: { a: "x" }, w: "y" }
-)
-
-export const UnionItems = {
-	arktype: type({
-		v: type({ a: "string" }).or({ b: "number" }),
-		w: "string"
-	}).array(),
-	zod: z.array(
-		z.object({
-			v: z.union([z.object({ a: z.string() }), z.object({ b: z.number() })]),
-			w: z.string()
-		})
-	),
-	valibot: v.array(
-		v.object({
-			v: v.union([v.object({ a: v.string() }), v.object({ b: v.number() })]),
-			w: v.string()
-		})
-	)
 }
 
 export const discriminatedData = [
@@ -375,27 +333,6 @@ export const Discriminated = {
 		v.object({ kind: v.literal("b"), b: v.number() }),
 		v.object({ kind: v.literal("c"), c: v.boolean() }),
 		v.object({ kind: v.literal("d"), d: v.array(v.string()) })
-	])
-}
-
-export const unionData = [{ a: "x" }, { b: 1 }, { c: true }, { d: ["x"] }]
-
-export const Union = {
-	arktype: type({ a: "string" })
-		.or({ b: "number" })
-		.or({ c: "boolean" })
-		.or({ d: "string[]" }),
-	zod: z.union([
-		z.object({ a: z.string() }),
-		z.object({ b: z.number() }),
-		z.object({ c: z.boolean() }),
-		z.object({ d: z.array(z.string()) })
-	]),
-	valibot: v.union([
-		v.object({ a: v.string() }),
-		v.object({ b: v.number() }),
-		v.object({ c: v.boolean() }),
-		v.object({ d: v.array(v.string()) })
 	])
 }
 
@@ -434,26 +371,6 @@ export const Constraints = {
 	})
 }
 
-export const indexData = { a: "x", b: 1, c: "y", d: 2, e: "z" }
-
-export const Index = {
-	arktype: type({ a: "string", "[string]": "string | number" }),
-	zod: z.object({ a: z.string() }).catchall(z.union([z.string(), z.number()])),
-	valibot: v.objectWithRest(
-		{ a: v.string() },
-		v.union([v.string(), v.number()])
-	)
-}
-
-export const datedData = { d: created, n: 1 }
-
-// zod's and valibot's dates also reject an invalid Date
-export const Dated = {
-	arktype: type({ d: "Date", n: "number" }),
-	zod: z.object({ d: z.date(), n: z.number() }),
-	valibot: v.object({ d: v.date(), n: v.number() })
-}
-
 export const morphData = "12345"
 
 export const Morph = {
@@ -464,30 +381,6 @@ export const Morph = {
 		v.regex(numericStringMatcher),
 		v.transform(Number)
 	)
-}
-
-export const objectMorphData = {
-	a: " x ",
-	b: { c: [1, 2, 3], d: "y" },
-	e: true
-}
-
-export const ObjectMorph = {
-	arktype: type({
-		a: "string.trim",
-		b: { c: "number[]", d: "string" },
-		e: "boolean"
-	}),
-	zod: z.object({
-		a: z.string().trim(),
-		b: z.object({ c: z.array(z.number()), d: z.string() }),
-		e: z.boolean()
-	}),
-	valibot: v.object({
-		a: v.pipe(v.string(), v.trim()),
-		b: v.object({ c: v.array(v.number()), d: v.string() }),
-		e: v.boolean()
-	})
 }
 
 export const defaultsData = { a: "s", c: true }
@@ -513,30 +406,6 @@ export const Defaults = {
 		c: v.optional(v.boolean()),
 		d: v.optional(v.string(), "x"),
 		e: v.optional(v.number())
-	})
-}
-
-export const nestedDefaultsData = {
-	id: "x",
-	inner: { a: "y" },
-	flags: { x: true, y: false, z: true }
-}
-
-export const NestedDefaults = {
-	arktype: type({
-		id: "string",
-		inner: { a: "string", b: "number = 5" },
-		flags: { x: "boolean", y: "boolean", z: "boolean" }
-	}),
-	zod: z.object({
-		id: z.string(),
-		inner: z.object({ a: z.string(), b: z.number().default(5) }),
-		flags: z.object({ x: z.boolean(), y: z.boolean(), z: z.boolean() })
-	}),
-	valibot: v.object({
-		id: v.string(),
-		inner: v.object({ a: v.string(), b: v.optional(v.number(), 5) }),
-		flags: v.object({ x: v.boolean(), y: v.boolean(), z: v.boolean() })
 	})
 }
 
@@ -568,120 +437,4 @@ export const Tree = {
 	arktype: scope({ node: { id: "number", children: "node[]" } }).export().node,
 	zod: zodNode,
 	valibot: valibotNode
-}
-
-type User = { name: string; groups: Group[] }
-
-type Group = { title: string; members: User[] }
-
-const user = (depth: number, id = 0): User => ({
-	name: `u${id}`,
-	groups:
-		depth ?
-			Array.from({ length: 3 }, (_, i) => group(depth - 1, id * 3 + i + 1))
-		:	[]
-})
-
-const group = (depth: number, id: number): Group => ({
-	title: `g${id}`,
-	members:
-		depth ?
-			Array.from({ length: 3 }, (_, i) => user(depth - 1, id * 3 + i + 1))
-		:	[]
-})
-
-export const recursiveScopeData = user(3)
-
-const zodUser: z.ZodType<User> = z.object({
-	name: z.string(),
-	get groups() {
-		return z.array(zodGroup)
-	}
-})
-
-const zodGroup: z.ZodType<Group> = z.object({
-	title: z.string(),
-	get members() {
-		return z.array(zodUser)
-	}
-})
-
-const valibotUser: v.GenericSchema<User> = v.object({
-	name: v.string(),
-	groups: v.array(v.lazy(() => valibotGroup))
-})
-
-const valibotGroup: v.GenericSchema<Group> = v.object({
-	title: v.string(),
-	members: v.array(v.lazy(() => valibotUser))
-})
-
-export const RecursiveScope = {
-	arktype: scope({
-		user: { name: "string", groups: "group[]" },
-		group: { title: "string", members: "user[]" }
-	}).export().user,
-	zod: zodUser,
-	valibot: valibotUser
-}
-
-type MorphNodeIn = {
-	id: string
-	label?: string | undefined
-	children: MorphNodeIn[]
-}
-
-type MorphNodeOut = { id: number; label: string; children: MorphNodeOut[] }
-
-const morphNode = (depth: number, id = 0): MorphNodeIn => ({
-	id: `${id}`,
-	...(id % 2 ? {} : { label: `l${id}` }),
-	children:
-		depth ?
-			Array.from({ length: 3 }, (_, i) => morphNode(depth - 1, id * 3 + i + 1))
-		:	[]
-})
-
-export const recursiveMorphData = morphNode(3)
-
-export const parsedMorphNode = (node: MorphNodeIn): MorphNodeOut => ({
-	id: Number.parseInt(node.id),
-	label: node.label ?? "none",
-	children: node.children.map(parsedMorphNode)
-})
-
-const parseId = (s: string) => Number.parseInt(s)
-
-const zodMorphNode: z.ZodType<MorphNodeOut, MorphNodeIn> = z.object({
-	id: z.string().transform(parseId),
-	label: z.string().default("none"),
-	get children() {
-		return z.array(zodMorphNode)
-	}
-})
-
-const valibotMorphNode: v.GenericSchema<MorphNodeIn, MorphNodeOut> = v.object({
-	id: v.pipe(v.string(), v.transform(parseId)),
-	label: v.optional(v.string(), "none"),
-	children: v.array(v.lazy(() => valibotMorphNode))
-})
-
-export const RecursiveMorph = {
-	arktype: scope({
-		node: {
-			id: ["string", "=>", parseId],
-			label: "string = 'none'",
-			children: "node[]"
-		}
-	}).export().node,
-	zod: zodMorphNode,
-	valibot: valibotMorphNode
-}
-
-export const primitiveData = "foo"
-
-export const Primitive = {
-	arktype: type.string,
-	zod: z.string(),
-	valibot: v.string()
 }

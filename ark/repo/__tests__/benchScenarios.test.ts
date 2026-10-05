@@ -6,14 +6,10 @@ import type { z } from "zod"
 import {
 	Constraints,
 	constraintsData,
-	Dated,
-	datedData,
 	Defaults,
 	defaultsData,
 	Discriminated,
 	discriminatedData,
-	Index,
-	indexData,
 	Items,
 	itemsData,
 	itemsInvalidData,
@@ -25,30 +21,13 @@ import {
 	MoltarStrip,
 	Morph,
 	morphData,
-	NestedDefaults,
-	nestedDefaultsData,
-	ObjectMorph,
-	objectMorphData,
-	parsedMorphNode,
 	Patterns,
 	patternsInvalidData,
-	Primitive,
-	primitiveData,
 	Product,
 	productData,
 	productInvalidData,
-	RecursiveMorph,
-	recursiveMorphData,
-	RecursiveScope,
-	recursiveScopeData,
-	Strings,
-	stringsInvalidData,
 	Tree,
-	treeData,
-	Union,
-	unionData,
-	UnionItems,
-	unionItemsInvalidData
+	treeData
 } from "../bench/scenarios.ts"
 
 type Schemas = {
@@ -103,25 +82,10 @@ contextualize(() => {
 		accepts(Product, productData)
 		accepts(Items, itemsData)
 		for (const data of discriminatedData) accepts(Discriminated, data)
-		for (const data of unionData) accepts(Union, data)
 		accepts(Constraints, constraintsData)
-		accepts(Index, indexData)
-		accepts(Dated, datedData)
 		accepts(Morph, morphData, 12345)
-		accepts(ObjectMorph, objectMorphData, { ...objectMorphData, a: "x" })
 		accepts(Defaults, defaultsData, { a: "s", b: 5, c: true, d: "x" })
-		accepts(NestedDefaults, nestedDefaultsData, {
-			...nestedDefaultsData,
-			inner: { a: "y", b: 5 }
-		})
 		accepts(Tree, treeData)
-		accepts(RecursiveScope, recursiveScopeData)
-		accepts(
-			RecursiveMorph,
-			recursiveMorphData,
-			parsedMorphNode(recursiveMorphData)
-		)
-		accepts(Primitive, primitiveData)
 	})
 
 	it("rejects alike", () => {
@@ -129,8 +93,6 @@ contextualize(() => {
 		rejects(Moltar, moltarInvalidData)
 		rejects(Product, productInvalidData)
 		rejects(Items, itemsInvalidData)
-		rejects(Strings, stringsInvalidData)
 		rejects(Patterns, patternsInvalidData)
-		rejects(UnionItems, unionItemsInvalidData)
 	})
 })
