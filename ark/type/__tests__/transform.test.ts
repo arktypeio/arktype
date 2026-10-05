@@ -342,7 +342,7 @@ b must be A (was "y")`)
 				}
 			)
 			const out = T.assert(original)
-			attest(Object.getOwnPropertyDescriptors(out)).unknown.equals({
+			attest(Object.getOwnPropertyDescriptors(out)).equals({
 				a: { value: "a", writable: true, enumerable: true, configurable: true },
 				computed: {
 					value: 2,
