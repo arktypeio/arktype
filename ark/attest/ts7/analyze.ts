@@ -170,7 +170,8 @@ const getCompletions = (
 	if (arg === undefined) return {}
 
 	const text = file.getFullText()
-	const completions: Record<string, string[]> = {}
+	// null prototype so inherited names like "constructor" aren't seen as duplicates
+	const completions: Record<string, string[]> = Object.create(null)
 
 	for (const descendant of getDescendants(arg)) {
 		if (!ast.isStringLiteral(descendant) && !ast.isTemplateLiteral(descendant))

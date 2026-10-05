@@ -56,8 +56,8 @@ export const getInstantiationsContributedByNodes = (
 			// dot-prefixed so test runner globs don't pick it up
 			const tempFile = join(fileDir, `.attest-${process.pid}-${i}-${fileBase}`)
 			writeFile(tempFile, text)
-			tempFiles.push(tempFile)
 			const configPath = join(configDir, `${process.pid}-${i}.json`)
+			tempFiles.push(tempFile, configPath)
 			writeJson(configPath, {
 				extends: attestTsconfigPath,
 				files: [tempFile],

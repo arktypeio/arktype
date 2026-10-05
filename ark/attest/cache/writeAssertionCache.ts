@@ -183,7 +183,8 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	const descendants = getDescendants(arg)
 	const file = attestCall.getSourceFile()
 	const text = file.getFullText()
-	const completions: Completions | string = {}
+	// null prototype so inherited names like "constructor" aren't seen as duplicates
+	const completions: Record<string, string[]> = Object.create(null)
 
 	for (const descendant of descendants) {
 		if (ts.isStringLiteral(descendant) || ts.isTemplateLiteral(descendant)) {
