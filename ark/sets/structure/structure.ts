@@ -124,7 +124,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 				kind: "structure",
 				baseInner,
 				l: flattenConstraints(lInner),
-				// l's derived props precede r's constraints so r's meet them as l operands
+				// l's derived props precede r's constraints to meet them as l operands
 				r: [...lDerived, ...flattenConstraints(rInner), ...rDerived],
 				roots: [],
 				ctx
