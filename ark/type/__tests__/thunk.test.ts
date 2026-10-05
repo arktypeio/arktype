@@ -103,9 +103,7 @@ contextualize(() => {
 	})
 
 	it("self-referencing thunk in scope", () => {
-		const { a }: Record<string, Type> = scope({
-			a: () => ({ "a?": "a" })
-		} as never).export() as never
+		const { a } = scope({ a: () => ({ "a?": "a" }) }).export()
 
 		attest(a.expression).snap("{ a?: $a }")
 		attest(a.allows({ a: { a: {} } })).equals(true)
