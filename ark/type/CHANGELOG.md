@@ -2,6 +2,41 @@
 
 ## 3.0.0
 
+### Remove the `clone` option
+
+Transforming no longer clones the input first, and never writes to it. A transformed object is a new object sharing every untransformed value with the input, and input nothing transforms is returned as is:
+
+```ts
+const T = type({ a: "string.trim", b: { c: "string" } })
+const input = { a: " x ", b: { c: "y" } }
+
+// previously false, now true
+T(input).b === input.b
+```
+
+A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
+
+### Reject shallow cycles
+
+An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
+
+```ts
+// previously accepted every value, now throws: Alias 'a' has a shallow resolution cycle: a->a
+scope({ a: "a" }).export()
+```
+
+### Describe dates in UTC
+
+Dates in descriptions and error messages no longer depend on the host's timezone. A date at UTC or local midnight is written as its calendar date, collapsing to its year on January 1, and any other date is written in UTC:
+
+```ts
+const T = type("Date < d'2000-01-01T12:30:00Z'")
+
+// previously "must be 7:29:59.999 AM, January 1, 2000 or earlier" in New York
+// now "must be January 1, 2000, 12:29:59.999 PM UTC or earlier"
+T(new Date("2001-06-01"))
+```
+
 ### Throw from `.assert` when a root morph fails
 
 When a type's root was a morph (or a union of morphs) that returned `ArkErrors`, `.assert` returned the errors instead of throwing, and a configured `onFail` was not called. A root morph's errors are now handled like any others, as they already were for a morph at a key:
