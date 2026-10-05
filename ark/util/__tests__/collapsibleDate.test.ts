@@ -66,7 +66,7 @@ contextualize(() => {
 		attest(describeCollapsibleDate(date)).snap("January 15, 2023, 2:00 PM UTC")
 	})
 
-	it("keeps year for a time on January 1", () => {
+	it("returns full date and time on January 1", () => {
 		const date = new Date("2023-01-01T14:30:00.000Z")
 		attest(describeCollapsibleDate(date)).snap("January 1, 2023, 2:30 PM UTC")
 	})
