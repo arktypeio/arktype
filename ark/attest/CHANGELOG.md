@@ -4,10 +4,10 @@ NOTE: This changelog is incomplete, but will include notable attest-specific cha
 
 ## 0.57.0
 
-Runtime benches now run in a loop compiled for each bench, after a 500ms warmup, with as many calls per sample as fit in about 0.2ms. Their times don't compare with earlier versions', so re-record stored runtime baselines.
+Runtime benches now run in a loop compiled for each bench, after a warmup of 500ms (or `until.ms` if shorter), with as many calls per sample as fit in about 0.2ms. Their times don't compare with earlier versions', so re-record stored runtime baselines.
 
 - Return the result a bench computes, so V8 can't drop its work as unused. attest warns when a bench returns `undefined`.
-- `until.count` counts samples taken after the warmup rather than sets of 1000 calls.
+- `until.count` and `until.ms` bound the samples taken after the warmup. They counted sets of 1000 calls and time from the bench's start.
 - A bench that returns a Promise is awaited whether or not it is an `async` function.
 - Sample times are sorted numerically. They were sorted as strings, which misordered times like 9.5 and 10.2 and skewed `.median`.
 
