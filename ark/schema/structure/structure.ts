@@ -183,7 +183,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			},
 			sequence: {
 				child: true,
-				// an array here is the json of a union element, never a list of sequences
+				// e.g. ["number", "string"] is (number | string)[], not two sequences
 				parse: (schema, ctx) => ctx.$.node("sequence", schema)
 			},
 			undeclared: {
