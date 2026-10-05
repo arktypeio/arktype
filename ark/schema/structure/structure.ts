@@ -36,8 +36,8 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
-	copyOf,
 	applyValue,
+	copyOf,
 	mergeTransformed,
 	traverseKey,
 	type InternalTraversal,
@@ -794,7 +794,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const transformedIndex =
 			this.index?.filter(index => index.value.transforms) ?? []
 		const deletes = this.undeclared === "delete"
-		const transformedChildren: BaseNode[] = transformedProps.flatMap(prop =>
+		const transformedChildren = transformedProps.flatMap(prop =>
 			this.transformsOf(prop).map(step => step.node)
 		)
 		for (const index of transformedIndex) transformedChildren.push(index.value)
@@ -927,7 +927,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const sequence = this.sequence
 		if (!sequence?.defaultables) return
 		const args =
-			sequence.defaultValueMorphs.some(morph => morph.length !== 1) ?
+			sequence.defaultValueMorphs.some(morph => morph.length === 2) ?
 				"out, ctx"
 			:	"out"
 		js.if(
@@ -1003,16 +1003,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			deleteFromCopy()
 			return
 		}
-		const valueOf = (prop: Prop.Node) => {
+		const outputOf = (prop: Prop.Node) => {
 			const i = transformedProps.indexOf(prop)
 			return i === -1 ? `out${js.prop(prop.key)}` : `transformed${i}`
 		}
-		const requiredEntries = this.props
-			.filter(prop => prop.required)
-			.map(
+		const requiredEntries =
+			this.required?.map(
 				prop =>
-					`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${valueOf(prop)}`
-			)
+					`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${outputOf(prop)}`
+			) ?? []
 		js.const("result", `{ ${requiredEntries.join(", ")} }`)
 		const copies =
 			this.declaresKey("__proto__") ?
@@ -1020,14 +1019,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			:	"Object.getPrototypeOf(data) !== Object.prototype"
 		// checked after the literal's reads, from which V8 can infer data's prototype
 		js.if(copies, deleteFromCopy)
-		for (const prop of this.props) {
-			if (prop.required) continue
-			const store = `result${js.prop(prop.key)} = ${valueOf(prop)}`
-			if (prop.hasKind("optional") && prop.hasDefault()) {
-				js.if(`${prop.serializedKey} in data`, () => js.line(store)).else(() =>
-					js.line(compileDefault(js, prop, "result"))
+		if (this.optional) {
+			for (const prop of this.optional) {
+				js.if(`${prop.serializedKey} in data`, () =>
+					js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
 				)
-			} else js.if(`${prop.serializedKey} in data`, () => js.line(store))
+				if (prop.hasDefault())
+					js.else(() => js.line(compileDefault(js, prop, "result")))
+			}
 		}
 		for (const prop of this.inheritableProps) {
 			if (transformedProps.includes(prop)) continue
@@ -1120,7 +1119,7 @@ const constructStructuralMorphCacheKey = (
 	for (let i = 0; i < node.defaultable.length; i++)
 		cacheKey += `${nameOf(node.defaultable[i].defaultValueMorph)} `
 
-	if (node.sequence?.defaultValueMorphs?.length)
+	if (node.sequence?.defaultValueMorphs.length)
 		cacheKey += `${nameOf(node.sequence.defaultValueMorphs)} `
 
 	if (node.undeclared === "delete") {
@@ -1166,7 +1165,7 @@ const compileDefault = (
 	out: string
 ): string =>
 	node.value.transforms ?
-		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 1 ? "" : ", ctx"})`
+		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 2 ? ", ctx" : ""})`
 	: typeof node.default === "function" ?
 		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
 		// -0 would serialize as 0

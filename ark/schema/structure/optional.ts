@@ -1,7 +1,6 @@
 import {
 	hasDomain,
 	isThunk,
-	omit,
 	printable,
 	throwParseError,
 	WeakCache,
@@ -84,7 +83,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 		if (ioKind === "out" || !this.hasDefault()) return super.getIo(ioKind)
 		return this.$.node(
 			"optional",
-			{ ...omit(this.inner, { default: 1 }), value: this.value.rawIn },
+			{ key: this.key, value: this.value.rawIn },
 			{ prereduced: true }
 		)
 	}
