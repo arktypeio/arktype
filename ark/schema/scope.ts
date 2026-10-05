@@ -1119,7 +1119,10 @@ const bindModuleLazily = (
 	return bound as never
 }
 
-const finalizeExport = ($: BaseScope, resolution: BaseRoot | GenericRoot) =>
+export const finalizeExport = (
+	$: BaseScope,
+	resolution: BaseRoot | GenericRoot
+): BaseRoot | GenericRoot =>
 	hasArkKind(resolution, "root") ? $.finalize(resolution) : resolution
 
 const openDefinitions: BaseParseContext[] = []
