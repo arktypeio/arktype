@@ -72,7 +72,7 @@ const nextName = (value: object | symbol) => {
 	const baseName = baseNameFor(value)
 	let name = baseName
 	let count = nameCounts[baseName] ?? 0
-	// a name can be taken by a registry key like sets, or by a function named e.g. fn1
+	// a name may be taken by a registry key like sets or a function named fn1
 	while (name in nameCounts || name in registry) name = `${baseName}${++count}`
 	nameCounts[baseName] = count
 	nameCounts[name] ??= 0

@@ -480,7 +480,7 @@ type shallowReferencesOf<ast, $> =
 
 type ShallowOperator = BranchOperator | "#"
 
-// a morph's piped node is a structural position, so what it pipes to isn't a shallow reference
+// what a morph pipes to is a structural position, not a shallow reference
 type pipesFromMorph<l, operator, $> =
 	operator extends "|>" ? includesMorphAst<l, $, never> : false
 
@@ -494,7 +494,7 @@ type includesMorphAst<ast, $, seen> =
 			alias extends seen ?
 				false
 			:	includesMorphAst<aliasAstOf<alias, $>, $, seen | alias>
-		:	// a tuple, object or Type definition may hold a morph only inferring it would show
+		:	// assume a tuple, object or Type definition may hold a morph
 			true
 	: ast extends GenericInstantiationAst ? true
 	: ast extends readonly unknown[] ?
