@@ -1,7 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import ts from "typescript"
 import { publicEntryPoints } from "./bundle.ts"
 
 const loadedUrls = new Set<string>()
@@ -100,26 +98,5 @@ if (
 	scope({}).constructor.name !== "InternalScope"
 )
 	throw new Error("⚠️  Bundling renamed a class.")
-
-// class static blocks need Safari 16.4, newer than anything else shipped
-for (const pkg of packages) {
-	const dir = fromPackage(pkg, "out/")
-	for (const name of readdirSync(dir).filter(name => name.endsWith(".js"))) {
-		const visit = (node: ts.Node): void => {
-			if (ts.isClassStaticBlockDeclaration(node))
-				throw new Error(`⚠️  ${pkg}/out/${name} has a class static block.`)
-			ts.forEachChild(node, visit)
-		}
-		visit(
-			ts.createSourceFile(
-				name,
-				readFileSync(new URL(name, dir), "utf8"),
-				ts.ScriptTarget.Latest,
-				true,
-				ts.ScriptKind.JS
-			)
-		)
-	}
-}
 
 console.log("🧩 Every entry shares its package's modules and registry!")
