@@ -221,6 +221,6 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 export type ResolvedConfig = resolveConfig<ArkSchemaConfig>
 
 export const unsupportedCloneConfigMessage =
-	"The clone option is no longer supported, since input is not cloned before morphs"
+	"The clone option is no longer supported, since transforming neither clones nor writes to input"
 
 export type unsupportedCloneConfigMessage = typeof unsupportedCloneConfigMessage
