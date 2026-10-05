@@ -11,11 +11,12 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 	if (!existingTags.includes(tagName)) {
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, alias)
 
+		const distTag = distTagOf(pkg.version)
 		shell(`git tag ${tagName}`)
-		tagsToPublish.push(tagName)
-		shell(`pnpm publish --no-git-checks --tag ${distTagOf(pkg.version)}`, {
-			cwd: pkg.path
-		})
+		tagsToPublish.push(
+			`${tagName} ${distTag === "latest" ? "--latest" : "--prerelease"}`
+		)
+		shell(`pnpm publish --no-git-checks --tag ${distTag}`, { cwd: pkg.path })
 
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, pkg.name)
 	}
@@ -43,9 +44,4 @@ for (const pkg of packages) {
 
 shell("git push --tags")
 
-for (const tagName of tagsToPublish) {
-	const version = tagName.slice(tagName.lastIndexOf("@") + 1)
-	shell(
-		`gh release create ${tagName} ${distTagOf(version) === "latest" ? "--latest" : "--prerelease"}`
-	)
-}
+for (const release of tagsToPublish) shell(`gh release create ${release}`)
