@@ -218,7 +218,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
 		this.includesContextualMorph ||= this.defaultValueMorphs.some(
-			morph => morph.length !== 1
+			morph => morph.length === 2
 		)
 	}
 
@@ -507,10 +507,11 @@ const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
 	const cached = defaultableMorphsCache.get(cacheKey)
 	if (cached) return cached
 
-	const callsElement = node.defaultables.some(
-		([element]) => element.includesTransform || element.includesAlias
-	)
-	return callsElement ?
+	return (
+			node.defaultables.some(
+				([element]) => element.includesTransform || element.includesAlias
+			)
+		) ?
 			defaultableMorphsCache.pin(cacheKey, morphs)
 		:	defaultableMorphsCache.set(cacheKey, morphs)
 }
