@@ -498,70 +498,69 @@ contextualize(() => {
 
 	// https://github.com/arktypeio/arktype/issues/1547
 	it("discriminates cyclic union on nested path", () => {
-		const defs = {
-			AChild: { type: "'AChild'", children: "(AParent)[] > 0" },
-			AParent: { type: "'AParent'", children: "(AChild)[] > 0" },
-			BChild: { type: "'BChild'", children: "unknown[]" },
-			BParent: {
-				type: "'BParent'",
-				layout: "number[]",
-				children: "(BChild)[] > 0"
-			}
-		} as const
-		const s = scope(defs)
-
-		const Thing = s.type("AParent | BParent")
-
-		attest(Thing.internal.assertHasKind("union").discriminantJson).equals({
-			kind: "unit",
-			path: ["type"],
-			cases: {
-				'"BParent"': {
-					required: [
-						{
-							key: "children",
-							value: {
-								sequence: {
-									required: [
-										{ key: "children", value: "Array" },
-										{ key: "type", value: { unit: "BChild" } }
-									],
-									domain: "object"
-								},
-								proto: "Array",
-								minLength: 1
-							}
-						},
-						{ key: "layout", value: { sequence: "number", proto: "Array" } }
-					]
+		for (const jitless of [false, true]) {
+			const s = scope(
+				{
+					AChild: { type: "'AChild'", children: "(AParent)[] > 0" },
+					AParent: { type: "'AParent'", children: "(AChild)[] > 0" },
+					BChild: { type: "'BChild'", children: "unknown[]" },
+					BParent: {
+						type: "'BParent'",
+						layout: "number[]",
+						children: "(BChild)[] > 0"
+					}
 				},
-				'"AParent"': {
-					required: [
-						{
-							key: "children",
-							value: {
-								sequence: `$ark.${s.export().AChild.internal.id}`,
-								proto: "Array",
-								minLength: 1
-							}
-						}
-					]
-				}
-			}
-		})
+				{ jitless }
+			)
 
-		const data = {
-			type: "BParent",
-			layout: "",
-			children: [{ type: "BChild", children: [] }]
+			const Thing = s.type("AParent | BParent")
+
+			attest(Thing.internal.assertHasKind("union").discriminantJson).equals({
+				kind: "unit",
+				path: ["type"],
+				cases: {
+					'"BParent"': {
+						required: [
+							{
+								key: "children",
+								value: {
+									sequence: {
+										required: [
+											{ key: "children", value: "Array" },
+											{ key: "type", value: { unit: "BChild" } }
+										],
+										domain: "object"
+									},
+									proto: "Array",
+									minLength: 1
+								}
+							},
+							{ key: "layout", value: { sequence: "number", proto: "Array" } }
+						]
+					},
+					'"AParent"': {
+						required: [
+							{
+								key: "children",
+								value: {
+									sequence: `$ark.${s.export().AChild.internal.id}`,
+									proto: "Array",
+									minLength: 1
+								}
+							}
+						]
+					}
+				}
+			})
+
+			attest(
+				Thing({
+					type: "BParent",
+					layout: "",
+					children: [{ type: "BChild", children: [] }]
+				}).toString()
+			).snap("layout must be an array (was string)")
 		}
-		attest(Thing(data).toString()).snap("layout must be an array (was string)")
-		const JitlessThing = scope(defs, { jitless: true }).type(
-			"AParent | BParent"
-		)
-		attest(JitlessThing(data).toString()).snap(
-			"layout must be an array (was string)"
-		)
 	})
 
 	it("discriminates neither a date nor NaN", () => {

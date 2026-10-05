@@ -1435,66 +1435,51 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1367
 	it("cyclic discriminated union issue 2", () => {
-		const componentModule = type.module({
-			container: {
-				type: "'container'",
-				content: "component"
-			},
-
-			flexbox: {
-				type: "'flexbox'",
-				items: "component"
-			},
-
-			tabsItem: {
-				id: "string",
-				title: "component",
-				content: "component"
-			},
-			tabs: {
-				type: "'tabs'",
-				items: "tabsItem[]"
-			},
-
-			singleComponent: "string | flexbox | tabs",
-			component: "singleComponent | singleComponent[]"
-		})
-		const componentSchema = componentModule.component
-
-		const component: typeof componentSchema.infer = {
-			type: "tabs",
-			items: [
+		for (const jitless of [false, true]) {
+			const componentModule = type.module(
 				{
-					id: "tab-id",
-					title: "tab-title",
-					content: []
-				}
-			]
+					container: {
+						type: "'container'",
+						content: "component"
+					},
+
+					flexbox: {
+						type: "'flexbox'",
+						items: "component"
+					},
+
+					tabsItem: {
+						id: "string",
+						title: "component",
+						content: "component"
+					},
+					tabs: {
+						type: "'tabs'",
+						items: "tabsItem[]"
+					},
+
+					singleComponent: "string | flexbox | tabs",
+					component: "singleComponent | singleComponent[]"
+				},
+				{ jitless }
+			)
+			const componentSchema = componentModule.component
+
+			const component: typeof componentSchema.infer = {
+				type: "tabs",
+				items: [
+					{
+						id: "tab-id",
+						title: "tab-title",
+						content: []
+					}
+				]
+			}
+
+			const result = componentSchema(component)
+
+			attest(result).equals(component)
 		}
-
-		const result = componentSchema(component)
-
-		attest(result).equals(component)
-	})
-
-	it("cyclic discriminated union issue 2 jitless", () => {
-		const componentModule = type.module(
-			{
-				container: { type: "'container'", content: "component" },
-				flexbox: { type: "'flexbox'", items: "component" },
-				tabsItem: { id: "string", title: "component", content: "component" },
-				tabs: { type: "'tabs'", items: "tabsItem[]" },
-				singleComponent: "string | flexbox | tabs",
-				component: "singleComponent | singleComponent[]"
-			},
-			{ jitless: true }
-		)
-		const component: typeof componentModule.component.infer = {
-			type: "tabs",
-			items: [{ id: "tab-id", title: "tab-title", content: [] }]
-		}
-
-		attest(componentModule.component(component)).equals(component)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1362
@@ -1539,40 +1524,25 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1640
 	it("cyclic discriminated union with record reference", () => {
-		const Node = scope({
-			Number: { type: "'number'" },
-			Array: { type: "'array'", item: "Node" },
-			Unit: { type: "'unit'" },
-			Container: { things: "Record<string, Node>" },
-			Node: "Number | Array | Unit"
-		}).export().Node
+		for (const jitless of [false, true]) {
+			const Node = scope(
+				{
+					Number: { type: "'number'" },
+					Array: { type: "'array'", item: "Node" },
+					Unit: { type: "'unit'" },
+					Container: { things: "Record<string, Node>" },
+					Node: "Number | Array | Unit"
+				},
+				{ jitless }
+			).export().Node
 
-		const data = { type: "array", item: { type: "number" } } as const
+			const data = { type: "array", item: { type: "number" } } as const
 
-		attest(Node(data)).equals(data)
-		attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
-			'item.type must be "array", "number" or "unit" (was "nope")'
-		)
-	})
-
-	it("cyclic discriminated union with record reference jitless", () => {
-		const Node = scope(
-			{
-				Number: { type: "'number'" },
-				Array: { type: "'array'", item: "Node" },
-				Unit: { type: "'unit'" },
-				Container: { things: "Record<string, Node>" },
-				Node: "Number | Array | Unit"
-			},
-			{ jitless: true }
-		).export().Node
-
-		const data = { type: "array", item: { type: "number" } } as const
-
-		attest(Node(data)).equals(data)
-		attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
-			'item.type must be "array", "number" or "unit" (was "nope")'
-		)
+			attest(Node(data)).equals(data)
+			attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
+				'item.type must be "array", "number" or "unit" (was "nope")'
+			)
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1284
