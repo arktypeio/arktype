@@ -210,10 +210,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
+		if (typeof node === "string")
+			return `${this.referenceToId(node, opts)}(${arg}, ${this.ctx})`
 		const kind = opts?.kind ?? this.traversalKind
 		// Allows adds no errors to ctx, so a predicate reading it runs in a branch
 		if (
-			typeof node !== "string" &&
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
 			node.allowsRequiresContext
@@ -222,19 +223,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 					`${this.ctx}.allows(${this.ref(node)}, ${arg})`
 				:	`${this.ref(node)}.allows(${arg})`
 		}
-		const requiresContext =
-			typeof node === "string" ? true : this.requiresContextFor(node, kind)
-		const id = typeof node === "string" ? node : node.id
-		if (
-			kind === "Transform" &&
-			typeof node !== "string" &&
-			node.isTransformedById
-		)
-			return `${this.ctx}.transformResolution("${id}", ${arg}, ${this.referenceToId(id, opts)})`
-		if (requiresContext)
-			return `${this.referenceToId(id, opts)}(${arg}, ${this.ctx})`
-
-		return `${this.referenceToId(id, opts)}(${arg})`
+		const reference = this.referenceToId(node.id, opts)
+		if (kind === "Transform" && node.isTransformedById)
+			return `${this.ctx}.transformResolution("${node.id}", ${arg}, ${reference})`
+		return this.requiresContextFor(node, kind) ?
+				`${reference}(${arg}, ${this.ctx})`
+			:	`${reference}(${arg})`
 	}
 
 	invokeMember(
