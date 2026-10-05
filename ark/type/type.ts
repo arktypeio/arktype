@@ -1,8 +1,8 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	finalizeExport,
 	GenericRoot,
-	hasArkKind,
 	type BaseParseOptions,
 	type Morph,
 	type NodeSelector,
@@ -282,9 +282,7 @@ export class InternalTypeParser extends Callable<
 					typeAttachments[k as never] as BaseRoot | GenericRoot
 				)
 				// a resolved scope has already compiled the nodes bound before it
-				return $.resolved && hasArkKind(bound, "root") ?
-						$.finalize(bound)
-					:	bound
+				return $.resolved ? finalizeExport($, bound) : bound
 			})
 		}
 	}
