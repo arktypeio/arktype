@@ -52,7 +52,6 @@ export class ArkError<
 			for (const innerError of input.errors) {
 				const innerFlat =
 					innerError.hasCode("union") ? innerError.errors : [innerError]
-				// a union's errors are already unique, so only those of later branches are compared
 				flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
 			}
 			input.errors =

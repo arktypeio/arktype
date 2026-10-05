@@ -344,7 +344,7 @@ const precompileReferences = (
 	const traversals = references.map(node => declareTraversals(linkage, node))
 	for (let i = 0; i < linkage.reached.length; i++)
 		declareTraversals(linkage, linkage.reached[i])
-	// passed as arrays, since V8 can't compile a function with tens of thousands of parameters
+	// passed as arrays, as V8 can't call a function with tens of thousands of arguments
 	const unit = new CompiledFunction<
 		(
 			dependencies: Fn[],
@@ -439,7 +439,7 @@ const declareTraversal = (
 		linkage,
 		kind !== "Transform" || node.transformRequiresContext
 	).indent()
-	// an input copyOf can't copy is transformed in place, so a write it refuses throws
+	// strict, so writing to a frozen input copyOf left uncopied throws
 	if (kind === "Transform") js.line(`"use strict"`)
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })

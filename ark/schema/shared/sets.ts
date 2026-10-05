@@ -9,7 +9,7 @@ import type { JsonSchema } from "./jsonSchema.ts"
 import { $ark } from "./registry.ts"
 import type { ToJsonSchema } from "./toJsonSchema.ts"
 
-// installed by arksets, so code that never relates two types never ships the algebra
+// installed by arksets, so @ark/schema alone ships without the algebra
 export interface SetEngine {
 	intersect: InternalNodeIntersection<BaseScope>
 	pipe: InternalNodeIntersection<BaseScope>

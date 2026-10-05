@@ -227,7 +227,7 @@ export class Traversal {
 	}
 
 	pipe(node: BaseNode, data: unknown): unknown {
-		// Allows would detach a contextual node's predicates from this path, so Apply decides it
+		// Allows would detach a contextual node's predicates from this path
 		const decidedByApply = node.allowsRequiresContext && !node.includesAlias
 		if (decidedByApply ? this.applyPiped(node, data) : node.allows(data)) {
 			if (!node.transforms) return data
@@ -249,7 +249,6 @@ export class Traversal {
 		return this.errors
 	}
 
-	// whether it added no errors, dropping only the piped node's own morphs
 	private applyPiped(node: BaseNode, data: unknown): boolean {
 		const errorCount = this.currentErrorCount
 		const { received, receivedDepth } = this
@@ -585,8 +584,7 @@ export class Traversal {
 		let parent: any
 
 		if (key !== undefined) {
-			// find the object on which the key to be morphed exists, copying
-			// each object along the way
+			// find the object on which the key to be morphed exists
 			this.copied ??= new Map()
 			parent = this.morphedRoot = this.copyOnce(this.morphedRoot)
 			for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++) {

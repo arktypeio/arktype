@@ -346,7 +346,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			const pushesKey =
 				keyExpression !== undefined && node.transformRequiresContext
 			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
-			// a step after another plans its transforms from the input, so where it rejects the other's output it transforms the input
+			// a step rejecting an earlier step's output transforms the input instead
 			const transformed =
 				arg === input ?
 					this.invoke(node, { arg })
