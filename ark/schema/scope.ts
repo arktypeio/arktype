@@ -673,30 +673,26 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		let bound: reference
+		if (reference.$ === this) return reference
 
 		if (isNode(reference)) {
-			bound =
-				reference.$ === this || reference.hasKind("alias") ?
-					reference
-				:	new (reference.constructor as any)(reference, this)
-		} else if (reference.$ === this) bound = reference
-		else {
-			let generic = this.boundGenerics.get(reference)
-			if (!generic) {
-				generic = new GenericRoot(
-					reference.params as never,
-					reference.bodyDef,
-					reference.$,
-					this as never,
-					reference.hkt,
-					reference.alias
+			return reference.hasKind("alias") ? reference : (
+					new (reference.constructor as any)(reference, this)
 				)
-				this.boundGenerics.set(reference, generic)
-			}
-			bound = generic as never
 		}
 
+		let bound = this.boundGenerics.get(reference)
+		if (!bound) {
+			bound = new GenericRoot(
+				reference.params as never,
+				reference.bodyDef,
+				reference.$,
+				this as never,
+				reference.hkt,
+				reference.alias
+			)
+			this.boundGenerics.set(reference, bound)
+		}
 		return bound as never
 	}
 
