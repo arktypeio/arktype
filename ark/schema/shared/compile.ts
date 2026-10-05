@@ -8,7 +8,7 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
-import { $ark, registeredReference } from "./registry.ts"
+import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import type { TraversalKind } from "./traversal.ts"
 
@@ -225,12 +225,10 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		const requiresContext =
 			typeof node === "string" ? true : this.requiresContextFor(node, kind)
 		const id = typeof node === "string" ? node : node.id
-		// an alias resolving to node keys its output by id, so entering node directly does too
 		if (
 			kind === "Transform" &&
 			typeof node !== "string" &&
-			node.includesAlias &&
-			$ark.nodesByRegisteredId[id]
+			node.isTransformedById
 		)
 			return `${this.ctx}.transformResolution("${id}", ${arg}, ${this.referenceToId(id, opts)})`
 		if (requiresContext)

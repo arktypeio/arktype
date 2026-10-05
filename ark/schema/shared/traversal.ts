@@ -214,8 +214,7 @@ export class Traversal {
 	}
 
 	transform(node: BaseNode, data: unknown): unknown {
-		// an alias resolving to node keys its output by id, so entering node directly does too
-		if (node.includesAlias && $ark.nodesByRegisteredId[node.id])
+		if (node.isTransformedById)
 			return this.transformResolution(node.id, data, node.traverseTransform)
 		return this.transformed(node.traverseTransform(data, this), data)
 	}
