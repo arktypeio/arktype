@@ -387,6 +387,14 @@ b must be A (was "y")`)
 		}
 	})
 
+	it("union of array props with shared defaults", () => {
+		const T = type("string[]")
+			.and({ a: "number = 5" })
+			.or(type("string[]").and({ a: "number = 5", b: "string" }))
+		attest(T.expression).snap("{ a: number = 5 } & string[]")
+		attest(T.assert(["s"]).a).equals(5)
+	})
+
 	it("non-enumerable key with shared defaults", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
