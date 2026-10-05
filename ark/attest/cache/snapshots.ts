@@ -52,7 +52,7 @@ export const getSnapshotByName = (
  */
 export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 	const config = getConfig()
-	const path = config.defaultAssertionCachePath
+	const path = config.assertionCachePath
 	if (existsSync(path)) {
 		const existing = readJson(path)
 		writeJson(path, {
@@ -123,14 +123,14 @@ const writeCachedInlineSnapshotUpdates = () => {
 
 	let snapshotData: SnapshotArgs[] | undefined
 
-	if (!existsSync(config.defaultAssertionCachePath)) return
+	if (!existsSync(config.assertionCachePath)) return
 
 	try {
-		snapshotData = readJson(config.defaultAssertionCachePath).updates as never
+		snapshotData = readJson(config.assertionCachePath).updates as never
 	} catch {
 		// If we can't read the snapshot, log an error and move onto the next update
 		console.error(
-			`Unable to read snapshot data from expected location ${config.defaultAssertionCachePath}.`
+			`Unable to read snapshot data from expected location ${config.assertionCachePath}.`
 		)
 	}
 	if (snapshotData) {

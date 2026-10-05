@@ -6,12 +6,6 @@ settings:
 
 catalogs:
   default:
-    '@ark/attest-ts-min':
-      specifier: npm:typescript@5.1.6
-      version: 5.1.6
-    '@ark/attest-ts-next':
-      specifier: npm:typescript@next
-      version: 5.9.0-dev.20250407
     typescript:
       specifier: 5.9.3
       version: 5.9.3
@@ -26,12 +20,6 @@ importers:
       '@ark/attest':
         specifier: link:ark/attest
         version: link:ark/attest
-      '@ark/attest-ts-min':
-        specifier: 'catalog:'
-        version: typescript@5.1.6
-      '@ark/attest-ts-next':
-        specifier: 'catalog:'
-        version: typescript@5.9.0-dev.20250407
       '@ark/fs':
         specifier: workspace:*
         version: link:ark/fs
@@ -5098,16 +5086,6 @@ packages:
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0
       typescript: '>=4.8.4 <6.0.0'
-
-  typescript@5.1.6:
-    resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
-  typescript@5.9.0-dev.20250407:
-    resolution: {integrity: sha512-JW8/Our6MR+QYS3M134UaLWtEYdVXWzwlbg6rj3fmF9TppADEdaSNiJK90M2wmfSuu5j8Nefk93oSrZF03JkGw==}
-    engines: {node: '>=14.17'}
-    hasBin: true
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -10757,10 +10735,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
-
-  typescript@5.1.6: {}
-
-  typescript@5.9.0-dev.20250407: {}
 
   typescript@5.9.3: {}
 

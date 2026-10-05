@@ -3,5 +3,3 @@ packages:
 
 catalog:
   typescript: 5.9.3
-  "@ark/attest-ts-min": npm:typescript@5.1.6
-  "@ark/attest-ts-next": npm:typescript@next

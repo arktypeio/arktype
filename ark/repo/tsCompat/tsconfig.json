@@ -1,0 +1,13 @@
+{
+	// mirrors the setup recommended in the docs for consumers
+	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ES2022",
+		"strict": true,
+		"exactOptionalPropertyTypes": true,
+		"skipLibCheck": true,
+		"noEmit": true
+	},
+	"files": ["index.ts"]
+}

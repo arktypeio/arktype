@@ -55,8 +55,28 @@ jobs:
       - name: Test
         run: pnpm testRepo
 
+  typescript:
+    needs: core
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        # minimum supported version, then the latest of each major
+        typescript: [5.1.6, 6.0.3, 7.0.2]
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Typecheck consumer usage with TypeScript ${{ matrix.typescript }}
+        run: npx --yes --package typescript@${{ matrix.typescript }} -- tsc --project ark/repo/tsCompat
+
   prChecks:
-    needs: compatibility
+    needs: [compatibility, typescript]
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:

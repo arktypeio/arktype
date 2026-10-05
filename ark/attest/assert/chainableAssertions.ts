@@ -52,10 +52,8 @@ export class ChainableAssertions implements AssertionRecord {
 
 	private get unversionedActual(): unknown {
 		if (this.versionableActual instanceof TypeAssertionMapping) {
-			return this.versionableActual.fn(
-				this.ctx.typeRelationshipAssertionEntries![0][1],
-				this.ctx
-			)!.actual
+			return this.versionableActual.fn(this.ctx.typeAssertion!, this.ctx)!
+				.actual
 		}
 		return this.versionableActual
 	}

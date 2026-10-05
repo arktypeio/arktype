@@ -1,6 +1,5 @@
 import { readJson, type LinePosition, type SourcePosition } from "@ark/fs"
-import { existsSync, readdirSync } from "node:fs"
-import { join } from "node:path"
+import { existsSync } from "node:fs"
 import { getConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
 import type {
@@ -10,54 +9,20 @@ import type {
 	TypeAssertionKind
 } from "./writeAssertionCache.ts"
 
-export type VersionedAssertionsByFile = [
-	tsVersion: string,
-	relationshipAssertions: AssertionsByFile,
-	benchAssertions: AssertionsByFile
-]
+let cachedAssertions: AssertionsByFile | undefined
 
-let assertionEntries: VersionedAssertionsByFile[] | undefined
-export const getCachedAssertionEntries = (): VersionedAssertionsByFile[] => {
-	if (!assertionEntries) {
-		const config = getConfig()
-		if (!existsSync(config.assertionCacheDir))
-			throwMissingAssertionDataError(config.assertionCacheDir)
-
-		const assertionFiles = readdirSync(config.assertionCacheDir)
-		const relationshipAssertions: AssertionsByFile = {}
-		const benchAssertions: AssertionsByFile = {}
-
-		assertionEntries = assertionFiles.map(file => {
-			const data = readJson(join(config.assertionCacheDir, file)) as Record<
-				string,
-				TypeAssertionData[]
-			>
-			for (const fileName of Object.keys(data)) {
-				const relationshipAssertionData = data[fileName].filter(
-					(entry: TypeAssertionData) => "args" in entry
-				)
-				const benchAssertionData = data[fileName].filter(
-					(entry: TypeAssertionData) => "count" in entry
-				)
-				relationshipAssertions[fileName] = relationshipAssertionData
-				benchAssertions[fileName] = benchAssertionData
-			}
-			return [
-				// remove .json extension
-				file.slice(0, -5),
-				relationshipAssertions,
-				benchAssertions
-			]
-		})
+const getCachedAssertions = (): AssertionsByFile => {
+	if (!cachedAssertions) {
+		const { assertionCachePath } = getConfig()
+		if (!existsSync(assertionCachePath)) {
+			throw new Error(
+				`Unable to find precached assertion data at '${assertionCachePath}'. ` +
+					`Ensure the 'setup' function from @ark/attest has been called before running your tests.`
+			)
+		}
+		cachedAssertions = readJson(assertionCachePath) as AssertionsByFile
 	}
-	return assertionEntries!
-}
-
-const throwMissingAssertionDataError = (location: string) => {
-	throw new Error(
-		`Unable to find precached assertion data at '${location}'. ` +
-			`Ensure the 'setup' function from @ark/attest has been called before running your tests.`
-	)
+	return cachedAssertions
 }
 
 const isPositionWithinRange = (
@@ -73,51 +38,39 @@ const isPositionWithinRange = (
 	return true
 }
 
-export type VersionedTypeAssertion<
-	kind extends TypeAssertionKind = TypeAssertionKind
-> = [tsVersion: string, assertionData: TypeAssertionData<kind>]
-
-const getAssertionsOfKindAtPosition = <kind extends TypeAssertionKind>(
+const getAssertionOfKindAtPosition = <kind extends TypeAssertionKind>(
 	position: SourcePosition,
 	kind: kind
-): VersionedTypeAssertion<kind>[] => {
+): TypeAssertionData<kind> => {
 	const fileKey = getFileKey(position.file)
-	return getCachedAssertionEntries().map(
-		([version, typeRelationshipAssertions, BenchAssertionAssertions]) => {
-			const assertions =
-				kind === "type" ? typeRelationshipAssertions : BenchAssertionAssertions
-			if (!assertions[fileKey]) {
-				throw new Error(
-					`Found no assertion data for '${fileKey}' for TypeScript version ${version}.`
-				)
-			}
-			const matchingAssertion = assertions[fileKey].find(assertion =>
-				/**
-				 * Depending on the environment, a trace can refer to any of these points
-				 * attest(...)
-				 * ^     ^   ^
-				 * Because of this, it's safest to check if the call came from anywhere in the expected range.
-				 *
-				 */
-				isPositionWithinRange(position, assertion.location)
-			)
-			if (!matchingAssertion) {
-				throw new Error(
-					`Found no assertion for TypeScript version ${version} at line ${position.line} char ${position.char} in '${fileKey}'.
-	Are sourcemaps enabled and working properly?`
-				)
-			}
-			return [version, matchingAssertion] as VersionedTypeAssertion<kind>
-		}
+	const assertions = getCachedAssertions()[fileKey]
+	if (!assertions) throw new Error(`Found no assertion data for '${fileKey}'.`)
+
+	const matchingAssertion = assertions.find(
+		assertion =>
+			(kind === "type" ? "args" in assertion : "count" in assertion) &&
+			/**
+			 * Depending on the environment, a trace can refer to any of these points
+			 * attest(...)
+			 * ^     ^   ^
+			 * Because of this, it's safest to check if the call came from anywhere in the expected range.
+			 *
+			 */
+			isPositionWithinRange(position, assertion.location)
 	)
+	if (!matchingAssertion) {
+		throw new Error(
+			`Found no assertion at line ${position.line} char ${position.char} in '${fileKey}'.
+	Are sourcemaps enabled and working properly?`
+		)
+	}
+	return matchingAssertion as TypeAssertionData<kind>
 }
 
-export const getTypeAssertionsAtPosition = (
+export const getTypeAssertionAtPosition = (
 	position: SourcePosition
-): VersionedTypeAssertion<"type">[] =>
-	getAssertionsOfKindAtPosition(position, "type")
+): TypeAssertionData<"type"> => getAssertionOfKindAtPosition(position, "type")
 
-export const getBenchAssertionsAtPosition = (
+export const getBenchAssertionAtPosition = (
 	position: SourcePosition
-): VersionedTypeAssertion<"bench">[] =>
-	getAssertionsOfKindAtPosition(position, "bench")
+): TypeAssertionData<"bench"> => getAssertionOfKindAtPosition(position, "bench")

@@ -132,7 +132,7 @@ describe("attest features", () => {
 		const numericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
-		if (getPrimaryTsVersionUnderTest().startsWith("5")) {
+		if (ts.version.startsWith("5")) {
 			// this assertion will only occur when testing TypeScript 5+!
 			attest<(number | bigint)[]>(numericArray.infer)
 		}
@@ -185,7 +185,6 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
-	tsVersions: "typescript",
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
@@ -341,40 +340,22 @@ This ensures that type assertions can be made across processes without creating 
 
 ### TS Versions
 
-There is a tsVersions setting that allows testing multiple TypeScript aliases at once.
-
-````ts globalSetup.ts
-import { setup } from "@ark/attest"
-/** A string or list of strings representing the TypeScript version aliases to run.
- *
- * Aliases must be specified as a package.json dependency or devDependency beginning with "typescript".
- * Alternate aliases can be specified using the "npm:" prefix:
- * ```json
- * 		"typescript": "latest",
- * 		"typescript-next": "npm:typescript@next",
- * 		"typescript-1": "npm:typescript@5.2"
- * 		"typescript-2": "npm:typescript@5.1"
- * ```
- *
- * "*" can be pased to run all discovered versions beginning with "typescript".
- */
-setup({ tsVersions: "*" })
-````
+Attest analyzes your project with whichever version of `typescript` is installed. To test multiple versions, run your suite once per version, e.g. via a CI matrix that installs each version before running tests.
 
 ### APIs
 
-The most flexible attest APIs are `getTypeAssertionsAtPosition` and `caller`.
+The most flexible attest APIs are `getTypeAssertionAtPosition` and `caller`.
 
 Here's an example of how you might use them in your own API:
 
 ```ts
-import { getTypeAssertionsAtPosition, caller } from "@ark/attest"
+import { getTypeAssertionAtPosition, caller } from "@ark/attest"
 
 const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()
-	const types = getTypeAssertionsAtPosition(position)
+	const types = getTypeAssertionAtPosition(position)
 	// assert that the type of actualValue is the same as the type of expectedType
-	const relationship = types[0].args[0].relationships.typeArgs[0]
+	const relationship = types.args[0].relationships.typeArgs[0]
 	if (relationship === undefined) {
 		throw new Error(
 			`yourCustomAssert requires a type arg representing the expected type, e.g. 'yourCustomAssert<"foo">("foo")'`

@@ -1,7 +1,7 @@
 import { caller } from "@ark/fs"
 import { throwInternalError } from "@ark/util"
 import ts from "typescript"
-import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.ts"
+import { getBenchAssertionAtPosition } from "../cache/getCachedAssertions.ts"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -74,7 +74,7 @@ export const instantiationDataHandler = (
 	const instantiationsContributed =
 		isBenchFunction ?
 			getContributedInstantiations(ctx)
-		:	getBenchAssertionsAtPosition(ctx.benchCallPosition)[0][1].count
+		:	getBenchAssertionAtPosition(ctx.benchCallPosition).count
 
 	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 		instantiationsContributed,
