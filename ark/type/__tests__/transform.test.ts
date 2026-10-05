@@ -128,7 +128,8 @@ contextualize(() => {
 	})
 
 	it("contextual index on declared key", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const Listed = $.type("string").narrow((k, ctx) =>
 				(ctx.root as { trimmed: string[] }).trimmed.includes(k)
 			)
@@ -142,8 +143,7 @@ contextualize(() => {
 
 	it("index transform of a prop with a default", () => {
 		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({
+			const T = scope({}, { jitless }).type({
 				"p?": ["object", ["string", "=", "d"]],
 				"[string]": { "[string]": { x: "string.numeric.parse" } }
 			})
@@ -160,7 +160,8 @@ contextualize(() => {
 	})
 
 	it("failed key transform", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const A = $.type("string").pipe((s, ctx) => ctx.error("A"))
 			const B = $.type("string").pipe((s, ctx) => ctx.error("B"))
 
@@ -301,7 +302,8 @@ b must be A (was "y")`)
 	})
 
 	it("non-enumerable declared key", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const T = $.type({ e: "string", d: "string = 'd'" })
 			const original = Object.defineProperty({}, "e", { value: "e" })
 			const out = T.assert(original)
@@ -317,8 +319,8 @@ b must be A (was "y")`)
 	})
 
 	it("non-enumerable key with failing sibling", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
-			const T = $.type({
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
 				a: "string.trim",
 				c: { d: "string.date.parse" },
 				b: "string"
@@ -332,8 +334,8 @@ b must be A (was "y")`)
 	})
 
 	it("hidden props and accessors", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
-			const T = $.type({ a: "string.trim" })
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({ a: "string.trim" })
 			const original = Object.defineProperties(
 				{ a: " a " },
 				{
@@ -374,7 +376,8 @@ b must be A (was "y")`)
 	})
 
 	it("array props with shared defaults", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const T = $.type({
 				x: $.type({ a: "number = 5", b: "string" })
 					.and("string[]")
@@ -387,7 +390,8 @@ b must be A (was "y")`)
 	})
 
 	it("non-enumerable key with shared defaults", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			$.type({ a: "number = 5", b: "string" })
 			const T = $.type({
 				x: $.type({ a: "number = 5", c: "string" }).pipe((o, ctx) =>
@@ -434,7 +438,8 @@ b must be A (was "y")`)
 	})
 
 	it("piped contextual node", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const paths: PropertyKey[][] = []
 			const T = $.type({
 				password: "string",
@@ -462,7 +467,8 @@ b must be A (was "y")`)
 	})
 
 	it("branch predicate reading ctx", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const Long = $.type([
 				"string > 5",
 				":",
@@ -478,7 +484,8 @@ b must be A (was "y")`)
 	})
 
 	it("predicate error returning true", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			const Positive = $.type("number").narrow((n, ctx) => {
 				if (n <= 0) ctx.error("positive")
 				return true
@@ -594,7 +601,8 @@ b must be A (was "y")`)
 	})
 
 	it("discriminated case checked once", () => {
-		for (const $ of [scope({}), scope({}, { jitless: true })]) {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
 			let callCount = 0
 			const T = $.type([
 				"string",
@@ -719,8 +727,12 @@ b must be A (was "y")`)
 		})
 
 		it("inherited Object.prototype key", () => {
-			for (const $ of [scope({}), scope({}, { jitless: true })]) {
-				const T = $.type({ "+": "delete", a: "string", "toString?": "unknown" })
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({
+					"+": "delete",
+					a: "string",
+					"toString?": "unknown"
+				})
 				attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals(["a"])
 				attest(Object.keys(T.assert({ a: "a", toString: 1, z: 1 }))).equals([
 					"a",
@@ -730,8 +742,8 @@ b must be A (was "y")`)
 		})
 
 		it("transformed inherited key", () => {
-			for (const $ of [scope({}), scope({}, { jitless: true })]) {
-				const T = $.type({
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({
 					"+": "delete",
 					a: "string",
 					"toString?": ["unknown", "=>", v => v]
@@ -744,8 +756,8 @@ b must be A (was "y")`)
 		})
 
 		it("deletes symbols", () => {
-			for (const $ of [scope({}), scope({}, { jitless: true })]) {
-				const T = $.type({ "+": "delete", a: "string" })
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({ "+": "delete", a: "string" })
 				const out = T.assert({ a: "a", [Symbol("s")]: 1 })
 				attest(Reflect.ownKeys(out)).equals(["a"])
 			}
