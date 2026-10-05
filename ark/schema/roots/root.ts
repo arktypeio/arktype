@@ -1,6 +1,5 @@
 import {
 	arrayEquals,
-	chainableNoOpProxy,
 	includes,
 	inferred,
 	omit,
@@ -91,10 +90,6 @@ export abstract class BaseRoot<
 
 	get internal(): this {
 		return this
-	}
-
-	get infer(): unknown {
-		return chainableNoOpProxy
 	}
 
 	private _standard?: StandardSchemaV1.ArkTypeProps

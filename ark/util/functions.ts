@@ -11,10 +11,6 @@ export const cached = <t>(thunk: () => t): (() => t) => {
 	return () => (result === unset ? (result = thunk()) : result)
 }
 
-export const chainableNoOpProxy: any = new Proxy(() => chainableNoOpProxy, {
-	get: () => chainableNoOpProxy
-})
-
 export const isThunk = <value>(
 	value: value
 ): value is Extract<value, Thunk> extends never ? value & Thunk
