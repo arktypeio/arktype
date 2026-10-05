@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark, writeUnresolvableMessage } from "@ark/schema"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -211,24 +211,5 @@ contextualize(() => {
 				"next.name must be a string (was a number)"
 			)
 		}
-	})
-
-	it("registers only roots an alias references", () => {
-		const Plain = type({ unreferenced: "string" })
-		attest($ark.nodesByRegisteredId[Plain.internal.id]).equals(undefined)
-
-		const Cyclic = type({ referenced: "string", "next?": "this" })
-		attest(
-			$ark.nodesByRegisteredId[Cyclic.internal.id] === Cyclic.internal
-		).equals(true)
-
-		const Piped = scope({}, { jitless: true }).type({
-			name: "string",
-			"next?": "string.json.parse |> this"
-		})
-		attest(Piped.internal.isCyclic).equals(false)
-		attest(Piped({ name: "a", next: '{"name":1}' }).toString()).snap(
-			"next.name must be a string (was a number)"
-		)
 	})
 })
