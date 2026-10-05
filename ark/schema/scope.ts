@@ -336,12 +336,6 @@ const precompile = (
 	return compiledUnit
 }
 
-export type PrecompiledReferences = {
-	[k: `${string}Allows`]: TraverseAllows
-	[k: `${string}Apply`]: TraverseApply
-	[k: `${string}Optimistic`]: (data: unknown) => unknown
-}
-
 type PrecompiledTraversals = [
 	allows: TraverseAllows,
 	apply: TraverseApply,
