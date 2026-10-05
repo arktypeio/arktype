@@ -10,11 +10,8 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import { $ark, registeredReference } from "./registry.ts"
-import {
-	mergeTransformed,
-	TransformErrors,
-	type TraversalKind
-} from "./traversal.ts"
+import { mergeTransformed, TransformErrors } from "./transform.ts"
+import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 

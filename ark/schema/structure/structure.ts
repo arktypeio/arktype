@@ -35,10 +35,9 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
+import { copyOf, mergeTransformed } from "../shared/transform.ts"
 import {
 	applyValue,
-	copyOf,
-	mergeTransformed,
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,

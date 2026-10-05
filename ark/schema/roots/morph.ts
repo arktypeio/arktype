@@ -10,9 +10,9 @@ import {
 	type RootKind
 } from "../shared/implement.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
+import { TransformErrors } from "../shared/transform.ts"
 import {
 	applyMember,
-	TransformErrors,
 	type Traversal,
 	type TraverseAllows,
 	type TraverseApply,
