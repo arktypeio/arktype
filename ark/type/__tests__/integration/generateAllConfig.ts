@@ -4,7 +4,7 @@ import { flatMorph } from "@ark/util"
 import { ark } from "arktype"
 import type { ArkConfig } from "arktype/config"
 
-// keywords resolve on first reference, so resolve them all
+// keywords resolve on first reference
 ark.export()
 
 const config: ArkConfig = {
