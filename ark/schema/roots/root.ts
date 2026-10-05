@@ -470,35 +470,34 @@ export abstract class BaseRoot<
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("root", kind, schema)
+		return this.$.finalize(this._constrain("root", kind, schema))
 	}
 
 	constrainIn<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("in", kind, schema)
+		return this.$.finalize(this._constrain("in", kind, schema))
 	}
 
 	constrainOut<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("out", kind, schema)
+		return this.$.finalize(this._constrain("out", kind, schema))
 	}
 
 	rawConstrain<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("root", kind, schema, false)
+		return this._constrain("root", kind, schema)
 	}
 
 	private _constrain(
 		io: "root" | "in" | "out",
 		kind: Constraint.PrimitiveKind,
-		schema: any,
-		jit = true
+		schema: any
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema as never)
 
@@ -537,7 +536,7 @@ export abstract class BaseRoot<
 
 		if (result instanceof Disjoint) result.throw()
 
-		return this.$.finalize(result as never, jit)
+		return result as never
 	}
 
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
