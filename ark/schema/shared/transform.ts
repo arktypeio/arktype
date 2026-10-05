@@ -46,9 +46,9 @@ export const copyOf = (data: object): object => {
 	// a builtin whose state can't be copied, e.g. a function, transforms in place
 	if (!copyContents) return data
 	const copy = Object.setPrototypeOf(copyContents(data as never), prototype)
-	// a typed array's own props are its elements
+	// like an array's, a typed array's copy takes only its elements
 	if (kind in typedArrayConstructors) return copy
-	// state like an Error's message is copied, writable as in a spread
+	// descriptors include state a spread skips, e.g. an Error's message
 	const descriptors: { [k: Key]: PropertyDescriptor } =
 		Object.getOwnPropertyDescriptors(data)
 	for (const k of Reflect.ownKeys(descriptors)) {
