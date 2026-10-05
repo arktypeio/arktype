@@ -3,18 +3,6 @@
 const holdsWeakly =
 	typeof WeakRef === "function" && typeof FinalizationRegistry === "function"
 
-class Pinned<v> {
-	private readonly value: v
-
-	constructor(value: v) {
-		this.value = value
-	}
-
-	deref(): v {
-		return this.value
-	}
-}
-
 export class WeakCache<v extends object> {
 	// a Map is faster here than a null-prototype record
 	private readonly refs = new Map<string, { deref(): v | undefined }>()
@@ -38,7 +26,7 @@ export class WeakCache<v extends object> {
 	}
 
 	pin(key: string, value: v): v {
-		this.refs.set(key, new Pinned(value))
+		this.refs.set(key, { deref: () => value })
 		return value
 	}
 }
