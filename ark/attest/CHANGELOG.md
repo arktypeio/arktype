@@ -2,6 +2,15 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.57.0
+
+Runtime benches now run in a loop compiled for each bench, after a 500ms warmup, with as many calls per sample as fit in about 0.2ms. Their times don't compare with earlier versions', so re-record stored runtime baselines.
+
+- Return the result a bench computes, so V8 can't drop its work as unused. attest warns when a bench returns `undefined`.
+- `until.count` counts samples taken after the warmup rather than sets of 1000 calls.
+- A bench that returns a Promise is awaited whether or not it is an `async` function.
+- Sample times are sorted numerically. They were sorted as strings, which misordered times like 9.5 and 10.2 and skewed `.median`.
+
 ## 0.51.0
 
 Fix some tsconfig path resolution (thanks @LukeAbby🎉)
