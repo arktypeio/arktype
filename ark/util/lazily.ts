@@ -2,17 +2,17 @@ import { cached } from "./functions.ts"
 import { defineValue } from "./records.ts"
 
 export const lazily = <t extends object>(thunk: () => t): t => {
-	let result: any
+	let cached: any
 	return new Proxy<t>({} as t, {
 		get: (_, prop) => {
-			if (!result) result = thunk()
+			if (!cached) cached = thunk()
 
-			return result[prop as keyof t]
+			return cached[prop as keyof t]
 		},
 		set: (_, prop, value) => {
-			if (!result) result = thunk()
+			if (!cached) cached = thunk()
 
-			result[prop] = value
+			cached[prop] = value
 			return true
 		}
 	})
