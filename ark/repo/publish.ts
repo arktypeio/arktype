@@ -1,7 +1,7 @@
 import { getShellOutput, rewriteJson, shell } from "@ark/fs"
 import { packages, type ArkPackage } from "./shared.ts"
 
-const tagsToPublish: string[] = []
+const releasesToCreate: string[] = []
 
 const existingTags = getShellOutput("git tag").split("\n")
 
@@ -13,7 +13,7 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 
 		const distTag = distTagOf(pkg.version)
 		shell(`git tag ${tagName}`)
-		tagsToPublish.push(
+		releasesToCreate.push(
 			`${tagName} ${distTag === "latest" ? "--latest" : "--prerelease"}`
 		)
 		shell(`pnpm publish --no-git-checks --tag ${distTag}`, { cwd: pkg.path })
@@ -44,4 +44,4 @@ for (const pkg of packages) {
 
 shell("git push --tags")
 
-for (const release of tagsToPublish) shell(`gh release create ${release}`)
+for (const release of releasesToCreate) shell(`gh release create ${release}`)
