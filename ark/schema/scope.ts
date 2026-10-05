@@ -27,6 +27,7 @@ import {
 import {
 	mergeConfigs,
 	type ArkSchemaConfig,
+	type ArkSchemaRegistry,
 	type ResolvedConfig
 } from "./config.ts"
 import {
@@ -191,10 +192,7 @@ export interface ResolvedScopeConfig
 	extends ResolvedConfig,
 		ScopeOnlyConfigOptions {}
 
-interface GlobalConfig {
-	config: ArkSchemaConfig
-	resolvedConfig: ResolvedConfig
-}
+type GlobalConfig = Pick<ArkSchemaRegistry, "config" | "resolvedConfig">
 
 // configure merges into $ark.config in place but replaces $ark.resolvedConfig
 const currentGlobalConfig = (): GlobalConfig => ({
@@ -209,12 +207,9 @@ export const fixGlobalConfig = (): void => {
 	fixedGlobalConfig ??= currentGlobalConfig()
 }
 
-export const withFixedGlobalConfig = <t>(construct: () => t): t =>
-	constructWith(fixedGlobalConfig, construct)
-
-const constructWith = <t>(
-	globalConfig: GlobalConfig | undefined,
-	construct: () => t
+export const withFixedGlobalConfig = <t>(
+	construct: () => t,
+	globalConfig = fixedGlobalConfig
 ): t => {
 	const outerGlobalConfig = constructingWith
 	constructingWith = globalConfig
@@ -1231,12 +1226,12 @@ export const rootSchemaScope: SchemaScope = new SchemaScope({})
 const importedGlobalConfig = currentGlobalConfig()
 
 export const bootstrapRootScope = (parseIntrinsics: () => void): void =>
-	constructWith(importedGlobalConfig, () => {
+	withFixedGlobalConfig(() => {
 		cacheUnknownUnion(rootSchemaScope)
 		// ensure the scope is resolved so JIT will be applied to future types
 		rootSchemaScope.export()
 		parseIntrinsics()
-	})
+	}, importedGlobalConfig)
 
 export const parseAsSchema = (
 	def: unknown,
