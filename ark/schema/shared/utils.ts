@@ -110,7 +110,7 @@ export const assertUnchecked = (): void => {
 	}
 }
 
-export const discardUnchecked = (): void => {
+const discardUnchecked = (): void => {
 	uncheckedAssertions.length = 0
 	uncheckedKeys = {}
 }
