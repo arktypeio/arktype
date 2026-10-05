@@ -628,24 +628,21 @@ contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/1082
 	describe("cyclic", () => {
 		it("self-reference", () => {
-			const getTypes = () =>
-				scope({
-					"alternate<a, b>": {
-						// ensures old generic params aren't intersected with
-						// updated values (would be never)
-						swap: "alternate<b, a>",
-						order: ["a", "b"]
-					},
-					reference: "alternate<0, 1>"
-				}).export()
-			const types = getTypes()
-			attest<[0, 1]>(types.reference.infer.swap.swap.order)
-			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-			const getFromCall = () => types.alternate("'off'", "'on'")
-			const fromCall = getFromCall()
+			const types = scope({
+				"alternate<a, b>": {
+					// ensures old generic params aren't intersected with
+					// updated values (would be never)
+					swap: "alternate<b, a>",
+					order: ["a", "b"]
+				},
+				reference: "alternate<0, 1>"
+			}).export()
+			attest<[0, 1], typeof types.reference.infer.swap.swap.order>()
+			attest<[1, 0], typeof types.reference.infer.swap.swap.swap.order>()
+			const fromCall = types.alternate("'off'", "'on'")
 
-			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+			attest<["off", "on"], typeof fromCall.infer.swap.swap.order>()
+			attest<["on", "off"], typeof fromCall.infer.swap.swap.swap.order>()
 		})
 		it("self-reference no params", () => {
 			attest(() =>
