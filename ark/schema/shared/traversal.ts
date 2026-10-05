@@ -47,6 +47,8 @@ export class Traversal {
 	 */
 	path: PropertyKey[] = []
 
+	_errors: ArkErrors | undefined
+
 	/**
 	 * #### {@link ArkErrors} that will be part of this traversal's finalized result
 	 *
@@ -55,8 +57,6 @@ export class Traversal {
 	get errors(): ArkErrors {
 		return (this._errors ??= new ArkErrors(this))
 	}
-
-	_errors: ArkErrors | undefined
 
 	/**
 	 * #### the original value being traversed
