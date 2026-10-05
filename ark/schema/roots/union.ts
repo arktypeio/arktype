@@ -201,6 +201,23 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
+	get branchGroups(): BaseRoot[] {
+		const branchGroups: BaseRoot[] = []
+		let firstBooleanIndex = -1
+		for (const branch of this.branches) {
+			if (branch.hasKind("unit") && branch.domain === "boolean") {
+				if (firstBooleanIndex === -1) {
+					firstBooleanIndex = branchGroups.length
+					branchGroups.push(branch)
+				} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
+				continue
+			}
+			branchGroups.push(branch)
+		}
+
+		return branchGroups as never
+	}
+
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
 		n.rawIn.hasKind("unit")
 	)

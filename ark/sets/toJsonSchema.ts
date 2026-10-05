@@ -74,22 +74,6 @@ const toResolvedJsonSchema = (
 	return Object.assign(result, node.metaJson)
 }
 
-const branchGroupsOf = (node: nodeOfKind<"union">): BaseRoot[] => {
-	const branchGroups: BaseRoot[] = []
-	let firstBooleanIndex = -1
-	for (const branch of node.branches) {
-		if (branch.hasKind("unit") && branch.domain === "boolean") {
-			if (firstBooleanIndex === -1) {
-				firstBooleanIndex = branchGroups.length
-				branchGroups.push(branch)
-			} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
-			continue
-		}
-		branchGroups.push(branch)
-	}
-	return branchGroups
-}
-
 const innerToJsonSchemaByKind: {
 	[kind in RootKind]: (
 		node: nodeOfKind<kind>,
@@ -98,7 +82,7 @@ const innerToJsonSchemaByKind: {
 } = {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
-		const branchGroups = branchGroupsOf(node)
+		const branchGroups = node.branchGroups
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
 		if (
