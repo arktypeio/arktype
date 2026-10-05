@@ -293,6 +293,11 @@ export abstract class BaseNode<
 		return false
 	}
 
+	// entered directly, it keys its output by id as an alias resolving to it does
+	get isTransformedById(): boolean {
+		return this.includesAlias && $ark.nodesByRegisteredId[this.id] !== undefined
+	}
+
 	get transformRequiresContext(): boolean {
 		return (
 			this.transforms &&
