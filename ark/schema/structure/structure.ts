@@ -981,8 +981,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
 				)
 			}
-			const breakIfUndeclared = (keyKind: "string" | "symbol") => {
-				const props = this.props.filter(prop => typeof prop.key === keyKind)
+			const breakIfUndeclared = (props: Prop.Node[]) => {
 				if (props.length) compileDeclaredKeySwitch(js, props)
 				return js.if(`!(${this._compileDeclaresKey(js)})`, () =>
 					js.line("break undeclared")
@@ -993,9 +992,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`undeclared: if (${unchanged.join(" && ")})`
 				:	"undeclared:"
 			js.block(label, () => {
-				js.forIn("data", () => breakIfUndeclared("string"))
+				js.forIn("data", () =>
+					breakIfUndeclared(
+						this.props.filter(prop => typeof prop.key === "string")
+					)
+				)
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					breakIfUndeclared("symbol")
+					breakIfUndeclared(
+						this.props.filter(prop => typeof prop.key === "symbol")
+					)
 				)
 				return js.return("data")
 			})
