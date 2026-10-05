@@ -19,7 +19,7 @@ export const bundle = (): void => {
 	}).sort()
 	const entryPoints = publicEntryPoints(process.cwd())
 	const ownFiles = flattenIntoInternal(entryPoints, modulePaths)
-	// one build for every entry evaluates a module they share once
+	// a module several entries import evaluates once only if they share one build
 	const { outputFiles } = buildSync({ ...buildOptions(), entryPoints })
 	for (const path of modulePaths) rmRf(path)
 	for (const file of outputFiles)
