@@ -1107,7 +1107,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
-	Pick<Structure.Node, "defaultable" | "declaresKey">
+	Pick<Structure.Node, "defaultable" | "declaresKey" | "props">
 
 const constructStructuralMorphCacheKey = (
 	node: PartiallyInitializedStructure
@@ -1137,6 +1137,13 @@ const constructStructuralMorphCacheKey = (
 					cacheKey += i + " | "
 			}
 		}
+		cacheKey += ")"
+	}
+
+	// an array's copy keeps only the props its structure declares
+	if (cacheKey && node.sequence && node.undeclared !== "delete") {
+		cacheKey += "sequence ("
+		for (const prop of node.props) cacheKey += prop.compiledKey + " | "
 		cacheKey += ")"
 	}
 

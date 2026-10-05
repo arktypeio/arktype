@@ -14,6 +14,18 @@ const input = { a: " x ", b: { c: "y" } }
 T(input).b === input.b
 ```
 
+A transformed array keeps only the named props its type declares, so a union of array types with the same defaults and different props is indeterminate:
+
+```ts
+// previously kept extra, now drops it
+type("string.trim[]")(Object.assign([" x "], { extra: 1 }))
+
+// previously reduced to { a: number = 5 } & string[], now throws: An unordered union ... is indeterminate
+type("string[]")
+	.and({ a: "number = 5" })
+	.or(type("string[]").and({ a: "number = 5", b: "string" }))
+```
+
 A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
 
 ### Reject shallow cycles
