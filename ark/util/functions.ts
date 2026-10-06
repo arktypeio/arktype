@@ -59,7 +59,7 @@ export type DynamicFunction = new <fn extends Fn>(
 
 export type CallableOptions<attachments extends object> = {
 	attach?: attachments
-	bind?: object
+	bind?: object | null
 }
 
 /** @ts-ignore required to cast function type */
@@ -75,7 +75,7 @@ export class Callable<fn extends Fn, attachments extends object = {}> {
 	) {
 		return Object.assign(
 			Object.setPrototypeOf(
-				fn.bind(opts?.bind ?? this),
+				opts?.bind === null ? fn : fn.bind(opts?.bind ?? this),
 				this.constructor.prototype
 			),
 			opts?.attach

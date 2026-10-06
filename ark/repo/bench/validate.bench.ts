@@ -219,7 +219,7 @@ bench("discriminated parse (valibot)", () =>
 // one call site validates every type, as a framework's shared validator does
 bench("rotating parse (arktype)", () =>
 	rotatingData.map((d, i) => Rotating[i].arktype(d))
-).median([384.91, "ns"])
+).median([266.42, "ns"])
 
 bench("rotating parse (zod)", () =>
 	rotatingData.map((d, i) => Rotating[i].zod.safeParse(d))

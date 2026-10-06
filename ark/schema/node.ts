@@ -139,7 +139,7 @@ export abstract class BaseNode<
 						rootApply(data, onFail)
 					:	this.initRootApply()(data, onFail)
 			},
-			{ attach: attachedInnerOf(attachments) as never }
+			{ attach: attachedInnerOf(attachments) as never, bind: null }
 		)
 		// assigned one at a time, so every node of a kind shares a V8 map
 		const self: mutable<UnknownAttachments> = this
