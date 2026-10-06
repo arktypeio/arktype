@@ -115,10 +115,13 @@ for (const pkg of packages) {
 	const { name } = JSON.parse(
 		readFileSync(fromPackage(pkg, "package.json"), "utf8")
 	)
-	const internalNames = exportedNamesOf(resolve(`${name}/internal`))
+	const internalPath = resolve(`${name}/internal`)
+	for (const path of ["internal/index.ts", "internal/index.js"]) {
+		if (resolve(`${name}/${path}`) !== internalPath)
+			throw new Error(`⚠️  ${name}/${path} isn't ${name}/internal.`)
+	}
+	const internalNames = exportedNamesOf(internalPath)
 	for (const module of modulesOf(pkg)) {
-		await importBuilt(`${name}/internal/${module}.ts`)
-		await importBuilt(`${name}/internal/${module}.js`)
 		for (const exportedName of exportedNamesOf(
 			fileURLToPath(fromPackage(pkg, `out/${module}.js`))
 		)) {
