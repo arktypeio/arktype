@@ -155,17 +155,15 @@ Right: { b: boolean, + (undeclared): delete }`)
 		it("reject ignores symbol keys", () => {
 			const undeclared = Symbol("undeclared")
 			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type({ "+": "reject", a: "string" })
-				const data = { a: "ok", [undeclared]: 1 }
-				attest(T(data)).equals(data)
-				const Indexed = $.type({
+				const T = scope({}, { jitless }).type({
 					"+": "reject",
 					a: "string",
-					"[symbol]": "number"
+					"[/^x/]": "number"
 				})
-				attest(Indexed({ a: "ok", [undeclared]: "1" }).toString()).snap(
-					"value at [Symbol(undeclared)] must be a number (was a string)"
+				const data = { a: "ok", x: 1, [undeclared]: 1 }
+				attest(T(data)).equals(data)
+				attest(T({ a: "ok", b: 1, [undeclared]: 1 }).toString()).snap(
+					"b must be removed"
 				)
 			}
 		})
