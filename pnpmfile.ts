@@ -4,7 +4,8 @@ type PackageManifest = {
 	peerDependencies?: Record<string, string>
 }
 
-// keep in sync with the ts6 catalog in pnpm-workspace.yaml
+// keep in sync with the ts6 catalog in pnpm-workspace.yaml and the
+// typescript-6 alias in ark/attest/package.json
 const jsApiTypeScriptVersion = "6.0.3"
 
 // these use TypeScript's JS API, which TS 7 doesn't have, so they get their

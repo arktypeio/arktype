@@ -38,7 +38,7 @@ pnpm i # install package.json dependencies
 pnpm build # builds the package
 ```
 
-Make sure you are using our repo's pinned version of TypeScript and not one that comes bundled with your editor. In VSCode, you should be automatically prompted to allow this when you open the repo, but otherwise take a look at this explanation for how it can be done [from the VSCode docs](https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript).
+Make sure you are using our repo's pinned version of TypeScript and not one that comes bundled with your editor. The repo develops on TypeScript 7, which VSCode runs through the [TypeScript (Native Preview)](https://marketplace.visualstudio.com/items?itemName=TypeScriptTeam.native-preview) extension. It's recommended when you open the repo, and the workspace settings point it at the pinned version.
 
 5. Create a new topic branch:
 

@@ -8,6 +8,7 @@ catalog:
   typescript: 7.1.0-dev.20261006.1
 
 catalogs:
-  # for packages that need TypeScript's JS API (keep in sync with pnpmfile.ts)
+  # for packages that need TypeScript's JS API (keep in sync with pnpmfile.ts
+  # and the typescript-6 alias in ark/attest/package.json)
   ts6:
     typescript: 6.0.3
