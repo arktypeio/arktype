@@ -343,6 +343,31 @@ const out = UserForm({
 })
 ```
 
+`"reject"` checks symbol keys too, which costs an extra read per object. If you don't need undeclared symbol keys rejected, you can allow them for faster validation:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ rejectAllowsSymbolKeys: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({
+	"+": "reject",
+	name: "string"
+})
+
+// valid, since undeclared symbol keys are now allowed
+const out = User({
+	name: "Alice",
+	[Symbol("id")]: 1
+})
+```
+
 ### exactOptionalPropertyTypes
 
 By default, ArkType validates optional keys as if [TypeScript's `exactOptionalPropertyTypes` is set to `true`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes).

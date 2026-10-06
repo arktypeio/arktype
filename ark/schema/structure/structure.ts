@@ -74,6 +74,7 @@ export declare namespace Structure {
 		readonly index?: readonly Index.Schema[]
 		readonly sequence?: Sequence.Schema
 		readonly undeclared?: UndeclaredKeyBehavior
+		readonly rejectAllowsSymbolKeys?: boolean
 	}
 
 	export interface Inner {
@@ -82,6 +83,7 @@ export declare namespace Structure {
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
 		readonly undeclared?: UndeclaredKeyHandling
+		readonly rejectAllowsSymbolKeys?: boolean
 	}
 
 	export namespace Inner {
@@ -136,6 +138,13 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			return schema
 		},
 		applyConfig: (schema, config) => {
+			const undeclared = schema.undeclared ?? config.onUndeclaredKey
+			if (
+				schema.rejectAllowsSymbolKeys === undefined &&
+				undeclared === "reject" &&
+				config.rejectAllowsSymbolKeys
+			)
+				return { ...schema, undeclared, rejectAllowsSymbolKeys: true }
 			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
 				return {
 					...schema,
@@ -200,7 +209,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					if (ioKind === "in") delete inner.undeclared
 					else inner.undeclared = "reject"
 				}
-			}
+			},
+			rejectAllowsSymbolKeys: {}
 		},
 		defaults: {
 			description: structuralDescription
@@ -411,6 +421,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (r.sequence) inner.sequence = r.sequence
 		if (r.undeclared) inner.undeclared = r.undeclared
 		else delete inner.undeclared
+		if (r.rejectAllowsSymbolKeys !== undefined)
+			inner.rejectAllowsSymbolKeys = r.rejectAllowsSymbolKeys
+		else delete inner.rejectAllowsSymbolKeys
 		return this.$.node("structure", inner)
 	}
 
@@ -468,7 +481,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			const keys = ownKeysOf(data)
+			const keys =
+				!this.index && this.rejectAllowsSymbolKeys ?
+					Object.keys(data)
+				:	ownKeysOf(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
@@ -496,7 +512,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					}
 				}
 
-				if (this.undeclared === "reject" && !this.declaresKey(k)) {
+				if (
+					this.undeclared === "reject" &&
+					!this.declaresKey(k) &&
+					(typeof k === "string" || !this.rejectAllowsSymbolKeys)
+				) {
 					if (traversalKind === "Allows") return false
 
 					// this should have its own error code:
@@ -758,17 +778,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.compileExhaustiveEntry(
-					js.const("k", "keys[i]"),
-					this.props.filter(prop => typeof prop.key === "string")
-				)
+				this.compileExhaustiveEntry(js.const("k", "keys[i]"), "string")
 			)
-			if (this.undeclared === "reject" || this.indexMatchesSymbols) {
+			if (
+				(this.undeclared === "reject" && !this.rejectAllowsSymbolKeys) ||
+				this.indexMatchesSymbols
+			) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					this.compileExhaustiveEntry(
-						js,
-						this.props.filter(prop => typeof prop.key === "symbol")
-					)
+					this.compileExhaustiveEntry(js, "symbol")
 				)
 			}
 		}
@@ -1080,7 +1097,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	protected compileExhaustiveEntry(
 		js: NodeCompiler,
-		props: Prop.Node[]
+		keyDomain: "string" | "symbol"
 	): NodeCompiler {
 		if (this.index) {
 			for (const node of this.index) {
@@ -1094,7 +1111,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (this.undeclared === "reject") {
+		if (
+			this.undeclared === "reject" &&
+			(keyDomain === "string" || !this.rejectAllowsSymbolKeys)
+		) {
+			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
 			const reject = () =>
 				js.traversalKind === "Allows" ?
