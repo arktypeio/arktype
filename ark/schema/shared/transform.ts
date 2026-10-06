@@ -1,4 +1,5 @@
 import {
+	defineValue,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -7,6 +8,7 @@ import {
 	type BuiltinObjectKind,
 	type Key
 } from "@ark/util"
+import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { ArkErrorResult } from "./errors.ts"
 
 export class TransformErrors {
@@ -37,7 +39,21 @@ export declare namespace TransformErrors {
 }
 
 export const copyOf = (data: object): object => {
-	if (isArray(data)) return data.slice()
+	if (isArray(data)) {
+		const copy = data.slice()
+		const keys = Object.keys(data)
+		let i = keys.length
+		// an array's named keys follow its indices
+		if (keys[i - 1] !== `${data.length - 1}`)
+			while (i > 0 && !arrayIndexMatcher.test(keys[i - 1])) i--
+		for (; i < keys.length; i++)
+			defineValue(copy, keys[i], data[keys[i] as never])
+		for (const k of Object.getOwnPropertySymbols(data)) {
+			if (Object.prototype.propertyIsEnumerable.call(data, k))
+				defineValue(copy, k, data[k as never])
+		}
+		return copy
+	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
 	const kind = objectKindOf(data)
@@ -46,7 +62,7 @@ export const copyOf = (data: object): object => {
 	// a builtin whose state can't be copied, e.g. a function, transforms in place
 	if (!copyContents) return data
 	const copy = Object.setPrototypeOf(copyContents(data as never), prototype)
-	// like an array's, a typed array's copy takes only its elements
+	// a typed array's copy takes only its elements
 	if (kind in typedArrayConstructors) return copy
 	// descriptors include state a spread skips, e.g. an Error's message
 	const descriptors: { [k: Key]: PropertyDescriptor } =

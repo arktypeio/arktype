@@ -34,6 +34,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
+import { copyOf } from "../shared/transform.ts"
 import {
 	applyValue,
 	traverseKey,
@@ -385,7 +386,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				ctx
 			)
 			if (Object.is(transformed, element)) continue
-			if (out === data) out = data.slice()
+			if (out === data) out = copyOf(data) as never
 			out[i] = transformed
 		}
 		return out
@@ -420,7 +421,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 					keyExpression,
 					onChange: () =>
 						js
-							.if("out === data", () => js.set("out", "data.slice()"))
+							.if("out === data", () =>
+								js.set("out", `${js.ref(copyOf)}(data)`)
+							)
 							.line(`out[${keyExpression}] = ${transformed}`)
 				})
 		})

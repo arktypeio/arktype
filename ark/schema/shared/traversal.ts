@@ -637,9 +637,7 @@ export class Traversal {
 	private copyOnce(data: unknown): unknown {
 		if (typeof data !== "object" || data === null || this.copied!.has(data))
 			return data
-		// a morph at an array's named prop reads it from this copy
-		const copy =
-			isArray(data) ? Object.assign(data.slice(), data) : copyOf(data)
+		const copy = copyOf(data)
 		this.copied!.set(copy, data)
 		return copy
 	}
