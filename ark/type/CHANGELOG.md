@@ -14,15 +14,6 @@ const input = { a: " x ", b: { c: "y" } }
 T(input).b === input.b
 ```
 
-A union of array types with the same defaults and different props is indeterminate:
-
-```ts
-// previously reduced to { a: number = 5 } & string[], now throws: An unordered union ... is indeterminate
-type("string[]")
-	.and({ a: "number = 5" })
-	.or(type("string[]").and({ a: "number = 5", b: "string" }))
-```
-
 A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config. A config with a `clone` key now throws a ParseError.
 
 ### Reject shallow cycles
