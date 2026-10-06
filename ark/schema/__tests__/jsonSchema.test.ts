@@ -334,6 +334,47 @@ contextualize(() => {
 		})
 	})
 
+	it("includes object default from meta", () => {
+		const T = rootSchema({
+			proto: "Array",
+			sequence: "number",
+			meta: { default: [5] }
+		})
+
+		attest(toJsonSchema(T)).snap({
+			type: "array",
+			items: { type: "number" },
+			default: [5]
+		})
+	})
+
+	it("includes nested object default from meta", () => {
+		const T = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "number" }],
+			meta: { default: { a: 1 } }
+		})
+
+		attest(toJsonSchema(T)).snap({
+			type: "object",
+			properties: { a: { type: "number" } },
+			required: ["a"],
+			default: { a: 1 }
+		})
+	})
+
+	it("includes custom object meta", () => {
+		const T = rootSchema({
+			domain: "number",
+			meta: { "x-unit": { name: "ms" } } as never
+		})
+
+		attest<object>(toJsonSchema(T)).snap({
+			type: "number",
+			"x-unit": { name: "ms" }
+		})
+	})
+
 	it("null generated as type instead of const", () => {
 		const T = rootSchema({ unit: null })
 
@@ -415,6 +456,32 @@ contextualize(() => {
     base: {},
     value: 0n
 }`)
+		})
+
+		it("meta default", () => {
+			const T = rootSchema({
+				domain: "object",
+				meta: { default: { a: 0n } }
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "defaultValue",
+    base: {
+        type: "object"
+    },
+    value: {
+        a: 0n
+    }
+}`)
+		})
+
+		it("meta function default", () => {
+			const T = rootSchema({
+				domain: "object",
+				meta: { default: () => ({}) }
+			})
+
+			attest(() => T.toJsonSchema()).throws("defaultValue")
 		})
 
 		it("functional default", () => {
