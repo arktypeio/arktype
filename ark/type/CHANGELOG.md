@@ -86,6 +86,19 @@ const T = type({ "+": "reject", a: "string" })
 T({ a: "x", [Symbol("s")]: 1 })
 ```
 
+With it, reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate:
+
+```ts
+const s = Symbol("s")
+
+// throws with rejectAllowsSymbolKeys: An unordered union ... is indeterminate
+type({ "+": "reject", a: "string.trim" }).or({
+	"+": "reject",
+	a: "string",
+	[s]: "1"
+})
+```
+
 ### Delete undeclared symbol keys
 
 `"+": "delete"` removes undeclared symbol keys, which 2.2.7 kept.
