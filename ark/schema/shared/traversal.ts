@@ -753,7 +753,7 @@ export const allowsUntracked = (
 	aliasVisits.count = 0
 	continuation = undefined
 	let allowed: boolean
-	// restored in a catch rather than a finally, which slows every cyclic allows
+	// restored in a catch, since a finally slows short cyclic allows
 	try {
 		allowed = node.traverseAllows(data as never, 0)
 	} catch (e) {
