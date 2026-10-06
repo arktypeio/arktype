@@ -184,8 +184,7 @@ export class ArkErrors
 	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
 	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
 	 */
-	// a static getter keyed by a symbol would make instanceof slow in V8
-	static readonly [Symbol.species] = Array
+	declare static readonly [Symbol.species]: ArrayConstructor
 
 	protected ctx: Traversal
 
@@ -367,6 +366,10 @@ export class ArkErrors
 		}
 	}
 }
+
+// a static getter keyed by a symbol would make instanceof slow in V8, and
+// transpiled static fields assign, which Array's getter-only species rejects
+Object.defineProperty(ArkErrors, Symbol.species, { value: Array })
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"
