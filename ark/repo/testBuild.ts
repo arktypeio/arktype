@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import ts from "typescript"
 import { publicEntryPoints } from "./bundle.ts"
 
 const loadedUrls = new Set<string>()
@@ -83,9 +84,58 @@ if (
 	)
 }
 
-// a consumer's `export *` of arktype and another package drops any name both export
-if ("string" in (await importBuilt("arktype")))
-	throw new Error("⚠️  arktype's root exports its modules' names.")
+const modulesOf = (pkg: string) =>
+	readdirSync(fromPackage(pkg, "out"), { recursive: true, encoding: "utf8" })
+		.filter(path => path.endsWith(".d.ts"))
+		.map(path => path.slice(0, -".d.ts".length).replace(/\\/g, "/"))
+
+const program = ts.createProgram(
+	packages.flatMap(pkg =>
+		modulesOf(pkg).map(module =>
+			fileURLToPath(fromPackage(pkg, `out/${module}.d.ts`))
+		)
+	),
+	{ module: ts.ModuleKind.NodeNext, types: [] }
+)
+
+const checker = program.getTypeChecker()
+
+const exportedNamesOf = (path: string) =>
+	new Set(
+		checker
+			.getExportsOfModule(
+				checker.getSymbolAtLocation(
+					program.getSourceFile(path.replace(/js$/, "d.ts"))!
+				)!
+			)
+			.map(symbol => symbol.name)
+	)
+
+for (const pkg of packages) {
+	const { name } = JSON.parse(
+		readFileSync(fromPackage(pkg, "package.json"), "utf8")
+	)
+	const internalNames = exportedNamesOf(resolve(`${name}/internal`))
+	for (const module of modulesOf(pkg)) {
+		await importBuilt(`${name}/internal/${module}.ts`)
+		await importBuilt(`${name}/internal/${module}.js`)
+		for (const exportedName of exportedNamesOf(
+			fileURLToPath(fromPackage(pkg, `out/${module}.js`))
+		)) {
+			if (!internalNames.has(exportedName)) {
+				throw new Error(
+					`⚠️  ${name}/internal lacks ${module}'s ${exportedName}.`
+				)
+			}
+		}
+	}
+	// a consumer's `export *` of a package and another drops any name both export
+	const rootNames = exportedNamesOf(resolve(name))
+	for (const exportedName of Object.keys(await importBuilt(name))) {
+		if (!rootNames.has(exportedName))
+			throw new Error(`⚠️  ${name}'s root exports ${exportedName}.`)
+	}
+}
 
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
