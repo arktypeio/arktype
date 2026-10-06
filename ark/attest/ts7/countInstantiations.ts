@@ -41,13 +41,11 @@ const countInstantiations = (configPath: string) =>
 			],
 			{ maxBuffer: 1e8 },
 			// tsc exits non-zero for type errors, which don't affect the count,
-			// but errors in a tsconfig or without a location can skip checking
+			// but skips checking entirely for errors like syntax errors or
+			// invalid options, which it reports by omitting the check time
 			(_, stdout, stderr) => {
 				const count = /Instantiations:\s+(\d+)/.exec(stdout)?.[1]
-				if (
-					count === undefined ||
-					/^error TS|\.json\(\d+,\d+\): error TS/m.test(stdout)
-				) {
+				if (count === undefined || !stdout.includes("Check time:")) {
 					reject(
 						new Error(
 							`Unable to read instantiations for ${configPath}:\n${stdout}${stderr}`
