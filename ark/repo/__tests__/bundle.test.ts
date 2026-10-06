@@ -7,9 +7,7 @@ import { pathToFileURL } from "node:url"
 import { bundle } from "../bundle.ts"
 
 const traced = (module: string, js: string) =>
-	`(globalThis.evaluated ??= []).push("${module}");\n${js.replace(/= {}/g, `= { from: "${module}" }`)}`
-
-type Namespace = Record<string, { from?: string }>
+	`(globalThis.evaluated ??= []).push("${module}");\n${js}`
 
 const packages: string[] = []
 
@@ -65,11 +63,11 @@ contextualize(() => {
 		)
 		const fromOut = bundleIn(dir)
 
-		const root: Namespace = await import(fromOut("index.js"))
+		const root = await import(fromOut("index.js"))
 		attest(evaluated()).equals(["a", "index"])
 		attest(Object.keys(root)).equals(["x"])
 
-		const internal: Namespace = await import(fromOut("internal.js"))
+		const internal = await import(fromOut("internal.js"))
 		attest(evaluated()).equals(["b", "internal"])
 		attest(Object.keys(internal)).equals(["x", "y"])
 		attest(internal.x).is(root.x)

@@ -49,15 +49,6 @@ export const publicEntryPoints = (dir: string): string[] => [
 
 type Edit = [start: number, end: number, replacement: string]
 
-const parse = (js: string) =>
-	ts.createSourceFile(
-		"bundle.js",
-		js,
-		ts.ScriptTarget.Latest,
-		true,
-		ts.ScriptKind.JS
-	)
-
 const applyEdits = (js: string, edits: Edit[]) =>
 	edits
 		.sort(([l], [r]) => r - l)
@@ -82,7 +73,15 @@ const nameSelfReferencingClasses = (js: string): string => {
 		}
 		ts.forEachChild(node, visit)
 	}
-	visit(parse(js))
+	visit(
+		ts.createSourceFile(
+			"bundle.js",
+			js,
+			ts.ScriptTarget.Latest,
+			true,
+			ts.ScriptKind.JS
+		)
+	)
 	for (const name of runtimeNames) {
 		const collided = collidedNameOf(name, identifiers)
 		if (collided) {
