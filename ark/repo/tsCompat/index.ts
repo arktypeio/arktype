@@ -69,7 +69,10 @@ const $ = scope({
 	Node: { value: "number", "next?": "Node" },
 	List: { head: "Node" }
 })
-export const types = $.export()
+// not exported, since TS 7.1 rejects declaration emit for anonymous cyclic
+// types (TS5088) that earlier versions elided to `any`
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const types = $.export()
 
 assertEquals<typeof types.List.infer.head.value, number>()
 

@@ -76,7 +76,7 @@ jobs:
       - name: Typecheck consumer usage with TypeScript ${{ matrix.typescript }}
         run: pnpm --package=typescript@${{ matrix.typescript }} dlx -c "tsc --version && tsc --project ark/repo/tsCompat"
 
-  ts7:
+  ts6:
     needs: core
     timeout-minutes: 20
     runs-on: ubuntu-latest
@@ -87,28 +87,27 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      # packages stay built with the default TypeScript, since the build's
-      # tooling (tsup, typescript-eslint) needs a JS API TS 7 doesn't have
-      - name: Install TypeScript 7
+      - name: Install TypeScript 6
         run: |
-          sed -i "s/^  typescript: .*/  typescript: 7.1.0-dev.20261006.1/" pnpm-workspace.yaml
+          sed -i "s/^  typescript: .*/  typescript: 6.0.3/" pnpm-workspace.yaml
           pnpm install --no-frozen-lockfile
 
       - name: Typecheck repo
         run: pnpm tsc --version && pnpm typecheckRepo
 
-      # attest's declarations must not depend on TS 5/6's compiler API types
+      # attest's declarations must not depend on TS 7's API types, which
+      # the core job's testTsCompat can't catch since TS 7 is installed there
       - name: Typecheck attest's declarations
         run: pnpm tsc --project ark/repo/tsCompat/tsconfig.attest.json
 
-      # snap population tests compare exact instantiation counts, which are
-      # measured differently with TS 7 (see ark/attest/ts7/instantiations.ts)
+      # type snapshots and snap population tests' instantiation counts are
+      # recorded with TS 7, whose type strings and counts differ
       - name: Test attest
         working-directory: ark/attest
         run: pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert
 
   prChecks:
-    needs: [compatibility, typescript, ts7]
+    needs: [compatibility, typescript, ts6]
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:

@@ -831,7 +831,7 @@ contextualize(() => {
 						captures: ["a"] | ["b"]
 					}
 				>
-			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["b"] | ["a"] }>')
+			>(S).type.toString.snap('Regex<"aa" | "bb", { captures: ["a"] | ["b"] }>')
 		})
 
 		it("branching captures", () => {

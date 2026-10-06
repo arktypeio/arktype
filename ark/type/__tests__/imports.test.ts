@@ -79,8 +79,8 @@ contextualize(() => {
 
 				// have to snapshot the module since TypeScript treats it as bivariant
 				attest(types).type.toString.snap(`Module<{
-	public: string | true | 3
 	hasCrept: true
+	public: string | 3 | true
 }>`)
 			})
 		}
@@ -161,8 +161,8 @@ contextualize(() => {
 
 		attest(Object.keys(userModule)).equals(["payload", "db"])
 		attest(userModule).type.toString.snap(`Module<{
+	db: { id: string; name: string; age: number }
 	payload: { name: string; age: number }
-	db: { name: string; age: number; id: string }
 }>`)
 	})
 

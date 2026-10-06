@@ -309,10 +309,10 @@ contextualize(() => {
 				b: { a: "a&b" }
 			}).export()
 			attest(types.a.t).type.toString.snap(
-				"{ b: { a: { b: cyclic; a: cyclic }; b: cyclic } }"
+				"{ b: { b: cyclic; a: { b: cyclic; a: cyclic } } }"
 			)
 			attest(types.b.t).type.toString.snap(
-				"{ a: { b: { a: cyclic; b: cyclic }; a: cyclic } }"
+				"{ a: { b: { b: cyclic; a: cyclic }; a: cyclic } }"
 			)
 		})
 

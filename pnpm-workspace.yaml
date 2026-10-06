@@ -1,5 +1,13 @@
 packages:
   - "ark/*"
 
+# lets tools that need TypeScript's JS API, which TS 7 doesn't have, use TS 6
+pnpmfile: pnpmfile.ts
+
 catalog:
-  typescript: 6.0.3
+  typescript: 7.1.0-dev.20261006.1
+
+catalogs:
+  # for packages that need TypeScript's JS API (keep in sync with pnpmfile.ts)
+  ts6:
+    typescript: 6.0.3
