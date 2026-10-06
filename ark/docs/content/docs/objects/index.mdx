@@ -221,7 +221,7 @@ However, sometimes the way you're using the object would make undeclared propert
 	<SyntaxTab string>
 
 ```ts
-// fail if any non-symbolic key other than "onlyAllowedKey" is present
+// fail if any key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	"+": "reject",
 	onlyAllowedKey: "string"
@@ -247,7 +247,7 @@ const MyOpenObject = type({
     	<SyntaxTab fluent>
 
 ```ts
-// fail if any non-symbolic key other than "onlyAllowedKey" is present
+// fail if any key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	onlyAllowedKey: "string"
 }).onUndeclaredKey("reject")

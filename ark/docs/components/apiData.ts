@@ -271,7 +271,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "- `\"reject\"` - disallow extra non-symbolic properties"
+                        "value": "- `\"reject\"` - disallow extra properties"
                     }
                 ],
                 [
@@ -302,7 +302,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "- `\"reject\"` - disallow extra non-symbolic properties"
+                        "value": "- `\"reject\"` - disallow extra properties"
                     }
                 ],
                 [

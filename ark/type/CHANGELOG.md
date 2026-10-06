@@ -66,29 +66,7 @@ T('{"a":" x "}')
 
 `arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
 
-### Ignore symbol keys when rejecting undeclared keys
-
-`"+": "reject"` no longer fails on undeclared symbol keys, as with zod's and valibot's strict objects. This saves a symbol read per object, which makes validating small strict objects about 3x faster:
-
-```ts
-const T = type({ "+": "reject", a: "string" })
-
-// previously ArkErrors: value at [Symbol(s)] must be removed, now valid
-T({ a: "x", [Symbol("s")]: 1 })
-```
-
-Reject types that differed only by a symbol key are no longer disjoint, so a union of them with a morph is indeterminate:
-
-```ts
-const s = Symbol("s")
-
-// previously parsed, now throws: An unordered union ... is indeterminate
-type({ "+": "reject", a: "string.trim" }).or({
-	"+": "reject",
-	a: "string",
-	[s]: "1"
-})
-```
+### Delete undeclared symbol keys
 
 `"+": "delete"` removes undeclared symbol keys, which 2.2.7 kept.
 
