@@ -10,13 +10,13 @@ import prettier from "@prettier/sync"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
+import type { Completions } from "../cache/getCachedAssertions.ts"
 import {
 	getSnapshotByName,
 	queueSnapshotUpdate,
 	updateExternalSnapshot,
 	type SnapshotArgs
 } from "../cache/snapshots.ts"
-import type { Completions } from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
 import { chainableNoOpProxy } from "../utils.ts"
 import {

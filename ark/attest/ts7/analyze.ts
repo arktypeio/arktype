@@ -26,6 +26,7 @@ import {
 export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const config = getConfig()
 	const server = TsgoServer.instance
+	server.disableCommentDirectives()
 	const assertionsByFile: AssertionsByFile = {}
 	for (const path of server.rootFiles) {
 		const file = server.getSourceFileOrThrow(path)
@@ -219,8 +220,9 @@ const getJsdoc = (call: CallExpression): string | undefined => {
 
 	// read from the AST where possible since tsgo's documentation flattens links
 	const documentation = (
-		declarations.map(getDocumentationComment).filter(Boolean).join("\n") ||
-		symbol.getDocumentationComment(checker)
+		[...new Set(declarations.map(getDocumentationComment))]
+			.filter(Boolean)
+			.join("\n") || symbol.getDocumentationComment(checker)
 	).trim()
 	if (documentation) return documentation
 
@@ -234,8 +236,9 @@ const getJsdoc = (call: CallExpression): string | undefined => {
 			if (tags.length) {
 				return tags
 					.map(tag => {
+						const name = TsgoServer.instance.getOriginalText(tag.tagName)
 						const comment = ast.getTextOfJSDocComment(tag.comment)
-						return tag.tagName.text + (comment ? ` ${comment}` : "")
+						return name + (comment ? ` ${comment}` : "")
 					})
 					.join("\n")
 			}
@@ -243,18 +246,22 @@ const getJsdoc = (call: CallExpression): string | undefined => {
 	}
 }
 
+// like TS, only a declaration's last JSDoc block is its documentation
 const getDocumentationComment = (declaration: Node): string => {
-	// JSDoc for a variable is attached to its statement
+	// the JSDoc of a statement declaring one variable belongs to that variable
+	const statement = declaration.parent?.parent
 	const host =
-		ast.isVariableDeclaration(declaration) ?
-			declaration.parent.parent
+		(
+			statement &&
+			ast.isVariableStatement(statement) &&
+			statement.declarationList.declarations.length === 1
+		) ?
+			statement
 		:	declaration
-	return (host.jsDoc ?? [])
-		.map(
-			doc => (ast.isJSDoc(doc) && ast.getTextOfJSDocComment(doc.comment)) || ""
-		)
-		.filter(Boolean)
-		.join("\n")
+	const doc = host.jsDoc?.[host.jsDoc.length - 1]
+	return (
+		(doc && ast.isJSDoc(doc) && ast.getTextOfJSDocComment(doc.comment)) || ""
+	)
 }
 
 const getInlineInstantiationData = (

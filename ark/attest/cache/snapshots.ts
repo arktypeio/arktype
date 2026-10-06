@@ -127,7 +127,8 @@ let snapshotsWillBeWritten = false
 export const writeSnapshotUpdatesOnExit = (): void => {
 	if (snapshotsWillBeWritten) return
 
-	process.on("exit", writeCachedInlineSnapshotUpdates)
+	// before TS 7's API stops its server on exit
+	process.prependListener("exit", writeCachedInlineSnapshotUpdates)
 	snapshotsWillBeWritten = true
 }
 

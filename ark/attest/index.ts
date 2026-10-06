@@ -5,13 +5,11 @@ export { attest } from "./assert/attest.ts"
 export { bench } from "./bench/bench.ts"
 export {
 	getBenchAssertionAtPosition,
-	getTypeAssertionAtPosition
-} from "./cache/getCachedAssertions.ts"
-export type {
-	ArgAssertionData,
-	LinePositionRange,
-	TypeAssertionData,
-	TypeRelationship
+	getTypeAssertionAtPosition,
+	type ArgAssertionData,
+	type LinePositionRange,
+	type TypeAssertionData,
+	type TypeRelationship
 } from "./cache/getCachedAssertions.ts"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.ts"
 export { contextualize } from "./utils.ts"

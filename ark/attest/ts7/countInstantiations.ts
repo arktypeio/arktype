@@ -22,10 +22,10 @@ const countInstantiations = (configPath: string) =>
 			],
 			{ maxBuffer: 1e8 },
 			// tsc exits non-zero for type errors, which don't affect the count,
-			// but errors without a location (e.g. invalid options) can skip checking
+			// but option errors (TS5xxx) or errors without a location can skip checking
 			(_, stdout, stderr) => {
 				const count = /Instantiations:\s+(\d+)/.exec(stdout)?.[1]
-				if (count === undefined || /^error TS\d+/m.test(stdout)) {
+				if (count === undefined || /^error TS|error TS5\d{3}:/m.test(stdout)) {
 					reject(
 						new Error(
 							`Unable to read instantiations for ${configPath}:\n${stdout}${stderr}`

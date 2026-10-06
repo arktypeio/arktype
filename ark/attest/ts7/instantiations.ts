@@ -53,7 +53,7 @@ export const getInstantiationsContributedByNodes = (
 		)
 	]
 
-	const projectConfigPath = TsgoServer.instance.configPath
+	const { configPath: projectConfigPath, project } = TsgoServer.instance
 	const configDir = dirname(projectConfigPath)
 	const fileDir = dirname(file.fileName)
 	const fileBase = basename(file.fileName)
@@ -76,6 +76,8 @@ export const getInstantiationsContributedByNodes = (
 						incremental: false,
 						composite: false,
 						tsBuildInfoFile: null,
+						// implied by composite and required by options like declarationMap
+						...(project.compilerOptions.composite && { declaration: true }),
 						// otherwise counts depend on whether declarations are checked
 						skipLibCheck: true
 					},
