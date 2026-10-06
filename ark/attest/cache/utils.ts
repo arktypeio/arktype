@@ -11,7 +11,7 @@ import {
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
 } from "./ts.ts"
-import type { LinePositionRange } from "./writeAssertionCache.ts"
+import type { LinePositionRange } from "./getCachedAssertions.ts"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression

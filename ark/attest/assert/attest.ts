@@ -3,8 +3,10 @@ import type { ErrorMessage } from "@ark/util"
 import { getBenchCtx } from "../bench/bench.ts"
 import type { Measure } from "../bench/measure.ts"
 import { instantiationDataHandler } from "../bench/type.ts"
-import { getTypeAssertionAtPosition } from "../cache/getCachedAssertions.ts"
-import type { TypeAssertionData } from "../cache/writeAssertionCache.ts"
+import {
+	getTypeAssertionAtPosition,
+	type TypeAssertionData
+} from "../cache/getCachedAssertions.ts"
 import { getConfig, type AttestConfig } from "../config.ts"
 import {
 	assertEquals,

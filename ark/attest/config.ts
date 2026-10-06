@@ -1,15 +1,15 @@
 import { ensureDir, fromCwd } from "@ark/fs"
-import { tryParseNumber } from "@ark/util"
+import { tryParseNumber, type JsonObject } from "@ark/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type * as prettier from "prettier"
-import type ts from "typescript"
 
 export type BenchErrorConfig = "runtime" | "types" | boolean
 
 type BaseAttestConfig = {
 	tsconfig: string | null | undefined
-	compilerOptions: ts.CompilerOptions
+	/** compilerOptions as they would be written in tsconfig.json */
+	compilerOptions: JsonObject
 	updateSnapshots: boolean
 	failOnMissingSnapshots: boolean
 	skipTypes: boolean

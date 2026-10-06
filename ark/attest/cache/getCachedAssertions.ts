@@ -2,12 +2,48 @@ import { readJson, type LinePosition, type SourcePosition } from "@ark/fs"
 import { existsSync } from "node:fs"
 import { getConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
-import type {
-	AssertionsByFile,
-	LinePositionRange,
-	TypeAssertionData,
-	TypeAssertionKind
-} from "./writeAssertionCache.ts"
+
+export type AssertionsByFile = Record<string, TypeAssertionData[]>
+
+export type Completions = Record<string, string[]> | string
+
+export type ArgAssertionData = {
+	type: string
+	relationships: {
+		args: TypeRelationship[]
+		typeArgs: TypeRelationship[]
+	}
+}
+
+export type TypeRelationshipAssertionData = {
+	location: LinePositionRange
+	args: ArgAssertionData[]
+	typeArgs: ArgAssertionData[]
+	errors: string[]
+	completions: Completions
+	/** JSDoc comment for the first argument, if any */
+	jsdoc?: string
+}
+
+export type TypeBenchmarkingAssertionData = {
+	location: LinePositionRange
+	count: number
+}
+
+export type TypeAssertionKind = "bench" | "type"
+
+export type TypeAssertionData<
+	kind extends TypeAssertionKind = TypeAssertionKind
+> =
+	kind extends "bench" ? TypeBenchmarkingAssertionData
+	:	TypeRelationshipAssertionData
+
+export type LinePositionRange = {
+	start: LinePosition
+	end: LinePosition
+}
+
+export type TypeRelationship = "subtype" | "supertype" | "equality" | "none"
 
 let cachedAssertions: AssertionsByFile | undefined
 

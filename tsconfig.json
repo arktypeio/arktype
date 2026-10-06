@@ -4,6 +4,16 @@
 		"allowImportingTsExtensions": true,
 		"rewriteRelativeImportExtensions": true,
 		"customConditions": ["ark-ts"],
+		// types for attest's TS 7 backend, which imports from whichever
+		// typescript is installed at runtime
+		"paths": {
+			"typescript/unstable/ast": [
+				"./ark/attest/node_modules/typescript-7/dist/ast/index.d.ts"
+			],
+			"typescript/unstable/sync": [
+				"./ark/attest/node_modules/typescript-7/dist/api/sync/api.d.ts"
+			]
+		},
 		"types": ["mocha", "node"],
 		// avoid prototype methods that are not available and cannot easily be transpiled
 		"lib": ["ES2020"]

@@ -5,7 +5,7 @@ import type {
 	Completions,
 	TypeAssertionData,
 	TypeRelationship
-} from "../cache/writeAssertionCache.ts"
+} from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
 import { getInstantiationsContributedByNodes } from "./instantiations.ts"
@@ -213,15 +213,48 @@ const getJsdoc = (call: CallExpression): string | undefined => {
 	const symbol = checker.getSymbolAtLocation(arg)
 	if (!symbol) return
 
-	const documentation = symbol.getDocumentationComment(checker).trim()
+	const declarations = symbol.declarations.flatMap(
+		declaration => declaration.resolve() ?? []
+	)
+
+	// read from the AST where possible since tsgo's documentation flattens links
+	const documentation = (
+		declarations.map(getDocumentationComment).filter(Boolean).join("\n") ||
+		symbol.getDocumentationComment(checker)
+	).trim()
 	if (documentation) return documentation
 
-	const tags = symbol.getJsDocTags(checker)
-	if (tags.length) {
-		return tags
-			.map(tag => tag.name + (tag.text ? ` ${tag.text}` : ""))
-			.join("\n")
+	for (const declaration of declarations) {
+		if (
+			ast.isPropertyAssignment(declaration) ||
+			ast.isShorthandPropertyAssignment(declaration) ||
+			ast.isPropertyDeclaration(declaration)
+		) {
+			const tags = ast.getJSDocTags(declaration)
+			if (tags.length) {
+				return tags
+					.map(tag => {
+						const comment = ast.getTextOfJSDocComment(tag.comment)
+						return tag.tagName.text + (comment ? ` ${comment}` : "")
+					})
+					.join("\n")
+			}
+		}
 	}
+}
+
+const getDocumentationComment = (declaration: Node): string => {
+	// JSDoc for a variable is attached to its statement
+	const host =
+		ast.isVariableDeclaration(declaration) ?
+			declaration.parent.parent
+		:	declaration
+	return (host.jsDoc ?? [])
+		.map(
+			doc => (ast.isJSDoc(doc) && ast.getTextOfJSDocComment(doc.comment)) || ""
+		)
+		.filter(Boolean)
+		.join("\n")
 }
 
 const getInlineInstantiationData = (

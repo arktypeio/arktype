@@ -1,7 +1,7 @@
 // typechecked against the built packages with each supported TypeScript
 // version in CI to ensure inference holds outside the version we test with
-import { match, scope, type } from "arktype"
 import { regex } from "arkregex"
+import { match, scope, type } from "arktype"
 
 type equals<l, r> =
 	(<t>() => t extends l ? 1 : 0) extends <t>() => t extends r ? 1 : 0 ? true

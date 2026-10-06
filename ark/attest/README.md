@@ -344,7 +344,7 @@ Attest analyzes your project with whichever version of `typescript` is installed
 
 TypeScript 7+ is supported via its native API. Type assertions, completions, JSDoc, benches and the CLI work the same way, with a few differences:
 
-- Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench, so they differ from TypeScript 5/6 baselines.
+- Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench. Since `tsc` fully checks the bench's dependencies before measuring it, work a bench shares with them isn't attributed to the bench, so counts run lower than with TypeScript 5/6 (up to ~25% for benches over local source files) and baselines should be recorded separately.
 - Type strings, union ordering and error elaboration can differ from earlier versions, so snapshots may need to be updated when switching.
 
 ### APIs

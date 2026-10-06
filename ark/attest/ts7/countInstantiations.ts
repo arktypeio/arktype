@@ -21,10 +21,11 @@ const countInstantiations = (configPath: string) =>
 				"--singleThreaded"
 			],
 			{ maxBuffer: 1e8 },
-			// tsc exits non-zero for type errors, which don't affect the count
+			// tsc exits non-zero for type errors, which don't affect the count,
+			// but errors without a location (e.g. invalid options) can skip checking
 			(_, stdout, stderr) => {
 				const count = /Instantiations:\s+(\d+)/.exec(stdout)?.[1]
-				if (count === undefined) {
+				if (count === undefined || /^error TS\d+/m.test(stdout)) {
 					reject(
 						new Error(
 							`Unable to read instantiations for ${configPath}:\n${stdout}${stderr}`

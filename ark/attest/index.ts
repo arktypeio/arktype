@@ -12,6 +12,6 @@ export type {
 	LinePositionRange,
 	TypeAssertionData,
 	TypeRelationship
-} from "./cache/writeAssertionCache.ts"
+} from "./cache/getCachedAssertions.ts"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.ts"
 export { contextualize } from "./utils.ts"

@@ -1,11 +1,12 @@
-import { ensureDir, writeFile, writeJson, type SourcePosition } from "@ark/fs"
-import { throwError, throwInternalError } from "@ark/util"
-import { rmSync } from "node:fs"
+import type { SourcePosition } from "@ark/fs"
+import { throwError } from "@ark/util"
 import { execFileSync } from "node:child_process"
 import { basename, dirname, extname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { isPositionWithinRange } from "../cache/getCachedAssertions.ts"
-import type { LinePositionRange } from "../cache/writeAssertionCache.ts"
+import {
+	isPositionWithinRange,
+	type LinePositionRange
+} from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
 import {
 	TsgoServer,
@@ -13,7 +14,10 @@ import {
 	getCallExpressionsByName,
 	getCallLocation,
 	getFirstFunctionDescendant,
+	removeTempFile,
 	tscPath,
+	writeTempFile,
+	writeTempTsconfig,
 	type Node,
 	type SourceFile
 } from "./server.ts"
@@ -28,7 +32,11 @@ const countInstantiationsScript = fileURLToPath(
 /**
  * tsgo's API doesn't expose instantiation counts, so each block is checked by
  * a separate tsc process alongside the rest of its file with test calls
- * removed, and compared against that file on its own
+ * removed, and compared against that file on its own.
+ *
+ * Unlike TS 5's in-process measurement, tsc fully checks every file the
+ * program includes, so work a block shares with its dependencies is counted
+ * in the baseline rather than attributed to the block.
  */
 export const getInstantiationsContributedByNodes = (
 	file: SourceFile,
@@ -45,24 +53,37 @@ export const getInstantiationsContributedByNodes = (
 		)
 	]
 
-	const attestTsconfigPath = TsgoServer.instance.configPath
-	const configDir = ensureDir(join(getConfig().cacheDir, "instantiations"))
+	const projectConfigPath = TsgoServer.instance.configPath
+	const configDir = dirname(projectConfigPath)
 	const fileDir = dirname(file.fileName)
 	const fileBase = basename(file.fileName)
 
-	const tempFiles: string[] = []
+	const tempPaths: string[] = []
 	try {
 		const configPaths = variants.map((text, i) => {
 			// dot-prefixed so test runner globs don't pick it up
-			const tempFile = join(fileDir, `.attest-${process.pid}-${i}-${fileBase}`)
-			writeFile(tempFile, text)
-			const configPath = join(configDir, `${process.pid}-${i}.json`)
-			tempFiles.push(tempFile, configPath)
-			writeJson(configPath, {
-				extends: attestTsconfigPath,
-				files: [tempFile],
-				include: []
-			})
+			const tempFile = writeTempFile(
+				join(fileDir, `.attest-${process.pid}-${i}-${fileBase}`),
+				text
+			)
+			// beside the project config so its relative paths resolve the same way
+			const configPath = writeTempTsconfig(
+				join(configDir, `.attest-${process.pid}-${i}.tsconfig.json`),
+				{
+					extends: projectConfigPath,
+					compilerOptions: {
+						// reused build info would skip checking unchanged files
+						incremental: false,
+						composite: false,
+						tsBuildInfoFile: null,
+						// otherwise counts depend on whether declarations are checked
+						skipLibCheck: true
+					},
+					files: [tempFile],
+					include: []
+				}
+			)
+			tempPaths.push(tempFile, configPath)
 			return configPath
 		})
 
@@ -75,50 +96,61 @@ export const getInstantiationsContributedByNodes = (
 		)
 		return counts.map(count => count - baseline)
 	} finally {
-		for (const path of tempFiles) rmSync(path, { force: true })
+		for (const path of tempPaths) removeTempFile(path)
 	}
 }
 
 const getBaselineText = (file: SourceFile): string => {
-	let text = file.getFullText()
+	const text = file.getFullText()
 	// remove each complete test expression, e.g. bench(...).types(...)
-	for (const call of getCallExpressionsByName(
+	const removedRanges = getCallExpressionsByName(
 		file,
 		getConfig().testDeclarationAliases
-	)) {
-		let node: Node = call
-		while (node.parent && !ast.isExpressionStatement(node)) node = node.parent
-		text = text.replace(node.getFullText(), "")
-	}
-	return text
-}
+	)
+		.map(call => {
+			let node: Node = call
+			while (node.parent && !ast.isExpressionStatement(node)) node = node.parent
+			return node
+		})
+		.sort((l, r) => l.pos - r.pos)
 
-const benchCountsByFile = new Map<string, BenchCount[]>()
+	let baselineText = ""
+	let position = 0
+	for (const statement of removedRanges) {
+		// nested test calls are removed with the statement containing them
+		if (statement.pos < position) continue
+		baselineText += text.slice(position, statement.pos)
+		position = statement.end
+	}
+	return baselineText + text.slice(position)
+}
 
 type BenchCount = {
 	location: LinePositionRange
 	count: number
 }
 
+const benchCountsByFile = new Map<string, BenchCount[]>()
+
 export const getBenchInstantiations = (position: SourcePosition): number => {
 	let benchCounts = benchCountsByFile.get(position.file)
 	if (!benchCounts) {
 		// count every bench in the file at once so tsc can run in parallel
 		const file = TsgoServer.instance.getSourceFileOrThrow(position.file)
-		const calls = getCallExpressionsByName(
+		const benches = getCallExpressionsByName(
 			file,
 			getConfig().testDeclarationAliases
-		)
+		).flatMap(call => {
+			const body = getFirstFunctionDescendant(call)
+			// e.g. bench("name", fn), which has no inline body to measure
+			return body ? [{ call, body }] : []
+		})
 		const counts = getInstantiationsContributedByNodes(
 			file,
-			calls.map(
-				call =>
-					getFirstFunctionDescendant(call) ??
-					throwInternalError(`Unable to retrieve contents of ${call.getText()}`)
-			)
+			benches.map(bench => bench.body)
 		)
-		benchCounts = calls.map((call, i) => ({
-			location: getCallLocation(call),
+		benchCounts = benches.map((bench, i) => ({
+			location: getCallLocation(bench.call),
 			count: counts[i]
 		}))
 		benchCountsByFile.set(position.file, benchCounts)
@@ -128,7 +160,7 @@ export const getBenchInstantiations = (position: SourcePosition): number => {
 			isPositionWithinRange(position, location)
 		)?.count ??
 		throwError(
-			`No call expressions matching the name(s) '${getConfig().testDeclarationAliases.join()}' were found at ${position.file}:${position.line}:${position.char}`
+			`No call expressions with an inline function matching the name(s) '${getConfig().testDeclarationAliases.join()}' were found at ${position.file}:${position.line}:${position.char}`
 		)
 	)
 }

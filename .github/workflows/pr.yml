@@ -72,8 +72,9 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      # unlike npx, dlx always runs the requested version even if the workspace has a copy
       - name: Typecheck consumer usage with TypeScript ${{ matrix.typescript }}
-        run: npx --yes --package typescript@${{ matrix.typescript }} -- tsc --project ark/repo/tsCompat
+        run: pnpm --package=typescript@${{ matrix.typescript }} dlx -c "tsc --version && tsc --project ark/repo/tsCompat"
 
   attest-ts7:
     needs: core
@@ -91,7 +92,12 @@ jobs:
           sed -i "s/^  typescript: .*/  typescript: 7.0.2/" pnpm-workspace.yaml
           pnpm install --no-frozen-lockfile
 
-      # snap population tests compare exact instantiation counts, which are compiler-specific
+      # attest's declarations must not depend on TS 5's compiler API types
+      - name: Typecheck attest's declarations
+        run: pnpm tsc --version && pnpm tsc --project ark/repo/tsCompat/tsconfig.attest.json
+
+      # snap population tests compare exact instantiation counts, which are
+      # measured differently with TS 7 (see ark/attest/ts7/instantiations.ts)
       - name: Test attest
         working-directory: ark/attest
         run: pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert

@@ -16,7 +16,7 @@ import {
 	updateExternalSnapshot,
 	type SnapshotArgs
 } from "../cache/snapshots.ts"
-import type { Completions } from "../cache/writeAssertionCache.ts"
+import type { Completions } from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
 import { chainableNoOpProxy } from "../utils.ts"
 import {
