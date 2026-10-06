@@ -877,7 +877,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	private compileCopy(js: NodeCompiler): NodeCompiler {
 		return js.if("out === data", () =>
 			this.sequence ?
-				this.compileCopyProps(js.set("out", "data.slice()"), "data", "out")
+				this.compileCopyProps(
+					js.set("out", `${js.ref(copyOf)}(data)`),
+					"data",
+					"out"
+				)
 			:	js.set(
 					"out",
 					`Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
@@ -907,7 +911,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		})
 	}
 
-	// slicing an array drops its props
+	// an array's copy has only the enumerable props of data
 	private compileCopyProps(
 		js: NodeCompiler,
 		from: string,

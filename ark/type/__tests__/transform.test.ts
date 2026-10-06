@@ -374,6 +374,22 @@ b must be A (was "y")`)
 		).snap("value at [1] must be a string (was a number)")
 	})
 
+	it("array with undeclared props", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const s = Symbol("s")
+			const original = Object.assign([" a "], { extra: 1, [s]: 2 })
+			attest($.type("string.trim[]").assert(original)).equals(
+				Object.assign(["a"], { extra: 1, [s]: 2 })
+			)
+			attest(
+				$.type(["string", "string = 'd'"]).assert(
+					Object.assign(["a"], { extra: 1 })
+				)
+			).equals(Object.assign(["a", "d"], { extra: 1 }) as never)
+		}
+	})
+
 	it("array props with shared defaults", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
