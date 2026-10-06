@@ -522,8 +522,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				if (
 					this.undeclared === "reject" &&
-					!this.declaresKey(k) &&
-					(typeof k === "string" || !this.rejectAllowsSymbolKeys)
+					(typeof k === "string" || !this.rejectAllowsSymbolKeys) &&
+					!this.declaresKey(k)
 				) {
 					if (traversalKind === "Allows") return false
 
