@@ -104,6 +104,10 @@ type({ "+": "reject", a: "string.trim" }).or({
 
 `"+": "delete"` removes undeclared symbol keys, which 2.2.7 kept.
 
+### Import internals from `arktype/internal`
+
+`arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
+
 ## 2.2.7
 
 ### Fix `this[]` in self-referential object types
