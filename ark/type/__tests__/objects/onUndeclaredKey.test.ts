@@ -36,6 +36,13 @@ contextualize(() => {
 		attest(R.and(L).expression).equals(L.and(R).expression)
 	})
 
+	it("intersects a symbol index with reject", () => {
+		const T = type({ "+": "reject", a: "string" }).and({ "[symbol]": "number" })
+		attest(T.expression).snap(
+			"{ [symbol]: number, a: string, + (undeclared): reject }"
+		)
+	})
+
 	describe("traversal", () => {
 		const getExtraneousB = () => ({ a: "ok", b: "why?" })
 
@@ -143,6 +150,24 @@ Right: { b: boolean, + (undeclared): delete }`)
 			}).onUndeclaredKey("reject")
 			attest(T({ a: "ok" })).equals({ a: "ok" })
 			attest(T(getExtraneousB()).toString()).snap("b must be removed")
+		})
+
+		it("reject ignores symbol keys", () => {
+			const undeclared = Symbol("undeclared")
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({ "+": "reject", a: "string" })
+				const data = { a: "ok", [undeclared]: 1 }
+				attest(T(data)).equals(data)
+				const Indexed = $.type({
+					"+": "reject",
+					a: "string",
+					"[symbol]": "number"
+				})
+				attest(Indexed({ a: "ok", [undeclared]: "1" }).toString()).snap(
+					"value at [Symbol(undeclared)] must be a number (was a string)"
+				)
+			}
 		})
 
 		it("reject array key", () => {

@@ -3,6 +3,7 @@ import {
 	Disjoint,
 	normalizeIndex,
 	writeDuplicateKeyMessage,
+	type BaseRoot,
 	type BaseScope,
 	type OptionalNode,
 	type Structure,
@@ -38,6 +39,11 @@ const intersectPropsAndIndex = <
 	return null
 }
 
+const allowedKeysOf = (node: Structure.Node): BaseRoot =>
+	node.undeclared === "reject" ?
+		node.keyof().rawOr($ark.intrinsic.symbol.internal)
+	:	node.keyof()
+
 export const structure: setImplementationOf<Structure.Declaration> = {
 	intersections: {
 		structure: (l, r, ctx) => {
@@ -50,7 +56,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			const lDerived: OptionalNode[] = []
 			const rDerived: OptionalNode[] = []
 			if (l.undeclared) {
-				const lKey = l.keyof()
+				const lKey = allowedKeysOf(l)
 				for (const k of r.requiredKeys) {
 					if (!lKey.allows(k)) {
 						disjointResult.add(
@@ -80,7 +86,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 				}
 			}
 			if (r.undeclared) {
-				const rKey = r.keyof()
+				const rKey = allowedKeysOf(r)
 				for (const k of l.requiredKeys) {
 					if (!rKey.allows(k)) {
 						disjointResult.add(
