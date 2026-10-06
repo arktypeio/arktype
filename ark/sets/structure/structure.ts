@@ -40,7 +40,7 @@ const intersectPropsAndIndex = <
 }
 
 const allowedKeysOf = (node: Structure.Node): BaseRoot =>
-	node.undeclared === "reject" && node.rejectAllowsSymbolKeys ?
+	node.rejectAllowsSymbolKeys ?
 		node.keyof().rawOr($ark.intrinsic.symbol.internal)
 	:	node.keyof()
 

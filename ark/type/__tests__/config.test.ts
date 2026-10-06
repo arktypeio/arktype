@@ -4,6 +4,7 @@ import {
 	rootSchema,
 	schemaScope,
 	unsupportedCloneConfigMessage,
+	writeBadRejectAllowsSymbolKeysMessage,
 	type ArkSchemaConfig
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
@@ -260,6 +261,14 @@ contextualize(() => {
 				"{ [symbol]: number, a: string, + (undeclared): reject }"
 			)
 		})
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				required: [{ key: "a", value: "string" }],
+				undeclared: "delete",
+				rejectAllowsSymbolKeys: true
+			})
+		).throws(writeBadRejectAllowsSymbolKeysMessage("delete"))
 	})
 
 	it("clone", () => {
