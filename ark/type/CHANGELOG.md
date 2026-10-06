@@ -66,6 +66,26 @@ T('{"a":" x "}')
 
 `arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
 
+### Add `rejectAllowsSymbolKeys`
+
+Finding undeclared symbol keys for `"+": "reject"` takes a symbol read per object. If you don't need them rejected, you can allow them, which makes validating a small object that rejects undeclared keys about 2.5x faster and one with 40 keys about 1.15x faster:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ rejectAllowsSymbolKeys: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const T = type({ "+": "reject", a: "string" })
+
+// valid, instead of ArkErrors: value at [Symbol(s)] must be removed
+T({ a: "x", [Symbol("s")]: 1 })
+```
+
 ### Delete undeclared symbol keys
 
 `"+": "delete"` removes undeclared symbol keys, which 2.2.7 kept.

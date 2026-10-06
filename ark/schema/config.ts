@@ -201,6 +201,7 @@ const normalizeFallback = (
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly jitless?: boolean
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
+	readonly rejectAllowsSymbolKeys?: boolean
 	readonly numberAllowsNaN?: boolean
 	readonly dateAllowsInvalid?: boolean
 	readonly exactOptionalPropertyTypes?: boolean

@@ -90,6 +90,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 		{
 			jitless: envHasCsp(),
 			onUndeclaredKey: "ignore",
+			rejectAllowsSymbolKeys: false,
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,
 			dateAllowsInvalid: false,

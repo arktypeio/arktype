@@ -176,7 +176,11 @@ let anonymousScopeCount = 0
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
-	"dateAllowsInvalid" | "numberAllowsNaN" | "onUndeclaredKey" | "keywords"
+	| "dateAllowsInvalid"
+	| "numberAllowsNaN"
+	| "onUndeclaredKey"
+	| "rejectAllowsSymbolKeys"
+	| "keywords"
 >
 
 export interface ScopeOnlyConfigOptions {

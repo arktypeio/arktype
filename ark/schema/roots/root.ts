@@ -547,8 +547,11 @@ export abstract class BaseRoot<
 				(kind, inner) =>
 					kind === "structure" ?
 						rule === "ignore" ?
-							omit(inner as Structure.Inner, { undeclared: 1 })
-						:	{ ...inner, undeclared: rule }
+							omit(inner as Structure.Inner, {
+								undeclared: 1,
+								rejectAllowsSymbolKeys: 1
+							})
+						:	{ ...inner, undeclared: rule, rejectAllowsSymbolKeys: undefined }
 					:	inner,
 				deep ? undefined : (
 					{ shouldTransform: node => !includes(structuralKinds, node.kind) }

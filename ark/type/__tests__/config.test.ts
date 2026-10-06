@@ -239,6 +239,29 @@ contextualize(() => {
 		})
 	})
 
+	it("rejectAllowsSymbolKeys", () => {
+		withConfig({ rejectAllowsSymbolKeys: true }, () => {
+			const undeclared = Symbol("undeclared")
+			const data = { a: "ok", x: 1, [undeclared]: 1 }
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({ "+": "reject", a: "string", x: "number" })
+				attest(T(data)).equals(data)
+				const Indexed = $.type({
+					"+": "reject",
+					a: "string",
+					"[/^x/]": "number"
+				})
+				attest(Indexed(data)).equals(data)
+				attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
+			}
+			const L = scope({}).type({ "+": "reject", a: "string" })
+			attest(L.and({ "[symbol]": "number" }).expression).snap(
+				"{ [symbol]: number, a: string, + (undeclared): reject }"
+			)
+		})
+	})
+
 	it("clone", () => {
 		// @ts-expect-error
 		attest(() => configure({ clone: false })).throws(

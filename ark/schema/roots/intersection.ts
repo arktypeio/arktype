@@ -87,7 +87,7 @@ export declare namespace Intersection {
 
 	export type NormalizedSchema = Omit<
 		ConstraintsSchema,
-		StructuralKind | "undeclared"
+		StructuralKind | ConditionalTerminalIntersectionKey
 	>
 
 	export type Schema<inferredBasis = any> = ConstraintsSchema<inferredBasis>
@@ -388,6 +388,7 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 
 export type ConditionalTerminalIntersectionRoot = {
 	undeclared?: UndeclaredKeyBehavior
+	rejectAllowsSymbolKeys?: boolean
 }
 
 type ConditionalTerminalIntersectionKey =
@@ -403,7 +404,7 @@ export type constraintKindOf<t> = {
 
 type conditionalIntersectionKeyOf<t> =
 	| constraintKindOf<t>
-	| (t extends object ? "undeclared" : never)
+	| (t extends object ? ConditionalTerminalIntersectionKey : never)
 
 type intersectionChildSchemaValueOf<k extends Intersection.FlattenedChildKind> =
 	k extends OpenNodeKind ? listable<NodeSchema<k>> : NodeSchema<k>
