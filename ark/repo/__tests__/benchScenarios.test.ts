@@ -26,6 +26,8 @@ import {
 	Product,
 	productData,
 	productInvalidData,
+	Rotating,
+	rotatingData,
 	Tree,
 	treeData
 } from "../bench/scenarios.ts"
@@ -82,6 +84,7 @@ contextualize(() => {
 		accepts(Product, productData)
 		accepts(Items, itemsData)
 		for (const data of discriminatedData) accepts(Discriminated, data)
+		for (const [i, data] of rotatingData.entries()) accepts(Rotating[i], data)
 		accepts(Constraints, constraintsData)
 		accepts(Morph, morphData, 12345)
 		accepts(Defaults, defaultsData, { a: "s", b: 5, c: true, d: "x" })

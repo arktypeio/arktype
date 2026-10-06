@@ -336,6 +336,55 @@ export const Discriminated = {
 	])
 }
 
+export const rotatingData = [
+	"s",
+	"t",
+	{ a: "x" },
+	1,
+	{ b: 1 },
+	["u"],
+	{ d: 1 },
+	1
+]
+
+export const Rotating = [
+	{ arktype: type("string"), zod: z.string(), valibot: v.string() },
+	{
+		arktype: type("string > 0"),
+		zod: z.string().min(1),
+		valibot: v.pipe(v.string(), v.minLength(1))
+	},
+	{
+		arktype: type({ a: "string" }),
+		zod: z.object({ a: z.string() }),
+		valibot: v.object({ a: v.string() })
+	},
+	{ arktype: type("number"), zod: z.number(), valibot: v.number() },
+	{
+		arktype: type({ b: "number" }),
+		zod: z.object({ b: z.number() }),
+		valibot: v.object({ b: v.number() })
+	},
+	{
+		arktype: type("string[]"),
+		zod: z.array(z.string()),
+		valibot: v.array(v.string())
+	},
+	{
+		arktype: type({ c: "boolean" }).or({ d: "number" }),
+		zod: z.union([z.object({ c: z.boolean() }), z.object({ d: z.number() })]),
+		valibot: v.union([
+			v.object({ c: v.boolean() }),
+			v.object({ d: v.number() })
+		])
+	},
+	{
+		arktype: type("0 <= number < 1000000000"),
+		zod: z.number().min(0).lt(1000000000),
+		valibot: v.pipe(v.number(), v.minValue(0), v.ltValue(1000000000))
+	}
+]
+
 export const constraintsData = {
 	name: "Ada Lovelace",
 	email: "ada@example.com",
