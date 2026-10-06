@@ -363,6 +363,18 @@ contextualize(() => {
 		})
 	})
 
+	it("includes custom object meta", () => {
+		const T = rootSchema({
+			domain: "number",
+			meta: { "x-unit": { name: "ms" } } as never
+		})
+
+		attest<object>(toJsonSchema(T)).snap({
+			type: "number",
+			"x-unit": { name: "ms" }
+		})
+	})
+
 	it("null generated as type instead of const", () => {
 		const T = rootSchema({ unit: null })
 
@@ -461,6 +473,15 @@ contextualize(() => {
         a: 0n
     }
 }`)
+		})
+
+		it("meta function default", () => {
+			const T = rootSchema({
+				domain: "object",
+				meta: { default: () => ({}) }
+			})
+
+			attest(() => T.toJsonSchema()).throws("defaultValue")
 		})
 
 		it("functional default", () => {

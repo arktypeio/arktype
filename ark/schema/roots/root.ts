@@ -7,7 +7,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Fn,
-	type array
+	type array,
+	type dict
 } from "@ark/util"
 import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
@@ -203,22 +204,22 @@ export abstract class BaseRoot<
 	}
 
 	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		const result = this.innerToJsonSchema(ctx)
-		Object.assign(result, this.metaJson)
+		const result = this.innerToJsonSchema(ctx) as JsonSchema & dict
 
-		// metaJson serializes an object default like [5] as a registered
-		// reference (e.g. "$ark.array1"), so read it from meta directly
-		if (typeof this.meta.default === "object" && this.meta.default !== null) {
-			delete result.default
-			const value = this.meta.default
-			result.default =
-				$ark.intrinsic.jsonData.allows(value) ?
-					value
-				:	ctx.fallback.defaultValue({
+		for (const k in this.meta) {
+			const v = (this.meta as dict)[k]
+			// metaJson serializes non-primitives like [5] to references like
+			// "$ark.array1", so prefer the original value when it is valid JSON
+			// (jsonData's object domain also allows functions, so exclude them)
+			result[k] =
+				typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
+				: k === "default" ?
+					ctx.fallback.defaultValue({
 						code: "defaultValue",
 						base: result,
-						value
+						value: v as never
 					})
+				:	(this.metaJson as dict)[k]
 		}
 
 		return result
