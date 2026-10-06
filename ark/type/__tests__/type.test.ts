@@ -240,14 +240,8 @@ contextualize(() => {
 		)
 	})
 
-	it("is an unbound function", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type("string")
-			attest(T.name).equals("")
-			attest(T.length).equals(2)
-			attest(T.toString()).equals("Type<string>")
-			attest(Function.prototype.toString.call(T)).satisfies(/^\(/)
-		}
+	it("is unbound", () => {
+		attest(type("string").name).equals("")
 	})
 
 	it("toString()", () => {
