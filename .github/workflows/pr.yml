@@ -91,7 +91,7 @@ jobs:
       # tooling (tsup, typescript-eslint) needs a JS API TS 7 doesn't have
       - name: Install TypeScript 7
         run: |
-          sed -i "s/^  typescript: .*/  typescript: 7.0.2/" pnpm-workspace.yaml
+          sed -i "s/^  typescript: .*/  typescript: 7.1.0-dev.20261006.1/" pnpm-workspace.yaml
           pnpm install --no-frozen-lockfile
 
       - name: Typecheck repo

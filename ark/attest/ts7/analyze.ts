@@ -17,6 +17,7 @@ import {
 	getCallLocation,
 	getDescendants,
 	getFirstFunctionDescendant,
+	noTruncation,
 	type CallExpression,
 	type Node,
 	type SourceFile,
@@ -78,14 +79,9 @@ const analyzeAssertCall = (
 	return result
 }
 
-// TypeFormatFlags.NoTruncation, which tsgo's API doesn't export
-const noTruncation = 1
-
 export const stringifyTypeAtLocation = (node: Node): StringifiedType => {
 	const checker = TsgoServer.instance.project.checker
-	const type =
-		checker.getTypeAtLocation(node) ??
-		throwInternalError(`Unable to get type of ${node.getText()}`)
+	const type = checker.getTypeAtLocation(node)
 	let string = checker.typeToString(type)
 	if (string.includes("...")) {
 		const nonTruncated = checker.typeToString(type, undefined, noTruncation)
@@ -97,8 +93,7 @@ export const stringifyTypeAtLocation = (node: Node): StringifiedType => {
 	return {
 		type,
 		string,
-		isUnresolvable:
-			(type as { intrinsicName?: string }).intrinsicName === "error"
+		isUnresolvable: type.isErrorType()
 	}
 }
 
@@ -189,7 +184,7 @@ const getCompletions = (
 			return `Encountered multiple completion candidates for string(s) '${prefix}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
 
 		const entries =
-			TsgoServer.instance.project.checker.getCompletionsAtPosition(
+			TsgoServer.instance.project.languageService.getCompletionsAtPosition(
 				file.fileName,
 				position
 			)?.entries ?? []

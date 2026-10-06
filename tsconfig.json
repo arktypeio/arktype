@@ -13,6 +13,9 @@
 			"typescript/unstable/ast": [
 				"./ark/attest/node_modules/typescript-7/dist/ast/index.d.ts"
 			],
+			"typescript/unstable/fs": [
+				"./ark/attest/node_modules/typescript-7/dist/api/fs.d.ts"
+			],
 			"typescript/unstable/sync": [
 				"./ark/attest/node_modules/typescript-7/dist/api/sync/api.d.ts"
 			]
