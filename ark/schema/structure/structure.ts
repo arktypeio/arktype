@@ -127,6 +127,14 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		kind: "structure",
 		hasAssociatedError: false,
 		normalize: schema => {
+			if (
+				schema.rejectAllowsSymbolKeys !== undefined &&
+				schema.undeclared !== "reject"
+			) {
+				throwParseError(
+					writeBadRejectAllowsSymbolKeysMessage(schema.undeclared ?? "ignore")
+				)
+			}
 			// a set engine rejects duplicate keys in order with its other reduce errors
 			if ($ark.sets) return schema
 			const seen: Record<Key, true | undefined> = Object.create(null)
@@ -1308,3 +1316,8 @@ export const writeDuplicateKeyMessage = <key extends Key>(
 
 export type writeDuplicateKeyMessage<key extends Key> =
 	`Duplicate key '${describe<key>}'`
+
+export const writeBadRejectAllowsSymbolKeysMessage = (
+	actual: Exclude<UndeclaredKeyBehavior, "reject">
+): string =>
+	`rejectAllowsSymbolKeys may only be specified with undeclared "reject" (was ${actual})`
