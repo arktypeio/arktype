@@ -36,13 +36,6 @@ contextualize(() => {
 		attest(R.and(L).expression).equals(L.and(R).expression)
 	})
 
-	it("intersects a symbol index with reject", () => {
-		const T = type({ "+": "reject", a: "string" }).and({ "[symbol]": "number" })
-		attest(T.expression).snap(
-			"{ [symbol]: number, a: string, + (undeclared): reject }"
-		)
-	})
-
 	describe("traversal", () => {
 		const getExtraneousB = () => ({ a: "ok", b: "why?" })
 
@@ -152,18 +145,12 @@ Right: { b: boolean, + (undeclared): delete }`)
 			attest(T(getExtraneousB()).toString()).snap("b must be removed")
 		})
 
-		it("reject ignores symbol keys", () => {
+		it("reject symbol key", () => {
 			const undeclared = Symbol("undeclared")
 			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({
-					"+": "reject",
-					a: "string",
-					"[/^x/]": "number"
-				})
-				const data = { a: "ok", x: 1, [undeclared]: 1 }
-				attest(T(data)).equals(data)
-				attest(T({ a: "ok", b: 1, [undeclared]: 1 }).toString()).snap(
-					"b must be removed"
+				const T = scope({}, { jitless }).type({ "+": "reject", a: "string" })
+				attest(T({ a: "ok", [undeclared]: 1 }).toString()).snap(
+					"value at [Symbol(undeclared)] must be removed"
 				)
 			}
 		})

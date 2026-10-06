@@ -60,7 +60,7 @@ import { arrayIndexMatcher } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
- * - `"reject"` - disallow extra non-symbolic properties
+ * - `"reject"` - disallow extra properties
  * - `"delete"` - remove extra properties from output
  */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
@@ -468,7 +468,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			const keys = this.index ? ownKeysOf(data) : Object.keys(data)
+			const keys = ownKeysOf(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
@@ -496,11 +496,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					}
 				}
 
-				if (
-					this.undeclared === "reject" &&
-					typeof k === "string" &&
-					!this.declaresKey(k)
-				) {
+				if (this.undeclared === "reject" && !this.declaresKey(k)) {
 					if (traversalKind === "Allows") return false
 
 					// this should have its own error code:
@@ -762,12 +758,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.compileExhaustiveEntry(js)
+				this.compileExhaustiveEntry(
+					js.const("k", "keys[i]"),
+					this.props.filter(prop => typeof prop.key === "string")
+				)
 			)
-			// undeclared symbol keys are never rejected, so only an index reads them
-			if (this.indexMatchesSymbols) {
+			if (this.undeclared === "reject" || this.indexMatchesSymbols) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					this.compileIndexEntry(js)
+					this.compileExhaustiveEntry(
+						js,
+						this.props.filter(prop => typeof prop.key === "symbol")
+					)
 				)
 			}
 		}
@@ -1077,16 +1078,24 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
 	}
 
-	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
-		js.const("k", "keys[i]")
-
-		if (this.index) this.compileIndexEntry(js)
+	protected compileExhaustiveEntry(
+		js: NodeCompiler,
+		props: Prop.Node[]
+	): NodeCompiler {
+		if (this.index) {
+			for (const node of this.index) {
+				js.if(
+					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
+					() => {
+						js.traverseKey("k", "data[k]", node.value)
+						return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
+					}
+				)
+			}
+		}
 
 		if (this.undeclared === "reject") {
-			const stringProps = this.props.filter(
-				prop => typeof prop.key === "string"
-			)
-			if (stringProps.length) compileDeclaredKeySwitch(js, stringProps)
+			if (props.length) compileDeclaredKeySwitch(js, props)
 			const reject = () =>
 				js.traversalKind === "Allows" ?
 					js.return(false)
@@ -1100,19 +1109,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			else js.if(`!(${declaresKey})`, reject)
 		}
 
-		return js
-	}
-
-	private compileIndexEntry(js: NodeCompiler): NodeCompiler {
-		for (const node of this.index!) {
-			js.if(
-				`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-				() => {
-					js.traverseKey("k", "data[k]", node.value)
-					return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
-				}
-			)
-		}
 		return js
 	}
 }
