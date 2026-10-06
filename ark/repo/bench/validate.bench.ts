@@ -24,6 +24,8 @@ import {
 	Product,
 	productData,
 	productInvalidData,
+	Rotating,
+	rotatingData,
 	Tree,
 	treeData
 } from "./scenarios.ts"
@@ -213,6 +215,19 @@ bench("discriminated parse (zod)", () =>
 bench("discriminated parse (valibot)", () =>
 	discriminatedData.map(d => v.safeParse(Discriminated.valibot, d))
 ).median([2.62, "us"])
+
+// one call site validates every type, as a framework's shared validator does
+bench("rotating parse (arktype)", () =>
+	rotatingData.map((d, i) => Rotating[i].arktype(d))
+).median([384.91, "ns"])
+
+bench("rotating parse (zod)", () =>
+	rotatingData.map((d, i) => Rotating[i].zod.safeParse(d))
+).median([1.63, "us"])
+
+bench("rotating parse (valibot)", () =>
+	rotatingData.map((d, i) => v.safeParse(Rotating[i].valibot, d))
+).median([1.96, "us"])
 
 bench("constraints parse (arktype)", () =>
 	Constraints.arktype(constraintsData)
