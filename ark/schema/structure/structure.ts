@@ -762,10 +762,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.index || this.undeclared === "reject") {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
-				this.compileExhaustiveEntry(
-					js.const("k", "keys[i]"),
-					this.props.filter(prop => typeof prop.key === "string")
-				)
+				this.compileExhaustiveEntry(js)
 			)
 			// undeclared symbol keys are never rejected, so only an index reads them
 			if (this.indexMatchesSymbols) {
@@ -1076,14 +1073,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
 	}
 
-	protected compileExhaustiveEntry(
-		js: NodeCompiler,
-		props: Prop.Node[]
-	): NodeCompiler {
+	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
+		js.const("k", "keys[i]")
+
 		if (this.index) this.compileIndexEntry(js)
 
 		if (this.undeclared === "reject") {
-			if (props.length) compileDeclaredKeySwitch(js, props)
+			const stringProps = this.props.filter(
+				prop => typeof prop.key === "string"
+			)
+			if (stringProps.length) compileDeclaredKeySwitch(js, stringProps)
 			const reject = () =>
 				js.traversalKind === "Allows" ?
 					js.return(false)
