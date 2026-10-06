@@ -342,7 +342,7 @@ This ensures that type assertions can be made across processes without creating 
 
 Attest analyzes your project with whichever version of `typescript` is installed. To test multiple versions, run your suite once per version, e.g. via a CI matrix that installs each version before running tests.
 
-TypeScript 7+ is supported via its native API. Type assertions, completions, JSDoc, benches and the CLI work the same way, with a few differences:
+TypeScript 7.1+ is supported via its native API. Type assertions, completions, JSDoc, benches and the CLI work the same way, with a few differences:
 
 - Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench. Since `tsc` fully checks the bench's dependencies before measuring it, work a bench shares with them isn't attributed to the bench, so counts run lower than with TypeScript 5/6, by as much as most of the count for a bench whose cost is mostly shared with its dependencies, and baselines should be recorded separately.
 - Type strings, union ordering and error elaboration can differ from earlier versions, so snapshots may need to be updated when switching.

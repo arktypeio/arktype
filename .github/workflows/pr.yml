@@ -89,7 +89,7 @@ jobs:
 
       - name: Install TypeScript 7
         run: |
-          sed -i "s/^  typescript: .*/  typescript: 7.0.2/" pnpm-workspace.yaml
+          sed -i "s/^  typescript: .*/  typescript: 7.1.0-dev.20261006.1/" pnpm-workspace.yaml
           pnpm install --no-frozen-lockfile
 
       # attest's declarations must not depend on TS 5's compiler API types

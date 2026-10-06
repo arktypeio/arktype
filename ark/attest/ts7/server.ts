@@ -1,10 +1,12 @@
-import { fromCwd, writeFile } from "@ark/fs"
+import { fromCwd } from "@ark/fs"
 import { throwError, throwInternalError, type JsonObject } from "@ark/util"
-import { existsSync, rmSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
 import { threadId } from "node:worker_threads"
+import ts from "typescript"
 import type * as tsgoAst from "typescript/unstable/ast"
+import type * as tsgoFs from "typescript/unstable/fs"
 import type * as tsgoApi from "typescript/unstable/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
@@ -17,8 +19,13 @@ const requireTypeScript = createRequire(import.meta.url)
 export const ast: typeof tsgoAst =
 	isTs7 ? requireTypeScript("typescript/unstable/ast") : (undefined as never)
 
-const { API }: typeof tsgoApi =
+const { API, TypeFormatFlags }: typeof tsgoApi =
 	isTs7 ? requireTypeScript("typescript/unstable/sync") : ({} as never)
+
+const { createFileSystemLayer }: typeof tsgoFs =
+	isTs7 ? requireTypeScript("typescript/unstable/fs") : ({} as never)
+
+export const noTruncation: number = isTs7 ? TypeFormatFlags.NoTruncation : 0
 
 export const tscPath: string = join(
 	dirname(requireTypeScript.resolve("typescript/package.json")),
@@ -42,11 +49,10 @@ export class TsgoServer {
 	rootFiles: string[]
 
 	private api: tsgoApi.API
-	private generatedConfig: string | undefined
+	private config: string
 	private snapshot: tsgoApi.Snapshot | undefined
-	private contentsByPath = new Map<string, string>()
 	private originalTextByPath = new Map<string, string>()
-	private filesOutsideProject = new Map<string, SourceFile | undefined>()
+	private filesOutsideProject = new Map<string, SourceFile>()
 
 	private static _instance: TsgoServer | null = null
 	static get instance(): TsgoServer {
@@ -54,25 +60,16 @@ export class TsgoServer {
 	}
 
 	private constructor() {
-		this.api = new API({
-			cwd: fromCwd(),
-			fs: { readFile: path => this.contentsByPath.get(path) }
-		})
+		if (ts.version.startsWith("7.0."))
+			throwError(`@ark/attest requires TypeScript 7.1+ (found ${ts.version})`)
+		this.api = new API({ cwd: fromCwd() })
 		this.projectConfig = getProjectConfig()
-		const { extends: baseConfigPath, compilerOptions } = this.projectConfig
-		if (baseConfigPath && !Object.keys(compilerOptions).length)
-			this.configPath = baseConfigPath
-		else {
-			this.configPath = join(
-				this.projectConfig.dir,
-				`.attest-${tempId}.tsconfig.json`
-			)
-			this.generatedConfig = JSON.stringify(
-				{ extends: baseConfigPath, compilerOptions },
-				null,
-				4
-			)
-		}
+		// only exists in tsgo's view of the filesystem, so nothing is written
+		this.configPath = join(this.projectConfig.dir, ".attest.tsconfig.json")
+		this.config = JSON.stringify({
+			extends: this.projectConfig.extends,
+			compilerOptions: this.projectConfig.compilerOptions
+		})
 		this.project = this.openProject()
 
 		const configErrors = this.project.program.getConfigFileParsingDiagnostics()
@@ -80,7 +77,7 @@ export class TsgoServer {
 			throwError(configErrors.map(error => error.text).join("\n"))
 
 		const normalizedCwd = fromCwd().replace(/\\/g, "/")
-		this.rootFiles = this.project.rootFiles.filter(path =>
+		this.rootFiles = this.project.parsedCommandLine.fileNames.filter(path =>
 			path.startsWith(normalizedCwd)
 		)
 	}
@@ -90,16 +87,16 @@ export class TsgoServer {
 	 * @ts-ignore, so they're disabled in root files without shifting positions
 	 */
 	disableCommentDirectives(): void {
-		if (this.contentsByPath.size) return
+		if (this.originalTextByPath.size) return
+		const files: [path: string, contents: string][] = []
 		for (const path of this.rootFiles) {
 			const file = this.getSourceFileOrThrow(path)
 			const contents = getTextWithoutCommentDirectives(file)
 			if (contents === undefined) continue
 			this.originalTextByPath.set(path, file.getFullText())
-			this.contentsByPath.set(path, contents)
+			files.push([path, contents])
 		}
-		if (this.contentsByPath.size)
-			this.project = this.openProject([...this.contentsByPath.keys()])
+		if (files.length) this.project = this.openProject(files)
 	}
 
 	/** the node's text as written, before any directives were disabled */
@@ -122,34 +119,26 @@ export class TsgoServer {
 	// e.g. benches excluded by tsconfig, which are only read for their syntax
 	private getFileOutsideProject(path: string): SourceFile | undefined {
 		if (!this.filesOutsideProject.has(path) && existsSync(path)) {
-			const snapshot = this.api.updateSnapshot({ openFiles: [path] })
 			this.filesOutsideProject.set(
 				path,
-				snapshot.getDefaultProjectForFile(path)?.program.getSourceFile(path)
+				this.api.createSourceFileFromFile(path).sourceFile
 			)
-			snapshot.dispose()
 		}
 		return this.filesOutsideProject.get(path)
 	}
 
-	private openProject(changed?: string[]): Project {
-		// tsgo only reads a generated config while loading the project, so it
-		// can't be left behind if the process is interrupted
-		if (this.generatedConfig) writeFile(this.configPath, this.generatedConfig)
-		let snapshot: tsgoApi.Snapshot
-		try {
-			snapshot = this.api.updateSnapshot(
-				changed ?
-					{ openProjects: [this.configPath], fileChanges: { changed } }
-				:	{ openProjects: [this.configPath] }
-			)
-		} finally {
-			if (this.generatedConfig) rmSync(this.configPath, { force: true })
-		}
+	private openProject(files: [path: string, contents: string][] = []): Project {
+		const snapshot = this.api.createSnapshot({
+			openProjects: [this.configPath],
+			fileSystem: createFileSystemLayer([
+				[this.configPath, this.config],
+				...files
+			])
+		})
 		this.snapshot?.dispose()
 		this.snapshot = snapshot
 		return (
-			snapshot.getProject(this.configPath) ??
+			snapshot.getConfiguredProject(this.configPath) ??
 			throwInternalError(`@ark/attest: Unable to load ${this.configPath}`)
 		)
 	}
@@ -164,8 +153,8 @@ export type ProjectConfig = {
 
 /**
  * tsgo only loads projects from config files, so attest's compilerOptions are
- * applied by configs written beside the base config, which keeps relative
- * paths and ${configDir} resolving exactly as they would from the base config
+ * applied by configs beside the base config, which keeps relative paths and
+ * ${configDir} resolving exactly as they would from the base config
  */
 const getProjectConfig = (): ProjectConfig => {
 	const { tsconfig, compilerOptions } = getConfig()

@@ -51,7 +51,7 @@
 	},
 	"devDependencies": {
 		"typescript": "catalog:",
-		"typescript-7": "npm:typescript@7.0.2"
+		"typescript-7": "npm:typescript@7.1.0-dev.20261006.1"
 	},
 	"peerDependencies": {
 		"typescript": "*"
