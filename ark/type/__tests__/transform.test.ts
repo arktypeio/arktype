@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeIndiscriminableMorphMessage } from "arksets"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -405,15 +404,12 @@ b must be A (was "y")`)
 	})
 
 	it("union of array props with shared defaults", () => {
-		attest(() =>
-			type("string[]")
-				.and({ a: "number = 5" })
-				.or(type("string[]").and({ a: "number = 5", b: "string" }))
-		).throws(
-			writeIndiscriminableMorphMessage(
-				"{ a: number = 5 } & string[]",
-				"{ b: string, a: number = 5 } & string[]"
-			)
+		const T = type("string[]")
+			.and({ a: "number = 5" })
+			.or(type("string[]").and({ a: "number = 5", b: "string" }))
+		attest(T.expression).snap("{ a: number = 5 } & string[]")
+		attest(T.assert(Object.assign(["s"], { b: "x" }))).equals(
+			Object.assign(["s"], { b: "x", a: 5 })
 		)
 	})
 
