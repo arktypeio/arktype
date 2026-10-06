@@ -246,22 +246,24 @@ const getJsdoc = (call: CallExpression): string | undefined => {
 	}
 }
 
-// like TS, only a declaration's last JSDoc block is its documentation
+// like TS, only the last JSDoc block of each host is documentation
 const getDocumentationComment = (declaration: Node): string => {
-	// the JSDoc of a statement declaring one variable belongs to that variable
+	const hosts = [declaration]
+	// a variable statement's JSDoc belongs to its first variable
 	const statement = declaration.parent?.parent
-	const host =
-		(
-			statement &&
-			ast.isVariableStatement(statement) &&
-			statement.declarationList.declarations.length === 1
-		) ?
-			statement
-		:	declaration
-	const doc = host.jsDoc?.[host.jsDoc.length - 1]
-	return (
-		(doc && ast.isJSDoc(doc) && ast.getTextOfJSDocComment(doc.comment)) || ""
+	if (
+		statement &&
+		ast.isVariableStatement(statement) &&
+		statement.declarationList.declarations[0].pos === declaration.pos
 	)
+		hosts.push(statement)
+	return hosts
+		.map(host => {
+			const doc = host.jsDoc?.[host.jsDoc.length - 1]
+			return doc && ast.isJSDoc(doc) && ast.getTextOfJSDocComment(doc.comment)
+		})
+		.filter(Boolean)
+		.join("\n")
 }
 
 const getInlineInstantiationData = (

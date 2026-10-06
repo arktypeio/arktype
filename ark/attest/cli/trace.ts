@@ -76,6 +76,19 @@ const getSourceFile = (path: string): ts.SourceFile =>
 		(TsgoServer.instance.getSourceFileOrThrow(path) as never)
 	:	TsServer.instance.getSourceFileOrThrow(path)
 
+const utf8ByPath = new Map<string, Buffer>()
+
+// tsgo's trace positions are UTF-8 byte offsets rather than UTF-16 indices
+const getTextPosition = (path: string, position: number): number => {
+	if (!isTs7) return position
+	const text = getSourceFile(path).getFullText()
+	let utf8 = utf8ByPath.get(path)
+	if (!utf8) utf8ByPath.set(path, (utf8 = Buffer.from(text)))
+	return utf8.length === text.length ?
+			position
+		:	utf8.subarray(0, position).toString().length
+}
+
 const getDescendants = (node: ts.Node): ts.Node[] =>
 	isTs7 ? (getDescendantsTs7(node as never) as never) : getDescendantsTs5(node)
 
@@ -367,8 +380,8 @@ const processDurationEntry = (
 	ctx: AnalysisContext
 ): void => {
 	const entryPath = entry.args.path as string
-	const entryPos = entry.args.pos as number
-	const entryEnd = entry.args.end as number
+	const entryPos = getTextPosition(entryPath, entry.args.pos as number)
+	const entryEnd = getTextPosition(entryPath, entry.args.end as number)
 	const entryDur = entry.dur as number
 
 	const sourceFile = getSourceFile(entryPath)

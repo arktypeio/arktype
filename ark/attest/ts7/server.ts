@@ -1,8 +1,9 @@
 import { fromCwd, writeFile } from "@ark/fs"
-import { throwError, throwInternalError } from "@ark/util"
-import { existsSync, readFileSync, readdirSync, rmSync } from "node:fs"
+import { throwError, throwInternalError, type JsonObject } from "@ark/util"
+import { existsSync, rmSync } from "node:fs"
 import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
+import { threadId } from "node:worker_threads"
 import type * as tsgoAst from "typescript/unstable/ast"
 import type * as tsgoApi from "typescript/unstable/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
@@ -25,6 +26,9 @@ export const tscPath: string = join(
 	"tsc"
 )
 
+// unique to this thread, since worker threads share a pid
+export const tempId = `${process.pid}-${threadId}`
+
 export type Node = tsgoAst.Node
 export type SourceFile = tsgoAst.SourceFile
 export type CallExpression = tsgoAst.CallExpression
@@ -32,13 +36,16 @@ export type Project = tsgoApi.Project
 export type Type = tsgoApi.Type
 
 export class TsgoServer {
+	projectConfig: ProjectConfig
 	configPath: string
 	project: Project
 	rootFiles: string[]
 
 	private api: tsgoApi.API
+	private generatedConfig: string | undefined
 	private snapshot: tsgoApi.Snapshot | undefined
 	private contentsByPath = new Map<string, string>()
+	private originalTextByPath = new Map<string, string>()
 	private filesOutsideProject = new Map<string, SourceFile | undefined>()
 
 	private static _instance: TsgoServer | null = null
@@ -51,7 +58,21 @@ export class TsgoServer {
 			cwd: fromCwd(),
 			fs: { readFile: path => this.contentsByPath.get(path) }
 		})
-		this.configPath = getProjectConfigPath()
+		this.projectConfig = getProjectConfig()
+		const { extends: baseConfigPath, compilerOptions } = this.projectConfig
+		if (baseConfigPath && !Object.keys(compilerOptions).length)
+			this.configPath = baseConfigPath
+		else {
+			this.configPath = join(
+				this.projectConfig.dir,
+				`.attest-${tempId}.tsconfig.json`
+			)
+			this.generatedConfig = JSON.stringify(
+				{ extends: baseConfigPath, compilerOptions },
+				null,
+				4
+			)
+		}
 		this.project = this.openProject()
 
 		const configErrors = this.project.program.getConfigFileParsingDiagnostics()
@@ -71,12 +92,11 @@ export class TsgoServer {
 	disableCommentDirectives(): void {
 		if (this.contentsByPath.size) return
 		for (const path of this.rootFiles) {
-			// avoid transferring the AST of a file that can't contain one
-			if (!readFileSync(path, "utf8").includes("@ts-")) continue
-			const contents = getTextWithoutCommentDirectives(
-				this.getSourceFileOrThrow(path)
-			)
-			if (contents !== undefined) this.contentsByPath.set(path, contents)
+			const file = this.getSourceFileOrThrow(path)
+			const contents = getTextWithoutCommentDirectives(file)
+			if (contents === undefined) continue
+			this.originalTextByPath.set(path, file.getFullText())
+			this.contentsByPath.set(path, contents)
 		}
 		if (this.contentsByPath.size)
 			this.project = this.openProject([...this.contentsByPath.keys()])
@@ -84,10 +104,8 @@ export class TsgoServer {
 
 	/** the node's text as written, before any directives were disabled */
 	getOriginalText(node: Node): string {
-		const path = node.getSourceFile().fileName
-		return this.contentsByPath.has(path) ?
-				readFileSync(path, "utf8").slice(node.getStart(), node.end)
-			:	node.getText()
+		const text = this.originalTextByPath.get(node.getSourceFile().fileName)
+		return text?.slice(node.getStart(), node.end) ?? node.getText()
 	}
 
 	getSourceFileOrThrow(path: string): SourceFile {
@@ -115,11 +133,19 @@ export class TsgoServer {
 	}
 
 	private openProject(changed?: string[]): Project {
-		const snapshot = this.api.updateSnapshot(
-			changed ?
-				{ openProjects: [this.configPath], fileChanges: { changed } }
-			:	{ openProjects: [this.configPath] }
-		)
+		// tsgo only reads a generated config while loading the project, so it
+		// can't be left behind if the process is interrupted
+		if (this.generatedConfig) writeFile(this.configPath, this.generatedConfig)
+		let snapshot: tsgoApi.Snapshot
+		try {
+			snapshot = this.api.updateSnapshot(
+				changed ?
+					{ openProjects: [this.configPath], fileChanges: { changed } }
+				:	{ openProjects: [this.configPath] }
+			)
+		} finally {
+			if (this.generatedConfig) rmSync(this.configPath, { force: true })
+		}
 		this.snapshot?.dispose()
 		this.snapshot = snapshot
 		return (
@@ -129,27 +155,29 @@ export class TsgoServer {
 	}
 }
 
+export type ProjectConfig = {
+	/** where attest's configs are written, beside the base config if any */
+	dir: string
+	extends: string | undefined
+	compilerOptions: JsonObject
+}
+
 /**
  * tsgo only loads projects from config files, so attest's compilerOptions are
- * applied by a config written beside the base config, which keeps relative
+ * applied by configs written beside the base config, which keeps relative
  * paths and ${configDir} resolving exactly as they would from the base config
  */
-const getProjectConfigPath = (): string => {
+const getProjectConfig = (): ProjectConfig => {
 	const { tsconfig, compilerOptions } = getConfig()
 	const baseConfigPath =
 		tsconfig === null ? undefined
 		: tsconfig === undefined ? findTsconfig(fromCwd())
 		: resolve(tsconfig)
-	if (baseConfigPath && !Object.keys(compilerOptions).length)
-		return baseConfigPath
-
-	return writeTempTsconfig(
-		join(
-			baseConfigPath ? dirname(baseConfigPath) : fromCwd(),
-			`.attest-${process.pid}.tsconfig.json`
-		),
-		{ extends: baseConfigPath, compilerOptions }
-	)
+	return {
+		dir: baseConfigPath ? dirname(baseConfigPath) : fromCwd(),
+		extends: baseConfigPath,
+		compilerOptions
+	}
 }
 
 const findTsconfig = (fromDir: string): string | undefined => {
@@ -161,8 +189,8 @@ const findTsconfig = (fromDir: string): string | undefined => {
 
 // tsgo's grammar, which unlike TS 5 allows any number of leading slashes but
 // only spaces and tabs as whitespace
-const singleLineDirective = /^\/{2,}[ \t]*@ts-(?:expect-error|ignore)/
-const multiLineDirective = /^[ \t]*[*/]*[ \t]*@ts-(?:expect-error|ignore)/
+const singleLineDirective = /^\/{2,}[\t ]*@ts-(?:expect-error|ignore)/
+const multiLineDirective = /^[\t ]*[*/]*[\t ]*@ts-(?:expect-error|ignore)/
 const lineBreak = /[\n\r\u2028\u2029]/g
 
 const literalKinds = (): ReadonlySet<tsgoAst.SyntaxKind> =>
@@ -184,8 +212,15 @@ const getTextWithoutCommentDirectives = (
 	file: SourceFile
 ): string | undefined => {
 	const text = file.getFullText()
+	if (!text.includes("@ts-")) return
+
 	const kinds = literalKinds()
 	const literalEnds = new Map<number, number>()
+	// like a literal, a shebang line can't contain a comment
+	if (text.startsWith("#!")) {
+		const shebangEnd = text.search(lineBreak)
+		literalEnds.set(0, shebangEnd === -1 ? text.length : shebangEnd)
+	}
 	for (const node of getDescendants(file)) {
 		if (kinds.has(node.kind)) {
 			// JsxText has no trivia, so its leading whitespace is part of it
@@ -219,60 +254,13 @@ const getTextWithoutCommentDirectives = (
 			// only the last line of a block comment can be a directive
 			let lastLineStart = i
 			lineBreak.lastIndex = i
-			while (lineBreak.exec(text) && lineBreak.lastIndex <= commentEnd)
+			while (lineBreak.test(text) && lineBreak.lastIndex <= commentEnd)
 				lastLineStart = lineBreak.lastIndex
 			disable(lastLineStart, commentEnd, multiLineDirective)
 			i = commentEnd - 1
 		}
 	}
 	return changed ? chars.join("") : undefined
-}
-
-const tempPaths = new Set<string>()
-
-process.on("exit", () => {
-	for (const path of tempPaths) rmSync(path, { force: true })
-})
-
-const cleanedDirs = new Set<string>()
-
-// a process that was killed couldn't remove its own temp files
-const removeStaleTempFiles = (dir: string) => {
-	if (cleanedDirs.has(dir)) return
-	cleanedDirs.add(dir)
-	for (const name of readdirSync(dir)) {
-		const pid = /^\.attest-(\d+)[-.]/.exec(name)?.[1]
-		if (pid && !isRunning(Number(pid))) rmSync(join(dir, name), { force: true })
-	}
-}
-
-const isRunning = (pid: number): boolean => {
-	try {
-		process.kill(pid, 0)
-		return true
-	} catch (e) {
-		// the process exists but belongs to another user
-		return (e as NodeJS.ErrnoException).code === "EPERM"
-	}
-}
-
-/**
- * Written beside sources so relative paths resolve the same way, and removed
- * at exit or by the next process to write to the same directory
- */
-export const writeTempFile = (path: string, contents: string): string => {
-	removeStaleTempFiles(dirname(path))
-	tempPaths.add(path)
-	writeFile(path, contents)
-	return path
-}
-
-export const writeTempTsconfig = (path: string, config: object): string =>
-	writeTempFile(path, JSON.stringify(config, null, 4))
-
-export const removeTempFile = (path: string): void => {
-	rmSync(path, { force: true })
-	tempPaths.delete(path)
 }
 
 export const getDescendants = (node: Node): Node[] => {

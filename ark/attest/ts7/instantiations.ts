@@ -14,10 +14,8 @@ import {
 	getCallExpressionsByName,
 	getCallLocation,
 	getFirstFunctionDescendant,
-	removeTempFile,
+	tempId,
 	tscPath,
-	writeTempFile,
-	writeTempTsconfig,
 	type Node,
 	type SourceFile
 } from "./server.ts"
@@ -53,53 +51,53 @@ export const getInstantiationsContributedByNodes = (
 		)
 	]
 
-	const { configPath: projectConfigPath, project } = TsgoServer.instance
-	const configDir = dirname(projectConfigPath)
+	const { projectConfig } = TsgoServer.instance
 	const fileDir = dirname(file.fileName)
 	const fileBase = basename(file.fileName)
 
-	const tempPaths: string[] = []
-	try {
-		const configPaths = variants.map((text, i) => {
-			// dot-prefixed so test runner globs don't pick it up
-			const tempFile = writeTempFile(
-				join(fileDir, `.attest-${process.pid}-${i}-${fileBase}`),
-				text
-			)
-			// beside the project config so its relative paths resolve the same way
-			const configPath = writeTempTsconfig(
-				join(configDir, `.attest-${process.pid}-${i}.tsconfig.json`),
-				{
-					extends: projectConfigPath,
-					compilerOptions: {
-						// reused build info would skip checking unchanged files
-						incremental: false,
-						composite: false,
-						tsBuildInfoFile: null,
-						// implied by composite and required by options like declarationMap
-						...(project.compilerOptions.composite && { declaration: true }),
-						// otherwise counts depend on whether declarations are checked
-						skipLibCheck: true
-					},
-					files: [tempFile],
-					include: []
-				}
-			)
-			tempPaths.push(tempFile, configPath)
-			return configPath
-		})
-
-		const [baseline, ...counts]: number[] = JSON.parse(
-			execFileSync(
-				process.execPath,
-				[countInstantiationsScript, tscPath, ...configPaths],
-				{ encoding: "utf8", maxBuffer: 1e8 }
-			)
+	const files: Record<string, string> = {}
+	const configPaths = variants.map((text, i) => {
+		// dot-prefixed so test runner globs don't pick it up
+		const sourcePath = join(fileDir, `.attest-${tempId}-${i}-${fileBase}`)
+		const configPath = join(
+			projectConfig.dir,
+			`.attest-${tempId}-${i}.tsconfig.json`
 		)
-		return counts.map(count => count - baseline)
-	} finally {
-		for (const path of tempPaths) removeTempFile(path)
-	}
+		files[sourcePath] = text
+		files[configPath] = JSON.stringify({
+			extends: projectConfig.extends,
+			compilerOptions: {
+				...projectConfig.compilerOptions,
+				// reused build info would skip checking unchanged files
+				incremental: false,
+				composite: false,
+				tsBuildInfoFile: null,
+				// declaration emit would fully check the exported types of both the
+				// baseline and the variant, hiding work a bench shares with them
+				declaration: false,
+				declarationMap: false,
+				declarationDir: null,
+				emitDeclarationOnly: false,
+				isolatedDeclarations: false,
+				// a bench excluded from the project may be outside its rootDir
+				rootDir: null,
+				// otherwise counts depend on whether declarations are checked
+				skipLibCheck: true
+			},
+			files: [sourcePath],
+			include: []
+		})
+		return configPath
+	})
+
+	const [baseline, ...counts]: number[] = JSON.parse(
+		execFileSync(process.execPath, [countInstantiationsScript, tscPath], {
+			input: JSON.stringify({ files, configPaths }),
+			encoding: "utf8",
+			maxBuffer: 1e8
+		})
+	)
+	return counts.map(count => count - baseline)
 }
 
 const getBaselineText = (file: SourceFile): string => {
@@ -157,10 +155,12 @@ export const getBenchInstantiations = (position: SourcePosition): number => {
 		}))
 		benchCountsByFile.set(position.file, benchCounts)
 	}
+	// calls are listed outermost first, e.g. it(...) before a bench inside it
+	const innermost = benchCounts
+		.filter(({ location }) => isPositionWithinRange(position, location))
+		.pop()
 	return (
-		benchCounts.find(({ location }) =>
-			isPositionWithinRange(position, location)
-		)?.count ??
+		innermost?.count ??
 		throwError(
 			`No call expressions with an inline function matching the name(s) '${getConfig().testDeclarationAliases.join()}' were found at ${position.file}:${position.line}:${position.char}`
 		)

@@ -1,11 +1,30 @@
 import { execFile } from "node:child_process"
+import { readFileSync, rmSync, writeFileSync } from "node:fs"
 import { availableParallelism } from "node:os"
 
 // run as a script so tsc processes can run in parallel from sync callers:
-// node countInstantiations.ts <tscPath> ...<tsconfigPaths>
-// writes a JSON array of instantiation counts, one per tsconfig
+// node countInstantiations.ts <tscPath>
+// reads { files: Record<path, contents>, configPaths: string[] } from stdin,
+// writes the files and then a JSON array of counts, one per tsconfig
 
-const [tscPath, ...configPaths] = process.argv.slice(2)
+type Input = {
+	files: Record<string, string>
+	configPaths: string[]
+}
+
+const tscPath = process.argv[2]
+const { files, configPaths }: Input = JSON.parse(readFileSync(0, "utf8"))
+
+// this process owns the files so they're removed even if a run is
+// interrupted, which would otherwise end its parent without cleanup
+process.on("exit", () => {
+	for (const path in files) rmSync(path, { force: true })
+})
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+	process.on(signal, () => process.exit(1))
+
+for (const [path, contents] of Object.entries(files))
+	writeFileSync(path, contents)
 
 const countInstantiations = (configPath: string) =>
 	new Promise<number>((resolve, reject) =>
@@ -22,10 +41,13 @@ const countInstantiations = (configPath: string) =>
 			],
 			{ maxBuffer: 1e8 },
 			// tsc exits non-zero for type errors, which don't affect the count,
-			// but option errors (TS5xxx) or errors without a location can skip checking
+			// but errors in a tsconfig or without a location can skip checking
 			(_, stdout, stderr) => {
 				const count = /Instantiations:\s+(\d+)/.exec(stdout)?.[1]
-				if (count === undefined || /^error TS|error TS5\d{3}:/m.test(stdout)) {
+				if (
+					count === undefined ||
+					/^error TS|\.json\(\d+,\d+\): error TS/m.test(stdout)
+				) {
 					reject(
 						new Error(
 							`Unable to read instantiations for ${configPath}:\n${stdout}${stderr}`
