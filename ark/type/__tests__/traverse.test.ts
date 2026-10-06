@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { ArkErrors, TraversalError } from "@ark/schema"
+import { throwError } from "@ark/util"
 import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
@@ -292,6 +293,50 @@ age must be more than 18 (was 2)`)
 			.snap(`b must be a string (was a number)
 d must be a number (was a string)
 a must be a string without ! (was "!a")`)
+	})
+
+	it("cyclic data after a nested call threw", () => {
+		let nesting = false
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{
+					link: {
+						value: [
+							"number",
+							":",
+							(n: number) => n > 0 || (nesting && throwError("nonpositive"))
+						],
+						"next?": "link",
+						"label?": ["string", "=>", s => s.trim()]
+					},
+					nested: [
+						"object",
+						":",
+						(o: object) => {
+							nesting = true
+							try {
+								types.link(o)
+							} catch {
+								nesting = false
+							}
+							return true
+						}
+					],
+					nestedFirst: { first: "nested", second: "link" },
+					nestedLast: { first: "link", second: "nested" }
+				},
+				{ jitless }
+			).export()
+			let deep: typeof types.link.inferIn = { value: 0 }
+			for (let i = 1; i < 100; i++) deep = { value: i, next: deep }
+			attest(types.nestedFirst.allows({ first: deep, second: deep })).equals(
+				false
+			)
+			const ring: typeof types.link.inferIn = { value: 1, label: " a " }
+			ring.next = ring
+			const out = types.nestedLast.assert({ first: ring, second: { value: 0 } })
+			attest(out.first.next?.label).equals("a")
+		}
 	})
 
 	it("ctx.path docs example", () => {

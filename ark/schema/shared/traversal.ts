@@ -752,7 +752,15 @@ export const allowsUntracked = (
 	const outerContinuation = continuation
 	aliasVisits.count = 0
 	continuation = undefined
-	const allowed = node.traverseAllows(data as never, 0)
+	let allowed: boolean
+	// restored in a catch rather than a finally, which slows every cyclic allows
+	try {
+		allowed = node.traverseAllows(data as never, 0)
+	} catch (e) {
+		aliasVisits.count = outerVisits
+		continuation = outerContinuation
+		throw e
+	}
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
 	continuation = outerContinuation
@@ -766,10 +774,12 @@ export const allowsAcyclic = (
 ): boolean | undefined => {
 	const outerTracked = aliasVisits.tracked
 	aliasVisits.tracked = false
-	const allowed = allowsUntracked(node, data)
-	const tracked = aliasVisits.tracked
-	aliasVisits.tracked ||= outerTracked
-	return tracked ? undefined : allowed
+	try {
+		const allowed = allowsUntracked(node, data)
+		return aliasVisits.tracked ? undefined : allowed
+	} finally {
+		aliasVisits.tracked ||= outerTracked
+	}
 }
 
 // a contextual predicate can add an error and still return true
