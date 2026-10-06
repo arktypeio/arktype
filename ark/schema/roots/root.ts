@@ -323,7 +323,11 @@ export abstract class BaseRoot<
 		args: BaseRoot[operation] extends Fn<infer args> ? args : []
 	): StructuralOperationBranchResultByName[operation][] {
 		return this.distribute(branch => {
-			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
+			if (
+				branch.equals($ark.intrinsic.object) &&
+				operation !== "merge" &&
+				operation !== "props"
+			)
 				// ideally this wouldn't be a special case, but for now it
 				// allows us to bypass `assertHasKeys` checks on base
 				// instantiations of generics like Pick and Omit. Could
