@@ -61,7 +61,7 @@ jobs:
     strategy:
       matrix:
         # minimum supported version, then the latest of each major
-        typescript: [5.1.6, 6.0.3, 7.0.2]
+        typescript: [5.1.6, 5.9.3, 6.0.3, 7.0.2]
       fail-fast: false
 
     runs-on: ubuntu-latest
@@ -76,7 +76,7 @@ jobs:
       - name: Typecheck consumer usage with TypeScript ${{ matrix.typescript }}
         run: pnpm --package=typescript@${{ matrix.typescript }} dlx -c "tsc --version && tsc --project ark/repo/tsCompat"
 
-  attest-ts7:
+  ts7:
     needs: core
     timeout-minutes: 20
     runs-on: ubuntu-latest
@@ -87,14 +87,19 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      # packages stay built with the default TypeScript, since the build's
+      # tooling (tsup, typescript-eslint) needs a JS API TS 7 doesn't have
       - name: Install TypeScript 7
         run: |
           sed -i "s/^  typescript: .*/  typescript: 7.0.2/" pnpm-workspace.yaml
           pnpm install --no-frozen-lockfile
 
-      # attest's declarations must not depend on TS 5's compiler API types
+      - name: Typecheck repo
+        run: pnpm tsc --version && pnpm typecheckRepo
+
+      # attest's declarations must not depend on TS 5/6's compiler API types
       - name: Typecheck attest's declarations
-        run: pnpm tsc --version && pnpm tsc --project ark/repo/tsCompat/tsconfig.attest.json
+        run: pnpm tsc --project ark/repo/tsCompat/tsconfig.attest.json
 
       # snap population tests compare exact instantiation counts, which are
       # measured differently with TS 7 (see ark/attest/ts7/instantiations.ts)
@@ -103,7 +108,7 @@ jobs:
         run: pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert
 
   prChecks:
-    needs: [compatibility, typescript, attest-ts7]
+    needs: [compatibility, typescript, ts7]
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
