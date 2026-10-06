@@ -43,9 +43,15 @@ export const copyOf = (data: object): object => {
 		const copy = data.slice()
 		const keys = Object.keys(data)
 		let i = keys.length
-		// an array's named keys follow its indices
-		if (keys[i - 1] !== `${data.length - 1}`)
-			while (i > 0 && !arrayIndexMatcher.test(keys[i - 1])) i--
+		// an array's named keys follow its indices, which are below its length
+		if (keys[data.length - 1] === `${data.length - 1}`) i = data.length
+		else {
+			while (
+				i > 0 &&
+				!(arrayIndexMatcher.test(keys[i - 1]) && +keys[i - 1] < data.length)
+			)
+				i--
+		}
 		for (; i < keys.length; i++)
 			defineValue(copy, keys[i], data[keys[i] as never])
 		for (const k of Object.getOwnPropertySymbols(data)) {
