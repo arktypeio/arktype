@@ -71,6 +71,7 @@ const $ = scope({
 })
 // not exported, since TS 7.1 rejects declaration emit for anonymous cyclic
 // types (TS5088) that earlier versions elided to `any`
+// https://github.com/microsoft/TypeScript/issues/64656
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const types = $.export()
 
