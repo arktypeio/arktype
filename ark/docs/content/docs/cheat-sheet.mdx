@@ -161,6 +161,6 @@ if (out instanceof type.errors) {
 | ------------------------------------------ | ----------------------------------------------------------- |
 | `name: "string \| undefined"` for optional | Use `"name?": "string"` — append `?` to the **key**         |
 | `type([Schema])` for arrays                | Use `Schema.array()` — brackets create tuples               |
-| `"Record<string, T>"` for records          | Use `type({ "[string]": T })` — index signature syntax      |
+| `"Record<string, T>"` with `T` a variable  | Use `type.Record("string", T)` or `{ "[string]": T }`       |
 | Manually re-validating after `type()`      | Trust ArkType's output — it already validated the structure |
 | `type User = typeof Schema.t`              | Use `typeof Schema.infer` for the output type               |
