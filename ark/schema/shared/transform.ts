@@ -40,7 +40,14 @@ export declare namespace TransformErrors {
 
 export const copyOf = (data: object): object => {
 	if (isArray(data)) {
-		const copy = data.slice()
+		// slice builds its copy from data.constructor, which a named key can shadow
+		const copy =
+			data.constructor === Array ?
+				(data as unknown[]).slice()
+			:	Object.setPrototypeOf(
+					([] as unknown[]).concat(data),
+					Object.getPrototypeOf(data)
+				)
 		const keys = Object.keys(data)
 		let i = keys.length
 		// an array's named keys follow its indices, which are below its length
