@@ -430,6 +430,24 @@ b must be A (was "y")`)
 					[Symbol.isConcatSpreadable]: false
 				})
 			)
+			attest(
+				$.type("string.trim[]").assert(Object.assign([" a "], { slice: 1 }))
+			).equals(Object.assign(["a"], { slice: 1 }))
+		}
+	})
+
+	it("RegExp with transformed props", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const original = Object.assign(/a/g, { x: " a " })
+			original.lastIndex = 1
+			const out = $.type({ x: "string.trim" }).assert(original) as RegExp & {
+				x: string
+			}
+			attest(out instanceof RegExp).equals(true)
+			attest(out.x).equals("a")
+			attest(out.lastIndex).equals(1)
+			attest(original.x).equals(" a ")
 		}
 	})
 

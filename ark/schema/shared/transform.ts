@@ -52,8 +52,9 @@ export const copyOf = (data: object): object => {
 				i--
 		}
 		let copy: unknown[]
-		// slice builds its copy from data.constructor, which a named key can shadow
-		if (data.constructor === Array) copy = (data as unknown[]).slice()
+		// slice builds its copy from data.constructor, which a named key can shadow,
+		// as it can slice itself
+		if (data.constructor === Array) copy = Array.prototype.slice.call(data)
 		else {
 			copy = Object.setPrototypeOf([], Object.getPrototypeOf(data))
 			copy.length = data.length
@@ -82,7 +83,9 @@ export const copyOf = (data: object): object => {
 	const descriptors: { [k: Key]: PropertyDescriptor } =
 		Object.getOwnPropertyDescriptors(data)
 	for (const k of Reflect.ownKeys(descriptors)) {
-		descriptors[k].configurable = true
+		// state the copy already owns, e.g. a RegExp's lastIndex, can't become configurable
+		if (Object.getOwnPropertyDescriptor(copy, k)?.configurable !== false)
+			descriptors[k].configurable = true
 		if ("value" in descriptors[k]) descriptors[k].writable = true
 	}
 	return Object.defineProperties(copy, descriptors)
