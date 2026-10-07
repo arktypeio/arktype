@@ -1,6 +1,5 @@
 import {
 	CastableBase,
-	ReadonlyArray,
 	ReadonlyPath,
 	append,
 	appendUnique,
@@ -167,36 +166,34 @@ export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
 
+// below this many paths, comparing propStrings is faster than indexing them
+const maxScannedLength = 8
+
 /**
- * A ReadonlyArray of `ArkError`s returned by a Type on invalid input.
+ * The `ArkError`s returned by a Type on invalid input.
  *
  * Subsequent errors added at an existing path are merged into an
  * ArkError intersection.
  */
-export class ArkErrors
-	extends ReadonlyArray<ArkError>
-	implements StandardSchemaV1.FailureResult
-{
+export class ArkErrors implements StandardSchemaV1.FailureResult {
 	readonly [arkKind] = "errors"
-
-	/**
-	 * Inherited array methods (`map`, `filter`, `slice`, …) return a plain
-	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
-	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
-	 */
-	declare static readonly [Symbol.species]: ArrayConstructor
 
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {
-		super()
 		this.ctx = ctx
 	}
 
+	private _byPath: Record<string, ArkError> | undefined
 	/**
 	 * Errors by a pathString representing their location.
 	 */
-	byPath: Record<string, ArkError> = Object.create(null)
+	get byPath(): Record<string, ArkError> {
+		if (this._byPath) return this._byPath
+		const byPath: Record<string, ArkError> = Object.create(null)
+		for (const error of this.issues) byPath[error.propString] = error
+		return (this._byPath = byPath)
+	}
 
 	/**
 	 * {@link byPath} flattened so that each value is an array of ArkError instances at that path.
@@ -215,14 +212,19 @@ export class ArkErrors
 		return flatMorph(this.byPath, (k, v) => [k, v.flat.map(e => e.problem)])
 	}
 
+	private _byAncestorPath: Record<string, ArkError[]> | undefined
 	/**
 	 * All pathStrings at which errors are present mapped to the errors occuring
 	 * at that path or any nested path within it.
 	 */
-	byAncestorPath: Record<string, ArkError[]> = Object.create(null)
+	get byAncestorPath(): Record<string, ArkError[]> {
+		if (this._byAncestorPath) return this._byAncestorPath
+		this._byAncestorPath = Object.create(null)
+		for (const error of this.issues) this.addAncestorPaths(error)
+		return this._byAncestorPath!
+	}
 
 	count = 0
-	private mutable: ArkError[] = this as never
 
 	/**
 	 * Throw a TraversalError based on these errors.
@@ -240,11 +242,10 @@ export class ArkErrors
 	}
 
 	/**
-	 * Append an ArkError to this array, ignoring duplicates.
+	 * Add an ArkError, ignoring duplicates.
 	 */
 	add(error: ArkError): void {
-		const propString = error.propString
-		const existing = this.byPath[propString]
+		const existing = this.errorAtPath(error)
 		if (existing) {
 			// only add if it's not already in the errors collection
 			if (
@@ -279,26 +280,22 @@ export class ArkErrors
 						this.ctx
 					)
 
-			const existingIndex = this.indexOf(existing)
-			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
-				errorIntersection
-
-			this.byPath[propString] = errorIntersection
-			// add the original error here rather than the intersection
-			// since the intersection is reflected by the array of errors at
-			// this path
-			this.addAncestorPaths(error)
+			const issues = this.issues as ArkError[]
+			issues[issues.indexOf(existing)] = errorIntersection
+			if (this._byPath) this._byPath[error.propString] = errorIntersection
+			// ancestors list errors in issue order, which appending here would break
+			this._byAncestorPath = undefined
 		} else {
-			this.byPath[propString] = error
-			this.addAncestorPaths(error)
-			this.mutable[this.length] = error
+			;(this.issues as ArkError[]).push(error)
+			if (this._byPath) this._byPath[error.propString] = error
+			if (this._byAncestorPath) this.addAncestorPaths(error)
 		}
 		this.count++
 	}
 
 	transform(f: (e: ArkError) => ArkError): ArkErrors {
 		const result = new ArkErrors(this.ctx)
-		for (const e of this) result.add(f(e))
+		for (const e of this.issues) result.add(f(e))
 		return result
 	}
 
@@ -309,7 +306,7 @@ export class ArkErrors
 	merge(errors: ArkErrors): void {
 		// a morph that returns ctx.errors has already added them
 		if (errors === this) return
-		for (const e of errors) {
+		for (const e of errors.issues) {
 			this.add(
 				e.transform(
 					input => ({ ...input, prefixPath: [...this.ctx.path] }) as never
@@ -349,36 +346,51 @@ export class ArkErrors
 	}
 
 	/**
-	 * Alias of this ArkErrors instance for StandardSchema compatibility.
+	 * One ArkError per path with errors, in the order each path first failed.
 	 */
-	get issues(): this {
-		return this
+	readonly issues: readonly ArkError[] = []
+
+	get length(): number {
+		return this.issues.length
+	}
+
+	[Symbol.iterator](): IterableIterator<ArkError> {
+		return this.issues.values()
 	}
 
 	toJSON(): JsonArray {
-		return [...this.map(e => e.toJSON())]
+		return this.issues.map(e => e.toJSON())
 	}
 
 	toString(): string {
+		const issues = this.issues
 		// join would convert each error through V8's slower generic ToPrimitive
-		let result = this.length === 0 ? "" : this[0].toString()
-		for (let i = 1; i < this.length; i++) result += `\n${this[i].toString()}`
+		let result = issues.length === 0 ? "" : issues[0].toString()
+		for (let i = 1; i < issues.length; i++)
+			result += `\n${issues[i].toString()}`
 		return result
 	}
 
+	private errorAtPath(error: ArkError): ArkError | undefined {
+		const issues = this.issues
+		if (issues.length === 0) return undefined
+		const propString = error.propString
+		if (this._byPath || issues.length >= maxScannedLength)
+			return this.byPath[propString]
+		// an error at an existing path usually follows the last one added
+		for (let i = issues.length - 1; i >= 0; i--)
+			if (issues[i].propString === propString) return issues[i]
+	}
+
 	private addAncestorPaths(error: ArkError): void {
+		const byAncestorPath = this._byAncestorPath!
+		const flat = error.flat
 		for (const propString of error.path.stringifyAncestors()) {
-			this.byAncestorPath[propString] = append(
-				this.byAncestorPath[propString],
-				error
-			)
+			for (const e of flat)
+				byAncestorPath[propString] = append(byAncestorPath[propString], e)
 		}
 	}
 }
-
-// a static getter keyed by a symbol would make instanceof slow in V8, and
-// transpiled static fields assign, which Array's getter-only species rejects
-Object.defineProperty(ArkErrors, Symbol.species, { value: Array })
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"
@@ -386,7 +398,7 @@ export class TraversalError extends Error {
 
 	constructor(errors: ArkErrors) {
 		if (errors.length === 1) super(errors.summary)
-		else super("\n" + errors.map(error => `  • ${indent(error)}`).join("\n"))
+		else super("\n" + errors.issues.map(e => `  • ${indent(e)}`).join("\n"))
 
 		Object.defineProperty(this, "arkErrors", {
 			value: errors,

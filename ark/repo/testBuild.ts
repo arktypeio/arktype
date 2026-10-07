@@ -1,3 +1,4 @@
+import type { ArkErrors } from "arktype"
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -143,11 +144,11 @@ for (const pkg of packages) {
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
 
-const errors = type("string")(5)
+const errors = type("string")(5) as ArkErrors
 
 if (
 	errors.constructor.name !== "ArkErrors" ||
-	errors[0].constructor.name !== "ArkError" ||
+	errors.issues[0].constructor.name !== "ArkError" ||
 	(arkSchema.Disjoint as Function).name !== "Disjoint" ||
 	scope({}).constructor.name !== "InternalScope"
 )

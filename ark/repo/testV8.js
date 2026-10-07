@@ -114,3 +114,32 @@ assertOneMapPerKind("after reading cached getters")
 console.log(
 	`🏎️  ${Object.keys(nodesByKind).length} node kinds each have one map!`
 )
+
+console.log("\n⏱️  Checking that every ArkErrors has one V8 map...\n")
+
+let emptyErrors
+type("unknown").narrow((data, ctx) => {
+	emptyErrors = ctx.errors
+	return true
+})(0)
+
+const indexedErrors = type("string")(0)
+indexedErrors.byPath
+indexedErrors.byAncestorPath
+
+const errorResults = [
+	emptyErrors,
+	type("string")(0),
+	type({ a: "string", b: "string", c: "string" })({}),
+	type("number[]")(Array.from({ length: 20 }, String)),
+	indexedErrors
+]
+
+for (const errors of errorResults) {
+	if (!eval("%HaveSameMap(errorResults[0], errors)"))
+		throw new Error(
+			`⚠️  ArkErrors with ${errors.length} errors has a different map.`
+		)
+}
+
+console.log("🏎️  ArkErrors have one map!")

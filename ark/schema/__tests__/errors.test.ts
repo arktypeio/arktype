@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	ArkErrors,
+	type ArkError,
 	configureSchema,
 	rootSchema,
 	schemaScope
@@ -149,18 +150,43 @@ contextualize(() => {
 
 	const errors = nEvenAtLeast2({ n: 1 }) as ArkErrors
 
-	it("Array methods allocate plain Array (Symbol.species), not ArkErrors", () => {
+	it("issues is a plain array", () => {
 		const messages = errors.issues.map(e => e.message)
 		attest(messages instanceof Array).equals(true)
 		attest(messages.constructor).equals(Array)
 		attest(messages instanceof ArkErrors).equals(false)
 
-		const mapped = errors.map(() => 1)
-		attest(mapped.constructor).equals(Array)
-		attest(mapped instanceof ArkErrors).equals(false)
+		attest(Array.isArray(errors)).equals(false)
+		attest(Array.isArray(errors.issues)).equals(true)
+		attest(errors.issues).equals([...errors])
+		attest(errors.length).equals(errors.issues.length)
+	})
 
-		attest(errors.filter(() => true).constructor).equals(Array)
-		attest(errors.slice().constructor).equals(Array)
+	it("array members are read from issues", () => {
+		// @ts-expect-error
+		attest(() => errors[0]).type.errors("Property '0' does not exist")
+		// @ts-expect-error
+		attest(() => errors.map(e => e)).type.errors(
+			"Property 'map' does not exist"
+		)
+		// @ts-expect-error
+		attest(() => errors.push(errors.issues[0])).type.errors(
+			"Property 'push' does not exist"
+		)
+		// @ts-expect-error
+		attest(() => (errors.length = 0)).type.errors("read-only property")
+		// @ts-expect-error
+		attest(() => errors.issues.push(errors.issues[0])).type.errors(
+			"Property 'push' does not exist"
+		)
+		// @ts-expect-error
+		attest((): readonly ArkError[] => errors).type.errors(
+			"is missing the following properties"
+		)
+		// @ts-expect-error
+		attest(() => ([] as ArkError[]).concat(errors)).type.errors(
+			"No overload matches this call"
+		)
 	})
 
 	it("serialization", () => {

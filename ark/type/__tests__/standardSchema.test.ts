@@ -24,7 +24,8 @@ contextualize(() => {
 			foo: 5
 		}) as StandardSchemaV1.FailureResult
 
-		attest(badStandardOut.issues).instanceOf(type.errors)
+		attest(badStandardOut).instanceOf(type.errors)
+		attest(Array.isArray(badStandardOut.issues)).equals(true)
 		attest(badStandardOut.issues.toString()).snap(
 			"foo must be a string (was a number)"
 		)
