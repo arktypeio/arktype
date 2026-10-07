@@ -1,10 +1,10 @@
 # arktype
 
-## 3.0.0
+## Unreleased
 
 ### Remove the `clone` option
 
-Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as in 2.x. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
+Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as before. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
@@ -54,7 +54,7 @@ if (out instanceof type.errors) {
 }
 ```
 
-`issues` already returns the errors in 2.x, so `out.issues.map(...)` works on both versions. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
+`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
 
 ### Throw from `.assert` when a root morph fails
 
@@ -146,7 +146,7 @@ type({ "+": "reject", a: "string.trim" }).or({
 
 ### Delete undeclared symbol keys
 
-`"+": "delete"` removes undeclared symbol keys, which 2.2.7 kept.
+`"+": "delete"` removes undeclared symbol keys, which it previously kept.
 
 ### Import internals from `arktype/internal`
 
