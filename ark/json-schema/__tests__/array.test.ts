@@ -8,6 +8,7 @@ import {
 contextualize(() => {
 	it("type array", () => {
 		const t = jsonSchemaToType({ type: "array" })
+		attest<unknown[]>(t.infer)
 		attest(t.expression).snap("Array")
 	})
 
@@ -16,12 +17,14 @@ contextualize(() => {
 			type: "array",
 			items: { type: "string" }
 		})
+		attest<string[]>(tItems.infer)
 		attest(tItems.expression).snap("string[]")
 
 		const tItemsArr = jsonSchemaToType({
 			type: "array",
 			items: [{ type: "string" }, { type: "number" }]
 		})
+		attest<[string, number]>(tItemsArr.infer)
 		attest(tItemsArr.expression).snap("[string, number]")
 	})
 
@@ -30,17 +33,33 @@ contextualize(() => {
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }]
 		})
+		attest<[string, number, ...unknown[]]>(tPrefixItems.infer)
 		attest(tPrefixItems.expression).snap("[string, number, ...unknown[]]")
 	})
 
 	it("items & prefixItems", () => {
+		const tItemsFalseAndPrefixItems = jsonSchemaToType({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			items: false
+		})
+		attest<[string, number]>(tItemsFalseAndPrefixItems.infer)
+
 		const tItemsAndPrefixItems = jsonSchemaToType({
 			type: "array",
 			prefixItems: [{ type: "string" }, { type: "number" }],
 			items: { type: "boolean" }
 		})
-		attest(tItemsAndPrefixItems.expression).snap(
-			"[string, number, ...boolean[]]"
+		attest<[string, number, ...boolean[]]>(tItemsAndPrefixItems.infer)
+
+		const tItemsArrayAndPrefixItems = jsonSchemaToType({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			items: [{ type: "boolean" }, { type: "null" }]
+		})
+		attest<[string, number, boolean, null]>(tItemsArrayAndPrefixItems.infer)
+		attest(tItemsArrayAndPrefixItems.expression).snap(
+			"[string, number, boolean, null]"
 		)
 	})
 
@@ -49,6 +68,7 @@ contextualize(() => {
 			type: "array",
 			additionalItems: { type: "string" }
 		})
+		attest<string[]>(tAdditionalItems.infer)
 		attest(tAdditionalItems.expression).snap("string[]")
 	})
 
@@ -58,6 +78,7 @@ contextualize(() => {
 			additionalItems: { type: "boolean" },
 			items: [{ type: "string" }, { type: "number" }]
 		})
+		attest<[string, number, ...boolean[]]>(tItemsVariadic.infer)
 		attest(tItemsVariadic.expression).snap("[string, number, ...boolean[]]")
 
 		const tItemsFalseAdditional = jsonSchemaToType({
@@ -65,14 +86,17 @@ contextualize(() => {
 			additionalItems: false,
 			items: [{ type: "string" }]
 		})
+		attest<[string]>(tItemsFalseAdditional.infer)
 		attest(tItemsFalseAdditional.expression).snap("[string]")
 
-		attest(() =>
-			jsonSchemaToType({
-				type: "array",
-				additionalItems: { type: "string" },
-				items: { type: "string" }
-			})
+		attest(
+			() =>
+				// @ts-ignore Suppress 'excessively deep and possibly infinite' error
+				jsonSchemaToType({
+					type: "array",
+					additionalItems: { type: "string" },
+					items: { type: "string" }
+				}) as never
 		).throws(writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage())
 	})
 
@@ -88,13 +112,14 @@ contextualize(() => {
 	})
 
 	it("additionalItems & items & prefixItems", () => {
-		attest(() =>
-			jsonSchemaToType({
-				type: "array",
-				additionalItems: { type: "boolean" },
-				items: { type: "null" },
-				prefixItems: [{ type: "string" }, { type: "number" }]
-			})
+		attest(
+			() =>
+				jsonSchemaToType({
+					type: "array",
+					additionalItems: { type: "boolean" },
+					items: { type: "null" },
+					prefixItems: [{ type: "string" }, { type: "number" }]
+				}) as never
 		).throws(writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage())
 	})
 
@@ -103,6 +128,7 @@ contextualize(() => {
 			type: "array",
 			contains: { type: "number" }
 		})
+		attest<unknown[]>(tContains.infer)
 		attest(tContains.json).snap({
 			proto: "Array",
 			predicate: ["$ark.jsonSchemaArrayContainsValidator"]
@@ -117,13 +143,14 @@ contextualize(() => {
 			type: "array",
 			maxItems: 5
 		})
+		attest<unknown[]>(tMaxItems.infer)
 		attest(tMaxItems.expression).snap("Array <= 5")
 	})
 
 	it("maxItems (negative)", () => {
-		attest(() => jsonSchemaToType({ type: "array", maxItems: -1 })).throws(
-			"TraversalError: maxItems must be non-negative"
-		)
+		attest(
+			() => jsonSchemaToType({ type: "array", maxItems: -1 }) as never
+		).throws("TraversalError: maxItems must be non-negative")
 	})
 
 	it("minItems (positive)", () => {
@@ -131,13 +158,14 @@ contextualize(() => {
 			type: "array",
 			minItems: 5
 		})
+		attest<unknown[]>(tMinItems.infer)
 		attest(tMinItems.expression).snap("Array >= 5")
 	})
 
 	it("minItems (negative)", () => {
-		attest(() => jsonSchemaToType({ type: "array", minItems: -1 })).throws(
-			"TraversalError: minItems must be non-negative"
-		)
+		attest(
+			() => jsonSchemaToType({ type: "array", minItems: -1 }) as never
+		).throws("TraversalError: minItems must be non-negative")
 	})
 
 	it("minItems (0)", () => {
@@ -155,6 +183,7 @@ contextualize(() => {
 			type: "array",
 			uniqueItems: true
 		})
+		attest<unknown[]>(tUniqueItems.infer)
 		attest(tUniqueItems.json).snap({
 			proto: "Array",
 			predicate: ["$ark.jsonSchemaArrayUniqueItemsValidator"]
