@@ -7,7 +7,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Fn,
-	type array
+	type array,
+	type dict
 } from "@ark/util"
 import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
@@ -203,9 +204,25 @@ export abstract class BaseRoot<
 	}
 
 	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		const result = this.innerToJsonSchema(ctx)
+		const result = this.innerToJsonSchema(ctx) as JsonSchema & dict
 
-		return Object.assign(result, this.metaJson)
+		for (const k in this.meta) {
+			const v = (this.meta as dict)[k]
+			// metaJson serializes non-primitives like [5] to references like
+			// "$ark.array1", so prefer the original value when it is valid JSON
+			// (jsonData's object domain also allows functions, so exclude them)
+			result[k] =
+				typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
+				: k === "default" ?
+					ctx.fallback.defaultValue({
+						code: "defaultValue",
+						base: result,
+						value: v as never
+					})
+				:	(this.metaJson as dict)[k]
+		}
+
+		return result
 	}
 
 	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
@@ -306,7 +323,11 @@ export abstract class BaseRoot<
 		args: BaseRoot[operation] extends Fn<infer args> ? args : []
 	): StructuralOperationBranchResultByName[operation][] {
 		return this.distribute(branch => {
-			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
+			if (
+				branch.equals($ark.intrinsic.object) &&
+				operation !== "merge" &&
+				operation !== "props"
+			)
 				// ideally this wouldn't be a special case, but for now it
 				// allows us to bypass `assertHasKeys` checks on base
 				// instantiations of generics like Pick and Omit. Could

@@ -1,10 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	writeDuplicateKeyMessage,
-	writeLiteralUnionEntriesMessage
+	writeLiteralUnionEntriesMessage,
+	writeNonStructuralOperandMessage
 } from "@ark/schema"
-import { register, type array } from "@ark/util"
-import { type } from "arktype"
+import { Hkt, register, type array } from "@ark/util"
+import { generic, type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
 
 // by default because of the toJSON method, it wouldn't be clear
@@ -70,6 +71,32 @@ contextualize(() => {
 	it("union", () => {
 		const T = type({ foo: "string" }).or({ bar: "number" })
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))
+	})
+
+	it("base object", () => {
+		const T = type("object")
+
+		attest<array<never>>(T.props)
+		attest(T.props).snap([])
+	})
+
+	it("object generic constraint", () => {
+		const PropCount = generic(["O", "object"])(
+			({ O }) => type.unit(O.props.length),
+			class extends Hkt<[object]> {
+				declare body: number
+			}
+		)
+
+		attest(PropCount("object").expression).snap("0")
+		attest(PropCount({ foo: "string", bar: "number" }).expression).snap("2")
+	})
+
+	it("non-object", () => {
+		// @ts-expect-error
+		attest(() => type("string").props)
+			.throws(writeNonStructuralOperandMessage("props", "string"))
+			.type.errors("Property 'props' does not exist")
 	})
 
 	it("structural operation removes narrow", () => {
