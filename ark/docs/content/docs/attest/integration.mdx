@@ -1,0 +1,74 @@
+---
+title: Integration
+---
+
+### Setup
+
+If you're a library author wanting to integrate type into your own assertions instead of using the `attest` API, you'll need to call `setup` with a list of `attestAliases` to ensure type data is collected from your own functions:
+
+```ts
+import { setup } from "@ark/attest"
+
+// attest will only collect type data from functions with names listed in `attestAliases`
+setup({ attestAliases: ["yourCustomAssert"] })
+
+// There are many other config options, but some are primarily internal- use others at your own risk!
+```
+
+You'll need to make sure that setup with whatever aliases you need before the first test runs. As part of the setup process, attest will search for the specified assertion calls and cache their types in a temporary file that will be referenced during test execution.
+
+This ensures that type assertions can be made across processes without creating a new TSServer instance for each.
+
+### TS Versions
+
+Attest analyzes your project with whichever version of `typescript` is installed. To test multiple versions, run your suite once per version, e.g. via a CI matrix that installs each version before running tests.
+
+TypeScript 7.1+ is supported via its native API. Type assertions, completions, JSDoc, benches and the CLI work the same way, with a few differences:
+
+- Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench. Since `tsc` fully checks the bench's dependencies before measuring it, work a bench shares with them isn't attributed to the bench, so counts run lower than with TypeScript 5/6, by as much as most of the count for a bench whose cost is mostly shared with its dependencies, and baselines should be recorded separately.
+- Type strings, union ordering and error elaboration can differ from earlier versions, so snapshots may need to be updated when switching.
+- Benches write temporary copies beside their source files while measuring, so they need a writable source directory.
+
+### APIs
+
+The most flexible attest APIs are `getTypeAssertionAtPosition` and `caller`.
+
+Here's an example of how you might use them in your own API:
+
+```ts
+import { caller, getTypeAssertionAtPosition } from "@ark/attest"
+
+export const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
+	const position = caller()
+	const assertion = getTypeAssertionAtPosition(position)
+	const actual = assertion.args[0]
+	// relationship of the actual value's type to the expected type arg
+	const relationship = actual.relationships.typeArgs[0]
+	if (relationship === undefined) {
+		throw new Error(
+			`yourCustomAssert requires a type arg representing the expected type, e.g. 'yourCustomAssert<"foo">("foo")'`
+		)
+	}
+	if (relationship !== "equality") {
+		throw new Error(
+			`Expected ${assertion.typeArgs[0].type}, got ${actual.type} with relationship ${relationship}`
+		)
+	}
+}
+```
+
+A user might then use `yourCustomAssert` like this:
+
+```ts
+// @noErrors
+import { yourCustomAssert } from "your-package"
+
+// Ok
+yourCustomAssert<"foo">(`${"f"}oo` as const)
+// Error: `Expected boolean, got true with relationship subtype`
+yourCustomAssert<boolean>(true)
+// Error: `Expected 5, got number with relationship supertype`
+yourCustomAssert<5>(2 + 3)
+```
+
+Please don't hesitate to open a GitHub [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) or reach out on [ArkType's Discord](https://arktype.io/discord) if you have any questions or feedback- we'd love to hear from you! ⛵

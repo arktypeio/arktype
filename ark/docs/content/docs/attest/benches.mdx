@@ -1,0 +1,65 @@
+---
+title: Benches
+---
+
+Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `node benches.ts` or `tsx benches.ts`:
+
+```ts title="benches.ts"
+import { bench } from "@ark/attest"
+
+// Combinatorial template literals often result in expensive types- let's benchmark this one!
+type makeComplexType<s extends string> =
+	s extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
+	:	s
+
+bench("bench type", () => {
+	return {} as makeComplexType<"defenestration">
+	// This is an inline snapshot that will be populated or compared when you run the file
+}).types([169, "instantiations"])
+
+bench("bench runtime and type", () => {
+	return {} as makeComplexType<"antidisestablishmentarianism">
+})
+	// Average time it takes the function execute
+	.mean([2, "ms"])
+	// Seems like our type is O(n) with respect to the length of the input- not bad!
+	.types([337, "instantiations"])
+```
+
+## Baseline expressions
+
+If you're benchmarking an API, you'll need to include a "baseline expression" so that instantiations created when your API is initially invoked don't add noise to the individual tests.
+
+Here's an example of what that looks like:
+
+```ts
+import { bench } from "@ark/attest"
+import { type } from "arktype"
+
+// baseline expression
+type("boolean")
+
+bench("single-quoted", () => {
+	const _ = type("'nineteen characters'")
+	// would be 2697 without baseline
+}).types([610, "instantiations"])
+
+bench("keyword", () => {
+	const _ = type("string")
+	// would be 2507 without baseline
+}).types([356, "instantiations"])
+```
+
+<Callout type="warn">
+	Be sure your baseline expression is not identical to an expression you are
+	using in any of your benchmarks. If it is, the individual benchmarks will
+	reuse its cached types, leading to reduced (or 0) instantiations.
+</Callout>
+
+## Thresholds
+
+If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+
+```bash
+tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded --benchPercentThreshold 10
+```

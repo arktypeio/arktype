@@ -13,6 +13,7 @@
 		"checkLinks": "linkinator https://arktype.io -r"
 	},
 	"dependencies": {
+		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/schema": "workspace:*",

@@ -1,0 +1,6 @@
+{
+	"title": "Attest",
+	"description": "Type assertions and benchmarks",
+	"root": true,
+	"pages": ["index", "assertions", "benches", "options", "cli", "integration"]
+}
