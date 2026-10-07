@@ -5,21 +5,25 @@ const installers = ["pnpm", "npm", "yarn", "bun"] as const satisfies string[]
 
 export type Installer = (typeof installers)[number]
 
-type InstallationTabProps = {
+export type InstallationTabsProps = {
+	pkg?: string
+	dev?: boolean
+}
+
+type InstallerTabProps = InstallationTabsProps & {
 	name: Installer
 }
 
-const InstallerTab = ({ name }: InstallationTabProps) => (
+const InstallerTab = ({ name, pkg = "arktype", dev }: InstallerTabProps) => (
 	<Tab value={name} className="installer-tab">
-		<CodeBlock lang="bash">{`${name} ${name === "yarn" || name === "bun" ? "add" : "install"} arktype`}</CodeBlock>
+		<CodeBlock lang="bash">{`${name} ${name === "yarn" || name === "bun" ? "add" : "install"}${dev ? " -D" : ""} ${pkg}`}</CodeBlock>
 	</Tab>
 )
 
-export const InstallationTabs = () => (
+export const InstallationTabs = (props: InstallationTabsProps) => (
 	<Tabs items={installers}>
-		<InstallerTab name="pnpm" />
-		<InstallerTab name="npm" />
-		<InstallerTab name="yarn" />
-		<InstallerTab name="bun" />
+		{installers.map(name => (
+			<InstallerTab key={name} name={name} {...props} />
+		))}
 	</Tabs>
 )

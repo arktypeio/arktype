@@ -132,6 +132,9 @@ importers:
 
   ark/docs:
     dependencies:
+      '@ark/attest':
+        specifier: link:../attest
+        version: link:../attest
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs

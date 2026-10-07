@@ -1,0 +1,70 @@
+---
+title: Setup
+---
+
+Attest is a testing library that makes your TypeScript types available at runtime, giving you access to precise type-level assertions and performance benchmarks.
+
+Assertions are framework agnostic and can be seamlessly integrated with your existing Vitest, Jest, or Mocha tests.
+
+Benchmarks can run from anywhere and will deterministically report the number of type instantiations contributed by the contents of the `bench` call.
+
+If you've ever wondered how ArkType can guarantee identical behavior between its runtime and static parser implementations and highly optimized editor performance, Attest is your answer⚡
+
+## Installation
+
+<InstallationTabs pkg="@ark/attest" dev />
+
+<Callout type="info">
+	This package is still in alpha! Your feedback will help us iterate toward a
+	stable 1.0.
+</Callout>
+
+## Global setup
+
+To use attest's type assertions, you'll need to call its setup and cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
+
+<Callout type="warn">
+	If you run your tests in watch mode or otherwise iteratively during dev, you
+	will want to enable [`skipTypes`](/docs/attest/options#skiptypes).
+</Callout>
+
+### Vitest
+
+```ts title="vitest.config.ts"
+// @noErrors
+import { defineConfig } from "vitest/config"
+
+export default defineConfig({
+	test: {
+		globalSetup: ["setupVitest.ts"]
+	}
+})
+```
+
+```ts title="setupVitest.ts"
+import { setup } from "@ark/attest"
+
+// config options can be passed here
+export default () => setup({})
+```
+
+### Mocha
+
+```json title="package.json"
+"mocha": {
+	"require": "./setupMocha.ts"
+}
+```
+
+```ts title="setupMocha.ts"
+import { setup, teardown } from "@ark/attest"
+
+// config options can be passed here
+export const mochaGlobalSetup = () => setup({})
+
+export const mochaGlobalTeardown = teardown
+```
+
+You should also add `.attest` to your repository's `.gitignore` file.
+
+Bun support is currently pending [them supporting @prettier/sync for type formatting](https://github.com/oven-sh/bun/issues/10768). If this is a problem for you, please 👍 that issue so they prioritize it!
