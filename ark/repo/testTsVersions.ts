@@ -60,17 +60,8 @@ if (unknown.length) {
 if (process.env.CI && !requested.length)
 	console.log("Skipping TS version checks, which CI runs per task")
 else {
-	const names = requested.length ? requested : Object.keys(tasks)
-	// concurrent dlx installs conflict, so consumer checks run one at a time
-	const runConsumers = async () => {
-		const results: boolean[] = []
-		for (const name of names.filter(name => name.startsWith("consumer@")))
-			results.push(await run(name))
-		return results
-	}
-	const results = await Promise.all([
-		runConsumers(),
-		...names.filter(name => !name.startsWith("consumer@")).map(run)
-	])
-	if (results.flat().includes(false)) process.exit(1)
+	const results = await Promise.all(
+		(requested.length ? requested : Object.keys(tasks)).map(run)
+	)
+	if (results.includes(false)) process.exit(1)
 }

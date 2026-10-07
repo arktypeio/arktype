@@ -17,7 +17,7 @@ catalogs:
 overrides:
   '@ark/attest': link:ark/attest
 
-pnpmfileChecksum: sha256-52HQCvZCs7y6vTampc9s+mTETXNRqCzQXfqqwdx9HHU=
+pnpmfileChecksum: sha256-rJNh4Ifx65FEPNKNzfyytCBFtNll4hy5yEDH9ozWOkM=
 
 importers:
 

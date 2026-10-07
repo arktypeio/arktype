@@ -1,5 +1,6 @@
 type PackageManifest = {
-	name: string
+	// pnpm dlx's temporary project has no name
+	name?: string
 	dependencies?: Record<string, string>
 	peerDependencies?: Record<string, string>
 }
@@ -10,7 +11,7 @@ const jsApiTypeScriptVersion = "6.0.3"
 
 // these use TypeScript's JS API, which TS 7 doesn't have, so they get their
 // own TS 6 rather than resolving the workspace's TypeScript as a peer
-const needsJsApi = (name: string) =>
+const needsJsApi = (name = "") =>
 	name === "typescript-eslint" ||
 	name.startsWith("@typescript-eslint/") ||
 	name === "tsup" ||
