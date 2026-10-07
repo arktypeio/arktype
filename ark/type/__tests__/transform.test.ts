@@ -234,6 +234,10 @@ b must be A (was "y")`)
 		attest(out instanceof Box).equals(true)
 		attest(out.a).equals("a")
 		attest(original.a).equals(" a ")
+
+		class List extends Array<string> {}
+		const list = type("string.trim[]").assert(List.from([" a "]))
+		attest(list instanceof List && [...list]).equals(["a"])
 	})
 
 	it("non-builtin prototype constructor", () => {
@@ -409,6 +413,11 @@ b must be A (was "y")`)
 					Object.assign([], { 1: " a ", 4294967295: 0 })
 				)
 			).equals(Object.assign([], { 1: "a", 4294967295: 0 }))
+			attest(
+				$.type("string.trim[]").assert(
+					Object.assign([" a "], { constructor: 1 })
+				)
+			).equals(Object.assign(["a"], { constructor: 1 }))
 		}
 	})
 
