@@ -4,7 +4,7 @@
 
 ### Remove the `clone` option
 
-Transforming no longer clones the input first, and never writes to it, except to a builtin whose state can't be copied (e.g. a function, Promise, WeakMap, FormData or Blob), which is transformed in place as in 2.x. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
+Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as in 2.x. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
