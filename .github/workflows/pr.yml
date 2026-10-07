@@ -21,8 +21,11 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      # TS version checks run in parallel in the typescript job
       - name: prChecks
         run: pnpm prChecks
+        env:
+          ARK_SKIP_TS_VERSIONS: 1
 
   compatibility:
     needs: core
@@ -55,13 +58,28 @@ jobs:
       - name: Test
         run: pnpm testRepo
 
-  typescript:
+  tsVersionTasks:
     needs: core
-    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    outputs:
+      tasks: ${{ steps.list.outputs.tasks }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - id: list
+        run: echo "tasks=$(node ark/repo/testTsVersions.ts --list)" >> "$GITHUB_OUTPUT"
+
+  typescript:
+    needs: tsVersionTasks
+    timeout-minutes: 20
     strategy:
       matrix:
-        # minimum supported version, then the latest of each major
-        typescript: [5.1.6, 5.9.3, 6.0.3, 7.0.2]
+        task: ${{ fromJSON(needs.tsVersionTasks.outputs.tasks) }}
       fail-fast: false
 
     runs-on: ubuntu-latest
@@ -72,42 +90,11 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      # unlike npx, dlx always runs the requested version even if the workspace has a copy
-      - name: Typecheck consumer usage with TypeScript ${{ matrix.typescript }}
-        run: pnpm --package=typescript@${{ matrix.typescript }} dlx -c "tsc --version && tsc --project ark/repo/tsCompat"
-
-  ts6:
-    needs: core
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup repo
-        uses: ./.github/actions/setup
-
-      - name: Install TypeScript 6
-        run: |
-          sed -i "s/^  typescript: .*/  typescript: 6.0.3/" pnpm-workspace.yaml
-          pnpm install --no-frozen-lockfile
-
-      - name: Typecheck repo
-        run: pnpm tsc --version && pnpm typecheckRepo
-
-      # attest's declarations must not depend on TS 7's API types, which
-      # the core job's testTsCompat can't catch since TS 7 is installed there
-      - name: Typecheck attest's declarations
-        run: pnpm tsc --project ark/repo/tsCompat/tsconfig.attest.json
-
-      # type snapshots and snap population tests' instantiation counts are
-      # recorded with TS 7, whose type strings and counts differ
-      - name: Test attest
-        working-directory: ark/attest
-        run: pnpm mocha --config ../repo/mocha.package.jsonc --fgrep "populates file" --invert
+      - name: Test ${{ matrix.task }}
+        run: pnpm testTsVersions ${{ matrix.task }}
 
   prChecks:
-    needs: [compatibility, typescript, ts6]
+    needs: [compatibility, typescript]
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
