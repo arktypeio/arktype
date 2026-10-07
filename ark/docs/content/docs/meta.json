@@ -1,21 +1,3 @@
 {
-	"pages": [
-		"intro",
-		"cheat-sheet",
-		"primitives",
-		"objects",
-		"keywords",
-		"expressions",
-		"match",
-		"configuration",
-		"type-api",
-		"traversal-api",
-		"integrations",
-		"ecosystem",
-		"scopes",
-		"generics",
-		"declare",
-		"blog",
-		"faq"
-	]
+	"pages": ["(arktype)", "attest"]
 }

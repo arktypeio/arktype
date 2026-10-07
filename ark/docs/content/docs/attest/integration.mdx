@@ -1,0 +1,87 @@
+---
+title: Integration
+---
+
+### Setup
+
+If you're a library author wanting to integrate type into your own assertions instead of using the `attest` API, you'll need to call `setup` with a list of `attestAliases` to ensure type data is collected from your own functions:
+
+```ts
+import { setup } from "@ark/attest"
+
+// attest will only collect type data from functions with names listed in `attestAliases`
+setup({ attestAliases: ["yourCustomAssert"] })
+
+// There are many other config options, but some are primarily internal- use others at your own risk!
+```
+
+You'll need to make sure that setup with whatever aliases you need before the first test runs. As part of the setup process, attest will search for the specified assertion calls and cache their types in a temporary file that will be referenced during test execution.
+
+This ensures that type assertions can be made across processes without creating a new TSServer instance for each.
+
+### TS Versions
+
+The `tsVersions` setting allows testing multiple TypeScript aliases at once.
+
+Aliases must be specified as a `package.json` dependency or devDependency beginning with `"typescript"`. Alternate aliases can be specified using the `"npm:"` prefix:
+
+```json title="package.json"
+"typescript": "latest",
+"typescript-next": "npm:typescript@next",
+"typescript-1": "npm:typescript@5.2",
+"typescript-2": "npm:typescript@5.1"
+```
+
+`"*"` can be passed to run all discovered versions beginning with `"typescript"`:
+
+```ts title="globalSetup.ts"
+import { setup } from "@ark/attest"
+
+setup({ tsVersions: "*" })
+```
+
+### APIs
+
+The most flexible attest APIs are `getTypeAssertionsAtPosition` and `caller`.
+
+Here's an example of how you might use them in your own API:
+
+```ts
+import { caller, getTypeAssertionsAtPosition } from "@ark/attest"
+
+export const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
+	const position = caller()
+	// one entry per TypeScript version under test
+	for (const [tsVersion, assertion] of getTypeAssertionsAtPosition(position)) {
+		const actual = assertion.args[0]
+		// relationship of the actual value's type to the expected type arg
+		const relationship = actual.relationships.typeArgs[0]
+		if (relationship === undefined) {
+			throw new Error(
+				`yourCustomAssert requires a type arg representing the expected type, e.g. 'yourCustomAssert<"foo">("foo")'`
+			)
+		}
+		if (relationship !== "equality") {
+			throw new Error(
+				`Expected ${assertion.typeArgs[0].type}, got ${actual.type} with relationship ${relationship} (TypeScript ${tsVersion})`
+			)
+		}
+	}
+}
+```
+
+A user might then use `yourCustomAssert` like this:
+
+```ts
+// @noErrors
+import { yourCustomAssert } from "your-package"
+
+// Ok
+yourCustomAssert<"foo">(`${"f"}oo` as const)
+// Error: `Expected boolean, got true with relationship subtype`
+yourCustomAssert<boolean>(true)
+// Error: `Expected 5, got number with relationship supertype`
+yourCustomAssert<5>(2 + 3)
+```
+
+Please don't hesitate to open a GitHub [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) or reach out on [ArkType's Discord](https://arktype.io/discord) if you have any questions or feedback- we'd love to hear from you! ⛵

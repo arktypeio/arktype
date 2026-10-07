@@ -1,0 +1,24 @@
+{
+	"title": "ArkType",
+	"description": "TypeScript's 1:1 validator",
+	"root": true,
+	"pages": [
+		"intro",
+		"cheat-sheet",
+		"primitives",
+		"objects",
+		"keywords",
+		"expressions",
+		"match",
+		"configuration",
+		"type-api",
+		"traversal-api",
+		"integrations",
+		"ecosystem",
+		"scopes",
+		"generics",
+		"declare",
+		"blog",
+		"faq"
+	]
+}

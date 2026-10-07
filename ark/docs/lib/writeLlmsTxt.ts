@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { repoDirs } from "../../repo/shared.ts"
 
 export const writeLlmsTxt = () => {
-	const contentDir = join(repoDirs.docs, "content", "docs")
+	const contentDir = join(repoDirs.docs, "content", "docs", "(arktype)")
 	const paths = walkPaths(contentDir, {
 		excludeDirs: true,
 		include: path => path.endsWith(".mdx")
