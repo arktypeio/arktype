@@ -159,6 +159,17 @@ contextualize(() => {
 		}
 	})
 
+	it("index transform deleting an inherited key name", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
+				"p?": ["object", ["string", "=", "d"]],
+				"[string]": { "+": "delete", "[/^\\d+$/]": "object" }
+			})
+			const out = T.assert({ p: Object.assign([{}], { toString: 1 }) })
+			attest(Object.keys(out.p as object)).equals(["0", "1"])
+		}
+	})
+
 	it("failed key transform", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
