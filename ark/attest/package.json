@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.56.7",
+	"version": "0.57.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -41,16 +41,18 @@
 	},
 	"dependencies": {
 		"@ark/fs": "workspace:*",
+		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@prettier/sync": "0.6.1",
 		"@typescript/analyze-trace": "0.10.1",
 		"@typescript/vfs": "1.6.1",
 		"arktype": "workspace:*",
-		"@ark/schema": "workspace:*",
 		"prettier": "3.6.2"
 	},
 	"devDependencies": {
-		"typescript": "catalog:"
+		"typescript": "catalog:",
+		"typescript-6": "npm:typescript@6.0.3",
+		"typescript-7": "npm:typescript@7.1.0-dev.20261006.1"
 	},
 	"peerDependencies": {
 		"typescript": "*"

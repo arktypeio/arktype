@@ -11,9 +11,9 @@ import {
 import { throwInternalError } from "@ark/util"
 import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
-import type ts from "typescript"
 import { getConfig } from "../config.ts"
-import { getFileKey } from "../utils.ts"
+import { getSnapCallArgs as getSnapCallArgsTs7 } from "../ts7/snapshots.ts"
+import { getFileKey, isTs7 } from "../utils.ts"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -52,7 +52,7 @@ export const getSnapshotByName = (
  */
 export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 	const config = getConfig()
-	const path = config.defaultAssertionCachePath
+	const path = config.assertionCachePath
 	if (existsSync(path)) {
 		const existing = readJson(path)
 		writeJson(path, {
@@ -65,7 +65,7 @@ export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 
 export type QueuedUpdate = {
 	position: SourcePosition
-	snapCall: ts.CallExpression
+	snapCallArgs: SnapCallArgs
 	snapFunctionName: string
 	newArgText: string
 	baselinePath: string[] | undefined
@@ -76,22 +76,35 @@ export type ExternalSnapshotArgs = SnapshotArgs & {
 	customPath: string | undefined
 }
 
-const findCallExpressionAncestor = (
+export type SnapCallArgs = {
+	pos: number
+	end: number
+	firstArgText: string | undefined
+}
+
+const getSnapCallArgs = (
 	position: SourcePosition,
 	functionName: string
-): ts.CallExpression => {
-	const server = TsServer.instance
-	const file = server.getSourceFileOrThrow(position.file)
-	const absolutePosition = getAbsolutePosition(file, position)
-	const startNode = nearestCallExpressionChild(file, absolutePosition)
-	const calls = getCallExpressionsByName(startNode, [functionName], true)
-	if (calls.length) return startNode
+): SnapCallArgs => {
+	if (isTs7) return getSnapCallArgsTs7(position, functionName)
 
-	throwInternalError(
-		`Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
-			position
-		)}.`
+	const file = TsServer.instance.getSourceFileOrThrow(position.file)
+	const startNode = nearestCallExpressionChild(
+		file,
+		getAbsolutePosition(file, position)
 	)
+	if (!getCallExpressionsByName(startNode, [functionName], true).length) {
+		throwInternalError(
+			`Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
+				position
+			)}.`
+		)
+	}
+	return {
+		pos: startNode.arguments.pos,
+		end: startNode.arguments.end,
+		firstArgText: startNode.arguments[0]?.getText()
+	}
 }
 
 export const updateExternalSnapshot = ({
@@ -114,7 +127,8 @@ let snapshotsWillBeWritten = false
 export const writeSnapshotUpdatesOnExit = (): void => {
 	if (snapshotsWillBeWritten) return
 
-	process.on("exit", writeCachedInlineSnapshotUpdates)
+	// before TS 7's API stops its server on exit
+	process.prependListener("exit", writeCachedInlineSnapshotUpdates)
 	snapshotsWillBeWritten = true
 }
 
@@ -123,14 +137,14 @@ const writeCachedInlineSnapshotUpdates = () => {
 
 	let snapshotData: SnapshotArgs[] | undefined
 
-	if (!existsSync(config.defaultAssertionCachePath)) return
+	if (!existsSync(config.assertionCachePath)) return
 
 	try {
-		snapshotData = readJson(config.defaultAssertionCachePath).updates as never
+		snapshotData = readJson(config.assertionCachePath).updates as never
 	} catch {
 		// If we can't read the snapshot, log an error and move onto the next update
 		console.error(
-			`Unable to read snapshot data from expected location ${config.defaultAssertionCachePath}.`
+			`Unable to read snapshot data from expected location ${config.assertionCachePath}.`
 		)
 	}
 	if (snapshotData) {
@@ -151,7 +165,7 @@ const snapshotArgsToQueuedUpdate = ({
 	snapFunctionName = "snap",
 	baselinePath
 }: SnapshotArgs): QueuedUpdate => {
-	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
+	const snapCallArgs = getSnapCallArgs(position, snapFunctionName)
 	let newArgText =
 		typeof serializedValue === "string" && serializedValue.includes("\n") ?
 			"`" + serializedValue.replace(/`/g, "\\`").replace(/\${/g, "\\${") + "`"
@@ -163,7 +177,7 @@ const snapshotArgsToQueuedUpdate = ({
 
 	return {
 		position,
-		snapCall,
+		snapCallArgs,
 		snapFunctionName,
 		newArgText,
 		baselinePath
@@ -198,11 +212,7 @@ const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 
 	try {
 		const updatedPaths = [
-			...new Set(
-				queuedUpdates.map(update =>
-					filePath(update.snapCall.getSourceFile().fileName)
-				)
-			)
+			...new Set(queuedUpdates.map(update => filePath(update.position.file)))
 		]
 		shell(`${formatter} ${updatedPaths.join(" ")}`)
 	} catch {
@@ -214,30 +224,24 @@ const writeFileUpdates = (path: string, updates: QueuedUpdate[]) => {
 	let fileText = readFile(path)
 	let offSet = 0
 	for (const update of updates) {
-		const previousArgTextLength =
-			update.snapCall.arguments.end - update.snapCall.arguments.pos
+		const { pos, end } = update.snapCallArgs
 		fileText =
-			fileText.slice(0, update.snapCall.arguments.pos + offSet) +
+			fileText.slice(0, pos + offSet) +
 			update.newArgText +
-			fileText.slice(update.snapCall.arguments.end + offSet)
-		offSet += update.newArgText.length - previousArgTextLength
-		summarizeSnapUpdate(update.snapCall.arguments, update)
+			fileText.slice(end + offSet)
+		offSet += update.newArgText.length - (end - pos)
+		summarizeSnapUpdate(update)
 	}
 	writeFile(path, fileText)
 }
 
-const summarizeSnapUpdate = (
-	originalArgs: ts.NodeArray<ts.Expression>,
-	update: QueuedUpdate
-) => {
-	let updateSummary = `${
-		originalArgs.length ? "🆙  Updated" : "📸  Established"
-	} `
+const summarizeSnapUpdate = (update: QueuedUpdate) => {
+	const previousValue = update.snapCallArgs.firstArgText
+	let updateSummary = `${previousValue ? "🆙  Updated" : "📸  Established"} `
 	updateSummary +=
 		update.baselinePath ?
 			`baseline '${update.baselinePath.join("/")}' `
 		:	`snap at ${getFileKey(update.position.file)}:${update.position.line} `
-	const previousValue = update.snapCall.arguments[0]?.getText()
 	updateSummary +=
 		previousValue ?
 			`from ${previousValue} to `

@@ -8,7 +8,6 @@ import {
 	type Node,
 	type SourceFile
 } from "ts-morph"
-import ts from "typescript"
 import { bootstrapFs, bootstrapUtil, repoDirs } from "./shared.ts"
 
 const { flatMorph, throwInternalError, emojiToUnicode } = bootstrapUtil
@@ -340,8 +339,8 @@ const findInheritedDocs = (
 	if (!inheritDocsSource) return
 
 	const sourceDeclaration = sourceFile
-		.getDescendantsOfKind(ts.SyntaxKind.Identifier as never)
-		.find((i): i is any => i.getText() === inheritDocsSource)
+		.getDescendantsOfKind(SyntaxKind.Identifier)
+		.find(i => i.getText() === inheritDocsSource)
 		?.getDefinitions()[0]
 		.getDeclarationNode()
 

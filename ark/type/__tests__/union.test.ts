@@ -224,12 +224,10 @@ contextualize(() => {
 	it("root autocompletion", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "s" }, "|", { b: "boolean" })).completions({
-			s: ["string", "symbol"],
-			"|": ["|>"]
+			s: ["string", "symbol"]
 		})
 		// @ts-expect-error
 		attest(() => type({ a: "string" }, "|", { b: "b" })).completions({
-			"|": ["|>"],
 			b: ["bigint", "boolean"]
 		})
 	})

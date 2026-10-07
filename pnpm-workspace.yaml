@@ -1,7 +1,14 @@
 packages:
   - "ark/*"
 
+# lets tools that need TypeScript's JS API, which TS 7 doesn't have, use TS 6
+pnpmfile: pnpmfile.ts
+
 catalog:
-  typescript: 5.9.3
-  "@ark/attest-ts-min": npm:typescript@5.1.6
-  "@ark/attest-ts-next": npm:typescript@next
+  typescript: 7.1.0-dev.20261006.1
+
+catalogs:
+  # for packages that need TypeScript's JS API (keep in sync with pnpmfile.ts
+  # and the typescript-6 alias in ark/attest/package.json)
+  ts6:
+    typescript: 6.0.3

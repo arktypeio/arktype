@@ -1,0 +1,7 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		// tsup sets baseUrl for its DTS build, which TypeScript 6 deprecates
+		"ignoreDeprecations": "6.0"
+	}
+}

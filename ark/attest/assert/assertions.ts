@@ -1,7 +1,7 @@
 import { printable, throwInternalError } from "@ark/util"
 import type { type } from "arktype"
 import * as assert from "node:assert/strict"
-import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.ts"
+import type { TypeRelationshipAssertionData } from "../cache/getCachedAssertions.ts"
 import type { AssertionContext } from "./attest.ts"
 
 export type ThrowAssertionErrorContext = {
@@ -50,31 +50,25 @@ export const versionableAssertion =
 	(fn: AssertFn): AssertFn =>
 	(expected, actual, ctx) => {
 		if (actual instanceof TypeAssertionMapping) {
-			if (!ctx.typeRelationshipAssertionEntries) {
+			if (!ctx.typeAssertion) {
 				throwInternalError(
-					`Unexpected missing typeAssertionEntries when passed a TypeAssertionMapper`
+					`Unexpected missing typeAssertion when passed a TypeAssertionMapper`
 				)
 			}
-			for (const [version, data] of ctx.typeRelationshipAssertionEntries) {
-				let errorMessage = ""
-				try {
-					const mapped = actual.fn(data, ctx)
-					if (mapped !== null) {
-						fn(
-							"expected" in mapped ? mapped.expected : expected,
-							mapped.actual,
-							ctx
-						)
-					}
-				} catch (e) {
-					errorMessage += `❌TypeScript@${version}:${e}\n`
+			try {
+				const mapped = actual.fn(ctx.typeAssertion, ctx)
+				if (mapped !== null) {
+					fn(
+						"expected" in mapped ? mapped.expected : expected,
+						mapped.actual,
+						ctx
+					)
 				}
-				if (errorMessage) {
-					throwAssertionError({
-						stack: ctx.assertionStack,
-						message: errorMessage
-					})
-				}
+			} catch (e) {
+				throwAssertionError({
+					stack: ctx.assertionStack,
+					message: `${e}`
+				})
 			}
 		} else fn(expected, actual, ctx)
 	}

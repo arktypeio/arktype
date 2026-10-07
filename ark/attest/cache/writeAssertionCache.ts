@@ -1,9 +1,14 @@
-import type { LinePosition } from "@ark/fs"
 import { flatMorph } from "@ark/util"
 import ts from "typescript"
 
 import { getConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
+import type {
+	ArgAssertionData,
+	AssertionsByFile,
+	TypeAssertionData,
+	TypeRelationship
+} from "./getCachedAssertions.ts"
 import {
 	TsServer,
 	extractArgumentTypesFromCall,
@@ -17,8 +22,6 @@ import {
 	getCallExpressionsByName,
 	getCallLocationFromCallExpression
 } from "./utils.ts"
-
-export type AssertionsByFile = Record<string, TypeAssertionData[]>
 
 export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const config = getConfig()
@@ -174,8 +177,6 @@ const serializeArg = (
 	}
 })
 
-export type Completions = Record<string, string[]> | string
-
 const getCompletions = (attestCall: ts.CallExpression) => {
 	const arg = attestCall.arguments[0]
 	if (arg === undefined) return {}
@@ -183,7 +184,8 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	const descendants = getDescendants(arg)
 	const file = attestCall.getSourceFile()
 	const text = file.getFullText()
-	const completions: Completions | string = {}
+	// null prototype so inherited names like "constructor" aren't seen as duplicates
+	const completions: Record<string, string[]> = Object.create(null)
 
 	for (const descendant of descendants) {
 		if (ts.isStringLiteral(descendant) || ts.isTemplateLiteral(descendant)) {
@@ -268,44 +270,6 @@ const concatenateChainedErrors = (
 				}`
 		)
 		.join("\n")
-
-export type ArgAssertionData = {
-	type: string
-	relationships: {
-		args: TypeRelationship[]
-		typeArgs: TypeRelationship[]
-	}
-}
-
-export type TypeRelationshipAssertionData = {
-	location: LinePositionRange
-	args: ArgAssertionData[]
-	typeArgs: ArgAssertionData[]
-	errors: string[]
-	completions: Completions
-	/** JSDoc comment for the first argument, if any */
-	jsdoc?: string
-}
-
-export type TypeBenchmarkingAssertionData = {
-	location: LinePositionRange
-	count: number
-}
-
-export type TypeAssertionKind = "bench" | "type"
-
-export type TypeAssertionData<
-	kind extends TypeAssertionKind = TypeAssertionKind
-> =
-	kind extends "bench" ? TypeBenchmarkingAssertionData
-	:	TypeRelationshipAssertionData
-
-export type LinePositionRange = {
-	start: LinePosition
-	end: LinePosition
-}
-
-export type TypeRelationship = "subtype" | "supertype" | "equality" | "none"
 
 export const compareTsTypes = (
 	l: StringifiableType,

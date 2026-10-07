@@ -876,7 +876,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(T.expression).snap("[string, string] | (In: null) => Out<unknown>")
 		attest(T.t).type.toString.snap(
-			"[string, string] | ((In: null) => Out<undefined>)"
+			"((In: null) => Out<undefined>) | [string, string]"
 		)
 		attest(T.inferIn).type.toString("[string, string] | null")
 		attest(T.infer).type.toString("[string, string] | undefined")
