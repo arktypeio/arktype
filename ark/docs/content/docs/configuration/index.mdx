@@ -244,7 +244,7 @@ mod.isEven(3)
 
 #### ArkErrors
 
-For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` array returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
 
 These `ArkError` instances can be arbitrarily transformed and composed with an internationalization library. This is still a topic we're working on investigating and documenting, so please reach out with any questions or feedback!
 

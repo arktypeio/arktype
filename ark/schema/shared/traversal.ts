@@ -52,7 +52,7 @@ export class Traversal {
 	/**
 	 * #### {@link ArkErrors} that will be part of this traversal's finalized result
 	 *
-	 * ✅ will always be an empty array for a valid traversal
+	 * ✅ will always be empty for a valid traversal
 	 */
 	get errors(): ArkErrors {
 		return (this._errors ??= new ArkErrors(this))
@@ -488,7 +488,8 @@ export class Traversal {
 	}
 
 	private invalidResolution(
-		error = this.currentBranch?.error ?? this.errors[this.errors.length - 1]
+		error = this.currentBranch?.error ??
+			this.errors.issues[this.errors.length - 1]
 	): InvalidResolution {
 		const branch = this.currentBranch
 		return {

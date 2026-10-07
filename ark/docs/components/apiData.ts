@@ -971,7 +971,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "✅ will always be an empty array for a valid traversal"
+                        "value": "✅ will always be empty for a valid traversal"
                     }
                 ]
             ]

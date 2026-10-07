@@ -2330,7 +2330,9 @@ swap.swap.order[1] must be "on" (was "off")`)
 		for (let i = 0; i < 1200; i++) data = { x: i, n: data }
 		const out = a(data)
 
-		attest(out instanceof type.errors && out[0].hasCode("union")).equals(true)
+		attest(out instanceof type.errors && out.issues[0].hasCode("union")).equals(
+			true
+		)
 	})
 
 	it("jit and jitless errors through an intersection's resolution", () => {

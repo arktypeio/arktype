@@ -37,6 +37,25 @@ const T = type("Date < d'2000-01-01T12:30:00Z'")
 T(new Date("2001-06-01"))
 ```
 
+### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
+
+`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one `ArkError` per path, in the order each path first failed. Iterating, `length` and every other `ArkErrors` member work as before. Indexing and array methods move to `issues`:
+
+```ts
+const out = T(data)
+
+if (out instanceof type.errors) {
+	// previously out.map(e => e.message), now
+	out.issues.map(e => e.message)
+	// previously out[0], now
+	out.issues[0]
+	// unchanged
+	for (const error of out) console.log(error.message)
+}
+```
+
+`issues` already returns the errors in 2.x, so `out.issues.map(...)` works on both versions. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
+
 ### Throw from `.assert` when a root morph fails
 
 When a type's root was a morph (or a union of morphs) that returned `ArkErrors`, `.assert` returned the errors instead of throwing, and a configured `onFail` was not called. A root morph's errors are now handled like any others, as they already were for a morph at a key:
@@ -60,6 +79,32 @@ const T = type("string").pipe((s, ctx) =>
 
 // previously threw a TypeError, now { a: "x" }
 T('{"a":" x "}')
+```
+
+### Fix errors repeated or added at another path
+
+Errors added more than once at a path other than the current one, as by `ctx.reject({ relativePath })`, were merged into an error without that path, and a morph that returned an error it had already added listed it twice:
+
+```ts
+const T = type({ a: "string" }).pipe((o, ctx) => {
+	ctx.error({ expected: "p", relativePath: ["a"] })
+	return ctx.error({ expected: "q", relativePath: ["a"] })
+})
+
+// previously ({"a":"s"}) must be... ◦ p ◦ q ◦ q
+// now a ({"a":"s"}) must be... ◦ p ◦ q
+T({ a: "s" }).toString()
+```
+
+A morph that returned `ctx.errors` listed each of its errors twice, or added errors until it ran out of memory when the morph was at a key:
+
+```ts
+const T = type({
+	a: type("string").pipe((s, ctx) => (ctx.error("not ok"), ctx.errors))
+})
+
+// previously ran out of memory, now a must be not ok (was "x")
+T({ a: "x" }).toString()
 ```
 
 ### Configure before importing anything else

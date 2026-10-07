@@ -448,7 +448,9 @@ const outcomeOf = (t: Type, data: unknown) => {
 
 const pathsOf = (t: Type, data: unknown) => {
 	const out = t(data)
-	return out instanceof ArkErrors ? out.map(e => e.propString).join() : "ok"
+	return out instanceof ArkErrors ?
+			out.issues.map(e => e.propString).join()
+		:	"ok"
 }
 
 const shuffle = <t>(items: readonly t[], rand: () => number) => {

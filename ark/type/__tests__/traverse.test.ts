@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { ArkErrors, TraversalError } from "@ark/schema"
-import { throwError } from "@ark/util"
+import { flatMorph, throwError } from "@ark/util"
 import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
@@ -276,6 +276,78 @@ isAdmin must be false, null or true (was 1)`)
 		attest(out.toString()).snap(`b must be a number (was a string)
 a must be not ok (was "x")`)
 		attest((out as ArkErrors).count).equals(2)
+	})
+
+	it("byAncestorPath is the same whenever it's read", () => {
+		const expectedByAncestorPath = (errors: ArkErrors) =>
+			flatMorph(errors.byAncestorPath, (k, v) => [k, v.map(e => e.expected)])
+
+		let readBetween: Record<string, string[]> | undefined
+		const T = (readsBetween: boolean) =>
+			type("unknown").narrow((d, ctx) => {
+				ctx.reject({ expected: "a", path: ["x", "z"] })
+				ctx.reject({ expected: "b", path: ["y"] })
+				if (readsBetween) readBetween = expectedByAncestorPath(ctx.errors)
+				ctx.reject({ expected: "c", path: ["x", "z"] })
+				return false
+			})
+
+		const out = T(true)(1) as ArkErrors
+
+		attest(readBetween).snap({
+			"": ["a", "b"],
+			x: ["a"],
+			"x.z": ["a"],
+			y: ["b"]
+		})
+		attest(expectedByAncestorPath(out)).snap({
+			"": ["a", "c", "b"],
+			x: ["a", "c"],
+			"x.z": ["a", "c"],
+			y: ["b"]
+		})
+		attest(expectedByAncestorPath(out)).equals(
+			expectedByAncestorPath(T(false)(1) as ArkErrors)
+		)
+	})
+
+	it("a never error replaces the errors at its path", () => {
+		const out = type("unknown").narrow((d, ctx) => {
+			ctx.reject({ expected: "a", path: ["x"] })
+			attest(ctx.errors.byAncestorPath.x.length).equals(1)
+			ctx.error({ code: "union", errors: [], path: ["x"] })
+			ctx.reject({ expected: "b", path: ["x"] })
+			return false
+		})(1) as ArkErrors
+
+		attest(out.count).equals(3)
+		attest(out.flatByPath.x.map(e => e.code)).equals(["union"])
+		attest(out.byAncestorPath.x.map(e => e.code)).equals(["union"])
+	})
+
+	it("errors at more paths than are scanned", () => {
+		const out = type("unknown").narrow((d, ctx) => {
+			for (let i = 0; i < 10; i++)
+				ctx.reject({ expected: `p${i}`, path: [`k${i}`] })
+			ctx.reject({ expected: "q", path: ["k3"] })
+			ctx.reject({ expected: "r", path: ["k9"] })
+			return false
+		})(1) as ArkErrors
+
+		attest(out.issues.map(e => e.propString)).equals(Object.keys(out.byPath))
+		attest(out.flatProblemsByPath).snap({
+			k0: ["must be p0 (was 1)"],
+			k1: ["must be p1 (was 1)"],
+			k2: ["must be p2 (was 1)"],
+			k3: ["must be p3 (was 1)", "must be q (was 1)"],
+			k4: ["must be p4 (was 1)"],
+			k5: ["must be p5 (was 1)"],
+			k6: ["must be p6 (was 1)"],
+			k7: ["must be p7 (was 1)"],
+			k8: ["must be p8 (was 1)"],
+			k9: ["must be p9 (was 1)", "must be r (was 1)"]
+		})
+		attest(out.count).equals(12)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1149
