@@ -247,7 +247,11 @@ export class ArkErrors
 		const existing = this.byPath[propString]
 		if (existing) {
 			// only add if it's not already in the errors collection
-			if (error === existing) return
+			if (
+				error === existing ||
+				(existing.hasCode("intersection") && existing.errors.includes(error))
+			)
+				return
 			// If the existing error is an error for a value constrained to "never",
 			// then we don't want to intersect the error messages.
 			if (existing.hasCode("union") && existing.errors.length === 0) {
@@ -267,7 +271,10 @@ export class ArkErrors
 							errors:
 								existing.hasCode("intersection") ?
 									[...existing.errors, error]
-								:	[existing, error]
+								:	[existing, error],
+							// an error added with its own path isn't at ctx.path
+							path: existing.path,
+							data: existing.data
 						},
 						this.ctx
 					)
@@ -300,6 +307,8 @@ export class ArkErrors
 	 * prefixing their paths with that of the current Traversal.
 	 */
 	merge(errors: ArkErrors): void {
+		// a morph that returns ctx.errors has already added them
+		if (errors === this) return
 		for (const e of errors) {
 			this.add(
 				e.transform(
