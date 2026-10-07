@@ -10,7 +10,7 @@ import {
 	type Structure,
 	type nodeOfKind
 } from "@ark/schema"
-import { flatMorph, hasKey, throwInternalError } from "@ark/util"
+import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	refs: BaseRoot[]
@@ -69,9 +69,28 @@ const toResolvedJsonSchema = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
 ): JsonSchema => {
-	const result = innerToJsonSchemaByKind[node.kind](node as never, ctx)
+	const result = innerToJsonSchemaByKind[node.kind](
+		node as never,
+		ctx
+	) as JsonSchema & dict
 
-	return Object.assign(result, node.metaJson)
+	for (const k in node.meta) {
+		const v = (node.meta as dict)[k]
+		// metaJson serializes non-primitives like [5] to references like
+		// "$ark.array1", so prefer the original value when it is valid JSON
+		// (jsonData's object domain also allows functions, so exclude them)
+		result[k] =
+			typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
+			: k === "default" ?
+				ctx.fallback.defaultValue({
+					code: "defaultValue",
+					base: result,
+					value: v as never
+				})
+			:	(node.metaJson as dict)[k]
+	}
+
+	return result
 }
 
 const innerToJsonSchemaByKind: {

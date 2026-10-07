@@ -1,8 +1,5 @@
-"use client"
-
 import { cx } from "class-variance-authority"
 import { Star } from "lucide-react"
-import React, { useEffect, useState } from "react"
 import { Button } from "./Button.tsx"
 
 export declare namespace GhStarButton {
@@ -21,24 +18,31 @@ export const formatStarCount = (count: number): string => {
 	return `${finalCount}k`
 }
 
-const defaultStars = "6.5k"
-
-export const fetchStars = async () => {
-	const res = await fetch("https://api.github.com/repos/arktypeio/arktype")
-	const data = (await res.json()) as { stargazers_count: number }
-	if (typeof data?.stargazers_count === "number")
-		return formatStarCount(data.stargazers_count)
-	return defaultStars
+// The docs are statically exported, so this runs once per build. That keeps
+// the number correct on first paint (no hardcoded fallback that jumps after
+// hydration) and costs one unauthenticated request per build instead of one
+// per visitor, well within GitHub's rate limit. GITHUB_TOKEN is used if
+// present (e.g. in CI) for a higher limit.
+export const fetchStars = async (): Promise<string | undefined> => {
+	try {
+		const token = process.env.GITHUB_TOKEN
+		const res = await fetch("https://api.github.com/repos/arktypeio/arktype", {
+			headers: token ? { Authorization: `Bearer ${token}` } : {}
+		})
+		if (!res.ok) return
+		const data = (await res.json()) as { stargazers_count?: unknown }
+		if (typeof data.stargazers_count === "number")
+			return formatStarCount(data.stargazers_count)
+	} catch (e) {
+		console.error("Failed to fetch GitHub star count:", e)
+	}
 }
 
 // based on the trpc component:
 // https://github.com/trpc/trpc/blob/7d10d7b028f1d85f6523e995ee7deb17dc886874/www/src/components/GithubStarsButton.tsx#L15
-export const GhStarButton = ({ className }: GhStarButton.Props) => {
-	const [starCount, setStarCount] = useState<string>(defaultStars)
-
-	useEffect(() => {
-		fetchStars().then(setStarCount).catch(console.error)
-	}, [])
+export const GhStarButton = async ({ className }: GhStarButton.Props) => {
+	// if the fetch fails, render the star alone rather than a stale number
+	const starCount = await fetchStars()
 
 	return (
 		<Button
