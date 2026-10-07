@@ -1,6 +1,10 @@
 import { caller } from "@ark/fs"
 import { throwError } from "@ark/util"
 import { basename, relative } from "node:path"
+import ts from "typescript"
+
+/** TypeScript 7+ is native and only exposes its API via tsgo's IPC client */
+export const isTs7: boolean = Number.parseInt(ts.version) >= 7
 
 export const getFileKey = (path: string): string => relative(".", path)
 

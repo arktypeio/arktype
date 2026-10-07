@@ -4,6 +4,22 @@
 		"allowImportingTsExtensions": true,
 		"rewriteRelativeImportExtensions": true,
 		"customConditions": ["ark-ts"],
+		// attest imports TypeScript's classic API (TS 5/6) or tsgo's (TS 7)
+		// from whichever is installed, so types for both come from aliases
+		"paths": {
+			"typescript": [
+				"./ark/attest/node_modules/typescript-6/lib/typescript.d.ts"
+			],
+			"typescript/unstable/ast": [
+				"./ark/attest/node_modules/typescript-7/dist/ast/index.d.ts"
+			],
+			"typescript/unstable/fs": [
+				"./ark/attest/node_modules/typescript-7/dist/api/fs.d.ts"
+			],
+			"typescript/unstable/sync": [
+				"./ark/attest/node_modules/typescript-7/dist/api/sync/api.d.ts"
+			]
+		},
 		"types": ["mocha", "node"],
 		// avoid prototype methods that are not available and cannot easily be transpiled
 		"lib": ["ES2020"]

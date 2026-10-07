@@ -4,6 +4,7 @@ import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getConfig } from "../config.ts"
 import { getFileKey } from "../utils.ts"
+import type { LinePositionRange } from "./getCachedAssertions.ts"
 import {
 	getDescendants,
 	getFirstAncestorByKindOrThrow,
@@ -11,7 +12,6 @@ import {
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
 } from "./ts.ts"
-import type { LinePositionRange } from "./writeAssertionCache.ts"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression

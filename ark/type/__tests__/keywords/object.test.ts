@@ -68,7 +68,7 @@ contextualize(() => {
 			const T = keywords.Array.liftFrom({ data: "number" })
 
 			attest(T.t).type.toString.snap(`(
-	In: { data: number } | { data: number }[]
+	In: { data: number }[] | { data: number }
 ) => To<{ data: number }[]>`)
 			attest(T.expression).snap(
 				"(In: { data: number } | { data: number }[]) => Out<{ data: number }[]>"

@@ -1,9 +1,6 @@
-import {
-	attest,
-	contextualize,
-	getPrimaryTsVersionUnderTest
-} from "@ark/attest"
+import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
+import ts from "typescript"
 
 const o = { ark: "type" } as const
 const shouldThrow = (a: false) => {
@@ -82,7 +79,7 @@ contextualize(() => {
 		const NumericArray = arrayOf("number | bigint")
 		// flexibly combine runtime logic with type assertions to customize your
 		// tests beyond what is possible from pure static-analysis based type testing tools
-		if (getPrimaryTsVersionUnderTest().startsWith("5")) {
+		if (ts.version.startsWith("5")) {
 			// this assertion will only occur when testing TypeScript 5+!
 			attest<(number | bigint)[]>(NumericArray.infer)
 		}

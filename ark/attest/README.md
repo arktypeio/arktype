@@ -23,7 +23,7 @@ See [arktype.io/docs/attest](https://arktype.io/docs/attest) for:
 - [Setup](https://arktype.io/docs/attest) with Vitest, Mocha and other test runners
 - [Assertions](https://arktype.io/docs/attest/assertions) for types, values, errors, completions and JSDoc
 - [Benches](https://arktype.io/docs/attest/benches) measuring type instantiations and runtime
-- [Options](https://arktype.io/docs/attest/options) like `skipTypes` and `tsVersions`
+- [Options](https://arktype.io/docs/attest/options) like `skipTypes` and `typeToStringFormat`
 - The [CLI](https://arktype.io/docs/attest/cli) for type performance stats and traces
 - [Integrating](https://arktype.io/docs/attest/integration) attest's type data into your own assertions
 

@@ -214,7 +214,7 @@ contextualize(() => {
 
 		attest(matcher).type.toString.snap(`Match<
 	string | number,
-	[(In: string) => string, (In: number) => number]
+	[(In: number) => number, (In: string) => string]
 >`)
 
 		// @ts-expect-error
@@ -401,8 +401,8 @@ contextualize(() => {
 			attest(m).type.toString.snap(`Match<
 	{ foo: string } | { foo: number },
 	[
-		(In: { foo: string }) => number,
-		(In: { foo: number }) => string
+		(In: { foo: number }) => string,
+		(In: { foo: string }) => number
 	]
 >`)
 		})
@@ -443,10 +443,10 @@ contextualize(() => {
 				meta: { onFail: throwDefaultRef }
 			})
 			attest(m).type.toString.snap(`Match<
-	{ id: 0 | 1 | 2 } | { id: 0 },
+	{ id: 0 } | { id: 0 | 1 | 2 },
 	[
-		(In: { id: 0 | 1 | 2 }) => 0 | 1 | 2,
-		(In: { id: 0 }) => 0
+		(In: { id: 0 }) => 0,
+		(In: { id: 0 | 1 | 2 }) => 0 | 1 | 2
 	]
 >`)
 		})
@@ -661,7 +661,7 @@ contextualize(() => {
 
 		attest(stringifyResponse).type.toString.snap(`Match<
 	unknown,
-	[(In: true | 1) => string, (In: false | 0) => string]
+	[(In: 0 | false) => string, (In: 1 | true) => string]
 >`)
 
 		attest(stringifyResponse(true)).snap("true")

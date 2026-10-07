@@ -220,15 +220,15 @@ contextualize.each(
 			})
 
 			attest(rootScope).type.toString.snap(`Scope<{
-	group: { name: string }[]
-	user: Submodule<{
-		root: { name: string }
-		admin: { name: string; isAdmin: true }
-		saiyan: { name: string; powerLevel: number }
-	}>
 	elevatedUser:
 		| { name: string; isAdmin: true }
 		| { name: string; powerLevel: number }
+	group: { name: string }[]
+	user: Submodule<{
+		admin: { name: string; isAdmin: true }
+		root: { name: string }
+		saiyan: { name: string; powerLevel: number }
+	}>
 }>`)
 			attest(rootScope.json).snap({
 				"user.root": {

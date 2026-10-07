@@ -10,13 +10,13 @@ import prettier from "@prettier/sync"
 import { type } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
+import type { Completions } from "../cache/getCachedAssertions.ts"
 import {
 	getSnapshotByName,
 	queueSnapshotUpdate,
 	updateExternalSnapshot,
 	type SnapshotArgs
 } from "../cache/snapshots.ts"
-import type { Completions } from "../cache/writeAssertionCache.ts"
 import { getConfig } from "../config.ts"
 import { chainableNoOpProxy } from "../utils.ts"
 import {
@@ -52,10 +52,8 @@ export class ChainableAssertions implements AssertionRecord {
 
 	private get unversionedActual(): unknown {
 		if (this.versionableActual instanceof TypeAssertionMapping) {
-			return this.versionableActual.fn(
-				this.ctx.typeRelationshipAssertionEntries![0][1],
-				this.ctx
-			)!.actual
+			return this.versionableActual.fn(this.ctx.typeAssertion!, this.ctx)!
+				.actual
 		}
 		return this.versionableActual
 	}

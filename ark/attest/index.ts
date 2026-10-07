@@ -4,18 +4,12 @@ export { caller, type CallerOfOptions } from "@ark/fs"
 export { attest } from "./assert/attest.ts"
 export { bench } from "./bench/bench.ts"
 export {
-	getBenchAssertionsAtPosition,
-	getTypeAssertionsAtPosition
+	getBenchAssertionAtPosition,
+	getTypeAssertionAtPosition,
+	type ArgAssertionData,
+	type LinePositionRange,
+	type TypeAssertionData,
+	type TypeRelationship
 } from "./cache/getCachedAssertions.ts"
-export type {
-	ArgAssertionData,
-	LinePositionRange,
-	TypeAssertionData,
-	TypeRelationship
-} from "./cache/writeAssertionCache.ts"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.ts"
-export {
-	findAttestTypeScriptVersions,
-	getPrimaryTsVersionUnderTest
-} from "./tsVersioning.ts"
 export { contextualize } from "./utils.ts"

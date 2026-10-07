@@ -59,6 +59,6 @@
 		"@types/react-dom": "19.1.2",
 		"prettier-plugin-tailwindcss": "0.6.11",
 		"tailwindcss": "4.1.4",
-		"typescript": "catalog:"
+		"typescript": "catalog:ts6"
 	}
 }
