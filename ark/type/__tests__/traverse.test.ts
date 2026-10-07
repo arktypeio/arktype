@@ -235,6 +235,49 @@ isAdmin must be false, null or true (was 1)`)
 		).snap("user.repeatPassword must be identical to password")
 	})
 
+	it("errors intersected at a relative path keep it", () => {
+		const T = type({ a: "number" }).narrow((o, ctx) => {
+			ctx.reject({ expected: "x", relativePath: ["a"] })
+			return ctx.reject({ expected: "y", relativePath: ["a"] })
+		})
+
+		const out = T({ a: 1 }) as ArkErrors
+
+		attest(out.toString()).snap(`a ({"a":1}) must be...
+  ◦ x
+  ◦ y`)
+		attest(out.issues[0].propString).equals("a")
+	})
+
+	it("an error a morph adds and returns is listed once", () => {
+		const T = type({ a: "string" }).pipe((o, ctx) => {
+			ctx.error({ expected: "p", relativePath: ["a"] })
+			return ctx.error({ expected: "q", relativePath: ["a"] })
+		})
+
+		const out = T({ a: "s" }) as ArkErrors
+
+		attest(out.toString()).snap(`a ({"a":"s"}) must be...
+  ◦ p
+  ◦ q`)
+		attest(out.count).equals(2)
+	})
+
+	it("a morph returning ctx.errors adds them once", () => {
+		const Checked = type("string").pipe((s, ctx) => {
+			ctx.error("not ok")
+			return ctx.errors
+		})
+
+		attest(Checked("x").toString()).snap('must be not ok (was "x")')
+
+		const out = type({ a: Checked, b: "number" })({ a: "x", b: "y" })
+
+		attest(out.toString()).snap(`b must be a number (was a string)
+a must be not ok (was "x")`)
+		attest((out as ArkErrors).count).equals(2)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1149
 	it("morphs apply when not at an error path, even on failed validation", () => {
 		const AgeType = type("string.numeric.parse").to("number>18")
