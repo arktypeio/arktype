@@ -67,7 +67,9 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	): r extends infer _ ? _ : never
 
 	/**
-	 * Create a {@link Generic} from a parameter string and body definition.
+	 * Create a {@link Generic} from a parameter string and body definition, or a
+	 * {@link Type} from a [tuple expression](http://localhost:3000/docs/expressions)
+	 * spread as this function's arguments.
 	 *
 	 * @param params A string like "<t, n extends number>" specifying the
 	 * {@link Generic}'s parameters and any associated constraints via `extends`.
@@ -77,38 +79,33 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	 * from its {@link Scope}.
 	 *
 	 * @example const BoxOf = type("<t extends string | number>", { contents: "t" })
-	 */
-	<
-		const params extends ParameterString,
-		const def,
-		r = Generic<parseValidGenericParams<params, $>, def, $>
-	>(
-		params: validateParameterString<params, $>,
-		def: type.validate<
-			def,
-			$,
-			baseGenericConstraints<parseValidGenericParams<params, $>>
-		>
-	): r extends infer _ ? _ : never
-
-	/**
-	 * Create a {@link Type} from a [tuple expression](http://localhost:3000/docs/expressions)
-	 * spread as this function's arguments.
-	 *
 	 * @example type("string", "|", { foo: "number" })
 	 */
+	// a single signature so TS 7, which only reports the last overload's error,
+	// shows the same errors as TS 6 for both forms
 	<
 		const zero,
 		const one,
 		const rest extends array,
-		r = type.instantiate<[zero, one, ...rest], $>
+		r = zero extends ParameterString ?
+			Generic<parseValidGenericParams<zero, $>, one, $>
+		:	type.instantiate<[zero, one, ...rest], $>
 	>(
-		_0: zero extends IndexZeroOperator ? zero : type.validate<zero, $>,
-		_1: zero extends "keyof" ? type.validate<one, $>
+		_0: zero extends ParameterString ? validateParameterString<zero, $>
+		: zero extends IndexZeroOperator ? zero
+		: type.validate<zero, $>,
+		_1: zero extends ParameterString ?
+			type.validate<
+				one,
+				$,
+				baseGenericConstraints<parseValidGenericParams<zero, $>>
+			>
+		: zero extends "keyof" ? type.validate<one, $>
 		: zero extends "instanceof" ? conform<one, Constructor>
 		: zero extends "===" ? conform<one, unknown>
 		: conform<one, ArgTwoOperator>,
-		..._2: zero extends "===" ? rest
+		..._2: zero extends ParameterString ? []
+		: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
 			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]

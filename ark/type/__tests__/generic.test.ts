@@ -85,13 +85,12 @@ contextualize(() => {
 		})
 
 		it("this not resolvable in generic def", () => {
-			// TS 7 only reports the type error of the last overload, not this one
 			attest(() =>
-				// @ts-expect-error
 				type("<t>", {
+					// @ts-expect-error
 					box: "t | this"
 				})
-			).throws(writeUnresolvableMessage("this"))
+			).throwsAndHasTypeError(writeUnresolvableMessage("this"))
 		})
 
 		it("this in arg", () => {
@@ -218,25 +217,22 @@ contextualize(() => {
 		})
 
 		it("constraint parse error", () => {
-			// TS 7 only reports the type error of the last overload, not this one
 			attest(() => {
 				// @ts-expect-error
 				type("<n extends nummer>", "n > 0")
-			}).throws(writeUnresolvableMessage("nummer"))
+			}).throwsAndHasTypeError(writeUnresolvableMessage("nummer"))
 		})
 
 		it("constraint semantic parse error", () => {
-			// TS 7 only reports the type error of the last overload, not this one
 			attest(() => {
 				// @ts-expect-error
 				type("<boo extends boolean > 0>", "boo")
-			}).throws(writeUnboundableMessage("boolean"))
+			}).throwsAndHasTypeError(writeUnboundableMessage("boolean"))
 		})
 
 		it("default constraint is unknown", () => {
-			// TS 7 only reports the type error of the last overload, not this one
 			// @ts-expect-error
-			attest(() => type("<arr>", "arr > 0")).throws(
+			attest(() => type("<arr>", "arr > 0")).throwsAndHasTypeError(
 				writeUnboundableMessage("unknown")
 			)
 		})
