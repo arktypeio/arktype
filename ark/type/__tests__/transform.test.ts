@@ -235,9 +235,13 @@ b must be A (was "y")`)
 		attest(out.a).equals("a")
 		attest(original.a).equals(" a ")
 
-		class List extends Array<string> {}
-		const list = type("string.trim[]").assert(List.from([" a "]))
-		attest(list instanceof List && [...list]).equals(["a"])
+		class List extends Array<string> {
+			get [Symbol.isConcatSpreadable]() {
+				return false
+			}
+		}
+		const list = type("string.trim[]").assert(List.from([" a ", "b"]))
+		attest(list instanceof List && [...list]).equals(["a", "b"])
 	})
 
 	it("non-builtin prototype constructor", () => {
@@ -415,9 +419,17 @@ b must be A (was "y")`)
 			).equals(Object.assign([], { 1: "a", 4294967295: 0 }))
 			attest(
 				$.type("string.trim[]").assert(
-					Object.assign([" a "], { constructor: 1 })
+					Object.assign([" a ", "b"], {
+						constructor: 1,
+						[Symbol.isConcatSpreadable]: false
+					})
 				)
-			).equals(Object.assign(["a"], { constructor: 1 }))
+			).equals(
+				Object.assign(["a", "b"], {
+					constructor: 1,
+					[Symbol.isConcatSpreadable]: false
+				})
+			)
 		}
 	})
 
