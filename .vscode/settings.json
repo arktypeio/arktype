@@ -27,7 +27,7 @@
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "./node_modules/typescript/lib",
-	// TS 7 has no tsserver, so the TypeScript (Native Preview) extension runs
+	// TS 7 has no tsserver, so the TypeScript 7 extension runs
 	// the pinned version from typescript.tsdk instead of the built-in one
 	"js/ts.experimental.useTsgo": true,
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
