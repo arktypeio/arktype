@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { buildSync } from "esbuild"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
@@ -44,10 +45,12 @@ const evaluated = () =>
 	(globalThis as { evaluated?: string[] }).evaluated?.splice(0)
 
 contextualize(() => {
+	// buildSync's first call starts esbuild's service with the cwd it runs in, and
+	// Windows can't remove a directory a live process has as its cwd
+	before(() => buildSync({ stdin: { contents: "" }, write: false }))
+
 	afterEach(() => {
-		// Windows can briefly hold a just-imported file, failing removal with EPERM
-		for (const dir of packages.splice(0))
-			rmSync(dir, { recursive: true, maxRetries: 5 })
+		for (const dir of packages.splice(0)) rmSync(dir, { recursive: true })
 	})
 
 	it("entries share their modules", async () => {
