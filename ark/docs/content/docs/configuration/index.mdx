@@ -100,9 +100,9 @@ Some options only apply at specific levels, as reflected in the corresponding in
 	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
 >
 	If you need your config to apply to built-in keywords (important for options
-	like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and
-	`configure` from `"arktype/config"` before importing anything from
-	`"arktype"`.
+	like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`),
+	you should import and `configure` from `"arktype/config"` before importing
+	anything from `"arktype"`.
 
 Otherwise, keywords will have already been parsed by the time your config applies!
 

@@ -93,6 +93,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			rejectAllowsSymbolKeys: false,
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,
+			numberAllowsInfinity: false,
 			dateAllowsInvalid: false,
 			onFail: null,
 			keywords: {},

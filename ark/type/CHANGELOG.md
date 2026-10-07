@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### Reject `Infinity` from `number`
+
+`number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:
+
+```ts
+// previously Infinity, now ArkErrors: must be a number (was Infinity)
+type.number(Infinity)
+```
+
+Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in one type with the `number.Infinity` and `number.NegativeInfinity` keywords:
+
+```ts
+const T = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number (was Infinity)` instead of its range error.
+
 ### Remove the `clone` option
 
 Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as before. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:

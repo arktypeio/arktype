@@ -27,6 +27,7 @@ export declare namespace Domain {
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
 		readonly domain: domain
 		readonly numberAllowsNaN?: boolean
+		readonly numberAllowsInfinity?: boolean
 	}
 
 	export interface NormalizedSchema<
@@ -60,25 +61,33 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 		collapsibleKey: "domain",
 		keys: {
 			domain: {},
-			numberAllowsNaN: {}
+			numberAllowsNaN: {},
+			numberAllowsInfinity: {}
 		},
 		normalize: schema =>
 			typeof schema === "string" ? { domain: schema }
 			: hasKey(schema, "numberAllowsNaN") && schema.domain !== "number" ?
 				throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
+			: hasKey(schema, "numberAllowsInfinity") && schema.domain !== "number" ?
+				throwParseError(Domain.writeBadAllowInfinityMessage(schema.domain))
 			:	schema,
-		applyConfig: (schema, config) =>
-			(
-				schema.numberAllowsNaN === undefined &&
-				schema.domain === "number" &&
-				config.numberAllowsNaN
-			) ?
-				{ ...schema, numberAllowsNaN: true }
-			:	schema,
+		applyConfig: (schema, config) => {
+			if (schema.domain !== "number") return schema
+			if (schema.numberAllowsNaN === undefined && config.numberAllowsNaN)
+				schema = { ...schema, numberAllowsNaN: true }
+			if (
+				schema.numberAllowsInfinity === undefined &&
+				config.numberAllowsInfinity
+			)
+				schema = { ...schema, numberAllowsInfinity: true }
+			return schema
+		},
 		defaults: {
 			description: node => domainDescriptions[node.domain],
 			actual: data =>
-				Number.isNaN(data) ? "NaN" : domainDescriptions[domainOf(data)]
+				typeof data === "number" && !Number.isFinite(data) ?
+					String(data)
+				:	domainDescriptions[domainOf(data)]
 		}
 	})
 
@@ -86,26 +95,54 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 	private readonly requiresNaNCheck =
 		this.domain === "number" && !this.numberAllowsNaN
 
+	private readonly requiresInfinityCheck =
+		this.domain === "number" && !this.numberAllowsInfinity
+
 	readonly traverseAllows: TraverseAllows =
-		this.requiresNaNCheck ?
+		this.requiresNaNCheck && this.requiresInfinityCheck ?
+			data => Number.isFinite(data)
+		: this.requiresNaNCheck ?
 			data => typeof data === "number" && !Number.isNaN(data)
+		: this.requiresInfinityCheck ?
+			data =>
+				typeof data === "number" &&
+				data !== Number.POSITIVE_INFINITY &&
+				data !== Number.NEGATIVE_INFINITY
 		:	data => domainOf(data) === this.domain
 
 	readonly compiledCondition: string =
 		this.domain === "object" ?
 			`((typeof data === "object" && data !== null) || typeof data === "function")`
-		:	`typeof data === "${this.domain}"${this.requiresNaNCheck ? " && !Number.isNaN(data)" : ""}`
+		: this.requiresNaNCheck && this.requiresInfinityCheck ?
+			"Number.isFinite(data)"
+		:	`typeof data === "${this.domain}"${
+				this.requiresNaNCheck ? " && !Number.isNaN(data)"
+				: this.requiresInfinityCheck ?
+					" && data !== Infinity && data !== -Infinity"
+				:	""
+			}`
 
 	readonly compiledNegation: string =
 		this.domain === "object" ?
 			`((typeof data !== "object" || data === null) && typeof data !== "function")`
-		:	`typeof data !== "${this.domain}"${this.requiresNaNCheck ? " || Number.isNaN(data)" : ""}`
+		: this.requiresNaNCheck && this.requiresInfinityCheck ?
+			"!Number.isFinite(data)"
+		:	`typeof data !== "${this.domain}"${
+				this.requiresNaNCheck ? " || Number.isNaN(data)"
+				: this.requiresInfinityCheck ?
+					" || data === Infinity || data === -Infinity"
+				:	""
+			}`
 
 	readonly expression: string =
-		this.numberAllowsNaN ? "number | NaN" : this.domain
+		this.numberAllowsNaN || this.numberAllowsInfinity ?
+			`number${this.numberAllowsNaN ? " | NaN" : ""}${this.numberAllowsInfinity ? " | Infinity | -Infinity" : ""}`
+		:	this.domain
 
 	get nestableExpression(): string {
-		return this.numberAllowsNaN ? `(${this.expression})` : this.expression
+		return this.expression === this.domain ?
+				this.expression
+			:	`(${this.expression})`
 	}
 
 	get defaultShortDescription(): string {
@@ -119,5 +156,9 @@ export const Domain = {
 	writeBadAllowNanMessage: (
 		actual: Exclude<Domain.NonEnumerable, "number">
 	): string =>
-		`numberAllowsNaN may only be specified with domain "number" (was ${actual})`
+		`numberAllowsNaN may only be specified with domain "number" (was ${actual})`,
+	writeBadAllowInfinityMessage: (
+		actual: Exclude<Domain.NonEnumerable, "number">
+	): string =>
+		`numberAllowsInfinity may only be specified with domain "number" (was ${actual})`
 }

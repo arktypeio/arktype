@@ -594,10 +594,12 @@ export const pruneDiscriminant = (
 	discriminantBranch.transform(
 		(nodeKind, inner) => {
 			if (nodeKind === "unit") return null
-			// a discriminant's typeof check doesn't exclude NaN
+			// a discriminant's typeof check doesn't exclude NaN or Infinity
 			if (nodeKind === "domain") {
-				const { domain, numberAllowsNaN } = inner as Domain.Inner
-				return domain === "number" && !numberAllowsNaN ? inner : null
+				const { domain, numberAllowsNaN, numberAllowsInfinity } =
+					inner as Domain.Inner
+				if (domain !== "number" || (numberAllowsNaN && numberAllowsInfinity))
+					return null
 			}
 			return inner
 		},

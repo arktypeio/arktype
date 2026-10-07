@@ -9,7 +9,8 @@ import {
 import { configure, scope, type } from "arktype"
 
 const withConfig = (config: ArkSchemaConfig, fn: () => void) => {
-	const originalConfig = $ark.config
+	// configure assigns to $ark.config in place, so restore from a copy
+	const originalConfig = { ...$ark.config }
 	const originalResolvedConfig = $ark.resolvedConfig
 	configure(config)
 	fn()
@@ -220,6 +221,24 @@ contextualize(() => {
 			})
 
 			attest(nonNanable.allows(Number.NaN)).equals(false)
+		})
+	})
+
+	it("numberAllowsInfinity", () => {
+		withConfig({ numberAllowsInfinity: true }, () => {
+			const { infinitable } = schemaScope({
+				infinitable: "number"
+			}).export()
+
+			attest(infinitable.allows(Number.POSITIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NEGATIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NaN)).equals(false)
+
+			const { nonInfinitable } = type.module({
+				nonInfinitable: "number"
+			})
+
+			attest(nonInfinitable.allows(Number.POSITIVE_INFINITY)).equals(false)
 		})
 	})
 
