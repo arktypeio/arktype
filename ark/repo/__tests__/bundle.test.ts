@@ -45,7 +45,9 @@ const evaluated = () =>
 
 contextualize(() => {
 	afterEach(() => {
-		for (const dir of packages.splice(0)) rmSync(dir, { recursive: true })
+		// Windows can briefly hold a just-imported file, failing removal with EPERM
+		for (const dir of packages.splice(0))
+			rmSync(dir, { recursive: true, maxRetries: 5 })
 	})
 
 	it("entries share their modules", async () => {
