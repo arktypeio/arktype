@@ -21,11 +21,8 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      # TS version checks run in parallel in the typescript job
       - name: prChecks
         run: pnpm prChecks
-        env:
-          ARK_SKIP_TS_VERSIONS: 1
 
   compatibility:
     needs: core

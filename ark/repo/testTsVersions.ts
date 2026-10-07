@@ -56,8 +56,9 @@ if (unknown.length) {
 	process.exit(1)
 }
 
-if (process.env.ARK_SKIP_TS_VERSIONS && !requested.length)
-	console.log("Skipping TS version checks (ARK_SKIP_TS_VERSIONS is set)")
+// CI runs each task as its own job, so prChecks there skips the full set
+if (process.env.CI && !requested.length)
+	console.log("Skipping TS version checks, which CI runs per task")
 else {
 	const names = requested.length ? requested : Object.keys(tasks)
 	// concurrent dlx installs conflict, so consumer checks run one at a time
