@@ -169,6 +169,47 @@ type({ "+": "reject", a: "string.trim" }).or({
 
 `arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
 
+## 2.2.8
+
+### Add `string.base58`
+
+Validates base58-encoded strings, which use the Bitcoin alphabet (no `0`, `O`, `I` or `l`):
+
+```ts
+const Base58 = type("string.base58")
+
+// valid
+Base58("3mJr7AoUXx2Wqd")
+// ArkErrors: must be base58-encoded (was "0OIl")
+Base58("0OIl")
+```
+
+Thanks to @WolfieLeader.
+
+### Return empty `props` for `object`
+
+`type("object").props` threw instead of returning the empty list of properties, like `type({}).props` does (#1682, fixes #1177).
+
+Thanks to @SunilRathod27.
+
+### Keep object values from meta in JSON Schema
+
+Meta values that aren't primitives, like an object or array `default` or a custom key like `x-unit`, were emitted as internal `$ark` references instead of their JSON values (#1677). Defaults that aren't valid JSON, including functions, now go through the `defaultValue` fallback.
+
+Thanks to @lprnmns.
+
+### Report invalid generic definitions on TypeScript 7
+
+TypeScript 7 only reports the error of the last overload that fails, which for an invalid generic definition was the tuple expression signature rather than ArkType's own message (#1681):
+
+```ts
+// TypeScript 7 previously: Argument of type '"<n extends nummer>"' is not assignable to parameter of type '"Array" | ...
+// now: 'nummer' is unresolvable
+type("<n extends nummer>", "n > 0")
+```
+
+The generic and tuple expression signatures of `type` are now a single signature, so TypeScript 6 and 7 report the same errors directly, and errors in a generic's body point at the invalid property.
+
 ## 2.2.7
 
 ### Fix `this[]` in self-referential object types

@@ -41,7 +41,11 @@ const twoslash = transformerTwoslash({
 	twoslashOptions: {
 		compilerOptions: {
 			// avoid ... in certain longer types on hover
-			noErrorTruncation: true
+			noErrorTruncation: true,
+			// twoslash defaults to baseUrl and node10 resolution, which TS 6 deprecates
+			ignoreDeprecations: "6.0",
+			// snippets import "./config.ts" for its side effects without defining it
+			noUncheckedSideEffectImports: false
 		},
 		extraFiles: {
 			"global.d.ts": `import type * as a from "arktype"

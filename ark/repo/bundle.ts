@@ -1,6 +1,6 @@
 import { buildSync } from "esbuild"
 import { join } from "node:path"
-import ts from "typescript"
+import { ts } from "ts-morph"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	fromCwd,

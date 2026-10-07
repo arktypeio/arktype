@@ -2,6 +2,8 @@
 	"recommendations": [
 		"esbenp.prettier-vscode",
 		"dbaeumer.vscode-eslint",
+		// Language support from the repo's pinned TypeScript 7
+		"TypeScriptTeam.native-preview",
 		// Run/debug tests inline via VSCode's Test Explorer
 		"hbenl.vscode-mocha-test-adapter",
 		// Syntax highlighting for strings in ArkType definitions

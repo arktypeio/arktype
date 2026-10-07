@@ -238,9 +238,14 @@ type TsLibFiles = {
 export const getTsLibFiles = (
 	tsconfigOptions: ts.CompilerOptions
 ): TsLibFiles => {
-	const defaultMapFromNodeModules =
-		tsvfs.createDefaultMapFromNodeModules(tsconfigOptions)
 	const libPath = dirname(ts.getDefaultLibFilePath(tsconfigOptions))
+	// read libs from the typescript attest imported rather than letting
+	// tsvfs resolve its own
+	const defaultMapFromNodeModules = tsvfs.createDefaultMapFromNodeModules(
+		tsconfigOptions,
+		ts,
+		libPath
+	)
 	return {
 		defaultMapFromNodeModules,
 		resolvedPaths: [...defaultMapFromNodeModules.keys()].map(path =>

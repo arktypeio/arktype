@@ -2,7 +2,7 @@ import type { ArkErrors } from "arktype"
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import ts from "typescript"
+import { ts } from "ts-morph"
 import { publicEntryPoints } from "./bundle.ts"
 
 const loadedUrls = new Set<string>()

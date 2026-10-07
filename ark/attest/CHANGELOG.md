@@ -2,7 +2,7 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
-## 0.57.0
+## Unreleased
 
 Runtime benches now run in a loop compiled for each bench, after a warmup of 500ms (or `until.ms` if shorter), with as many calls per sample as fit in about 0.2ms. Their times don't compare with earlier versions', so re-record stored runtime baselines.
 
@@ -10,6 +10,24 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - `until.count` and `until.ms` bound the samples taken after the warmup. They counted sets of 1000 calls and time from the bench's start.
 - A bench that returns a Promise is awaited whether or not it is an `async` function.
 - Sample times are sorted numerically. They were sorted as strings, which misordered times like 9.5 and 10.2 and skewed `.median`.
+
+## 0.57.0
+
+### Breaking changes
+
+- Removed the `tsVersions` config option. Attest now analyzes your project with whichever `typescript` it resolves (normally your own install, since it's a peer dependency) and writes a single `.attest/assertions.json`. To test multiple versions, run your suite once per version, e.g. via a CI matrix.
+- Removed `getPrimaryTsVersionUnderTest`. Read `ts.version` from your own `typescript` import instead.
+- Renamed `getTypeAssertionsAtPosition` to `getTypeAssertionAtPosition` and `getBenchAssertionsAtPosition` to `getBenchAssertionAtPosition`, which return a single assertion rather than one per TypeScript version.
+
+### TypeScript 7 support
+
+TypeScript 7.1+ is supported through its native API, selected automatically when it's the installed version. TypeScript 7.0.x throws an error asking you to upgrade. Type assertions, completions, JSDoc, snapshots, benches and the CLI work as before, with these differences:
+
+- Instantiation counts are measured by running `tsc` per bench and can be lower than with TypeScript 5/6, so bench baselines should be re-recorded after switching.
+- Type strings, union ordering and error elaboration can differ, so snapshots may need updating.
+- Benches write temporary copies beside their source files while measuring, so they need a writable source directory.
+
+https://github.com/arktypeio/arktype/pull/1680
 
 ## 0.51.0
 

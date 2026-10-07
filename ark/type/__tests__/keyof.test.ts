@@ -65,7 +65,7 @@ contextualize(() => {
 		attest(() => type("keyof "))
 			.throws(writeMissingRightOperandMessage("keyof", ""))
 			// it tries to autocomplete, so this is just a possible completion that would be included
-			.type.errors("keyof bigint")
+			.type.errors("keyof Array")
 	})
 
 	it("invalid operand", () => {

@@ -78,7 +78,7 @@ contextualize(() => {
 		attest(
 			// @ts-expect-error
 			declare<"foo" | "bar">().type(["'foo'", "|", "'baz'"])
-		).type.errors(`declared: "foo" | "bar"; inferred: "foo" | "baz"`)
+		).type.errors(`declared: "bar" | "foo"; inferred: "baz" | "foo"`)
 	})
 
 	it("narrower", () => {

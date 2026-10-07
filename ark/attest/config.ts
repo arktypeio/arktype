@@ -1,42 +1,17 @@
 import { ensureDir, fromCwd } from "@ark/fs"
-import {
-	isArray,
-	liftArray,
-	tryParseNumber,
-	type autocomplete
-} from "@ark/util"
+import { tryParseNumber, type JsonObject } from "@ark/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type * as prettier from "prettier"
-import type ts from "typescript"
-import {
-	findAttestTypeScriptVersions,
-	type TsVersionData
-} from "./tsVersioning.ts"
-
-export type TsVersionAliases = autocomplete<"*"> | string[]
 
 export type BenchErrorConfig = "runtime" | "types" | boolean
 
 type BaseAttestConfig = {
 	tsconfig: string | null | undefined
-	compilerOptions: ts.CompilerOptions
+	/** compilerOptions as they would be written in tsconfig.json */
+	compilerOptions: JsonObject
 	updateSnapshots: boolean
 	failOnMissingSnapshots: boolean
-	/** A string or list of strings representing the TypeScript version aliases to run.
-	 *
-	 * Aliases must be specified as a package.json dependency or devDependency beginning with "typescript".
-	 * Alternate aliases can be specified using the "npm:" prefix:
-	 * ```json
-	 * 		"typescript": "latest",
-	 * 		"typescript-next: "npm:typescript@next",
-	 * 		"typescript-1": "npm:typescript@5.2"
-	 * 		"typescript-2": "npm:typescript@5.1"
-	 * ```
-	 *
-	 * "*" can be pased to run all discovered versions beginning with "typescript".
-	 */
-	tsVersions: TsVersionAliases | TsVersionData[]
 	skipTypes: boolean
 	skipInlineInstantiations: boolean
 	attestAliases: string[]
@@ -70,7 +45,6 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
-	tsVersions: "default",
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
@@ -114,7 +88,7 @@ const getParamValue = (param: keyof AttestConfig) => {
 	if (param === "benchPercentThreshold")
 		return tryParseNumber(raw, { errorOnFail: true })
 
-	if (param === "tsVersions" || param === "attestAliases") return raw.split(",")
+	if (param === "attestAliases") return raw.split(",")
 
 	if (param === "typeToStringFormat" || param === "compilerOptions")
 		return JSON.parse(raw)
@@ -145,49 +119,14 @@ const addEnvConfig = (config: BaseAttestConfig) => {
 
 export interface ParsedAttestConfig extends Readonly<BaseAttestConfig> {
 	cacheDir: string
-	assertionCacheDir: string
-	defaultAssertionCachePath: string
-	tsVersions: TsVersionData[]
+	assertionCachePath: string
 }
 
 const parseConfig = (): ParsedAttestConfig => {
-	const baseConfig = addEnvConfig(getDefaultAttestConfig())
 	const cacheDir = resolve(".attest")
-	const assertionCacheDir = join(cacheDir, "assertions")
-	const defaultAssertionCachePath = join(assertionCacheDir, "typescript.json")
-
-	return Object.assign(baseConfig, {
+	return Object.assign(addEnvConfig(getDefaultAttestConfig()), {
 		cacheDir,
-		assertionCacheDir,
-		defaultAssertionCachePath,
-		tsVersions:
-			baseConfig.skipTypes ? []
-			: isTsVersionAliases(baseConfig.tsVersions) ?
-				parseTsVersions(baseConfig.tsVersions)
-			:	baseConfig.tsVersions
-	})
-}
-
-const isTsVersionAliases = (
-	v: AttestConfig["tsVersions"]
-): v is TsVersionAliases =>
-	typeof v === "string" || (isArray(v) && typeof v[0] === "string")
-
-const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
-	const versions = findAttestTypeScriptVersions()
-	if (aliases === "*" || (isArray(aliases) && aliases[0] === "*"))
-		return versions
-
-	return liftArray(aliases).map(alias => {
-		const matching = versions.find(v => v.alias === alias)
-		if (!matching) {
-			throw new Error(
-				`Specified TypeScript version ${alias} does not exist.` +
-					` It should probably be specified in package.json like:
-"@ark/attest-ts-${alias}": "npm:typescript@latest"`
-			)
-		}
-		return matching
+		assertionCachePath: join(cacheDir, "assertions.json")
 	})
 }
 
@@ -208,5 +147,4 @@ if (!globalThis.localStorage?.getItem)
 export const ensureCacheDirs = (): void => {
 	cachedConfig ??= getConfig()
 	ensureDir(cachedConfig.cacheDir)
-	ensureDir(cachedConfig.assertionCacheDir)
 }

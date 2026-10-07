@@ -81,7 +81,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => accept(T)).type.errors(
-			"Argument of type 'Type<1, {}>' is not assignable to parameter of type 'Type<string, {}>'"
+			"Type 'Type<1, {}>' is missing the following properties from type 'Type<string, {}>'"
 		)
 	})
 
@@ -93,9 +93,9 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => type("number[]") satisfies Type<string[]>).type.errors(
-			"Type 'number' is not assignable to type 'string'"
+			"Type 'Type<number, {}>' is missing the following properties from type 'Type<string, {}>'"
 		)
-		attest.instantiations([525881, "instantiations"])
+		attest.instantiations([248683, "instantiations"])
 	})
 
 	it("args signature obeys assignability rules", () => {
@@ -103,9 +103,9 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => type("number", "[]") satisfies Type<string[]>).type.errors(
-			"Type 'number' is not assignable to type 'string'"
+			"Type 'Type<number, {}>' is missing the following properties from type 'Type<string, {}>'"
 		)
-		attest.instantiations([524238, "instantiations"])
+		attest.instantiations([249815, "instantiations"])
 	})
 
 	it("type.Any allows arbitrary scope", () => {

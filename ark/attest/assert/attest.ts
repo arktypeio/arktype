@@ -4,8 +4,8 @@ import { getBenchCtx } from "../bench/bench.ts"
 import type { Measure } from "../bench/measure.ts"
 import { instantiationDataHandler } from "../bench/type.ts"
 import {
-	getTypeAssertionsAtPosition,
-	type VersionedTypeAssertion
+	getTypeAssertionAtPosition,
+	type TypeAssertionData
 } from "../cache/getCachedAssertions.ts"
 import { getConfig, type AttestConfig } from "../config.ts"
 import {
@@ -43,8 +43,7 @@ export type AssertionContext = {
 	position: SourcePosition
 	defaultExpected?: unknown
 	assertionStack: string
-	typeRelationshipAssertionEntries?: VersionedTypeAssertion<"type">[]
-	typeBenchmarkingAssertionEntries?: VersionedTypeAssertion<"bench">[]
+	typeAssertion?: TypeAssertionData<"type">
 	lastSnapName?: string
 }
 
@@ -69,8 +68,8 @@ export const attestInternal = (
 		...ctxHooks
 	}
 	if (!cfg.skipTypes) {
-		ctx.typeRelationshipAssertionEntries = getTypeAssertionsAtPosition(position)
-		if (ctx.typeRelationshipAssertionEntries[0]?.[1].typeArgs[0]) {
+		ctx.typeAssertion = getTypeAssertionAtPosition(position)
+		if (ctx.typeAssertion.typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}

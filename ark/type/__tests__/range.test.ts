@@ -259,7 +259,9 @@ contextualize(() => {
 			attest(() =>
 				// @ts-expect-error
 				type("(number | boolean[])>0")
-			).throwsAndHasTypeError(writeUnboundableMessage("number | boolean[]"))
+			)
+				.throws(writeUnboundableMessage("number | boolean[]"))
+				.type.errors(writeUnboundableMessage("boolean[] | number"))
 		})
 
 		it("unknown", () => {

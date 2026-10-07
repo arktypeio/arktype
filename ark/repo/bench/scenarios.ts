@@ -1,5 +1,5 @@
 import { numericStringMatcher } from "@ark/util"
-import { scope, type } from "arktype"
+import { scope, type, type Type } from "arktype"
 import * as v from "valibot"
 import { z } from "zod"
 
@@ -482,8 +482,12 @@ const valibotNode: v.GenericSchema<TreeNode> = v.object({
 	children: v.array(v.lazy(() => valibotNode))
 })
 
+const arktypeNode: Type<TreeNode, any> = scope({
+	node: { id: "number", children: "node[]" }
+}).export().node
+
 export const Tree = {
-	arktype: scope({ node: { id: "number", children: "node[]" } }).export().node,
+	arktype: arktypeNode,
 	zod: zodNode,
 	valibot: valibotNode
 }
