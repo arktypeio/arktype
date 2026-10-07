@@ -346,6 +346,7 @@ TypeScript 7.1+ is supported via its native API. Type assertions, completions, J
 
 - Instantiation counts are measured by running `tsc --extendedDiagnostics --singleThreaded` per bench. Since `tsc` fully checks the bench's dependencies before measuring it, work a bench shares with them isn't attributed to the bench, so counts run lower than with TypeScript 5/6, by as much as most of the count for a bench whose cost is mostly shared with its dependencies, and baselines should be recorded separately.
 - Type strings, union ordering and error elaboration can differ from earlier versions, so snapshots may need to be updated when switching.
+- Benches write temporary copies beside their source files while measuring, so they need a writable source directory.
 
 ### APIs
 
