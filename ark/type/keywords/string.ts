@@ -953,6 +953,7 @@ export const string: string.module = keywordModule(
 		alphanumeric: () =>
 			regexStringNode(/^[\dA-Za-z]*$/, "only letters and digits 0-9"),
 		hex,
+		base58: () => regexStringNode(/^[1-9A-HJ-NP-Za-km-z]+$/, "base58-encoded"),
 		base64,
 		capitalize,
 		creditCard,
@@ -987,6 +988,7 @@ export declare namespace string {
 		alpha: string
 		alphanumeric: string
 		hex: string
+		base58: string
 		base64: base64.submodule
 		capitalize: capitalize.submodule
 		creditCard: string
