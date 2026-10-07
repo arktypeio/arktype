@@ -3,7 +3,6 @@ import {
 	$ark,
 	rootSchema,
 	schemaScope,
-	unsupportedCloneConfigMessage,
 	writeBadRejectAllowsSymbolKeysMessage,
 	type ArkSchemaConfig
 } from "@ark/schema"
@@ -269,17 +268,6 @@ contextualize(() => {
 				rejectAllowsSymbolKeys: true
 			})
 		).throws(writeBadRejectAllowsSymbolKeysMessage("delete"))
-	})
-
-	it("clone", () => {
-		// @ts-expect-error
-		attest(() => configure({ clone: false })).throws(
-			unsupportedCloneConfigMessage
-		)
-		// @ts-expect-error
-		attest(() => scope({}, { clone: false })).throws(
-			unsupportedCloneConfigMessage
-		)
 	})
 
 	it("docs actual example", () => {

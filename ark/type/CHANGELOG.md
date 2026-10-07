@@ -14,7 +14,7 @@ const input = { a: " x ", b: { c: "y" } }
 T(input).b === input.b
 ```
 
-A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config. A config with a `clone` key now throws a ParseError.
+A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
 
 ### Reject shallow cycles
 
