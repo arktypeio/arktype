@@ -1002,7 +1002,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors — array-like with .summary
+	// ArkErrors — iterable, with .summary and an .issues array
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }
@@ -1130,7 +1130,8 @@ Some options only apply at specific levels, as reflected in the corresponding in
 	If you need your config to apply to built-in keywords (important for options
 	like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`),
 	you should import and `configure` from `"arktype/config"` before importing
-	anything from `"arktype"`.
+	anything else from `"arktype"` or `"@ark/schema"`, including deep imports
+	like `"arktype/internal/*"`.
 
 Otherwise, keywords will have already been parsed by the time your config applies!
 
@@ -2247,6 +2248,18 @@ const trimStringStart = type("string", "=>", str => str.trimStart())
     </SyntaxTab>
 
 </SyntaxTabs>
+
+A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType never writes to its input: a transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
+
+```ts
+const T = type({ a: "string.trim", b: { c: "string" } })
+const input = { a: " x ", b: { c: "y" } }
+
+const out = T.assert(input)
+
+out === input // false
+out.b === input.b // true
+```
 
 #### To
 
@@ -5301,6 +5314,16 @@ const Bounded = type({
 
 </SyntaxTabs>
 
+Dates in descriptions and error messages are written in UTC. A date at UTC or local midnight is written as its calendar date, or just its year on January 1:
+
+```ts
+// a Date and 2023 or later
+type("Date >= d'2023-01-01'").description
+
+// a Date and January 1, 2023, 2:30 PM UTC or later
+type("Date >= d'2023-01-01T14:30Z'").description
+```
+
 ## instanceof
 
 Most built-in instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
@@ -5490,6 +5513,14 @@ const Range = type({
 </SyntaxTabs>
 
 ## number
+
+`number` rejects `NaN`, `Infinity` and `-Infinity`. Allow them in a single type with the `number.NaN`, `number.Infinity` and `number.NegativeInfinity` keywords:
+
+```ts
+const T = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+To allow them everywhere, set `numberAllowsNaN` or `numberAllowsInfinity` in your [global config](/docs/configuration#levels).
 
 ### keywords [#number-keywords]
 
@@ -5990,6 +6021,8 @@ export const types = scope({
 
 Cyclic types are inferred to arbitrary depth. At runtime, they can safely validate cyclic data.
 
+A cycle must pass through an object, array or morph. An alias that resolves to itself without one, like `a` in `scope({ a: "a | string" })`, is a type error and throws a `ParseError`.
+
 ```ts
 export const types = scope({
 	Package: {
@@ -6276,7 +6309,7 @@ if (out instanceof type.errors) {
 
 ### ArkErrors
 
-The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data:
+The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data. It is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`:
 
 ```ts
 const T = type({ n: "number % 2", m: "number >= 2" })

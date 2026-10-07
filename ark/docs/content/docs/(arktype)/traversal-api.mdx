@@ -54,7 +54,7 @@ if (out instanceof type.errors) {
 
 ### ArkErrors
 
-The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data:
+The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data. It is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`:
 
 ```ts
 const T = type({ n: "number % 2", m: "number >= 2" })

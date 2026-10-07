@@ -102,7 +102,8 @@ Some options only apply at specific levels, as reflected in the corresponding in
 	If you need your config to apply to built-in keywords (important for options
 	like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`),
 	you should import and `configure` from `"arktype/config"` before importing
-	anything from `"arktype"`.
+	anything else from `"arktype"` or `"@ark/schema"`, including deep imports
+	like `"arktype/internal/*"`.
 
 Otherwise, keywords will have already been parsed by the time your config applies!
 

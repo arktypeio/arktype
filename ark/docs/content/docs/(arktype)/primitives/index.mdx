@@ -134,6 +134,14 @@ const Range = type({
 
 ## number
 
+`number` rejects `NaN`, `Infinity` and `-Infinity`. Allow them in a single type with the `number.NaN`, `number.Infinity` and `number.NegativeInfinity` keywords:
+
+```ts
+const T = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+To allow them everywhere, set `numberAllowsNaN` or `numberAllowsInfinity` in your [global config](/docs/configuration#levels).
+
 ### keywords [#number-keywords]
 
 The following keywords can be referenced in any definition, e.g.:
