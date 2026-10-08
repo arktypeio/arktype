@@ -2,6 +2,7 @@ import { intrinsic, node } from "@ark/schema"
 import { cached } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
+import { keywordMeta } from "./phrases.ts"
 
 /**
  * As per the ECMA-262 specification:
@@ -14,21 +15,33 @@ export const epoch = cached(() =>
 	node("intersection", {
 		domain: node("domain", {
 			domain: "number",
-			meta: "a number representing a Unix timestamp"
+			meta: {
+				description: "a number representing a Unix timestamp",
+				keyword: "number.epoch"
+			}
 		}),
 		divisor: node("divisor", {
 			rule: 1,
-			meta: `an integer representing a Unix timestamp`
+			meta: {
+				description: `an integer representing a Unix timestamp`,
+				keyword: "number.epoch"
+			}
 		}),
 		min: node("min", {
 			rule: -8640000000000000,
-			meta: `a Unix timestamp after -8640000000000000`
+			meta: {
+				description: `a Unix timestamp after -8640000000000000`,
+				keyword: "number.epoch"
+			}
 		}),
 		max: node("max", {
 			rule: 8640000000000000,
-			meta: "a Unix timestamp before 8640000000000000"
+			meta: {
+				description: "a Unix timestamp before 8640000000000000",
+				keyword: "number.epoch"
+			}
 		}),
-		meta: "an integer representing a safe Unix timestamp"
+		meta: keywordMeta("number.epoch")
 	})
 )
 

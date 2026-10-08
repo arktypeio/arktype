@@ -21,12 +21,17 @@ import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 import { number } from "./number.ts"
+import {
+	keywordError,
+	keywordMeta,
+	type KeywordPhraseAlias
+} from "./phrases.ts"
 
 // non-trivial expressions should have an explanation or attribution
 
 export const regexStringNode = (
 	regex: RegExp,
-	description: string,
+	alias: KeywordPhraseAlias,
 	jsonSchemaFormat?: JsonSchema.Format
 ): Intersection.Node => {
 	const input: mutable<NodeInput<"intersection">> = {
@@ -34,7 +39,7 @@ export const regexStringNode = (
 		pattern: [
 			node("pattern", {
 				...constraintInputOf("pattern", regex),
-				meta: description
+				meta: keywordMeta(alias)
 			})
 		]
 	}
@@ -45,8 +50,10 @@ export const regexStringNode = (
 }
 
 const stringIntegerRoot = cached(() =>
-	regexStringNode(wellFormedIntegerMatcher, "a well-formed integer string")
+	regexStringNode(wellFormedIntegerMatcher, "string.integer")
 )
+
+const integerParseError = keywordError("string.integer.parse")
 
 export const stringInteger: stringInteger.module = keywordModule(
 	{
@@ -58,9 +65,7 @@ export const stringInteger: stringInteger.module = keywordModule(
 					(s: string, ctx: Traversal) => {
 						const parsed = Number.parseInt(s)
 						return Number.isSafeInteger(parsed) ? parsed : (
-								ctx.error(
-									"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
-								)
+								ctx.error(integerParseError)
 							)
 					}
 				],
@@ -83,19 +88,19 @@ export declare namespace stringInteger {
 	}
 }
 
-const hex = () => regexStringNode(/^[\dA-Fa-f]+$/, "hex characters only")
+const hex = () => regexStringNode(/^[\dA-Fa-f]+$/, "string.hex")
 
 const base64: base64.module = keywordModule(
 	{
 		root: () =>
 			regexStringNode(
 				/^(?:[\d+/A-Za-z]{4})*(?:[\d+/A-Za-z]{2}==|[\d+/A-Za-z]{3}=)?$/,
-				"base64-encoded"
+				"string.base64"
 			),
 		url: () =>
 			regexStringNode(
 				/^(?:[\w-]{4})*(?:[\w-]{2}(?:==|%3D%3D)?|[\w-]{3}(?:=|%3D)?)?$/,
-				"base64url-encoded"
+				"string.base64.url"
 			)
 	},
 	{
@@ -115,7 +120,7 @@ declare namespace base64 {
 }
 
 const preformattedCapitalize = cached(() =>
-	regexStringNode(/^[A-Z].*$/, "capitalized")
+	regexStringNode(/^[A-Z].*$/, "string.capitalize.preformatted")
 )
 
 export const capitalize: capitalize.module = keywordModule(
@@ -173,13 +178,13 @@ export const creditCard = cached(() =>
 		domain: node("domain", { domain: "string" }),
 		pattern: [
 			node("pattern", {
-				meta: "a credit card number",
+				meta: keywordMeta("string.creditCard"),
 				rule: creditCardMatcher.source
 			})
 		],
 		predicate: [
 			node("predicate", {
-				meta: "a credit card number",
+				meta: keywordMeta("string.creditCard"),
 				predicate: isLuhnValid
 			})
 		]
@@ -289,7 +294,7 @@ const parsableDate = cached(() =>
 		domain: node("domain", { domain: "string" }),
 		predicate: [
 			node("predicate", {
-				meta: "a parsable date",
+				meta: keywordMeta("string.date"),
 				predicate: isParsableDate
 			})
 		]
@@ -309,12 +314,7 @@ const epochRoot = cached(() =>
 			}
 			return true
 		})
-		.configure(
-			{
-				description: "an integer string representing a safe Unix timestamp"
-			},
-			"self"
-		)
+		.configure(keywordMeta("string.date.epoch"), "self")
 		.assertHasKind("intersection")
 )
 
@@ -336,10 +336,9 @@ const epoch: Module<stringDate.epoch.$> = keywordModule(
 ) as never
 
 const isoRoot = cached(() =>
-	regexStringNode(
-		iso8601Matcher,
-		"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
-	).internal.assertHasKind("intersection")
+	regexStringNode(iso8601Matcher, "string.date.iso").internal.assertHasKind(
+		"intersection"
+	)
 )
 
 const iso: Module<stringDate.iso.$> = keywordModule(
@@ -357,6 +356,8 @@ const iso: Module<stringDate.iso.$> = keywordModule(
 	}
 ) as never
 
+const dateParseError = keywordError("string.date.parse")
+
 export const stringDate: stringDate.module = keywordModule(
 	{
 		root: parsableDate,
@@ -367,8 +368,7 @@ export const stringDate: stringDate.module = keywordModule(
 				morphs: [
 					(s: string, ctx: Traversal) => {
 						const date = new Date(s)
-						if (Number.isNaN(date.valueOf()))
-							return ctx.error("a parsable date")
+						if (Number.isNaN(date.valueOf())) return ctx.error(dateParseError)
 						return date
 					}
 				],
@@ -421,7 +421,7 @@ const email = () =>
 		// regex based on:
 		// https://www.regular-expressions.info/email.html
 		/^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$/,
-		"an email address",
+		"string.email",
 		"email"
 	)
 
@@ -446,9 +446,9 @@ const ipv6Matcher = new RegExp(
 
 export const ip: ip.module = keywordModule(
 	{
-		root: ["v4 | v6", "@", "an IP address"],
-		v4: () => regexStringNode(ipv4Matcher, "an IPv4 address", "ipv4"),
-		v6: () => regexStringNode(ipv6Matcher, "an IPv6 address", "ipv6")
+		root: ["v4 | v6", "@", keywordMeta("string.ip")],
+		v4: () => regexStringNode(ipv4Matcher, "string.ip.v4", "ipv4"),
+		v6: () => regexStringNode(ipv6Matcher, "string.ip.v6", "ipv6")
 	},
 	{
 		name: "string.ip"
@@ -467,52 +467,37 @@ export declare namespace ip {
 	}
 }
 
-const jsonStringDescription = "a JSON string"
-
-export const writeJsonSyntaxErrorProblem = (error: unknown): string => {
-	if (!(error instanceof SyntaxError)) throw error
-	return `must be ${jsonStringDescription} (${error})`
-}
+const jsonError = keywordError("string.json")
 
 const jsonRoot = () =>
 	node("intersection", {
-		meta: jsonStringDescription,
+		meta: keywordMeta("string.json"),
 		domain: node("domain", { domain: "string" }),
 		predicate: [
 			node("predicate", {
-				meta: jsonStringDescription,
+				meta: keywordMeta("string.json"),
 				predicate: (s: string, ctx: Traversal) => {
 					try {
 						JSON.parse(s)
 						return true
 					} catch (e) {
-						return ctx.reject({
-							code: "predicate",
-							expected: jsonStringDescription,
-							problem: writeJsonSyntaxErrorProblem(e)
-						})
+						if (!(e instanceof SyntaxError)) throw e
+						return ctx.reject({ ...jsonError, cause: e })
 					}
 				}
 			})
 		]
 	})
 
+const jsonParseError = keywordError("string.json.parse")
+
 const parseJson: Morph<string> = (s: string, ctx: Traversal) => {
-	if (s.length === 0) {
-		return ctx.error({
-			code: "predicate",
-			expected: jsonStringDescription,
-			actual: "empty"
-		})
-	}
+	if (s.length === 0) return ctx.error(jsonParseError)
 	try {
 		return JSON.parse(s)
 	} catch (e) {
-		return ctx.error({
-			code: "predicate",
-			expected: jsonStringDescription,
-			problem: writeJsonSyntaxErrorProblem(e)
-		})
+		if (!(e instanceof SyntaxError)) throw e
+		return ctx.error({ ...jsonParseError, cause: e })
 	}
 }
 
@@ -544,7 +529,7 @@ export declare namespace stringJson {
 }
 
 const preformattedLower = cached(() =>
-	regexStringNode(/^[a-z]*$/, "only lowercase letters")
+	regexStringNode(/^[a-z]*$/, "string.lower.preformatted")
 )
 
 const lower: lower.module = keywordModule(
@@ -590,7 +575,7 @@ const preformattedNodes = flatMorph(
 							predicate: (s: string) => s.normalize(form) === s
 						})
 					],
-					meta: `${form}-normalized unicode`
+					meta: keywordMeta(`string.normalize.${form}.preformatted`)
 				})
 			)
 		] as const
@@ -714,7 +699,7 @@ export declare namespace normalize {
 }
 
 const numericRoot = cached(() =>
-	regexStringNode(numericStringMatcher, "a well-formed numeric string")
+	regexStringNode(numericStringMatcher, "string.numeric")
 )
 
 export const stringNumeric: stringNumeric.module = keywordModule(
@@ -743,23 +728,20 @@ export declare namespace stringNumeric {
 	}
 }
 
-const regexPatternDescription = "a regex pattern"
+const regexError = keywordError("string.regex")
+
 const regex = () =>
 	node("intersection", {
 		domain: node("domain", { domain: "string" }),
 		predicate: [
 			node("predicate", {
-				meta: regexPatternDescription,
+				meta: keywordMeta("string.regex"),
 				predicate: (s: string, ctx: Traversal) => {
 					try {
 						new RegExp(s)
 						return true
 					} catch (e) {
-						return ctx.reject({
-							code: "predicate",
-							expected: regexPatternDescription,
-							problem: String(e)
-						})
+						return ctx.reject({ ...regexError, cause: e })
 					}
 				}
 			})
@@ -770,14 +752,13 @@ const regex = () =>
 const semverMatcher =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+([\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
 
-const semver = () =>
-	regexStringNode(semverMatcher, "a semantic version (see https://semver.org/)")
+const semver = () => regexStringNode(semverMatcher, "string.semver")
 
 const preformattedTrim = cached(() =>
 	regexStringNode(
 		// no leading or trailing whitespace
 		/^\S.*\S$|^\S?$/,
-		"trimmed"
+		"string.trim.preformatted"
 	)
 )
 
@@ -808,7 +789,7 @@ export declare namespace trim {
 }
 
 const preformattedUpper = cached(() =>
-	regexStringNode(/^[A-Z]*$/, "only uppercase letters")
+	regexStringNode(/^[A-Z]*$/, "string.upper.preformatted")
 )
 
 const upper: upper.module = keywordModule(
@@ -844,7 +825,7 @@ const urlRoot = cached(() =>
 		domain: node("domain", { domain: "string" }),
 		predicate: [
 			node("predicate", {
-				meta: "a URL string",
+				meta: keywordMeta("string.url"),
 				predicate: isParsableUrl
 			})
 		],
@@ -853,6 +834,8 @@ const urlRoot = cached(() =>
 		meta: { format: "uri" }
 	})
 )
+
+const urlParseError = keywordError("string.url.parse")
 
 export const url: url.module = keywordModule(
 	{
@@ -866,7 +849,7 @@ export const url: url.module = keywordModule(
 						try {
 							return new URL(s)
 						} catch {
-							return ctx.error("a URL string")
+							return ctx.error(urlParseError)
 						}
 					}
 				],
@@ -897,7 +880,7 @@ export const uuid: uuid.module = keywordModule(
 		root: [
 			"versioned | nil | max",
 			"@",
-			{ description: "a UUID", format: "uuid" }
+			{ ...keywordMeta("string.uuid"), format: "uuid" }
 		],
 		"#nil": "'00000000-0000-0000-0000-000000000000'",
 		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
@@ -906,42 +889,42 @@ export const uuid: uuid.module = keywordModule(
 		v1: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-1[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv1"
+				"string.uuid.v1"
 			),
 		v2: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-2[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv2"
+				"string.uuid.v2"
 			),
 		v3: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-3[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv3"
+				"string.uuid.v3"
 			),
 		v4: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-4[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv4"
+				"string.uuid.v4"
 			),
 		v5: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-5[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv5"
+				"string.uuid.v5"
 			),
 		v6: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-6[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv6"
+				"string.uuid.v6"
 			),
 		v7: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-7[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv7"
+				"string.uuid.v7"
 			),
 		v8: () =>
 			regexStringNode(
 				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-8[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"a UUIDv8"
+				"string.uuid.v8"
 			)
 	},
 	{
@@ -974,16 +957,15 @@ export declare namespace uuid {
 export const string: string.module = keywordModule(
 	{
 		root: () => intrinsic.string,
-		alpha: () => regexStringNode(/^[A-Za-z]*$/, "only letters"),
-		alphanumeric: () =>
-			regexStringNode(/^[\dA-Za-z]*$/, "only letters and digits 0-9"),
+		alpha: () => regexStringNode(/^[A-Za-z]*$/, "string.alpha"),
+		alphanumeric: () => regexStringNode(/^[\dA-Za-z]*$/, "string.alphanumeric"),
 		hex,
-		base58: () => regexStringNode(/^[1-9A-HJ-NP-Za-km-z]+$/, "base58-encoded"),
+		base58: () => regexStringNode(/^[1-9A-HJ-NP-Za-km-z]+$/, "string.base58"),
 		base64,
 		capitalize,
 		creditCard,
 		date: stringDate,
-		digits: () => regexStringNode(/^\d*$/, "only digits 0-9"),
+		digits: () => regexStringNode(/^\d*$/, "string.digits"),
 		email,
 		integer: stringInteger,
 		ip,

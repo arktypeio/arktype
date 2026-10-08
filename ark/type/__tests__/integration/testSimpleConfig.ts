@@ -35,6 +35,12 @@ cases({
 		const expected = config.keywords["string.numeric"].description
 		strictEqual(numeric.description, expected)
 		strictEqual(numeric("abc").toString(), `must be ${expected} (was "abc")`)
+		// configured text replaces the keyword's phrase
+		strictEqual(
+			numeric.internal.select({ kind: "pattern", method: "assertFind" }).meta
+				.keyword,
+			undefined
+		)
 	},
 	deepLeafKeyword: () => {
 		const pretrimmed = type.keywords.string.trim.preformatted

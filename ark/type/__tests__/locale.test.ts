@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	describeMissing,
-	en,
 	type ActualContext,
 	type ArkError,
 	type ArkErrors,
@@ -14,6 +13,7 @@ import {
 } from "@ark/schema"
 import { listPattern, type Domain } from "@ark/util"
 import { scope, type } from "arktype"
+import { en } from "arktype/internal/locales/en.ts"
 
 // errors described by their own nodes, which union and intersection errors list
 const leavesOf = (error: ArkError): ArkError[] =>

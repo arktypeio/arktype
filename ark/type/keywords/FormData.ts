@@ -3,6 +3,7 @@ import { cached, registry } from "@ark/util"
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
+import { keywordMeta } from "./phrases.ts"
 
 export type FormDataValue = string | File
 
@@ -21,7 +22,7 @@ const parsedFormDataValue = () => value().rawOr(value().array())
 
 const parsed = cached(() =>
 	node("intersection", {
-		meta: "an object representing parsed form data",
+		meta: keywordMeta("FormData.parsed"),
 		domain: node("domain", { domain: "object" }),
 		structure: node("structure", {
 			index: [

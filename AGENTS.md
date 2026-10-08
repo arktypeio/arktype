@@ -34,7 +34,7 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 Keywords follow `typescriptType.constraint.subconstraint`, e.g. `string.email`, `number.integer`, `string.json.parse`.
 
-To add a regex string validator, create it with `regexStringNode(/^pattern$/, "description")` (patterns must be anchored), register it in the `Scope.module()` in `ark/type/keywords/string.ts` and add it to the namespace `$` type.
+To add a regex string validator, add its English phrase to `ark/type/keywords/phrases.ts` under its flat alias (e.g. `"string.email": "an email address"`), create it with `regexStringNode(/^pattern$/, "string.alias")` (patterns must be anchored), register it in the `Scope.module()` in `ark/type/keywords/string.ts` and add it to the namespace `$` type. Other keyword nodes with authored text take their meta from `keywordMeta(alias)`, so messages can find the phrase by `meta.keyword`.
 
 To add a number keyword, use `node("intersection", …)` with a `domain` node and `min`/`max`, `divisor` or `predicate` nodes. See `ark/type/keywords/number.ts`.
 
