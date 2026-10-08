@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs"
-import { ResolverFactory } from "oxc-resolver"
+import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 
 export interface PrecompileHost {
 	resolve(specifier: string, importer: string): string | undefined
@@ -14,11 +14,7 @@ export interface NodeHostOptions {
 }
 
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
-	const resolver = new ResolverFactory({
-		tsconfig:
-			opts?.tsconfig ?
-				{ configFile: opts.tsconfig, references: "auto" }
-			:	"auto",
+	const resolveOptions: NapiResolveOptions = {
 		conditionNames: opts?.conditions ?? ["import", "node", "default"],
 		extensions: [
 			".ts",
@@ -37,10 +33,23 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			".mjs": [".mts", ".mjs"],
 			".cjs": [".cts", ".cjs"]
 		}
+	}
+	const resolver = new ResolverFactory({
+		...resolveOptions,
+		tsconfig:
+			opts?.tsconfig ?
+				{ configFile: opts.tsconfig, references: "auto" }
+			:	"auto"
 	})
+	let resolverWithoutTsconfig: ResolverFactory | undefined
 	return {
-		resolve: (specifier, importer) =>
-			resolver.resolveFileSync(importer, specifier).path,
+		resolve: (specifier, importer) => {
+			const result = resolver.resolveFileSync(importer, specifier)
+			if (!result.error || !/tsconfig/i.test(result.error)) return result.path
+			// a tsconfig the resolver cannot load, like one extending a file a tool generates, fails every resolution
+			resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
+			return resolverWithoutTsconfig.resolveFileSync(importer, specifier).path
+		},
 		readFile: path =>
 			existsSync(path) ? readFileSync(path, "utf8") : undefined
 	}

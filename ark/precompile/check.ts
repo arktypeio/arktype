@@ -63,7 +63,7 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 	}
 	const rate = report.sites ? (100 * report.accepted) / report.sites : 100
 	report.lines.push(
-		`${report.sites} sites in ${report.files} ${report.files === 1 ? "file" : "files"}: ${report.accepted} accepted (${rate.toFixed(1)}%)`
+		`${report.sites} ${report.sites === 1 ? "site" : "sites"} in ${report.files} ${report.files === 1 ? "file" : "files"}: ${report.accepted} accepted (${rate.toFixed(1)}%)`
 	)
 	return report
 }

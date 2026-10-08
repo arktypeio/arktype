@@ -17,7 +17,7 @@ export class SourceModule {
 		this.source = source
 		const result = parseSync(id, source, {
 			lang: langOf(id),
-			sourceType: "module",
+			sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module",
 			preserveParens: false
 		})
 		this.program = result.program

@@ -21,6 +21,13 @@ contextualize(() => {
 		])
 	})
 
+	it("resolves past a tsconfig it cannot load", () => {
+		attest(check([], { cwd: fromHere("unloadableTsconfig") }).lines).snap([
+			"site.ts:4:21  accepted",
+			"1 site in 2 files: 1 accepted (100.0%)"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)

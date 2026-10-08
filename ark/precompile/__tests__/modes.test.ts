@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { diagnosticsOf, precompile, statusesOf } from "./utils.ts"
+import { precompileModule } from "@ark/precompile"
+import { diagnosticsOf, memoryHost, precompile, statusesOf } from "./utils.ts"
 
 contextualize(() => {
 	describe("configuration", () => {
@@ -91,6 +92,9 @@ configure({ number: { description: describe } })`,
 		attest(diagnosticsOf("export const = 5")).snap([
 			"/main.ts:1:1  /main.ts cannot be parsed: Unexpected token"
 		])
+		attest(
+			precompileModule("return", "/main.cjs", memoryHost({})).diagnostics
+		).equals([])
 	})
 
 	describe("standalone", () => {
