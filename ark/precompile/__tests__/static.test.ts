@@ -376,7 +376,7 @@ const A = type(\`number < \${load()}\`)
 const B = type(\`number < \${max([1, 2])}\`)`)
 			).snap([
 				"7:11 rejected\n  `load()` calls a function the build does not interpret\n  `load` (/main.ts:3:14) is not a static helper: its body is not one expression or one `return`",
-				"8:11 rejected\n  `lodash` cannot be resolved from /main.ts"
+				"8:11 rejected\n  `lodash` is a package the build does not read"
 			])
 		})
 
@@ -391,7 +391,50 @@ const wrap = (schema: unknown) => {
 const A = type({ name: z.string() })`)
 			).snap([
 				'/main.ts:4:32  `schema` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `schema` is a parameter of wrap (/main.ts:3:15); its value is known only at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` cannot be resolved from /main.ts\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				'/main.ts:7:24  `z.string()` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `zod` is a package the build does not read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("values the build cannot read", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+import { Missing } from "./missing.ts"
+import { External } from "pkg"
+class UserDto {
+	static schema = type({ name: "string" })
+}
+const A = type({ a: Missing })
+const B = type({ b: Schema })
+const C = type({ c: UserDto.schema })
+const D = type({ d: this })
+const E = type({ e: External })`)
+			).snap([
+				"5:18 accepted { name: string }",
+				"7:11 rejected\n  `Missing` is an import the build cannot follow\n  /missing.ts cannot be read",
+				"8:11 rejected\n  `Schema` is a global the build does not read",
+				"9:11 rejected\n  `UserDto.schema` reads a property of a function the build does not interpret",
+				"10:11 rejected\n  `this` is not in the static subset",
+				"11:11 accepted { e: (In: unknown) => Out<unknown> }"
+			])
+		})
+
+		it("imports assigned in their module", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { x, set } from "./a.ts"
+import * as a from "./a.ts"
+set()
+const A = type(x)
+const B = type(a.x)`,
+					{
+						"/a.ts": `export let x = "string"
+export const set = () => { x = "number" }`
+					}
+				)
+			).snap([
+				"5:11 rejected\n  `x` is imported from /a.ts\n  `x` is assigned at /a.ts:2:28, so its value at the site is not known",
+				"6:11 rejected\n  `x` is assigned at /a.ts:2:28, so its value at the site is not known"
 			])
 		})
 

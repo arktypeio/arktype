@@ -96,6 +96,21 @@ export const check = (data: unknown) => {
 			])
 		})
 
+		it("cache mode holds no value the build cannot read", () => {
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+let def = "string"
+def = "number"
+export const T = type(def)`,
+					{},
+					{ mode: "cache" }
+				)
+			).snap([
+				"/main.ts:4:18  type(def) cannot be precompiled\n  `def` is assigned at /main.ts:3:1, so its value at the site is not known\n  Cache mode leaves this to arktype at runtime."
+			])
+		})
+
 		it("cache mode reports without rejecting", () => {
 			const source = `import { type } from "arktype"
 const make = type

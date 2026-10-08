@@ -74,6 +74,8 @@ export type ImportTarget =
 	| { kind: "expression"; module: SourceModule; node: Node }
 	| { kind: "json"; id: string; value: unknown }
 	| { kind: "unresolved"; message: string }
+	// a package the build does not follow, whose values are known only at runtime
+	| { kind: "package"; message: string }
 
 export class ModuleGraph {
 	host: PrecompileHost
@@ -112,7 +114,7 @@ export class ModuleGraph {
 		}
 		if (id.includes("/node_modules/")) {
 			return {
-				kind: "unresolved",
+				kind: "package",
 				message: `\`${specifier}\` is a package the build does not read`
 			}
 		}
@@ -229,7 +231,8 @@ export class ModuleGraph {
 				const target = this.resolve(specifier, module)
 				if (!(target instanceof SourceModule)) continue
 				const result = this.exportOf(target, name, seen)
-				if (result.kind !== "unresolved") return result
+				if (result.kind !== "unresolved" && result.kind !== "package")
+					return result
 			}
 		}
 		return {

@@ -8,11 +8,12 @@ import {
 import { hasArkKind } from "@ark/schema"
 import { posix } from "node:path"
 
+// a bare specifier resolves to a package in node_modules, which the build does not read
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
 	resolve: (specifier, importer) =>
 		specifier.startsWith(".") ?
 			posix.join(posix.dirname(importer), specifier)
-		:	undefined,
+		:	`/node_modules/${specifier}/index.js`,
 	readFile: path => files[path]
 })
 

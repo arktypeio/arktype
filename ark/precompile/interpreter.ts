@@ -38,6 +38,7 @@ import {
 	staticBodyOf,
 	unwrapExpression,
 	type FunctionNode,
+	type ImportTarget,
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
@@ -347,9 +348,7 @@ export class Interpreter {
 		return new DynamicValue(
 			ctx.module,
 			node,
-			`${unsupportedDescriptions[node.type] ?? `\`${ctx.module.snippetOf(node)}\``} is not in the static subset`,
-			undefined,
-			"opaque"
+			`${unsupportedDescriptions[node.type] ?? `\`${ctx.module.snippetOf(node)}\``} is not in the static subset`
 		)
 	}
 
@@ -652,9 +651,7 @@ export class Interpreter {
 						value: new DynamicValue(
 							ctx.module,
 							node,
-							`\`${node.name}\` is a global the build does not read`,
-							undefined,
-							"opaque"
+							`\`${node.name}\` is a global the build does not read`
 						)
 					}
 		}
@@ -694,16 +691,7 @@ export class Interpreter {
 				)
 			}
 		}
-		const problem =
-			binding.kind === "catch" ? "is a caught error"
-			: binding.kind === "member" || binding.kind === "namespace" ?
-				"is declared in a TypeScript namespace or enum"
-			: binding.isAmbient ? "is declared without a value"
-			: binding.writes.length ?
-				`is ${module.scopes.bindingsById.has(binding.writes[0]) ? "declared again" : "assigned"} at ${module.positionOf(binding.writes[0])}, so its value at the site is not known`
-			: module.scopes.hasDirectEval ? "is in a module that calls `eval`"
-			: isLoopVariable(binding) ? "is a loop variable"
-			: undefined
+		const problem = staticProblemOf(binding, module)
 		if (problem) {
 			return {
 				value: new DynamicValue(module, node, `\`${binding.name}\` ${problem}`)
@@ -828,6 +816,15 @@ export class Interpreter {
 					value: new DynamicValue(
 						ctx.module,
 						node,
+						`\`${binding.name}\` is an import the build cannot follow`,
+						new DynamicValue(ctx.module, node, target.message)
+					)
+				}
+			case "package":
+				return {
+					value: new DynamicValue(
+						ctx.module,
+						node,
 						target.message,
 						undefined,
 						"opaque"
@@ -843,10 +840,7 @@ export class Interpreter {
 					}
 				}
 		}
-		const result =
-			target.kind === "binding" ?
-				this.bindingValue(target.binding, target.module)
-			:	this.nodeValue(target.node, target.module)
+		const result = this.exportValue(target)
 		if (result.error !== undefined) throw result.error
 		if (isDynamic(result.value)) {
 			return {
@@ -870,6 +864,25 @@ export class Interpreter {
 				value: result.value
 			}
 		}
+	}
+
+	// an export is static only if its own module could not change it
+	private exportValue(
+		target: Extract<ImportTarget, { kind: "binding" | "expression" }>
+	): Evaluated {
+		if (target.kind === "expression")
+			return this.nodeValue(target.node, target.module)
+		const problem = staticProblemOf(target.binding, target.module)
+		return problem ?
+				{
+					value: new DynamicValue(
+						target.module,
+						target.binding.id,
+						`\`${target.binding.name}\` ${problem}`
+					),
+					trace: emptyTrace()
+				}
+			:	this.bindingValue(target.binding, target.module)
 	}
 
 	private bindingValue(binding: Binding, module: SourceModule): Evaluated {
@@ -934,9 +947,7 @@ export class Interpreter {
 			return new DynamicValue(
 				ctx.module,
 				binding.id,
-				`\`${binding.name}\` is a TypeScript import-equals declaration`,
-				undefined,
-				"opaque"
+				`\`${binding.name}\` is a TypeScript import-equals declaration`
 			)
 		}
 		if (!declarator.init) return undefined
@@ -1097,9 +1108,7 @@ export class Interpreter {
 			return new DynamicValue(
 				ctx.module,
 				node,
-				`\`${ctx.module.snippetOf(node)}\` reads a property of a function the build does not interpret`,
-				undefined,
-				"opaque"
+				`\`${ctx.module.snippetOf(node)}\` reads a property of a function the build does not interpret`
 			)
 		}
 		if (intrinsics.has(object)) {
@@ -1154,21 +1163,19 @@ export class Interpreter {
 		const target = this.graph.exportOf(namespace.module, name)
 		switch (target.kind) {
 			case "unresolved":
+			case "package":
 				return new DynamicValue(
 					ctx.module,
 					node,
 					target.message,
 					undefined,
-					"opaque"
+					target.kind === "package" ? "opaque" : undefined
 				)
 			case "arktype":
 				return target.value
 			case "binding":
 			case "expression": {
-				const result =
-					target.kind === "binding" ?
-						this.bindingValue(target.binding, target.module)
-					:	this.nodeValue(target.node, target.module)
+				const result = this.exportValue(target)
 				if (result.error !== undefined) throw result.error
 				if (
 					!isDynamic(result.value) &&
@@ -1844,6 +1851,20 @@ const runPointOf = (
 const isBoundFunction = (node: FunctionNode): boolean =>
 	node.type === "FunctionDeclaration" ||
 	(node.parent?.type === "VariableDeclarator" && node.parent.init === node)
+
+const staticProblemOf = (
+	binding: Binding,
+	module: SourceModule
+): string | undefined =>
+	binding.kind === "catch" ? "is a caught error"
+	: binding.kind === "member" || binding.kind === "namespace" ?
+		"is declared in a TypeScript namespace or enum"
+	: binding.isAmbient ? "is declared without a value"
+	: binding.writes.length ?
+		`is ${module.scopes.bindingsById.has(binding.writes[0]) ? "declared again" : "assigned"} at ${module.positionOf(binding.writes[0])}, so its value at the site is not known`
+	: module.scopes.hasDirectEval ? "is in a module that calls `eval`"
+	: isLoopVariable(binding) ? "is a loop variable"
+	: undefined
 
 const isLoopVariable = (binding: Binding) => {
 	const declaration = binding.declaration.parent
