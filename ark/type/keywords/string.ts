@@ -5,7 +5,6 @@ import {
 	node,
 	type Intersection,
 	type JsonSchema,
-	type Morph,
 	type NodeInput,
 	type Traversal
 } from "@ark/schema"
@@ -20,12 +19,29 @@ import {
 import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
-import { number } from "./number.ts"
 import {
-	keywordError,
-	keywordMeta,
-	type KeywordPhraseAlias
-} from "./phrases.ts"
+	capitalizeString,
+	isJsonString,
+	isLuhnValid,
+	isParsableDate,
+	isParsableUrl,
+	isRegexPattern,
+	lowercaseString,
+	normalizationsByForm,
+	parseDate,
+	parseEpoch,
+	parseInteger,
+	parseIsoDate,
+	parseJson,
+	parseNumeric,
+	parseUrl,
+	trimString,
+	uppercaseString
+} from "./functions.ts"
+import { number } from "./number.ts"
+import { keywordMeta, type KeywordPhraseAlias } from "./phrases.ts"
+
+export { isLuhnValid } from "./functions.ts"
 
 // non-trivial expressions should have an explanation or attribution
 
@@ -53,22 +69,13 @@ const stringIntegerRoot = cached(() =>
 	regexStringNode(wellFormedIntegerMatcher, "string.integer")
 )
 
-const integerParseError = keywordError("string.integer.parse")
-
 export const stringInteger: stringInteger.module = keywordModule(
 	{
 		root: stringIntegerRoot,
 		parse: () =>
 			node("morph", {
 				in: stringIntegerRoot(),
-				morphs: [
-					(s: string, ctx: Traversal) => {
-						const parsed = Number.parseInt(s)
-						return Number.isSafeInteger(parsed) ? parsed : (
-								ctx.error(integerParseError)
-							)
-					}
-				],
+				morphs: [parseInteger],
 				declaredOut: intrinsic.integer
 			})
 	},
@@ -128,7 +135,7 @@ export const capitalize: capitalize.module = keywordModule(
 		root: () =>
 			node("morph", {
 				in: intrinsic.string,
-				morphs: [(s: string) => s.charAt(0).toUpperCase() + s.slice(1)],
+				morphs: [capitalizeString],
 				declaredOut: preformattedCapitalize()
 			}),
 		preformatted: preformattedCapitalize
@@ -147,26 +154,6 @@ export declare namespace capitalize {
 		root: (In: string) => To<string>
 		preformatted: string
 	}
-}
-
-// https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
-export const isLuhnValid = (creditCardInput: string): boolean => {
-	const sanitized = creditCardInput.replace(/[ -]+/g, "")
-	let sum = 0
-	let digit: string
-	let tmpNum: number
-	let shouldDouble = false
-	for (let i = sanitized.length - 1; i >= 0; i--) {
-		digit = sanitized.substring(i, i + 1)
-		tmpNum = Number.parseInt(digit, 10)
-		if (shouldDouble) {
-			tmpNum *= 2
-			sum += tmpNum >= 10 ? (tmpNum % 10) + 1 : tmpNum
-		} else sum += tmpNum
-
-		shouldDouble = !shouldDouble
-	}
-	return !!(sum % 10 === 0 ? sanitized : false)
 }
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isCreditCard.js
@@ -287,8 +274,6 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
-const isParsableDate = (s: string) => !Number.isNaN(new Date(s).valueOf())
-
 const parsableDate = cached(() =>
 	node("intersection", {
 		domain: node("domain", { domain: "string" }),
@@ -301,19 +286,21 @@ const parsableDate = cached(() =>
 	}).assertHasKind("intersection")
 )
 
+export const isEpochString = (s: string, ctx: Traversal): boolean => {
+	// this is safe since it has already
+	// been validated as an integer string
+	const n = Number.parseInt(s)
+	const out = number.epoch(n)
+	if (out instanceof ArkErrors) {
+		ctx.errors.merge(out)
+		return false
+	}
+	return true
+}
+
 const epochRoot = cached(() =>
 	stringInteger.root.internal
-		.narrow((s, ctx) => {
-			// this is safe since it has already
-			// been validated as an integer string
-			const n = Number.parseInt(s)
-			const out = number.epoch(n)
-			if (out instanceof ArkErrors) {
-				ctx.errors.merge(out)
-				return false
-			}
-			return true
-		})
+		.narrow(isEpochString)
 		.configure(keywordMeta("string.date.epoch"), "self")
 		.assertHasKind("intersection")
 )
@@ -324,9 +311,7 @@ const epoch: Module<stringDate.epoch.$> = keywordModule(
 		parse: () =>
 			node("morph", {
 				in: epochRoot(),
-				// parse as a number so the string is treated as milliseconds
-				// rather than passed to the Date string parser
-				morphs: [(s: string) => new Date(Number.parseInt(s))],
+				morphs: [parseEpoch],
 				declaredOut: intrinsic.Date
 			})
 	},
@@ -347,7 +332,7 @@ const iso: Module<stringDate.iso.$> = keywordModule(
 		parse: () =>
 			node("morph", {
 				in: isoRoot(),
-				morphs: [(s: string) => new Date(s)],
+				morphs: [parseIsoDate],
 				declaredOut: intrinsic.Date
 			})
 	},
@@ -356,8 +341,6 @@ const iso: Module<stringDate.iso.$> = keywordModule(
 	}
 ) as never
 
-const dateParseError = keywordError("string.date.parse")
-
 export const stringDate: stringDate.module = keywordModule(
 	{
 		root: parsableDate,
@@ -365,13 +348,7 @@ export const stringDate: stringDate.module = keywordModule(
 			node("morph", {
 				declaredIn: parsableDate(),
 				in: intrinsic.string,
-				morphs: [
-					(s: string, ctx: Traversal) => {
-						const date = new Date(s)
-						if (Number.isNaN(date.valueOf())) return ctx.error(dateParseError)
-						return date
-					}
-				],
+				morphs: [parseDate],
 				declaredOut: intrinsic.Date
 			}),
 		iso,
@@ -467,8 +444,6 @@ export declare namespace ip {
 	}
 }
 
-const jsonError = keywordError("string.json")
-
 const jsonRoot = () =>
 	node("intersection", {
 		meta: keywordMeta("string.json"),
@@ -476,30 +451,10 @@ const jsonRoot = () =>
 		predicate: [
 			node("predicate", {
 				meta: keywordMeta("string.json"),
-				predicate: (s: string, ctx: Traversal) => {
-					try {
-						JSON.parse(s)
-						return true
-					} catch (e) {
-						if (!(e instanceof SyntaxError)) throw e
-						return ctx.reject({ ...jsonError, cause: e })
-					}
-				}
+				predicate: isJsonString
 			})
 		]
 	})
-
-const jsonParseError = keywordError("string.json.parse")
-
-const parseJson: Morph<string> = (s: string, ctx: Traversal) => {
-	if (s.length === 0) return ctx.error(jsonParseError)
-	try {
-		return JSON.parse(s)
-	} catch (e) {
-		if (!(e instanceof SyntaxError)) throw e
-		return ctx.error({ ...jsonParseError, cause: e })
-	}
-}
 
 export const json: stringJson.module = keywordModule(
 	{
@@ -537,7 +492,7 @@ const lower: lower.module = keywordModule(
 		root: () =>
 			node("morph", {
 				in: intrinsic.string,
-				morphs: [(s: string) => s.toLowerCase()],
+				morphs: [lowercaseString],
 				declaredOut: preformattedLower()
 			}),
 		preformatted: preformattedLower
@@ -572,7 +527,7 @@ const preformattedNodes = flatMorph(
 					domain: node("domain", { domain: "string" }),
 					predicate: [
 						node("predicate", {
-							predicate: (s: string) => s.normalize(form) === s
+							predicate: normalizationsByForm[form].predicate
 						})
 					],
 					meta: keywordMeta(`string.normalize.${form}.preformatted`)
@@ -589,7 +544,7 @@ const normalizeNodes = flatMorph(
 			() =>
 				node("morph", {
 					in: intrinsic.string,
-					morphs: [(s: string) => s.normalize(form)],
+					morphs: [normalizationsByForm[form].morphs],
 					declaredOut: preformattedNodes[form]()
 				})
 		] as const
@@ -708,7 +663,7 @@ export const stringNumeric: stringNumeric.module = keywordModule(
 		parse: () =>
 			node("morph", {
 				in: numericRoot(),
-				morphs: [(s: string) => Number.parseFloat(s)],
+				morphs: [parseNumeric],
 				declaredOut: intrinsic.number
 			})
 	},
@@ -728,22 +683,13 @@ export declare namespace stringNumeric {
 	}
 }
 
-const regexError = keywordError("string.regex")
-
 const regex = () =>
 	node("intersection", {
 		domain: node("domain", { domain: "string" }),
 		predicate: [
 			node("predicate", {
 				meta: keywordMeta("string.regex"),
-				predicate: (s: string, ctx: Traversal) => {
-					try {
-						new RegExp(s)
-						return true
-					} catch (e) {
-						return ctx.reject({ ...regexError, cause: e })
-					}
-				}
+				predicate: isRegexPattern
 			})
 		],
 		meta: { format: "regex" }
@@ -767,7 +713,7 @@ const trim: trim.module = keywordModule(
 		root: () =>
 			node("morph", {
 				in: intrinsic.string,
-				morphs: [(s: string) => s.trim()],
+				morphs: [trimString],
 				declaredOut: preformattedTrim()
 			}),
 		preformatted: preformattedTrim
@@ -797,7 +743,7 @@ const upper: upper.module = keywordModule(
 		root: () =>
 			node("morph", {
 				in: intrinsic.string,
-				morphs: [(s: string) => s.toUpperCase()],
+				morphs: [uppercaseString],
 				declaredOut: preformattedUpper()
 			}),
 		preformatted: preformattedUpper
@@ -818,8 +764,6 @@ declare namespace upper {
 	}
 }
 
-const isParsableUrl = (s: string) => URL.canParse(s)
-
 const urlRoot = cached(() =>
 	node("intersection", {
 		domain: node("domain", { domain: "string" }),
@@ -835,8 +779,6 @@ const urlRoot = cached(() =>
 	})
 )
 
-const urlParseError = keywordError("string.url.parse")
-
 export const url: url.module = keywordModule(
 	{
 		root: urlRoot,
@@ -844,15 +786,7 @@ export const url: url.module = keywordModule(
 			node("morph", {
 				declaredIn: urlRoot(),
 				in: intrinsic.string,
-				morphs: [
-					(s: string, ctx: Traversal) => {
-						try {
-							return new URL(s)
-						} catch {
-							return ctx.error(urlParseError)
-						}
-					}
-				],
+				morphs: [parseUrl],
 				declaredOut: node("proto", { proto: URL })
 			})
 	},

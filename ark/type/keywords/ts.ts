@@ -20,6 +20,7 @@ import {
 import type { required, To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
+import { stringifyJson } from "./functions.ts"
 
 export const tsKeywordDefinitions: Record<
 	keyof arkTsKeywords.$,
@@ -89,7 +90,7 @@ export const json: Module<json.$> = keywordModule(
 		stringify: () =>
 			node("morph", {
 				in: intrinsic.jsonObject,
-				morphs: [(data: Json) => JSON.stringify(data)],
+				morphs: [stringifyJson],
 				declaredOut: intrinsic.string
 			})
 	},

@@ -1,6 +1,15 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark, precompileByContent, Traversal, type NodeId } from "@ark/schema"
-import { scope, type } from "arktype"
+import {
+	$ark,
+	isNode,
+	precompileByContent,
+	Traversal,
+	type NodeId
+} from "@ark/schema"
+import { liftArray } from "@ark/util"
+import { keywords, scope, type } from "arktype"
+import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
+import { isEpochString } from "arktype/internal/keywords/string.ts"
 
 contextualize(() => {
 	const isEven = (n: number) => n % 2 === 0
@@ -70,5 +79,32 @@ contextualize(() => {
 		attest(T({ [key]: "b", n: "x" }).toString()).snap(
 			"n must be a number (was a string)"
 		)
+	})
+
+	it("exports every keyword's predicates and morphs", () => {
+		const exported = new Set<unknown>([
+			isEpochString,
+			liftArray,
+			...Object.values(keywordFunctions),
+			...Object.values(keywordFunctions.normalizationsByForm).flatMap(
+				normalization => [normalization.predicate, normalization.morphs]
+			)
+		])
+		const unexported: string[] = []
+		const collect = (path: string, value: any): void => {
+			if (typeof value === "function" && value.internal?.references) {
+				for (const node of value.internal.references) {
+					const fns =
+						node.hasKind("morph") ? node.morphs
+						: node.hasKind("predicate") ? [node.predicate]
+						: []
+					for (const fn of fns)
+						if (!isNode(fn) && !exported.has(fn)) unexported.push(path)
+				}
+			} else if (typeof value === "object" && value !== null)
+				for (const k in value) collect(`${path}.${k}`, value[k])
+		}
+		collect("keywords", keywords)
+		attest(unexported).equals([])
 	})
 })

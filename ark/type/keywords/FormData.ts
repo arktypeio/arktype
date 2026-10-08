@@ -4,6 +4,7 @@ import type { To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 import { keywordMeta } from "./phrases.ts"
+import { parseFormData } from "./functions.ts"
 
 export type FormDataValue = string | File
 
@@ -43,29 +44,7 @@ export const arkFormData: arkFormData.module = keywordModule(
 		parse: () =>
 			node("morph", {
 				in: node("proto", { proto: FormData }),
-				morphs: [
-					(data: FormData): ParsedFormData => {
-						const result: ParsedFormData = {}
-
-						// no cast is actually required here, but with
-						// typescript.tsserver.experimental.enableProjectDiagnostics: true
-						// this file periodically displays as having an error, likely due to the
-						// lack of a `File` type.
-						type FormDataEntries = [string, FormDataValue][]
-						for (const [k, v] of data as {} as FormDataEntries) {
-							if (Object.prototype.hasOwnProperty.call(result, k)) {
-								const existing = result[k]
-								if (
-									typeof existing === "string" ||
-									existing instanceof registry.FileConstructor
-								)
-									result[k] = [existing, v]
-								else existing.push(v)
-							} else result[k] = v
-						}
-						return result
-					}
-				],
+				morphs: [parseFormData],
 				declaredOut: parsed()
 			})
 	},

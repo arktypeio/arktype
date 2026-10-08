@@ -165,6 +165,15 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
+### Name keyword morphs and predicates
+
+Keywords' morphs and predicates are named functions exported from `arktype/internal`, so `.json` names each by what it does, where every keyword morph was named `morphs`, with a `$N` counter after the first one used:
+
+```ts
+// previously ["$ark.morphs"], now ["$ark.trimString"]
+type("string.trim").json.morphs
+```
+
 ### Fix global config when the first Type is created
 
 Global config is read when the first Type is created rather than when arktype is imported, so importing `arktype` before your config file no longer matters, and `configure` can be imported from `"arktype"` as well as `"arktype/config"`. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
