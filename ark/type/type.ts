@@ -275,7 +275,7 @@ export class InternalTypeParser extends Callable<
 		const typeAttachments = $arkTypeRegistry.typeAttachments
 		for (const k in typeAttachments) {
 			defineLazily(this, k, () => {
-				const bound = $.bindReference(
+				const bound = $.bindKeyword(
 					typeAttachments[k as never] as BaseRoot | GenericRoot
 				)
 				// a resolved scope has already compiled the nodes bound before it

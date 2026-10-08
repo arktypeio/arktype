@@ -51,7 +51,6 @@ import {
 } from "./module.ts"
 import { referencesThroughAliases, type BaseNode } from "./node.ts"
 import {
-	createNode,
 	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
@@ -78,7 +77,7 @@ import {
 	type InvokeOptions
 } from "./shared/compile.ts"
 import { isArkErrorResult } from "./shared/errors.ts"
-import type { NodeKind } from "./shared/implement.ts"
+import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
@@ -875,7 +874,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			// don't include cyclic aliases from JSON scope
 			if (k.startsWith("json")) continue
 			defineLazily(bound, k, () =>
-				this.bindReference(intrinsic[k as keyof typeof intrinsic])
+				this.bindKeyword(intrinsic[k as keyof typeof intrinsic])
 			)
 		}
 		return this.cacheGetter("intrinsic", bound)
@@ -959,24 +958,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (isNode(reference)) {
 			if (reference.hasKind("alias")) return reference
-			// a leaf compiles its description, so one this scope
-			// describes differently needs its own id
-			if (
-				!reference.children.length &&
-				this.resolvedConfig[reference.kind].description !==
-					reference.$.resolvedConfig[reference.kind].description
-			) {
-				return createNode({
-					id: registerNodeId(reference.kind),
-					kind: reference.kind,
-					inner: reference.inner,
-					meta: reference.meta,
-					$: this
-				}) as never
-			}
-			return composing(() =>
-				resolveDescription(new (reference.constructor as any)(reference, this))
-			)
+			return composing(() => {
+				const bound = new (reference.constructor as any)(reference, this)
+				// a bound node keeps the descriptions of the scope that created it
+				if (
+					reference.includesKeptDescription ||
+					!this.describesLike(reference.$)
+				) {
+					bound.includesKeptDescription = true
+					bound._description = reference.description
+				}
+				return resolveDescription(bound)
+			})
 		}
 
 		let bound = this.boundGenerics.get(reference)
@@ -992,6 +985,31 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this.boundGenerics.set(reference, bound)
 		}
 		return bound as never
+	}
+
+	// a keyword resolved by name is described by this scope all the way down,
+	// except through a cycle, which would be printed unrolled
+	bindKeyword<reference extends BaseNode | GenericRoot>(
+		reference: reference
+	): reference {
+		if (
+			!isNode(reference) ||
+			reference.isCyclic ||
+			this.describesLike(reference.$)
+		)
+			return this.bindReference(reference)
+		return reference.transform((kind, inner) => inner, {
+			bindScope: this,
+			prereduced: true
+		}) as never
+	}
+
+	private describesLike($: BaseScope): boolean {
+		return nodeKinds.every(
+			kind =>
+				this.resolvedConfig[kind].description ===
+				$.resolvedConfig[kind].description
+		)
 	}
 
 	resolveRoot(name: string): BaseRoot {
@@ -1011,11 +1029,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 	protected maybeResolveSubalias(
 		name: string
 	): BaseRoot | GenericRoot | undefined {
-		return (
+		const resolution =
 			(this.lazyExports && maybeResolveExport(this.lazyExports, name)) ??
-			maybeResolveSubalias(this.aliases, name) ??
-			maybeResolveSubalias(this.ambient, name)
-		)
+			maybeResolveSubalias(this.aliases, name)
+		if (resolution) return resolution
+		const keyword = maybeResolveSubalias(this.ambient, name)
+		return keyword && (this.resolutions[name] = this.bindKeyword(keyword))
 	}
 
 	get ambient(): InternalModule {
@@ -1160,12 +1179,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
-			return (this.resolutions[name] = this.bindReference(def.root))
+			return (this.resolutions[name] =
+				isScopeAlias ?
+					this.bindReference(def.root)
+				:	this.bindKeyword(def.root))
 		}
 
-		return (this.resolutions[name] = this.parse(def, {
-			alias: name
-		}))
+		return (this.resolutions[name] =
+			isScopeAlias ?
+				this.parse(def, { alias: name })
+			:	this.finalize(this.bindKeyword(def as BaseRoot)))
 	}
 
 	protected createParseContext<input extends BaseParseContextInput>(

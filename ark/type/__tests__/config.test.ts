@@ -236,6 +236,59 @@ contextualize(() => {
 	})
 
 	it("referenced types keep their descriptions", () => {
+		const custom = { domain: { description: () => "a custom number" } }
+		const plain = scope({ x: "number" }).export()
+		for (const jitless of [false, true]) {
+			const lib = scope(
+				{ x: "number", y: { v: "number" } },
+				{ jitless, ...custom }
+			).export()
+			const types = scope(
+				{
+					plain,
+					...plain,
+					ref: type("number"),
+					o: type({ a: "number" }),
+					b: "number",
+					int: "number.integer",
+					gt: "number > 5",
+					described: type("number").describe("my number"),
+					imported: "plain.x"
+				},
+				{ jitless, ...custom }
+			).export()
+			attest({
+				ref: types.ref("s").toString(),
+				o: types.o({ a: "s" }).toString(),
+				b: types.b("s").toString(),
+				int: types.int("s").toString(),
+				gt: types.gt("s").toString(),
+				described: types.described("s").toString(),
+				imported: types.imported("s").toString(),
+				spread: types.x("s").toString(),
+				x: type({ a: lib.x })({ a: "s" }).toString(),
+				y: type({ a: lib.y })({ a: { v: "s" } }).toString(),
+				rebound: scope({ x: type(lib.x) })
+					.export()
+					.x("s")
+					.toString()
+			}).equals({
+				ref: "must be a number (was a string)",
+				o: "a must be a number (was a string)",
+				b: "must be a custom number (was a string)",
+				int: "must be a custom number (was a string)",
+				gt: "must be a custom number (was a string)",
+				described: "must be my number (was a string)",
+				imported: "must be a number (was a string)",
+				spread: "must be a number (was a string)",
+				x: "a must be a custom number (was a string)",
+				y: "a.v must be a custom number (was a string)",
+				rebound: "must be a custom number (was a string)"
+			})
+		}
+	})
+
+	it("referenced cyclic and discriminated types keep their descriptions", () => {
 		const Cyclic = type({ a: "number", "next?": "this" })
 		const Discriminated = type({ kind: "'a'", n: "number" }).or({ kind: "'b'" })
 		const Configured = type("number").configure({
@@ -245,6 +298,7 @@ contextualize(() => {
 			const types = scope(
 				{
 					b: "number",
+					cyclic: Cyclic,
 					o: { cyclic: Cyclic, discriminated: Discriminated, b: "b" },
 					configured: { a: Configured, b: "b" }
 				},
@@ -269,7 +323,33 @@ contextualize(() => {
 			attest(types.configured({ a: "x", b: "x" }).toString()).equals(
 				"a must be a configured number (was a string)\nb must be a custom number (was a string)"
 			)
+			attest(types.cyclic.description).equals(
+				scope({ Cyclic }).export().Cyclic.description
+			)
 		}
+	})
+
+	it("a type equal to a referenced type keeps its own descriptions", () => {
+		const lib = scope(
+			{ y: { v: "number" } },
+			{ domain: { description: () => "a custom number" } }
+		).export()
+		const OwnFirst = type({ first: { v: "number" } })
+		const KeptAfter = type({ first: lib.y })
+		const KeptFirst = type({ after: lib.y })
+		const OwnAfter = type({ after: { v: "number" } })
+		attest(OwnFirst({ first: { v: "s" } }).toString()).equals(
+			"first.v must be a number (was a string)"
+		)
+		attest(KeptAfter({ first: { v: "s" } }).toString()).equals(
+			"first.v must be a custom number (was a string)"
+		)
+		attest(KeptFirst({ after: { v: "s" } }).toString()).equals(
+			"after.v must be a custom number (was a string)"
+		)
+		attest(OwnAfter({ after: { v: "s" } }).toString()).equals(
+			"after.v must be a number (was a string)"
+		)
 	})
 
 	it("description writer runs on definition", () => {

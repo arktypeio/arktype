@@ -119,6 +119,8 @@ export abstract class BaseNode<
 	includesShallowAlias: boolean
 	allowsRequiresContext: boolean
 	includesContextualMorph: boolean
+	// described by another scope's writers, which a copy bound elsewhere keeps
+	includesKeptDescription: boolean
 	readonly cache: { rootApply?: RootApply } = {}
 
 	protected _referencesById: Record<string, BaseNode> | undefined
@@ -187,6 +189,7 @@ export abstract class BaseNode<
 		this.isCyclic = this.kind === "alias"
 		this.includesAlias = this.isCyclic
 		this.includesShallowAlias = this.isCyclic
+		this.includesKeptDescription = false
 		// an alias belongs in a structural value, so one there doesn't make its parent shallow
 		const isStructural = this.isStructural()
 
@@ -198,6 +201,7 @@ export abstract class BaseNode<
 			this.includesContextualMorph ||= this.children[i].includesContextualMorph
 			this.isCyclic ||= this.children[i].isCyclic
 			this.includesAlias ||= this.children[i].includesAlias
+			this.includesKeptDescription ||= this.children[i].includesKeptDescription
 			if (!isStructural)
 				this.includesShallowAlias ||= this.children[i].includesShallowAlias
 		}
@@ -543,7 +547,7 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	private _description: string | undefined
+	_description: string | undefined
 	get description(): string {
 		return (this._description ??=
 			this.meta?.description ??

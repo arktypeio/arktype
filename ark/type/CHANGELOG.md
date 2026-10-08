@@ -261,19 +261,24 @@ T({ a: "x", b: "1" }).toString()
 
 A valid nested object's defaults are applied even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs can run once more. Valid calls are unchanged.
 
-### Keep a referenced type's descriptions when it is compiled
+### Keep a Type's descriptions wherever it's referenced
 
-A compiled type referenced from a scope with its own `description` writer described the nodes it shared with that scope's keywords using the scope's writer, where `jitless` or in a CSP environment it kept the descriptions it was defined with. Both modes now keep them:
+A Type keeps the `description` writers of the scope that defined it wherever it's referenced or imported, and a name a scope resolves, such as a keyword, uses that scope's writers all the way down, whether compiled or `jitless`:
 
 ```ts
-const A = type({ a: "number" })
+const custom = { domain: { description: () => "a custom number" } }
+const lib = scope({ x: "number" }, custom).export()
 const types = scope(
-	{ b: "number", o: { a: A, b: "b" } },
-	{ domain: { description: () => "a custom number" } }
+	{ ref: type("number"), int: "number.integer" },
+	custom
 ).export()
 
-// previously "a.a must be a custom number (was a string)", now "a.a must be a number (was a string)"
-types.o({ a: { a: "x" }, b: 1 }).toString()
+// previously "must be a custom number (was a string)", now "must be a number (was a string)"
+types.ref("x").toString()
+// previously "must be a number (was a string)", now "must be a custom number (was a string)"
+types.int("x").toString()
+// previously "a must be a number (was a string)", now "a must be a custom number (was a string)"
+type({ a: lib.x })({ a: "x" }).toString()
 ```
 
 ### Name keyword morphs and predicates
