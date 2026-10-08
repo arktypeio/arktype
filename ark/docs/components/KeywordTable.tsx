@@ -1,3 +1,4 @@
+import { hasArkKind } from "@ark/schema"
 import {
 	append,
 	ecmascriptConstructors,
@@ -52,7 +53,7 @@ for (const [alias, v] of entriesOf(ark.internal.resolutions)
 	)
 	.sort((l, r) => (l[0] < r[0] ? -1 : 1))) {
 	// should not occur, only for temporary resolutions of cyclic definition
-	if (typeof v === "string") continue
+	if (hasArkKind(v, "context")) continue
 
 	const name =
 		alias.startsWith("string") ? "string"
