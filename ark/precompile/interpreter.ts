@@ -89,7 +89,6 @@ export interface SiteState {
 	trace: Trace
 	sourcesByValue: Map<unknown, Node>
 	holes: unknown[]
-	// the functions the site interpreted
 	interpreted: Set<Node>
 	// each call into arktype's API
 	requests: [Node, SourceModule][]
@@ -152,18 +151,14 @@ export class Interpreter {
 	opts: InterpreterOptions
 	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
-	// where each symbol was first evaluated
-	symbolSources = new Map<symbol, [Node, SourceModule]>()
+	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
 	private escapesByBinding = new Map<Binding, DynamicValue | null>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
-	// validating functions read from arktype values, like `T.assert`
 	private validators = new WeakSet<object>()
-	// plain objects whose methods are arktype's, like its namespaces or what `declare<t>()` returns
 	private arkObjects = new WeakSet<object>()
-	// the call into arktype or a built-in that a stand-in may be called from
-	private active: { ctx: Context; isArktype: boolean } | undefined
+	private activeCall: { ctx: Context; isArktype: boolean } | undefined
 
 	constructor(graph: ModuleGraph, opts: InterpreterOptions = {}) {
 		this.graph = graph
@@ -204,8 +199,8 @@ export class Interpreter {
 			return site.value
 		}
 		const value = this.evaluateNode(node, ctx)
-		if (typeof value === "symbol" && !this.symbolSources.has(value))
-			this.symbolSources.set(value, [node, ctx.module])
+		if (typeof value === "symbol" && !this.sourcesBySymbol.has(value))
+			this.sourcesBySymbol.set(value, [node, ctx.module])
 		if (
 			ctx.site &&
 			ctx.module === ctx.site.module &&
@@ -1317,15 +1312,15 @@ export class Interpreter {
 		if (problem) return this.reject(node, ctx, problem)
 
 		let result: unknown
-		const previous = this.active
-		this.active = { ctx, isArktype: false }
+		const previous = this.activeCall
+		this.activeCall = { ctx, isArktype: false }
 		try {
 			result = Reflect.apply(fn, receiver, args)
 		} catch (e) {
 			if (e instanceof DynamicValue) return e
 			throw this.thrown(e, node, ctx)
 		} finally {
-			this.active = previous
+			this.activeCall = previous
 		}
 		const isApproximate =
 			builtin?.isApproximate ?
@@ -1363,8 +1358,8 @@ export class Interpreter {
 			converted.push(value)
 		}
 		if (ctx.site) collectHoles(converted, ctx.site.holes, this.standIns)
-		const previous = this.active
-		this.active = { ctx, isArktype: true }
+		const previous = this.activeCall
+		this.activeCall = { ctx, isArktype: true }
 		try {
 			const result = Reflect.apply(fn, receiver, converted)
 			if (isPlainContainer(result)) this.arkObjects.add(result)
@@ -1372,7 +1367,7 @@ export class Interpreter {
 		} catch (e) {
 			throw this.thrown(e, node, ctx)
 		} finally {
-			this.active = previous
+			this.activeCall = previous
 		}
 	}
 
@@ -1521,7 +1516,7 @@ export class Interpreter {
 	}
 
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
-		const active = this.active
+		const active = this.activeCall
 		if (active?.isArktype) standIn.isCalled = true
 		const closure = standIn.closure!
 		if (!staticBodyOf(closure.node)) {

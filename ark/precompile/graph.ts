@@ -38,7 +38,6 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 		null
 	)
 
-// arktype's exports that a standalone build's runtime provides
 export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	{
 		ArkError: 1,
@@ -50,7 +49,6 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// members of a Type that validate, which run at runtime in every mode
 export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
 		assert: 1,
@@ -62,7 +60,6 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// members derived from registry names or node ids, which differ between the build and runtime
 export const unstableArkMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
 		id: 1,
@@ -470,7 +467,6 @@ const readsArguments = (fn: FunctionNode): boolean => {
 	return result
 }
 
-// the binding a function or class is declared as, or a `const` holding it
 export const bindingOfFunction = (
 	node: Node,
 	module: SourceModule

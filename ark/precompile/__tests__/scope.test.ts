@@ -6,29 +6,29 @@ import { globSync, readFileSync } from "node:fs"
 import { parseSync, visitorKeys, type Node } from "oxc-parser"
 
 // TS nodes that hold values rather than types
-const valueTsKinds = new Set([
-	"TSAsExpression",
-	"TSSatisfiesExpression",
-	"TSTypeAssertion",
-	"TSNonNullExpression",
-	"TSInstantiationExpression",
-	"TSEnumDeclaration",
-	"TSEnumBody",
-	"TSEnumMember",
-	"TSModuleDeclaration",
-	"TSModuleBlock",
-	"TSImportEqualsDeclaration",
-	"TSExternalModuleReference",
-	"TSExportAssignment",
-	"TSParameterProperty",
-	"TSQualifiedName"
-])
+const valueTsKinds = {
+	TSAsExpression: 1,
+	TSSatisfiesExpression: 1,
+	TSTypeAssertion: 1,
+	TSNonNullExpression: 1,
+	TSInstantiationExpression: 1,
+	TSEnumDeclaration: 1,
+	TSEnumBody: 1,
+	TSEnumMember: 1,
+	TSModuleDeclaration: 1,
+	TSModuleBlock: 1,
+	TSImportEqualsDeclaration: 1,
+	TSExternalModuleReference: 1,
+	TSExportAssignment: 1,
+	TSParameterProperty: 1,
+	TSQualifiedName: 1
+}
 
 const parse = (file: string, source: string) =>
 	parseSync(file, source, { range: true, preserveParens: false }).program
 
 const typeRangesOf = (node: Node, ranges: [number, number][] = []) => {
-	if (node.type.startsWith("TS") && !valueTsKinds.has(node.type))
+	if (node.type.startsWith("TS") && !(node.type in valueTsKinds))
 		ranges.push([node.start, node.end])
 	for (const k of visitorKeys[node.type] ?? []) {
 		const child = (node as never)[k] as Node | Node[] | null

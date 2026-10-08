@@ -25,7 +25,7 @@ const interpret = (expression: string): { value: unknown } | undefined => {
 }
 
 // values from either realm, with key order and each number's text
-const describe = (value: unknown): string => {
+const print = (value: unknown): string => {
 	if (typeof value === "number")
 		return Object.is(value, -0) ? "-0" : String(value)
 	if (typeof value === "string") return JSON.stringify(value)
@@ -37,10 +37,10 @@ const describe = (value: unknown): string => {
 	if (tag === "[object RegExp]") return String(value)
 	if (tag === "[object Date]") return `Date(${(value as Date).getTime()})`
 	if (Array.isArray(value))
-		return `[${Array.from(value, (_, i) => (i in value ? describe(value[i]) : "<empty>")).join(", ")}]`
+		return `[${Array.from(value, (_, i) => (i in value ? print(value[i]) : "<empty>")).join(", ")}]`
 
 	return `{${Reflect.ownKeys(value)
-		.map(k => `${String(k)}: ${describe(Reflect.get(value, k))}`)
+		.map(k => `${String(k)}: ${print(Reflect.get(value, k))}`)
 		.join(", ")}}`
 }
 
@@ -172,14 +172,14 @@ contextualize(() => {
 				const result = interpret(source)
 				let expected: string
 				try {
-					expected = describe(runInNewContext(`(${source})`))
+					expected = print(runInNewContext(`(${source})`))
 				} catch {
 					attest(result).equals(undefined)
 					return
 				}
 				if (!result) return
 				accepted++
-				attest(describe(result.value)).equals(expected)
+				attest(print(result.value)).equals(expected)
 			}),
 			{ numRuns: 500 }
 		)

@@ -69,7 +69,6 @@ export interface Hole {
 	kind: "function" | "class" | "symbol" | "opaque"
 	// the parameter count compiled for, undefined when no declaration gives one
 	arity: number | undefined
-	// a symbol's description
 	description: string | undefined
 	isCalledAtDefinition: boolean
 	// an opaque value arktype parsed as a Standard Schema
@@ -333,7 +332,7 @@ export class Precompiler {
 		const [node, origin] =
 			source ? [source, module]
 			: standIn ? [standIn.node, standIn.module]
-			: this.interpreter.symbolSources.get(value as symbol)!
+			: this.interpreter.sourcesBySymbol.get(value as symbol)!
 		if (standIn?.kind === "opaque" && !standIn.isDefinition) {
 			return new DynamicValue(
 				origin,

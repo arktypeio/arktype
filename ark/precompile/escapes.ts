@@ -28,7 +28,6 @@ interface EscapeState {
 	isData: boolean
 }
 
-// an object is proven if its module never writes to it and it reaches only property reads, static helpers, arktype calls and definitions
 export const findEscape = (
 	binding: Binding,
 	module: SourceModule,

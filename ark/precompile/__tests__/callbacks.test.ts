@@ -12,25 +12,19 @@ contextualize(() => {
 			statusesOf(`import { type, scope } from "arktype"
 const A = type(() => type("string"))
 const B = type({ a: () => type("number"), b: [() => type("boolean")] })
-const $ = scope({ a: () => type("string"), b: "a[]" }).export()
-const C = type(() => ${nonStatic})`)
+const $ = scope({ a: () => type("string"), b: "a[]" }).export()`)
 		).snap([
 			"2:11 accepted string",
 			"3:11 accepted { a: number, b: [boolean] }",
-			"4:11 accepted",
-			"5:11 rejected\n  arktype calls a function (/main.ts:5:16) while defining the type, so it must be a static helper\n  the function (/main.ts:5:16) is not a static helper: its body is not one expression or one `return`"
+			"4:11 accepted"
 		])
 	})
 
 	it("map", () => {
 		attest(
 			statusesOf(`import { type } from "arktype"
-const A = type({ a: "string" }).map(prop => [prop, { key: "b", value: prop.value }])
-const B = type({ a: "string" }).map(prop => ${nonStatic})`)
-		).snap([
-			"2:11 accepted { a: string, b: string }",
-			"3:11 rejected\n  arktype calls a function (/main.ts:3:37) while defining the type, so it must be a static helper\n  the function (/main.ts:3:37) is not a static helper: its body is not one expression or one `return`"
-		])
+const A = type({ a: "string" }).map(prop => [prop, { key: "b", value: prop.value }])`)
+		).snap(["2:11 accepted { a: string, b: string }"])
 	})
 
 	it("configure, meta writers and selectors", () => {
@@ -38,24 +32,41 @@ const B = type({ a: "string" }).map(prop => ${nonStatic})`)
 			statusesOf(`import { type } from "arktype"
 const A = type("string").configure(meta => ({ description: \`\${meta.description}!\` }))
 const B = type(["string", "@", meta => ({ ...meta, title: "s" })])
-const C = type({ a: "string" }).configure({ description: "a" }, { where: n => n.kind === "domain" })
-const D = type("string").configure(meta => ${nonStatic})`)
+const C = type({ a: "string" }).configure({ description: "a" }, { where: n => n.kind === "domain" })`)
 		).snap([
 			"2:11 accepted string",
 			"3:11 accepted string",
-			"4:11 accepted { a: string }",
-			"5:11 rejected\n  arktype calls a function (/main.ts:5:36) while defining the type, so it must be a static helper\n  the function (/main.ts:5:36) is not a static helper: its body is not one expression or one `return`"
+			"4:11 accepted { a: string }"
 		])
 	})
 
 	it("distribute", () => {
 		attest(
 			statusesOf(`import { type } from "arktype"
-const A = type("'a' | 'b'").distribute(branch => branch.expression, branches => branches.join())
-const B = type("'a' | 'b'").distribute(branch => ${nonStatic})`)
+const A = type("'a' | 'b'").distribute(branch => branch.expression, branches => branches.join())`)
+		).snap(["2:11 accepted"])
+	})
+
+	it("callbacks arktype calls are static helpers", () => {
+		const source = `import { type, scope } from "arktype"
+const A = type(() => ${nonStatic})
+const B = type({ a: "string" }).map(prop => ${nonStatic})
+const C = type("string").configure(meta => ${nonStatic})
+const D = type("'a' | 'b'").distribute(branch => ${nonStatic})
+const E = scope({ a: "number" }, { domain: { description: () => ${nonStatic} } }).export()
+const F = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${nonStatic} })`
+		attest(statusesOf(source)[0]).snap(`2:11 rejected
+  arktype calls a function (/main.ts:2:16) while defining the type, so it must be a static helper
+  the function (/main.ts:2:16) is not a static helper: its body is not one expression or one \`return\``)
+		attest(
+			precompile(source).sites.map(site => `${site.line} ${site.status}`)
 		).snap([
-			"2:11 accepted",
-			"3:11 rejected\n  arktype calls a function (/main.ts:3:40) while defining the type, so it must be a static helper\n  the function (/main.ts:3:40) is not a static helper: its body is not one expression or one `return`"
+			"2 rejected",
+			"6 rejected",
+			"10 rejected",
+			"14 rejected",
+			"18 rejected",
+			"22 rejected"
 		])
 	})
 
@@ -87,12 +98,8 @@ const B = Stateful("string")`)
 	it("description writers", () => {
 		attest(
 			statusesOf(`import { scope } from "arktype"
-const A = scope({ a: "number" }, { domain: { description: () => "a custom number" } }).export()
-const B = scope({ a: "number" }, { domain: { description: () => ${nonStatic} } }).export()`)
-		).snap([
-			"2:11 accepted",
-			"3:11 rejected\n  arktype calls `description` (/main.ts:3:59) while defining the type, so it must be a static helper\n  `description` (/main.ts:3:59) is not a static helper: its body is not one expression or one `return`"
-		])
+const A = scope({ a: "number" }, { domain: { description: () => "a custom number" } }).export()`)
+		).snap(["2:11 accepted"])
 	})
 
 	it("narrows on literal values", () => {
@@ -111,12 +118,8 @@ const C = type("string").narrow(s => ${nonStatic})`)
 	it("json schema fallbacks", () => {
 		attest(
 			statusesOf(`import { type } from "arktype"
-const A = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ctx.base })
-const B = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${nonStatic} })`)
-		).snap([
-			"2:11 accepted",
-			"3:11 rejected\n  arktype calls `fallback` (/main.ts:3:71) while defining the type, so it must be a static helper\n  `fallback` (/main.ts:3:71) is not a static helper: its body is not one expression or one `return`"
-		])
+const A = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ctx.base })`)
+		).snap(["2:11 accepted"])
 	})
 
 	it("validation-time callbacks are holes", () => {
