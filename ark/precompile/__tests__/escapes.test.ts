@@ -111,6 +111,25 @@ export const T = type(o.a)`)[0]
 		])
 	})
 
+	it("modules", () => {
+		attest(
+			inputsOf(`import { type, scope } from "arktype"
+const $ = scope({ a: "string" }).export()
+;($ as any).a = type("number")
+export const T = type({ x: $.a })`)
+		).snap([
+			["2:11 accepted"],
+			["3:17 accepted"],
+			["4:18 accepted", "local $.a"]
+		])
+		attest(
+			inputsOf(`import { type, scope } from "arktype"
+const $ = scope({ a: "string" }).export()
+Object.assign($ as any, { b: type("number") })
+export const T = type({ ...$ } as any)`)
+		).snap([["2:11 accepted"], ["3:30 accepted"], ["4:18 accepted", "local $"]])
+	})
+
 	it("dates and regexes", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"

@@ -778,7 +778,7 @@ export class Interpreter {
 				binding,
 				module,
 				this.graph,
-				isData(this.bindingValue(binding, module).value)
+				this.bindingValue(binding, module).value
 			)
 			result =
 				escape ?
@@ -1711,15 +1711,10 @@ export const isValidator = (value: unknown): boolean =>
 
 // objects whose contents the program can change after the build reads them
 const isTracked = (value: unknown): value is object =>
-	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
-
-const isData = (value: unknown, seen = new Set<unknown>()): boolean => {
-	if (!hasDomain(value, "object")) return true
-	if (!isPlainContainer(value)) return false
-	if (seen.has(value)) return true
-	seen.add(value)
-	return Reflect.ownKeys(value).every(k => isData(Reflect.get(value, k), seen))
-}
+	isPlainContainer(value) ||
+	value instanceof Date ||
+	value instanceof RegExp ||
+	hasArkKind(value, "module")
 
 export const findDynamic = (
 	value: unknown,

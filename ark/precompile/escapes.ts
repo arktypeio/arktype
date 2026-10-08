@@ -1,6 +1,9 @@
+import { hasArkKind } from "@ark/schema"
+import { hasDomain } from "@ark/util"
 import type { CallExpression, MemberExpression, Node } from "oxc-parser"
 import {
 	globalsByName,
+	isPlainContainer,
 	methodsByReceiverKind,
 	pureBuiltins,
 	type PureBuiltin
@@ -28,15 +31,31 @@ interface EscapeState {
 	seen: Set<Node | Binding>
 	// the object holds only primitives, arrays and plain objects, so converting or iterating it runs no code of its own
 	isData: boolean
+	// the object is a Module, whose members are arktype values with arktype's own methods
+	isModule: boolean
 }
 
 export const findEscape = (
 	binding: Binding,
 	module: SourceModule,
 	graph: ModuleGraph,
-	isData: boolean
+	value: unknown
 ): Escape | undefined =>
-	escapeOfBinding(binding, { module, graph, seen: new Set(), isData })
+	escapeOfBinding(binding, {
+		module,
+		graph,
+		seen: new Set(),
+		isData: isData(value),
+		isModule: hasArkKind(value, "module")
+	})
+
+const isData = (value: unknown, seen = new Set<unknown>()): boolean => {
+	if (!hasDomain(value, "object")) return true
+	if (!isPlainContainer(value)) return false
+	if (seen.has(value)) return true
+	seen.add(value)
+	return Reflect.ownKeys(value).every(k => isData(Reflect.get(value, k), seen))
+}
 
 const escapeOfBinding = (
 	binding: Binding,
@@ -192,6 +211,8 @@ const escapeOfMember = (
 	const parent = end.parent!
 	if (parent.type !== "CallExpression" || parent.callee !== end)
 		return escapeOfValue(end, s)
+	// a method of a Module's member is arktype's, unless a write found elsewhere replaced it
+	if (s.isModule) return
 	const method =
 		(end as MemberExpression).computed ?
 			undefined
