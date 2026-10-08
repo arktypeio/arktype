@@ -232,7 +232,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
 	expression: string = this.distribute(
-		n => n.nestableExpression,
+		// an intersection binds more tightly than a union, so it never needs parens
+		n => (n.hasKind("intersection") ? n.expression : n.nestableExpression),
 		expressBranches
 	)
 

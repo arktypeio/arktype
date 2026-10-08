@@ -214,23 +214,30 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 		defaults: {
 			description: node => {
 				if (node.children.length === 0) return "unknown"
-				if (node.structure) return node.structure.description
 
+				const basis = writtenBasisOf(node)
+				const prestructurals = writtenPrestructuralsOf(node)
 				const childDescriptions: string[] = []
 
 				if (
-					node.basis &&
+					basis &&
 					!node.prestructurals.some(r => r.impl.obviatesBasisDescription)
 				)
-					childDescriptions.push(node.basis.description)
+					childDescriptions.push(basis.description)
 
-				if (node.prestructurals.length) {
-					const sortedRefinementDescriptions = node.prestructurals
+				if (prestructurals.length) {
+					const sortedRefinementDescriptions = prestructurals
 						.slice()
 						// override alphabetization to describe min before max
 						.sort((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
 						.map(r => r.description)
 					childDescriptions.push(...sortedRefinementDescriptions)
+				}
+
+				if (node.structure) {
+					return childDescriptions.length ?
+							`${node.structure.description}${basis ? " & " : " "}${childDescriptions.join(" and ")}`
+						:	node.structure.description
 				}
 
 				if (node.inner.predicate) {
@@ -266,6 +273,19 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	structure: Structure.Node | undefined = this.inner.structure
 
 	expression: string = writeIntersectionExpression(this)
+
+	get nestableExpression(): string {
+		// an expression written by a single child is already nestable
+		return (
+				this.expression === "unknown" ||
+					this.expression === "[]" ||
+					this.children.some(
+						child => child.nestableExpression === this.expression
+					)
+			) ?
+				this.expression
+			:	`(${this.expression})`
+	}
 
 	get shallowMorphs(): array<Morph> {
 		return this.inner.structure?.structuralMorph ?
@@ -365,25 +385,51 @@ export const Intersection = {
 }
 
 const writeIntersectionExpression = (node: Intersection.Node) => {
-	if (node.structure?.expression) return node.structure.expression
+	const basis = writtenBasisOf(node)
 
 	const basisExpression =
-		(
-			node.basis &&
-			!node.prestructurals.some(n => n.impl.obviatesBasisExpression)
-		) ?
-			node.basis.nestableExpression
+		basis && !node.prestructurals.some(n => n.impl.obviatesBasisExpression) ?
+			basis.nestableExpression
 		:	""
 
-	const refinementsExpression = node.prestructurals
+	const refinementsExpression = writtenPrestructuralsOf(node)
 		.map(n => n.expression)
 		.join(" & ")
 
-	const fullExpression = `${basisExpression}${basisExpression && refinementsExpression ? " " : ""}${refinementsExpression}`
+	const fullExpression =
+		basisExpression === "Array" && refinementsExpression === "== 0" ?
+			"[]"
+		:	`${basisExpression}${basisExpression && refinementsExpression ? " " : ""}${refinementsExpression}`
 
-	if (fullExpression === "Array == 0") return "[]"
+	if (node.structure) {
+		return fullExpression ?
+				`${node.structure.expression}${basis ? " & " : " "}${fullExpression}`
+			:	node.structure.expression
+	}
 
 	return fullExpression || "unknown"
+}
+
+const writtenBasisOf = (node: Intersection.Node) =>
+	(
+		node.structure &&
+		node.basis?.equals(
+			node.structure.sequence?.impliedBasis ?? node.structure.impliedBasis
+		)
+	) ?
+		null
+	:	node.basis
+
+const writtenPrestructuralsOf = (node: Intersection.Node) => {
+	const sequence = node.structure?.sequence
+	if (!sequence) return node.prestructurals
+	// minVariadicLength is excluded since it isn't reflected in the intersection's id
+	const impliedMinLength = sequence.prefixLength + sequence.postfixLength
+	return node.prestructurals.filter(n =>
+		n.kind === "minLength" ? n.rule !== impliedMinLength
+		: n.kind === "maxLength" ? n.rule !== sequence.maxLength
+		: n.kind !== "exactLength" || impliedMinLength !== sequence.maxLength
+	)
 }
 
 export type ConditionalTerminalIntersectionRoot = {

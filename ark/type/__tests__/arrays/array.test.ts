@@ -270,6 +270,70 @@ value at [1] must be a number (was boolean)`)
 		})
 	})
 
+	describe("length bounds", () => {
+		it("min", () => {
+			const T = type("number[] > 1")
+			attest(T.expression).snap("number[] >= 2")
+			attest(T.description).snap("number[] at least length 2")
+		})
+
+		it("max", () => {
+			const T = type("number[] < 5")
+			attest(T.expression).snap("number[] <= 4")
+			attest(T.description).snap("number[] at most length 4")
+		})
+
+		it("range", () => {
+			const T = type("0 < number[] <= 5")
+			attest(T.expression).snap("number[] <= 5 & >= 1")
+			attest(T.description).snap("number[] at most length 5 and non-empty")
+		})
+
+		it("exact", () => {
+			const T = type("number[] == 1")
+			attest(T.expression).snap("number[] == 1")
+			attest(T.description).snap("number[] exactly length 1")
+		})
+
+		it("implied by tuple", () => {
+			attest(type(["number"]).expression).snap("[number]")
+			attest(type(["number", "number?"]).expression).snap("[number, number?]")
+			attest(type(["string", "...", "number[]"]).expression).snap(
+				"[string, ...number[]]"
+			)
+		})
+
+		it("narrower than tuple", () => {
+			const T = type(["number", "number?"]).and("unknown[] == 1")
+			attest(T.expression).snap("[number, number?] == 1")
+			attest(T.description).snap("[number, number?] exactly length 1")
+			attest(
+				type(["string", "...", "number[]"]).and("unknown[] > 3").expression
+			).snap("[string, ...number[]] >= 4")
+		})
+
+		it("minimum variadic length", () => {
+			const T = type(["number", "...", "number[]"])
+			attest(T.expression).snap("number[] >= 1")
+			attest(type("number[] > 0").expression).equals(T.expression)
+		})
+
+		it("with props", () => {
+			const T = type({ foo: "string" }).and("number[] > 1")
+			attest(T.expression).snap("{ foo: string } & number[] >= 2")
+		})
+
+		it("nested", () => {
+			attest(type("number[] > 1").array().expression).snap("(number[] >= 2)[]")
+			attest(type(["number"]).array().expression).snap("[number][]")
+		})
+
+		it("union", () => {
+			const T = type("number[] > 1 | string[] < 1")
+			attest(T.expression).snap("number[] >= 2 | string[] == 0")
+		})
+	})
+
 	it("reduces minLength", () => {
 		const T = type(["number", "number", "...", "number[]", "number"])
 		const Expected = type("number[]>=3")
