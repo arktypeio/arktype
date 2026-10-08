@@ -69,7 +69,7 @@ export const parseInnerDefinition = (
 		}
 		let scopeCache = parseCache.get(ctx.$)
 		if (!scopeCache) {
-			scopeCache = {}
+			scopeCache = Object.create(null) as Record<string, InnerParseResult>
 			parseCache.set(ctx.$, scopeCache)
 		}
 		if (scopeCache[def]) return scopeCache[def]

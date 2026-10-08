@@ -571,7 +571,7 @@ export const describeBranches = (
 		return "boolean"
 
 	// keep track of seen descriptions to avoid duplication
-	const seen: Record<string, true | undefined> = {}
+	const seen: Record<string, true | undefined> = Object.create(null)
 	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
 	const last = unique.pop()!
 

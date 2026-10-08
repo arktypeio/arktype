@@ -1,6 +1,6 @@
 import { config } from "./simpleConfig.ts"
 
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { deepStrictEqual, strictEqual } from "node:assert/strict"
 import { cases } from "./util.ts"
 
@@ -41,5 +41,9 @@ cases({
 		const expected = config.keywords["string.trim.preformatted"].description
 		strictEqual(pretrimmed.description, expected)
 		strictEqual(pretrimmed(" ").toString(), `must be ${expected} (was " ")`)
+	},
+	scopeNamedLikeObjectPrototypeMember: () => {
+		const types = scope({ root: "string" }, { name: "valueOf" }).export()
+		strictEqual(types.root.description, config.keywords.string.description)
 	}
 })

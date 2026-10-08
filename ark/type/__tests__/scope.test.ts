@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { scope, type, type Module, type Scope } from "arktype"
+import { generic, scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 import { keywordModule } from "arktype/internal/scope.ts"
@@ -549,6 +549,65 @@ b.c.c must be an object (was missing)`)
 		const t2 = s2.type("a")
 		attest(t1.expression).equals("string")
 		attest(t2.expression).equals("number")
+	})
+
+	it("aliases named like Object.prototype members", () => {
+		const types = scope({
+			toString: "string",
+			valueOf: "toString[]",
+			"#constructor": "number",
+			toLocaleString: "constructor",
+			sub: type.module({ a: "string" })
+		}).export()
+		attest(types.valueOf(["a"])).equals(["a"])
+		attest(types.toLocaleString(1)).equals(1)
+		attest(types.valueOf([1]).toString()).snap(
+			"value at [0] must be a string (was a number)"
+		)
+		attest(() =>
+			// @ts-expect-error
+			scope({ a: "constructor" }).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("constructor"))
+		attest(() =>
+			// @ts-expect-error
+			scope({ sub: types.sub, a: "sub.toString" }).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("sub.toString"))
+		attest(() =>
+			// @ts-expect-error
+			scope({ sub: types.sub, a: "sub.toString.a" }).export()
+		).throwsAndHasTypeError(writeUnresolvableMessage("sub.toString.a"))
+	})
+
+	it("generic params named like Object.prototype members", () => {
+		const types = scope({
+			"box<valueOf>": { v: "valueOf" },
+			x: "box<string>"
+		}).export()
+		attest(types.x({ v: 1 }).toString()).snap(
+			"v must be a string (was a number)"
+		)
+		const Box = generic("toString")({ v: "toString" })
+		attest(Box("number")({ v: "a" }).toString()).snap(
+			"v must be a number (was a string)"
+		)
+	})
+
+	it("keywords and aliases keep Object.prototype", () => {
+		attest(String(type.keywords)).equals("[object Object]")
+		attest(String(scope({ a: "string" }).aliases)).equals("[object Object]")
+	})
+
+	it("cyclic aliases named like Object.prototype members in separate scopes", () => {
+		const L = scope({ toString: { a: "string", "b?": "toString" } }).export()
+		const R = scope({ toString: { a: "number", "b?": "toString" } }).export()
+		const T = type({ l: L.toString, r: R.toString })
+		const data = { l: { a: "x", b: { a: "y" } }, r: { a: 1, b: { a: 2 } } }
+		attest(T(data)).equals(data)
+	})
+
+	it("root of a scope named like an Object.prototype member", () => {
+		const types = scope({ root: "string" }, { name: "toString" }).export()
+		attest(types.root.description).snap("a string")
 	})
 
 	it("scope frozen before its first parse", () => {

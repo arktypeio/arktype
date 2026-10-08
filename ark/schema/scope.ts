@@ -468,7 +468,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	references: readonly BaseNode[] = []
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
-	} = {}
+	} = Object.create(null)
 	private readonly boundGenerics = new Map<GenericRoot, GenericRoot>()
 
 	exportedNames: string[] = []
@@ -499,11 +499,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 			let name = k
 			if (k[0] === "#") {
 				name = k.slice(1)
-				if (name in this.aliases)
+				if (Object.prototype.hasOwnProperty.call(this.aliases, name))
 					throwParseError(writeDuplicateAliasError(name))
 				this.aliases[name] = v
 			} else {
-				if (name in this.aliases) throwParseError(writeDuplicateAliasError(k))
+				if (Object.prototype.hasOwnProperty.call(this.aliases, name))
+					throwParseError(writeDuplicateAliasError(k))
 				this.aliases[name] = v
 				this.exportedNames.push(name)
 			}
@@ -815,16 +816,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
 			)
 		}
-		let def: unknown = this.aliases[name] ?? this.ambient?.[name]
+		const isScopeAlias = Object.prototype.hasOwnProperty.call(
+			this.aliases,
+			name
+		)
+		let def: unknown =
+			isScopeAlias ? this.aliases[name]
+			: Object.prototype.hasOwnProperty.call(this.ambient, name) ?
+				this.ambient[name]
+			:	undefined
 
 		if (!def) return this.maybeResolveSubalias(name)
 
 		// a reference to a thunk's alias while it's called is a cycle, but a generic's declaration is called again
-		if (
-			name in this.aliases &&
-			isThunk(def) &&
-			!(def instanceof LazyGenericRoot)
-		) {
+		if (isScopeAlias && isThunk(def) && !(def instanceof LazyGenericRoot)) {
 			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
 			const ctx = registerParseContext(
 				this.createParseContext(preparsed as BaseParseContextInput)
@@ -1175,15 +1180,18 @@ const maybeResolveSubalias = (
 	if (dotIndex === -1) return
 
 	const dotPrefix = name.slice(0, dotIndex)
-	const prefixSchema = base[dotPrefix]
 	// if the name includes ".", but the prefix is not an alias, it
 	// might be something like a decimal literal, so just fall through to return
-	if (prefixSchema === undefined) return
+	if (!Object.prototype.hasOwnProperty.call(base, dotPrefix)) return
+	const prefixSchema = base[dotPrefix]
 	if (!hasArkKind(prefixSchema, "module"))
 		return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
 
 	const subalias = name.slice(dotIndex + 1)
-	const resolution = prefixSchema[subalias]
+	const resolution =
+		Object.prototype.hasOwnProperty.call(prefixSchema, subalias) ?
+			prefixSchema[subalias]
+		:	undefined
 
 	if (resolution === undefined)
 		return maybeResolveSubalias(prefixSchema, subalias)

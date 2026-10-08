@@ -51,4 +51,15 @@ contextualize(() => {
 file must be a File instance (was string)
 tags[2] must be a string (was an object)`)
 	})
+
+	it("keys named like Object.prototype members", () => {
+		const data = new FormData()
+		data.append("toString", "a")
+		data.append("constructor", "b")
+		data.append("constructor", "c")
+		attest(type("FormData.parse")(data)).snap({
+			toString: "a",
+			constructor: ["b", "c"]
+		})
+	})
 })

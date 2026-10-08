@@ -40,7 +40,7 @@ export const arkFormData: arkFormData.module = keywordModule(
 					// lack of a `File` type.
 					type FormDataEntries = [string, FormDataValue][]
 					for (const [k, v] of data as {} as FormDataEntries) {
-						if (k in result) {
+						if (Object.prototype.hasOwnProperty.call(result, k)) {
 							const existing = result[k]
 							if (
 								typeof existing === "string" ||

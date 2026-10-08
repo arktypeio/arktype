@@ -130,7 +130,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
 	`${printable(schema)} is not a valid type schema`
 
-const nodeCountsByPrefix: PartialRecord<string, number> = {}
+const nodeCountsByPrefix: PartialRecord<string, number> = Object.create(null)
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
 	isArray(listableNode) ?

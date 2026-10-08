@@ -118,7 +118,7 @@ const maybeParseReference = (
 	s: RuntimeState,
 	token: string
 ): BaseRoot | undefined => {
-	if (s.ctx.args?.[token]) {
+	if (s.ctx.args && Object.prototype.hasOwnProperty.call(s.ctx.args, token)) {
 		const arg = s.ctx.args[token]
 		if (typeof arg !== "string") return arg
 

@@ -236,7 +236,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				: alias === "root" ? this.name
 				: `${this.name}.${alias}`
 
-			const config = this.resolvedConfig.keywords?.[qualifiedName]
+			const { keywords } = this.resolvedConfig
+			const config =
+				Object.prototype.hasOwnProperty.call(keywords, qualifiedName) ?
+					keywords[qualifiedName]
+				:	undefined
 
 			if (config) {
 				if (isThunk(def)) {
