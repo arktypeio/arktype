@@ -1,5 +1,6 @@
-import { InternalPrimitiveConstraint } from "../constraint.ts"
+import { BaseConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNodeInput,
@@ -10,6 +11,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
+import type { TraverseApply } from "../shared/traversal.ts"
 
 export declare namespace Pattern {
 	export interface ExpandedSchema extends BaseNodeInput {
@@ -55,20 +57,51 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 		}
 	})
 
-export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration> {
+export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
+	// g and y make test start from lastIndex, which it also advances
+	private readonly resetsLastIndex =
+		this.instance.global || this.instance.sticky
+
 	traverseAllows: (string: string) => boolean =
-		// g and y make test start from lastIndex, which it also advances
-		this.instance.global || this.instance.sticky ?
+		this.resetsLastIndex ?
 			string => {
 				this.instance.lastIndex = 0
 				return this.instance.test(string)
 			}
 		:	this.instance.test.bind(this.instance)
 
-	readonly compiledCondition: string = `${this.expression}.test(data)`
-	readonly compiledNegation: string = `!${this.compiledCondition}`
+	traverseApply: TraverseApply<string> = (data, ctx) => {
+		if (!this.traverseAllows(data)) ctx.errorFromNodeContext(this.errorContext)
+	}
+
+	get errorContext(): Pattern.ErrorContext {
+		return {
+			code: "pattern",
+			description: this.description,
+			meta: this.meta,
+			...this.inner
+		}
+	}
+
+	// a ref rather than a literal, so a pattern the engine rejects fails its own definition
+	compile(js: NodeCompiler): void {
+		const instance = js.ref(this.instance)
+		const condition =
+			this.resetsLastIndex ?
+				`(${instance}.lastIndex = 0, ${instance}.test(data))`
+			:	`${instance}.test(data)`
+		if (js.traversalKind === "Allows") js.return(condition)
+		else {
+			js.if(`!${condition}`, () =>
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+				)
+			)
+		}
+	}
+
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 }
 
