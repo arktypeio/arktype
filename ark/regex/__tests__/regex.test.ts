@@ -779,6 +779,70 @@ contextualize(() => {
 			>(S)
 		})
 
+		it("captures in multiple branches", () => {
+			const S = regex("^(?:(a)|b|(c))$")
+			attest<
+				Regex<
+					"a" | "b" | "c",
+					{
+						captures:
+							| ["a", undefined]
+							| [undefined, undefined]
+							| [undefined, "c"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"a" | "b" | "c",
+	{
+		captures:
+			| [undefined, undefined]
+			| [undefined, "c"]
+			| ["a", undefined]
+	}
+>`)
+		})
+
+		it("named captures in multiple branches", () => {
+			// https://github.com/arktypeio/arktype/issues/1530
+			const S = regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$")
+			attest<
+				Regex<
+					"1" | "2" | "3",
+					{
+						captures:
+							| ["1", undefined, undefined]
+							| [undefined, "2", undefined]
+							| [undefined, undefined, "3"]
+						names:
+							| { a: "1"; b: undefined; c: undefined }
+							| { a: undefined; b: "2"; c: undefined }
+							| { a: undefined; b: undefined; c: "3" }
+					}
+				>
+			>(S)
+		})
+
+		it("capture following captures in multiple branches", () => {
+			const S = regex("^(?:(a)|(b)(c))(d)$")
+			attest<
+				Regex<
+					"ad" | "bcd",
+					{
+						captures:
+							| ["a", undefined, undefined, "d"]
+							| [undefined, "b", "c", "d"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"ad" | "bcd",
+	{
+		captures:
+			| [undefined, "b", "c", "d"]
+			| ["a", undefined, undefined, "d"]
+	}
+>`)
+		})
+
 		it("empty start branch", () => {
 			const S = regex("^|b$")
 			attest<Regex<string, {}>>(S).type.toString.snap("Regex<string, {}>")
@@ -865,6 +929,36 @@ contextualize(() => {
 					}
 				>
 			>(S)
+		})
+
+		it("reference to group in previous branch", () => {
+			const S = regex("^(?:(a)|(b)\\1)$")
+			attest<
+				Regex<
+					"a" | "b",
+					{
+						captures: ["a", undefined] | [undefined, "b"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"a" | "b",
+	{ captures: [undefined, "b"] | ["a", undefined] }
+>`)
+		})
+
+		it("reference within later branch", () => {
+			const S = regex("^(?:(a)|(b)\\2)$")
+			attest<
+				Regex<
+					"a" | "bb",
+					{
+						captures: ["a", undefined] | [undefined, "b"]
+					}
+				>
+			>(S).type.toString.snap(`Regex<
+	"a" | "bb",
+	{ captures: [undefined, "b"] | ["a", undefined] }
+>`)
 		})
 
 		it("anchored ref", () => {
