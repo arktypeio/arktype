@@ -212,4 +212,71 @@ contextualize(() => {
 			)
 		}
 	})
+
+	it("prints this at the top of its own type", () => {
+		const T = type({ v: "number", "next?": "this" })
+
+		attest(T.expression).snap("{ v: number, next?: this }")
+		attest(T.description).snap("{ v: a number, next?: this }")
+		attest(T.toString()).snap("Type<{ v: number, next?: this }>")
+	})
+
+	it("parses its printed expression back", () => {
+		const T = type("string | this[]")
+
+		attest(T.expression).snap("string | this[]")
+		attest(type(T.expression as "string | this[]").equals(T)).equals(true)
+	})
+
+	it("prints a name where nested", () => {
+		const T = type({ v: "number", "next?": "this" })
+		const boxOf = type("<t>", { box: "t" })
+
+		attest(type({ a: T }).expression).snap(
+			"{ a: { v: number, next?: type1b8zgbj0qm5 } }"
+		)
+		attest(T.array().expression).snap("{ v: number, next?: type1b8zgbj0qm5 }[]")
+		attest(T.and({ x: "string" }).expression).snap(
+			"{ v: number, x: string, next?: type1b8zgbj0qm5 }"
+		)
+		attest(boxOf(T).expression).snap(
+			"{ box: { v: number, next?: type1b8zgbj0qm5 } }"
+		)
+		attest(T.pipe(t => t).expression).snap(
+			"(In: { v: number, next?: type1b8zgbj0qm5 }) => Out<unknown>"
+		)
+		attest(type({ a: T }).description).snap(
+			"{ a: { v: a number, next?: type1b8zgbj0qm5 } }"
+		)
+	})
+
+	it("description writer reads a name where nested", () => {
+		const $ = scope(
+			{},
+			{
+				required: {
+					description: node =>
+						`${String(node.key)} is ${node.value.description}`
+				}
+			}
+		)
+		const T = $.type({ v: "number", "next?": "this" })
+
+		attest($.type({ a: T }).description).snap(
+			"{ a is { v is a number, next?: type1b8zgbj0qm5 } }"
+		)
+	})
+
+	it("calls a thunk in its definition twice", () => {
+		let calls = 0
+		type({
+			a: () => {
+				calls++
+				return type("string")
+			},
+			"next?": "this"
+		})
+
+		attest(calls).equals(2)
+	})
 })

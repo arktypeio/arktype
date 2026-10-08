@@ -33,7 +33,7 @@ import {
 	type UnknownAttachments
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import { hasArkKind, isNode, type arkKind } from "./shared/utils.ts"
+import { composing, hasArkKind, isNode, type arkKind } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
@@ -42,6 +42,8 @@ export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	prereduced?: prereduced
 	args?: ContextualArgs
 	id?: NodeId
+	// the content name an anonymous cycle's references print where `this` would mean another Type
+	name?: string
 }
 
 export interface BaseParseContextInput extends BaseParseOptions {
@@ -55,6 +57,7 @@ export interface AttachedParseContext {
 	id: NodeId
 	phase: "unresolved" | "resolving" | "member" | "resolved"
 	isReferencedById?: true
+	isReferencedAsThis?: true
 	index?: number
 	lowlink?: number
 	closesCycle?: true
@@ -236,8 +239,8 @@ export const createNode = ({
 		children
 	}
 
-	const node = resolveDescription(
-		new nodeClassesByKind[kind](attachments as never, $)
+	const node = composing(() =>
+		resolveDescription(new nodeClassesByKind[kind](attachments as never, $))
 	)
 
 	return key ? $.nodesByKey.set(key, node) : node

@@ -70,10 +70,12 @@ export const inProgress: {
 	definitions: number
 	resolutions: number
 	ioReads: number
+	compositions: number
 } = {
 	definitions: 0,
 	resolutions: 0,
-	ioReads: 0
+	ioReads: 0,
+	compositions: 0
 }
 
 export const isResolutionFinal = (): boolean =>
@@ -136,6 +138,36 @@ export const defining = <t>(define: () => t): t => {
 	} finally {
 		inProgress.definitions--
 	}
+}
+
+// a Type read while another node is built or described is nested in it
+export const composing = <t>(compose: () => t): t => {
+	inProgress.compositions++
+	try {
+		return compose()
+	} finally {
+		inProgress.compositions--
+	}
+}
+
+// within another node's text, `this` would mean that node
+export const printSelfAsThis = <node extends BaseRoot>(
+	node: node,
+	printedWithThis: BaseRoot
+): node => {
+	const { expression } = node
+	return Object.defineProperties(node, {
+		expression: {
+			get: () =>
+				inProgress.compositions ? expression : printedWithThis.expression
+		},
+		description: {
+			get: () =>
+				inProgress.compositions ?
+					Reflect.get(Object.getPrototypeOf(node), "description", node)
+				:	printedWithThis.description
+		}
+	})
 }
 
 export type unwrapDefault<thunkableValue> =

@@ -81,6 +81,7 @@ import {
 	type TraverseTransform
 } from "./shared/traversal.ts"
 import {
+	composing,
 	inProgress,
 	isIoFinal,
 	isNode,
@@ -544,7 +545,9 @@ export abstract class BaseNode<
 	get description(): string {
 		return (this._description ??=
 			this.meta?.description ??
-			this.$.resolvedConfig[this.kind].description(this as never))
+			composing(() =>
+				this.$.resolvedConfig[this.kind].description(this as never)
+			))
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes

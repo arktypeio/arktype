@@ -164,6 +164,19 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+### Print `this` for an anonymous cyclic Type's references
+
+A Type that references itself through `this` printed each reference as a node id, which changed with whatever was defined first. It now prints `this` at the top of its own Type, and inside another Type, where `this` would mean the outer Type, a name derived from the Type's text. A thunk in such a definition is called twice:
+
+```ts
+const T = type({ v: "number", "next?": "this" })
+
+// previously { v: number, next?: type1 }, now { v: number, next?: this }
+T.expression
+// previously { a: { v: number, next?: type1 } }, now { a: { v: number, next?: type1b8zgbj0qm5 } }
+type({ a: T }).expression
+```
+
 ### Omit function meta from JSON Schema
 
 JSON Schema can't represent a function, so a meta value like a custom `message` writer was copied as an internal reference whose name depended on what else was registered. It's now omitted:

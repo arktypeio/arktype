@@ -103,7 +103,7 @@ contextualize(() => {
 			})
 
 			attest(T.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
-			attest(T.expression).satisfies(/{ box: { a: type\d+ \| string } }/)
+			attest(T.expression).snap("{ box: { a: typemk9p3fxpql | string } }")
 		})
 
 		it("too few args", () => {

@@ -96,10 +96,12 @@ import {
 import {
 	arkKind,
 	assertUnchecked,
+	composing,
 	defining,
 	hasArkKind,
 	inProgress,
 	isNode,
+	printSelfAsThis,
 	resolving
 } from "./shared/utils.ts"
 import { arrayIndexMatcher } from "./structure/shared.ts"
@@ -987,8 +989,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 					$: this
 				}) as never
 			}
-			return resolveDescription(
-				new (reference.constructor as any)(reference, this)
+			return composing(() =>
+				resolveDescription(new (reference.constructor as any)(reference, this))
 			)
 		}
 
@@ -1352,7 +1354,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const ctx = registerParseContext(this.createParseContext(ctxInputOrNode))
 		let node = this.parseOpenDefinition(def, ctx)
-		return resolving(() => {
+		node = resolving(() => {
 			if (node.includesShallowAlias && !inProgress.definitions)
 				node = resolveShallowAliases(node)
 
@@ -1363,6 +1365,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 			else delete nodesByRegisteredId[ctx.id]
 			return node
 		})
+		if (!ctx.isReferencedAsThis || ctx.name) return node
+		// parsed again, since the nodes that reference it have printed `this`
+		return printSelfAsThis(
+			this.parseDefinition(def, {
+				...opts,
+				name: `${ctx.prefix}${hashOf(node.expression)}`
+			}),
+			node
+		)
 	}
 
 	private parseOpenDefinition(def: unknown, ctx: BaseParseContext): BaseRoot {

@@ -87,7 +87,11 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
 		const referenced = nodesByRegisteredId[this.reference as NodeId]
-		if (hasArkKind(referenced, "context")) referenced.isReferencedById = true
+		if (hasArkKind(referenced, "context")) {
+			referenced.isReferencedById = true
+			if (!referenced.alias && !this.operator)
+				referenced.isReferencedAsThis = true
+		}
 	}
 	readonly structure = undefined
 	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those
@@ -305,9 +309,8 @@ const expressionOf = (node: AliasNode): string => {
 	}
 	const referenced = nodesByRegisteredId[node.reference as NodeId]
 	if (hasArkKind(referenced, "root")) return referenced.expression
-	return hasArkKind(referenced, "context") && referenced.alias ?
-			`$${referenced.alias}`
-		:	node.reference
+	if (!hasArkKind(referenced, "context")) return node.reference
+	return referenced.alias ? `$${referenced.alias}` : (referenced.name ?? "this")
 }
 
 const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
