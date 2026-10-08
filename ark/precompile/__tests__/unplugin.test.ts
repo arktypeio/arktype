@@ -3,12 +3,16 @@ import { fromHere } from "@ark/fs"
 import {
 	precompile,
 	standaloneConfigurationMessage,
+	writeStandaloneDependencyMessage,
 	type PrecompilePluginOptions
 } from "@ark/precompile/unplugin"
 import { build as esbuild } from "esbuild"
 import { spawnSync } from "node:child_process"
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join } from "node:path"
 import {
-	build as vite,
+	build as viteBuild,
 	defaultClientConditions,
 	defaultServerConditions,
 	type InlineConfig,
@@ -37,7 +41,7 @@ const viteConfig = (opts?: PrecompilePluginOptions): InlineConfig => ({
 
 const bundlers = {
 	vite: async (opts?: PrecompilePluginOptions) => {
-		const [{ output }] = (await vite({
+		const [{ output }] = (await viteBuild({
 			...viteConfig(opts),
 			build: {
 				write: false,
@@ -67,6 +71,80 @@ const run = (js: string) =>
 		input: js,
 		encoding: "utf8"
 	}).stdout
+
+const writeFixture = (files: Record<string, string>): string => {
+	const root = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+	for (const path in files) {
+		mkdirSync(dirname(join(root, path)), { recursive: true })
+		writeFileSync(join(root, path), files[path])
+	}
+	return root
+}
+
+const fakePackage = (path: string, name: string, version: string) => ({
+	[`${path}/package.json`]: JSON.stringify({
+		name,
+		version,
+		type: "module",
+		exports: {
+			".": "./index.js",
+			"./runtime": "./index.js",
+			"./internal": "./index.js",
+			"./*": "./*"
+		}
+	}),
+	[`${path}/index.js`]:
+		"export const type = () => {}\nexport const registerPrecompiledUnits = () => {}\n"
+})
+
+// a program whose packages import arktype, one of them from a copy of its own
+const dependencies = writeFixture({
+	...fakePackage("node_modules/arktype", "arktype", "2.2.0"),
+	...fakePackage(
+		"node_modules/arktype/node_modules/@ark/schema",
+		"@ark/schema",
+		"0.2.0"
+	),
+	...fakePackage("node_modules/@ark/schema", "@ark/schema", "0.1.0"),
+	...fakePackage("node_modules/shared", "shared", "1.0.0"),
+	"node_modules/shared/index.js":
+		'import { type } from "arktype"\nexport const shared = typeof type\n',
+	"node_modules/shared/other.js":
+		'import { type } from "arktype"\nexport const other = typeof type\n',
+	...fakePackage("node_modules/forked", "forked", "1.0.0"),
+	...fakePackage(
+		"node_modules/forked/node_modules/arktype",
+		"arktype",
+		"2.1.0"
+	),
+	"node_modules/forked/index.js":
+		'import { type } from "arktype"\nexport const forked = typeof type\n',
+	"shared.ts":
+		'import { shared } from "shared"\nimport { other } from "shared/other.js"\nconsole.log(shared, other)\n',
+	"forked.ts":
+		'import { type } from "arktype"\nimport { forked } from "forked"\nexport const T = type("string")\nconsole.log(forked)\n',
+	"schema.ts":
+		'import "@ark/schema"\nimport { type } from "arktype"\nexport const T = type("string")\n'
+})
+
+const buildDependency = async (
+	entry: string,
+	opts: PrecompilePluginOptions = {}
+) => {
+	const result = await esbuild({
+		entryPoints: [join(dependencies, entry)],
+		absWorkingDir: dependencies,
+		bundle: true,
+		write: false,
+		format: "esm",
+		logLevel: "silent",
+		plugins: [precompile.esbuild({ ...opts, cwd: dependencies })]
+	}).catch((e: { errors: { text: string }[] }) => e)
+	return [
+		...result.errors.map(e => e.text),
+		...("warnings" in result ? result.warnings.map(w => w.text) : [])
+	].map(text => text.split(`${dependencies}/`).join(""))
+}
 
 // written while parsing a definition, which a standalone build never does
 const parserMessage = "is unresolvable"
@@ -151,7 +229,7 @@ contextualize(() => {
 			logLevel: "silent",
 			plugins: [precompile.esbuild(plugin)]
 		})
-		const [{ output }] = (await vite({
+		const [{ output }] = (await viteBuild({
 			root,
 			configFile: false,
 			logLevel: "silent",
@@ -161,6 +239,47 @@ contextualize(() => {
 		attest([run(outputFiles[0].text), run(output[0].code)]).snap([
 			"config\nkeywords\narktype\nstring\n",
 			"config\nkeywords\narktype\nstring\n"
+		])
+	})
+
+	it("warns once for each dependency importing arktype in standalone mode", async () => {
+		attest(await buildDependency("shared.ts")).equals([
+			writeStandaloneDependencyMessage("shared")
+		])
+		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals(
+			[]
+		)
+	})
+
+	it("fails for a second copy of arktype", async () => {
+		const vite = (runtime?: "arktype") =>
+			viteBuild({
+				root: dependencies,
+				configFile: false,
+				logLevel: "silent",
+				plugins: [precompile.vite({ runtime, cwd: dependencies })],
+				build: { write: false, lib: { entry: "forked.ts", formats: ["es"] } }
+			}).then(
+				() => "",
+				(e: Error) => e.message
+			)
+		const report = `arktype resolves to more than one copy
+  2.2.0 at node_modules/arktype, reached from forked.ts
+  2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js`
+		for (const runtime of [undefined, "arktype"] as const) {
+			const errors = await buildDependency("forked.ts", { runtime })
+			attest(errors.some(text => text.includes(report))).equals(true)
+			attest((await vite(runtime)).includes(report)).equals(true)
+		}
+	})
+
+	it("fails for a second copy of a package arktype runs on", async () => {
+		attest(
+			(await buildDependency("schema.ts")).filter(text =>
+				text.includes("more than one copy")
+			)
+		).snap([
+			"schema.ts:2:22  @ark/schema resolves to more than one copy\n  0.1.0 at node_modules/@ark/schema, reached from schema.ts\n  0.2.0 at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js\n  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 		])
 	})
 

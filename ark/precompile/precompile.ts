@@ -9,6 +9,7 @@ import {
 import type { type } from "arktype"
 import { precompileStandalone } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
+import { dirname, join } from "node:path"
 import type {
 	CallExpression,
 	ImportDeclarationSpecifier,
@@ -135,6 +136,7 @@ export type Rule =
 	| "parse"
 	| "syntax"
 	| "unsupported"
+	| "copies"
 
 export interface Diagnostic {
 	severity: "error" | "warning"
@@ -147,6 +149,20 @@ export interface Diagnostic {
 	message: string
 	reasons: string[]
 	hint: string | undefined
+}
+
+// a package arktype runs on, whose classes and registry a program must load once
+export type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
+
+export interface PackageCopy {
+	version: string
+	// the file it was first resolved from
+	importer: string
+}
+
+export interface CopiesReport {
+	message: string
+	reasons: string[]
 }
 
 export const precompileModule = (
@@ -166,6 +182,13 @@ export class Precompiler {
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
+	private packagesByEntry: Record<string, [root: string, version: string]> =
+		Object.create(null)
+	private copiesByPackage: Record<ArkPackage, Record<string, PackageCopy>> = {
+		arktype: {},
+		"@ark/schema": {},
+		"@ark/util": {}
+	}
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
@@ -259,9 +282,82 @@ export class Precompiler {
 		}
 	}
 
+	// each package arktype runs on that importer reaches in a copy other than one reached before
+	readCopies(name: ArkPackage, importer: string): CopiesReport[] {
+		const entry = this.graph.host.resolve(name, importer)
+		if (!entry) return []
+		const [root, version] = (this.packagesByEntry[entry] ??= this.packageOf(
+			name,
+			entry
+		))
+		const copies = this.copiesByPackage[name]
+		if (copies[root]) return []
+		copies[root] = { version, importer }
+		const reports =
+			Object.keys(copies).length > 1 ? [this.copiesReportOf(name)] : []
+		// arktype's own dependencies may resolve to copies of their own
+		if (name === "arktype")
+			reports.push(...this.readCopies("@ark/schema", entry))
+		if (name !== "@ark/util")
+			reports.push(...this.readCopies("@ark/util", entry))
+		return reports
+	}
+
+	private packageOf(
+		name: ArkPackage,
+		entry: string
+	): [root: string, version: string] {
+		for (
+			let root = dirname(entry);
+			root !== dirname(root);
+			root = dirname(root)
+		) {
+			const manifest = this.graph.host.readFile(join(root, "package.json"))
+			if (manifest === undefined) continue
+			const { name: packageName, version } = JSON.parse(manifest)
+			if (packageName === name) return [root, version ?? "unknown"]
+		}
+		return [dirname(entry), "unknown"]
+	}
+
+	private copiesReportOf(name: ArkPackage): CopiesReport {
+		const copies = this.copiesByPackage[name]
+		return {
+			message: `${name} resolves to more than one copy`,
+			reasons: Object.keys(copies).map(
+				root =>
+					`${copies[root].version} at ${this.graph.pathOf(root)}, reached from ${this.graph.pathOf(copies[root].importer)}`
+			)
+		}
+	}
+
 	precompile(source: string, id: string): PrecompiledModule {
 		const module = this.graph.add(id, source)
 		const { sites, diagnostics, dependencies } = this._analyze(module)
+		for (const node of module.program.body) {
+			const specifier =
+				(
+					node.type === "ImportDeclaration" ||
+					node.type === "ExportAllDeclaration" ||
+					node.type === "ExportNamedDeclaration"
+				) ?
+					node.source
+				:	null
+			const name = specifier && arkPackageSpecifier.exec(specifier.value)?.[1]
+			if (!name) continue
+			for (const report of this.readCopies(name as ArkPackage, id)) {
+				diagnostics.push(
+					this.diagnostic(
+						module,
+						specifier,
+						"copies",
+						"error",
+						report.message,
+						report.reasons
+					)
+				)
+			}
+		}
 		const s = new MagicString(source)
 		const modules: Record<string, string> = {}
 		if (this.mode === "standalone")
@@ -913,7 +1009,7 @@ export class Precompiler {
 			reasons,
 			hint:
 				rule === "syntax" ? undefined
-				: this.mode === "cache" ? cacheHint
+				: this.mode === "cache" && rule !== "copies" ? cacheHint
 				: (hint ?? hintsByRule[rule])
 		}
 	}
@@ -926,14 +1022,20 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 		...(diagnostic.hint ? [`  ${diagnostic.hint}`] : [])
 	].join("\n")
 
+export const copiesHint =
+	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
+
 const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,
 	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",
 	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
 	unsupported: `Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`,
-	parse: "The precompiled site throws the same ParseError when it is created."
+	parse: "The precompiled site throws the same ParseError when it is created.",
+	copies: copiesHint
 }
+
+const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
 
 const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
