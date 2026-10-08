@@ -222,6 +222,17 @@ contextualize(() => {
 		).throwsAndHasTypeError(writeUnexpectedCharacterMessage("c"))
 	})
 
+	it("errors on each reference to an invalid alias", () => {
+		const $ = scope({
+			a: { b: "b" },
+			// @ts-expect-error
+			b: { a: "a", c: "bad" }
+		})
+		attest(() => $.type("a")).throws(writeUnresolvableMessage("bad"))
+		attest(() => $.type("a | string")).throws(writeUnresolvableMessage("bad"))
+		attest(() => $.type("b")).throws(writeUnresolvableMessage("bad"))
+	})
+
 	it("autocompletion", () => {
 		attest(() => {
 			scope({

@@ -784,6 +784,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 				let node: BaseRoot
 				try {
 					node = this.parseOpenDefinition(v.def, v)
+				} catch (e) {
+					// reset so the next reference reparses it and throws the same error
+					v.phase = "unresolved"
+					throw e
 				} finally {
 					openDefinitions.pop()
 				}
