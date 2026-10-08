@@ -31,6 +31,29 @@ contextualize(() => {
 		)
 	})
 
+	it("nested standard schema issues", () => {
+		const User = type({ age: "number.integer" })
+		const Wrapped = type({ user: { "~standard": User["~standard"] } })
+
+		attest(Wrapped({ user: { age: 1.5 } }).toString()).snap(
+			"user.age must be an integer (was 1.5)"
+		)
+
+		const Other = type({
+			user: {
+				"~standard": {
+					version: 1,
+					vendor: "other",
+					validate: () => ({
+						issues: [{ message: "Expected an integer", path: ["age"] }]
+					})
+				}
+			}
+		})
+
+		attest(Other({ user: {} }).toString()).snap("user.age expected an integer")
+	})
+
 	it("can infer generic parameter from standard schema", () => {
 		const acceptsStandardSchema = <T extends StandardSchemaV1>(
 			schema: T

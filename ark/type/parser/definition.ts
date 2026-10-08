@@ -1,4 +1,5 @@
 import {
+	ArkError,
 	constraintInputOf,
 	hasArkKind,
 	inProgress,
@@ -127,7 +128,13 @@ const parseStandardSchema = (
 
 		if (!result.issues) return result.value
 
-		for (const { message, path } of result.issues) {
+		for (const issue of result.issues) {
+			const path = issue.path
+			// an ArkError's message starts with its path, which relativePath adds
+			const message =
+				issue instanceof ArkError ?
+					issue.transform(e => ({ ...e, path: [] }) as never).message
+				:	issue.message
 			if (path) {
 				if (path.length) {
 					ctx.error({

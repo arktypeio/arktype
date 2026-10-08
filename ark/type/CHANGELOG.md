@@ -676,6 +676,19 @@ const out = UserFromOtherCopy(data)
 out instanceof type.errors
 ```
 
+### Write a nested arktype Standard Schema's errors without repeating their key
+
+When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:
+
+```ts
+const User = type({ age: "number.integer" })
+const T = type({ user: { "~standard": User["~standard"] } })
+
+// previously user.age age must be an integer (was 1.5)
+// now user.age must be an integer (was 1.5)
+T({ user: { age: 1.5 } })
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
