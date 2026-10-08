@@ -36,6 +36,7 @@ export const packageScopes = [
 	"fast-check",
 	"fs",
 	"json-schema",
+	"precompile",
 	"regex",
 	"schema",
 	"sets",

@@ -1,0 +1,55 @@
+{
+	"name": "@ark/precompile",
+	"description": "Precompiles arktype definitions at build time",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/precompile"
+	},
+	"type": "module",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
+	"exports": {
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		},
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
+	},
+	"files": [
+		"out"
+	],
+	"scripts": {
+		"build": "ts ../repo/build.ts",
+		"test": "node ../repo/testPackage.ts"
+	},
+	"dependencies": {
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*",
+		"arkregex": "workspace:*",
+		"arktype": "workspace:*",
+		"oxc-parser": "0.153.0",
+		"oxc-resolver": "11.24.2"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"devDependencies": {
+		"@typescript-eslint/scope-manager": "8.46.1",
+		"fast-check": "3.23.2"
+	}
+}
