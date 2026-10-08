@@ -204,19 +204,25 @@ const escapeOfMember = (
 	member: MemberExpression,
 	s: EscapeState
 ): Escape | undefined => {
+	// `as`, `!` and optional chaining around a chain leave a call's `this` the same
 	let end: MemberExpression = member
-	while (end.parent?.type === "MemberExpression" && end.parent.object === end)
-		end = end.parent
-	if (isWriteTarget(end)) {
-		const write = end.parent!
+	let outer: Node = member
+	for (let parent = member.parent!; ; parent = outer.parent!) {
+		if (parent.type === "MemberExpression" && parent.object === outer)
+			end = parent
+		else if (!isTransparent(parent) && parent.type !== "ChainExpression") break
+		outer = parent
+	}
+	if (isWriteTarget(outer)) {
+		const write = outer.parent!
 		return {
 			node: write,
 			message: `is written by \`${s.module.snippetOf(write)}\``
 		}
 	}
-	const parent = end.parent!
-	if (parent.type !== "CallExpression" || parent.callee !== end)
-		return escapeOfValue(end, s)
+	const parent = outer.parent!
+	if (parent.type !== "CallExpression" || parent.callee !== outer)
+		return escapeOfValue(outer, s)
 	if (isArkMethodCall(end, s)) return
 	const method = end.computed ? undefined : end.property.name
 	// in an object of data, a method by one of these names is a pure built-in or throws

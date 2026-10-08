@@ -44,6 +44,18 @@ export const T = type(o.a)`)[0][1]
 		])
 	})
 
+	it("a method called through `as`, `!` or optional chaining", () => {
+		attest(
+			["(o.f as any)()", "o.f!()", "(o?.f)()"].map(
+				use =>
+					inputsOf(`import { type } from "arktype"
+const o = { a: "string", f() { (this as any).a = "number" } }
+;${use}
+export const T = type(o.a)`)[0][1]
+			)
+		).snap(["local o.a", "local o.a", "local o.a"])
+	})
+
 	it("data has no methods of its own", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"
