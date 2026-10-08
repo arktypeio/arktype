@@ -4,12 +4,12 @@ This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every 
 
 | Category                                                                               | Issues                                       | Suggested action                        |
 | -------------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------- |
-| [Fix tracker](#fix-tracker)                                                            | 15 fixed, 1 awaiting a decision, 0 in review | post the comments on fixed issues       |
-| [Easy-win bugs](#easy-win-bugs)                                                        | 16                                           | fix on featherduster                              |
+| [Fix tracker](#fix-tracker)                                                            | 14 fixed, 1 awaiting a decision, 0 in review | post the comments on fixed issues       |
+| [Easy-win bugs](#easy-win-bugs)                                                        | 15                                           | fix on featherduster                              |
 | [Clear bugs](#clear-bugs)                                                              | 28                                           | schedule; 16 need a decision first      |
 | [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22                                           | close when featherduster ships                    |
 | [Probably close: out of date](#probably-close-out-of-date)                             | 22                                           | close now                               |
-| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 21                                           | close, with the note where there is one |
+| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 22                                           | close, with the note where there is one |
 | [Needs info](#needs-info)                                                              | 2                                            | ask the reporter                        |
 | [Relevant features](#relevant-features)                                                | 77                                           | keep; 62 need a design decision         |
 | [Docs](#docs)                                                                          | 14                                           | keep                                    |
@@ -37,7 +37,6 @@ This section is updated as fixes from this audit land. A fix that only corrects 
 | [#1430](#fix-1430) | fixed in featherduster            | 8c66cc7c1                                                        |
 | [#1600](#fix-1600) | fixed in featherduster            | f1fc4e798                                                        |
 | [#1676](#fix-1676) | fixed in featherduster            | 84ff9fbb6                                                        |
-| [#1088](#fix-1088) | fixed in featherduster            | 8d6dceecd                                                        |
 | [#1445](#fix-1445) | fixed in featherduster            | 9987af9cb, 551d873e1, d5b4fc498, 35cbdb031, 6060504dc, 309c867ee |
 | [#1160](#fix-1160) | fixed in featherduster            | a55e764a7                                                        |
 | [#1023](#fix-1023) | fix awaiting a decision | A f641e654e, B 12d552c0a, C 0361af515, D 8cba24727               |
@@ -328,36 +327,6 @@ Still retained: a scope containing a cyclic type. Also changed: `compiledMeta` i
 
 On 2.2.8, define function-bearing types once at module level and do request-specific checks after validating.
 
-### <a id="fix-1088"></a>[#1088](https://github.com/arktypeio/arktype/issues/1088) Make `@ark/schema` more resilient to duplicate installations or initializations
-
-Fixed in featherduster by 8d6dceecd.
-
-**Runtime cost, measured after landing.** Recognizing another copy's errors reads a brand on every object a morph returns, where 2.2.8 used `instanceof`. The commit message says there was no measurable cost, but that run was too noisy to see it. Paired benchmarks, with both builds alternating short batches on one pinned core, put 8d6dceecd at about +5% to +10% per call for root morph types whose 64 morphs return differently shaped objects (jit and jitless), and +18% to +26% for a morph that returns a preallocated object (about 9 ns). Primitive outputs are unaffected. All 4 processes agree in each run, which matters more than the tiny p-values, since pairs within a process aren't independent. Two cheaper checks didn't help. Returning early for plain objects and arrays made mixed outputs slower, and reading the brand only when a second copy has registered `$ark2` on `globalThis` cost as much as the brand read itself. Reverting 8d6dceecd restores 2.2.8's speed and behavior. The harness and data are in `.frizz/threads/567f8946-44d1-4e2c-9cfc-5152f7109381/perf-1088/` in the main checkout.
-
-Comment to post:
-
-Fixed on the `featherduster` branch (#1685) in 8d6dcee.
-
-The visible failure was morphs: a morph returning `ArkErrors` or an `ArkError` from a duplicate install of arktype was treated as a successful output, so later morphs ran on the errors object. Morph results are now recognized by their `" arkKind"` brand plus a `toJSON` method (a brand alone can come from parsed JSON):
-
-```ts
-import { type } from "arktype"
-import { type as otherType } from "other-copy-of-arktype"
-
-const OtherNumber = otherType("number")
-const T = type("string")
-	.pipe(s => OtherNumber(s))
-	.pipe(() => "next morph ran")
-
-String(T("x")) // "must be a number (was a string)" (was "next morph ran")
-```
-
-Copies recognized: 2.1.10+ for `ArkError`, 2.1.17+ for `ArkErrors`. A hand-written object with the brand and a `toJSON` method also counts as errors.
-
-Not changed: `instanceof type.errors` in your own code still only matches its own copy. Types from another copy of the same version already work in definitions and intersections, so the remaining `instanceof Disjoint` checks are left as is.
-
-Workaround on 2.2.8: convert in the morph, e.g. `out instanceof otherType.errors ? ctx.error({ message: out.summary }) : out`.
-
 ### <a id="fix-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
 
 Fixed in featherduster by 9987af9cb and 551d873e1 and d5b4fc498 and 35cbdb031 and 6060504dc and 309c867ee.
@@ -440,7 +409,6 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 | Issue                                                     | Package   | Effort  | Status                               | Bug                                                                                                                                                                                                                                                                     |
 | --------------------------------------------------------- | --------- | ------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [#1023](https://github.com/arktypeio/arktype/issues/1023) | `arktype` | trivial | [fix awaiting a decision](#fix-1023) | A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.                                                                                                                               |
-| [#1088](https://github.com/arktypeio/arktype/issues/1088) | `schema`  | trivial | [fixed in featherduster](#fix-1088)            | A morph returning another installed copy's `ArkErrors` is treated as a successful output because morph results are checked with `instanceof`; switch those checks to `hasArkKind`.                                                                                      |
 | [#1306](https://github.com/arktypeio/arktype/issues/1306) | `attest`  | trivial | [fixed in featherduster](#fix-1306)            | attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.                                                                                                             |
 | [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | [fixed in featherduster](#fix-1445)            | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                    |
 | [#1470](https://github.com/arktypeio/arktype/issues/1470) | `schema`  | trivial | [fixed in featherduster](#fix-1470)            | `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.                                                                                                         |
@@ -465,16 +433,6 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 **Evidence:** Reproduces on 2.2.8 and featherduster under tsgo and TS 6. `type("string", "=>", s => s as any).infer` is `(In: string) => Out<any>`, so `T.assert("x")` is typed as a function, which is unsound; a nested prop is wrong too. Root cause is `ark/type/attributes.ts:55-56`: `finalizeDistillation` uses `equals` (`[l, r] extends [r, l]`), which holds whenever the distilled type is or contains `any` in place of the morph, so the undistilled type is returned. A scratch copy using `exactEquals` fixes both cases on both checkers and keeps `never`, named `.as<Interface>()`, instanceof, parse morphs, defaults and tuple display unchanged.
 
 **Fix:** `ark/type/attributes.ts:55-56`: change `equals<t, distilled> extends true ? t : distilled` to `exactEquals<t, distilled> extends true ? t : distilled` (import `exactEquals` from @ark/util), then uncomment `attest<any>(T.infer)` at `ark/type/__tests__/pipe.test.ts:318`. Side effect: `.as<A & B>()` now displays as the flattened `{ a: string; b: number }` instead of `A & B` (types equivalent); check type-display snapshots and `operator.bench.ts` for drift.
-
-### [#1088](https://github.com/arktypeio/arktype/issues/1088) Make `@ark/schema` more resilient to duplicate installations or initializations
-
-`schema` · effort trivial · 1 reaction · [fixed in featherduster](#fix-1088) · 2.2.8: reproduces, featherduster: reproduces
-
-**Summary:** A morph returning another installed copy's `ArkErrors` is treated as a successful output because morph results are checked with `instanceof`; switch those checks to `hasArkKind`.
-
-**Evidence:** Ran with a second copy of arktype/@ark/schema/@ark/util loaded from scratch. On both 2.2.8 and the featherduster tip, `type("string").pipe(s => Num2(s)).pipe(() => "next morph ran")("x")` returns "next morph ran". That contradicts the documented "if a morph returns an ArkErrors instance, validation will fail". `hasArkKind` already has `error`/`errors` kinds (`utils.ts:48-64`). Embedding or intersecting the other copy's Types already works (cross-copy disjoints throw correctly), so the remaining `instanceof Disjoint` checks are harmless. Patching `isArkErrorResult` plus the traversal checks in a scratch copy of the featherduster schema fixed it.
-
-**Fix:** featherduster tip: in `ark/schema/shared/errors.ts:25-27`, `isArkErrorResult` should use `hasArkKind(result, "error") || hasArkKind(result, "errors")`. It is the check used by the compiled and `traverseTransform` morph paths (`roots/morph.ts:211,233`, `node.ts:510`). Also in `ark/schema/shared/traversal.ts:280,608,615` replace `instanceof ArkError`/`ArkErrors` with the same `hasArkKind` checks; `root.ts:102`, `optional.ts:197` and `type/keywords/string.ts:296` can follow for consistency. Verified in a scratch copy: the `errors.ts` and `traversal.ts` changes alone make the morph case fail correctly. Making user-side `instanceof type.errors` cross-copy (`Symbol.hasInstance`) is a separate, optional extension.
 
 ### [#1306](https://github.com/arktypeio/arktype/issues/1306) Attest trace fails on `composite` typescript projects
 
@@ -1140,6 +1098,10 @@ These are about removed packages or APIs, plans superseded by other work, or emp
 
   _Decision:_ Keep unanchored regexes 1:1 with JS and JSON Schema (close), or add a parse-time error for unanchored patterns?
 
+- **[#1088](https://github.com/arktypeio/arktype/issues/1088) Make `@ark/schema` more resilient to duplicate installations or initializations** (`schema` · effort trivial · 1 reaction · [note](#note-1088)). A morph returning another installed copy's `ArkErrors` is treated as a successful output, because morph results are checked with `instanceof`. Running two copies isn't supported.
+
+  Recognizing another copy's errors by their brand was fixed in 8d6dceecd and reverted in de03d8dee: checking every object a morph returns cost about 5% to 10% per call when one call site sees many output shapes, and up to about 25% for trivial morphs, with no cheaper check found. Instead, precompile is to fail a build that resolves more than one copy of `arktype`, `@ark/schema` or `@ark/util`, and its standalone runtime is to share arktype's error classes. The note recommends a single copy (`npm dedupe`, `overrides`) and gives a workaround in the morph.
+
 - **[#1461](https://github.com/arktypeio/arktype/issues/1461) Allow array of readonly arrays for ArkError** (`schema` · breaking · [note](#note-1461)). Request to let ArkError `path` hold nested arrays so one error can point at several related locations.
 
   ArkErrors are the Standard Schema issues, whose `path` is a flat `ReadonlyArray<PropertyKey | PathSegment>`; nested arrays would break that contract plus `flatByPath` and path-prefixed messages. The idiomatic approach, one error per path via `ctx.reject({ relativePath })`, works on both 2.2.8 and the featherduster tip (verified, including Standard Schema issue paths).
@@ -1692,7 +1654,7 @@ The probes, their corpora and results, the per-pattern type changes and both rev
 
 ## Notes by issue
 
-These 129 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
+These 130 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
 ### <a id="note-462"></a>[#462](https://github.com/arktypeio/arktype/issues/462) arktype dedicated Promise handling
 
@@ -2734,6 +2696,31 @@ The `alternate<a, b>` test from the issue also exports, validates and passes its
 ### <a id="note-1085"></a>[#1085](https://github.com/arktypeio/arktype/issues/1085) Arkdark breaks syntax highlighting when jsx/tsx templates contain functions ending with `type`
 
 No longer reproduces with the current ArkDark grammar. The definition matcher now requires a word boundary before the function name (`\b(type|generic|scope|...)(\()`, added in #1126), so `fn_name_ends_with_type()` is no longer treated as a `type(` call. Tokenizing the component from the issue with Shiki: with the grammar from before #1126, `type` in `fn_name_ends_with_type()` gets `entity.name.function.ts` and the closing `</button>` is no longer parsed as a JSX tag. With the current grammar, every token's scopes are identical to plain TSX highlighting.
+
+### <a id="note-1088"></a>[#1088](https://github.com/arktypeio/arktype/issues/1088) Make `@ark/schema` more resilient to duplicate installations or initializations
+
+Closing: running more than one copy of arktype isn't supported. The visible failure is that a morph returning another copy's `ArkErrors` is treated as a successful output, since morph results are checked with `instanceof`. Types from another copy already work inside definitions and intersections.
+
+Recognizing another copy's errors by their `" arkKind"` brand was implemented on the `featherduster` branch (#1685) and then reverted. Every object a morph returns had to be checked, which made those morphs about 5–10% slower when one call site sees many output shapes, and up to about 25% slower for trivial morphs.
+
+To resolve a single copy, run `npm ls arktype @ark/schema @ark/util` (or `pnpm why`) to find the duplicates, then `npm dedupe` / `pnpm dedupe`, or pin one version with `overrides` (npm, pnpm) or `resolutions` (yarn).
+
+If two copies can't be avoided, convert in the morph:
+
+```ts
+import { type } from "arktype"
+import { type as otherType } from "other-copy-of-arktype"
+
+const OtherNumber = otherType("number")
+const T = type("string").pipe((s, ctx) => {
+	const out = OtherNumber(s)
+	return out instanceof otherType.errors ?
+			ctx.error({ message: out.summary })
+		:	out
+})
+
+String(T("x")) // "must be a number (was a string)"
+```
 
 ### <a id="note-1128"></a>[#1128](https://github.com/arktypeio/arktype/issues/1128) Attest Bun support
 
