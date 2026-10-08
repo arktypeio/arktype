@@ -259,7 +259,7 @@ contextualize(() => {
 			)
 		})
 
-		it("primitive morph precomputed", () => {
+		it("primitive morph runs when applied", () => {
 			let callCount = 0
 
 			const toggle = (b: boolean) => {
@@ -291,13 +291,15 @@ contextualize(() => {
 				domain: "object"
 			})
 
+			attest(callCount).equals(0)
+
 			const out = T({})
 
 			attest(out).snap({ blep: true })
 			attest(callCount).equals(1)
 
 			T({})
-			attest(callCount).equals(1)
+			attest(callCount).equals(2)
 		})
 
 		it("default preserved on pipe to node", () => {
@@ -332,13 +334,36 @@ contextualize(() => {
 				domain: "object"
 			})
 
+			attest(callCount).equals(0)
+
 			const out = T({})
 
 			attest(out).snap({ blep: true })
 			attest(callCount).equals(1)
 
 			T({})
-			attest(callCount).equals(1)
+			attest(callCount).equals(2)
+		})
+
+		it("primitive morph output is not shared", () => {
+			for (const jitless of [false, true]) {
+				let calls = 0
+				const T = scope({}, { jitless }).type({
+					at: [type("number").pipe(n => n || ++calls), "=", 0]
+				})
+				attest(T({})).equals({ at: 1 })
+				attest(T({})).equals({ at: 2 })
+				attest(T({ at: 0 })).equals({ at: 3 })
+			}
+		})
+
+		it("narrowed default is checked when defined", () => {
+			const isEven = (n: number) => n % 2 === 0
+			attest(() =>
+				type({ n: [type("number").narrow(isEven), "=", 3] })
+			).throws.snap(
+				"ParseError: Default for n must be valid according to isEven (was 3)"
+			)
 		})
 
 		it("primitive morphed to object not premorphed", () => {

@@ -3,7 +3,6 @@ import {
 	isThunk,
 	printable,
 	throwParseError,
-	WeakCache,
 	type requireKeys
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
@@ -13,7 +12,6 @@ import { compileSerializedValue } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
-	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
@@ -101,7 +99,10 @@ export class OptionalNode extends BaseProp<"optional"> {
 			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
-	defaultValueMorph: Morph | undefined = getDefaultableMorph(this)
+	defaultValueMorph: Morph | undefined =
+		this.hasDefault() ?
+			computeDefaultValueMorph(this.key, this.value, this.default)
+		:	undefined
 }
 
 export const Optional = {
@@ -109,67 +110,48 @@ export const Optional = {
 	Node: OptionalNode
 }
 
-const defaultableMorphCache = new WeakCache<Morph>()
-
-const getDefaultableMorph = (node: Optional.Node): Morph | undefined => {
-	if (!node.hasDefault()) return
-
-	const cacheKey = `{${node.compiledKey}: ${node.value.id} = ${defaultValueSerializer(node.default)}}`
-
-	const cached = defaultableMorphCache.get(cacheKey)
-	if (cached) return cached
-
-	const morph = computeDefaultValueMorph(node.key, node.value, node.default)
-	return node.value.includesTransform || node.value.includesAlias ?
-			defaultableMorphCache.pin(cacheKey, morph)
-		:	defaultableMorphCache.set(cacheKey, morph)
-}
-
 export const computeDefaultValueMorph = (
 	key: PropertyKey,
 	value: BaseRoot,
 	defaultInput: unknown
 ): Morph<any> => {
-	if (typeof defaultInput === "function") {
-		if (!value.allowsRequiresContext && !value.includesContextualMorph) {
-			return data => {
-				const input = defaultInput()
-				const output = value.traverse(input)
-				if (output instanceof ArkErrors)
-					return new TransformErrors(output, input).addTo(undefined, key)
-				data[key] = output
-				return data
-			}
-		}
-		let transformingDefault = false
-		return (data, ctx) => {
-			// transforming a default through a cyclic value can reach this morph again
-			if (transformingDefault) return data
-			transformingDefault = true
-			try {
-				data[key] = traverseKey(key, () => value(defaultInput(), ctx), ctx)
-			} finally {
-				transformingDefault = false
-			}
+	const thunk = isThunk(defaultInput) ? defaultInput : undefined
+	if (!thunk && !value.includesTransform && !value.includesAlias) {
+		return data => {
+			data[key] = defaultInput
 			return data
 		}
 	}
-
-	// non-functional defaults can be safely cached as long as the morph is
-	// guaranteed to be pure and the output is primitive
-	const precomputedMorphedDefault =
-		value.includesTransform ? value.assert(defaultInput) : defaultInput
-
-	return hasDomain(precomputedMorphedDefault, "object") ?
-			// the type signature only allows this if the value was morphed
-			(data, ctx) => {
-				data[key] = traverseKey(key, () => value(defaultInput, ctx), ctx)
-				return data
-			}
-		:	data => {
-				data[key] = precomputedMorphedDefault
-				return data
-			}
+	if (!value.allowsRequiresContext && !value.includesContextualMorph) {
+		return data => {
+			const input = thunk ? thunk() : defaultInput
+			const output = value.traverse(input)
+			if (output instanceof ArkErrors)
+				return new TransformErrors(output, input).addTo(undefined, key)
+			data[key] = output
+			return data
+		}
+	}
+	let transformingDefault = false
+	return (data, ctx) => {
+		// transforming a default through a cyclic value can reach this morph again
+		if (transformingDefault) return data
+		if (!thunk && !value.transforms) {
+			data[key] = defaultInput
+			return data
+		}
+		transformingDefault = true
+		try {
+			data[key] = traverseKey(
+				key,
+				() => value(thunk ? thunk() : defaultInput, ctx),
+				ctx
+			)
+		} finally {
+			transformingDefault = false
+		}
+		return data
+	}
 }
 
 export const assertDefaultValueAssignability = (

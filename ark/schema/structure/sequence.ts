@@ -4,7 +4,6 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	WeakCache,
 	type array,
 	type mutable,
 	type satisfy
@@ -256,7 +255,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: []
 
-	defaultValueMorphs: Morph[] = getDefaultableMorphs(this)
+	defaultValueMorphs: Morph[] =
+		this.defaultables?.map(([node, defaultValue], i) =>
+			computeDefaultValueMorph(this.prefixLength + i, node, defaultValue)
+		) ?? []
 
 	optionalize(): SequenceNode {
 		const { prefix, defaultables, ...inner } = this.inner
@@ -440,36 +442,6 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
-}
-
-const defaultableMorphsCache = new WeakCache<Morph[]>()
-
-const getDefaultableMorphs = (node: Sequence.Node): Morph[] => {
-	if (!node.defaultables) return []
-
-	const morphs: Morph[] = []
-	let cacheKey = "["
-
-	const lastDefaultableIndex = node.prefixLength + node.defaultablesLength - 1
-
-	for (let i = node.prefixLength; i <= lastDefaultableIndex; i++) {
-		const [elementNode, defaultValue] = node.defaultables[i - node.prefixLength]
-		morphs.push(computeDefaultValueMorph(i, elementNode, defaultValue))
-		cacheKey += `${i}: ${elementNode.id} = ${defaultValueSerializer(defaultValue)}, `
-	}
-
-	cacheKey += "]"
-
-	const cached = defaultableMorphsCache.get(cacheKey)
-	if (cached) return cached
-
-	return (
-			node.defaultables.some(
-				([element]) => element.includesTransform || element.includesAlias
-			)
-		) ?
-			defaultableMorphsCache.pin(cacheKey, morphs)
-		:	defaultableMorphsCache.set(cacheKey, morphs)
 }
 
 export const Sequence = {

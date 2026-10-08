@@ -652,6 +652,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 		if (failed) {
+			// a transform without ctx returns its errors
 			if (!ctx) return failed
 			ctx.addTransformErrors(failed)
 		}
@@ -969,13 +970,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			() =>
 				this.compileCopy(js).for(
 					`i < ${sequence.defaultables!.length}`,
-					() => {
-						const applyDefault = `${js.ref(sequence.defaultValueMorphs)}[i](${args})`
-						if (!sequence.includesMorph) return js.line(applyDefault)
-						return js
-							.const("defaulted", applyDefault)
-							.if("defaulted !== out", () => js.addTransformErrors("defaulted"))
-					},
+					() =>
+						compileDefaultMorph(
+							js,
+							sequence,
+							`${js.ref(sequence.defaultValueMorphs)}[i](${args})`,
+							"out"
+						),
 					`data.length - ${sequence.prefixLength}`
 				)
 		)
@@ -1218,13 +1219,26 @@ const compileDefault = (
 			Object.is(node.default, -0) ? "-0" : compileSerializedValue(node.default)
 		return js.line(`${out}${js.prop(node.key)} = ${serializedDefault}`)
 	}
-	const morph = js.ref(node.defaultValueMorph)
-	if (node.defaultValueMorph.length === 2)
-		return js.line(`${morph}(${out}, ctx)`)
-	return js
-		.const("defaulted", `${morph}(${out})`)
-		.if(`defaulted !== ${out}`, () => js.addTransformErrors("defaulted"))
+	return compileDefaultMorph(
+		js,
+		node,
+		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 2 ? ", ctx" : ""})`,
+		out
+	)
 }
+
+// only a default on a node that includesMorph can return TransformErrors
+const compileDefaultMorph = (
+	js: NodeCompiler,
+	node: BaseNode,
+	call: string,
+	out: string
+): NodeCompiler =>
+	node.includesMorph ?
+		js
+			.const("defaulted", call)
+			.if(`defaulted !== ${out}`, () => js.addTransformErrors("defaulted"))
+	:	js.line(call)
 
 const compileDeclaredKeySwitch = (
 	js: NodeCompiler,

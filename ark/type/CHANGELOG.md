@@ -768,6 +768,19 @@ const T = type({ count: ["number", "=", () => readCount()] })
 T({})
 ```
 
+### Run a morph on a primitive default each time the default is applied
+
+A primitive default whose type had a morph was morphed once, when the type was defined, and every omitted key got that output. The morph now runs each time the default is applied, as it already did for a default that morphed to an object, so an omitted key behaves like the default passed explicitly:
+
+```ts
+const T = type({ at: [type("number").pipe(n => n || Date.now()), "=", 0] })
+
+// previously the time T was defined, now the time of each call
+T({}).at
+```
+
+A morph that fails on the default returns its errors from validation instead of throwing a TraversalError when the type is defined. The default is still checked against the morph's input when defined.
+
 ## 2.2.8
 
 ### Add `string.base58`
