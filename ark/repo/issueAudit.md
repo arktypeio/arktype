@@ -2,49 +2,408 @@
 
 This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every bug-like report was reproduced on arktype 2.2.8 (`main` at 1ca8ceaf4, the current npm release) and on the featherduster branch (1e4c240c3). An independent verifier then re-ran and challenged each bug verdict, close recommendation and note. It revised 69 of the 223 verdicts. Nothing was posted to GitHub. Findings worth sharing with a reporter are in [Notes by issue](#notes-by-issue).
 
-| Category                                                                               | Issues | Suggested action                        |
-| -------------------------------------------------------------------------------------- | ------ | --------------------------------------- |
-| [Easy-win bugs](#easy-win-bugs)                                                        | 17     | fix on featherduster                              |
-| [Clear bugs](#clear-bugs)                                                              | 28     | schedule; 16 need a decision first      |
-| [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22     | close when featherduster ships                    |
-| [Probably close: out of date](#probably-close-out-of-date)                             | 22     | close now                               |
-| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 20     | close, with the note where there is one |
-| [Needs info](#needs-info)                                                              | 2      | ask the reporter                        |
-| [Relevant features](#relevant-features)                                                | 77     | keep; 62 need a design decision         |
-| [Docs](#docs)                                                                          | 14     | keep                                    |
-| [Internal](#internal)                                                                  | 21     | keep or close at your discretion        |
+| Category                                                                               | Issues                                      | Suggested action                        |
+| -------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------- |
+| [Fix tracker](#fix-tracker)                                                            | 8 fixed, 6 awaiting a decision, 3 in review | post the comments on fixed issues       |
+| [Easy-win bugs](#easy-win-bugs)                                                        | 17                                          | fix on featherduster                              |
+| [Clear bugs](#clear-bugs)                                                              | 28                                          | schedule; 16 need a decision first      |
+| [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22                                          | close when featherduster ships                    |
+| [Probably close: out of date](#probably-close-out-of-date)                             | 22                                          | close now                               |
+| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 20                                          | close, with the note where there is one |
+| [Needs info](#needs-info)                                                              | 2                                           | ask the reporter                        |
+| [Relevant features](#relevant-features)                                                | 77                                          | keep; 62 need a design decision         |
+| [Docs](#docs)                                                                          | 14                                          | keep                                    |
+| [Internal](#internal)                                                                  | 21                                          | keep or close at your discretion        |
 
 Two cross-cutting lists follow the categories: [featherduster breaking-change candidates](#featherduster-breaking-change-candidates) and [side findings](#side-findings), which are problems the audit found that no open issue tracks, including two featherduster behavior changes the CHANGELOG doesn't mention.
 
 Each entry lists the package the work lands in, the effort, whether the change is breaking, reactions on the issue, and a link to its note when it has one.
 
+## Fix tracker
+
+This section is updated as fixes from this audit land. A fix that only corrects behavior lands on the featherduster branch directly. One that makes an API or behavior decision waits here for approval first. Each landed fix comes with a comment to post on its issue. Every snippet in a comment was run against the fixed tree. The comments refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
+
+| Issue              | Status                  | Commits              |
+| ------------------ | ----------------------- | -------------------- |
+| [#1121](#fix-1121) | fixed in featherduster            | 23f54d05b            |
+| [#1473](#fix-1473) | fixed in featherduster            | 312718029            |
+| [#1306](#fix-1306) | fixed in featherduster            | 99934ba9f            |
+| [#1470](#fix-1470) | fixed in featherduster            | f923ffeb1            |
+| [#1529](#fix-1529) | fixed in featherduster            | f7c43123b, 49fea0d79 |
+| [#1555](#fix-1555) | fixed in featherduster            | 0332e7a9d            |
+| [#1548](#fix-1548) | fixed in featherduster            | 09fb6f7f9            |
+| [#1530](#fix-1530) | fixed in featherduster            | 196ced06c            |
+| [#1577](#fix-1577) | fix awaiting a decision | b4aa2c78d            |
+| [#1430](#fix-1430) | fix awaiting a decision | a8f407e5b            |
+| [#1600](#fix-1600) | fix awaiting a decision | 90d9162af            |
+| [#1676](#fix-1676) | fix awaiting a decision | 32b915ba6            |
+| [#1088](#fix-1088) | fix awaiting a decision | dfb854c11            |
+| [#1576](#fix-1576) | fix awaiting a decision | 1954a2038            |
+| [#1445](#fix-1445) | fix in review           | `fix/match-order`    |
+| [#1023](#fix-1023) | fix in review           | `fix/infer`          |
+| [#1160](#fix-1160) | fix in review           | `fix/infer`          |
+
+### Fixed in featherduster
+
+### <a id="fix-1121"></a>[#1121](https://github.com/arktypeio/arktype/issues/1121) Replace cases of {} being used to store arbitrary names with Object.create(null)
+
+Fixed in featherduster by 23f54d05b.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 23f54d0.
+
+The original `register` case was already fixed, but several other maps keyed by user-supplied names still inherited from `Object.prototype`: scope aliases, ambient keywords, the string parse cache, generic args, node id counters, module exports and the `FormData.parse` accumulator. Internal-only maps now use `Object.create(null)`; user-facing ones (`type.keywords`, a scope's aliases) keep their prototype and are read with an own-property check.
+
+```ts
+const types = scope({ toString: "string", constructor: "number" }).export()
+types.toString("foo") // "foo" (was ParseError: #toString duplicates public alias toString)
+
+type("toString" as any)
+// throws 'toString' is unresolvable (was an internal TypeError)
+
+const fd = new FormData()
+fd.append("toString", "a")
+fd.append("toString", "b")
+type("FormData.parse")(fd) // { toString: ["a", "b"] }
+```
+
+An alias named `__proto__` still doesn't work, since assigning that key sets the object's prototype. The lint rule against `{}` dictionaries hasn't been added.
+
+### <a id="fix-1473"></a>[#1473](https://github.com/arktypeio/arktype/issues/1473) Content-Security-Policy warning
+
+Fixed in featherduster by 312718029.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 3127180.
+
+The `new Function("return false")` CSP probe ran unconditionally while the default config was built, so `jitless: true` only overrode its result after the violation was already logged. The probe now runs only if `jitless` isn't already set in the global config. Simulating a CSP that blocks eval in Node:
+
+```ts
+const calls: string[] = []
+globalThis.Function = new Proxy(globalThis.Function, {
+	construct(target, args) {
+		calls.push(String(args.at(-1)))
+		throw new EvalError("blocked by CSP (simulated)")
+	}
+}) as never
+const { configure } = await import("arktype/config")
+configure({ jitless: true })
+const { type } = await import("arktype")
+console.log(calls) // [] (was [ 'return false' ])
+type({ a: "string" })({ a: 5 }).toString() // "a must be a string (was a number)"
+```
+
+`configure` has to run before arktype is first imported, e.g. from its own module imported ahead of arktype, as in the [configuration docs](https://arktype.io/docs/configuration). Without a global `jitless` setting, the probe still runs once, and setting `jitless` only at the scope level doesn't skip it.
+
+### <a id="fix-1306"></a>[#1306](https://github.com/arktypeio/arktype/issues/1306) Attest trace fails on `composite` typescript projects
+
+Fixed in featherduster by 99934ba9f.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 99934ba.
+
+`attest trace` and `attest stats` passed `--incremental false --tsBuildInfoFile null` to tsc so stale build info couldn't skip the check. Composite projects reject that (TS6379), and since TypeScript 5.6 tsc then skip type checking entirely, hence the empty trace and 0 instantiations. Simply adding `--composite false` instead breaks composite projects that set `declarationMap`, `declarationDir` etc. (TS5069). Both commands now leave the project's options alone and run tsc with `--incremental` and a build info file in a fresh temp dir, which is removed afterwards.
+
+With your tsconfig and a recursive type in `src/index.ts`, `attest stats` now reports real counts (`"instantiations": 34068`), and `attest trace .` writes and analyzes a trace.
+
+### <a id="fix-1470"></a>[#1470](https://github.com/arktypeio/arktype/issues/1470) Using configure on string literal causes the enum to become "anyOf" in schema
+
+Fixed in featherduster by f923ffeb1.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in f923ffe.
+
+`.configure()` and `.describe()` apply meta to each literal branch of a union as well as the union itself, and `toJsonSchema` only collapsed a union to `enum` when its branches had no meta at all. Branches whose meta matches the union's now collapse too:
+
+```ts
+const Provider = type("'sqlite' | 'postgresql' | 'mysql'")
+const Database = type({
+	provider: Provider.configure({ title: "Database Provider" }),
+	url: type("string").configure({ title: "Database URL" })
+})
+Database.toJsonSchema()
+// {
+// 	$schema: "https://json-schema.org/draft/2020-12/schema",
+// 	type: "object",
+// 	properties: {
+// 		provider: { enum: ["mysql", "postgresql", "sqlite"], title: "Database Provider" },
+// 		url: { type: "string", title: "Database URL" }
+// 	},
+// 	required: ["provider", "url"]
+// }
+```
+
+A branch with its own different meta still produces `anyOf`, as does a nullable union like `'a' | 'b' | null`, since `null` isn't emitted as a `const`.
+
+Workaround on 2.2.8: configure only the union node with `Provider.configure({ title: "Database Provider" }, "self")`.
+
+### <a id="fix-1529"></a>[#1529](https://github.com/arktypeio/arktype/issues/1529) ArkRegex's `regex()` returns `any` type in the playground
+
+Fixed in featherduster by f7c43123b and 49fea0d79.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in f7c4312.
+
+The playground loads a bundled copy of arkregex's type declarations, and the bundler dropped the internal `s` namespace that the parser types use, so `regex()` resolved to `any`. The bundle is now built from an entry that exports that namespace, and `regex("^ok$", "i")` infers `Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>` through it again. A test now type-checks a snippet against the bundled declarations so this can't silently regress.
+
+The same check turned up a similar bundling problem with `Required<...>` in arktype scopes, which inferred an error type in the playground; that's fixed in 49fea0d.
+
+The playground will pick both up once the docs are deployed from that branch. The `Define a Type called "Thing" to enable introspection` message is unrelated: the playground shows it whenever the code doesn't define a type named `Thing`.
+
+### <a id="fix-1555"></a>[#1555](https://github.com/arktypeio/arktype/issues/1555) Blob and File Obj check would not work in Mini-Program enviroment
+
+Fixed in featherduster by 0332e7a9d.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 0332e7a.
+
+`@ark/util` read `Blob`, `URL` and the other web platform constructors as bare globals, which throws a `ReferenceError` in runtimes that don't define them. They're now read as properties of `globalThis`, so a missing one is just `undefined`. Simulated by deleting the globals before import:
+
+```ts
+for (const k of [
+	"Blob",
+	"File",
+	"FormData",
+	"Headers",
+	"Request",
+	"Response",
+	"URL"
+])
+	delete (globalThis as any)[k]
+
+const { type } = await import("arktype")
+
+const FlowItem = type({
+	"source?": "string | number",
+	"update_time?": "string | number",
+	"value?": "unknown"
+})
+FlowItem({ source: 1 }) // { source: 1 } (import used to throw "Blob is not defined")
+
+type("Blob") // throws ParseError: 'Blob' is unresolvable
+```
+
+Keywords that need a missing global still fail when used: `Blob`, `File`, `Headers`, `Request`, `Response` and `URL` with the unresolvable error above, while `FormData`, `string.url` and `string.url.parse` still throw a `ReferenceError`.
+
+Workaround on 2.2.8: the `globalThis.X ??= function X() {}` stubs from @guyutongxue's comment, run in a module imported before arktype.
+
+### <a id="fix-1548"></a>[#1548](https://github.com/arktypeio/arktype/issues/1548) Some global types like `File`, `Blob` is conflicting and becomes `never` when used with `@cloudflare/workers-types` in `tsconfig.compilerOptions.types`
+
+Fixed in featherduster by 09fb6f7f9.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 09fb6f7.
+
+ArkType read the instance types of its builtin constructors from `typeof globalThis`, which includes globals declared with `var` but not with `class`. `@cloudflare/workers-types` declares `Blob`, `File`, `Headers` and `URL` as classes (`Request` and `Response` are `var`s, which is why those worked), so all four inferred as `never`. They now fall back to the class's own type. Checked against the published workers-types `index.d.ts` with `"lib": ["ES2022"]` and no DOM:
+
+```ts
+const Thing = type({
+	file: "File",
+	blob: "Blob",
+	url: "URL",
+	headers: "Headers",
+	string: "string"
+})
+
+type Out = typeof Thing.infer
+// { file: File; blob: Blob; url: URL; headers: Headers; string: string }
+// (file, blob, url and headers were never)
+```
+
+A global TypeScript can't resolve at all still infers as `never` rather than `any`.
+
+### <a id="fix-1530"></a>[#1530](https://github.com/arktypeio/arktype/issues/1530) Incorrect unnamed captures inference given alternation
+
+Fixed in featherduster by 196ced06c.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 196ced0.
+
+Every alternation branch numbered its groups from the same index, so a branch was never padded for the groups of the branches after it. A capture in one branch is now `undefined` in every other branch, matching what `exec` returns:
+
+```ts
+regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
+// ["1", undefined, undefined] | [undefined, "2", undefined] | [undefined, undefined, "3"]
+
+const m = regex("^(?:(a)|(b)(c))(d)$").exec("ad")
+m?.[4] // "d" (previously typed at index 2)
+```
+
+Numbered backreferences to a group in another branch now resolve to that group. A named backreference to a group declared in an earlier branch still widens to `string`.
+
+### Ready, awaiting a decision
+
+### <a id="fix-1577"></a>[#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
+
+Fix ready on `issue-audit` (b4aa2c78d), not landed. **Decision:** Adds five types to `arktype`'s root exports: `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex`. It is additive, but each one becomes public API to keep.
+
+Comment to post once it lands (`<sha>` is its commit):
+
+Fixed on the `featherduster` branch (#1685) in <sha>.
+
+Under pnpm, `@ark/util` and `@ark/schema` usually aren't resolvable from your package, and `arktype` didn't re-export the types its inferred types reference, so TypeScript could only name them through the `.pnpm/` store path and rejected it as non-portable. `arktype` now re-exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types, so your example emits:
+
+```ts
+export const GraphqlIdentifier = type("string.lower#GID")
+// d.ts: ...To<import("arktype").Brand<string, "GID">>...
+```
+
+That covers brands (`#X`, `.brand()`), `string.json.parse`, `object.json`, `object.json.stringify`, scopes containing generics, exported `regex()` values and `ArkErrors.byPath`/`issues`/`flatByPath`. Dependency types reachable only through rarely exported members (`.json`, `.meta`, `.internal`, `.select`, `.intersect`, `~standard`) can still hit this.
+
+On 2.2.8, @mattidupre's workaround above works: add `@ark/util` (and `@ark/schema` if needed) as direct dependencies, pinned to the exact versions `arktype` depends on.
+
+### <a id="fix-1430"></a>[#1430](https://github.com/arktypeio/arktype/issues/1430) Improve sequence min/max length expressions/descriptions
+
+Fix ready on `issue-audit` (a8f407e5b), not landed. **Decision:** Picks a format for expressions that used to drop length bounds and protos: `number[] >= 2`, `{ foo: string } & Date` and `(string >= 2)[]`. Error messages and `.expression` output for these types change.
+
+Comment to post once it lands (`<sha>` is its commit):
+
+Fixed on the `featherduster` branch (#1685) in <sha>.
+
+When a type had a structure, its expression and description were written from the structure alone, so array length bounds were dropped and distinct types printed identically. Bounds the sequence doesn't already imply are now written after it:
+
+```ts
+type("number[] > 1").expression // "number[] >= 2"
+type("number[] > 1").description // "number[] at least length 2"
+type("number[] < 5").description // "number[] at most length 4"
+type("0 < number[] <= 5").description // "number[] at most length 5 and non-empty"
+type("number[] > 1 | string[] < 1").expression // "number[] >= 2 | string[] == 0"
+type(["number"]).expression // "[number]"
+```
+
+The same bug dropped a proto alongside props, so `type("Date").and({ foo: "string" })` now prints `{ foo: string } & Date` rather than `{ foo: string }`. Joined intersections are also parenthesized when nested: `type("(string > 1)[]").expression` is `"(string >= 2)[]"` (was `"string >= 2[]"`).
+
+One difference from the snapshots above: a range is written `number[] <= 5 & >= 1`, not `1 < number[] <= 5`. `[number, ...number[]]` prints as `number[] >= 1`, since it's the same type as `number[] > 0`.
+
+### <a id="fix-1600"></a>[#1600](https://github.com/arktypeio/arktype/issues/1600) Using `.to` after a `.pipe` throws a `ParseError: instanceOf operand must be a function (was undefined)`
+
+Fix ready on `issue-audit` (90d9162af), not landed. **Decision:** An invoked builtin generic like `type.Record(...)` follows the config of the scope it is invoked from (`jitless`, `onFail`, ...) instead of the root schema scope's.
+
+Comment to post once it lands (`<sha>` is its commit):
+
+Fixed on the `featherduster` branch (#1685) in <sha>.
+
+This wasn't specific to `.pipe`/`.to`. Builtin generics like `type.Record` are defined in @ark/schema's root scope, and their instantiations stayed in that scope, so any method that takes a definition (`.to`, `.or`, `.and`, ...) parsed `"string.uuid[] > 0"` as a schema. The same applied to `Pick`, `Omit`, `Merge`, `Partial` etc. and to `$.type.Record(...)` from a scope. Instantiations are now parsed in the scope they're invoked from, so your example works as written:
+
+```ts
+const out = Thing({
+	tags: { _6baf599f_8a93_478c_9a3b_51cc01451628: true }
+})
+// { tags: [ '6baf599f-8a93-478c-9a3b-51cc01451628' ] }
+```
+
+Behavior change: an invoked builtin generic now follows the invoking scope's config (`jitless`, `onFail`, ...) instead of the defaults.
+
+Workaround on 2.2.8: use the string syntax, `type("Record<string, boolean>")`, in place of `type.Record("string", "boolean")`.
+
+### <a id="fix-1676"></a>[#1676](https://github.com/arktypeio/arktype/issues/1676) Memory leak: functions passed to `narrow`, `pipe`, `match` and defaults are never released
+
+Fix ready on `issue-audit` (32b915ba6), not landed. **Decision:** Removes the public `compiledMeta` member from `@ark/schema` nodes. The `$ark.x` names that predicates, morphs, defaults and meta values get in a node's `json` or `expression` no longer resolve through `$ark`, and JIT error meta becomes the node's own meta object, so a non-JSON value like `NaN` is no longer stringified.
+
+Comment to post once it lands (`<sha>` is its commit):
+
+Fixed on the `featherduster` branch (#1685) in <sha>, with a much smaller change than the one you describe, so no PR needed. Thanks for the tests.
+
+Hashing a node registered each narrow, pipe, match, default and meta function (e.g. a `message`) on `$ark`, keeping it and its closure alive forever. It now uses a unique name that doesn't hold the function.
+
+```ts
+const handleRequest = (request: { id: number }) => {
+	const T = type({ id: "number" }).narrow(v => v.id === request.id)
+	T({ id: 1 })
+	return new WeakRef(request)
+}
+const ref = handleRequest({ id: 1 })
+// after 3 rounds of setImmediate + gc()
+ref.deref() === undefined // true (false on 2.2.8)
+```
+
+All four tests from the issue pass. A `scope()` is now collected whether or not it's exported.
+
+Still retained: a scope containing a cyclic type. Also changed: `compiledMeta` is removed from @ark/schema nodes, and `$ark.x` names of functions in a node's `json`/`expression` no longer resolve through `$ark`.
+
+On 2.2.8, define function-bearing types once at module level and do request-specific checks after validating.
+
+### <a id="fix-1088"></a>[#1088](https://github.com/arktypeio/arktype/issues/1088) Make `@ark/schema` more resilient to duplicate installations or initializations
+
+Fix ready on `issue-audit` (dfb854c11), not landed. **Decision:** A morph result counts as errors when it has the `" arkKind"` brand and a `toJSON` method, which recognizes errors from duplicate installs of 2.1.17 or later. A hand-written object with both would count too. A microbenchmark of the check alone was slower once the brand read went megamorphic, on a loaded machine (suggestive only).
+
+Comment to post once it lands (`<sha>` is its commit):
+
+Fixed on the `featherduster` branch (#1685) in <sha>.
+
+The visible failure was morphs: a morph returning `ArkErrors` or an `ArkError` from a duplicate install of arktype was treated as a successful output, so later morphs ran on the errors object. Morph results are now recognized by their `" arkKind"` brand plus a `toJSON` method (a brand alone can come from parsed JSON):
+
+```ts
+import { type } from "arktype"
+import { type as otherType } from "other-copy-of-arktype"
+
+const OtherNumber = otherType("number")
+const T = type("string")
+	.pipe(s => OtherNumber(s))
+	.pipe(() => "next morph ran")
+
+String(T("x")) // "must be a number (was a string)" (was "next morph ran")
+```
+
+Copies recognized: 2.1.10+ for `ArkError`, 2.1.17+ for `ArkErrors`. A hand-written object with the brand and a `toJSON` method also counts as errors.
+
+Not changed: `instanceof type.errors` in your own code still only matches its own copy. Types from another copy of the same version already work in definitions and intersections, so the remaining `instanceof Disjoint` checks are left as is.
+
+Workaround on 2.2.8: convert in the morph, e.g. `out instanceof otherType.errors ? ctx.error({ message: out.summary }) : out`.
+
+### <a id="fix-1576"></a>[#1576](https://github.com/arktypeio/arktype/issues/1576) is ArkRegex a drop-in replacement for `new RegExp` even with dynamic patterns?
+
+Fix ready on `fix/regex` (1954a2038), not landed. **Decision:** `regex()` accepts a pattern typed as plain `string`, as `new RegExp` does. Its captures are `string | undefined` and its `groups` may be `undefined`. Today it is a type error, which contradicts the docs' "drop-in replacement" claim. Reviewed clean.
+
+### In review
+
+### <a id="fix-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
+
+Fix in review on `fix/match-order`. Six commits: this issue plus five ordered-discrimination bugs a fuzz found (98 of 3000 matchers misrouted on featherduster). It also fixes a featherduster regression in tuple-union `.allows` listed under side findings.
+
+### <a id="fix-1023"></a>[#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
+
+Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed at the top level only; the nested case is still in progress.
+
+### <a id="fix-1160"></a>[#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
+
+Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed at the top level only; the nested case is still in progress.
+
 ## Easy-win bugs
 
 These are unambiguous bugs, each verified to reproduce on the featherduster branch. The fix is local, you can name it in a sentence, it is about 30 changed lines or fewer, and it adds no API. The verifier checked each fix location on featherduster, and most fixes were prototyped in a scratch copy.
 
-| Issue                                                     | Package   | Effort  | Bug                                                                                                                                                                                                                                                                     |
-| --------------------------------------------------------- | --------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [#1023](https://github.com/arktypeio/arktype/issues/1023) | `arktype` | trivial | A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.                                                                                                                               |
-| [#1088](https://github.com/arktypeio/arktype/issues/1088) | `schema`  | trivial | A morph returning another installed copy's `ArkErrors` is treated as a successful output because morph results are checked with `instanceof`; switch those checks to `hasArkKind`.                                                                                      |
-| [#1306](https://github.com/arktypeio/arktype/issues/1306) | `attest`  | trivial | attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.                                                                                                             |
-| [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                    |
-| [#1470](https://github.com/arktypeio/arktype/issues/1470) | `schema`  | trivial | `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.                                                                                                         |
-| [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                 |
-| [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                               |
-| [#1548](https://github.com/arktypeio/arktype/issues/1548) | `util`    | trivial | With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.                                                                                                                                                               |
-| [#1576](https://github.com/arktypeio/arktype/issues/1576) | `regex`   | trivial | `regex(p)` with a non-literal `string` pattern fails to compile (parameter inferred as `never`), contradicting the documented 'drop-in replacement for new RegExp()'.                                                                                                   |
-| [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                            |
-| [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                               |
-| [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                      |
-| [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                       |
-| [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                 |
-| [#1530](https://github.com/arktypeio/arktype/issues/1530) | `regex`   | small   | With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures. |
-| [#1555](https://github.com/arktypeio/arktype/issues/1555) | `util`    | small   | Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).                                                                                    |
-| [#1676](https://github.com/arktypeio/arktype/issues/1676) | `schema`  | small   | Types built from fresh functions (narrow/pipe/match/defaults) are never garbage collected because each function is register()ed into the global $ark registry. On 2.2.8 this also pins the nodes built from them; on featherduster only the function and its closure stay pinned. |
+| Issue                                                     | Package   | Effort  | Status                               | Bug                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------- | --------- | ------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#1023](https://github.com/arktypeio/arktype/issues/1023) | `arktype` | trivial | [fix in review](#fix-1023)           | A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.                                                                                                                               |
+| [#1088](https://github.com/arktypeio/arktype/issues/1088) | `schema`  | trivial | [fix awaiting a decision](#fix-1088) | A morph returning another installed copy's `ArkErrors` is treated as a successful output because morph results are checked with `instanceof`; switch those checks to `hasArkKind`.                                                                                      |
+| [#1306](https://github.com/arktypeio/arktype/issues/1306) | `attest`  | trivial | [fixed in featherduster](#fix-1306)            | attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.                                                                                                             |
+| [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | [fix in review](#fix-1445)           | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                    |
+| [#1470](https://github.com/arktypeio/arktype/issues/1470) | `schema`  | trivial | [fixed in featherduster](#fix-1470)            | `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.                                                                                                         |
+| [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | [fixed in featherduster](#fix-1473)            | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                 |
+| [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | [fixed in featherduster](#fix-1529)            | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                               |
+| [#1548](https://github.com/arktypeio/arktype/issues/1548) | `util`    | trivial | [fixed in featherduster](#fix-1548)            | With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.                                                                                                                                                               |
+| [#1576](https://github.com/arktypeio/arktype/issues/1576) | `regex`   | trivial | [fix awaiting a decision](#fix-1576) | `regex(p)` with a non-literal `string` pattern fails to compile (parameter inferred as `never`), contradicting the documented 'drop-in replacement for new RegExp()'.                                                                                                   |
+| [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fix awaiting a decision](#fix-1577) | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                            |
+| [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | [fix awaiting a decision](#fix-1600) | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                               |
+| [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | [fixed in featherduster](#fix-1121)            | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                      |
+| [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | [fix in review](#fix-1160)           | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                       |
+| [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | [fix awaiting a decision](#fix-1430) | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                 |
+| [#1530](https://github.com/arktypeio/arktype/issues/1530) | `regex`   | small   | [fixed in featherduster](#fix-1530)            | With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures. |
+| [#1555](https://github.com/arktypeio/arktype/issues/1555) | `util`    | small   | [fixed in featherduster](#fix-1555)            | Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).                                                                                    |
+| [#1676](https://github.com/arktypeio/arktype/issues/1676) | `schema`  | small   | [fix awaiting a decision](#fix-1676) | Types built from fresh functions (narrow/pipe/match/defaults) are never garbage collected because each function is register()ed into the global $ark registry. On 2.2.8 this also pins the nodes built from them; on featherduster only the function and its closure stay pinned. |
 
 ### [#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
 
-`arktype` · effort trivial · [note](#note-1023) · 2.2.8: reproduces, featherduster: reproduces
+`arktype` · effort trivial · [fix in review](#fix-1023) · [note](#note-1023) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.
 
@@ -54,7 +413,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1088](https://github.com/arktypeio/arktype/issues/1088) Make `@ark/schema` more resilient to duplicate installations or initializations
 
-`schema` · effort trivial · 1 reaction · [note](#note-1088) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort trivial · 1 reaction · [fix awaiting a decision](#fix-1088) · [note](#note-1088) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** A morph returning another installed copy's `ArkErrors` is treated as a successful output because morph results are checked with `instanceof`; switch those checks to `hasArkKind`.
 
@@ -64,7 +423,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1306](https://github.com/arktypeio/arktype/issues/1306) Attest trace fails on `composite` typescript projects
 
-`attest` · effort trivial · [note](#note-1306) · 2.2.8: reproduces, featherduster: reproduces
+`attest` · effort trivial · [fixed in featherduster](#fix-1306) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.
 
@@ -74,7 +433,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
 
-`schema` · effort trivial · [note](#note-1445) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort trivial · [fix in review](#fix-1445) · [note](#note-1445) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.
 
@@ -84,7 +443,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1470](https://github.com/arktypeio/arktype/issues/1470) Using configure on string literal causes the enum to become "anyOf" in schema
 
-`schema` · effort trivial · 1 reaction · [note](#note-1470) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort trivial · 1 reaction · [fixed in featherduster](#fix-1470) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.
 
@@ -94,7 +453,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1473](https://github.com/arktypeio/arktype/issues/1473) Content-Security-Policy warning
 
-`schema` · effort trivial · 2 reactions · [note](#note-1473) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort trivial · 2 reactions · [fixed in featherduster](#fix-1473) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.
 
@@ -104,7 +463,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1529](https://github.com/arktypeio/arktype/issues/1529) ArkRegex's `regex()` returns `any` type in the playground
 
-`docs` · effort trivial · 2 reactions · [note](#note-1529) · 2.2.8: reproduces, featherduster: reproduces
+`docs` · effort trivial · 2 reactions · [fixed in featherduster](#fix-1529) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.
 
@@ -114,7 +473,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1548](https://github.com/arktypeio/arktype/issues/1548) Some global types like `File`, `Blob` is conflicting and becomes `never` when used with `@cloudflare/workers-types` in `tsconfig.compilerOptions.types`
 
-`util` · effort trivial · [note](#note-1548) · 2.2.8: reproduces, featherduster: reproduces
+`util` · effort trivial · [fixed in featherduster](#fix-1548) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.
 
@@ -124,7 +483,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1576](https://github.com/arktypeio/arktype/issues/1576) is ArkRegex a drop-in replacement for `new RegExp` even with dynamic patterns?
 
-`regex` · effort trivial · 1 reaction · [note](#note-1576) · 2.2.8: reproduces, featherduster: reproduces
+`regex` · effort trivial · 1 reaction · [fix awaiting a decision](#fix-1576) · [note](#note-1576) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** `regex(p)` with a non-literal `string` pattern fails to compile (parameter inferred as `never`), contradicting the documented 'drop-in replacement for new RegExp()'.
 
@@ -134,7 +493,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
 
-`arktype` · effort trivial · 2 reactions · [note](#note-1577) · 2.2.8: reproduces, featherduster: reproduces
+`arktype` · effort trivial · 2 reactions · [fix awaiting a decision](#fix-1577) · [note](#note-1577) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.
 
@@ -144,7 +503,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1600](https://github.com/arktypeio/arktype/issues/1600) Using `.to` after a `.pipe` throws a `ParseError: instanceOf operand must be a function (was undefined)`
 
-`schema` · effort trivial · [note](#note-1600) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort trivial · [fix awaiting a decision](#fix-1600) · [note](#note-1600) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.
 
@@ -154,7 +513,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1121](https://github.com/arktypeio/arktype/issues/1121) Replace cases of {} being used to store arbitrary names with Object.create(null)
 
-`schema` · effort small · [note](#note-1121) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort small · [fixed in featherduster](#fix-1121) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.
 
@@ -164,7 +523,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
 
-`arktype` · effort small · [note](#note-1160) · 2.2.8: reproduces, featherduster: reproduces
+`arktype` · effort small · [fix in review](#fix-1160) · [note](#note-1160) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.
 
@@ -174,7 +533,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1430](https://github.com/arktypeio/arktype/issues/1430) Improve sequence min/max length expressions/descriptions
 
-`schema` · effort small · [note](#note-1430) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort small · [fix awaiting a decision](#fix-1430) · [note](#note-1430) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.
 
@@ -184,7 +543,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1530](https://github.com/arktypeio/arktype/issues/1530) Incorrect unnamed captures inference given alternation
 
-`regex` · effort small · [note](#note-1530) · 2.2.8: reproduces, featherduster: reproduces
+`regex` · effort small · [fixed in featherduster](#fix-1530) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures.
 
@@ -194,7 +553,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1555](https://github.com/arktypeio/arktype/issues/1555) Blob and File Obj check would not work in Mini-Program enviroment
 
-`util` · effort small · [note](#note-1555) · 2.2.8: reproduces, featherduster: reproduces
+`util` · effort small · [fixed in featherduster](#fix-1555) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).
 
@@ -204,7 +563,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1676](https://github.com/arktypeio/arktype/issues/1676) Memory leak: functions passed to `narrow`, `pipe`, `match` and defaults are never released
 
-`schema` · effort small · [note](#note-1676) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort small · [fix awaiting a decision](#fix-1676) · [note](#note-1676) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Types built from fresh functions (narrow/pipe/match/defaults) are never garbage collected because each function is register()ed into the global $ark registry. On 2.2.8 this also pins the nodes built from them; on featherduster only the function and its closure stay pinned.
 
@@ -1214,23 +1573,34 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ### featherduster behavior changes the CHANGELOG doesn't mention
 
-- **`"+": "delete"` reorders keys.** On featherduster, deleting undeclared keys (shallow or deep) returns the declared keys in the node's sorted order. 2.2.8 keeps input order. `type({ "+": "delete", b: "string", a: "string", "c?": "number" })({ a: "1", z: 0, c: 1, b: "2" })` gives `{a, c, b}` on 2.2.8 and `{a, b, c}` on featherduster. Transforms that don't delete keys, like `string.trim`, keep input order on both. Found while checking [#1380](https://github.com/arktypeio/arktype/issues/1380).
+- **`"+": "delete"` reorders keys.** On featherduster, deleting undeclared keys (shallow or deep) returns the declared keys in the node's sorted order. 2.2.8 keeps input order. `type({ "+": "delete", b: "string", a: "string", "c?": "number" })({ a: "1", z: 0, c: 1, b: "2" })` gives `{a, c, b}` on 2.2.8 and `{a, b, c}` on featherduster. Transforms that don't delete keys, like `string.trim`, keep input order on both. Found while checking [#1380](https://github.com/arktypeio/arktype/issues/1380). The order was set deliberately (713b65cdc, d16b90039 for perf). Whether to keep it and document it in the CHANGELOG is awaiting a decision.
+- **A tuple union's `.allows` rejects a value it accepts on 2.2.8.** `type(["'x'", "string"]).or(["unknown", "undefined"]).or(["1", "object"]).allows(["x", undefined])` is false on featherduster and true on 2.2.8. The fix for [#1445](https://github.com/arktypeio/arktype/issues/1445) on `fix/match-order` fixes it too (in review).
 - **The call site drops out of the indeterminate-union ParseError's stack.** The extra `ark/sets/engine.ts` frame pushes the user's `.or(...)` frame past Node's default 10-frame stack limit, so the error no longer shows where it came from. Found on [#1613](https://github.com/arktypeio/arktype/issues/1613).
 - **Equivalent cyclic aliases are no longer the same node.** On featherduster, `types.user !== types.admin` for structurally equal aliases, and `admin`'s expression unrolls one level. `equals` is true, so this is not a correctness issue, but it changes reference identity. Found on [#928](https://github.com/arktypeio/arktype/issues/928). The loss of identity for a shared input transformed at two keys is already listed under known regressions in [#1685](https://github.com/arktypeio/arktype/pull/1685).
 
 ### Unfiled bugs
 
-- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. The cause is in `appendNonRedundant`/`prependNonRedundant` (`ark/regex/state.ts:743-768`): they merge `` `${number}` `` into an adjacent `string` because `` `${number}` `` extends `string`. Merging only when the neighbor is exactly `` `${number}` `` fixes it, and that type-checks in scratch. This is an easy win, related to [#1663](https://github.com/arktypeio/arktype/issues/1663) but distinct from it. Found on [#839](https://github.com/arktypeio/arktype/issues/839).
+- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. The cause is in `appendNonRedundant`/`prependNonRedundant` (`ark/regex/state.ts:743-768`): they merge `` `${number}` `` into an adjacent `string` because `` `${number}` `` extends `string`. Merging only when the neighbor is exactly `` `${number}` `` fixes it, and that type-checks in scratch. It is related to [#1663](https://github.com/arktypeio/arktype/issues/1663) but distinct from it. Found on [#839](https://github.com/arktypeio/arktype/issues/839). The one-line fix proposed here turned out to be unsound, since TypeScript matches a placeholder followed by another placeholder against a single character. The fix on `fix/regex` widens such types (`\d+` infers `string`). Review is still finding new false rejections in quantified groups, so it awaits a decision.
 - **`string[] & number[]` is `unknown[]` on 2.2.8 and accepts `["x"]`.** On featherduster it is `[]`, which is correct. No issue tracks it, so nothing needs closing. Found on [#1088](https://github.com/arktypeio/arktype/issues/1088).
 - **Flat tuple expressions silently drop operands at runtime.** They are a type error, but at runtime the extra operands are dropped (`string | false | true`). Separately, `type("string&number")` throws "unsatisfiable" at runtime but isn't a type error. Found on [#585](https://github.com/arktypeio/arktype/issues/585).
 - **A numeric finite index is a type error but works at runtime.** With `index: "1 | 3 | 5 | 7"`, `{ "[index]": "index" }` reports "Indexed key definition must be a string or symbol", but at runtime it expands fine. Found on [#584](https://github.com/arktypeio/arktype/issues/584).
-- **An intersection's expression drops its proto and refinements when it has props.** `type("Date > 0").and({ foo: "string" }).expression` is `{ foo: string }`. This is the same early return as [#1430](https://github.com/arktypeio/arktype/issues/1430), so fixing that issue fixes this too.
-- **The playground's `type.d.ts` has a stray `Required$1` (TS2749).** The `(Omit|Exclude|Extract|Record)$1` fixup in `ark/repo/dtsGen.ts` doesn't cover it. Found on [#1529](https://github.com/arktypeio/arktype/issues/1529).
+- **An intersection's expression drops its proto and refinements when it has props.** `type("Date > 0").and({ foo: "string" }).expression` is `{ foo: string }`. This is the same early return as [#1430](https://github.com/arktypeio/arktype/issues/1430), and its fix (awaiting a decision) fixes this too.
+- **`.brand()` on a string or number infers an `ObjectType` (2.2.7 and featherduster).** `type("string").brand("X")` has no `StringType` methods. `Brand<string, id>` is `string & {...}`, and `instantiateType` checks `[t] extends [object]` first.
+- **arkregex inference gaps (2.2.7 and featherduster).** These turned up while fixing [#1530](https://github.com/arktypeio/arktype/issues/1530). Capture indices from a literal pattern are unsound for optional groups. The base `Regex` types `exec` groups as `undefined`. A template source with a dynamic part infers its captures as `[]`. `finalizeBranches` drops branch errors. A later alternation branch can't see named groups from earlier branches.
+- **Putting a 2.2.8 `Type` in a featherduster definition throws `node.referencedBesidesChildren is not iterable`.** A duplicate copy of the same version works. Found while checking [#1088](https://github.com/arktypeio/arktype/issues/1088).
+- **Date bounds print the local `Date.toString()` in expressions (2.2.8 and featherduster).** That drops milliseconds, so `type("Date > 0")` and `type("Date >= 0")` both print `Date >= Wed Dec 31 1969 19:00:00 GMT-0500 (Eastern Standard Time)`, and the expression depends on the machine's time zone. On featherduster, `description` is in UTC with milliseconds.
+- **`ark/repo/__tests__/benchScenarios.test.ts` "accepts alike" is intermittent on featherduster.** It failed in two full runs and passed in a third, and it passes alone.
+
+### Fixed in featherduster without an issue
+
+- **The playground's `type.d.ts` had a stray `Required$1` (TS2749).** Fixed with [#1529](https://github.com/arktypeio/arktype/issues/1529) (49fea0d79).
+- **A scope alias that failed to parse reported a false cycle on later references.** With `scope({ a: { b: "b" }, b: { a: "a", c: "bad" } })`, `$.type("a")` threw "'bad' is unresolvable", but a following `$.type("a | string")` threw a shallow cycle error. On 2.2.8, JIT validation of the result crashed. Fixed in f8f2d92e4.
+- **Errors merged from a nested morph lost part of their path (featherduster regression).** `toJSON().path` and the message of an error from a morph inside a morph dropped the middle keys. Fixed in c03af9670.
 - **Error wording.** With an empty `actual`, `ark/schema/roots/intersection.ts:246` still writes the `(${ctx.actual}) ` prefix ([#1538](https://github.com/arktypeio/arktype/issues/1538)). On featherduster, the JSON scope's error for `{ a: [1, { b: undefined }] }` repeats itself: `... must be an array (was object) or must be an array (was object)` ([#1026](https://github.com/arktypeio/arktype/issues/1026)). The summary for an optional `never` key is just `never` ([#930](https://github.com/arktypeio/arktype/issues/930)).
 
 ## Notes by issue
 
-These 144 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
+These 136 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
 ### <a id="note-462"></a>[#462](https://github.com/arktypeio/arktype/issues/462) arktype dedicated Promise handling
 
@@ -1821,21 +2191,6 @@ T("x") // "next morph ran"
 
 The other copy's Types already work inside definitions and intersections (`type({ a: Num2 })`), since that path uses `hasArkKind`.
 
-### <a id="note-1121"></a>[#1121](https://github.com/arktypeio/arktype/issues/1121) Replace cases of {} being used to store arbitrary names with Object.create(null)
-
-The `register` case no longer reproduces on arktype 2.2.8 (a function named `toString` registers as `toString`). Other name maps still inherit from `Object.prototype`. On arktype 2.2.8:
-
-```ts
-scope({ toString: "string" }).export()
-// ParseError: #toString duplicates public alias toString
-type("toString" as any)
-// TypeError: Cannot read properties of undefined (reading 'map')
-type({ valueOf: "boolean" })({ valueOf: 1 }).toString()
-// TypeError: to.push is not a function
-```
-
-The maps involved are `aliases`/`resolutions` in `ark/schema/scope.ts`, the per-scope string parse cache in `ark/type/parser/definition.ts`, `ctx.args` (`{ this: ctx.id }` in `ark/type/scope.ts`, read in `ark/type/parser/shift/operand/unenclosed.ts`) and the `groupBy` accumulator in `ark/util/arrays.ts`.
-
 ### <a id="note-1128"></a>[#1128](https://github.com/arktypeio/arktype/issues/1128) Attest Bun support
 
 `@prettier/sync` 0.6.1 (pinned by @ark/attest 0.57.0) formats correctly under Bun 1.2.10. With TypeScript 7 installed, writing snapshots still fails under Bun: attest uses TypeScript 7's API client, which reads `child.stdout._handle.fd` (`typescript/dist/api/syncChannel.js`), and Bun doesn't expose `_handle`.
@@ -1992,23 +2347,6 @@ Array.index             "matched by ^(?:0|[1-9]\d*)$"
 Array.liftFrom          "a generic type for Function"
 unknown.any             "unknown"
 ```
-
-### <a id="note-1306"></a>[#1306](https://github.com/arktypeio/arktype/issues/1306) Attest trace fails on `composite` typescript projects
-
-Root cause: `baseDiagnosticTscCmd` in `ark/attest/cli/shared.ts`, used by both `attest trace` and `attest stats`, passes `--incremental false`. tsc rejects that for a composite project and skips type checking, so the trace is empty. With the tsconfig from the issue and a recursive type in `src/index.ts`, on TypeScript 6.0.3:
-
-```
-$ tsc --noEmit --extendedDiagnostics --incremental false --tsBuildInfoFile null --project tsconfig.json
-tsconfig.json(5,5): error TS6379: Composite projects may not disable incremental compilation.
-Types:                         85
-Instantiations:                 0
-
-$ tsc --noEmit --extendedDiagnostics --incremental false --composite false --tsBuildInfoFile null --project tsconfig.json
-Types:                       36458
-Instantiations:              38790
-```
-
-The TypeScript 7 native preview behaves the same. Adding `--composite false` to that command avoids the error.
 
 ### <a id="note-1307"></a>[#1307](https://github.com/arktypeio/arktype/issues/1307) Allow more specific "date" keywords
 
@@ -2520,38 +2858,6 @@ Name("ABC") // "ABC"
 
 Meta isn't validated (`"ABC"` passes). For `pattern`, `type({ name: /^[a-z]+$/ })` validates and emits the same `pattern`. A dedicated `jsonSchema` meta property is tracked in #1571.
 
-### <a id="note-1470"></a>[#1470](https://github.com/arktypeio/arktype/issues/1470) Using configure on string literal causes the enum to become "anyOf" in schema
-
-Still reproduces on arktype 2.2.8. Shallow `.configure` copies the meta onto each literal branch, and the `enum` collapse in `toJsonSchema` (`ark/schema/roots/union.ts:324`) only applies when the branches have no metadata. `.describe()` behaves the same way. Configuring only the union node avoids it:
-
-```ts
-const Provider = type("'sqlite' | 'postgresql' | 'mysql'")
-Provider.configure({ title: "Database Provider" }, "self").toJsonSchema()
-// { $schema: "...", enum: ["mysql", "postgresql", "sqlite"], title: "Database Provider" }
-```
-
-Related: #1450.
-
-### <a id="note-1473"></a>[#1473](https://github.com/arktypeio/arktype/issues/1473) Content-Security-Policy warning
-
-Still reproduces on arktype 2.2.8 with `jitless: true` configured before importing arktype. The `envHasCsp()` probe in `ark/schema/kinds.ts:92` runs unconditionally while the default config is built. Simulating CSP in Node:
-
-```ts
-const calls: string[] = []
-globalThis.Function = new Proxy(globalThis.Function, {
-	construct(target, args) {
-		calls.push(String(args.at(-1)))
-		throw new EvalError("blocked by CSP (simulated)")
-	}
-}) as never
-const { configure } = await import("arktype/config")
-configure({ jitless: true })
-await import("arktype")
-console.log(calls) // [ 'return false' ]
-```
-
-`$ark.config.jitless` is already `true` when the probe runs, so checking it first would skip the probe.
-
 ### <a id="note-1475"></a>[#1475](https://github.com/arktypeio/arktype/issues/1475) `toJsonSchema()` fails when a field is `string.url`
 
 Still reproduces on arktype 2.2.8. `string.url` validates with a predicate (`URL.canParse`), and predicates throw by default in `toJsonSchema`. The keyword already carries `format: "uri"`, so ignoring the predicate gives the expected output:
@@ -2756,30 +3062,6 @@ T({ "[string]": 1 }) // { '[string]': 1 }
 // T.infer: { "[string]"?: number }
 ```
 
-### <a id="note-1529"></a>[#1529](https://github.com/arktypeio/arktype/issues/1529) ArkRegex's `regex()` returns `any` type in the playground
-
-Root cause: the playground's bundled arkregex declarations (`ark/docs/components/dts/regex.ts`, generated by `ark/repo/dtsGen.ts` via `tsup --dts-resolve`) are missing the `s` namespace from `ark/regex/state.ts`. Its uses (`s.error<...>`, `s.pushGroup<...>`) sit in types whose type parameter is also named `s`, so the bundler drops the namespace and everything only it references. Type-checking the bundled files reports `TS2702: 's' only refers to a type, but is being used as a namespace here` 36 times, and `regex()` resolves to `any`:
-
-```ts
-const ok = regex("^ok$", "i")
-export const b: number = ok.infer // no error: ok is any
-```
-
-With the namespace renamed so no type parameter shadows it, the regenerated bundle type-checks and `ok.infer` is `"ok" | "oK" | "Ok" | "OK"`.
-
-### <a id="note-1530"></a>[#1530](https://github.com/arktypeio/arktype/issues/1530) Incorrect unnamed captures inference given alternation
-
-Still reproduces on arktype 2.2.8 (arkregex 0.0.13). Captures after the alternation get the wrong index too:
-
-```ts
-regex("^(a)|(b)$").inferCaptures // ["a"] | [undefined, "b"]
-regex("^(?:a|(b))$").inferCaptures // [] | ["b"]
-regex("^(?:(a)|(b)(c))(d)$").inferCaptures // ["a", "d"] | [undefined, "b", "c", "d"]
-/^(?:(a)|(b)(c))(d)$/.exec("ad") // ["ad", "a", undefined, undefined, "d"]
-```
-
-In `UnionTree.finalizeBranchCaptures` (`ark/regex/state.ts`), each branch is prefixed with `undefined` only for the first branch's captures (`acc[0]`), and `finalizeBranches` never pads earlier branches with trailing `undefined`s.
-
 ### <a id="note-1532"></a>[#1532](https://github.com/arktypeio/arktype/issues/1532) capture groups inside lookarounds not captured
 
 Still reproduces on arktype 2.2.8 (arkregex 0.0.13). Because dropped groups also shift the indices of later captures, the inferred types can be wrong, not just missing:
@@ -2857,45 +3139,6 @@ Doesn't reproduce on the `featherduster` branch (#1685): in the same order, `Thi
 Still reproduces on arktype 2.2.8: both the scope above and the two-props-per-branch case from the comment throw `Unexpected JSON Schema input for structure: {}`. Cyclic types always generate with refs, and the generated `$defs` include the union's discriminated case nodes with the `kind` key pruned (e.g. `{ value: string }`), which have no `object` domain. A non-recursive discriminated union with `toJsonSchema({ useRefs: true })` throws the same error (#1511, #1612).
 
 Doesn't reproduce on the `featherduster` branch (#1685). There, `s.type("SearchNode").toJsonSchema()` returns a `$ref` to a `Node` def whose `data` refs an `anyOf` of the two branches.
-
-### <a id="note-1548"></a>[#1548](https://github.com/arktypeio/arktype/issues/1548) Some global types like `File`, `Blob` is conflicting and becomes `never` when used with `@cloudflare/workers-types` in `tsconfig.compilerOptions.types`
-
-Still reproduces on arktype 2.2.8 with the published `@cloudflare/workers-types` `index.d.ts` and `"lib": ["ESNext"]` (no DOM):
-
-```ts
-const Thing = type({
-	file: "File",
-	blob: "Blob",
-	url: "URL",
-	headers: "Headers",
-	request: "Request"
-})
-type Out = typeof Thing.infer
-// file, blob, url, headers: never; request is fine
-```
-
-Cause: `instantiateConstructors` in `ark/util/objectKinds.ts` reads instance types from `typeof globalThis`, which includes `declare var` globals but not `declare class` ones. workers-types declares `Blob`, `File`, `Headers` and `URL` as classes (`Request`/`Response` are `var`s, so they work). Falling back to `InstanceType<builtinConstructors[k]>`, guarded against `any` (#1246), resolves all of them.
-
-### <a id="note-1555"></a>[#1555](https://github.com/arktypeio/arktype/issues/1555) Blob and File Obj check would not work in Mini-Program enviroment
-
-Still reproduces on arktype 2.2.8 by deleting the globals before importing:
-
-```ts
-for (const k of [
-	"Blob",
-	"File",
-	"FormData",
-	"Headers",
-	"Request",
-	"Response",
-	"URL"
-])
-	delete (globalThis as any)[k]
-const { type } = await import("arktype")
-// ReferenceError: Blob is not defined
-```
-
-`platformConstructors` in `ark/util/objectKinds.ts` reads every constructor at module load (and `FileConstructor = globalThis.File ?? Blob`), although the keywords that use them are lazy. On the `featherduster` branch (#1685), `FormData`, `Headers`, `Request` and `Response` are already getters, so only `Blob` and `URL` still throw. The `globalThis.X ??= function X() {}` stubs from the comment above work around it on arktype 2.2.8.
 
 ### <a id="note-1568"></a>[#1568](https://github.com/arktypeio/arktype/issues/1568) Arktype doesn't work with @date-fns/utc UTCDate class.
 
