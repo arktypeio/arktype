@@ -211,9 +211,8 @@ contextualize(() => {
 		const { T } = await load({ T: type("string") })
 		attest(() => T.and("number")).throws(writeUnavailableMemberMessage("and"))
 		attest(() => T.in).throws(writeUnavailableMemberMessage("in"))
-		attest(() => T.toJsonSchema()).throws(
-			writeUnavailableMemberMessage("toJsonSchema")
-		)
+		attest("toJsonSchema" in T).equals(false)
+		attest(JSON.stringify({ T })).equals("{}")
 	})
 
 	it("writes errors with configured strings", async () => {

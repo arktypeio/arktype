@@ -147,9 +147,12 @@ type typeOnlyMember =
 	| "inferIntrospectableOut"
 	| "Symbol"
 
+// introspection a build bakes only when asked, so otherwise absent as on any other validator
+type bakedMember = "json" | "toJSON" | "toJsonSchema"
+
 type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
-	keyof Validator | keyof Function | typeOnlyMember
+	keyof Validator | keyof Function | typeOnlyMember | bakedMember
 >
 
 // each composes or introspects a node, which a standalone validator doesn't have
@@ -183,7 +186,6 @@ const unavailableMembers = {
 	in: "property",
 	internal: "property",
 	intersect: "method",
-	json: "property",
 	keyof: "method",
 	laterThan: "method",
 	lessThan: "method",
@@ -209,9 +211,7 @@ const unavailableMembers = {
 	readonly: "method",
 	required: "method",
 	select: "method",
-	to: "method",
-	toJSON: "method",
-	toJsonSchema: "method"
+	to: "method"
 } satisfies Record<unavailableMember, "method" | "property">
 
 for (const [name, kind] of Object.entries(unavailableMembers)) {
