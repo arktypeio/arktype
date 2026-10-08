@@ -15,6 +15,8 @@ import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	refs: BaseRoot[]
+	refNamesById: Record<string, string>
+	refCountsByPrefix: Record<string, number>
 }
 
 export const toJsonSchema = (
@@ -23,7 +25,7 @@ export const toJsonSchema = (
 ): JsonSchema => {
 	const ctx: JsonSchemaContext = Object.assign(
 		mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, opts),
-		{ refs: [] }
+		{ refs: [], refNamesById: {}, refCountsByPrefix: {} }
 	)
 
 	ctx.useRefs ||= node.includesAlias
@@ -32,18 +34,29 @@ export const toJsonSchema = (
 	const schema: JsonSchema =
 		typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
 
+	if (ctx.useRefs) {
+		// name defs in reference order so each prefix is numbered in key order
+		for (const ref of node.references)
+			if (ref.isRoot() && !ref.alwaysExpandJsonSchema) refNameOf(ref, ctx)
+	}
+
 	Object.assign(schema, toJsonSchemaRecurse(node, ctx))
 
 	if (ctx.useRefs) {
-		const schemasById: Record<string, JsonSchema> = {}
-		for (let i = 0; i < ctx.refs.length; i++)
-			schemasById[ctx.refs[i].id] ??= toResolvedJsonSchema(ctx.refs[i], ctx)
+		const schemasByName: Record<string, JsonSchema> = {}
+		for (let i = 0; i < ctx.refs.length; i++) {
+			schemasByName[ctx.refNamesById[ctx.refs[i].id]] ??= toResolvedJsonSchema(
+				ctx.refs[i],
+				ctx
+			)
+		}
 		// only nodes a $ref reaches are defined, not e.g. a discriminant's cases
-		const defs = flatMorph(node.references, (i, ref) =>
-			ref.id in schemasById ? [ref.id, schemasById[ref.id]] : []
-		)
+		const defs = flatMorph(node.references, (i, ref) => {
+			const name = ctx.refNamesById[ref.id]
+			return name in schemasByName ? [name, schemasByName[name]] : []
+		})
 		// an alias's resolution or a morph's out can be reached outside node.references
-		Object.assign(defs, schemasById)
+		Object.assign(defs, schemasByName)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		if (ctx.target === "draft-07") Object.assign(schema, { definitions: defs })
 		else schema.$defs = defs
@@ -60,10 +73,19 @@ export const toJsonSchemaRecurse = (
 		ctx.refs.push(node)
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
-		return { $ref: `#/${defsKey}/${node.id}` } as JsonSchema.Ref
+		return { $ref: `#/${defsKey}/${refNameOf(node, ctx)}` } as JsonSchema.Ref
 	}
 
 	return toResolvedJsonSchema(node, ctx)
+}
+
+const refNameOf = (node: BaseRoot, ctx: JsonSchemaContext): string => {
+	if (node.id in ctx.refNamesById) return ctx.refNamesById[node.id]
+	// an id's prefix is its alias or kind, but its count depends on unrelated nodes
+	const prefix = node.id.replace(/\d+$/, "")
+	ctx.refCountsByPrefix[prefix] ??= 0
+	return (ctx.refNamesById[node.id] =
+		`${prefix}${++ctx.refCountsByPrefix[prefix]}`)
 }
 
 const toResolvedJsonSchema = (

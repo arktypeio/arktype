@@ -12,7 +12,12 @@ export const setEngine: SetEngine = {
 	discriminate,
 	toJsonSchema,
 	toJsonSchemaRecurse: (node, ctx) =>
-		toJsonSchemaRecurse(node, { ...ctx, refs: [] })
+		toJsonSchemaRecurse(node, {
+			...ctx,
+			refs: [],
+			refNamesById: {},
+			refCountsByPrefix: {}
+		})
 }
 
 // must precede parsing, since nodes are reduced and discriminated when parsed

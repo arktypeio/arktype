@@ -281,7 +281,7 @@ contextualize(() => {
 			required: ["a"]
 		})
 		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
-			$ref: `#/$defs/${node.id}`
+			$ref: "#/$defs/intersection1"
 		})
 		attest(
 			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
@@ -899,7 +899,7 @@ contextualize(() => {
 			).equals(expected)
 			attest(
 				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
-					.$defs![T.id]
+					.$defs!.intersection1
 			).equals(expected)
 		})
 

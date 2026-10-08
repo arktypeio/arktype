@@ -651,6 +651,20 @@ A tuple definition's first two elements were converted to property keys to check
 type(["string", "toString"])
 ```
 
+### Name JSON Schema `$defs` independently of other types
+
+`$defs` keys and `$ref`s were node ids, whose numbers depend on every type defined before, so the same type's JSON Schema changed with unrelated code. Each def is now named by its alias or kind, numbered within the schema in reference order:
+
+```ts
+const { user } = scope({
+	user: { name: "string", "friends?": "user[]" }
+}).export()
+
+// previously e.g. { $ref: "#/$defs/user3", ... "#/$defs/intersection41" ... }
+// now { $ref: "#/$defs/user1", ... "#/$defs/intersection1" ... }
+user.toJsonSchema()
+```
+
 ## 2.2.8
 
 ### Add `string.base58`

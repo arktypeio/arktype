@@ -155,6 +155,32 @@ contextualize(() => {
 		attest(referencedDefs(out)).equals(Object.keys(out.$defs!).sort())
 	})
 
+	it("names defs independently of earlier types", () => {
+		const toUserSchema = () =>
+			scope({ user: { name: "string", "friends?": "user[]" } })
+				.export()
+				.user.toJsonSchema({ dialect: null })
+
+		const first = toUserSchema()
+		type({ name: "string", "friends?": "string[]" })
+
+		attest(toUserSchema()).equals(first)
+		attest(first).snap({
+			$ref: "#/$defs/user1",
+			$defs: {
+				user1: {
+					type: "object",
+					properties: {
+						name: { type: "string" },
+						friends: { $ref: "#/$defs/intersection1" }
+					},
+					required: ["name"]
+				},
+				intersection1: { type: "array", items: { $ref: "#/$defs/user1" } }
+			}
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1470
 	it("configured union of literals as enum", () => {
 		const Provider = type("'sqlite' | 'postgresql'").configure({
