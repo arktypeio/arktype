@@ -10,9 +10,20 @@ import type {
 } from "oxc-parser"
 import type { PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
-import { exportNameOf, unwrapExpression, walk, type Binding } from "./scope.ts"
+import {
+	exportNameOf,
+	unwrapExpression,
+	walk,
+	type Binding,
+	type Reference
+} from "./scope.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
+
+export type ArkExportName =
+	| keyof typeof arktype
+	| keyof typeof arktypeConfig
+	| keyof typeof arkregex
 
 const arktypeNamespacesBySpecifier: Record<string, object> =
 	Object.setPrototypeOf(
@@ -70,7 +81,8 @@ export const unstableArkMembers: Record<string, 1> = Object.setPrototypeOf(
 )
 
 export type ImportTarget =
-	| { kind: "arktype"; name: string; value: unknown }
+	| { kind: "arktype"; name: ArkExportName; value: unknown }
+	| { kind: "arktypeNamespace"; specifier: string; value: object }
 	| { kind: "binding"; module: SourceModule; binding: Binding; name: string }
 	| { kind: "namespace"; module: SourceModule }
 	| { kind: "expression"; module: SourceModule; node: Node }
@@ -102,8 +114,8 @@ export class ModuleGraph {
 	): ImportTarget | SourceModule {
 		if (specifier in arktypeNamespacesBySpecifier) {
 			return {
-				kind: "arktype",
-				name: specifier,
+				kind: "arktypeNamespace",
+				specifier,
 				value: arktypeNamespacesBySpecifier[specifier]
 			}
 		}
@@ -174,9 +186,17 @@ export class ModuleGraph {
 		}
 		const target = this.resolve(source, module)
 		if (!(target instanceof SourceModule)) {
-			if (target.kind !== "arktype" || declaration.type !== "ImportSpecifier")
-				return target
-			return arktypeExportOf(target, exportNameOf(declaration.imported))
+			return (
+					target.kind !== "arktypeNamespace" ||
+						declaration.type === "ImportNamespaceSpecifier"
+				) ?
+					target
+				:	arktypeExportOf(
+						target,
+						declaration.type === "ImportSpecifier" ?
+							exportNameOf(declaration.imported)
+						:	"default"
+					)
 		}
 		return (
 			declaration.type === "ImportNamespaceSpecifier" ?
@@ -208,7 +228,9 @@ export class ModuleGraph {
 				case "namespace": {
 					const target = this.resolve(entry.specifier, module)
 					if (!(target instanceof SourceModule)) {
-						return target.kind === "arktype" && entry.kind === "reexport" ?
+						return (
+								target.kind === "arktypeNamespace" && entry.kind === "reexport"
+							) ?
 								arktypeExportOf(target, entry.name)
 							:	target
 					}
@@ -226,7 +248,7 @@ export class ModuleGraph {
 				const target = this.resolve(specifier, module)
 				const result =
 					target instanceof SourceModule ? this.exportOf(target, name, seen)
-					: target.kind === "arktype" ? arktypeExportOf(target, name)
+					: target.kind === "arktypeNamespace" ? arktypeExportOf(target, name)
 					: target.kind === "package" ? target
 					: undefined
 				if (result?.kind === "package") packageExport ??= result
@@ -249,6 +271,7 @@ export class ModuleGraph {
 			const target = this.importOf(binding, module)
 			result =
 				target.kind === "arktype" ? !(target.name in runtimeExports)
+				: target.kind === "arktypeNamespace" ? true
 				: target.kind === "binding" ?
 					this.isArkBinding(target.binding, target.module)
 				:	target.kind === "expression" &&
@@ -262,6 +285,27 @@ export class ModuleGraph {
 			result = this.isArkExpression(binding.declaration.init, module)
 		this.arkBindings.set(binding, result)
 		return result
+	}
+
+	// e.g. `type` imported from arktype, or `ark.type` with `ark` its namespace
+	arkExportOf(
+		reference: Reference,
+		module: SourceModule
+	): [name: ArkExportName, node: Node] | undefined {
+		const binding = reference.binding
+		if (binding?.kind !== "import" || reference.isWrite) return
+		const target = this.importOf(binding, module)
+		if (target.kind === "arktype") return [target.name, reference.id]
+		const member = reference.id.parent
+		if (
+			target.kind !== "arktypeNamespace" ||
+			member?.type !== "MemberExpression" ||
+			member.object !== reference.id ||
+			member.computed
+		)
+			return
+		const exported = arktypeExportOf(target, member.property.name)
+		return exported.kind === "arktype" ? [exported.name, member] : undefined
 	}
 
 	isArkExpression(node: Node, module: SourceModule): boolean {
@@ -365,18 +409,18 @@ export class ModuleGraph {
 }
 
 const arktypeExportOf = (
-	namespace: Extract<ImportTarget, { kind: "arktype" }>,
+	namespace: Extract<ImportTarget, { kind: "arktypeNamespace" }>,
 	name: string
 ): ImportTarget =>
-	name in (namespace.value as object) ?
+	name in namespace.value ?
 		{
 			kind: "arktype",
-			name,
-			value: Reflect.get(namespace.value as object, name)
+			name: name as ArkExportName,
+			value: Reflect.get(namespace.value, name)
 		}
 	:	{
 			kind: "unresolved",
-			message: `\`${namespace.name}\` has no export \`${name}\``
+			message: `\`${namespace.specifier}\` has no export \`${name}\``
 		}
 
 export const isFunctionNode = (node: Node): node is FunctionNode =>

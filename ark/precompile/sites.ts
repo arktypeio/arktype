@@ -17,11 +17,11 @@ import {
 	type SiteState
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
+import type { SiteKind } from "./precompile.ts"
 import { isTransparent, type Reference } from "./scope.ts"
 
 export interface SiteCandidate {
-	// the arktype export at the root, or "reference" for a Type, Scope or Generic of the program, or "helper" for a static helper
-	kind: string
+	kind: SiteKind
 	root: Node
 	// the nearest enclosing function, which runs the site each time it is called
 	fn: FunctionNode | undefined
@@ -72,17 +72,12 @@ const rootKindOf = (
 	reference: Reference,
 	module: SourceModule,
 	graph: ModuleGraph
-): string | undefined => {
+): SiteKind | undefined => {
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
-	if (binding.kind === "import") {
-		const target = graph.importOf(binding, module)
-		if (target.kind === "arktype") {
-			return target.name in runtimeExports || target.name === "configure" ?
-					undefined
-				:	target.name
-		}
-	}
+	const [name] = graph.arkExportOf(reference, module) ?? []
+	if (name)
+		return name in runtimeExports || name === "configure" ? undefined : name
 	if (graph.isArkBinding(binding, module)) return "reference"
 	const call = helperCallOf(reference.id)
 	const helper =

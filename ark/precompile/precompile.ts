@@ -1,4 +1,4 @@
-import { ParseError, registeredNameOf } from "@ark/util"
+import { hasDomain, ParseError, registeredNameOf } from "@ark/util"
 import type { CallExpression, Node } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
@@ -8,14 +8,14 @@ import {
 	enclosingFunctionOf,
 	ModuleGraph,
 	runtimeExports,
-	staticBodyOf
+	staticBodyOf,
+	type ArkExportName
 } from "./graph.ts"
 import type { PrecompileHost } from "./host.ts"
 import {
 	createSiteState,
 	findDynamic,
 	Interpreter,
-	isObjectLike,
 	type InterpreterOptions,
 	type Read,
 	type SiteState
@@ -39,9 +39,11 @@ export interface PrecompileResult {
 	dependencies: string[]
 }
 
+// the arktype export at the root, or "reference" for a Type, Scope or Generic the program defines, or "helper" for a static helper
+export type SiteKind = ArkExportName | "reference" | "helper"
+
 export interface Site {
-	// the arktype export at the root, or "reference" for a Type, Scope or Generic the program defines, or "helper" for a static helper
-	kind: string
+	kind: SiteKind
 	start: number
 	end: number
 	line: number
@@ -382,7 +384,9 @@ export class Precompiler {
 		if (this.mode !== "standalone") return result
 		for (const value of candidate.state.holes) {
 			const standIn =
-				isObjectLike(value) ? this.interpreter.standIns.get(value) : undefined
+				hasDomain(value, "object") ?
+					this.interpreter.standIns.get(value)
+				:	undefined
 			if (!standIn?.isDefinition || !standIn.dynamic) continue
 			const source = candidate.state.sourcesByValue.get(standIn.dynamic)
 			const [node, origin] =
@@ -406,12 +410,13 @@ export class Precompiler {
 		const severity = this.mode === "standalone" ? "error" : "warning"
 		let calls = 0
 		for (const reference of module.scopes.references) {
-			const binding = reference.binding
-			if (binding?.kind !== "import") continue
-			const target = this.graph.importOf(binding, module)
-			if (target.kind !== "arktype" || target.name !== "configure") continue
-			const call = reference.id.parent
-			if (call?.type !== "CallExpression" || call.callee !== reference.id)
+			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
+			const call = read?.parent
+			if (
+				name !== "configure" ||
+				call?.type !== "CallExpression" ||
+				call.callee !== read
+			)
 				continue
 			calls++
 			const problem =
@@ -453,7 +458,7 @@ export class Precompiler {
 			for (const k of Reflect.ownKeys(o)) {
 				const v = Reflect.get(o, k)
 				const standIn =
-					isObjectLike(v) ? this.interpreter.standIns.get(v) : undefined
+					hasDomain(v, "object") ? this.interpreter.standIns.get(v) : undefined
 				if (
 					k === "description" &&
 					standIn &&
@@ -480,20 +485,20 @@ export class Precompiler {
 			const binding = reference.binding
 			if (binding?.kind !== "import" || reference.isWrite) continue
 			const target = this.graph.importOf(binding, module)
-			if (target.kind !== "arktype" || target.name in runtimeExports) continue
-			const id = reference.id
-			const parent = id.parent
-			if (
-				target.name === "configure" &&
-				parent?.type === "CallExpression" &&
-				parent.callee === id
-			)
+			if (target.kind !== "arktype" && target.kind !== "arktypeNamespace")
 				continue
+			const id = reference.id
+			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
+			const parent = read?.parent
 			if (
-				target.name === "type" &&
-				parent?.type === "MemberExpression" &&
-				!parent.computed &&
-				(parent.property as { name: string }).name === "errors"
+				(name && name in runtimeExports) ||
+				(name === "configure" &&
+					parent?.type === "CallExpression" &&
+					parent.callee === read) ||
+				(name === "type" &&
+					parent?.type === "MemberExpression" &&
+					!parent.computed &&
+					parent.property.name === "errors")
 			)
 				continue
 			if (
@@ -615,7 +620,7 @@ const isFolded = (
 			contains(outer.state.node, candidate.fn!) &&
 			!outer.state.holes.some(
 				hole =>
-					isObjectLike(hole) &&
+					hasDomain(hole, "object") &&
 					interpreter.standIns.get(hole)?.node === candidate.fn &&
 					isHeld(hole, interpreter)
 			)
@@ -623,6 +628,6 @@ const isFolded = (
 
 // a function arktype only calls while defining a type is not part of the type
 const isHeld = (hole: unknown, interpreter: Interpreter) =>
-	!isObjectLike(hole) ||
+	!hasDomain(hole, "object") ||
 	!interpreter.standIns.get(hole)!.isCalled ||
 	registeredNameOf(hole) !== undefined

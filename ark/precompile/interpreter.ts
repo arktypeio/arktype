@@ -1,5 +1,5 @@
 import { arkKind, hasArkKind } from "@ark/schema"
-import { ParseError } from "@ark/util"
+import { hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import type {
@@ -22,12 +22,7 @@ import {
 	pureBuiltins,
 	type MethodReceiverKind
 } from "./builtins.ts"
-import {
-	DynamicValue,
-	writeCalledAtDefinitionMessage,
-	writeNotStaticHelperMessage,
-	writeParameterMessage
-} from "./dynamic.ts"
+import { DynamicValue } from "./dynamic.ts"
 import { findEscape } from "./escapes.ts"
 import {
 	bindingOfFunction,
@@ -129,7 +124,7 @@ export interface Context {
 	depth: number
 }
 
-interface Reference {
+interface Lookup {
 	value: unknown
 	read?: Read
 }
@@ -165,7 +160,7 @@ export class Interpreter {
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	// validating functions read from arktype values, like `T.assert`
 	private validators = new WeakSet<object>()
-	// plain objects arktype returned, like `declare<t>()`, whose methods are arktype's
+	// plain objects whose methods are arktype's, like its namespaces or what `declare<t>()` returns
 	private arkObjects = new WeakSet<object>()
 	// the call into arktype or a built-in that a stand-in may be called from
 	private active: { ctx: Context; isArktype: boolean } | undefined
@@ -217,7 +212,7 @@ export class Interpreter {
 			contains(ctx.site.node, node) &&
 			(typeof value === "symbol" ||
 				value instanceof DynamicValue ||
-				(isObjectLike(value) && this.standIns.has(value)))
+				(hasDomain(value, "object") && this.standIns.has(value)))
 		) {
 			const previous = ctx.site.sourcesByValue.get(value)
 			// a hole is the outermost expression that evaluates to it
@@ -365,7 +360,8 @@ export class Interpreter {
 		for (let i = 0; i < node.expressions.length; i++) {
 			const value = this.evaluate(node.expressions[i], ctx)
 			if (isDynamic(value)) return value.asOperand()
-			if (isObjectLike(value)) return this.coercion(node.expressions[i], ctx)
+			if (hasDomain(value, "object"))
+				return this.coercion(node.expressions[i], ctx)
 			if (typeof value === "symbol") {
 				return new DynamicValue(
 					ctx.module,
@@ -414,7 +410,7 @@ export class Interpreter {
 				: property.key.type === "Identifier" ? property.key.name
 				: String((property.key as { value: unknown }).value)
 			if (isDynamic(key)) return key
-			if (isObjectLike(key)) return this.coercion(property.key, ctx)
+			if (hasDomain(key, "object")) return this.coercion(property.key, ctx)
 			if (
 				key === "__proto__" &&
 				!property.computed &&
@@ -465,7 +461,7 @@ export class Interpreter {
 			case "!":
 				return !argument
 		}
-		if (isObjectLike(argument)) return this.coercion(node, ctx)
+		if (hasDomain(argument, "object")) return this.coercion(node, ctx)
 		try {
 			return unaryOperators[node.operator](argument)
 		} catch (e) {
@@ -513,10 +509,10 @@ export class Interpreter {
 						`\`${ctx.module.snippetOf(node)}\` checks a key of a value other than an object literal`
 					)
 				}
-				if (isObjectLike(left)) return this.coercion(node.left, ctx)
+				if (hasDomain(left, "object")) return this.coercion(node.left, ctx)
 				return (left as PropertyKey) in right
 		}
-		if (isObjectLike(left) || isObjectLike(right))
+		if (hasDomain(left, "object") || hasDomain(right, "object"))
 			return this.coercion(node, ctx)
 		let result: unknown
 		try {
@@ -552,7 +548,7 @@ export class Interpreter {
 		)
 	}
 
-	private evaluateReference(node: Node, ctx: Context): Reference {
+	private evaluateReference(node: Node, ctx: Context): Lookup {
 		node = unwrapExpression(node)
 		if (node.type === "Identifier")
 			return this.readIdentifier(node as IdentifierReference, ctx)
@@ -588,26 +584,23 @@ export class Interpreter {
 		if (!node.computed) return (node.property as IdentifierReference).name
 		const key = this.evaluate(node.property, ctx)
 		if (isDynamic(key)) return key
-		return isObjectLike(key) ?
+		return hasDomain(key, "object") ?
 				this.coercion(node.property, ctx)
 			:	(key as PropertyKey)
 	}
 
-	private consume(reference: Reference, ctx: Context): unknown {
-		const { value, read } = reference
+	private consume(lookup: Lookup, ctx: Context): unknown {
+		const { value, read } = lookup
 		if (
 			read &&
 			!isDynamic(value) &&
-			!(isObjectLike(value) && this.standIns.has(value))
+			!(hasDomain(value, "object") && this.standIns.has(value))
 		)
 			ctx.trace.reads.push(read)
 		return value
 	}
 
-	private readDefine(
-		node: MemberExpression,
-		ctx: Context
-	): Reference | undefined {
+	private readDefine(node: MemberExpression, ctx: Context): Lookup | undefined {
 		const object = unwrapExpression(node.object)
 		if (
 			object.type !== "MemberExpression" ||
@@ -635,7 +628,7 @@ export class Interpreter {
 		return { value, read: { root: { kind: "define", name }, path: [], value } }
 	}
 
-	private readIdentifier(node: IdentifierReference, ctx: Context): Reference {
+	private readIdentifier(node: IdentifierReference, ctx: Context): Lookup {
 		const binding = ctx.module.scopes.referencesById.get(node)?.binding
 		if (!binding) {
 			return node.name in globalsByName ?
@@ -655,7 +648,7 @@ export class Interpreter {
 		return this.readBinding(binding, node, ctx)
 	}
 
-	private readBinding(binding: Binding, node: Node, ctx: Context): Reference {
+	private readBinding(binding: Binding, node: Node, ctx: Context): Lookup {
 		const module = ctx.module
 		if (binding.kind === "param") {
 			const ownerName = inferredNameOf(binding.declaration as FunctionNode)
@@ -663,11 +656,7 @@ export class Interpreter {
 				value: new DynamicValue(
 					module,
 					node,
-					writeParameterMessage(
-						binding.name,
-						ownerName || "a function",
-						module.positionOf(binding.id)
-					),
+					`\`${binding.name}\` is a parameter of ${ownerName || "a function"} (${module.positionOf(binding.id)}); its value is known only at runtime`,
 					undefined,
 					"parameter"
 				)
@@ -796,10 +785,13 @@ export class Interpreter {
 		return result
 	}
 
-	private readImport(binding: Binding, node: Node, ctx: Context): Reference {
+	private readImport(binding: Binding, node: Node, ctx: Context): Lookup {
 		const target = this.graph.importOf(binding, ctx.module)
 		switch (target.kind) {
 			case "arktype":
+				return { value: target.value }
+			case "arktypeNamespace":
+				this.arkObjects.add(target.value)
 				return { value: target.value }
 			case "namespace":
 				return { value: new ModuleNamespace(target.module) }
@@ -1095,7 +1087,7 @@ export class Interpreter {
 					Reflect.get(Object(object), key)
 				:	this.notOwnData(node, ctx)
 		}
-		if (!isObjectLike(object)) return this.notOwnData(node, ctx)
+		if (!hasDomain(object, "object")) return this.notOwnData(node, ctx)
 		if (this.standIns.has(object)) {
 			return new DynamicValue(
 				ctx.module,
@@ -1108,7 +1100,7 @@ export class Interpreter {
 			return (
 					(descriptor &&
 						"value" in descriptor &&
-						!isObjectLike(descriptor.value)) ||
+						!hasDomain(descriptor.value, "object")) ||
 						pureBuiltins.has(descriptor?.value)
 				) ?
 					descriptor!.value
@@ -1141,7 +1133,11 @@ export class Interpreter {
 			)
 		}
 		const value = Reflect.get(object, key)
-		if (typeof key === "string" && key in runtimeMembers && isObjectLike(value))
+		if (
+			typeof key === "string" &&
+			key in runtimeMembers &&
+			hasDomain(value, "object")
+		)
 			this.validators.add(value)
 		return intrinsics.has(value) ? this.notOwnData(node, ctx) : value
 	}
@@ -1165,13 +1161,18 @@ export class Interpreter {
 				)
 			case "arktype":
 				return target.value
+			case "arktypeNamespace":
+				this.arkObjects.add(target.value)
+				return target.value
 			case "binding":
 			case "expression": {
 				const result = this.exportValue(target)
 				if (result.error !== undefined) throw result.error
 				if (
 					!isDynamic(result.value) &&
-					!(isObjectLike(result.value) && this.standIns.has(result.value))
+					!(
+						hasDomain(result.value, "object") && this.standIns.has(result.value)
+					)
 				) {
 					ctx.trace.reads.push({
 						root: { kind: "export", file: target.module.id, name },
@@ -1257,7 +1258,7 @@ export class Interpreter {
 		ctx: Context
 	): unknown {
 		if (isDynamic(fn)) return fn
-		const standIn = isObjectLike(fn) ? this.standIns.get(fn) : undefined
+		const standIn = hasDomain(fn, "object") ? this.standIns.get(fn) : undefined
 		if (standIn) {
 			if (standIn.closure && staticBodyOf(standIn.closure.node))
 				return this.interpretCall(standIn.closure, args, node, ctx)
@@ -1560,10 +1561,7 @@ export class Interpreter {
 		return new DynamicValue(
 			standIn.module,
 			standIn.node,
-			writeNotStaticHelperMessage(
-				standIn.closure?.name ? `\`${standIn.closure.name}\`` : "the function",
-				standIn.module.positionOf(standIn.node)
-			)
+			`${standIn.closure?.name ? `\`${standIn.closure.name}\`` : "the function"} (${standIn.module.positionOf(standIn.node)}) is not a static helper: its body is not one expression or one \`return\``
 		)
 	}
 
@@ -1578,10 +1576,7 @@ export class Interpreter {
 		return new DynamicValue(
 			standIn.module,
 			standIn.node,
-			writeCalledAtDefinitionMessage(
-				name,
-				standIn.module.positionOf(standIn.node)
-			),
+			`arktype calls ${name} (${standIn.module.positionOf(standIn.node)}) while defining the type, so it must be a static helper`,
 			cause ??
 				standIn.dynamic ??
 				(standIn.closure ? this.notStaticHelper(standIn) : undefined),
@@ -1699,9 +1694,6 @@ export class Interpreter {
 export const isDynamic = (value: unknown): value is DynamicValue =>
 	value instanceof DynamicValue
 
-export const isObjectLike = (value: unknown): value is object =>
-	(typeof value === "object" && value !== null) || typeof value === "function"
-
 // Types, matchers and typed functions run their arguments through validation
 export const isValidator = (value: unknown): boolean =>
 	hasArkKind(value, "root") || value instanceof InternalTypedFn
@@ -1711,7 +1703,7 @@ const isTracked = (value: unknown): value is object =>
 	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
 
 const isData = (value: unknown, seen = new Set<unknown>()): boolean => {
-	if (!isObjectLike(value)) return true
+	if (!hasDomain(value, "object")) return true
 	if (!isPlainContainer(value)) return false
 	if (seen.has(value)) return true
 	seen.add(value)
@@ -1741,7 +1733,7 @@ const collectHoles = (
 	seen.add(value)
 	if (
 		typeof value === "symbol" ||
-		(isObjectLike(value) && standIns.has(value))
+		(hasDomain(value, "object") && standIns.has(value))
 	) {
 		if (!holes.includes(value)) holes.push(value)
 		return

@@ -109,6 +109,20 @@ export const check = (data: unknown) => {
 			])
 		})
 
+		it("arktype namespace imports", () => {
+			const source = `import * as ark from "arktype"
+const A = ark.type({ a: "string" })
+export const isError = (data: unknown) => data instanceof ark.ArkErrors
+export const make = (def: string) => {
+	const T = ark["type"](def)
+	return T
+}`
+			attest(precompile(source).sites.map(site => site.kind)).snap(["type"])
+			attest(diagnosticsOf(source)).snap([
+				'/main.ts:5:12  `ark` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
 		it("cache mode holds no value the build cannot read", () => {
 			attest(
 				diagnosticsOf(

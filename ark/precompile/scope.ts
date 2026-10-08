@@ -45,18 +45,7 @@ export interface Reference {
 	isWrite: boolean
 }
 
-export type ScopeKind =
-	| "module"
-	| "function"
-	| "functionName"
-	| "block"
-	| "class"
-	| "classField"
-	| "enum"
-	| "namespace"
-
 export interface Scope {
-	kind: ScopeKind
 	node: Node
 	parent: Scope | undefined
 	bindings: Record<string, Binding>
@@ -81,7 +70,7 @@ export class ModuleScopes {
 	private pendingExports: [string, Reference][] = []
 
 	constructor(program: Program) {
-		this.root = this.scope = createScope("module", program, undefined)
+		this.root = this.scope = createScope(program, undefined)
 		for (const statement of program.body) this.visit(statement, program)
 		this.close()
 		for (const reference of this.references) {
@@ -109,17 +98,15 @@ export class ModuleScopes {
 			case "ClassExpression":
 				return this.visitClass(node)
 			case "BlockStatement":
-				return this.inScope("block", node, () => this.visitAll(node.body, node))
+				return this.inScope(node, () => this.visitAll(node.body, node))
 			case "StaticBlock":
-				return this.inScope("function", node, () =>
-					this.visitAll(node.body, node)
-				)
+				return this.inScope(node, () => this.visitAll(node.body, node))
 			case "ForStatement":
 			case "SwitchStatement":
-				return this.inScope("block", node, () => this.visitChildren(node))
+				return this.inScope(node, () => this.visitChildren(node))
 			case "ForInStatement":
 			case "ForOfStatement":
-				return this.inScope("block", node, () => {
+				return this.inScope(node, () => {
 					if (node.left.type === "VariableDeclaration")
 						this.visit(node.left, node)
 					else this.visitTarget(node.left, node)
@@ -127,7 +114,7 @@ export class ModuleScopes {
 					this.visit(node.body, node)
 				})
 			case "CatchClause":
-				return this.inScope("block", node, () => {
+				return this.inScope(node, () => {
 					if (node.param) this.bindPattern(node.param, "catch", node, node)
 					this.visit(node.body, node)
 				})
@@ -205,7 +192,7 @@ export class ModuleScopes {
 			case "TSEnumDeclaration":
 				this.bind(node.id, "enum", node, node)
 				if (node.declare) this.scope.bindings[node.id.name].isAmbient = true
-				return this.inScope("enum", node, () => {
+				return this.inScope(node, () => {
 					for (const member of node.body.members) {
 						member.parent = node
 						if (member.id.type !== "TemplateLiteral") {
@@ -221,9 +208,7 @@ export class ModuleScopes {
 			case "TSModuleDeclaration":
 				if (node.declare || node.id.type !== "Identifier" || !node.body) return
 				this.bind(node.id, "namespace", node, node)
-				return this.inScope("namespace", node, () =>
-					this.visit(node.body, node)
-				)
+				return this.inScope(node, () => this.visit(node.body, node))
 			case "TSModuleBlock":
 				return this.visitAll(node.body, node)
 			case "TSImportEqualsDeclaration":
@@ -266,7 +251,7 @@ export class ModuleScopes {
 		if (node.type === "FunctionDeclaration" && node.id)
 			this.bind(node.id, "function", node, node)
 		const visitScope = () =>
-			this.inScope("function", node, () => {
+			this.inScope(node, () => {
 				for (const param of node.params)
 					this.bindPattern(param, "param", node, node)
 				if (node.body!.type === "BlockStatement") {
@@ -275,7 +260,7 @@ export class ModuleScopes {
 				} else this.visit(node.body, node)
 			})
 		if (node.type === "FunctionExpression" && node.id) {
-			this.inScope("functionName", node, () => {
+			this.inScope(node, () => {
 				this.bind(node.id!, "function", node, node)
 				visitScope()
 			})
@@ -287,7 +272,7 @@ export class ModuleScopes {
 		if (node.type === "ClassDeclaration" && node.id)
 			this.bind(node.id, "class", node, node)
 		this.visitAll(node.decorators, node)
-		this.inScope("class", node, () => {
+		this.inScope(node, () => {
 			if (node.type === "ClassExpression" && node.id)
 				this.bind(node.id, "class", node, node)
 			this.visit(node.superClass, node)
@@ -308,8 +293,7 @@ export class ModuleScopes {
 		else node.key.parent = node
 		if (node.type === "Property") return this.visit(node.value, node)
 		if (node.type === "MethodDefinition") return this.visit(node.value, node)
-		if (node.value)
-			this.inScope("classField", node, () => this.visit(node.value, node))
+		if (node.value) this.inScope(node, () => this.visit(node.value, node))
 	}
 
 	private visitVariables(
@@ -531,9 +515,9 @@ export class ModuleScopes {
 		return reference
 	}
 
-	private inScope(kind: ScopeKind, node: Node, visit: () => void): void {
+	private inScope(node: Node, visit: () => void): void {
 		const parentScope = this.scope
-		this.scope = createScope(kind, node, parentScope)
+		this.scope = createScope(node, parentScope)
 		visit()
 		this.close()
 		this.scope = parentScope
@@ -566,25 +550,27 @@ export class ModuleScopes {
 
 	private functionScope(): Scope {
 		let scope = this.scope
-		while (scope.kind !== "function" && scope.kind !== "module")
-			scope = scope.parent!
+		while (scope.parent && !(scope.node.type in varScopeKinds))
+			scope = scope.parent
 		return scope
 	}
 }
 
 type ArrowFunctionNode = Extract<Node, { type: "ArrowFunctionExpression" }>
 
-const createScope = (
-	kind: ScopeKind,
-	node: Node,
-	parent: Scope | undefined
-): Scope => ({
-	kind,
+const createScope = (node: Node, parent: Scope | undefined): Scope => ({
 	node,
 	parent,
 	bindings: Object.create(null),
 	unresolved: []
 })
+
+const varScopeKinds = {
+	FunctionDeclaration: 1,
+	FunctionExpression: 1,
+	ArrowFunctionExpression: 1,
+	StaticBlock: 1
+} as const satisfies KeySet
 
 const typeKeys = {
 	typeAnnotation: 1,

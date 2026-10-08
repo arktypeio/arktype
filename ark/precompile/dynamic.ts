@@ -29,12 +29,6 @@ export class DynamicValue {
 			code === "parameter" || code === "opaque" || (cause?.isOpaque ?? false)
 	}
 
-	get root(): DynamicValue {
-		let link: DynamicValue = this
-		while (link.cause) link = link.cause
-		return link
-	}
-
 	// the site needs the value to compute something else, so it cannot be held as a hole
 	asOperand(): DynamicValue {
 		if (!this.isOpaque) return this
@@ -49,22 +43,3 @@ export class DynamicValue {
 		return result
 	}
 }
-
-export const writeParameterMessage = (
-	name: string,
-	owner: string,
-	position: string
-): string =>
-	`\`${name}\` is a parameter of ${owner} (${position}); its value is known only at runtime`
-
-export const writeCalledAtDefinitionMessage = (
-	name: string,
-	position: string
-): string =>
-	`arktype calls ${name} (${position}) while defining the type, so it must be a static helper`
-
-export const writeNotStaticHelperMessage = (
-	name: string,
-	position: string
-): string =>
-	`${name} (${position}) is not a static helper: its body is not one expression or one \`return\``
