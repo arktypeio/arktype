@@ -257,6 +257,25 @@ type("Date >= d'2000-01-01'").expression
 
 So the same type describes itself the same way under any time zone or locale.
 
+### Reject date literals without a time zone
+
+A date literal must now be the same instant on every machine: an ISO date (UTC), an ISO date-time with `Z` or an offset, or epoch milliseconds. A date-time without an offset or a non-ISO string was parsed in the local time zone, and an impossible date like `2025-02-30` rolled over into March:
+
+```ts
+// previously the local time of each machine, now throws ParseError: Date literal '2025-01-01T12:00' must be an ISO date like 2025-01-01, an ISO date-time with Z or an offset like 2025-01-01T12:00Z, or epoch milliseconds
+type("Date > d'2025-01-01T12:00'")
+
+// previously local midnight, now throws the same ParseError
+type("Date > d'01/02/2025'")
+
+// unchanged
+type("Date > d'2025-01-01'")
+type("Date > d'2025-01-01T12:00Z'")
+type("Date > d'2025-01-01T12:00-05:00'")
+```
+
+A numeric literal that isn't an ISO year like `d'2025'` is always epoch milliseconds, so `d'12'` is 12ms after the epoch rather than December 1, 2001 in local time.
+
 ### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
 
 `ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one `ArkError` per path, in the order each path first failed. Iterating, `length` and every other `ArkErrors` member work as before. Indexing and array methods move to `issues`:

@@ -7,7 +7,7 @@ import {
 	writeUnboundableMessage
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeDoubleRightBoundMessage } from "arktype/internal/parser/ast/bounds.ts"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -103,45 +103,58 @@ contextualize(() => {
 		})
 
 		it("single Date", () => {
-			const T = type("Date<d'2023/1/12'")
+			const T = type("Date<d'2023-01-12'")
 			attest<Date>(T.infer)
 			attest(T).type.toString.snap("Type<Date, {}>")
-			attest(T.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
+			attest(T.json).snap({ proto: "Date", before: "2023-01-11T23:59:59.999Z" })
 		})
 
 		it("Date equality", () => {
-			const T = type("Date==d'2020-1-1'")
+			const T = type("Date==d'2020-01-01'")
 			attest<Date>(T.infer)
 			attest(T).type.toString.snap("Type<Date, {}>")
-			attest(T.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
-			attest(T.allows(new Date("2020/01/01"))).equals(true)
-			attest(T.allows(new Date("2020/01/02"))).equals(false)
+			attest(T.json).snap({ unit: "2020-01-01T00:00:00.000Z" })
+			attest(T.allows(new Date("2020-01-01"))).equals(true)
+			attest(T.allows(new Date("2020-01-02"))).equals(false)
 		})
 
 		it("double Date", () => {
-			const T = type("d'2001/10/10'< Date < d'2005/10/10'")
+			const T = type("d'2001-10-10'< Date < d'2005-10-10'")
 			attest<Date>(T.infer)
 			attest(T.t).type.toString.snap("Date")
 			attest(T.json).snap({
 				proto: "Date",
-				before: "2005-10-10T03:59:59.999Z",
-				after: "2001-10-10T04:00:00.001Z"
+				before: "2005-10-09T23:59:59.999Z",
+				after: "2001-10-10T00:00:00.001Z"
 			})
-			attest(T.allows(new Date("2003/10/10"))).equals(true)
-			attest(T.allows(new Date("2001/10/10"))).equals(false)
-			attest(T.allows(new Date("2005/10/10"))).equals(false)
+			attest(T.allows(new Date("2003-10-10"))).equals(true)
+			attest(T.allows(new Date("2001-10-10"))).equals(false)
+			attest(T.allows(new Date("2005-10-10"))).equals(false)
 		})
 
 		it("Date bound descriptions", () => {
 			attest(type("Date >= d'2023-01-01'").description).snap(
 				"a Date and 2023 or later"
 			)
-			attest(type("Date >= d'2023/1/1'").description).snap(
+			attest(type("Date >= d'2023-01-01T00:00-05:00'").description).snap(
 				"a Date and January 1, 2023, 5:00 AM UTC or later"
 			)
 			attest(type("Date >= d'2023-01-01T14:30Z'").description).snap(
 				"a Date and January 1, 2023, 2:30 PM UTC or later"
 			)
+		})
+
+		it("Date unit alias left bound", () => {
+			const $ = scope({
+				start: type.unit(new Date("2000-01-01T05:00Z")),
+				// @ts-expect-error
+				T: "start < Date < d'2001-01-01'"
+			})
+			attest($.export().T.json).snap({
+				proto: "Date",
+				before: "2000-12-31T23:59:59.999Z",
+				after: "2000-01-01T05:00:00.001Z"
+			})
 		})
 
 		it("dynamic Date", () => {
@@ -299,16 +312,16 @@ contextualize(() => {
 		it("number with right Date bound", () => {
 			attest(() =>
 				// @ts-expect-error
-				type("number<d'2001/01/01'")
+				type("number<d'2001-01-01'")
 			).throwsAndHasTypeError(
-				writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
+				writeInvalidLimitMessage("<", "d'2001-01-01'", "right")
 			)
 		})
 
 		it("number with left Date bound", () => {
 			// @ts-expect-error
-			attest(() => type("d'2001/01/01'<number<2")).throwsAndHasTypeError(
-				writeInvalidLimitMessage(">", "d'2001/01/01'", "left")
+			attest(() => type("d'2001-01-01'<number<2")).throwsAndHasTypeError(
+				writeInvalidLimitMessage(">", "d'2001-01-01'", "left")
 			)
 		})
 	})

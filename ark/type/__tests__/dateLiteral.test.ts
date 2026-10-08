@@ -4,10 +4,10 @@ import { writeInvalidDateMessage } from "arktype/internal/parser/shift/operand/d
 
 contextualize(() => {
 	it("base", () => {
-		const T = type("d'2000/05/05'")
+		const T = type("d'2000-05-05'")
 		attest<Date>(T.infer)
-		attest(T.allows(new Date("2000/05/05"))).equals(true)
-		attest(T.allows(new Date("2000/06/05"))).equals(false)
+		attest(T.allows(new Date("2000-05-05"))).equals(true)
+		attest(T.allows(new Date("2000-06-05"))).equals(false)
 		attest(T.allows(new Date("2000-05-05T09:00:00.000Z"))).equals(false)
 	})
 
@@ -18,9 +18,14 @@ contextualize(() => {
 		attest(ISO.allows(new Date("2000/07/05"))).equals(false)
 	})
 
-	it("allows spaces", () => {
-		const T = type("d' 2021  /  05  /  01  '")
-		attest(T.allows(new Date("2021/05/01"))).equals(true)
+	it("offset", () => {
+		attest(type("d'2000-05-05T00:00+05:00'").expression).snap(
+			"d'2000-05-04T19:00:00.000Z'"
+		)
+	})
+
+	it("year", () => {
+		attest(type("d'2000'").expression).snap("d'2000-01-01T00:00:00.000Z'")
 	})
 
 	it("epoch", () => {
@@ -28,10 +33,39 @@ contextualize(() => {
 		const T = type(`d'${now.valueOf()}'`)
 		attest(T.allows(now)).equals(true)
 		attest(T.allows(new Date(now.valueOf() + 1))).equals(false)
+		attest(type("d'12'").expression).snap("d'1970-01-01T00:00:00.012Z'")
+	})
+
+	it("epoch left bound", () => {
+		const T = type("d'0' < Date < d'10'")
+		attest(T.json).snap({
+			proto: "Date",
+			before: "1970-01-01T00:00:00.009Z",
+			after: "1970-01-01T00:00:00.001Z"
+		})
 	})
 
 	it("invalid date", () => {
 		attest(() => type("d'tuesday'")).throws(writeInvalidDateMessage("tuesday"))
+	})
+
+	it("rejects local time", () => {
+		attest(() => type("d'2000-05-05T00:00'")).throws(
+			writeInvalidDateMessage("2000-05-05T00:00")
+		)
+		attest(() => type("d'05/05/2000'")).throws(
+			writeInvalidDateMessage("05/05/2000")
+		)
+		attest(() => type("d'2000-05-05 00:00Z'")).throws(
+			writeInvalidDateMessage("2000-05-05 00:00Z")
+		)
+	})
+
+	it("rejects impossible days", () => {
+		attest(() => type("d'2001-02-29'")).throws(
+			writeInvalidDateMessage("2001-02-29")
+		)
+		attest(type("d'2000-02-29'").expression).snap("d'2000-02-29T00:00:00.000Z'")
 	})
 
 	it("prints ISO instants", () => {

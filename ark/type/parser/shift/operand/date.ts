@@ -17,10 +17,10 @@ type extractDateLiteralSource<literal extends DateLiteral> =
 export const writeInvalidDateMessage = <source extends string>(
 	source: source
 ): writeInvalidDateMessage<source> =>
-	`'${source}' could not be parsed by the Date constructor`
+	`Date literal '${source}' must be an ISO date like 2025-01-01, an ISO date-time with Z or an offset like 2025-01-01T12:00Z, or epoch milliseconds`
 
 export type writeInvalidDateMessage<source extends string> =
-	`'${source}' could not be parsed by the Date constructor`
+	`Date literal '${source}' must be an ISO date like 2025-01-01, an ISO date-time with Z or an offset like 2025-01-01T12:00Z, or epoch milliseconds`
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
 
@@ -37,17 +37,32 @@ const maybeParseDate = <errorOnFail extends boolean | string>(
 	source: string,
 	errorOnFail?: errorOnFail
 ): DateParseResult<errorOnFail> => {
-	const stringParsedDate = new Date(source)
-	if (isValidDate(stringParsedDate)) return stringParsedDate
-
-	const epochMillis = tryParseNumber(source)
-	if (epochMillis !== undefined) {
-		const numberParsedDate = new Date(epochMillis)
-		if (isValidDate(numberParsedDate)) return numberParsedDate
+	const isoParts = isoInstantMatcher.exec(source)
+	if (isoParts) {
+		const [, year, month = "01", day = "01"] = isoParts
+		const stringParsedDate = new Date(source)
+		if (isValidDate(stringParsedDate) && isDayOfMonth(+year, +month, +day))
+			return stringParsedDate
+	} else {
+		const epochMillis = tryParseNumber(source)
+		if (epochMillis !== undefined) {
+			const numberParsedDate = new Date(epochMillis)
+			if (isValidDate(numberParsedDate)) return numberParsedDate
+		}
 	}
 	return errorOnFail ?
 			throwParseError(
 				errorOnFail === true ? writeInvalidDateMessage(source) : errorOnFail
 			)
 		:	(undefined as never)
+}
+
+// a date alone is UTC, but a time without Z or an offset would be local
+const isoInstantMatcher =
+	/^((?!-0{6})[+-]\d{6}|\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01]))?)?(?:T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d))?$/
+
+const isDayOfMonth = (year: number, month: number, day: number) => {
+	const date = new Date(0)
+	date.setUTCFullYear(year, month - 1, day)
+	return date.getUTCDate() === day
 }

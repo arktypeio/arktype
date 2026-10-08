@@ -332,7 +332,7 @@ contextualize(() => {
 			assertProperty(arbitrary, T)
 		})
 		it("bounded date", () => {
-			const T = type("d'2001/10/10'<Date<=d'2005/10/10'")
+			const T = type("d'2001-10-10'<Date<=d'2005-10-10'")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})

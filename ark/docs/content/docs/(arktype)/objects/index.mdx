@@ -1038,10 +1038,12 @@ They're primarily useful in ranges.
 
 ```ts
 const Literals = type({
-	singleQuoted: "d'01-01-1970'",
-	doubleQuoted: 'd"01-01-1970"'
+	singleQuoted: "d'1970-01-01'",
+	doubleQuoted: 'd"1970-01-01T12:00Z"'
 })
 ```
+
+A literal must be the same instant on every machine, so it can be an ISO date like `2025-01-01` (which is UTC), an ISO date-time with `Z` or an offset like `2025-01-01T12:00+01:00`, or a number of epoch milliseconds.
 
 ### ranges [#dates-ranges]
 
