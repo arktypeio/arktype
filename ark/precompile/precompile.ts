@@ -1,21 +1,34 @@
 import { ParseError, registeredNameOf } from "@ark/util"
-import type { Node } from "oxc-parser"
+import type { CallExpression, Node } from "oxc-parser"
 import { DynamicValue } from "./dynamic.ts"
-import { contains, ModuleGraph } from "./graph.ts"
+import { contains, ModuleGraph, runtimeExports, staticBodyOf } from "./graph.ts"
 import type { PrecompileHost } from "./host.ts"
 import {
 	createSiteState,
 	findDynamic,
 	Interpreter,
 	isObjectLike,
+	isPlainContainer,
 	type InterpreterOptions,
 	type Read,
 	type SiteState
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import { findSites, type SiteCandidate } from "./sites.ts"
+import {
+	enclosingFunctionOf,
+	findSites,
+	isFoldedHelper,
+	type SiteCandidate
+} from "./sites.ts"
 
-export interface PrecompileOptions extends InterpreterOptions {}
+export type PrecompileMode = "standalone" | "cache"
+
+export interface PrecompileOptions extends InterpreterOptions {
+	// standalone builds ship a runtime instead of arktype, so every arktype expression must be folded
+	mode?: PrecompileMode
+	// the module whose `configure()` call sets the configuration
+	config?: string
+}
 
 export interface PrecompileResult {
 	sites: Site[]
@@ -72,7 +85,7 @@ export interface Helper {
 	end: number
 }
 
-export type Rule = "R1" | "parse"
+export type Rule = "R1" | "R2" | "R3" | "R4" | "parse"
 
 export interface Diagnostic {
 	severity: "error" | "warning"
@@ -97,10 +110,14 @@ export const precompileModule = (
 export class Precompiler {
 	graph: ModuleGraph
 	interpreter: Interpreter
+	mode: PrecompileMode
+	config: string | undefined
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host)
 		this.interpreter = new Interpreter(this.graph, opts)
+		this.mode = opts?.mode ?? "standalone"
+		this.config = opts?.config
 	}
 
 	precompileModule(source: string, id: string): PrecompileResult {
@@ -142,6 +159,9 @@ export class Precompiler {
 			sites.push(site)
 			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
 		}
+		diagnostics.push(...this.checkConfiguration(module))
+		if (this.mode === "standalone")
+			diagnostics.push(...this.checkStandalone(module, candidates, sites))
 		return {
 			sites,
 			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
@@ -289,15 +309,19 @@ export class Precompiler {
 		module: SourceModule
 	): Diagnostic[] {
 		const node = candidate.state.node
+		const severity = this.mode === "standalone" ? "error" : "warning"
 		if (site.status === "rejected") {
 			return [
-				this.diagnostic(
-					module,
-					node,
-					"R1",
-					`${module.snippetOf(node)} cannot be precompiled`,
-					site.reasons
-				)
+				{
+					...this.diagnostic(
+						module,
+						node,
+						isCallback(rejectionOf(candidate.state)) ? "R2" : "R1",
+						`${module.snippetOf(node)} cannot be precompiled`,
+						site.reasons
+					),
+					severity
+				}
 			]
 		}
 		const result: Diagnostic[] = []
@@ -309,6 +333,140 @@ export class Precompiler {
 					"parse",
 					`${module.snippetOf(node)} throws a ParseError`,
 					[site.parseError.message]
+				)
+			)
+		}
+		if (this.mode !== "standalone") return result
+		for (const value of candidate.state.holes) {
+			const standIn =
+				isObjectLike(value) ? this.interpreter.standIns.get(value) : undefined
+			if (!standIn?.isDefinition || !standIn.dynamic) continue
+			const source = candidate.state.sourcesByValue.get(standIn.dynamic)
+			const [node, origin] =
+				source ? [source, module] : [standIn.node, standIn.module]
+			result.push({
+				...this.diagnostic(
+					origin,
+					node,
+					"R4",
+					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
+					chainOf(standIn.dynamic)
+				),
+				severity: "warning"
+			})
+		}
+		return result
+	}
+
+	private checkConfiguration(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const severity = this.mode === "standalone" ? "error" : "warning"
+		let calls = 0
+		for (const reference of module.scopes.references) {
+			const binding = reference.binding
+			if (binding?.kind !== "import") continue
+			const target = this.graph.importOf(binding, module)
+			if (target.kind !== "arktype" || target.name !== "configure") continue
+			const call = reference.id.parent
+			if (call?.type !== "CallExpression" || call.callee !== reference.id)
+				continue
+			calls++
+			const problem =
+				this.config === undefined ?
+					"configure() is called, but the build has no `config` module"
+				: this.config !== module.id ?
+					`configure() is called outside the config module ${this.config}`
+				: calls > 1 ? "configure() is called more than once"
+				: undefined
+			const reasons = problem ? [] : this.configurationProblemsOf(call, module)
+			if (problem || reasons.length) {
+				result.push({
+					...this.diagnostic(
+						module,
+						call,
+						"R3",
+						problem ?? `${module.snippetOf(call)} is not static`,
+						reasons
+					),
+					severity
+				})
+			}
+		}
+		return result
+	}
+
+	private configurationProblemsOf(
+		call: CallExpression,
+		module: SourceModule
+	): string[] {
+		const value = this.interpreter.evaluateSite(
+			createSiteState(call.arguments[0] ?? call, module)
+		)
+		const dynamic = rejectionOf(value)
+		if (dynamic) return chainOf(dynamic)
+		const result: string[] = []
+		const visit = (o: unknown) => {
+			if (!isPlainContainer(o)) return
+			for (const k of Reflect.ownKeys(o)) {
+				const v = Reflect.get(o, k)
+				const standIn =
+					isObjectLike(v) ? this.interpreter.standIns.get(v) : undefined
+				if (
+					k === "description" &&
+					standIn &&
+					!(standIn.closure && staticBodyOf(standIn.closure.node))
+				) {
+					result.push(
+						`the description writer at ${standIn.module.positionOf(standIn.node)} must be a static helper, since arktype calls it while defining types`
+					)
+				}
+				visit(v)
+			}
+		}
+		visit(value.value)
+		return result
+	}
+
+	private checkStandalone(
+		module: SourceModule,
+		candidates: SiteCandidate[],
+		sites: Site[]
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
+		for (const reference of module.scopes.references) {
+			const binding = reference.binding
+			if (binding?.kind !== "import" || reference.isWrite) continue
+			const target = this.graph.importOf(binding, module)
+			if (target.kind !== "arktype" || target.name in runtimeExports) continue
+			const id = reference.id
+			const parent = id.parent
+			if (
+				target.name === "configure" &&
+				parent?.type === "CallExpression" &&
+				parent.callee === id
+			)
+				continue
+			if (
+				target.name === "type" &&
+				parent?.type === "MemberExpression" &&
+				!parent.computed &&
+				(parent.property as { name: string }).name === "errors"
+			)
+				continue
+			if (
+				sites.some(site => site.start <= id.start && id.end <= site.end) ||
+				candidates.some(candidate => contains(candidate.state.node, id))
+			)
+				continue
+			const fn = enclosingFunctionOf(id)
+			if (fn && isFoldedHelper(fn, module)) continue
+			result.push(
+				this.diagnostic(
+					module,
+					id,
+					"R4",
+					`\`${binding.name}\` is used outside a precompiled site`,
+					[]
 				)
 			)
 		}
@@ -333,7 +491,7 @@ export class Precompiler {
 			column,
 			message,
 			reasons,
-			hint: hintsByRule[rule]
+			hint: this.mode === "cache" ? cacheHint : hintsByRule[rule]
 		}
 	}
 }
@@ -347,8 +505,13 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 
 const hintsByRule: Record<Rule, string> = {
 	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,
+	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",
+	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
 	parse: "The precompiled site throws the same ParseError when it is created."
 }
+
+const cacheHint = "Cache mode leaves this to arktype at runtime."
 
 const reject = (site: Site, dynamic: DynamicValue): Site => {
 	site.status = "rejected"
@@ -363,6 +526,12 @@ const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error
 	: state.error === undefined ? findDynamic(state.value)
 	: undefined
+
+const isCallback = (dynamic: DynamicValue | undefined): boolean => {
+	for (let link = dynamic; link; link = link.cause)
+		if (link.code === "callback") return true
+	return false
+}
 
 const chainOf = (dynamic: DynamicValue): string[] => {
 	const result: string[] = []
