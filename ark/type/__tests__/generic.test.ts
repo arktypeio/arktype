@@ -626,6 +626,16 @@ contextualize(() => {
 				numb: ["number"]
 			})
 		})
+
+		it("describes a generic by its class", () => {
+			const List = generic(["t", "string"])(
+				args => args.t.array(),
+				class ListOf extends Hkt {
+					declare body: this[0][]
+				}
+			)
+			attest(List.internal.description).snap("a generic type for ListOf")
+		})
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1082

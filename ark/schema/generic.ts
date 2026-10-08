@@ -136,7 +136,7 @@ export class GenericRoot<
 		this.hkt = hkt
 		this.description =
 			hkt ?
-				(new hkt().description ?? `a generic type for ${hkt.constructor.name}`)
+				(new hkt().description ?? `a generic type for ${hkt.name}`)
 			:	"a generic type"
 		this.alias = alias
 		if ($.resolved || !alias) void this.baseInstantiation

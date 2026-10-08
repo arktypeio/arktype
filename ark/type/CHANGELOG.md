@@ -164,6 +164,23 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+
+### Describe an `Hkt` generic by its class
+
+A generic defined with an `Hkt` class and no `description` was described by the class's constructor, `Function`, rather than by the class:
+
+```ts
+const List = generic(["t", "string"])(
+	args => args.t.array(),
+	class ListOf extends Hkt {
+		declare body: this[0][]
+	}
+)
+
+// previously "a generic type for Function", now "a generic type for ListOf"
+List.internal.description
+```
+
 ### Print `this` for an anonymous cyclic Type's references
 
 A Type that references itself through `this` printed each reference as a node id, which changed with whatever was defined first. It now prints `this` at the top of its own Type, and inside another Type, where `this` would mean the outer Type, a name derived from the Type's text. A deep transform like `onDeepUndeclaredKey`, which printed `synthetic<N>`, does the same. A thunk in such a definition is called twice:
