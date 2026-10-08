@@ -762,8 +762,12 @@ export class Interpreter {
 				)
 			}
 		}
-		// a Type is compared by content, but a Module or Scope can change after the initializer read it
-		if (!isArkValue(result.value) || isTracked(result.value))
+		// a Type is compared by content, but a Generic parses its body at each instantiation, and a Module or Scope can change after it was read
+		if (
+			!isArkValue(result.value) ||
+			isTracked(result.value) ||
+			hasArkKind(result.value, "generic")
+		)
 			mergeTrace(ctx.trace, result.trace)
 		return isTracked(result.value) && this.escapeOf(binding, module) ?
 				{

@@ -403,6 +403,28 @@ export const $ = type.module({ a: "string" })
 		).snap(["4:18 accepted", "import $"])
 	})
 
+	it("generics read through another binding", () => {
+		attest(
+			[
+				`const o = { a: "t" }
+const G = type("<t>", o)
+;(o as any).a = "number"
+export const T = G("string")`,
+				`const o = { v: "t" }
+const $ = type.module({ "box<t>": o })
+const G = $.box
+;(o as any).v = "number"
+export const T = G("string")`
+			].map(source =>
+				inputsOf(`import { type } from "arktype"
+${source}`).pop()
+			)
+		).snap([
+			["5:18 accepted", "local o"],
+			["6:18 accepted", "local o", "local $.box"]
+		])
+	})
+
 	it("scopes", () => {
 		attest(
 			inputsOf(`import { type, scope } from "arktype"
