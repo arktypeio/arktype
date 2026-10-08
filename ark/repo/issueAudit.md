@@ -332,6 +332,8 @@ On 2.2.8, define function-bearing types once at module level and do request-spec
 
 Fixed in featherduster by 8d6dceecd.
 
+**Runtime cost, measured after landing.** Recognizing another copy's errors reads a brand on every object a morph returns, where 2.2.8 used `instanceof`. The commit message says there was no measurable cost, but that run was too noisy to see it. Paired benchmarks, with both builds alternating short batches on one pinned core, put 8d6dceecd at about +5% to +10% per call for root morph types whose 64 morphs return differently shaped objects (jit and jitless), and +18% to +26% for a morph that returns a preallocated object (about 9 ns). Primitive outputs are unaffected. All 4 processes agree in each run, which matters more than the tiny p-values, since pairs within a process aren't independent. Two cheaper checks didn't help. Returning early for plain objects and arrays made mixed outputs slower, and reading the brand only when a second copy has registered `$ark2` on `globalThis` cost as much as the brand read itself. Reverting 8d6dceecd restores 2.2.8's speed and behavior. The harness and data are in `.frizz/threads/567f8946-44d1-4e2c-9cfc-5152f7109381/perf-1088/` in the main checkout.
+
 Comment to post:
 
 Fixed on the `featherduster` branch (#1685) in 8d6dcee.
