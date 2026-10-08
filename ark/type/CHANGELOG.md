@@ -255,6 +255,51 @@ type("(string > 1)[]").expression
 
 https://github.com/arktypeio/arktype/issues/1430
 
+### Parse an invoked builtin generic in the invoking scope
+
+A type created by calling a builtin generic directly, like `type.Record(...)`, belonged to an internal schema scope, so methods that take a definition (`.to`, `.or`, `.and`, ...) parsed it as a schema:
+
+```ts
+// previously threw ParseError: instanceOf operand must be a function (was undefined)
+type
+	.Record("string", "boolean")
+	.pipe(o => Object.keys(o))
+	.to("string[]")
+```
+
+It now belongs to the scope it was invoked from and follows its config, so `$.type.Record(...)` invoked from a `jitless` scope is no longer compiled, and the scope's `onFail` applies to it.
+
+https://github.com/arktypeio/arktype/issues/1600
+
+### Release functions passed to `narrow`, `pipe`, `match` and defaults
+
+A type built from a new function, such as one created per request, kept that function and everything it captured in memory forever. Such functions are now released along with the type, and so is a `scope()` whose aliases are never resolved:
+
+```ts
+const handleRequest = (request: { id: number }) =>
+	type({ id: "number" }).narrow(v => v.id === request.id)
+
+// previously each call kept its request in memory, now it can be garbage collected
+handleRequest({ id: 1 })
+```
+
+The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+
+https://github.com/arktypeio/arktype/issues/1676
+
+### Fail when a morph returns errors from another copy of arktype
+
+A morph that returned `ArkErrors` or an `ArkError` from a duplicate installation of `arktype` was treated as a successful output, so later morphs ran on the errors object. A morph's result now counts as errors when it has arktype's `" arkKind"` brand and a `toJSON` method, which copies have had since 2.1.17:
+
+```ts
+const T = type("string").pipe(s => NumberFromOtherCopy(s))
+
+// previously the other copy's ArkErrors as output, now must be a number (was a string)
+T("x")
+```
+
+https://github.com/arktypeio/arktype/issues/1088
+
 ## 2.2.8
 
 ### Add `string.base58`
