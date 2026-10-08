@@ -1629,7 +1629,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ### Unfiled bugs
 
-- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. The cause is in `appendNonRedundant`/`prependNonRedundant` (`ark/regex/state.ts:743-768`): they merge `` `${number}` `` into an adjacent `string` because `` `${number}` `` extends `string`. Merging only when the neighbor is exactly `` `${number}` `` fixes it, and that type-checks in scratch. It is related to [#1663](https://github.com/arktypeio/arktype/issues/1663) but distinct from it. Found on [#839](https://github.com/arktypeio/arktype/issues/839). The one-line fix proposed here turned out to be unsound, since TypeScript matches a placeholder followed by another placeholder against a single character. The fix on `fix/regex` widens such types (`\d+` infers `string`). A further round, applying the fix the last review proposed for quantified groups, is in review, and landing waits for approval of the widened types.
+- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. It is one case of a broader arkregex soundness gap, and its fix was held after review. See the issue draft below. Found on [#839](https://github.com/arktypeio/arktype/issues/839).
 - **`string[] & number[]` is `unknown[]` on 2.2.8 and accepts `["x"]`.** On featherduster it is `[]`, which is correct. No issue tracks it, so nothing needs closing. Found on [#1088](https://github.com/arktypeio/arktype/issues/1088).
 - **Flat tuple expressions silently drop operands at runtime.** They are a type error, but at runtime the extra operands are dropped (`string | false | true`). Separately, `type("string&number")` throws "unsatisfiable" at runtime but isn't a type error. Found on [#585](https://github.com/arktypeio/arktype/issues/585).
 - **A numeric finite index is a type error but works at runtime.** With `index: "1 | 3 | 5 | 7"`, `{ "[index]": "index" }` reports "Indexed key definition must be a string or symbol", but at runtime it expands fine. Found on [#584](https://github.com/arktypeio/arktype/issues/584).
@@ -1653,6 +1653,42 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 - **A scope alias that failed to parse reported a false cycle on later references.** With `scope({ a: { b: "b" }, b: { a: "a", c: "bad" } })`, `$.type("a")` threw "'bad' is unresolvable", but a following `$.type("a | string")` threw a shallow cycle error. On 2.2.8, JIT validation of the result crashed. Fixed in f8f2d92e4.
 - **Errors merged from a nested morph lost part of their path (featherduster regression).** `toJSON().path` and the message of an error from a morph inside a morph dropped the middle keys. Fixed in c03af9670.
 - **Error wording.** With an empty `actual`, `ark/schema/roots/intersection.ts:246` still writes the `(${ctx.actual}) ` prefix ([#1538](https://github.com/arktypeio/arktype/issues/1538)). On featherduster, the JSON scope's error for `{ a: [1, { b: undefined }] }` repeats itself: `... must be an array (was object) or must be an array (was object)` ([#1026](https://github.com/arktypeio/arktype/issues/1026)). The summary for an optional `never` key is just `never` ([#930](https://github.com/arktypeio/arktype/issues/930)).
+
+### Issue draft: arkregex infers types that reject strings the pattern matches
+
+Every string a pattern matches should be assignable to the type arkregex infers for it, through `regex()` and through `type("/.../").infer`, which shares the inference. `ark/docs/content/docs/regex/inference.mdx` says inferred types are "at worst imprecise and never incorrect". That doesn't hold on 2.2.8 or featherduster. A probe of 2,841 patterns against every short string they match finds 310,500 rejected matches in 1,293 patterns. Most come from `\d` inferring `` `${number}` `` around text it can't contain: `regex("\\d+")` infers `` `${number}` `` but matches `"x1y"`.
+
+Two TypeScript rules cause most of it. When TS matches a string against a template literal type:
+
+1. a placeholder directly followed by another placeholder matches exactly one character
+2. a placeholder followed by a literal ends at the literal's first occurrence, and TS never backtracks
+
+arkregex uses `` `${string}` `` for `.`, `.*`, `.+`, `x+` and the text a missing anchor allows, and `` `${number}` `` for `\d`, so both rules come up whenever one sits next to another or next to a literal it can also match.
+
+**The attempted fix isn't landed.** `fix/regex` (56d4f948a) stops merging `\d` into `` `${number}` ``, merges adjacent `` `${string}` ``s and absorbs repetitions. It cuts the rejected matches from 310,500 to 25,662, but three review rounds each found new ones. In the last round:
+
+- 1,604 matches in 62 patterns are rejected that featherduster accepted. Merging a `` `${string}` `` shifts which characters TS gives every later placeholder, so `^..\d$` rejects `"ab1"`, `^a..\d$` rejects `"abc1"` and `^(?:\d.*)+\d$` rejects `"11"`.
+- Some types widen with no soundness need. `^a..c$` becomes `` `a${string}c` `` and `^\d..` loses two required characters, because two raw `.` atoms are merged although the parser can tell them from `.*`.
+- `^[\d.]{7,16}$` compiles on featherduster and fails with TS2590 on the branch, and `^[\d.]{7,15}$` goes from 82k to 2.18M instantiations, because a digit class mixed with a literal is no longer collapsed before a bounded quantifier enumerates it.
+
+**What the fix leaves**, on the worker's 1,930-pattern probe:
+
+| class                                             | example  | inferred                             | rejects        | matches | patterns |
+| ------------------------------------------------- | -------- | ------------------------------------ | -------------- | ------- | -------- |
+| a `` `${string}` `` directly before a placeholder | `^.*\d$` | `` `${string}${number}` ``           | `"0"`, `"0a0"` | 4,296   | 36       |
+| a placeholder before a literal it can contain     | `a\d`    | `` `${string}a${number}${string}` `` | `"aa1"`        | 857     | 43       |
+| `\s` covers only space, tab and newline           | `^\s$`   | `" " \| "\t" \| "\n"`                | `"\r"`         | 60      | 15       |
+
+The `\s` class is unrelated to template literals: `WhitespaceChar` in `@ark/util` is shared with the arktype parser, so arkregex needs its own type for `\s`.
+
+**Directions**, none implemented:
+
+- Merge `` `${string}` `` runs once, after anchors are applied, and only where no placeholder follows, rather than in `appendNonRedundant`, `prependNonRedundant` and `appendRepetition`.
+- Don't merge raw `.` atoms. A prototype of this alone (`review-precision/variant-dot.patch`) removed every new rejection among the 100 patterns whose types it changed and restored 25 precise featherduster types.
+- Past a small repetition bound, widen a quantified union containing `` `${number}` `` instead of enumerating it.
+- Track during parsing whether each placeholder can match zero or several characters, and merge or absorb from that rather than from the finished type. This is a design change to `state.ts`.
+
+The probes, their corpora and results, the per-pattern type changes and both reviews' evidence are in `.frizz/threads/567f8946-44d1-4e2c-9cfc-5152f7109381/regex-probe/` in the main checkout: `results-final.md`, `remaining-final.md` and `type-changes-final.md` for the worker's probe, and `review-sound/` and `review-precision/` for the reviewers'.
 
 ## Notes by issue
 
