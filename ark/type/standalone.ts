@@ -9,6 +9,7 @@ import {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	errorWritersByCode,
 	rootApplyParams,
 	rootApplyRuntime,
 	writeRootApply
@@ -37,18 +38,22 @@ export const precompileStandalone = (
 	const locale = $ark.config.locale
 	if (locale !== undefined && locale !== $ark.defaultConfig.locale)
 		throwError(writeUnprecompilableMessage("a configured locale"))
-	for (const root of roots) {
-		const config = root.$.resolvedConfig
-		for (const code in $ark.defaultConfig) {
-			for (const k of writerKeys) {
-				const writer = (config[code as ArkErrorCode] as never)?.[k]
-				if (writer !== $ark.defaultConfig[code as ArkErrorCode]?.[k as never])
-					throwError(writeUnprecompilableMessage(`a configured ${code} ${k}`))
-			}
-		}
+	for (const root of roots)
 		if (root.onFail) throwError(writeUnprecompilableMessage("onFail"))
-	}
 	const unit = precompileByContent(roots)
+	// traversal raises these itself, and a predicate or morph can raise any code
+	const raisableCodes: { [code in ArkErrorCode]?: true } = {
+		intersection: true,
+		predicate: true,
+		union: true,
+		discriminant: true,
+		undeclared: true
+	}
+	for (const context of unit.errorContexts)
+		raisableCodes[(context as { code: ArkErrorCode }).code] = true
+	const runsFunctions = unit.declared.some(
+		node => node.hasKind("predicate") || node.hasKind("morph")
+	)
 	const traversalIndexByName: Record<string, number> = {}
 	const propsByKeys = new Set<object>()
 	const objectUnits = new Set<unknown>()
@@ -179,6 +184,36 @@ export const precompileStandalone = (
 		)
 	}
 
+	const configOf = (root: BaseRoot): string => {
+		const config = root.$.resolvedConfig
+		const declared = constNamesByValue.get(config)
+		if (declared) return declared
+		const configuredCodes: string[] = []
+		let code: ArkErrorCode
+		for (code in errorWritersByCode) {
+			const writers: string[] = []
+			for (const k of writerKeys) {
+				const writer = config[code][k]
+				if (writer === $ark.defaultConfig[code][k]) continue
+				if (typeof writer === "string")
+					writers.push(`${k}: ${JSON.stringify(writer)}`)
+				else if (runsFunctions || raisableCodes[code])
+					throwError(writeUnprecompilableMessage(`a configured ${code} ${k}`))
+			}
+			if (writers.length) {
+				configuredCodes.push(
+					`${code}: { ...runtime.runtimeConfig.${code}, ${writers.join(", ")} }`
+				)
+			}
+		}
+		return configuredCodes.length ?
+				declareConst(
+					config,
+					`{ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} }`
+				)
+			:	"runtime.runtimeConfig"
+	}
+
 	const refs = unit.refs.map(emit)
 	const errorContexts = unit.errorContexts.map(emit)
 	const exports = Object.entries(types).map(([name, t], i) => {
@@ -187,7 +222,7 @@ export const precompileStandalone = (
 		return `const validator${i} = new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, unit.names[root.id])}
-	})(${shape}, runtime.runtimeConfig, ${Object.values(rootApplyRuntime).map(emit).join(", ")}),
+	})(${shape}, ${configOf(root)}, ${Object.values(rootApplyRuntime).map(emit).join(", ")}),
 	${shape},
 	{ expression: ${JSON.stringify(root.expression)}, description: ${JSON.stringify(root.description)}, meta: ${emit(root.meta)} }
 )

@@ -216,6 +216,20 @@ contextualize(() => {
 		)
 	})
 
+	it("writes errors with configured strings", async () => {
+		const $ = scope(
+			{ T: { a: "string" } },
+			{
+				domain: { message: "configured" },
+				divisor: { message: ctx => `configured ${ctx.problem}` }
+			}
+		)
+		const { T } = $.export()
+		const { T: validator } = await load({ T })
+		attest(validator({ a: 1 }).summary).equals(T({ a: 1 }).toString())
+		attest(validator({ a: 1 }).summary).snap("configured")
+	})
+
 	it("rejects what it can't precompile", () => {
 		const isEven = (n: number) => n % 2 === 0
 		attest(() =>
@@ -223,6 +237,12 @@ contextualize(() => {
 		).throws(writeUnprecompilableMessage("Function(isEven)"))
 		attest(() => precompileStandalone({ T: type("===", { a: 1 }) })).throws(
 			writeUnprecompilableMessage('the unit {"a":1}')
+		)
+		const T = scope({}, { domain: { message: () => "configured" } }).type(
+			"string"
+		)
+		attest(() => precompileStandalone({ T })).throws(
+			writeUnprecompilableMessage("a configured domain message")
 		)
 	})
 
