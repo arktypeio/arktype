@@ -5,7 +5,8 @@ import {
 	type ArkError,
 	configureSchema,
 	rootSchema,
-	schemaScope
+	schemaScope,
+	type Traversal
 } from "@ark/schema"
 
 contextualize(() => {
@@ -119,6 +120,28 @@ contextualize(() => {
 		attest(superSpecialNumber("five")?.toString()).snap(
 			"must be my special number (was a string)"
 		)
+	})
+
+	it("reads supplied text through its slot", () => {
+		const greeting = rootSchema({
+			domain: "string",
+			predicate: (s: string, ctx: Traversal) =>
+				ctx.reject({ expected: "a greeting", actual: "" })
+		})
+		const error = (greeting.traverse("x") as ArkErrors).issues[0]
+		attest(error.expected).equals("a greeting")
+		attest(error.actual).equals("")
+		attest(error.toString()).snap("must be a greeting")
+		attest(Object.keys(error).includes("expected")).equals(false)
+		attest(error.toJSON()).snap({
+			data: "x",
+			path: [],
+			code: "predicate",
+			expected: "a greeting",
+			actual: "",
+			problem: "must be a greeting",
+			message: "must be a greeting"
+		})
 	})
 
 	it("can apply a global config", () => {

@@ -68,10 +68,12 @@ export class ArkError<
 		}
 		this.input = input as never
 		this.ctx = ctx
-		// assigning defines the same property unless this has or inherits k, e.g. message
+		// assigning defines the same property unless this has or inherits k, e.g. propString
 		for (const k in input) {
-			if (k in this) defineValue(this, k, input[k as never])
-			else (this as any)[k] = input[k as never]
+			if (k in this) {
+				// text supplied for a slot stays in input, where its getter reads it
+				if (!isSlot(k)) defineValue(this, k, input[k as never])
+			} else (this as any)[k] = input[k as never]
 		}
 		for (const k of Object.getOwnPropertySymbols(input))
 			defineValue(this, k, input[k as never])
@@ -108,7 +110,7 @@ export class ArkError<
 	}
 
 	get expected(): string {
-		if (this.input.expected) return this.input.expected
+		if (this.input.expected !== undefined) return this.input.expected
 
 		const config = this.meta?.expected ?? this.nodeConfig.expected
 
@@ -116,7 +118,7 @@ export class ArkError<
 	}
 
 	get actual(): string {
-		if (this.input.actual) return this.input.actual
+		if (this.input.actual !== undefined) return this.input.actual
 
 		const config = this.meta?.actual ?? this.nodeConfig.actual
 
@@ -124,7 +126,7 @@ export class ArkError<
 	}
 
 	get problem(): string {
-		if (this.input.problem) return this.input.problem
+		if (this.input.problem !== undefined) return this.input.problem
 
 		const config = this.meta?.problem ?? this.nodeConfig.problem
 
@@ -132,7 +134,7 @@ export class ArkError<
 	}
 
 	get message(): string {
-		if (this.input.message) return this.input.message
+		if (this.input.message !== undefined) return this.input.message
 
 		const config = this.meta?.message ?? this.nodeConfig.message
 
@@ -163,6 +165,9 @@ export class ArkError<
 		throw this
 	}
 }
+
+const isSlot = (k: string) =>
+	k === "expected" || k === "actual" || k === "problem" || k === "message"
 
 export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
