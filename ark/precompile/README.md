@@ -15,7 +15,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
 The same analysis is available as `precompileModule(source, id, host)` and as an ESLint rule:
 
 ```js
-import arkPrecompile from "@ark/precompile/eslint"
+import { configs } from "@ark/precompile/eslint"
 
-export default [arkPrecompile.configs.recommended]
+export default [configs.recommended]
 ```

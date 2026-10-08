@@ -321,6 +321,9 @@ importers:
       arktype:
         specifier: workspace:*
         version: link:../type
+      eslint:
+        specifier: '>=9'
+        version: 9.37.0(jiti@2.6.1)
       oxc-parser:
         specifier: 0.153.0
         version: 0.153.0
