@@ -244,6 +244,21 @@ contextualize(() => {
 		attest(() => precompileStandalone({ T })).throws(
 			writeUnprecompilableMessage("a configured domain message")
 		)
+		const cyclic: Record<string, unknown> = {}
+		cyclic.self = cyclic
+		attest(() =>
+			precompileStandalone({ T: type("string").configure({ cyclic } as never) })
+		).throws(writeUnprecompilableMessage("a cyclic object"))
+		const accessor = {
+			get x() {
+				return 1
+			}
+		}
+		attest(() =>
+			precompileStandalone({
+				T: type("string").configure({ accessor } as never)
+			})
+		).throws(writeUnprecompilableMessage('{"x":1}\'s properties'))
 	})
 
 	it("rejects a configured locale", () => {

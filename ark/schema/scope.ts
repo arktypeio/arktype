@@ -625,24 +625,31 @@ const compileContent = (
 		id === node.id ? "$" : `$${(positionsById[id] ??= calleeIds.push(id) - 1)}`
 	const linkage = createLinkage(positionOf)
 	declareTraversals(linkage, node)
+	const serializing = new Set<object>()
 	const serialize = (value: unknown): string => {
 		if (isNode(value)) {
 			linkage.referencesById[value.id] ??= value
 			return positionOf(value.id)
 		}
-		if (isArray(value)) return `[${value.map(serialize)}]`
-		if (hasDomain(value, "object") || typeof value === "symbol") {
-			const prototype =
-				typeof value === "object" && Object.getPrototypeOf(value)
-			if (prototype !== Object.prototype && prototype !== null) {
-				let i = s.valueIndices.get(value)
-				if (i === undefined)
-					s.valueIndices.set(value, (i = s.valueIndices.size))
-				return `v${i}`
-			}
-			return `{${Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${serialize(v)}`)}}`
+		if (!hasDomain(value, "object") && typeof value !== "symbol")
+			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
+		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
+		// a value inside itself has no finite content, so like an instance it's keyed by identity
+		if (
+			serializing.has(value as object) ||
+			(!isArray(value) && prototype !== Object.prototype && prototype !== null)
+		) {
+			let i = s.valueIndices.get(value)
+			if (i === undefined) s.valueIndices.set(value, (i = s.valueIndices.size))
+			return `v${i}`
 		}
-		return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
+		serializing.add(value as object)
+		const content =
+			isArray(value) ?
+				`[${value.map(serialize)}]`
+			:	`{${Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${serialize(v)}`)}}`
+		serializing.delete(value as object)
+		return content
 	}
 	const occurrence = s.occurrencesById[node.id]
 	const content = [

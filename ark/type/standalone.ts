@@ -14,13 +14,7 @@ import {
 	rootApplyRuntime,
 	writeRootApply
 } from "@ark/schema/internal"
-import {
-	hasDomain,
-	isArray,
-	printable,
-	serializePrimitive,
-	throwError
-} from "@ark/util"
+import { hasDomain, printable, serializePrimitive, throwError } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
 import type { type } from "./keywords/keywords.ts"
 import * as runtime from "./runtime.ts"
@@ -83,6 +77,7 @@ export const precompileStandalone = (
 	const declarations: string[] = []
 	const links: string[] = []
 	const constNamesByValue = new Map<unknown, string>()
+	const emitting = new Set<object>()
 	const declareConst = (value: object, expression: string): string => {
 		const name = `o${constNamesByValue.size}`
 		constNamesByValue.set(value, name)
@@ -154,34 +149,55 @@ export const precompileStandalone = (
 				`{ __proto__: null, ${keys.map(k => `[${JSON.stringify(k)}]: 1`).join(", ")} }`
 			)
 		}
-		if (value instanceof Date)
-			return declareConst(value, `new Date(${value.getTime()})`)
-		if (value instanceof RegExp) {
+		if (emitting.has(value))
+			return throwError(writeUnprecompilableMessage("a cyclic object"))
+		const prototype = Object.getPrototypeOf(value)
+		const keys = Reflect.ownKeys(value)
+		if (prototype === Date.prototype && keys.length === 0)
+			return declareConst(value, `new Date(${(value as Date).getTime()})`)
+		if (prototype === RegExp.prototype && keys.length === 1) {
+			const { source, flags, lastIndex } = value as RegExp
+			const regex = `new RegExp(${JSON.stringify(source)}, ${JSON.stringify(flags)})`
 			return declareConst(
 				value,
-				`new RegExp(${JSON.stringify(value.source)}, ${JSON.stringify(value.flags)})`
+				lastIndex ?
+					`Object.assign(${regex}, { lastIndex: ${lastIndex} })`
+				:	regex
 			)
 		}
-		if (isArray(value)) {
-			if (Object.getPrototypeOf(value) !== Array.prototype)
-				throwError(writeUnprecompilableMessage(printable(value)))
-			return declareConst(value, `[${value.map(emit).join(", ")}]`)
+		const isArrayLiteral = prototype === Array.prototype
+		const isFrozen = Object.isFrozen(value)
+		const propKeys = isArrayLiteral ? keys.filter(k => k !== "length") : keys
+		// a literal has its value's prototype and frozenness, and only enumerable data properties
+		const isReproducible =
+			(isArrayLiteral ?
+				propKeys.length === (value as unknown[]).length &&
+				propKeys.every((k, i) => k === `${i}`)
+			:	prototype === Object.prototype || prototype === null) &&
+			(isFrozen || Object.isExtensible(value)) &&
+			propKeys.every(k => {
+				const descriptor = Object.getOwnPropertyDescriptor(value, k)!
+				return (
+					typeof k === "string" &&
+					descriptor.enumerable &&
+					"value" in descriptor &&
+					(isFrozen || (descriptor.writable && descriptor.configurable))
+				)
+			})
+		if (!isReproducible) {
+			throwError(
+				writeUnprecompilableMessage(`${printable(value)}'s properties`)
+			)
 		}
-		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
-		if (
-			prototype !== Object.prototype ||
-			Object.getOwnPropertySymbols(value).length
-		)
-			return throwError(writeUnprecompilableMessage(printable(value)))
-		const entries = Object.entries(value).map(
-			([k, v]) =>
-				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${emit(v)}`
-		)
-		const literal = `{ ${entries.join(", ")} }`
-		return declareConst(
-			value,
-			Object.isFrozen(value) ? `Object.freeze(${literal})` : literal
-		)
+		emitting.add(value)
+		const literal =
+			isArrayLiteral ?
+				`[${(value as unknown[]).map(emit).join(", ")}]`
+			:	`{ ${prototype === null ? "__proto__: null, " : ""}${propKeys
+					.map(k => `[${JSON.stringify(k)}]: ${emit(value[k as never])}`)
+					.join(", ")} }`
+		emitting.delete(value)
+		return declareConst(value, isFrozen ? `Object.freeze(${literal})` : literal)
 	}
 
 	const configOf = (root: BaseRoot): string => {
