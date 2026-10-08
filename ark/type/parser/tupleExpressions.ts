@@ -241,7 +241,7 @@ const indexOneParsers = { ...postfixParsers, ...infixParsers }
 export type IndexOneOperator = keyof typeof indexOneParsers
 
 const isIndexOneExpression = (def: array): def is IndexOneExpression =>
-	indexOneParsers[def[1] as IndexOneOperator] !== undefined
+	isOperatorOf(def[1], indexOneParsers)
 
 export type InfixExpression = readonly [unknown, InfixToken, ...unknown[]]
 
@@ -286,7 +286,12 @@ const indexZeroParsers = defineIndexZeroParsers({
 export type IndexZeroOperator = keyof typeof indexZeroParsers
 
 const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>
-	indexZeroParsers[def[0] as IndexZeroOperator] !== undefined
+	isOperatorOf(def[0], indexZeroParsers)
+
+// a non-string element could run user code if coerced to a property key
+const isOperatorOf = (element: unknown, parsers: object) =>
+	typeof element === "string" &&
+	Object.prototype.hasOwnProperty.call(parsers, element)
 
 export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind

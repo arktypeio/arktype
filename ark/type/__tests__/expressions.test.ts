@@ -148,6 +148,26 @@ contextualize(() => {
 				type([{ s: "strng" }, "|", "number"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
 		})
+
+		it("doesn't coerce non-string elements to operators", () => {
+			let coercions = 0
+			class Opaque {
+				toString() {
+					coercions++
+					return "|"
+				}
+			}
+			const T = type(["string", new Opaque(), "number"] as never)
+			attest(T.expression).snap("[string, {}, number]")
+			attest(coercions).equals(0)
+		})
+
+		it("prototype keys are not operators", () => {
+			attest(() => {
+				// @ts-expect-error
+				type(["string", "toString"])
+			}).throwsAndHasTypeError(writeUnresolvableMessage("toString"))
+		})
 	})
 
 	describe("root expression", () => {

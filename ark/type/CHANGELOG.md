@@ -642,6 +642,15 @@ T.expression // '{ bar?: number, foo: string = "foo" }'
 
 Symbol keys follow string keys.
 
+### Read only string elements as tuple operators
+
+A tuple definition's first two elements were converted to property keys to check for an operator, calling an object's `toString` or `Symbol.toPrimitive` at definition, and a name inherited from `Object.prototype` was mistaken for one:
+
+```ts
+// previously threw an internal TypeError, now 'toString' is unresolvable
+type(["string", "toString"])
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
