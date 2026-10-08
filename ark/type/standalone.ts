@@ -47,18 +47,23 @@ export const precompileStandalone = (
 	const unit = precompileByContent(roots)
 	const memberNames = [...new Set(Object.values(unit.names))]
 	const propsByKeys = new Set<object>()
+	const objectUnits = new Set<unknown>()
 	const reached = new Set<BaseNode>()
-	// a structure's keys are read only with `in`, so they're emitted without their props
-	const collectPropsByKeys = (node: BaseNode): void => {
+	const collect = (node: BaseNode): void => {
 		for (const reference of node.references) {
 			if (reached.has(reference)) continue
 			reached.add(reference)
 			if (reference.hasKind("structure")) propsByKeys.add(reference.propsByKey)
-			else if (reference.hasKind("alias"))
-				collectPropsByKeys(reference.resolution)
+			else if (
+				reference.hasKind("unit") &&
+				hasDomain(reference.unit, "object") &&
+				!(reference.unit instanceof Date)
+			)
+				objectUnits.add(reference.unit)
+			else if (reference.hasKind("alias")) collect(reference.resolution)
 		}
 	}
-	for (const root of roots) collectPropsByKeys(root)
+	for (const root of roots) collect(root)
 	const runtimeNamesByValue = new Map<unknown, string>()
 	const indexRuntime = (value: unknown, path: string): void => {
 		if (typeof value === "function") runtimeNamesByValue.set(value, path)
@@ -135,6 +140,10 @@ export const precompileStandalone = (
 					value.name
 				:	throwError(writeUnprecompilableMessage(printable(value)))
 		}
+		// a unit is compared by reference, so a copy wouldn't equal it
+		if (objectUnits.has(value))
+			throwError(writeUnprecompilableMessage(`the unit ${printable(value)}`))
+		// a structure's keys are read only with `in`, so they're emitted without their props
 		if (propsByKeys.has(value as object)) {
 			const keys = Reflect.ownKeys(value as object)
 			if (keys.some(k => typeof k === "symbol"))

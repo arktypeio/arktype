@@ -180,6 +180,9 @@ contextualize(() => {
 		attest(() =>
 			precompileStandalone({ T: type("number").narrow(isEven) })
 		).throws(writeUnprecompilableMessage("Function(isEven)"))
+		attest(() => precompileStandalone({ T: type("===", { a: 1 }) })).throws(
+			writeUnprecompilableMessage('the unit {"a":1}')
+		)
 	})
 
 	it("rejects a configured locale", () => {
