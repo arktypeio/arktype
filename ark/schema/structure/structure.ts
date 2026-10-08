@@ -970,14 +970,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.sequence?.transforms || transformedIndex.length !== 0
 			)
 		}
+		this.compileDefaults(js)
+		this.compileCopiedDeclaredKeys(js).return("out")
+	}
+
+	private compileDefaults(js: NodeCompiler): NodeCompiler {
 		for (const node of this.defaultable) {
 			js.if(`!(${js.serialize(node.key)} in data)`, () =>
 				compileDefault(this.compileCopy(js), node, "out")
 			)
 		}
 		this.compileSequenceDefaults(js)
-		js.returnIfTransformFailed()
-		this.compileCopiedDeclaredKeys(js).return("out")
+		return js.returnIfTransformFailed()
 	}
 
 	private compileCopy(js: NodeCompiler): NodeCompiler {
@@ -1034,24 +1038,28 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	private compileSequenceDefaults(js: NodeCompiler): void {
 		const sequence = this.sequence
 		if (!sequence?.defaultables) return
-		const args =
-			sequence.defaultValueMorphs.some(morph => morph.length === 2) ?
-				"out, ctx"
-			:	"out"
+		const defaultables = sequence.defaultables
 		js.if(
 			`data.length < ${sequence.prefixLength + sequence.defaultablesLength}`,
-			() =>
-				this.compileCopy(js).for(
-					`i < ${sequence.defaultables!.length}`,
-					() =>
-						compileDefaultMorph(
-							js,
-							sequence,
-							`${js.ref(sequence.defaultValueMorphs)}[i](${args})`,
-							"out"
-						),
-					`data.length - ${sequence.prefixLength}`
-				)
+			() => {
+				this.compileCopy(js)
+				for (let i = 0; i < defaultables.length; i++) {
+					const [node, defaultValue] = defaultables[i]
+					const index = sequence.prefixLength + i
+					const morph = sequence.defaultValueMorphs[i]
+					js.if(`data.length <= ${index}`, () =>
+						typeof defaultValue !== "function" && !node.transforms ?
+							js.line(`out[${index}] = ${serializeDefault(js, defaultValue)}`)
+						:	compileDefaultMorph(
+								js,
+								sequence,
+								`${js.ref(morph)}(out${morph.length === 2 ? ", ctx" : ""})`,
+								"out"
+							)
+					)
+				}
+				return js
+			}
 		)
 	}
 
@@ -1073,7 +1081,22 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					this.compileCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
 				)
 			}
-			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
+			this.compileDefaults(js)
+			this.compileCopiedDeclaredKeys(js)
+				.const("dataKeys", "Object.keys(data)")
+				.const("dataSymbols", "Object.getOwnPropertySymbols(data)")
+				.if("dataSymbols.length", () =>
+					js.line("dataKeys.push(...dataSymbols)")
+				)
+				.for("i < dataKeys.length", () =>
+					js
+						.const("k", "dataKeys[i]")
+						.if(
+							`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
+							() => this.compileCopy(js).line("delete out[k]")
+						)
+				)
+			return js.return("out")
 		}
 		if (this.sequence) {
 			// an array is scanned either way, so it's returned as is if nothing is undeclared
@@ -1284,10 +1307,9 @@ const compileDefault = (
 	out: string
 ): NodeCompiler => {
 	if (typeof node.default !== "function" && !node.value.transforms) {
-		// -0 would serialize as 0
-		const serializedDefault =
-			Object.is(node.default, -0) ? "-0" : js.serialize(node.default)
-		return js.line(`${out}${js.prop(node.key)} = ${serializedDefault}`)
+		return js.line(
+			`${out}${js.prop(node.key)} = ${serializeDefault(js, node.default)}`
+		)
 	}
 	return compileDefaultMorph(
 		js,
@@ -1296,6 +1318,10 @@ const compileDefault = (
 		out
 	)
 }
+
+// -0 would serialize as 0
+const serializeDefault = (js: NodeCompiler, value: unknown): string =>
+	Object.is(value, -0) ? "-0" : js.serialize(value)
 
 // only a default on a node that includesMorph can return TransformErrors
 const compileDefaultMorph = (
