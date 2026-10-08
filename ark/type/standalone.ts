@@ -75,7 +75,12 @@ export const precompileStandalone = (
 	}
 	for (const name in runtime) indexRuntime(runtime[name as never], name)
 
-	const imports = new Set(["assertAbiVersion", "resolvedConfig", "Validator"])
+	const imports = new Set([
+		"assertAbiVersion",
+		"claimEntry",
+		"resolvedConfig",
+		"Validator"
+	])
 	const declarations: string[] = []
 	const links: string[] = []
 	const constNamesByValue = new Map<unknown, string>()
@@ -209,6 +214,7 @@ export { validator${i} as ${JSON.stringify(name)} }`
 	return `import { ${[...imports].sort().join(", ")} } from "arktype/runtime"
 
 assertAbiVersion(${runtime.abiVersion})
+claimEntry("arktype/runtime")
 
 ${declarations.join("\n")}
 

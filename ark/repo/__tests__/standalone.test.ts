@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { $ark } from "@ark/schema"
+import { $ark, hasArkKind } from "@ark/schema"
 import { scope, type } from "arktype"
 import { de } from "arktype/locales/de"
 import {
@@ -10,9 +10,11 @@ import {
 import {
 	abiVersion,
 	writeAbiVersionMismatchMessage,
+	writeEntryConflictMessage,
 	writeUnavailableMemberMessage
 } from "arktype/runtime"
 import { buildSync } from "esbuild"
+import { spawnSync } from "node:child_process"
 
 // a bundle holds only what an artifact imports, so validating with it proves no node is needed
 const bundle = (types: Record<string, type.Any>) => {
@@ -37,19 +39,28 @@ const bundle = (types: Record<string, type.Any>) => {
 	}
 }
 
-const load = async (
-	types: Record<string, type.Any>
-): Promise<Record<string, any>> =>
-	import(
-		`data:text/javascript;base64,${Buffer.from(bundle(types).js).toString("base64")}`
-	)
+const urlOf = (js: string) =>
+	`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`
 
-// an artifact's errors come from its bundled runtime, so they aren't instances of type.errors
-const isErrors = (result: unknown): result is type.errors =>
-	(result as type.errors | undefined)?.[" arkKind"] === "errors"
+const entryKey = Symbol.for("arktype.entry")
+
+// an artifact refuses to load beside arktype, which comparing it with the JIT requires
+const importBesideArktype = async (js: string): Promise<any> => {
+	const global = globalThis as Record<symbol, unknown>
+	const entry = global[entryKey]
+	delete global[entryKey]
+	try {
+		return await import(urlOf(js))
+	} finally {
+		global[entryKey] = entry
+	}
+}
+
+const load = (types: Record<string, type.Any>): Promise<Record<string, any>> =>
+	importBesideArktype(bundle(types).js)
 
 const observe = (result: unknown, input: unknown) =>
-	isErrors(result) ?
+	hasArkKind(result, "errors") ?
 		{
 			summary: result.summary,
 			errors: result.issues.map(e => ({
@@ -203,12 +214,34 @@ contextualize(() => {
 			`assertAbiVersion(${abiVersion})`,
 			`assertAbiVersion(${abiVersion + 1})`
 		)
-		const error = await import(
-			`data:text/javascript;base64,${Buffer.from(mismatched).toString("base64")}`
-		).catch((e: Error) => e)
+		const error = await importBesideArktype(mismatched).catch((e: Error) => e)
 		attest(error.message).equals(
 			writeAbiVersionMismatchMessage(abiVersion + 1, abiVersion)
 		)
+	})
+
+	it("refuses to load beside arktype", async () => {
+		const { js } = bundle({ T: type("boolean") })
+		const error = await import(urlOf(js)).catch((e: Error) => e)
+		attest(error.message).equals(
+			writeEntryConflictMessage("arktype/runtime", "arktype")
+		)
+	})
+
+	it("keeps arktype from loading beside it", () => {
+		const { js } = bundle({ T: type("string") })
+		const { stderr } = spawnSync(
+			process.execPath,
+			["--conditions=ark-ts", "--input-type=module"],
+			{
+				cwd: fromHere(),
+				input: `await import(${JSON.stringify(urlOf(js))})\nawait import("arktype")`,
+				encoding: "utf8"
+			}
+		)
+		attest(
+			stderr.includes(writeEntryConflictMessage("arktype", "arktype/runtime"))
+		).equals(true)
 	})
 
 	it("bundles without node, scope or parse code", () => {
@@ -228,6 +261,7 @@ contextualize(() => {
 			"schema/shared/traversal.ts",
 			"schema/shared/utils.ts",
 			"schema/structure/shared.ts",
+			"type/entry.ts",
 			"type/keywords/functions.ts",
 			"type/runtime.ts"
 		])

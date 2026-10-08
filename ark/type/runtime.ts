@@ -51,6 +51,7 @@ export {
 	ParseError,
 	printable
 } from "@ark/util"
+export { claimEntry, writeEntryConflictMessage } from "./entry.ts"
 export * from "./keywords/functions.ts"
 
 // the predicate writers read a keyword's phrase for an error it raised
