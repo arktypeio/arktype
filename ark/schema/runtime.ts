@@ -1,4 +1,4 @@
-import { envHasCsp, flatMorph, throwError } from "@ark/util"
+import { flatMorph, throwError } from "@ark/util"
 import type { ResolvedConfig } from "./config.ts"
 import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
 import type { ExpectedWriter } from "./shared/errors.ts"
@@ -37,7 +37,8 @@ export const runtimeConfig: ResolvedConfig = {
 		code,
 		{ expected: writeExpected, ...errorWriters, ...writers }
 	]),
-	jitless: envHasCsp(),
+	// errors are copied without generating code, so validation never needs eval
+	jitless: true,
 	onFail: null
 } as never
 

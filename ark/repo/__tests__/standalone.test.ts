@@ -177,6 +177,25 @@ contextualize(() => {
 		attest("jsonSchema" in validator["~standard"]).equals(false)
 	})
 
+	it("validates without generating code", async () => {
+		const { js } = bundle({ T: type({ a: "string" }) })
+		const { Function } = globalThis
+		const bodies: string[] = []
+		globalThis.Function = new Proxy(Function, {
+			construct: (target, args, newTarget) => {
+				bodies.push(args[args.length - 1])
+				return Reflect.construct(target, args, newTarget)
+			}
+		})
+		try {
+			const { T } = await importBesideArktype(js)
+			attest(T({ a: 1 }).summary).snap("a must be a string (was a number)")
+		} finally {
+			globalThis.Function = Function
+		}
+		attest(bodies).equals([])
+	})
+
 	it("throws on members that need arktype", async () => {
 		const { T } = await load({ T: type("string") })
 		attest(() => T.and("number")).throws(writeUnavailableMemberMessage("and"))
