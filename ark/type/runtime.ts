@@ -22,24 +22,17 @@ export {
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
-	applyMember,
-	applyResolution,
-	applyValue,
 	ArkError,
 	ArkErrors,
 	arrayIndexMatcher,
 	copyOf,
 	isAbsent,
 	isArkErrorResult,
-	maxAliasDepth,
-	maxAliasVisits,
 	mergeTransformed,
 	runtimeConfig,
-	runtimeLocale,
 	TransformErrors,
 	Traversal,
-	TraversalError,
-	traverseKey
+	TraversalError
 } from "@ark/schema/runtime"
 export {
 	isValidDate,
@@ -48,12 +41,7 @@ export {
 	ParseError,
 	printable
 } from "@ark/util"
-export {
-	assertRuntimeVersion,
-	claimEntry,
-	writeEntryConflictMessage,
-	writeRuntimeVersionMismatchMessage
-} from "./entry.ts"
+export { assertRuntimeVersion, claimEntry } from "./entry.ts"
 export * from "./keywords/functions.ts"
 
 // the predicate writers read a keyword's phrase for an error it raised

@@ -2,17 +2,17 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { $ark, hasArkKind } from "@ark/schema"
 import { scope, type } from "arktype"
-import { arktypeVersion } from "arktype/internal/entry.ts"
+import {
+	arktypeVersion,
+	writeEntryConflictMessage,
+	writeRuntimeVersionMismatchMessage
+} from "arktype/internal/entry.ts"
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
 	writeUnprecompilableMessage
 } from "arktype/internal/standalone.ts"
-import {
-	writeRuntimeVersionMismatchMessage,
-	writeEntryConflictMessage,
-	writeUnavailableMemberMessage
-} from "arktype/runtime"
+import { writeUnavailableMemberMessage } from "arktype/runtime"
 import { buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
 
