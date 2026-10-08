@@ -932,7 +932,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this._exports[name] =
 					this.lazyExports ? this.lazyExports[name]
 					: hasArkKind(def, "module") ? bindModule(def, this)
-					: bootstrapAliasReferences(this.maybeResolve(name)!)
+					: this.maybeResolve(name)!
 			}
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
@@ -947,7 +947,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			}
 			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
-				referencesThroughAliases(this.references)
+				this.references = referencesThroughAliases(this.references)
 				if (!this.resolvedConfig.jitless)
 					this.compiledUnit = precompile(this.references, this)
 				this.resolved = true
@@ -978,10 +978,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					const def = this.aliases[name]
 					return hasArkKind(def, "module") ?
 							bindModuleLazily(def, this)
-						:	finalizeExport(
-								this,
-								bootstrapAliasReferences(this.maybeResolve(name)!)
-							)
+						:	finalizeExport(this, this.maybeResolve(name)!)
 				})
 			}
 			this.lazyExports = exports as never
@@ -1052,10 +1049,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 			return node
 
-		bootstrapAliasReferences(node)
-		if (node.includesAlias) referencesThroughAliases(node.references)
+		const references =
+			node.includesAlias ?
+				referencesThroughAliases(node.references)
+			:	node.references
 		if (!this.resolvedConfig.jitless && !node.compiledUnit && jit)
-			precompile(node.references)
+			precompile(references)
 		return node
 	}
 
@@ -1142,19 +1141,6 @@ const maybeResolveExport = (
 	return hasArkKind(resolution, "root") || hasArkKind(resolution, "generic") ?
 			resolution
 		:	undefined
-}
-
-const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
-	if (isNode(resolution) && !resolution.includesAlias) return resolution
-	const aliases = resolution.references.filter(node => node.hasKind("alias"))
-	for (const aliasNode of aliases) {
-		addReferences(aliasNode.referencesById, aliasNode.resolution.referencesById)
-		for (const ref of resolution.references) {
-			if (aliasNode.id in ref.referencesById)
-				addReferences(ref.referencesById, aliasNode.referencesById)
-		}
-	}
-	return resolution
 }
 
 const addReferences = (

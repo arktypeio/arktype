@@ -228,7 +228,7 @@ export abstract class BaseNode<
 		if (!isResolutionFinal()) return this.id
 		if (this.hasKind("alias") || isNode($ark.nodesByRegisteredId[this.id]))
 			return (this._trackedId = this.id)
-		const alias = this.references.find(
+		const alias = referencesThroughAliases(this.references).find(
 			reference =>
 				reference.hasKind("alias") &&
 				reference.resolution.kind === this.kind &&
@@ -918,12 +918,7 @@ export abstract class BaseNode<
 			) as never
 		}
 
-		const rawSelected = this._select(
-			normalized,
-			normalized.boundary === "references" && isResolutionFinal() ?
-				referencesThroughAliases(this.references)
-			:	undefined
-		)
+		const rawSelected = this._select(normalized)
 		const selected = rawSelected && liftArray(rawSelected)
 
 		const shouldTransform: ShouldTransformFn =
@@ -1175,13 +1170,17 @@ const _isMutuallySimulated = (
 export const referencesThroughAliases = (
 	references: readonly BaseNode[]
 ): BaseNode[] => {
-	const reached = new Set(references)
-	for (const reference of reached) {
+	// keyed by id, as a node bound to another scope keeps its id
+	const reached = new Map<string, BaseNode>(
+		references.map(reference => [reference.id, reference])
+	)
+	for (const reference of reached.values()) {
 		if (!reference.hasKind("alias")) continue
-		for (const resolved of reference.resolution.references)
-			reached.add(resolved)
+		const resolved = reference.resolution.referencesById
+		for (const id in resolved)
+			if (!reached.has(id)) reached.set(id, resolved[id])
 	}
-	return [...reached]
+	return [...reached.values()]
 }
 
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
@@ -1213,7 +1212,10 @@ const NodeSelector = {
 		self: node => [node],
 		child: node => [...node.children],
 		shallow: node => [...node.shallowReferences],
-		references: node => [...node.references]
+		references: node =>
+			isResolutionFinal() ?
+				referencesThroughAliases(node.references)
+			:	[...node.references]
 	} satisfies Dict<NodeSelector.Boundary, (node: BaseNode) => BaseNode[]>,
 	applyMethod: {
 		filter: nodes => nodes,
