@@ -6,6 +6,7 @@ import type {
 	ArrowFunctionExpression,
 	Function,
 	ImportSpecifier,
+	MemberExpression,
 	Node
 } from "oxc-parser"
 import { relative } from "node:path"
@@ -319,6 +320,40 @@ export class ModuleGraph {
 		return exported.kind === "arktype" ? [exported.name, member] : undefined
 	}
 
+	// e.g. `T.assert` or `type.errors`, which run at runtime in every mode, or `T.json`, which differs between the build and runtime
+	isRuntimeMember(member: MemberExpression, module: SourceModule): boolean {
+		const name =
+			member.computed ?
+				member.property.type === "Literal" ?
+					member.property.value
+				:	undefined
+			:	member.property.name
+		if (typeof name !== "string") return false
+		if (name in runtimeMembers || name in unstableArkMembers) return true
+		const object = unwrapExpression(member.object)
+		const root =
+			object.type === "MemberExpression" ?
+				unwrapExpression(object.object)
+			:	object
+		const reference =
+			root.type === "Identifier" ?
+				module.scopes.referencesById.get(root)
+			:	undefined
+		const [exportName, read] =
+			(reference && this.arkExportOf(reference, module)) ?? []
+		return name === "errors" && exportName === "type" && read === object
+	}
+
+	isRuntimeUse(id: Node, module: SourceModule): boolean {
+		for (
+			let node = id;
+			node.parent?.type === "MemberExpression" && node.parent.object === node;
+			node = node.parent
+		)
+			if (this.isRuntimeMember(node.parent, module)) return true
+		return false
+	}
+
 	isArkExpression(node: Node, module: SourceModule): boolean {
 		node = unwrapExpression(node)
 		while (
@@ -333,7 +368,7 @@ export class ModuleGraph {
 			if (node.type === "CallExpression") {
 				const helper = this.helperOf(node.callee, module)
 				if (helper && this.isArkHelper(helper[0], helper[1])) return true
-			}
+			} else if (this.isRuntimeMember(node, module)) return false
 			node = unwrapExpression(
 				node.type === "MemberExpression" ? node.object : node.callee
 			)
@@ -409,7 +444,8 @@ export class ModuleGraph {
 				if (
 					binding &&
 					binding.scope.node !== fn &&
-					this.isArkBinding(binding, module)
+					this.isArkBinding(binding, module) &&
+					!this.isRuntimeUse(node, module)
 				)
 					result = true
 			}

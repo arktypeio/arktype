@@ -1,10 +1,8 @@
-import type { IdentifierReference, Node } from "oxc-parser"
+import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
 	enclosingFunctionOf,
 	runtimeExports,
-	runtimeMembers,
-	unstableArkMembers,
 	staticBodyOf,
 	type FunctionNode,
 	type ModuleGraph
@@ -37,24 +35,27 @@ export const findSites = (
 ): SiteCandidate[] => {
 	const candidates: SiteCandidate[] = []
 	for (const reference of module.scopes.references) {
-		const kind = rootKindOf(reference, module, graph)
-		if (!kind) continue
+		const found = rootOf(reference, module, graph)
+		if (!found) continue
+		const [kind, root] = found
 		const fn = enclosingFunctionOf(reference.id)
 		if (fn && isFoldedHelper(fn, module)) continue
-		const root = kind === "helper" ? helperCallOf(reference.id)! : reference.id
 		const value =
 			kind === "reference" ?
 				interpreter.valueOfBinding(reference.binding!, module)
 			:	undefined
-		// a binding the build could not compute is reported where it is defined, or holds validated data
-		if (kind === "reference" && (value === undefined || isDynamic(value)))
+		// a binding the build could not compute is reported where it is defined, and validated data or a RegExp is read at runtime
+		if (
+			kind === "reference" &&
+			(value === undefined || isDynamic(value) || value instanceof RegExp)
+		)
 			continue
 		const fallbacks: Node[] = []
 		const top = climb(root, isValidator(value), fallbacks, module, graph)
-		if (top === reference.id) continue
+		if (top === root && kind !== "helper") continue
 		candidates.push({
 			kind,
-			root: reference.id,
+			root: kind === "helper" ? reference.id : root,
 			fn,
 			state: createSiteState(top, module),
 			fallbacks
@@ -68,26 +69,28 @@ export const findSites = (
 	)
 }
 
-const rootKindOf = (
+const rootOf = (
 	reference: Reference,
 	module: SourceModule,
 	graph: ModuleGraph
-): SiteKind | undefined => {
+): [kind: SiteKind, root: Node] | undefined => {
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
-	const [name] = graph.arkExportOf(reference, module) ?? []
-	if (name)
-		return name in runtimeExports || name === "configure" ? undefined : name
-	if (graph.isArkBinding(binding, module)) return "reference"
+	const [name, read] = graph.arkExportOf(reference, module) ?? []
+	if (name) {
+		return name in runtimeExports || name === "configure" ?
+				undefined
+			:	[name, read!]
+	}
+	if (graph.isArkBinding(binding, module)) return ["reference", reference.id]
 	const call = helperCallOf(reference.id)
-	const helper =
-		call && graph.helperOf((call as { callee: Node }).callee, module)
+	const helper = call && graph.helperOf(call.callee, module)
 	return helper && graph.isArkHelper(helper[0], helper[1]) ?
-			"helper"
+			["helper", call]
 		:	undefined
 }
 
-const helperCallOf = (id: Node): Node | undefined => {
+const helperCallOf = (id: Node): CallExpression | undefined => {
 	const parent = id.parent
 	const callee =
 		parent?.type === "MemberExpression" && parent.object === id ? parent : id
@@ -120,7 +123,7 @@ const climb = (
 		if (
 			parent?.type === "MemberExpression" &&
 			parent.object === probe &&
-			!isRuntimeMember(parent, root)
+			!graph.isRuntimeMember(parent, module)
 		)
 			top = parent
 		else if (
@@ -133,26 +136,6 @@ const climb = (
 			top = parent
 		} else return top
 	}
-}
-
-const isRuntimeMember = (
-	member: Extract<Node, { type: "MemberExpression" }>,
-	root: Node
-): boolean => {
-	const name =
-		member.computed ?
-			member.property.type === "Literal" ?
-				member.property.value
-			:	undefined
-		:	(member.property as IdentifierReference).name
-	return (
-		typeof name === "string" &&
-		(name in runtimeMembers ||
-			name in unstableArkMembers ||
-			(name === "errors" &&
-				member.object === root &&
-				(root as IdentifierReference).name === "type"))
-	)
 }
 
 // a static helper that is only ever called is folded at each call, so its body holds no sites of its own

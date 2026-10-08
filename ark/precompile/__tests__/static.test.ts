@@ -238,6 +238,40 @@ const ada = named({ name: "Ada" })`)
 			])
 		})
 
+		it("runtime uses of arktype are not sites", () => {
+			attest(
+				statusesOf(
+					`import { type, regex } from "arktype"
+import { createClient } from "./client.ts"
+const User = type({ name: "string" })
+export function isValidationError(x: unknown) {
+	return x instanceof type.errors
+}
+export const parseUser = (data: unknown) => {
+	const out = User(data)
+	if (isValidationError(out)) throw new Error(out.summary)
+	return out
+}
+export const npmSpecifier = regex("^npm:(?<name>[a-z]+)$")
+export function nameOf(specifier: string) {
+	let match = npmSpecifier.exec(specifier)
+	return match?.groups?.name
+}
+export const handler = (token: string) => {
+	const client = createClient(token)
+	return client.fetch()
+}`,
+					{
+						"/env.ts": `import { type } from "arktype"
+export const env = type({ API_URL: "string" }).assert(process.env)`,
+						"/client.ts": `import { connect } from "some-client-package"
+import { env } from "./env.ts"
+export const createClient = (token: string) => connect({ url: env.API_URL, token })`
+					}
+				)
+			).snap(["3:14 accepted { name: string }", "12:29 accepted"])
+		})
+
 		it("objects and modules arktype returns", () => {
 			attest(
 				statusesOf(`import { type, scope, declare } from "arktype"

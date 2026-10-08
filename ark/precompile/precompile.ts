@@ -491,15 +491,15 @@ export class Precompiler {
 			const id = reference.id
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
 			const parent = read?.parent
+			// a re-export forwards the binding, and each use of it is checked where it occurs
 			if (
+				id.parent?.type === "ExportSpecifier" ||
+				id.parent?.type === "ExportDefaultDeclaration" ||
 				(name && name in runtimeExports) ||
 				(name === "configure" &&
 					parent?.type === "CallExpression" &&
 					parent.callee === read) ||
-				(name === "type" &&
-					parent?.type === "MemberExpression" &&
-					!parent.computed &&
-					parent.property.name === "errors")
+				this.graph.isRuntimeUse(id, module)
 			)
 				continue
 			if (candidates.some(candidate => contains(candidate.state.node, id)))

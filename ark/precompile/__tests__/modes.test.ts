@@ -109,6 +109,14 @@ export const check = (data: unknown) => {
 			])
 		})
 
+		it("re-exports of arktype", () => {
+			attest(
+				diagnosticsOf(`import { type, scope } from "arktype"
+export { type }
+export default scope`)
+			).snap([])
+		})
+
 		it("arktype namespace imports", () => {
 			const source = `import * as ark from "arktype"
 const A = ark.type({ a: "string" })
