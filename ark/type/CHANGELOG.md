@@ -165,6 +165,21 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
+### Keep a referenced type's descriptions when it is compiled
+
+A compiled type referenced from a scope with its own `description` writer described the nodes it shared with that scope's keywords using the scope's writer, where `jitless` or in a CSP environment it kept the descriptions it was defined with. Both modes now keep them:
+
+```ts
+const A = type({ a: "number" })
+const types = scope(
+	{ b: "number", o: { a: A, b: "b" } },
+	{ domain: { description: () => "a custom number" } }
+).export()
+
+// previously "a.a must be a custom number (was a string)", now "a.a must be a number (was a string)"
+types.o({ a: { a: "x" }, b: 1 }).toString()
+```
+
 ### Name keyword morphs and predicates
 
 Keywords' morphs and predicates are named functions exported from `arktype/internal`, so `.json` names each by what it does, where every keyword morph was named `morphs`, with a `$N` counter after the first one used:

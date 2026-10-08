@@ -47,6 +47,7 @@ import {
 } from "./module.ts"
 import { referencesThroughAliases, type BaseNode } from "./node.ts"
 import {
+	createNode,
 	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
@@ -758,11 +759,25 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (reference.$ === this) return reference
 
 		if (isNode(reference)) {
-			return reference.hasKind("alias") ? reference : (
-					resolveDescription(
-						new (reference.constructor as any)(reference, this)
-					)
-				)
+			if (reference.hasKind("alias")) return reference
+			// a leaf compiles its description, so one this scope
+			// describes differently needs its own id
+			if (
+				!reference.children.length &&
+				this.resolvedConfig[reference.kind].description !==
+					reference.$.resolvedConfig[reference.kind].description
+			) {
+				return createNode({
+					id: registerNodeId(reference.kind),
+					kind: reference.kind,
+					inner: reference.inner,
+					meta: reference.meta,
+					$: this
+				}) as never
+			}
+			return resolveDescription(
+				new (reference.constructor as any)(reference, this)
+			)
 		}
 
 		let bound = this.boundGenerics.get(reference)

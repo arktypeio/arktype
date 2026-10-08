@@ -229,11 +229,45 @@ contextualize(() => {
 				{ b: "number", o: { a: A, b: "b" } },
 				{ jitless, domain: { description: () => "a custom number" } }
 			).export()
-			// ideally JIT would keep the description A was parsed with
-			attest(types.o({ a: { a: "x" }, b: 1 }).toString()).equals(
-				jitless ?
-					"a.a must be a number (was a string)"
-				:	"a.a must be a custom number (was a string)"
+			attest(types.o({ a: { a: "x" }, b: "x" }).toString()).equals(
+				"a.a must be a number (was a string)\nb must be a custom number (was a string)"
+			)
+		}
+	})
+
+	it("referenced types keep their descriptions", () => {
+		const Cyclic = type({ a: "number", "next?": "this" })
+		const Discriminated = type({ kind: "'a'", n: "number" }).or({ kind: "'b'" })
+		const Configured = type("number").configure({
+			description: "a configured number"
+		})
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{
+					b: "number",
+					o: { cyclic: Cyclic, discriminated: Discriminated, b: "b" },
+					configured: { a: Configured, b: "b" }
+				},
+				{ jitless, domain: { description: () => "a custom number" } }
+			).export()
+			attest(
+				types
+					.o({
+						cyclic: { a: 1, next: { a: "x" } },
+						discriminated: { kind: "a", n: "x" },
+						b: 1
+					})
+					.toString()
+			).equals(
+				"cyclic.next.a must be a number (was a string)\ndiscriminated.n must be a number (was a string)"
+			)
+			attest(
+				types
+					.o({ cyclic: { a: 1 }, discriminated: { kind: "c" }, b: 1 })
+					.toString()
+			).equals('discriminated.kind must be "a" or "b" (was "c")')
+			attest(types.configured({ a: "x", b: "x" }).toString()).equals(
+				"a must be a configured number (was a string)\nb must be a custom number (was a string)"
 			)
 		}
 	})
