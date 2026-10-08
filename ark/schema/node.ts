@@ -4,6 +4,7 @@ import {
 	appendUnique,
 	flatMorph,
 	hasDomain,
+	hashOf,
 	includes,
 	isArray,
 	isEmptyObject,
@@ -37,7 +38,7 @@ import type {
 	nodeOfKind,
 	reducibleKindOf
 } from "./kinds.ts"
-import type { BaseParseOptions, NodeId } from "./parse.ts"
+import type { BaseParseContext, BaseParseOptions, NodeId } from "./parse.ts"
 import type { AliasNode } from "./roots/alias.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
@@ -85,7 +86,8 @@ import {
 	inProgress,
 	isIoFinal,
 	isNode,
-	isResolutionFinal
+	isResolutionFinal,
+	printSelfAsThis
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
@@ -817,11 +819,37 @@ export abstract class BaseNode<
 		if (!ctx.throughAliases) return this._transform(mapper, ctx) as never
 		// an alias to a resolution still being transformed can't be resolved until the transform returns
 		inProgress.resolutions++
+		let transformed: BaseNode | null
 		try {
-			return this._transform(mapper, ctx) as never
+			transformed = this._transform(mapper, ctx)
 		} finally {
 			inProgress.resolutions--
+			for (const id in ctx.synthetics)
+				delete $ark.nodesByRegisteredId[ctx.synthetics[id].id]
 		}
+		if (!transformed || opts?.names) return transformed as never
+		// transformed again, since its synthetics have printed `this` or what they replaced
+		let name: string | undefined
+		const names: Record<string, string> = {}
+		for (const id in ctx.synthetics) {
+			if (id === this.id) name = `synthetic${hashOf(transformed.expression)}`
+			else {
+				names[id] =
+					`synthetic${hashOf(`${transformed.expression}\n${ctx.synthetics[id].name}`)}`
+			}
+		}
+		const named =
+			isEmptyObject(names) ? transformed : (
+				this.transform(mapper, { ...opts, names })
+			)
+		if (!name) return named as never
+		return printSelfAsThis(
+			this.transform(mapper, {
+				...opts,
+				names: { ...names, [this.id]: name }
+			}) as never,
+			named as BaseRoot
+		) as never
 	}
 
 	protected _createTransformContext(
@@ -837,6 +865,7 @@ export abstract class BaseNode<
 			},
 			undeclaredKeyHandling: undefined,
 			throughAliases: isResolutionFinal(),
+			synthetics: {},
 			...opts
 		}
 	}
@@ -857,7 +886,14 @@ export abstract class BaseNode<
 				if (!transformed) return transformed
 				ctx.seen[resolution.id] = () => transformed
 			}
-			return this.$.lazilyResolve(ctx.seen[resolution.id]! as never)
+			ctx.synthetics[resolution.id] ??= this.$.openSynthetic(
+				ctx.names?.[resolution.id] ??
+					(resolution === ctx.root ? undefined : this.expression)
+			)
+			return this.$.lazilyResolve(
+				ctx.seen[resolution.id]! as never,
+				ctx.synthetics[resolution.id].id
+			)
 		}
 
 		let transformedNode: BaseRoot | undefined
@@ -1467,6 +1503,7 @@ export type DeepNodeTransformOptions = {
 	bindScope?: BaseScope
 	prereduced?: boolean
 	selected?: readonly BaseNode[] | undefined
+	names?: Record<string, string>
 }
 
 export type ShouldTransformFn = (
@@ -1482,6 +1519,7 @@ export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
 	parseOptions: BaseParseOptions
 	undeclaredKeyHandling: UndeclaredKeyHandling | undefined
 	throughAliases: boolean
+	synthetics: Record<string, BaseParseContext>
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(

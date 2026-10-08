@@ -1,6 +1,7 @@
 import {
 	defineLazily,
 	flatMorph,
+	hashOf,
 	hasDomain,
 	includes,
 	isArray,
@@ -664,22 +665,6 @@ const nameComponent = (
 				`${node.kind}${hash}`
 			:	`${node.kind}${hash}_${canonicalPositions[i]}`
 	}
-}
-
-// cyrb53, a 53-bit string hash
-const hashOf = (input: string): string => {
-	let h1 = 0xdeadbeef
-	let h2 = 0x41c6ce57
-	for (let i = 0; i < input.length; i++) {
-		const code = input.charCodeAt(i)
-		h1 = Math.imul(h1 ^ code, 2654435761)
-		h2 = Math.imul(h2 ^ code, 1597334677)
-	}
-	h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507)
-	h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
-	h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
-	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
-	return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
 }
 
 export const writePrecompiledUnits = (roots: readonly BaseRoot[]): string => {
@@ -1373,6 +1358,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 				name: `${ctx.prefix}${hashOf(node.expression)}`
 			}),
 			node
+		)
+	}
+
+	openSynthetic(name: string | undefined): BaseParseContext {
+		return registerParseContext(
+			this.createParseContext({
+				def: undefined,
+				prefix: "synthetic",
+				...(name && { name })
+			})
 		)
 	}
 

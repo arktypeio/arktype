@@ -1514,6 +1514,27 @@ p1[0].p0 must be x (was a number)`)
 		).throws(writeIndiscriminableMorphMessage("string[]", "($a0 | g0<$a0>)[]"))
 	})
 
+	it("prints a deep transform's references", () => {
+		const { node } = scope({ node: { v: "string", "next?": "node" } }).export()
+		const { a } = scope({
+			a: { "p?": "c" },
+			c: { q: "b" },
+			b: { "r?": "d" },
+			d: { q: "b", "s?": "a" }
+		}).export()
+		const strict = node.onDeepUndeclaredKey("reject")
+
+		attest(strict.expression).snap(
+			"{ v: string, next?: this, + (undeclared): reject }"
+		)
+		attest(type({ a: strict }).expression).snap(
+			"{ a: { v: string, next?: synthetic1gygl89r02t, + (undeclared): reject } }"
+		)
+		attest(a.onDeepUndeclaredKey("reject").expression).snap(
+			"{ p?: synthetic1ddwfrt7wsp, + (undeclared): reject }"
+		)
+	})
+
 	it("describes a cyclic union", () => {
 		const types = scope({
 			a: { kind: "'a'", "n?": "b" },
