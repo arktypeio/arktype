@@ -700,6 +700,19 @@ const T = scope({}, { jitless: true }).type(/a/g)
 ;[T.allows("a"), T.allows("a")]
 ```
 
+### Read builtin constructors when validating with `jitless`
+
+With `jitless` or in a CSP environment, an instance check for a builtin like `URL` used the constructor arktype found when it was imported, so replacing or polyfilling the global afterward changed compiled types but not interpreted ones. Both now read the global when validating:
+
+```ts
+const T = scope({}, { jitless: true }).type("URL")
+const url = new URL("https://arktype.io")
+globalThis.URL = class extends URL {}
+
+// previously url, now ArkErrors: must be a URL instance (was URL)
+T(url)
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
