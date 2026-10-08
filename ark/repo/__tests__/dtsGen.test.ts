@@ -32,8 +32,14 @@ contextualize(() => {
 			"main.ts",
 			`
 import { regex } from "arkregex"
+import { scope } from "arktype"
 
 const ok = regex("^ok$", "i")
+
+const required = scope({
+	user: { "name?": "string" },
+	requiredUser: "Required<user>"
+}).export().requiredUser.infer
 `
 		)
 
@@ -47,7 +53,8 @@ const ok = regex("^ok$", "i")
 		)
 
 		attest(inferred).snap({
-			ok: 'Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i"; }>'
+			ok: 'Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i"; }>',
+			required: "{ name: string; }"
 		})
 	})
 })

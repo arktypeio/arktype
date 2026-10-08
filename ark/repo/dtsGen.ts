@@ -44,7 +44,7 @@ export const ${pkg.scope}Dts = ${JSON.stringify(rawDtsModule)}\n`
 
 	// fix some tsup confusion
 	const fileContents = rawFileContents.replace(
-		/(Omit|Exclude|Extract|Record)\$1/g,
+		/\b(Omit|Exclude|Extract|Record|Required)\$1\b/g,
 		"$1"
 	)
 
