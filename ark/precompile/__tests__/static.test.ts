@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { precompileModule } from "@ark/precompile"
-import { diagnosticsOf, memoryHost, precompile, statusesOf } from "./utils.ts"
+import { precompileModule, Precompiler } from "@ark/precompile"
+import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
 
 contextualize(() => {
 	describe("allowed", () => {
@@ -59,7 +59,7 @@ const y = "number"`)
 		})
 
 		it("imports, re-exports and namespaces", () => {
-			const result = precompile(
+			const result = analyze(
 				`import { type } from "arktype"
 import { max } from "./limits.ts"
 import * as limits from "./all.ts"
@@ -322,7 +322,7 @@ const B = scope({ ...$.export(), user: { id: "id" } }).export()`)
 		})
 
 		it("objects are inputs", () => {
-			const result = precompile(`import { type } from "arktype"
+			const result = analyze(`import { type } from "arktype"
 const unit = { a: 1 }
 const A = type("===", unit)`)
 			attest(result.sites.map(site => site.status)).snap(["accepted"])
@@ -338,7 +338,7 @@ const A = type("===", unit)`)
 		})
 
 		it("nested definitions", () => {
-			const result = precompile(
+			const result = analyze(
 				`import { type } from "arktype"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
@@ -370,7 +370,7 @@ const D = type("Date").atOrAfter(new Date("2020-01-01T00:00:00+02:00"))`)
 		})
 
 		it("regexes and symbols", () => {
-			const result = precompile(`import { type } from "arktype"
+			const result = analyze(`import { type } from "arktype"
 const tag = Symbol("tag")
 const A = type("string").matching(new RegExp("^a", "i"))
 const B = type({ [tag]: "string" })`)
@@ -393,7 +393,7 @@ const B = type({ [tag]: "string" })`)
 		})
 
 		it("define constants", () => {
-			const result = precompile(
+			const result = analyze(
 				`import { type } from "arktype"
 const A = type(process.env.NODE_ENV === "production" ? "string" : "unknown")
 const B = type(\`'\${import.meta.env.MODE}'\`)`,
@@ -891,11 +891,9 @@ export const T = type(o.a)`)[0]
 const o = { a: "string" }
 with ({ o: { a: "number" } }) { exports.T = type(o.a) }`
 			attest(
-				precompileModule(
-					source,
-					"/main.cts",
-					memoryHost({ "/main.cts": source })
-				).sites.map(site => [site.status, ...site.reasons])
+				new Precompiler(memoryHost({ "/main.cts": source }))
+					.analyze(source, "/main.cts")
+					.sites.map(site => [site.status, ...site.reasons])
 			).snap([["rejected", "`o` is in a module that uses `with`"]])
 		})
 

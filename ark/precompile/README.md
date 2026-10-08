@@ -12,7 +12,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
 ```
 
-The same analysis is available as `precompileModule(source, id, host)` and as an ESLint rule:
+The same analysis is available as `new Precompiler(host).analyze(source, id)` and as an ESLint rule:
 
 ```js
 import { configs } from "@ark/precompile/eslint"

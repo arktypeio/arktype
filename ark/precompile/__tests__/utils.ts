@@ -1,9 +1,11 @@
 import {
 	precompileModule,
+	Precompiler,
 	renderDiagnostic,
+	type ModuleAnalysis,
+	type PrecompiledModule,
 	type PrecompileHost,
-	type PrecompileOptions,
-	type PrecompileResult
+	type PrecompileOptions
 } from "@ark/precompile"
 import { hasArkKind } from "@ark/schema"
 import { posix } from "node:path"
@@ -17,11 +19,21 @@ export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
 	readFile: path => files[path]
 })
 
+export const analyze = (
+	source: string,
+	files: Record<string, string> = {},
+	opts?: PrecompileOptions
+): ModuleAnalysis =>
+	new Precompiler(memoryHost({ ...files, "/main.ts": source }), opts).analyze(
+		source,
+		"/main.ts"
+	)
+
 export const precompile = (
 	source: string,
 	files: Record<string, string> = {},
 	opts?: PrecompileOptions
-): PrecompileResult =>
+): PrecompiledModule =>
 	precompileModule(
 		source,
 		"/main.ts",
@@ -35,7 +47,7 @@ export const statusesOf = (
 	files?: Record<string, string>,
 	opts?: PrecompileOptions
 ): string[] =>
-	precompile(source, files, opts).sites.map(site =>
+	analyze(source, files, opts).sites.map(site =>
 		[
 			`${site.line}:${site.column} ${site.status}${
 				site.parseError ? ` (${site.parseError.message})`
@@ -50,14 +62,14 @@ export const diagnosticsOf = (
 	source: string,
 	files?: Record<string, string>,
 	opts?: PrecompileOptions
-): string[] => precompile(source, files, opts).diagnostics.map(renderDiagnostic)
+): string[] => analyze(source, files, opts).diagnostics.map(renderDiagnostic)
 
 // each site's status, with the inputs a factory compares at creation or the reasons it is rejected
 export const inputsOf = (
 	source: string,
 	files?: Record<string, string>
 ): string[][] =>
-	precompile(source, files).sites.map(site => [
+	analyze(source, files).sites.map(site => [
 		`${site.line}:${site.column} ${site.status}`,
 		...(site.status === "rejected" ?
 			site.reasons

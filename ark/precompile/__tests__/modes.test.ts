@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { precompileModule, renderDiagnostic } from "@ark/precompile"
-import { diagnosticsOf, memoryHost, precompile, statusesOf } from "./utils.ts"
+import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
 
 contextualize(() => {
 	describe("configuration", () => {
@@ -129,7 +129,7 @@ export const make = (def: string) => {
 	const T = ark["type"](def)
 	return T
 }`
-			attest(precompile(source).sites.map(site => site.kind)).snap(["type"])
+			attest(analyze(source).sites.map(site => site.kind)).snap(["type"])
 			attest(diagnosticsOf(source)).snap([
 				'/main.ts:5:12  `ark` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
@@ -182,7 +182,7 @@ export const parse = (data: unknown) => {
 	out.a = "checked"
 	return out
 }`
-			const diagnostics = precompile(source).diagnostics.filter(d =>
+			const diagnostics = analyze(source).diagnostics.filter(d =>
 				d.message.includes("writes to")
 			)
 			attest(diagnostics.map(d => `${d.line}:${d.column} ${d.message}`)).snap([
@@ -225,7 +225,7 @@ export const field = (limit: number) => {
 	return Field
 }`
 			attest(
-				precompile(source).diagnostics.map(d => `${d.rule} ${d.severity}`)
+				analyze(source).diagnostics.map(d => `${d.rule} ${d.severity}`)
 			).snap(["R4 error", "R1 error"])
 			attest(diagnosticsOf(source, {}, { mode: "cache" })).snap([
 				"/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  Cache mode leaves this to arktype at runtime."

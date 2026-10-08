@@ -40,10 +40,7 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		files: files.length
 	}
 	for (const file of files) {
-		const result = precompiler.precompileModule(
-			readFileSync(file, "utf8"),
-			file
-		)
+		const result = precompiler.analyze(readFileSync(file, "utf8"), file)
 		const path = relative(cwd, file)
 		const entries: [number, string][] = result.diagnostics.map(diagnostic => [
 			diagnostic.start,

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import type { Type } from "arktype"
-import { precompile, statusesOf } from "./utils.ts"
+import { analyze, statusesOf } from "./utils.ts"
 
 const nonStatic = `{
 	const result = "string"
@@ -60,7 +60,7 @@ const F = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${n
   arktype calls a function (/main.ts:2:16) while defining the type, so it must be a static helper
   the function (/main.ts:2:16) is not a static helper: its body is not one expression or one \`return\``)
 		attest(
-			precompile(source).sites.map(site => `${site.line} ${site.status}`)
+			analyze(source).sites.map(site => `${site.line} ${site.status}`)
 		).snap([
 			"2 rejected",
 			"6 rejected",
@@ -124,7 +124,7 @@ const A = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ctx
 	})
 
 	it("validation-time callbacks are holes", () => {
-		const result = precompile(`import { type } from "arktype"
+		const result = analyze(`import { type } from "arktype"
 const format = (s: string) => {
 	const trimmed = s.trim()
 	return trimmed
@@ -138,7 +138,7 @@ const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.rej
 	})
 
 	it("holes have no names at build", () => {
-		const result = precompile(`import { type } from "arktype"
+		const result = analyze(`import { type } from "arktype"
 const isPositive = (n: number) => n > 0
 class User {}
 const A = type("number").narrow(isPositive)
@@ -160,7 +160,7 @@ const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })`
 			"10:11 rejected\n  arktype calls a function (/main.ts:10:38) while defining the type, so it must be a static helper\n  the function (/main.ts:10:38) is not a static helper: its body is not one expression or one `return`"
 		])
 		attest(
-			precompile(source).sites.map(site =>
+			analyze(source).sites.map(site =>
 				site.holes.map(hole => `${hole.kind} ${hole.isCalledAtDefinition}`)
 			)
 		).snap([["function false"], ["function false"], []])

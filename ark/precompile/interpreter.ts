@@ -1,4 +1,4 @@
-import { arkKind, hasArkKind } from "@ark/schema"
+import { arkKind, hasArkKind, type BaseRoot } from "@ark/schema"
 import { hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -96,6 +96,8 @@ export interface SiteState {
 	interpreted: Set<Node>
 	// each call into arktype's API
 	requests: [Node, SourceModule][]
+	// each Type a request returned
+	roots: BaseRoot[]
 	value: unknown
 	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
@@ -112,6 +114,7 @@ export const createSiteState = (
 	holes: [],
 	interpreted: new Set(),
 	requests: [],
+	roots: [],
 	value: undefined,
 	error: undefined,
 	isEvaluated: false
@@ -1413,6 +1416,8 @@ export class Interpreter {
 		try {
 			const result = Reflect.apply(fn, receiver, converted)
 			if (isPlainContainer(result)) this.arkObjects.add(result)
+			else if (ctx.site && hasArkKind(result, "root"))
+				ctx.site.roots.push(result)
 			if (opaque && hasDomain(result, "object"))
 				this.opaqueStandInsByValue.set(result, opaque)
 			return result

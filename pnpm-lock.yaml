@@ -324,6 +324,9 @@ importers:
       eslint:
         specifier: '>=9'
         version: 9.37.0(jiti@2.6.1)
+      magic-string:
+        specifier: 0.30.19
+        version: 0.30.19
       oxc-parser:
         specifier: 0.153.0
         version: 0.153.0

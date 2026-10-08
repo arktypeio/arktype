@@ -49,6 +49,7 @@
 		"@ark/util": "workspace:*",
 		"arkregex": "workspace:*",
 		"arktype": "workspace:*",
+		"magic-string": "0.30.19",
 		"oxc-parser": "0.153.0",
 		"oxc-resolver": "11.24.2"
 	},

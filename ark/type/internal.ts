@@ -63,6 +63,7 @@ export * from "./variants/object.ts"
 export * from "./variants/string.ts"
 
 export type { Comparator } from "./attributes.ts"
+export { registerPrecompiledUnits } from "@ark/schema"
 export { json } from "./keywords/string.ts"
 export { object } from "./keywords/ts.ts"
 export type { InfixExpression } from "./parser/ast/infer.ts"

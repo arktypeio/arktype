@@ -1,7 +1,7 @@
 import type { ESLint, Linter, Rule } from "eslint"
 import { resolve } from "node:path"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
-import { precompileModule, type PrecompileOptions } from "./precompile.ts"
+import { Precompiler, type PrecompileOptions } from "./precompile.ts"
 
 export interface PrecompileRuleOptions
 	extends PrecompileOptions,
@@ -31,16 +31,11 @@ const precompilable: Rule.RuleModule = {
 	create: context => ({
 		"Program:exit": () => {
 			const opts: PrecompileRuleOptions | undefined = context.options[0]
-			const result = precompileModule(
-				context.sourceCode.text,
-				context.filename,
-				createNodeHost(opts),
-				{
-					...opts,
-					cwd: context.cwd,
-					config: opts?.config && resolve(context.cwd, opts.config)
-				}
-			)
+			const result = new Precompiler(createNodeHost(opts), {
+				...opts,
+				cwd: context.cwd,
+				config: opts?.config && resolve(context.cwd, opts.config)
+			}).analyze(context.sourceCode.text, context.filename)
 			for (const diagnostic of result.diagnostics) {
 				if (diagnostic.file !== context.filename) continue
 				context.report({

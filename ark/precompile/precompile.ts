@@ -1,5 +1,21 @@
-import { hasDomain, ParseError, registeredNameOf } from "@ark/util"
-import type { CallExpression, Node, Program } from "oxc-parser"
+import { hasArkKind, writePrecompiledUnits, type BaseRoot } from "@ark/schema"
+import {
+	flatMorph,
+	hashOf,
+	hasDomain,
+	ParseError,
+	registeredNameOf
+} from "@ark/util"
+import type { type } from "arktype"
+import { precompileStandalone } from "arktype/internal/standalone.ts"
+import MagicString, { type SourceMap } from "magic-string"
+import type {
+	CallExpression,
+	ImportDeclarationSpecifier,
+	Node,
+	Program,
+	Span
+} from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
@@ -42,10 +58,20 @@ export interface PrecompileOptions extends InterpreterOptions {
 	config?: string | undefined
 }
 
-export interface PrecompileResult {
+export interface ModuleAnalysis {
 	sites: Site[]
 	diagnostics: Diagnostic[]
 	dependencies: string[]
+}
+
+export interface PrecompiledModule {
+	code: string
+	// undefined when the module is unchanged
+	map: SourceMap | undefined
+	dependencies: string[]
+	diagnostics: Diagnostic[]
+	// the source of each virtual module the code imports, by specifier
+	modules: Record<string, string>
 }
 
 // the arktype export at the root, or "reference" for a Type, Scope or Generic the program defines, or "helper" for a static helper
@@ -61,6 +87,8 @@ export interface Site {
 	reasons: string[]
 	// the value arktype computed, which a factory reproduces
 	value: unknown
+	// each Type the site's requests return, which cache mode precompiles
+	roots: BaseRoot[]
 	// the error the definition throws, which a factory throws when it is created
 	parseError: ParseError | undefined
 	holes: Hole[]
@@ -98,7 +126,14 @@ export interface Helper {
 	end: number
 }
 
-export type Rule = "R1" | "R2" | "R3" | "R4" | "parse" | "syntax"
+export type Rule =
+	| "R1"
+	| "R2"
+	| "R3"
+	| "R4"
+	| "parse"
+	| "syntax"
+	| "unsupported"
 
 export interface Diagnostic {
 	severity: "error" | "warning"
@@ -118,7 +153,7 @@ export const precompileModule = (
 	id: string,
 	host: PrecompileHost,
 	opts?: PrecompileOptions
-): PrecompileResult => new Precompiler(host, opts).precompileModule(source, id)
+): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
 export class Precompiler {
 	graph: ModuleGraph
@@ -137,8 +172,140 @@ export class Precompiler {
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
-	precompileModule(source: string, id: string): PrecompileResult {
+	analyze(source: string, id: string): ModuleAnalysis {
+		return this._analyze(this.graph.add(id, source))
+	}
+
+	precompile(source: string, id: string): PrecompiledModule {
 		const module = this.graph.add(id, source)
+		const { sites, diagnostics, dependencies } = this._analyze(module)
+		const s = new MagicString(source)
+		const modules: Record<string, string> = {}
+		if (this.mode === "standalone")
+			this.foldSites(module, sites, s, modules, diagnostics)
+		else {
+			const roots = sites.flatMap(site => site.roots)
+			if (roots.length) {
+				const table = `import { registerPrecompiledUnits } from "arktype/internal"\n\nregisterPrecompiledUnits(${writePrecompiledUnits(roots)})\n`
+				const specifier = `~arktype/units/${hashOf(table)}`
+				modules[specifier] = table
+				// imported last, so it loads after the module's other imports and registers before its body creates a Type
+				s.append(`\nimport "${specifier}"`)
+			}
+		}
+		return {
+			code: s.toString(),
+			map:
+				s.hasChanged() ?
+					s.generateMap({ source: id, includeContent: true, hires: "boundary" })
+				:	undefined,
+			dependencies,
+			diagnostics,
+			modules
+		}
+	}
+
+	private foldSites(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		modules: Record<string, string>,
+		diagnostics: Diagnostic[]
+	): void {
+		let prefix = "$ark"
+		while (module.source.includes(prefix)) prefix += "$"
+		const namesBySite = new Map<Site, string>()
+		const typesByName: Record<string, type.Any> = {}
+		for (const site of sites) {
+			if (site.status === "rejected") continue
+			const reasons = this.unsupportedReasonsOf(site)
+			if (reasons.length) {
+				diagnostics.push(this.unsupported(module, site, reasons))
+				continue
+			}
+			const name = nameOf(site)
+			namesBySite.set(site, name)
+			if (!site.parseError) typesByName[name] = site.value as never
+		}
+		const refusalsByName: Record<string, string> = {}
+		const validators =
+			Object.keys(typesByName).length ?
+				writeValidators(typesByName, refusalsByName)
+			:	""
+		const specifier = `~arktype/${hashOf(validators)}`
+		const imported = new Set<string>()
+		const folded: Site[] = []
+		for (const [site, name] of namesBySite) {
+			if (refusalsByName[name]) {
+				diagnostics.push(this.unsupported(module, site, [refusalsByName[name]]))
+				continue
+			}
+			const local = prefix + name
+			if (!imported.has(name)) {
+				imported.add(name)
+				if (site.parseError) {
+					modules[`~arktype/${name}`] = writeParseErrorThrower(
+						site.parseError.message
+					)
+					s.append(`\nimport ${local} from "~arktype/${name}"`)
+				} else {
+					modules[specifier] = validators
+					s.append(`\nimport { v${name} as ${local} } from "${specifier}"`)
+				}
+			}
+			// a ParseError is thrown where the site is evaluated, as arktype throws it
+			s.overwrite(site.start, site.end, site.parseError ? `${local}()` : local)
+			folded.push(site)
+		}
+		pruneArktypeImports(module, folded, s)
+		diagnostics.sort((l, r) => l.start - r.start)
+	}
+
+	private unsupported(
+		module: SourceModule,
+		site: Site,
+		reasons: string[]
+	): Diagnostic {
+		return this.diagnostic(
+			module,
+			site,
+			"unsupported",
+			"error",
+			`${module.snippetOf(site)} can't be precompiled to a standalone validator yet`,
+			reasons
+		)
+	}
+
+	private unsupportedReasonsOf(site: Site): string[] {
+		const result =
+			site.parseError || hasArkKind(site.value, "root") ?
+				[]
+			:	["its value is not a Type"]
+		for (const hole of site.holes) {
+			const holeModule = this.graph.moduleOf(hole.file)
+			result.push(
+				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
+			)
+		}
+		for (const input of site.inputs) {
+			result.push(
+				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
+					input.kind === "import" ?
+						`imported from ${this.graph.pathOf(input.file!)}`
+					: input.kind === "local" ? "declared in a function around the site"
+					: "a define"
+				}`
+			)
+		}
+		for (const helper of site.helpers) {
+			result.push(
+				`it calls the static helper \`${helper.name}\` (${this.graph.moduleOf(helper.file).positionOf(helper)})`
+			)
+		}
+		return result
+	}
+
+	private _analyze(module: SourceModule): ModuleAnalysis {
 		if (module.parseErrors.length) {
 			return {
 				sites: [],
@@ -152,7 +319,7 @@ export class Precompiler {
 						[]
 					)
 				),
-				dependencies: [id]
+				dependencies: [module.id]
 			}
 		}
 		const candidates = findSites(module, this.graph, this.interpreter)
@@ -191,7 +358,7 @@ export class Precompiler {
 		return {
 			sites: sites.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
-			dependencies: this.graph.dependenciesOf(id)
+			dependencies: this.graph.dependenciesOf(module.id)
 		}
 	}
 
@@ -285,6 +452,7 @@ export class Precompiler {
 			status: "accepted",
 			reasons: [],
 			value: undefined,
+			roots: [],
 			parseError: undefined,
 			holes: [],
 			inputs: [],
@@ -298,7 +466,10 @@ export class Precompiler {
 		const dynamic = rejectionOf(state)
 		if (dynamic) return rejectSite(site, dynamic)
 		if (state.error instanceof ParseError) site.parseError = state.error
-		else site.value = state.value
+		else {
+			site.value = state.value
+			site.roots = state.roots
+		}
 		for (const read of state.trace.reads) {
 			const input = this.inputOf(read, candidate, module)
 			if (input instanceof DynamicValue) return rejectSite(site, input)
@@ -639,20 +810,20 @@ export class Precompiler {
 
 	private diagnostic(
 		module: SourceModule,
-		node: Node,
+		span: Span,
 		rule: Rule,
 		severity: Diagnostic["severity"],
 		message: string,
 		reasons: string[],
 		hint?: string
 	): Diagnostic {
-		const [line, column] = module.lineAndColumnOf(node.start)
+		const [line, column] = module.lineAndColumnOf(span.start)
 		return {
 			severity,
 			rule,
 			file: module.id,
-			start: node.start,
-			end: node.end,
+			start: span.start,
+			end: span.end,
 			line,
 			column,
 			message,
@@ -677,6 +848,7 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",
 	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
+	unsupported: `Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`,
 	parse: "The precompiled site throws the same ParseError when it is created."
 }
 
@@ -727,10 +899,89 @@ const isStrict = (program: Program): boolean =>
 			statement.directive === "use strict"
 	)
 
+// named by content, so equal sites share a validator
+const nameOf = (site: Site) =>
+	hashOf(site.parseError?.message ?? (site.value as BaseRoot).hash)
+
+// precompileStandalone refuses a whole artifact for one Type it can't emit, so on a refusal each is emitted alone to find it
+const writeValidators = (
+	typesByName: Record<string, type.Any>,
+	refusalsByName: Record<string, string>
+): string => {
+	const types = flatMorph(typesByName, (name, t) => [`v${name}`, t])
+	try {
+		return precompileStandalone(types)
+	} catch {
+		for (const name in typesByName) {
+			try {
+				precompileStandalone({ [name]: typesByName[name] })
+			} catch (e) {
+				refusalsByName[name] = (e as Error).message
+				delete types[`v${name}`]
+			}
+		}
+		return precompileStandalone(types)
+	}
+}
+
+const writeParseErrorThrower = (message: string) =>
+	`import { ParseError } from "arktype/runtime"\n\nexport default () => {\n\tthrow new ParseError(${JSON.stringify(message)})\n}\n`
+
+// an import only folded sites read becomes `import "arktype"`, so the runtime loads where arktype would have
+const pruneArktypeImports = (
+	module: SourceModule,
+	folded: Site[],
+	s: MagicString
+) => {
+	for (const statement of module.program.body) {
+		if (
+			statement.type !== "ImportDeclaration" ||
+			statement.source.value !== "arktype" ||
+			statement.importKind === "type"
+		)
+			continue
+		const kept = statement.specifiers.filter(specifier =>
+			isReadOutside(specifier, folded, module)
+		)
+		if (kept.length < statement.specifiers.length)
+			s.overwrite(statement.start, statement.end, writeImport(kept, module))
+	}
+}
+
+const isReadOutside = (
+	specifier: ImportDeclarationSpecifier,
+	sites: Site[],
+	module: SourceModule
+) =>
+	!!module.scopes.bindingsById
+		.get(specifier.local)
+		?.references.some(
+			({ id }) =>
+				!sites.some(site => site.start <= id.start && id.end <= site.end)
+		)
+
+const writeImport = (
+	specifiers: ImportDeclarationSpecifier[],
+	module: SourceModule
+) => {
+	const clauses: string[] = []
+	const named: string[] = []
+	for (const specifier of specifiers) {
+		if (specifier.type === "ImportSpecifier")
+			named.push(module.textOf(specifier))
+		else clauses.push(module.textOf(specifier))
+	}
+	if (named.length) clauses.push(`{ ${named.join(", ")} }`)
+	return clauses.length ?
+			`import ${clauses.join(", ")} from "arktype"`
+		:	`import "arktype"`
+}
+
 const rejectSite = (site: Site, dynamic: DynamicValue): Site => {
 	site.status = "rejected"
 	site.reasons = chainOf(dynamic)
 	site.value = undefined
+	site.roots = []
 	site.holes = []
 	site.inputs = []
 	return site

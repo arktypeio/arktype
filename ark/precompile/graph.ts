@@ -130,6 +130,10 @@ export class ModuleGraph {
 		return module
 	}
 
+	moduleOf(id: string): SourceModule {
+		return this.modulesById[id] as SourceModule
+	}
+
 	resolve(
 		specifier: string,
 		importer: SourceModule

@@ -1,4 +1,4 @@
-import { parseSync, type Node, type Program } from "oxc-parser"
+import { parseSync, type Program, type Span } from "oxc-parser"
 import { ModuleScopes } from "./scope.ts"
 
 export class SourceModule {
@@ -37,17 +37,17 @@ export class SourceModule {
 		return [low + 1, offset - this.lineStarts[low] + 1]
 	}
 
-	positionOf(node: Node): string {
-		const [line, column] = this.lineAndColumnOf(node.start)
+	positionOf(span: Span): string {
+		const [line, column] = this.lineAndColumnOf(span.start)
 		return `${this.path}:${line}:${column}`
 	}
 
-	textOf(node: Node): string {
-		return this.source.slice(node.start, node.end)
+	textOf(span: Span): string {
+		return this.source.slice(span.start, span.end)
 	}
 
-	snippetOf(node: Node): string {
-		const text = this.textOf(node).replace(/\s*\n\s*/g, " ")
+	snippetOf(span: Span): string {
+		const text = this.textOf(span).replace(/\s*\n\s*/g, " ")
 		return text.length > 60 ? `${text.slice(0, 59)}…` : text
 	}
 }
