@@ -1,5 +1,19 @@
 # arkregex
 
+## Unreleased
+
+### infer capture indices across alternation branches
+
+A capture in one alternation branch is `undefined` in every other branch, so the inferred tuples line up with what `exec` returns:
+
+```ts
+// was: ["1"] | [undefined, "2"] | [undefined, "3"]
+// now: ["1", undefined, undefined] | [undefined, "2", undefined] | [undefined, undefined, "3"]
+regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
+```
+
+https://github.com/arktypeio/arktype/issues/1530
+
 ## 0.0.6
 
 ### include the empty string when a zero-min quantifier applies to a number pattern
