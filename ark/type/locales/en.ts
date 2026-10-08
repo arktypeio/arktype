@@ -1,5 +1,6 @@
-import { en as schemaEn, type Locale } from "@ark/schema"
-import type { KeywordPhraseAlias } from "../keywords/phrases.ts"
+import { en as schemaEn } from "@ark/schema"
+import "../keywords/phrases.ts"
+import type { Locale } from "../locale.ts"
 
-// a keyword's module imports phrases.ts, which gives schema's en its phrases
-export const en = schemaEn as Locale.Complete<string, KeywordPhraseAlias>
+// phrases.ts gives schema's en arktype's keyword phrases
+export const en = schemaEn as Locale.Complete

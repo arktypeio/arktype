@@ -14,7 +14,7 @@ import {
 	type KeywordPhraseAlias
 } from "arktype/internal/keywords/phrases.ts"
 import { regexStringNode } from "arktype/internal/keywords/string.ts"
-import { en } from "arktype/internal/locales/en.ts"
+import { en } from "arktype/locales/en"
 
 const flatKeywords = (prefix: string, o: object): [string, type.Any][] =>
 	Object.entries(o).flatMap(([k, v]): [string, type.Any][] => {

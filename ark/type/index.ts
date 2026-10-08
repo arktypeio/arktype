@@ -15,6 +15,7 @@ export { regex, type Regex } from "arkregex"
 export type { distill, Out } from "./attributes.ts"
 export * from "./config.ts"
 export { Generic } from "./generic.ts"
+export type { Locale } from "./locale.ts"
 export {
 	ark,
 	declare,

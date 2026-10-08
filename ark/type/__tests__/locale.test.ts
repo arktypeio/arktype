@@ -2,6 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	describeMissing,
+	TraversalError,
+	writeInvalidLocaleMessage,
 	type ActualContext,
 	type ArkError,
 	type ArkErrors,
@@ -11,9 +13,18 @@ import {
 	type MessageWriter,
 	type ProblemContext
 } from "@ark/schema"
-import { listPattern, type Domain } from "@ark/util"
-import { scope, type } from "arktype"
-import { en } from "arktype/internal/locales/en.ts"
+import { flatMorph, listPattern, type Domain } from "@ark/util"
+import {
+	ark,
+	configure,
+	match,
+	scope,
+	type,
+	type ArkConfig,
+	type Locale as ArkLocale
+} from "arktype"
+import { en } from "arktype/locales/en"
+import { AsyncLocalStorage } from "node:async_hooks"
 
 // errors described by their own nodes, which union and intersection errors list
 const leavesOf = (error: ArkError): ArkError[] =>
@@ -36,6 +47,190 @@ const enActual = (error: ArkError) => {
 class Foo {}
 
 const isEven = (n: number) => n % 2 === 0
+
+const o = {}
+const sym = Symbol("parity")
+
+// every leaf code and context variant, each with data that fails it
+const corpusOf = (jitless: boolean): [type.Any, unknown][] => {
+	const $ = scope({}, { jitless })
+	const node = scope(
+		{ node: { next: "node | null", v: "string" } },
+		{ jitless }
+	).export().node
+	return [
+		[$.type("string"), 5],
+		[$.type("number"), "x"],
+		[$.type("bigint"), 1],
+		[$.type("symbol"), 1],
+		[$.type("object"), 1],
+		[$.type("'a'"), "b"],
+		[$.type("5"), 4],
+		[$.type("5n"), 4n],
+		[$.type("true"), false],
+		[$.type("null"), 1],
+		[$.type("undefined"), 1],
+		[$.type.unit(Foo), {}],
+		[$.type("Date"), 1],
+		[$.type("Date"), new Date("!")],
+		[$.type("unknown[]"), {}],
+		[$.type("Map"), {}],
+		[$.type.instanceOf(Foo), {}],
+		[$.type("number > 0"), 0],
+		[$.type("number >= 0"), -1],
+		[$.type("number < 0"), 0],
+		[$.type("number <= 0"), 1],
+		[$.type("number > 5"), 5],
+		[$.type("number >= 5.5"), 5],
+		[$.type("number < 5"), 5],
+		[$.type("number <= -5"), 5],
+		[$.type("string > 0"), ""],
+		[$.type("string >= 3"), ""],
+		[$.type("unknown[] >= 2"), []],
+		[$.type("string <= 3"), "abcd"],
+		[$.type("unknown[] <= 1"), [1, 2]],
+		[$.type("string == 3"), "ab"],
+		[$.type("unknown[] == 0"), [1]],
+		[$.type("number % 1"), 1.5],
+		[$.type("number % 2"), 1],
+		[$.type("number % 3"), 1],
+		[$.type("/^a.*$/"), "b"],
+		[$.type(/a/i), "b"],
+		[$.type("Date < d'2000-01-01'"), new Date("2001-01-01")],
+		[$.type("Date > d'2000-01-01T12:30:00Z'"), new Date("1999-01-01")],
+		[$.type("number").narrow(() => false), 1],
+		[$.type("number").narrow(isEven), 1],
+		[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
+		[
+			$.type("string").pipe.try(function parse(s: string) {
+				return JSON.parse(s)
+			}),
+			"{"
+		],
+		[$.type("string | number[]"), [true]],
+		[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
+		[$.type("(number % 2) & (number > 3)"), 1],
+		[$.type("(string >= 2) | (string <= 0)"), "a"],
+		[$.type({ a: "string" }), {}],
+		[$.type({ a: "string | number" }), {}],
+		[$.type({ a: "never" }), {}],
+		[$.type({ a: "unknown" }), {}],
+		[
+			$.type({
+				a: $.type("unknown")
+					.narrow(() => true)
+					.or("string")
+			}),
+			{}
+		],
+		[$.type({ a: "boolean" }), {}],
+		[$.type({ a: "boolean | null" }), {}],
+		[$.type({ a: "'x' | 'y' | 1n | 1.5" }), {}],
+		[$.type({ a: $.type.unit(o) }), {}],
+		[$.type({ a: $.type.unit(sym) }), {}],
+		[$.type({ a: $.type("'x'").describe("an x") }), {}],
+		[$.type({ a: $.type("false").describe("no").or("true") }), {}],
+		[$.type({ a: $.type("number").describe("a count") }), {}],
+		[$.type({ a: $.type("Date").describe("a day") }), {}],
+		[$.type({ a: $.type("string").pipe(s => s.length) }), {}],
+		[
+			$.type({
+				a: $.type("string")
+					.describe("text")
+					.pipe(s => s.length)
+			}),
+			{}
+		],
+		[$.type({ a: "string > 3" }), {}],
+		[$.type({ a: "string[]" }), {}],
+		[$.type({ a: "Date < d'2000-01-01'" }), {}],
+		[$.type({ a: $.type.instanceOf(Foo) }), {}],
+		[$.type({ a: "string.uuid | number" }), {}],
+		[$.type({ a: "string.date.epoch.parse" }), {}],
+		[node, { v: "x" }],
+		[$.type({ "+": "reject", a: "string" }), { a: "", b: 1 }],
+		[
+			$.type({ kind: "'a'", x: "string" }).or({
+				kind: "'b'",
+				y: "number"
+			}),
+			{ kind: "c" }
+		],
+		[
+			$.type({ kind: "'a'", x: "string" }).or({
+				kind: "'b'",
+				y: "number"
+			}),
+			{}
+		],
+		[$.type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" }), { k: 3n }],
+		[
+			$.type({ k: "1.5", a: "string" }).or({ k: "2.5", b: "number" }),
+			{ k: 3.5 }
+		],
+		[$.type("'a' | 'b' | 'c'"), "d"],
+		[
+			$.type({ k: "true", a: "string" })
+				.or({ k: "false", b: "string" })
+				.or({ k: "'x'", c: "string" }),
+			{ k: 5 }
+		],
+		[$.type.enumerated(o, sym, 1, Infinity, -Infinity), 2],
+		[$.type("string | number | bigint").or({ a: "1" }), true],
+		[$.type("string | number | bigint").or({ a: "1" }), sym]
+	]
+}
+
+const mark = (label: string) => `⟦${label}⟧`
+
+const marks = (o: object): Record<string, string> =>
+	Object.fromEntries(Object.keys(o).map(k => [k, mark(k)]))
+
+// a marker for every entry, so any other text in its output is arktype's
+const xx: Locale = {
+	...(flatMorph(en, (k, v) =>
+		typeof v === "object" && k !== "nouns" && k !== "keywordPhrases" ?
+			[k, { expected: mark(k) }]
+		:	[]
+	) as {} as Locale.Writers),
+	union: {
+		expected: e =>
+			e.errors
+				.map(child => `${child.propString} ${child.expected} ${child.actual}`)
+				.join(mark("or"))
+	},
+	intersection: {
+		expected: e => e.errors.map(child => child.expected).join(mark("and"))
+	},
+	required: { expected: (e, locale) => describeMissing(e.missing, locale) },
+	tag: "xx",
+	list: (items, type) => items.join(mark(type)),
+	plural: () => "other",
+	number: () => mark("number"),
+	date: () => mark("date"),
+	verbatim: text => text,
+	cite: text => `${mark("cite")} ${text}`,
+	expectedNoun: noun => noun,
+	basis: basis => mark(basis.code),
+	nouns: marks(en.nouns) as Locale["nouns"],
+	keywordPhrases: marks(en.keywordPhrases),
+	actual: () => mark("actual"),
+	problem: e => `${mark("problem")} ${e.expected} ${e.actual}`,
+	message: e => `${e.propString} ${mark("message")} ${e.problem}`
+}
+
+// configure assigns to $ark.config in place, so restore from a copy
+const withConfig = <t>(config: ArkConfig, fn: () => t): t => {
+	const originalConfig = { ...$ark.config }
+	const originalResolvedConfig = $ark.resolvedConfig
+	configure(config)
+	try {
+		return fn()
+	} finally {
+		$ark.config = originalConfig
+		$ark.resolvedConfig = originalResolvedConfig
+	}
+}
 
 contextualize(() => {
 	describe("en", () => {
@@ -97,139 +292,8 @@ contextualize(() => {
 
 		it("a leaf error's expected and actual text come from its fields", () => {
 			const codes = new Set<string>()
-			const o = {}
-			const sym = Symbol("parity")
 			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const node = scope(
-					{ node: { next: "node | null", v: "string" } },
-					{ jitless }
-				).export().node
-				const corpus: [type.Any, unknown][] = [
-					[$.type("string"), 5],
-					[$.type("number"), "x"],
-					[$.type("bigint"), 1],
-					[$.type("symbol"), 1],
-					[$.type("object"), 1],
-					[$.type("'a'"), "b"],
-					[$.type("5"), 4],
-					[$.type("5n"), 4n],
-					[$.type("true"), false],
-					[$.type("null"), 1],
-					[$.type("undefined"), 1],
-					[$.type.unit(Foo), {}],
-					[$.type("Date"), 1],
-					[$.type("Date"), new Date("!")],
-					[$.type("unknown[]"), {}],
-					[$.type("Map"), {}],
-					[$.type.instanceOf(Foo), {}],
-					[$.type("number > 0"), 0],
-					[$.type("number >= 0"), -1],
-					[$.type("number < 0"), 0],
-					[$.type("number <= 0"), 1],
-					[$.type("number > 5"), 5],
-					[$.type("number >= 5.5"), 5],
-					[$.type("number < 5"), 5],
-					[$.type("number <= -5"), 5],
-					[$.type("string > 0"), ""],
-					[$.type("string >= 3"), ""],
-					[$.type("unknown[] >= 2"), []],
-					[$.type("string <= 3"), "abcd"],
-					[$.type("unknown[] <= 1"), [1, 2]],
-					[$.type("string == 3"), "ab"],
-					[$.type("unknown[] == 0"), [1]],
-					[$.type("number % 1"), 1.5],
-					[$.type("number % 2"), 1],
-					[$.type("number % 3"), 1],
-					[$.type("/^a.*$/"), "b"],
-					[$.type(/a/i), "b"],
-					[$.type("Date < d'2000-01-01'"), new Date("2001-01-01")],
-					[$.type("Date > d'2000-01-01T12:30:00Z'"), new Date("1999-01-01")],
-					[$.type("number").narrow(() => false), 1],
-					[$.type("number").narrow(isEven), 1],
-					[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
-					[
-						$.type("string").pipe.try(function parse(s: string) {
-							return JSON.parse(s)
-						}),
-						"{"
-					],
-					[$.type("string | number[]"), [true]],
-					[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
-					[$.type("(number % 2) & (number > 3)"), 1],
-					[$.type("(string >= 2) | (string <= 0)"), "a"],
-					[$.type({ a: "string" }), {}],
-					[$.type({ a: "string | number" }), {}],
-					[$.type({ a: "never" }), {}],
-					[$.type({ a: "unknown" }), {}],
-					[
-						$.type({
-							a: $.type("unknown")
-								.narrow(() => true)
-								.or("string")
-						}),
-						{}
-					],
-					[$.type({ a: "boolean" }), {}],
-					[$.type({ a: "boolean | null" }), {}],
-					[$.type({ a: "'x' | 'y' | 1n | 1.5" }), {}],
-					[$.type({ a: $.type.unit(o) }), {}],
-					[$.type({ a: $.type.unit(sym) }), {}],
-					[$.type({ a: $.type("'x'").describe("an x") }), {}],
-					[$.type({ a: $.type("false").describe("no").or("true") }), {}],
-					[$.type({ a: $.type("number").describe("a count") }), {}],
-					[$.type({ a: $.type("Date").describe("a day") }), {}],
-					[$.type({ a: $.type("string").pipe(s => s.length) }), {}],
-					[
-						$.type({
-							a: $.type("string")
-								.describe("text")
-								.pipe(s => s.length)
-						}),
-						{}
-					],
-					[$.type({ a: "string > 3" }), {}],
-					[$.type({ a: "string[]" }), {}],
-					[$.type({ a: "Date < d'2000-01-01'" }), {}],
-					[$.type({ a: $.type.instanceOf(Foo) }), {}],
-					[$.type({ a: "string.uuid | number" }), {}],
-					[$.type({ a: "string.date.epoch.parse" }), {}],
-					[node, { v: "x" }],
-					[$.type({ "+": "reject", a: "string" }), { a: "", b: 1 }],
-					[
-						$.type({ kind: "'a'", x: "string" }).or({
-							kind: "'b'",
-							y: "number"
-						}),
-						{ kind: "c" }
-					],
-					[
-						$.type({ kind: "'a'", x: "string" }).or({
-							kind: "'b'",
-							y: "number"
-						}),
-						{}
-					],
-					[
-						$.type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" }),
-						{ k: 3n }
-					],
-					[
-						$.type({ k: "1.5", a: "string" }).or({ k: "2.5", b: "number" }),
-						{ k: 3.5 }
-					],
-					[$.type("'a' | 'b' | 'c'"), "d"],
-					[
-						$.type({ k: "true", a: "string" })
-							.or({ k: "false", b: "string" })
-							.or({ k: "'x'", c: "string" }),
-						{ k: 5 }
-					],
-					[$.type.enumerated(o, sym, 1, Infinity, -Infinity), 2],
-					[$.type("string | number | bigint").or({ a: "1" }), true],
-					[$.type("string | number | bigint").or({ a: "1" }), sym]
-				]
-				for (const [T, data] of corpus) {
+				for (const [T, data] of corpusOf(jitless)) {
 					for (const error of (T(data) as ArkErrors).issues.flatMap(leavesOf)) {
 						codes.add(error.code)
 						attest(enExpected(error)).equals(error.expected)
@@ -509,10 +573,558 @@ b isn't allowed`)
 			).type.errors("Property 'expectedNoun' does not exist")
 		})
 
+		it("arktype's Locale names its writers and contexts", () => {
+			const rule = (e: ArkLocale.ExpectedContext<"min">) => e.rule
+			const min: ArkLocale.CodeWriters<"min"> = {
+				expected: (e, locale) => `> ${locale.number(rule(e))}`
+			}
+			const phrases: ArkLocale.Data["keywordPhrases"] = {
+				"string.email": { noun: "an email address" }
+			}
+			attest<number>(rule({ rule: 1 } as never))
+			const locale: Locale = { ...xx, min, keywordPhrases: phrases }
+			attest((type("number > 1")(0) as ArkErrors).toLocaleString(locale)).snap(
+				" ⟦message⟧ ⟦problem⟧ > ⟦number⟧ ⟦actual⟧"
+			)
+			attest(type("string.email")("x").toLocaleString(locale)).snap(
+				" ⟦message⟧ ⟦problem⟧ an email address ⟦actual⟧"
+			)
+		})
+
 		it("a locale is complete", () => {
 			const { min: _, ...partial } = en
 			// @ts-expect-error
 			attest((): Locale => partial).type.errors("Property 'min' is missing")
+		})
+	})
+
+	describe("binding", () => {
+		it("toLocaleString renders in a locale", () => {
+			const errors = type({ k: "string" })({ k: 5 }) as ArkErrors
+			const error = errors.issues[0]
+			attest(errors.toLocaleString(xx)).snap(
+				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+			)
+			attest(error.toLocaleString(xx)).snap(
+				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+			)
+			attest(errors.summary).snap("k must be a string (was a number)")
+			attest(errors.toLocaleString()).equals(errors.summary)
+			attest(error.toLocaleString()).equals(error.message)
+			// Array.prototype.toLocaleString passes each element its tag
+			attest([error].toLocaleString("de")).equals(error.message)
+		})
+
+		it("toLocaleString reaches union and intersection children", () => {
+			const union = type("(string >= 2) | (string <= 0)")("a") as ArkErrors
+			attest(union.toLocaleString(xx)).snap(
+				" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
+			)
+			const intersection = type("(number % 2) & (number > 3)")(1) as ArkErrors
+			attest(intersection.toLocaleString(xx)).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦divisor⟧⟦and⟧⟦min⟧ ⟦actual⟧"
+			)
+		})
+
+		it("static", () => {
+			withConfig({ locale: xx }, () => {
+				attest($ark.resolvedConfig.locale).is(xx)
+				const errors = scope({}).type("string")(5) as ArkErrors
+				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				attest(errors.toLocaleString(en)).snap(
+					"must be a string (was a number)"
+				)
+				// errors render with the config of the scope that raised them
+				attest(type("string")(5).toString()).snap(
+					"must be a string (was a number)"
+				)
+			})
+		})
+
+		it("a function", () => {
+			let locale: Locale | undefined
+			let calls = 0
+			withConfig(
+				{
+					locale: () => {
+						calls++
+						return locale
+					}
+				},
+				() => {
+					attest($ark.resolvedConfig.locale).is(en)
+					const errors = type("(string >= 2) | (string <= 0)")("a") as ArkErrors
+					attest(errors.toString()).snap(
+						"must be exactly length 0 or at least length 2 (was 1)"
+					)
+					locale = xx
+					calls = 0
+					attest(errors.toString()).snap(
+						" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
+					)
+					// once per outermost read, which its children share
+					attest(calls).equals(1)
+					attest(errors.toLocaleString(en)).snap(
+						"must be exactly length 0 or at least length 2 (was 1)"
+					)
+					attest(calls).equals(1)
+				}
+			)
+		})
+
+		it("a function selects one locale per read", () => {
+			let calls = 0
+			withConfig({ locale: () => (calls++ % 2 ? en : xx) }, () => {
+				const T = type({ a: "string", b: "number", c: "boolean" })
+				const errors = T({}) as ArkErrors
+				const read = (f: () => unknown) => {
+					calls = 0
+					const result = f()
+					attest(calls).equals(1)
+					return result
+				}
+				attest(read(() => errors.summary))
+					.snap(`a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
+b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
+c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
+				attest(
+					read(() => errors.toJSON().map(issue => (issue as any).message))
+				).snap([
+					"a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
+					"b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
+					"c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧"
+				])
+				attest(read(() => errors.issues[0].toJSON().actual)).snap("⟦actual⟧")
+				attest(read(() => errors.flatProblemsByPath)).snap({
+					a: ["⟦problem⟧ ⟦domain⟧ ⟦actual⟧"],
+					b: ["⟦problem⟧ ⟦domain⟧ ⟦actual⟧"],
+					c: ["⟦problem⟧ ⟦boolean⟧ ⟦actual⟧"]
+				})
+				attest(
+					read(() => {
+						try {
+							T.assert({})
+						} catch (e) {
+							return (e as TraversalError).message
+						}
+					})
+				).snap(`
+  • a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
+  • b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
+  • c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
+			})
+		})
+
+		it("a function that throws renders in en", () => {
+			withConfig(
+				{
+					locale: () => {
+						throw new Error("no request")
+					}
+				},
+				() => {
+					attest(type("string")(5).toString()).snap(
+						"must be a string (was a number)"
+					)
+					let thrown: unknown
+					try {
+						type("string").assert(5)
+					} catch (e) {
+						thrown = e
+					}
+					attest(thrown).instanceOf(TraversalError)
+					attest((thrown as TraversalError).message).snap(
+						"must be a string (was a number)"
+					)
+				}
+			)
+		})
+
+		it("interleaved requests each render in their own locale", async () => {
+			const store = new AsyncLocalStorage<Locale>()
+			const originalConfig = { ...$ark.config }
+			const originalResolvedConfig = $ark.resolvedConfig
+			configure({ locale: () => store.getStore() })
+			try {
+				const T = type({ k: "string" })
+				const read = async (ms: number) => {
+					const errors = T({ k: 5 }) as ArkErrors
+					await new Promise(resolve => setTimeout(resolve, ms))
+					return errors.toString()
+				}
+				attest(
+					await Promise.all([
+						store.run(xx, () => read(20)),
+						read(10),
+						store.run(xx, () => read(0))
+					])
+				).snap([
+					"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
+					"k must be a string (was a number)",
+					"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+				])
+			} finally {
+				$ark.config = originalConfig
+				$ark.resolvedConfig = originalResolvedConfig
+			}
+		})
+
+		it("user writers outrank every locale", () => {
+			withConfig({ min: { expected: "positive!" } }, () => {
+				const errorsOf = () =>
+					scope(
+						{},
+						{
+							domain: {
+								problem: (e, locale) => `${locale.tag}: ${e.expected}`
+							}
+						}
+					).type({
+						k: "string",
+						j: type("number > 0").configure({ actual: "configured" })
+					})({ k: 5, j: 0 }) as ArkErrors
+				const rendered = errorsOf().toLocaleString(xx)
+				attest(rendered).snap(`j ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive! configured
+k ⟦message⟧ xx: ⟦domain⟧`)
+				attest(withConfig({ locale: xx }, () => errorsOf().toString())).equals(
+					rendered
+				)
+				attest(
+					withConfig({ locale: () => xx }, () => errorsOf().toString())
+				).equals(rendered)
+			})
+		})
+
+		it("cites authored text", () => {
+			const $ = scope({}, { domain: { description: () => "a big one" } })
+			const rendered = (T: type.Any, data: unknown) =>
+				(T(data) as ArkErrors).toLocaleString(xx)
+			attest(rendered(type("number").describe("a count"), "x")).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧"
+			)
+			attest(
+				rendered(
+					type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")),
+					-1
+				)
+			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ positive ⟦actual⟧")
+			attest(
+				rendered(type("number").configure({ expected: "a count" }), "x")
+			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧")
+			attest(rendered($.type("bigint"), 1)).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a big one ⟦actual⟧"
+			)
+			// a node's description is its own scope's, whichever scope validates
+			const $min = scope({}, { min: { description: n => `over ${n.rule}` } })
+			attest(rendered(type({ k: $min.type("number > 7") }), { k: 1 })).snap(
+				"k ⟦message⟧ ⟦problem⟧ ⟦cite⟧ over 7 ⟦actual⟧"
+			)
+			attest(rendered($min.type({ k: type("number > 7") }), { k: 1 })).snap(
+				"k ⟦message⟧ ⟦problem⟧ ⟦min⟧ ⟦actual⟧"
+			)
+			// a keyword's phrase is the locale's own text
+			attest(rendered(type("string.email"), "x")).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦string.email⟧ ⟦actual⟧"
+			)
+			// a missing value's description is authored by its meta or scope
+			const $basis = scope(
+				{},
+				{
+					unit: { description: n => `unit ${String(n.unit)}` },
+					proto: { description: () => "a moment" }
+				}
+			)
+			const Missing = $basis.type({ a: "'x'", b: "Date", c: "1 | 2" })
+			attest(rendered(Missing, {}))
+				.snap(`a ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit x ⟦actual⟧
+b ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a moment ⟦actual⟧
+c ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actual⟧`)
+			attest((Missing({}) as ArkErrors).toLocaleString({ ...en })).equals(
+				(Missing({}) as ArkErrors).summary
+			)
+			// a phrase the locale lacks shows the keyword's English
+			attest(
+				type("string.email")("x").toLocaleString({ ...xx, keywordPhrases: {} })
+			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an email address ⟦actual⟧")
+		})
+
+		it("a code's own problem frames only its locale's expected text", () => {
+			const locale: Locale = {
+				...xx,
+				unit: { expected: mark("unit"), problem: mark("unit.problem") }
+			}
+			attest(type("'a'")("b").toLocaleString(locale)).snap(
+				" ⟦message⟧ ⟦unit.problem⟧"
+			)
+			attest(type("'a'").describe("an a")("b").toLocaleString(locale)).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an a ⟦actual⟧"
+			)
+			attest(
+				type("'a'").configure({ expected: "an a" })("b").toLocaleString(locale)
+			).snap(" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an a ⟦actual⟧")
+			const $ = scope({}, { unit: { expected: "an a" } })
+			attest($.type("'a'")("b").toLocaleString(locale)).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦cite⟧ an a ⟦actual⟧"
+			)
+			// a keyword's phrase is not its code's expected text
+			const patterned: Locale = {
+				...xx,
+				pattern: { expected: mark("pattern"), problem: mark("pattern.problem") }
+			}
+			attest(type("/^a/")("b").toLocaleString(patterned)).snap(
+				" ⟦message⟧ ⟦pattern.problem⟧"
+			)
+			attest(type("string.email")("b").toLocaleString(patterned)).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦string.email⟧ ⟦actual⟧"
+			)
+		})
+
+		it("an untyped locale renders what it lacks through en", () => {
+			const partial = {
+				tag: "partial",
+				domain: { expected: () => "<domain>" },
+				min: { problem: () => "<min>" },
+				nouns: { boolean: "<boolean>" }
+			} as {} as Locale
+			const T = type({ k: "string", j: "number > 0", l: "boolean" })
+			const rendered = (T({ k: 5, j: 0 }) as ArkErrors).toLocaleString(partial)
+			attest(rendered).snap(`j <min>
+k must be <domain> (was 5)
+l must be <boolean> (was missing)`)
+			attest(
+				withConfig({ locale: partial }, () =>
+					scope({})
+						.type({
+							k: "string",
+							j: "number > 0",
+							l: "boolean"
+						})({ k: 5, j: 0 })
+						.toString()
+				)
+			).equals(rendered)
+			attest(
+				withConfig({ locale: () => partial }, () =>
+					T({ k: 5, j: 0 }).toString()
+				)
+			).equals(rendered)
+		})
+
+		it("a slot configured as undefined renders through the locale", () => {
+			const config = { domain: { expected: undefined } } as never
+			const errors = scope({}, config).type("number")("x") as ArkErrors
+			attest(errors.toLocaleString(xx)).snap(
+				" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+			)
+		})
+
+		it("configure rejects a locale that is neither an object nor a function", () => {
+			attest(() => configure({ locale: "de" as never })).throws(
+				writeInvalidLocaleMessage("de")
+			)
+		})
+
+		it("checks keyword phrase aliases", () => {
+			attest(() =>
+				configure({
+					// @ts-expect-error
+					locale: { ...xx, keywordPhrases: { "string.emial": mark("email") } }
+				})
+			).type.errors("'\"string.emial\"' does not exist")
+		})
+
+		it("is global-only", () => {
+			// @ts-expect-error
+			attest(() => scope({}, { locale: xx })).type.errors(
+				"'locale' does not exist in type"
+			)
+		})
+
+		it("ignores a scope's locale", () => {
+			const config = { locale: { tag: "partial" } } as never
+			attest(scope({}, config).type("string")(5).toString()).snap(
+				"must be a string (was a number)"
+			)
+			withConfig({ locale: xx }, () =>
+				attest(scope({}, config).type("string")(5).toString()).snap(
+					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+				)
+			)
+			withConfig({ locale: () => xx }, () =>
+				attest(scope({}, config).type("string")(5).toString()).snap(
+					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
+				)
+			)
+		})
+
+		it("renders default-value ParseErrors in English", () => {
+			const def = { k: ["number", "=", () => "x"] } as never
+			withConfig({ locale: xx }, () =>
+				attest(() => scope({}).type(def)).throws.snap(
+					"ParseError: Default for k must be a number (was a string)"
+				)
+			)
+			withConfig({ locale: () => xx }, () =>
+				attest(() => scope({}).type(def)).throws.snap(
+					"ParseError: Default for k must be a number (was a string)"
+				)
+			)
+		})
+
+		it("a spread of en renders as en does", () => {
+			const spread = { ...en }
+			for (const jitless of [false, true]) {
+				for (const [T, data] of corpusOf(jitless)) {
+					const errors = T(data) as ArkErrors
+					attest(errors.toLocaleString(spread)).equals(errors.summary)
+				}
+			}
+		})
+
+		it("a spread of en lists a missing true, false and more as given", () => {
+			// en's required text names any branches starting with true and false boolean
+			const T = type({
+				a: match
+					.case("true", () => 1)
+					.case("false", () => 2)
+					.case("'x'", () => 3)
+					.default("reject")
+			})
+			const errors = T({}) as ArkErrors
+			attest(errors.summary).snap("a must be boolean (was missing)")
+			attest(errors.toLocaleString({ ...en })).snap(
+				'a must be true, false or "x" (was missing)'
+			)
+		})
+	})
+
+	describe("leaks", () => {
+		const keywordsOf = (prefix: string, o: object): type.Any[] =>
+			Object.entries(o).flatMap(([k, v]): type.Any[] => {
+				const alias =
+					k === "root" ? prefix
+					: prefix ? `${prefix}.${k}`
+					: k
+				return (
+					v?.internal?.kind ? [v]
+					: typeof v === "object" && v !== null ? keywordsOf(alias, v)
+					: []
+				)
+			})
+
+		// every code and its variants, keyed by j and k
+		const leakCorpusOf = (jitless: boolean): [type.Any, unknown][] => {
+			const $ = scope({}, { jitless })
+			return [
+				[$.type("string"), 5],
+				[$.type("'a'"), "b"],
+				[$.type.unit(o), {}],
+				[$.type("'a' | 'b' | 1"), "c"],
+				[$.type("Date"), {}],
+				[$.type("Date"), new Date("!")],
+				[$.type.instanceOf(Foo), {}],
+				[$.type("number > 0"), 0],
+				[$.type("number <= 0"), 1],
+				[$.type("string >= 3"), ""],
+				[$.type("unknown[] <= 1"), [1, 2]],
+				[$.type("string == 3"), "ab"],
+				[$.type("Date > d'2000-01-01'"), new Date(0)],
+				[$.type("Date < d'2000-01-01'"), new Date("2001-01-01")],
+				[$.type("number % 2"), 1],
+				[$.type("/^a/"), "b"],
+				[$.type("number").narrow(isEven), 1],
+				[$.type("number").narrow(() => false), 1],
+				[$.type("number").narrow((n, ctx) => ctx.reject({})), 1],
+				[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
+				[$.type("(string >= 2) | (string <= 0)"), "a"],
+				[$.type("(number % 2) & (number > 3)"), 1],
+				[$.type({ k: "string" }), {}],
+				[$.type({ k: "boolean" }), {}],
+				[$.type({ k: "never" }), {}],
+				[$.type({ k: "unknown" }), {}],
+				[$.type({ k: "string | number | Date" }), {}],
+				[$.type({ k: "string.date.parse" }), {}],
+				[$.type({ k: "string" }).or({ j: "number" }), {}],
+				[$.type({ "+": "reject", k: "string" }), { k: "", j: 1 }],
+				[
+					$.type({ k: "'a'", j: "string" }).or({ k: "'b'", j: "number" }),
+					{ k: "c" }
+				],
+				[$.type({ k: "'a'", j: "string" }).or({ k: "'b'", j: "number" }), {}],
+				[$.type("string | number | bigint").or({ k: "1" }), true],
+				// a node another scope described in English
+				[
+					scope({}, { jitless, min: { description: () => mark("min") } }).type({
+						k: type("number > 8")
+					}),
+					{ k: 1 }
+				]
+			]
+		}
+
+		it("a locale's text replaces all of arktype's", () => {
+			const codes = new Set<string>()
+			const leaked: string[] = []
+			const check = (text: string) => {
+				// besides markers, only paths through j and k remain
+				const rest = text.replace(/⟦[^⟦⟧]*⟧/g, "").replace(/\b[jk]\b/g, "")
+				if (/[a-z]/i.test(rest)) leaked.push(text)
+			}
+			const checkErrors = (errors: readonly ArkError[]) => {
+				for (const error of errors) {
+					codes.add(error.code)
+					check(error.expected)
+					check(error.actual)
+					check(error.problem)
+					check(error.message)
+					if (error.hasCode("union") || error.hasCode("intersection"))
+						checkErrors(error.errors)
+				}
+			}
+			const checkResult = (result: unknown) => {
+				if (!(result instanceof type.errors)) return
+				check(result.summary)
+				checkErrors(result.issues)
+			}
+			const inputs = [
+				5,
+				1.5,
+				9e15,
+				null,
+				{},
+				[],
+				"x",
+				"",
+				"{",
+				"(",
+				"9007199254740993"
+			]
+			withConfig({ locale: () => xx }, () => {
+				for (const jitless of [false, true])
+					for (const [T, data] of leakCorpusOf(jitless)) checkResult(T(data))
+				for (const T of keywordsOf("", ark.export()))
+					for (const data of inputs) checkResult(T(data))
+			})
+			attest(leaked).equals([])
+			attest([...codes].sort()).snap([
+				"after",
+				"before",
+				"discriminant",
+				"divisor",
+				"domain",
+				"exactLength",
+				"intersection",
+				"max",
+				"maxLength",
+				"min",
+				"minLength",
+				"pattern",
+				"predicate",
+				"proto",
+				"required",
+				"undeclared",
+				"union",
+				"unit"
+			])
 		})
 	})
 })

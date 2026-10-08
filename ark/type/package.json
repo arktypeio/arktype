@@ -25,6 +25,10 @@
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
+		"./locales/en": {
+			"ark-ts": "./locales/en.ts",
+			"default": "./out/locales/en.js"
+		},
 		"./internal": {
 			"ark-ts": "./internal.ts",
 			"default": "./out/internal.js"
@@ -62,7 +66,7 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testSchemaFirst && pnpm testMissingGlobals",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testSchemaFirst && pnpm testMissingGlobals && pnpm testLocaleConfig",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
@@ -70,7 +74,8 @@
 		"testJitlessConfig": "ts ./__tests__/integration/testJitlessConfig.ts",
 		"testCsp": "ts ./__tests__/integration/testCsp.ts",
 		"testSchemaFirst": "ts ./__tests__/integration/testSchemaFirst.ts",
-		"testMissingGlobals": "ts ./__tests__/integration/testMissingGlobals.ts"
+		"testMissingGlobals": "ts ./__tests__/integration/testMissingGlobals.ts",
+		"testLocaleConfig": "ts ./__tests__/integration/testLocaleConfig.ts"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*",

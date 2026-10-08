@@ -1,21 +1,29 @@
-import type { ArkRegistry, requireKeys, show } from "@ark/util"
+import {
+	hasDomain,
+	printable,
+	throwParseError,
+	type ArkRegistry,
+	type requireKeys,
+	type show
+} from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { TypeMeta } from "./shared/declare.ts"
-import type {
-	ActualConfig,
-	ArkErrorCode,
-	ArkErrors,
-	ExpectedConfig,
-	MessageConfig,
-	ProblemConfig
+import {
+	noteLocaleConfigured,
+	type ActualConfig,
+	type ArkErrorCode,
+	type ArkErrors,
+	type ExpectedConfig,
+	type MessageConfig,
+	type ProblemConfig
 } from "./shared/errors.ts"
 import {
 	isNodeKind,
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
-import type { Locale } from "./shared/locale.ts"
+import { normalizeLocale, type Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
@@ -73,13 +81,34 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 $ark.config ??= {}
 
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
+	if (config.locale !== undefined) {
+		if (!hasDomain(config.locale, "object"))
+			throwParseError(writeInvalidLocaleMessage(config.locale))
+		noteLocaleConfigured()
+	}
+
 	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
 	if ($ark.resolvedConfig)
-		$ark.resolvedConfig = mergeConfigs($ark.resolvedConfig, result)
+		$ark.resolvedConfig = resolveGlobalConfig($ark.resolvedConfig)
 
 	return result
 }
+
+/** $ark.config merged over base, with its static locale */
+export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
+	const resolved = mergeConfigs(base, $ark.config)
+	const { locale } = $ark.config
+	// a locale function selects a locale per read, which is en if it returns none
+	;(resolved as { locale: Locale }).locale =
+		typeof locale === "object" ?
+			normalizeLocale(locale)
+		:	$ark.defaultConfig.locale
+	return resolved
+}
+
+export const writeInvalidLocaleMessage = (locale: unknown): string =>
+	`locale must be a Locale or a function returning one (was ${printable(locale)})`
 
 export const mergeConfigs = <base extends ArkSchemaConfig>(
 	base: base,
@@ -206,6 +235,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly onFail?: ArkErrors.Handler | null
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 	readonly toJsonSchema?: ToJsonSchema.Options
+	readonly locale?: Locale<any> | (() => Locale<any> | undefined)
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<
@@ -214,8 +244,9 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 			Required<config[k]>
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
+		: k extends "locale" ? Locale
 		: config[k]
-	} & { readonly locale: Locale } & Omit<config, keyof ArkSchemaConfig>
+	} & Omit<config, keyof ArkSchemaConfig>
 >
 
 export type ResolvedConfig = resolveConfig<ArkSchemaConfig>

@@ -67,6 +67,7 @@ import {
 	type InvokeOptions
 } from "./shared/compile.ts"
 import type { NodeKind } from "./shared/implement.ts"
+import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
 import {
@@ -169,6 +170,7 @@ export type GlobalOnlyConfigOptionName = satisfy<
 	| "onUndeclaredKey"
 	| "rejectAllowsSymbolKeys"
 	| "keywords"
+	| "locale"
 >
 
 export interface ScopeOnlyConfigOptions {
@@ -442,6 +444,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		this.config = mergeConfigs(globalConfig.config, config)
 
 		this.resolvedConfig = mergeConfigs(globalConfig.resolvedConfig, config)
+
+		// locale is global-only, though an untyped config can pass one
+		const { locale } = globalConfig.resolvedConfig
+		if (this.resolvedConfig.locale !== locale)
+			(this.resolvedConfig as { locale: Locale }).locale = locale
 
 		this.name =
 			this.resolvedConfig.name ?? `anonymousScope${anonymousScopeCount++}`

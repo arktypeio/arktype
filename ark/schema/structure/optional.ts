@@ -190,9 +190,12 @@ export const assertDefaultValueAssignability = (
 	const out = (node.in as BaseRoot)(wrapped ? value() : value)
 
 	if (out instanceof ArkErrors) {
+		// a ParseError is for the developer, so it renders in English
+		const en = $ark.defaultConfig.locale
+
 		if (key === null) {
 			// e.g. "Default must be assignable to number (was string)"
-			throwParseError(`Default ${out.summary}`)
+			throwParseError(`Default ${out.toLocaleString(en)}`)
 		}
 
 		const atPath = out.transform(e =>
@@ -201,7 +204,7 @@ export const assertDefaultValueAssignability = (
 
 		// e.g. "Default for bar must be assignable to number (was string)"
 		// e.g. "Default for value at [0] must be assignable to number (was string)"
-		throwParseError(`Default for ${atPath.summary}`)
+		throwParseError(`Default for ${atPath.toLocaleString(en)}`)
 	}
 
 	return value

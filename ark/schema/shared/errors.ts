@@ -23,7 +23,14 @@ import type {
 import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
-import type { Locale } from "./locale.ts"
+import {
+	keywordPhraseOf,
+	keywordWriterOf,
+	normalizeLocale,
+	writeKeywordExpected,
+	type Locale
+} from "./locale.ts"
+import { $ark } from "./registry.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
@@ -33,6 +40,54 @@ export type ArkErrorResult = ArkError | ArkErrors
 export const isArkErrorResult = (result: unknown): result is ArkErrorResult =>
 	typeof result === "object" &&
 	(result instanceof ArkError || result instanceof ArkErrors)
+
+type ErrorSlot = "expected" | "actual" | "problem" | "message"
+
+type SlotConfig = string | ((...args: never[]) => string)
+
+// the locale of the outermost read in progress, which the reads it makes share
+let renderLocale: Locale | undefined
+
+// false until configure is passed a locale, so English reads check nothing else
+let localeConfigured = false
+
+export const noteLocaleConfigured = (): void => {
+	localeConfigured = true
+}
+
+const localizes = (): boolean => renderLocale !== undefined || localeConfigured
+
+// an outermost read selects a locale when a function is configured
+const selectsLocale = (): boolean =>
+	localeConfigured &&
+	renderLocale === undefined &&
+	typeof $ark.config.locale === "function"
+
+const selectLocale = (): Locale => {
+	try {
+		const locale = ($ark.config.locale as () => Locale<any> | undefined)()
+		return locale === undefined ?
+				$ark.defaultConfig.locale
+			:	normalizeLocale(locale)
+	} catch {
+		// a throw from a getter would replace the TraversalError assert throws
+		return $ark.defaultConfig.locale
+	}
+}
+
+const readIn = <t>(locale: Locale, read: () => t): t => {
+	const outer = renderLocale
+	renderLocale = locale
+	try {
+		return read()
+	} finally {
+		renderLocale = outer
+	}
+}
+
+// Array.prototype.toLocaleString passes each element its own arguments, a tag
+const isLocale = (locale: unknown): locale is Locale<any> =>
+	typeof locale === "object" && locale !== null
 
 export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
@@ -123,6 +178,7 @@ export class ArkError<
 	}
 
 	get expected(): string {
+		if (localizes()) return this.render("expected")
 		if (this.input.expected !== undefined) return this.input.expected
 
 		const config = this.meta?.expected ?? this.nodeConfig.expected
@@ -133,6 +189,7 @@ export class ArkError<
 	}
 
 	get actual(): string {
+		if (localizes()) return this.render("actual")
 		if (this.input.actual !== undefined) return this.input.actual
 
 		const config = this.meta?.actual ?? this.nodeConfig.actual
@@ -143,6 +200,7 @@ export class ArkError<
 	}
 
 	get problem(): string {
+		if (localizes()) return this.render("problem")
 		if (this.input.problem !== undefined) return this.input.problem
 
 		const config = this.meta?.problem ?? this.nodeConfig.problem
@@ -153,6 +211,7 @@ export class ArkError<
 	}
 
 	get message(): string {
+		if (localizes()) return this.render("message")
 		if (this.input.message !== undefined) return this.input.message
 
 		const config = this.meta?.message ?? this.nodeConfig.message
@@ -162,11 +221,46 @@ export class ArkError<
 			:	config
 	}
 
+	/**
+	 * The message in `locale`, or in the locale a read selects without one.
+	 */
+	toLocaleString(locale?: Locale<any>): string {
+		return isLocale(locale) ?
+				readIn(normalizeLocale(locale), () => this.message)
+			:	this.message
+	}
+
+	// a read through a locale, which writes what the app hasn't configured
+	private render(slot: ErrorSlot): string {
+		if (selectsLocale()) return readIn(selectLocale(), () => this[slot])
+		const error: ArkError = this as never
+		const locale = renderLocale ?? this.ctx.config.locale
+		const config = this.configOf(slot)
+		if (
+			locale === $ark.defaultConfig.locale ||
+			config !== $ark.defaultConfig[this.code][slot]
+		)
+			return writeSlot(error, slot, config, locale)
+		if (slot === "expected") return localeExpected(error, locale)
+		const writer = localeWriter(error, slot, this.configOf("expected"), locale)
+		return writeSlot(error, slot, writer, locale)
+	}
+
+	private configOf(slot: ErrorSlot): SlotConfig {
+		return (
+			this.input[slot] ??
+			this.meta?.[slot] ??
+			this.nodeConfig[slot] ??
+			$ark.defaultConfig[this.code][slot]
+		)
+	}
+
 	get flat(): ArkError[] {
 		return this.hasCode("intersection") ? [...this.errors] : [this as never]
 	}
 
 	toJSON(): JsonObject {
+		if (selectsLocale()) return readIn(selectLocale(), () => this.toJSON())
 		const json: Record<string, unknown> = { data: this.data, path: this.path }
 		for (const k in this.input)
 			if (!(k in excludedFromJson)) json[k] = this.input[k as never]
@@ -184,6 +278,83 @@ export class ArkError<
 	throw(): never {
 		throw this
 	}
+}
+
+const writeSlot = (
+	error: ArkError,
+	slot: ErrorSlot,
+	config: SlotConfig,
+	locale: Locale
+): string =>
+	typeof config === "string" ?
+		slot === "expected" ?
+			locale.cite(config)
+		:	config
+	: slot === "actual" ?
+		config(error.data as never, error as never, locale as never)
+	:	config(error as never, locale as never)
+
+// a locale's writer for a slot other than expected
+const localeWriter = (
+	error: ArkError,
+	slot: Exclude<ErrorSlot, "expected">,
+	expected: SlotConfig,
+	locale: Locale
+): SlotConfig => {
+	const description = ownDescription(error)
+	if (description !== undefined) {
+		const keywordWriter = keywordWriterOf(error, locale, slot)
+		if (keywordWriter !== undefined) return keywordWriter as never
+	}
+	const writer = locale[error.code][slot]
+	if (writer === undefined) return locale[slot] as never
+	// a code's own problem frames the text of its locale's expected writer,
+	// not a keyword's phrase or authored text, while union and intersection
+	// frame their children's
+	return (
+			slot === "problem" &&
+				error.code !== "union" &&
+				error.code !== "intersection" &&
+				(expected !== $ark.defaultConfig[error.code].expected ||
+					(description !== undefined && !isEnglish(error, description)))
+		) ?
+			(locale.problem as never)
+		:	(writer as never)
+}
+
+const localeExpected = (error: ArkError, locale: Locale): string => {
+	const description = ownDescription(error)
+	if (description !== undefined) {
+		const phrase = keywordPhraseOf(error, locale)
+		if (phrase !== undefined)
+			return writeKeywordExpected(phrase, error as never, locale)
+		if (!isEnglish(error, description)) return locale.cite(description)
+	}
+	return writeExpected(error, locale[error.code].expected, locale)
+}
+
+const writeExpected = (
+	error: ArkError,
+	expected: string | ((error: never, locale: Locale) => string),
+	locale: Locale
+): string =>
+	typeof expected === "string" ? expected : expected(error as never, locale)
+
+// a discriminant's description lists its cases, while its meta is its union's
+const ownDescription = (error: ArkError): string | undefined =>
+	error.code === "discriminant" ? undefined : error.description
+
+// whether a description is what arktype writes for a node without authored
+// text or a keyword. Any scope's writer may have written it, so its text decides
+const isEnglish = (error: ArkError, description: string): boolean => {
+	const meta = error.meta
+	const en = $ark.defaultConfig.locale
+	return (
+		meta !== undefined &&
+		meta.description === undefined &&
+		meta.keyword === undefined &&
+		description === writeExpected(error, en[error.code].expected, en)
+	)
 }
 
 // this.path includes the input's paths, and the rest reference values,
@@ -250,6 +421,8 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	 * {@link byPath} flattened so that each value is an array of problem strings at that path.
 	 */
 	get flatProblemsByPath(): Record<string, string[]> {
+		if (selectsLocale())
+			return readIn(selectLocale(), () => this.flatProblemsByPath)
 		return flatMorph(this.byPath, (k, v) => [k, v.flat.map(e => e.problem)])
 	}
 
@@ -387,6 +560,15 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	}
 
 	/**
+	 * The summary in `locale`, or in the locale a read selects without one.
+	 */
+	toLocaleString(locale?: Locale<any>): string {
+		return isLocale(locale) ?
+				readIn(normalizeLocale(locale), () => this.summary)
+			:	this.summary
+	}
+
+	/**
 	 * One ArkError per path with errors, in the order each path first failed.
 	 */
 	readonly issues: readonly ArkError[] = []
@@ -400,10 +582,12 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	}
 
 	toJSON(): JsonArray {
+		if (selectsLocale()) return readIn(selectLocale(), () => this.toJSON())
 		return this.issues.map(e => e.toJSON())
 	}
 
 	toString(): string {
+		if (selectsLocale()) return readIn(selectLocale(), () => this.toString())
 		const issues = this.issues
 		// join would convert each error through V8's slower generic ToPrimitive
 		let result = issues.length === 0 ? "" : issues[0].toString()
@@ -438,8 +622,7 @@ export class TraversalError extends Error {
 	declare arkErrors: ArkErrors
 
 	constructor(errors: ArkErrors) {
-		if (errors.length === 1) super(errors.summary)
-		else super("\n" + errors.issues.map(e => `  • ${indent(e)}`).join("\n"))
+		super(writeTraversalMessage(errors))
 
 		Object.defineProperty(this, "arkErrors", {
 			value: errors,
@@ -447,6 +630,11 @@ export class TraversalError extends Error {
 		})
 	}
 }
+
+const writeTraversalMessage = (errors: ArkErrors): string =>
+	selectsLocale() ? readIn(selectLocale(), () => writeTraversalMessage(errors))
+	: errors.length === 1 ? errors.summary
+	: "\n" + errors.issues.map(e => `  • ${indent(e)}`).join("\n")
 
 const indent = (error: ArkError): string =>
 	error.toString().split("\n").join("\n  ")

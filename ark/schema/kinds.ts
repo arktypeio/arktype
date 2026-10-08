@@ -11,7 +11,7 @@ import {
 	type array
 } from "@ark/util"
 import {
-	mergeConfigs,
+	resolveGlobalConfig,
 	type ResolvedConfig,
 	type ResolvedUnknownNodeConfig
 } from "./config.ts"
@@ -255,7 +255,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 	) as never
 )
 
-$ark.resolvedConfig = mergeConfigs($ark.defaultConfig, $ark.config)
+$ark.resolvedConfig = resolveGlobalConfig($ark.defaultConfig)
 
 export const nodeClassesByKind: Record<
 	NodeKind,

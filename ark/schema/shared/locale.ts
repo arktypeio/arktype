@@ -14,6 +14,7 @@ import type {
 	MessageContext,
 	ProblemContext
 } from "./errors.ts"
+import { $ark } from "./registry.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 
@@ -123,6 +124,45 @@ type localeExpectedContext<code extends ArkErrorCode> =
 // keyword writers are told apart from nouns by a noun key
 type validateNoun<noun> = noun extends { readonly noun: unknown } ? never : noun
 
+const normalizedLocales = new WeakMap<object, Locale>()
+
+/** a locale completed from en, since an untyped or older one may lack entries */
+export const normalizeLocale = (locale: Locale<any>): Locale => {
+	const en = $ark.defaultConfig.locale
+	if (locale === en) return en
+	let normalized = normalizedLocales.get(locale)
+	if (normalized === undefined) {
+		normalized = completeFrom(en, locale)
+		normalizedLocales.set(locale, normalized)
+	}
+	return normalized
+}
+
+const completeFrom = (en: Locale, locale: Locale<any>): Locale => {
+	let completed: Record<string, unknown> | undefined
+	const fill = (k: string, entry: unknown) => {
+		completed ??= { ...locale }
+		completed[k] = entry
+	}
+	let k: keyof Locale
+	for (k in en) {
+		const entry = locale[k] as any
+		const enEntry = en[k] as any
+		if (entry === undefined)
+			// a keyword without a phrase renders its English description
+			fill(k, k === "keywordPhrases" ? {} : enEntry)
+		else if (k === "nouns") {
+			if (Object.keys(enEntry).some(id => entry[id] === undefined))
+				fill(k, { ...enEntry, ...entry })
+		} else if (k !== "keywordPhrases" && typeof enEntry === "object") {
+			// an error code's writers
+			if (entry.expected === undefined)
+				fill(k, { ...entry, expected: enEntry.expected })
+		}
+	}
+	return (completed as Locale | undefined) ?? locale
+}
+
 /** the phrase a locale has for an error's keyword */
 export const keywordPhraseOf = <noun>(
 	error: { readonly meta?: ArkEnv.meta },
@@ -174,7 +214,7 @@ export const describeMissing = <noun>(
 ): string => {
 	if (missing.code === "intersection")
 		return locale.expectedNoun(locale.nouns.unknown)
-	if (missing.code !== "union") return locale.basis(missing, locale)
+	if (missing.code !== "union") return describeBasis(missing, locale)
 	if (missing.branches.length === 0)
 		return locale.expectedNoun(locale.nouns.never)
 	if (isBooleanPair(missing.branches))
@@ -184,6 +224,21 @@ export const describeMissing = <noun>(
 		appendUnique(branches, describeMissing(branch, locale))
 	return locale.list(branches, "or")
 }
+
+// a unit or proto's description is authored, by its meta or a scope's
+// writer, unless it is what arktype writes for it
+const describeBasis = <noun>(
+	basis: MissingBasis,
+	locale: Locale<noun>
+): string =>
+	(
+		(basis.code === "unit" || basis.code === "proto") &&
+		basis.meta.keyword === undefined &&
+		basis.description !==
+			$ark.defaultConfig[basis.code].description(basis as never)
+	) ?
+		locale.cite(basis.description!)
+	:	locale.basis(basis, locale)
 
 // undescribed false and true, which a locale names as one
 const isBooleanPair = (branches: readonly MissingValue[]) =>
