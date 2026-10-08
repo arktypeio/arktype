@@ -22,8 +22,8 @@ import {
 } from "@ark/util"
 import {
 	mergeConfigs,
+	resolveGlobalConfig,
 	type ArkSchemaConfig,
-	type ArkSchemaRegistry,
 	type ResolvedConfig
 } from "./config.ts"
 import {
@@ -185,34 +185,6 @@ export interface ArkSchemaScopeConfig
 export interface ResolvedScopeConfig
 	extends ResolvedConfig,
 		ScopeOnlyConfigOptions {}
-
-type GlobalConfig = Pick<ArkSchemaRegistry, "config" | "resolvedConfig">
-
-// configure merges into $ark.config in place but replaces $ark.resolvedConfig
-const currentGlobalConfig = (): GlobalConfig => ({
-	config: { ...$ark.config },
-	resolvedConfig: $ark.resolvedConfig
-})
-
-let fixedGlobalConfig: GlobalConfig | undefined
-let constructingWith: GlobalConfig | undefined
-
-export const fixGlobalConfig = (): void => {
-	fixedGlobalConfig ??= currentGlobalConfig()
-}
-
-export const withFixedGlobalConfig = <t>(
-	construct: () => t,
-	globalConfig = fixedGlobalConfig
-): t => {
-	const outerGlobalConfig = constructingWith
-	constructingWith = globalConfig
-	try {
-		return construct()
-	} finally {
-		constructingWith = outerGlobalConfig
-	}
-}
 
 $ark.ambient ??= {} as never
 
@@ -413,9 +385,8 @@ const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 	(nodesByRegisteredId[ctx.id] = ctx)
 
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly config: ArkSchemaScopeConfig
-	readonly resolvedConfig: ResolvedScopeConfig
 	readonly name: string
+	private readonly scopeConfig: ArkSchemaScopeConfig | undefined
 
 	get [arkKind](): "scope" {
 		return "scope"
@@ -439,19 +410,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		def: Record<string, unknown>,
 		config?: ArkSchemaScopeConfig
 	) {
-		const globalConfig = constructingWith ?? $ark
-
-		this.config = mergeConfigs(globalConfig.config, config)
-
-		this.resolvedConfig = mergeConfigs(globalConfig.resolvedConfig, config)
-
-		// locale is global-only, though an untyped config can pass one
-		const { locale } = globalConfig.resolvedConfig
-		if (this.resolvedConfig.locale !== locale)
-			(this.resolvedConfig as { locale: Locale }).locale = locale
-
-		this.name =
-			this.resolvedConfig.name ?? `anonymousScope${anonymousScopeCount++}`
+		this.name = config?.name ?? `anonymousScope${anonymousScopeCount++}`
+		this.scopeConfig = config
 
 		const aliasEntries = Object.entries(def).map(entry =>
 			this.preparseOwnAliasEntry(...entry)
@@ -482,6 +442,22 @@ export abstract class BaseScope<$ extends {} = {}> {
 					:	this.createParseContext(preparsed)
 			}
 		}
+	}
+
+	get config(): ArkSchemaScopeConfig {
+		return mergeConfigs($ark.config, this.scopeConfig)
+	}
+
+	get resolvedConfig(): ResolvedScopeConfig {
+		// the first read fixes the global config, so configure throws after it
+		const globalConfig = ($ark.resolvedConfig ??= resolveGlobalConfig(
+			$ark.defaultConfig
+		))
+		const resolvedConfig = mergeConfigs(globalConfig, this.scopeConfig)
+		// locale is global-only, though an untyped config can pass one
+		if (resolvedConfig.locale !== globalConfig.locale)
+			(resolvedConfig as { locale: Locale }).locale = globalConfig.locale
+		return this.cacheGetter("resolvedConfig", resolvedConfig)
 	}
 
 	get intrinsic(): Omit<typeof $ark.intrinsic, `json${string}`> {
@@ -1135,14 +1111,10 @@ export const schemaScope: SchemaScopeParser = (aliases, config) =>
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
-const importedGlobalConfig = currentGlobalConfig()
-
-export const bootstrapRootScope = (parseIntrinsics: () => void): void =>
-	withFixedGlobalConfig(() => {
-		// ensure the scope is resolved so JIT will be applied to future types
-		rootSchemaScope.export()
-		parseIntrinsics()
-	}, importedGlobalConfig)
+export const bootstrapRootScope = (): void => {
+	// ensure the scope is resolved so JIT will be applied to future types
+	rootSchemaScope.export()
+}
 
 export const parseAsSchema = (
 	def: unknown,

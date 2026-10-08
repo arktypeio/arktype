@@ -1,5 +1,4 @@
 import {
-	fixGlobalConfig,
 	RootModule,
 	type ArkErrors,
 	type arkKind,
@@ -75,9 +74,6 @@ export declare namespace Ark {
 	export interface boundTypeAttachments<$>
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
-
-// keywords are built on first reference, from the config as it is now
-fixGlobalConfig()
 
 export const ark: Scope<Ark> = scope(
 	{

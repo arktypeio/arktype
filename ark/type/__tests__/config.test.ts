@@ -1,22 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	$ark,
+	configureAfterTypeMessage,
 	rootSchema,
-	schemaScope,
-	writeBadRejectAllowsSymbolKeysMessage,
-	type ArkSchemaConfig
+	writeBadRejectAllowsSymbolKeysMessage
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
-
-const withConfig = (config: ArkSchemaConfig, fn: () => void) => {
-	// configure assigns to $ark.config in place, so restore from a copy
-	const originalConfig = { ...$ark.config }
-	const originalResolvedConfig = $ark.resolvedConfig
-	configure(config)
-	fn()
-	$ark.config = originalConfig
-	$ark.resolvedConfig = originalResolvedConfig
-}
 
 contextualize(() => {
 	it("tuple expression", () => {
@@ -250,77 +238,7 @@ contextualize(() => {
 		}
 	})
 
-	it("numberAllowsNaN", () => {
-		withConfig({ numberAllowsNaN: true }, () => {
-			const { nanable } = schemaScope({
-				nanable: "number"
-			}).export()
-
-			attest(nanable.allows(Number.NaN)).equals(true)
-
-			const { nonNanable } = type.module({
-				nonNanable: "number"
-			})
-
-			attest(nonNanable.allows(Number.NaN)).equals(false)
-		})
-	})
-
-	it("numberAllowsInfinity", () => {
-		withConfig({ numberAllowsInfinity: true }, () => {
-			const { infinitable } = schemaScope({
-				infinitable: "number"
-			}).export()
-
-			attest(infinitable.allows(Number.POSITIVE_INFINITY)).equals(true)
-			attest(infinitable.allows(Number.NEGATIVE_INFINITY)).equals(true)
-			attest(infinitable.allows(Number.NaN)).equals(false)
-
-			const { nonInfinitable } = type.module({
-				nonInfinitable: "number"
-			})
-
-			attest(nonInfinitable.allows(Number.POSITIVE_INFINITY)).equals(false)
-		})
-	})
-
-	it("dateAllowsInvalid", () => {
-		withConfig({ dateAllowsInvalid: true }, () => {
-			const { invalidable } = schemaScope({
-				invalidable: Date
-			}).export()
-
-			attest(invalidable.allows(new Date("!"))).equals(true)
-
-			const { uninvalidable } = type.module({
-				uninvalidable: "number"
-			})
-
-			attest(uninvalidable.allows(new Date("!"))).equals(false)
-		})
-	})
-
-	it("rejectAllowsSymbolKeys", () => {
-		withConfig({ rejectAllowsSymbolKeys: true }, () => {
-			const undeclared = Symbol("undeclared")
-			const data = { a: "ok", x: 1, [undeclared]: 1 }
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type({ "+": "reject", a: "string", x: "number" })
-				attest(T(data)).equals(data)
-				const Indexed = $.type({
-					"+": "reject",
-					a: "string",
-					"[/^x/]": "number"
-				})
-				attest(Indexed(data)).equals(data)
-				attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
-			}
-			const L = scope({}).type({ "+": "reject", a: "string" })
-			attest(L.and({ "[symbol]": "number" }).expression).snap(
-				"{ [symbol]: number, a: string, + (undeclared): reject }"
-			)
-		})
+	it("rejectAllowsSymbolKeys requires reject", () => {
 		attest(() =>
 			rootSchema({
 				domain: "object",
@@ -329,6 +247,11 @@ contextualize(() => {
 				rejectAllowsSymbolKeys: true
 			})
 		).throws(writeBadRejectAllowsSymbolKeysMessage("delete"))
+	})
+
+	it("configure after a type is created", () => {
+		type("string")
+		attest(() => configure({})).throws(configureAfterTypeMessage)
 	})
 
 	it("docs actual example", () => {

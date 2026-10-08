@@ -5,7 +5,6 @@ import {
 	LazyGenericRoot,
 	parseGeneric,
 	RootModule,
-	withFixedGlobalConfig,
 	type AliasDefEntry,
 	type ArkSchemaRegistry,
 	type ArkSchemaScopeConfig,
@@ -23,6 +22,7 @@ import {
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
 	type RootSchema,
+	type TypeMeta,
 	type arkKind,
 	type exportedNameOf,
 	type nodeOfKind,
@@ -223,6 +223,13 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		)
 	}
 
+	private keywordConfigOf(qualifiedName: string): TypeMeta | undefined {
+		const { keywords } = this.resolvedConfig
+		return Object.prototype.hasOwnProperty.call(keywords, qualifiedName) ?
+				keywords[qualifiedName]
+			:	undefined
+	}
+
 	protected preparseOwnAliasEntry(alias: string, def: unknown): AliasDefEntry {
 		const firstParamIndex = alias.indexOf("<")
 		if (firstParamIndex === -1) {
@@ -234,25 +241,27 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				: alias === "root" ? this.name
 				: `${this.name}.${alias}`
 
-			const { keywords } = this.resolvedConfig
-			const config =
-				Object.prototype.hasOwnProperty.call(keywords, qualifiedName) ?
-					keywords[qualifiedName]
-				:	undefined
-
-			if (config) {
-				if (isThunk(def)) {
-					const thunk = def
-					def = () => {
+			// a thunk looks up its config when called, so constructing ark on import doesn't fix the global config
+			if (isThunk(def)) {
+				const thunk = def
+				return [
+					alias,
+					() => {
 						const resolution = thunk()
-						return hasArkKind(resolution, "generic") ? resolution : (
+						if (hasArkKind(resolution, "generic")) return resolution
+						const config = this.keywordConfigOf(qualifiedName)
+						return config ?
 								([resolution, "@", config] satisfies TupleExpression)
-							)
+							:	resolution
 					}
-				} else def = [def, "@", config] satisfies TupleExpression
+				]
 			}
 
-			return [alias, def]
+			const config = this.keywordConfigOf(qualifiedName)
+			return [
+				alias,
+				config ? ([def, "@", config] satisfies TupleExpression) : def
+			]
 		}
 
 		if (alias[alias.length - 1] !== ">") {
@@ -398,9 +407,9 @@ export const keywordModule = (
 			module,
 			name,
 			() =>
-				(exports ??= withFixedGlobalConfig(() =>
-					new InternalScope(def, config).exportLazily()
-				))[name as never]
+				(exports ??= new InternalScope(def, config).exportLazily())[
+					name as never
+				]
 		)
 	}
 	return module

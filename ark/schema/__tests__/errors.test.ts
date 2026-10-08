@@ -1,9 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	$ark,
 	ArkErrors,
 	type ArkError,
-	configureSchema,
 	rootSchema,
 	schemaScope,
 	type Traversal
@@ -142,25 +140,6 @@ contextualize(() => {
 			problem: "must be a greeting",
 			message: "must be a greeting"
 		})
-	})
-
-	it("can apply a global config", () => {
-		configureSchema({
-			domain: {
-				description: inner => `my special ${inner.domain}`
-			}
-		})
-		const mySpecialSymbol = schemaScope({}).node("domain", { domain: "symbol" })
-		attest(mySpecialSymbol.traverse("foo")?.toString()).snap(
-			"must be my special symbol (was a string)"
-		)
-		configureSchema({
-			domain: $ark.defaultConfig.domain
-		})
-		const myBoringSymbol = schemaScope({}).node("domain", { domain: "symbol" })
-		attest(myBoringSymbol.traverse("foo")?.toString()).snap(
-			"must be a symbol (was a string)"
-		)
 	})
 
 	const nEvenAtLeast2 = rootSchema({

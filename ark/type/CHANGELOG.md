@@ -165,6 +165,21 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
+### Fix global config when the first Type is created
+
+Global config is read when the first Type is created rather than when arktype is imported, so importing `arktype` before your config file no longer matters, and `configure` can be imported from `"arktype"` as well as `"arktype/config"`. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
+
+```ts
+import { configure, type } from "arktype"
+
+configure({ numberAllowsNaN: true })
+// previously false, now true
+type.number.allows(Number.NaN)
+
+// previously ignored by type, now throws: configure must be called before any Type is created, e.g. from a module imported first
+configure({ onUndeclaredKey: "delete" })
+```
+
 ### Reject `Infinity` from `number`
 
 `number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:

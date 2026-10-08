@@ -74,7 +74,7 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts; pnpm testIntegration",
-		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testSchemaFirst && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl",
+		"testIntegration": "pnpm testSimpleConfig && pnpm testAllConfig && pnpm testOnFailConfig && pnpm testEoptConfig && pnpm testJitlessConfig && pnpm testCsp && pnpm testSchemaFirst && pnpm testConfigAfterImport && pnpm testMissingGlobals && pnpm testLocaleConfig && pnpm testLocaleWithoutIntl",
 		"testSimpleConfig": "ts ./__tests__/integration/testSimpleConfig.ts",
 		"testAllConfig": "ts ./__tests__/integration/testAllConfig.ts",
 		"testOnFailConfig": "ts ./__tests__/integration/testOnFailConfig.ts",
@@ -82,6 +82,7 @@
 		"testJitlessConfig": "ts ./__tests__/integration/testJitlessConfig.ts",
 		"testCsp": "ts ./__tests__/integration/testCsp.ts",
 		"testSchemaFirst": "ts ./__tests__/integration/testSchemaFirst.ts",
+		"testConfigAfterImport": "ts ./__tests__/integration/testConfigAfterImport.ts",
 		"testMissingGlobals": "ts ./__tests__/integration/testMissingGlobals.ts",
 		"testLocaleConfig": "ts ./__tests__/integration/testLocaleConfig.ts",
 		"testLocaleWithoutIntl": "ts ./__tests__/integration/testLocaleWithoutIntl.ts"

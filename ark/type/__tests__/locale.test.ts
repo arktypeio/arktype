@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	describeMissing,
+	resolveGlobalConfig,
 	TraversalError,
 	writeInvalidLocaleMessage,
 	type ActualContext,
@@ -229,17 +230,25 @@ const xx: Locale = {
 	message: e => `${e.propString} ${mark("message")} ${e.problem}`
 }
 
+// configure throws once a Type exists, so this configures as if none did,
+// then resolves the global config as the first Type would
+const reconfigure = (config: ArkConfig) => {
+	delete $ark.resolvedConfig
+	configure(config)
+	$ark.resolvedConfig = resolveGlobalConfig($ark.defaultConfig)
+}
+
 // configure assigns to $ark.config in place, so restore from a copy
 const withConfig = <t>(config: ArkConfig, fn: () => t): t => {
 	const originalConfig = { ...$ark.config }
-	const originalResolvedConfig = $ark.resolvedConfig
-	configure(config)
+	const originalResolvedConfig = $ark.resolvedConfig!
+	reconfigure(config)
 	try {
 		return fn()
 	} finally {
 		$ark.config = originalConfig
 		// resolving the original config restores the locale reads render in
-		configure({})
+		reconfigure({})
 		$ark.resolvedConfig = originalResolvedConfig
 	}
 }
@@ -248,8 +257,8 @@ contextualize(() => {
 	describe("en", () => {
 		it("is the resolved locale", () => {
 			attest($ark.defaultConfig.locale).is(en)
-			attest($ark.resolvedConfig.locale).is(en)
 			attest(scope({}).type("string").internal.$.resolvedConfig.locale).is(en)
+			attest($ark.resolvedConfig!.locale).is(en)
 		})
 
 		it("has the writers each kind writes itself", () => {
@@ -682,7 +691,7 @@ b isn't allowed`)
 
 		it("static", () => {
 			withConfig({ locale: xx }, () => {
-				attest($ark.resolvedConfig.locale).is(xx)
+				attest($ark.resolvedConfig!.locale).is(xx)
 				const errors = scope({}).type("string")(5) as ArkErrors
 				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
 				attest(errors.toLocaleString(en)).snap(
@@ -706,7 +715,7 @@ b isn't allowed`)
 					}
 				},
 				() => {
-					attest($ark.resolvedConfig.locale).is(en)
+					attest($ark.resolvedConfig!.locale).is(en)
 					const errors = type("(string >= 2) | (string <= 0)")("a") as ArkErrors
 					attest(errors.toString()).snap(
 						"must be exactly length 0 or at least length 2 (was 1)"
@@ -730,14 +739,14 @@ b isn't allowed`)
 			withConfig({ locale: () => xx }, () => {
 				const errors = type("string")(5) as ArkErrors
 				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
-				configure({ locale: en })
+				reconfigure({ locale: en })
 				attest(errors.toString()).snap("must be a string (was a number)")
-				configure({ locale: xx })
+				reconfigure({ locale: xx })
 				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
-				configure({ locale: { ...en } })
+				reconfigure({ locale: { ...en } })
 				attest(errors.toString()).snap("must be a string (was a number)")
-				configure({ locale: () => xx })
-				configure({ locale: undefined } as never)
+				reconfigure({ locale: () => xx })
+				reconfigure({ locale: undefined } as never)
 				attest(errors.toString()).snap("must be a string (was a number)")
 			})
 		})
@@ -823,8 +832,8 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 		it("interleaved requests each render in their own locale", async () => {
 			const store = new AsyncLocalStorage<Locale>()
 			const originalConfig = { ...$ark.config }
-			const originalResolvedConfig = $ark.resolvedConfig
-			configure({ locale: () => store.getStore() })
+			const originalResolvedConfig = $ark.resolvedConfig!
+			reconfigure({ locale: () => store.getStore() })
 			try {
 				const T = type({ k: "string" })
 				const read = async (ms: number) => {
@@ -845,7 +854,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 				])
 			} finally {
 				$ark.config = originalConfig
-				configure({})
+				reconfigure({})
 				$ark.resolvedConfig = originalResolvedConfig
 			}
 		})

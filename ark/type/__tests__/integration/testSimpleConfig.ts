@@ -1,5 +1,6 @@
 import { config } from "./simpleConfig.ts"
 
+import { schemaScope } from "@ark/schema"
 import { scope, type } from "arktype"
 import { deepStrictEqual, strictEqual } from "node:assert/strict"
 import { cases } from "./util.ts"
@@ -7,6 +8,11 @@ import { cases } from "./util.ts"
 cases({
 	NaN: () => {
 		strictEqual(type("number").allows(Number.NaN), true)
+		strictEqual(type.module({ n: "number" }).n.allows(Number.NaN), true)
+		strictEqual(
+			schemaScope({ n: "number" }).export().n.allows(Number.NaN),
+			true
+		)
 	},
 	Infinity: () => {
 		strictEqual(type("number").allows(Number.POSITIVE_INFINITY), true)

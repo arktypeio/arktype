@@ -24,7 +24,7 @@ However, it's equally important that when you need different behavior, you can e
     </tr>
     <tr>
       <td>**global**</td>
-      <td>all Types parsed after the config is applied</td>
+      <td>all Types</td>
       <td>
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -97,16 +97,12 @@ Some options only apply at specific levels, as reflected in the corresponding in
 
 <Callout
 	type="warn"
-	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
+	title="Call `configure` in a separate file imported before any Type is created!"
 >
-	If you need your config to apply to built-in keywords (important for options
-	like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`),
-	you should import and `configure` from `"arktype/config"` before importing
-	anything else from `"arktype"` or `"@ark/schema"`, including deep imports
-	like `"arktype/internal/*"`.
-
-Otherwise, keywords will have already been parsed by the time your config applies!
-
+	Global config is fixed when the first Type is created, whether by a definition
+	or by referencing a keyword like `type.number`, and calling `configure` after
+	that throws. Importing `"arktype"` first is fine, and `configure` can be
+	imported from either `"arktype"` or `"arktype/config"`.
 </Callout>
 
 ### Errors

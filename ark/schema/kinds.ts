@@ -10,11 +10,7 @@ import {
 	withAlphabetizedKeys,
 	type array
 } from "@ark/util"
-import {
-	resolveGlobalConfig,
-	type ResolvedConfig,
-	type ResolvedUnknownNodeConfig
-} from "./config.ts"
+import type { ResolvedConfig, ResolvedUnknownNodeConfig } from "./config.ts"
 import type { BaseNode } from "./node.ts"
 import { Predicate } from "./predicate.ts"
 import { Divisor } from "./refinements/divisor.ts"
@@ -220,8 +216,6 @@ $ark.defaultConfig = withAlphabetizedKeys(
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )
-
-$ark.resolvedConfig = resolveGlobalConfig($ark.defaultConfig)
 
 export const nodeClassesByKind: Record<
 	NodeKind,

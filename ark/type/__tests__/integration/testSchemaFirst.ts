@@ -1,4 +1,9 @@
-import { configureSchema, intrinsic, rootSchema } from "@ark/schema"
+import {
+	configureSchema,
+	intrinsic,
+	rootSchema,
+	schemaScope
+} from "@ark/schema"
 import { strictEqual } from "node:assert/strict"
 import { cases } from "./util.ts"
 
@@ -19,11 +24,15 @@ cases({
 			true
 		)
 	},
-	intrinsicsParsedWithTheConfigAsOfImport: () => {
+	intrinsicsParsedWithTheGlobalConfig: () => {
 		strictEqual(
 			intrinsic.number.traverse("x")?.toString(),
-			"must be a number (was a string)"
+			"must be a configured domain (was a string)"
 		)
-		strictEqual(intrinsic.string.description, "a string")
+		strictEqual(intrinsic.string.description, "a configured domain")
+		strictEqual(
+			schemaScope({}).schema("symbol").traverse("x")?.toString(),
+			"must be a configured domain (was a string)"
+		)
 	}
 })

@@ -99,9 +99,8 @@ export const bootstrap = (): void => {
 	bootstrappedWithEngine = $ark.sets !== undefined
 	defineValue($ark, "intrinsic", undefined)
 	try {
-		bootstrapRootScope(() =>
-			Object.assign(intrinsicTarget, bootstrapIntrinsic())
-		)
+		bootstrapRootScope()
+		Object.assign(intrinsicTarget, bootstrapIntrinsic())
 	} catch (e) {
 		bootstrapped = false
 		bootstrapOnRead()

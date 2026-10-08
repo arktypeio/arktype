@@ -33,7 +33,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkSchemaConfig
 	defaultConfig: ResolvedConfig
-	resolvedConfig: ResolvedConfig
+	resolvedConfig?: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 	sets?: SetEngine
 }
@@ -83,13 +83,8 @@ $ark.config ??= {}
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
 		throwParseError(writeInvalidLocaleMessage(config.locale))
-
-	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
-
-	if ($ark.resolvedConfig)
-		$ark.resolvedConfig = resolveGlobalConfig($ark.resolvedConfig)
-
-	return result
+	if ($ark.resolvedConfig) return throwParseError(configureAfterTypeMessage)
+	return Object.assign($ark.config, mergeConfigs($ark.config, config))
 }
 
 /** $ark.config merged over base, with its static locale */
@@ -243,3 +238,8 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 >
 
 export type ResolvedConfig = resolveConfig<ArkSchemaConfig>
+
+export const configureAfterTypeMessage =
+	"configure must be called before any Type is created, e.g. from a module imported first"
+
+export type configureAfterTypeMessage = typeof configureAfterTypeMessage

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark } from "@ark/schema"
+import { $ark, resolveGlobalConfig } from "@ark/schema"
 import { configure, scope, type, type ArkConfig, type Locale } from "arktype"
 import { keywordPhrases } from "arktype/internal/keywords/phrases.ts"
 import { de } from "arktype/locales/de"
@@ -14,17 +14,25 @@ const { ListFormat } = Intl as {} as {
 	) => { format: (items: readonly string[]) => string }
 }
 
+// configure throws once a Type exists, so this configures as if none did,
+// then resolves the global config as the first Type would
+const reconfigure = (config: ArkConfig) => {
+	delete $ark.resolvedConfig
+	configure(config)
+	$ark.resolvedConfig = resolveGlobalConfig($ark.defaultConfig)
+}
+
 // configure assigns to $ark.config in place, so restore from a copy
 const withConfig = <t>(config: ArkConfig, fn: () => t): t => {
 	const originalConfig = { ...$ark.config }
-	const originalResolvedConfig = $ark.resolvedConfig
-	configure(config)
+	const originalResolvedConfig = $ark.resolvedConfig!
+	reconfigure(config)
 	try {
 		return fn()
 	} finally {
 		$ark.config = originalConfig
 		// resolving the original config restores the locale reads render in
-		configure({})
+		reconfigure({})
 		$ark.resolvedConfig = originalResolvedConfig
 	}
 }

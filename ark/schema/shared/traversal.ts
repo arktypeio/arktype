@@ -675,7 +675,7 @@ export const aliasVisits = {
 		}
 		aliasVisits.tracked = true
 		// a root traversed untracked has no contextual predicate, so its Allows reads no config
-		return (continuation ??= new Traversal(data, $ark.resolvedConfig))
+		return (continuation ??= new Traversal(data, $ark.resolvedConfig!))
 	}
 }
 
