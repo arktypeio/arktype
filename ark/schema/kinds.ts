@@ -48,7 +48,7 @@ import type {
 	UnknownAttachments,
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
-import type { Locale } from "./shared/locale.ts"
+import { describeMissing, type Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
@@ -106,17 +106,21 @@ const shared = nodeImplementationsByKind.divisor.defaults as {
 	message: MessageWriter
 }
 
+const describeRequired: Locale.ExpectedWriter<"required"> = (e, locale) =>
+	describeMissing(e.missing, locale)
+
 // a leaf error carries its node's inner fields, so the node's description
-// writer describes it, while union, intersection and required have their own
+// writer describes it, while union and intersection have their own and
+// required describes what is missing
 const enWritersOf = (
 	kind: NodeKind,
 	defaults: ResolvedUnknownNodeConfig
 ): Locale.CodeWriters => {
 	const writers: Record<string, unknown> = {
 		expected:
-			kind === "union" || kind === "intersection" || kind === "required" ?
-				defaults.expected
-			:	defaults.description
+			kind === "union" || kind === "intersection" ? defaults.expected
+			: kind === "required" ? describeRequired
+			: defaults.description
 	}
 	for (const slot of ["actual", "problem", "message"] as const)
 		if (defaults[slot] !== shared[slot]) writers[slot] = defaults[slot]
@@ -160,6 +164,13 @@ export const en: Locale = {
 	verbatim: text => text,
 	cite: text => text,
 	expectedNoun: noun => noun,
+	// a domain is named by its noun whatever its meta, as DomainNode's
+	// defaultShortDescription does
+	basis: (basis, locale) =>
+		basis.code === "domain" ? locale.expectedNoun(locale.nouns[basis.domain])
+		: basis.meta.description === undefined ?
+			nodeImplementationsByKind[basis.code].defaults.description(basis as never)
+		:	locale.cite(basis.meta.description),
 	nouns: {
 		...domainDescriptions,
 		...objectKindDescriptions,

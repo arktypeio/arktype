@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
+	describeMissing,
 	en,
 	type ActualContext,
 	type ArkError,
@@ -8,9 +9,10 @@ import {
 	type ExpectedContext,
 	type Locale,
 	type MessageContext,
+	type MessageWriter,
 	type ProblemContext
 } from "@ark/schema"
-import type { Domain } from "@ark/util"
+import { listPattern, type Domain } from "@ark/util"
 import { scope, type } from "arktype"
 
 // errors described by their own nodes, which union and intersection errors list
@@ -97,6 +99,10 @@ contextualize(() => {
 			const sym = Symbol("parity")
 			for (const jitless of [false, true]) {
 				const $ = scope({}, { jitless })
+				const node = scope(
+					{ node: { next: "node | null", v: "string" } },
+					{ jitless }
+				).export().node
 				const corpus: [type.Any, unknown][] = [
 					[$.type("string"), 5],
 					[$.type("number"), "x"],
@@ -142,6 +148,43 @@ contextualize(() => {
 					[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
 					[$.type("(number % 2) & (number > 3)"), 1],
 					[$.type("(string >= 2) | (string <= 0)"), "a"],
+					[$.type({ a: "string" }), {}],
+					[$.type({ a: "string | number" }), {}],
+					[$.type({ a: "never" }), {}],
+					[$.type({ a: "unknown" }), {}],
+					[
+						$.type({
+							a: $.type("unknown")
+								.narrow(() => true)
+								.or("string")
+						}),
+						{}
+					],
+					[$.type({ a: "boolean" }), {}],
+					[$.type({ a: "boolean | null" }), {}],
+					[$.type({ a: "'x' | 'y' | 1n | 1.5" }), {}],
+					[$.type({ a: $.type.unit(o) }), {}],
+					[$.type({ a: $.type.unit(sym) }), {}],
+					[$.type({ a: $.type("'x'").describe("an x") }), {}],
+					[$.type({ a: $.type("false").describe("no").or("true") }), {}],
+					[$.type({ a: $.type("number").describe("a count") }), {}],
+					[$.type({ a: $.type("Date").describe("a day") }), {}],
+					[$.type({ a: $.type("string").pipe(s => s.length) }), {}],
+					[
+						$.type({
+							a: $.type("string")
+								.describe("text")
+								.pipe(s => s.length)
+						}),
+						{}
+					],
+					[$.type({ a: "string > 3" }), {}],
+					[$.type({ a: "string[]" }), {}],
+					[$.type({ a: "Date < d'2000-01-01'" }), {}],
+					[$.type({ a: $.type.instanceOf(Foo) }), {}],
+					[$.type({ a: "string.uuid | number" }), {}],
+					[$.type({ a: "string.date.epoch.parse" }), {}],
+					[node, { v: "x" }],
 					[$.type({ "+": "reject", a: "string" }), { a: "", b: 1 }],
 					[
 						$.type({ kind: "'a'", x: "string" }).or({
@@ -181,7 +224,9 @@ contextualize(() => {
 						codes.add(error.code)
 						attest(enExpected(error)).equals(error.expected)
 						attest(enActual(error)).equals(error.actual)
-						if (error.description !== undefined)
+						if (error.hasCode("required"))
+							attest(error.expected).equals(error.missingValueDescription)
+						else if (error.description !== undefined)
 							attest(error.expected).equals(error.description)
 					}
 				}
@@ -200,9 +245,49 @@ contextualize(() => {
 				"pattern",
 				"predicate",
 				"proto",
+				"required",
 				"undeclared",
 				"unit"
 			])
+		})
+
+		it("describes a missing value through the locale", () => {
+			const missingOf = (T: type.Any) => {
+				const error = (T({}) as ArkErrors).issues[0]
+				return error.hasCode("required") ? error.missing : undefined!
+			}
+			const plain: Locale = {
+				...en,
+				list: listPattern(
+					{ two: " or ", middle: ", ", end: ", or " },
+					{ two: " and ", middle: ", ", end: ", and " }
+				),
+				nouns: { ...en.nouns, boolean: "a boolean", never: "nothing" },
+				expectedNoun: noun => `<${noun}>`
+			}
+			const describe = (T: type.Any) => describeMissing(missingOf(T), plain)
+			attest(describe(type({ a: "boolean" }))).snap("<a boolean>")
+			attest(describe(type({ a: "never" }))).snap("<nothing>")
+			attest(describe(type({ a: "unknown" }))).snap("<present>")
+			attest(describe(type({ a: "string | number | bigint" }))).snap(
+				"<a bigint>, <a number>, or <a string>"
+			)
+			attest(
+				describe(
+					type({
+						a: type("unknown")
+							.narrow(() => true)
+							.or("string")
+					})
+				)
+			).snap("<a string> or <present>")
+			attest(
+				describe(type({ a: type("'x'").describe("an x").or("'y'") }))
+			).snap('an x or "y"')
+			const $ = scope({ a: "string | number", b: { x: "a | boolean" } })
+			attest(describe($.export().b)).snap(
+				"<a number>, <a string>, false, or true"
+			)
 		})
 	})
 
@@ -316,6 +401,32 @@ contextualize(() => {
 				)
 			).snap("a bigint, a number, a string or an object")
 			attest(expected(errorOf(type("1 | 2 | 3"), 4), en)).snap("1, 2 or 3")
+		})
+
+		it("a shared writer narrows to the new contexts", () => {
+			const message: MessageWriter = e =>
+				e.code === "required" ?
+					`${e.valueMeta.title ?? e.propString} is missing`
+				: e.code === "undeclared" ? `${e.propString} isn't allowed`
+				: e.code === "discriminant" ?
+					`${e.propString} isn't one of ${e.cases.length}${e.absent ? " (absent)" : ""}`
+				:	e.problem
+			const $ = scope(
+				{},
+				{
+					required: { message },
+					undeclared: { message },
+					discriminant: { message }
+				}
+			)
+			const T = $.type({
+				"+": "reject",
+				name: type("string").configure({ title: "Name" })
+			})
+			attest(T({ b: 1 }).toString()).snap(`Name is missing
+b isn't allowed`)
+			const U = $.type({ k: "'a'", x: "string" }).or({ k: "'b'", y: "number" })
+			attest(U({}).toString()).snap("k isn't one of 2 (absent)")
 		})
 
 		it("meta may be absent", () => {

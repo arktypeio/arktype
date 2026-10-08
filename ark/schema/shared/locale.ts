@@ -1,4 +1,11 @@
-import type { BuiltinObjectKind, Domain, ListType, omit } from "@ark/util"
+import {
+	appendUnique,
+	type BuiltinObjectKind,
+	type Domain,
+	type ListType,
+	type omit
+} from "@ark/util"
+import type { MissingBasis, MissingValue } from "../structure/required.ts"
 import type {
 	ActualContext,
 	ArkErrorCode,
@@ -37,6 +44,8 @@ export declare namespace Locale {
 		extends Info {
 		/** renders a noun where expected text goes */
 		readonly expectedNoun: (noun: noun) => string
+		/** renders one alternative of a missing value where expected text goes */
+		readonly basis: (basis: MissingBasis, locale: Locale<noun>) => string
 		readonly nouns: { readonly [id in NounId]: validateNoun<noun> }
 		readonly keywordPhrases: {
 			readonly [alias in keywordAlias]?: KeywordPhrase<noun>
@@ -113,3 +122,31 @@ type localeExpectedContext<code extends ArkErrorCode> =
 
 // keyword writers are told apart from nouns by a noun key
 type validateNoun<noun> = noun extends { readonly noun: unknown } ? never : noun
+
+/** renders a missing value where expected text goes */
+export const describeMissing = <noun>(
+	missing: MissingValue,
+	locale: Locale<noun>
+): string => {
+	if (missing.code === "intersection")
+		return locale.expectedNoun(locale.nouns.unknown)
+	if (missing.code !== "union") return locale.basis(missing, locale)
+	if (missing.branches.length === 0)
+		return locale.expectedNoun(locale.nouns.never)
+	if (isBooleanPair(missing.branches))
+		return locale.expectedNoun(locale.nouns.boolean)
+	const branches: string[] = []
+	for (const branch of missing.branches)
+		appendUnique(branches, describeMissing(branch, locale))
+	return locale.list(branches, "or")
+}
+
+// undescribed false and true, which a locale names as one
+const isBooleanPair = (branches: readonly MissingValue[]) =>
+	branches.length === 2 &&
+	branches.every(
+		branch =>
+			branch.code === "unit" &&
+			typeof branch.unit === "boolean" &&
+			branch.meta.description === undefined
+	)
