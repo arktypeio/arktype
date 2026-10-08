@@ -288,6 +288,8 @@ const precompileReferences = (
 		) => PrecompiledTraversals[],
 		["dependencies", "refs", "errorContexts"]
 	>("dependencies", "refs", "errorContexts")
+	// strict as a module is, so writing to a frozen input copyOf left uncopied throws
+	unit.line(`"use strict"`)
 	let i = 0
 	for (const name of linkage.dependencies.values())
 		unit.const(name, `dependencies[${i++}]`)
@@ -374,8 +376,6 @@ const declareTraversal = (
 		linkage,
 		kind !== "Transform" || node.transformRequiresContext
 	).indent()
-	// strict, so writing to a frozen input copyOf left uncopied throws
-	if (kind === "Transform") js.line(`"use strict"`)
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
 	linkage.members.push([name, js.write("function")])

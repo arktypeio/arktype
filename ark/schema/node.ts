@@ -1549,7 +1549,7 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		"allowsInContext",
 		"config",
 		"unset",
-		`return (function ${js.write(`${node.id}RootApply`)})`
+		`"use strict"\nreturn (function ${js.write(`${node.id}RootApply`)})`
 	)(
 		node,
 		node.allows,
