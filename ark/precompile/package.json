@@ -25,6 +25,10 @@
 			"ark-ts": "./eslint.ts",
 			"default": "./out/eslint.js"
 		},
+		"./unplugin": {
+			"ark-ts": "./unplugin.ts",
+			"default": "./out/unplugin.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"
@@ -51,7 +55,8 @@
 		"arktype": "workspace:*",
 		"magic-string": "0.30.19",
 		"oxc-parser": "0.153.0",
-		"oxc-resolver": "11.24.2"
+		"oxc-resolver": "11.24.2",
+		"unplugin": "3.4.0"
 	},
 	"peerDependencies": {
 		"eslint": ">=9"
@@ -66,6 +71,9 @@
 	},
 	"devDependencies": {
 		"@typescript-eslint/scope-manager": "8.46.1",
-		"fast-check": "3.23.2"
+		"esbuild": "0.25.10",
+		"fast-check": "3.23.2",
+		"vite": "8.3.4",
+		"vitest": "5.0.3"
 	}
 }
