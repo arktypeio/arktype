@@ -212,6 +212,8 @@ const createQuery = (options: { type: unknown; run: () => unknown }) => {
 const rowsQuery = (id: string) => createQuery({ type: Row.array(), run: () => id })
 export const load = async (id: string) => rowsQuery(id).run()
 export const viaHelper = rowsQuery("x")
+const rowQuery = (id: string) => createQuery({ type: Row, run: () => id })
+export const loadOne = async (id: string) => rowQuery(id).run()
 export const parseRows = (data: unknown) => Row.array()(data)
 const sized = (n: number) => Row.array().atMostLength(n)
 export const Pair = sized(2)
@@ -223,8 +225,8 @@ export const parseNames = (data: unknown) => type("string[]")(data)`
 			attest(statusesOf(source, files)).snap([
 				"3:13 accepted { id: string }",
 				"8:55 accepted { id: string }[]",
-				"11:45 accepted { id: string }[]",
-				"13:21 accepted { id: string }[] <= 2"
+				"13:45 accepted { id: string }[]",
+				"15:21 accepted { id: string }[] <= 2"
 			])
 			attest(diagnosticsOf(source, files)).snap([])
 		})

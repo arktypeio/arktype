@@ -14,6 +14,7 @@ import type { PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
+	isTransparent,
 	unwrapExpression,
 	walk,
 	type Binding,
@@ -444,6 +445,7 @@ export class ModuleGraph {
 				if (
 					binding &&
 					binding.scope.node !== fn &&
+					isComposing(node) &&
 					this.isArkBinding(binding, module) &&
 					!this.isRuntimeUse(node, module)
 				)
@@ -469,6 +471,18 @@ const arktypeExportOf = (
 			kind: "unresolved",
 			message: `\`${namespace.specifier}\` has no export \`${name}\``
 		}
+
+// arktype runs through a reference called or read as `type(def)` or `T.array()`, but not one passed along as `{ type: T }`
+const isComposing = (id: Node): boolean => {
+	let node = id
+	while (node.parent && isTransparent(node.parent)) node = node.parent
+	const parent = node.parent
+	return (
+		(parent?.type === "MemberExpression" && parent.object === node) ||
+		(parent?.type === "CallExpression" && parent.callee === node) ||
+		(parent?.type === "TaggedTemplateExpression" && parent.tag === node)
+	)
+}
 
 export const isFunctionNode = (node: Node): node is FunctionNode =>
 	node.type === "ArrowFunctionExpression" ||
