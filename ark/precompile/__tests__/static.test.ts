@@ -1,0 +1,462 @@
+import { attest, contextualize } from "@ark/attest"
+import { diagnosticsOf, precompile, statusesOf } from "./utils.ts"
+
+contextualize(() => {
+	describe("allowed", () => {
+		it("literals and templates", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const max = 5
+const A = type("string")
+const B = type(\`number < \${max}\`)
+const C = type(\`number < \${0.1 + 0.2}\`)
+const D = type({ a: "number" } as const satisfies object)
+const E = type(<const>["string", "number"])`)
+			).snap([
+				"3:11 accepted string",
+				"4:11 accepted number < 5",
+				"5:11 accepted number < 0.30000000000000004",
+				"6:11 accepted { a: number }",
+				"7:11 accepted [string, number]"
+			])
+		})
+
+		it("object and array literals", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const key = "b"
+const base = { a: "string" }
+const rest = ["number"] as const
+const A = type({ ...base, [key]: "number", [\`\${key}2\`]: "boolean" })
+const B = type(["string", ...rest])`)
+			).snap([
+				"5:11 accepted { a: string, b: number, b2: boolean }",
+				"6:11 accepted [string, number]"
+			])
+		})
+
+		it("let never assigned", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+let max = 5
+var min = 1
+const A = type(\`\${min} < number < \${max}\`)`)
+			).snap(["4:11 accepted number < 5 & > 1"])
+		})
+
+		it("imports, re-exports and namespaces", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { max } from "./limits.ts"
+import * as limits from "./all.ts"
+import { min as low } from "./all.ts"
+const A = type(\`\${low} < number < \${max + limits.max}\`)`,
+				{
+					"/limits.ts": `export const max = 5\nexport const min = 1`,
+					"/reexport.ts": `export { max, min } from "./limits.ts"`,
+					"/all.ts": `export * from "./reexport.ts"`
+				}
+			)
+			attest(result.sites.map(site => site.status)).snap(["accepted"])
+			attest(result.sites[0].inputs).snap([
+				{ kind: "import", file: "/limits.ts", name: "min", path: [], value: 1 },
+				{ kind: "import", file: "/limits.ts", name: "max", path: [], value: 5 }
+			])
+			attest(result.dependencies).snap([
+				"/main.ts",
+				"/all.ts",
+				"/limits.ts",
+				"/reexport.ts"
+			])
+		})
+
+		it("enums", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+enum Size { small = 1, large = small * 10 }
+const enum Name { a = "alpha" }
+const A = type(\`\${Size.small} < number < \${Size.large}\`)
+const B = type(\`'\${Name.a}' | '\${Size[1]}'\`)`)
+			).snap([
+				"4:11 accepted number < 10 & > 1",
+				'5:11 accepted "alpha" | "small"'
+			])
+		})
+
+		it("operators", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const max = 5
+const A = type(\`number < \${max > 3 ? 2 ** 10 : -1}\`)
+const B = type(\`'\${typeof max}' | '\${"a" in { a: 1 }}' | '\${null ?? max}'\`)
+const C = type(\`number < \${Math.sin(0) + Math.sqrt(16)}\`)`)
+			).snap([
+				"3:11 accepted number < 1024",
+				'4:11 accepted "5" | "number" | "true"',
+				"5:11 accepted number < 4"
+			])
+		})
+
+		it("member reads", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const limits = { max: 5, names: ["a", "b"] }
+const A = type(\`number < \${limits.max + limits.names.length + "abc".length}\`)
+const B = type(\`'\${limits.names[1]}'\`)`)
+			).snap(["3:11 accepted number < 10", '4:11 accepted "b"'])
+		})
+
+		it("pure built-ins", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const roles = { admin: 1, member: 2 }
+const A = type(Object.keys(roles).map(k => \`'\${k}'\`).join(" | "))
+const B = type(\`number < \${Math.max(1, Number("2"), parseInt("3"))}\`)
+const C = type(JSON.parse(JSON.stringify({ a: "string" })))
+const D = type("string".toUpperCase().toLowerCase())`)
+			).snap([
+				'3:11 accepted "admin" | "member"',
+				"4:11 accepted number < 3",
+				"5:11 accepted { a: string }",
+				"6:11 accepted string"
+			])
+		})
+
+		it("arktype's API", () => {
+			attest(
+				statusesOf(`import { type, scope, match, generic } from "arktype"
+import { regex } from "arkregex"
+const User = type({ name: "string" })
+const A = User.or("null").array()
+const $ = scope({ id: "string", user: { id: "id" } }).export()
+const M = match({ string: s => s.length, default: "assert" })
+const Box = generic("t")({ box: "t" })
+const B = Box("number")
+const C = type("string").matching(regex("^a"))
+const D = type.keywords.number.integer`)
+			).snap([
+				"3:14 accepted { name: string }",
+				"4:11 accepted ({ name: string } | null)[]",
+				"5:11 accepted",
+				"6:11 accepted (In: string) => Out<unknown>",
+				"7:13 accepted",
+				"8:11 accepted { box: number }",
+				"9:11 accepted /^a/",
+				"10:11 accepted number % 1"
+			])
+		})
+
+		it("static helpers", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { twice } from "./helpers.ts"
+import * as helpers from "./helpers.ts"
+const bound = (n: number) => \`number < \${n}\`
+function optional(t) {
+	return t.or("undefined")
+}
+const A = type(bound(twice(2)))
+const B = optional(type(helpers.label("a")))`,
+					{
+						"/helpers.ts": `export const twice = (n: number) => n * 2\nexport const label = (s: string) => \`'\${s}'\``
+					}
+				)
+			).snap(["8:11 accepted number < 4", '9:11 accepted "a" | undefined'])
+		})
+
+		it("helpers over types", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const optional = (t: any) => t.or("undefined")
+const log = (t: unknown) => console.log(t)
+const A = optional(type("string"))
+log(type("number"))
+const B = type("string")("data")`)
+			).snap([
+				"4:11 accepted string | undefined",
+				"5:5 accepted number",
+				"6:11 accepted string"
+			])
+		})
+
+		it("escaped objects are inputs", () => {
+			const result = precompile(`import { type } from "arktype"
+const unit = { a: 1 }
+register(unit)
+const A = type("===", unit)`)
+			attest(result.sites.map(site => site.status)).snap(["accepted"])
+			attest(result.sites[0].inputs).snap([
+				{
+					kind: "local",
+					file: undefined,
+					name: "unit",
+					path: [],
+					value: { a: 1 }
+				}
+			])
+		})
+
+		it("dates", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type("Date").atOrAfter(new Date(0))
+const B = type("Date").atOrAfter(Date.UTC(2020, 0, 1))
+const C = type("Date").atOrAfter(new Date("2020-01-01"))
+const D = type("Date").atOrAfter(new Date("2020-01-01T00:00:00+02:00"))`)
+			).snap([
+				"2:11 accepted Date >= d'1970-01-01T00:00:00.000Z'",
+				"3:11 accepted Date >= d'2020-01-01T00:00:00.000Z'",
+				"4:11 accepted Date >= d'2020-01-01T00:00:00.000Z'",
+				"5:11 accepted Date >= d'2019-12-31T22:00:00.000Z'"
+			])
+		})
+
+		it("regexes and symbols", () => {
+			const result = precompile(`import { type } from "arktype"
+const tag = Symbol("tag")
+const A = type("string").matching(new RegExp("^a", "i"))
+const B = type({ [tag]: "string" })`)
+			attest(result.sites.map(site => site.status)).snap([
+				"accepted",
+				"accepted"
+			])
+			attest(result.sites[1].holes).snap([
+				{
+					file: "/main.ts",
+					start: 132,
+					end: 135,
+					kind: "symbol",
+					arity: undefined,
+					description: "tag",
+					isCalledAtDefinition: false,
+					isDefinition: false
+				}
+			])
+		})
+
+		it("define constants", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+const A = type(process.env.NODE_ENV === "production" ? "string" : "unknown")
+const B = type(\`'\${import.meta.env.MODE}'\`)`,
+				{},
+				{
+					define: {
+						"process.env.NODE_ENV": "production",
+						"import.meta.env.MODE": "dev"
+					}
+				}
+			)
+			attest(result.sites.map(site => site.status)).snap([
+				"accepted",
+				"accepted"
+			])
+			attest(result.sites.map(site => site.inputs)).snap([
+				[
+					{
+						kind: "define",
+						file: undefined,
+						name: "process.env.NODE_ENV",
+						path: [],
+						value: "production"
+					}
+				],
+				[
+					{
+						kind: "define",
+						file: undefined,
+						name: "import.meta.env.MODE",
+						path: [],
+						value: "dev"
+					}
+				]
+			])
+		})
+	})
+
+	describe("rejected", () => {
+		it("parameter", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+
+const makeField = (limit: number) => {
+	const field = type(\`string <= \${limit}\`)
+	return field
+}
+
+const makeShortField = (limit: number) => type(\`string <= \${limit}\`)
+const Short = makeShortField(5)
+export const fields = [1, 2].map(makeShortField)`)
+			).snap([
+				'/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (/main.ts:3:20); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+				'/main.ts:8:43  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeShortField (/main.ts:8:25); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			])
+		})
+
+		it("call the build cannot see into", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+import { max } from "lodash"
+const load = () => {
+	const def = 5
+	return def
+}
+const A = type(\`number < \${load()}\`)
+const B = type(\`number < \${max([1, 2])}\`)`)
+			).snap([
+				"7:11 rejected\n  `load()` calls a function the build does not interpret\n  `load` (/main.ts:3:14) is not a static helper: its body is not one expression or one `return`",
+				"8:11 rejected\n  `lodash` cannot be resolved from /main.ts"
+			])
+		})
+
+		it("mutable binding", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+let max = 5
+max++
+const A = type(\`number < \${max}\`)`)
+			).snap([
+				"4:11 rejected\n  `max` is assigned at /main.ts:3:1, so its value at the site is not known"
+			])
+		})
+
+		it("environment", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type("Date").atOrAfter(Date.now())
+const B = type(\`'\${process.argv[2]}'\`)
+const C = type(\`number < \${Math.random()}\`)
+const D = type(\`'\${(1000).toLocaleString()}'\`)
+const E = type("Date").atOrAfter(new Date("2020-01-01T00:00:00"))`)
+			).snap([
+				"2:11 rejected\n  `Date.now` is not one of the build's pure built-ins",
+				"3:11 rejected\n  `process` is a global the build does not read",
+				"4:11 rejected\n  `Math.random` is not one of the build's pure built-ins",
+				"5:11 rejected\n  `(1000).toLocaleString` is not one of the build's pure built-ins",
+				'6:11 rejected\n  `new Date("2020-01-01T00:00:00")` reads the time zone'
+			])
+		})
+
+		it("approximated math", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type(\`number < \${2 ** 0.5}\`)
+const B = type(\`number < \${Math.sin(1)}\`)`)
+			).snap([
+				"2:11 rejected\n  `2 ** 0.5` is approximated by each engine unless its operands are integers with a safe integer result",
+				"3:11 rejected\n  `Math.sin(1)` is approximated by each engine unless its operands are integers with a safe integer result"
+			])
+		})
+
+		it("accessors and __proto__", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type({ get a() { return "string" } })
+const B = type({ __proto__: null, a: "string" })`)
+			).snap([
+				'2:11 rejected\n  `get a() { return "string" }` is an accessor, which runs code when arktype reads the definition',
+				"3:11 rejected\n  a `__proto__` key changes the object's prototype"
+			])
+		})
+
+		it("reads that are not own data", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const limits = { max: 5 }
+const A = type(\`'\${limits.toString}'\`)
+const B = type(\`'\${limits.constructor.name}'\`)`)
+			).snap([
+				"3:11 rejected\n  `limits.toString` does not read an own data property",
+				"4:11 rejected\n  `limits.constructor` does not read an own data property"
+			])
+		})
+
+		it("helper reached through a property", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const limits = { max: () => 5 }
+const A = type(\`number < \${limits.max()}\`)`)
+			).snap([
+				"3:11 rejected\n  `limits.max` is a function reached through a property rather than a binding"
+			])
+		})
+
+		it("type built from a type that is not static", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+let Inner = type("string")
+Inner = type("number")
+const A = type({ inner: Inner })`)
+			).snap([
+				"2:13 accepted string",
+				"3:9 accepted number",
+				"4:11 rejected\n  `Inner` is a Type assigned at /main.ts:3:1, so it is not static"
+			])
+		})
+
+		it("object that escapes a module that does not export it", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { max } from "./limits.ts"
+const A = type(\`number < \${max()}\`)`,
+					{
+						"/limits.ts": `const limits = { max: 5 }\nregister(limits)\nexport const max = () => limits.max`
+					}
+				)
+			).snap([
+				"3:11 rejected\n  the site reads an object that escapes a module that does not export it\n  `limits` is passed to `register` (/limits.ts:2:1)"
+			])
+		})
+
+		it("excluded arktype members", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const User = type({ name: "string" })
+const A = type(\`'\${User.id}'\`)
+const B = type(JSON.stringify(User.json))
+const C = type(\`'\${JSON.stringify(User)}'\`)`)
+			).snap([
+				"2:14 accepted { name: string }",
+				"3:11 rejected\n  `User.id` is derived from registry names or node ids, which are not stable",
+				"4:11 rejected\n  `User.json` is derived from registry names or node ids, which are not stable",
+				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value"
+			])
+		})
+
+		it("match parser extended by separate cases", () => {
+			attest(
+				statusesOf(`import { match } from "arktype"
+const parser = match.case("string", s => s.length)
+parser.case("number", n => n)
+const M = parser.default("assert")`)
+			).snap([
+				"2:16 accepted",
+				"3:1 rejected\n  `parser` is a match parser, which each `.case` mutates, and is read in more than one place",
+				"4:11 rejected\n  `parser` is a match parser, which each `.case` mutates, and is read in more than one place"
+			])
+		})
+	})
+
+	describe("parse errors", () => {
+		it("warns and accepts", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const A = type({ a: "strin" })`)
+			).snap([
+				"/main.ts:2:11  type({ a: \"strin\" }) throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created."
+			])
+		})
+
+		it("rejects other errors", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const read = (o: any) => o.a.b
+const A = type(read({}))`)
+			).snap([
+				"3:11 rejected\n  `o.a.b` reads a property of undefined, which throws"
+			])
+		})
+	})
+})

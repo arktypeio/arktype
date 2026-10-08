@@ -93,7 +93,7 @@ export interface SiteState {
 	// each call into arktype's API
 	requests: [Node, SourceModule][]
 	value: unknown
-	error: unknown
+	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
 }
 
@@ -182,7 +182,7 @@ export class Interpreter {
 		try {
 			site.value = this.evaluateNode(site.node, ctx)
 		} catch (e) {
-			site.error = e
+			site.error = this.thrown(e, site.node, ctx)
 		}
 		return site
 	}
@@ -1301,7 +1301,11 @@ export class Interpreter {
 		return isApproximate ? this.approximation(node, ctx) : result
 	}
 
-	private thrown(e: unknown, node: Node, ctx: Context): unknown {
+	private thrown(
+		e: unknown,
+		node: Node,
+		ctx: Context
+	): DynamicValue | ParseError {
 		return e instanceof DynamicValue || e instanceof ParseError ?
 				e
 			:	new DynamicValue(
@@ -1537,12 +1541,14 @@ export class Interpreter {
 	private classStandIn(node: Class, ctx: Context): object {
 		const base =
 			node.superClass ? this.evaluate(node.superClass, ctx) : undefined
-		const isStaticClass = node.body.body.every(
+		const effect = node.body.body.find(
 			element =>
-				(element.type === "MethodDefinition" && element.kind === "method") ||
-				(element.type === "PropertyDefinition" &&
-					(element.declare || !element.value)) ||
-				element.type === "TSIndexSignature"
+				!(
+					(element.type === "MethodDefinition" && element.kind === "method") ||
+					(element.type === "PropertyDefinition" &&
+						(element.declare || !element.value)) ||
+					element.type === "TSIndexSignature"
+				)
 		)
 		const target =
 			typeof base === "function" ?
@@ -1579,7 +1585,16 @@ export class Interpreter {
 			},
 			construct: (target, args, newTarget) => {
 				standIn.isCalled = true
-				if (!isStaticClass) throw this.calledAtDefinition(standIn, undefined)
+				if (effect) {
+					throw this.calledAtDefinition(
+						standIn,
+						new DynamicValue(
+							ctx.module,
+							effect,
+							`\`${ctx.module.snippetOf(effect)}\` runs when the class is constructed`
+						)
+					)
+				}
 				return Reflect.construct(target, args, newTarget)
 			}
 		})

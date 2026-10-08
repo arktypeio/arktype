@@ -46,17 +46,16 @@ export type ImportTarget =
 
 export class ModuleGraph {
 	host: PrecompileHost
-	dependencies = new Set<string>()
 	private modulesById: Record<string, SourceModule | ImportTarget> =
 		Object.create(null)
 	private arkBindings = new Map<Binding, boolean>()
+	private importsById: Record<string, string[]> = Object.create(null)
 
 	constructor(host: PrecompileHost) {
 		this.host = host
 	}
 
 	add(id: string, source: string): SourceModule {
-		this.dependencies.add(id)
 		const module = new SourceModule(id, source)
 		this.modulesById[id] = module
 		return module
@@ -86,7 +85,8 @@ export class ModuleGraph {
 				message: `\`${specifier}\` is a package the build does not read`
 			}
 		}
-		this.dependencies.add(id)
+		const imports = (this.importsById[importer.id] ??= [])
+		if (!imports.includes(id)) imports.push(id)
 		this.modulesById[id] ??= this.load(id, specifier)
 		return this.modulesById[id]
 	}
@@ -109,6 +109,16 @@ export class ModuleGraph {
 			}
 		}
 		return new SourceModule(id, source)
+	}
+
+	// every module the build may read to compute values of `id`'s bindings
+	dependenciesOf(id: string): string[] {
+		const result = [id]
+		for (let i = 0; i < result.length; i++) {
+			for (const dependency of this.importsById[result[i]] ?? [])
+				if (!result.includes(dependency)) result.push(dependency)
+		}
+		return result
 	}
 
 	importOf(binding: Binding, module: SourceModule): ImportTarget {
