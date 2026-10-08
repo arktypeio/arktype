@@ -2,20 +2,23 @@ import {
 	$ark,
 	isNode,
 	precompileByContent,
-	rootApplyParams,
-	writeRootApply,
 	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
 	type NodeId
 } from "@ark/schema"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import {
+	rootApplyParams,
+	rootApplyRuntime,
+	writeRootApply
+} from "@ark/schema/internal"
 import {
 	hasDomain,
 	isArray,
 	printable,
 	serializePrimitive,
-	throwError,
-	unset
+	throwError
 } from "@ark/util"
 import type { type } from "./keywords/keywords.ts"
 import * as runtime from "./runtime.ts"
@@ -196,21 +199,13 @@ export const precompileStandalone = (
 		return `const validator${i} = new Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, unit.names[root.id])}
-	})(${shape}, ${shape}.allows, ${shape}.traverseAllows, ${shape}.traverseApply, ${shape}.traverseTransform, Traversal, TransformErrors, applyCyclic, allowsAcyclic, allowsInContext, runtimeConfig, ${JSON.stringify(unset)}),
+	})(${shape}, runtimeConfig, ${Object.values(rootApplyRuntime).map(emit).join(", ")}),
 	${shape},
 	{ expression: ${JSON.stringify(root.expression)}, description: ${JSON.stringify(root.description)}, meta: ${emit(root.meta)} }
 )
 export { validator${i} as ${JSON.stringify(name)} }`
 	})
-	for (const name of [
-		"Traversal",
-		"TransformErrors",
-		"applyCyclic",
-		"allowsAcyclic",
-		"allowsInContext",
-		"allowsUntracked"
-	])
-		imports.add(name)
+	for (const name of ["allowsInContext", "allowsUntracked"]) imports.add(name)
 	return `import { ${[...imports].sort().join(", ")} } from "arktype/runtime"
 
 assertAbiVersion(${runtime.abiVersion})

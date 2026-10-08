@@ -46,7 +46,7 @@ import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
-import { CompiledFunction, type NodeCompiler } from "./shared/compile.ts"
+import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
 	BaseNodeInput,
@@ -71,7 +71,11 @@ import {
 	type UnknownAttachments
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import { TransformErrors } from "./shared/transform.ts"
+import {
+	rootApplyParams,
+	rootApplyRuntime,
+	writeRootApply
+} from "./shared/rootApply.ts"
 import {
 	allowsAcyclic,
 	allowsInContext,
@@ -1546,98 +1550,7 @@ const compileRootApply = (node: BaseRoot): RootApply =>
 	new DynamicFunction<(...args: unknown[]) => RootApply>(
 		...rootApplyParams,
 		writeRootApply(node, node.id)
-	)(
-		node,
-		node.allows,
-		node.traverseAllows,
-		node.traverseApply,
-		node.traverseTransform,
-		Traversal,
-		TransformErrors,
-		applyCyclic,
-		allowsAcyclic,
-		allowsInContext,
-		node.$.resolvedConfig,
-		unset
-	)
-
-export const rootApplyParams = [
-	"node",
-	"allows",
-	"traverseAllows",
-	"apply",
-	"transform",
-	"Traversal",
-	"TransformErrors",
-	"applyCyclic",
-	"allowsAcyclic",
-	"allowsInContext",
-	"config",
-	"unset"
-] as const
-
-// name keys the root's resolution, so it must be what its unit names it
-export const writeRootApply = (node: BaseRoot, name: string): string => {
-	const js = new CompiledFunction("data", "onFail").indent()
-	const applyFailed = new CompiledFunction("data", "onFail").indent()
-	const fallback = (body: typeof js) =>
-		node.includesAlias ?
-			body.return(
-				"applyCyclic(node, data, new Traversal(data, config)).finalize(onFail)"
-			)
-		:	body
-				.const("ctx", "new Traversal(data, config)")
-				.line("apply(data, ctx)")
-				.return("ctx.finalize(onFail)")
-	// a valid result is often data itself, which is cheaper to compare than instanceof
-	const returnResult = () =>
-		node.includesMorph ?
-			js
-				.if("result !== data && result instanceof TransformErrors", () =>
-					js
-						.const("ctx", "new Traversal(data, config)")
-						.line("ctx.addTransformErrors(result)")
-						.return("ctx.finalize(onFail)")
-				)
-				.return("result")
-		:	js.return("result")
-	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
-	if (node.rootApplyStrategy === "contextual") {
-		// failing in its own function lets V8 inline Allows and remove the ctx it allocates
-		fallback(applyFailed)
-		js.const("ctx", "new Traversal(data, config)")
-			.if("!traverseAllows(data, ctx) || ctx.hasError()", () =>
-				js.return("applyFailed(data, onFail)")
-			)
-			.return("data")
-	} else if (node.rootApplyStrategy === "allows")
-		js.if("!allows(data)", fallback).return("data")
-	else if (node.rootApplyStrategy === "contextualTransform") {
-		if (node.includesAlias) {
-			js.const("untracked", "allowsAcyclic(node, data)")
-				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
-				.const("ctx", "new Traversal(data, config)")
-				.set("ctx.tracksTransforms", "untracked === undefined")
-				.const("result", `ctx.transformResolution("${name}", data, transform)`)
-		} else {
-			js.if("!allows(data)", fallback)
-				.const("ctx", "new Traversal(data, config)")
-				.const("result", "transform(data, ctx)")
-		}
-		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
-	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
-		js.const("result", "transform(data)").if("result === unset", fallback)
-		returnResult()
-	} else if (node.includesMorph) {
-		js.if("!allows(data)", fallback).const("result", "transform(data)")
-		returnResult()
-	} else js.if("!allows(data)", fallback).return("transform(data)")
-	const failurePath =
-		applyFailed.body ?
-			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
-		:	""
-	return `"use strict"\n${failurePath}return (function ${js.write(`${name}RootApply`)})`
-}
+	)(node, node.$.resolvedConfig, ...Object.values(rootApplyRuntime))
 
 export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}
